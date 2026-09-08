@@ -13,7 +13,9 @@ public enum GameNotificationKind : byte
     Influence,
     Equipment,
     Movement,
-    Control
+    Control,
+    Chaos,
+    Crackdown
 }
 
 /// <summary>A mechanical notification reference; presentation supplies localized text.</summary>

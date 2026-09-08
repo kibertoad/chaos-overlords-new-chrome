@@ -71,6 +71,23 @@ public sealed class ManualRulesTests
     public void InfluenceProgressCannotDropBelowZero(int resistance, int successes, int expected) =>
         Assert.Equal(expected, ManualRules.ApplyInfluenceProgress(resistance, successes));
 
+    [Fact]
+    public void ChaosPoolAddsSectorIncomeOnceToAllParticipatingGangs() =>
+        Assert.Equal(16, ManualRules.ChaosDiceCount([(5, 2), (4, 1)], 4));
+
+    [Theory]
+    [InlineData(5, true, 5)]
+    [InlineData(5, false, 2)]
+    [InlineData(0, false, 0)]
+    public void ChaosIncomeDependsOnControlAndRoundsDown(int successes, bool controls, int expected) =>
+        Assert.Equal(expected, ManualRules.ChaosIncome(successes, controls));
+
+    [Theory]
+    [InlineData(10, 10, false)]
+    [InlineData(11, 10, true)]
+    public void CrackdownRequiresChaosStrictlyAboveTolerance(int chaos, int tolerance, bool expected) =>
+        Assert.Equal(expected, ManualRules.TriggersCrackdown(chaos, tolerance));
+
     [Theory]
     [InlineData(2, 1)]
     [InlineData(3, 1)]

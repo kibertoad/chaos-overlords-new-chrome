@@ -12,7 +12,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Tables | 22 sites, 90 gangs, 64 items | Parity verified (values only) | Source/payload hashes, Verified | Semantic field-use fixtures |
 | Turn phases | Upkeep, Command, Execution, Hire, Elimination | Headless coordinator implemented | Manual, High; player iteration provisional | Binary dispatcher confirmation |
 | Execution phases | Instant, Combat, Transaction, Chaos, Movement, Control | Headless coordinator implemented | Manual, High | Binary within-phase ordering |
-| Action IDs | None plus 14 original commands | Data-driven target/relationship validation and typed queue implemented; resolution pending | Table/save notes + manual, High; queue tie-break Low | Add reference-derived costs and resolve each command |
+| Action IDs | None plus 14 original commands | Data-driven target/relationship validation and typed queue implemented; every command except Attack resolves headlessly | Table/save notes + manual, High; queue tie-break Low | Implement and verify Attack; add reference-derived edge costs |
 | City | 8x8 sectors, three sites each | Provisional | Manual/data, High structure; Low algorithm | Match initial reference city |
 | Players | Six slots | Implemented | Data/save/manual, High | Setup permutations |
 | Gang capacity | 80 per player, six friendly per sector | Implemented | Manual, High | Boundary reference fixture |
@@ -25,7 +25,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Cash/upkeep | Sector/site income then active-gang upkeep with zero floor | Ordered Upkeep-phase resolver, component events, notifications and hashes implemented | Manual formula High; phase boundary/desertion modifiers Medium/Low | Reference zero-cash and multi-turn fixtures |
 | Sector control | Grouped Force + Control minus income, defenders and site Support; overthrow resets influence | Non-dice grouped resolver, ownership/site reset, Support and Overthrow accounting implemented | Manual equation High; positive threshold Medium; simultaneous ordering Low | Cross-player/tie, income-definition and crackdown fixtures |
 | Influence | Cooperative Force + Influence versus site resistance; ownership and benefits at zero | Same-player grouped Instant resolver, persistent resistance, ownership/Support, notifications and hashes implemented | Manual base formula High; pooling Medium; conflict/benefit timing Low | Cross-player ordering, takeover and full site-benefit fixtures |
-| Chaos | Income/chaos/crackdown effects | Documented | Manual, Medium | Controlled roll experiment |
+| Chaos | Force + Chaos + sector Income; controlled/uncontrolled payout; sector-wide crackdown suppression | Phase-wide grouped resolver, cash/statistics, persisted Chaos, crackdown state and broadcast notifications implemented | Manual base formula High; pooling Medium; accumulation/rounding/order Low | Controlled binary experiments at tolerance boundaries and police aftermath |
 | Bribe | $3, tolerance +5, max 40 | Instant-phase resolver, cash statistic, ordered result and notification implemented | Manual, High for formula; failure behavior Low | Binary timing and insufficient-cash edge cases |
 | Snitch | Free, tolerance -3, min 0 | Instant-phase resolver and ordered result/notification implemented | Manual, High for formula; automatic tolerance behavior Low | Binary timing and uninfluenced-site edge cases |
 | Heal | Base four dice plus effective Heal, success restores force to max 10 | Instant-phase resolver with deterministic rolls/results implemented | Manual formula Medium/High; recovered RNG algorithm High; seed/context Low | Reference fixture for dice pool, equipment/site scope and RNG order |
@@ -58,7 +58,6 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 - City generation selects sites uniformly instead of using verified frequency
   and class rules.
 - Hiring happens immediately and uses provisional price selection.
-- Control spends an invented cash cost and assigns ownership directly.
 - The core exposes a headless match schema, data-driven command validation,
   deterministic command and notification queues, ordered events, phase hashes,
   and a phase coordinator, but the current client still uses its older direct
@@ -66,8 +65,8 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 - Command replacement gets a new sequence number and resolution otherwise uses
   submission order inside a subphase; both are provisional recreation rules,
   not binary-validated behavior.
-- AI, research, equipment, combat, police, scenarios, victory and saves are not
-  implemented.
+- AI, combat, crackdown police execution, full scenario flow, victory and saves
+  are not implemented; research/equipment omit the parity gaps listed above.
 
 These blockers prevent describing the current playable slice as a faithful
 gameplay recreation even though its decoded tables and asset pack are verified.

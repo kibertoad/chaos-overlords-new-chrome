@@ -1,7 +1,7 @@
 # Architecture
 
 Status: evolving implementation architecture
-Last updated: 2026-09-08
+Last updated: 2026-09-09
 
 ## Dependency direction
 
@@ -152,12 +152,19 @@ Before an execution subphase mutates state, every queued action in that subphase
 must have a supported resolver. Unsupported actions block advancement rather
 than being silently consumed.
 
-Influence and Control are grouped resolvers. Influence commands from one player
+Influence, Chaos, and Control are grouped resolvers. Influence commands from one player
 aimed at the same site pool Force and effective Influence into one deterministic
 roll stream. Control commands from one player in the same sector pool Force and
 effective Control into one non-dice comparison. Each group resolves at its
 earliest queue position and emits one ordered result per participating command.
 Cross-player conflicts remain an explicit parity gap.
+
+Chaos is resolved across the entire subphase: one player's same-sector gangs
+share a roll, every group in a sector contributes before its crackdown state and
+payouts commit, and a new crackdown suppresses all groups in that sector. This
+phase-wide barrier is deterministic and prevents queue order from letting an
+earlier player escape suppression; accumulation/reset and original ordering are
+still provisional pending binary fixtures.
 
 The Transaction resolver treats equipment as gang-owned: Equip purchases
 directly into one of three slots, Give moves an equipped item between friendly

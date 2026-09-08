@@ -91,6 +91,32 @@ public static class ManualRules
         return Math.Max(0, resistance - successes);
     }
 
+    public static int ChaosDiceCount(IEnumerable<(int Force, int Chaos)> gangs, int sectorIncome)
+    {
+        ArgumentNullException.ThrowIfNull(gangs);
+        var total = sectorIncome;
+        foreach (var gang in gangs)
+        {
+            if (gang.Force is < 0 or > MaximumForce)
+                throw new ArgumentOutOfRangeException(nameof(gangs));
+            total = checked(total + gang.Force + gang.Chaos);
+        }
+        return Math.Max(0, total);
+    }
+
+    public static int ChaosIncome(int successes, bool controlsSector)
+    {
+        if (successes < 0) throw new ArgumentOutOfRangeException(nameof(successes));
+        return controlsSector ? successes : successes / 2;
+    }
+
+    public static bool TriggersCrackdown(int chaos, int tolerance)
+    {
+        if (chaos < 0) throw new ArgumentOutOfRangeException(nameof(chaos));
+        ValidateTolerance(tolerance);
+        return chaos > tolerance;
+    }
+
     public static int ControlStrength(IEnumerable<(int Force, int Control)> gangs)
     {
         ArgumentNullException.ThrowIfNull(gangs);

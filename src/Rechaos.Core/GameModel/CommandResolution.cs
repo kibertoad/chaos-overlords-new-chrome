@@ -24,7 +24,7 @@ public sealed record CommandResolutionResult(
 public static class CommandResolver
 {
     public static bool IsSupported(GangAction action) =>
-        action is GangAction.Bribe or GangAction.Equip or GangAction.Give or GangAction.Heal
+        action is GangAction.Bribe or GangAction.Chaos or GangAction.Equip or GangAction.Give or GangAction.Heal
             or GangAction.Hide or GangAction.Influence or GangAction.Move or GangAction.Research
             or GangAction.Sell or GangAction.Snitch or GangAction.Terminate or GangAction.Control;
 
@@ -38,6 +38,7 @@ public static class CommandResolver
             throw new InvalidOperationException("A command phase can only resolve during Execution.");
         if (commands.Any(command => command.ExecutionPhase != phase))
             throw new ArgumentException("Every command must belong to the current execution subphase.", nameof(commands));
+        if (phase == ExecutionPhase.Chaos) return ResolveChaosPhase(state, commands);
         var results = new List<CommandResolutionResult>(commands.Count);
         var resolvedSequences = new HashSet<long>();
         foreach (var queued in commands)
@@ -75,6 +76,7 @@ public static class CommandResolver
         return queued.Command.Action switch
         {
             GangAction.Bribe => ResolveBribe(state, queued.Command),
+            GangAction.Chaos => ResolveChaosPhase(state, [queued]).Single(),
             GangAction.Control => ResolveControl(state, [queued]).Single(),
             GangAction.Equip => ResolveEquip(state, queued.Command),
             GangAction.Give => ResolveGive(state, queued.Command),
@@ -213,6 +215,88 @@ public static class CommandResolver
             GameNotificationKind.Movement);
     }
 
+    private static IReadOnlyList<CommandResolutionResult> ResolveChaosPhase(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> commands)
+    {
+        var groups = commands
+            .GroupBy(queued => (
+                queued.Command.Player,
+                SectorId: state.FindGang(queued.Command.Gang)!.SectorId))
+            .Select(group =>
+            {
+                var participants = group.ToArray();
+                var sector = state.Sectors[group.Key.SectorId];
+                var dice = ManualRules.ChaosDiceCount(
+                    participants.Select(queued =>
+                    {
+                        var gang = state.FindGang(queued.Command.Gang)!;
+                        return (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Chaos);
+                    }),
+                    SectorIncome(state, sector));
+                var rolls = DiceRoller.RollD6(state.Random, dice);
+                return new ChaosGroup(participants, sector, rolls, ManualRules.CountSuccesses(rolls), dice);
+            })
+            .ToArray();
+
+        var sectorSuccesses = groups
+            .GroupBy(group => group.Sector.Id)
+            .ToDictionary(group => group.Key, group => group.Sum(value => value.Successes));
+        var sectorBefore = sectorSuccesses.Keys.ToDictionary(id => id, id => state.Sectors[id].Chaos);
+        var newlyTriggered = new HashSet<int>();
+        foreach (var (sectorId, successes) in sectorSuccesses.OrderBy(value => value.Key))
+        {
+            var sector = state.Sectors[sectorId];
+            sector.Chaos = checked(sector.Chaos + successes);
+            if (!sector.CrackdownActive && ManualRules.TriggersCrackdown(sector.Chaos, sector.Tolerance))
+            {
+                sector.CrackdownActive = true;
+                newlyTriggered.Add(sectorId);
+            }
+        }
+
+        var results = new List<CommandResolutionResult>(commands.Count);
+        var firstEventBySector = new Dictionary<int, long>();
+        foreach (var group in groups)
+        {
+            var player = state.FindPlayer(group.Participants[0].Command.Player)!;
+            var payout = group.Sector.CrackdownActive
+                ? 0
+                : ManualRules.ChaosIncome(group.Successes, group.Sector.Owner == player.Id);
+            player.Cash = checked(player.Cash + payout);
+            player.Statistics.CashEarned += payout;
+            for (var index = 0; index < group.Participants.Count; index++)
+            {
+                var participant = group.Participants[index];
+                var result = Complete(state, participant.Command, GameEventKind.CommandResolved,
+                    new CommandResolutionDetails(
+                        CommandResolutionCode.Resolved, group.Rolls, group.Successes,
+                        sectorBefore[group.Sector.Id], group.Sector.Chaos,
+                        CashDelta: index == 0 ? payout : 0,
+                        AttackValue: group.DiceCount, DefenseValue: group.Sector.Tolerance),
+                    GameNotificationKind.Chaos);
+                results.Add(result);
+                firstEventBySector.TryAdd(group.Sector.Id, result.Event!.Sequence);
+            }
+        }
+
+        foreach (var sectorId in newlyTriggered.Order())
+        {
+            foreach (var player in state.Players.Where(player => player.Status == PlayerStatus.Active))
+                state.QueueNotification(
+                    player.Id, GameNotificationKind.Crackdown,
+                    sectorId: sectorId, relatedEventSequence: firstEventBySector[sectorId]);
+        }
+        return results;
+    }
+
+    private sealed record ChaosGroup(
+        IReadOnlyList<QueuedCommand> Participants,
+        MatchSectorState Sector,
+        IReadOnlyList<int> Rolls,
+        int Successes,
+        int DiceCount);
+
     private static IReadOnlyList<CommandResolutionResult> ResolveControl(
         MatchState state,
         IReadOnlyList<QueuedCommand> participants)
@@ -227,8 +311,7 @@ public static class CommandResolver
             return (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Control);
         });
         var attack = ManualRules.ControlStrength(attackers);
-        var sectorIncome = sector.Sites.Sum(site =>
-            state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
+        var sectorIncome = SectorIncome(state, sector);
         var defense = 0;
         var support = 0;
         if (sector.Owner is { } owner && owner != first.Player)
@@ -276,6 +359,10 @@ public static class CommandResolver
             site.Resistance = definition.Resistance;
         }
     }
+
+    private static int SectorIncome(MatchState state, MatchSectorState sector) =>
+        sector.Sites.Sum(site =>
+            state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
 
     private static CommandResolutionResult ResolveHeal(MatchState state, GameCommand command)
     {

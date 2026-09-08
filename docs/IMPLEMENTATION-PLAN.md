@@ -41,9 +41,9 @@ is ever attempted.
 | Build | .NET 10 solution, MonoGame DesktopGL 3.8.5.1, xUnit v3 4.0.0 | CI, packaging, other OS smoke tests |
 | Original data | Embedded 22 sites, 90 gangs, and 64 items with pinned provenance | Semantic/formula validation, versioned generation tool |
 | Extraction | Transactional/versioned full-pack SHA-256 validation; 215 repaired RGB555 PX16 images, 214 retained plus decoded PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files; generated 685-output factual catalog | Transparency/color-key validation, video strategy, semantic role/owner resolution |
-| Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, basic cash, hiring, sector ownership and upkeep | Action resolution, client integration, original RNG and almost all exact formulas |
+| Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, Upkeep, and every non-combat command resolver | Attack/combat, client integration, original RNG seeding/order and exact parity formulas |
 | Client | Scaled 640x460 view, original background loading, keyboard interaction, basic board | Original screens, sprites, mouse UI, animation, sound/music, accessibility |
-| Tests | Parser/header/provenance, asset verification, scenarios, manual rules, command queue and phase coordinator | Reference fixtures, action resolution, AI snapshots, save compatibility, visual tests |
+| Tests | Parser/header/provenance, asset verification, scenarios, manual rules, deterministic non-combat action resolution, command queue and phase coordinator | Reference fixtures, combat, AI snapshots, save compatibility, visual tests |
 | Documentation | File/binary research, generated factual asset catalog, architecture, validation, parity matrix and this roadmap | Rules, save map, UI atlas and remaining documents listed in section 4 |
 
 The current game is a playable architectural slice, not evidence of rule parity.
@@ -556,7 +556,7 @@ unmarked guess.
 | M0 | In progress | Research templates; file/binary logs; architecture, validation and parity documents; source/output verification; rollback-safe staged installation; sanitized reference-fixture schema; labeled JSON state-diff tool; versioned 685-output manifest and generated factual asset catalog | One captured, fully documented reference observation |
 | M1 | Foundation started | Ten scenario definitions and durations; 8x8/three-site prototype; scaled MonoGame shell | Exact city generation and setup, HQ/Right Hands initialization, atlas, screen router, mouse input and reference fixtures |
 | M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; declarative validation for all action target shapes; typed queue mutations and ordered events; bounded notification queues; serializable provisional RNG; canonical phase hashes | Hire lifecycle, reference-derived costs and per-action resolution, original RNG recovery, and binary-validated within-phase ordering |
-| M3 | Foundation started | Ordered base Upkeep economy; all Instant and Transaction actions; Move/Terminate; grouped Influence and Control with ownership/site reset; deterministic Research; pure police helpers | Cross-player group conflicts, full site benefits, desertion/modifiers, research caps, factory discounts/acquisition/swap fixtures and M2 gate |
+| M3 | Foundation started | Ordered base Upkeep economy; all Instant and Transaction actions; Move/Terminate; grouped Influence and Control with ownership/site reset; phase-wide grouped Chaos income/accumulation/crackdown; deterministic Research; pure police helpers | Binary Chaos/reset/police fixtures, cross-player Influence/Control conflicts, full site benefits, desertion/modifiers, research caps, factory discounts/acquisition/swap fixtures and M2 gate |
 | M4 | Foundation started | Recovered raw RNG/range algorithms; serializable state; effective equipment stats; phase-integrated Heal resolver with recorded rolls | RNG seed/call-order validation, full combat/resolution deliverable, and M2-M3 gates |
 | M5 | Not started | Scenario objective predicates and timed score models only | Full game/endgame/persistence/UI deliverable and M4 gate |
 | M6 | Not started | None | M5 and AI research/implementation |
@@ -564,7 +564,7 @@ unmarked guess.
 | M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
 | M9 | Not started | None | Frozen deterministic simulation after M8 |
 
-Current automated baseline: the solution builds successfully, 164 tests
+Current automated baseline: the solution builds successfully, 175 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.

@@ -1,0 +1,176 @@
+using Rechaos.Core.Assets;
+using Rechaos.Core.GameModel;
+using Xunit;
+
+namespace Rechaos.Tests;
+
+public sealed class ChaosResolutionTests
+{
+    [Fact]
+    public void FriendlyGangsPoolOneChaosRollAndControlledSectorPaysEverySuccess()
+    {
+        var match = CreateMatch(twoPlayerZeroGangs: true, owner: new PlayerId(0), tolerance: 40);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+        var cashBefore = match.Players[0].Cash;
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(2, match.LastPhaseResolutions.Count);
+        var first = match.LastPhaseResolutions[0].Event!.Resolution!;
+        var second = match.LastPhaseResolutions[1].Event!.Resolution!;
+        var gangs = new[] { match.FindGang(new GangId(10))!, match.FindGang(new GangId(11))! };
+        var sectorIncome = SectorIncome(match, 0);
+        var expectedDice = ManualRules.ChaosDiceCount(gangs.Select(gang =>
+            (gang.Force, EffectiveStatisticsCalculator.ForGang(match, gang).Chaos)), sectorIncome);
+        Assert.Equal(expectedDice, first.Rolls.Count);
+        Assert.Equal(first.Rolls, second.Rolls);
+        Assert.Equal(first.Successes, first.CashDelta);
+        Assert.Equal(0, second.CashDelta);
+        Assert.Equal(first.Successes,
+            match.LastPhaseResolutions.Sum(result => result.Event!.Resolution!.CashDelta));
+        Assert.Equal(cashBefore + first.Successes, match.Players[0].Cash);
+        Assert.Equal(first.Successes, match.Players[0].Statistics.CashEarned);
+        Assert.Equal(first.Successes, match.Sectors[0].Chaos);
+        Assert.Equal(expectedDice * 3, match.Random.ConsumptionCount);
+        Assert.All(match.LastPhaseResolutions,
+            result => Assert.Equal(GameNotificationKind.Chaos,
+                match.NotificationsFor(result.Command.Player)
+                    .Single(notification => notification.RelatedEventSequence == result.Event!.Sequence).Kind));
+    }
+
+    [Fact]
+    public void UncontrolledSectorPaysHalfOfSuccessesRoundedDown()
+    {
+        var match = CreateMatch(tolerance: 40);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+        var cashBefore = match.Players[0].Cash;
+
+        match.FinishExecutionPhase();
+
+        var successes = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.Successes;
+        Assert.Equal(successes / 2, match.Players[0].Cash - cashBefore);
+        Assert.Equal(successes / 2, match.Players[0].Statistics.CashEarned);
+    }
+
+    [Fact]
+    public void AllPlayersContributeBeforeCrackdownSuppressesSectorPayouts()
+    {
+        var match = CreateMatch(secondPlayerSector: 0, tolerance: 0);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: true);
+        var cashBefore = match.Players.Select(player => player.Cash).ToArray();
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(2, match.LastPhaseResolutions.Count);
+        var totalSuccesses = match.LastPhaseResolutions.Sum(result => result.Event!.Resolution!.Successes);
+        Assert.True(totalSuccesses > 0);
+        Assert.Equal(totalSuccesses, match.Sectors[0].Chaos);
+        Assert.True(match.Sectors[0].CrackdownActive);
+        Assert.Equal(cashBefore, match.Players.Select(player => player.Cash));
+        Assert.All(match.Players, player => Assert.Contains(
+            match.NotificationsFor(player.Id),
+            notification => notification.Kind == GameNotificationKind.Crackdown && notification.SectorId == 0));
+    }
+
+    [Fact]
+    public void ExistingCrackdownSuppressesIncomeWhileChaosStillAccumulates()
+    {
+        var match = CreateMatch(tolerance: 40, crackdownActive: true);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+        var cashBefore = match.Players[0].Cash;
+
+        match.FinishExecutionPhase();
+
+        var successes = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.Successes;
+        Assert.Equal(cashBefore, match.Players[0].Cash);
+        Assert.Equal(successes, match.Sectors[0].Chaos);
+        Assert.DoesNotContain(match.NotificationsFor(new PlayerId(0)),
+            notification => notification.Kind == GameNotificationKind.Crackdown);
+    }
+
+    [Fact]
+    public void EquivalentChaosRunsProduceIdenticalEventsAndHash()
+    {
+        var first = CreateMatch(twoPlayerZeroGangs: true, owner: new PlayerId(0), tolerance: 40);
+        var second = CreateMatch(twoPlayerZeroGangs: true, owner: new PlayerId(0), tolerance: 40);
+        QueueChaosAndEnterPhase(first, includeSecondPlayer: false);
+        QueueChaosAndEnterPhase(second, includeSecondPlayer: false);
+
+        first.FinishExecutionPhase();
+        second.FinishExecutionPhase();
+
+        Assert.Equal(
+            first.LastPhaseResolutions.Select(result => result.Event!.Resolution!.Rolls),
+            second.LastPhaseResolutions.Select(result => result.Event!.Resolution!.Rolls),
+            new RollCollectionComparer());
+        Assert.Equal(first.LastPhaseResolutions.Select(result => result.Event!.Resolution!.Successes),
+            second.LastPhaseResolutions.Select(result => result.Event!.Resolution!.Successes));
+        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+    }
+
+    private static void QueueChaosAndEnterPhase(MatchState match, bool includeSecondPlayer)
+    {
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Chaos(0, 10)).Accepted);
+        if (match.FindGang(new GangId(11)) is not null) Assert.True(match.Submit(Chaos(0, 11)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        if (includeSecondPlayer) Assert.True(match.Submit(Chaos(1, 20)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        for (var index = 0; index < 3; index++) match.FinishExecutionPhase();
+        Assert.Equal(ExecutionPhase.Chaos, match.Coordinator.ExecutionPhase);
+    }
+
+    private static GameCommand Chaos(int player, int gang) =>
+        new(new PlayerId(player), new GangId(gang), GangAction.Chaos, CommandTarget.None);
+
+    private static int SectorIncome(MatchState match, int sectorId) =>
+        match.Sectors[sectorId].Sites.Sum(site =>
+            match.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
+
+    private sealed class RollCollectionComparer : IEqualityComparer<IReadOnlyList<int>>
+    {
+        public bool Equals(IReadOnlyList<int>? x, IReadOnlyList<int>? y) =>
+            x is not null && y is not null && x.SequenceEqual(y);
+
+        public int GetHashCode(IReadOnlyList<int> obj) => 0;
+    }
+
+    private static MatchState CreateMatch(
+        bool twoPlayerZeroGangs = false,
+        int secondPlayerSector = 3,
+        PlayerId? owner = null,
+        int tolerance = 20,
+        bool crackdownActive = false)
+    {
+        var data = BundledOriginalData.Load();
+        var chaosGang = data.Gangs.OrderByDescending(gang => gang.Stats.Chaos).First().Id;
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(1), "TWO", PlayerController.Computer)
+        ];
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var playerZeroGangs = new List<MatchGangState>
+        {
+            new(new GangId(10), new PlayerId(0), chaosGang, 0, 10)
+        };
+        if (twoPlayerZeroGangs)
+            playerZeroGangs.Add(new MatchGangState(new GangId(11), new PlayerId(0), chaosGang, 0, 8));
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 500, playerZeroGangs),
+            new(setups[1], 500,
+                [new MatchGangState(new GangId(20), new PlayerId(1), chaosGang, secondPlayerSector, 9)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 4)
+            ], id == 0 ? owner : null, id == 0 ? tolerance : 20,
+                crackdownActive: id == 0 && crackdownActive))
+            .ToArray();
+        return new MatchState(data, setup, players, sectors);
+    }
+}
