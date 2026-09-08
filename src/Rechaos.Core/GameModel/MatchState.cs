@@ -471,6 +471,8 @@ public sealed class MatchState
                 throw new ArgumentException($"Player {player.Id} contains an invalid researched item.", nameof(players));
             if (player.ResearchProgress.Keys.Any(player.ResearchedItems.Contains))
                 throw new ArgumentException($"Player {player.Id} has overlapping active and completed research.", nameof(players));
+            if (player.Inventory.Any(pair => !IsActualItem(definitions, pair.Key) || pair.Value <= 0))
+                throw new ArgumentException($"Player {player.Id} contains invalid inventory state.", nameof(players));
         }
 
         var overcrowded = players.SelectMany(player => player.Gangs)

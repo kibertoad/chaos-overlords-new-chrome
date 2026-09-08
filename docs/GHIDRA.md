@@ -39,6 +39,23 @@ C:\GOG Games\Chaos Overlords\Chaos Overlords.exe
 Always verify the length and hash before interpreting an address. Findings from
 another executable version must be tracked separately.
 
+## Reference manual
+
+The canonical local manual used for rule transcription is:
+
+```text
+C:\GOG Games\chaos_overlords_manual\Chaos Overlords - Manual.pdf
+```
+
+- Length: 6,229,841 bytes
+- SHA-256: `bdb1072848df95111cd014faaa7297d016b7c6e55cd7f2658dda67a167a0089d`
+- Layout: 30 PDF pages containing 56 numbered scan pages
+
+The copy at `C:\GOG Games\Chaos Overlords\Chaos Overlords - Manual.pdf` has
+the same length and SHA-256 and is therefore byte-identical. Rule evidence
+should cite `MANUAL-GOG-1` in `GAME-RULES.md`; local absolute paths are setup
+metadata, not runtime dependencies.
+
 ## Headless workflow
 
 Create every project in a unique directory under `%TEMP%` and import the owned

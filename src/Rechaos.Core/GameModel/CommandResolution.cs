@@ -4,7 +4,8 @@ public enum CommandResolutionCode : byte
 {
     Resolved,
     InsufficientCash,
-    UnsupportedAction
+    UnsupportedAction,
+    ItemUnavailable
 }
 
 public sealed record CommandResolutionResult(
@@ -22,8 +23,9 @@ public sealed record CommandResolutionResult(
 public static class CommandResolver
 {
     public static bool IsSupported(GangAction action) =>
-        action is GangAction.Bribe or GangAction.Heal or GangAction.Hide or GangAction.Influence
-            or GangAction.Research or GangAction.Snitch;
+        action is GangAction.Bribe or GangAction.Equip or GangAction.Give or GangAction.Heal
+            or GangAction.Hide or GangAction.Influence or GangAction.Research or GangAction.Sell
+            or GangAction.Snitch or GangAction.Terminate;
 
     public static IReadOnlyList<CommandResolutionResult> ResolvePhase(
         MatchState state,
@@ -68,11 +70,15 @@ public static class CommandResolver
         return queued.Command.Action switch
         {
             GangAction.Bribe => ResolveBribe(state, queued.Command),
+            GangAction.Equip => ResolveEquip(state, queued.Command),
+            GangAction.Give => ResolveGive(state, queued.Command),
             GangAction.Heal => ResolveHeal(state, queued.Command),
             GangAction.Hide => ResolveHide(state, queued.Command),
             GangAction.Influence => ResolveInfluence(state, [queued]).Single(),
             GangAction.Research => ResolveResearch(state, queued.Command),
+            GangAction.Sell => ResolveSell(state, queued.Command),
             GangAction.Snitch => ResolveSnitch(state, queued.Command),
+            GangAction.Terminate => ResolveTerminate(state, queued.Command),
             _ => new CommandResolutionResult(queued.Command, CommandResolutionCode.UnsupportedAction, null)
         };
     }
@@ -96,6 +102,89 @@ public static class CommandResolver
         state.Sectors[gang.SectorId].Tolerance = after;
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after, -cost));
+    }
+
+    private static CommandResolutionResult ResolveEquip(MatchState state, GameCommand command)
+    {
+        var player = state.FindPlayer(command.Player)!;
+        var gang = state.FindGang(command.Gang)!;
+        var itemIndex = checked((short)command.Target.Id);
+        var item = state.Definitions.Items[itemIndex];
+        if (player.Cash < item.Cost)
+            return Complete(state, command, GameEventKind.CommandFailed,
+                new CommandResolutionDetails(
+                    CommandResolutionCode.InsufficientCash, [], 0, CashDelta: 0, ItemId: itemIndex),
+                GameNotificationKind.Equipment);
+
+        player.Cash -= item.Cost;
+        player.Statistics.CashSpent += item.Cost;
+        var replaced = EquipmentRules.Equip(gang, EquipmentRules.SlotFor(item), itemIndex);
+        return Complete(state, command, GameEventKind.CommandResolved,
+            new CommandResolutionDetails(
+                CommandResolutionCode.Resolved, [], 0,
+                PreviousValue: replaced, ResultValue: itemIndex, CashDelta: -item.Cost,
+                ItemId: itemIndex, ReplacedItemId: replaced),
+            GameNotificationKind.Equipment);
+    }
+
+    private static CommandResolutionResult ResolveGive(MatchState state, GameCommand command)
+    {
+        var source = state.FindGang(command.Gang)!;
+        var target = state.FindGang(new GangId(command.Target.Id))!;
+        var itemIndex = checked((short)command.SecondaryTarget!.Value.Id);
+        var slot = EquipmentRules.SlotFor(state.Definitions.Items[itemIndex]);
+        if (EquipmentRules.EquippedItem(source, slot) != itemIndex)
+            return Complete(state, command, GameEventKind.CommandFailed,
+                new CommandResolutionDetails(
+                    CommandResolutionCode.ItemUnavailable, [], 0, ItemId: itemIndex),
+                GameNotificationKind.Equipment);
+
+        EquipmentRules.Unequip(source, slot);
+        var replaced = EquipmentRules.Equip(target, slot, itemIndex);
+        return Complete(state, command, GameEventKind.CommandResolved,
+            new CommandResolutionDetails(
+                CommandResolutionCode.Resolved, [], 0,
+                PreviousValue: itemIndex, ResultValue: itemIndex,
+                ItemId: itemIndex, ReplacedItemId: replaced),
+            GameNotificationKind.Equipment);
+    }
+
+    private static CommandResolutionResult ResolveSell(MatchState state, GameCommand command)
+    {
+        var player = state.FindPlayer(command.Player)!;
+        var gang = state.FindGang(command.Gang)!;
+        var itemIndex = checked((short)command.Target.Id);
+        var item = state.Definitions.Items[itemIndex];
+        var slot = EquipmentRules.SlotFor(item);
+        if (EquipmentRules.EquippedItem(gang, slot) != itemIndex)
+            return Complete(state, command, GameEventKind.CommandFailed,
+                new CommandResolutionDetails(
+                    CommandResolutionCode.ItemUnavailable, [], 0, ItemId: itemIndex),
+                GameNotificationKind.Equipment);
+
+        EquipmentRules.Unequip(gang, slot);
+        var proceeds = EquipmentRules.SaleValue(item);
+        player.Cash = checked(player.Cash + proceeds);
+        player.Statistics.CashEarned += proceeds;
+        return Complete(state, command, GameEventKind.CommandResolved,
+            new CommandResolutionDetails(
+                CommandResolutionCode.Resolved, [], 0,
+                PreviousValue: itemIndex, CashDelta: proceeds, ItemId: itemIndex),
+            GameNotificationKind.Equipment);
+    }
+
+    private static CommandResolutionResult ResolveTerminate(MatchState state, GameCommand command)
+    {
+        var gang = state.FindGang(command.Gang)!;
+        var before = gang.Force;
+        gang.Force = 0;
+        gang.Hidden = false;
+        gang.WeaponItemId = null;
+        gang.ArmorItemId = null;
+        gang.MiscellaneousItemId = null;
+        return Complete(state, command, GameEventKind.CommandResolved,
+            new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, 0),
+            GameNotificationKind.Elimination);
     }
 
     private static CommandResolutionResult ResolveHeal(MatchState state, GameCommand command)

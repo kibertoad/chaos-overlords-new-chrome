@@ -156,6 +156,69 @@ place and no command in it mutates state. This is a recreation invariant that
 prevents incomplete logic from silently consuming player commands; it is not a
 claim about original-game behavior.
 
+## Equipment transactions
+
+### RULE-EQUIP-001 — Purchase and equip
+
+- Source: `MANUAL-GOG-1`; Equip, Equipment, Item Types, and Tech Level
+  descriptions on numbered pages 43–44.
+- Observed statement: Equip buys an item for the acting gang, deducts its listed
+  cost, requires prior research for most items, and requires gang tech level at
+  least equal to item tech level. A gang has one weapon, armor, and miscellaneous
+  slot; melee, blade, and ranged items share the weapon slot.
+- Interpretation: zero-research-difficulty items are immediately available;
+  other items require completed player research. Successful purchase replaces
+  and loses the previous same-slot item and records cash spent.
+- Confidence: High for cost, categories, research, and tech gates; Medium for
+  same-slot purchase replacement behavior; Low for factory discounts and repeat
+  commands.
+- Implementation: `EquipmentRules`, transaction validation, and
+  `CommandResolver.ResolveEquip`.
+- Tests: `TransactionResolutionTests` covers purchase, replacement, cash and
+  statistics, research/tech validation, insufficient funds, and replay hashes.
+
+### RULE-GIVE-001 — Transfer equipped item
+
+- Source: `MANUAL-GOG-1`; Give description on numbered pages 43–44.
+- Observed statement: a gang may give one or all equipped items to one friendly
+  gang; the recipient must meet item tech level, and an existing similar item is
+  lost.
+- Interpretation: one Give command transfers its selected equipped item to the
+  friendly same-sector target, clears the source slot, and replaces the target's
+  same slot without a cash change.
+- Confidence: High for transfer, tech gate, and replacement loss; Medium for
+  within-phase swap ordering.
+- Implementation: transaction validation and `CommandResolver.ResolveGive`.
+- Tests: transfer, replacement loss, possession validation, and tech validation
+  in `TransactionResolutionTests`.
+
+### RULE-SELL-001 — Half-price sale
+
+- Source: `MANUAL-GOG-1`; Sell description on numbered page 44.
+- Observed statement: selling returns half the original listed price, excluding
+  factory discounts, rounded down.
+- Interpretation: remove the selected equipped item, add `floor(Cost / 2)` to
+  player cash, and record the proceeds as cash earned.
+- Confidence: High for the formula; Medium for statistics timing and multi-item
+  UI batching.
+- Implementation: `EquipmentRules.SaleValue` and `CommandResolver.ResolveSell`.
+- Tests: odd-price rounding, equipment removal, cash/statistics accounting, and
+  runtime possession failure in `TransactionResolutionTests` and
+  `ManualRulesTests`.
+
+### RULE-TERMINATE-001 — Remove gang and equipment
+
+- Source: `MANUAL-GOG-1`; Terminate description and command sequence on numbered
+  pages 44–45.
+- Observed statement: Terminate removes the gang from play and all items it
+  possesses; it executes during Movement.
+- Interpretation: set Force to zero, clear Hidden and all three equipment slots,
+  and emit an elimination notification.
+- Confidence: High for gang/item removal and phase; Low for statistics,
+  notification presentation, and effects on simultaneous Movement.
+- Implementation: `CommandResolver.ResolveTerminate`.
+- Tests: `TransactionResolutionTests.TerminateRemovesGangAndAllEquipmentDuringMovement`.
+
 ## Upkeep economy
 
 ### RULE-UPKEEP-001 — Base income, upkeep, and cash floor

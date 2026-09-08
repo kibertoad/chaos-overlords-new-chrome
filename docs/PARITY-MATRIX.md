@@ -32,7 +32,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Hide/detect | Hidden state, Stealth probability and cooperative detect | Hide state transition implemented; detection/reveal unresolved | Manual state intent High; timing/detection Medium/Low | Reveal timing and distribution fixtures |
 | Combat | Simultaneous attack, defense, damage and retaliation | Documented | Manual, Medium | Binary formula matrix |
 | Movement | Adjacent-sector move | Documented | Manual, High | Simultaneous collision ordering |
-| Equipment | One weapon/armor/misc, tech gated | Documented | Manual/tables, High | Inventory model and fixtures |
+| Equipment | One weapon/armor/misc; research/tech gates; purchase, transfer, replacement loss, half-price sale | Equip/Give/Sell Transaction resolvers, typed slots, cash/statistics, validation, events and notifications implemented | Manual formulas High; replacement/swap ordering Medium; discounts Low | Factory discount, multi-item UI, swap and acquisition fixtures |
 | Research | Force + Research dice, persistent progress/completion; tech/site caps | Instant-phase resolver with deterministic rolls, progress/completion state, validation, result notification and hashes implemented; caps excluded | Manual formula High; equipment/repeat behavior Medium; recovered RNG algorithm High; seed/context Low | Reference fixtures for tech/site caps, unlock effects, zero-difficulty items and RNG order |
 | Police | Combat 20, Detect 12, stealth detection curve | Implemented as pure rules | Manual, High | Wire crackdown; exact aftermath |
 | Objectives | Ten named scenarios and objective thresholds | Implemented as model | Manual, High | Wire match setup; binary edge/tie fixtures |

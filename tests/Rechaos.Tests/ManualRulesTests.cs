@@ -70,4 +70,17 @@ public sealed class ManualRulesTests
     [InlineData(2, 5, 0)]
     public void InfluenceProgressCannotDropBelowZero(int resistance, int successes, int expected) =>
         Assert.Equal(expected, ManualRules.ApplyInfluenceProgress(resistance, successes));
+
+    [Theory]
+    [InlineData(2, 1)]
+    [InlineData(3, 1)]
+    [InlineData(25, 12)]
+    public void EquipmentSalePaysHalfRoundedDown(int cost, int expected)
+    {
+        var item = new Rechaos.Core.Assets.ItemDefinition(
+            "TEST", 0, "", 0, 0, (short)cost, 0,
+            new Rechaos.Core.Assets.Statistics(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+            0, 0, 0, 0);
+        Assert.Equal(expected, EquipmentRules.SaleValue(item));
+    }
 }

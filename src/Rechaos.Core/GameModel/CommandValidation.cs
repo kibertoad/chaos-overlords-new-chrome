@@ -18,6 +18,10 @@ public enum CommandValidationCode
     DestinationNotAdjacent,
     ItemAlreadyResearched,
     SiteAlreadyInfluenced,
+    ItemNotResearched,
+    InsufficientTechLevel,
+    ItemNotEquipped,
+    ItemAlreadyEquipped,
     CommandNotQueued
 }
 
@@ -109,7 +113,7 @@ public static class CommandValidator
         if (command.Action == GangAction.Influence
             && state.FindSite(command.Target.Id)!.InfluencedBy is not null)
             return CommandValidation.Reject(CommandValidationCode.SiteAlreadyInfluenced);
-        return CommandValidation.Valid();
+        return ValidateTransaction(state, command, actor);
     }
 
     public static CommandValidation ValidateCancellation(MatchState state, PlayerId player, GangId gang) =>
@@ -207,6 +211,48 @@ public static class CommandValidator
         target.Id >= 0 && target.Id < state.Definitions.Items.Count && state.Definitions.Items[target.Id].Type != 99
             ? CommandValidation.Valid()
             : CommandValidation.Reject(CommandValidationCode.TargetNotFound);
+
+    private static CommandValidation ValidateTransaction(
+        MatchState state,
+        GameCommand command,
+        MatchGangState actor)
+    {
+        if (command.Action is not (GangAction.Equip or GangAction.Give or GangAction.Sell))
+            return CommandValidation.Valid();
+        var itemIndex = checked((short)(command.Action == GangAction.Give
+            ? command.SecondaryTarget!.Value.Id
+            : command.Target.Id));
+        var item = state.Definitions.Items[itemIndex];
+        var slot = EquipmentRules.SlotFor(item);
+
+        if (command.Action == GangAction.Equip)
+        {
+            var player = state.FindPlayer(command.Player)!;
+            if (item.ResearchDifficulty > 0 && !player.ResearchedItems.Contains(itemIndex))
+                return CommandValidation.Reject(CommandValidationCode.ItemNotResearched);
+            if (!MeetsTechLevel(state, actor, item))
+                return CommandValidation.Reject(CommandValidationCode.InsufficientTechLevel);
+            return EquipmentRules.EquippedItem(actor, slot) == itemIndex
+                ? CommandValidation.Reject(CommandValidationCode.ItemAlreadyEquipped)
+                : CommandValidation.Valid();
+        }
+
+        if (EquipmentRules.EquippedItem(actor, slot) != itemIndex)
+            return CommandValidation.Reject(CommandValidationCode.ItemNotEquipped);
+        if (command.Action == GangAction.Give)
+        {
+            var recipient = state.FindGang(new GangId(command.Target.Id))!;
+            if (!MeetsTechLevel(state, recipient, item))
+                return CommandValidation.Reject(CommandValidationCode.InsufficientTechLevel);
+        }
+        return CommandValidation.Valid();
+    }
+
+    private static bool MeetsTechLevel(
+        MatchState state,
+        MatchGangState gang,
+        Rechaos.Core.Assets.ItemDefinition item) =>
+        state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).TechLevel >= item.TechLevel;
 }
 
 internal static class CommandValidationMessages
@@ -229,6 +275,10 @@ internal static class CommandValidationMessages
             [CommandValidationCode.DestinationNotAdjacent] = "Movement requires an orthogonally adjacent sector.",
             [CommandValidationCode.ItemAlreadyResearched] = "The targeted item has already been researched.",
             [CommandValidationCode.SiteAlreadyInfluenced] = "The targeted site is already influenced.",
+            [CommandValidationCode.ItemNotResearched] = "The item has not been researched.",
+            [CommandValidationCode.InsufficientTechLevel] = "The gang's tech level is too low for this item.",
+            [CommandValidationCode.ItemNotEquipped] = "The acting gang does not have that item equipped.",
+            [CommandValidationCode.ItemAlreadyEquipped] = "The acting gang already has that item equipped.",
             [CommandValidationCode.CommandNotQueued] = "The gang has no queued command."
         };
 

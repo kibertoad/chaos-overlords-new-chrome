@@ -55,6 +55,8 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   three-sample range wrapper plus canonical little-endian SHA-256 encoding.
 - `GameModel/EffectiveStatistics.cs`: definition/equipment stat aggregation and
   deterministic six-sided dice rolls.
+- `GameModel/Equipment.cs`: item-type slot mapping, replacement/unequip
+  mutations, and manual half-price sale calculation.
 
 Target subdivisions:
 
@@ -155,6 +157,13 @@ same site pool their gangs' Force and effective Influence into one deterministic
 roll stream. The group is resolved at its earliest queue position and emits one
 ordered result per participating command. Cross-player conflicts remain an
 explicit parity gap.
+
+The Transaction resolver treats equipment as gang-owned: Equip purchases
+directly into one of three slots, Give moves an equipped item between friendly
+gangs, and Sell removes an equipped item for cash. The player inventory map is
+validated state reserved for future acquisition workflows; it is not silently
+used as a shop or overflow stash. Terminate clears all gang-owned equipment in
+the Movement phase.
 
 `MatchState.FinishUpkeep` resolves every active player in stable player-ID order
 before entering Command. Each result separates sector tax, influenced-site

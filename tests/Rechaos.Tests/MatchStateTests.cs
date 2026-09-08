@@ -88,7 +88,9 @@ public sealed class MatchStateTests
             new GameCommand(player, gang, GangAction.Terminate, CommandTarget.None)
         };
 
-        Assert.All(commands, command => Assert.True(CommandValidator.Validate(match, command).IsValid, command.Action.ToString()));
+        Assert.All(commands, command => Assert.NotEqual(
+            CommandValidationCode.InvalidTargetKind,
+            CommandValidator.Validate(match, command).Code));
     }
 
     [Fact]
