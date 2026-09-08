@@ -53,8 +53,8 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   with presentation-independent payloads.
 - `GameModel/Determinism.cs`: serializable recovered Visual C++ random step and
   three-sample range wrapper plus canonical little-endian SHA-256 encoding.
-- `GameModel/EffectiveStatistics.cs`: definition/equipment stat aggregation and
-  deterministic six-sided dice rolls.
+- `GameModel/EffectiveStatistics.cs`: definition/equipment/influenced-site stat
+  aggregation and deterministic six-sided dice rolls.
 - `GameModel/Equipment.cs`: item-type slot mapping, replacement/unequip
   mutations, and manual half-price sale calculation.
 
@@ -170,8 +170,15 @@ Combat also uses a phase-wide barrier. It snapshots Force, effective statistics,
 equipment class, and Hidden state for every gang; calculates all attacks and
 eligible retaliation in queue order; then commits aggregate damage. This keeps
 an eliminated gang's simultaneous response independent of event emission order.
-Hidden-target detection, police combat, and original overkill attribution remain
-explicit gaps.
+Hidden attacks use an individual Detect-versus-Stealth roll and suppress
+retaliation on a hit. Cooperative sector visibility is a separate deterministic
+query because Hide does not affect whether a gang is displayed. Police combat
+and original overkill attribution remain explicit gaps.
+
+All action resolvers consume the same effective-stat projection. It adds gang
+definition, three equipment slots, and every same-sector site influenced by the
+gang's owner, preventing research, social, Chaos, control, and combat paths from
+silently disagreeing about local modifiers.
 
 The Transaction resolver treats equipment as gang-owned: Equip purchases
 directly into one of three slots, Give moves an equipped item between friendly

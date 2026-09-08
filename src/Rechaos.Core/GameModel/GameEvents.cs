@@ -24,7 +24,9 @@ public sealed record CommandResolutionDetails(
     IReadOnlyList<int>? RetaliationRolls = null,
     int RetaliationSuccesses = 0,
     int Damage = 0,
-    int RetaliationDamage = 0);
+    int RetaliationDamage = 0,
+    int? DetectionRoll = null,
+    int? DetectionChance = null);
 
 public sealed record EconomyResolutionDetails(
     int PreviousCash,

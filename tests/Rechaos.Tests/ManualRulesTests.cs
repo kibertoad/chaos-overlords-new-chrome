@@ -118,6 +118,19 @@ public sealed class ManualRulesTests
         Assert.Equal(damage, ManualRules.RetaliationDamage(successes));
 
     [Theory]
+    [InlineData(10, 10, 50)]
+    [InlineData(12, 10, 60)]
+    [InlineData(4, 14, 0)]
+    [InlineData(30, 10, 100)]
+    public void HiddenAttackChanceIsFivePercentPerDetectDifference(
+        int detect, int stealth, int expected) =>
+        Assert.Equal(expected, ManualRules.HiddenAttackHitPercent(detect, stealth));
+
+    [Fact]
+    public void SectorDetectionUsesBestGangAndBandBonusFromEachHelper() =>
+        Assert.Equal(24, ManualRules.SectorDetectionStrength([12, 19, 14, -3]));
+
+    [Theory]
     [InlineData(2, 1)]
     [InlineData(3, 1)]
     [InlineData(25, 12)]

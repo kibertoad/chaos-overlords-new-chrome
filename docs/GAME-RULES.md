@@ -26,13 +26,19 @@ controlled reference observation confirms its execution timing and edge cases.
   detect it before targeting it.
 - Interpretation: the Instant resolver changes the acting gang's `Hidden` flag
   to true without an RNG roll; the state expires at the following Upkeep before
-  repeat Hide resolves again.
-- Current exclusions: detection contests, attack evasion, site/detect modifiers,
-  and exact reveal timing inside the original Upkeep boundary.
-- Confidence: High that Hide enters hidden state; Low for timing and all exit or
-  detection interactions.
-- Implementation: `CommandResolver.ResolveHide` and `MatchGangState.Hidden`.
-- Tests: `InstantResolutionTests.HideMarksGangHiddenAndRecordsTransition`.
+  repeat Hide resolves again. An attack against the hiding gang rolls 1–100
+  against `clamp(50 + 5 × (attacker Detect − defender Stealth), 0, 100)` using
+  the individual attacker's Detect. Failure means the target evades; success
+  proceeds normally but cannot retaliate. Hide does not change whether the gang
+  is visible in the sector.
+- Current exclusions: binary confirmation of the five-point probability step,
+  exact reveal timing, and interactions with police attacks.
+- Confidence: High that Hide enters hidden state and successful hits prevent
+  retaliation; Medium for the probability formula; Low for timing.
+- Implementation: `CommandResolver.ResolveHide`, combat detection handling,
+  `ManualRules.HiddenAttackHitPercent`, and `MatchGangState.Hidden`.
+- Tests: `InstantResolutionTests.HideMarksGangHiddenAndRecordsTransition` and
+  `CombatResolutionTests` evasion/hit cases.
 - Next experiment: compare saves and target availability before Hide, directly
   after Instant, and after the hidden gang acts or is detected.
 
@@ -178,11 +184,11 @@ claim about original-game behavior.
   attacks and retaliation calculated from its phase-start Force. Force is
   floored at zero; elimination clears equipment and Hidden state. Actual damage
   credit is allocated in stable result order when attacks overkill one target.
-- Hidden target behavior: a target that became Hidden during Instant produces an
-  ordered `TargetHidden` failure without consuming combat RNG. Detection remains
-  a separate unresolved rule rather than an invented check.
-- Current exclusions: cooperative detection/reveal, site modifiers, crackdown
-  police attacks, animation/audio timing, original overkill-stat attribution,
+- Hidden target behavior: a target that became Hidden during Instant receives
+  an individual Detect-versus-Stealth percentage roll. Evasion produces an
+  ordered `TargetEvaded` result; a successful hit prevents retaliation.
+- Current exclusions: crackdown police attacks, animation/audio timing,
+  original overkill-stat attribution,
   repeated mutual attacks, and binary confirmation of resolver/RNG order.
 - Confidence: High for weapon-skill associations and Martial Arts exception;
   Medium/High for the Force-corrected formula and retaliation; Low for ordering,
@@ -196,6 +202,41 @@ claim about original-game behavior.
 - Next experiment: reproduce a fixed unarmed matchup from the FAQ, then repeat
   with melee/blade/ranged weapons, Martial Arts, two attackers, and a target
   hidden during Instant while capturing force bars, damage, and RNG order.
+
+### RULE-DETECT-001 — Cooperative sector visibility
+
+- Source: `MANUAL-GOG-1`, numbered page 47.
+- Observed statement: compare an enemy gang's Stealth with the highest friendly
+  Detect in its sector. Every additional friendly gang contributes +1 at Detect
+  0–10, +2 at 11–12, +3 at 13–14, +4 at 15–16, +5 at 17–18, and +6 at 19 or
+  more. If one friendly gang can see the enemy, all friendly gangs there can.
+- Interpretation: active same-sector gangs contribute effective Detect through
+  `SectorDetectionStrength`; visibility succeeds at `Detect >= Stealth`. Negative
+  Detect helpers contribute zero because the manual defines no negative band.
+  A player always detects its own gang, and Hide does not affect visibility.
+- Current exclusions: stale knowledge after movement, UI information masking,
+  exact behavior below zero, and binary confirmation of site/item modifiers.
+- Confidence: High for the table and threshold; Medium for negative values and
+  visibility-query timing.
+- Implementation: `ManualRules.SectorDetectionStrength` and
+  `MatchState.CanPlayerDetectGang`.
+- Tests: `ManualRulesTests` covers band arithmetic; `CombatResolutionTests`
+  covers ownership, enemy visibility, and independence from Hide.
+
+### RULE-SITE-STATS-001 — Influenced-site local modifiers
+
+- Source: `MANUAL-GOG-1`; Influence, site tables, and Statistics/Skill Mods.
+- Observed statement: an influenced site benefits or hinders the influencing
+  player's gangs in that sector using its listed statistics.
+- Interpretation: `EffectiveStatisticsCalculator` adds every influenced site's
+  complete statistic vector to the owner's gangs located in that sector, after
+  definition and equipment statistics. Enemy gangs receive no benefit.
+- Current exclusions: special Science Center/Research Lab tech caps, Factory
+  discount, protection/upkeep behavior, and exact negative-stat clamping.
+- Confidence: High for ownership and local scope; Medium for aggregation order.
+- Tests: `CombatResolutionTests.InfluencedSiteStatisticsApplyOnlyToOwnersGangsInThatSector`
+  plus existing Heal, Research, Influence, Chaos, Control, and Combat tests that
+  all consume the shared effective-stat path.
 
 ## Equipment transactions
 

@@ -293,6 +293,17 @@ public sealed class MatchState
     public MatchSiteState? FindSite(int id) => id is >= 0 and < MatchLimits.SiteCount
         ? Sectors[id / MatchLimits.SitesPerSector].Sites[id % MatchLimits.SitesPerSector]
         : null;
+    public bool CanPlayerDetectGang(PlayerId observer, GangId targetGang)
+    {
+        var player = FindPlayer(observer) ?? throw new ArgumentOutOfRangeException(nameof(observer));
+        var target = FindGang(targetGang) ?? throw new ArgumentOutOfRangeException(nameof(targetGang));
+        if (target.Owner == observer) return true;
+        var observers = player.Gangs.Where(gang => gang.IsActive && gang.SectorId == target.SectorId).ToArray();
+        if (observers.Length == 0) return false;
+        var detection = ManualRules.SectorDetectionStrength(
+            observers.Select(gang => EffectiveStatisticsCalculator.ForGang(this, gang).Detect));
+        return detection >= EffectiveStatisticsCalculator.ForGang(this, target).Stealth;
+    }
     public IReadOnlyList<GameNotification> NotificationsFor(PlayerId player) => GetNotificationQueue(player).Items;
 
     public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>

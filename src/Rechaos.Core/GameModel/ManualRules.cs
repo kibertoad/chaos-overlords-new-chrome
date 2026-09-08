@@ -145,6 +145,33 @@ public static class ManualRules
     public static bool SuppressesRetaliation(EffectiveStatistics attacker, short? attackerWeaponType) =>
         attackerWeaponType is null && attacker.MartialArts > 0;
 
+    public static int HiddenAttackHitPercent(int detect, int stealth)
+    {
+        var chance = 50L + ((long)detect - stealth) * 5;
+        return (int)Math.Clamp(chance, 0, 100);
+    }
+
+    public static int SectorDetectionStrength(IEnumerable<int> gangDetect)
+    {
+        ArgumentNullException.ThrowIfNull(gangDetect);
+        var values = gangDetect.OrderDescending().ToArray();
+        if (values.Length == 0) return 0;
+        var total = values[0];
+        foreach (var detect in values.Skip(1)) total = checked(total + DetectionAssist(detect));
+        return total;
+    }
+
+    private static int DetectionAssist(int detect) => detect switch
+    {
+        < 0 => 0,
+        <= 10 => 1,
+        <= 12 => 2,
+        <= 14 => 3,
+        <= 16 => 4,
+        <= 18 => 5,
+        _ => 6
+    };
+
     public static int ControlStrength(IEnumerable<(int Force, int Control)> gangs)
     {
         ArgumentNullException.ThrowIfNull(gangs);

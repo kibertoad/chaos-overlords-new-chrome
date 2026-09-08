@@ -213,7 +213,7 @@ output.
 ### BIN-RNG-004 - three callers classified as command selection, not combat
 
 **Observation:** Focused Ghidra 12.1.3 summaries of RNG-wrapper callers
-`0x00401000`, `0x0040abc0`, and `0x00428ef0` show large action-selection
+`0x00401000`, `0x0040abc0`, `0x00428ef0`, and `0x00436c70` show large action-selection
 switches, repeated bounded attempts to choose targets, and writes to per-gang
 command/target slots. All three are reached from `0x00432da0`; none directly
 applies Force damage or exhibits the manual's attack/retaliation arithmetic.

@@ -55,6 +55,8 @@ public static class EffectiveStatisticsCalculator
         var result = EffectiveStatistics.From(definition.Stats);
         foreach (var itemId in EquippedItems(gang))
             result = result.Add(state.Definitions.Items[itemId].Stats);
+        foreach (var site in state.Sectors[gang.SectorId].Sites.Where(site => site.InfluencedBy == gang.Owner))
+            result = result.Add(state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Stats);
         return result;
     }
 

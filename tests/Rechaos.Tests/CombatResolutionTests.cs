@@ -77,17 +77,76 @@ public sealed class CombatResolutionTests
     }
 
     [Fact]
-    public void TargetHiddenDuringInstantCausesOrderedCombatFailure()
+    public void HiddenTargetCanEvadeAttackUsingIndividualDetect()
     {
-        var match = CreateMatch();
+        var data = BundledOriginalData.Load();
+        var lowDetect = data.Gangs.OrderBy(gang => gang.Stats.Detect).First().Id;
+        var highStealth = data.Gangs.OrderByDescending(gang => gang.Stats.Stealth).First().Id;
+        var match = CreateMatch(playerZeroDefinition: lowDetect, playerOneDefinition: highStealth);
         QueueAndEnterCombat(match, GangAction.Hide);
 
         match.FinishExecutionPhase();
 
         var result = Assert.Single(match.LastPhaseResolutions);
-        Assert.Equal(CommandResolutionCode.TargetHidden, result.Code);
+        Assert.Equal(CommandResolutionCode.TargetEvaded, result.Code);
         Assert.Equal(GameEventKind.CommandFailed, result.Event!.Kind);
         Assert.Empty(result.Event.Resolution!.Rolls);
+        Assert.Equal(0, result.Event.Resolution.DetectionChance);
+        Assert.InRange(result.Event.Resolution.DetectionRoll!.Value, 1, 100);
+        Assert.Equal(3, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
+    public void HittingHiddenTargetConsumesDetectionRollAndPreventsRetaliation()
+    {
+        var data = BundledOriginalData.Load();
+        var highDetect = data.Gangs.OrderByDescending(gang => gang.Stats.Detect).First().Id;
+        var lowStealth = data.Gangs.OrderBy(gang => gang.Stats.Stealth).First().Id;
+        var match = CreateMatch(playerZeroDefinition: highDetect, playerOneDefinition: lowStealth);
+        QueueAndEnterCombat(match, GangAction.Hide);
+
+        match.FinishExecutionPhase();
+
+        var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.Equal(CommandResolutionCode.Resolved, resolution.Code);
+        Assert.Equal(100, resolution.DetectionChance);
+        Assert.InRange(resolution.DetectionRoll!.Value, 1, 100);
+        Assert.Empty(resolution.RetaliationRolls!);
+        Assert.Equal((resolution.Rolls.Count + 1) * 3, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
+    public void InfluencedSiteStatisticsApplyOnlyToOwnersGangsInThatSector()
+    {
+        const short researchLab = 4;
+        var match = CreateMatch(influencedSiteDefinition: researchLab);
+        var ownerGang = match.FindGang(new GangId(10))!;
+        var enemyGang = match.FindGang(new GangId(20))!;
+        var siteStats = match.Definitions.Sites.Single(site => site.Id == researchLab).Stats;
+        var ownerBase = match.Definitions.Gangs.Single(gang => gang.Id == ownerGang.DefinitionId).Stats;
+        var enemyBase = match.Definitions.Gangs.Single(gang => gang.Id == enemyGang.DefinitionId).Stats;
+
+        Assert.Equal(EffectiveStatistics.From(ownerBase).Add(siteStats),
+            EffectiveStatisticsCalculator.ForGang(match, ownerGang));
+        Assert.Equal(EffectiveStatistics.From(enemyBase),
+            EffectiveStatisticsCalculator.ForGang(match, enemyGang));
+    }
+
+    [Fact]
+    public void SectorVisibilityUsesCooperativeDetectButNotHideState()
+    {
+        var data = BundledOriginalData.Load();
+        var highDetect = data.Gangs.OrderByDescending(gang => gang.Stats.Detect).First().Id;
+        var lowStealth = data.Gangs.OrderBy(gang => gang.Stats.Stealth).First().Id;
+        var match = CreateMatch(playerZeroDefinition: highDetect, playerOneDefinition: lowStealth);
+
+        Assert.True(match.CanPlayerDetectGang(new PlayerId(0), new GangId(20)));
+        Assert.True(match.CanPlayerDetectGang(new PlayerId(1), new GangId(20)));
+
+        QueueAndEnterCombat(match, GangAction.Hide);
+
+        Assert.True(match.FindGang(new GangId(20))!.Hidden);
+        Assert.True(match.CanPlayerDetectGang(new PlayerId(0), new GangId(20)));
     }
 
     [Fact]
@@ -171,7 +230,8 @@ public sealed class CombatResolutionTests
         short? playerZeroWeapon = null,
         short? playerOneWeapon = null,
         short? playerOneArmor = null,
-        short? playerOneMiscellaneous = null)
+        short? playerOneMiscellaneous = null,
+        short? influencedSiteDefinition = null)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -192,7 +252,8 @@ public sealed class CombatResolutionTests
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
-                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(0, id == 0 && influencedSiteDefinition is { } site ? site : (short)0, 7,
+                    id == 0 && influencedSiteDefinition is not null ? new PlayerId(0) : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
             ]))

@@ -7,7 +7,8 @@ public enum CommandResolutionCode : byte
     UnsupportedAction,
     ItemUnavailable,
     DestinationFull,
-    TargetHidden
+    TargetHidden,
+    TargetEvaded
 }
 
 public sealed record CommandResolutionResult(
@@ -128,11 +129,19 @@ public static class CommandResolver
             var attacker = snapshots[queued.Command.Gang];
             var targetId = new GangId(queued.Command.Target.Id);
             var target = snapshots[targetId];
+            int? detectionRoll = null;
+            int? detectionChance = null;
             if (target.Hidden)
             {
-                outcomes.Add(new CombatOutcome(queued, attacker, target, CommandResolutionCode.TargetHidden,
-                    [], 0, 0, [], 0, 0));
-                continue;
+                detectionChance = ManualRules.HiddenAttackHitPercent(
+                    attacker.Statistics.Detect, target.Statistics.Stealth);
+                detectionRoll = state.Random.NextInclusive(100);
+                if (detectionRoll > detectionChance)
+                {
+                    outcomes.Add(new CombatOutcome(queued, attacker, target, CommandResolutionCode.TargetEvaded,
+                        [], 0, 0, [], 0, 0, detectionRoll, detectionChance));
+                    continue;
+                }
             }
 
             var attackDice = ManualRules.AttackDiceCount(
@@ -141,8 +150,8 @@ public static class CommandResolver
                 target.Statistics.Defense);
             var attackRolls = DiceRoller.RollD6(state.Random, attackDice);
             var attackSuccesses = ManualRules.CountSuccesses(attackRolls);
-            var suppressesRetaliation = ManualRules.SuppressesRetaliation(
-                    attacker.Statistics, attacker.WeaponType)
+            var suppressesRetaliation = target.Hidden
+                || ManualRules.SuppressesRetaliation(attacker.Statistics, attacker.WeaponType)
                 && !ManualRules.SuppressesRetaliation(target.Statistics, target.WeaponType);
             var retaliationDice = suppressesRetaliation
                 ? 0
@@ -156,7 +165,8 @@ public static class CommandResolver
                 queued, attacker, target, CommandResolutionCode.Resolved,
                 attackRolls, attackSuccesses, attackSuccesses,
                 retaliationRolls, retaliationSuccesses,
-                ManualRules.RetaliationDamage(retaliationSuccesses)));
+                ManualRules.RetaliationDamage(retaliationSuccesses),
+                detectionRoll, detectionChance));
         }
 
         var incomingDamage = new Dictionary<GangId, int>();
@@ -189,7 +199,9 @@ public static class CommandResolver
                     RetaliationRolls: outcome.RetaliationRolls,
                     RetaliationSuccesses: outcome.RetaliationSuccesses,
                     Damage: outcome.Damage,
-                    RetaliationDamage: outcome.RetaliationDamage),
+                    RetaliationDamage: outcome.RetaliationDamage,
+                    DetectionRoll: outcome.DetectionRoll,
+                    DetectionChance: outcome.DetectionChance),
                 GameNotificationKind.Combat);
             results.Add(result);
             firstEventByGang.TryAdd(outcome.Target.Id, result.Event!.Sequence);
@@ -271,7 +283,9 @@ public static class CommandResolver
         int Damage,
         IReadOnlyList<int> RetaliationRolls,
         int RetaliationSuccesses,
-        int RetaliationDamage);
+        int RetaliationDamage,
+        int? DetectionRoll,
+        int? DetectionChance);
 
     private static CommandResolutionResult ResolveEquip(MatchState state, GameCommand command)
     {
