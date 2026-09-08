@@ -1,0 +1,7 @@
+{
+  "$.turn": "Turn number",
+  "$.phase": "Top-level phase",
+  "$.players": "Players",
+  "$.sectors": "Sectors",
+  "$.gangs": "Gangs"
+}

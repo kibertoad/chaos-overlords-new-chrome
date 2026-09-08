@@ -40,6 +40,8 @@ public static class AssetPackVerifier
             errors.Add($"Format version {manifest.FormatVersion} is incompatible; expected {expectedFormatVersion}.");
         if (!IsSha256(manifest.SourceFingerprintSha256))
             errors.Add("Source fingerprint is missing or malformed.");
+        if (string.IsNullOrWhiteSpace(manifest.ExtractorVersion))
+            errors.Add("Extractor version is missing.");
         if (manifest.Files is null) return Invalid("Manifest asset list is missing.");
         if (manifest.Files.Count == 0) errors.Add("Manifest contains no assets.");
         if (expectedFileCount > 0 && manifest.Files.Count != expectedFileCount)
@@ -66,6 +68,12 @@ public static class AssetPackVerifier
                 errors.Add($"Asset hash is missing or malformed: {asset.Path}");
                 continue;
             }
+            if (string.IsNullOrWhiteSpace(asset.SourcePath))
+                errors.Add($"Original source path is missing: {asset.Path}");
+            if (string.IsNullOrWhiteSpace(asset.MediaType))
+                errors.Add($"Media type is missing: {asset.Path}");
+            if (asset.Conversion is not null && string.IsNullOrWhiteSpace(asset.Conversion.Method))
+                errors.Add($"Conversion method is missing: {asset.Path}");
 
             string path;
             try { path = Path.GetFullPath(Path.Combine(assetRoot, asset.Path)); }

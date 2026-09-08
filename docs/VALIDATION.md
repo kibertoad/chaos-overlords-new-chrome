@@ -39,6 +39,37 @@ dotnet run --project src/Rechaos.Extractor -- --verify-output `
 `--quick` skips content hashes and checks manifest structure, safe paths,
 presence, and lengths only. It is a startup optimization, never parity evidence.
 
+Generate the asset catalog only from a pack that passes full verification:
+
+```powershell
+dotnet run --project src/Rechaos.Extractor -- --catalog `
+  --output src/Rechaos.Game/Assets `
+  --catalog-output docs/ASSET-CATALOG.md
+```
+
+Re-run the full paired-pixel RGB555/RGB565 comparison:
+
+```powershell
+dotnet run --project src/Rechaos.Extractor -- --analyze-px `
+  --output src/Rechaos.Game/Assets
+```
+
+Compare two sanitized mechanical-state captures:
+
+```powershell
+dotnet run --project src/Rechaos.Tools -- state-diff `
+  expected-state.json actual-state.json `
+  --labels docs/schemas/state-labels.example.json
+```
+
+The fixture contract is
+[`schemas/reference-fixture.schema.json`](schemas/reference-fixture.schema.json).
+It pins the executable and source-pack hashes, experiment/finding identity,
+initial and final state, commands, expected events, and phase-boundary hashes.
+Only sanitized mechanical values belong in a checked-in fixture; original
+pixels, media, saves of uncertain redistribution status, and narrative text do
+not.
+
 ## Current canonical identities
 
 - Full `DATA` + `HELP` + `MUSIC` source fingerprint:
@@ -49,7 +80,9 @@ presence, and lengths only. It is a startup optimization, never parity evidence.
   `bdb1072848df95111cd014faaa7297d016b7c6e55cd7f2658dda67a167a0089d`
 
 Individual gameplay table hashes are in `GameplayDataProvenance` and the format
-log. The current installed pack contains 471 manifest entries.
+log. The current installed pack contains 685 manifest entries representing 471
+original source resources; 214 entries are decoded PX08 derivatives retained
+alongside their original inputs.
 
 ## Original-binary oracle protocol
 

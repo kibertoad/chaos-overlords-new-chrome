@@ -17,11 +17,20 @@ dotnet run --project src/Rechaos.Extractor -- --source "C:\GOG Games\Chaos Overl
 dotnet run --project src/Rechaos.Game
 ```
 
+Extraction stages and fully verifies a new pack before replacing the installed
+one. A complete matching pack is left untouched unless `--force` is supplied.
+
 Verify source or installed assets without rewriting them:
 
 ```powershell
 dotnet run --project src/Rechaos.Extractor -- --verify-source --source "C:\GOG Games\Chaos Overlords"
 dotnet run --project src/Rechaos.Extractor -- --verify-output
+```
+
+Regenerate the checked-in factual asset inventory from a fully verified pack:
+
+```powershell
+dotnet run --project src/Rechaos.Extractor -- --catalog
 ```
 
 On Windows, [`play.bat`](play.bat) performs both steps and uses the default GOG
@@ -45,6 +54,8 @@ six-player turn rotation are active.
 - `Rechaos.Core`: original-data parsers and platform-independent game state.
 - `Rechaos.Extractor`: fingerprints the original asset pack, repairs PX16 BMP
   headers, and installs the original media/resources locally.
+- `Rechaos.Tools`: compares sanitized JSON state captures with stable paths and
+  optional human-readable field labels.
 - `Rechaos.Game`: MonoGame DesktopGL client with no Content Pipeline dependency.
 - `Rechaos.Tests`: format and extractor regression tests.
 
@@ -53,6 +64,9 @@ notes; no source code or copyrighted resources are copied from the game.
 
 All discoveries, evidence, uncertainty, and open format questions are tracked
 in [`docs/ORIGINAL-FILE-FORMATS.md`](docs/ORIGINAL-FILE-FORMATS.md).
+The generated inventory covers 471 original resources and all 685 installed
+outputs (including decoded PX08 derivatives) in
+[`docs/ASSET-CATALOG.md`](docs/ASSET-CATALOG.md).
 The complete migration sequence and parity gates are tracked in
 [`docs/IMPLEMENTATION-PLAN.md`](docs/IMPLEMENTATION-PLAN.md).
 Current boundaries and validation procedures are documented in

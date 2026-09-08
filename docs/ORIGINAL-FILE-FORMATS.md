@@ -139,9 +139,12 @@ also proves there is no scan-line padding for these even widths. **Verified.**
 
 The extractor repairs offsets `0x12` (width, int32), `0x16` (height, int32),
 `0x1A` (planes = 1, int16), and `0x1C` (bits = 16, int16), leaving pixel bytes
-untouched. **Verified.** The precise BI_RGB 16-bit channel interpretation used
-by every modern decoder (RGB555 versus RGB565) still needs screenshot/color
-comparison and is **Medium** confidence.
+untouched. **Verified.** Comparison of all 12,065,806 paired PX08/PX16 pixels
+strongly identifies RGB555: total absolute RGB error is 111,862,509 for RGB555
+versus 744,334,623 for RGB565, with 7,413,122 versus 6,230,106 exact quantized
+matches. No source pixel has bit 15 set. Channel interpretation is therefore
+**High** confidence; transparency/color-key behavior still needs reference
+observation.
 
 Known dimension groups (**High**, from exact payload-size arithmetic and the
 reference size map):
@@ -163,7 +166,8 @@ reference size map):
 | `PX03000` | 640 x 576 |
 | `PX04999` | 20 x 1280 |
 | `PX05xxx` | 344 x 209 |
-| `PX06xxx` | 242 x 157 |
+| `PX06xxx`, 76,526-byte resources | 242 x 158 |
+| `PX06xxx`, 76,042-byte resources | 242 x 157 |
 | `PX07xxx` | 512 x 64 |
 | `PX10000`-`PX10006` | 432 x 416 |
 
@@ -174,11 +178,20 @@ guessed. The extractor skips an unknown dimension rather than corrupting it.
 ## `PX08/PXxxxxx` graphics
 
 These begin with `BM` and use a 40-byte DIB header, 8-bit indexed pixels, and a
-palette ending at pixel offset `0x436` (1,078). Inspected `PX00100` reports
-compression value 1, i.e. BMP RLE8. Width/height fields are similarly missing.
-This structural finding is **Verified** for `PX00100`; dimensions and decoding
-across the family are **Low** until implemented. The current extractor prefers
-PX16 and does not export PX08.
+256-entry BGRA palette ending at pixel offset `0x436` (1,078). Across the full
+fingerprinted set, 207 files report compression value 1 (BMP RLE8) and seven
+`PX05xxx` files report compression value 0 (uncompressed BMP). Width/height
+fields are missing in both variants. The extractor retains every source and
+produces a bounded, uncompressed 8-bit BMP derivative while preserving its
+palette. All 214 sources decode and pass output size/hash verification; this is
+**High** confidence pending pixel comparison against reference rendering.
+
+The local `re-chaos` dimension tool's `76,526`-byte PX16 case is listed
+as 242x157, but the exact 54-byte header plus 16-bit payload size is
+`54 + (242 * 158 * 2) = 76,526`, and the paired PX08 RLE stream also contains
+158 rows. The recreation therefore uses 242x158 for that size and retains
+242x157 only for the 76,042-byte case. This is a confirmed contradiction in
+the secondary source, not an original-format ambiguity.
 
 ## Audio and music
 
@@ -197,7 +210,7 @@ and looping rules are **Low**. They are copied byte-for-byte.
 Smacker v2 signature. Header values appear to give 480 x 256 dimensions at
 offsets 4 and 8; frame counts appear to be 1,150 and 200 at offset 12. Container
 identity is **Verified**; field interpretation is **High**; playback/timing and
-audio tracks are **Low**. The current extractor does not export video because
+audio tracks are **Low**. The extractor copies both videos byte-for-byte, but
 the MonoGame client has no Smacker decoder yet.
 
 ## Other files
@@ -206,7 +219,7 @@ the MonoGame client has no Smacker decoder yet.
 |---|---|---|
 | `CLT00002` | 944-byte color-related lookup/table; begins repeated four-byte entries resembling B, G, R, flag/index. Not decoded. | **Low** |
 | `DATA.Z` | 7,676,546-byte opaque binary. It does not expose a recognized signature in its first bytes (`13 5D 65 8C ...`). Purpose and compression unknown. | **Low** |
-| `HELP/` | Original help resources; not inventoried yet. | **Low** |
+| `HELP/` | Original help resources copied and hash-inventoried; internal semantics remain unmapped. | **Medium** |
 
 ## Save games (reference-derived, unverified locally)
 
@@ -220,8 +233,9 @@ round-trip fixtures. It is intentionally not implemented yet.
 
 ## Open questions / next experiments
 
-1. Identify every PX resource semantically and verify RGB555/RGB565 colors.
-2. Decode and map PX08 RLE images; compare them with PX16 variants.
+1. Identify every PX resource semantically and verify transparency/color keys
+   against original rendering.
+2. Compare decoded PX08 palettes/pixels with PX16 variants and original rendering.
 3. Determine `CLT00002` entry layout and consumer.
 4. Identify/decompress `DATA.Z` and inventory its contents.
 5. Implement Smacker playback or a legal local transcode during extraction.

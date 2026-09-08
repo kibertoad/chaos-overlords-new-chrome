@@ -8,6 +8,7 @@ Last updated: 2026-09-07
 ```text
 Rechaos.Game --------> Rechaos.Core
 Rechaos.Extractor ----> Rechaos.Core
+Rechaos.Tools --------> Rechaos.Core
 Rechaos.Tests --------> Core + Extractor
 ```
 
@@ -53,6 +54,10 @@ Target subdivisions:
 - Validates canonical original tables and the whole source fingerprint.
 - Repairs missing PX16 BMP header fields without modifying pixel bytes.
 - Copies media/opaque resources and generates a per-output hash manifest.
+- Records manifest format and extractor versions, original-relative source,
+  output hash/size/media type, and conversion method/geometry per asset.
+- Stages and fully verifies a complete pack before rollback-safe directory
+  promotion; `--force` explicitly rebuilds an already-valid matching pack.
 - Verifies installed packs and skips extraction when the full pack already
   matches.
 - Rejects malformed paths, missing assets, size changes, and hash changes.
@@ -60,15 +65,27 @@ Target subdivisions:
 CLI modes:
 
 ```text
---source <install> [--output <assets>]       extract unless already complete
+--source <install> [--output <assets>] [--force]
+                                                extract unless already complete
 --verify-source --source <install>           validate original source only
 --verify-output [--output <assets>]          validate every output hash
 --verify-output [--output <assets>] --quick  validate paths and sizes only
+--catalog [--output <assets>]                generate docs/ASSET-CATALOG.md
+--analyze-px [--output <assets>]             compare PX08/PX16 color encodings
 ```
 
-Target additions are transactional staging/promotion, semantic asset catalogs,
-additional supported source fingerprints, PX08 decoding, video conversion or
-playback, and machine-readable diagnostics.
+Target additions are semantic catalog ownership, stale-staging cleanup, additional
+supported source fingerprints, transparency validation, video conversion or playback,
+and machine-readable diagnostics.
+
+### `Rechaos.Tools`
+
+- `state-diff` recursively compares sanitized JSON states without depending on
+  JSON property order.
+- Differences have stable JSON paths and may use a checked-in path-to-label map
+  so reports name known state fields while retaining their exact location.
+- Exit code 0 means states match, 1 means differences were found, and 2 means
+  the input or invocation was invalid.
 
 ### `Rechaos.Game`
 
@@ -171,7 +188,6 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
 - The prototype client still advances its older per-player turn directly rather
   than driving `TurnCoordinator`; within-subphase command ordering is explicitly
   provisional until the binary tie-breaker is recovered.
-- Source extraction writes directly to the destination instead of staging.
 - Runtime manifest checking validates version only.
 - Media resources are extracted but not presented.
 

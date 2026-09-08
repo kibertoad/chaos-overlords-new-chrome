@@ -6,9 +6,9 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Area | Original requirement | Recreation status | Evidence/confidence | Next parity gate |
 |---|---|---|---|---|
 | Source pack | Exact supported DATA/HELP/MUSIC set | Implemented | Full SHA-256, Verified | Add second-source-version test |
-| Output pack | 471 converted/copied assets | Implemented | Per-file size/SHA-256, Verified | Transactional install test |
-| PX16 | Repair four missing BMP fields | Implemented | Payload arithmetic/reference notes, High | RGB555/565 visual comparison |
-| PX08 | RLE8 indexed graphics | Documented | Header inspection, Medium | Decode and compare all 214 files |
+| Output pack | 685 outputs from 471 original resources | Implemented | Transactional promotion plus per-file size/SHA-256, Verified | Add stale-install cleanup |
+| PX16 | Repair four missing BMP fields as RGB555 | Implemented | Payload arithmetic plus 12,065,806 paired-pixel comparison, High | Verify transparency/color keys in reference rendering |
+| PX08 | 207 RLE8 and 7 uncompressed indexed graphics | Implemented | Strict decoder, full 214-file extraction and payload checks; High | Compare palettes/pixels with PX16 and reference rendering |
 | Tables | 22 sites, 90 gangs, 64 items | Parity verified (values only) | Source/payload hashes, Verified | Semantic field-use fixtures |
 | Turn phases | Upkeep, Command, Execution, Hire, Elimination | Headless coordinator implemented | Manual, High; player iteration provisional | Binary dispatcher confirmation |
 | Execution phases | Instant, Combat, Transaction, Chaos, Movement, Control | Headless coordinator implemented | Manual, High | Binary within-phase ordering |

@@ -40,11 +40,11 @@ is ever attempted.
 |---|---|---|
 | Build | .NET 10 solution, MonoGame DesktopGL 3.8.5.1, xUnit v3 4.0.0 | CI, packaging, other OS smoke tests |
 | Original data | Embedded 22 sites, 90 gangs, and 64 items with pinned provenance | Semantic/formula validation, versioned generation tool |
-| Extraction | Full-pack SHA-256 validation; 215 repaired PX16 images, 214 PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files | Atomic install, verification command, PX08 decode, video strategy, semantic catalog |
+| Extraction | Transactional/versioned full-pack SHA-256 validation; 215 repaired RGB555 PX16 images, 214 retained plus decoded PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files; generated 685-output factual catalog | Transparency/color-key validation, video strategy, semantic role/owner resolution |
 | Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, basic cash, hiring, sector ownership and upkeep | Action resolution, client integration, original RNG and almost all exact formulas |
 | Client | Scaled 640x460 view, original background loading, keyboard interaction, basic board | Original screens, sprites, mouse UI, animation, sound/music, accessibility |
 | Tests | Parser/header/provenance, asset verification, scenarios, manual rules, command queue and phase coordinator | Reference fixtures, action resolution, AI snapshots, save compatibility, visual tests |
-| Documentation | File/binary research, architecture, validation, parity matrix and this roadmap | Rules, save map, UI atlas and remaining documents listed in section 4 |
+| Documentation | File/binary research, generated factual asset catalog, architecture, validation, parity matrix and this roadmap | Rules, save map, UI atlas and remaining documents listed in section 4 |
 
 The current game is a playable architectural slice, not evidence of rule parity.
 Any provisional gameplay formula must be replaced or validated before its
@@ -305,8 +305,10 @@ difference is either matched or documented.
 - Support install-root and direct `DATA` inputs consistently.
 - Store extractor version, source fingerprint, per-file output hash, conversion
   parameters, and source-to-output mapping in the manifest.
-- Decode PX08 RLE8 and its palette; compare corresponding PX08/PX16 imagery.
-- Confirm RGB555 versus RGB565 and transparency/color-key behavior for PX16.
+- Maintain bounded PX08 RLE8/BI_RGB decoding and compare corresponding
+  PX08/PX16 imagery as formats or supported source versions change.
+- Confirm transparency/color-key behavior for PX16 against reference rendering;
+  RGB555 channel layout is established with High-confidence paired-pixel data.
 - Discover exact dimensions for every exceptional image without size guesses.
 - Slice sprite sheets and record rectangles/animation sequences in a generated
   catalog, while retaining unsliced originals for audit.
@@ -539,9 +541,19 @@ platforms from clean machines using only user-supplied legal assets.
 No milestone gate has passed yet. Work completed ahead of a dependency gate is
 recorded as foundation work, not as completion of that milestone.
 
+Local reference-oracle availability: the supported GOG installation includes
+`C:\GOG Games\Chaos Overlords\Chaos Overlords.exe`, version 1.1, 664,576 bytes,
+with SHA-256
+`a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`.
+This path is machine-local research metadata: the executable remains outside
+the repository, is never copied by the extractor or release, and is not an
+end-user runtime dependency. If this exact binary becomes unavailable, binary-
+dependent parity work must be reported as blocked rather than replaced by an
+unmarked guess.
+
 | Milestone | Status | Implemented foundation | Work required before gate |
 |---|---|---|---|
-| M0 | In progress | Research templates; file/binary logs; architecture, validation and parity documents; source/output verification; 471-file hash manifest | Transactional installation, generated asset catalog, reference fixture schema and state-diff tool |
+| M0 | In progress | Research templates; file/binary logs; architecture, validation and parity documents; source/output verification; rollback-safe staged installation; sanitized reference-fixture schema; labeled JSON state-diff tool; versioned 685-output manifest and generated factual asset catalog | One captured, fully documented reference observation |
 | M1 | Foundation started | Ten scenario definitions and durations; 8x8/three-site prototype; scaled MonoGame shell | Exact city generation and setup, HQ/Right Hands initialization, atlas, screen router, mouse input and reference fixtures |
 | M2 | Foundation started | Stable player/gang IDs; documented phases/action IDs; headless phase coordinator; typed command targets; deterministic queue replacement/cancellation/repeat infrastructure | Complete match schema, hire lifecycle, per-action validation/events/resolution and binary-validated within-phase ordering |
 | M3 | Not started | Manual-backed constants and pure Bribe/Snitch/police helpers only | Entire milestone deliverable and M2 gate |
@@ -552,9 +564,10 @@ recorded as foundation work, not as completion of that milestone.
 | M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
 | M9 | Not started | None | Frozen deterministic simulation after M8 |
 
-Current automated baseline: the solution builds without warnings, 84 tests
-pass, and the inspected legal-copy output contains 471 size/SHA-256-verified
-assets. This is implementation coverage, not original-game behavioral parity.
+Current automated baseline: the solution builds without warnings, 97 tests
+pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
+outputs from 471 original resources. This is implementation coverage, not
+original-game behavioral parity.
 
 ### M0 - Research foundation
 
@@ -673,10 +686,11 @@ not lines of code or asset counts.
 
 ## 9. Immediate next implementation sequence
 
-1. Finish M0 with transactional/versioned installation, a reference fixture
-   schema and the labeled state-diff tool; output verification is complete.
-2. Generate `ASSET-CATALOG.md`, decode PX08, and resolve all PX dimensions,
-   palettes and PX16 color formats.
+1. Finish M0 by capturing one reference observation with the fixture schema and
+   labeled state-diff tool; transactional installation and output verification
+   are complete.
+2. Enrich the generated `ASSET-CATALOG.md` by resolving semantic owners,
+   palette/transparency behavior and sprite rectangles.
 3. Extend the current IDs, phase coordinator and command queue into the complete
    headless match schema, validation result types and ordered event records.
 4. Obtain original save/reference fixtures and connect them to state diffs and
@@ -698,9 +712,22 @@ When sources disagree, use this order and record the conflict:
 2. Byte/state changes in original save files from controlled experiments.
 3. Original executable data/control-flow analysis expressed as clean-room facts.
 4. The original manual supplied with the user's legal copy.
-5. The [`re-chaos` format research](https://github.com/wfr/re-chaos).
+5. The local [`re-chaos`](C:/sources/re-chaos) format-research checkout,
+   corresponding to upstream commit
+   `3561d4122b4a7670105366b3edb16ddd74c2b932`, and its
+   [upstream repository](https://github.com/wfr/re-chaos).
 6. Contemporary reviews, strategy notes and community observations.
 
 The manual describes intended behavior; the shipped executable defines
 compatibility behavior. Neither undocumented assumptions nor the current
 prototype implementation count as evidence.
+
+Use `C:\sources\re-chaos` whenever its `README.md`, `structs.h`, or format tools
+cover the file, save structure, image resource, or mechanical field under
+investigation. Treat those materials as secondary research rather than copied
+production code: cite the upstream commit and exact file/line or structure,
+reimplement independently, and validate the result against this project's
+fingerprinted GOG data and executable. The upstream research used executable
+SHA-256 `0791e6209d573a79882675d1236737f5c9b369ea4af541a7dbd03cbadf4493d5`,
+which differs from the locally available GOG executable, so a `re-chaos`
+finding alone cannot establish behavioral parity for this build.

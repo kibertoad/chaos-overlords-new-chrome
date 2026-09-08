@@ -132,6 +132,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (!File.Exists(manifestPath))
             throw new FileNotFoundException("Original assets are not installed. Run Rechaos.Extractor with --source pointing at a legal Chaos Overlords installation.", manifestPath);
         var manifest = JsonSerializer.Deserialize<AssetManifest>(File.ReadAllText(manifestPath));
-        if (manifest?.FormatVersion != 2) throw new InvalidDataException("The asset pack is incompatible. Run the current extractor again.");
+        if (manifest?.FormatVersion != AssetManifest.CurrentFormatVersion)
+            throw new InvalidDataException("The asset pack is incompatible. Run the current extractor again.");
     }
 }

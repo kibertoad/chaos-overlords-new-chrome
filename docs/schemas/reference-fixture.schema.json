@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rechaos.invalid/schemas/reference-fixture.schema.json",
+  "title": "Re: Chaos Overlords sanitized reference fixture",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "experiment", "reference", "initialState", "commands", "expectedEvents", "finalState", "phaseHashes"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "experiment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "findingId", "description", "capturedAtUtc", "confidence"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9._-]+$" },
+        "findingId": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "capturedAtUtc": { "type": "string", "format": "date-time" },
+        "confidence": { "enum": ["Verified", "High", "Medium", "Low"] }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executableSha256", "sourcePackSha256", "platform", "captureProcedure"],
+      "properties": {
+        "executableSha256": { "$ref": "#/$defs/sha256" },
+        "sourcePackSha256": { "$ref": "#/$defs/sha256" },
+        "platform": { "type": "string", "minLength": 1 },
+        "captureProcedure": { "type": "string", "minLength": 1 }
+      }
+    },
+    "initialState": { "$ref": "#/$defs/state" },
+    "commands": { "type": "array", "items": { "type": "object" } },
+    "expectedEvents": { "type": "array", "items": { "type": "object" } },
+    "finalState": { "$ref": "#/$defs/state" },
+    "phaseHashes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["turn", "phase", "sha256"],
+        "properties": {
+          "turn": { "type": "integer", "minimum": 1 },
+          "phase": { "type": "string", "minLength": 1 },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "state": {
+      "type": "object",
+      "description": "Sanitized mechanical state only; proprietary media and narrative text are forbidden."
+    }
+  }
+}
