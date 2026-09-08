@@ -26,8 +26,8 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Sector control | Force + Control contest | Provisional | Manual formula, Medium | Neutral/enemy/tie fixtures |
 | Influence | Force + Influence versus site resistance | Documented | Manual, High | Implement and diff saves |
 | Chaos | Income/chaos/crackdown effects | Documented | Manual, Medium | Controlled roll experiment |
-| Bribe | $3, tolerance +5, max 40 | Implemented as pure rule | Manual, High | Wire command; binary edge cases |
-| Snitch | Free, tolerance -3, min 0 | Implemented as pure rule | Manual, High | Wire command; binary edge cases |
+| Bribe | $3, tolerance +5, max 40 | Instant-phase resolver, cash statistic, ordered result and notification implemented | Manual, High for formula; failure behavior Low | Binary timing and insufficient-cash edge cases |
+| Snitch | Free, tolerance -3, min 0 | Instant-phase resolver and ordered result/notification implemented | Manual, High for formula; automatic tolerance behavior Low | Binary timing and uninfluenced-site edge cases |
 | Heal | `4d6 + Heal`, success restores force to max 10 | Documented | Manual, High | Identify dice-count semantics |
 | Hide/detect | Stealth probability and cooperative detect | Documented | Manual, Medium | Distribution fixtures |
 | Combat | Simultaneous attack, defense, damage and retaliation | Documented | Manual, Medium | Binary formula matrix |

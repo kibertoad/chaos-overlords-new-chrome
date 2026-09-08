@@ -5,7 +5,8 @@ public enum GameEventKind : byte
     CommandQueued,
     CommandReplaced,
     CommandCancelled,
-    CommandResolved
+    CommandResolved,
+    CommandFailed
 }
 
 /// <summary>An ordered mechanical fact suitable for UI, replay, and parity fixtures.</summary>
@@ -19,4 +20,5 @@ public sealed record GameEvent(
     GangId Gang,
     GangAction Action,
     CommandTarget Target,
-    CommandTarget? SecondaryTarget = null);
+    CommandTarget? SecondaryTarget = null,
+    CommandResolutionCode? ResolutionCode = null);

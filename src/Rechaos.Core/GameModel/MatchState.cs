@@ -222,6 +222,7 @@ public sealed class MatchState
     public TurnCommandQueue Commands { get; } = new();
     public IReadOnlyList<GameEvent> Events => _events;
     public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashes;
+    public IReadOnlyList<CommandResolutionResult> LastPhaseResolutions { get; private set; } = [];
     internal long NextEventSequence => _nextEventSequence;
 
     public MatchPlayerState? FindPlayer(PlayerId id) => Players.SingleOrDefault(player => player.Id == id);
@@ -233,7 +234,30 @@ public sealed class MatchState
 
     public TurnTransition FinishUpkeep() => CaptureBoundary(Coordinator.FinishUpkeep());
     public TurnTransition FinishCommand(PlayerId player) => CaptureBoundary(Coordinator.FinishCommand(player));
-    public TurnTransition FinishExecutionPhase() => CaptureBoundary(Coordinator.FinishExecutionPhase());
+    public TurnTransition FinishExecutionPhase()
+    {
+        if (Coordinator.Phase != TurnPhase.Execution)
+            throw new InvalidOperationException($"Cannot complete Execution while in {Coordinator.Phase}.");
+        var phase = Coordinator.ExecutionPhase
+            ?? throw new InvalidOperationException("Execution subphase is missing.");
+        var commands = Commands.ForPhase(phase);
+        var unsupported = commands.FirstOrDefault(command => !CommandResolver.IsSupported(command.Command.Action));
+        if (unsupported is not null)
+        {
+            LastPhaseResolutions = [];
+            throw new NotSupportedException($"{unsupported.Command.Action} resolution has not been implemented.");
+        }
+
+        LastPhaseResolutions = commands.Select(command => CommandResolver.Resolve(this, command)).ToArray();
+        var transition = Coordinator.FinishExecutionPhase();
+        if (phase == TurnStructure.ExecutionOrder[^1])
+        {
+            Commands.FinishExecution();
+            foreach (var gang in Players.SelectMany(player => player.Gangs))
+                gang.QueuedCommand = Commands.TryGet(gang.Id, out var queued) ? queued : null;
+        }
+        return CaptureBoundary(transition);
+    }
     public TurnTransition FinishHire(PlayerId player) => CaptureBoundary(Coordinator.FinishHire(player));
     public TurnTransition FinishPlayerElimination() => CaptureBoundary(Coordinator.FinishPlayerElimination());
 
@@ -277,6 +301,29 @@ public sealed class MatchState
             command.Action,
             command.Target,
             command.SecondaryTarget);
+        _events.Add(gameEvent);
+        return gameEvent;
+    }
+
+    internal GameEvent AppendResolutionEvent(
+        GameEventKind kind,
+        GameCommand command,
+        CommandResolutionCode resolutionCode)
+    {
+        if (kind is not (GameEventKind.CommandResolved or GameEventKind.CommandFailed))
+            throw new ArgumentOutOfRangeException(nameof(kind));
+        var gameEvent = new GameEvent(
+            _nextEventSequence++,
+            Coordinator.Turn,
+            Coordinator.Phase,
+            Coordinator.ExecutionPhase,
+            kind,
+            command.Player,
+            command.Gang,
+            command.Action,
+            command.Target,
+            command.SecondaryTarget,
+            resolutionCode);
         _events.Add(gameEvent);
         return gameEvent;
     }

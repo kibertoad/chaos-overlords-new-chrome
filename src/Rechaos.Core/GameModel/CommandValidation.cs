@@ -50,7 +50,8 @@ public sealed record CommandRule(
     CommandTargetKind PrimaryTarget,
     CommandTargetKind SecondaryTarget = CommandTargetKind.None,
     GangTargetRelationship GangRelationship = GangTargetRelationship.Any,
-    SpatialConstraint SpatialConstraint = SpatialConstraint.None);
+    SpatialConstraint SpatialConstraint = SpatialConstraint.None,
+    int CashCost = 0);
 
 /// <summary>
 /// Declarative command shapes. Exact costs and resolution formulas are added to
@@ -62,7 +63,7 @@ public static class CommandRules
     {
         new(GangAction.Attack, CommandTargetKind.Gang, GangRelationship: GangTargetRelationship.Enemy,
             SpatialConstraint: SpatialConstraint.SameSector),
-        new(GangAction.Bribe, CommandTargetKind.None),
+        new(GangAction.Bribe, CommandTargetKind.None, CashCost: ManualRules.BribeCost),
         new(GangAction.Chaos, CommandTargetKind.None),
         new(GangAction.Control, CommandTargetKind.None),
         new(GangAction.Equip, CommandTargetKind.Item),

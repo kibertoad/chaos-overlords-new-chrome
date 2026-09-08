@@ -44,6 +44,8 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
 - `GameModel/CommandValidation.cs`: data-driven action descriptors and typed,
   non-mutating command validation results.
 - `GameModel/GameEvents.cs`: monotonically ordered mechanical event records.
+- `GameModel/CommandResolution.cs`: evidence-gated execution dispatcher and
+  result codes; currently resolves Bribe and Snitch only.
 - `GameModel/Notifications.cs`: bounded per-player mechanical notification queues
   with presentation-independent payloads.
 - `GameModel/Determinism.cs`: serializable provisional PCG32 stream and canonical
@@ -139,6 +141,9 @@ One turn contains Upkeep, Command, Execution, Hire, and Player Elimination.
 Execution resolves all players in Instant, Combat, Transaction, Chaos, Movement,
 and Control order. `TurnStructure` is the current executable specification of
 that ordering. Within-subphase ordering and tie-breaking remain unverified.
+Before an execution subphase mutates state, every queued action in that subphase
+must have a supported resolver. Unsupported actions block advancement rather
+than being silently consumed.
 
 ## State ownership target
 
