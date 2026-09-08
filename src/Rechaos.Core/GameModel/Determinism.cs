@@ -5,59 +5,53 @@ using Rechaos.Core.Assets;
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Stable, serializable PCG32 stream used by the headless recreation until the
-/// original executable's RNG is recovered. This is deterministic infrastructure,
-/// not an original-game compatibility claim.
+/// Stable, serializable implementation of the original executable's statically
+/// linked Visual C++ rand step and three-sample bounded-range wrapper. Initial
+/// seed selection remains provisional until its source is recovered.
 /// </summary>
 public sealed class DeterministicRandom
 {
-    private const ulong Multiplier = 6364136223846793005UL;
-    private ulong _state;
-    private readonly ulong _increment;
+    private const uint Multiplier = 0x343fd;
+    private const uint Addend = 0x269ec3;
+    private const int SelectionThreshold = 0x3ffe;
+    private uint _state;
 
     public DeterministicRandom(int seed)
     {
-        _increment = 1442695040888963407UL;
-        _state = 0;
-        NextUInt32();
-        _state = unchecked(_state + (uint)seed);
-        NextUInt32();
-        ConsumptionCount = 0;
+        _state = unchecked((uint)seed);
     }
 
-    public DeterministicRandom(ulong state, ulong increment, long consumptionCount)
+    public DeterministicRandom(uint state, long consumptionCount)
     {
-        if ((increment & 1) == 0) throw new ArgumentOutOfRangeException(nameof(increment), "The PCG stream increment must be odd.");
         if (consumptionCount < 0) throw new ArgumentOutOfRangeException(nameof(consumptionCount));
         _state = state;
-        _increment = increment;
         ConsumptionCount = consumptionCount;
     }
 
-    public ulong State => _state;
-    public ulong Increment => _increment;
+    public uint State => _state;
     public long ConsumptionCount { get; private set; }
 
-    public uint NextUInt32()
+    public int NextRaw()
     {
-        var oldState = _state;
-        _state = unchecked(oldState * Multiplier + _increment);
+        _state = unchecked(_state * Multiplier + Addend);
         ConsumptionCount++;
-        var xorShifted = (uint)(((oldState >> 18) ^ oldState) >> 27);
-        var rotation = (int)(oldState >> 59);
-        return (xorShifted >> rotation) | (xorShifted << ((-rotation) & 31));
+        return (int)((_state >> 16) & 0x7fff);
     }
 
     public int NextInt(int exclusiveMaximum)
     {
         if (exclusiveMaximum <= 0) throw new ArgumentOutOfRangeException(nameof(exclusiveMaximum));
-        var bound = (uint)exclusiveMaximum;
-        var threshold = unchecked(0u - bound) % bound;
-        while (true)
-        {
-            var value = NextUInt32();
-            if (value >= threshold) return (int)(value % bound);
-        }
+        return NextInclusive(exclusiveMaximum) - 1;
+    }
+
+    public int NextInclusive(int maximum)
+    {
+        if (maximum <= 0) throw new ArgumentOutOfRangeException(nameof(maximum));
+        var first = NextRaw();
+        var second = NextRaw();
+        var selector = NextRaw();
+        var selected = selector > SelectionThreshold ? first : second;
+        return selected % maximum + 1;
     }
 }
 
@@ -97,7 +91,6 @@ public static class MatchStateHasher
             WriteNullableByte(writer, state.Coordinator.ExecutionPhase is { } execution ? (byte)execution : null);
             WriteNullableInt(writer, state.Coordinator.ActivePlayer?.Value);
             writer.Write(state.Random.State);
-            writer.Write(state.Random.Increment);
             writer.Write(state.Random.ConsumptionCount);
             writer.Write(state.NextEventSequence);
 

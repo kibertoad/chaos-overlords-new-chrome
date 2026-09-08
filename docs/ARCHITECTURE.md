@@ -48,8 +48,10 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   result codes; currently resolves Bribe and Snitch only.
 - `GameModel/Notifications.cs`: bounded per-player mechanical notification queues
   with presentation-independent payloads.
-- `GameModel/Determinism.cs`: serializable provisional PCG32 stream and canonical
-  little-endian SHA-256 match-state encoding.
+- `GameModel/Determinism.cs`: serializable recovered Visual C++ random step and
+  three-sample range wrapper plus canonical little-endian SHA-256 encoding.
+- `GameModel/EffectiveStatistics.cs`: definition/equipment stat aggregation and
+  deterministic six-sided dice rolls.
 
 Target subdivisions:
 
@@ -172,10 +174,11 @@ mutation paths.
 Compatibility state may not depend on system time, thread scheduling, hash-map
 iteration, locale, filesystem ordering, rendering frames, audio playback, or
 platform floating-point differences. Collections that affect decisions use a
-defined order. The headless model uses a stable, serializable PCG32 stream; its
-algorithm is explicitly provisional because the original PRNG is still unknown.
-The older playable prototype still uses `System.Random` and remains outside the
-compatibility-state boundary.
+defined order. The headless model reproduces the recovered Visual C++ 1998 raw
+RNG step and the game's three-sample inclusive-range wrapper. Initial seeding
+and the complete call-site order remain provisional. The older playable
+prototype still uses `System.Random` and remains outside the compatibility-state
+boundary.
 
 State hashes are computed from a versioned canonical little-endian binary
 encoding after transitions made through `MatchState`. The encoding includes

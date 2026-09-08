@@ -1,7 +1,7 @@
 # Original executable internals research
 
 Status: active clean-room research log
-Last updated: 2026-09-07
+Last updated: 2026-09-08
 Reference executable SHA-256:
 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`
 
@@ -166,10 +166,43 @@ only for UI animation, input, networking, or audio timing.
 
 **Confidence:** Verified observation; Low RNG interpretation.
 
-**Next validation:** Locate IAT cross-references to both clock functions, follow
-returned-value data flow, identify arithmetic recurrence/range reduction, and
-compare predicted rolls with repeated saved-state experiments. Do not replace
-the prototype `System.Random` until this finding reaches High confidence.
+**Next validation:** Follow clock return-value data flow to determine whether
+either clock seeds gameplay state or is presentation-only.
+
+### BIN-RNG-002 - runtime random step
+
+**Observation:** Ghidra 12.1.3 identifies the function at virtual address
+`0x00478cd0` as the statically linked Visual Studio 1998 `_rand`. It updates the
+calling thread's 32-bit hold state using multiplier `0x343fd` and addend
+`0x269ec3`, then returns bits 16-30 of the new state. Ghidra found one direct
+game caller, at `0x0045d227`.
+
+**Interpretation:** The recurrence and 15-bit output are the original build's
+raw random-number step.
+
+**Confidence:** High from function identification, constants, state write, and
+single-caller cross-reference. Runtime output still needs black-box correlation.
+
+### BIN-RNG-003 - bounded random wrapper
+
+**Observation:** The function at `0x0045d227` clamps an input below one to one,
+calls `_rand` three times, uses the third result as a selector, chooses the first
+result when the selector is greater than `0x3ffe` and otherwise the second, then
+returns the chosen value modulo the clamped input plus one.
+
+**Interpretation:** Gameplay requests an inclusive random integer from one
+through the input and consumes exactly three raw RNG values for each request.
+
+**Confidence:** High for control flow, constants, range, and consumption count.
+The initial hold-state seed and complete wrapper call-site ownership remain
+unknown.
+
+**Implementation:** `DeterministicRandom.NextRaw` and `NextInclusive` reproduce
+these address-level facts. `MatchSetup.InitialSeed` remains a recreation input,
+not a verified mapping to the original hold state.
+
+**Next validation:** Locate writes to the per-thread hold state and all callers
+of `0x0045d227`; correlate a controlled dice sequence with predicted outputs.
 
 ## Toolchain hypothesis
 

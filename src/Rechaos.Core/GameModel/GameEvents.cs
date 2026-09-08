@@ -9,6 +9,14 @@ public enum GameEventKind : byte
     CommandFailed
 }
 
+public sealed record CommandResolutionDetails(
+    CommandResolutionCode Code,
+    IReadOnlyList<int> Rolls,
+    int Successes,
+    int? PreviousValue = null,
+    int? ResultValue = null,
+    int CashDelta = 0);
+
 /// <summary>An ordered mechanical fact suitable for UI, replay, and parity fixtures.</summary>
 public sealed record GameEvent(
     long Sequence,
@@ -21,4 +29,4 @@ public sealed record GameEvent(
     GangAction Action,
     CommandTarget Target,
     CommandTarget? SecondaryTarget = null,
-    CommandResolutionCode? ResolutionCode = null);
+    CommandResolutionDetails? Resolution = null);

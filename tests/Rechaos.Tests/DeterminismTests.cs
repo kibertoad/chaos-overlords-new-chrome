@@ -10,11 +10,11 @@ public sealed class DeterminismTests
     public void RandomStreamCanBeRestoredExactly()
     {
         var random = new DeterministicRandom(1996);
-        var prefix = Enumerable.Range(0, 4).Select(_ => random.NextUInt32()).ToArray();
-        var restored = new DeterministicRandom(random.State, random.Increment, random.ConsumptionCount);
+        var prefix = Enumerable.Range(0, 4).Select(_ => random.NextRaw()).ToArray();
+        var restored = new DeterministicRandom(random.State, random.ConsumptionCount);
 
-        var suffix = Enumerable.Range(0, 8).Select(_ => random.NextUInt32()).ToArray();
-        var restoredSuffix = Enumerable.Range(0, 8).Select(_ => restored.NextUInt32()).ToArray();
+        var suffix = Enumerable.Range(0, 8).Select(_ => random.NextRaw()).ToArray();
+        var restoredSuffix = Enumerable.Range(0, 8).Select(_ => restored.NextRaw()).ToArray();
 
         Assert.Equal(4, prefix.Distinct().Count());
         Assert.Equal(suffix, restoredSuffix);
@@ -29,8 +29,17 @@ public sealed class DeterminismTests
         var values = Enumerable.Range(0, 100).Select(_ => random.NextInt(7)).ToArray();
 
         Assert.All(values, value => Assert.InRange(value, 0, 6));
-        Assert.True(random.ConsumptionCount >= values.Length);
+        Assert.Equal(values.Length * 3, random.ConsumptionCount);
         Assert.Throws<ArgumentOutOfRangeException>(() => random.NextInt(0));
+    }
+
+    [Fact]
+    public void RawStepMatchesRecoveredVisualCppSequence()
+    {
+        var random = new DeterministicRandom(1);
+
+        Assert.Equal([41, 18467, 6334, 26500, 19169],
+            Enumerable.Range(0, 5).Select(_ => random.NextRaw()));
     }
 
     [Fact]

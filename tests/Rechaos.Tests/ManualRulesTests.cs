@@ -52,4 +52,12 @@ public sealed class ManualRulesTests
     [InlineData(10, 1, 10)]
     public void HealingCannotExceedTenForce(int current, int successes, int expected) =>
         Assert.Equal(expected, ManualRules.RestoreForce(current, successes));
+
+    [Theory]
+    [InlineData(-10, 0)]
+    [InlineData(-4, 0)]
+    [InlineData(0, 4)]
+    [InlineData(6, 10)]
+    public void HealDicePoolIsBaseFourPlusSkillWithZeroFloor(int skill, int dice) =>
+        Assert.Equal(dice, ManualRules.HealDiceCount(skill));
 }

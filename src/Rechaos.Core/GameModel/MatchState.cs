@@ -91,7 +91,15 @@ public sealed class MatchPlayerState
 
 public sealed class MatchGangState
 {
-    public MatchGangState(GangId id, PlayerId owner, short definitionId, int sectorId, int force)
+    public MatchGangState(
+        GangId id,
+        PlayerId owner,
+        short definitionId,
+        int sectorId,
+        int force,
+        short? weaponItemId = null,
+        short? armorItemId = null,
+        short? miscellaneousItemId = null)
     {
         if (sectorId is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sectorId));
@@ -102,6 +110,9 @@ public sealed class MatchGangState
         DefinitionId = definitionId;
         SectorId = sectorId;
         Force = force;
+        WeaponItemId = weaponItemId;
+        ArmorItemId = armorItemId;
+        MiscellaneousItemId = miscellaneousItemId;
     }
 
     public GangId Id { get; }
@@ -308,7 +319,7 @@ public sealed class MatchState
     internal GameEvent AppendResolutionEvent(
         GameEventKind kind,
         GameCommand command,
-        CommandResolutionCode resolutionCode)
+        CommandResolutionDetails resolution)
     {
         if (kind is not (GameEventKind.CommandResolved or GameEventKind.CommandFailed))
             throw new ArgumentOutOfRangeException(nameof(kind));
@@ -323,7 +334,7 @@ public sealed class MatchState
             command.Action,
             command.Target,
             command.SecondaryTarget,
-            resolutionCode);
+            resolution);
         _events.Add(gameEvent);
         return gameEvent;
     }
@@ -379,6 +390,9 @@ public sealed class MatchState
                 throw new ArgumentException($"Player {player.Id} contains a gang owned by another player.", nameof(players));
             if (player.Gangs.Any(gang => !definitions.Gangs.Any(definition => definition.Id == gang.DefinitionId)))
                 throw new ArgumentException($"Player {player.Id} contains an unknown gang definition.", nameof(players));
+            if (player.Gangs.Any(gang => EquippedItemIds(gang).Any(itemId =>
+                    itemId < 0 || itemId >= definitions.Items.Count || definitions.Items[itemId].Type == 99)))
+                throw new ArgumentException($"Player {player.Id} contains invalid equipped item state.", nameof(players));
         }
 
         var overcrowded = players.SelectMany(player => player.Gangs)
@@ -390,5 +404,12 @@ public sealed class MatchState
         if (sectors.SelectMany(sector => sector.Sites)
             .Any(site => !definitions.Sites.Any(definition => definition.Id == site.DefinitionId)))
             throw new ArgumentException("A sector contains an unknown site definition.", nameof(sectors));
+    }
+
+    private static IEnumerable<short> EquippedItemIds(MatchGangState gang)
+    {
+        if (gang.WeaponItemId is { } weapon) yield return weapon;
+        if (gang.ArmorItemId is { } armor) yield return armor;
+        if (gang.MiscellaneousItemId is { } miscellaneous) yield return miscellaneous;
     }
 }

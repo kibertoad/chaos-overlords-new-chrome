@@ -18,7 +18,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Gang capacity | 80 per player, six friendly per sector | Implemented | Manual, High | Boundary reference fixture |
 | Gang identity | Stable gang instance identity, owner, force, sector, equipment and command projection | Headless schema implemented | Recreation invariant, not an original-format claim | Correlate IDs with save slots |
 | Command queue | One action per gang, replace/cancel/repeat | Structured validation, typed mutation results, and ordered queue events implemented | Manual supports queued/repeat actions; replacement ordering Low | Binary ordering, cost rules and resolution fixtures |
-| Determinism state | Explicit RNG state/consumption and phase hashes | Serializable PCG32 stream and canonical SHA-256 encoding implemented | Recreation invariant; original RNG unknown, Low parity confidence | Recover original RNG and validate phase hashes against reference fixtures |
+| Determinism state | Explicit RNG state/consumption and phase hashes | Recovered VS98 raw step and three-sample range wrapper, serializable state, canonical SHA-256 encoding | Static binary addresses/constants, High algorithm; seed/call order Low | Locate seeding and validate rolls/phase hashes against reference fixtures |
 | Notifications | Bounded per-player ordered queues | Mechanical notification schema and deterministic overflow implemented | Recreation safety bound; original capacity/overflow unknown, Low | Recover original queue layout, capacity and delivery order |
 | Starting state | Right Hands in controlled sector | Documented | Manual, High | Implement exact setup |
 | Hire pool | Three distinct offers; placement in Hire phase | Provisional | Manual, High | Deferred-hire fixture |
@@ -28,7 +28,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Chaos | Income/chaos/crackdown effects | Documented | Manual, Medium | Controlled roll experiment |
 | Bribe | $3, tolerance +5, max 40 | Instant-phase resolver, cash statistic, ordered result and notification implemented | Manual, High for formula; failure behavior Low | Binary timing and insufficient-cash edge cases |
 | Snitch | Free, tolerance -3, min 0 | Instant-phase resolver and ordered result/notification implemented | Manual, High for formula; automatic tolerance behavior Low | Binary timing and uninfluenced-site edge cases |
-| Heal | `4d6 + Heal`, success restores force to max 10 | Documented | Manual, High | Identify dice-count semantics |
+| Heal | Base four dice plus effective Heal, success restores force to max 10 | Instant-phase resolver with deterministic rolls/results implemented | Manual formula Medium/High; recovered RNG algorithm High; seed/context Low | Reference fixture for dice pool, equipment/site scope and RNG order |
 | Hide/detect | Stealth probability and cooperative detect | Documented | Manual, Medium | Distribution fixtures |
 | Combat | Simultaneous attack, defense, damage and retaliation | Documented | Manual, Medium | Binary formula matrix |
 | Movement | Adjacent-sector move | Documented | Manual, High | Simultaneous collision ordering |

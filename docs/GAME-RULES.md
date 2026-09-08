@@ -18,6 +18,29 @@ controlled reference observation confirms its execution timing and edge cases.
 
 ## Instant commands
 
+### RULE-HEAL-001 — Heal dice and force restoration
+
+- Source: `MANUAL-GOG-1`; Heal command description, plus `BIN-RNG-002` and
+  `BIN-RNG-003` for random-number generation. Exact manual scan page location
+  still needs transcription.
+- Observed statement: Heal rolls a base four dice plus Heal skill; each roll of
+  4-6 restores one Force, capped at 10.
+- Interpretation: calculate gang-definition plus equipped-item Heal modifiers,
+  roll `max(0, 4 + Heal)` six-sided dice, count results at least four, and add
+  successes to Force with a maximum of ten.
+- Current exclusions: influenced-site and other contextual stat modifiers are
+  not applied until their ownership/scope is verified.
+- Confidence: High for dice threshold and Force cap; Medium for dice-pool and
+  equipment aggregation; High for the recovered RNG step/range wrapper; Low for
+  initial seed and complete RNG call order.
+- Implementation: `EffectiveStatisticsCalculator`, `DiceRoller`,
+  `CommandResolver.ResolveHeal`, and `ManualRules.RestoreForce`.
+- Tests: deterministic roll/event/hash replay, effective Heal equipment, dice
+  bounds, RNG consumption, and Force cap tests in `CommandResolutionTests`,
+  `DeterminismTests`, and `ManualRulesTests`.
+- Next experiment: execute Heal from an identical save across base/item/site
+  modifiers and correlate visible rolls plus Force deltas with predicted RNG.
+
 ### RULE-BRIBE-001 — Bribe tolerance adjustment
 
 - Source: `MANUAL-GOG-1`; Bribe command description. Exact scan page location

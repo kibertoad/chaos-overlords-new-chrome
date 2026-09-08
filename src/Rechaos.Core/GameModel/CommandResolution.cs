@@ -21,7 +21,8 @@ public sealed record CommandResolutionResult(
 /// </summary>
 public static class CommandResolver
 {
-    public static bool IsSupported(GangAction action) => action is GangAction.Bribe or GangAction.Snitch;
+    public static bool IsSupported(GangAction action) =>
+        action is GangAction.Bribe or GangAction.Heal or GangAction.Snitch;
 
     public static CommandResolutionResult Resolve(MatchState state, QueuedCommand queued)
     {
@@ -34,6 +35,7 @@ public static class CommandResolver
         return queued.Command.Action switch
         {
             GangAction.Bribe => ResolveBribe(state, queued.Command),
+            GangAction.Heal => ResolveHeal(state, queued.Command),
             GangAction.Snitch => ResolveSnitch(state, queued.Command),
             _ => new CommandResolutionResult(queued.Command, CommandResolutionCode.UnsupportedAction, null)
         };
@@ -44,35 +46,57 @@ public static class CommandResolver
         var player = state.FindPlayer(command.Player)!;
         var cost = CommandRules.ByAction[GangAction.Bribe].CashCost;
         if (player.Cash < cost)
-            return Complete(state, command, CommandResolutionCode.InsufficientCash, GameEventKind.CommandFailed);
+        {
+            var tolerance = state.Sectors[state.FindGang(command.Gang)!.SectorId].Tolerance;
+            return Complete(state, command, GameEventKind.CommandFailed,
+                new CommandResolutionDetails(CommandResolutionCode.InsufficientCash, [], 0, tolerance, tolerance));
+        }
 
         var gang = state.FindGang(command.Gang)!;
         player.Cash -= cost;
         player.Statistics.CashSpent += cost;
-        state.Sectors[gang.SectorId].Tolerance = ManualRules.ApplyBribe(state.Sectors[gang.SectorId].Tolerance);
-        return Complete(state, command, CommandResolutionCode.Resolved, GameEventKind.CommandResolved);
+        var before = state.Sectors[gang.SectorId].Tolerance;
+        var after = ManualRules.ApplyBribe(before);
+        state.Sectors[gang.SectorId].Tolerance = after;
+        return Complete(state, command, GameEventKind.CommandResolved,
+            new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after, -cost));
+    }
+
+    private static CommandResolutionResult ResolveHeal(MatchState state, GameCommand command)
+    {
+        var gang = state.FindGang(command.Gang)!;
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
+        var rolls = DiceRoller.RollD6(state.Random, ManualRules.HealDiceCount(statistics.Heal));
+        var successes = ManualRules.CountSuccesses(rolls);
+        var before = gang.Force;
+        gang.Force = ManualRules.RestoreForce(gang.Force, successes);
+        return Complete(state, command, GameEventKind.CommandResolved,
+            new CommandResolutionDetails(CommandResolutionCode.Resolved, rolls, successes, before, gang.Force));
     }
 
     private static CommandResolutionResult ResolveSnitch(MatchState state, GameCommand command)
     {
         var gang = state.FindGang(command.Gang)!;
-        state.Sectors[gang.SectorId].Tolerance = ManualRules.ApplySnitch(state.Sectors[gang.SectorId].Tolerance);
-        return Complete(state, command, CommandResolutionCode.Resolved, GameEventKind.CommandResolved);
+        var before = state.Sectors[gang.SectorId].Tolerance;
+        var after = ManualRules.ApplySnitch(before);
+        state.Sectors[gang.SectorId].Tolerance = after;
+        return Complete(state, command, GameEventKind.CommandResolved,
+            new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after));
     }
 
     private static CommandResolutionResult Complete(
         MatchState state,
         GameCommand command,
-        CommandResolutionCode code,
-        GameEventKind eventKind)
+        GameEventKind eventKind,
+        CommandResolutionDetails resolution)
     {
-        var gameEvent = state.AppendResolutionEvent(eventKind, command, code);
+        var gameEvent = state.AppendResolutionEvent(eventKind, command, resolution);
         state.QueueNotification(
             command.Player,
             GameNotificationKind.CommandResult,
             command.Gang,
             state.FindGang(command.Gang)!.SectorId,
             gameEvent.Sequence);
-        return new CommandResolutionResult(command, code, gameEvent);
+        return new CommandResolutionResult(command, resolution.Code, gameEvent);
     }
 }

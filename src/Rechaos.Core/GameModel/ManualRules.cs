@@ -15,6 +15,7 @@ public static class ManualRules
     public const int MaximumTolerance = 40;
     public const int PoliceCombat = 20;
     public const int PoliceDetect = 12;
+    public const int HealBaseDice = 4;
 
     public static int ApplyBribe(int tolerance)
     {
@@ -53,6 +54,8 @@ public static class ManualRules
         if (successes < 0) throw new ArgumentOutOfRangeException(nameof(successes));
         return Math.Min(MaximumForce, currentForce + successes);
     }
+
+    public static int HealDiceCount(int healSkill) => Math.Max(0, HealBaseDice + healSkill);
 
     private static void ValidateTolerance(int tolerance)
     {
