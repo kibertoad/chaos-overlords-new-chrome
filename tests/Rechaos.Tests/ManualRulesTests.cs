@@ -83,4 +83,16 @@ public sealed class ManualRulesTests
             0, 0, 0, 0);
         Assert.Equal(expected, EquipmentRules.SaleValue(item));
     }
+
+    [Fact]
+    public void ControlStrengthAddsForceAndSkillWithoutDice() =>
+        Assert.Equal(13, ManualRules.ControlStrength([(5, 2), (4, 2)]));
+
+    [Theory]
+    [InlineData(12, 3, 0, 0, 9)]
+    [InlineData(12, 3, 5, 2, 2)]
+    [InlineData(4, 5, 3, 1, -5)]
+    public void ControlMarginSubtractsIncomeDefenseAndSupport(
+        int attack, int income, int defense, int support, int expected) =>
+        Assert.Equal(expected, ManualRules.ControlMargin(attack, income, defense, support));
 }

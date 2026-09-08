@@ -5,7 +5,8 @@ public enum CommandResolutionCode : byte
     Resolved,
     InsufficientCash,
     UnsupportedAction,
-    ItemUnavailable
+    ItemUnavailable,
+    DestinationFull
 }
 
 public sealed record CommandResolutionResult(
@@ -24,8 +25,8 @@ public static class CommandResolver
 {
     public static bool IsSupported(GangAction action) =>
         action is GangAction.Bribe or GangAction.Equip or GangAction.Give or GangAction.Heal
-            or GangAction.Hide or GangAction.Influence or GangAction.Research or GangAction.Sell
-            or GangAction.Snitch or GangAction.Terminate;
+            or GangAction.Hide or GangAction.Influence or GangAction.Move or GangAction.Research
+            or GangAction.Sell or GangAction.Snitch or GangAction.Terminate or GangAction.Control;
 
     public static IReadOnlyList<CommandResolutionResult> ResolvePhase(
         MatchState state,
@@ -42,19 +43,23 @@ public static class CommandResolver
         foreach (var queued in commands)
         {
             if (!resolvedSequences.Add(queued.Sequence)) continue;
-            if (queued.Command.Action != GangAction.Influence)
+            if (queued.Command.Action is not (GangAction.Influence or GangAction.Control))
             {
                 results.Add(Resolve(state, queued));
                 continue;
             }
 
-            var participants = commands
-                .Where(candidate => candidate.Command.Action == GangAction.Influence
-                    && candidate.Command.Player == queued.Command.Player
-                    && candidate.Command.Target == queued.Command.Target)
-                .ToArray();
+            var sectorId = state.FindGang(queued.Command.Gang)!.SectorId;
+            var participants = commands.Where(candidate =>
+                candidate.Command.Action == queued.Command.Action
+                && candidate.Command.Player == queued.Command.Player
+                && (queued.Command.Action == GangAction.Influence
+                    ? candidate.Command.Target == queued.Command.Target
+                    : state.FindGang(candidate.Command.Gang)!.SectorId == sectorId)).ToArray();
             foreach (var participant in participants) resolvedSequences.Add(participant.Sequence);
-            results.AddRange(ResolveInfluence(state, participants));
+            results.AddRange(queued.Command.Action == GangAction.Influence
+                ? ResolveInfluence(state, participants)
+                : ResolveControl(state, participants));
         }
         return results;
     }
@@ -70,11 +75,13 @@ public static class CommandResolver
         return queued.Command.Action switch
         {
             GangAction.Bribe => ResolveBribe(state, queued.Command),
+            GangAction.Control => ResolveControl(state, [queued]).Single(),
             GangAction.Equip => ResolveEquip(state, queued.Command),
             GangAction.Give => ResolveGive(state, queued.Command),
             GangAction.Heal => ResolveHeal(state, queued.Command),
             GangAction.Hide => ResolveHide(state, queued.Command),
             GangAction.Influence => ResolveInfluence(state, [queued]).Single(),
+            GangAction.Move => ResolveMove(state, queued.Command),
             GangAction.Research => ResolveResearch(state, queued.Command),
             GangAction.Sell => ResolveSell(state, queued.Command),
             GangAction.Snitch => ResolveSnitch(state, queued.Command),
@@ -185,6 +192,89 @@ public static class CommandResolver
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, 0),
             GameNotificationKind.Elimination);
+    }
+
+    private static CommandResolutionResult ResolveMove(MatchState state, GameCommand command)
+    {
+        var gang = state.FindGang(command.Gang)!;
+        var destination = command.Target.Id;
+        var friendlyCount = state.FindPlayer(command.Player)!.Gangs.Count(candidate =>
+            candidate.IsActive && candidate.SectorId == destination);
+        if (friendlyCount >= MatchLimits.FriendlyGangsPerSector)
+            return Complete(state, command, GameEventKind.CommandFailed,
+                new CommandResolutionDetails(
+                    CommandResolutionCode.DestinationFull, [], 0, gang.SectorId, gang.SectorId),
+                GameNotificationKind.Movement);
+
+        var before = gang.SectorId;
+        gang.SectorId = destination;
+        return Complete(state, command, GameEventKind.CommandResolved,
+            new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, destination),
+            GameNotificationKind.Movement);
+    }
+
+    private static IReadOnlyList<CommandResolutionResult> ResolveControl(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> participants)
+    {
+        if (participants.Count == 0) throw new ArgumentException("At least one participant is required.", nameof(participants));
+        var first = participants[0].Command;
+        var player = state.FindPlayer(first.Player)!;
+        var sector = state.Sectors[state.FindGang(first.Gang)!.SectorId];
+        var attackers = participants.Select(queued =>
+        {
+            var gang = state.FindGang(queued.Command.Gang)!;
+            return (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Control);
+        });
+        var attack = ManualRules.ControlStrength(attackers);
+        var sectorIncome = sector.Sites.Sum(site =>
+            state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
+        var defense = 0;
+        var support = 0;
+        if (sector.Owner is { } owner && owner != first.Player)
+        {
+            defense = ManualRules.ControlStrength(state.FindPlayer(owner)!.Gangs
+                .Where(gang => gang.IsActive && !gang.Hidden && gang.SectorId == sector.Id)
+                .Select(gang => (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Control)));
+            support = sector.Sites.Where(site => site.InfluencedBy == owner).Sum(site =>
+                state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Support);
+        }
+        var margin = ManualRules.ControlMargin(attack, sectorIncome, defense, support);
+        var previousOwner = sector.Owner;
+        var captured = previousOwner != first.Player && margin > 0;
+        if (captured)
+        {
+            if (previousOwner is { } oldOwner)
+            {
+                player.Statistics.Overthrows++;
+                ResetInfluencedSites(state, sector, oldOwner);
+            }
+            sector.Owner = first.Player;
+        }
+
+        var results = new List<CommandResolutionResult>(participants.Count);
+        foreach (var participant in participants)
+        {
+            results.Add(Complete(state, participant.Command, GameEventKind.CommandResolved,
+                new CommandResolutionDetails(
+                    CommandResolutionCode.Resolved, [], captured ? 1 : 0,
+                    PreviousValue: previousOwner?.Value, ResultValue: sector.Owner?.Value,
+                    AttackValue: attack, DefenseValue: checked(sectorIncome + defense + support)),
+                GameNotificationKind.Control));
+        }
+        return results;
+    }
+
+    private static void ResetInfluencedSites(MatchState state, MatchSectorState sector, PlayerId previousOwner)
+    {
+        var player = state.FindPlayer(previousOwner)!;
+        foreach (var site in sector.Sites)
+        {
+            var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+            if (site.InfluencedBy == previousOwner) player.Support -= definition.Support;
+            site.InfluencedBy = null;
+            site.Resistance = definition.Resistance;
+        }
     }
 
     private static CommandResolutionResult ResolveHeal(MatchState state, GameCommand command)

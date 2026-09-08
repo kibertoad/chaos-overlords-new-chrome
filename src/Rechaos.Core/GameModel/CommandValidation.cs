@@ -22,6 +22,8 @@ public enum CommandValidationCode
     InsufficientTechLevel,
     ItemNotEquipped,
     ItemAlreadyEquipped,
+    DestinationAtCapacity,
+    SectorNotControlled,
     CommandNotQueued
 }
 
@@ -110,9 +112,18 @@ public static class CommandValidator
         if (command.Action == GangAction.Research
             && state.FindPlayer(command.Player)!.ResearchedItems.Contains((short)command.Target.Id))
             return CommandValidation.Reject(CommandValidationCode.ItemAlreadyResearched);
-        if (command.Action == GangAction.Influence
-            && state.FindSite(command.Target.Id)!.InfluencedBy is not null)
-            return CommandValidation.Reject(CommandValidationCode.SiteAlreadyInfluenced);
+        if (command.Action == GangAction.Influence)
+        {
+            var sector = state.Sectors[command.Target.Id / MatchLimits.SitesPerSector];
+            if (sector.Owner != command.Player)
+                return CommandValidation.Reject(CommandValidationCode.SectorNotControlled);
+            if (state.FindSite(command.Target.Id)!.InfluencedBy is not null)
+                return CommandValidation.Reject(CommandValidationCode.SiteAlreadyInfluenced);
+        }
+        if (command.Action == GangAction.Move
+            && state.FindPlayer(command.Player)!.Gangs.Count(gang =>
+                gang.IsActive && gang.SectorId == command.Target.Id) >= MatchLimits.FriendlyGangsPerSector)
+            return CommandValidation.Reject(CommandValidationCode.DestinationAtCapacity);
         return ValidateTransaction(state, command, actor);
     }
 
@@ -279,6 +290,8 @@ internal static class CommandValidationMessages
             [CommandValidationCode.InsufficientTechLevel] = "The gang's tech level is too low for this item.",
             [CommandValidationCode.ItemNotEquipped] = "The acting gang does not have that item equipped.",
             [CommandValidationCode.ItemAlreadyEquipped] = "The acting gang already has that item equipped.",
+            [CommandValidationCode.DestinationAtCapacity] = "The destination already has the maximum friendly gangs.",
+            [CommandValidationCode.SectorNotControlled] = "The player must control the target sector.",
             [CommandValidationCode.CommandNotQueued] = "The gang has no queued command."
         };
 

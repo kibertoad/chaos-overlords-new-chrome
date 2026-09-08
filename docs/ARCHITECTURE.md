@@ -152,11 +152,12 @@ Before an execution subphase mutates state, every queued action in that subphase
 must have a supported resolver. Unsupported actions block advancement rather
 than being silently consumed.
 
-Influence is the first grouped resolver: commands from one player aimed at the
-same site pool their gangs' Force and effective Influence into one deterministic
-roll stream. The group is resolved at its earliest queue position and emits one
-ordered result per participating command. Cross-player conflicts remain an
-explicit parity gap.
+Influence and Control are grouped resolvers. Influence commands from one player
+aimed at the same site pool Force and effective Influence into one deterministic
+roll stream. Control commands from one player in the same sector pool Force and
+effective Control into one non-dice comparison. Each group resolves at its
+earliest queue position and emits one ordered result per participating command.
+Cross-player conflicts remain an explicit parity gap.
 
 The Transaction resolver treats equipment as gang-owned: Equip purchases
 directly into one of three slots, Give moves an equipped item between friendly
@@ -164,6 +165,11 @@ gangs, and Sell removes an equipped item for cash. The player inventory map is
 validated state reserved for future acquisition workflows; it is not silently
 used as a shop or overflow stash. Terminate clears all gang-owned equipment in
 the Movement phase.
+
+Move commits in stable queue order and enforces the six-friendly-gang capacity
+both during submission and again during resolution. Control ownership changes
+are atomic with former-owner influenced-site cleanup, Support adjustment, and
+Overthrow statistics so phase hashes cannot observe a partially captured sector.
 
 `MatchState.FinishUpkeep` resolves every active player in stable player-ID order
 before entering Command. Each result separates sector tax, influenced-site

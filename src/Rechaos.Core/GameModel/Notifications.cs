@@ -11,7 +11,9 @@ public enum GameNotificationKind : byte
     Objective,
     Research,
     Influence,
-    Equipment
+    Equipment,
+    Movement,
+    Control
 }
 
 /// <summary>A mechanical notification reference; presentation supplies localized text.</summary>

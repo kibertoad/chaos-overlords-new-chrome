@@ -18,7 +18,9 @@ public sealed record CommandResolutionDetails(
     int? ResultValue = null,
     int CashDelta = 0,
     short? ItemId = null,
-    short? ReplacedItemId = null);
+    short? ReplacedItemId = null,
+    int? AttackValue = null,
+    int? DefenseValue = null);
 
 public sealed record EconomyResolutionDetails(
     int PreviousCash,

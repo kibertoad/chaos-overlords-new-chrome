@@ -62,9 +62,12 @@ public sealed class MatchPlayerState
         IReadOnlyDictionary<short, int>? researchProgress = null,
         IReadOnlySet<short>? researchedItems = null,
         IReadOnlyDictionary<short, int>? inventory = null,
+        int support = 0,
+        int bigManPoints = 0,
         PlayerStatus status = PlayerStatus.Active)
     {
         if (cash < 0) throw new ArgumentOutOfRangeException(nameof(cash));
+        if (bigManPoints < 0) throw new ArgumentOutOfRangeException(nameof(bigManPoints));
         if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         Setup = setup ?? throw new ArgumentNullException(nameof(setup));
         _gangs = gangs?.ToArray() ?? [];
@@ -74,6 +77,8 @@ public sealed class MatchPlayerState
         _researchedItems = researchedItems is null ? [] : new HashSet<short>(researchedItems);
         _inventory = inventory?.ToDictionary() ?? [];
         Cash = cash;
+        Support = support;
+        BigManPoints = bigManPoints;
         Status = status;
     }
 
@@ -295,6 +300,7 @@ public sealed class MatchState
 
     public TurnTransition FinishUpkeep()
     {
+        foreach (var gang in Players.SelectMany(player => player.Gangs)) gang.Hidden = false;
         LastUpkeepResolutions = EconomyResolver.ResolveUpkeep(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }

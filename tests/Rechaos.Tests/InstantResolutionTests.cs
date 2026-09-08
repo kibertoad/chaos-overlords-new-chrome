@@ -76,6 +76,19 @@ public sealed class InstantResolutionTests
     }
 
     [Fact]
+    public void InfluenceRequiresPlayerToControlTargetSector()
+    {
+        var match = CreateMatch(siteResistance: 7, playerControlsSector: false);
+        EnterCommand(match);
+
+        var result = match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Influence, CommandTarget.Site(0)));
+
+        Assert.False(result.Accepted);
+        Assert.Equal(CommandValidationCode.SectorNotControlled, result.Validation.Code);
+    }
+
+    [Fact]
     public void EquivalentInfluenceRunsProduceIdenticalEventsAndHash()
     {
         var first = CreateMatch(siteResistance: 100);
@@ -112,7 +125,10 @@ public sealed class InstantResolutionTests
         match.FinishCommand(new PlayerId(1));
     }
 
-    private static MatchState CreateMatch(int siteResistance, PlayerId? influencedBy = null)
+    private static MatchState CreateMatch(
+        int siteResistance,
+        PlayerId? influencedBy = null,
+        bool playerControlsSector = true)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
@@ -138,7 +154,7 @@ public sealed class InstantResolutionTests
                 new MatchSiteState(0, 0, id == 0 ? siteResistance : 7, id == 0 ? influencedBy : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ]))
+            ], owner: id == 0 && playerControlsSector ? new PlayerId(0) : null))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }

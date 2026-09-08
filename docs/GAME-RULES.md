@@ -24,11 +24,11 @@ controlled reference observation confirms its execution timing and edge cases.
   scan page locations still need transcription.
 - Observed statement: Hide makes the acting gang hidden so opposing gangs must
   detect it before targeting it.
-- Interpretation: the Instant resolver changes the acting gang's persistent
-  `Hidden` flag to true and records the before/after transition without an RNG
-  roll.
-- Current exclusions: reveal timing, detection contests, action restrictions,
-  site/detect modifiers, and repeated Hide behavior in the original executable.
+- Interpretation: the Instant resolver changes the acting gang's `Hidden` flag
+  to true without an RNG roll; the state expires at the following Upkeep before
+  repeat Hide resolves again.
+- Current exclusions: detection contests, attack evasion, site/detect modifiers,
+  and exact reveal timing inside the original Upkeep boundary.
 - Confidence: High that Hide enters hidden state; Low for timing and all exit or
   detection interactions.
 - Implementation: `CommandResolver.ResolveHide` and `MatchGangState.Hidden`.
@@ -55,7 +55,8 @@ controlled reference observation confirms its execution timing and edge cases.
   benefit timing.
 - Implementation: `CommandResolver.ResolvePhase`,
   `CommandResolver.ResolveInfluence`, `ManualRules.InfluenceDiceCount`, and
-  `ManualRules.ApplyInfluenceProgress`.
+  `ManualRules.ApplyInfluenceProgress`; validation requires player ownership of
+  the target sector.
 - Tests: `InstantResolutionTests` covers friendly pooling, single RNG
   consumption, partial progress, completion/Support, target rejection,
   notifications, deterministic replay, and phase hashes.
@@ -218,6 +219,47 @@ claim about original-game behavior.
   notification presentation, and effects on simultaneous Movement.
 - Implementation: `CommandResolver.ResolveTerminate`.
 - Tests: `TransactionResolutionTests.TerminateRemovesGangAndAllEquipmentDuringMovement`.
+
+## Movement and sector control
+
+### RULE-MOVE-001 — Adjacent movement and friendly capacity
+
+- Source: `MANUAL-GOG-1`; Move command and command sequence descriptions.
+- Observed statement: Move relocates a gang to an adjacent sector during the
+  Movement phase. The structural limit is six friendly gangs per sector.
+- Interpretation: move to one orthogonally adjacent sector, rejecting a target
+  already at friendly capacity; commands that compete for the final slot resolve
+  in stable queue order and later commands fail without moving.
+- Confidence: High for adjacency/capacity; Low for original simultaneous
+  collision and final-slot ordering.
+- Implementation: movement validation and `CommandResolver.ResolveMove`.
+- Tests: `BoardResolutionTests` covers movement events, capacity at submission,
+  runtime contention, stable result order, and notifications.
+
+### RULE-CONTROL-001 — Cooperative sector control comparison
+
+- Source: `MANUAL-GOG-1`; Control command and Math of the Game, numbered pages
+  31 and 49–50.
+- Observed statement: friendly participants total `Force + Control`. Neutral
+  attempts subtract sector income. Enemy attempts also subtract every active,
+  non-hiding defending gang's `Force + Control` and total influenced-site
+  Support. Losing a sector loses all influenced sites, which return to full
+  resistance; taking ownership directly from another player is an Overthrow.
+- Interpretation: group same-player Control commands by sector, calculate the
+  signed margin without dice, and capture only when it is strictly positive.
+  On an overthrow, increment the attacker's statistic, remove the former
+  owner's site Support, clear influence, and restore table resistance.
+- Current exclusions: cross-player simultaneous tie/conflict ordering, precise
+  definition of sector income, crackdown restrictions, abandoned-sector rules,
+  and negative-total edge behavior. Groups currently resolve at their earliest
+  stable queue position.
+- Confidence: High for equation components and influence loss; Medium for the
+  strict-positive threshold; Low for simultaneous ordering.
+- Implementation: `ManualRules.ControlStrength`, `ManualRules.ControlMargin`,
+  grouped `CommandResolver.ResolveControl`, and site-reset handling.
+- Tests: `BoardResolutionTests` covers neutral capture, pooled strength, defended
+  failure, overthrow/statistics, influence reset, deterministic hashes, and Hide
+  expiration; `ManualRulesTests` covers equation arithmetic.
 
 ## Upkeep economy
 

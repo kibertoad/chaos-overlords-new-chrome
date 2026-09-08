@@ -91,6 +91,22 @@ public static class ManualRules
         return Math.Max(0, resistance - successes);
     }
 
+    public static int ControlStrength(IEnumerable<(int Force, int Control)> gangs)
+    {
+        ArgumentNullException.ThrowIfNull(gangs);
+        var total = 0;
+        foreach (var gang in gangs)
+        {
+            if (gang.Force is < 0 or > MaximumForce)
+                throw new ArgumentOutOfRangeException(nameof(gangs));
+            total = checked(total + gang.Force + gang.Control);
+        }
+        return total;
+    }
+
+    public static int ControlMargin(int attack, int sectorIncome, int defense = 0, int support = 0) =>
+        checked(attack - sectorIncome - defense - support);
+
     private static void ValidateTolerance(int tolerance)
     {
         if (tolerance is < MinimumTolerance or > MaximumTolerance)
