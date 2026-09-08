@@ -1,0 +1,55 @@
+using Rechaos.Core.GameModel;
+using Xunit;
+
+namespace Rechaos.Tests;
+
+public sealed class ManualRulesTests
+{
+    [Theory]
+    [InlineData(1, false)]
+    [InlineData(2, false)]
+    [InlineData(3, false)]
+    [InlineData(4, true)]
+    [InlineData(5, true)]
+    [InlineData(6, true)]
+    public void FourThroughSixAreSuccesses(int roll, bool expected) =>
+        Assert.Equal(expected, ManualRules.IsDieSuccess(roll));
+
+    [Fact]
+    public void SuccessCountingValidatesAndCountsDice() =>
+        Assert.Equal(3, ManualRules.CountSuccesses([1, 4, 2, 5, 6]));
+
+    [Theory]
+    [InlineData(0, 5)]
+    [InlineData(34, 39)]
+    [InlineData(38, 40)]
+    [InlineData(40, 40)]
+    public void BribeAddsFiveAndCapsAtForty(int before, int after) =>
+        Assert.Equal(after, ManualRules.ApplyBribe(before));
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(2, 0)]
+    [InlineData(3, 0)]
+    [InlineData(40, 37)]
+    public void SnitchSubtractsThreeAndFloorsAtZero(int before, int after) =>
+        Assert.Equal(after, ManualRules.ApplySnitch(before));
+
+    [Theory]
+    [InlineData(0, 100)]
+    [InlineData(5, 100)]
+    [InlineData(6, 95)]
+    [InlineData(12, 65)]
+    [InlineData(24, 5)]
+    [InlineData(25, 0)]
+    [InlineData(50, 0)]
+    public void PoliceDetectionMatchesManualTable(int stealth, int percent) =>
+        Assert.Equal(percent, ManualRules.PoliceDetectionPercent(stealth));
+
+    [Theory]
+    [InlineData(1, 3, 4)]
+    [InlineData(9, 5, 10)]
+    [InlineData(10, 1, 10)]
+    public void HealingCannotExceedTenForce(int current, int successes, int expected) =>
+        Assert.Equal(expected, ManualRules.RestoreForce(current, successes));
+}

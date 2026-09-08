@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src/Rechaos.Core/Rechaos.Core.csproj" />
+  <Project Path="src/Rechaos.Extractor/Rechaos.Extractor.csproj" />
+  <Project Path="src/Rechaos.Game/Rechaos.Game.csproj" />
+  <Project Path="tests/Rechaos.Tests/Rechaos.Tests.csproj" />
+</Solution>

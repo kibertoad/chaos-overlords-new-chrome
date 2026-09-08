@@ -1,0 +1,201 @@
+# Original executable internals research
+
+Status: active clean-room research log
+Last updated: 2026-09-07
+Reference executable SHA-256:
+`a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`
+
+This document records factual structure and testable interpretations of the
+original executable. It does not contain copied decompiled source. Addresses are
+valid only for the fingerprint above.
+
+## Finding format
+
+- **ID**: stable reference used by rules, code, tests, and the parity matrix.
+- **Observation**: what is directly present in the executable or behavior.
+- **Interpretation**: what the observation may mean.
+- **Confidence**: Verified, High, Medium, or Low.
+- **Next validation**: experiment needed before relying on semantics.
+
+## PE image
+
+### BIN-PE-001 - executable format
+
+**Observation:** The file is PE32 for Intel x86 (`Machine = 0x14c`), Windows GUI
+subsystem, with preferred image base `0x00400000`, entry point `0x00478d00`,
+image size `0x000c9000`, and no debug directory. Symbols, COFF line numbers, and
+the symbol table are stripped. Linker version is 3.10. The COFF timestamp is
+1996-07-19 22:26:46 in the dumper's local display.
+
+**Interpretation:** This is a native 32-bit Windows build consistent with the
+original 1996 release, not a managed GOG launcher.
+
+**Confidence:** Verified for header values; High for interpretation.
+
+### BIN-PE-002 - sections
+
+| Section | RVA | Virtual size | Raw offset/size | Flags |
+|---|---:|---:|---:|---|
+| `.text` | `0x1000` | `0x7fac2` | `0x400` / `0x7fc00` | execute, read |
+| `.rdata` | `0x81000` | `0xc4d` | `0x80000` / `0xe00` | read |
+| `.data` | `0x82000` | `0x2b110` | `0x80e00` / `0x7a00` | read, write |
+| `.idata` | `0xae000` | `0x19fa` | `0x88800` / `0x1a00` | read, write |
+| `.rsrc` | `0xb0000` | `0x11bec` | `0x8a200` / `0x11c00` | read |
+| `.reloc` | `0xc2000` | `0x6498` | `0x9be00` / `0x6600` | discardable, read |
+
+**Confidence:** Verified from PE headers.
+
+The large zero-initialized tail of `.data` is a candidate home for the global
+match arrays described by the save format. This is only a hypothesis until
+cross-references and runtime/save correlations are established.
+
+## Platform boundaries visible in imports
+
+### BIN-API-001 - rendering
+
+**Observation:** The binary imports `DirectDrawCreate` from `DDRAW.dll`, plus GDI
+palette/DIB/blit operations including `SetDIBits`, `BitBlt`, `StretchBlt`,
+`CreatePalette`, `SetPaletteEntries`, `RealizePalette`, `UpdateColors`, and
+`SetSystemPaletteUse`. USER32 imports include cursor, bitmap, menu, dialog,
+window, key-state, paint, and message-loop functions.
+
+**Interpretation:** Original rendering combines DirectDraw with Win32/GDI and
+explicit palette management. The PX08/PX16 split and color-depth preference are
+selected within this platform layer.
+
+**Confidence:** Verified imports; Medium architecture interpretation.
+
+**Next validation:** Find cross-references from the literal PX paths and palette
+APIs, then map the load/convert/blit functions and color-key behavior.
+
+### BIN-API-002 - audio and video
+
+**Observation:** WINMM imports include `PlaySoundA`, `mciSendCommandA`, auxiliary
+volume APIs, `timeGetTime`, `timeSetEvent`, and `timeKillEvent`. Sixteen Smacker
+functions are imported by ordinal from `smackw32.dll`.
+
+**Interpretation:** Effects likely use `PlaySoundA`, CD/music control likely uses
+MCI, and Smacker owns intro/logo decoding. Multimedia timers may drive animation
+or sound; their presence does not prove simulation timing.
+
+**Confidence:** Verified imports; Medium API-role interpretation; Low timer role.
+
+**Next validation:** Cross-reference `data\snd00000`, `Data\mvIntro`,
+`Data\mvLogos`, and `A:\CHAOS\CDTrack` literals.
+
+### BIN-API-003 - files and persistence
+
+**Observation:** The executable imports `CreateFileA`, `ReadFile`, `WriteFile`,
+`GetFileSize`, `SetFilePointer`, `FlushFileBuffers`, `GetOpenFileNameA`, and
+`GetSaveFileNameA`. Embedded strings include `Save Files (*.SAV)`, `Please
+specify save name`, and `Old Version of Saved Game.`
+
+**Interpretation:** Save/load is implemented with direct Win32 file I/O and a
+version/magic branch consistent with the two documented save variants.
+
+**Confidence:** Verified observations; High interpretation.
+
+**Next validation:** Locate string references, identify read/write functions,
+and match their fixed transfer sizes against the save-layout document.
+
+### BIN-API-004 - legacy networking
+
+**Observation:** The import table contains 18 WinSock functions by ordinal,
+Windows Telephony API calls for modem setup/dialing, serial-port configuration,
+overlapped file I/O, communication masks/events, threads, mutexes, critical
+sections, and synchronization waits. Embedded strings reference modem Control
+Panel setup and host windows.
+
+**Interpretation:** WinSock, modem, and serial transports described by the manual
+are native subsystems in this build and share synchronization infrastructure.
+
+**Confidence:** Verified imports/strings; High interpretation.
+
+**Security decision:** Original transports are research-only and must not be
+exposed to untrusted networks. A recreation transport will not reuse this code
+or wire format without a separate protocol/security study.
+
+### BIN-API-005 - configuration
+
+**Observation:** Registry APIs are imported. Strings include
+`SOFTWARE\Stick Man Games\Chaos Overlords\1.0` and the Windows App Paths key for
+`Chaos Overlords.exe`.
+
+**Interpretation:** Preferences and/or installation location are stored in the
+registry under the product key.
+
+**Confidence:** Verified strings/imports; Medium interpretation.
+
+**Next validation:** Inspect registry reads/writes in a disposable reference VM
+while changing one option at a time.
+
+## Resource lookup literals
+
+### BIN-ASSET-001 - data paths
+
+The following case-varying format/path literals are embedded in the executable:
+
+| Literal | Likely role | Confidence |
+|---|---|---|
+| `data\Sites` | site definitions | High |
+| `data\Gangs` | gang definitions | High |
+| `data\Items` | item definitions | High |
+| `data\PX08\PX00000` | formatted 8-bit image lookup | High |
+| `data\PX08\px00128` | fixed 8-bit resource | High |
+| `data\PX16\px00128` | fixed 16-bit resource | High |
+| `data\snd00000` | formatted sound lookup | High |
+| `Data\mvIntro` | intro movie | High |
+| `Data\mvLogos` | logo movie | High |
+| `.\Help\Chaos.hlp` | WinHelp content | Verified |
+| `A:\CHAOS\CDTrack` | CD music path/template | Medium |
+
+The `00000` suffix strongly suggests integer-to-five-digit resource formatting,
+but the formatter and valid ranges must be located before this is marked
+Verified.
+
+## Timing and RNG candidates
+
+### BIN-RNG-001 - imported clocks
+
+**Observation:** `GetTickCount`, `timeGetTime`, periodic multimedia timer APIs,
+and asynchronous key state are imported. No external C runtime DLL appears in
+the import table, so any C library RNG would be statically linked.
+
+**Interpretation:** One clock may seed random state, but any may instead be used
+only for UI animation, input, networking, or audio timing.
+
+**Confidence:** Verified observation; Low RNG interpretation.
+
+**Next validation:** Locate IAT cross-references to both clock functions, follow
+returned-value data flow, identify arithmetic recurrence/range reduction, and
+compare predicted rolls with repeated saved-state experiments. Do not replace
+the prototype `System.Random` until this finding reaches High confidence.
+
+## Toolchain hypothesis
+
+### BIN-TOOL-001 - compiler/runtime
+
+**Observation:** Linker version 3.10, 1996 timestamp, no imported MSVCRT DLL, and
+native Win32 APIs.
+
+**Interpretation:** A mid-1990s Microsoft Visual C++ toolchain with statically
+linked runtime is plausible.
+
+**Confidence:** Medium. Linker fingerprints and startup code still need matching
+against known toolchain signatures.
+
+## Priority static-analysis queue
+
+1. Xrefs to save/version strings and fixed file transfer sizes.
+2. Xrefs to `data\Sites`, `data\Gangs`, and `data\Items`; map load destinations.
+3. Phase dispatcher using action IDs 0-14 and execution ordering.
+4. `GetTickCount`/`timeGetTime` xrefs and candidate PRNG recurrence.
+5. Dice range reduction and success-count loop.
+6. Control, influence, chaos, heal, combat, stealth, and crackdown resolvers.
+7. Scenario setup/scoring/victory table and turn limits.
+8. City/site distribution and HQ placement.
+9. AI command-selection entry points and difficulty branches.
+10. PX/SND/MV formatters and semantic resource-ID tables.
+
+Every completed item must add address-level findings here, black-box fixtures in
+the validation ledger, and a linked parity-matrix update.

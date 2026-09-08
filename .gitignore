@@ -27,6 +27,8 @@ bld/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+/.config/
+/.idea/
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
@@ -50,6 +52,9 @@ CodeCoverage/
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
+
+# Proprietary assets generated from a user's legal copy
+src/Rechaos.Game/Assets/
 
 # NUnit
 *.VisualState.xml

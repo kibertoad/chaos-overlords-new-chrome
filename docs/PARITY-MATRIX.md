@@ -1,0 +1,75 @@
+# Gameplay and feature parity matrix
+
+Status values are defined in `IMPLEMENTATION-PLAN.md`. `Manual` confidence means
+the intended behavior has been inspected but not yet confirmed in the binary.
+
+| Area | Original requirement | Recreation status | Evidence/confidence | Next parity gate |
+|---|---|---|---|---|
+| Source pack | Exact supported DATA/HELP/MUSIC set | Implemented | Full SHA-256, Verified | Add second-source-version test |
+| Output pack | 471 converted/copied assets | Implemented | Per-file size/SHA-256, Verified | Transactional install test |
+| PX16 | Repair four missing BMP fields | Implemented | Payload arithmetic/reference notes, High | RGB555/565 visual comparison |
+| PX08 | RLE8 indexed graphics | Documented | Header inspection, Medium | Decode and compare all 214 files |
+| Tables | 22 sites, 90 gangs, 64 items | Parity verified (values only) | Source/payload hashes, Verified | Semantic field-use fixtures |
+| Turn phases | Upkeep, Command, Execution, Hire, Elimination | Headless coordinator implemented | Manual, High; player iteration provisional | Binary dispatcher confirmation |
+| Execution phases | Instant, Combat, Transaction, Chaos, Movement, Control | Headless coordinator implemented | Manual, High | Binary within-phase ordering |
+| Action IDs | None plus 14 original commands | Typed queue implemented; resolution pending | Table/save notes + manual, High; queue tie-break Low | Resolve each command |
+| City | 8x8 sectors, three sites each | Provisional | Manual/data, High structure; Low algorithm | Match initial reference city |
+| Players | Six slots | Implemented | Data/save/manual, High | Setup permutations |
+| Gang capacity | 80 per player, six friendly per sector | Implemented | Manual, High | Boundary reference fixture |
+| Gang identity | Stable gang instance identity and owner | Implemented in prototype state | Recreation invariant, not an original-format claim | Correlate IDs with save slots |
+| Command queue | One action per gang, replace/cancel/repeat | Infrastructure implemented | Manual supports queued/repeat actions; replacement ordering Low | Binary ordering and invalid-target fixtures |
+| Starting state | Right Hands in controlled sector | Documented | Manual, High | Implement exact setup |
+| Hire pool | Three distinct offers; placement in Hire phase | Provisional | Manual, High | Deferred-hire fixture |
+| Cash/upkeep | Income then upkeep, zero floor rules | Provisional | Manual, High | Multi-turn state comparison |
+| Sector control | Force + Control contest | Provisional | Manual formula, Medium | Neutral/enemy/tie fixtures |
+| Influence | Force + Influence versus site resistance | Documented | Manual, High | Implement and diff saves |
+| Chaos | Income/chaos/crackdown effects | Documented | Manual, Medium | Controlled roll experiment |
+| Bribe | $3, tolerance +5, max 40 | Implemented as pure rule | Manual, High | Wire command; binary edge cases |
+| Snitch | Free, tolerance -3, min 0 | Implemented as pure rule | Manual, High | Wire command; binary edge cases |
+| Heal | `4d6 + Heal`, success restores force to max 10 | Documented | Manual, High | Identify dice-count semantics |
+| Hide/detect | Stealth probability and cooperative detect | Documented | Manual, Medium | Distribution fixtures |
+| Combat | Simultaneous attack, defense, damage and retaliation | Documented | Manual, Medium | Binary formula matrix |
+| Movement | Adjacent-sector move | Documented | Manual, High | Simultaneous collision ordering |
+| Equipment | One weapon/armor/misc, tech gated | Documented | Manual/tables, High | Inventory model and fixtures |
+| Research | Force + Research progress, tech/site caps | Documented | Manual/tables, High | Full tech-tree fixture |
+| Police | Combat 20, Detect 12, stealth detection curve | Implemented as pure rules | Manual, High | Wire crackdown; exact aftermath |
+| Objectives | Ten named scenarios and objective thresholds | Implemented as model | Manual, High | Wire match setup; binary edge/tie fixtures |
+| Timers | 26/52/104/208 turns | Implemented as model | Manual, High | End-turn boundary fixtures |
+| Endgame | Ranking, five awards, statistics | Documented | Manual, High | Implement ties/no-award cases |
+| AI | Objective/difficulty-aware computer players | Unknown | Binary research required, Low | Decision snapshots |
+| Save import | Two known magic/size variants | Documented | Reverse-engineering notes, Medium | Obtain and parse corpus |
+| Native saves | Versioned safe recreation format | Unknown | Design required | Snapshot/replay schema |
+| City/Sector UI | Original screen/panel workflow | Provisional | Manual/PX assets, Medium | UI atlas and golden screens |
+| Input | Original mouse plus modern keyboard | Provisional | Manual/current client | Full hit-map/navigation |
+| Audio | 28 WAV resources and triggers | Extracted only | File inspection, High format | Resource-to-event map |
+| Music | Eight Ogg tracks | Extracted only | GOG pack, High format | Track sequencing behavior |
+| Video | Two Smacker v2 movies | Extracted only | Signature, Verified container | Playback/transcode decision |
+| Hot-seat | Multiple humans on one machine | Provisional | Manual/current rotation | Hidden handoff/full turns |
+| Legacy network | WinSock/IPX/modem/serial/Mac transports | Intentional deviation candidate | Manual, High | Document protocol; keep disabled |
+| Modern network | Safe deterministic command transport | Not applicable until post-parity | Roadmap decision | Threat model after M8 |
+
+## Current blockers to parity claims
+
+- `System.Random` is not known to match the original RNG.
+- City generation selects sites uniformly instead of using verified frequency
+  and class rules.
+- Hiring happens immediately and uses provisional price selection.
+- Control spends an invented cash cost and assigns ownership directly.
+- The core exposes a deterministic command queue and phase coordinator, but the
+  current client still uses its older direct per-player turn controls.
+- Command replacement gets a new sequence number and resolution otherwise uses
+  submission order inside a subphase; both are provisional recreation rules,
+  not binary-validated behavior.
+- AI, research, equipment, combat, police, scenarios, victory and saves are not
+  implemented.
+
+These blockers prevent describing the current playable slice as a faithful
+gameplay recreation even though its decoded tables and asset pack are verified.
+
+## Binary evidence status
+
+Initial PE/import/string classification is recorded in `ORIGINAL-INTERNALS.md`.
+It verifies the native x86/Win32 platform boundaries, source resource paths,
+save/version strings, DirectDraw/GDI rendering, WINMM/Smacker media, and legacy
+WinSock/TAPI/serial dependencies. No gameplay formula or RNG interpretation has
+yet reached binary-verified status.

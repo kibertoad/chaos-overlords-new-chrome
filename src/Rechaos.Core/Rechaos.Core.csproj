@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <EmbeddedResource Include="GameData/original-data.json" />
+  </ItemGroup>
+</Project>
