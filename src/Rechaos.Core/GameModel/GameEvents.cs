@@ -7,7 +7,10 @@ public enum GameEventKind : byte
     CommandReplaced,
     CommandCancelled,
     CommandResolved,
-    CommandFailed
+    CommandFailed,
+    HireQueued,
+    HireResolved,
+    PlayerEliminated
 }
 
 public sealed record CommandResolutionDetails(
@@ -39,6 +42,15 @@ public sealed record EconomyResolutionDetails(
     public bool WasFlooredAtZero => PreviousCash + SectorIncome + SiteIncome - GangUpkeep < 0;
 }
 
+public sealed record HireResolutionDetails(
+    short GangDefinitionId,
+    int SectorId,
+    int Cost,
+    GangId? Gang = null,
+    short? ReplacementOffer = null);
+
+public sealed record EliminationDetails(PlayerId EliminatedPlayer, int RemainingPlayers);
+
 /// <summary>An ordered mechanical fact suitable for UI, replay, and parity fixtures.</summary>
 public sealed record GameEvent(
     long Sequence,
@@ -52,4 +64,6 @@ public sealed record GameEvent(
     CommandTarget Target,
     CommandTarget? SecondaryTarget = null,
     CommandResolutionDetails? Resolution = null,
-    EconomyResolutionDetails? Economy = null);
+    EconomyResolutionDetails? Economy = null,
+    HireResolutionDetails? Hire = null,
+    EliminationDetails? Elimination = null);

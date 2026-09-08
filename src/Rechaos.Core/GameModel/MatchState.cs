@@ -46,9 +46,9 @@ public sealed class MatchSetup
 
 public sealed class MatchPlayerState
 {
-    private readonly MatchGangState[] _gangs;
-    private readonly short[] _hirePool;
-    private readonly PendingHireState[] _pendingHires;
+    private readonly List<MatchGangState> _gangs;
+    private readonly List<short> _hirePool;
+    private readonly List<PendingHireState> _pendingHires;
     private readonly Dictionary<short, int> _researchProgress;
     private readonly HashSet<short> _researchedItems;
     private readonly Dictionary<short, int> _inventory;
@@ -70,9 +70,9 @@ public sealed class MatchPlayerState
         if (bigManPoints < 0) throw new ArgumentOutOfRangeException(nameof(bigManPoints));
         if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         Setup = setup ?? throw new ArgumentNullException(nameof(setup));
-        _gangs = gangs?.ToArray() ?? [];
-        _hirePool = hirePool?.ToArray() ?? [];
-        _pendingHires = pendingHires?.ToArray() ?? [];
+        _gangs = gangs?.ToList() ?? [];
+        _hirePool = hirePool?.ToList() ?? [];
+        _pendingHires = pendingHires?.ToList() ?? [];
         _researchProgress = researchProgress?.ToDictionary() ?? [];
         _researchedItems = researchedItems is null ? [] : new HashSet<short>(researchedItems);
         _inventory = inventory?.ToDictionary() ?? [];
@@ -118,6 +118,12 @@ public sealed class MatchPlayerState
         }
         return remaining;
     }
+
+    internal void AddGang(MatchGangState gang) => _gangs.Add(gang);
+    internal void AddPendingHire(PendingHireState hire) => _pendingHires.Add(hire);
+    internal void ClearPendingHires() => _pendingHires.Clear();
+    internal bool RemoveHireOffer(short gangDefinitionId) => _hirePool.Remove(gangDefinitionId);
+    internal void AddHireOffer(short gangDefinitionId) => _hirePool.Add(gangDefinitionId);
 
     private static void ValidateResearchItem(OriginalData definitions, short itemIndex)
     {
@@ -286,6 +292,7 @@ public sealed class MatchState
     public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashes;
     public IReadOnlyList<CommandResolutionResult> LastPhaseResolutions { get; private set; } = [];
     public IReadOnlyList<UpkeepResolutionResult> LastUpkeepResolutions { get; private set; } = [];
+    public IReadOnlyList<HireResolutionResult> LastHireResolutions { get; private set; } = [];
     internal long NextEventSequence => _nextEventSequence;
 
     public MatchPlayerState? FindPlayer(PlayerId id) => Players.SingleOrDefault(player => player.Id == id);
@@ -311,7 +318,11 @@ public sealed class MatchState
 
     public TurnTransition FinishUpkeep()
     {
-        foreach (var gang in Players.SelectMany(player => player.Gangs)) gang.Hidden = false;
+        foreach (var gang in Players.SelectMany(player => player.Gangs))
+        {
+            gang.Hidden = false;
+            gang.HiredThisTurn = false;
+        }
         LastUpkeepResolutions = EconomyResolver.ResolveUpkeep(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }
@@ -340,8 +351,40 @@ public sealed class MatchState
         }
         return CaptureBoundary(transition);
     }
-    public TurnTransition FinishHire(PlayerId player) => CaptureBoundary(Coordinator.FinishHire(player));
-    public TurnTransition FinishPlayerElimination() => CaptureBoundary(Coordinator.FinishPlayerElimination());
+    public TurnTransition FinishHire(PlayerId player)
+    {
+        if (Coordinator.Phase != TurnPhase.Hire || Coordinator.ActivePlayer != player)
+            return CaptureBoundary(Coordinator.FinishHire(player));
+        var state = FindPlayer(player) ?? throw new ArgumentOutOfRangeException(nameof(player));
+        LastHireResolutions = HireResolver.Resolve(this, state);
+        return CaptureBoundary(Coordinator.FinishHire(player));
+    }
+
+    public TurnTransition FinishPlayerElimination()
+    {
+        if (Coordinator.Phase != TurnPhase.PlayerElimination)
+            return CaptureBoundary(Coordinator.FinishPlayerElimination());
+        ResolvePlayerEliminations();
+        return CaptureBoundary(Coordinator.FinishPlayerElimination());
+    }
+
+    public HireSubmissionResult QueueHire(PlayerId playerId, short gangDefinitionId, int targetSectorId)
+    {
+        var validation = HireRules.Validate(this, playerId, gangDefinitionId, targetSectorId);
+        if (!validation.IsValid) return new HireSubmissionResult(validation);
+
+        var player = FindPlayer(playerId)!;
+        var definition = Definitions.Gangs.Single(item => item.Id == gangDefinitionId);
+        var cost = HireRules.InitialCost(definition);
+        var pending = new PendingHireState(gangDefinitionId, targetSectorId);
+        player.Cash -= cost;
+        player.Statistics.CashSpent += cost;
+        player.RemoveHireOffer(gangDefinitionId);
+        player.AddPendingHire(pending);
+        var gameEvent = AppendHireEvent(GameEventKind.HireQueued, playerId,
+            new HireResolutionDetails(gangDefinitionId, targetSectorId, cost));
+        return new HireSubmissionResult(validation, pending, gameEvent);
+    }
 
     public CommandSubmissionResult Submit(GameCommand command)
     {
@@ -427,6 +470,61 @@ public sealed class MatchState
         return gameEvent;
     }
 
+    internal GangId NextGangId() => new(
+        Players.SelectMany(player => player.Gangs).Select(gang => gang.Id.Value).DefaultIfEmpty(-1).Max() + 1);
+
+    internal GameEvent AppendHireEvent(GameEventKind kind, PlayerId player, HireResolutionDetails hire)
+    {
+        if (kind is not (GameEventKind.HireQueued or GameEventKind.HireResolved))
+            throw new ArgumentOutOfRangeException(nameof(kind));
+        var gameEvent = new GameEvent(
+            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
+            Coordinator.ExecutionPhase, kind, player, hire.Gang,
+            GangAction.None, CommandTarget.Sector(hire.SectorId), Hire: hire);
+        _events.Add(gameEvent);
+        return gameEvent;
+    }
+
+    private void ResolvePlayerEliminations()
+    {
+        var eliminated = Players
+            .Where(player => player.Status == PlayerStatus.Active)
+            .Where(player => player.Gangs.All(gang => !gang.IsActive))
+            .Where(player => Sectors.All(sector => sector.Owner != player.Id))
+            .OrderBy(player => player.Id.Value)
+            .ToArray();
+
+        foreach (var player in eliminated)
+        {
+            player.Status = PlayerStatus.Eliminated;
+            player.ClearPendingHires();
+            foreach (var sector in Sectors)
+            foreach (var site in sector.Sites.Where(site => site.InfluencedBy == player.Id))
+            {
+                site.InfluencedBy = null;
+                site.Resistance = Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Resistance;
+            }
+
+            var details = new EliminationDetails(
+                player.Id,
+                Players.Count(candidate => candidate.Status == PlayerStatus.Active));
+            var gameEvent = AppendEliminationEvent(player.Id, details);
+            foreach (var recipient in Players.Where(candidate => candidate.Status == PlayerStatus.Active || candidate.Id == player.Id))
+                QueueNotification(recipient.Id, GameNotificationKind.Elimination,
+                    relatedEventSequence: gameEvent.Sequence);
+        }
+    }
+
+    private GameEvent AppendEliminationEvent(PlayerId player, EliminationDetails elimination)
+    {
+        var gameEvent = new GameEvent(
+            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
+            Coordinator.ExecutionPhase, GameEventKind.PlayerEliminated, player,
+            null, GangAction.None, CommandTarget.None, Elimination: elimination);
+        _events.Add(gameEvent);
+        return gameEvent;
+    }
+
     internal GameNotification QueueNotification(
         PlayerId player,
         GameNotificationKind kind,
@@ -474,6 +572,17 @@ public sealed class MatchState
                 throw new ArgumentException($"Player {player.Id} exceeds gang capacity.", nameof(players));
             if (player.HirePool.Count > MatchLimits.HireOffersPerPlayer)
                 throw new ArgumentException($"Player {player.Id} exceeds hire-pool capacity.", nameof(players));
+            if (player.HirePool.Count != player.HirePool.Distinct().Count())
+                throw new ArgumentException($"Player {player.Id} has duplicate hire offers.", nameof(players));
+            if (player.HirePool.Any(id => id == 0 || !definitions.Gangs.Any(definition => definition.Id == id)))
+                throw new ArgumentException($"Player {player.Id} has an invalid hire offer.", nameof(players));
+            if (player.PendingHires.Count > 1)
+                throw new ArgumentException($"Player {player.Id} has more than one pending hire.", nameof(players));
+            if (player.PendingHires.Any(hire => !player.HirePool.Contains(hire.GangDefinitionId) &&
+                    !definitions.Gangs.Any(definition => definition.Id == hire.GangDefinitionId)))
+                throw new ArgumentException($"Player {player.Id} has an invalid pending hire.", nameof(players));
+            if (player.PendingHires.Any(hire => hire.TargetSectorId is < 0 or >= MatchLimits.SectorCount))
+                throw new ArgumentException($"Player {player.Id} has an invalid pending-hire sector.", nameof(players));
             if (player.Gangs.Any(gang => gang.Owner != player.Id))
                 throw new ArgumentException($"Player {player.Id} contains a gang owned by another player.", nameof(players));
             if (player.Gangs.Any(gang => !definitions.Gangs.Any(definition => definition.Id == gang.DefinitionId)))

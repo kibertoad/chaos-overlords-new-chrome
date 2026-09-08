@@ -197,6 +197,21 @@ before entering Command. Each result separates sector tax, influenced-site
 cash, and active-gang upkeep so reference fixtures can locate the first differing
 component. Desertion and unverified special modifiers remain outside this slice.
 
+Hiring uses the same deferred boundary as the manual: selecting one of a
+player's three offers reserves the recruit, charges its initial price, and
+removes that offer, but does not create a gang. `FinishHire` places the recruit
+at full Force, assigns a stable match-wide gang ID, and deterministically fills
+the vacant offer while preserving three distinct choices. Validation is an
+ordered set of side-effect-free `IValidationRule` implementations. Each rule
+owns both its typed failure code and user-facing message so UI previews, AI
+queries, and authoritative submission cannot disagree about eligibility.
+
+Player Elimination now runs at its named phase boundary. An active player with
+neither an active gang nor an owned sector becomes eliminated; any remaining
+site influence is cleared back to the site's base resistance, and ordered events
+and notifications expose the transition. Exact original cleanup and simultaneous
+ordering still require binary fixtures.
+
 ## State ownership target
 
 `MatchState` now owns the schema for:
@@ -260,7 +275,8 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
 ## Known architectural debt
 
 - `GameState` combines cursor/UI messages with simulation state.
-- Hiring is immediate instead of deferred to the Hire phase.
+- The legacy `GameState` prototype still hires immediately; authoritative
+  `MatchState` hiring is deferred to the Hire phase.
 - Control and city generation formulas are placeholders.
 - The new `MatchState` gang schema has force, equipment, and a read-only command
   projection, but the prototype client still consumes the legacy `GameState`.
