@@ -17,6 +17,7 @@ public enum CommandValidationCode
     TargetOutsideSector,
     DestinationNotAdjacent,
     ItemAlreadyResearched,
+    SiteAlreadyInfluenced,
     CommandNotQueued
 }
 
@@ -105,6 +106,9 @@ public static class CommandValidator
         if (command.Action == GangAction.Research
             && state.FindPlayer(command.Player)!.ResearchedItems.Contains((short)command.Target.Id))
             return CommandValidation.Reject(CommandValidationCode.ItemAlreadyResearched);
+        if (command.Action == GangAction.Influence
+            && state.FindSite(command.Target.Id)!.InfluencedBy is not null)
+            return CommandValidation.Reject(CommandValidationCode.SiteAlreadyInfluenced);
         return CommandValidation.Valid();
     }
 
@@ -141,7 +145,7 @@ public static class CommandValidator
             CommandTargetKind.None => CommandValidation.Valid(),
             CommandTargetKind.Gang => ValidateGangTarget(state, actor, target, rule),
             CommandTargetKind.Sector => ValidateSectorTarget(state, actor, target, rule),
-            CommandTargetKind.Site => ValidateSiteTarget(actor, target, rule),
+            CommandTargetKind.Site => ValidateSiteTarget(state, actor, target, rule),
             CommandTargetKind.Item => ValidateItemTarget(state, target),
             _ => CommandValidation.Reject(CommandValidationCode.InvalidTargetKind)
         };
@@ -186,10 +190,13 @@ public static class CommandValidator
     }
 
     private static CommandValidation ValidateSiteTarget(
+        MatchState state,
         MatchGangState actor,
         CommandTarget target,
         CommandRule rule)
     {
+        if (state.FindSite(target.Id) is null)
+            return CommandValidation.Reject(CommandValidationCode.TargetNotFound);
         var sectorId = target.Id / MatchLimits.SitesPerSector;
         return rule.SpatialConstraint == SpatialConstraint.SameSector && sectorId != actor.SectorId
             ? CommandValidation.Reject(CommandValidationCode.TargetOutsideSector)
@@ -221,6 +228,7 @@ internal static class CommandValidationMessages
             [CommandValidationCode.TargetOutsideSector] = "The target must be in the acting gang's sector.",
             [CommandValidationCode.DestinationNotAdjacent] = "Movement requires an orthogonally adjacent sector.",
             [CommandValidationCode.ItemAlreadyResearched] = "The targeted item has already been researched.",
+            [CommandValidationCode.SiteAlreadyInfluenced] = "The targeted site is already influenced.",
             [CommandValidationCode.CommandNotQueued] = "The gang has no queued command."
         };
 

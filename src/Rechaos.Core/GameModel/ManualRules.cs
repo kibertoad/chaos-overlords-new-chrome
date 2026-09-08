@@ -71,6 +71,26 @@ public static class ManualRules
         return Math.Max(0, remaining - successes);
     }
 
+    public static int InfluenceDiceCount(IEnumerable<(int Force, int Influence)> participants)
+    {
+        ArgumentNullException.ThrowIfNull(participants);
+        var total = 0;
+        foreach (var participant in participants)
+        {
+            if (participant.Force is < 0 or > MaximumForce)
+                throw new ArgumentOutOfRangeException(nameof(participants));
+            total = checked(total + participant.Force + participant.Influence);
+        }
+        return Math.Max(0, total);
+    }
+
+    public static int ApplyInfluenceProgress(int resistance, int successes)
+    {
+        if (resistance < 0) throw new ArgumentOutOfRangeException(nameof(resistance));
+        if (successes < 0) throw new ArgumentOutOfRangeException(nameof(successes));
+        return Math.Max(0, resistance - successes);
+    }
+
     private static void ValidateTolerance(int tolerance)
     {
         if (tolerance is < MinimumTolerance or > MaximumTolerance)

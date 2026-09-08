@@ -22,7 +22,40 @@ public sealed record CommandResolutionResult(
 public static class CommandResolver
 {
     public static bool IsSupported(GangAction action) =>
-        action is GangAction.Bribe or GangAction.Heal or GangAction.Research or GangAction.Snitch;
+        action is GangAction.Bribe or GangAction.Heal or GangAction.Hide or GangAction.Influence
+            or GangAction.Research or GangAction.Snitch;
+
+    public static IReadOnlyList<CommandResolutionResult> ResolvePhase(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> commands)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(commands);
+        if (state.Coordinator.Phase != TurnPhase.Execution || state.Coordinator.ExecutionPhase is not { } phase)
+            throw new InvalidOperationException("A command phase can only resolve during Execution.");
+        if (commands.Any(command => command.ExecutionPhase != phase))
+            throw new ArgumentException("Every command must belong to the current execution subphase.", nameof(commands));
+        var results = new List<CommandResolutionResult>(commands.Count);
+        var resolvedSequences = new HashSet<long>();
+        foreach (var queued in commands)
+        {
+            if (!resolvedSequences.Add(queued.Sequence)) continue;
+            if (queued.Command.Action != GangAction.Influence)
+            {
+                results.Add(Resolve(state, queued));
+                continue;
+            }
+
+            var participants = commands
+                .Where(candidate => candidate.Command.Action == GangAction.Influence
+                    && candidate.Command.Player == queued.Command.Player
+                    && candidate.Command.Target == queued.Command.Target)
+                .ToArray();
+            foreach (var participant in participants) resolvedSequences.Add(participant.Sequence);
+            results.AddRange(ResolveInfluence(state, participants));
+        }
+        return results;
+    }
 
     public static CommandResolutionResult Resolve(MatchState state, QueuedCommand queued)
     {
@@ -36,6 +69,8 @@ public static class CommandResolver
         {
             GangAction.Bribe => ResolveBribe(state, queued.Command),
             GangAction.Heal => ResolveHeal(state, queued.Command),
+            GangAction.Hide => ResolveHide(state, queued.Command),
+            GangAction.Influence => ResolveInfluence(state, [queued]).Single(),
             GangAction.Research => ResolveResearch(state, queued.Command),
             GangAction.Snitch => ResolveSnitch(state, queued.Command),
             _ => new CommandResolutionResult(queued.Command, CommandResolutionCode.UnsupportedAction, null)
@@ -73,6 +108,49 @@ public static class CommandResolver
         gang.Force = ManualRules.RestoreForce(gang.Force, successes);
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, rolls, successes, before, gang.Force));
+    }
+
+    private static CommandResolutionResult ResolveHide(MatchState state, GameCommand command)
+    {
+        var gang = state.FindGang(command.Gang)!;
+        var before = gang.Hidden;
+        gang.Hidden = true;
+        return Complete(state, command, GameEventKind.CommandResolved,
+            new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before ? 1 : 0, 1));
+    }
+
+    private static IReadOnlyList<CommandResolutionResult> ResolveInfluence(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> participants)
+    {
+        if (participants.Count == 0) throw new ArgumentException("At least one participant is required.", nameof(participants));
+        var first = participants[0].Command;
+        var site = state.FindSite(first.Target.Id)!;
+        var dice = participants.Select(queued =>
+        {
+            var gang = state.FindGang(queued.Command.Gang)!;
+            return (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Influence);
+        });
+        var rolls = DiceRoller.RollD6(state.Random, ManualRules.InfluenceDiceCount(dice));
+        var successes = ManualRules.CountSuccesses(rolls);
+        var before = site.Resistance;
+        site.Resistance = ManualRules.ApplyInfluenceProgress(before, successes);
+        if (site.Resistance == 0 && site.InfluencedBy is null)
+        {
+            site.InfluencedBy = first.Player;
+            var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+            state.FindPlayer(first.Player)!.Support = checked(state.FindPlayer(first.Player)!.Support + definition.Support);
+        }
+
+        var results = new List<CommandResolutionResult>(participants.Count);
+        foreach (var participant in participants)
+        {
+            results.Add(Complete(state, participant.Command, GameEventKind.CommandResolved,
+                new CommandResolutionDetails(
+                    CommandResolutionCode.Resolved, rolls, successes, before, site.Resistance),
+                GameNotificationKind.Influence));
+        }
+        return results;
     }
 
     private static CommandResolutionResult ResolveSnitch(MatchState state, GameCommand command)

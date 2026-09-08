@@ -9,7 +9,8 @@ public enum GameNotificationKind : byte
     Combat,
     Elimination,
     Objective,
-    Research
+    Research,
+    Influence
 }
 
 /// <summary>A mechanical notification reference; presentation supplies localized text.</summary>

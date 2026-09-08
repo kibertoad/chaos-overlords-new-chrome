@@ -94,15 +94,16 @@ public sealed class CommandResolutionTests
         var match = CreateMatch(cash: 10);
         match.FinishUpkeep();
         var player = new PlayerId(0);
-        Assert.True(match.Submit(new GameCommand(player, new GangId(10), GangAction.Bribe, CommandTarget.None)).Accepted);
-        Assert.True(match.Submit(new GameCommand(player, new GangId(11), GangAction.Hide, CommandTarget.None)).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            player, new GangId(10), GangAction.Attack, CommandTarget.Gang(new GangId(20)))).Accepted);
         match.FinishCommand(player);
         match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase();
 
         Assert.Throws<NotSupportedException>(() => match.FinishExecutionPhase());
 
         Assert.Equal(TurnPhase.Execution, match.Coordinator.Phase);
-        Assert.Equal(ExecutionPhase.Instant, match.Coordinator.ExecutionPhase);
+        Assert.Equal(ExecutionPhase.Combat, match.Coordinator.ExecutionPhase);
         Assert.Equal(10, match.Players[0].Cash);
         Assert.Equal(0, match.Sectors[0].Tolerance);
         Assert.Empty(match.LastPhaseResolutions);

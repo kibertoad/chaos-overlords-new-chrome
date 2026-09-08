@@ -24,12 +24,12 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Hire pool | Three distinct offers; placement in Hire phase | Provisional | Manual, High | Deferred-hire fixture |
 | Cash/upkeep | Sector/site income then active-gang upkeep with zero floor | Ordered Upkeep-phase resolver, component events, notifications and hashes implemented | Manual formula High; phase boundary/desertion modifiers Medium/Low | Reference zero-cash and multi-turn fixtures |
 | Sector control | Force + Control contest | Provisional | Manual formula, Medium | Neutral/enemy/tie fixtures |
-| Influence | Force + Influence versus site resistance | Documented | Manual, High | Implement and diff saves |
+| Influence | Cooperative Force + Influence versus site resistance; ownership and benefits at zero | Same-player grouped Instant resolver, persistent resistance, ownership/Support, notifications and hashes implemented | Manual base formula High; pooling Medium; conflict/benefit timing Low | Cross-player ordering, takeover and full site-benefit fixtures |
 | Chaos | Income/chaos/crackdown effects | Documented | Manual, Medium | Controlled roll experiment |
 | Bribe | $3, tolerance +5, max 40 | Instant-phase resolver, cash statistic, ordered result and notification implemented | Manual, High for formula; failure behavior Low | Binary timing and insufficient-cash edge cases |
 | Snitch | Free, tolerance -3, min 0 | Instant-phase resolver and ordered result/notification implemented | Manual, High for formula; automatic tolerance behavior Low | Binary timing and uninfluenced-site edge cases |
 | Heal | Base four dice plus effective Heal, success restores force to max 10 | Instant-phase resolver with deterministic rolls/results implemented | Manual formula Medium/High; recovered RNG algorithm High; seed/context Low | Reference fixture for dice pool, equipment/site scope and RNG order |
-| Hide/detect | Stealth probability and cooperative detect | Documented | Manual, Medium | Distribution fixtures |
+| Hide/detect | Hidden state, Stealth probability and cooperative detect | Hide state transition implemented; detection/reveal unresolved | Manual state intent High; timing/detection Medium/Low | Reveal timing and distribution fixtures |
 | Combat | Simultaneous attack, defense, damage and retaliation | Documented | Manual, Medium | Binary formula matrix |
 | Movement | Adjacent-sector move | Documented | Manual, High | Simultaneous collision ordering |
 | Equipment | One weapon/armor/misc, tech gated | Documented | Manual/tables, High | Inventory model and fixtures |

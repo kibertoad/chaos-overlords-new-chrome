@@ -60,4 +60,14 @@ public sealed class ManualRulesTests
     [InlineData(6, 10)]
     public void HealDicePoolIsBaseFourPlusSkillWithZeroFloor(int skill, int dice) =>
         Assert.Equal(dice, ManualRules.HealDiceCount(skill));
+
+    [Fact]
+    public void InfluencePoolAddsEveryParticipantsForceAndSkill() =>
+        Assert.Equal(13, ManualRules.InfluenceDiceCount([(5, 2), (4, 2)]));
+
+    [Theory]
+    [InlineData(10, 3, 7)]
+    [InlineData(2, 5, 0)]
+    public void InfluenceProgressCannotDropBelowZero(int resistance, int successes, int expected) =>
+        Assert.Equal(expected, ManualRules.ApplyInfluenceProgress(resistance, successes));
 }

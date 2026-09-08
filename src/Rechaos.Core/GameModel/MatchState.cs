@@ -285,6 +285,9 @@ public sealed class MatchState
 
     public MatchPlayerState? FindPlayer(PlayerId id) => Players.SingleOrDefault(player => player.Id == id);
     public MatchGangState? FindGang(GangId id) => Players.SelectMany(player => player.Gangs).SingleOrDefault(gang => gang.Id == id);
+    public MatchSiteState? FindSite(int id) => id is >= 0 and < MatchLimits.SiteCount
+        ? Sectors[id / MatchLimits.SitesPerSector].Sites[id % MatchLimits.SitesPerSector]
+        : null;
     public IReadOnlyList<GameNotification> NotificationsFor(PlayerId player) => GetNotificationQueue(player).Items;
 
     public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>
@@ -310,7 +313,7 @@ public sealed class MatchState
             throw new NotSupportedException($"{unsupported.Command.Action} resolution has not been implemented.");
         }
 
-        LastPhaseResolutions = commands.Select(command => CommandResolver.Resolve(this, command)).ToArray();
+        LastPhaseResolutions = CommandResolver.ResolvePhase(this, commands);
         var transition = Coordinator.FinishExecutionPhase();
         if (phase == TurnStructure.ExecutionOrder[^1])
         {

@@ -45,7 +45,8 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   non-mutating command validation results.
 - `GameModel/GameEvents.cs`: monotonically ordered mechanical event records.
 - `GameModel/CommandResolution.cs`: evidence-gated execution dispatcher and
-  result codes; currently resolves Bribe, Heal, Research, and Snitch only.
+  grouped phase dispatch and result codes; all Instant actions (Bribe, Heal,
+  Hide, Influence, Research, and Snitch) now resolve.
 - `GameModel/EconomyResolution.cs`: ordered Upkeep-phase sector/site income,
   gang upkeep, zero-floor results, events, and notifications.
 - `GameModel/Notifications.cs`: bounded per-player mechanical notification queues
@@ -148,6 +149,12 @@ that ordering. Within-subphase ordering and tie-breaking remain unverified.
 Before an execution subphase mutates state, every queued action in that subphase
 must have a supported resolver. Unsupported actions block advancement rather
 than being silently consumed.
+
+Influence is the first grouped resolver: commands from one player aimed at the
+same site pool their gangs' Force and effective Influence into one deterministic
+roll stream. The group is resolved at its earliest queue position and emits one
+ordered result per participating command. Cross-player conflicts remain an
+explicit parity gap.
 
 `MatchState.FinishUpkeep` resolves every active player in stable player-ID order
 before entering Command. Each result separates sector tax, influenced-site
