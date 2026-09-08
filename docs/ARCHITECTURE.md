@@ -1,7 +1,7 @@
 # Architecture
 
 Status: evolving implementation architecture
-Last updated: 2026-09-07
+Last updated: 2026-09-08
 
 ## Dependency direction
 
@@ -45,7 +45,7 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   non-mutating command validation results.
 - `GameModel/GameEvents.cs`: monotonically ordered mechanical event records.
 - `GameModel/CommandResolution.cs`: evidence-gated execution dispatcher and
-  result codes; currently resolves Bribe, Heal, and Snitch only.
+  result codes; currently resolves Bribe, Heal, Research, and Snitch only.
 - `GameModel/EconomyResolution.cs`: ordered Upkeep-phase sector/site income,
   gang upkeep, zero-floor results, events, and notifications.
 - `GameModel/Notifications.cs`: bounded per-player mechanical notification queues
@@ -170,7 +170,8 @@ component. Desertion and unverified special modifiers remain outside this slice.
 - deterministic PRNG state and consumption counter.
 
 The initial schema covers setup identity, phases, players, sectors/sites, gangs,
-hire state, research/inventory, equipment, statistics, command projections,
+hire state, persistent research progress/completion, inventory, equipment,
+statistics, command projections,
 ordered events, bounded notification queues, deterministic PRNG state, and
 phase-boundary hashes. Reference-derived resolvers remain to be added. Public
 collection projections are read-only; renderer/view models must not receive

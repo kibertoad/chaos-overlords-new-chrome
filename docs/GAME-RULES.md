@@ -41,6 +41,32 @@ controlled reference observation confirms its execution timing and edge cases.
 - Next experiment: execute Heal from an identical save across base/item/site
   modifiers and correlate visible rolls plus Force deltas with predicted RNG.
 
+### RULE-RESEARCH-001 — Research dice and persistent progress
+
+- Source: `MANUAL-GOG-1`; Research command and item-table descriptions, plus
+  `BIN-RNG-002` and `BIN-RNG-003` for random-number generation. Exact manual
+  scan page locations still need transcription.
+- Observed statement: Research rolls dice equal to the gang's Force plus its
+  Research skill; each success reduces the item's remaining research number.
+- Interpretation: calculate gang-definition plus equipped-item Research
+  modifiers, roll `max(0, Force + Research)` six-sided dice, count results at
+  least four, persist unfinished progress, and mark the item researched at zero.
+- Current exclusions: tech-level restrictions, Science Center/Research Lab
+  effects, influenced-site/contextual modifiers, ownership/unlock effects, and
+  the exact behavior of zero-difficulty items.
+- Confidence: High for the manual formula and completion threshold; Medium for
+  equipment aggregation and repeat-command rejection; High for the recovered
+  RNG step/range wrapper; Low for initial seed and complete RNG call order.
+- Implementation: `MatchPlayerState.RemainingResearch`,
+  `MatchPlayerState.ApplyResearch`, `ManualRules.ResearchDiceCount`, and
+  `CommandResolver.ResolveResearch`.
+- Tests: `ResearchResolutionTests` covers effective dice count, recorded rolls,
+  progress, completion, repeat rejection, state invariants, RNG consumption,
+  notifications, and deterministic phase hashes.
+- Next experiment: execute Research from identical saves across gang/item/site
+  modifiers, tech-level boundaries, and near-completion values, then compare
+  rolls, unlock state, repeat behavior, and save deltas.
+
 ### RULE-BRIBE-001 — Bribe tolerance adjustment
 
 - Source: `MANUAL-GOG-1`; Bribe command description. Exact scan page location

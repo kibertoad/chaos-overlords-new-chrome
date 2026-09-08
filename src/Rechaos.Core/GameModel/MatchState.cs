@@ -90,6 +90,35 @@ public sealed class MatchPlayerState
     public IReadOnlySet<short> ResearchedItems => _researchedItems;
     public IReadOnlyDictionary<short, int> Inventory => _inventory;
     public MatchStatistics Statistics { get; } = new();
+
+    public int RemainingResearch(OriginalData definitions, short itemIndex)
+    {
+        ArgumentNullException.ThrowIfNull(definitions);
+        ValidateResearchItem(definitions, itemIndex);
+        if (_researchedItems.Contains(itemIndex)) return 0;
+        return _researchProgress.GetValueOrDefault(itemIndex, definitions.Items[itemIndex].ResearchDifficulty);
+    }
+
+    internal int ApplyResearch(OriginalData definitions, short itemIndex, int successes)
+    {
+        var remaining = ManualRules.ApplyResearchProgress(RemainingResearch(definitions, itemIndex), successes);
+        if (remaining == 0)
+        {
+            _researchProgress.Remove(itemIndex);
+            _researchedItems.Add(itemIndex);
+        }
+        else
+        {
+            _researchProgress[itemIndex] = remaining;
+        }
+        return remaining;
+    }
+
+    private static void ValidateResearchItem(OriginalData definitions, short itemIndex)
+    {
+        if (itemIndex < 0 || itemIndex >= definitions.Items.Count || definitions.Items[itemIndex].Type == 99)
+            throw new ArgumentOutOfRangeException(nameof(itemIndex));
+    }
 }
 
 public sealed class MatchGangState
@@ -432,6 +461,13 @@ public sealed class MatchState
             if (player.Gangs.Any(gang => EquippedItemIds(gang).Any(itemId =>
                     itemId < 0 || itemId >= definitions.Items.Count || definitions.Items[itemId].Type == 99)))
                 throw new ArgumentException($"Player {player.Id} contains invalid equipped item state.", nameof(players));
+            if (player.ResearchProgress.Any(pair =>
+                    !IsActualItem(definitions, pair.Key) || pair.Value <= 0))
+                throw new ArgumentException($"Player {player.Id} contains invalid research progress.", nameof(players));
+            if (player.ResearchedItems.Any(itemId => !IsActualItem(definitions, itemId)))
+                throw new ArgumentException($"Player {player.Id} contains an invalid researched item.", nameof(players));
+            if (player.ResearchProgress.Keys.Any(player.ResearchedItems.Contains))
+                throw new ArgumentException($"Player {player.Id} has overlapping active and completed research.", nameof(players));
         }
 
         var overcrowded = players.SelectMany(player => player.Gangs)
@@ -457,4 +493,7 @@ public sealed class MatchState
         if (gang.ArmorItemId is { } armor) yield return armor;
         if (gang.MiscellaneousItemId is { } miscellaneous) yield return miscellaneous;
     }
+
+    private static bool IsActualItem(OriginalData definitions, short itemId) =>
+        itemId >= 0 && itemId < definitions.Items.Count && definitions.Items[itemId].Type != 99;
 }

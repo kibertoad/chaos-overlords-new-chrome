@@ -58,6 +58,19 @@ public static class ManualRules
 
     public static int HealDiceCount(int healSkill) => Math.Max(0, HealBaseDice + healSkill);
 
+    public static int ResearchDiceCount(int force, int researchSkill)
+    {
+        if (force is < 0 or > MaximumForce) throw new ArgumentOutOfRangeException(nameof(force));
+        return Math.Max(0, force + researchSkill);
+    }
+
+    public static int ApplyResearchProgress(int remaining, int successes)
+    {
+        if (remaining < 0) throw new ArgumentOutOfRangeException(nameof(remaining));
+        if (successes < 0) throw new ArgumentOutOfRangeException(nameof(successes));
+        return Math.Max(0, remaining - successes);
+    }
+
     private static void ValidateTolerance(int tolerance)
     {
         if (tolerance is < MinimumTolerance or > MaximumTolerance)

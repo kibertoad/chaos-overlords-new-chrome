@@ -16,6 +16,7 @@ public enum CommandValidationCode
     TargetNotEnemy,
     TargetOutsideSector,
     DestinationNotAdjacent,
+    ItemAlreadyResearched,
     CommandNotQueued
 }
 
@@ -97,9 +98,14 @@ public static class CommandValidator
         var actor = state.FindGang(command.Gang)!;
         var primaryValidation = ValidateTarget(state, actor, command.Target, rule);
         if (!primaryValidation.IsValid) return primaryValidation;
-        return command.SecondaryTarget is { } secondary
+        var secondaryValidation = command.SecondaryTarget is { } secondary
             ? ValidateTarget(state, actor, secondary, rule with { SpatialConstraint = SpatialConstraint.None })
             : CommandValidation.Valid();
+        if (!secondaryValidation.IsValid) return secondaryValidation;
+        if (command.Action == GangAction.Research
+            && state.FindPlayer(command.Player)!.ResearchedItems.Contains((short)command.Target.Id))
+            return CommandValidation.Reject(CommandValidationCode.ItemAlreadyResearched);
+        return CommandValidation.Valid();
     }
 
     public static CommandValidation ValidateCancellation(MatchState state, PlayerId player, GangId gang) =>
@@ -191,7 +197,7 @@ public static class CommandValidator
     }
 
     private static CommandValidation ValidateItemTarget(MatchState state, CommandTarget target) =>
-        target.Id < state.Definitions.Items.Count && state.Definitions.Items[target.Id].Type != 99
+        target.Id >= 0 && target.Id < state.Definitions.Items.Count && state.Definitions.Items[target.Id].Type != 99
             ? CommandValidation.Valid()
             : CommandValidation.Reject(CommandValidationCode.TargetNotFound);
 }
@@ -214,6 +220,7 @@ internal static class CommandValidationMessages
             [CommandValidationCode.TargetNotEnemy] = "The target must be an enemy gang.",
             [CommandValidationCode.TargetOutsideSector] = "The target must be in the acting gang's sector.",
             [CommandValidationCode.DestinationNotAdjacent] = "Movement requires an orthogonally adjacent sector.",
+            [CommandValidationCode.ItemAlreadyResearched] = "The targeted item has already been researched.",
             [CommandValidationCode.CommandNotQueued] = "The gang has no queued command."
         };
 

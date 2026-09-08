@@ -22,7 +22,7 @@ public sealed record CommandResolutionResult(
 public static class CommandResolver
 {
     public static bool IsSupported(GangAction action) =>
-        action is GangAction.Bribe or GangAction.Heal or GangAction.Snitch;
+        action is GangAction.Bribe or GangAction.Heal or GangAction.Research or GangAction.Snitch;
 
     public static CommandResolutionResult Resolve(MatchState state, QueuedCommand queued)
     {
@@ -36,6 +36,7 @@ public static class CommandResolver
         {
             GangAction.Bribe => ResolveBribe(state, queued.Command),
             GangAction.Heal => ResolveHeal(state, queued.Command),
+            GangAction.Research => ResolveResearch(state, queued.Command),
             GangAction.Snitch => ResolveSnitch(state, queued.Command),
             _ => new CommandResolutionResult(queued.Command, CommandResolutionCode.UnsupportedAction, null)
         };
@@ -84,16 +85,34 @@ public static class CommandResolver
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after));
     }
 
+    private static CommandResolutionResult ResolveResearch(MatchState state, GameCommand command)
+    {
+        var gang = state.FindGang(command.Gang)!;
+        var player = state.FindPlayer(command.Player)!;
+        var itemIndex = checked((short)command.Target.Id);
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
+        var rolls = DiceRoller.RollD6(
+            state.Random,
+            ManualRules.ResearchDiceCount(gang.Force, statistics.Research));
+        var successes = ManualRules.CountSuccesses(rolls);
+        var before = player.RemainingResearch(state.Definitions, itemIndex);
+        var after = player.ApplyResearch(state.Definitions, itemIndex, successes);
+        return Complete(state, command, GameEventKind.CommandResolved,
+            new CommandResolutionDetails(CommandResolutionCode.Resolved, rolls, successes, before, after),
+            GameNotificationKind.Research);
+    }
+
     private static CommandResolutionResult Complete(
         MatchState state,
         GameCommand command,
         GameEventKind eventKind,
-        CommandResolutionDetails resolution)
+        CommandResolutionDetails resolution,
+        GameNotificationKind notificationKind = GameNotificationKind.CommandResult)
     {
         var gameEvent = state.AppendResolutionEvent(eventKind, command, resolution);
         state.QueueNotification(
             command.Player,
-            GameNotificationKind.CommandResult,
+            notificationKind,
             command.Gang,
             state.FindGang(command.Gang)!.SectorId,
             gameEvent.Sequence);
