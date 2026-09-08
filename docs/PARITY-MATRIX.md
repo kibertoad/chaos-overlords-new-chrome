@@ -12,12 +12,12 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Tables | 22 sites, 90 gangs, 64 items | Parity verified (values only) | Source/payload hashes, Verified | Semantic field-use fixtures |
 | Turn phases | Upkeep, Command, Execution, Hire, Elimination | Headless coordinator implemented | Manual, High; player iteration provisional | Binary dispatcher confirmation |
 | Execution phases | Instant, Combat, Transaction, Chaos, Movement, Control | Headless coordinator implemented | Manual, High | Binary within-phase ordering |
-| Action IDs | None plus 14 original commands | Typed queue implemented; resolution pending | Table/save notes + manual, High; queue tie-break Low | Resolve each command |
+| Action IDs | None plus 14 original commands | Data-driven target/relationship validation and typed queue implemented; resolution pending | Table/save notes + manual, High; queue tie-break Low | Add reference-derived costs and resolve each command |
 | City | 8x8 sectors, three sites each | Provisional | Manual/data, High structure; Low algorithm | Match initial reference city |
 | Players | Six slots | Implemented | Data/save/manual, High | Setup permutations |
 | Gang capacity | 80 per player, six friendly per sector | Implemented | Manual, High | Boundary reference fixture |
-| Gang identity | Stable gang instance identity and owner | Implemented in prototype state | Recreation invariant, not an original-format claim | Correlate IDs with save slots |
-| Command queue | One action per gang, replace/cancel/repeat | Infrastructure implemented | Manual supports queued/repeat actions; replacement ordering Low | Binary ordering and invalid-target fixtures |
+| Gang identity | Stable gang instance identity, owner, force, sector, equipment and command projection | Headless schema implemented | Recreation invariant, not an original-format claim | Correlate IDs with save slots |
+| Command queue | One action per gang, replace/cancel/repeat | Structured validation, typed mutation results, and ordered queue events implemented | Manual supports queued/repeat actions; replacement ordering Low | Binary ordering, cost rules and resolution fixtures |
 | Starting state | Right Hands in controlled sector | Documented | Manual, High | Implement exact setup |
 | Hire pool | Three distinct offers; placement in Hire phase | Provisional | Manual, High | Deferred-hire fixture |
 | Cash/upkeep | Income then upkeep, zero floor rules | Provisional | Manual, High | Multi-turn state comparison |
@@ -55,7 +55,8 @@ the intended behavior has been inspected but not yet confirmed in the binary.
   and class rules.
 - Hiring happens immediately and uses provisional price selection.
 - Control spends an invented cash cost and assigns ownership directly.
-- The core exposes a deterministic command queue and phase coordinator, but the
+- The core exposes a headless match schema, data-driven command validation,
+  deterministic command queue, ordered events, and phase coordinator, but the
   current client still uses its older direct per-player turn controls.
 - Command replacement gets a new sequence number and resolution otherwise uses
   submission order inside a subphase; both are provisional recreation rules,

@@ -47,9 +47,9 @@ public readonly record struct CommandTarget
 
     public static CommandTarget None => new(CommandTargetKind.None, -1);
     public static CommandTarget Gang(GangId id) => new(CommandTargetKind.Gang, id.Value);
-    public static CommandTarget Sector(int id) => Create(CommandTargetKind.Sector, id, GameState.BoardSize * GameState.BoardSize);
-    public static CommandTarget Site(int id) => Create(CommandTargetKind.Site, id, GameState.BoardSize * GameState.BoardSize * 3);
-    public static CommandTarget Item(int id) => Create(CommandTargetKind.Item, id, int.MaxValue);
+    public static CommandTarget Sector(int id) => Create(CommandTargetKind.Sector, id, MatchLimits.SectorCount);
+    public static CommandTarget Site(int id) => Create(CommandTargetKind.Site, id, MatchLimits.SiteCount);
+    public static CommandTarget Item(int id) => Create(CommandTargetKind.Item, id, MatchLimits.ItemSlots);
 
     private static CommandTarget Create(CommandTargetKind kind, int id, int exclusiveMaximum)
     {
@@ -64,7 +64,8 @@ public sealed record GameCommand(
     GangId Gang,
     GangAction Action,
     CommandTarget Target,
-    bool Repeat = false);
+    bool Repeat = false,
+    CommandTarget? SecondaryTarget = null);
 
 public sealed record QueuedCommand(long Sequence, GameCommand Command)
 {

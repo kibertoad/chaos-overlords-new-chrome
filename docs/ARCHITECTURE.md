@@ -37,6 +37,13 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   transition records.
 - `GameModel/GameCommands.cs`: bounded IDs, typed targets, deterministic
   per-gang command storage, replacement, cancellation, and repeat retention.
+- `GameModel/MatchLimits.cs`: one source for board, player, gang, site, item,
+  and hire-pool capacities.
+- `GameModel/MatchState.cs`: explicit headless setup, player, sector, site, gang,
+  research, inventory, hire, statistics, and equipment state.
+- `GameModel/CommandValidation.cs`: data-driven action descriptors and typed,
+  non-mutating command validation results.
+- `GameModel/GameEvents.cs`: monotonically ordered mechanical event records.
 
 Target subdivisions:
 
@@ -131,7 +138,7 @@ that ordering. Within-subphase ordering and tie-breaking remain unverified.
 
 ## State ownership target
 
-`MatchState` will own:
+`MatchState` now owns the schema for:
 
 - immutable setup/scenario identity and initial seed;
 - turn number, current top-level phase, and active command player;
@@ -144,8 +151,11 @@ that ordering. Within-subphase ordering and tie-breaking remain unverified.
 - bounded notification queues;
 - deterministic PRNG state and consumption counter.
 
-Only resolvers mutate this state. Renderer/view models receive read-only
-projections.
+The initial schema covers setup identity, phases, players, sectors/sites, gangs,
+hire state, research/inventory, equipment, statistics, command projections, and
+ordered events. Notification queues, deterministic PRNG state, state hashing,
+and reference-derived resolvers remain to be added. Public collection
+projections are read-only; renderer/view models must not receive mutation paths.
 
 ## Determinism boundary
 
@@ -183,8 +193,8 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
 - `GameState` combines cursor/UI messages with simulation state.
 - Hiring is immediate instead of deferred to the Hire phase.
 - Control and city generation formulas are placeholders.
-- Gang instances have stable identity and ownership, but still lack mutable
-  force, equipment, and an embedded read-only command projection.
+- The new `MatchState` gang schema has force, equipment, and a read-only command
+  projection, but the prototype client still consumes the legacy `GameState`.
 - The prototype client still advances its older per-player turn directly rather
   than driving `TurnCoordinator`; within-subphase command ordering is explicitly
   provisional until the binary tie-breaker is recovered.

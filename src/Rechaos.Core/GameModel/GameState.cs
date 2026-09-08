@@ -4,10 +4,10 @@ namespace Rechaos.Core.GameModel;
 
 public sealed class GameState
 {
-    public const int BoardSize = 8;
-    public const int MaximumPlayers = 6;
-    public const int MaximumGangsPerPlayer = 80;
-    public const int MaximumFriendlyGangsPerSector = 6;
+    public const int BoardSize = MatchLimits.BoardWidth;
+    public const int MaximumPlayers = MatchLimits.PlayerCount;
+    public const int MaximumGangsPerPlayer = MatchLimits.GangsPerPlayer;
+    public const int MaximumFriendlyGangsPerSector = MatchLimits.FriendlyGangsPerSector;
     private readonly Random _random;
     private readonly OriginalData _data;
     private int _nextGangId;

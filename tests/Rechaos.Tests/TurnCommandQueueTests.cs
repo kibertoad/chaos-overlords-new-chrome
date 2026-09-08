@@ -67,6 +67,7 @@ public sealed class TurnCommandQueueTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new GangId(-1));
         Assert.Throws<ArgumentOutOfRangeException>(() => CommandTarget.Sector(64));
         Assert.Throws<ArgumentOutOfRangeException>(() => CommandTarget.Site(192));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CommandTarget.Item(64));
     }
 
     private static GameCommand Command(
