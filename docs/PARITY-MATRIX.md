@@ -18,6 +18,8 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Gang capacity | 80 per player, six friendly per sector | Implemented | Manual, High | Boundary reference fixture |
 | Gang identity | Stable gang instance identity, owner, force, sector, equipment and command projection | Headless schema implemented | Recreation invariant, not an original-format claim | Correlate IDs with save slots |
 | Command queue | One action per gang, replace/cancel/repeat | Structured validation, typed mutation results, and ordered queue events implemented | Manual supports queued/repeat actions; replacement ordering Low | Binary ordering, cost rules and resolution fixtures |
+| Determinism state | Explicit RNG state/consumption and phase hashes | Serializable PCG32 stream and canonical SHA-256 encoding implemented | Recreation invariant; original RNG unknown, Low parity confidence | Recover original RNG and validate phase hashes against reference fixtures |
+| Notifications | Bounded per-player ordered queues | Mechanical notification schema and deterministic overflow implemented | Recreation safety bound; original capacity/overflow unknown, Low | Recover original queue layout, capacity and delivery order |
 | Starting state | Right Hands in controlled sector | Documented | Manual, High | Implement exact setup |
 | Hire pool | Three distinct offers; placement in Hire phase | Provisional | Manual, High | Deferred-hire fixture |
 | Cash/upkeep | Income then upkeep, zero floor rules | Provisional | Manual, High | Multi-turn state comparison |
@@ -50,14 +52,16 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 
 ## Current blockers to parity claims
 
-- `System.Random` is not known to match the original RNG.
+- The headless PCG32 stream and prototype `System.Random` are not known to match
+  the original RNG.
 - City generation selects sites uniformly instead of using verified frequency
   and class rules.
 - Hiring happens immediately and uses provisional price selection.
 - Control spends an invented cash cost and assigns ownership directly.
 - The core exposes a headless match schema, data-driven command validation,
-  deterministic command queue, ordered events, and phase coordinator, but the
-  current client still uses its older direct per-player turn controls.
+  deterministic command and notification queues, ordered events, phase hashes,
+  and a phase coordinator, but the current client still uses its older direct
+  per-player turn controls.
 - Command replacement gets a new sequence number and resolution otherwise uses
   submission order inside a subphase; both are provisional recreation rules,
   not binary-validated behavior.

@@ -82,6 +82,7 @@ public sealed class TurnCommandQueue
     private long _nextSequence;
 
     public int Count => _byGang.Count;
+    internal long NextSequence => _nextSequence;
 
     public QueuedCommand Set(GameCommand command)
     {

@@ -555,7 +555,7 @@ unmarked guess.
 |---|---|---|---|
 | M0 | In progress | Research templates; file/binary logs; architecture, validation and parity documents; source/output verification; rollback-safe staged installation; sanitized reference-fixture schema; labeled JSON state-diff tool; versioned 685-output manifest and generated factual asset catalog | One captured, fully documented reference observation |
 | M1 | Foundation started | Ten scenario definitions and durations; 8x8/three-site prototype; scaled MonoGame shell | Exact city generation and setup, HQ/Right Hands initialization, atlas, screen router, mouse input and reference fixtures |
-| M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; declarative validation for all action target shapes; typed queue mutations and ordered events | Notification/RNG/hash state, hire lifecycle, reference-derived costs and per-action resolution, and binary-validated within-phase ordering |
+| M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; declarative validation for all action target shapes; typed queue mutations and ordered events; bounded notification queues; serializable provisional RNG; canonical phase hashes | Hire lifecycle, reference-derived costs and per-action resolution, original RNG recovery, and binary-validated within-phase ordering |
 | M3 | Not started | Manual-backed constants and pure Bribe/Snitch/police helpers only | Entire milestone deliverable and M2 gate |
 | M4 | Not started | Manual-backed dice/force helpers only | Entire milestone deliverable, original RNG discovery and M2-M3 gates |
 | M5 | Not started | Scenario objective predicates and timed score models only | Full game/endgame/persistence/UI deliverable and M4 gate |
@@ -564,7 +564,7 @@ unmarked guess.
 | M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
 | M9 | Not started | None | Frozen deterministic simulation after M8 |
 
-Current automated baseline: the solution builds without warnings, 104 tests
+Current automated baseline: the solution builds without warnings, 109 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.
@@ -691,9 +691,10 @@ not lines of code or asset counts.
    are complete.
 2. Enrich the generated `ASSET-CATALOG.md` by resolving semantic owners,
    palette/transparency behavior and sprite rectangles.
-3. Continue the headless match schema through notification/RNG/hash state,
-   reference-derived command costs, resolvers, and phase-boundary processing;
-   typed validation results and ordered queue events are now in place.
+3. Continue the headless match schema through reference-derived command costs,
+   resolvers, and phase-boundary processing; notification queues, serializable
+   provisional RNG state, canonical hashes, typed validation results, and ordered
+   queue events are now in place.
 4. Obtain original save/reference fixtures and connect them to state diffs and
    phase-boundary hashes.
 5. Reproduce original city generation, HQ/Right Hands placement and new-game

@@ -44,6 +44,10 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
 - `GameModel/CommandValidation.cs`: data-driven action descriptors and typed,
   non-mutating command validation results.
 - `GameModel/GameEvents.cs`: monotonically ordered mechanical event records.
+- `GameModel/Notifications.cs`: bounded per-player mechanical notification queues
+  with presentation-independent payloads.
+- `GameModel/Determinism.cs`: serializable provisional PCG32 stream and canonical
+  little-endian SHA-256 match-state encoding.
 
 Target subdivisions:
 
@@ -152,21 +156,27 @@ that ordering. Within-subphase ordering and tie-breaking remain unverified.
 - deterministic PRNG state and consumption counter.
 
 The initial schema covers setup identity, phases, players, sectors/sites, gangs,
-hire state, research/inventory, equipment, statistics, command projections, and
-ordered events. Notification queues, deterministic PRNG state, state hashing,
-and reference-derived resolvers remain to be added. Public collection
-projections are read-only; renderer/view models must not receive mutation paths.
+hire state, research/inventory, equipment, statistics, command projections,
+ordered events, bounded notification queues, deterministic PRNG state, and
+phase-boundary hashes. Reference-derived resolvers remain to be added. Public
+collection projections are read-only; renderer/view models must not receive
+mutation paths.
 
 ## Determinism boundary
 
 Compatibility state may not depend on system time, thread scheduling, hash-map
 iteration, locale, filesystem ordering, rendering frames, audio playback, or
 platform floating-point differences. Collections that affect decisions use a
-defined order. The original PRNG is still unknown; `System.Random` in the
-prototype is explicitly provisional and must be removed before parity claims.
+defined order. The headless model uses a stable, serializable PCG32 stream; its
+algorithm is explicitly provisional because the original PRNG is still unknown.
+The older playable prototype still uses `System.Random` and remains outside the
+compatibility-state boundary.
 
-State hashes will be computed from a canonical binary encoding after every
-phase. Replays store setup plus ordered commands and expected phase hashes.
+State hashes are computed from a versioned canonical little-endian binary
+encoding after transitions made through `MatchState`. The encoding includes
+definitions, setup, phase/RNG state, players, sectors, commands, and pending
+notifications. Replays will store setup plus ordered commands and expected phase
+hashes.
 
 ## Proprietary-content boundary
 

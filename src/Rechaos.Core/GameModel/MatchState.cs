@@ -176,6 +176,9 @@ public sealed class MatchStatistics
 public sealed class MatchState
 {
     private readonly List<GameEvent> _events = [];
+    private readonly Dictionary<PlayerId, NotificationQueue> _notifications;
+    private readonly Dictionary<PlayerId, long> _nextNotificationSequences;
+    private readonly List<PhaseBoundaryHash> _phaseHashes = [];
     private long _nextEventSequence;
 
     public MatchState(
@@ -205,6 +208,9 @@ public sealed class MatchState
         Players = players.ToArray();
         Sectors = sectors.ToArray();
         Coordinator = new TurnCoordinator(players.Count);
+        Random = new DeterministicRandom(setup.InitialSeed);
+        _notifications = Players.ToDictionary(player => player.Id, _ => new NotificationQueue());
+        _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
     }
 
     public OriginalData Definitions { get; }
@@ -212,11 +218,24 @@ public sealed class MatchState
     public IReadOnlyList<MatchPlayerState> Players { get; }
     public IReadOnlyList<MatchSectorState> Sectors { get; }
     public TurnCoordinator Coordinator { get; }
+    public DeterministicRandom Random { get; }
     public TurnCommandQueue Commands { get; } = new();
     public IReadOnlyList<GameEvent> Events => _events;
+    public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashes;
+    internal long NextEventSequence => _nextEventSequence;
 
     public MatchPlayerState? FindPlayer(PlayerId id) => Players.SingleOrDefault(player => player.Id == id);
     public MatchGangState? FindGang(GangId id) => Players.SelectMany(player => player.Gangs).SingleOrDefault(gang => gang.Id == id);
+    public IReadOnlyList<GameNotification> NotificationsFor(PlayerId player) => GetNotificationQueue(player).Items;
+
+    public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>
+        GetNotificationQueue(player).TryDequeue(out notification);
+
+    public TurnTransition FinishUpkeep() => CaptureBoundary(Coordinator.FinishUpkeep());
+    public TurnTransition FinishCommand(PlayerId player) => CaptureBoundary(Coordinator.FinishCommand(player));
+    public TurnTransition FinishExecutionPhase() => CaptureBoundary(Coordinator.FinishExecutionPhase());
+    public TurnTransition FinishHire(PlayerId player) => CaptureBoundary(Coordinator.FinishHire(player));
+    public TurnTransition FinishPlayerElimination() => CaptureBoundary(Coordinator.FinishPlayerElimination());
 
     public CommandSubmissionResult Submit(GameCommand command)
     {
@@ -260,6 +279,42 @@ public sealed class MatchState
             command.SecondaryTarget);
         _events.Add(gameEvent);
         return gameEvent;
+    }
+
+    internal GameNotification QueueNotification(
+        PlayerId player,
+        GameNotificationKind kind,
+        GangId? gang = null,
+        int? sectorId = null,
+        long? relatedEventSequence = null)
+    {
+        if (sectorId is < 0 or >= MatchLimits.SectorCount) throw new ArgumentOutOfRangeException(nameof(sectorId));
+        var queue = GetNotificationQueue(player);
+        var notification = new GameNotification(
+            _nextNotificationSequences[player]++, Coordinator.Turn, Coordinator.Phase,
+            Coordinator.ExecutionPhase, kind, gang, sectorId, relatedEventSequence);
+        queue.Enqueue(notification);
+        return notification;
+    }
+
+    internal long NextNotificationSequence(PlayerId player) =>
+        _nextNotificationSequences.TryGetValue(player, out var sequence)
+            ? sequence
+            : throw new ArgumentOutOfRangeException(nameof(player));
+
+    private NotificationQueue GetNotificationQueue(PlayerId player) =>
+        _notifications.TryGetValue(player, out var queue)
+            ? queue
+            : throw new ArgumentOutOfRangeException(nameof(player));
+
+    private TurnTransition CaptureBoundary(TurnTransition transition)
+    {
+        _phaseHashes.Add(new PhaseBoundaryHash(
+            Coordinator.Turn,
+            Coordinator.Phase,
+            Coordinator.ExecutionPhase,
+            MatchStateHasher.ComputeSha256(this)));
+        return transition;
     }
 
     private static void ValidateDefinitionsAndCapacities(
