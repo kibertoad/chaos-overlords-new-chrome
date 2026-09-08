@@ -6,7 +6,8 @@ public enum CommandResolutionCode : byte
     InsufficientCash,
     UnsupportedAction,
     ItemUnavailable,
-    DestinationFull
+    DestinationFull,
+    TargetHidden
 }
 
 public sealed record CommandResolutionResult(
@@ -24,7 +25,7 @@ public sealed record CommandResolutionResult(
 public static class CommandResolver
 {
     public static bool IsSupported(GangAction action) =>
-        action is GangAction.Bribe or GangAction.Chaos or GangAction.Equip or GangAction.Give or GangAction.Heal
+        action is GangAction.Attack or GangAction.Bribe or GangAction.Chaos or GangAction.Equip or GangAction.Give or GangAction.Heal
             or GangAction.Hide or GangAction.Influence or GangAction.Move or GangAction.Research
             or GangAction.Sell or GangAction.Snitch or GangAction.Terminate or GangAction.Control;
 
@@ -38,6 +39,7 @@ public static class CommandResolver
             throw new InvalidOperationException("A command phase can only resolve during Execution.");
         if (commands.Any(command => command.ExecutionPhase != phase))
             throw new ArgumentException("Every command must belong to the current execution subphase.", nameof(commands));
+        if (phase == ExecutionPhase.Combat) return ResolveCombatPhase(state, commands);
         if (phase == ExecutionPhase.Chaos) return ResolveChaosPhase(state, commands);
         var results = new List<CommandResolutionResult>(commands.Count);
         var resolvedSequences = new HashSet<long>();
@@ -75,6 +77,7 @@ public static class CommandResolver
 
         return queued.Command.Action switch
         {
+            GangAction.Attack => ResolveCombatPhase(state, [queued]).Single(),
             GangAction.Bribe => ResolveBribe(state, queued.Command),
             GangAction.Chaos => ResolveChaosPhase(state, [queued]).Single(),
             GangAction.Control => ResolveControl(state, [queued]).Single(),
@@ -112,6 +115,163 @@ public static class CommandResolver
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after, -cost));
     }
+
+    private static IReadOnlyList<CommandResolutionResult> ResolveCombatPhase(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> commands)
+    {
+        var snapshots = state.Players.SelectMany(player => player.Gangs)
+            .ToDictionary(gang => gang.Id, gang => CombatSnapshot.For(state, gang));
+        var outcomes = new List<CombatOutcome>(commands.Count);
+        foreach (var queued in commands)
+        {
+            var attacker = snapshots[queued.Command.Gang];
+            var targetId = new GangId(queued.Command.Target.Id);
+            var target = snapshots[targetId];
+            if (target.Hidden)
+            {
+                outcomes.Add(new CombatOutcome(queued, attacker, target, CommandResolutionCode.TargetHidden,
+                    [], 0, 0, [], 0, 0));
+                continue;
+            }
+
+            var attackDice = ManualRules.AttackDiceCount(
+                attacker.Force,
+                ManualRules.CombatRating(attacker.Statistics, attacker.WeaponType),
+                target.Statistics.Defense);
+            var attackRolls = DiceRoller.RollD6(state.Random, attackDice);
+            var attackSuccesses = ManualRules.CountSuccesses(attackRolls);
+            var suppressesRetaliation = ManualRules.SuppressesRetaliation(
+                    attacker.Statistics, attacker.WeaponType)
+                && !ManualRules.SuppressesRetaliation(target.Statistics, target.WeaponType);
+            var retaliationDice = suppressesRetaliation
+                ? 0
+                : ManualRules.AttackDiceCount(
+                    target.Force,
+                    ManualRules.CombatRating(target.Statistics, target.WeaponType),
+                    attacker.Statistics.Defense);
+            var retaliationRolls = DiceRoller.RollD6(state.Random, retaliationDice);
+            var retaliationSuccesses = ManualRules.CountSuccesses(retaliationRolls);
+            outcomes.Add(new CombatOutcome(
+                queued, attacker, target, CommandResolutionCode.Resolved,
+                attackRolls, attackSuccesses, attackSuccesses,
+                retaliationRolls, retaliationSuccesses,
+                ManualRules.RetaliationDamage(retaliationSuccesses)));
+        }
+
+        var incomingDamage = new Dictionary<GangId, int>();
+        foreach (var outcome in outcomes.Where(outcome => outcome.Code == CommandResolutionCode.Resolved))
+        {
+            AddDamage(incomingDamage, outcome.Target.Id, outcome.Damage);
+            AddDamage(incomingDamage, outcome.Attacker.Id, outcome.RetaliationDamage);
+        }
+
+        foreach (var (gangId, damage) in incomingDamage)
+        {
+            var gang = state.FindGang(gangId)!;
+            gang.Force = Math.Max(0, snapshots[gangId].Force - damage);
+        }
+        CreditCombatStatistics(state, snapshots, outcomes);
+
+        var results = new List<CommandResolutionResult>(commands.Count);
+        var firstEventByGang = new Dictionary<GangId, long>();
+        foreach (var outcome in outcomes)
+        {
+            var eventKind = outcome.Code == CommandResolutionCode.Resolved
+                ? GameEventKind.CommandResolved
+                : GameEventKind.CommandFailed;
+            var result = Complete(state, outcome.Queued.Command, eventKind,
+                new CommandResolutionDetails(
+                    outcome.Code, outcome.AttackRolls, outcome.AttackSuccesses,
+                    outcome.Target.Force, state.FindGang(outcome.Target.Id)!.Force,
+                    AttackValue: outcome.AttackRolls.Count,
+                    DefenseValue: outcome.Target.Statistics.Defense,
+                    RetaliationRolls: outcome.RetaliationRolls,
+                    RetaliationSuccesses: outcome.RetaliationSuccesses,
+                    Damage: outcome.Damage,
+                    RetaliationDamage: outcome.RetaliationDamage),
+                GameNotificationKind.Combat);
+            results.Add(result);
+            firstEventByGang.TryAdd(outcome.Target.Id, result.Event!.Sequence);
+            firstEventByGang.TryAdd(outcome.Attacker.Id, result.Event.Sequence);
+        }
+
+        foreach (var snapshot in snapshots.Values
+                     .Where(snapshot => snapshot.Force > 0 && state.FindGang(snapshot.Id)!.Force == 0)
+                     .OrderBy(snapshot => snapshot.Id.Value))
+        {
+            var gang = state.FindGang(snapshot.Id)!;
+            EliminateGang(gang);
+            state.FindPlayer(gang.Owner)!.Statistics.Casualties++;
+            state.QueueNotification(
+                gang.Owner, GameNotificationKind.Elimination, gang.Id, gang.SectorId,
+                firstEventByGang.GetValueOrDefault(gang.Id));
+        }
+        return results;
+    }
+
+    private static void AddDamage(Dictionary<GangId, int> damage, GangId gang, int amount)
+    {
+        if (amount == 0) return;
+        damage[gang] = checked(damage.GetValueOrDefault(gang) + amount);
+    }
+
+    private static void CreditCombatStatistics(
+        MatchState state,
+        IReadOnlyDictionary<GangId, CombatSnapshot> snapshots,
+        IReadOnlyList<CombatOutcome> outcomes)
+    {
+        var remainingForce = snapshots.ToDictionary(pair => pair.Key, pair => pair.Value.Force);
+        foreach (var outcome in outcomes.Where(outcome => outcome.Code == CommandResolutionCode.Resolved))
+        {
+            Credit(outcome.Attacker.Owner, outcome.Target.Id, outcome.Damage);
+            Credit(outcome.Target.Owner, outcome.Attacker.Id, outcome.RetaliationDamage);
+        }
+
+        void Credit(PlayerId source, GangId victim, int attempted)
+        {
+            var applied = Math.Min(attempted, remainingForce[victim]);
+            remainingForce[victim] -= applied;
+            state.FindPlayer(source)!.Statistics.DamageInflicted = checked(
+                state.FindPlayer(source)!.Statistics.DamageInflicted + applied);
+        }
+    }
+
+    private static void EliminateGang(MatchGangState gang)
+    {
+        gang.Force = 0;
+        gang.Hidden = false;
+        gang.WeaponItemId = null;
+        gang.ArmorItemId = null;
+        gang.MiscellaneousItemId = null;
+    }
+
+    private sealed record CombatSnapshot(
+        GangId Id,
+        PlayerId Owner,
+        int SectorId,
+        int Force,
+        bool Hidden,
+        EffectiveStatistics Statistics,
+        short? WeaponType)
+    {
+        public static CombatSnapshot For(MatchState state, MatchGangState gang) => new(
+            gang.Id, gang.Owner, gang.SectorId, gang.Force, gang.Hidden,
+            EffectiveStatisticsCalculator.ForGang(state, gang),
+            gang.WeaponItemId is { } weapon ? state.Definitions.Items[weapon].Type : null);
+    }
+
+    private sealed record CombatOutcome(
+        QueuedCommand Queued,
+        CombatSnapshot Attacker,
+        CombatSnapshot Target,
+        CommandResolutionCode Code,
+        IReadOnlyList<int> AttackRolls,
+        int AttackSuccesses,
+        int Damage,
+        IReadOnlyList<int> RetaliationRolls,
+        int RetaliationSuccesses,
+        int RetaliationDamage);
 
     private static CommandResolutionResult ResolveEquip(MatchState state, GameCommand command)
     {
@@ -186,11 +346,7 @@ public static class CommandResolver
     {
         var gang = state.FindGang(command.Gang)!;
         var before = gang.Force;
-        gang.Force = 0;
-        gang.Hidden = false;
-        gang.WeaponItemId = null;
-        gang.ArmorItemId = null;
-        gang.MiscellaneousItemId = null;
+        EliminateGang(gang);
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, 0),
             GameNotificationKind.Elimination);

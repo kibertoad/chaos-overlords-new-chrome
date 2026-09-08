@@ -20,7 +20,11 @@ public sealed record CommandResolutionDetails(
     short? ItemId = null,
     short? ReplacedItemId = null,
     int? AttackValue = null,
-    int? DefenseValue = null);
+    int? DefenseValue = null,
+    IReadOnlyList<int>? RetaliationRolls = null,
+    int RetaliationSuccesses = 0,
+    int Damage = 0,
+    int RetaliationDamage = 0);
 
 public sealed record EconomyResolutionDetails(
     int PreviousCash,

@@ -166,6 +166,13 @@ phase-wide barrier is deterministic and prevents queue order from letting an
 earlier player escape suppression; accumulation/reset and original ordering are
 still provisional pending binary fixtures.
 
+Combat also uses a phase-wide barrier. It snapshots Force, effective statistics,
+equipment class, and Hidden state for every gang; calculates all attacks and
+eligible retaliation in queue order; then commits aggregate damage. This keeps
+an eliminated gang's simultaneous response independent of event emission order.
+Hidden-target detection, police combat, and original overkill attribution remain
+explicit gaps.
+
 The Transaction resolver treats equipment as gang-owned: Equip purchases
 directly into one of three slots, Give moves an equipped item between friendly
 gangs, and Sell removes an equipped item for cash. The player inventory map is

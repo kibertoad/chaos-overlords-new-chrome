@@ -88,6 +88,35 @@ public sealed class ManualRulesTests
     public void CrackdownRequiresChaosStrictlyAboveTolerance(int chaos, int tolerance, bool expected) =>
         Assert.Equal(expected, ManualRules.TriggersCrackdown(chaos, tolerance));
 
+    [Fact]
+    public void CombatRatingUsesCumulativeSkillsForWeaponClass()
+    {
+        var statistics = new EffectiveStatistics(
+            Combat: 3, Defense: 0, Stealth: 0, Detect: 0, Chaos: 0, Control: 0,
+            Heal: 0, Influence: 0, Research: 0, Strength: 2, Blade: 4, Range: 5,
+            Fighting: 6, MartialArts: 7);
+
+        Assert.Equal(18, ManualRules.CombatRating(statistics, null));
+        Assert.Equal(5, ManualRules.CombatRating(statistics, 0));
+        Assert.Equal(9, ManualRules.CombatRating(statistics, 1));
+        Assert.Equal(8, ManualRules.CombatRating(statistics, 2));
+    }
+
+    [Theory]
+    [InlineData(10, 5, 3, 12)]
+    [InlineData(2, -1, 4, 0)]
+    public void AttackPoolIncludesForceAndSubtractsDefense(
+        int force, int combat, int defense, int expected) =>
+        Assert.Equal(expected, ManualRules.AttackDiceCount(force, combat, defense));
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 0)]
+    [InlineData(2, 1)]
+    [InlineData(5, 2)]
+    public void RetaliationDamageIsHalvedAndRoundedDown(int successes, int damage) =>
+        Assert.Equal(damage, ManualRules.RetaliationDamage(successes));
+
     [Theory]
     [InlineData(2, 1)]
     [InlineData(3, 1)]

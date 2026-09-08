@@ -117,6 +117,34 @@ public static class ManualRules
         return chaos > tolerance;
     }
 
+    public static int CombatRating(EffectiveStatistics statistics, short? weaponType)
+    {
+        var skill = weaponType switch
+        {
+            null => checked(statistics.Strength + statistics.Fighting + statistics.MartialArts),
+            0 => statistics.Strength,
+            1 => checked(statistics.Strength + statistics.Blade),
+            2 => statistics.Range,
+            _ => throw new ArgumentOutOfRangeException(nameof(weaponType), weaponType, "A weapon type must be melee, blade, or ranged.")
+        };
+        return checked(statistics.Combat + skill);
+    }
+
+    public static int AttackDiceCount(int force, int combatRating, int defense)
+    {
+        if (force is < 0 or > MaximumForce) throw new ArgumentOutOfRangeException(nameof(force));
+        return Math.Max(0, checked(force + combatRating - defense));
+    }
+
+    public static int RetaliationDamage(int successes)
+    {
+        if (successes < 0) throw new ArgumentOutOfRangeException(nameof(successes));
+        return successes / 2;
+    }
+
+    public static bool SuppressesRetaliation(EffectiveStatistics attacker, short? attackerWeaponType) =>
+        attackerWeaponType is null && attacker.MartialArts > 0;
+
     public static int ControlStrength(IEnumerable<(int Force, int Control)> gangs)
     {
         ArgumentNullException.ThrowIfNull(gangs);

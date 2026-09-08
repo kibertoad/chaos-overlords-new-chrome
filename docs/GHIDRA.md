@@ -6,6 +6,14 @@ and full disassembly/decompiler output must never be added to Git.
 
 ## Known local installation
 
+Quick lookup: Ghidra is pinned at
+`C:\Users\kiber\AppData\Local\Programs\Ghidra\ghidra_12.1.3_PUBLIC` and its
+JDK at `C:\Users\kiber\AppData\Local\Programs\Java\jdk-21.0.12.1+1`. Check
+these exact paths first; do not search the machine or download replacements
+while both documented launchers exist. Temporary analysis projects live under
+`%TEMP%\rechaos-ghidra-*` and are disposable, so enumerate that narrow pattern
+when looking for a reusable project rather than searching the filesystem.
+
 The current Windows research machine has:
 
 | Tool | Version | Location |

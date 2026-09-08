@@ -157,6 +157,46 @@ place and no command in it mutates state. This is a recreation invariant that
 prevents incomplete logic from silently consuming player commands; it is not a
 claim about original-game behavior.
 
+## Combat
+
+### RULE-ATTACK-001 — Simultaneous attack and retaliation
+
+- Source: `MANUAL-GOG-1`, numbered pages 50–51; the
+  [1997 unofficial FAQ 0.7.1](https://gamefaqs.gamespot.com/pc/196900-chaos-overlords/faqs/1684)
+  records a developer-informed correction that the printed Attack Roll omitted
+  current Force.
+- Observed statement: attack dice equal current Force plus modified Combat minus
+  defender Defense, floored at zero. Rolls of 4–6 each cause one Force damage.
+  Strength adds for bare hands, melee, and blade weapons; Blade adds for blade
+  weapons, Range for ranged weapons, and Fighting plus Martial Arts for bare
+  hands. Retaliation uses the same starting statistics but halves successful
+  damage, rounded down. A bare-handed Martial Artist prevents retaliation unless
+  the opponent is also a bare-handed Martial Artist.
+- Interpretation: snapshot every gang at the Combat boundary, roll queued
+  attacks and eligible retaliation in stable queue order, then apply all damage
+  together. Consequently, a gang eliminated by one result still completes
+  attacks and retaliation calculated from its phase-start Force. Force is
+  floored at zero; elimination clears equipment and Hidden state. Actual damage
+  credit is allocated in stable result order when attacks overkill one target.
+- Hidden target behavior: a target that became Hidden during Instant produces an
+  ordered `TargetHidden` failure without consuming combat RNG. Detection remains
+  a separate unresolved rule rather than an invented check.
+- Current exclusions: cooperative detection/reveal, site modifiers, crackdown
+  police attacks, animation/audio timing, original overkill-stat attribution,
+  repeated mutual attacks, and binary confirmation of resolver/RNG order.
+- Confidence: High for weapon-skill associations and Martial Arts exception;
+  Medium/High for the Force-corrected formula and retaliation; Low for ordering,
+  overkill accounting, and hidden failure behavior.
+- Implementation: `ManualRules.CombatRating`, `ManualRules.AttackDiceCount`,
+  `ManualRules.RetaliationDamage`, and `CommandResolver.ResolveCombatPhase`.
+- Tests: `CombatResolutionTests` covers effective attack/defense pools,
+  retaliation, phase-start simultaneity, Martial Arts, hidden targets,
+  elimination/equipment loss, statistics, RNG consumption, notifications, and
+  hashes; `ManualRulesTests` covers the formulas.
+- Next experiment: reproduce a fixed unarmed matchup from the FAQ, then repeat
+  with melee/blade/ranged weapons, Martial Arts, two attackers, and a target
+  hidden during Instant while capturing force bars, damage, and RNG order.
+
 ## Equipment transactions
 
 ### RULE-EQUIP-001 — Purchase and equip

@@ -76,4 +76,7 @@ Current boundaries and validation procedures are documented in
 Clean-room findings from the fingerprinted original executable are recorded in
 [`docs/ORIGINAL-INTERNALS.md`](docs/ORIGINAL-INTERNALS.md).
 The reproducible temporary-project workflow for the locally installed Ghidra
-tooling is documented in [`docs/GHIDRA.md`](docs/GHIDRA.md).
+tooling is documented in [`docs/GHIDRA.md`](docs/GHIDRA.md). On the known
+research machine, use the pinned installation at
+`C:\Users\kiber\AppData\Local\Programs\Ghidra\ghidra_12.1.3_PUBLIC`; do not
+search for or reinstall Ghidra before checking that path.

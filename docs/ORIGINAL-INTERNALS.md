@@ -210,6 +210,25 @@ semantics to individual callers. The checked-in focused-report script now emits
 incoming call addresses to support that mapping without storing bulk decompiler
 output.
 
+### BIN-RNG-004 - three callers classified as command selection, not combat
+
+**Observation:** Focused Ghidra 12.1.3 summaries of RNG-wrapper callers
+`0x00401000`, `0x0040abc0`, and `0x00428ef0` show large action-selection
+switches, repeated bounded attempts to choose targets, and writes to per-gang
+command/target slots. All three are reached from `0x00432da0`; none directly
+applies Force damage or exhibits the manual's attack/retaliation arithmetic.
+
+**Interpretation:** These functions belong to AI command planning or validation,
+not the Combat resolver. They should be excluded from the next formula search;
+their shared caller `0x00432da0` is a promising AI dispatcher candidate.
+
+**Confidence:** Medium. The command-slot interpretation is structurally strong,
+but field identities and action constants are not yet fully labeled.
+
+**Next validation:** inspect the remaining RNG callers for writes to the gang
+Force field and for paired full/halved success loops, then correlate the result
+with a controlled original-game combat observation.
+
 ## Toolchain hypothesis
 
 ### BIN-TOOL-001 - compiler/runtime

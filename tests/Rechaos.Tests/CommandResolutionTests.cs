@@ -89,7 +89,7 @@ public sealed class CommandResolutionTests
     }
 
     [Fact]
-    public void UnsupportedActionBlocksSubphaseBeforeAnyResolution()
+    public void AttackAdvancesPreviouslyBlockedCombatSubphase()
     {
         var match = CreateMatch(cash: 10);
         match.FinishUpkeep();
@@ -100,14 +100,12 @@ public sealed class CommandResolutionTests
         match.FinishCommand(new PlayerId(1));
         match.FinishExecutionPhase();
 
-        Assert.Throws<NotSupportedException>(() => match.FinishExecutionPhase());
+        match.FinishExecutionPhase();
 
-        Assert.Equal(TurnPhase.Execution, match.Coordinator.Phase);
-        Assert.Equal(ExecutionPhase.Combat, match.Coordinator.ExecutionPhase);
-        Assert.Equal(10, match.Players[0].Cash);
-        Assert.Equal(0, match.Sectors[0].Tolerance);
-        Assert.Empty(match.LastPhaseResolutions);
-        Assert.DoesNotContain(match.Events, gameEvent => gameEvent.Kind is GameEventKind.CommandResolved or GameEventKind.CommandFailed);
+        Assert.Equal(ExecutionPhase.Transaction, match.Coordinator.ExecutionPhase);
+        Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
+        Assert.Contains(match.Events, gameEvent => gameEvent.Kind == GameEventKind.CommandResolved
+            && gameEvent.Action == GangAction.Attack);
     }
 
     private static void QueueAndEnterExecution(MatchState match, GangAction action)
