@@ -84,3 +84,28 @@ action lacks an implemented evidence-backed resolver, the subphase remains in
 place and no command in it mutates state. This is a recreation invariant that
 prevents incomplete logic from silently consuming player commands; it is not a
 claim about original-game behavior.
+
+## Upkeep economy
+
+### RULE-UPKEEP-001 — Base income, upkeep, and cash floor
+
+- Source: `MANUAL-GOG-1`; Upkeep, Finance, Sector Tax, and Gang Upkeep
+  descriptions. Exact scan page locations still need transcription.
+- Observed statement: each controlled sector grants $1; influenced sites apply
+  their listed cash values; active gangs charge their listed upkeep; projected
+  cash below zero ends at zero.
+- Interpretation: for each active player in stable ID order, calculate
+  `max(0, cash + controlled sectors + influenced-site cash - active-gang upkeep)`.
+- Current exclusions: insufficient-funds desertion, site protection, cash
+  adjustment, special gang/item/site modifiers, integer overflow behavior, and
+  the exact statistics accounting boundary.
+- Confidence: High for the component values and zero floor; Medium for whether
+  all components commit in one Upkeep boundary; Low for excluded edge cases.
+- Implementation: `EconomyResolver.ResolveUpkeep` and
+  `MatchState.FinishUpkeep`.
+- Tests: `EconomyResolutionTests` covers component accounting, negative cash
+  flooring, eliminated players, ordered events/notifications, and deterministic
+  phase hashes.
+- Next experiment: prepare saves around zero projected cash with controlled
+  combinations of sectors, positive/negative sites, and gangs, then compare
+  Finance/Event panels and post-Upkeep saves.

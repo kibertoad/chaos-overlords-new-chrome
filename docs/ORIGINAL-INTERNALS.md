@@ -204,6 +204,12 @@ not a verified mapping to the original hold state.
 **Next validation:** Locate writes to the per-thread hold state and all callers
 of `0x0045d227`; correlate a controlled dice sequence with predicted outputs.
 
+Ghidra reports direct calls to `0x0045d227` from 21 containing functions and 61
+call sites. This establishes broad reuse but does not yet assign gameplay
+semantics to individual callers. The checked-in focused-report script now emits
+incoming call addresses to support that mapping without storing bulk decompiler
+output.
+
 ## Toolchain hypothesis
 
 ### BIN-TOOL-001 - compiler/runtime

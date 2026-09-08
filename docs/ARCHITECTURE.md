@@ -45,7 +45,9 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   non-mutating command validation results.
 - `GameModel/GameEvents.cs`: monotonically ordered mechanical event records.
 - `GameModel/CommandResolution.cs`: evidence-gated execution dispatcher and
-  result codes; currently resolves Bribe and Snitch only.
+  result codes; currently resolves Bribe, Heal, and Snitch only.
+- `GameModel/EconomyResolution.cs`: ordered Upkeep-phase sector/site income,
+  gang upkeep, zero-floor results, events, and notifications.
 - `GameModel/Notifications.cs`: bounded per-player mechanical notification queues
   with presentation-independent payloads.
 - `GameModel/Determinism.cs`: serializable recovered Visual C++ random step and
@@ -146,6 +148,11 @@ that ordering. Within-subphase ordering and tie-breaking remain unverified.
 Before an execution subphase mutates state, every queued action in that subphase
 must have a supported resolver. Unsupported actions block advancement rather
 than being silently consumed.
+
+`MatchState.FinishUpkeep` resolves every active player in stable player-ID order
+before entering Command. Each result separates sector tax, influenced-site
+cash, and active-gang upkeep so reference fixtures can locate the first differing
+component. Desertion and unverified special modifiers remain outside this slice.
 
 ## State ownership target
 

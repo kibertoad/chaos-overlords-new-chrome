@@ -61,9 +61,11 @@ public sealed class MatchPlayerState
         IReadOnlyList<PendingHireState>? pendingHires = null,
         IReadOnlyDictionary<short, int>? researchProgress = null,
         IReadOnlySet<short>? researchedItems = null,
-        IReadOnlyDictionary<short, int>? inventory = null)
+        IReadOnlyDictionary<short, int>? inventory = null,
+        PlayerStatus status = PlayerStatus.Active)
     {
         if (cash < 0) throw new ArgumentOutOfRangeException(nameof(cash));
+        if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         Setup = setup ?? throw new ArgumentNullException(nameof(setup));
         _gangs = gangs?.ToArray() ?? [];
         _hirePool = hirePool?.ToArray() ?? [];
@@ -72,6 +74,7 @@ public sealed class MatchPlayerState
         _researchedItems = researchedItems is null ? [] : new HashSet<short>(researchedItems);
         _inventory = inventory?.ToDictionary() ?? [];
         Cash = cash;
+        Status = status;
     }
 
     public MatchPlayerSetup Setup { get; }
@@ -133,7 +136,13 @@ public sealed record PendingHireState(short GangDefinitionId, int TargetSectorId
 
 public sealed class MatchSectorState
 {
-    public MatchSectorState(int id, IReadOnlyList<MatchSiteState> sites)
+    public MatchSectorState(
+        int id,
+        IReadOnlyList<MatchSiteState> sites,
+        PlayerId? owner = null,
+        int tolerance = ManualRules.MinimumTolerance,
+        int chaos = 0,
+        bool crackdownActive = false)
     {
         if (id is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(id));
@@ -142,8 +151,15 @@ public sealed class MatchSectorState
             throw new ArgumentException($"A sector must contain exactly {MatchLimits.SitesPerSector} sites.", nameof(sites));
         if (sites.Select(site => site.Slot).Order().SequenceEqual(Enumerable.Range(0, MatchLimits.SitesPerSector)) is false)
             throw new ArgumentException("Site slots must be exactly 0, 1, and 2.", nameof(sites));
+        if (tolerance is < ManualRules.MinimumTolerance or > ManualRules.MaximumTolerance)
+            throw new ArgumentOutOfRangeException(nameof(tolerance));
+        if (chaos < 0) throw new ArgumentOutOfRangeException(nameof(chaos));
         Id = id;
         Sites = sites.OrderBy(site => site.Slot).ToArray();
+        Owner = owner;
+        Tolerance = tolerance;
+        Chaos = chaos;
+        CrackdownActive = crackdownActive;
     }
 
     public int Id { get; }
@@ -156,13 +172,14 @@ public sealed class MatchSectorState
 
 public sealed class MatchSiteState
 {
-    public MatchSiteState(int slot, short definitionId, int resistance)
+    public MatchSiteState(int slot, short definitionId, int resistance, PlayerId? influencedBy = null)
     {
         if (slot is < 0 or >= MatchLimits.SitesPerSector) throw new ArgumentOutOfRangeException(nameof(slot));
         if (resistance < 0) throw new ArgumentOutOfRangeException(nameof(resistance));
         Slot = slot;
         DefinitionId = definitionId;
         Resistance = resistance;
+        InfluencedBy = influencedBy;
     }
 
     public int Slot { get; }
@@ -234,6 +251,7 @@ public sealed class MatchState
     public IReadOnlyList<GameEvent> Events => _events;
     public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashes;
     public IReadOnlyList<CommandResolutionResult> LastPhaseResolutions { get; private set; } = [];
+    public IReadOnlyList<UpkeepResolutionResult> LastUpkeepResolutions { get; private set; } = [];
     internal long NextEventSequence => _nextEventSequence;
 
     public MatchPlayerState? FindPlayer(PlayerId id) => Players.SingleOrDefault(player => player.Id == id);
@@ -243,7 +261,11 @@ public sealed class MatchState
     public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>
         GetNotificationQueue(player).TryDequeue(out notification);
 
-    public TurnTransition FinishUpkeep() => CaptureBoundary(Coordinator.FinishUpkeep());
+    public TurnTransition FinishUpkeep()
+    {
+        LastUpkeepResolutions = EconomyResolver.ResolveUpkeep(this);
+        return CaptureBoundary(Coordinator.FinishUpkeep());
+    }
     public TurnTransition FinishCommand(PlayerId player) => CaptureBoundary(Coordinator.FinishCommand(player));
     public TurnTransition FinishExecutionPhase()
     {
@@ -339,6 +361,23 @@ public sealed class MatchState
         return gameEvent;
     }
 
+    internal GameEvent AppendUpkeepEvent(PlayerId player, EconomyResolutionDetails economy)
+    {
+        var gameEvent = new GameEvent(
+            _nextEventSequence++,
+            Coordinator.Turn,
+            Coordinator.Phase,
+            Coordinator.ExecutionPhase,
+            GameEventKind.UpkeepResolved,
+            player,
+            null,
+            GangAction.None,
+            CommandTarget.None,
+            Economy: economy);
+        _events.Add(gameEvent);
+        return gameEvent;
+    }
+
     internal GameNotification QueueNotification(
         PlayerId player,
         GameNotificationKind kind,
@@ -404,6 +443,12 @@ public sealed class MatchState
         if (sectors.SelectMany(sector => sector.Sites)
             .Any(site => !definitions.Sites.Any(definition => definition.Id == site.DefinitionId)))
             throw new ArgumentException("A sector contains an unknown site definition.", nameof(sectors));
+        var playerIds = players.Select(player => player.Id).ToHashSet();
+        if (sectors.Any(sector => sector.Owner is { } owner && !playerIds.Contains(owner)))
+            throw new ArgumentException("A sector owner is not part of the match.", nameof(sectors));
+        if (sectors.SelectMany(sector => sector.Sites)
+            .Any(site => site.InfluencedBy is { } owner && !playerIds.Contains(owner)))
+            throw new ArgumentException("A site influencer is not part of the match.", nameof(sectors));
     }
 
     private static IEnumerable<short> EquippedItemIds(MatchGangState gang)

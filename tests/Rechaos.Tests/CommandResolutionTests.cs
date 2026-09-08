@@ -20,7 +20,10 @@ public sealed class CommandResolutionTests
         Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
         Assert.Equal(GameEventKind.CommandResolved, match.Events[^1].Kind);
         Assert.Equal(CommandResolutionCode.Resolved, match.Events[^1].Resolution!.Code);
-        Assert.Equal(match.Events[^1].Sequence, Assert.Single(match.NotificationsFor(new PlayerId(0))).RelatedEventSequence);
+        var commandNotification = Assert.Single(
+            match.NotificationsFor(new PlayerId(0)),
+            item => item.Kind == GameNotificationKind.CommandResult);
+        Assert.Equal(match.Events[^1].Sequence, commandNotification.RelatedEventSequence);
         Assert.Equal(ExecutionPhase.Combat, match.Coordinator.ExecutionPhase);
     }
 

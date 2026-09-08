@@ -22,7 +22,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Notifications | Bounded per-player ordered queues | Mechanical notification schema and deterministic overflow implemented | Recreation safety bound; original capacity/overflow unknown, Low | Recover original queue layout, capacity and delivery order |
 | Starting state | Right Hands in controlled sector | Documented | Manual, High | Implement exact setup |
 | Hire pool | Three distinct offers; placement in Hire phase | Provisional | Manual, High | Deferred-hire fixture |
-| Cash/upkeep | Income then upkeep, zero floor rules | Provisional | Manual, High | Multi-turn state comparison |
+| Cash/upkeep | Sector/site income then active-gang upkeep with zero floor | Ordered Upkeep-phase resolver, component events, notifications and hashes implemented | Manual formula High; phase boundary/desertion modifiers Medium/Low | Reference zero-cash and multi-turn fixtures |
 | Sector control | Force + Control contest | Provisional | Manual formula, Medium | Neutral/enemy/tie fixtures |
 | Influence | Force + Influence versus site resistance | Documented | Manual, High | Implement and diff saves |
 | Chaos | Income/chaos/crackdown effects | Documented | Manual, Medium | Controlled roll experiment |
@@ -52,8 +52,9 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 
 ## Current blockers to parity claims
 
-- The headless PCG32 stream and prototype `System.Random` are not known to match
-  the original RNG.
+- The headless raw RNG and bounded wrapper match recovered binary control flow,
+  but initial seeding and complete call order remain unknown; the prototype
+  `System.Random` does not match the recovered algorithm.
 - City generation selects sites uniformly instead of using verified frequency
   and class rules.
 - Hiring happens immediately and uses provisional price selection.

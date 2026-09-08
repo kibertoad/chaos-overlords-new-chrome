@@ -2,6 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 public enum GameEventKind : byte
 {
+    UpkeepResolved,
     CommandQueued,
     CommandReplaced,
     CommandCancelled,
@@ -17,6 +18,17 @@ public sealed record CommandResolutionDetails(
     int? ResultValue = null,
     int CashDelta = 0);
 
+public sealed record EconomyResolutionDetails(
+    int PreviousCash,
+    int SectorIncome,
+    int SiteIncome,
+    int GangUpkeep,
+    int ResultCash)
+{
+    public int NetChange => ResultCash - PreviousCash;
+    public bool WasFlooredAtZero => PreviousCash + SectorIncome + SiteIncome - GangUpkeep < 0;
+}
+
 /// <summary>An ordered mechanical fact suitable for UI, replay, and parity fixtures.</summary>
 public sealed record GameEvent(
     long Sequence,
@@ -25,8 +37,9 @@ public sealed record GameEvent(
     ExecutionPhase? ExecutionPhase,
     GameEventKind Kind,
     PlayerId Player,
-    GangId Gang,
+    GangId? Gang,
     GangAction Action,
     CommandTarget Target,
     CommandTarget? SecondaryTarget = null,
-    CommandResolutionDetails? Resolution = null);
+    CommandResolutionDetails? Resolution = null,
+    EconomyResolutionDetails? Economy = null);

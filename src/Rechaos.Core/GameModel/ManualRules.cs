@@ -16,6 +16,7 @@ public static class ManualRules
     public const int PoliceCombat = 20;
     public const int PoliceDetect = 12;
     public const int HealBaseDice = 4;
+    public const int ControlledSectorTax = 1;
 
     public static int ApplyBribe(int tolerance)
     {
