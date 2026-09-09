@@ -131,6 +131,9 @@ The item workflow projects research/equipment state and submits Research,
 Equip, and Sell through the replay recorder and authoritative Core validator.
 Computer Command/Hire turns use the deterministic baseline in `AI-SPEC.md` and
 submit through that same recorder; its policy is not an original-parity claim.
+The audio router consumes newly appended attack-resolution events and maps an
+equipped item's original Sound field to `SND005xx`; it never feeds playback
+state or timing back into the simulation.
 
 Target presentation layers:
 

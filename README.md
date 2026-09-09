@@ -56,6 +56,7 @@ equipment, B for the combat summary, and Space to advance.
 X opens the selected sector's detection-filtered gang search.
 The mapped city-panel buttons also open gang, sector, finance, and ranking views;
 gang, hire, and site panels use the original portrait sheets.
+Resolved equipped-weapon attacks play their original extracted `SND005xx` cue.
 F5/F9 save/load and F6/F10
 save/verify replays. Escape returns to the title screen before quitting.
 

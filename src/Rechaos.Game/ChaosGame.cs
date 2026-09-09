@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.Assets;
@@ -71,6 +72,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
     private PixelFont? _font;
+    private readonly Dictionary<short, SoundEffect> _weaponSounds = [];
     private MatchState? _state;
     private MatchReplayRecorder? _replay;
     private OriginalData? _definitions;
@@ -88,6 +90,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private string _message = "SELECT NEW GAME";
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
+    private long _lastAudibleEventSequence = -1;
 
     public ChaosGame(string assetRoot)
     {
@@ -131,6 +134,11 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _gangInfoBackground = LoadTexture("PX05000.bmp");
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
+        for (short index = 0; index <= 18; index++)
+        {
+            var sound = LoadSound(AudioRouting.SoundFile(index));
+            if (sound is not null) _weaponSounds.Add(index, sound);
+        }
     }
 
     protected override void Update(GameTime gameTime)
@@ -208,6 +216,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (mouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released
             && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint))
             HandleClick(virtualPoint);
+        PlayNewCombatSounds();
         _previousKeyboard = keyboard;
         _previousMouse = mouse;
         base.Update(gameTime);
@@ -553,6 +562,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _cursor = _state.Players[0].Gangs[0].SectorId;
         _selectedGangIndex = 0;
         _message = "ADVANCE UPKEEP TO BEGIN";
+        _lastAudibleEventSequence = -1;
         _screens.Show(ClientScreen.City);
     }
 
@@ -1350,6 +1360,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _selectedGangIndex = 0;
             _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
+            _lastAudibleEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
             _screens.Show(_state.Outcome is null ? ClientScreen.City : ClientScreen.Endgame);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -1381,6 +1392,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             _replay = new MatchReplayRecorder(_state);
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _message = "REPLAY VERIFIED";
+            _lastAudibleEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -1426,6 +1438,27 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (!File.Exists(path)) return null;
         using var stream = File.OpenRead(path);
         return Texture2D.FromStream(GraphicsDevice, stream);
+    }
+
+    private SoundEffect? LoadSound(string fileName)
+    {
+        var path = Path.Combine(_assetRoot, "audio", fileName);
+        if (!File.Exists(path)) return null;
+        using var stream = File.OpenRead(path);
+        return SoundEffect.FromStream(stream);
+    }
+
+    private void PlayNewCombatSounds()
+    {
+        if (_state is null) return;
+        foreach (var gameEvent in _state.Events.Where(value => value.Sequence > _lastAudibleEventSequence)
+                     .OrderBy(value => value.Sequence))
+        {
+            if (AudioRouting.WeaponSound(_state, gameEvent) is { } soundIndex
+                && _weaponSounds.TryGetValue(soundIndex, out var sound))
+                sound.Play();
+            _lastAudibleEventSequence = gameEvent.Sequence;
+        }
     }
 
     private void ValidateAssetPack()

@@ -641,6 +641,10 @@ Gate: single-player campaigns complete reliably and AI validation targets pass.
 Deliver sprite/animation atlas, effects, music, video, original UI polish and
 native-resolution visual baselines.
 
+Current foundation: original city/site/gang imagery is routed, and resolved
+equipped-weapon attacks use item-defined `SND005xx` cues. Remaining trigger,
+animation, music, video, and exact visual behavior is still required.
+
 Depends on: M1-M6 event model, complete asset catalog.
 Gate: visual and media trigger comparisons pass across the entire game flow.
 
