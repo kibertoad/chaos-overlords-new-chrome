@@ -74,6 +74,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _gangInfoBackground;
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
+    private Texture2D? _policeSprites;
     private PixelFont? _font;
     private readonly Dictionary<short, SoundEffect> _weaponSounds = [];
     private MatchState? _state;
@@ -139,6 +140,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _gangInfoBackground = LoadTexture("PX05000.bmp");
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
+        _policeSprites = LoadTexture("PX00300.bmp", transparentBlack: true);
         for (short index = 0; index <= 18; index++)
         {
             var sound = LoadSound(AudioRouting.SoundFile(index));
@@ -701,6 +703,12 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 batch.Draw(pixel, destination, sector.Owner is { } owner
                     ? PlayerColors[owner.Value] * .68f
                     : new Color(24, 37, 39));
+            if (sector.CrackdownActive && _policeSprites is not null)
+                batch.Draw(
+                    _policeSprites,
+                    new Rectangle(destination.X + 14, destination.Y + 10, 27, 32),
+                    OriginalSpriteLayout.PolicePatrolCar,
+                    Color.White);
             if (index == _cursor) DrawBorder(batch, pixel, destination, Color.Gold, 2);
         }
 
@@ -1551,12 +1559,20 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private bool Pressed(KeyboardState current, Keys key) => current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
 
-    private Texture2D? LoadTexture(string fileName)
+    private Texture2D? LoadTexture(string fileName, bool transparentBlack = false)
     {
         var path = Path.Combine(_assetRoot, "images", fileName);
         if (!File.Exists(path)) return null;
         using var stream = File.OpenRead(path);
-        return Texture2D.FromStream(GraphicsDevice, stream);
+        var texture = Texture2D.FromStream(GraphicsDevice, stream);
+        if (!transparentBlack) return texture;
+        var colors = new Color[texture.Width * texture.Height];
+        texture.GetData(colors);
+        for (var index = 0; index < colors.Length; index++)
+            if (colors[index].R == 0 && colors[index].G == 0 && colors[index].B == 0)
+                colors[index] = Color.Transparent;
+        texture.SetData(colors);
+        return texture;
     }
 
     private SoundEffect? LoadSound(string fileName)

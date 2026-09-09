@@ -118,6 +118,8 @@ public static class CityMapLayout
 
 public static class OriginalSpriteLayout
 {
+    public static Rectangle PolicePatrolCar => new(116, 0, 48, 64);
+
     public static Rectangle SitePortrait(int definitionId)
     {
         if (definitionId is < 0 or >= 22) throw new ArgumentOutOfRangeException(nameof(definitionId));
