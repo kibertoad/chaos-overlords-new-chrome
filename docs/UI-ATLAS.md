@@ -64,10 +64,18 @@ validated against the executable.
 - Extracted RGB555 bitmaps are loaded from the installed asset pack; they are
   not embedded in source or redistributed.
 
+## `PX00128` provisional control routes
+
+The city frame currently routes Events `(492,124,50,51)`, Financial
+`(548,176,50,49)`, Gangs `(492,226,50,49)`, Sector `(548,226,50,49)`, and
+Ranking `(548,276,50,49)`. These rectangles come from bitmap inspection and
+remain provisional until executable capture confirms their exact edges and
+pressed states.
+
 ## Next mapping work
 
 1. Identify the main-city content layers placed inside the black viewport of
-   `PX00128` and map its right-panel button rectangles.
+   `PX00128` and validate/complete its provisional right-panel button rectangles.
 2. Correlate `PX00143` through `PX00146` with local/network player counts.
 3. Map fonts, cursor frames, selection/pressed-state sprites and transparency.
 4. Capture reference screenshots for title, every setup configuration and the

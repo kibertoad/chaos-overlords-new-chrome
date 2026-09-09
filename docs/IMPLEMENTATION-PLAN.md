@@ -42,7 +42,7 @@ is ever attempted.
 | Original data | Embedded 22 sites, 90 gangs, and 64 items with pinned provenance | Semantic/formula validation, versioned generation tool |
 | Extraction | Transactional/versioned full-pack SHA-256 validation; 215 repaired RGB555 PX16 images, 214 retained plus decoded PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files; generated 685-output factual catalog | Transparency/color-key validation, video strategy, semantic role/owner resolution |
 | Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, Upkeep, all 14 command resolvers, simultaneous gang/Crackdown combat, hidden attack/visibility checks, and local influenced-site stats | Crackdown duration/aftermath, special buildings, original RNG seeding/order and exact parity formulas |
-| Client | Scaled 640x460 routed setup/handoff/city/sector/gang/commands/hire/events/endgame UI backed by authoritative `MatchState`; recovered setup; local controls; private handoff; Core-derived commands; hire/snub and notification panels; mouse/keyboard, saves/replays | Full setup detail, richer target workflow, sprites/atlas, finance/research/ranking and remaining management panels/hit maps, AI driver, animation, sound/music, accessibility |
+| Client | Scaled 640x460 routed setup/handoff/city/sector/gang/finance/ranking/commands/hire/events/endgame UI backed by authoritative `MatchState`; recovered setup; local controls; private handoff; Core-derived commands and projections; hire/snub and notification panels; mouse/keyboard, saves/replays | Full setup detail, richer target workflow, sprites/atlas, research/equipment and remaining management panels/hit maps, AI driver, animation, sound/music, accessibility |
 | Tests | Parser/header/provenance, asset verification, scenarios, manual rules, deterministic non-combat action resolution, command queue and phase coordinator | Reference fixtures, combat, AI snapshots, save compatibility, visual tests |
 | Documentation | File/binary research, generated factual asset catalog, architecture, validation, parity matrix, roadmap and initial full-screen UI atlas/hit map | Complete sprite atlas, rules, original save map and remaining documents listed in section 4 |
 
@@ -452,6 +452,12 @@ tournaments without invalid state, stalls, or nondeterminism.
 
 ### J. User interface and input
 
+Functional UI is delivered incrementally with the gameplay milestones: the
+shell and city workflow begin in M1, command and management screens land through
+M2-M5, and every scenario must be locally operable at the M5 gate. M7 is the
+separate visual-parity pass for exact sprites, animation, audio, interaction
+polish, and golden screenshots; it is not the first appearance of a usable UI.
+
 - Inventory every screen: logos/intro, title, menus, setup, scenario panel, game
   info, city view, sector view, gangs, sites, items/research, notifications,
   score/victory, save/load, preferences, help and multiplayer screens.
@@ -615,7 +621,8 @@ Gate: complete reference turns produce matching state hashes.
 ### M5 - Objectives and full hot-seat game
 
 Deliver scoring, all victory conditions, endgame/statistics, save/load and every
-required management screen.
+required management screen. Finance and live ranking are implemented; research,
+equipment, and the remaining original management workflows are still required.
 
 Depends on: M4.
 Gate: all ten scenarios can be completed locally with reference-equivalent rules.

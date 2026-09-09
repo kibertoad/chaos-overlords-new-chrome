@@ -33,8 +33,10 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle CityAction = new(430, 415, 86, 24);
     private static readonly Rectangle CityAdvance = new(524, 415, 96, 24);
     private static readonly Rectangle CityEvents = new(492, 124, 50, 51);
+    private static readonly Rectangle CityFinance = new(548, 176, 50, 49);
     private static readonly Rectangle CityGangs = new(492, 226, 50, 49);
     private static readonly Rectangle CitySector = new(548, 226, 50, 49);
+    private static readonly Rectangle CityRanking = new(548, 276, 50, 49);
     private static readonly Rectangle EventsDismiss = new(218, 414, 96, 28);
     private static readonly Rectangle EventsBack = new(322, 414, 96, 28);
     private static readonly Rectangle CommandsQueue = new(218, 414, 96, 28);
@@ -164,6 +166,11 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                     _screens.Show(ClientScreen.City);
                 break;
+            case ClientScreen.Finance:
+            case ClientScreen.Ranking:
+                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    _screens.Show(ClientScreen.City);
+                break;
         }
         if (mouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released
             && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint))
@@ -213,6 +220,12 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Gang when _state is not null:
                 DrawGangDetails(_batch, _pixel, _font, _state);
                 break;
+            case ClientScreen.Finance when _state is not null:
+                DrawFinance(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.Ranking when _state is not null:
+                DrawRanking(_batch, _pixel, _font, _state);
+                break;
         }
         _batch.End();
         base.Draw(gameTime);
@@ -246,6 +259,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.C)) OpenCommands();
         if (Pressed(keyboard, Keys.G)) CycleGang(1);
         if (Pressed(keyboard, Keys.I)) _screens.Show(ClientScreen.Sector);
+        if (Pressed(keyboard, Keys.F)) _screens.Show(ClientScreen.Finance);
+        if (Pressed(keyboard, Keys.R)) _screens.Show(ClientScreen.Ranking);
         if (Pressed(keyboard, Keys.H)) OpenHire();
         if (Pressed(keyboard, Keys.Space)) AdvancePhase();
         if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
@@ -294,6 +309,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Sector:
             case ClientScreen.Gang:
+            case ClientScreen.Finance:
+            case ClientScreen.Ranking:
                 if (ManagementBack.Contains(point)) _screens.Show(ClientScreen.City);
                 break;
         }
@@ -320,8 +337,10 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
         else if (CityAdvance.Contains(point)) AdvancePhase();
         else if (CityEvents.Contains(point)) _screens.Show(ClientScreen.Events);
+        else if (CityFinance.Contains(point)) _screens.Show(ClientScreen.Finance);
         else if (CityGangs.Contains(point)) _screens.Show(ClientScreen.Gang);
         else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
+        else if (CityRanking.Contains(point)) _screens.Show(ClientScreen.Ranking);
     }
 
     private void OpenCommands()
@@ -707,6 +726,91 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
         DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
     }
+
+    private void DrawFinance(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
+        DrawManagementPanel(batch, pixel);
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var player = state.FindPlayer(playerId)!;
+        var forecast = EconomyResolver.Project(state, player);
+        font.Draw(batch, "FINANCIAL", new Vector2(18, 60), Color.Gold, 2);
+        font.Draw(batch, player.Setup.Name, new Vector2(18, 86), PlayerColors[playerId.Value], 1);
+        string[] rows =
+        [
+            $"CURRENT CASH       ${forecast.CurrentCash}",
+            $"SECTOR TAXES       +${forecast.SectorIncome}",
+            $"SITE INCOME        +${forecast.SiteIncome}",
+            $"GANG UPKEEP        -${forecast.GangUpkeep}",
+            "---------------------------",
+            $"NEXT BALANCE       ${forecast.ResultCash}",
+            $"NET CHANGE         {Signed(forecast.NetChange)}",
+            "",
+            $"TOTAL CASH EARNED  ${player.Statistics.CashEarned}",
+            $"TOTAL CASH SPENT   ${player.Statistics.CashSpent}"
+        ];
+        for (var index = 0; index < rows.Length; index++)
+            font.Draw(batch, rows[index], new Vector2(18, 120 + index * 22), Color.White, 1);
+        font.Draw(batch, "PROJECTED AT NEXT UPKEEP", new Vector2(18, 368), new Color(180, 230, 170), 1);
+        DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
+    }
+
+    private void DrawRanking(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
+        DrawManagementPanel(batch, pixel);
+        var scenario = ScenarioCatalog.Get(state.Setup.Scenario);
+        font.Draw(batch, "RANKING", new Vector2(18, 60), Color.Gold, 2);
+        font.Draw(batch, scenario.Name, new Vector2(18, 86), Color.White, 1);
+        font.Draw(batch, scenario.Objective.ToUpperInvariant(), new Vector2(18, 104), new Color(180, 230, 170), 1);
+
+        if (scenario.IsTimed)
+        {
+            var standings = EndgameRankingEvaluator.EvaluateTimed(state);
+            foreach (var entry in standings.Select((standing, index) => (standing, index)))
+            {
+                var player = state.FindPlayer(entry.standing.Player)!;
+                var y = 142 + entry.index * 38;
+                font.Draw(batch, $"{entry.standing.Place}. {player.Setup.Name}", new Vector2(18, y),
+                    PlayerColors[player.Id.Value], 1);
+                font.Draw(batch, $"SCORE {entry.standing.Score}", new Vector2(234, y), Color.White, 1);
+            }
+            var turns = ScenarioCatalog.Turns(state.Setup.Duration);
+            font.Draw(batch, $"TURN {state.Coordinator.Turn} OF {turns}", new Vector2(18, 382), Color.White, 1);
+        }
+        else
+        {
+            foreach (var entry in state.Players.OrderBy(player => player.Id.Value)
+                         .Select((player, index) => (player, index)))
+            {
+                var score = MatchOutcomeEvaluator.Project(state, entry.player);
+                var y = 142 + entry.index * 38;
+                font.Draw(batch, entry.player.Setup.Name, new Vector2(18, y),
+                    PlayerColors[entry.player.Id.Value], 1);
+                font.Draw(batch, ObjectiveProgress(state.Setup.Scenario, score),
+                    new Vector2(170, y), Color.White, 1);
+            }
+        }
+        DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
+    }
+
+    private void DrawManagementPanel(SpriteBatch batch, Texture2D pixel)
+    {
+        if (_cityBackground is not null)
+            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
+    }
+
+    private static string Signed(int value) => value >= 0 ? $"+${value}" : $"-${Math.Abs(value)}";
+
+    private static string ObjectiveProgress(ScenarioId scenario, PlayerScoreState score) => scenario switch
+    {
+        ScenarioId.KillEmAll => score.IsAlive ? $"ALIVE  FOES {score.OpponentsAlive}" : "ELIMINATED",
+        ScenarioId.Big40 => $"SECTORS {score.ControlledSectors}/40",
+        ScenarioId.Eliminate => $"ENEMY RIGHT HANDS {score.OpposingRightHandsAlive}",
+        ScenarioId.Siege => $"IMPORTANT {score.ImportantSectorsControlled}/6",
+        ScenarioId.BigMan => $"POINTS {score.BigManPoints}/40",
+        ScenarioId.Armageddon => $"SECTORS {score.ControlledSectors}/{MatchLimits.SectorCount}",
+        _ => ""
+    };
 
     private static string ItemName(MatchState state, short? itemId) =>
         itemId is { } id ? state.Definitions.Items[id].Name : "NONE";

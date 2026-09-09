@@ -76,6 +76,27 @@ public sealed class EconomyResolutionTests
         Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
     }
 
+    [Fact]
+    public void EconomyProjectionMatchesUpkeepWithoutMutatingState()
+    {
+        var match = CreateMatch(20);
+        var player = match.Players[0];
+        var before = MatchStateHasher.ComputeSha256(match);
+
+        var forecast = EconomyResolver.Project(match, player);
+
+        Assert.Equal(before, MatchStateHasher.ComputeSha256(match));
+        Assert.Equal(new EconomyForecast(20, 2, 5, 3, 24), forecast);
+
+        match.FinishUpkeep();
+        var resolved = match.LastUpkeepResolutions[0].Details;
+        Assert.Equal(forecast.CurrentCash, resolved.PreviousCash);
+        Assert.Equal(forecast.SectorIncome, resolved.SectorIncome);
+        Assert.Equal(forecast.SiteIncome, resolved.SiteIncome);
+        Assert.Equal(forecast.GangUpkeep, resolved.GangUpkeep);
+        Assert.Equal(forecast.ResultCash, resolved.ResultCash);
+    }
+
     private static MatchState CreateMatch(
         int playerZeroCash,
         bool playerZeroOwnsSectors = true,

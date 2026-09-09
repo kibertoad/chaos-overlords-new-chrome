@@ -48,8 +48,9 @@ and provides title, new-game setup, and deterministic 8x8 hot-seat city screens.
 Setup supports scenario, duration, and one-to-six local players using keyboard
 or mouse. In the city, use arrows/WASD or click to select, Enter or a second
 click to act, G to cycle gangs, C to open the legal-command picker, H to open
-the three-offer hire panel (including snubbing), I for sector details, and Space
-to advance. The mapped city-panel buttons also open gang and sector information.
+the three-offer hire panel (including snubbing), I for sector details, F for the
+next-upkeep financial projection, R for scenario ranking, and Space to advance.
+The mapped city-panel buttons also open gang, sector, finance, and ranking views.
 F5/F9 save/load and F6/F10
 save/verify replays. Escape returns to the title screen before quitting.
 
