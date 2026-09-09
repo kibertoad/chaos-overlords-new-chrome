@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
@@ -59,5 +60,51 @@ public static class VirtualInput
         var y = (physical.Y - top) / scale;
         virtualPoint = new Point((int)x, (int)y);
         return x >= 0 && x < Width && y >= 0 && y < Height;
+    }
+}
+
+/// <summary>Native layout of the 8x8 sector cells in the PX10000-PX10006 city layers.</summary>
+public static class CityMapLayout
+{
+    public const int Left = 2;
+    public const int Top = 44;
+    public const int TileWidth = 54;
+    public const int TileHeight = 52;
+
+    public static Rectangle Source(int sectorId)
+    {
+        ValidateSector(sectorId);
+        return new Rectangle(
+            sectorId % 8 * TileWidth,
+            sectorId / 8 * TileHeight,
+            TileWidth,
+            TileHeight);
+    }
+
+    public static Rectangle Destination(int sectorId)
+    {
+        var source = Source(sectorId);
+        return new Rectangle(Left + source.X, Top + source.Y, source.Width, source.Height);
+    }
+
+    public static int OwnershipSheet(PlayerId? owner) => owner?.Value + 1 ?? 0;
+
+    public static bool TrySectorAt(Point point, out int sectorId)
+    {
+        var x = point.X - Left;
+        var y = point.Y - Top;
+        if (x < 0 || x >= TileWidth * 8 || y < 0 || y >= TileHeight * 8)
+        {
+            sectorId = -1;
+            return false;
+        }
+        sectorId = y / TileHeight * 8 + x / TileWidth;
+        return true;
+    }
+
+    private static void ValidateSector(int sectorId)
+    {
+        if (sectorId is < 0 or >= MatchLimits.SectorCount)
+            throw new ArgumentOutOfRangeException(nameof(sectorId));
     }
 }

@@ -43,8 +43,9 @@ redistributed.
 ## Current playable slice
 
 The port loads the original 16-bit artwork at native 640x460 resolution with
-integer-friendly point scaling, parses all 22 sites, 90 gangs, and 64 items,
-and provides title, new-game setup, and deterministic 8x8 hot-seat city screens.
+integer-friendly point scaling, including ownership-composited `PX1000x` city
+layers. It parses all 22 sites, 90 gangs, and 64 items and provides title,
+new-game setup, and deterministic 8x8 hot-seat city screens.
 Setup supports scenario, duration, and one-to-six local players using keyboard
 or mouse. In the city, use arrows/WASD or click to select, Enter or a second
 click to act, G to cycle gangs, C to open the legal-command picker, H to open

@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+using Rechaos.Core.GameModel;
 using Rechaos.Game;
 using Xunit;
 
@@ -46,5 +48,25 @@ public sealed class UiNavigationTests
         router.Show(ClientScreen.Ranking);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.City, router.Current);
+    }
+
+    [Fact]
+    public void CityMapLayoutMapsEveryAtlasTileAndOwnershipLayer()
+    {
+        for (var sector = 0; sector < MatchLimits.SectorCount; sector++)
+        {
+            var source = CityMapLayout.Source(sector);
+            var destination = CityMapLayout.Destination(sector);
+            Assert.Equal(source.X + CityMapLayout.Left, destination.X);
+            Assert.Equal(source.Y + CityMapLayout.Top, destination.Y);
+            Assert.True(CityMapLayout.TrySectorAt(destination.Center, out var mapped));
+            Assert.Equal(sector, mapped);
+        }
+
+        Assert.Equal(new Rectangle(0, 0, 54, 52), CityMapLayout.Source(0));
+        Assert.Equal(new Rectangle(378, 364, 54, 52), CityMapLayout.Source(63));
+        Assert.Equal(0, CityMapLayout.OwnershipSheet(null));
+        Assert.Equal(6, CityMapLayout.OwnershipSheet(new PlayerId(5)));
+        Assert.False(CityMapLayout.TrySectorAt(new Point(434, 460), out _));
     }
 }

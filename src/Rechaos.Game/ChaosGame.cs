@@ -11,7 +11,7 @@ namespace Rechaos.Game;
 public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 {
     private static readonly Color[] PlayerColors =
-        [Color.Crimson, Color.CornflowerBlue, Color.LimeGreen, Color.Gold, Color.MediumPurple, Color.DarkOrange];
+        [Color.Red, Color.LimeGreen, Color.Blue, Color.Yellow, Color.Magenta, Color.Cyan];
     private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 200, 34);
@@ -57,6 +57,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _titleBackground;
     private Texture2D? _setupBackground;
     private Texture2D? _cityBackground;
+    private readonly Texture2D?[] _cityOwnershipLayers = new Texture2D?[MatchLimits.PlayerCount + 1];
     private Texture2D? _endgameBackground;
     private Texture2D? _handoffPanel;
     private Texture2D? _gangInfoBackground;
@@ -111,6 +112,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _titleBackground = LoadTexture("PX00130.bmp");
         _setupBackground = LoadTexture("PX00143.bmp");
         _cityBackground = LoadTexture("PX00128.bmp");
+        for (var index = 0; index < _cityOwnershipLayers.Length; index++)
+            _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
         _endgameBackground = LoadTexture("PX00200.bmp");
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
@@ -318,11 +321,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void HandleCityClick(Point point)
     {
-        const int left = 10, top = 49, cellWidth = 52, cellHeight = 42;
-        if (point.X >= left && point.X < left + cellWidth * 8
-            && point.Y >= top && point.Y < top + cellHeight * 8)
+        if (CityMapLayout.TrySectorAt(point, out var selected))
         {
-            var selected = (point.Y - top) / cellHeight * 8 + (point.X - left) / cellWidth;
             if (_cursor == selected) QueueBoardCommand();
             else
             {
@@ -484,32 +484,33 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
         var player = state.Players[playerIndex];
         var selectedGang = SelectedGang(player);
-        batch.Draw(pixel, new Rectangle(8, 7, 420, 29), new Color(0, 0, 0, 205));
-        font.Draw(batch, $"TURN {state.Coordinator.Turn}  {player.Setup.Name}  ${player.Cash}",
-            new Vector2(16, 17), Color.White, 1);
-
-        const int left = 10, top = 49, cellWidth = 52, cellHeight = 42;
-        batch.Draw(pixel, new Rectangle(left - 4, top - 4, cellWidth * 8 + 8, cellHeight * 8 + 8), new Color(0, 0, 0, 190));
         for (var index = 0; index < state.Sectors.Count; index++)
         {
             var sector = state.Sectors[index];
-            var x = left + index % 8 * cellWidth;
-            var y = top + index / 8 * cellHeight;
-            var fill = sector.Owner is null
-                ? new Color(24, 37, 39, 220)
-                : PlayerColors[sector.Owner.Value.Value] * .68f;
-            batch.Draw(pixel, new Rectangle(x + 1, y + 1, cellWidth - 2, cellHeight - 2), fill);
-            batch.Draw(pixel, new Rectangle(x + 4, y + 5, cellWidth - 8, 1), new Color(100, 125, 112));
-            font.Draw(batch, (index + 1).ToString("00"), new Vector2(x + 5, y + 13), Color.White, 1);
-            font.Draw(batch, "$" + SectorSiteIncome(state, sector), new Vector2(x + 30, y + 13), new Color(180, 230, 170), 1);
-            if (index == _cursor) DrawBorder(batch, pixel, new Rectangle(x, y, cellWidth, cellHeight), Color.Gold, 2);
+            var destination = CityMapLayout.Destination(index);
+            var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
+            if (layer is not null)
+                batch.Draw(layer, destination, CityMapLayout.Source(index), Color.White);
+            else
+                batch.Draw(pixel, destination, sector.Owner is { } owner
+                    ? PlayerColors[owner.Value] * .68f
+                    : new Color(24, 37, 39));
+            if (index == _cursor) DrawBorder(batch, pixel, destination, Color.Gold, 2);
         }
 
-        batch.Draw(pixel, new Rectangle(8, 389, 420, 60), new Color(0, 0, 0, 220));
-        font.Draw(batch, SectorSummary(state, state.Sectors[_cursor]), new Vector2(14, 395), Color.White, 1);
+        var selectedSector = state.Sectors[_cursor];
+        batch.Draw(pixel, new Rectangle(474, 5, 114, 108), new Color(0, 0, 0, 205));
+        font.Draw(batch, player.Setup.Name, new Vector2(480, 12), PlayerColors[playerIndex], 1);
+        font.Draw(batch, $"T{state.Coordinator.Turn} {state.Coordinator.Phase.ToString().ToUpperInvariant()}",
+            new Vector2(480, 26), Color.Lime, 1);
+        font.Draw(batch, $"CASH ${player.Cash}", new Vector2(480, 48), Color.Lime, 1);
+        font.Draw(batch, $"SECTOR {_cursor + 1}", new Vector2(480, 64), Color.Lime, 1);
+        font.Draw(batch, $"INCOME ${SectorSiteIncome(state, selectedSector)}", new Vector2(480, 78), Color.Lime, 1);
+        font.Draw(batch, $"CHAOS {selectedSector.Chaos}", new Vector2(480, 92), Color.Lime, 1);
         var selectedLabel = selectedGang is null ? "NO GANG" : $"GANG {selectedGang.Id.Value}";
-        font.Draw(batch, $"{selectedLabel}  {player.Gangs.Count}/{MatchLimits.GangsPerPlayer}", new Vector2(14, 410), PlayerColors[playerIndex], 1);
-        font.Draw(batch, _message, new Vector2(112, 410), Color.Gold, 1);
+        font.Draw(batch, _message.Length <= 32 ? _message : _message[..32],
+            new Vector2(438, 374), Color.Gold, 1);
+        font.Draw(batch, selectedLabel, new Vector2(438, 393), PlayerColors[playerIndex], 1);
         DrawButton(batch, pixel, font, CityAction,
             state.Coordinator.Phase == TurnPhase.Hire ? "HIRE" : "ACTION", false);
         DrawButton(batch, pixel, font, CityAdvance, "ADVANCE", false);
@@ -1042,11 +1043,6 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     }
 
     private static int SectorSiteIncome(MatchState state, MatchSectorState sector) => sector.Income;
-
-    private static string SectorSummary(MatchState state, MatchSectorState sector) =>
-        $"SECTOR {sector.Id + 1}  TOL {sector.Tolerance}  "
-        + string.Join(", ", sector.Sites.Select(site =>
-            state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Name));
 
     private static void DrawCentered(
         PixelFont font, SpriteBatch batch, string text, int y, Color color, int scale)

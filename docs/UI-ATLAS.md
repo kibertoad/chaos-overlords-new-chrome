@@ -37,6 +37,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00300` | Police unit/equipment header sprites | High from visible content |
 | `PX03000` | Gang portrait/sprite composite | High from visible content |
 | `PX05000`-`PX05024` | Gang-information panel family | Medium from visible template fields |
+| `PX10000`-`PX10006` | Neutral plus six player-colored 8x8 city layers; each sector is a 54x52 source cell | High from dimensions, grid, and color inspection |
 
 ## `PX00143` provisional hit map
 
@@ -63,6 +64,8 @@ validated against the executable.
 - Mouse coordinates are inverse-mapped through the same scale/offset as drawing.
 - Extracted RGB555 bitmaps are loaded from the installed asset pack; they are
   not embedded in source or redistributed.
+- City sectors use their fixed 54 by 52 cell from `PX10000` when neutral or
+  `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
 
 ## `PX00128` provisional control routes
 
