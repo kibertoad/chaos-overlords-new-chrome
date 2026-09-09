@@ -395,4 +395,24 @@ public sealed partial class ChaosGame
         var indices = EquipmentCommandIndices(_state);
         if (indices.Count > 0) _commandTargetCursor = indices[0];
     }
+
+    private static string FormatCommandTargets(MatchState state, GameCommand command)
+    {
+        var text = command.Target.Kind == CommandTargetKind.None
+            ? command.Action.ToString().ToUpperInvariant()
+            : FormatTarget(state, command.Target);
+        if (command.SecondaryTarget is { } secondary)
+            text += " / " + FormatTarget(state, secondary);
+        return text;
+    }
+
+    private static string FormatTarget(MatchState state, CommandTarget target) => target.Kind switch
+    {
+        CommandTargetKind.Gang => "GANG " + target.Id,
+        CommandTargetKind.Sector => "SECTOR " + (target.Id + 1),
+        CommandTargetKind.Site => state.Definitions.Sites.Single(definition => definition.Id ==
+            state.FindSite(target.Id)!.DefinitionId).Name,
+        CommandTargetKind.Item => state.Definitions.Items[target.Id].Name,
+        _ => ""
+    };
 }

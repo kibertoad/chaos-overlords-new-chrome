@@ -135,7 +135,8 @@ The client shell is a partial class split by responsibility. `ChaosGame.cs`
 retains the loop, shared client state, and top-level input/screen routing.
 `ChaosGame.Assets.cs`, `ChaosGame.Setup.cs`, and `ChaosGame.Persistence.cs`
 isolate media loading, setup, and snapshot/replay I/O. `ChaosGame.TurnFlow.cs`
-owns planning handoff and computer-turn orchestration; `ChaosGame.Hire.cs` owns
+owns planning handoff, its presentation, and computer-turn orchestration;
+`ChaosGame.Endgame.cs` owns completed-match presentation; `ChaosGame.Hire.cs` owns
 the hire dock, comparison screen, and hire interactions. `ChaosGame.City.cs`
 owns city navigation, control-panel routing, board rendering, status projection,
 and direct map-command assignment. `ChaosGame.Sector.cs` owns the detailed-sector

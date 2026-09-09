@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 
@@ -5,6 +7,9 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private static readonly Rectangle HandoffReady = new(266, 246, 108, 66);
+    private Texture2D? _handoffPanel;
+
     private void AdvanceTurn()
     {
         if (_debugPhaseStepping) AdvanceDebugPhase();
@@ -148,5 +153,17 @@ public sealed partial class ChaosGame
         {
             _screens.Show(ClientScreen.City);
         }
+    }
+
+    private void DrawHandoff(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
+        batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
+        var panel = new Rectangle(266, 148, 108, 164);
+        if (_handoffPanel is not null) batch.Draw(_handoffPanel, panel, Color.White);
+        else batch.Draw(pixel, panel, new Color(24, 37, 39));
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var player = state.FindPlayer(playerId)!;
+        DrawCentered(font, batch, player.Setup.Name, 194, PlayerColors[playerId.Value], 1);
+        DrawBorder(batch, pixel, HandoffReady, Color.Gold, 2);
     }
 }

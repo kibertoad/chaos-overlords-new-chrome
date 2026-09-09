@@ -35,11 +35,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     ];
     private static readonly Rectangle SetupStart = new(370, 374, 92, 50);
     private static readonly Rectangle SetupBack = new(466, 374, 96, 50);
-    private static readonly Rectangle EventsDismiss = new(218, 414, 96, 28);
-    private static readonly Rectangle EventsBack = new(322, 414, 96, 28);
     private static readonly Rectangle ManagementBack = new(322, 414, 96, 28);
-    private static readonly Rectangle EndgameDone = new(320, 404, 104, 54);
-    private static readonly Rectangle HandoffReady = new(266, 246, 108, 66);
     private readonly GraphicsDeviceManager _graphics;
     private readonly string _assetRoot;
     private readonly string _quickSavePath;
@@ -52,8 +48,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _setupBackground;
     private Texture2D? _cityBackground;
     private readonly Texture2D?[] _cityOwnershipLayers = new Texture2D?[MatchLimits.PlayerCount + 1];
-    private Texture2D? _endgameBackground;
-    private Texture2D? _handoffPanel;
     private Texture2D? _gangInfoBackground;
     private Texture2D? _siteInfoBackground;
     private Texture2D? _itemInfoBackground;
@@ -376,7 +370,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 DrawHandoff(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.Events when _state is not null:
-                DrawEvents(_batch, _pixel, _font, _state);
+                DrawLastTurnEventsPanel(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.Commands when _state is not null:
                 DrawCommands(_batch, _pixel, _font, _state);
@@ -409,14 +403,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 DrawGiveTargets(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.CombatSummary when _state is not null:
-                DrawCombatSummary(_batch, _pixel, _font, _state);
+                DrawCombatResultsPanel(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.Search when _state is not null:
                 DrawSearch(_batch, _pixel, _font, _state);
                 break;
         }
         if (_state is not null && _combatAnimationPlayer.IsPlaying)
-            DrawCombatAnimation(_batch, _pixel, _font, _state);
+            DrawCombatPanel(_batch, _pixel, _font, _state);
         _batch.End();
         base.Draw(gameTime);
     }
@@ -544,93 +538,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     private static int Mod(int value, int divisor) => (value % divisor + divisor) % divisor;
 
-    private void DrawEndgame(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
-    {
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        if (_endgameBackground is not null)
-            batch.Draw(_endgameBackground, new Rectangle(0, 50, 428, 410), Color.White);
-        else
-            batch.Draw(pixel, new Rectangle(0, 50, 428, 410), new Color(0, 0, 0, 230));
-
-        var outcome = state.Outcome!;
-        font.Draw(batch, "MATCH COMPLETE", new Vector2(164, 62), Color.Gold, 2);
-        font.Draw(batch, ScenarioCatalog.Get(outcome.Scenario).Name, new Vector2(164, 86), Color.White, 1);
-        font.Draw(batch, $"TURN {outcome.Turn}  {outcome.Reason}", new Vector2(164, 101), Color.White, 1);
-
-        var rows = outcome.Standings.Count > 0
-            ? outcome.Standings.Select(standing => (
-                standing.Player, Label: $"{standing.Place}. {state.FindPlayer(standing.Player)!.Setup.Name}",
-                Value: standing.Score.ToString())).ToArray()
-            : state.Players.OrderByDescending(player => outcome.Winners.Contains(player.Id))
-                .ThenBy(player => player.Id.Value)
-                .Select(player => (Player: player.Id,
-                    Label: player.Setup.Name,
-                    Value: outcome.Winners.Contains(player.Id) ? "WINNER" : ""))
-                .ToArray();
-        for (var index = 0; index < rows.Length; index++)
-        {
-            var y = 78 + index * 48;
-            font.Draw(batch, rows[index].Label, new Vector2(8, y), PlayerColors[rows[index].Player.Value], 1);
-            font.Draw(batch, rows[index].Value, new Vector2(164, y), Color.White, 1);
-        }
-
-        font.Draw(batch, "AWARDS", new Vector2(164, 255), Color.Gold, 1);
-        for (var index = 0; index < outcome.Awards.Count; index++)
-        {
-            var award = outcome.Awards[index];
-            var recipients = string.Join(",", award.Recipients.Select(player => (player.Value + 1).ToString()));
-            font.Draw(batch, $"{award.Award} {award.Value} P{recipients}",
-                new Vector2(164, 272 + index * 14), Color.White, 1);
-        }
-        DrawBorder(batch, pixel, EndgameDone, Color.Gold, 2);
-    }
-
-    private void DrawHandoff(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
-    {
-        batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
-        var panel = new Rectangle(266, 148, 108, 164);
-        if (_handoffPanel is not null) batch.Draw(_handoffPanel, panel, Color.White);
-        else batch.Draw(pixel, panel, new Color(24, 37, 39));
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
-        var player = state.FindPlayer(playerId)!;
-        DrawCentered(font, batch, player.Setup.Name, 194, PlayerColors[playerId.Value], 1);
-        DrawBorder(batch, pixel, HandoffReady, Color.Gold, 2);
-    }
-
-    private void DrawEvents(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
-    {
-        DrawLastTurnEventsPanel(batch, pixel, font, state);
-    }
-
-    private void DrawCombatSummary(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
-    {
-        DrawCombatResultsPanel(batch, pixel, font, state);
-    }
-
-    private void DrawCombatAnimation(
-        SpriteBatch batch,
-        Texture2D pixel,
-        PixelFont font,
-        MatchState state)
-    {
-        DrawCombatPanel(batch, pixel, font, state);
-    }
-
-    private void DrawCombatGangPortrait(
-        SpriteBatch batch,
-        Texture2D pixel,
-        MatchState state,
-        GangId? gangId,
-        Rectangle destination)
-    {
-        if (gangId is not { } id || state.FindGang(id) is not { } gang) return;
-        if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, destination,
-                OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
-        DrawBorder(batch, pixel, destination, PlayerColors[gang.Owner.Value], 1);
-    }
-
     private static bool IsVisibleCombatEvent(MatchState state, PlayerId viewer, GameEvent gameEvent)
     {
         if (gameEvent.Kind == GameEventKind.PoliceAttackResolved) return gameEvent.Player == viewer;
@@ -638,64 +545,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (gameEvent.Player == viewer) return true;
         return gameEvent.Target.Kind == CommandTargetKind.Gang
             && state.FindGang(new GangId(gameEvent.Target.Id))?.Owner == viewer;
-    }
-
-    private static string CombatHeading(MatchState state, GameEvent gameEvent)
-    {
-        if (gameEvent.Kind == GameEventKind.PoliceAttackResolved)
-            return "POLICE > " + GangLabel(state, gameEvent.Gang);
-        return GangLabel(state, gameEvent.Gang) + " > "
-            + GangLabel(state, new GangId(gameEvent.Target.Id));
-    }
-
-    private static string CombatResult(GameEvent gameEvent)
-    {
-        if (gameEvent.PoliceAttack is { } police)
-            return police.Detected ? $"DAMAGE {police.Damage}" : "NOT DETECTED";
-        var resolution = gameEvent.Resolution!;
-        return resolution.Code == CommandResolutionCode.TargetEvaded
-            ? "TARGET EVADED"
-            : $"DAMAGE {resolution.Damage} RETURN {resolution.RetaliationDamage}";
-    }
-
-    private static string GangLabel(MatchState state, GangId? gangId)
-    {
-        if (gangId is not { } id) return "GANG";
-        var gang = state.FindGang(id);
-        return gang is null ? $"GANG {id.Value}" :
-            state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Name;
-    }
-
-    private static string ItemName(MatchState state, short? itemId) =>
-        itemId is { } id ? state.Definitions.Items[id].Name : "NONE";
-
-    private static string FormatCommandTargets(MatchState state, GameCommand command)
-    {
-        var text = command.Target.Kind == CommandTargetKind.None
-            ? command.Action.ToString().ToUpperInvariant()
-            : FormatTarget(state, command.Target);
-        if (command.SecondaryTarget is { } secondary)
-            text += " / " + FormatTarget(state, secondary);
-        return text;
-    }
-
-    private static string FormatTarget(MatchState state, CommandTarget target) => target.Kind switch
-    {
-        CommandTargetKind.Gang => "GANG " + target.Id,
-        CommandTargetKind.Sector => "SECTOR " + (target.Id + 1),
-        CommandTargetKind.Site => state.Definitions.Sites.Single(definition => definition.Id ==
-            state.FindSite(target.Id)!.DefinitionId).Name,
-        CommandTargetKind.Item => state.Definitions.Items[target.Id].Name,
-        _ => ""
-    };
-
-    private void DismissNotification()
-    {
-        if (_state is null || _replay is null) return;
-        var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
-        _message = _replay.TryDismissNotification(playerId, out _)
-            ? "EVENT DISMISSED"
-            : "NO EVENT TO DISMISS";
     }
 
     private static void DrawCentered(
