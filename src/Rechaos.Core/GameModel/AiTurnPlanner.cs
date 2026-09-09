@@ -23,6 +23,7 @@ public static class AiTurnPlanner
         foreach (var gang in player.Gangs.Where(gang => gang.IsActive).OrderBy(gang => gang.Id.Value))
         {
             var choice = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id)
+                .Where(command => IsObservable(state, playerId, command))
                 .Where(command => EstimatedCost(state, command) <= cashBudget)
                 .OrderByDescending(command => Score(state, player, gang, command))
                 .ThenBy(command => command.Action)
@@ -143,6 +144,10 @@ public static class AiTurnPlanner
         GangAction.Equip => state.Definitions.Items[command.Target.Id].Cost,
         _ => 0
     };
+
+    private static bool IsObservable(MatchState state, PlayerId player, GameCommand command) =>
+        command.Action != GangAction.Attack
+        || state.CanPlayerDetectGang(player, new GangId(command.Target.Id));
 
     private static int HireValue(MatchState state, short definitionId)
     {

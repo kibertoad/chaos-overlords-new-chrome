@@ -14,6 +14,9 @@ It must not be cited as behavioral parity with the original AI.
 - It reads authoritative `MatchState` and returns at most one command per active
   gang without mutating state or consuming simulation RNG.
 - Candidate commands come exclusively from `CommandOptionCatalog.LegalCommands`.
+- Attack candidates are additionally restricted by the same cooperative sector
+  detection query exposed to players, so the baseline does not target gangs it
+  cannot observe.
 - Selection is stable by score, action, target kind, target ID, and secondary ID.
 - A shared projected cash budget prevents the planner from intentionally queuing
   more Bribe/Equip cost than the player currently holds.
@@ -43,7 +46,7 @@ replay-verified two-computer harness through 20 turns or objective completion.
 
 ## Required parity work
 
-1. Recover original difficulty levels, bonuses, observable information, and
+1. Recover original difficulty levels, bonuses, observable-information rules, and
    command-selection entry points around the dispatcher noted in
    `ORIGINAL-INTERNALS.md`.
 2. Capture fixed-state decisions for every scenario and difficulty.

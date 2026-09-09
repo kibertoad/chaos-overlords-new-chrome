@@ -36,6 +36,43 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void PlannerDoesNotAttackUndetectableGang()
+    {
+        var data = BundledOriginalData.Load();
+        var lowDetect = data.Gangs.OrderBy(gang => gang.Stats.Detect).First();
+        var highStealth = data.Gangs.OrderByDescending(gang => gang.Stats.Stealth).First();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU", PlayerController.Computer),
+            new(new PlayerId(1), "RIVAL", PlayerController.Human)
+        ];
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20,
+                [new MatchGangState(new GangId(10), new PlayerId(0), lowDetect.Id, 0, 10)]),
+            new(setups[1], 20,
+                [new MatchGangState(new GangId(20), new PlayerId(1), highStealth.Id, 0, 10)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 5),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 5)
+            ], income: 3))
+            .ToArray();
+        var match = new MatchState(data,
+            new MatchSetup(ScenarioId.KillEmAll, GameDuration.SixMonths, 9, setups), players, sectors);
+        match.FinishUpkeep();
+
+        Assert.False(match.CanPlayerDetectGang(new PlayerId(0), new GangId(20)));
+        Assert.Contains(CommandOptionCatalog.LegalCommands(match, new PlayerId(0), new GangId(10)),
+            command => command.Action == GangAction.Attack);
+        Assert.DoesNotContain(AiTurnPlanner.Plan(match, new PlayerId(0)),
+            command => command.Action == GangAction.Attack);
+    }
+
+    [Fact]
     public void HirePlannerSelectsOnlyAnAffordableValidOfferWithoutMutation()
     {
         var match = CreateMatch();
