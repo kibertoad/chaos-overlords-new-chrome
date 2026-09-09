@@ -130,6 +130,12 @@ loading, title/setup/hot-seat-handoff/city/sector/gang/finance/ranking/items/Giv
 keyboard and inverse-mapped mouse input,
 prototype board renderer, and an internal pixel font. `UI-ATLAS.md` records the
 first full-screen resource and hit-region mappings.
+The client shell is a partial class split by responsibility: the primary
+`ChaosGame.cs` owns the loop and routing, while `ChaosGame.Setup.cs`,
+`ChaosGame.GangDetails.cs`, `ChaosGame.Persistence.cs`, and
+`ChaosGame.Assets.cs` isolate setup rendering/state, gang-information form
+composition, snapshot/replay I/O, and original-media loading/playback. Further
+screen groups should follow the same split instead of growing the shell again.
 It reads original media only from the extracted asset directory.
 The item workflow projects research/equipment state and submits Research,
 Equip, Give, and Sell through the replay recorder and authoritative Core

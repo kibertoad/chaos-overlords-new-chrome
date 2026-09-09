@@ -125,7 +125,8 @@ validated against the executable.
 - `PX05000` is the gang-information overlay. Double-clicking an owned gang card
   or a stationary Hire-dock portrait opens it over the current view. Hire art is
   not promoted to a drag token until the pointer moves beyond the click
-  threshold, preserving double-click inspection.
+  threshold, preserving double-click inspection. Unhired gang information shows
+  Force as `??`; the authoritative health value is instantiated on hire.
 
 ## `PX00128` provisional control routes
 

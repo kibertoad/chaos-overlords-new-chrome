@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
@@ -9,7 +8,7 @@ using Rechaos.Core.Persistence;
 
 namespace Rechaos.Game;
 
-public sealed class ChaosGame : Microsoft.Xna.Framework.Game
+public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 {
     private static readonly Color[] PlayerColors =
         [Color.Red, Color.LimeGreen, Color.Blue, Color.Yellow, Color.Magenta, Color.Cyan];
@@ -897,148 +896,6 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _screens.Show(returnScreen);
     }
 
-    private void ChangeScenario(int delta)
-    {
-        var count = ScenarioCatalog.All.Count;
-        _selectedScenario = ScenarioCatalog.All[Mod((int)_selectedScenario + delta, count)].Id;
-    }
-
-    private void ChangeDuration(int delta)
-    {
-        _selectedDuration = Durations[Mod(Array.IndexOf(Durations, _selectedDuration) + delta, Durations.Length)];
-    }
-
-    private void ChangePlayerCount(int delta)
-    {
-        var previous = _selectedPlayerCount;
-        _selectedPlayerCount = Math.Clamp(_selectedPlayerCount + delta, 1, MatchLimits.PlayerCount);
-        for (var index = previous; index < _selectedPlayerCount; index++)
-            _computerPlayers[index] = true;
-    }
-
-    private void ToggleController(int index)
-    {
-        if (index < 0 || index >= _selectedPlayerCount) return;
-        _computerPlayers[index] = !_computerPlayers[index];
-        _message = $"PLAYER {index + 1} {(_computerPlayers[index] ? "COMPUTER" : "HUMAN")}";
-    }
-
-    private void CycleDifficulty()
-    {
-        var values = Enum.GetValues<AiDifficulty>();
-        _selectedAiMentality = values[Mod(
-            Array.IndexOf(values, _selectedAiMentality) + 1, values.Length)];
-        _message = $"AI MENTALITY {DifficultyPresentation.Label(_selectedAiMentality)}";
-    }
-
-    private void SelectDifficulty(AiDifficulty difficulty)
-    {
-        _selectedAiMentality = difficulty;
-        _message = $"AI MENTALITY {DifficultyPresentation.Label(difficulty)}";
-    }
-
-    private void CyclePortrait(int player, int delta)
-    {
-        if (player < 0 || player >= _selectedPlayerCount) return;
-        _playerPortraits[player] = checked((short)Mod(
-            _playerPortraits[player] + delta, PlayerPortraitLayout.Count));
-        _message = $"PLAYER {player + 1} PORTRAIT {_playerPortraits[player] + 1}";
-    }
-
-    private static Rectangle SetupPlayerSlot(int index) =>
-        new(368 + index % 2 * 96, 120 + index / 2 * 64, 94, 54);
-
-    private void StartMatch()
-    {
-        if (_definitions is null) return;
-        var players = Enumerable.Range(0, _selectedPlayerCount)
-            .Select(index => new MatchPlayerSetup(
-                new PlayerId(index), $"PLAYER {index + 1}",
-                _computerPlayers[index] ? PlayerController.Computer : PlayerController.Human,
-                _playerPortraits[index]))
-            .ToArray();
-        var setup = new MatchSetup(
-            _selectedScenario, _selectedDuration, Environment.TickCount, players, _selectedAiMentality);
-        _state = OriginalMatchFactory.Create(_definitions, setup);
-        _replay = new MatchReplayRecorder(_state);
-        if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_replay);
-        if (!_debugPhaseStepping) PrepareCurrentHireOffers();
-        _cursor = _state.Players[0].Gangs[0].SectorId;
-        _selectedGangIndex = 0;
-        _message = _debugPhaseStepping ? "ADVANCE UPKEEP TO BEGIN" : "PLAN YOUR TURN";
-        _lastAudibleEventSequence = -1;
-        _lastAnimatedEventSequence = -1;
-        _combatAnimationPlayer.Clear();
-        _screens.Show(ClientScreen.City);
-    }
-
-    private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)
-    {
-        if (_titleBackground is not null)
-            batch.Draw(_titleBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        else
-        {
-            batch.Draw(pixel, new Rectangle(92, 72, 456, 112), new Color(0, 0, 0, 210));
-            DrawCentered(font, batch, "CHAOS OVERLORDS", 103, Color.Gold, 3);
-        }
-        DrawButton(batch, pixel, font, TitleNewGame, "NEW GAME", true);
-        DrawButton(batch, pixel, font, TitleLoadGame, "LOAD GAME", true);
-        DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
-        DrawCentered(font, batch, _message, 410, new Color(185, 195, 195), 1);
-    }
-
-    private void DrawSetup(SpriteBatch batch, Texture2D pixel, PixelFont font)
-    {
-        if (_setupBackground is not null)
-            batch.Draw(_setupBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        else
-            batch.Draw(pixel, new Rectangle(70, 52, 500, 384), new Color(0, 0, 0, 220));
-        DrawBorder(batch, pixel, SetupScenarios[(int)_selectedScenario], Color.Gold, 2);
-        DrawBorder(batch, pixel, SetupDurations[Array.IndexOf(Durations, _selectedDuration)], Color.Gold, 2);
-        for (var index = 0; index < MatchLimits.PlayerCount; index++)
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
-                    OriginalSpriteLayout.OverlordPortrait(
-                        index < _selectedPlayerCount ? _playerPortraits[index] : PlayerPortraitLayout.Count - 1),
-                    Color.White);
-        font.Draw(batch, $"PLAYERS {_selectedPlayerCount}", new Vector2(376, 306), Color.White, 1);
-        for (var index = 0; index < _selectedPlayerCount; index++)
-        {
-            var portrait = PlayerPortraitLayout.SetupLarge(index);
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, portrait,
-                    OriginalSpriteLayout.OverlordPortrait(_playerPortraits[index]), Color.White);
-            DrawBorder(batch, pixel, portrait, PlayerColors[index], 1);
-            DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Previous(index), left: true, Color.Lime);
-            DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Next(index), left: false, Color.Lime);
-            var label = $"P{index + 1} {(_computerPlayers[index] ? "CPU" : "HUMAN")}";
-            font.Draw(batch, label, new Vector2(portrait.X, portrait.Bottom + 2), PlayerColors[index], 1);
-        }
-        DrawBorder(batch, pixel, SetupAiMentalities[(int)_selectedAiMentality], Color.Gold, 2);
-        if (_hoverPoint is { } hover)
-        {
-            var hovered = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(hover));
-            if (hovered >= 0) DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)hovered);
-        }
-    }
-
-    private static void DrawDifficultyTooltip(
-        SpriteBatch batch,
-        Texture2D pixel,
-        PixelFont font,
-        AiDifficulty difficulty)
-    {
-        var panel = new Rectangle(70, 210, 286, 104);
-        batch.Draw(pixel, panel, new Color(8, 18, 16, 248));
-        DrawBorder(batch, pixel, panel, Color.Lime, 2);
-        var lines = DifficultyPresentation.Tooltip(difficulty)
-            .Concat(["NO CASH, STAT, RNG, OR", "INFORMATION BONUSES."])
-            .ToArray();
-        for (var row = 0; row < lines.Length; row++)
-            font.Draw(batch, lines[row], new Vector2(panel.X + 8, panel.Y + 8 + row * 12),
-                row == 0 ? Color.Gold : Color.White, 1);
-    }
-
     private static int Mod(int value, int divisor) => (value % divisor + divisor) % divisor;
 
     private void DrawBoard(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
@@ -1071,7 +928,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             if (index == _cursor) DrawBorder(batch, pixel, destination, Color.Gold, 2);
         }
         var selectedGang = SelectedGang(player);
-        if (_draggedHireDefinitionId is null && selectedGang is { IsActive: true })
+        if (!_hireDragStarted && selectedGang is { IsActive: true })
             DrawGangStatusMarker(batch, selectedGang.SectorId,
                 selectedGang.QueuedCommand is null
                     ? OriginalSpriteLayout.IdleGangStatus
@@ -1567,71 +1424,6 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         batch.Draw(pixel, new Rectangle(bounds.X, bounds.Bottom - 2, 2, 2), Color.Black);
         batch.Draw(pixel, new Rectangle(bounds.Right - 2, bounds.Bottom - 2, 2, 2), Color.Black);
         font.Draw(batch, label, new Vector2(bounds.X + 5, bounds.Y + 4), Color.Lime, 1);
-    }
-
-    private void DrawGangDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
-    {
-        if (_gangDetailsReturnScreen == ClientScreen.Sector) DrawSectorDetails(batch, pixel, font, state);
-        else DrawBoard(batch, pixel, font, state);
-        var panel = GangInformationLayout.Panel;
-        if (_gangInfoBackground is not null)
-            batch.Draw(_gangInfoBackground, panel, Color.White);
-        else
-            batch.Draw(pixel, panel, new Color(0, 0, 0, 245));
-        var gang = _gangDetailsInstanceId is { } instanceId ? state.FindGang(instanceId) : null;
-        var definitionId = gang?.DefinitionId ?? _gangDetailsDefinitionId;
-        if (definitionId is null)
-        {
-            font.Draw(batch, "NO ACTIVE GANG", new Vector2(200, 153), Color.White, 1);
-        }
-        else
-        {
-            var definition = state.Definitions.Gangs.Single(value => value.Id == definitionId.Value);
-            var stats = gang is null
-                ? EffectiveStatistics.From(definition.Stats)
-                : EffectiveStatisticsCalculator.ForGang(state, gang);
-            batch.Draw(pixel, new Rectangle(198, 152, 184, 10), Color.Black);
-            batch.Draw(pixel, new Rectangle(198, 169, 184, 31), Color.Black);
-            batch.Draw(pixel, new Rectangle(270, 216, 20, 12), Color.Black);
-            batch.Draw(pixel, new Rectangle(370, 216, 14, 22), Color.Black);
-            batch.Draw(pixel, new Rectangle(270, 242, 20, 72), Color.Black);
-            batch.Draw(pixel, new Rectangle(370, 242, 14, 72), Color.Black);
-            if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, GangInformationLayout.Portrait,
-                    OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
-            font.Draw(batch, definition.Name, new Vector2(200, 153), Color.Lime, 1);
-            foreach (var entry in WrapPanelText(definition.Description, 29).Take(3).Select((text, row) => (text, row)))
-                font.Draw(batch, entry.text, new Vector2(200, 169 + entry.row * 10), Color.Lime, 1);
-            font.Draw(batch, (gang?.Force ?? definition.Force).ToString(), new Vector2(272, 218), Color.Lime, 1);
-            font.Draw(batch, definition.Upkeep.ToString(), new Vector2(372, 218), Color.Lime, 1);
-            font.Draw(batch, definition.TechLevel.ToString(), new Vector2(372, 228), Color.Lime, 1);
-            int[] left = [stats.Combat, stats.Defense, stats.Chaos, stats.Control, stats.Heal, stats.Influence, stats.Research];
-            int[] right = [stats.Stealth, stats.Detect, stats.Strength, stats.Blade, stats.Range, stats.Fighting, stats.MartialArts];
-            for (var index = 0; index < left.Length; index++)
-            {
-                font.Draw(batch, left[index].ToString(), new Vector2(272, 244 + index * 10), Color.Lime, 1);
-                font.Draw(batch, right[index].ToString(), new Vector2(372, 244 + index * 10), Color.Lime, 1);
-            }
-        }
-    }
-
-    private static IEnumerable<string> WrapPanelText(string text, int width)
-    {
-        var remaining = text.ToUpperInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        var line = "";
-        foreach (var word in remaining)
-        {
-            if (line.Length > 0 && line.Length + word.Length + 1 > width)
-            {
-                yield return line;
-                line = word;
-            }
-            else
-            {
-                line = line.Length == 0 ? word : line + " " + word;
-            }
-        }
-        if (line.Length > 0) yield return line;
     }
 
     private void DrawFinance(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
@@ -2373,79 +2165,6 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
     }
 
-    private void SaveQuickGame()
-    {
-        if (_state is null) return;
-        try
-        {
-            NativeSaveStore.SaveAtomic(_quickSavePath, _state);
-            _message = "GAME SAVED";
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            _message = "SAVE FAILED";
-        }
-    }
-
-    private void LoadQuickGame()
-    {
-        if (_definitions is null) return;
-        try
-        {
-            var result = NativeSaveStore.LoadRecoveringBackup(_quickSavePath, _definitions);
-            _state = result.State;
-            _replay = new MatchReplayRecorder(_state);
-            if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_replay);
-            if (!_debugPhaseStepping) PrepareCurrentHireOffers();
-            _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
-            _selectedGangIndex = 0;
-            _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
-            _lastAudibleEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
-            _lastAnimatedEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
-            _combatAnimationPlayer.Clear();
-            _screens.Show(_state.Outcome is null ? ClientScreen.City : ClientScreen.Endgame);
-        }
-        catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            _message = "LOAD FAILED";
-        }
-    }
-
-    private void SaveReplay()
-    {
-        if (_replay is null) return;
-        try
-        {
-            MatchReplayStore.SaveAtomic(_replayPath, _replay);
-            _message = "REPLAY SAVED";
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        {
-            _message = "REPLAY SAVE FAILED";
-        }
-    }
-
-    private void LoadReplay()
-    {
-        if (_state is null) return;
-        try
-        {
-            _state = MatchReplayStore.LoadAndReplay(_replayPath, _state.Definitions);
-            _replay = new MatchReplayRecorder(_state);
-            if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_replay);
-            if (!_debugPhaseStepping) PrepareCurrentHireOffers();
-            _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
-            _message = "REPLAY VERIFIED";
-            _lastAudibleEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
-            _lastAnimatedEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
-            _combatAnimationPlayer.Clear();
-        }
-        catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
-        {
-            _message = "REPLAY FAILED";
-        }
-    }
-
     private static int SectorSiteIncome(MatchState state, MatchSectorState sector) => sector.Income;
 
     private static string SectorCode(int sectorId) =>
@@ -2500,87 +2219,4 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private bool Pressed(KeyboardState current, Keys key) => current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
 
-    private Texture2D? LoadTexture(
-        string fileName,
-        bool transparentBlack = false,
-        bool transparentWhite = false)
-    {
-        var path = Path.Combine(_assetRoot, "images", fileName);
-        if (!File.Exists(path)) return null;
-        using var stream = File.OpenRead(path);
-        var texture = Texture2D.FromStream(GraphicsDevice, stream);
-        if (!transparentBlack && !transparentWhite) return texture;
-        var colors = new Color[texture.Width * texture.Height];
-        texture.GetData(colors);
-        for (var index = 0; index < colors.Length; index++)
-            if ((transparentBlack && colors[index].R == 0 && colors[index].G == 0 && colors[index].B == 0)
-                || (transparentWhite && colors[index].R >= 248 && colors[index].G >= 248 && colors[index].B >= 248))
-                colors[index] = Color.Transparent;
-        texture.SetData(colors);
-        return texture;
-    }
-
-    private void LoadCombatAnimationTextures()
-    {
-        for (short animation = 0; animation <= 27; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, false), transparentBlack: true);
-        for (short animation = 0; animation <= 28; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, true), transparentBlack: true);
-        for (short animation = 0; animation <= 19; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, false), transparentBlack: false);
-        for (short animation = 0; animation <= 20; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, true), transparentBlack: false);
-    }
-
-    private void LoadCombatAnimationTexture(string fileName, bool transparentBlack)
-    {
-        var texture = LoadTexture(fileName, transparentBlack: transparentBlack);
-        if (texture is not null) _combatAnimationTextures[fileName] = texture;
-    }
-
-    private SoundEffect? LoadSound(string fileName)
-    {
-        var path = Path.Combine(_assetRoot, "audio", fileName);
-        if (!File.Exists(path)) return null;
-        using var stream = File.OpenRead(path);
-        return SoundEffect.FromStream(stream);
-    }
-
-    private void PlayNewCombatSounds()
-    {
-        if (_state is null) return;
-        foreach (var gameEvent in _state.Events.Where(value => value.Sequence > _lastAudibleEventSequence)
-                     .OrderBy(value => value.Sequence))
-        {
-            if (AudioRouting.WeaponSound(_state, gameEvent) is { } soundIndex
-                && _weaponSounds.TryGetValue(soundIndex, out var sound))
-                sound.Play();
-            _lastAudibleEventSequence = gameEvent.Sequence;
-        }
-    }
-
-    private void CaptureNewCombatAnimations()
-    {
-        if (_state is null) return;
-        var viewer = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
-        foreach (var gameEvent in _state.Events
-                     .Where(value => value.Sequence > _lastAnimatedEventSequence)
-                     .OrderBy(value => value.Sequence))
-        {
-            if (_combatAnimationTextures.Count > 0 && IsVisibleCombatEvent(_state, viewer, gameEvent))
-                foreach (var clip in CombatAnimationRouting.ForEvent(_state, gameEvent))
-                    _combatAnimationPlayer.Enqueue(clip);
-            _lastAnimatedEventSequence = gameEvent.Sequence;
-        }
-    }
-
-    private void ValidateAssetPack()
-    {
-        var manifestPath = Path.Combine(_assetRoot, "manifest.json");
-        if (!File.Exists(manifestPath))
-            throw new FileNotFoundException("Original assets are not installed. Run Rechaos.Extractor with --source pointing at a legal Chaos Overlords installation.", manifestPath);
-        var manifest = JsonSerializer.Deserialize<AssetManifest>(File.ReadAllText(manifestPath));
-        if (manifest?.FormatVersion != AssetManifest.CurrentFormatVersion)
-            throw new InvalidDataException("The asset pack is incompatible. Run the current extractor again.");
-    }
 }

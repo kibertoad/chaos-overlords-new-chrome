@@ -322,20 +322,20 @@ public static class CommandOverlayLayout
 public static class EquipmentCommandLayout
 {
     public static Rectangle Panel => new(104, 125, 344, 209);
-    public static Rectangle Portrait => new(128, 142, 64, 64);
+    public static Rectangle Portrait => new(130, 143, 64, 64);
     public static Rectangle Cancel => new(136, 262, 49, 24);
     public static Rectangle Ok => new(136, 294, 49, 24);
     public static Rectangle ItemRow(int row)
     {
         if (row is < 0 or >= 12) throw new ArgumentOutOfRangeException(nameof(row));
-        return new Rectangle(248, 143 + row * 12, 184, 11);
+        return new Rectangle(248, 154 + row * 12, 184, 11);
     }
 }
 
 public static class GangInformationLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(130, 143, 64, 64);
+    public static Rectangle Portrait => new(130, 143, 64, 62);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 }
 

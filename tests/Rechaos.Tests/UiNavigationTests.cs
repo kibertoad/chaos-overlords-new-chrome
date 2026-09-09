@@ -183,8 +183,8 @@ public sealed class UiNavigationTests
         Assert.False(CommandOverlayLayout.OpensTargetPicker(GangAction.Chaos));
         Assert.Equal(new Rectangle(256, 61, 158, 22), CommandOverlayLayout.ActionRow(0));
         Assert.Equal(new Rectangle(104, 125, 344, 209), EquipmentCommandLayout.Panel);
-        Assert.Equal(new Rectangle(248, 143, 184, 11), EquipmentCommandLayout.ItemRow(0));
-        Assert.Equal(new Rectangle(130, 143, 64, 64), GangInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(248, 154, 184, 11), EquipmentCommandLayout.ItemRow(0));
+        Assert.Equal(new Rectangle(130, 143, 64, 62), GangInformationLayout.Portrait);
     }
 
     [Theory]
