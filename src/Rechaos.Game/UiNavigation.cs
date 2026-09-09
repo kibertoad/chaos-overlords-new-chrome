@@ -7,7 +7,8 @@ public enum ClientScreen
 {
     Title,
     Setup,
-    City
+    City,
+    Endgame
 }
 
 public sealed class ScreenRouter

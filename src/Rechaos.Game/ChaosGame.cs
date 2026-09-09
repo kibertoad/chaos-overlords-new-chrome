@@ -32,6 +32,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle SetupBack = new(466, 374, 96, 50);
     private static readonly Rectangle CityAction = new(430, 415, 86, 24);
     private static readonly Rectangle CityAdvance = new(524, 415, 96, 24);
+    private static readonly Rectangle EndgameDone = new(320, 404, 104, 54);
     private readonly GraphicsDeviceManager _graphics;
     private readonly string _assetRoot;
     private readonly string _quickSavePath;
@@ -42,6 +43,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _titleBackground;
     private Texture2D? _setupBackground;
     private Texture2D? _cityBackground;
+    private Texture2D? _endgameBackground;
     private PixelFont? _font;
     private MatchState? _state;
     private MatchReplayRecorder? _replay;
@@ -89,6 +91,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _titleBackground = LoadTexture("PX00130.bmp");
         _setupBackground = LoadTexture("PX00143.bmp");
         _cityBackground = LoadTexture("PX00128.bmp");
+        _endgameBackground = LoadTexture("PX00200.bmp");
     }
 
     protected override void Update(GameTime gameTime)
@@ -106,6 +109,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.City:
                 UpdateCity(keyboard);
+                break;
+            case ClientScreen.Endgame:
+                if (Pressed(keyboard, Keys.Enter)) _screens.Show(ClientScreen.Title);
                 break;
         }
         if (mouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released
@@ -134,6 +140,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.City when _state is not null:
                 DrawBoard(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.Endgame when _state?.Outcome is not null:
+                DrawEndgame(_batch, _pixel, _font, _state);
                 break;
         }
         _batch.End();
@@ -194,6 +203,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.City:
                 HandleCityClick(point);
+                break;
+            case ClientScreen.Endgame:
+                if (EndgameDone.Contains(point)) _screens.Show(ClientScreen.Title);
                 break;
         }
     }
@@ -324,6 +336,48 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         font.Draw(batch, "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY", new Vector2(18, 439), new Color(180, 190, 190), 1);
     }
 
+    private void DrawEndgame(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
+        if (_cityBackground is not null)
+            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        if (_endgameBackground is not null)
+            batch.Draw(_endgameBackground, new Rectangle(0, 50, 428, 410), Color.White);
+        else
+            batch.Draw(pixel, new Rectangle(0, 50, 428, 410), new Color(0, 0, 0, 230));
+
+        var outcome = state.Outcome!;
+        font.Draw(batch, "MATCH COMPLETE", new Vector2(164, 62), Color.Gold, 2);
+        font.Draw(batch, ScenarioCatalog.Get(outcome.Scenario).Name, new Vector2(164, 86), Color.White, 1);
+        font.Draw(batch, $"TURN {outcome.Turn}  {outcome.Reason}", new Vector2(164, 101), Color.White, 1);
+
+        var rows = outcome.Standings.Count > 0
+            ? outcome.Standings.Select(standing => (
+                standing.Player, Label: $"{standing.Place}. {state.FindPlayer(standing.Player)!.Setup.Name}",
+                Value: standing.Score.ToString())).ToArray()
+            : state.Players.OrderByDescending(player => outcome.Winners.Contains(player.Id))
+                .ThenBy(player => player.Id.Value)
+                .Select(player => (Player: player.Id,
+                    Label: player.Setup.Name,
+                    Value: outcome.Winners.Contains(player.Id) ? "WINNER" : ""))
+                .ToArray();
+        for (var index = 0; index < rows.Length; index++)
+        {
+            var y = 78 + index * 48;
+            font.Draw(batch, rows[index].Label, new Vector2(8, y), PlayerColors[rows[index].Player.Value], 1);
+            font.Draw(batch, rows[index].Value, new Vector2(164, y), Color.White, 1);
+        }
+
+        font.Draw(batch, "AWARDS", new Vector2(164, 255), Color.Gold, 1);
+        for (var index = 0; index < outcome.Awards.Count; index++)
+        {
+            var award = outcome.Awards[index];
+            var recipients = string.Join(",", award.Recipients.Select(player => (player.Value + 1).ToString()));
+            font.Draw(batch, $"{award.Award} {award.Value} P{recipients}",
+                new Vector2(164, 272 + index * 14), Color.White, 1);
+        }
+        DrawBorder(batch, pixel, EndgameDone, Color.Gold, 2);
+    }
+
     private void MoveCursor(int dx, int dy)
     {
         var x = Math.Clamp(_cursor % MatchLimits.BoardWidth + dx, 0, MatchLimits.BoardWidth - 1);
@@ -405,6 +459,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 _message += "  AUTOSAVE FAILED";
             }
         }
+        if (_state.Outcome is not null) _screens.Show(ClientScreen.Endgame);
     }
 
     private void SaveQuickGame()
@@ -431,7 +486,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             _replay = new MatchReplayRecorder(_state);
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
-            _screens.Show(ClientScreen.City);
+            _screens.Show(_state.Outcome is null ? ClientScreen.City : ClientScreen.Endgame);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
         {
