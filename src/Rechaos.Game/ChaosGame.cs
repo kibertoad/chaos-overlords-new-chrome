@@ -73,6 +73,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _gangInfoBackground;
     private Texture2D? _siteInfoBackground;
     private Texture2D? _itemInfoBackground;
+    private Texture2D? _combatBackground;
     private Texture2D? _hireComparisonBackground;
     private Texture2D? _influenceBackground;
     private Texture2D? _targetAcquisitionBackground;
@@ -186,6 +187,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _gangInfoBackground = LoadTexture("PX05000.bmp");
         _siteInfoBackground = LoadTexture("PX05002.bmp");
         _itemInfoBackground = LoadTexture("PX05001.bmp");
+        _combatBackground = LoadTexture("PX05014.bmp");
         _hireComparisonBackground = LoadTexture("PX05016.bmp");
         _influenceBackground = LoadTexture("PX05005.bmp");
         _targetAcquisitionBackground = LoadTexture("PX05003.bmp");
@@ -1865,27 +1867,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         PixelFont font,
         MatchState state)
     {
-        if (_combatAnimationPlayer.Active is not { } clip) return;
-        var panel = new Rectangle(70, 48, 374, 364);
-        var destination = new Rectangle(129, 78, 256, 256);
-        batch.Draw(pixel, panel, new Color(0, 0, 0, 242));
-        DrawBorder(batch, pixel, panel, Color.Lime, 2);
-        var frame = CombatAnimationRouting.FrameSource(_combatAnimationPlayer.Frame);
-        if (clip.HitAnimation is { } hit
-            && _combatAnimationTextures.TryGetValue(
-                CombatAnimationRouting.HitFile(hit, clip.Reversed), out var hitTexture))
-            batch.Draw(hitTexture, destination, frame, Color.White);
-        else
-            batch.Draw(pixel, destination, Color.Black);
-        if (_combatAnimationTextures.TryGetValue(
-                CombatAnimationRouting.AttackFile(clip.AttackAnimation, clip.Reversed), out var attackTexture))
-            batch.Draw(attackTexture, destination, frame, Color.White);
-        DrawBorder(batch, pixel, destination, Color.White, 1);
-        var attacker = clip.Police ? "POLICE" : GangLabel(state, clip.Attacker);
-        font.Draw(batch, attacker + " > " + GangLabel(state, clip.Defender),
-            new Vector2(88, 350), Color.Gold, 1);
-        font.Draw(batch, clip.Reversed && !clip.Police ? "RETALIATION" : "COMBAT",
-            new Vector2(88, 368), Color.White, 1);
+        DrawCombatPanel(batch, pixel, font, state);
     }
 
     private void DrawCombatGangPortrait(

@@ -195,11 +195,13 @@ lower block reports all fourteen site modifiers. A stationary double-click
 opens it from either a detailed-sector building or a `PX05005` Influence target,
 then returns to the originating screen without discarding target selection.
 
-The original Combat view is a dedicated comparison panel rather than the flat
-target list: it identifies the sector, places attacker and defender owner/gang
-art side by side, shows equipment and dual Force tracks, and reserves a central
-cell for the combat presentation. Its background resource and exact hit map
-remain to be identified.
+`PX05014` is the dedicated live Combat comparison panel rather than a flat
+target list. It identifies the sector, places attacker and defender owner/gang
+art side by side, shows equipment and green/red Force tracks, and reserves the
+mirrored lower-center cells for the recovered attack and hit animations.
+`PX05012` is the separate paged Combat Results panel behind the right-console
+Combat Summary control. Both identities are confirmed by their template text,
+apertures, and the supplied original Combat capture.
 
 ## Next mapping work
 

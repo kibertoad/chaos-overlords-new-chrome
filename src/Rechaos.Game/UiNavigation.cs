@@ -438,6 +438,33 @@ public static class ItemInformationLayout
     };
 }
 
+public static class CombatPanelLayout
+{
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Sector => new(132, 136, 56, 64);
+    public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
+    public static Rectangle LeftHeader => new(201, 136, 119, 37);
+    public static Rectangle RightHeader => new(324, 136, 119, 37);
+    public static Rectangle LeftWeapon => new(202, 173, 50, 81);
+    public static Rectangle LeftGang => new(253, 173, 67, 81);
+    public static Rectangle LeftEquipment => new(202, 255, 50, 64);
+    public static Rectangle LeftAction => new(253, 255, 67, 64);
+    public static Rectangle RightGang => new(324, 173, 67, 81);
+    public static Rectangle RightWeapon => new(392, 173, 50, 81);
+    public static Rectangle RightAction => new(324, 255, 67, 64);
+    public static Rectangle RightEquipment => new(392, 255, 50, 64);
+
+    public static Rectangle HeaderColor(bool right) => right
+        ? new Rectangle(327, 139, 12, 28)
+        : new Rectangle(204, 139, 12, 28);
+    public static Rectangle HeaderPortrait(bool right) => right
+        ? new Rectangle(342, 139, 32, 32)
+        : new Rectangle(219, 139, 32, 32);
+    public static Rectangle ForceBar(bool right) => right
+        ? new Rectangle(326, 249, 63, 3)
+        : new Rectangle(255, 249, 63, 3);
+}
+
 public static class InfluenceCommandLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;

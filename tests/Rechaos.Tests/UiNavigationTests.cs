@@ -251,6 +251,11 @@ public sealed class UiNavigationTests
         Assert.Equal("ARMOR", ItemInformationLayout.TypeLabel(3));
         Assert.Equal(244, ItemInformationLayout.StatisticY(0));
         Assert.Equal(271, ItemInformationLayout.StatisticY(2));
+        Assert.Equal(EquipmentCommandLayout.Panel, CombatPanelLayout.Panel);
+        Assert.Equal(new Rectangle(132, 136, 56, 64), CombatPanelLayout.Sector);
+        Assert.Equal(new Rectangle(253, 255, 67, 64), CombatPanelLayout.LeftAction);
+        Assert.Equal(new Rectangle(324, 255, 67, 64), CombatPanelLayout.RightAction);
+        Assert.Equal(new Rectangle(255, 249, 63, 3), CombatPanelLayout.ForceBar(false));
     }
 
     [Theory]
