@@ -1,7 +1,7 @@
 # Complete implementation and migration plan
 
 Status: active roadmap
-Last updated: 2026-09-08
+Last updated: 2026-09-09
 Target: a deterministic, cross-platform MonoGame recreation of the Windows 95
 release of *Chaos Overlords*, requiring a user-owned original asset pack.
 
@@ -554,7 +554,7 @@ unmarked guess.
 | Milestone | Status | Implemented foundation | Work required before gate |
 |---|---|---|---|
 | M0 | In progress | Research templates; file/binary logs; architecture, validation and parity documents; source/output verification; rollback-safe staged installation; sanitized reference-fixture schema; labeled JSON state-diff tool; versioned 685-output manifest and generated factual asset catalog | One captured, fully documented reference observation |
-| M1 | Foundation started | Ten scenario definitions and durations; 8x8/three-site prototype; scaled MonoGame shell | Exact city generation and setup, HQ/Right Hands initialization, atlas, screen router, mouse input and reference fixtures |
+| M1 | Foundation started | Ten scenario definitions and durations; 8x8/three-site prototype; explicit-layout bootstrap with controlled HQ/Right Hands initialization and Armageddon setup overrides; scaled MonoGame shell | Exact city generation and placement inputs, atlas, screen router, mouse input and reference fixtures |
 | M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; common typed validation-rule pipeline; deferred hire purchase/placement, one-offer-per-turn snubbing, 5–9 initial Force, deterministic vacancy refill; player elimination; declarative validation for all action target shapes; typed queue mutations and ordered events; bounded notification queues; recovered RNG; canonical phase hashes | Binary-validated offer, Force-roll and within-phase ordering, and remaining reference-derived edge rules |
 | M3 | Foundation started | Ordered base Upkeep economy; all Instant and Transaction actions; Move/Terminate; grouped Influence and Control with ownership/site reset; phase-wide grouped Chaos income/accumulation/crackdown; local influenced-site stat projection; deterministic Research; pure police helpers | Binary Chaos/reset/police fixtures, cross-player Influence/Control conflicts, special buildings, desertion, research caps, factory discounts/acquisition/swap fixtures and M2 gate |
 | M4 | Foundation started | Recovered raw RNG/range algorithms; serializable state; effective item/site stats; phase-wide Attack/retaliation and Crackdown police snapshots; hidden/police detection; elimination and recorded rolls | Crackdown duration/aftermath, reveal timing, RNG seed/call-order validation, binary combat fixtures, and M2-M3 gates |
@@ -564,7 +564,7 @@ unmarked guess.
 | M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
 | M9 | Not started | None | Frozen deterministic simulation after M8 |
 
-Current automated baseline: the solution builds successfully, 219 tests
+Current automated baseline: the solution builds successfully, 222 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.

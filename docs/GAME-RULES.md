@@ -460,6 +460,22 @@ claim about original-game behavior.
 
 ## Objectives and match completion
 
+### RULE-SETUP-001 — Armageddon starting resources
+
+- Source: `MANUAL-GOG-1`; Armageddon scenario description.
+- Observed statement: Armageddon starts every player with $500 and all equipment
+  already researched.
+- Interpretation: new-match bootstrapping replaces the ordinary-scenario cash
+  input with 500 and marks every real item-table entry (excluding type-99 padding)
+  as researched before turn one.
+- Current exclusions: exact city generation, Headquarters/Right Hands placement,
+  ordinary-scenario starting cash and Force, initial hire offers, and RNG usage.
+- Confidence: High for the Armageddon cash and research overrides; Low for the
+  excluded setup mechanics.
+- Implementation: `MatchBootstrap.Create`.
+- Tests: `MatchBootstrapTests` covers both overrides and verifies the resulting
+  research state through the normal query API.
+
 ### RULE-OBJECTIVE-001 — End-of-turn objective evaluation
 
 - Source: `MANUAL-GOG-1`; scenario descriptions and scoring tables.
@@ -490,7 +506,7 @@ claim about original-game behavior.
   Low for timing, ties, Siege mapping and special objective edge cases.
 - Implementation: `MatchOutcomeEvaluator`, scenario-specific elimination and
   Big Man accrual in `MatchState.FinishPlayerElimination`, `MatchState.Outcome`,
-  and canonical hash format version 2.
+  and canonical hash format version 4.
 - Tests: `MatchOutcomeTests` covers authoritative projection, objective event
   and notification emission, Eliminate's Right Hands distinction, exact timed
   boundary ties/standings, and outcome hashing; `EndgameRankingTests` covers

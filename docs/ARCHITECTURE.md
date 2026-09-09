@@ -216,6 +216,15 @@ site influence is cleared back to the site's base resistance, and ordered events
 and notifications expose the transition. Exact original cleanup and simultaneous
 ordering still require binary fixtures.
 
+`MatchBootstrap` converts an explicit city and player-placement layout into the
+authoritative state graph without guessing the still-unrecovered generation
+algorithm. It verifies a distinct neutral Headquarters sector for every player,
+creates stable-ID Right Hands gangs there, transfers sector control, and leaves
+the caller's reusable layout untouched. Armageddon setup applies its manual-only
+$500 and all-items-researched overrides at this boundary. Starting positions,
+Right Hands Force, ordinary-scenario cash, hire pools and city contents remain
+explicit inputs until reference fixtures establish them.
+
 ## State ownership target
 
 `MatchState` now owns the schema for:
