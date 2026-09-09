@@ -142,7 +142,8 @@ assignment, and hover target feedback. `ChaosGame.Management.cs` owns the
 Finance, Search, and Ranking projections and their shared panel shell. Gang,
 site, and item information modal navigation lives with its corresponding renderer in
 `ChaosGame.GangDetails.cs`, `ChaosGame.SiteDetails.cs`, and
-`ChaosGame.ItemDetails.cs`. Attack selection, combat presentation, results, and
+`ChaosGame.ItemDetails.cs`. `ChaosGame.Items.cs` owns the research/equipment
+browser and Give workflow. Attack selection, combat presentation, results, and
 turn events likewise remain in their focused partials. Further screen groups
 should follow these boundaries instead of growing the shell again.
 It reads original media only from the extracted asset directory.
