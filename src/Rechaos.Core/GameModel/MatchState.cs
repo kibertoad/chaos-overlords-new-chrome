@@ -200,8 +200,6 @@ public sealed class MatchSectorState
             throw new ArgumentException($"A sector must contain exactly {MatchLimits.SitesPerSector} sites.", nameof(sites));
         if (sites.Select(site => site.Slot).Order().SequenceEqual(Enumerable.Range(0, MatchLimits.SitesPerSector)) is false)
             throw new ArgumentException("Site slots must be exactly 0, 1, and 2.", nameof(sites));
-        if (tolerance is < ManualRules.MinimumTolerance or > ManualRules.MaximumTolerance)
-            throw new ArgumentOutOfRangeException(nameof(tolerance));
         if (chaos < 0) throw new ArgumentOutOfRangeException(nameof(chaos));
         if (income < 0) throw new ArgumentOutOfRangeException(nameof(income));
         Id = id;
@@ -714,8 +712,10 @@ public sealed class MatchState
             foreach (var sector in Sectors)
             foreach (var site in sector.Sites.Where(site => site.InfluencedBy == player.Id))
             {
+                var definition = Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+                sector.Tolerance = checked(sector.Tolerance - definition.Tolerance);
                 site.InfluencedBy = null;
-                site.Resistance = Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Resistance;
+                site.Resistance = definition.Resistance;
             }
 
             var details = new EliminationDetails(

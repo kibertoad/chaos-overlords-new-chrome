@@ -51,15 +51,17 @@ public sealed class InstantResolutionTests
     [Fact]
     public void InfluenceCompletionClaimsSiteAndAppliesSupport()
     {
-        var match = CreateMatch(siteResistance: 1);
+        var match = CreateMatch(siteResistance: 1, siteDefinitionId: 6);
         var siteDefinition = match.Definitions.Sites.Single(value => value.Id == match.FindSite(0)!.DefinitionId);
         QueueInfluencePair(match);
+        var toleranceBefore = match.Sectors[0].Tolerance;
 
         match.FinishExecutionPhase();
 
         Assert.Equal(0, match.FindSite(0)!.Resistance);
         Assert.Equal(new PlayerId(0), match.FindSite(0)!.InfluencedBy);
         Assert.Equal(siteDefinition.Support, match.Players[0].Support);
+        Assert.Equal(toleranceBefore + siteDefinition.Tolerance, match.Sectors[0].Tolerance);
     }
 
     [Fact]
@@ -129,7 +131,8 @@ public sealed class InstantResolutionTests
     private static MatchState CreateMatch(
         int siteResistance,
         PlayerId? influencedBy = null,
-        bool playerControlsSector = true)
+        bool playerControlsSector = true,
+        short siteDefinitionId = 0)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
@@ -152,7 +155,8 @@ public sealed class InstantResolutionTests
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
-                new MatchSiteState(0, 0, id == 0 ? siteResistance : 7, id == 0 ? influencedBy : null),
+                new MatchSiteState(0, id == 0 ? siteDefinitionId : (short)0,
+                    id == 0 ? siteResistance : 7, id == 0 ? influencedBy : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
             ], owner: id == 0 && playerControlsSector ? new PlayerId(0) : null))

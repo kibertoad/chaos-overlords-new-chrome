@@ -89,6 +89,26 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
+    public void NegativeEffectiveToleranceTriggersCrackdownWithoutChaosCommands()
+    {
+        var match = CreateMatch(tolerance: -2);
+        match.FinishUpkeep();
+        Assert.Equal(-1, match.Sectors[0].Tolerance);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        for (var index = 0; index < 3; index++) match.FinishExecutionPhase();
+
+        match.FinishExecutionPhase();
+
+        Assert.True(match.Sectors[0].CrackdownActive);
+        Assert.All(match.Players, player => Assert.Contains(
+            match.NotificationsFor(player.Id),
+            notification => notification.Kind == GameNotificationKind.Crackdown
+                && notification.SectorId == 0
+                && notification.RelatedEventSequence is null));
+    }
+
+    [Fact]
     public void EquivalentChaosRunsProduceIdenticalEventsAndHash()
     {
         var first = CreateMatch(twoPlayerZeroGangs: true, owner: new PlayerId(0), tolerance: 40);

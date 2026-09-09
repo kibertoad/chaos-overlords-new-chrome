@@ -117,7 +117,6 @@ public static class ManualRules
     public static bool TriggersCrackdown(int chaos, int tolerance)
     {
         if (chaos < 0) throw new ArgumentOutOfRangeException(nameof(chaos));
-        ValidateTolerance(tolerance);
         return chaos > tolerance;
     }
 

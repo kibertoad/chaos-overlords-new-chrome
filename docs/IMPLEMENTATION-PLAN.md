@@ -145,6 +145,8 @@ the exact RNG consumption order.
 - Bribe costs $5 and raises sector tolerance by 3, capped at 40. Snitch is free
   and lowers tolerance by 3, floored at zero. At Upkeep, tolerance moves one
   point toward `17 - Income` plus the tolerance values of influenced sites.
+  Site modifiers remain outside the base cap and a negative effective tolerance
+  triggers a crackdown even without a Chaos command.
 - Chaos uses total Force + Chaos, earns cash subject to sector income/control,
   increases chaos, and may trigger a crackdown. Exact cash and chaos increments
   require binary fixtures.
@@ -572,7 +574,7 @@ unmarked guess.
 | M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
 | M9 | Not started | None | Frozen deterministic simulation after M8 |
 
-Current automated baseline: the solution builds successfully, 268 tests
+Current automated baseline: the solution builds successfully, 270 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.

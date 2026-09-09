@@ -158,10 +158,11 @@ controlled reference observation confirms its execution timing and edge cases.
 - Source: `MANUAL-GOG-1`; command formula summary. Exact scan page location
   still needs transcription into the evidence log.
 - Observed statement: Bribe costs $5 and raises the acting gang's sector
-  tolerance by 3, with a maximum base tolerance of 40.
+  tolerance by 3, with a maximum unmodified tolerance of 40. Influenced-site
+  modifiers remain applied and may take the effective value outside 0–40.
 - Interpretation: during the Instant execution subphase, deduct $5 from the
-  commanding player, record it as cash spent, and set sector tolerance to
-  `min(40, tolerance + 3)`.
+  commanding player, record it as cash spent, remove the current site modifier,
+  cap the adjusted base at 40, then restore the site modifier.
 - Current insufficient-cash behavior: the recreation emits an ordered failed
   result and does not change cash or tolerance. This edge case is provisional.
 - Confidence: High for cost/delta/cap; Low for execution-time affordability and
@@ -178,9 +179,10 @@ controlled reference observation confirms its execution timing and edge cases.
 - Source: `MANUAL-GOG-1`; Snitch command description. Exact scan page location
   still needs transcription into the evidence log.
 - Observed statement: Snitch is free and lowers the acting gang's sector
-  tolerance by 3, with a minimum tolerance of zero.
-- Interpretation: during the Instant execution subphase, set sector tolerance
-  to `max(0, tolerance - 3)` without changing cash.
+  tolerance by 3, with a minimum unmodified tolerance of zero.
+- Interpretation: during the Instant execution subphase, remove the current
+  site modifier, floor the adjusted base at zero, then restore the modifier,
+  without changing cash.
 - Confidence: High for cost/delta/floor; Medium for execution timing; Low for
   automatic tolerance interactions in sectors without influenced sites.
 - Implementation: `ManualRules.ApplySnitch`, `CommandResolver.ResolveSnitch`.
@@ -195,14 +197,21 @@ controlled reference observation confirms its execution timing and edge cases.
 - Observed statement: a sector's normal tolerance is determined by its income,
   with influenced-site Tolerance values modifying that normal. Temporary
   tolerance changes move one point toward normal each turn.
-- Interpretation: normal tolerance is `17 - sector Income + sum(Tolerance)` for
-  currently influenced sites, clamped to 0–40. During Upkeep, every sector's
-  current tolerance moves exactly one point toward that value.
+- Interpretation: normal effective tolerance is
+  `17 - sector Income + sum(Tolerance)` for currently influenced sites. Site
+  adjustments apply immediately when influence is gained or lost, may move the
+  effective value outside 0–40, and remain outside Bribe/Snitch's base caps.
+  During Upkeep, every sector's current value moves exactly one point toward
+  its normal effective value. During the Chaos phase, `Chaos > Tolerance`
+  triggers a crackdown even when no gang submitted a Chaos command; therefore
+  any negative effective tolerance automatically triggers one.
 - Confidence: High for the formula and one-point adjustment; Medium for the
   exact turn boundary and whether an influence change applies immediately.
 - Implementation: `ToleranceResolver`, invoked by `MatchState.FinishUpkeep`.
 - Tests: `ToleranceResolverTests` covers movement from both directions, stable
-  values, and inclusion of influenced while excluding uninfluenced sites.
+  values, site adjustments and base-cap separation; influence tests cover the
+  immediate modifier, and `ChaosResolutionTests` covers commandless negative-
+  tolerance crackdown.
 - Next experiment: compare saves before and after Upkeep around a Bribe or
   Snitch, then repeat while gaining or losing influence over modifier sites.
 

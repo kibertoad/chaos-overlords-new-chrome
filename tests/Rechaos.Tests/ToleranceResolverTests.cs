@@ -31,6 +31,22 @@ public sealed class ToleranceResolverTests
         Assert.Equal(11, ToleranceResolver.NormalTolerance(match, match.Sectors[0]));
     }
 
+    [Fact]
+    public void SiteAdjustmentRemainsOutsideBribeAndSnitchBaseCaps()
+    {
+        var match = CreateMatch(tolerance: -6, income: 7, influenceFirstTwoSites: true);
+        var sector = match.Sectors[0];
+        // The two test sites contribute -1 in total, so an effective -1 is a
+        // base-zero value with the modifier still applied.
+        sector.Tolerance = -1;
+        Assert.Equal(-1, ToleranceResolver.SiteAdjustment(match, sector));
+        Assert.Equal(2, ToleranceResolver.ApplyBribe(match, sector));
+        Assert.Equal(-1, ToleranceResolver.ApplySnitch(match, sector));
+
+        sector.Tolerance = 39; // base 40 plus the -1 site adjustment
+        Assert.Equal(39, ToleranceResolver.ApplyBribe(match, sector));
+    }
+
     private static MatchState CreateMatch(
         int tolerance,
         int income,

@@ -118,11 +118,12 @@ public static class CommandResolver
         }
 
         var gang = state.FindGang(command.Gang)!;
+        var sector = state.Sectors[gang.SectorId];
         player.Cash -= cost;
         player.Statistics.CashSpent += cost;
-        var before = state.Sectors[gang.SectorId].Tolerance;
-        var after = ManualRules.ApplyBribe(before);
-        state.Sectors[gang.SectorId].Tolerance = after;
+        var before = sector.Tolerance;
+        var after = ToleranceResolver.ApplyBribe(state, sector);
+        sector.Tolerance = after;
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after, -cost));
     }
@@ -491,11 +492,12 @@ public static class CommandResolver
         {
             var sector = state.Sectors[sectorId];
             sector.Chaos = checked(sector.Chaos + successes);
-            if (!sector.CrackdownActive && ManualRules.TriggersCrackdown(sector.Chaos, sector.Tolerance))
-            {
-                sector.CrackdownActive = true;
-                newlyTriggered.Add(sectorId);
-            }
+        }
+        foreach (var sector in state.Sectors.OrderBy(value => value.Id))
+        {
+            if (sector.CrackdownActive || !ManualRules.TriggersCrackdown(sector.Chaos, sector.Tolerance)) continue;
+            sector.CrackdownActive = true;
+            newlyTriggered.Add(sector.Id);
         }
 
         var results = new List<CommandResolutionResult>(commands.Count);
@@ -528,7 +530,8 @@ public static class CommandResolver
             foreach (var player in state.Players.Where(player => player.Status == PlayerStatus.Active))
                 state.QueueNotification(
                     player.Id, GameNotificationKind.Crackdown,
-                    sectorId: sectorId, relatedEventSequence: firstEventBySector[sectorId]);
+                    sectorId: sectorId,
+                    relatedEventSequence: firstEventBySector.TryGetValue(sectorId, out var sequence) ? sequence : null);
         }
         return results;
     }
@@ -598,6 +601,8 @@ public static class CommandResolver
         {
             var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
             if (site.InfluencedBy == previousOwner) player.Support -= definition.Support;
+            if (site.InfluencedBy is not null)
+                sector.Tolerance = checked(sector.Tolerance - definition.Tolerance);
             site.InfluencedBy = null;
             site.Resistance = definition.Resistance;
         }
@@ -648,6 +653,8 @@ public static class CommandResolver
             site.InfluencedBy = first.Player;
             var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
             state.FindPlayer(first.Player)!.Support = checked(state.FindPlayer(first.Player)!.Support + definition.Support);
+            var sector = state.Sectors[first.Target.Id / MatchLimits.SitesPerSector];
+            sector.Tolerance = checked(sector.Tolerance + definition.Tolerance);
         }
 
         var results = new List<CommandResolutionResult>(participants.Count);
@@ -665,15 +672,16 @@ public static class CommandResolver
     {
         var player = state.FindPlayer(command.Player)!;
         var gang = state.FindGang(command.Gang)!;
-        var before = state.Sectors[gang.SectorId].Tolerance;
+        var sector = state.Sectors[gang.SectorId];
+        var before = sector.Tolerance;
         if (player.Cash < 0)
         {
             return Complete(state, command, GameEventKind.CommandFailed,
                 new CommandResolutionDetails(CommandResolutionCode.InsufficientCash, [], 0, before, before));
         }
 
-        var after = ManualRules.ApplySnitch(before);
-        state.Sectors[gang.SectorId].Tolerance = after;
+        var after = ToleranceResolver.ApplySnitch(state, sector);
+        sector.Tolerance = after;
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after));
     }
