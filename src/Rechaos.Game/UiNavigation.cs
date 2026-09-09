@@ -167,3 +167,8 @@ public static class SectorGangView
         return new Rectangle(18, 107 + index * 40, 36, 36);
     }
 }
+
+public static class GangArtLayout
+{
+    public static Rectangle SelectedEquipmentPortrait => new(558, 58, 56, 56);
+}

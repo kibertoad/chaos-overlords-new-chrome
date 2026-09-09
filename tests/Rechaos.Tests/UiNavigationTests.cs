@@ -119,5 +119,6 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(18, 107, 36, 36), SectorGangView.SearchPortrait(0));
         Assert.Equal(new Rectangle(18, 347, 36, 36),
             SectorGangView.SearchPortrait(SectorGangView.MaximumSearchRows - 1));
+        Assert.Equal(new Rectangle(558, 58, 56, 56), GangArtLayout.SelectedEquipmentPortrait);
     }
 }

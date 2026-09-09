@@ -1131,6 +1131,14 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         font.Draw(batch, gang is null ? "NO ACTIVE GANG" :
             $"{state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Name}  CASH ${player.Cash}",
             new Vector2(18, 86), PlayerColors[playerId.Value], 1);
+        if (gang is not null)
+        {
+            var portrait = GangArtLayout.SelectedEquipmentPortrait;
+            if (_gangPortraits is not null)
+                batch.Draw(_gangPortraits, portrait,
+                    OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
+            DrawBorder(batch, pixel, portrait, PlayerColors[playerId.Value], 1);
+        }
 
         var first = Math.Max(0, _itemCursor - 8);
         foreach (var entry in items.Skip(first).Take(18).Select((item, index) => (item, index)))

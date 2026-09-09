@@ -76,6 +76,8 @@ validated against the executable.
   that gang's information panel; enemy portraits remain read-only.
 - Search results reuse the same sheet and visibility projection for seven
   portrait-led rows, with owner-colored borders and overflow count.
+- The Equipment panel shows the selected gang from `PX03000` at `(558,58)` in
+  a 56-by-56 owner-colored frame, keeping the item list and statistics visible.
 - The recreation Give target panel reuses `PX03000` portraits and lists only
   validator-approved friendly recipients in the acting gang's sector. Its
   layout remains provisional pending identification of the original panel.
