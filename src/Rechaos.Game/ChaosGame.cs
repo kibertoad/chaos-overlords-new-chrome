@@ -15,6 +15,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly GraphicsDeviceManager _graphics;
     private readonly string _assetRoot;
     private readonly string _quickSavePath;
+    private readonly string _autoSavePath;
     private readonly string _replayPath;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
@@ -32,6 +33,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _quickSavePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords", "quicksave.rchsave");
+        _autoSavePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Rechaos Overlords", "autosave.rchsave");
         _replayPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords", "last-match.rchreplay");
@@ -192,6 +196,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             _message = "MATCH COMPLETE";
             return;
         }
+        var completedTurn = _state.Coordinator.Phase == TurnPhase.PlayerElimination;
         var transition = _state.Coordinator.Phase switch
         {
             TurnPhase.Upkeep => _replay!.FinishUpkeep(),
@@ -204,6 +209,18 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _message = transition.ExecutionPhase is { } execution
             ? execution.ToString().ToUpperInvariant()
             : transition.Phase.ToString().ToUpperInvariant();
+        if (completedTurn)
+        {
+            try
+            {
+                NativeSaveStore.SaveAtomic(_autoSavePath, _state);
+                _message += "  AUTOSAVED";
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                _message += "  AUTOSAVE FAILED";
+            }
+        }
     }
 
     private void SaveQuickGame()
