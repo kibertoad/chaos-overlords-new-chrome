@@ -14,6 +14,7 @@ public enum ClientScreen
     Events,
     Sector,
     Gang,
+    Site,
     Finance,
     Ranking,
     Items,
@@ -35,6 +36,7 @@ public sealed class ScreenRouter
         if (Current == ClientScreen.Title) return false;
         Current = Current is ClientScreen.Events or ClientScreen.Commands or ClientScreen.Hire
             or ClientScreen.Sector or ClientScreen.Gang or ClientScreen.Finance or ClientScreen.Ranking
+            or ClientScreen.Site
             or ClientScreen.Items or ClientScreen.Give
             or ClientScreen.CombatSummary
             or ClientScreen.Search
@@ -184,6 +186,12 @@ public static class OriginalSpriteLayout
         if (definitionId is < 0 or >= 90) throw new ArgumentOutOfRangeException(nameof(definitionId));
         return new Rectangle(definitionId % 10 * 64, definitionId / 10 * 64, 64, 64);
     }
+
+    public static Rectangle ItemPortrait(int definitionId)
+    {
+        if (definitionId is < 0 or >= 64) throw new ArgumentOutOfRangeException(nameof(definitionId));
+        return new Rectangle(0, definitionId * 20, 20, 20);
+    }
 }
 
 public static class GangStatusMarkerLayout
@@ -277,6 +285,7 @@ public static class SectorGangCardLayout
     public static Rectangle ForceBar(int slot) => At(slot, 3, 2, 64, 3);
     public static Rectangle OneOffAction(int slot) => At(slot, 3, 7, 30, 15);
     public static Rectangle RepeatingAction(int slot) => At(slot, 36, 7, 30, 15);
+    public static Rectangle AssignedCommand(int slot) => At(slot, 3, 7, 63, 15);
     public static Rectangle Portrait(int slot) => At(slot, 3, 23, 64, 64);
     public static Rectangle ItemSlot(int slot, int itemSlot)
     {
@@ -322,10 +331,26 @@ public static class CommandOverlayLayout
 
 public static class EquipmentCommandLayout
 {
+    public const int CategoryCount = 4;
     public static Rectangle Panel => new(104, 125, 344, 209);
     public static Rectangle Portrait => new(130, 143, 64, 64);
     public static Rectangle Cancel => new(136, 262, 49, 24);
     public static Rectangle Ok => new(136, 294, 49, 24);
+    public static Rectangle Category(int category)
+    {
+        if (category is < 0 or >= CategoryCount) throw new ArgumentOutOfRangeException(nameof(category));
+        return new Rectangle(207, 141 + category * 36, 34, 34);
+    }
+
+    public static int CategoryForItemType(int itemType) => itemType switch
+    {
+        0 or 1 => 0,
+        2 => 1,
+        3 => 2,
+        4 => 3,
+        _ => throw new ArgumentOutOfRangeException(nameof(itemType))
+    };
+
     public static Rectangle ItemRow(int row)
     {
         if (row is < 0 or >= 12) throw new ArgumentOutOfRangeException(nameof(row));
@@ -354,6 +379,43 @@ public static class GangInformationLayout
     };
 }
 
+public static class SiteInformationLayout
+{
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Portrait => new(132, 141, 120, 64);
+    public static Rectangle Ok => EquipmentCommandLayout.Ok;
+    public const int DataValueRight = 383;
+    public const int LeftValueRight = 287;
+    public const int RightValueRight = 383;
+    public static int DataY(int row)
+    {
+        if (row is < 0 or >= 4) throw new ArgumentOutOfRangeException(nameof(row));
+        return row switch
+        {
+            0 => 170,
+            1 => 188,
+            2 => 197,
+            3 => 206,
+            _ => throw new ArgumentOutOfRangeException(nameof(row))
+        };
+    }
+    public static int StatisticY(int row)
+    {
+        if (row is < 0 or >= 7) throw new ArgumentOutOfRangeException(nameof(row));
+        return row switch
+        {
+            0 => 245,
+            1 => 254,
+            2 => 272,
+            3 => 281,
+            4 => 290,
+            5 => 299,
+            6 => 308,
+            _ => throw new ArgumentOutOfRangeException(nameof(row))
+        };
+    }
+}
+
 public static class InfluenceCommandLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
@@ -368,6 +430,35 @@ public static class InfluenceCommandLayout
         2 => new Rectangle(209, 255, 120, 64),
         _ => throw new ArgumentOutOfRangeException(nameof(slot))
     };
+}
+
+public static class AttackCommandLayout
+{
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle ActorPortrait => new(129, 141, 64, 64);
+    public static Rectangle TargetPortrait => new(240, 141, 64, 64);
+    public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
+    public static Rectangle Ok => EquipmentCommandLayout.Ok;
+    public static Rectangle ActorForceBar => new(129, 228, 64, 3);
+    public static Rectangle TargetForceBar => new(240, 228, 64, 3);
+
+    public static Rectangle ActorItem(int slot)
+    {
+        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(129 + slot * 22, 207, 20, 20);
+    }
+
+    public static Rectangle Opponent(int slot)
+    {
+        if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(200, 141 + slot * 37, 32, 32);
+    }
+
+    public static Rectangle TargetItem(int slot)
+    {
+        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(240 + slot * 22, 207, 20, 20);
+    }
 }
 
 public static class StatusConsoleLayout

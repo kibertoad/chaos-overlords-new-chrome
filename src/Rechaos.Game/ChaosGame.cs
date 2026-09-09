@@ -71,12 +71,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _endgameBackground;
     private Texture2D? _handoffPanel;
     private Texture2D? _gangInfoBackground;
+    private Texture2D? _siteInfoBackground;
     private Texture2D? _hireComparisonBackground;
     private Texture2D? _influenceBackground;
+    private Texture2D? _targetAcquisitionBackground;
     private Texture2D? _equipmentPurchaseBackground;
     private Texture2D? _equipmentResearchBackground;
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
+    private Texture2D? _itemPortraits;
     private Texture2D? _policeSprites;
     private Texture2D? _uiSprites;
     private PixelFont? _font;
@@ -89,6 +92,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly ScreenRouter _screens = new();
     private readonly CitySectorClickTracker _citySectorClicks = new();
     private readonly IndexedDoubleClickTracker _sectorGangClicks = new();
+    private readonly IndexedDoubleClickTracker _sectorSiteClicks = new();
+    private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
     private readonly IndexedDoubleClickTracker _hirePortraitClicks = new();
     private readonly bool[] _computerPlayers = new bool[MatchLimits.PlayerCount];
     private readonly short[] _playerPortraits = Enumerable.Range(0, MatchLimits.PlayerCount)
@@ -103,6 +108,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private IReadOnlyList<GameCommand> _commandTargetOptions = [];
     private int _commandCursor;
     private int _commandTargetCursor;
+    private int _equipmentCategory;
     private bool _choosingCommandTarget;
     private bool _commandRepeats;
     private ClientScreen _commandReturnScreen = ClientScreen.City;
@@ -114,6 +120,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private short? _draggedHireDefinitionId;
     private Point _hirePressPoint;
     private bool _hireDragStarted;
+    private GangId? _draggedGangId;
+    private Point _gangPressPoint;
+    private bool _gangDragStarted;
     private int? _pendingHireSlot;
     private Point _dragPoint;
     private Point? _hoverPoint;
@@ -126,6 +135,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private ClientScreen _gangDetailsReturnScreen = ClientScreen.City;
     private GangId? _gangDetailsInstanceId;
     private short? _gangDetailsDefinitionId;
+    private ClientScreen _siteDetailsReturnScreen = ClientScreen.Sector;
+    private int? _siteDetailsSectorId;
+    private int? _siteDetailsSlot;
 
     public ChaosGame(string assetRoot, bool debugPhaseStepping = false)
     {
@@ -168,12 +180,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _endgameBackground = LoadTexture("PX00200.bmp");
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
+        _siteInfoBackground = LoadTexture("PX05002.bmp");
         _hireComparisonBackground = LoadTexture("PX05016.bmp");
         _influenceBackground = LoadTexture("PX05005.bmp");
+        _targetAcquisitionBackground = LoadTexture("PX05003.bmp");
         _equipmentPurchaseBackground = LoadTexture("PX05004.bmp");
         _equipmentResearchBackground = LoadTexture("PX05007.bmp");
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
+        _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);
         _policeSprites = LoadTexture("PX00300.bmp", transparentBlack: true);
         _uiSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
         LoadCombatAnimationTextures();
@@ -248,6 +263,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                     CloseGangDetails();
                 break;
+            case ClientScreen.Site:
+                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    CloseSiteDetails();
+                break;
             case ClientScreen.Finance:
             case ClientScreen.Ranking:
                 if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
@@ -289,6 +308,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 _hireDragStarted = true;
                 _message = "DROP ON A CONTROLLED SECTOR";
             }
+            else if (_draggedGangId is not null && !_gangDragStarted
+                     && (Math.Abs(virtualPoint.X - _gangPressPoint.X) >= 4
+                         || Math.Abs(virtualPoint.Y - _gangPressPoint.Y) >= 4))
+            {
+                _gangDragStarted = true;
+                _message = "DROP ON A NEIGHBORING SECTOR";
+            }
         }
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
             && _draggedHireDefinitionId is not null)
@@ -296,6 +322,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (pointerMapped && _hireDragStarted) CompleteHireDrag(virtualPoint);
             else if (pointerMapped) CompleteHireClick();
             else CancelHireDrag();
+        }
+        else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
+                 && _draggedGangId is not null)
+        {
+            if (pointerMapped && _gangDragStarted) CompleteGangDrag(virtualPoint);
+            else if (pointerMapped) CompleteGangClick();
+            else CancelGangDrag();
         }
         PlayNewCombatSounds();
         CaptureNewCombatAnimations();
@@ -343,6 +376,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Gang when _state is not null:
                 DrawGangDetails(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.Site when _state is not null:
+                DrawSiteDetails(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.Finance when _state is not null:
                 DrawFinance(_batch, _pixel, _font, _state);
@@ -484,6 +520,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Gang:
                 if (EquipmentCommandLayout.Ok.Contains(point)) CloseGangDetails();
                 break;
+            case ClientScreen.Site:
+                if (SiteInformationLayout.Ok.Contains(point)) CloseSiteDetails();
+                break;
             case ClientScreen.Finance:
             case ClientScreen.Ranking:
             case ClientScreen.CombatSummary:
@@ -527,6 +566,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _message = $"SECTOR {_cursor + 1}";
             return;
         }
+        var siteSlot = Enumerable.Range(0, MatchLimits.SitesPerSector)
+            .FirstOrDefault(slot => SectorDetailLayout.SitePortrait(slot).Contains(point), -1);
+        if (siteSlot >= 0)
+        {
+            if (_sectorSiteClicks.Register(_cursor * MatchLimits.SitesPerSector + siteSlot, _inputTime))
+                OpenSiteDetails(_cursor, siteSlot, ClientScreen.Sector);
+            return;
+        }
         var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var visible = SectorGangView.Visible(_state, playerId, _cursor)
             .OrderBy(gang => gang.Owner == playerId ? 0 : 1)
@@ -543,10 +590,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         var ownGangs = _state.FindPlayer(playerId)!.Gangs.Where(candidate => candidate.IsActive).ToArray();
         _selectedGangIndex = Array.FindIndex(ownGangs, candidate => candidate.Id == gang.Id);
-        if (SectorGangCardLayout.OneOffAction(index).Contains(point))
+        if (gang.QueuedCommand is { } queued
+            && SectorGangCardLayout.AssignedCommand(index).Contains(point))
+            OpenCommands(queued.Command.Repeat, ClientScreen.Sector);
+        else if (SectorGangCardLayout.OneOffAction(index).Contains(point))
             OpenCommands(repeat: false, returnScreen: ClientScreen.Sector);
         else if (SectorGangCardLayout.RepeatingAction(index).Contains(point))
             OpenCommands(repeat: true, returnScreen: ClientScreen.Sector);
+        else if (SectorGangCardLayout.Portrait(index).Contains(point))
+            BeginGangDrag(gang, point);
         else if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
             OpenGangDetails(gang, ClientScreen.Sector);
     }
@@ -728,7 +780,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     {
         if (_choosingCommandTarget)
         {
-            if (_commandTargetOptions.Count > 0)
+            if (IsEquipmentCommandPicker() && _state is not null)
+            {
+                var indices = EquipmentCommandIndices(_state);
+                if (indices.Count > 0)
+                {
+                    var position = indices.IndexOf(_commandTargetCursor);
+                    _commandTargetCursor = indices[Mod(position + delta, indices.Count)];
+                }
+            }
+            else if (_commandTargetOptions.Count > 0)
                 _commandTargetCursor = Mod(_commandTargetCursor + delta, _commandTargetOptions.Count);
         }
         else
@@ -741,6 +802,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     {
         if (_choosingCommandTarget)
         {
+            if (IsAttackCommandPicker())
+            {
+                HandleAttackCommandClick(point);
+                return;
+            }
             if (IsInfluenceCommandPicker())
             {
                 if (InfluenceCommandLayout.Cancel.Contains(point))
@@ -761,10 +827,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         : _state.FindGang(_commandTargetOptions[0].Gang);
                     if (actor is null) return;
                     var targetId = actor.SectorId * MatchLimits.SitesPerSector + slot;
+                    var openDetails = _influenceSiteClicks.Register(targetId, _inputTime);
                     for (var candidateIndex = 0; candidateIndex < _commandTargetOptions.Count; candidateIndex++)
                     {
                         if (_commandTargetOptions[candidateIndex].Target.Id != targetId) continue;
                         _commandTargetCursor = candidateIndex;
+                        if (openDetails) OpenSiteDetails(actor.SectorId, slot, ClientScreen.Commands);
                         return;
                     }
                     return;
@@ -784,11 +852,20 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     ActivateCommandSelection();
                     return;
                 }
-                var itemFirst = Math.Max(0, _commandTargetCursor - 5);
-                var itemVisible = Math.Min(12, _commandTargetOptions.Count - itemFirst);
+                for (var category = 0; category < EquipmentCommandLayout.CategoryCount; category++)
+                {
+                    if (!EquipmentCommandLayout.Category(category).Contains(point)) continue;
+                    SelectEquipmentCategory(category);
+                    return;
+                }
+                if (_state is null) return;
+                var indices = EquipmentCommandIndices(_state);
+                var position = indices.IndexOf(_commandTargetCursor);
+                var itemFirst = Math.Max(0, position - 5);
+                var itemVisible = Math.Min(12, indices.Count - itemFirst);
                 var itemRow = Enumerable.Range(0, Math.Max(0, itemVisible))
                     .FirstOrDefault(row => EquipmentCommandLayout.ItemRow(row).Contains(point), -1);
-                if (itemRow >= 0) _commandTargetCursor = itemFirst + itemRow;
+                if (itemRow >= 0) _commandTargetCursor = indices[itemFirst + itemRow];
                 else if (!EquipmentCommandLayout.Panel.Contains(point)) BackFromCommands();
                 return;
             }
@@ -819,7 +896,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (_replay is null) return;
         if (_choosingCommandTarget)
         {
-            if (_commandTargetOptions.Count > 0)
+            if (IsEquipmentCommandPicker() && (_state is null
+                || !EquipmentCommandIndices(_state).Contains(_commandTargetCursor)))
+            {
+                _message = "NO ITEMS IN THIS CATEGORY";
+            }
+            else if (_commandTargetOptions.Count > 0)
                 SubmitCommand(_commandTargetOptions[_commandTargetCursor]);
             return;
         }
@@ -840,7 +922,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         {
             _commandTargetOptions = options;
             _commandTargetCursor = 0;
+            _equipmentCategory = 0;
             _choosingCommandTarget = true;
+            if (action is GangAction.Equip or GangAction.Research)
+                SelectEquipmentCategory(0);
             return;
         }
         SubmitCommand(options[0]);
@@ -926,6 +1011,22 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var returnScreen = _gangDetailsReturnScreen;
         _gangDetailsInstanceId = null;
         _gangDetailsDefinitionId = null;
+        _screens.Show(returnScreen);
+    }
+
+    private void OpenSiteDetails(int sectorId, int slot, ClientScreen returnScreen)
+    {
+        _siteDetailsSectorId = sectorId;
+        _siteDetailsSlot = slot;
+        _siteDetailsReturnScreen = returnScreen;
+        _screens.Show(ClientScreen.Site);
+    }
+
+    private void CloseSiteDetails()
+    {
+        var returnScreen = _siteDetailsReturnScreen;
+        _siteDetailsSectorId = null;
+        _siteDetailsSlot = null;
         _screens.Show(returnScreen);
     }
 
@@ -1175,6 +1276,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             DrawInfluenceCommandTargets(batch, pixel, state);
             return;
         }
+        if (IsAttackCommandPicker())
+        {
+            DrawAttackCommandTargets(batch, pixel, font, state);
+            return;
+        }
         var panel = CommandOverlayLayout.TargetPanel;
         batch.Draw(pixel, panel, new Color(12, 18, 18, 248));
         DrawBorder(batch, pixel, panel, new Color(0, 190, 65), 2);
@@ -1202,6 +1308,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     private bool IsInfluenceCommandPicker() => _commandTargetOptions.Count > 0
         && _commandTargetOptions[0].Action == GangAction.Influence;
+
+    private bool IsAttackCommandPicker() => _commandTargetOptions.Count > 0
+        && _commandTargetOptions[0].Action == GangAction.Attack;
 
     private void DrawInfluenceCommandTargets(
         SpriteBatch batch,
@@ -1252,13 +1361,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             batch.Draw(_gangPortraits, EquipmentCommandLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actor.DefinitionId), Color.White);
 
-        var first = Math.Max(0, _commandTargetCursor - 5);
-        foreach (var entry in _commandTargetOptions.Skip(first).Take(12)
-                     .Select((command, row) => (command, row)))
+        var indices = EquipmentCommandIndices(state);
+        var position = indices.IndexOf(_commandTargetCursor);
+        var first = Math.Max(0, position - 5);
+        foreach (var entry in indices.Skip(first).Take(12)
+                     .Select((index, row) => (index, row)))
         {
-            var item = state.Definitions.Items[entry.command.Target.Id];
+            var command = _commandTargetOptions[entry.index];
+            var item = state.Definitions.Items[command.Target.Id];
             var rectangle = EquipmentCommandLayout.ItemRow(entry.row);
-            if (first + entry.row == _commandTargetCursor)
+            if (entry.index == _commandTargetCursor)
                 batch.Draw(pixel, rectangle, new Color(55, 65, 25));
             font.Draw(batch, item.Name, new Vector2(rectangle.X + 2, rectangle.Y + 1), Color.Lime, 1);
             var value = action == GangAction.Equip
@@ -1267,6 +1379,22 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             font.Draw(batch, value.ToString(), new Vector2(rectangle.Right - 12, rectangle.Y + 1),
                 Color.Lime, 1);
         }
+        DrawBorder(batch, pixel, EquipmentCommandLayout.Category(_equipmentCategory), Color.White, 2);
+    }
+
+    private List<int> EquipmentCommandIndices(MatchState state) => Enumerable.Range(0, _commandTargetOptions.Count)
+        .Where(index => EquipmentCommandLayout.CategoryForItemType(
+            state.Definitions.Items[_commandTargetOptions[index].Target.Id].Type) == _equipmentCategory)
+        .ToList();
+
+    private void SelectEquipmentCategory(int category)
+    {
+        if (category is < 0 or >= EquipmentCommandLayout.CategoryCount)
+            throw new ArgumentOutOfRangeException(nameof(category));
+        _equipmentCategory = category;
+        if (_state is null) return;
+        var indices = EquipmentCommandIndices(_state);
+        if (indices.Count > 0) _commandTargetCursor = indices[0];
     }
 
     private void DrawHire(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
@@ -1348,6 +1476,81 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (visibleGangs.Length > SectorGangCardLayout.VisibleCards)
             font.Draw(batch, $"+{visibleGangs.Length - SectorGangCardLayout.VisibleCards}",
                 new Vector2(397, 123), Color.White, 1);
+        DrawGangMoveDrag(batch, pixel, state);
+    }
+
+    private void BeginGangDrag(MatchGangState gang, Point point)
+    {
+        _draggedGangId = gang.Id;
+        _gangPressPoint = point;
+        _gangDragStarted = false;
+        _dragPoint = point;
+        _message = "DRAG TO MOVE; DOUBLE-CLICK FOR DETAILS";
+    }
+
+    private void CompleteGangClick()
+    {
+        var gangId = _draggedGangId;
+        _draggedGangId = null;
+        _gangDragStarted = false;
+        if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang) return;
+        if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
+            OpenGangDetails(gang, ClientScreen.Sector);
+        else
+            _message = "DOUBLE-CLICK FOR DETAILS OR DRAG TO MOVE";
+    }
+
+    private void CompleteGangDrag(Point point)
+    {
+        var gangId = _draggedGangId;
+        _draggedGangId = null;
+        _gangDragStarted = false;
+        if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang || _replay is null) return;
+        if (!SectorDetailLayout.TrySectorAt(point, _cursor, out var sectorId))
+        {
+            _message = "MOVE CANCELLED";
+            return;
+        }
+        var legal = CommandOptionCatalog.LegalCommands(_state, gang.Owner, gang.Id)
+            .FirstOrDefault(command => command.Action == GangAction.Move
+                && command.Target == CommandTarget.Sector(sectorId));
+        if (legal is null)
+        {
+            _message = "MOVE REQUIRES A NEIGHBORING SECTOR";
+            return;
+        }
+        var result = _replay.Submit(legal with { Repeat = false });
+        _message = result.Accepted
+            ? $"MOVE TO SECTOR {sectorId + 1} QUEUED"
+            : result.Validation.Message.ToUpperInvariant();
+    }
+
+    private void CancelGangDrag()
+    {
+        _draggedGangId = null;
+        _gangDragStarted = false;
+        _message = "MOVE CANCELLED";
+    }
+
+    private void DrawGangMoveDrag(SpriteBatch batch, Texture2D pixel, MatchState state)
+    {
+        if (!_gangDragStarted || _draggedGangId is not { } gangId || state.FindGang(gangId) is not { } gang)
+            return;
+        var legalSectors = CommandOptionCatalog.LegalCommands(state, gang.Owner, gang.Id)
+            .Where(command => command.Action == GangAction.Move)
+            .Select(command => command.Target.Id)
+            .ToHashSet();
+        for (var column = 0; column < SectorDetailLayout.Columns; column++)
+        for (var row = 0; row < SectorDetailLayout.Rows; row++)
+        {
+            if (SectorDetailLayout.SectorAt(_cursor, column, row) is not { } sectorId
+                || !legalSectors.Contains(sectorId)) continue;
+            DrawBorder(batch, pixel, SectorDetailLayout.Cell(column, row), Color.Lime, 2);
+        }
+        if (_gangPortraits is null) return;
+        var token = new Rectangle(_dragPoint.X - 18, _dragPoint.Y - 14, 36, 28);
+        batch.Draw(_gangPortraits, token, OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
+        DrawBorder(batch, pixel, token, PlayerColors[gang.Owner.Value], 1);
     }
 
     private void DrawSectorSideRail(SpriteBatch batch, Texture2D pixel, PixelFont font)
@@ -1393,19 +1596,33 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             batch.Draw(pixel, new Rectangle(force.X, force.Y, forceWidth, force.Height),
                 PlayerColors[gang.Owner.Value]);
 
-        var once = SectorGangCardLayout.OneOffAction(slot);
-        var repeat = SectorGangCardLayout.RepeatingAction(slot);
-        batch.Draw(pixel, once, new Color(34, 34, 34));
-        batch.Draw(pixel, repeat, new Color(34, 34, 34));
-        DrawBorder(batch, pixel, once, Color.LightGray, 1);
-        DrawBorder(batch, pixel, repeat, Color.LightGray, 1);
         var controlsEnabled = gang.Owner == viewer;
-        DrawDownArrow(batch, pixel, once.Center.X, once.Y + 5,
-            controlsEnabled ? Color.Lime : Color.Gray);
-        DrawDownArrow(batch, pixel, repeat.Center.X, repeat.Y + 3,
-            controlsEnabled ? Color.Lime : Color.Gray, compact: true);
-        DrawDownArrow(batch, pixel, repeat.Center.X, repeat.Y + 9,
-            controlsEnabled ? Color.Lime : Color.Gray, compact: true);
+        if (gang.QueuedCommand is { } queued)
+        {
+            var assigned = SectorGangCardLayout.AssignedCommand(slot);
+            batch.Draw(pixel, assigned, new Color(20, 28, 25));
+            DrawBorder(batch, pixel, assigned,
+                controlsEnabled ? PlayerColors[gang.Owner.Value] : Color.Gray, 1);
+            var label = queued.Command.Action.ToString().ToUpperInvariant();
+            var x = assigned.Center.X - label.Length * 3;
+            font.Draw(batch, label, new Vector2(x, assigned.Y + 4),
+                controlsEnabled ? Color.Lime : Color.Gray, 1);
+        }
+        else
+        {
+            var once = SectorGangCardLayout.OneOffAction(slot);
+            var repeat = SectorGangCardLayout.RepeatingAction(slot);
+            batch.Draw(pixel, once, new Color(34, 34, 34));
+            batch.Draw(pixel, repeat, new Color(34, 34, 34));
+            DrawBorder(batch, pixel, once, Color.LightGray, 1);
+            DrawBorder(batch, pixel, repeat, Color.LightGray, 1);
+            DrawDownArrow(batch, pixel, once.Center.X, once.Y + 5,
+                controlsEnabled ? Color.Lime : Color.Gray);
+            DrawDownArrow(batch, pixel, repeat.Center.X, repeat.Y + 3,
+                controlsEnabled ? Color.Lime : Color.Gray, compact: true);
+            DrawDownArrow(batch, pixel, repeat.Center.X, repeat.Y + 9,
+                controlsEnabled ? Color.Lime : Color.Gray, compact: true);
+        }
 
         var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
         if (_gangPortraits is not null)

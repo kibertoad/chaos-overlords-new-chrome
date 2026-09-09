@@ -210,7 +210,9 @@ public static class CommandValidator
         var sourceY = actor.SectorId / MatchLimits.BoardWidth;
         var targetX = target.Id % MatchLimits.BoardWidth;
         var targetY = target.Id / MatchLimits.BoardWidth;
-        return Math.Abs(sourceX - targetX) + Math.Abs(sourceY - targetY) == 1
+        var deltaX = Math.Abs(sourceX - targetX);
+        var deltaY = Math.Abs(sourceY - targetY);
+        return Math.Max(deltaX, deltaY) == 1
             ? CommandValidation.Valid()
             : CommandValidation.Reject(CommandValidationCode.DestinationNotAdjacent);
     }
@@ -294,7 +296,7 @@ internal static class CommandValidationMessages
             [CommandValidationCode.TargetNotFriendly] = "The target must be a friendly gang.",
             [CommandValidationCode.TargetNotEnemy] = "The target must be an enemy gang.",
             [CommandValidationCode.TargetOutsideSector] = "The target must be in the acting gang's sector.",
-            [CommandValidationCode.DestinationNotAdjacent] = "Movement requires an orthogonally adjacent sector.",
+            [CommandValidationCode.DestinationNotAdjacent] = "Movement requires a neighboring sector.",
             [CommandValidationCode.ItemAlreadyResearched] = "The targeted item has already been researched.",
             [CommandValidationCode.ResearchTechLevelUnavailable] = "The gang or its local research site cannot support that tech level.",
             [CommandValidationCode.SiteAlreadyInfluenced] = "The targeted site is already influenced.",

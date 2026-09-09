@@ -24,6 +24,8 @@ public sealed class CommandOptionCatalogTests
         Assert.Contains(first, command => command.Action == GangAction.Bribe && command.Target == CommandTarget.None);
         Assert.Contains(first, command => command.Action == GangAction.Move
             && command.Target == CommandTarget.Sector(1));
+        Assert.Contains(first, command => command.Action == GangAction.Move
+            && command.Target == CommandTarget.Sector(9));
         Assert.Contains(first, command => command.Action == GangAction.Influence
             && command.Target.Kind == CommandTargetKind.Site);
         Assert.DoesNotContain(first, command => command.Action == GangAction.Control);

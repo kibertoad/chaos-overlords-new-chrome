@@ -108,6 +108,10 @@ validated against the executable.
   and overlays coordinate labels, police, and gang-status art. Its three site
   slots use the matching 120-by-64 strips from `PX02000`; clicking a neighboring
   tile recenters the detail view.
+- Dragging a friendly gang portrait past the same four-pixel threshold used by
+  Hire creates a 36-by-28 scaled-art token and highlights only validator-legal
+  neighboring minimap sectors. Dropping queues a one-off Move command;
+  stationary clicks retain gang selection and double-click inspection.
 - Combat Summary places compact owner-colored attacker and defender portraits
   beside each visible attack result; police rows use the `PX00300` patrol car
   opposite the attacked gang.
@@ -121,7 +125,10 @@ validated against the executable.
   layout remains provisional pending identification of the original panel.
 - `PX05004` and `PX05007` are the original Equipment to Purchase and Equipment
   to Research overlays. Equip and Research route legal item choices through
-  these panels over the live detailed-sector view; equipment is not expanded
+  these panels over the live detailed-sector view. Both open on the first of
+  four left-side tabs: melee (Strength and Blade), ranged, armor, and
+  miscellaneous; the list contains only legal items in the selected category.
+  Equipment is not expanded
   into separate entries in the top-level action menu.
 - `PX05000` is the gang-information overlay. Double-clicking an owned gang card
   or a stationary Hire-dock portrait opens it over the current view. Hire art is
@@ -154,7 +161,8 @@ Each friendly card exposes separate one-off and repeating order controls; both
 use the authoritative legal-command picker and set the existing
 `GameCommand.Repeat` flag appropriately. The repeating control uses the
 reference's vertically stacked double-arrow mark, and the thin owner-colored
-track above the portrait reports current Force.
+track above the portrait reports current Force. Once an order is assigned, the
+two arrow cells are replaced by one full-width strip naming the queued action.
 The first themed overlay preserves the original fifteen-action ordering:
 Attack, Bribe, Chaos, Control, Equip, Give, Heal, Hide, Influence, Move,
 Research, Sell, Snitch, None, and Terminate. Individual equipment and other
@@ -175,8 +183,15 @@ shows the acting gang, an opponent-player portrait column, and the selected
 enemy gang with its equipment and Force track. `PX05005` is the `SITE TO
 INFLUENCE` picker; its three staggered apertures contain the selected sector's
 actual building art. These identities and workflows are confirmed by supplied
-original-game captures. The recreation currently implements `PX05005`; the
-other two are mapped for the next panel pass.
+original-game captures. The recreation implements `PX05005` and the two-stage
+player/gang selection of `PX05003`; `PX05001` is mapped for the next panel pass.
+
+`PX05002` is the Site Information panel. Its 120-by-64 aperture uses the same
+`PX02000` strip as the detailed-sector buildings; the right data block reports
+live remaining Resistance plus the site's Tolerance, Support and Cash, and the
+lower block reports all fourteen site modifiers. A stationary double-click
+opens it from either a detailed-sector building or a `PX05005` Influence target,
+then returns to the originating screen without discarding target selection.
 
 The original Combat view is a dedicated comparison panel rather than the flat
 target list: it identifies the sector, places attacker and defender owner/gang

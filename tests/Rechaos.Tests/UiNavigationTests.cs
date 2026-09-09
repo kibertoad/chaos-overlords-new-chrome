@@ -8,6 +8,19 @@ namespace Rechaos.Tests;
 public sealed class UiNavigationTests
 {
     [Fact]
+    public void AttackTargetPanelUsesOriginalAcquisitionApertures()
+    {
+        Assert.Equal(EquipmentCommandLayout.Panel, AttackCommandLayout.Panel);
+        Assert.Equal(new Rectangle(129, 141, 64, 64), AttackCommandLayout.ActorPortrait);
+        Assert.Equal(new Rectangle(240, 141, 64, 64), AttackCommandLayout.TargetPortrait);
+        Assert.Equal(new Rectangle(200, 141, 32, 32), AttackCommandLayout.Opponent(0));
+        Assert.Equal(new Rectangle(200, 289, 32, 32), AttackCommandLayout.Opponent(4));
+        Assert.Equal(new Rectangle(129, 207, 20, 20), AttackCommandLayout.ActorItem(0));
+        Assert.Equal(new Rectangle(284, 207, 20, 20), AttackCommandLayout.TargetItem(2));
+        Assert.Equal(new Rectangle(0, 240, 20, 20), OriginalSpriteLayout.ItemPortrait(12));
+    }
+
+    [Fact]
     public void GangInformationStatisticsFollowTemplateRows()
     {
         Assert.Equal([244, 253, 271, 280, 289, 298, 307],
@@ -218,7 +231,21 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(256, 61, 158, 22), CommandOverlayLayout.ActionRow(0));
         Assert.Equal(new Rectangle(104, 125, 344, 209), EquipmentCommandLayout.Panel);
         Assert.Equal(new Rectangle(248, 154, 184, 11), EquipmentCommandLayout.ItemRow(0));
+        Assert.Equal(new Rectangle(207, 141, 34, 34), EquipmentCommandLayout.Category(0));
+        Assert.Equal(new Rectangle(207, 249, 34, 34), EquipmentCommandLayout.Category(3));
+        Assert.Equal(0, EquipmentCommandLayout.CategoryForItemType(0));
+        Assert.Equal(0, EquipmentCommandLayout.CategoryForItemType(1));
+        Assert.Equal(1, EquipmentCommandLayout.CategoryForItemType(2));
+        Assert.Equal(2, EquipmentCommandLayout.CategoryForItemType(3));
+        Assert.Equal(3, EquipmentCommandLayout.CategoryForItemType(4));
         Assert.Equal(new Rectangle(130, 143, 64, 62), GangInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(254, 87, 63, 15), SectorGangCardLayout.AssignedCommand(0));
+        Assert.Equal(new Rectangle(132, 141, 120, 64), SiteInformationLayout.Portrait);
+        Assert.Equal(170, SiteInformationLayout.DataY(0));
+        Assert.Equal(188, SiteInformationLayout.DataY(1));
+        Assert.Equal(245, SiteInformationLayout.StatisticY(0));
+        Assert.Equal(272, SiteInformationLayout.StatisticY(2));
+        Assert.Equal(308, SiteInformationLayout.StatisticY(6));
     }
 
     [Theory]

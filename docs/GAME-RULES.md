@@ -469,8 +469,9 @@ claim about original-game behavior.
 - Source: `MANUAL-GOG-1`; Move command and command sequence descriptions.
 - Observed statement: Move relocates a gang to an adjacent sector during the
   Movement phase. The structural limit is six friendly gangs per sector.
-- Interpretation: move to one orthogonally adjacent sector, rejecting a target
-  already at friendly capacity; commands that compete for the final slot resolve
+- Interpretation: move to any of the eight neighboring sectors, including a
+  diagonal neighbor, rejecting a target already at friendly capacity; commands
+  that compete for the final slot resolve
   in stable queue order and later commands fail without moving.
 - Confidence: High for adjacency/capacity; Low for original simultaneous
   collision and final-slot ordering.

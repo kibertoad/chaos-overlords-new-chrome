@@ -107,8 +107,10 @@ public sealed class MatchStateTests
             CommandValidator.Validate(match, new GameCommand(player, actor, GangAction.Attack, CommandTarget.Gang(new GangId(11)))).Code);
         Assert.Equal(CommandValidationCode.TargetNotFriendly,
             CommandValidator.Validate(match, new GameCommand(player, actor, GangAction.Give, CommandTarget.Gang(new GangId(20)), SecondaryTarget: CommandTarget.Item(0))).Code);
+        Assert.True(CommandValidator.Validate(match,
+            new GameCommand(player, actor, GangAction.Move, CommandTarget.Sector(9))).IsValid);
         Assert.Equal(CommandValidationCode.DestinationNotAdjacent,
-            CommandValidator.Validate(match, new GameCommand(player, actor, GangAction.Move, CommandTarget.Sector(9))).Code);
+            CommandValidator.Validate(match, new GameCommand(player, actor, GangAction.Move, CommandTarget.Sector(18))).Code);
         Assert.Equal(CommandValidationCode.TargetOutsideSector,
             CommandValidator.Validate(match, new GameCommand(player, actor, GangAction.Influence, CommandTarget.Site(3))).Code);
         Assert.Equal(CommandValidationCode.InvalidTargetKind,
