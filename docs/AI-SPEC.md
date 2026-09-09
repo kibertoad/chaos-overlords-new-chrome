@@ -37,7 +37,9 @@ It currently chooses at most one offer per Hire phase.
 The test suite drives Greed, Power, Acceptance, and Dominance through complete
 two-computer six-month matches. Each scenario is run twice at a fixed seed and
 must produce the same final state hash; its complete mutation stream must also
-round-trip through the replay serializer to that hash.
+round-trip through the replay serializer to that hash. Kill 'Em All, Big 40,
+Eliminate, Siege, Big Man, and Armageddon each run the same deterministic,
+replay-verified two-computer harness through 20 turns or objective completion.
 
 ## Required parity work
 
@@ -47,5 +49,6 @@ round-trip through the replay serializer to that hash.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those
    fixtures.
-4. Extend the current timed-scenario tournament coverage to objective scenarios,
-   larger player counts, difficulty variants, and statistical reference traces.
+4. Extend the current ten-scenario two-player coverage to larger player counts,
+   difficulty variants, objective completion stress cases, and statistical
+   reference traces.

@@ -39,7 +39,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Objectives | Ten named scenarios and objective thresholds | Provisional live end-of-turn evaluation, explicit Siege-important sector state, Big Man center-sector point accrual, Eliminate cleanup, authoritative projection, tied winners, events/notifications and outcome hashing | Manual pages 12–15, High for thresholds/weights/effects; timing and special edges Low | Siege setup/visual mapping and binary boundary/tie/ordering fixtures |
 | Timers | 26/52/104/208 turns | Implemented as model | Manual, High | End-turn boundary fixtures |
 | Endgame | Ranking, five awards, statistics | Timed score standings with competition ties; all five award projections, Hide count, retaliation exclusion and outcome/event/hash integration; routed summary renders on mapped PX00200 frame | Manual pages 46–47 and scoring tables, High mappings; presentation/tie order/zero threshold Low | Recover objective ranking; map exact awards/stats layouts; binary tie/no-award and golden-screen fixtures |
-| AI | Objective/difficulty-aware computer players | Deterministic objective-aware baseline plans validator-approved Command actions, budgets spending, chooses valid hires, and runs through replay recording; all four timed scenarios complete repeatable, replay-verifiable two-AI tournaments; original difficulty policy unknown | Recreation behavior High; original parity Low | Recover difficulty branches/weights and information limits; add reference decision snapshots and objective-scenario tournaments |
+| AI | Objective/difficulty-aware computer players | Deterministic objective-aware baseline plans validator-approved Command actions, budgets spending, chooses valid hires, and runs through replay recording; all four timed scenarios complete repeatable tournaments and all six objective scenarios pass deterministic 20-turn windows, every run replay-verified; original difficulty policy unknown | Recreation behavior High; original parity Low | Recover difficulty branches/weights and information limits; add reference decision snapshots, larger-player tournaments and objective-completion stress cases |
 | Save import | Two known magic/size variants | Documented | Reverse-engineering notes, Medium | Obtain and parse corpus |
 | Native saves | Versioned safe recreation format | Version 2 snapshots preserve explicit sector income and all authoritative runtime state; v1 migration, deterministic encoding, 16 MiB bound, atomic replacement, backup recovery, F5/F9 quick saves and end-turn autosave implemented | Recreation format; deterministic continuation and migration tests, High | Add checked-in v1 fixture |
 | Replays | Deterministic recreation playback | Version 2 records a v2 initial snapshot plus every public match mutation, validation result and resulting state hash; bounded loader rejects divergence and out-of-band recording mutations; atomic client F6/F10 record/playback flow implemented | Recreation format; full-turn deterministic and file-store tests, High | Add checked-in fixture/migration and animated playback controls |
@@ -54,21 +54,21 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 
 ## Current blockers to parity claims
 
-- The headless raw RNG and bounded wrapper match recovered binary control flow,
-  but initial seeding and complete call order remain unknown; the prototype
-  `System.Random` does not match the recovered algorithm.
+- The raw RNG and bounded wrapper match recovered binary control flow, but
+  initial seeding and complete call order remain unknown.
 - City generation selects sites uniformly instead of using verified frequency
   and class rules.
-- Hiring happens immediately and uses provisional price selection.
-- The core exposes a headless match schema, data-driven command validation,
-  deterministic command and notification queues, ordered events, phase hashes,
-  and a phase coordinator, but the current client still uses its older direct
-  per-player turn controls.
+- Hire offer selection/refill and initial Force RNG ordering remain provisional,
+  although purchase is deferred and resolved in the Hire phase.
+- The client now drives the authoritative phase coordinator and replay recorder,
+  but several original management workflows, hit regions, and visual layers are
+  still incomplete or only provisionally mapped.
 - Command replacement gets a new sequence number and resolution otherwise uses
   submission order inside a subphase; both are provisional recreation rules,
   not binary-validated behavior.
-- AI, full scenario flow, victory and saves are not implemented; combat,
-  crackdown, research and equipment retain the parity gaps listed above.
+- AI difficulty behavior remains unrecovered; combat, crackdown, research,
+  equipment, objective timing, original-save import, and audiovisual triggers
+  retain the specific parity gaps listed above.
 
 These blockers prevent describing the current playable slice as a faithful
 gameplay recreation even though its decoded tables and asset pack are verified.

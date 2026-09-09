@@ -60,8 +60,8 @@ public sealed class AiTurnPlannerTests
     [InlineData(ScenarioId.Dominance)]
     public void AllComputerTimedMatchCompletesDeterministicallyAndReplays(ScenarioId scenario)
     {
-        var first = DriveTimedMatch(scenario, 1984);
-        var second = DriveTimedMatch(scenario, 1984);
+        var first = DriveMatch(scenario, 1984);
+        var second = DriveMatch(scenario, 1984);
 
         Assert.NotNull(first.State.Outcome);
         Assert.Equal(MatchEndReason.TimeLimit, first.State.Outcome!.Reason);
@@ -73,7 +73,28 @@ public sealed class AiTurnPlannerTests
         Assert.Equal(MatchStateHasher.ComputeSha256(first.State), MatchStateHasher.ComputeSha256(replayed));
     }
 
-    private static MatchReplayRecorder DriveTimedMatch(ScenarioId scenario, int seed)
+    [Theory]
+    [InlineData(ScenarioId.KillEmAll)]
+    [InlineData(ScenarioId.Big40)]
+    [InlineData(ScenarioId.Eliminate)]
+    [InlineData(ScenarioId.Siege)]
+    [InlineData(ScenarioId.BigMan)]
+    [InlineData(ScenarioId.Armageddon)]
+    public void AllComputerObjectiveMatchRunsDeterministicReplayWindow(ScenarioId scenario)
+    {
+        var first = DriveMatch(scenario, 2112, throughTurn: 20);
+        var second = DriveMatch(scenario, 2112, throughTurn: 20);
+
+        Assert.True(first.State.Outcome is not null || first.State.Coordinator.Turn > 20);
+        Assert.Equal(MatchStateHasher.ComputeSha256(first.State), MatchStateHasher.ComputeSha256(second.State));
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, first);
+        replay.Position = 0;
+        var replayed = MatchReplaySerializer.LoadAndReplay(replay, first.State.Definitions);
+        Assert.Equal(MatchStateHasher.ComputeSha256(first.State), MatchStateHasher.ComputeSha256(replayed));
+    }
+
+    private static MatchReplayRecorder DriveMatch(ScenarioId scenario, int seed, int? throughTurn = null)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -84,7 +105,9 @@ public sealed class AiTurnPlannerTests
         var recorder = new MatchReplayRecorder(OriginalMatchFactory.Create(
             data, new MatchSetup(scenario, GameDuration.SixMonths, seed, setups)));
         var boundaries = 0;
-        while (recorder.State.Outcome is null && boundaries++ < 1_000)
+        while (recorder.State.Outcome is null
+               && (throughTurn is null || recorder.State.Coordinator.Turn <= throughTurn)
+               && boundaries++ < 1_000)
         {
             var state = recorder.State;
             switch (state.Coordinator.Phase)
