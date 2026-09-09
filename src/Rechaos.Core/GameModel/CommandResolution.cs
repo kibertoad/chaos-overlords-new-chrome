@@ -140,11 +140,21 @@ public static class CommandResolver
         var snapshots = state.Players.SelectMany(player => player.Gangs)
             .ToDictionary(gang => gang.Id, gang => CombatSnapshot.For(state, gang));
         var outcomes = new List<CombatOutcome>(commands.Count);
+        var commandsByGang = commands.ToDictionary(queued => queued.Command.Gang);
+        var resolvedReciprocalEncounters = new HashSet<(int First, int Second)>();
         foreach (var queued in commands)
         {
             var attacker = snapshots[queued.Command.Gang];
             var targetId = new GangId(queued.Command.Target.Id);
             var target = snapshots[targetId];
+            if (commandsByGang.TryGetValue(targetId, out var reverse)
+                && reverse.Command.Target == CommandTarget.Gang(attacker.Id))
+            {
+                var encounter = attacker.Id.Value < target.Id.Value
+                    ? (attacker.Id.Value, target.Id.Value)
+                    : (target.Id.Value, attacker.Id.Value);
+                if (!resolvedReciprocalEncounters.Add(encounter)) continue;
+            }
             int? detectionRoll = null;
             int? detectionChance = null;
             if (target.Hidden)

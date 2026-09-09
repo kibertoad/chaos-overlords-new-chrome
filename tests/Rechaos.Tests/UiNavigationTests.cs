@@ -8,15 +8,15 @@ namespace Rechaos.Tests;
 public sealed class UiNavigationTests
 {
     [Fact]
-    public void AttackTargetPanelUsesOriginalAcquisitionApertures()
+    public void AttackTargetPanelUsesAcquisitionGridApertures()
     {
         Assert.Equal(EquipmentCommandLayout.Panel, AttackCommandLayout.Panel);
         Assert.Equal(new Rectangle(129, 141, 64, 64), AttackCommandLayout.ActorPortrait);
-        Assert.Equal(new Rectangle(240, 141, 64, 64), AttackCommandLayout.TargetPortrait);
+        Assert.Equal(new Rectangle(240, 141, 64, 64), AttackCommandLayout.TargetPortrait(0));
         Assert.Equal(new Rectangle(200, 141, 32, 32), AttackCommandLayout.Opponent(0));
         Assert.Equal(new Rectangle(200, 289, 32, 32), AttackCommandLayout.Opponent(4));
         Assert.Equal(new Rectangle(129, 207, 20, 20), AttackCommandLayout.ActorItem(0));
-        Assert.Equal(new Rectangle(284, 207, 20, 20), AttackCommandLayout.TargetItem(2));
+        Assert.Equal(new Rectangle(284, 207, 20, 20), AttackCommandLayout.TargetItem(0, 2));
         Assert.Equal(new Rectangle(0, 240, 20, 20), OriginalSpriteLayout.ItemPortrait(12));
     }
 
@@ -331,6 +331,36 @@ public sealed class UiNavigationTests
         Assert.False(NotificationPresentation.IsLastTurnReport(movement, null));
         Assert.True(NotificationPresentation.IsLastTurnReport(control, capture));
         Assert.Equal("SECTOR CONTROL ATTAINED.", NotificationPresentation.LastTurnStatus(control));
+    }
+
+    [Fact]
+    public void LastTurnReportsExcludeGangLossButRetainNamedPlayerElimination()
+    {
+        var notification = new GameNotification(0, 2, TurnPhase.Execution, ExecutionPhase.Combat,
+            GameNotificationKind.Elimination, new GangId(20), 7, 42);
+        var gangLoss = new GameEvent(42, 2, TurnPhase.Execution, ExecutionPhase.Combat,
+            GameEventKind.CommandResolved, new PlayerId(0), new GangId(10), GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)));
+        var playerLoss = new GameEvent(42, 2, TurnPhase.PlayerElimination, null,
+            GameEventKind.PlayerEliminated, new PlayerId(1), null, GangAction.None,
+            CommandTarget.None, Elimination:
+            new EliminationDetails(new PlayerId(1), 1));
+
+        Assert.False(NotificationPresentation.IsLastTurnReport(notification, gangLoss));
+        Assert.True(NotificationPresentation.IsLastTurnReport(notification, playerLoss));
+        Assert.Equal("PLAYER ELIMINATED.", NotificationPresentation.LastTurnStatus(notification));
+    }
+
+    [Fact]
+    public void AttackTargetGridHasSixNonOverlappingCards()
+    {
+        var cards = Enumerable.Range(0, AttackCommandLayout.VisibleTargets)
+            .Select(AttackCommandLayout.TargetCard).ToArray();
+
+        Assert.Equal(new Rectangle(240, 141, 64, 90), cards[0]);
+        Assert.Equal(new Rectangle(372, 231, 64, 90), cards[^1]);
+        Assert.All(cards.SelectMany((left, index) => cards.Skip(index + 1)
+            .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
     }
 
     [Fact]

@@ -189,9 +189,12 @@ The first themed overlay preserves the original fifteen-action ordering:
 Attack, Bribe, Chaos, Control, Equip, Give, Heal, Hide, Influence, Move,
 Research, Sell, Snitch, None, and Terminate. Individual equipment and other
 targets appear only in a second target overlay, never as top-level actions.
-The Attack target-acquisition roster groups candidate gangs by ascending player
-slot before gang id, matching the vertical opponent-portrait selector; raw
-global gang-id ordering must not be used because hires can interleave owners.
+The Attack target-acquisition roster includes only detectable enemy gangs in
+the acting gang's sector and groups them by ascending player slot. Selecting an
+opponent portrait displays that player's eligible gangs simultaneously in a
+three-column, two-row grid; clicking a gang selects that exact target and the
+active green OK button confirms it. Raw global gang-id ordering and click-to-
+cycle behavior are not used.
 Each detailed-sector building has a red control track filled green in proportion
 to reduced resistance; the starting Headquarters is fully green while neutral
 buildings begin red. A building already influenced by an opponent uses purple

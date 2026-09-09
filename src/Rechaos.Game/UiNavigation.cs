@@ -543,13 +543,12 @@ public static class InfluenceCommandLayout
 
 public static class AttackCommandLayout
 {
+    public const int VisibleTargets = 6;
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
     public static Rectangle ActorPortrait => new(129, 141, 64, 64);
-    public static Rectangle TargetPortrait => new(240, 141, 64, 64);
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
     public static Rectangle ActorForceBar => new(129, 228, 64, 3);
-    public static Rectangle TargetForceBar => new(240, 228, 64, 3);
 
     public static Rectangle ActorItem(int slot)
     {
@@ -563,26 +562,49 @@ public static class AttackCommandLayout
         return new Rectangle(200, 141 + slot * 37, 32, 32);
     }
 
-    public static Rectangle TargetItem(int slot)
+    public static Rectangle TargetCard(int targetSlot)
     {
-        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(240 + slot * 22, 207, 20, 20);
+        var portrait = TargetPortrait(targetSlot);
+        return new Rectangle(portrait.X, portrait.Y, 64, 90);
+    }
+
+    public static Rectangle TargetPortrait(int targetSlot)
+    {
+        if (targetSlot is < 0 or >= VisibleTargets)
+            throw new ArgumentOutOfRangeException(nameof(targetSlot));
+        return new Rectangle(240 + targetSlot % 3 * 66, 141 + targetSlot / 3 * 90, 64, 64);
+    }
+
+    public static Rectangle TargetForceBar(int targetSlot)
+    {
+        var portrait = TargetPortrait(targetSlot);
+        return new Rectangle(portrait.X, portrait.Y + 87, 64, 3);
+    }
+
+    public static Rectangle TargetItem(int targetSlot, int itemSlot)
+    {
+        if (itemSlot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(itemSlot));
+        var portrait = TargetPortrait(targetSlot);
+        return new Rectangle(portrait.X + itemSlot * 22, portrait.Y + 66, 20, 20);
     }
 }
 
 public static class AttackTargetRoster
 {
     /// <summary>
-    /// Keeps every owner's gangs contiguous and in the same owner order as the
-    /// portrait selector. Raw legal commands are gang-id ordered, which begins
-    /// to interleave owners after several hires and eliminations.
+    /// Limits attack presentation to detectable gangs in the actor's sector,
+    /// then keeps every owner's gangs contiguous and in portrait-selector order.
     /// </summary>
     public static IReadOnlyList<GameCommand> Order(
         MatchState state,
         IEnumerable<GameCommand> commands) => commands
         .Select(command => (command,
+            actor: state.FindGang(command.Gang),
             target: state.FindGang(new GangId(command.Target.Id))))
-        .Where(entry => entry.target is not null)
+        .Where(entry => entry.actor is not null
+            && entry.target is { IsActive: true }
+            && entry.target.SectorId == entry.actor.SectorId
+            && state.CanPlayerDetectGang(entry.command.Player, entry.target.Id))
         .OrderBy(entry => entry.target!.Owner.Value)
         .ThenBy(entry => entry.target!.Id.Value)
         .Select(entry => entry.command)

@@ -108,6 +108,10 @@ public sealed partial class ChaosGame
 
     private static string EventObject(MatchState state, GameNotification notification)
     {
+        var related = RelatedEvent(state, notification);
+        if (related?.Elimination is { } elimination)
+            return state.FindPlayer(elimination.EliminatedPlayer)?.Setup.Name.ToUpperInvariant()
+                ?? $"PLAYER {elimination.EliminatedPlayer.Value + 1}";
         if (notification.Gang is { } gangId && state.FindGang(gangId) is { } gang)
             return state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Name;
         if (notification.SectorId is { } sectorId) return SectorCode(sectorId);

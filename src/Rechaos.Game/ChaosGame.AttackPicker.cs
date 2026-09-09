@@ -28,9 +28,11 @@ public sealed partial class ChaosGame
             return;
         }
 
-        if (AttackCommandLayout.TargetPortrait.Contains(point))
+        var targets = AttackTargetIndicesForSelectedOwner(_state);
+        for (var slot = 0; slot < Math.Min(targets.Count, AttackCommandLayout.VisibleTargets); slot++)
         {
-            CycleAttackTargetForSelectedOwner();
+            if (!AttackCommandLayout.TargetCard(slot).Contains(point)) continue;
+            _commandTargetCursor = targets[slot];
             return;
         }
         if (!AttackCommandLayout.Panel.Contains(point)) BackFromCommands();
@@ -65,20 +67,21 @@ public sealed partial class ChaosGame
                 owner.Id == target.Owner ? 2 : 1);
         }
 
-        DrawAttackGang(batch, pixel, target, AttackCommandLayout.TargetPortrait,
-            AttackCommandLayout.TargetForceBar, AttackCommandLayout.TargetItem);
-        DrawTargetReticle(batch, pixel, AttackCommandLayout.TargetPortrait);
-
-        var sameOwnerCount = _commandTargetOptions.Count(command =>
-            state.FindGang(new GangId(command.Target.Id))?.Owner == target.Owner);
-        if (sameOwnerCount > 1)
+        var targets = AttackTargetIndicesForSelectedOwner(state);
+        foreach (var entry in targets.Take(AttackCommandLayout.VisibleTargets)
+                     .Select((commandIndex, slot) => (commandIndex, slot)))
         {
-            var selectedIndex = _commandTargetOptions
-                .Where(command => state.FindGang(new GangId(command.Target.Id))?.Owner == target.Owner)
-                .TakeWhile(command => command != selected).Count() + 1;
-            font.Draw(batch, $"{selectedIndex}/{sameOwnerCount}",
-                new Vector2(307, 198), Color.Lime, 1);
+            var candidate = state.FindGang(new GangId(
+                _commandTargetOptions[entry.commandIndex].Target.Id))!;
+            DrawAttackGang(batch, pixel, candidate,
+                AttackCommandLayout.TargetPortrait(entry.slot),
+                AttackCommandLayout.TargetForceBar(entry.slot),
+                itemSlot => AttackCommandLayout.TargetItem(entry.slot, itemSlot));
+            if (entry.commandIndex == _commandTargetCursor)
+                DrawTargetReticle(batch, pixel, AttackCommandLayout.TargetPortrait(entry.slot));
         }
+
+        DrawActiveAttackOk(batch, pixel, font);
     }
 
     private void DrawAttackGang(
@@ -97,8 +100,11 @@ public sealed partial class ChaosGame
         var itemIds = new short?[] { gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId };
         for (var slot = 0; slot < itemIds.Length; slot++)
         {
+            var destination = itemDestination(slot);
+            batch.Draw(pixel, destination, Color.Black);
+            DrawBorder(batch, pixel, destination, Color.LightGray, 1);
             if (_itemPortraits is not null && itemIds[slot] is { } itemId)
-                batch.Draw(_itemPortraits, itemDestination(slot),
+                batch.Draw(_itemPortraits, destination,
                     OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
         }
 
@@ -137,15 +143,23 @@ public sealed partial class ChaosGame
         }
     }
 
-    private void CycleAttackTargetForSelectedOwner()
+    private IReadOnlyList<int> AttackTargetIndicesForSelectedOwner(MatchState state)
     {
-        if (_state is null || _commandTargetOptions.Count == 0) return;
-        var current = _state.FindGang(new GangId(_commandTargetOptions[_commandTargetCursor].Target.Id));
-        if (current is null) return;
-        var choices = Enumerable.Range(0, _commandTargetOptions.Count)
-            .Where(index => _state.FindGang(new GangId(_commandTargetOptions[index].Target.Id))?.Owner == current.Owner)
-            .ToArray();
-        var position = Array.IndexOf(choices, _commandTargetCursor);
-        _commandTargetCursor = choices[(position + 1) % choices.Length];
+        if (_commandTargetOptions.Count == 0) return [];
+        var current = state.FindGang(new GangId(_commandTargetOptions[_commandTargetCursor].Target.Id));
+        return current is null
+            ? []
+            : Enumerable.Range(0, _commandTargetOptions.Count)
+                .Where(index => state.FindGang(
+                    new GangId(_commandTargetOptions[index].Target.Id))?.Owner == current.Owner)
+                .ToArray();
+    }
+
+    private static void DrawActiveAttackOk(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        var button = AttackCommandLayout.Ok;
+        batch.Draw(pixel, button, new Color(5, 18, 8));
+        DrawBorder(batch, pixel, button, Color.Lime, 2);
+        font.Draw(batch, "OK", new Vector2(button.Center.X - 6, button.Y + 8), Color.Lime, 1);
     }
 }

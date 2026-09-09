@@ -12,8 +12,9 @@ public static class NotificationPresentation
             GameNotificationKind.Control => relatedEvent?.Resolution?.Successes > 0,
             GameNotificationKind.Influence or GameNotificationKind.Research =>
                 relatedEvent?.Resolution is { PreviousValue: > 0, ResultValue: 0 },
+            GameNotificationKind.Elimination => relatedEvent?.Kind == GameEventKind.PlayerEliminated,
             GameNotificationKind.ControlLost or GameNotificationKind.Crackdown
-                or GameNotificationKind.Elimination or GameNotificationKind.Objective => true,
+                or GameNotificationKind.Objective => true,
             _ => false
         };
     }
@@ -25,7 +26,7 @@ public static class NotificationPresentation
         GameNotificationKind.Influence => "SITE INFLUENCE ATTAINED.",
         GameNotificationKind.Research => "RESEARCH COMPLETED.",
         GameNotificationKind.Crackdown => "POLICE CRACKDOWN.",
-        GameNotificationKind.Elimination => "GANG OR PLAYER ELIMINATED.",
+        GameNotificationKind.Elimination => "PLAYER ELIMINATED.",
         GameNotificationKind.Objective => "OBJECTIVE STATUS UPDATED.",
         _ => throw new ArgumentOutOfRangeException(nameof(notification))
     };

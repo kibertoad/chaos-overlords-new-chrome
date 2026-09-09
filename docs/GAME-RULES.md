@@ -242,7 +242,10 @@ claim about original-game behavior.
   the opponent is also a bare-handed Martial Artist.
 - Interpretation: snapshot every gang at the Combat boundary, roll queued
   attacks and eligible retaliation in stable queue order, then apply all damage
-  together. Consequently, a gang eliminated by one result still completes
+  together. Reciprocal orders between the same two gangs form one encounter:
+  the first stable queued order supplies the opening attack and the reverse
+  order is represented by that encounter's single retaliation, rather than
+  creating a second attack/retaliation pair. Consequently, a gang eliminated by one result still completes
   attacks and retaliation calculated from its phase-start Force. Force is
   floored at zero; elimination clears equipment and Hidden state. Actual damage
   credit is allocated in stable result order when attacks overkill one target;
@@ -250,9 +253,8 @@ claim about original-game behavior.
 - Hidden target behavior: a target that became Hidden during Instant receives
   an individual Detect-versus-Stealth percentage roll. Evasion produces an
   ordered `TargetEvaded` result; a successful hit prevents retaliation.
-- Current exclusions: animation/audio timing, original overkill-stat attribution
-  and police/gang ordering,
-  repeated mutual attacks, and binary confirmation of resolver/RNG order.
+- Current exclusions: original overkill-stat attribution and police/gang
+  ordering, and binary confirmation of resolver/RNG order.
 - Confidence: High for weapon-skill associations and Martial Arts exception;
   Medium/High for the Force-corrected formula and retaliation; Low for ordering,
   overkill accounting, and hidden failure behavior.
@@ -260,7 +262,7 @@ claim about original-game behavior.
   `ManualRules.RetaliationDamage`, and `CommandResolver.ResolveCombatPhase`.
 - Tests: `CombatResolutionTests` covers effective attack/defense pools,
   retaliation, phase-start simultaneity, Martial Arts, hidden targets,
-  elimination/equipment loss, statistics, RNG consumption, notifications, and
+  reciprocal-order coalescing, elimination/equipment loss, statistics, RNG consumption, notifications, and
   hashes; `ManualRulesTests` covers the formulas.
 - Next experiment: reproduce a fixed unarmed matchup from the FAQ, then repeat
   with melee/blade/ranged weapons, Martial Arts, two attackers, and a target

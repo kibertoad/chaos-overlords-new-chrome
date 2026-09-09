@@ -41,7 +41,7 @@ public sealed class CombatResolutionTests
     }
 
     [Fact]
-    public void AllAttacksUsePhaseStartSnapshotsEvenWhenGangIsEliminated()
+    public void ReciprocalOrdersResolveAsOneAttackAndOneRetaliation()
     {
         var match = CreateMatch(playerZeroForce: 2, playerOneForce: 2);
         QueueAndEnterCombat(match, GangAction.Attack);
@@ -50,15 +50,15 @@ public sealed class CombatResolutionTests
 
         match.FinishExecutionPhase();
 
-        Assert.Equal(2, match.LastPhaseResolutions.Count);
-        Assert.All(match.LastPhaseResolutions, result => Assert.Equal(CommandResolutionCode.Resolved, result.Code));
-        var zeroAttack = match.LastPhaseResolutions.Single(result => result.Command.Player == new PlayerId(0)).Event!.Resolution!;
-        var oneAttack = match.LastPhaseResolutions.Single(result => result.Command.Player == new PlayerId(1)).Event!.Resolution!;
-        Assert.Equal(Math.Max(0, initialZero - zeroAttack.RetaliationDamage - oneAttack.Damage),
+        var result = Assert.Single(match.LastPhaseResolutions);
+        Assert.Equal(CommandResolutionCode.Resolved, result.Code);
+        var encounter = result.Event!.Resolution!;
+        Assert.Equal(Math.Max(0, initialZero - encounter.RetaliationDamage),
             match.FindGang(new GangId(10))!.Force);
-        Assert.Equal(Math.Max(0, initialOne - zeroAttack.Damage - oneAttack.RetaliationDamage),
+        Assert.Equal(Math.Max(0, initialOne - encounter.Damage),
             match.FindGang(new GangId(20))!.Force);
-        Assert.NotEmpty(oneAttack.Rolls);
+        Assert.NotEmpty(encounter.Rolls);
+        Assert.NotEmpty(encounter.RetaliationRolls!);
     }
 
     [Fact]
