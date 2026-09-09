@@ -70,11 +70,13 @@ replay-verified two-computer harness through 20 turns or objective completion.
 
 ## Required parity work
 
-1. Finish naming the subordinate predicates feeding shared weighted sector
-   selector `0x00408642`. Its ring search, modes 1-5, mode-5 movement weights
-   (neutral/owned/enemy `5:2:1`), maximum-score random ties, and orthogonal
-   next-step routing are now bounded, while modes 6-16 remain only
-   structurally mapped. Selector `0x3e` is identified as the
+1. Finish naming the last subordinate fields feeding shared weighted sector
+   selector `0x00408642`. Its ring search, all direct family call sites,
+   modes 1-5, site Support/Cash/Stealth modes 7-9, human-player count,
+   mode-5 movement weights (neutral/owned/enemy `5:2:1`), maximum-score random
+   ties, and orthogonal next-step routing are now bounded. Mode 6's per-owner
+   table and the mode-7 planning-history byte remain unnamed. Selector `0x3e`
+   is identified as the
    previous-turn action byte. Selectors 3 (player cash), 4 (sector
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`

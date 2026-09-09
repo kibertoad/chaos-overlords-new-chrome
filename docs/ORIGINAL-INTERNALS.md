@@ -501,19 +501,60 @@ selection. Modes 1 through 5 have bounded scoring rules:
   enemy-owned sector `+1`.
 
 The remaining modes are structurally bounded but not all subordinate fields
-are named yet. Mode 6 combines a global selector-`0x32` branch, human-owner
-classification, selector `0x2e`, a per-owner table, and selector `0x5e`.
-Modes 7, 8, and 9 restrict candidates to owned sectors and score their three
-building slots using selectors `0x0c`, `0x0d`, and `0x10`, respectively; mode
-7 additionally requires selector `0x6f` to be zero. Mode 10 changes its owner
-test according to global selector `0x32`. Mode 11 gives `+1` to the sector
-returned by selector `0x5a` for the active player. Modes 12 and 14 restrict
+are named yet. Selector `0x32` counts players whose controller type is 0 or 3,
+so mode 6 and mode 10 branch on the number of human players. Selector `0x2d`
+compares two players' positions in the six-byte player-order table, rejecting
+neutral and self comparisons. Selector `0x2e` returns the one player occupying
+the table's zero-valued slot, or `-1` unless exactly one does. Selector `0x5e`
+counts one player's nonempty gang records in a sector. Mode 6 combines those
+facts with human-owner classification and an as-yet unnamed per-owner table.
+
+The site-data offsets used by modes 7 through 9 align exactly with the decoded
+62-byte `SITES` record: selectors `0x0c`, `0x0d`, and `0x10` return Support,
+Cash, and Stealth for a sector's selected site slot. Selector `0x1c` tests
+whether that site's definition Resistance minus its accumulated influence is
+below one. Modes 7 and 8 score the Support and Cash of not-yet-influenced sites
+in owned sectors. Mode 9 scores Stealth for already-influenced sites in owned
+sectors. Mode 7 additionally requires selector `0x6f` to be zero; `0x6f`
+counts a player's gangs in the sector whose planning-record byte at offset
+`+5` equals 9, but the precise history-field label still needs a save delta.
+
+Mode 10 changes its owner test according to the human-player count. Mode 11
+gives `+1` to the sector returned by selector `0x5a` for the active player.
+Modes 12 and 14 restrict
 selection to sectors 27, 28, 35, and 36; modes 13 and 15 restrict it to sectors
 9, 12, 30, 33, 51, and 54. These four modes require a per-player path value
 below 6 and award `+5` for a human-owned target versus `+1` otherwise, with
 modes 12 and 13 also excluding sectors already owned by the active player.
-Mode 16 gives `+1` to the sector returned by selector `0x77`. A mode above
-`0x3f` directly adds `+1` to sector `mode - 0x40`.
+Mode 16 gives `+1` to the sector returned by selector `0x77`; that selector
+groups planning-family-11 records in blocks of six and returns the stored
+anchor sector for the block containing the active gang. A mode above `0x3f`
+directly adds `+1` to sector `mode - 0x40`.
+
+All 48 direct references to `0x00408642` have also been enumerated. The static
+mode arguments map to the recovered family handlers as follows:
+
+| Selector mode | Handler/family call sites |
+|---:|---|
+| 2 | family 4 (`0x00401000`), four calls |
+| 3 | family 9 (`0x004605e0`), two calls |
+| 5 | family 0 (`0x00428ef0`), eight calls; family 1 (`0x00434080`), seven calls; family 7 (`0x00436c70`), one call |
+| 6 | family 2 (`0x0041fef0`), two calls |
+| 7 | family 5 (`0x0043a1d0`), four calls |
+| 8 | family 3 (`0x00435bd0`), four calls |
+| 9 | family 10 (`0x0042a6e0`), two calls; dispatcher `0x00432da0`, one call |
+| 10 and 16 | family 11 (`0x00420950`), two mode-10 calls and one mode-16 call |
+| 12 and 13 | family 13 (`0x0040abc0`), one call each |
+| 14 and 15 | family 14 (`0x00466910`), one call each |
+
+The one mode-0 call belongs to runtime function `0x00476a94`, outside the
+family table. Family 6 (`0x00431c60`) dynamically uses mode 2 when selector
+`0x60` finds no stored target and otherwise encodes that target as
+`sector + 0x40`. Family 7 and family 12 also contain encoded-sector calls.
+No direct call carries literal mode 1, 4, or 11; any live use must therefore
+come through a computed argument. `tools/ghidra/ReportCallArguments.java`
+provides a repeatable bounded inventory of the three pushed arguments at each
+direct call.
 
 `0x00408553` sorts the 64 sector scores descending while retaining their sector
 indices. The caller chooses uniformly among every sector tied for the maximum.
@@ -531,18 +572,19 @@ is ultimately queued. Randomness is used only for mode-0 neighbor selection
 and equal-best final scores in the bounded paths inspected here.
 
 **Confidence:** High for the address, ring expansion, score-map sorting,
-mode-0 directions, modes 1 through 5 weights, fixed sector sets, maximum-score
-tie randomization, and orthogonal next-step return. Medium for the late
-candidate filtering due to decompiler control-flow folding. Low for semantic
-names of selectors `0x0c`, `0x0d`, `0x10`, `0x2d`, `0x2e`, `0x32`, `0x5e`,
-`0x6f`, and `0x77`, and therefore for the complete meaning of modes 6 through
-16.
+mode-0 directions, modes 1 through 5 weights, site-field offsets, human-player
+count, gang-in-sector count, fixed sector sets, direct call inventory,
+maximum-score tie randomization, and orthogonal next-step return. Medium for
+the player-order predicates, family-11 anchor, dynamic call arguments, and late
+candidate filtering due to decompiler control-flow folding. Low for the
+remaining per-owner table, planning byte `+5`, and therefore the complete
+meaning of modes 6, 7, 10, and 16.
 
-**Next validation:** name the subordinate selectors used by modes 6 through
-16 and map each mode to its family-handler call site. Then reproduce the
-5:2:1 mode-5 target score, path threshold, and equal-best RNG with fixed-state
-reference traces before replacing the recreation's provisional destination
-weights.
+**Next validation:** resolve the mode-6 per-owner table and planning byte `+5`,
+then map the surrounding guards at each family call site to public commands.
+After that, reproduce the 5:2:1 mode-5 target score, path threshold, and
+equal-best RNG with fixed-state reference traces before replacing the
+recreation's provisional destination weights.
 
 ## New-game initialization
 
