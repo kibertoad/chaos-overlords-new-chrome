@@ -960,7 +960,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
             var stats = EffectiveStatisticsCalculator.ForGang(state, gang);
             if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, new Rectangle(54, 98, 64, 64),
+                batch.Draw(_gangPortraits, GangArtLayout.DetailPortrait,
                     OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
             batch.Draw(pixel, new Rectangle(138, 92, 238, 181), Color.Black);
             font.Draw(batch, definition.Name, new Vector2(144, 98), PlayerColors[playerId.Value], 1);

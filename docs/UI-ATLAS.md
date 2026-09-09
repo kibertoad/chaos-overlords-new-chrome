@@ -78,6 +78,8 @@ validated against the executable.
   portrait-led rows, with owner-colored borders and overflow count.
 - The Equipment panel shows the selected gang from `PX03000` at `(558,58)` in
   a 56-by-56 owner-colored frame, keeping the item list and statistics visible.
+- Gang Information places its 64-by-64 portrait at `(67,90)`, aligned to the
+  inner aperture of the `PX05000` template drawn at `(42,74)`.
 - Combat Summary places compact owner-colored attacker and defender portraits
   beside each visible attack result; police rows use the `PX00300` patrol car
   opposite the attacked gang.

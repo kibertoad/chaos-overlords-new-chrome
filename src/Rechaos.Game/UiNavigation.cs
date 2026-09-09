@@ -170,6 +170,7 @@ public static class SectorGangView
 
 public static class GangArtLayout
 {
+    public static Rectangle DetailPortrait => new(67, 90, 64, 64);
     public static Rectangle SelectedEquipmentPortrait => new(558, 58, 56, 56);
 
     public static Rectangle CombatPortrait(int row, bool defender)
