@@ -34,7 +34,9 @@ public sealed record CommandResolutionDetails(
     int Damage = 0,
     int RetaliationDamage = 0,
     int? DetectionRoll = null,
-    int? DetectionChance = null);
+    int? DetectionChance = null,
+    int? ChanceRoll = null,
+    int? ChanceSides = null);
 
 public sealed record EconomyResolutionDetails(
     int PreviousCash,

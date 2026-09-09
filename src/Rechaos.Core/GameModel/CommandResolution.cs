@@ -570,7 +570,10 @@ public static class CommandResolver
         }
         var margin = ManualRules.ControlMargin(attack, sectorIncome, defense, support);
         var previousOwner = sector.Owner;
-        var captured = previousOwner != first.Player && margin > 0;
+        int? chanceRoll = null;
+        if (previousOwner != first.Player && margin == 0)
+            chanceRoll = state.Random.NextInclusive(2);
+        var captured = previousOwner != first.Player && (margin > 0 || chanceRoll == 1);
         if (captured)
         {
             if (previousOwner is { } oldOwner)
@@ -588,7 +591,8 @@ public static class CommandResolver
                 new CommandResolutionDetails(
                     CommandResolutionCode.Resolved, [], captured ? 1 : 0,
                     PreviousValue: previousOwner?.Value, ResultValue: sector.Owner?.Value,
-                    AttackValue: attack, DefenseValue: checked(sectorIncome + defense + support)),
+                    AttackValue: attack, DefenseValue: checked(sectorIncome + defense + support),
+                    ChanceRoll: chanceRoll, ChanceSides: chanceRoll is null ? null : 2),
                 GameNotificationKind.Control));
         }
         return results;

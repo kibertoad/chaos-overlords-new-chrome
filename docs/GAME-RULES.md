@@ -452,20 +452,23 @@ claim about original-game behavior.
   Support. Losing a sector loses all influenced sites, which return to full
   resistance; taking ownership directly from another player is an Overthrow.
 - Interpretation: group same-player Control commands by sector, calculate the
-  signed margin without dice, and capture only when it is strictly positive.
+  signed margin without dice, and capture when it is positive. At exactly zero,
+  draw a deterministic two-outcome random value and capture on one outcome,
+  recording the roll and range in the resolution event.
   On an overthrow, increment the attacker's statistic, remove the former
   owner's site Support, clear influence, and restore table resistance.
 - Current exclusions: cross-player simultaneous tie/conflict ordering, precise
   definition of sector income, crackdown restrictions, abandoned-sector rules,
   and negative-total edge behavior. Groups currently resolve at their earliest
   stable queue position.
-- Confidence: High for equation components and influence loss; Medium for the
-  strict-positive threshold; Low for simultaneous ordering.
+- Confidence: High for equation components, influence loss, and the zero-margin
+  50% rule; Low for simultaneous ordering.
 - Implementation: `ManualRules.ControlStrength`, `ManualRules.ControlMargin`,
   grouped `CommandResolver.ResolveControl`, and site-reset handling.
 - Tests: `BoardResolutionTests` covers neutral capture, pooled strength, defended
-  failure, overthrow/statistics, influence reset, deterministic hashes, and Hide
-  expiration; `ManualRulesTests` covers equation arithmetic.
+  failure, recorded deterministic zero-margin chance, overthrow/statistics,
+  influence reset, deterministic hashes, and Hide expiration;
+  `ManualRulesTests` covers equation arithmetic.
 
 ## Upkeep economy
 

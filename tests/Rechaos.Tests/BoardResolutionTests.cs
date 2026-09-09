@@ -114,6 +114,34 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
+    public void ZeroMarginControlUsesRecordedDeterministicFiftyPercentChance()
+    {
+        var first = CreateMatch(
+            [Gang(10, 0, 0, 3)], [Gang(20, 1, 3, 5)], filledHirePool: true);
+        var second = CreateMatch(
+            [Gang(10, 0, 0, 3)], [Gang(20, 1, 3, 5)], filledHirePool: true);
+        Queue(first, Control(0, 10));
+        Queue(second, Control(0, 10));
+        EnterControl(first);
+        EnterControl(second);
+        var firstConsumptionBefore = first.Random.ConsumptionCount;
+        var secondConsumptionBefore = second.Random.ConsumptionCount;
+        first.FinishExecutionPhase();
+        second.FinishExecutionPhase();
+
+        var resolution = Assert.Single(first.LastPhaseResolutions).Event!.Resolution!;
+        Assert.Equal(resolution.AttackValue, resolution.DefenseValue);
+        Assert.InRange(resolution.ChanceRoll!.Value, 1, 2);
+        Assert.Equal(2, resolution.ChanceSides);
+        Assert.Equal(resolution.ChanceRoll == 1, first.Sectors[0].Owner == new PlayerId(0));
+        Assert.Equal(firstConsumptionBefore + 3, first.Random.ConsumptionCount);
+        Assert.Equal(secondConsumptionBefore + 3, second.Random.ConsumptionCount);
+        Assert.Equal(resolution.ChanceRoll,
+            Assert.Single(second.LastPhaseResolutions).Event!.Resolution!.ChanceRoll);
+        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+    }
+
+    [Fact]
     public void HidingDefenderDoesNotResistEnemyControl()
     {
         var data = BundledOriginalData.Load();
@@ -257,7 +285,8 @@ public sealed class BoardResolutionTests
         IReadOnlyList<MatchGangState> playerOneGangs,
         PlayerId? owner = null,
         PlayerId? influencedBy = null,
-        int playerOneSupport = 0)
+        int playerOneSupport = 0,
+        bool filledHirePool = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -268,7 +297,8 @@ public sealed class BoardResolutionTests
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
         MatchPlayerState[] players =
         [
-            new(setup.Players[0], 500, playerZeroGangs),
+            new(setup.Players[0], 500, playerZeroGangs,
+                hirePool: filledHirePool ? [1, 2, 3] : null),
             new(setup.Players[1], 500, playerOneGangs, support: playerOneSupport)
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
