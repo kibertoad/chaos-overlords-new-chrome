@@ -68,6 +68,7 @@ Target subdivisions:
 - `Scenarios`: setup, scoring, objectives, and victory.
 - `Persistence`: native snapshots and replay schema.
 - `Determinism`: original-compatible PRNG and state hashing.
+- `MatchOutcome`: state projection and end-of-turn scenario completion.
 
 ### `Rechaos.Extractor`
 

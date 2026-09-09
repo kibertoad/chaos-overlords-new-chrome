@@ -11,7 +11,8 @@ public enum GameEventKind : byte
     HireQueued,
     HireResolved,
     PoliceAttackResolved,
-    PlayerEliminated
+    PlayerEliminated,
+    MatchEnded
 }
 
 public sealed record CommandResolutionDetails(
@@ -52,6 +53,12 @@ public sealed record HireResolutionDetails(
 
 public sealed record EliminationDetails(PlayerId EliminatedPlayer, int RemainingPlayers);
 
+public sealed record MatchOutcomeDetails(
+    ScenarioId Scenario,
+    MatchEndReason Reason,
+    int CompletedTurn,
+    IReadOnlyList<PlayerId> Winners);
+
 public sealed record PoliceAttackResolutionDetails(
     int SectorId,
     int DetectionChance,
@@ -81,4 +88,5 @@ public sealed record GameEvent(
     EconomyResolutionDetails? Economy = null,
     HireResolutionDetails? Hire = null,
     EliminationDetails? Elimination = null,
-    PoliceAttackResolutionDetails? PoliceAttack = null);
+    PoliceAttackResolutionDetails? PoliceAttack = null,
+    MatchOutcomeDetails? MatchOutcome = null);

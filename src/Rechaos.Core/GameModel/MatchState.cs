@@ -294,6 +294,7 @@ public sealed class MatchState
     public IReadOnlyList<PoliceAttackResolutionResult> LastPoliceAttackResolutions { get; private set; } = [];
     public IReadOnlyList<UpkeepResolutionResult> LastUpkeepResolutions { get; private set; } = [];
     public IReadOnlyList<HireResolutionResult> LastHireResolutions { get; private set; } = [];
+    public MatchOutcome? Outcome { get; private set; }
     internal long NextEventSequence => _nextEventSequence;
 
     public MatchPlayerState? FindPlayer(PlayerId id) => Players.SingleOrDefault(player => player.Id == id);
@@ -319,6 +320,8 @@ public sealed class MatchState
 
     public TurnTransition FinishUpkeep()
     {
+        if (Outcome is not null)
+            throw new InvalidOperationException("The match has ended and cannot advance another turn.");
         foreach (var gang in Players.SelectMany(player => player.Gangs))
         {
             gang.Hidden = false;
@@ -376,6 +379,11 @@ public sealed class MatchState
         if (Coordinator.Phase != TurnPhase.PlayerElimination)
             return CaptureBoundary(Coordinator.FinishPlayerElimination());
         ResolvePlayerEliminations();
+        if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this) is { } outcome)
+        {
+            Outcome = outcome;
+            AppendMatchEndedEvent(outcome);
+        }
         return CaptureBoundary(Coordinator.FinishPlayerElimination());
     }
 
@@ -547,6 +555,22 @@ public sealed class MatchState
             Coordinator.ExecutionPhase, GameEventKind.PlayerEliminated, player,
             null, GangAction.None, CommandTarget.None, Elimination: elimination);
         _events.Add(gameEvent);
+        return gameEvent;
+    }
+
+    private GameEvent AppendMatchEndedEvent(MatchOutcome outcome)
+    {
+        var details = new MatchOutcomeDetails(
+            outcome.Scenario, outcome.Reason, outcome.Turn, outcome.Winners);
+        var gameEvent = new GameEvent(
+            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
+            Coordinator.ExecutionPhase, GameEventKind.MatchEnded,
+            outcome.Winners[0], null, GangAction.None, CommandTarget.None,
+            MatchOutcome: details);
+        _events.Add(gameEvent);
+        foreach (var player in Players)
+            QueueNotification(player.Id, GameNotificationKind.Objective,
+                relatedEventSequence: gameEvent.Sequence);
         return gameEvent;
     }
 

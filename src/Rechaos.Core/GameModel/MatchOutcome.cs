@@ -1,0 +1,81 @@
+namespace Rechaos.Core.GameModel;
+
+public enum MatchEndReason : byte
+{
+    TimeLimit,
+    ObjectiveCompleted
+}
+
+public sealed record MatchOutcome(
+    ScenarioId Scenario,
+    MatchEndReason Reason,
+    int Turn,
+    IReadOnlyList<PlayerId> Winners);
+
+/// <summary>
+/// Projects authoritative match state into the manual-defined scenario rules.
+/// End-boundary timing and simultaneous winner treatment remain provisional.
+/// </summary>
+public static class MatchOutcomeEvaluator
+{
+    private const short RightHandsDefinitionId = 0;
+    private const short HeadquartersDefinitionId = 21;
+
+    public static MatchOutcome? Evaluate(MatchState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var definition = ScenarioCatalog.Get(state.Setup.Scenario);
+        if (definition.IsTimed)
+        {
+            if (state.Coordinator.Turn < ScenarioCatalog.Turns(state.Setup.Duration)) return null;
+            var scores = state.Players
+                .Select(player => (player.Id, Score: ScenarioCatalog.TimedScore(
+                    state.Setup.Scenario, state.Setup.Duration, Project(state, player))))
+                .ToArray();
+            var best = scores.Max(value => value.Score);
+            return new MatchOutcome(
+                state.Setup.Scenario,
+                MatchEndReason.TimeLimit,
+                state.Coordinator.Turn,
+                scores.Where(value => value.Score == best).Select(value => value.Id).ToArray());
+        }
+
+        var winners = state.Players
+            .Where(player => ScenarioCatalog.HasObjectiveVictory(
+                state.Setup.Scenario, Project(state, player)))
+            .Select(player => player.Id)
+            .OrderBy(player => player.Value)
+            .ToArray();
+        return winners.Length == 0
+            ? null
+            : new MatchOutcome(
+                state.Setup.Scenario,
+                MatchEndReason.ObjectiveCompleted,
+                state.Coordinator.Turn,
+                winners);
+    }
+
+    public static PlayerScoreState Project(MatchState state, MatchPlayerState player)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(player);
+        if (state.FindPlayer(player.Id) != player)
+            throw new ArgumentException("Player does not belong to the match.", nameof(player));
+
+        var controlledSectors = state.Sectors.Count(sector => sector.Owner == player.Id);
+        var opponents = state.Players.Where(candidate => candidate.Id != player.Id).ToArray();
+        var importantSectors = state.Sectors.Count(sector =>
+            sector.Owner == player.Id
+            && sector.Sites.Any(site => site.DefinitionId == HeadquartersDefinitionId));
+        return new PlayerScoreState(
+            player.Cash,
+            player.Support,
+            controlledSectors,
+            player.Status == PlayerStatus.Active,
+            opponents.Count(candidate => candidate.Status == PlayerStatus.Active),
+            opponents.Sum(candidate => candidate.Gangs.Count(gang =>
+                gang.IsActive && gang.DefinitionId == RightHandsDefinitionId)),
+            importantSectors,
+            player.BigManPoints);
+    }
+}

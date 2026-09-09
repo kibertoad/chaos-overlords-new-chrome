@@ -427,3 +427,35 @@ claim about original-game behavior.
 - Next experiment: prepare saves around zero projected cash with controlled
   combinations of sectors, positive/negative sites, and gangs, then compare
   Finance/Event panels and post-Upkeep saves.
+
+## Objectives and match completion
+
+### RULE-OBJECTIVE-001 — End-of-turn objective evaluation
+
+- Source: `MANUAL-GOG-1`; scenario descriptions and scoring tables.
+- Observed statement: Greed, Power, Acceptance, and Dominance end at their
+  selected time limit; the other six scenarios end when their stated objective
+  is achieved. Dominance uses the duration-specific weights recorded in
+  `ScenarioCatalog`.
+- Interpretation: after Player Elimination and before advancing the turn,
+  project cash, support, controlled sectors, active opponents, opposing active
+  Right Hands, controlled Headquarters sectors, and Big Man points from the
+  authoritative match. Timed games end on turns 26/52/104/208 and preserve all
+  players tied for the highest score. Objective games preserve all qualifying
+  players in player-ID order. Emit one `MatchEnded` event and one Objective
+  notification per player; include the outcome in canonical state hashes and
+  prevent the following Upkeep phase from resolving.
+- Current exclusions: binary end-boundary timing, tie-break presentation,
+  eliminated-player ranking, Siege's exact important-sector identity,
+  Eliminate neutralization, Big Man point accrual, endgame rankings and awards.
+  Headquarters sites are provisionally treated as Siege-important sectors.
+- Confidence: High for thresholds, durations, score components and weights;
+  Low for timing, ties, Siege mapping and special objective edge cases.
+- Implementation: `MatchOutcomeEvaluator`, `MatchState.Outcome`, and
+  `MatchState.FinishPlayerElimination`; canonical hash format version 2.
+- Tests: `MatchOutcomeTests` covers authoritative projection, objective event
+  and notification emission, Eliminate's Right Hands distinction, exact timed
+  boundary ties, and outcome hashing.
+- Next experiment: capture the last two turns of each timed scenario and
+  simultaneous-threshold states for objective scenarios, then compare event,
+  ranking, tie, and next-screen behavior.
