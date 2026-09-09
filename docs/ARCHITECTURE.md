@@ -43,6 +43,8 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   research, inventory, hire, statistics, and equipment state.
 - `GameModel/CommandValidation.cs`: data-driven action descriptors and typed,
   non-mutating command validation results.
+- `GameModel/CommandOptionCatalog.cs`: deterministic expansion of declarative
+  target shapes into validator-approved commands for UI and future AI use.
 - `GameModel/GameEvents.cs`: monotonically ordered mechanical event records.
 - `GameModel/CommandResolution.cs`: evidence-gated execution dispatcher and
   grouped phase dispatch and result codes; all Instant actions (Bribe, Heal,
@@ -311,8 +313,9 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
   original next-player privacy handoff, an event/notification viewer whose
   dismissal mutations are replay-recorded, plus a state-driven endgame summary
   on the mapped original frame, but still
-  lacks the original setup detail, command picker, AI turn driver, notifications,
-  animations and most original panels.
+  lacks the original setup detail, AI turn driver, notification presentation
+  detail, animations and most original panels. Its command picker projects all
+  currently legal commands from Core rather than maintaining parallel UI rules.
 - Exact control edges and within-subphase command ordering remain provisional.
 - Runtime manifest checking validates version only.
 - Media resources are extracted but not presented.

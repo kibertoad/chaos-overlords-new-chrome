@@ -47,7 +47,8 @@ integer-friendly point scaling, parses all 22 sites, 90 gangs, and 64 items,
 and provides title, new-game setup, and deterministic 8x8 hot-seat city screens.
 Setup supports scenario, duration, and one-to-six local players using keyboard
 or mouse. In the city, use arrows/WASD or click to select, Enter or a second
-click to act, H to hire, and Space to advance. F5/F9 save/load and F6/F10
+click to act, G to cycle gangs, C to open the legal-command picker, H to hire,
+and Space to advance. F5/F9 save/load and F6/F10
 save/verify replays. Escape returns to the title screen before quitting.
 
 ## Projects

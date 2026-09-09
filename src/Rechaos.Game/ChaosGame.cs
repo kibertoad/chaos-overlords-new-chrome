@@ -35,6 +35,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle CityEvents = new(492, 124, 50, 51);
     private static readonly Rectangle EventsDismiss = new(218, 414, 96, 28);
     private static readonly Rectangle EventsBack = new(322, 414, 96, 28);
+    private static readonly Rectangle CommandsQueue = new(218, 414, 96, 28);
+    private static readonly Rectangle CommandsBack = new(322, 414, 96, 28);
     private static readonly Rectangle EndgameDone = new(320, 404, 104, 54);
     private static readonly Rectangle HandoffReady = new(266, 246, 108, 66);
     private readonly GraphicsDeviceManager _graphics;
@@ -58,6 +60,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private GameDuration _selectedDuration = GameDuration.SixMonths;
     private int _selectedPlayerCount = 2;
     private int _cursor;
+    private int _selectedGangIndex;
+    private IReadOnlyList<GameCommand> _commandOptions = [];
+    private int _commandCursor;
     private string _message = "SELECT NEW GAME";
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
@@ -127,6 +132,12 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)) DismissNotification();
                 if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
                 break;
+            case ClientScreen.Commands:
+                if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
+                if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
+                if (Pressed(keyboard, Keys.Enter)) SubmitSelectedCommand();
+                if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
+                break;
         }
         if (mouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released
             && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint))
@@ -164,6 +175,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Events when _state is not null:
                 DrawEvents(_batch, _pixel, _font, _state);
                 break;
+            case ClientScreen.Commands when _state is not null:
+                DrawCommands(_batch, _pixel, _font, _state);
+                break;
         }
         _batch.End();
         base.Draw(gameTime);
@@ -194,6 +208,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.W)) MoveCursor(0, -1);
         if (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.S)) MoveCursor(0, 1);
         if (Pressed(keyboard, Keys.Enter)) QueueBoardCommand();
+        if (Pressed(keyboard, Keys.C)) OpenCommands();
+        if (Pressed(keyboard, Keys.G)) CycleGang();
         if (Pressed(keyboard, Keys.H)) QueueFirstHireOffer();
         if (Pressed(keyboard, Keys.Space)) AdvancePhase();
         if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
@@ -234,6 +250,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 if (EventsDismiss.Contains(point)) DismissNotification();
                 else if (EventsBack.Contains(point)) _screens.Show(ClientScreen.City);
                 break;
+            case ClientScreen.Commands:
+                HandleCommandsClick(point);
+                break;
         }
     }
 
@@ -254,10 +273,76 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         else if (CityAction.Contains(point))
         {
             if (_state?.Coordinator.Phase == TurnPhase.Hire) QueueFirstHireOffer();
-            else QueueBoardCommand();
+            else OpenCommands();
         }
         else if (CityAdvance.Contains(point)) AdvancePhase();
         else if (CityEvents.Contains(point)) _screens.Show(ClientScreen.Events);
+    }
+
+    private void OpenCommands()
+    {
+        if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
+            || _state.Coordinator.ActivePlayer is not { } playerId)
+        {
+            _message = "COMMAND PICKER REQUIRES THE COMMAND PHASE";
+            return;
+        }
+        var gang = SelectedGang(_state.FindPlayer(playerId)!);
+        if (gang is null)
+        {
+            _message = "NO ACTIVE GANG";
+            return;
+        }
+        _commandOptions = CommandOptionCatalog.LegalCommands(_state, playerId, gang.Id);
+        _commandCursor = 0;
+        _screens.Show(ClientScreen.Commands);
+    }
+
+    private void MoveCommandCursor(int delta)
+    {
+        if (_commandOptions.Count == 0) return;
+        _commandCursor = Mod(_commandCursor + delta, _commandOptions.Count);
+    }
+
+    private void HandleCommandsClick(Point point)
+    {
+        if (point.X is >= 14 and < 418 && point.Y is >= 102 and < 390)
+        {
+            var first = Math.Max(0, _commandCursor - 8);
+            var index = first + (point.Y - 102) / 16;
+            if (index < _commandOptions.Count) _commandCursor = index;
+        }
+        else if (CommandsQueue.Contains(point)) SubmitSelectedCommand();
+        else if (CommandsBack.Contains(point)) _screens.Show(ClientScreen.City);
+    }
+
+    private void SubmitSelectedCommand()
+    {
+        if (_commandOptions.Count == 0 || _replay is null) return;
+        var command = _commandOptions[_commandCursor];
+        var result = _replay.Submit(command);
+        _message = result.Accepted
+            ? $"{command.Action.ToString().ToUpperInvariant()} QUEUED"
+            : result.Validation.Message.ToUpperInvariant();
+        _screens.Show(ClientScreen.City);
+    }
+
+    private void CycleGang()
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        var gangs = _state.FindPlayer(playerId)!.Gangs.Where(gang => gang.IsActive).ToArray();
+        if (gangs.Length == 0) return;
+        _selectedGangIndex = (_selectedGangIndex + 1) % gangs.Length;
+        _cursor = gangs[_selectedGangIndex].SectorId;
+        _message = $"GANG {gangs[_selectedGangIndex].Id.Value}";
+    }
+
+    private MatchGangState? SelectedGang(MatchPlayerState player)
+    {
+        var gangs = player.Gangs.Where(gang => gang.IsActive).ToArray();
+        if (gangs.Length == 0) return null;
+        _selectedGangIndex = Math.Clamp(_selectedGangIndex, 0, gangs.Length - 1);
+        return gangs[_selectedGangIndex];
     }
 
     private void ChangeScenario(int delta)
@@ -286,6 +371,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _state = OriginalMatchFactory.Create(_definitions, setup);
         _replay = new MatchReplayRecorder(_state);
         _cursor = _state.Players[0].Gangs[0].SectorId;
+        _selectedGangIndex = 0;
         _message = "ADVANCE UPKEEP TO BEGIN";
         _screens.Show(ClientScreen.City);
     }
@@ -333,6 +419,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
         var player = state.Players[playerIndex];
+        var selectedGang = SelectedGang(player);
         batch.Draw(pixel, new Rectangle(8, 7, 420, 29), new Color(0, 0, 0, 205));
         font.Draw(batch, $"TURN {state.Coordinator.Turn}  {player.Setup.Name}  ${player.Cash}",
             new Vector2(16, 17), Color.White, 1);
@@ -356,7 +443,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
         batch.Draw(pixel, new Rectangle(8, 389, 420, 60), new Color(0, 0, 0, 220));
         font.Draw(batch, SectorSummary(state, state.Sectors[_cursor]), new Vector2(14, 395), Color.White, 1);
-        font.Draw(batch, $"GANGS {player.Gangs.Count}/{MatchLimits.GangsPerPlayer}", new Vector2(14, 410), PlayerColors[playerIndex], 1);
+        var selectedLabel = selectedGang is null ? "NO GANG" : $"GANG {selectedGang.Id.Value}";
+        font.Draw(batch, $"{selectedLabel}  {player.Gangs.Count}/{MatchLimits.GangsPerPlayer}", new Vector2(14, 410), PlayerColors[playerIndex], 1);
         font.Draw(batch, _message, new Vector2(112, 410), Color.Gold, 1);
         DrawButton(batch, pixel, font, CityAction,
             state.Coordinator.Phase == TurnPhase.Hire ? "HIRE" : "ACTION", false);
@@ -446,6 +534,54 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         DrawButton(batch, pixel, font, EventsBack, "BACK", false);
     }
 
+    private void DrawCommands(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
+        if (_cityBackground is not null)
+            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
+        font.Draw(batch, "COMMANDS", new Vector2(18, 60), Color.Gold, 2);
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var gang = SelectedGang(state.FindPlayer(playerId)!);
+        var gangName = gang is null
+            ? "NO ACTIVE GANG"
+            : state.Definitions.Gangs.Single(definition => definition.Id == gang.DefinitionId).Name;
+        font.Draw(batch, gangName, new Vector2(18, 84), PlayerColors[playerId.Value], 1);
+
+        var first = Math.Max(0, _commandCursor - 8);
+        foreach (var entry in _commandOptions.Skip(first).Take(18).Select((command, index) => (command, index)))
+        {
+            var optionIndex = first + entry.index;
+            var y = 102 + entry.index * 16;
+            if (optionIndex == _commandCursor)
+                batch.Draw(pixel, new Rectangle(14, y - 3, 404, 14), new Color(72, 54, 18));
+            font.Draw(batch, FormatCommand(state, entry.command), new Vector2(18, y), Color.White, 1);
+        }
+        if (_commandOptions.Count == 0)
+            font.Draw(batch, "NO LEGAL COMMANDS", new Vector2(18, 102), Color.White, 1);
+        DrawButton(batch, pixel, font, CommandsQueue, "QUEUE", false);
+        DrawButton(batch, pixel, font, CommandsBack, "BACK", false);
+    }
+
+    private static string FormatCommand(MatchState state, GameCommand command)
+    {
+        var text = command.Action.ToString().ToUpperInvariant();
+        if (command.Target.Kind != CommandTargetKind.None)
+            text += " " + FormatTarget(state, command.Target);
+        if (command.SecondaryTarget is { } secondary)
+            text += " / " + FormatTarget(state, secondary);
+        return text;
+    }
+
+    private static string FormatTarget(MatchState state, CommandTarget target) => target.Kind switch
+    {
+        CommandTargetKind.Gang => "GANG " + target.Id,
+        CommandTargetKind.Sector => "SECTOR " + (target.Id + 1),
+        CommandTargetKind.Site => state.Definitions.Sites.Single(definition => definition.Id ==
+            state.FindSite(target.Id)!.DefinitionId).Name,
+        CommandTargetKind.Item => state.Definitions.Items[target.Id].Name,
+        _ => ""
+    };
+
     private void DismissNotification()
     {
         if (_state is null || _replay is null) return;
@@ -471,7 +607,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             _message = "BOARD COMMANDS REQUIRE THE COMMAND PHASE";
             return;
         }
-        var gang = _state.FindPlayer(playerId)!.Gangs.FirstOrDefault(candidate => candidate.IsActive);
+        var gang = SelectedGang(_state.FindPlayer(playerId)!);
         if (gang is null)
         {
             _message = "NO ACTIVE GANG";
@@ -540,7 +676,10 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (_state.Outcome is not null)
             _screens.Show(ClientScreen.Endgame);
         else if (transition.ActivePlayer is not null && transition.ActivePlayer != previousActivePlayer)
+        {
+            _selectedGangIndex = 0;
             _screens.Show(ClientScreen.Handoff);
+        }
     }
 
     private void SaveQuickGame()
@@ -566,6 +705,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             _state = result.State;
             _replay = new MatchReplayRecorder(_state);
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
+            _selectedGangIndex = 0;
             _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
             _screens.Show(_state.Outcome is null ? ClientScreen.City : ClientScreen.Endgame);
         }
