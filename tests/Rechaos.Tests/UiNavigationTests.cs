@@ -120,5 +120,8 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(18, 347, 36, 36),
             SectorGangView.SearchPortrait(SectorGangView.MaximumSearchRows - 1));
         Assert.Equal(new Rectangle(558, 58, 56, 56), GangArtLayout.SelectedEquipmentPortrait);
+        Assert.Equal(new Rectangle(18, 108, 20, 20), GangArtLayout.CombatPortrait(0, false));
+        Assert.Equal(new Rectangle(42, 372, 20, 20), GangArtLayout.CombatPortrait(11, true));
+        Assert.Throws<ArgumentOutOfRangeException>(() => GangArtLayout.CombatPortrait(12, false));
     }
 }

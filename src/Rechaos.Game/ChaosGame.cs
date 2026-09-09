@@ -1040,12 +1040,45 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         {
             var gameEvent = events[index];
             var y = 112 + index * 24;
+            var attackerPortrait = GangArtLayout.CombatPortrait(index, false);
+            if (gameEvent.Kind == GameEventKind.PoliceAttackResolved)
+            {
+                if (_policeSprites is not null)
+                    batch.Draw(_policeSprites, attackerPortrait,
+                        OriginalSpriteLayout.PolicePatrolCar, Color.White);
+                DrawBorder(batch, pixel, attackerPortrait, Color.LightBlue, 1);
+            }
+            else
+            {
+                DrawCombatGangPortrait(batch, pixel, state, gameEvent.Gang, attackerPortrait);
+            }
+            var targetGang = gameEvent.Kind == GameEventKind.PoliceAttackResolved
+                ? gameEvent.Gang
+                : gameEvent.Target.Kind == CommandTargetKind.Gang
+                    ? new GangId(gameEvent.Target.Id)
+                    : null;
+            DrawCombatGangPortrait(batch, pixel, state, targetGang,
+                GangArtLayout.CombatPortrait(index, true));
             font.Draw(batch, $"T{gameEvent.Turn} {CombatHeading(state, gameEvent)}",
-                new Vector2(18, y), Color.White, 1);
-            font.Draw(batch, CombatResult(gameEvent), new Vector2(230, y),
+                new Vector2(68, y), Color.White, 1);
+            font.Draw(batch, CombatResult(gameEvent), new Vector2(300, y),
                 gameEvent.Kind == GameEventKind.CommandFailed ? Color.OrangeRed : new Color(180, 230, 170), 1);
         }
         DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
+    }
+
+    private void DrawCombatGangPortrait(
+        SpriteBatch batch,
+        Texture2D pixel,
+        MatchState state,
+        GangId? gangId,
+        Rectangle destination)
+    {
+        if (gangId is not { } id || state.FindGang(id) is not { } gang) return;
+        if (_gangPortraits is not null)
+            batch.Draw(_gangPortraits, destination,
+                OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
+        DrawBorder(batch, pixel, destination, PlayerColors[gang.Owner.Value], 1);
     }
 
     private void DrawSearch(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)

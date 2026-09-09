@@ -171,4 +171,10 @@ public static class SectorGangView
 public static class GangArtLayout
 {
     public static Rectangle SelectedEquipmentPortrait => new(558, 58, 56, 56);
+
+    public static Rectangle CombatPortrait(int row, bool defender)
+    {
+        if (row is < 0 or >= 12) throw new ArgumentOutOfRangeException(nameof(row));
+        return new Rectangle(defender ? 42 : 18, 108 + row * 24, 20, 20);
+    }
 }
