@@ -26,6 +26,10 @@ public sealed class CommandOptionCatalogTests
             && command.Target == CommandTarget.Sector(1));
         Assert.Contains(first, command => command.Action == GangAction.Influence
             && command.Target.Kind == CommandTargetKind.Site);
+        Assert.DoesNotContain(first, command => command.Action == GangAction.Control);
+        Assert.Equal(CommandValidationCode.SectorAlreadyControlled,
+            CommandValidator.Validate(match,
+                new GameCommand(player, gang, GangAction.Control, CommandTarget.None)).Code);
         Assert.Equal(first.OrderBy(command => command.Action).Select(command => command.Action),
             first.Select(command => command.Action));
     }

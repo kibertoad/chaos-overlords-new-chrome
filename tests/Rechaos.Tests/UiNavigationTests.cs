@@ -17,11 +17,27 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void InfluencePickerUsesOriginalStaggeredSiteLayout()
+    {
+        Assert.Equal(new Rectangle(130, 141, 64, 64), InfluenceCommandLayout.Portrait);
+        Assert.Equal(new Rectangle(209, 141, 120, 64), InfluenceCommandLayout.Site(0));
+        Assert.Equal(new Rectangle(312, 198, 120, 64), InfluenceCommandLayout.Site(1));
+        Assert.Equal(new Rectangle(209, 255, 120, 64), InfluenceCommandLayout.Site(2));
+    }
+
+    [Fact]
     public void StatusConsoleValuesFollowTemplateRows()
     {
         Assert.Equal(579, StatusConsoleLayout.ValueRight);
         Assert.Equal([60, 69, 78, 87, 96],
             Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorValueY));
+    }
+
+    [Fact]
+    public void HirePriceSitsBesideRejectControl()
+    {
+        Assert.Equal(new Point(442, 443), HireDockLayout.Price(0));
+        Assert.Equal(new Point(574, 443), HireDockLayout.Price(2));
     }
 
     [Fact]
@@ -178,10 +194,11 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(new Rectangle(251, 80, 70, 118), SectorGangCardLayout.Frame(0));
         Assert.Equal(new Rectangle(325, 80, 70, 118), SectorGangCardLayout.Frame(1));
-        Assert.Equal(new Rectangle(254, 83, 30, 24), SectorGangCardLayout.OneOffAction(0));
-        Assert.Equal(new Rectangle(287, 83, 30, 24), SectorGangCardLayout.RepeatingAction(0));
-        Assert.Equal(new Rectangle(254, 108, 64, 64), SectorGangCardLayout.Portrait(0));
-        Assert.Equal(new Rectangle(296, 173, 21, 22), SectorGangCardLayout.ItemSlot(0, 2));
+        Assert.Equal(new Rectangle(254, 82, 64, 3), SectorGangCardLayout.ForceBar(0));
+        Assert.Equal(new Rectangle(254, 87, 30, 15), SectorGangCardLayout.OneOffAction(0));
+        Assert.Equal(new Rectangle(287, 87, 30, 15), SectorGangCardLayout.RepeatingAction(0));
+        Assert.Equal(new Rectangle(254, 103, 64, 64), SectorGangCardLayout.Portrait(0));
+        Assert.Equal(new Rectangle(296, 168, 21, 22), SectorGangCardLayout.ItemSlot(0, 2));
         Assert.Throws<ArgumentOutOfRangeException>(() => SectorGangCardLayout.Frame(2));
     }
 

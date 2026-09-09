@@ -58,13 +58,12 @@ public static class MatchBootstrap
                 throw new ArgumentException("A player's starting sector must contain a Headquarters site.", nameof(sectors));
         }
 
-        var allResearch = setup.Scenario == ScenarioId.Armageddon
-            ? definitions.Items
-                .Select((item, index) => (item, index))
-                .Where(entry => entry.item.Type != 99)
-                .Select(entry => checked((short)entry.index))
-                .ToHashSet()
-            : null;
+        var startingResearch = definitions.Items
+            .Select((item, index) => (item, index))
+            .Where(entry => entry.item.Type != 99
+                && (setup.Scenario == ScenarioId.Armageddon || entry.item.ResearchDifficulty == 0))
+            .Select(entry => checked((short)entry.index))
+            .ToHashSet();
         var players = new MatchPlayerState[starts.Count];
         for (var index = 0; index < starts.Count; index++)
         {
@@ -79,7 +78,7 @@ public static class MatchBootstrap
                     ? ArmageddonStartingCash
                     : start.StandardStartingCash,
                 [rightHands], start.HirePool,
-                researchedItems: allResearch);
+                researchedItems: startingResearch);
         }
 
         return new MatchState(definitions, setup, players, sectorArray);

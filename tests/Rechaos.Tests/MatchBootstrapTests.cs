@@ -32,7 +32,13 @@ public sealed class MatchBootstrapTests
             Assert.Equal(63, gang.SectorId);
             Assert.Equal(8, gang.Force);
         });
-        Assert.Empty(match.Players[0].ResearchedItems);
+        Assert.Equal(
+            ["BOOM BOXES", "COMBAT KNIFE", "COMBAT PISTOL", "COOL HATS", "LEATHERS", "METAL PIPE", "SHOCK PADS"],
+            match.Players[0].ResearchedItems
+                .Select(item => data.Items[item].Name)
+                .Order(StringComparer.Ordinal));
+        Assert.All(match.Players[0].ResearchedItems,
+            item => Assert.Equal(0, match.Players[0].RemainingResearch(data, item)));
     }
 
     [Fact]

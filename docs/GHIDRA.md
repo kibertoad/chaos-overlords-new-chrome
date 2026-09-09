@@ -119,6 +119,11 @@ their containing functions. `ReportDataBytes.java` prints at most 256 bytes at
 an explicitly supplied virtual address. Both are navigation aids for small,
 reviewable questions; their output must not be committed.
 
+`ReportDecompileMatches.java` accepts one function address followed by literal
+text patterns and emits at most 240 lines with two lines of context. Use it to
+answer a narrow question inside a large function without retaining or
+committing the complete decompiler listing.
+
 ## Evidence discipline
 
 - Record executable hash, Ghidra version, virtual address, call relationship,

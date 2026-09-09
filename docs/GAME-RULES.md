@@ -313,9 +313,16 @@ claim about original-game behavior.
 - Interpretation: zero-research-difficulty items are immediately available;
   other items require completed player research. Successful purchase replaces
   and loses the previous same-slot item and records cash spent.
+- Initial unlock set: ordinary scenarios begin with the seven non-placeholder
+  zero-difficulty technologies already researched: Metal Pipe (0), Combat Knife
+  (1), Combat Pistol (12), Leathers (24), Shock Pads (25), Cool Hats (39), and
+  Boom Boxes (40). Melee and ranged weapons are separate browser categories,
+  so the pistol does not appear beside the two initial melee choices. Armageddon
+  continues to unlock every real item.
 - Factory rule: an influenced Factory in the acting gang's controlled sector
   reduces purchase price by 30%; the recreation floors `Cost * 70 / 100`.
-- Confidence: High for cost, categories, research, tech gates and the 30% value;
+- Confidence: High for cost, categories, research, tech gates, the decoded
+  zero-difficulty set, and the 30% value;
   Medium for same-slot replacement and Factory locality; Low for discount
   rounding and repeat commands.
 - Implementation: `EquipmentRules`, `SpecialSiteRules.EquipmentCost`,

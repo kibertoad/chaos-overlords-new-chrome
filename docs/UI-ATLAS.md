@@ -94,7 +94,8 @@ validated against the executable.
   64-by-64 `PX03000` portraits at x 439, 505, and 571. Dragging an available
   portrait shows a 36-by-36 token and highlights valid controlled-sector drops;
   a reserved recruit retains its cell under the color-keyed original `HIRED`
-  stamp from `PX00129`. This interaction and placement were confirmed in the
+  stamp from `PX00129`. Available candidates show their two-digit initial hire
+  price in the footer beside the reject control. This interaction and placement were confirmed in the
   user-supplied original-game capture and footage at 03:57.
 - The selected gang's sector displays the original idle/question or assigned
   20-by-20 status marker. A pending or actively dragged hire uses the red-edged
@@ -151,7 +152,9 @@ right console, shared top portrait strip, and three-offer Hire dock remain
 visible; only dynamic values are painted over the console's baked labels.
 Each friendly card exposes separate one-off and repeating order controls; both
 use the authoritative legal-command picker and set the existing
-`GameCommand.Repeat` flag appropriately.
+`GameCommand.Repeat` flag appropriately. The repeating control uses the
+reference's vertically stacked double-arrow mark, and the thin owner-colored
+track above the portrait reports current Force.
 The first themed overlay preserves the original fifteen-action ordering:
 Attack, Bribe, Chaos, Control, Equip, Give, Heal, Hide, Influence, Move,
 Research, Sell, Snitch, None, and Terminate. Individual equipment and other
@@ -165,6 +168,21 @@ Hire console button overlays it on the live city, with three 32-by-32 gang
 portraits and their sixteen comparison values. Hiring itself remains the
 original drag-from-dock interaction; the comparison panel's OK control closes
 the overlay.
+
+`PX05001` is the shared Item Information panel opened from the Equip and
+Research item lists. `PX05003` is the `TARGET ACQUISITION` Attack picker: it
+shows the acting gang, an opponent-player portrait column, and the selected
+enemy gang with its equipment and Force track. `PX05005` is the `SITE TO
+INFLUENCE` picker; its three staggered apertures contain the selected sector's
+actual building art. These identities and workflows are confirmed by supplied
+original-game captures. The recreation currently implements `PX05005`; the
+other two are mapped for the next panel pass.
+
+The original Combat view is a dedicated comparison panel rather than the flat
+target list: it identifies the sector, places attacker and defender owner/gang
+art side by side, shows equipment and dual Force tracks, and reserves a central
+cell for the combat presentation. Its background resource and exact hit map
+remain to be identified.
 
 ## Next mapping work
 

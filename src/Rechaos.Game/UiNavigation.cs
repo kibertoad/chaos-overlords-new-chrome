@@ -274,13 +274,14 @@ public static class SectorGangCardLayout
     public const int Stride = 74;
 
     public static Rectangle Frame(int slot) => At(slot, 0, 0, 70, 118);
-    public static Rectangle OneOffAction(int slot) => At(slot, 3, 3, 30, 24);
-    public static Rectangle RepeatingAction(int slot) => At(slot, 36, 3, 30, 24);
-    public static Rectangle Portrait(int slot) => At(slot, 3, 28, 64, 64);
+    public static Rectangle ForceBar(int slot) => At(slot, 3, 2, 64, 3);
+    public static Rectangle OneOffAction(int slot) => At(slot, 3, 7, 30, 15);
+    public static Rectangle RepeatingAction(int slot) => At(slot, 36, 7, 30, 15);
+    public static Rectangle Portrait(int slot) => At(slot, 3, 23, 64, 64);
     public static Rectangle ItemSlot(int slot, int itemSlot)
     {
         if (itemSlot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(itemSlot));
-        return At(slot, 3 + itemSlot * 21, 93, 21, 22);
+        return At(slot, 3 + itemSlot * 21, 88, 21, 22);
     }
 
     private static Rectangle At(int slot, int x, int y, int width, int height)
@@ -350,6 +351,22 @@ public static class GangInformationLayout
         5 => 298,
         6 => 307,
         _ => throw new ArgumentOutOfRangeException(nameof(row))
+    };
+}
+
+public static class InfluenceCommandLayout
+{
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Portrait => new(130, 141, 64, 64);
+    public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
+    public static Rectangle Ok => EquipmentCommandLayout.Ok;
+
+    public static Rectangle Site(int slot) => slot switch
+    {
+        0 => new Rectangle(209, 141, 120, 64),
+        1 => new Rectangle(312, 198, 120, 64),
+        2 => new Rectangle(209, 255, 120, 64),
+        _ => throw new ArgumentOutOfRangeException(nameof(slot))
     };
 }
 
@@ -497,6 +514,12 @@ public static class HireDockLayout
     {
         ValidateSlot(slot);
         return new Rectangle(438 + slot * 66, 436, 66, 24);
+    }
+
+    public static Point Price(int slot)
+    {
+        var reject = Reject(slot);
+        return new Point(reject.X + 4, reject.Y + 7);
     }
 
     public static IReadOnlyList<HireDockEntry?> Project(
