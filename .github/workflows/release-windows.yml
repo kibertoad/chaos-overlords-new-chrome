@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Version tag to create, for example v0.1.0
+        description: Version tag to create, for example 0.1.0
         required: true
         type: string
 
@@ -27,8 +27,8 @@ jobs:
         env:
           RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          if ($env:RELEASE_TAG -notmatch '^v(\d+\.\d+\.\d+([.-][0-9A-Za-z.-]+)?)$') {
-            throw "Tag '$env:RELEASE_TAG' must look like v0.1.0."
+          if ($env:RELEASE_TAG -notmatch '^(\d+\.\d+\.\d+([.-][0-9A-Za-z.-]+)?)$') {
+            throw "Tag '$env:RELEASE_TAG' must look like 0.1.0."
           }
           $existing = git ls-remote --tags origin "refs/tags/$env:RELEASE_TAG"
           if ($existing) { throw "Tag '$env:RELEASE_TAG' already exists." }

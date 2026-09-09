@@ -49,7 +49,7 @@ installation accepts `/ORIGINAL="C:\path\to\Chaos Overlords"`; `/NOIMPORT=1`
 explicitly skips extraction.
 
 Maintainers can run the manual-only `Release Windows installer` GitHub Actions
-workflow and enter a tag such as `v0.1.0`. After tests and installer compilation
+workflow and enter a tag such as `0.1.0`. After tests and installer compilation
 succeed, the workflow creates that tag and a GitHub Release containing the
 matching versioned installer. It has no scheduled or push trigger.
 

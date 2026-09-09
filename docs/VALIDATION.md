@@ -76,6 +76,9 @@ not.
   `ad958a934a691318f31a27a87252f420dd89a0ad03759457d8feaf49914d29e3`
 - Bundled gameplay JSON:
   `e65f80e4d9a99ceeffbbc7fb335ef7f57b368ef87c1c56af23bcd759cd4e8b3a`
+
+The bundled JSON is pinned to LF checkout bytes in `.gitattributes`. Its hash
+is byte-level provenance, so platform newline conversion is not permitted.
 - Original manual:
   `bdb1072848df95111cd014faaa7297d016b7c6e55cd7f2658dda67a167a0089d`
 

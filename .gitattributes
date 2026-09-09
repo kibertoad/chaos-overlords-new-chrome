@@ -1,0 +1,3 @@
+# This embedded payload has a recorded byte-level provenance hash. Keep its
+# checkout bytes identical on Windows, Linux, and macOS.
+/src/Rechaos.Core/GameData/original-data.json text eol=lf
