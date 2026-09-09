@@ -54,3 +54,22 @@ current in-memory model without changing the stored deterministic continuation.
 
 Original-save import/export remains a separate research task. Native snapshots
 must never be presented as converted original saves.
+
+## Replay format version 1
+
+`MatchReplayRecorder` captures an initial native snapshot, then requires every
+authoritative mutation to pass through its API. It covers command submission and
+cancellation, hire selection and snubbing, all phase transitions, and
+notification dismissal. Before recording or saving, it verifies that the match
+has not been mutated out of band.
+
+Each ordered replay step stores its operation payload, the expected validation
+result where applicable, and the canonical state SHA-256 after the operation.
+`MatchReplaySerializer.LoadAndReplay` restores the initial snapshot, repeats the
+operations, checks validation outcomes, and rejects the file at the first hash
+divergence. Replay input is limited to 32 MiB and 1,000,000 operations. Unknown
+members, missing values, unknown versions, and malformed operations are rejected.
+
+The initial snapshot is required while original-compatible city generation is
+still unresolved. Once exact seed-to-city setup is recovered, a future replay
+version may replace it with setup inputs plus a verified generator version.

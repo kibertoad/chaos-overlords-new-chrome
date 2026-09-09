@@ -13,6 +13,7 @@ public static class NativeSaveSerializer
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
+    internal static JsonSerializerOptions CreateCompatibleJsonOptions() => new(JsonOptions);
 
     public static void Save(Stream destination, MatchState state)
     {

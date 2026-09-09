@@ -61,6 +61,8 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   snapshots with definition/state fingerprints and complete runtime restoration.
 - `Persistence/NativeSaveStore.cs`: atomic file promotion, previous-save backup,
   and corruption recovery.
+- `Persistence/MatchReplay.cs`: mutation recorder plus bounded deterministic
+  replay reader that checks validation results and state hashes after every step.
 
 Target subdivisions:
 
@@ -70,8 +72,8 @@ Target subdivisions:
 - `Resolution`: phase processors and exact formulas.
 - `Events`: ordered facts emitted by resolution.
 - `Scenarios`: setup, scoring, objectives, and victory.
-- `Persistence`: native snapshots are implemented; replay schema and original
-  save compatibility remain separate workstreams.
+- `Persistence`: native snapshots and authoritative-operation replays are
+  implemented; migration and original-save compatibility remain separate workstreams.
 - `Determinism`: original-compatible PRNG and state hashing.
 - `MatchOutcome`: state projection and end-of-turn scenario completion.
 - `EndgameAwards`: deterministic award projection from player statistics.

@@ -493,7 +493,9 @@ mute, loop and skip paths are stable.
 - Enable original-format export only after no-op and edited round-trip tests prove
   that known and unknown data are preserved safely.
 - Add autosave, atomic writes, backups and corruption recovery.
-- Add replay files as seed + initial configuration + ordered commands.
+- Add replay files as seed + initial configuration + ordered commands. A version
+  1 authoritative-operation replay with an initial snapshot is implemented;
+  replace the snapshot with compact setup inputs after exact city generation is recovered.
 
 **Exit gate:** the original corpus imports exactly; native saves migrate; any
 enabled original export passes byte-aware round-trip validation.
@@ -558,13 +560,13 @@ unmarked guess.
 | M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; common typed validation-rule pipeline; deferred hire purchase/placement, one-offer-per-turn snubbing, 5–9 initial Force, deterministic vacancy refill; player elimination; declarative validation for all action target shapes; typed queue mutations and ordered events; bounded notification queues; recovered RNG; canonical phase hashes | Binary-validated offer, Force-roll and within-phase ordering, and remaining reference-derived edge rules |
 | M3 | Foundation started | Ordered base Upkeep economy; all Instant and Transaction actions; Move/Terminate; grouped Influence and Control with ownership/site reset; phase-wide grouped Chaos income/accumulation/crackdown; local influenced-site stat projection; deterministic Research; pure police helpers | Binary Chaos/reset/police fixtures, cross-player Influence/Control conflicts, special buildings, desertion, research caps, factory discounts/acquisition/swap fixtures and M2 gate |
 | M4 | Foundation started | Recovered raw RNG/range algorithms; serializable state; effective item/site stats; phase-wide Attack/retaliation and Crackdown police snapshots; hidden/police detection; elimination and recorded rolls | Crackdown duration/aftermath, reveal timing, RNG seed/call-order validation, binary combat fixtures, and M2-M3 gates |
-| M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v1 snapshots with deterministic continuation | Siege setup/visual mapping, objective ranking/tie fixtures, save migration/replay, UI deliverable and M4 gate |
+| M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v1 snapshots and authoritative-operation replays with deterministic continuation/divergence checks | Siege setup/visual mapping, objective ranking/tie fixtures, save/replay migration and client replay flow, UI deliverable and M4 gate |
 | M6 | Not started | None | M5 and AI research/implementation |
 | M7 | Not started | Proprietary media is extracted and classified only | Complete atlas/event integration and M1-M6 dependencies |
 | M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
 | M9 | Not started | None | Frozen deterministic simulation after M8 |
 
-Current automated baseline: the solution builds successfully, 224 tests
+Current automated baseline: the solution builds successfully, 228 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.
