@@ -8,6 +8,7 @@ public enum ClientScreen
     Title,
     Setup,
     City,
+    Handoff,
     Endgame
 }
 

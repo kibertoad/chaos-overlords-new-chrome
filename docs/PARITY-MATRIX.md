@@ -48,7 +48,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Audio | 28 WAV resources and triggers | Extracted only | File inspection, High format | Resource-to-event map |
 | Music | Eight Ogg tracks | Extracted only | GOG pack, High format | Track sequencing behavior |
 | Video | Two Smacker v2 movies | Extracted only | Signature, Verified container | Playback/transcode decision |
-| Hot-seat | Multiple humans on one machine | Provisional | Manual/current rotation | Hidden handoff/full turns |
+| Hot-seat | Multiple humans on one machine | One-to-six local players with original PX00132 ready/handoff screen at active-player transitions | Manual/current rotation, Medium | Reference timing, private panel state and complete original turn workflow |
 | Legacy network | WinSock/IPX/modem/serial/Mac transports | Intentional deviation candidate | Manual, High | Document protocol; keep disabled |
 | Modern network | Safe deterministic command transport | Not applicable until post-parity | Roadmap decision | Threat model after M8 |
 

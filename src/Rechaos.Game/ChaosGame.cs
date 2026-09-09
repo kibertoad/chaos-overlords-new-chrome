@@ -33,6 +33,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle CityAction = new(430, 415, 86, 24);
     private static readonly Rectangle CityAdvance = new(524, 415, 96, 24);
     private static readonly Rectangle EndgameDone = new(320, 404, 104, 54);
+    private static readonly Rectangle HandoffReady = new(266, 246, 108, 66);
     private readonly GraphicsDeviceManager _graphics;
     private readonly string _assetRoot;
     private readonly string _quickSavePath;
@@ -44,6 +45,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _setupBackground;
     private Texture2D? _cityBackground;
     private Texture2D? _endgameBackground;
+    private Texture2D? _handoffPanel;
     private PixelFont? _font;
     private MatchState? _state;
     private MatchReplayRecorder? _replay;
@@ -92,6 +94,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _setupBackground = LoadTexture("PX00143.bmp");
         _cityBackground = LoadTexture("PX00128.bmp");
         _endgameBackground = LoadTexture("PX00200.bmp");
+        _handoffPanel = LoadTexture("PX00132.bmp");
     }
 
     protected override void Update(GameTime gameTime)
@@ -112,6 +115,10 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Endgame:
                 if (Pressed(keyboard, Keys.Enter)) _screens.Show(ClientScreen.Title);
+                break;
+            case ClientScreen.Handoff:
+                if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))
+                    _screens.Show(ClientScreen.City);
                 break;
         }
         if (mouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released
@@ -143,6 +150,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Endgame when _state?.Outcome is not null:
                 DrawEndgame(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.Handoff when _state is not null:
+                DrawHandoff(_batch, _pixel, _font, _state);
                 break;
         }
         _batch.End();
@@ -206,6 +216,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Endgame:
                 if (EndgameDone.Contains(point)) _screens.Show(ClientScreen.Title);
+                break;
+            case ClientScreen.Handoff:
+                if (HandoffReady.Contains(point)) _screens.Show(ClientScreen.City);
                 break;
         }
     }
@@ -378,6 +391,18 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         DrawBorder(batch, pixel, EndgameDone, Color.Gold, 2);
     }
 
+    private void DrawHandoff(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
+        batch.Draw(pixel, new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height), Color.Black);
+        var panel = new Rectangle(266, 148, 108, 164);
+        if (_handoffPanel is not null) batch.Draw(_handoffPanel, panel, Color.White);
+        else batch.Draw(pixel, panel, new Color(24, 37, 39));
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var player = state.FindPlayer(playerId)!;
+        DrawCentered(font, batch, player.Setup.Name, 194, PlayerColors[playerId.Value], 1);
+        DrawBorder(batch, pixel, HandoffReady, Color.Gold, 2);
+    }
+
     private void MoveCursor(int dx, int dy)
     {
         var x = Math.Clamp(_cursor % MatchLimits.BoardWidth + dx, 0, MatchLimits.BoardWidth - 1);
@@ -434,6 +459,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             _message = "MATCH COMPLETE";
             return;
         }
+        var previousActivePlayer = _state.Coordinator.ActivePlayer;
         var completedTurn = _state.Coordinator.Phase == TurnPhase.PlayerElimination;
         var transition = _state.Coordinator.Phase switch
         {
@@ -459,7 +485,10 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 _message += "  AUTOSAVE FAILED";
             }
         }
-        if (_state.Outcome is not null) _screens.Show(ClientScreen.Endgame);
+        if (_state.Outcome is not null)
+            _screens.Show(ClientScreen.Endgame);
+        else if (transition.ActivePlayer is not null && transition.ActivePlayer != previousActivePlayer)
+            _screens.Show(ClientScreen.Handoff);
     }
 
     private void SaveQuickGame()

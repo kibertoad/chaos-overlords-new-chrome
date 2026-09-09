@@ -21,5 +21,8 @@ public sealed class UiNavigationTests
         router.Show(ClientScreen.Endgame);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.Title, router.Current);
+        router.Show(ClientScreen.Handoff);
+        Assert.True(router.Back());
+        Assert.Equal(ClientScreen.Title, router.Current);
     }
 }
