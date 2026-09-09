@@ -21,7 +21,7 @@ A pass at one layer does not imply a pass at the next.
 dotnet restore Rechaos.slnx
 dotnet build Rechaos.slnx --no-restore
 dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj --no-build `
-  --no-progress --minimum-expected-tests 331
+  --no-progress --minimum-expected-tests 332
 ```
 
 The manually dispatched continuous-integration workflow runs this verification

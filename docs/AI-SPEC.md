@@ -20,6 +20,10 @@ It must not be cited as behavioral parity with the original AI.
 - Attack candidates are additionally restricted by the same cooperative sector
   detection query exposed to players, so the baseline does not target gangs it
   cannot observe.
+- Control ranking uses the recovered strict solo-strength boundary: the acting
+  gang's Force + Control must exceed sector Income plus visible defending
+  Force + Control and owner-influenced Support. Equal or weaker solo attempts
+  are demoted below useful commands.
 - Selection is stable by score, action, target kind, target ID, and secondary ID.
 - A shared nonnegative spending budget prevents the planner from intentionally
   queuing more Bribe/Equip cost than the player currently holds while still

@@ -70,8 +70,7 @@ public static class AiTurnPlanner
         return command.Action switch
         {
             GangAction.Attack => AttackValue(state, player, command, objective),
-            GangAction.Control => (state.Sectors[gang.SectorId].Owner == player.Id ? 250 : 850)
-                + ControlObjectiveBonus(objective, state.Sectors[gang.SectorId]),
+            GangAction.Control => ControlValue(state, player, gang, objective),
             GangAction.Influence => 650 + InfluenceValue(state, command.Target.Id, objective),
             GangAction.Heal => gang.Force < ManualRules.MaximumForce
                 ? 800 + ManualRules.MaximumForce - gang.Force
@@ -114,6 +113,50 @@ public static class AiTurnPlanner
             AiDifficulty.HomicidalManiac => 900,
             _ => throw new ArgumentOutOfRangeException(nameof(difficulty))
         };
+
+    private static int ControlValue(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        ScenarioId objective)
+    {
+        var sector = state.Sectors[gang.SectorId];
+        if (sector.Owner == player.Id) return 250 + ControlObjectiveBonus(objective, sector);
+
+        // The original planner's selector 0x2c only proceeds when one gang's
+        // Force + Control strictly exceeds the sector and defending strength.
+        // Keep the recreation's objective weights, but do not rank a known
+        // futile solo attempt above useful actions.
+        return (CanSoloControl(state, player.Id, gang) ? 850 : -1_000)
+            + ControlObjectiveBonus(objective, sector);
+    }
+
+    internal static bool CanSoloControl(MatchState state, PlayerId playerId, MatchGangState gang)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(gang);
+        var sector = state.Sectors[gang.SectorId];
+        if (sector.Owner == playerId || sector.CrackdownActive) return false;
+
+        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
+        var attack = ManualRules.ControlStrength([(gang.Force, statistics.Control)]);
+        var defense = sector.Income;
+        if (sector.Owner is { } owner && owner != playerId)
+        {
+            defense = checked(defense + ManualRules.ControlStrength(state.FindPlayer(owner)!.Gangs
+                .Where(candidate => candidate.IsActive && !candidate.Hidden && candidate.SectorId == sector.Id)
+                .Select(candidate =>
+                {
+                    var candidateStatistics = EffectiveStatisticsCalculator.ForGang(state, candidate);
+                    return (candidate.Force, candidateStatistics.Control);
+                })));
+            defense = checked(defense + sector.Sites
+                .Where(site => site.InfluencedBy == owner)
+                .Sum(site => state.Definitions.Sites.Single(
+                    definition => definition.Id == site.DefinitionId).Support));
+        }
+        return attack > defense;
+    }
 
     private static int CombatObjectiveBonus(ScenarioId scenario) => scenario switch
     {

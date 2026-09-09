@@ -600,7 +600,7 @@ unmarked guess.
 | M7 | Foundation started | Original city ownership layers and site/gang portraits are rendered; resolved equipped attacks route item-defined original weapon sounds | Complete atlas/event integration, animations, remaining audio/music/video, golden screens and M1-M6 dependencies |
 | M8 | Foundation started | Windows local launcher; legal-copy extraction; self-contained Windows package and GOG-aware Inno installer with visible stages, retryable source selection, nonzero failure exit and runtime error dialog; Linux amd64 `.deb`; macOS arm64/x64 application-bundle `.pkg`; manually dispatched validation and selectable Windows-only (default) or all-platform GitHub Release workflow; pull-request/manual zizmor gate; clean-room run `34403047147` passed Windows, Linux, both macOS architectures, and all installer jobs; zizmor run `34403047115` passed | Signing/notarization, native interactive tests, accuracy audit, compatibility and full release gate |
 
-Current automated baseline: the solution builds successfully, 331 tests
+Current automated baseline: the solution builds successfully, 332 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.

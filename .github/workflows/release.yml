@@ -80,7 +80,7 @@ jobs:
         run: |
           ./tools/Verify-Repository.ps1
           dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj `
-            --no-progress --minimum-expected-tests 331 -v minimal
+            --no-progress --minimum-expected-tests 332 -v minimal
 
   build-windows:
     name: Build Windows x64 installer

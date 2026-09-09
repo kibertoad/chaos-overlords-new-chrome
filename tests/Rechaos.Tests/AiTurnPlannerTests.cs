@@ -100,6 +100,28 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void PlannerRequiresStrictSoloControlAdvantageAtOriginalBoundary()
+    {
+        var data = BundledOriginalData.Load();
+        var definition = data.Gangs.First(candidate =>
+            ManualRules.MinimumSectorIncome - candidate.Stats.Control is >= 1 and < ManualRules.MaximumForce);
+        var equalForce = ManualRules.MinimumSectorIncome - definition.Stats.Control;
+        var equal = CreateNeutralControlMatch(data, definition.Id, equalForce);
+        var advantage = CreateNeutralControlMatch(data, definition.Id, equalForce + 1);
+        equal.FinishUpkeep();
+        advantage.FinishUpkeep();
+
+        var equalGang = equal.FindGang(new GangId(10))!;
+        var advantageGang = advantage.FindGang(new GangId(10))!;
+        Assert.False(AiTurnPlanner.CanSoloControl(equal, new PlayerId(0), equalGang));
+        Assert.True(AiTurnPlanner.CanSoloControl(advantage, new PlayerId(0), advantageGang));
+        Assert.DoesNotContain(AiTurnPlanner.Plan(equal, new PlayerId(0)),
+            command => command.Action == GangAction.Control);
+        Assert.Contains(AiTurnPlanner.Plan(advantage, new PlayerId(0)),
+            command => command.Action == GangAction.Control);
+    }
+
+    [Fact]
     public void HirePlannerSelectsOnlyAnAffordableValidOfferWithoutMutation()
     {
         var match = CreateMatch();
@@ -229,5 +251,33 @@ public sealed class AiTurnPlannerTests
             .ToArray();
         return new MatchState(data, new MatchSetup(
             ScenarioId.Power, GameDuration.SixMonths, 7, setups, difficulty), players, sectors);
+    }
+
+    private static MatchState CreateNeutralControlMatch(
+        OriginalData data,
+        short definitionId,
+        int force)
+    {
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU", PlayerController.Computer),
+            new(new PlayerId(1), "RIVAL", PlayerController.Human)
+        ];
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20,
+                [new MatchGangState(new GangId(10), new PlayerId(0), definitionId, 0, force)]),
+            new(setups[1], 20, [])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 5),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 5)
+            ], income: ManualRules.MinimumSectorIncome))
+            .ToArray();
+        return new MatchState(data, new MatchSetup(
+            ScenarioId.Power, GameDuration.SixMonths, 17, setups), players, sectors);
     }
 }
