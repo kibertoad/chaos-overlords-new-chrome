@@ -17,10 +17,26 @@ A pass at one layer does not imply a pass at the next.
 ## Local automated checks
 
 ```powershell
+./tools/Verify-Repository.ps1
 dotnet restore Rechaos.slnx
 dotnet build Rechaos.slnx --no-restore
-dotnet test tests/Rechaos.Tests/Rechaos.Tests.csproj --no-build
+dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj --no-build `
+  --no-progress --minimum-expected-tests 326
 ```
+
+The continuous-integration workflow runs this verification on Windows x64,
+Linux x64, macOS arm64, and macOS x64. It also publishes with
+`IncludeOriginalAssets=false`, rejects any resulting `Assets` directory, and
+runs the published `--smoke-test` entry point without an original asset pack.
+After all four platforms pass, its Windows packaging job builds the clean-room
+self-contained package and installer, installs with `/NOIMPORT=1`, launches the
+packaged smoke-test entry point, uninstalls it, and uploads both artifacts.
+
+`Verify-Repository.ps1` applies `tools/repository-policy.json` to Git-tracked
+files. It rejects extracted/imported roots, original-media extensions outside
+explicit clean-room or synthetic fixture roots, and unreviewed files larger
+than 1 MiB. The Windows publisher invokes the same check before deleting or
+creating package output.
 
 Validate a legal original installation without writing anything:
 

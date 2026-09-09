@@ -1,0 +1,34 @@
+{
+  "deniedRoots": [
+    "src/Rechaos.Game/Assets/",
+    "analysis/original/",
+    "reference/original/"
+  ],
+  "restrictedExtensions": [
+    ".bmp",
+    ".cue",
+    ".dat",
+    ".dib",
+    ".fnt",
+    ".gif",
+    ".ico",
+    ".jpeg",
+    ".jpg",
+    ".mid",
+    ".midi",
+    ".mp3",
+    ".ogg",
+    ".pal",
+    ".pcx",
+    ".png",
+    ".res",
+    ".smk",
+    ".wav"
+  ],
+  "approvedRestrictedRoots": [
+    "assets/clean-room/",
+    "tests/fixtures/synthetic/"
+  ],
+  "maximumTrackedFileBytes": 1048576,
+  "approvedLargeFiles": []
+}

@@ -1,0 +1,146 @@
+name: Continuous integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-latest
+          - name: Linux x64
+            os: ubuntu-latest
+          - name: macOS arm64
+            os: macos-15
+          - name: macOS x64
+            os: macos-15-intel
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Verify repository legal boundary
+        shell: pwsh
+        run: ./tools/Verify-Repository.ps1
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Restore
+        run: dotnet restore Rechaos.slnx
+
+      - name: Build without original assets
+        run: dotnet build Rechaos.slnx --no-restore -p:IncludeOriginalAssets=false -v minimal
+
+      - name: Test
+        run: dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj --no-restore --no-progress --minimum-expected-tests 326 -v minimal
+
+      - name: Publish assetless game
+        run: dotnet publish src/Rechaos.Game/Rechaos.Game.csproj --no-restore -c Release -p:IncludeOriginalAssets=false --output artifacts/assetless-game -v minimal
+
+      - name: Verify proprietary asset boundary
+        shell: pwsh
+        run: |
+          $assetDirectory = Join-Path $PWD 'artifacts/assetless-game/Assets'
+          if (Test-Path -LiteralPath $assetDirectory) {
+            throw "Assetless publish unexpectedly contains an Assets directory: $assetDirectory"
+          }
+
+      - name: Smoke-test published entry point
+        run: dotnet artifacts/assetless-game/Rechaos.Game.dll --smoke-test
+
+  package-windows:
+    name: Windows installer
+    needs: verify
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Verify repository legal boundary
+        shell: pwsh
+        run: ./tools/Verify-Repository.ps1
+
+      - name: Install pinned installer compiler
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP 'innosetup-7.1.0-x64.exe'
+          $compilerRoot = Join-Path $env:RUNNER_TEMP 'InnoSetup'
+          gh release download is-7_1_0 `
+            --repo jrsoftware/issrc `
+            --pattern 'innosetup-7.1.0-x64.exe' `
+            --dir $env:RUNNER_TEMP
+          gh release verify-asset $installer --repo jrsoftware/issrc
+          $signature = Get-AuthenticodeSignature -LiteralPath $installer
+          if ($signature.Status -ne 'Valid' -or
+              $signature.SignerCertificate.Subject -notlike '*Pyrsys B.V.*') {
+            throw "Unexpected Inno Setup signature: $($signature.Status) $($signature.SignerCertificate.Subject)"
+          }
+          $install = Start-Process -FilePath $installer `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/CURRENTUSER', '/SP-', '/NORESTART', "/DIR=`"$compilerRoot`"") `
+            -Wait -PassThru -WindowStyle Hidden
+          if ($install.ExitCode -ne 0) {
+            throw "Inno Setup installation returned $($install.ExitCode)."
+          }
+          "INNO_COMPILER=$compilerRoot\ISCC.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Build Windows installer
+        shell: pwsh
+        run: ./tools/Build-WindowsInstaller.ps1 -Compiler "$env:INNO_COMPILER"
+
+      - name: Smoke-test Windows installer
+        shell: pwsh
+        run: |
+          $testRoot = Join-Path $env:RUNNER_TEMP 'ChaosOverlordsNewChrome-installer-test'
+          $setup = Start-Process -FilePath 'artifacts/ChaosOverlords-NewChrome-Setup-0.1.0.exe' `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/NOICONS', '/NOIMPORT=1', "/DIR=`"$testRoot`"") `
+            -Wait -PassThru -WindowStyle Hidden
+          if ($setup.ExitCode -ne 0) { throw "Installer returned $($setup.ExitCode)." }
+          $game = Start-Process -FilePath (Join-Path $testRoot 'Game/Rechaos.Game.exe') `
+            -ArgumentList '--smoke-test' -WorkingDirectory (Join-Path $testRoot 'Game') `
+            -Wait -PassThru -WindowStyle Hidden
+          if ($game.ExitCode -ne 0) { throw "Packaged game returned $($game.ExitCode)." }
+          $uninstall = Start-Process -FilePath (Join-Path $testRoot 'unins000.exe') `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') `
+            -Wait -PassThru -WindowStyle Hidden
+          if ($uninstall.ExitCode -ne 0) { throw "Uninstaller returned $($uninstall.ExitCode)." }
+
+      - name: Upload clean-room Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChaosOverlordsNewChrome-win-x64
+          path: artifacts/ChaosOverlordsNewChrome-win-x64
+          if-no-files-found: error
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChaosOverlords-NewChrome-Setup
+          path: artifacts/ChaosOverlords-NewChrome-Setup-0.1.0.exe
+          if-no-files-found: error

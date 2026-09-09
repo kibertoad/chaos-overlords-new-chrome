@@ -16,6 +16,9 @@ if (-not $packageRoot.StartsWith($artifactsPrefix, [StringComparison]::OrdinalIg
     throw "Package output must remain below '$artifactsRoot'."
 }
 
+& (Join-Path $PSScriptRoot 'Verify-Repository.ps1') -RepositoryRoot $repositoryRoot
+if ($LASTEXITCODE -ne 0) { throw 'Repository policy verification failed.' }
+
 if (Test-Path -LiteralPath $packageRoot) {
     $resolvedPackage = (Resolve-Path -LiteralPath $packageRoot).Path
     if (-not $resolvedPackage.StartsWith($artifactsPrefix, [StringComparison]::OrdinalIgnoreCase)) {
