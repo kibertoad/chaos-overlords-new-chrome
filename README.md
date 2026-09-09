@@ -68,10 +68,12 @@ from the platform's per-user local application-data directory under
 `ChaosOverlordsNewChrome/Assets`.
 
 Maintainers can run the manual-only `Release installers` GitHub Actions
-workflow and enter a tag such as `0.1.0`. After tests and installer compilation
-succeed, the workflow creates that tag and a GitHub Release containing matching
-Windows x64, Linux x64, macOS arm64, and macOS x64 installers. It has no
-scheduled or push trigger.
+workflow, enter a tag such as `0.1.0`, and select `windows` or `all` installers.
+The default `windows` option builds and publishes only the Windows x64
+installer. The `all` option requires matching Windows x64, Linux x64, macOS
+arm64, and macOS x64 installers. The workflow creates the tag and GitHub Release
+only after tests and every selected build succeed; it has no scheduled or push
+trigger.
 
 The `Continuous integration` workflow is manual-only and runs build, test,
 startup, and installer checks on Windows, Linux, and both macOS architectures.

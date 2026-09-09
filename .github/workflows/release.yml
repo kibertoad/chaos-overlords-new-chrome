@@ -7,6 +7,14 @@ on:
         description: Version tag to create, for example 0.1.0
         required: true
         type: string
+      installers:
+        description: Installer platforms to build
+        required: true
+        default: windows
+        type: choice
+        options:
+          - windows
+          - all
 
 permissions: {}
 
@@ -72,7 +80,7 @@ jobs:
         run: |
           ./tools/Verify-Repository.ps1
           dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj `
-            --no-progress --minimum-expected-tests 330 -v minimal
+            --no-progress --minimum-expected-tests 331 -v minimal
 
   build-windows:
     name: Build Windows x64 installer
@@ -165,6 +173,7 @@ jobs:
   build-linux:
     name: Build Linux x64 installer
     needs: [prepare, test]
+    if: ${{ inputs.installers == 'all' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -196,6 +205,7 @@ jobs:
   build-macos:
     name: Build macOS ${{ matrix.arch }} installer
     needs: [prepare, test]
+    if: ${{ inputs.installers == 'all' }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -238,6 +248,14 @@ jobs:
   release:
     name: Create GitHub Release
     needs: [prepare, build-windows, build-linux, build-macos]
+    if: >-
+      ${{
+        always() &&
+        needs.prepare.result == 'success' &&
+        needs.build-windows.result == 'success' &&
+        (inputs.installers == 'windows' ||
+          (needs.build-linux.result == 'success' && needs.build-macos.result == 'success'))
+      }}
     runs-on: ubuntu-latest
     permissions:
       contents: write # Required to create the annotated tag and GitHub Release.
@@ -278,10 +296,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_INSTALLERS: ${{ inputs.installers }}
         run: |
           mapfile -t assets < <(find release-assets -type f -print | sort)
-          if (( ${#assets[@]} != 4 )); then
-            echo "Expected four installers, found ${#assets[@]}." >&2
+          expected=1
+          if [[ "$RELEASE_INSTALLERS" == all ]]; then expected=4; fi
+          if (( ${#assets[@]} != expected )); then
+            echo "Expected $expected installer(s), found ${#assets[@]}." >&2
             exit 1
           fi
           gh release create "$RELEASE_TAG" "${assets[@]}" \

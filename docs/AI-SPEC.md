@@ -5,9 +5,9 @@ Last updated: 2026-09-09
 
 The original executable's complete difficulty branches and evaluation weights
 have not yet been recovered. Static analysis has recovered the outer per-gang
-dispatcher, its 15-value handler map, and the distinct zero-based four-valued
-AI Mentality global plus its first threshold consumers. The current planner
-exists to make Human-versus-Computer
+dispatcher, its 15-value handler map, the distinct zero-based four-valued AI
+Mentality global, all six writes to it, and all eight genuine query consumers.
+The current planner exists to make Human-versus-Computer
 matches operable while preserving deterministic simulation and replay behavior.
 It must not be cited as behavioral parity with the original AI.
 
@@ -63,12 +63,11 @@ replay-verified two-computer harness through 20 turns or objective completion.
 
 ## Required parity work
 
-1. Continue tracing the identified AI Mentality state at `0x00487850` from its
-   setup writes through every selector-`0x36` consumer and label each resulting
-   command-selection and observable-information branch. The outer planner at
-   `0x00458fa0`, per-gang dispatcher at `0x00432da0`, complete handler map,
-   command-history record shape, known target encoding, mentality resource IDs,
-   and first threshold consumers are recorded in `ORIGINAL-INTERNALS.md`.
+1. Label state-query selectors 3, 4, `0x21`, and `0x35`, and correlate raw
+   action bytes 3, 10, and 13 with controlled original commands. The mentality
+   preference/setup writes and every selector-`0x36` consumer are now classified
+   structurally in `ORIGINAL-INTERNALS.md`; their public command meanings are
+   still deliberately unresolved.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those
    fixtures.

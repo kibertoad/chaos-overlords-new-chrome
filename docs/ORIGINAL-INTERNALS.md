@@ -365,27 +365,59 @@ state-query function `0x00402d70`, case `0x36` returns that same signed byte.
 This distinguishes it from the scenario-like global `0x004abbe8` and from
 query selectors `0x2f` and `0x31` used elsewhere in the planner.
 
-Focused xrefs identify writes at `0x00461bf6`, `0x00461fea`, `0x00463bc7`,
-`0x00463bf1`, `0x00464618`, and `0x00439542`. Exact selector-`0x36` consumers
-include `0x0040a1a7` and family-1 handler `0x00434080`. The first compares the
-returned value against thresholds 1 and 2. The family handler contains repeated
-tests for zero, at least one, and exactly two before selecting subsequent state
-queries/branches.
+The six focused writes now have bounded data-flow classifications:
+
+- `0x00464618` is preference initialization. `0x0046439a` obtains the registry
+  value named `prefsDiff` with `RegQueryValueExA` and copies its low byte into
+  `0x00487850`.
+- `0x00439542` is the setup-panel apply path. `0x00438da5` snapshots the global
+  into a local selection, changes that local from the setup hit regions, and
+  writes it back alongside the selected scenario and duration fields.
+- `0x00461bf6` and `0x00461fea` are two commit paths in the same UI/event
+  handler. The first path initially copies `0x00487850` to the one-byte staging
+  field `0x0049833c`; both paths later copy that staging byte back.
+- `0x00463bc7` and `0x00463bf1` restore the same one-byte staging field after
+  `0x0046381a` serializes/deserializes it with adjacent setup fields. They are
+  selected by two distinct four-byte format markers. Whether those formats are
+  file, local IPC, or legacy-network envelopes is intentionally left unlabeled.
+
+There are eight genuine selector-`0x36` calls, all in two functions: calls at
+`0x0040a734` and `0x0040a7b8` in `0x0040a1a7`, plus calls at `0x0043466a`,
+`0x004346d3`, `0x00434da6`, `0x00434dd9`, `0x00435090`, and `0x004350c3` in
+family-1 handler `0x00434080`. A nearby call at `0x0040950f` is not a consumer:
+its actual selector argument is `0x21`; `0x36` only appears in a preceding
+comparison.
+
+`0x0040a1a7` updates a player-pair table only when two positive pair fields
+produce a ratio above 75 percent. Player-type values 0 or 3 enter that path only
+at Mentality 1 or higher; all other type values enter it only below Mentality 2.
+The successful path sets a pair flag and writes `-10` to a paired score field.
+The player-type and pair-field meanings remain unlabeled.
+
+The six family-handler calls form three paired gates. They select among record
+action bytes 3, 10, and 13, with additional queries using selectors 3, 4,
+`0x21`, and `0x35`. The exact tests include Mentality equal to zero, at least
+one, and exactly two. Value 3 follows the `>= 1` paths but not the `== 2` paths;
+there is no dedicated comparison for it in these blocks. Public command names
+must not yet be assigned to those action bytes solely because the recreation's
+enum currently uses the same numbers.
 
 **Interpretation:** `0x00487850` is the original match-global, zero-based AI
-Mentality setting. At least family handler 1 changes its decision path by
-mentality; the second consumer also changes a player-pair selection path. The
-meaning of those chosen paths and the treatment of value 3 beyond falling
-through the observed threshold tests are not yet established.
+Mentality setting, seeded from a persisted preference and then carried through
+setup staging/serialization. Family handler 1 and a player-pair scoring pass
+both change paths by mentality. The branch mechanics are now bounded, but their
+state-query meanings and public command effects are not yet established.
 
 **Confidence:** Verified for resource IDs, address, display expression, query
-selector, xrefs, and comparison constants; High for the global's identity;
-Low for the branch outcomes and public command semantics.
+selector, all six write classifications, all eight genuine consumer call sites,
+comparison constants, and resulting raw record writes; High for the global's
+identity and persistence/setup flow; Low for state-query and public command
+semantics.
 
-**Next validation:** classify the six write sites as initialization, setup
-input, or load-state restoration; then expand only the selected basic blocks in
-`0x00434080` and `0x0040a1a7` to map each mentality value to observable command
-selection behavior.
+**Next validation:** label selectors 3, 4, `0x21`, and `0x35`, then correlate
+raw action bytes 3, 10, and 13 with controlled original queued-command
+observations. Use those labels to turn the enumerated branch table into
+observable command-selection fixtures before changing recreation policy.
 
 ## New-game initialization
 

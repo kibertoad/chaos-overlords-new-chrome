@@ -128,6 +128,12 @@ text patterns and emits at most 240 lines with two lines of context. Use it to
 answer a narrow question inside a large function without retaining or
 committing the complete decompiler listing.
 
+After locating relevant line numbers with that script,
+`ReportDecompileWindow.java` accepts one function address, a one-based start
+line, and a line count from 1 through 160. Use it to follow only an explicitly
+selected basic-block-sized window; never stitch adjacent windows together to
+reconstruct or retain a complete function.
+
 `ReportStringReferences.java` accepts explicit case-insensitive string
 fragments, reports at most 100 matching defined strings, and reports at most
 100 references per match. Use it to navigate from a known UI label or error

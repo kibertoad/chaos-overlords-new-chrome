@@ -181,10 +181,12 @@ optionally runs the extractor into the installed game's private `Assets`
 directory. Import output is surfaced through Setup, invalid sources can be
 reselected and retried, and a failed or incomplete import gives Setup a nonzero
 exit code. Linux and macOS use a per-user writable asset root when an adjacent
-pack is absent. The manual release workflow builds and verifies all four
-installers before it creates a requested version tag, so failed builds cannot
-publish a tag. Validation is also manually dispatched and may upload
-short-lived build artifacts, but never creates a tag or release.
+pack is absent. The manual release workflow defaults to building and verifying
+only the Windows installer, with an explicit all-platform option that requires
+Windows, Linux, and both macOS architectures. It creates a requested version
+tag only after every selected installer succeeds, so failed builds cannot
+publish a tag. Validation is also manually dispatched and may upload short-lived
+build artifacts, but never creates a tag or release.
 
 Target presentation layers:
 
