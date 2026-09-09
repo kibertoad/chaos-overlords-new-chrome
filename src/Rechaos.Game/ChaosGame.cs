@@ -35,9 +35,11 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle CityEvents = new(492, 124, 50, 51);
     private static readonly Rectangle CityCombatSummary = new(492, 176, 50, 49);
     private static readonly Rectangle CityFinance = new(548, 176, 50, 49);
-    private static readonly Rectangle CityGangs = new(492, 226, 50, 49);
-    private static readonly Rectangle CitySector = new(548, 226, 50, 49);
-    private static readonly Rectangle CityRanking = new(548, 276, 50, 49);
+    private static readonly Rectangle CityGangs = new(492, 226, 50, 17);
+    private static readonly Rectangle CityHire = new(492, 260, 50, 17);
+    private static readonly Rectangle CitySector = new(548, 226, 50, 17);
+    private static readonly Rectangle CityRanking = new(548, 243, 50, 17);
+    private static readonly Rectangle CitySearch = new(548, 260, 50, 17);
     private static readonly Rectangle EventsDismiss = new(218, 414, 96, 28);
     private static readonly Rectangle EventsBack = new(322, 414, 96, 28);
     private static readonly Rectangle CommandsQueue = new(218, 414, 96, 28);
@@ -195,6 +197,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
                 break;
             case ClientScreen.CombatSummary:
+            case ClientScreen.Search:
                 if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                     _screens.Show(ClientScreen.City);
                 break;
@@ -259,6 +262,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.CombatSummary when _state is not null:
                 DrawCombatSummary(_batch, _pixel, _font, _state);
                 break;
+            case ClientScreen.Search when _state is not null:
+                DrawSearch(_batch, _pixel, _font, _state);
+                break;
         }
         _batch.End();
         base.Draw(gameTime);
@@ -296,6 +302,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.R)) _screens.Show(ClientScreen.Ranking);
         if (Pressed(keyboard, Keys.T)) OpenItems();
         if (Pressed(keyboard, Keys.B)) _screens.Show(ClientScreen.CombatSummary);
+        if (Pressed(keyboard, Keys.X)) _screens.Show(ClientScreen.Search);
         if (Pressed(keyboard, Keys.H)) OpenHire();
         if (Pressed(keyboard, Keys.Space)) AdvancePhase();
         if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
@@ -347,6 +354,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Finance:
             case ClientScreen.Ranking:
             case ClientScreen.CombatSummary:
+            case ClientScreen.Search:
                 if (ManagementBack.Contains(point)) _screens.Show(ClientScreen.City);
                 break;
             case ClientScreen.Items:
@@ -376,8 +384,10 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         else if (CityCombatSummary.Contains(point)) _screens.Show(ClientScreen.CombatSummary);
         else if (CityFinance.Contains(point)) _screens.Show(ClientScreen.Finance);
         else if (CityGangs.Contains(point)) _screens.Show(ClientScreen.Gang);
+        else if (CityHire.Contains(point)) OpenHire();
         else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
         else if (CityRanking.Contains(point)) _screens.Show(ClientScreen.Ranking);
+        else if (CitySearch.Contains(point)) _screens.Show(ClientScreen.Search);
     }
 
     private void OpenCommands()
@@ -877,6 +887,37 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             font.Draw(batch, CombatResult(gameEvent), new Vector2(230, y),
                 gameEvent.Kind == GameEventKind.CommandFailed ? Color.OrangeRed : new Color(180, 230, 170), 1);
         }
+        DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
+    }
+
+    private void DrawSearch(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
+        DrawManagementPanel(batch, pixel);
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        font.Draw(batch, $"SEARCH SECTOR {_cursor + 1}", new Vector2(18, 60), Color.Gold, 2);
+        font.Draw(batch, state.FindPlayer(playerId)!.Setup.Name, new Vector2(18, 86),
+            PlayerColors[playerId.Value], 1);
+        var visible = state.Players
+            .SelectMany(player => player.Gangs)
+            .Where(gang => gang.IsActive && gang.SectorId == _cursor
+                && (gang.Owner == playerId || state.CanPlayerDetectGang(playerId, gang.Id)))
+            .OrderBy(gang => gang.Owner.Value)
+            .ThenBy(gang => gang.Id.Value)
+            .ToArray();
+        if (visible.Length == 0)
+            font.Draw(batch, "NO GANGS DETECTED", new Vector2(18, 116), Color.White, 1);
+        foreach (var entry in visible.Take(14).Select((gang, index) => (gang, index)))
+        {
+            var gang = entry.gang;
+            var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
+            var owner = state.FindPlayer(gang.Owner)!;
+            var y = 112 + entry.index * 21;
+            font.Draw(batch, definition.Name, new Vector2(18, y), PlayerColors[gang.Owner.Value], 1);
+            font.Draw(batch, $"{owner.Setup.Name}  FORCE {gang.Force}"
+                + (gang.Hidden ? "  HIDDEN" : ""), new Vector2(190, y), Color.White, 1);
+        }
+        if (visible.Length > 14)
+            font.Draw(batch, $"+{visible.Length - 14} MORE", new Vector2(18, 390), Color.White, 1);
         DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
     }
 

@@ -73,8 +73,9 @@ validated against the executable.
 ## `PX00128` provisional control routes
 
 The city frame currently routes Events `(492,124,50,51)`, Combat Summary
-`(492,176,50,49)`, Financial `(548,176,50,49)`, Gangs `(492,226,50,49)`,
-Sector `(548,226,50,49)`, and Ranking `(548,276,50,49)`. These rectangles come
+`(492,176,50,49)`, and Financial `(548,176,50,49)`. The lower compact rows are
+Gangs `(492,226,50,17)`, Hire `(492,260,50,17)`, Sector `(548,226,50,17)`,
+Ranking `(548,243,50,17)`, and Search `(548,260,50,17)`. These rectangles come
 from bitmap inspection and remain provisional until executable capture confirms
 their exact edges and pressed states.
 

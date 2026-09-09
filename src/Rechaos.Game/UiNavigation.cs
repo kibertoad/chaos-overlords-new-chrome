@@ -18,6 +18,7 @@ public enum ClientScreen
     Ranking,
     Items,
     CombatSummary,
+    Search,
     Handoff,
     Endgame
 }
@@ -35,6 +36,7 @@ public sealed class ScreenRouter
             or ClientScreen.Sector or ClientScreen.Gang or ClientScreen.Finance or ClientScreen.Ranking
             or ClientScreen.Items
             or ClientScreen.CombatSummary
+            or ClientScreen.Search
             ? ClientScreen.City
             : ClientScreen.Title;
         return true;

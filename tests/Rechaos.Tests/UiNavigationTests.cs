@@ -54,6 +54,9 @@ public sealed class UiNavigationTests
         router.Show(ClientScreen.CombatSummary);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.City, router.Current);
+        router.Show(ClientScreen.Search);
+        Assert.True(router.Back());
+        Assert.Equal(ClientScreen.City, router.Current);
     }
 
     [Fact]
