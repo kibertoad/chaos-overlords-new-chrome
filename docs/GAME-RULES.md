@@ -427,10 +427,11 @@ claim about original-game behavior.
   the authoritative count. Each sector retains its latest two occurrence turns;
   a third occurrence no more than four turns after the oldest neutralizes the
   sector and resets its influenced sites, Support, Tolerance modifiers, and
-  resistance just like an overthrow.
+  resistance just like an overthrow. The displaced owner receives a Control
+  notification in addition to the global Crackdown notification.
 - Current exclusions: original timing within Combat, whether 0%/100% checks
   consume RNG, weapon/damage-cap treatment, use of the separately documented
-  Detect 12 value, exact duration RNG call/order, control-loss notification, and
+  Detect 12 value, exact duration RNG call/order, control-loss message wording, and
   exact binary RNG/event order.
 - Confidence: High for the detection percentage table and Combat 20; Medium
   for defense subtraction; Low for phase ordering and the listed exclusions.

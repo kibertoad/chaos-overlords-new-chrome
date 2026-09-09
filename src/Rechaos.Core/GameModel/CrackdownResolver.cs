@@ -32,7 +32,14 @@ public static class CrackdownResolver
         sector.CrackdownTurnsRemaining = checked(sector.CrackdownTurnsRemaining + duration);
         var previousOwner = sector.Owner;
         var controlLost = sector.RecordCrackdown(state.Coordinator.Turn) && previousOwner is not null;
-        if (controlLost) SectorControlResolver.Neutralize(state, sector);
+        if (controlLost)
+        {
+            SectorControlResolver.Neutralize(state, sector);
+            state.QueueNotification(
+                previousOwner!.Value,
+                GameNotificationKind.Control,
+                sectorId: sector.Id);
+        }
         return new CrackdownTriggerResult(duration, previousOwner, controlLost);
     }
 }
