@@ -9,13 +9,17 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: zizmor-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   zizmor:
     name: zizmor
     runs-on: ubuntu-latest
     permissions:
-      actions: read
-      contents: read
+      actions: read # Required by zizmor's online audits.
+      contents: read # Required to audit the checked-out workflows.
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

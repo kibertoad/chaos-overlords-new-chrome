@@ -10,6 +10,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: release-${{ github.workflow }}-${{ inputs.tag }}
+  cancel-in-progress: false
+
 jobs:
   prepare:
     name: Validate release
@@ -224,7 +228,7 @@ jobs:
     needs: [prepare, build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # Required to create the annotated tag and GitHub Release.
     steps:
       - name: Check out release commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
