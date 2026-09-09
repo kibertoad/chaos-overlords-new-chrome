@@ -41,8 +41,11 @@ the versioned Inno Setup installer, run
 `./tools/Build-WindowsInstaller.ps1 -Version 0.1.0`; this requires the pinned
 Inno Setup 7.1.0 compiler. The installer scans GOG and Windows uninstall
 registry records plus common GOG paths, accepts a manually selected install,
-and can run the bundled extractor automatically. If no owned installation is
-found, it offers a link to the legal
+and defaults to importing the original game's art, music, sound, video, help,
+and other required assets automatically. If you own *Chaos Overlords*, install
+your legal copy before running this installer. If no installed copy is found,
+the installer explains how to select it or skip import and offers a link to the
+legal
 [Chaos Overlords GOG page](https://www.gog.com/en/game/chaos_overlords).
 Neither the portable package nor installer contains original assets. Silent
 installation accepts `/ORIGINAL="C:\path\to\Chaos Overlords"`; `/NOIMPORT=1`
@@ -53,7 +56,7 @@ Linux x64 and macOS arm64/x64 installers are built on their native hosts with
 `./tools/Build-MacInstaller.ps1 -Version 0.1.0 -Runtime osx-arm64` (or
 `osx-x64`). The Linux `.deb` installs launch and import commands; the macOS
 `.pkg` installs an application bundle containing the game, extractor, and an
-`Install Original Resources` helper. These packages are currently unsigned.
+asset-import helper. These packages are currently unsigned.
 When no adjacent `Assets` directory exists, the game reads extracted resources
 from the platform's per-user local application-data directory under
 `ChaosOverlordsNewChrome/Assets`.

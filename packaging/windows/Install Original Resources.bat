@@ -6,10 +6,10 @@ if "%SOURCE%"=="" set "SOURCE=C:\GOG Games\Chaos Overlords"
 "%~dp0Tools\Rechaos.Extractor.exe" --source "%SOURCE%" --output "%~dp0Game\Assets"
 if errorlevel 1 (
     echo.
-    echo Resource installation failed. The original installation was not modified.
+    echo Asset import failed. Your original Chaos Overlords installation was not modified.
     pause
     exit /b 1
 )
 echo.
-echo Owned resources are installed locally in Game\Assets.
+echo Art, music, sound, video, and other assets from your legal copy are installed in Game\Assets.
 pause

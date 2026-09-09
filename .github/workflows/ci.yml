@@ -123,17 +123,25 @@ jobs:
         run: |
           $testRoot = Join-Path $env:RUNNER_TEMP 'ChaosOverlordsNewChrome-installer-test'
           $setup = Start-Process -FilePath 'artifacts/ChaosOverlords-NewChrome-Setup-0.1.0.exe' `
-            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/NOICONS', '/NOIMPORT=1', "/DIR=`"$testRoot`"") `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/NOIMPORT=1', "/DIR=`"$testRoot`"") `
             -Wait -PassThru -WindowStyle Hidden
           if ($setup.ExitCode -ne 0) { throw "Installer returned $($setup.ExitCode)." }
-          $game = Start-Process -FilePath (Join-Path $testRoot 'Game/Rechaos.Game.exe') `
-            -ArgumentList '--smoke-test' -WorkingDirectory (Join-Path $testRoot 'Game') `
+          $shortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Chaos Overlords - New Chrome\Chaos Overlords - New Chrome.lnk'
+          if (-not (Test-Path -LiteralPath $shortcut)) { throw "Start menu shortcut is missing: $shortcut" }
+          $link = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut)
+          $expectedTarget = [IO.Path]::GetFullPath((Join-Path $testRoot 'Game/Rechaos.Game.exe'))
+          if ($link.TargetPath -ne $expectedTarget -or [IO.Path]::GetExtension($link.TargetPath) -ne '.exe') {
+            throw "Shortcut target is invalid: '$($link.TargetPath)' (expected '$expectedTarget')."
+          }
+          $game = Start-Process -FilePath $link.TargetPath `
+            -ArgumentList '--smoke-test' -WorkingDirectory $link.WorkingDirectory `
             -Wait -PassThru -WindowStyle Hidden
           if ($game.ExitCode -ne 0) { throw "Packaged game returned $($game.ExitCode)." }
           $uninstall = Start-Process -FilePath (Join-Path $testRoot 'unins000.exe') `
             -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') `
             -Wait -PassThru -WindowStyle Hidden
           if ($uninstall.ExitCode -ne 0) { throw "Uninstaller returned $($uninstall.ExitCode)." }
+          if (Test-Path -LiteralPath $shortcut) { throw "Uninstaller left the Start menu shortcut behind." }
 
       - name: Upload clean-room Windows package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

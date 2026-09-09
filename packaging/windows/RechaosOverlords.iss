@@ -4,6 +4,7 @@
 
 #define MyAppName "Chaos Overlords: New Chrome"
 #define MyAppGroupName "Chaos Overlords - New Chrome"
+#define MyAppShortcutName "Chaos Overlords - New Chrome"
 #define MyAppPublisher "kibertoad"
 #define MyAppExeName "Rechaos.Game.exe"
 #define PackageRoot "..\..\artifacts\ChaosOverlordsNewChrome-win-x64"
@@ -30,9 +31,9 @@ SetupLogging=yes
 Source: "{#PackageRoot}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\Game\{#MyAppExeName}"; WorkingDir: "{app}\Game"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Game\{#MyAppExeName}"; WorkingDir: "{app}\Game"; Tasks: desktopicon
-Name: "{group}\Install Original Resources"; Filename: "{app}\Install Original Resources.bat"; WorkingDir: "{app}"
+Name: "{group}\{#MyAppShortcutName}"; Filename: "{app}\Game\{#MyAppExeName}"; WorkingDir: "{app}\Game"
+Name: "{autodesktop}\{#MyAppShortcutName}"; Filename: "{app}\Game\{#MyAppExeName}"; WorkingDir: "{app}\Game"; Tasks: desktopicon
+Name: "{group}\Import Assets from Original Chaos Overlords"; Filename: "{app}\Install Original Resources.bat"; WorkingDir: "{app}"
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"
@@ -145,10 +146,11 @@ procedure InitializeWizard;
 begin
   DetectedOriginalPath := FindOriginalInstall;
   OriginalPage := CreateInputDirPage(wpSelectDir,
-    'Original game resources',
-    'Import resources from a legally owned GOG installation.',
-    'Setup can extract the original art, audio, video, help, and data without modifying the GOG installation. ' +
-    'Choose its folder, or clear the import option and install the recreation first.',
+    'Assets from the original Chaos Overlords',
+    'Import art, music, sound, video, and other game assets from your legally owned copy.',
+    'If you own Chaos Overlords, install it before running this installer. Setup can copy and convert the ' +
+    'required game assets without modifying your original installation. Select that installation below, ' +
+    'or clear the import option if you do not have it installed yet.',
     False, '');
   OriginalPage.Add('GOG installation folder:');
   if DetectedOriginalPath <> '' then
@@ -161,8 +163,8 @@ begin
   ImportCheckBox.Left := OriginalPage.Edits[0].Left;
   ImportCheckBox.Top := OriginalPage.Edits[0].Top + OriginalPage.Edits[0].Height + ScaleY(20);
   ImportCheckBox.Width := OriginalPage.SurfaceWidth;
-  ImportCheckBox.Caption := 'Import my original resources automatically after installation';
-  ImportCheckBox.Checked := DetectedOriginalPath <> '';
+  ImportCheckBox.Caption := 'Import art, music, sound, video, and other assets from my legal Chaos Overlords copy';
+  ImportCheckBox.Checked := ExpandConstant('{param:NOIMPORT|0}') <> '1';
 
   PurchaseButton := TNewButton.Create(OriginalPage);
   PurchaseButton.Parent := OriginalPage.Surface;
@@ -180,7 +182,8 @@ begin
      not IsOriginalInstall(OriginalPage.Values[0]) then
   begin
     MsgBox('That folder is not a complete Chaos Overlords installation. Select the folder containing ' +
-      'DATA\PX16, DATA\SITES, DATA\GANGS, and DATA\ITEMS, or clear automatic import.', mbError, MB_OK);
+      'DATA\PX16, DATA\SITES, DATA\GANGS, and DATA\ITEMS. If you own the game, install it before ' +
+      'running this installer; otherwise clear the asset import option.', mbError, MB_OK);
     Result := False;
   end;
 end;
@@ -209,12 +212,13 @@ begin
   Extractor := ExpandConstant('{app}\Tools\Rechaos.Extractor.exe');
   Parameters := '--source "' + SelectedOriginalPath + '" --output "' +
     ExpandConstant('{app}\Game\Assets') + '"';
-  WizardForm.StatusLabel.Caption := 'Extracting and verifying legally owned original resources...';
+  WizardForm.StatusLabel.Caption := 'Importing art, music, sound, video, and other assets from your legal copy...';
   if not Exec(Extractor, Parameters, ExpandConstant('{app}'), SW_SHOW,
       ewWaitUntilTerminated, ResultCode) then
-    MsgBox('The resource extractor could not be started. You can retry later with ' +
-      'Install Original Resources.bat.', mbError, MB_OK)
+    MsgBox('The asset importer could not be started. You can retry later with ' +
+      'Import Assets from Original Chaos Overlords in the Start menu.', mbError, MB_OK)
   else if ResultCode <> 0 then
     MsgBox('The recreation was installed, but resource extraction returned error ' +
-      IntToStr(ResultCode) + '. You can retry later with Install Original Resources.bat.', mbError, MB_OK);
+      IntToStr(ResultCode) + '. You can retry later with Import Assets from Original Chaos Overlords ' +
+      'in the Start menu.', mbError, MB_OK);
 end;
