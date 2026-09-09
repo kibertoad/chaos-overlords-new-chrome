@@ -29,10 +29,15 @@ Completion requires all of the following:
   discrepancy is documented with evidence and a confidence rating.
 - The game builds and runs on supported Windows, Linux, and macOS targets.
 
-Network compatibility with the unsafe original protocol is not a default
-requirement. A safe modern multiplayer transport may be added after local game
-parity; original-protocol interoperability must remain isolated and opt-in if it
-is ever attempted.
+### Explicit non-goal: original network code and protocols
+
+Reimplementing or interoperating with the original WinSock/IPX, modem, serial,
+AppleTalk, or MacTCP networking is explicitly out of scope. Those paths were
+buggy and insecure, are not required for completion, and will not be exposed,
+ported, protocol-matched, or accepted as a release dependency. The recreation
+supports local single-player and hot-seat play. A wholly new authenticated
+command transport may be considered after local parity, but it is a separate
+optional project and will not reuse the legacy protocol.
 
 ## 2. Current baseline
 
@@ -80,11 +85,11 @@ confirmed against controlled runs of the original executable.
 
 #### Menus, setup, and views
 
-- Recreate File commands: New Game, Open Scenario, Save, End Game, Host Game,
-  Join Game, and Quit, including when each is enabled.
+- Recreate File commands used by local play: New Game, Open Scenario, Save, End
+  Game, and Quit, including when each is enabled. Host/Join are intentionally
+  unsupported legacy-network entries.
 - Recreate Options for color depth, music, sound effects, base statistics,
   detailed combat, sliding panels, and warnings for idle gangs.
-- Recreate the Comm disconnect and multiplayer-type flows.
 - Implement 10 scenarios, four time limits (6 months = 26 turns, 1 year = 52,
   2 years = 104, and 4 years = 208), difficulty, player/portrait/name/color
   setup, computer/human assignment, and the begin/cancel flow.
@@ -191,12 +196,12 @@ the exact RNG consumption order.
   Chicken), and statistics (cash earned/spent, damage inflicted, casualties,
   overthrows), including ties and no-award cases.
 
-#### Legacy multiplayer facts to document
+#### Legacy multiplayer exclusion
 
-The manual exposes WinSock/TCP-IP, WinSockX/IPX, modem, and direct serial on
-Windows 95, plus AppleTalk, Communications Toolbox modem/serial, and MacTCP on
-Macintosh. Host/join setup and protocol behavior must be documented from the
-binary, but these transports must not be exposed by default in the recreation.
+The manual's WinSock/TCP-IP, WinSockX/IPX, modem, direct serial, AppleTalk,
+Communications Toolbox, and MacTCP paths are historical context only. Their
+implementation and protocol behavior are deliberately excluded from the
+research and recreation scope.
 
 ## 4. Required technical documentation
 
@@ -252,8 +257,6 @@ Recover and document, without copying original executable code:
 - UI resource lookup tables, sprite slicing, cursor modes, and hit testing;
 - audio/video resource lookup and trigger points;
 - persistence serialization order and version branching;
-- original network message/state model, documented for history even if not
-  implemented for security reasons.
 
 Use symbol-neutral names until semantics are demonstrated. Keep disassembly
 addresses/version hashes in research notes, not as dependencies in production
@@ -272,8 +275,8 @@ code.
   sites, AI branches, serialization, and resource IDs. Document facts and
   addresses without copying original implementation code.
 - Run the original only in a controlled offline environment. Disable/avoid its
-  legacy network paths, preserve the executable hash, record OS/compatibility
-  settings, and never expose it to an untrusted network.
+  in-scope gameplay paths, preserve the executable hash, and record
+  OS/compatibility settings. Do not exercise legacy network paths.
 - Design one-variable black-box experiments: fixed setup, saved pre-state, one
   command or setting change, saved post-state, UI/result capture, and repeated
   runs to distinguish deterministic rules from probability.
@@ -343,7 +346,7 @@ every phase boundary.
 
 ### D. New-game setup and city generation
 
-- Implement title/intro flow and new/load/network entry points.
+- Implement title/intro flow and local new/load entry points.
 - Implement scenario selection and descriptions.
 - Implement time limit, objective, difficulty, city/settings controls, player
   names, portraits, human/AI assignment, and starting order.
@@ -462,7 +465,8 @@ polish, and golden screenshots; it is not the first appearance of a usable UI.
 
 - Inventory every screen: logos/intro, title, menus, setup, scenario panel, game
   info, city view, sector view, gangs, sites, items/research, notifications,
-  score/victory, save/load, preferences, help and multiplayer screens.
+  score/victory, save/load, preferences, and help. Legacy networking screens
+  are intentionally excluded.
 - Recreate original virtual resolution, layering, palettes, typography, cursors,
   tooltips, modal behavior, focus order, hit boxes and transitions.
 - Map every PX sheet and sub-rectangle in `UI-ATLAS.md`.
@@ -508,21 +512,20 @@ mute, loop and skip paths are stable.
 **Exit gate:** the original corpus imports exactly; native saves migrate; any
 enabled original export passes byte-aware round-trip validation.
 
-### M. Multiplayer
+### M. Hot-seat and optional modern multiplayer
 
 - Complete hot-seat support first, including hidden hand-off screens if needed.
-- Document the original Comm menu, transport, messages, synchronization,
-  disconnect and resync behavior.
-- Do not expose the original network stack to untrusted networks.
+- Do not port, analyze for interoperability, or expose the original network
+  stack or protocols.
 - Design a modern authenticated, versioned protocol transporting commands and
   periodic state hashes rather than arbitrary serialized objects.
 - Add lobby, readiness, player assignment, reconnect, desync diagnostics and
   deterministic replay recovery.
 - Threat-model malformed peers and impose strict bounds/timeouts.
 
-**Exit gate:** hot-seat parity is complete; modern networking passes deterministic
-multi-process and adversarial protocol tests. Legacy interoperability, if any,
-has a separate security review and explicit opt-in.
+**Exit gate:** hot-seat parity is complete. If the separate optional modern
+networking project is undertaken, it passes deterministic multi-process and
+adversarial protocol tests. Legacy interoperability remains prohibited.
 
 ### N. Platform, packaging, and quality
 
@@ -661,6 +664,8 @@ Gate: release checklist passes from clean installations on all target platforms.
 ### M9 - Optional modern multiplayer
 
 Deliver safe command-based networking after simulation parity is frozen.
+This milestone is not part of original-game parity and never includes legacy
+protocol interoperability or reused original networking code.
 
 Depends on: M8 deterministic state/replay stability.
 Gate: threat model, desync recovery and multi-process tests pass.

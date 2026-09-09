@@ -4,7 +4,9 @@ Status: provisional recreation baseline
 Last updated: 2026-09-09
 
 The original executable's difficulty branches and evaluation weights have not
-yet been recovered. The current planner exists to make Human-versus-Computer
+yet been recovered. Static analysis has now recovered the outer per-gang
+dispatcher and its 15-value handler map, but not the distinct four-valued AI
+Mentality input. The current planner exists to make Human-versus-Computer
 matches operable while preserving deterministic simulation and replay behavior.
 It must not be cited as behavioral parity with the original AI.
 
@@ -60,9 +62,10 @@ replay-verified two-computer harness through 20 turns or objective completion.
 
 ## Required parity work
 
-1. Statically analyze the original difficulty branches, observable-information
-   rules, and command-selection entry points around `0x00432da0` and its known
-   callers (`0x00401000`, `0x0040abc0`, `0x00428ef0`, `0x00436c70`) noted in
+1. Statically identify the four-valued AI Mentality state and trace its branches
+   and observable-information rules. The outer planner at `0x00458fa0`, its
+   per-gang dispatcher at `0x00432da0`, complete handler map, command-history
+   record shape, and known target encoding are recorded in
    `ORIGINAL-INTERNALS.md`.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those

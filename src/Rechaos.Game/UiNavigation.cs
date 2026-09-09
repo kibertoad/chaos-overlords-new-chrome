@@ -337,6 +337,36 @@ public static class GangInformationLayout
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
     public static Rectangle Portrait => new(130, 143, 64, 62);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
+    public const int LeftValueRight = 287;
+    public const int RightValueRight = 383;
+
+    public static int StatisticY(int row) => row switch
+    {
+        0 => 244,
+        1 => 253,
+        2 => 271,
+        3 => 280,
+        4 => 289,
+        5 => 298,
+        6 => 307,
+        _ => throw new ArgumentOutOfRangeException(nameof(row))
+    };
+}
+
+public static class StatusConsoleLayout
+{
+    public const int LabelLeft = 480;
+    public const int ValueRight = 579;
+    public const int ScenarioY = 3;
+    public const int DateY = 15;
+    public const int ScoreY = 24;
+    public const int CashY = 42;
+
+    public static int SectorValueY(int row)
+    {
+        if (row is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(row));
+        return 60 + row * 9;
+    }
 }
 
 public static class DifficultyPresentation

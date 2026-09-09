@@ -8,6 +8,23 @@ namespace Rechaos.Tests;
 public sealed class UiNavigationTests
 {
     [Fact]
+    public void GangInformationStatisticsFollowTemplateRows()
+    {
+        Assert.Equal([244, 253, 271, 280, 289, 298, 307],
+            Enumerable.Range(0, 7).Select(GangInformationLayout.StatisticY));
+        Assert.Equal(287, GangInformationLayout.LeftValueRight);
+        Assert.Equal(383, GangInformationLayout.RightValueRight);
+    }
+
+    [Fact]
+    public void StatusConsoleValuesFollowTemplateRows()
+    {
+        Assert.Equal(579, StatusConsoleLayout.ValueRight);
+        Assert.Equal([60, 69, 78, 87, 96],
+            Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorValueY));
+    }
+
+    [Fact]
     public void RouterStartsAtTitleAndBackReturnsThere()
     {
         var router = new ScreenRouter();

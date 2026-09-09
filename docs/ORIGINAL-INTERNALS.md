@@ -111,9 +111,10 @@ are native subsystems in this build and share synchronization infrastructure.
 
 **Confidence:** Verified imports/strings; High interpretation.
 
-**Security decision:** Original transports are research-only and must not be
-exposed to untrusted networks. A recreation transport will not reuse this code
-or wire format without a separate protocol/security study.
+**Scope decision:** This import-level inventory is the endpoint for legacy
+network research. Original transports and wire formats are explicitly outside
+the recreation scope and will not be ported, exposed, or supported for
+interoperability.
 
 ### BIN-API-005 - configuration
 
@@ -228,6 +229,105 @@ but field identities and action constants are not yet fully labeled.
 **Next validation:** inspect the remaining RNG callers for writes to the gang
 Force field and for paired full/halved success loops, then correlate the result
 with a controlled original-game combat observation.
+
+### BIN-AI-001 - per-gang command dispatcher and action handlers
+
+**Observation:** Focused Ghidra 12.1.3 analysis identifies `0x00432da0` as a
+dispatcher reached from `0x00458fa0` at call site `0x004594df`. Its two
+arguments index arrays with player stride `0x510` and gang stride `0x10`. The
+dispatcher writes a selected family byte at `0x0048a250 + player * 0x510 +
+gang * 0x10`, then dispatches that value through the following handler table:
+
+| Value | Handler |
+|---:|---:|
+| 0 | `0x00428ef0` |
+| 1 | `0x00434080` |
+| 2 | `0x0041fef0` |
+| 3 | `0x00435bd0` |
+| 4 | `0x00401000` |
+| 5 | `0x0043a1d0` |
+| 6 | `0x00431c60` |
+| 7 | `0x00436c70` |
+| 9 | `0x004605e0` |
+| 10 | `0x0042a6e0` |
+| 11 | `0x00420950` |
+| 12 | `0x004353a0` |
+| 13 | `0x0040abc0` |
+| 14 | `0x00466910` |
+
+No case for value 8 appears in this handler switch. Several handlers write the
+chosen command and parameters both to a `0x10`-stride array rooted near
+`0x0048a250` and to a second projection with player stride `0xa20` and gang
+stride `0x20` rooted near `0x00498daf`. Target-sector results are repeatedly
+split using quotient and remainder by `0x51` (81).
+
+**Interpretation:** The first byte is an AI strategy/action-family selector,
+the handler switch maps it to command planners, and the two projections are
+closely related per-gang planned-command records. Division by 81 encodes a
+player/sector or owner/sector pair. Exact field names and the correspondence
+between family values and public command IDs are not yet established.
+
+**Confidence:** Verified for addresses, call site, strides, switch values,
+handler mapping, mirrored writes, and division constant; Medium for record and
+target semantics; Low for public action-name mapping.
+
+**Next validation:** analyze `0x00458fa0`, label the state-query selectors used
+by `0x00432da0`, and correlate each handler with controlled queued commands.
+
+### BIN-AI-002 - scenario-sensitive family selection
+
+**Observation:** When a state query made by `0x00432da0` reports one, the
+dispatcher performs a ten-way switch on values 0 through 9. Each branch then
+switches on a second query whose observed results are 0 through 6 and maps that
+pair to family values drawn from 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, and 14.
+The same function contains separate explicit comparisons against global
+`0x004abbe8` values 6, 7, and 8.
+
+**Interpretation:** The ten-way selector is likely the ten scenario/objective
+IDs and changes the preferred command family. `0x004abbe8` is also scenario-like
+in this routine, so it must not be assumed to be AI difficulty merely because
+it changes planning branches. The selector identities still require caller and
+save/global correlation.
+
+**Confidence:** Verified for branch shape, ranges, mapped values, and global
+comparisons; Medium for scenario interpretation.
+
+**Next validation:** correlate the query and global values against setup/save
+fields, then locate the distinct four-valued AI Mentality state.
+
+### BIN-AI-003 - outer AI planning pass and command history
+
+**Observation:** `0x00458fa0`, the sole normal caller of the per-gang dispatcher,
+is itself reached from `0x0040ab20` at `0x0040abac` and from the initialization
+routine `0x0046e766` at `0x0046f4ec`. On first use for a player it calls
+`0x00409de1` for all 81 indices and initializes per-player state. On subsequent
+passes it iterates all 81 records with player stride `0x510` and record stride
+`0x10`, copies bytes at offsets +5..+7 into +2..+4, clears +8..+10, and
+decrements the two 16-bit fields at +12 and +14 only when their associated
+queries are nonnegative. It skips records whose mirrored `0x20`-stride byte at
+`0x00498daa` is decimal 100. It later iterates the same 81 records, seeds family
+9 under a separate condition, and calls `0x00432da0` for every non-100 record.
+
+After the per-record pass, `0x00458fa0` performs a ten-way switch on the same
+state-query value 0 through 9 seen by `0x00432da0`. Each branch selects among
+strategy values, calls `0x004078d9` with small mode values, and updates
+per-player words at `0x00482128` and `0x00482140`. The function also iterates
+64 entries in a separate sector-sized pass before dispatching gangs.
+
+**Interpretation:** `0x00458fa0` is the outer AI planning pass. The +2..+4 and
++5..+7 triples are previous/current command projections, +8..+10 is the newly
+planned triple, decimal 100 marks an unused gang slot, and +12/+14 are two
+countdowns. The post-dispatch ten-way switch is objective strategy, while the
+64-entry pass prepares sector-level priorities. These field meanings remain
+provisional until save deltas or controlled commands identify them.
+
+**Confidence:** Verified for callers, loop bounds, addresses, strides, copies,
+clears, decrements, sentinel, and dispatcher call coverage; High that this is an
+outer AI planner; Medium for command-history/countdown/strategy semantics.
+
+**Next validation:** correlate the three byte triples and two words against a
+saved recurring and one-off command, then trace the four-valued global setup
+selection independently of the ten-way scenario selector.
 
 ## New-game initialization
 

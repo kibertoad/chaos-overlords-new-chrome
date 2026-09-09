@@ -170,7 +170,8 @@ the overlay.
 
 1. Identify the main-city content layers placed inside the black viewport of
    `PX00128` and validate/complete its provisional right-panel button rectangles.
-2. Correlate `PX00143` through `PX00146` with local/network player counts.
+2. Correlate `PX00143` through `PX00146` with local player counts; legacy
+   network setup variants are explicitly out of scope.
 3. Map fonts, cursor frames, selection/pressed-state sprites and transparency.
 4. Capture reference screenshots for title, every setup configuration and the
    initial city, then add masked native-resolution golden comparisons.

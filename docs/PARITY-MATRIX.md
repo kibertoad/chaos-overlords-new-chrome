@@ -39,7 +39,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Objectives | Ten named scenarios and objective thresholds | Provisional live end-of-turn evaluation, explicit Siege-important sector state, Big Man center-sector point accrual, Eliminate cleanup, authoritative projection, tied winners, events/notifications and outcome hashing | Manual pages 12–15, High for thresholds/weights/effects; timing and special edges Low | Siege setup/visual mapping and binary boundary/tie/ordering fixtures |
 | Timers | 26/52/104/208 turns | Implemented as model | Manual, High | End-turn boundary fixtures |
 | Endgame | Ranking, five awards, statistics | Timed score standings with competition ties; all five award projections, Hide count, retaliation exclusion and outcome/event/hash integration; routed summary renders on mapped PX00200 frame | Manual pages 46–47 and scoring tables, High mappings; presentation/tie order/zero threshold Low | Recover objective ranking; map exact awards/stats layouts; binary tie/no-award and golden-screen fixtures |
-| AI | Objective/difficulty-aware computer players | Deterministic objective-aware baseline plans validator-approved Command actions, respects cooperative attack detection, budgets spending, chooses valid hires, and runs through replay recording; one global AI Mentality applies docs-backed increasing aggression and Homicidal human-target preference with no bonuses; numeric weights remain provisional pending static analysis | Recreation behavior High; manual/FAQ High for global levels, fair play and broad intent; exact binary policy Low | Statically recover difficulty branches/weights and information limits; add reference decision snapshots, larger-player tournaments and objective-completion stress cases |
+| AI | Objective/difficulty-aware computer players | Deterministic objective-aware baseline plans validator-approved Command actions, respects cooperative attack detection, budgets spending, chooses valid hires, and runs through replay recording; one global AI Mentality applies docs-backed increasing aggression and Homicidal human-target preference with no bonuses; static analysis has recovered the outer 81-gang/64-sector planning pass, command-history record shape, per-gang dispatcher, all 15 family-handler values and 81-sector target split, while numeric weights remain provisional | Recreation behavior High; manual/FAQ High for global levels, fair play and broad intent; binary planner/dispatcher structure High; exact mentality policy Low | Identify the distinct four-valued mentality global and recover its branches/weights and information limits; add reference decision snapshots, larger-player tournaments and objective-completion stress cases |
 | Save import | Two known magic/size variants | Documented | Reverse-engineering notes, Medium | Obtain and parse corpus |
 | Native saves | Versioned safe recreation format | Version 5 snapshots preserve global AI mentality, player portraits, explicit sector income, Crackdown duration/history, and all authoritative runtime state; v1-v4 migration, deterministic encoding, 16 MiB bound, atomic replacement, backup recovery, F5/F9 quick saves and end-turn autosave implemented | Recreation format; deterministic continuation and migration tests, High | Add checked-in versioned fixtures |
 | Replays | Deterministic recreation playback | Version 4 records a v5 initial snapshot plus every public match mutation, planning-time hire-offer generation, validation result and resulting state hash; v2-v3 playback remains accepted; bounded loader rejects divergence and out-of-band recording mutations; full Crackdown trigger/countdown/police-combat replay and atomic client F6/F10 record/playback flow implemented | Recreation format; full-turn deterministic and file-store tests, High | Add checked-in fixture/migration and animated playback controls |
@@ -50,7 +50,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Music | Eight Ogg tracks | Extracted only | GOG pack, High format | Track sequencing behavior |
 | Video | Two Smacker v2 movies | Extracted only | Signature, Verified container | Playback/transcode decision |
 | Hot-seat | Multiple humans on one machine | One-to-six local players with original PX00132 ready/handoff screen at active-player transitions | Manual/current rotation, Medium | Reference timing, private panel state and complete original turn workflow |
-| Legacy network | WinSock/IPX/modem/serial/Mac transports | Intentional deviation candidate | Manual, High | Document protocol; keep disabled |
+| Legacy network | WinSock/IPX/modem/serial/Mac transports | Explicit non-goal: no port, protocol interoperability, or production exposure | Deliberate security/product exclusion | None; exclusion is final |
 | Modern network | Safe deterministic command transport | Not applicable until post-parity | Roadmap decision | Threat model after M8 |
 
 ## Current blockers to parity claims
@@ -67,7 +67,8 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 - Command replacement gets a new sequence number and resolution otherwise uses
   submission order inside a subphase; both are provisional recreation rules,
   not binary-validated behavior.
-- AI difficulty behavior remains unrecovered; combat, crackdown, research,
+- AI Mentality behavior remains unrecovered beyond the outer command-family
+  dispatcher and target-record structure; combat, crackdown, research,
   equipment, objective timing, original-save import, and audiovisual triggers
   retain the specific parity gaps listed above.
 
@@ -76,8 +77,9 @@ gameplay recreation even though its decoded tables and asset pack are verified.
 
 ## Binary evidence status
 
-Initial PE/import/string classification is recorded in `ORIGINAL-INTERNALS.md`.
-It verifies the native x86/Win32 platform boundaries, source resource paths,
-save/version strings, DirectDraw/GDI rendering, WINMM/Smacker media, and legacy
-WinSock/TAPI/serial dependencies. No gameplay formula or RNG interpretation has
-yet reached binary-verified status.
+Initial PE/import/string classification and continuing address-level gameplay
+research are recorded in `ORIGINAL-INTERNALS.md`. Verified or high-confidence
+findings now cover platform boundaries, source resource paths, save/version
+strings, the original RNG step and bounded wrapper, city/site/HQ/hire setup,
+and the outer AI command dispatcher. Exact AI Mentality policy and the remaining
+resolver formulas retain their explicitly listed gaps.

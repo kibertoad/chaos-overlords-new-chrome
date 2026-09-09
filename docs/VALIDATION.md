@@ -116,8 +116,8 @@ pre-action save.
 - Keep raw analysis databases and executable material outside the repository.
 
 Static analysis should prioritize the phase dispatcher, RNG, save/load, city
-generation, action resolver, scoring/victory, AI, resource lookup and network
-message boundaries.
+generation, action resolver, scoring/victory, AI, and resource lookup. Legacy
+network message boundaries are deliberately outside the recreation scope.
 
 ## Fixture classes
 

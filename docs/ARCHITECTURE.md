@@ -328,7 +328,8 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
 - Every output length and SHA-256 is verifiable.
 - Parsers must gain explicit size/allocation limits before accepting additional
   source versions or save files.
-- Original network protocols remain disabled and isolated from production code.
+- Original network code and protocols are an explicit non-goal: they are not
+  ported, exposed, or supported for interoperability.
 
 ## Known architectural debt
 

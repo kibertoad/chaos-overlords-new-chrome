@@ -945,16 +945,25 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
         var selectedSector = state.Sectors[_cursor];
         var scenario = ScenarioCatalog.Get(state.Setup.Scenario);
-        font.Draw(batch, scenario.Name, new Vector2(480, 5), Color.Lime, 1);
-        font.Draw(batch, MatchDate(state.Coordinator.Turn), new Vector2(480, 16), Color.Lime, 1);
-        font.Draw(batch, ScenarioScore(state, player).ToString(), new Vector2(568, 27), Color.Lime, 1);
-        font.Draw(batch, player.Cash.ToString(), new Vector2(568, 44), Color.Lime, 1);
-        font.Draw(batch, SectorCode(_cursor), new Vector2(568, 63), Color.Lime, 1);
-        font.Draw(batch, $"${SectorSiteIncome(state, selectedSector)}", new Vector2(568, 73), Color.Lime, 1);
-        font.Draw(batch, selectedSector.Tolerance.ToString(), new Vector2(568, 83), Color.Lime, 1);
-        font.Draw(batch, SectorSupport(state, player.Id, selectedSector).ToString(),
-            new Vector2(568, 93), Color.Lime, 1);
-        font.Draw(batch, selectedSector.Chaos.ToString(), new Vector2(568, 103), Color.Lime, 1);
+        batch.Draw(pixel, new Rectangle(StatusConsoleLayout.LabelLeft, 14, 44, 8), Color.Black);
+        font.Draw(batch, scenario.Name,
+            new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.ScenarioY), Color.Lime, 1);
+        font.Draw(batch, MatchDate(state.Coordinator.Turn),
+            new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
+        DrawPanelValue(font, batch, ScenarioScore(state, player).ToString(),
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.ScoreY);
+        DrawPanelValue(font, batch, player.Cash,
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.CashY);
+        DrawPanelValue(font, batch, SectorCode(_cursor),
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(0));
+        DrawPanelValue(font, batch, $"${SectorSiteIncome(state, selectedSector)}",
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(1));
+        DrawPanelValue(font, batch, selectedSector.Tolerance,
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(2));
+        DrawPanelValue(font, batch, SectorSupport(state, player.Id, selectedSector),
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(3));
+        DrawPanelValue(font, batch, selectedSector.Chaos,
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(4));
         font.Draw(batch, _message.Length <= 32 ? _message : _message[..32],
             new Vector2(438, 354), Color.Gold, 1);
         DrawHireDock(batch, state, player);
