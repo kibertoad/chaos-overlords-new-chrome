@@ -74,6 +74,9 @@ members, missing values, unknown versions, and malformed operations are rejected
 files. The prototype client records all of its mutations and exposes atomic
 save plus verified playback through F6 and F10.
 
-Version 2 embeds native-save version 2 and uses canonical state hash version 5,
-which includes explicit sector income. The initial snapshot remains required
-until original seed selection and the complete setup context are verified.
+Replay version 3 embeds a native-save version 4 initial snapshot and records
+planning-time hire-offer preparation so opening the persistent Hire dock does
+not become an out-of-band RNG mutation. Version 2 replay documents remain
+accepted. The current canonical state hash is version 7. The initial snapshot
+remains required until original seed selection and the complete setup context
+are verified.

@@ -225,15 +225,21 @@ before entering Command. Each result separates sector tax, influenced-site
 cash, and active-gang upkeep so reference fixtures can locate the first differing
 component. Desertion and unverified special modifiers remain outside this slice.
 
-Hiring uses the same deferred boundary as the manual: selecting one of a
-player's three offers reserves the recruit, charges its initial price, and
-removes that offer, but does not create a gang. A player may also snub one offer
-per Hire phase. `FinishHire` places each recruit at a rolled 5–9 Force, assigns
+Hiring uses the same deferred boundary as the manual: during the player's
+planning turn, selecting one of three offers reserves the recruit, charges its
+initial price, and removes that offer, but does not create a gang. A player may
+also snub one offer during planning. `FinishHire` later places each recruit at a rolled 5–9 Force, assigns
 a stable match-wide gang ID, and deterministically fills hired and snubbed
 vacancies while preserving three distinct choices. Validation is an ordered set
 of side-effect-free `IValidationRule` implementations. Each rule owns both its
 typed failure code and user-facing message so UI previews, AI queries, and
 authoritative submission cannot disagree about eligibility.
+
+`GameplayTurnFlow` separates the player-facing turn from the diagnostic phase
+machine. Normal play stops only in Command for each player's planning, where
+commands, equipment, and hiring can be edited in any order. Done drains
+Execution, deferred Hire placement, Player Elimination, and Upkeep through
+replay-recorded transitions. `--debug-phases` retains boundary-at-a-time stepping.
 
 Player Elimination now runs at its named phase boundary. An active player with
 neither an active gang nor an owned sector becomes eliminated; any remaining

@@ -31,8 +31,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle SetupPlayersRemove = new(466, 326, 96, 30);
     private static readonly Rectangle SetupStart = new(370, 374, 92, 50);
     private static readonly Rectangle SetupBack = new(466, 374, 96, 50);
-    private static readonly Rectangle CityAction = new(430, 415, 86, 24);
-    private static readonly Rectangle CityAdvance = new(524, 415, 96, 24);
+    private static readonly Rectangle CityDone = new(492, 278, 106, 54);
     private static readonly Rectangle CityEvents = new(492, 124, 50, 51);
     private static readonly Rectangle CityCombatSummary = new(492, 176, 50, 49);
     private static readonly Rectangle CityFinance = new(548, 176, 50, 49);
@@ -63,6 +62,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string _quickSavePath;
     private readonly string _autoSavePath;
     private readonly string _replayPath;
+    private readonly bool _debugPhaseStepping;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
     private Texture2D? _titleBackground;
@@ -75,6 +75,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
     private Texture2D? _policeSprites;
+    private Texture2D? _uiSprites;
     private PixelFont? _font;
     private readonly Dictionary<short, SoundEffect> _weaponSounds = [];
     private MatchState? _state;
@@ -93,14 +94,19 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private int _itemCursor;
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
+    private int? _draggedHireSlot;
+    private short? _draggedHireDefinitionId;
+    private int? _pendingHireSlot;
+    private Point _dragPoint;
     private string _message = "SELECT NEW GAME";
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
     private long _lastAudibleEventSequence = -1;
 
-    public ChaosGame(string assetRoot)
+    public ChaosGame(string assetRoot, bool debugPhaseStepping = false)
     {
         _assetRoot = assetRoot;
+        _debugPhaseStepping = debugPhaseStepping;
         _quickSavePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords", "quicksave.rchsave");
@@ -141,6 +147,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
         _policeSprites = LoadTexture("PX00300.bmp", transparentBlack: true);
+        _uiSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
         for (short index = 0; index <= 18; index++)
         {
             var sound = LoadSound(AudioRouting.SoundFile(index));
@@ -227,9 +234,18 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                     _screens.Show(ClientScreen.City);
                 break;
         }
-        if (mouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released
-            && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint))
-            HandleClick(virtualPoint);
+        var pointerMapped = VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint);
+        if (pointerMapped && mouse.LeftButton == ButtonState.Pressed)
+        {
+            _dragPoint = virtualPoint;
+            if (_previousMouse.LeftButton == ButtonState.Released) HandleClick(virtualPoint);
+        }
+        if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
+            && _draggedHireDefinitionId is not null)
+        {
+            if (pointerMapped) CompleteHireDrag(virtualPoint);
+            else CancelHireDrag();
+        }
         PlayNewCombatSounds();
         _previousKeyboard = keyboard;
         _previousMouse = mouse;
@@ -336,7 +352,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.B)) _screens.Show(ClientScreen.CombatSummary);
         if (Pressed(keyboard, Keys.X)) _screens.Show(ClientScreen.Search);
         if (Pressed(keyboard, Keys.H)) OpenHire();
-        if (Pressed(keyboard, Keys.Space)) AdvancePhase();
+        if (Pressed(keyboard, Keys.Space)) AdvanceTurn();
         if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
         if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
         if (Pressed(keyboard, Keys.F6)) SaveReplay();
@@ -430,7 +446,13 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void HandleCityClick(Point point)
     {
-        if (CityMapLayout.TrySectorAt(point, out var selected))
+        var hireSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
+            .FirstOrDefault(slot => HireDockLayout.Cell(slot).Contains(point), -1);
+        if (hireSlot >= 0)
+        {
+            BeginHireDrag(hireSlot, point);
+        }
+        else if (CityMapLayout.TrySectorAt(point, out var selected))
         {
             if (_cursor == selected) QueueBoardCommand();
             else
@@ -439,12 +461,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 _message = $"SECTOR {_cursor + 1}";
             }
         }
-        else if (CityAction.Contains(point))
-        {
-            if (_state?.Coordinator.Phase == TurnPhase.Hire) OpenHire();
-            else OpenCommands();
-        }
-        else if (CityAdvance.Contains(point)) AdvancePhase();
+        else if (CityDone.Contains(point)) AdvanceTurn();
         else if (CityEvents.Contains(point)) _screens.Show(ClientScreen.Events);
         else if (CityCombatSummary.Contains(point)) _screens.Show(ClientScreen.CombatSummary);
         else if (CityFinance.Contains(point)) _screens.Show(ClientScreen.Finance);
@@ -666,9 +683,11 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         var setup = new MatchSetup(_selectedScenario, _selectedDuration, Environment.TickCount, players);
         _state = OriginalMatchFactory.Create(_definitions, setup);
         _replay = new MatchReplayRecorder(_state);
+        if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_replay);
+        if (!_debugPhaseStepping) PrepareCurrentHireOffers();
         _cursor = _state.Players[0].Gangs[0].SectorId;
         _selectedGangIndex = 0;
-        _message = "ADVANCE UPKEEP TO BEGIN";
+        _message = _debugPhaseStepping ? "ADVANCE UPKEEP TO BEGIN" : "PLAN YOUR TURN";
         _lastAudibleEventSequence = -1;
         _screens.Show(ClientScreen.City);
     }
@@ -718,7 +737,6 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
         var player = state.Players[playerIndex];
-        var selectedGang = SelectedGang(player);
         for (var index = 0; index < state.Sectors.Count; index++)
         {
             var sector = state.Sectors[index];
@@ -738,24 +756,53 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                     Color.White);
             if (index == _cursor) DrawBorder(batch, pixel, destination, Color.Gold, 2);
         }
+        if (_draggedHireDefinitionId is not null
+            && CityMapLayout.TrySectorAt(_dragPoint, out var dropSector))
+            DrawBorder(batch, pixel, CityMapLayout.Destination(dropSector),
+                state.Sectors[dropSector].Owner == player.Id ? Color.Lime : Color.OrangeRed, 2);
 
         var selectedSector = state.Sectors[_cursor];
         batch.Draw(pixel, new Rectangle(474, 5, 114, 108), new Color(0, 0, 0, 205));
         font.Draw(batch, player.Setup.Name, new Vector2(480, 12), PlayerColors[playerIndex], 1);
-        font.Draw(batch, $"T{state.Coordinator.Turn} {state.Coordinator.Phase.ToString().ToUpperInvariant()}",
+        font.Draw(batch, _debugPhaseStepping
+                ? $"T{state.Coordinator.Turn} {state.Coordinator.Phase.ToString().ToUpperInvariant()}"
+                : $"TURN {state.Coordinator.Turn}",
             new Vector2(480, 26), Color.Lime, 1);
         font.Draw(batch, $"CASH ${player.Cash}", new Vector2(480, 48), Color.Lime, 1);
         font.Draw(batch, $"SECTOR {_cursor + 1}", new Vector2(480, 64), Color.Lime, 1);
         font.Draw(batch, $"INCOME ${SectorSiteIncome(state, selectedSector)}", new Vector2(480, 78), Color.Lime, 1);
         font.Draw(batch, $"CHAOS {selectedSector.Chaos}", new Vector2(480, 92), Color.Lime, 1);
-        var selectedLabel = selectedGang is null ? "NO GANG" : $"GANG {selectedGang.Id.Value}";
         font.Draw(batch, _message.Length <= 32 ? _message : _message[..32],
-            new Vector2(438, 374), Color.Gold, 1);
-        font.Draw(batch, selectedLabel, new Vector2(438, 393), PlayerColors[playerIndex], 1);
-        DrawButton(batch, pixel, font, CityAction,
-            state.Coordinator.Phase == TurnPhase.Hire ? "HIRE" : "ACTION", false);
-        DrawButton(batch, pixel, font, CityAdvance, "ADVANCE", false);
+            new Vector2(438, 354), Color.Gold, 1);
+        DrawHireDock(batch, state, player);
+        if (_draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
+        {
+            var token = new Rectangle(_dragPoint.X - 18, _dragPoint.Y - 18, 36, 36);
+            batch.Draw(_gangPortraits, token,
+                OriginalSpriteLayout.GangPortrait(draggedDefinition), Color.White);
+            DrawBorder(batch, pixel, token, Color.White, 1);
+        }
         font.Draw(batch, "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY", new Vector2(18, 439), new Color(180, 190, 190), 1);
+    }
+
+    private void DrawHireDock(
+        SpriteBatch batch,
+        MatchState state,
+        MatchPlayerState player)
+    {
+        var entries = CurrentHireDock(player);
+        for (var slot = 0; slot < entries.Count; slot++)
+        {
+            if (entries[slot] is not { } entry) continue;
+            var portrait = HireDockLayout.Portrait(slot);
+            if (_gangPortraits is not null)
+                batch.Draw(_gangPortraits, portrait,
+                    OriginalSpriteLayout.GangPortrait(entry.GangDefinitionId), Color.White);
+            if (entry.Hired && _uiSprites is not null)
+                batch.Draw(_uiSprites,
+                    new Rectangle(portrait.X + 2, portrait.Y + 2, 60, 60),
+                    OriginalSpriteLayout.HiredStamp, Color.White);
+        }
     }
 
     private void DrawEndgame(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
@@ -1398,13 +1445,15 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void OpenHire()
     {
-        if (_state is null || _state.Coordinator.Phase != TurnPhase.Hire
+        if (_state is null || _replay is null
+            || _state.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
-            _message = "HIRING REQUIRES THE HIRE PHASE";
+            _message = "HIRING REQUIRES A PLANNING TURN";
             return;
         }
         var player = _state.FindPlayer(playerId)!;
+        PrepareCurrentHireOffers();
         if (player.HirePool.Count == 0)
         {
             _message = "NO HIRE OFFER AVAILABLE";
@@ -1412,6 +1461,72 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
         _hireCursor = 0;
         _screens.Show(ClientScreen.Hire);
+    }
+
+    private void PrepareCurrentHireOffers()
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
+        var player = _state.FindPlayer(playerId)!;
+        if (player.HirePool.Count == 0 && player.PendingHires.Count == 0
+            && !player.HasSnubbedHireOfferThisTurn)
+            _replay.PrepareHireOffers(playerId);
+    }
+
+    private IReadOnlyList<HireDockEntry?> CurrentHireDock(MatchPlayerState player) =>
+        HireDockLayout.Project(player.HirePool, player.PendingHires.FirstOrDefault(), _pendingHireSlot);
+
+    private void BeginHireDrag(int slot, Point point)
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null
+            || _state.Coordinator.Phase != TurnPhase.Command)
+        {
+            _message = "HIRING REQUIRES A PLANNING TURN";
+            return;
+        }
+        PrepareCurrentHireOffers();
+        var entry = CurrentHireDock(_state.FindPlayer(playerId)!)[slot];
+        if (entry is null)
+        {
+            _message = "NO HIRE OFFER IN THIS SLOT";
+            return;
+        }
+        if (entry.Hired)
+        {
+            _message = "GANG ALREADY HIRED THIS TURN";
+            return;
+        }
+        _draggedHireSlot = slot;
+        _draggedHireDefinitionId = entry.GangDefinitionId;
+        _dragPoint = point;
+        _message = "DROP ON A CONTROLLED SECTOR";
+    }
+
+    private void CompleteHireDrag(Point point)
+    {
+        var definitionId = _draggedHireDefinitionId;
+        var slot = _draggedHireSlot;
+        _draggedHireDefinitionId = null;
+        _draggedHireSlot = null;
+        if (definitionId is null || slot is null || _state?.Coordinator.ActivePlayer is not { } playerId
+            || _replay is null)
+            return;
+        if (!CityMapLayout.TrySectorAt(point, out var sectorId))
+        {
+            _message = "HIRE CANCELLED";
+            return;
+        }
+        var result = _replay.QueueHire(playerId, definitionId.Value, sectorId);
+        _message = result.Accepted
+            ? $"HIRED FOR SECTOR {sectorId + 1}"
+            : result.Validation.Message.ToUpperInvariant();
+        if (result.Accepted) _pendingHireSlot = slot;
+    }
+
+    private void CancelHireDrag()
+    {
+        _draggedHireDefinitionId = null;
+        _draggedHireSlot = null;
+        _message = "HIRE CANCELLED";
     }
 
     private void MoveHireCursor(int delta)
@@ -1443,7 +1558,11 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         var offer = player.HirePool[_hireCursor];
         var result = _replay!.QueueHire(playerId, offer, _cursor);
         _message = result.Accepted ? "HIRE QUEUED" : result.Validation.Message.ToUpperInvariant();
-        if (result.Accepted) _screens.Show(ClientScreen.City);
+        if (result.Accepted)
+        {
+            _pendingHireSlot = _hireCursor;
+            _screens.Show(ClientScreen.City);
+        }
     }
 
     private void SnubSelectedHireOffer()
@@ -1458,7 +1577,59 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _hireCursor = Math.Clamp(_hireCursor, 0, Math.Max(0, player.HirePool.Count - 1));
     }
 
-    private void AdvancePhase()
+    private void AdvanceTurn()
+    {
+        if (_debugPhaseStepping) AdvanceDebugPhase();
+        else FinishPlanningTurn();
+    }
+
+    private void FinishPlanningTurn()
+    {
+        if (_state is null || _replay is null) return;
+        if (_state.Outcome is not null)
+        {
+            _message = "MATCH COMPLETE";
+            return;
+        }
+        if (_state.Coordinator.Phase != TurnPhase.Command
+            || _state.Coordinator.ActivePlayer is not { } playerId)
+        {
+            GameplayTurnFlow.AdvanceToPlanning(_replay);
+            _message = "PLANNING TURN READY";
+            return;
+        }
+
+        var previousTurn = _state.Coordinator.Turn;
+        GameplayTurnFlow.FinishPlanningTurn(_replay, playerId);
+        _pendingHireSlot = null;
+        PrepareCurrentHireOffers();
+        if (_state.Coordinator.Turn != previousTurn)
+        {
+            try
+            {
+                NativeSaveStore.SaveAtomic(_autoSavePath, _state);
+                _message = "TURN RESOLVED  AUTOSAVED";
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                _message = "TURN RESOLVED  AUTOSAVE FAILED";
+            }
+        }
+        else
+        {
+            _message = "PLANNING COMPLETE";
+        }
+
+        if (_state.Outcome is not null)
+            _screens.Show(ClientScreen.Endgame);
+        else
+        {
+            _selectedGangIndex = 0;
+            _screens.Show(ClientScreen.Handoff);
+        }
+    }
+
+    private void AdvanceDebugPhase()
     {
         if (_state is null) return;
         if (_state.Outcome is not null)
@@ -1514,9 +1685,13 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             {
                 foreach (var command in AiTurnPlanner.Plan(_state, playerId))
                     _replay.Submit(command);
-                _replay.FinishCommand(playerId);
+                PrepareCurrentHireOffers();
+                if (AiTurnPlanner.ChooseHire(_state, playerId) is { } planningHire)
+                    _replay.QueueHire(playerId, planningHire.GangDefinitionId, planningHire.SectorId);
+                if (_debugPhaseStepping) _replay.FinishCommand(playerId);
+                else GameplayTurnFlow.FinishPlanningTurn(_replay, playerId);
             }
-            else if (_state.Coordinator.Phase == TurnPhase.Hire)
+            else if (_debugPhaseStepping && _state.Coordinator.Phase == TurnPhase.Hire)
             {
                 if (AiTurnPlanner.ChooseHire(_state, playerId) is { } hire)
                     _replay.QueueHire(playerId, hire.GangDefinitionId, hire.SectorId);
@@ -1569,6 +1744,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             var result = NativeSaveStore.LoadRecoveringBackup(_quickSavePath, _definitions);
             _state = result.State;
             _replay = new MatchReplayRecorder(_state);
+            if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_replay);
+            if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _selectedGangIndex = 0;
             _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
@@ -1602,6 +1779,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         {
             _state = MatchReplayStore.LoadAndReplay(_replayPath, _state.Definitions);
             _replay = new MatchReplayRecorder(_state);
+            if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_replay);
+            if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _message = "REPLAY VERIFIED";
             _lastAudibleEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
@@ -1644,17 +1823,21 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private bool Pressed(KeyboardState current, Keys key) => current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
 
-    private Texture2D? LoadTexture(string fileName, bool transparentBlack = false)
+    private Texture2D? LoadTexture(
+        string fileName,
+        bool transparentBlack = false,
+        bool transparentWhite = false)
     {
         var path = Path.Combine(_assetRoot, "images", fileName);
         if (!File.Exists(path)) return null;
         using var stream = File.OpenRead(path);
         var texture = Texture2D.FromStream(GraphicsDevice, stream);
-        if (!transparentBlack) return texture;
+        if (!transparentBlack && !transparentWhite) return texture;
         var colors = new Color[texture.Width * texture.Height];
         texture.GetData(colors);
         for (var index = 0; index < colors.Length; index++)
-            if (colors[index].R == 0 && colors[index].G == 0 && colors[index].B == 0)
+            if ((transparentBlack && colors[index].R == 0 && colors[index].G == 0 && colors[index].B == 0)
+                || (transparentWhite && colors[index].R >= 248 && colors[index].G >= 248 && colors[index].B >= 248))
                 colors[index] = Color.Transparent;
         texture.SetData(colors);
         return texture;

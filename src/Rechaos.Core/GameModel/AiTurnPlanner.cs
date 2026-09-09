@@ -41,8 +41,9 @@ public static class AiTurnPlanner
     public static HireChoice? ChooseHire(MatchState state, PlayerId playerId)
     {
         ArgumentNullException.ThrowIfNull(state);
-        if (state.Coordinator.Phase != TurnPhase.Hire || state.Coordinator.ActivePlayer != playerId)
-            throw new InvalidOperationException("AI hiring requires that player's active Hire phase.");
+        if (state.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)
+            || state.Coordinator.ActivePlayer != playerId)
+            throw new InvalidOperationException("AI hiring requires that player's active planning turn.");
         var player = state.FindPlayer(playerId) ?? throw new ArgumentOutOfRangeException(nameof(playerId));
         if (player.Setup.Controller != PlayerController.Computer)
             throw new ArgumentException("AI hiring requires a computer-controlled player.", nameof(playerId));

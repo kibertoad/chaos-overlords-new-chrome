@@ -119,6 +119,7 @@ public static class CityMapLayout
 public static class OriginalSpriteLayout
 {
     public static Rectangle PolicePatrolCar => new(116, 0, 48, 64);
+    public static Rectangle HiredStamp => new(120, 300, 60, 60);
 
     public static Rectangle SitePortrait(int definitionId)
     {
@@ -177,5 +178,48 @@ public static class GangArtLayout
     {
         if (row is < 0 or >= 12) throw new ArgumentOutOfRangeException(nameof(row));
         return new Rectangle(defender ? 42 : 18, 108 + row * 24, 20, 20);
+    }
+}
+
+public sealed record HireDockEntry(short GangDefinitionId, bool Hired);
+
+public static class HireDockLayout
+{
+    public const int SlotCount = 3;
+
+    public static Rectangle Cell(int slot)
+    {
+        ValidateSlot(slot);
+        return new Rectangle(438 + slot * 66, 370, 66, 90);
+    }
+
+    public static Rectangle Portrait(int slot)
+    {
+        ValidateSlot(slot);
+        return new Rectangle(439 + slot * 66, 371, 64, 64);
+    }
+
+    public static IReadOnlyList<HireDockEntry?> Project(
+        IReadOnlyList<short> offers,
+        PendingHireState? pending,
+        int? pendingSlot)
+    {
+        ArgumentNullException.ThrowIfNull(offers);
+        var result = new HireDockEntry?[SlotCount];
+        var reserved = pending is null ? -1 : Math.Clamp(pendingSlot ?? 0, 0, SlotCount - 1);
+        if (pending is not null)
+            result[reserved] = new HireDockEntry(pending.GangDefinitionId, true);
+        var offerIndex = 0;
+        for (var slot = 0; slot < SlotCount && offerIndex < offers.Count; slot++)
+        {
+            if (slot == reserved) continue;
+            result[slot] = new HireDockEntry(offers[offerIndex++], false);
+        }
+        return result;
+    }
+
+    private static void ValidateSlot(int slot)
+    {
+        if (slot is < 0 or >= SlotCount) throw new ArgumentOutOfRangeException(nameof(slot));
     }
 }

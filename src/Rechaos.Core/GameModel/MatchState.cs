@@ -579,6 +579,20 @@ public sealed class MatchState
         return new HireSubmissionResult(validation, pending, gameEvent);
     }
 
+    public IReadOnlyList<short> PrepareHireOffers(PlayerId playerId)
+    {
+        if (Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)
+            || Coordinator.ActivePlayer != playerId)
+            throw new InvalidOperationException("Hire offers can only be prepared for the active planning player.");
+        var player = FindPlayer(playerId) ?? throw new ArgumentOutOfRangeException(nameof(playerId));
+        if (player.Status != PlayerStatus.Active)
+            throw new InvalidOperationException("An eliminated player cannot prepare hire offers.");
+        if (player.HirePool.Count == 0 && player.PendingHires.Count == 0
+            && !player.HasSnubbedHireOfferThisTurn)
+            HireResolver.FillInitialOffers(this, player);
+        return player.HirePool;
+    }
+
     public HireOfferSnubResult SnubHireOffer(PlayerId playerId, short gangDefinitionId)
     {
         var validation = HireRules.ValidateSnub(this, playerId, gangDefinitionId);

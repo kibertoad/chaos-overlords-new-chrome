@@ -5,5 +5,5 @@ var assetRoot = assetArgument >= 0 && assetArgument + 1 < args.Length
     ? Path.GetFullPath(args[assetArgument + 1])
     : Path.Combine(AppContext.BaseDirectory, "Assets");
 
-using var game = new ChaosGame(assetRoot);
+using var game = new ChaosGame(assetRoot, args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase));
 game.Run();

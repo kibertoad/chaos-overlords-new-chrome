@@ -25,8 +25,8 @@ controlled reference observation confirms its execution timing and edge cases.
   it from the panel and a replacement appears next turn. The player may instead
   fire one unwanted offer; its replacement likewise appears next turn. A hired
   gang begins with Force from 5 through 9 and may later be healed to 10.
-- Interpretation: one offer may be snubbed by the active player during each Hire
-  phase. It is removed immediately and refilled at `FinishHire`, the boundary
+- Interpretation: hiring and one offer snub are available throughout the active
+  player's planning turn. The choice is removed immediately and refilled at `FinishHire`, the boundary
   before the panel is next shown. Hired and snubbed vacancies are filled
   independently, so hiring and snubbing in one turn restores all three offers.
   A recruit's initial Force is generated uniformly in the inclusive range 5–9
@@ -40,7 +40,7 @@ controlled reference observation confirms its execution timing and edge cases.
 - Implementation: `MatchState.SnubHireOffer`, `HireRules.ValidateSnub`,
   `HireResolver.Resolve`, and `ManualRules.MinimumHiredGangForce` /
   `MaximumHiredGangForce`.
-- Tests: `HireAndEliminationTests` covers phase/player validation, the one-snub
+- Tests: `HireAndEliminationTests` covers planning/player validation, the one-snub
   limit, deferred refill, simultaneous hire plus snub, initial Force bounds,
   event details, RNG consumption, and deterministic hashes.
 - Next experiment: record repeated Hire panels and new-gang Force values from a

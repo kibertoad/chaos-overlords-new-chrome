@@ -87,6 +87,7 @@ public sealed class UiNavigationTests
     public void OriginalPortraitLayoutsCoverAllDefinitionSlots()
     {
         Assert.Equal(new Rectangle(116, 0, 48, 64), OriginalSpriteLayout.PolicePatrolCar);
+        Assert.Equal(new Rectangle(120, 300, 60, 60), OriginalSpriteLayout.HiredStamp);
         Assert.Equal(new Rectangle(0, 0, 120, 64), OriginalSpriteLayout.SitePortrait(0));
         Assert.Equal(new Rectangle(0, 21 * 64, 120, 64), OriginalSpriteLayout.SitePortrait(21));
         Assert.Equal(new Rectangle(0, 0, 64, 64), OriginalSpriteLayout.GangPortrait(0));
@@ -124,5 +125,17 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(18, 108, 20, 20), GangArtLayout.CombatPortrait(0, false));
         Assert.Equal(new Rectangle(42, 372, 20, 20), GangArtLayout.CombatPortrait(11, true));
         Assert.Throws<ArgumentOutOfRangeException>(() => GangArtLayout.CombatPortrait(12, false));
+    }
+
+    [Fact]
+    public void HireDockMatchesOriginalThreeCellStripAndRetainsHiredSlot()
+    {
+        Assert.Equal(new Rectangle(438, 370, 66, 90), HireDockLayout.Cell(0));
+        Assert.Equal(new Rectangle(571, 371, 64, 64), HireDockLayout.Portrait(2));
+        var cells = HireDockLayout.Project([1, 3], new PendingHireState(2, 12), 1);
+        Assert.Equal(new HireDockEntry(1, false), cells[0]);
+        Assert.Equal(new HireDockEntry(2, true), cells[1]);
+        Assert.Equal(new HireDockEntry(3, false), cells[2]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => HireDockLayout.Cell(3));
     }
 }

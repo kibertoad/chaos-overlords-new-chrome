@@ -25,7 +25,7 @@ original-game capture confirms the screen and interaction state.
 
 | Resource | Mapping | Confidence |
 |---|---|---|
-| `PX00129` | Main UI composite sheet: glyphs, action names, player bars, arrows, buttons, portraits, message controls and command icons | High from visible content; rectangles not yet complete |
+| `PX00129` | Main UI composite sheet: glyphs, action names, player bars, arrows, buttons, portraits, message controls and command icons; diagonal `HIRED` stamp `(120,300,60,60)` | High from visible content; remaining rectangles not yet complete |
 | `PX00132` | Next-player/Ready handoff panel | High from visible labels |
 | `PX00137`, `PX00139` | Empty and filled horizontal meter frames | Medium |
 | `PX00138` | Circular action/command icons | High from repeated command imagery |
@@ -80,6 +80,12 @@ validated against the executable.
   a 56-by-56 owner-colored frame, keeping the item list and statistics visible.
 - Gang Information places its 64-by-64 portrait at `(67,90)`, aligned to the
   inner aperture of the `PX05000` template drawn at `(42,74)`.
+- The city Hire dock uses three 66-pixel cells beginning at `(438,370)`, with
+  64-by-64 `PX03000` portraits at x 439, 505, and 571. Dragging an available
+  portrait shows a 36-by-36 token and highlights valid controlled-sector drops;
+  a reserved recruit retains its cell under the color-keyed original `HIRED`
+  stamp from `PX00129`. This interaction and placement were confirmed in the
+  user-supplied original-game capture and footage at 03:57.
 - Combat Summary places compact owner-colored attacker and defender portraits
   beside each visible attack result; police rows use the `PX00300` patrol car
   opposite the attacked gang.
@@ -95,6 +101,9 @@ Gangs `(492,226,50,17)`, Hire `(492,260,50,17)`, Sector `(548,226,50,17)`,
 Ranking `(548,243,50,17)`, and Search `(548,260,50,17)`. These rectangles come
 from bitmap inspection and remain provisional until executable capture confirms
 their exact edges and pressed states.
+Done uses the original panel cell at `(492,278,106,54)` in the recreation;
+normal mode resolves the internal phases automatically, while `--debug-phases`
+retains explicit advancement.
 
 ## Next mapping work
 

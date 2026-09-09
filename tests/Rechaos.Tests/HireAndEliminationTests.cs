@@ -75,7 +75,7 @@ public sealed class HireAndEliminationTests
         var wrongPhase = match.QueueHire(new PlayerId(0), 2, 0);
 
         Assert.Equal(HireValidationCode.InvalidPhase, wrongPhase.Validation.Code);
-        Assert.Equal("Gangs may only be hired during the Hire phase.", wrongPhase.Validation.Message);
+        Assert.Equal("Gangs may only be hired during the player's planning turn.", wrongPhase.Validation.Message);
         Assert.Equal(10, match.Players[0].Cash);
         Assert.Empty(match.Events);
 
@@ -89,6 +89,29 @@ public sealed class HireAndEliminationTests
         Assert.Equal(cashBefore, match.Players[0].Cash);
         Assert.Empty(match.Players[0].PendingHires);
         Assert.Equal(eventCountBefore, match.Events.Count);
+    }
+
+    [Fact]
+    public void HireCanBeChosenDuringCommandPlanningAndPlacedLater()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        var cashBefore = match.Players[0].Cash;
+
+        var result = match.QueueHire(new PlayerId(0), 2, 0);
+
+        Assert.True(result.Accepted);
+        Assert.Equal(cashBefore - 1, match.Players[0].Cash);
+        Assert.Single(match.Players[0].PendingHires);
+        Assert.Single(match.Players[0].Gangs);
+
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
+        match.FinishHire(new PlayerId(0));
+
+        Assert.Empty(match.Players[0].PendingHires);
+        Assert.Equal(2, match.Players[0].Gangs.Count);
     }
 
     [Fact]

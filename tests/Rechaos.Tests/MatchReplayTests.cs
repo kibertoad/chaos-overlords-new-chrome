@@ -75,6 +75,27 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void ReplaysPlanningTimeHireOfferGeneration()
+    {
+        var data = BundledOriginalData.Load();
+        var setupPlayer = new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human);
+        var recorder = new MatchReplayRecorder(OriginalMatchFactory.Create(data,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [setupPlayer])));
+        recorder.FinishUpkeep();
+
+        var offers = recorder.PrepareHireOffers(setupPlayer.Id).ToArray();
+
+        Assert.Equal(MatchLimits.HireOffersPerPlayer, offers.Length);
+        Assert.Equal(ReplayOperationKind.PrepareHireOffers, recorder.Steps[^1].Kind);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
+        Assert.Equal(offers, restored.Players[0].HirePool);
+        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void RejectsReplayWhoseExpectedStepHashWasModified()
     {
         var recorder = new MatchReplayRecorder(CreateMatch());

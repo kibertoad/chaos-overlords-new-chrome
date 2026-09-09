@@ -50,9 +50,12 @@ Setup supports scenario, duration, and one-to-six human/computer players using
 keyboard or mouse; click a player slot or press 1-6 to toggle its controller.
 The default two-player setup is Human vs Computer. In the city, use arrows/WASD or click to select, Enter or a second
 click to act, G to cycle gangs, C to open the legal-command picker, H to open
-the three-offer hire panel (including snubbing), I for sector details, F for the
+the three-offer hire panel during planning (including snubbing), I for sector details, F for the
 next-upkeep financial projection, R for scenario ranking, T for research and
-equipment, B for the combat summary, and Space to advance.
+equipment, B for the combat summary, and Space to finish planning. Recruit
+portraits remain in the lower-right city dock and can be dragged onto a
+controlled sector. Resolution phases run automatically in normal play; pass
+`--debug-phases` to expose individual deterministic phase steps.
 X opens the selected sector's detection-filtered gang search.
 In the equipment panel, V opens the legal same-sector recipient list for an
 equipped item; choose a gang with arrows or mouse and press Enter to queue Give.

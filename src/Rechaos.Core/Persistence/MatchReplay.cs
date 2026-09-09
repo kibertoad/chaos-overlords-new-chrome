@@ -16,7 +16,8 @@ public enum ReplayOperationKind : byte
     FinishExecutionPhase,
     FinishHire,
     FinishPlayerElimination,
-    DismissNotification
+    DismissNotification,
+    PrepareHireOffers
 }
 
 public sealed record ReplayStep(
@@ -83,6 +84,14 @@ public sealed class MatchReplayRecorder
             GangDefinitionId: gangDefinitionId, SectorId: sectorId,
             Accepted: result.Accepted, ValidationCode: (int)result.Validation.Code));
         return result;
+    }
+
+    public IReadOnlyList<short> PrepareHireOffers(PlayerId player)
+    {
+        EnsureSynchronized();
+        var offers = State.PrepareHireOffers(player);
+        Add(new ReplayStep(ReplayOperationKind.PrepareHireOffers, CurrentHash(), Player: player));
+        return offers;
     }
 
     public HireOfferSnubResult SnubHireOffer(PlayerId player, short gangDefinitionId)
@@ -163,7 +172,7 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    public const int CurrentFormatVersion = 2;
+    public const int CurrentFormatVersion = 3;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -210,7 +219,7 @@ public static class MatchReplaySerializer
 
     private static MatchState Apply(ReplayDocument document, OriginalData definitions)
     {
-        if (document.FormatVersion != CurrentFormatVersion)
+        if (document.FormatVersion is not (2 or CurrentFormatVersion))
             throw new InvalidDataException($"Unsupported replay format {document.FormatVersion}.");
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
@@ -272,6 +281,9 @@ public static class MatchReplaySerializer
                     throw new InvalidDataException($"Replay step {index} produced a different notification result.");
                 break;
             }
+            case ReplayOperationKind.PrepareHireOffers:
+                state.PrepareHireOffers(Required(step.Player, index));
+                break;
             default: throw new InvalidDataException($"Replay step {index} has an unknown operation kind.");
         }
     }

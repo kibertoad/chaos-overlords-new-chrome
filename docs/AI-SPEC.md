@@ -36,7 +36,8 @@ central sectors for Big Man, Support for Acceptance, and income for
 Greed/Dominance. Terminate is deliberately last-resort.
 
 Hiring ranks valid affordable offers by Force, Tech, Upkeep, and initial cost.
-It currently chooses at most one offer per Hire phase.
+It currently chooses at most one offer during its planning turn; placement is
+deferred to the internal Hire phase.
 
 The test suite drives Greed, Power, Acceptance, and Dominance through complete
 two-computer six-month matches. Each scenario is run twice at a fixed seed and

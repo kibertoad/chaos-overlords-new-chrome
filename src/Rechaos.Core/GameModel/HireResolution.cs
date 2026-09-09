@@ -63,8 +63,8 @@ public static class HireRules
     private static readonly IReadOnlyList<IValidationRule<Context, HireValidationCode>> Rules =
     [
         new DelegateRule(HireValidationCode.InvalidPhase,
-            "Gangs may only be hired during the Hire phase.",
-            context => context.State.Coordinator.Phase != TurnPhase.Hire),
+            "Gangs may only be hired during the player's planning turn.",
+            context => context.State.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)),
         new DelegateRule(HireValidationCode.InactivePlayer,
             "The hiring player is not active.",
             context => context.State.Coordinator.ActivePlayer != context.PlayerId),
@@ -144,8 +144,8 @@ public static class HireRules
     {
         ArgumentNullException.ThrowIfNull(state);
         var player = state.FindPlayer(playerId);
-        if (state.Coordinator.Phase != TurnPhase.Hire)
-            return new HireValidation(HireValidationCode.InvalidPhase, "Hire offers may only be snubbed during the Hire phase.");
+        if (state.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire))
+            return new HireValidation(HireValidationCode.InvalidPhase, "Hire offers may only be snubbed during the player's planning turn.");
         if (state.Coordinator.ActivePlayer != playerId || player is null)
             return new HireValidation(HireValidationCode.InactivePlayer, "The hiring player is not active.");
         if (player.Status != PlayerStatus.Active)
