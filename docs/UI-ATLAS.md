@@ -128,8 +128,9 @@ command. Enter remains the keyboard command shortcut.
 The detailed view follows the original full-screen composition from the
 reference capture: the 3-by-3 neighborhood begins at `(64,4)`, three 120-by-64
 site portraits stack at `(85,172)`, and up to two visible gang cards begin at
-`(251,4)`. Each friendly card exposes separate one-off and repeating order
-controls; both use the authoritative legal-command picker and set the existing
+`(251,4)`. The live right console and three-offer Hire dock remain visible.
+Each friendly card exposes separate one-off and repeating order controls; both
+use the authoritative legal-command picker and set the existing
 `GameCommand.Repeat` flag appropriately.
 
 `PX05016` is the original 344-by-209 `GANGS FOR HIRE` comparison panel. The

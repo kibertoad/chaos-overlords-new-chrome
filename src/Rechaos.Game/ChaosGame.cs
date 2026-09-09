@@ -1035,8 +1035,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void DrawSectorDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        DrawBoard(batch, pixel, font, state);
+        batch.Draw(pixel, new Rectangle(0, 0, 438, 460), Color.Black);
         DrawSectorSideRail(batch, pixel, font);
         var sector = state.Sectors[_cursor];
         DrawSectorNeighborhood(batch, pixel, font, state);
