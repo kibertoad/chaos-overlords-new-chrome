@@ -33,12 +33,12 @@ $safeRoot = $root.Replace('\', '/')
 $policyPath = Join-Path $PSScriptRoot 'repository-policy.json'
 $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
 
-$trackedOutput = & git -c "safe.directory=$safeRoot" -C $root ls-files -z
+$trackedOutput = @(& git -c "safe.directory=$safeRoot" -c core.quotepath=false -C $root ls-files)
 if ($LASTEXITCODE -ne 0) {
     throw "Unable to enumerate tracked files under '$root'."
 }
 
-$trackedPaths = @($trackedOutput -split "`0" | Where-Object { $_ } |
+$trackedPaths = @($trackedOutput | Where-Object { $_ } |
     ForEach-Object { Normalize-RepositoryPath $_ })
 $violations = [Collections.Generic.List[string]]::new()
 $restrictedExtensions = [Collections.Generic.HashSet[string]]::new(
