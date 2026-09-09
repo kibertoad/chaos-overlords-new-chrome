@@ -21,6 +21,23 @@ original-game capture confirms the screen and interaction state.
 | `PX00145` | Compact player setup frame | Low | Unmapped |
 | `PX00146` | Minimal two-slot setup frame | Low | Unmapped |
 
+## Composite sheets and panels
+
+| Resource | Mapping | Confidence |
+|---|---|---|
+| `PX00129` | Main UI composite sheet: glyphs, action names, player bars, arrows, buttons, portraits, message controls and command icons | High from visible content; rectangles not yet complete |
+| `PX00132` | Next-player/Ready handoff panel | High from visible labels |
+| `PX00137`, `PX00139` | Empty and filled horizontal meter frames | Medium |
+| `PX00138` | Circular action/command icons | High from repeated command imagery |
+| `PX00140` | Compact setup-control sheet matching `PX00143` labels | High |
+| `PX00150` | Two-state small command/equipment icon sheet | Medium |
+| `PX00200` | Endgame awards/statistics frame | High from visible labels |
+| `PX00201` | Endgame award/statistics symbols and controls | High from visible labels |
+| `PX00202`, `PX00203` | Victory and elimination panels | High from visible text |
+| `PX00300` | Police unit/equipment header sprites | High from visible content |
+| `PX03000` | Gang portrait/sprite composite | High from visible content |
+| `PX05000`-`PX05024` | Gang-information panel family | Medium from visible template fields |
+
 ## `PX00143` provisional hit map
 
 The recreation currently overlays selection borders and routes clicks through
