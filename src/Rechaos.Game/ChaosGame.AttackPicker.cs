@@ -106,7 +106,7 @@ public sealed partial class ChaosGame
         var forceWidth = forceBar.Width * gang.Force / ManualRules.MaximumForce;
         if (forceWidth > 0)
             batch.Draw(pixel, new Rectangle(forceBar.X, forceBar.Y, forceWidth, forceBar.Height),
-                PlayerColors[gang.Owner.Value]);
+                Color.Lime);
     }
 
     private void DrawTargetReticle(SpriteBatch batch, Texture2D pixel, Rectangle target)

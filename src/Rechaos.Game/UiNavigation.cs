@@ -15,6 +15,7 @@ public enum ClientScreen
     Sector,
     Gang,
     Site,
+    ItemInformation,
     Finance,
     Ranking,
     Items,
@@ -37,6 +38,7 @@ public sealed class ScreenRouter
         Current = Current is ClientScreen.Events or ClientScreen.Commands or ClientScreen.Hire
             or ClientScreen.Sector or ClientScreen.Gang or ClientScreen.Finance or ClientScreen.Ranking
             or ClientScreen.Site
+            or ClientScreen.ItemInformation
             or ClientScreen.Items or ClientScreen.Give
             or ClientScreen.CombatSummary
             or ClientScreen.Search
@@ -414,6 +416,26 @@ public static class SiteInformationLayout
             _ => throw new ArgumentOutOfRangeException(nameof(row))
         };
     }
+}
+
+public static class ItemInformationLayout
+{
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Portrait => new(132, 141, 56, 50);
+    public static Rectangle Ok => EquipmentCommandLayout.Ok;
+    public const int LeftValueRight = 287;
+    public const int RightValueRight = 383;
+    public static int StatisticY(int row) => GangInformationLayout.StatisticY(row);
+
+    public static string TypeLabel(int itemType) => itemType switch
+    {
+        0 => "STRENGTH",
+        1 => "BLADE",
+        2 => "RANGE",
+        3 => "ARMOR",
+        4 => "MISC",
+        _ => throw new ArgumentOutOfRangeException(nameof(itemType))
+    };
 }
 
 public static class InfluenceCommandLayout

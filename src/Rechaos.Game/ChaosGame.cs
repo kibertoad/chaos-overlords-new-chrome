@@ -72,6 +72,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _handoffPanel;
     private Texture2D? _gangInfoBackground;
     private Texture2D? _siteInfoBackground;
+    private Texture2D? _itemInfoBackground;
     private Texture2D? _hireComparisonBackground;
     private Texture2D? _influenceBackground;
     private Texture2D? _targetAcquisitionBackground;
@@ -94,6 +95,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly IndexedDoubleClickTracker _sectorGangClicks = new();
     private readonly IndexedDoubleClickTracker _sectorSiteClicks = new();
     private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
+    private readonly IndexedDoubleClickTracker _equipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _hirePortraitClicks = new();
     private readonly bool[] _computerPlayers = new bool[MatchLimits.PlayerCount];
     private readonly short[] _playerPortraits = Enumerable.Range(0, MatchLimits.PlayerCount)
@@ -112,6 +114,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private bool _choosingCommandTarget;
     private bool _commandRepeats;
     private ClientScreen _commandReturnScreen = ClientScreen.City;
+    private ClientScreen _managementReturnScreen = ClientScreen.City;
     private int _hireCursor;
     private int _itemCursor;
     private IReadOnlyList<GameCommand> _giveOptions = [];
@@ -138,6 +141,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private ClientScreen _siteDetailsReturnScreen = ClientScreen.Sector;
     private int? _siteDetailsSectorId;
     private int? _siteDetailsSlot;
+    private short? _itemDetailsId;
 
     public ChaosGame(string assetRoot, bool debugPhaseStepping = false)
     {
@@ -181,6 +185,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
         _siteInfoBackground = LoadTexture("PX05002.bmp");
+        _itemInfoBackground = LoadTexture("PX05001.bmp");
         _hireComparisonBackground = LoadTexture("PX05016.bmp");
         _influenceBackground = LoadTexture("PX05005.bmp");
         _targetAcquisitionBackground = LoadTexture("PX05003.bmp");
@@ -249,7 +254,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveHireCursor(1);
                 if (Pressed(keyboard, Keys.S)) SnubSelectedHireOffer();
                 if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    _screens.Show(ClientScreen.City);
+                    _screens.Show(_managementReturnScreen);
                 break;
             case ClientScreen.Sector:
                 UpdateSector(keyboard);
@@ -267,10 +272,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                     CloseSiteDetails();
                 break;
+            case ClientScreen.ItemInformation:
+                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    CloseItemDetails();
+                break;
             case ClientScreen.Finance:
             case ClientScreen.Ranking:
                 if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    _screens.Show(ClientScreen.City);
+                    _screens.Show(_managementReturnScreen);
                 break;
             case ClientScreen.Items:
                 if (Pressed(keyboard, Keys.Up)) MoveItemCursor(-1);
@@ -292,7 +301,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.CombatSummary:
             case ClientScreen.Search:
                 if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    _screens.Show(ClientScreen.City);
+                    _screens.Show(_managementReturnScreen);
                 break;
         }
         var pointerMapped = VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint);
@@ -379,6 +388,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Site when _state is not null:
                 DrawSiteDetails(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.ItemInformation when _state is not null:
+                DrawItemDetails(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.Finance when _state is not null:
                 DrawFinance(_batch, _pixel, _font, _state);
@@ -506,7 +518,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Events:
                 if (EventsDismiss.Contains(point)) DismissNotification();
-                else if (EventsBack.Contains(point)) _screens.Show(ClientScreen.City);
+                else if (EventsBack.Contains(point)) _screens.Show(_managementReturnScreen);
                 break;
             case ClientScreen.Commands:
                 HandleCommandsClick(point);
@@ -523,11 +535,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Site:
                 if (SiteInformationLayout.Ok.Contains(point)) CloseSiteDetails();
                 break;
+            case ClientScreen.ItemInformation:
+                if (ItemInformationLayout.Ok.Contains(point)) CloseItemDetails();
+                break;
             case ClientScreen.Finance:
             case ClientScreen.Ranking:
             case ClientScreen.CombatSummary:
             case ClientScreen.Search:
-                if (ManagementBack.Contains(point)) _screens.Show(ClientScreen.City);
+                if (ManagementBack.Contains(point)) _screens.Show(_managementReturnScreen);
                 break;
             case ClientScreen.Items:
                 HandleItemsClick(point);
@@ -546,6 +561,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             return;
         }
         if (_state is null) return;
+        if (HandleCityConsoleClick(point, ClientScreen.Sector)) return;
         var rejectSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
             .FirstOrDefault(slot => HireDockLayout.Reject(slot).Contains(point), -1);
         var hireSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
@@ -630,16 +646,29 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         else
         {
             _citySectorClicks.Cancel();
-            if (CityDone.Contains(point)) AdvanceTurn();
-            else if (CityEvents.Contains(point)) _screens.Show(ClientScreen.Events);
-            else if (CityCombatSummary.Contains(point)) _screens.Show(ClientScreen.CombatSummary);
-            else if (CityFinance.Contains(point)) _screens.Show(ClientScreen.Finance);
-            else if (CityGangs.Contains(point)) OpenSelectedGangDetails(ClientScreen.City);
-            else if (CityHire.Contains(point)) OpenHire();
-            else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
-            else if (CityRanking.Contains(point)) _screens.Show(ClientScreen.Ranking);
-            else if (CitySearch.Contains(point)) _screens.Show(ClientScreen.Search);
+            HandleCityConsoleClick(point, ClientScreen.City);
         }
+    }
+
+    private bool HandleCityConsoleClick(Point point, ClientScreen returnScreen)
+    {
+        if (CityDone.Contains(point)) AdvanceTurn();
+        else if (CityEvents.Contains(point)) OpenManagement(ClientScreen.Events, returnScreen);
+        else if (CityCombatSummary.Contains(point)) OpenManagement(ClientScreen.CombatSummary, returnScreen);
+        else if (CityFinance.Contains(point)) OpenManagement(ClientScreen.Finance, returnScreen);
+        else if (CityGangs.Contains(point)) OpenSelectedGangDetails(returnScreen);
+        else if (CityHire.Contains(point)) OpenHire(returnScreen);
+        else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
+        else if (CityRanking.Contains(point)) OpenManagement(ClientScreen.Ranking, returnScreen);
+        else if (CitySearch.Contains(point)) OpenManagement(ClientScreen.Search, returnScreen);
+        else return false;
+        return true;
+    }
+
+    private void OpenManagement(ClientScreen screen, ClientScreen returnScreen)
+    {
+        _managementReturnScreen = returnScreen;
+        _screens.Show(screen);
     }
 
     private void OpenCommands(bool repeat = false, ClientScreen returnScreen = ClientScreen.City)
@@ -865,7 +894,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 var itemVisible = Math.Min(12, indices.Count - itemFirst);
                 var itemRow = Enumerable.Range(0, Math.Max(0, itemVisible))
                     .FirstOrDefault(row => EquipmentCommandLayout.ItemRow(row).Contains(point), -1);
-                if (itemRow >= 0) _commandTargetCursor = indices[itemFirst + itemRow];
+                if (itemRow >= 0)
+                {
+                    _commandTargetCursor = indices[itemFirst + itemRow];
+                    var itemId = _commandTargetOptions[_commandTargetCursor].Target.Id;
+                    if (_equipmentItemClicks.Register(itemId, _inputTime)) OpenItemDetails((short)itemId);
+                }
                 else if (!EquipmentCommandLayout.Panel.Contains(point)) BackFromCommands();
                 return;
             }
@@ -1028,6 +1062,18 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _siteDetailsSectorId = null;
         _siteDetailsSlot = null;
         _screens.Show(returnScreen);
+    }
+
+    private void OpenItemDetails(short itemId)
+    {
+        _itemDetailsId = itemId;
+        _screens.Show(ClientScreen.ItemInformation);
+    }
+
+    private void CloseItemDetails()
+    {
+        _itemDetailsId = null;
+        _screens.Show(ClientScreen.Commands);
     }
 
     private static int Mod(int value, int divisor) => (value % divisor + divisor) % divisor;
@@ -1594,7 +1640,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var forceWidth = Math.Clamp((force.Width * gang.Force + 9) / 10, 0, force.Width);
         if (forceWidth > 0)
             batch.Draw(pixel, new Rectangle(force.X, force.Y, forceWidth, force.Height),
-                PlayerColors[gang.Owner.Value]);
+                Color.Lime);
 
         var controlsEnabled = gang.Owner == viewer;
         if (gang.QueuedCommand is { } queued)
@@ -2171,7 +2217,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _message = result.Accepted ? $"{command.Action.ToString().ToUpperInvariant()} QUEUED" : result.Validation.Message.ToUpperInvariant();
     }
 
-    private void OpenHire()
+    private void OpenHire(ClientScreen returnScreen = ClientScreen.City)
     {
         if (_state is null || _replay is null
             || _state.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)
@@ -2188,6 +2234,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             return;
         }
         _hireCursor = 0;
+        _managementReturnScreen = returnScreen;
         _screens.Show(ClientScreen.Hire);
     }
 
@@ -2287,7 +2334,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void HandleHireClick(Point point)
     {
-        if (HireComparisonLayout.Ok.Contains(point)) _screens.Show(ClientScreen.City);
+        if (HireComparisonLayout.Ok.Contains(point)) _screens.Show(_managementReturnScreen);
     }
 
     private void QueueSelectedHireOffer()

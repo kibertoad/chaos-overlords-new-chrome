@@ -184,7 +184,9 @@ enemy gang with its equipment and Force track. `PX05005` is the `SITE TO
 INFLUENCE` picker; its three staggered apertures contain the selected sector's
 actual building art. These identities and workflows are confirmed by supplied
 original-game captures. The recreation implements `PX05005` and the two-stage
-player/gang selection of `PX05003`; `PX05001` is mapped for the next panel pass.
+player/gang selection of `PX05003`. `PX05001` is now shared by Purchase and
+Research: a stationary item-row double-click opens its art, type, description,
+cost, tech level and fourteen modifiers, then returns to the same tab/selection.
 
 `PX05002` is the Site Information panel. Its 120-by-64 aperture uses the same
 `PX02000` strip as the detailed-sector buildings; the right data block reports

@@ -246,6 +246,11 @@ public sealed class UiNavigationTests
         Assert.Equal(245, SiteInformationLayout.StatisticY(0));
         Assert.Equal(272, SiteInformationLayout.StatisticY(2));
         Assert.Equal(308, SiteInformationLayout.StatisticY(6));
+        Assert.Equal(new Rectangle(132, 141, 56, 50), ItemInformationLayout.Portrait);
+        Assert.Equal("RANGE", ItemInformationLayout.TypeLabel(2));
+        Assert.Equal("ARMOR", ItemInformationLayout.TypeLabel(3));
+        Assert.Equal(244, ItemInformationLayout.StatisticY(0));
+        Assert.Equal(271, ItemInformationLayout.StatisticY(2));
     }
 
     [Theory]
