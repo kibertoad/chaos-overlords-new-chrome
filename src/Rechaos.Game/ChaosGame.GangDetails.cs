@@ -41,7 +41,7 @@ public sealed partial class ChaosGame
             int[] right = [stats.Stealth, stats.Detect, stats.Strength, stats.Blade, stats.Range, stats.Fighting, stats.MartialArts];
             for (var index = 0; index < left.Length; index++)
             {
-                var y = 244 + index * 10 + (index >= 2 ? 10 : 0);
+                var y = 242 + index * 10 + (index >= 2 ? 10 : 0);
                 DrawPanelValue(font, batch, left[index], 284, y);
                 DrawPanelValue(font, batch, right[index], 384, y);
             }
@@ -54,8 +54,8 @@ public sealed partial class ChaosGame
         batch.Draw(pixel, new Rectangle(200, 169, 186, 37), Color.Black);
         batch.Draw(pixel, new Rectangle(260, 216, 30, 12), Color.Black);
         batch.Draw(pixel, new Rectangle(360, 216, 25, 22), Color.Black);
-        batch.Draw(pixel, new Rectangle(260, 242, 30, 88), Color.Black);
-        batch.Draw(pixel, new Rectangle(360, 242, 25, 88), Color.Black);
+        batch.Draw(pixel, new Rectangle(250, 240, 44, 94), Color.Black);
+        batch.Draw(pixel, new Rectangle(350, 240, 39, 94), Color.Black);
         batch.Draw(pixel, new Rectangle(198, 324, 188, 1), Color.Lime);
     }
 
