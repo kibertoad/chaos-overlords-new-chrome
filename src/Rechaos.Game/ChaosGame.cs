@@ -56,7 +56,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData([Color.White]);
         _font = new PixelFont(_pixel);
-        _state = CreatePrototypeMatch(BundledOriginalData.Load());
+        _state = CreateInitialMatch(BundledOriginalData.Load());
         _replay = new MatchReplayRecorder(_state);
 
         var backgroundPath = Path.Combine(_assetRoot, "images", "PX00100.bmp");
@@ -284,36 +284,18 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
     }
 
-    private static int SectorSiteIncome(MatchState state, MatchSectorState sector) =>
-        sector.Sites.Sum(site => state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
+    private static int SectorSiteIncome(MatchState state, MatchSectorState sector) => sector.Income;
 
     private static string SectorSummary(MatchState state, MatchSectorState sector) =>
         $"SECTOR {sector.Id + 1}  TOL {sector.Tolerance}  "
         + string.Join(", ", sector.Sites.Select(site =>
             state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Name));
 
-    private static MatchState CreatePrototypeMatch(OriginalData data)
+    private static MatchState CreateInitialMatch(OriginalData data)
     {
         var playerSetup = new MatchPlayerSetup(new PlayerId(0), "PLAYER 1", PlayerController.Human);
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [playerSetup]);
-        var sectors = Enumerable.Range(0, MatchLimits.SectorCount).Select(id =>
-        {
-            var siteIds = id == 0
-                ? new short[] { MatchBootstrap.HeadquartersDefinitionId, 0, 1 }
-                : Enumerable.Range(0, MatchLimits.SitesPerSector)
-                    .Select(slot => data.Sites[(id * MatchLimits.SitesPerSector + slot) % (data.Sites.Count - 1)].Id)
-                    .ToArray();
-            return new MatchSectorState(id, siteIds.Select((siteId, slot) =>
-            {
-                var definition = data.Sites.Single(site => site.Id == siteId);
-                return new MatchSiteState(slot, siteId, definition.Resistance);
-            }).ToArray());
-        }).ToArray();
-        MatchPlayerStart[] starts =
-        [
-            new(new PlayerId(0), 0, ManualRules.MaximumForce, 500, [2, 3, 4])
-        ];
-        return MatchBootstrap.Create(data, setup, sectors, starts);
+        return OriginalMatchFactory.Create(data, setup);
     }
 
     private static void DrawBorder(SpriteBatch batch, Texture2D pixel, Rectangle rectangle, Color color, int thickness)

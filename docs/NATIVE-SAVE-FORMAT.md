@@ -1,6 +1,6 @@
 # Recreation-native save format
 
-Status: implemented format version 1
+Status: implemented format version 2
 Last updated: 2026-09-09
 
 This format belongs to the recreation. It is deliberately separate from the
@@ -9,7 +9,7 @@ claim of binary compatibility with either of them.
 
 ## Container and limits
 
-- UTF-8 JSON with camel-case property names and `formatVersion: 1`.
+- UTF-8 JSON with camel-case property names and `formatVersion: 2`.
 - Maximum accepted size: 16 MiB.
 - Unknown properties, missing constructor fields, invalid identifiers, invalid
   enum/phase combinations, and inconsistent sequence counters are rejected.
@@ -23,18 +23,18 @@ same-directory temporary file, flushes it to disk, retains the previous primary
 as `<save>.bak`, and promotes the temporary file over the primary. Recovery
 loads the backup only when the primary is missing, unreadable, or invalid.
 
-## Version 1 document
+## Version 2 document
 
 The top-level members are:
 
 | Member | Contents |
 |---|---|
-| `formatVersion` | Schema discriminator; currently `1` |
+| `formatVersion` | Schema discriminator; currently `2` |
 | `definitionsSha256` | Gameplay-definition compatibility fingerprint |
 | `stateSha256` | Canonical authoritative-state fingerprint |
 | `setup` | Scenario, duration, initial seed, ordered player definitions |
 | `players` | Cash/support/objective state, gangs, hire state, research, inventory, statistics |
-| `sectors` | Ownership, tolerance, chaos/crackdown/importance, and three site instances |
+| `sectors` | Ownership, explicit base income, tolerance, chaos/crackdown/importance, and three site instances |
 | `runtime` | Phase coordinator, RNG state/count, command queue/counter, event history/counter, notification queues/counters, phase hashes, and outcome |
 
 Gang command projections are reconstructed from the authoritative command queue
@@ -47,15 +47,16 @@ snapshot.
 
 ## Compatibility policy
 
-Readers reject unknown versions until an explicit migration is implemented and
-tested. A future writer must increment `formatVersion` for any incompatible
-shape or semantic change, retain a fixture for version 1, and migrate into the
-current in-memory model without changing the stored deterministic continuation.
+Readers accept version 1 and migrate its formerly implicit sector income from
+the sum of each sector's three site cash values. The legacy version-4 canonical
+hash is verified before the migrated state is returned. Unknown versions remain
+rejected. Future incompatible changes must increment `formatVersion`, retain
+fixtures, and preserve deterministic continuation during migration.
 
 Original-save import/export remains a separate research task. Native snapshots
 must never be presented as converted original saves.
 
-## Replay format version 1
+## Replay format version 2
 
 `MatchReplayRecorder` captures an initial native snapshot, then requires every
 authoritative mutation to pass through its API. It covers command submission and
@@ -73,6 +74,6 @@ members, missing values, unknown versions, and malformed operations are rejected
 files. The prototype client records all of its mutations and exposes atomic
 save plus verified playback through F6 and F10.
 
-The initial snapshot is required while original-compatible city generation is
-still unresolved. Once exact seed-to-city setup is recovered, a future replay
-version may replace it with setup inputs plus a verified generator version.
+Version 2 embeds native-save version 2 and uses canonical state hash version 5,
+which includes explicit sector income. The initial snapshot remains required
+until original seed selection and the complete setup context are verified.

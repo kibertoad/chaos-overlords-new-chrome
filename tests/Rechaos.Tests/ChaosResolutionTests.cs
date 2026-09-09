@@ -169,7 +169,7 @@ public sealed class ChaosResolutionTests
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
             ], id == 0 ? owner : null, id == 0 ? tolerance : 20,
-                crackdownActive: id == 0 && crackdownActive))
+                crackdownActive: id == 0 && crackdownActive, income: 2))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }

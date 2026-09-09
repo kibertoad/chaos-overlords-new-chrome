@@ -229,6 +229,67 @@ but field identities and action constants are not yet fully labeled.
 Force field and for paired full/halved success loops, then correlate the result
 with a controlled original-game combat observation.
 
+## New-game initialization
+
+### BIN-CITY-001 - density-derived sector income and tolerance
+
+**Observation:** In EXE-GOG-1.1, `0x00475fe1` constructs a 32 by 32 integer
+density field. Forty pairs of bounded `1..32` draws select zero-based centers.
+Four nested-radius passes add clipped 2 by 2, 4 by 4 and 6 by 6 footprints,
+capping cells at four. Each board sector sums the corresponding 4 by 4 cells.
+Its income byte is rounded from the average and offset by three; its initial
+tolerance byte is `17 - income`.
+
+**Interpretation:** Generated base income is 3 through 7 and is independent of
+the three sites' cash benefits. The recreation therefore stores sector income
+explicitly rather than deriving it from site definitions.
+
+**Confidence:** High static evidence; runtime reference fixture pending.
+
+### BIN-CITY-002 - three-site rejection sampling
+
+**Observation:** `0x004764b6` draws a site ID from 0 through 20. In scenario
+index 9 it rejects IDs 4 and 8. `0x00475fe1` rejects duplicate second/third
+sites, and `0x00476516` rejects a partial combination when the sum of any of
+the 14 site statistic modifiers is outside -6 through +6.
+
+**Interpretation:** Site frequency is not used by this generation path. Scenario
+9 is Armageddon; its excluded Research Lab and Science Center agree with the
+scenario's initially completed research.
+
+**Confidence:** High static evidence; runtime reference fixture pending.
+
+### BIN-CITY-003 - headquarters and Right Hands
+
+**Observation:** `0x00439563` writes sector IDs 9, 12, 30, 33, 51 and 54.
+`0x00476726` creates a six-value permutation by repeated bounded `1..6` draws
+with duplicate rejection, maps players through that table, assigns ownership,
+and replaces site slot zero with definition 21. `0x0046dc10` then initializes
+gang definition zero in each player's assigned sector at Force 10.
+
+**Interpretation:** Those six fixed sectors are the only new-game HQ candidates;
+Right Hands is definition zero and always starts at maximum Force.
+
+**Confidence:** High static evidence; active-player-count presentation and a
+runtime reference fixture remain pending.
+
+### BIN-HIRE-001 - initial and replacement offers
+
+**Observation:** `0x0046e766` initializes all three offer bytes per internal
+player to signed -100. Before a human interaction it calls `0x004716eb`, which
+fills negative slots using repeated bounded `1..89` draws, rejecting duplicates
+among the three slots and the positive ID represented by the replaced negative
+slot. The hire resolver at `0x00472775` negates removed offers before refill and
+creates a hired gang with a bounded `1..5` result plus four.
+
+**Interpretation:** Initial offers are populated on first interaction. Replacement
+selection is rejection sampling over gang IDs 1 through 89; a just-hired or
+snubbed gang cannot immediately replace itself. Hired Force is uniformly 5
+through 9 through the recovered bounded wrapper.
+
+**Confidence:** High static evidence; panel timing and runtime sequences still
+need a controlled original-game observation.
+
 ## Toolchain hypothesis
 
 ### BIN-TOOL-001 - compiler/runtime

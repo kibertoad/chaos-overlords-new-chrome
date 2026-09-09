@@ -261,16 +261,16 @@ Compatibility state may not depend on system time, thread scheduling, hash-map
 iteration, locale, filesystem ordering, rendering frames, audio playback, or
 platform floating-point differences. Collections that affect decisions use a
 defined order. The headless model reproduces the recovered Visual C++ 1998 raw
-RNG step and the game's three-sample inclusive-range wrapper. Initial seeding
-and the complete call-site order remain provisional. The older playable
-prototype still uses `System.Random` and remains outside the compatibility-state
-boundary.
+RNG step and the game's three-sample inclusive-range wrapper. Generated city,
+headquarters and hire offers consume that explicit stream. Initial seeding and
+the complete call-site order remain provisional; presentation effects must use
+a separate cosmetic stream.
 
 State hashes are computed from a versioned canonical little-endian binary
 encoding after transitions made through `MatchState`. The encoding includes
 definitions, setup, phase/RNG state, players, sectors, commands, and pending
-notifications. Replays will store setup plus ordered commands and expected phase
-hashes.
+notifications. Replays store an initial native snapshot, ordered authoritative
+operations and expected state hashes.
 
 ## Proprietary-content boundary
 
@@ -301,14 +301,12 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
   automatic recovery checkpoint after Player Elimination completes each turn.
   All client mutations pass through `MatchReplayRecorder`; F6/F10 atomically
   save and verify/play the current
-  replay. Its single-player city/site layout, starting values and initial offers
-  are explicitly a presentation prototype, not a parity claim.
+  replay. New matches now use the recovered density/site generator, fixed HQ
+  candidates, Right Hands setup and deferred initial offers; original seed
+  selection and complete setup-mode context remain provisional.
 - The client still lacks a screen router, command picker, AI turn driver,
   notifications, animations and most original panels.
-- Exact control edges and city generation remain provisional.
-- The prototype client still advances its older per-player turn directly rather
-  than driving `TurnCoordinator`; within-subphase command ordering is explicitly
-  provisional until the binary tie-breaker is recovered.
+- Exact control edges and within-subphase command ordering remain provisional.
 - Runtime manifest checking validates version only.
 - Media resources are extracted but not presented.
 

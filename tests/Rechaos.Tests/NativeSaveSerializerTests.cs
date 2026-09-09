@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Nodes;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
@@ -75,7 +76,9 @@ public sealed class NativeSaveSerializerTests
         using var stream = new MemoryStream();
         NativeSaveSerializer.Save(stream, match);
         var json = Encoding.UTF8.GetString(stream.ToArray());
-        var unknownVersion = json.Replace("\"formatVersion\":1", "\"formatVersion\":999", StringComparison.Ordinal);
+        var unknownVersion = json.Replace(
+            $"\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion}",
+            "\"formatVersion\":999", StringComparison.Ordinal);
 
         Assert.Throws<InvalidDataException>(() => NativeSaveSerializer.Load(
             new MemoryStream(Encoding.UTF8.GetBytes(unknownVersion)), match.Definitions));
@@ -88,6 +91,27 @@ public sealed class NativeSaveSerializerTests
         };
         stream.Position = 0;
         Assert.Throws<InvalidDataException>(() => NativeSaveSerializer.Load(stream, changedDefinitions));
+    }
+
+    [Fact]
+    public void VersionOneSaveMigratesSiteCashDerivedSectorIncome()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 1;
+        document["stateSha256"] = MatchStateHasher.ComputeLegacySha256(match);
+        foreach (var sector in document["sectors"]!.AsArray())
+            sector!.AsObject().Remove("income");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.All(restored.Sectors, sector => Assert.Equal(
+            sector.Sites.Sum(site => match.Definitions.Sites.Single(
+                definition => definition.Id == site.DefinitionId).Cash),
+            sector.Income));
     }
 
     [Fact]

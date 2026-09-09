@@ -42,7 +42,7 @@ is ever attempted.
 | Original data | Embedded 22 sites, 90 gangs, and 64 items with pinned provenance | Semantic/formula validation, versioned generation tool |
 | Extraction | Transactional/versioned full-pack SHA-256 validation; 215 repaired RGB555 PX16 images, 214 retained plus decoded PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files; generated 685-output factual catalog | Transparency/color-key validation, video strategy, semantic role/owner resolution |
 | Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, Upkeep, all 14 command resolvers, simultaneous gang/Crackdown combat, hidden attack/visibility checks, and local influenced-site stats | Crackdown duration/aftermath, special buildings, original RNG seeding/order and exact parity formulas |
-| Client | Scaled 640x460 view backed by authoritative `MatchState`, original background loading, keyboard phase/Move/Control/Hire interaction, atomic F5/F9 native quick-save/load, end-turn autosave, and F6/F10 replay recording/playback, basic board | Exact city/setup integration, original screens, sprites, mouse UI, AI driver, animation, sound/music, accessibility |
+| Client | Scaled 640x460 view backed by authoritative `MatchState`, recovered city/HQ/Right Hands setup, original background loading, keyboard phase/Move/Control/Hire interaction, atomic F5/F9 native quick-save/load, end-turn autosave, and F6/F10 replay recording/playback | Setup screens, screen router, sprites/atlas, mouse UI, AI driver, animation, sound/music, accessibility |
 | Tests | Parser/header/provenance, asset verification, scenarios, manual rules, deterministic non-combat action resolution, command queue and phase coordinator | Reference fixtures, combat, AI snapshots, save compatibility, visual tests |
 | Documentation | File/binary research, generated factual asset catalog, architecture, validation, parity matrix and this roadmap | Rules, save map, UI atlas and remaining documents listed in section 4 |
 
@@ -556,17 +556,17 @@ unmarked guess.
 | Milestone | Status | Implemented foundation | Work required before gate |
 |---|---|---|---|
 | M0 | In progress | Research templates; file/binary logs; architecture, validation and parity documents; source/output verification; rollback-safe staged installation; sanitized reference-fixture schema; labeled JSON state-diff tool; versioned 685-output manifest and generated factual asset catalog | One captured, fully documented reference observation |
-| M1 | Foundation started | Ten scenario definitions and durations; 8x8/three-site prototype; explicit-layout bootstrap with controlled HQ/Right Hands initialization and Armageddon setup overrides; scaled MonoGame client running the authoritative phase/command/hire model | Exact city generation and placement inputs, atlas, screen router, mouse input and reference fixtures |
-| M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; common typed validation-rule pipeline; deferred hire purchase/placement, one-offer-per-turn snubbing, 5–9 initial Force, deterministic vacancy refill; player elimination; declarative validation for all action target shapes; typed queue mutations and ordered events; bounded notification queues; recovered RNG; canonical phase hashes | Binary-validated offer, Force-roll and within-phase ordering, and remaining reference-derived edge rules |
+| M1 | Foundation started | Ten scenario definitions and durations; recovered 32x32 density-derived 8x8 city, balanced three-site rejection sampling, explicit sector income/tolerance, fixed-candidate HQ permutation, Right Hands Force 10, Armageddon exclusions/overrides, and authoritative client integration | Original seed/setup-mode fixture, atlas, setup screens, screen router and mouse input |
+| M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; common typed validation-rule pipeline; deferred hire purchase/placement, one-offer-per-turn snubbing, binary-derived 1–89 rejection refill and 5–9 initial Force; player elimination; declarative validation for all action target shapes; typed queue mutations and ordered events; bounded notification queues; recovered RNG; canonical phase hashes | Runtime offer/Force fixtures, within-phase ordering, and remaining reference-derived edge rules |
 | M3 | Foundation started | Ordered base Upkeep economy; all Instant and Transaction actions; Move/Terminate; grouped Influence and Control with ownership/site reset; phase-wide grouped Chaos income/accumulation/crackdown; local influenced-site stat projection; deterministic Research; pure police helpers | Binary Chaos/reset/police fixtures, cross-player Influence/Control conflicts, special buildings, desertion, research caps, factory discounts/acquisition/swap fixtures and M2 gate |
 | M4 | Foundation started | Recovered raw RNG/range algorithms; serializable state; effective item/site stats; phase-wide Attack/retaliation and Crackdown police snapshots; hidden/police detection; elimination and recorded rolls | Crackdown duration/aftermath, reveal timing, RNG seed/call-order validation, binary combat fixtures, and M2-M3 gates |
-| M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v1 snapshots and authoritative-operation replays with deterministic continuation/divergence checks plus client save/replay flows | Siege setup/visual mapping, objective ranking/tie fixtures, save/replay migration, UI deliverable and M4 gate |
+| M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v2 snapshots with v1 migration and v2 authoritative-operation replays plus client save/replay flows | Siege setup/visual mapping, objective ranking/tie fixtures, checked-in persistence fixtures, management UI deliverable and M4 gate |
 | M6 | Not started | None | M5 and AI research/implementation |
 | M7 | Not started | Proprietary media is extracted and classified only | Complete atlas/event integration and M1-M6 dependencies |
 | M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
 | M9 | Not started | None | Frozen deterministic simulation after M8 |
 
-Current automated baseline: the solution builds successfully, 229 tests
+Current automated baseline: the solution builds successfully, 235 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.
@@ -699,10 +699,11 @@ not lines of code or asset counts.
    queue events are now in place.
 4. Obtain original save/reference fixtures and connect them to state diffs and
    phase-boundary hashes.
-5. Reproduce original city generation, HQ/Right Hands placement and new-game
-   state exactly.
-6. Replace prototype control, hiring and economy formulas with observed rules.
-7. Connect the client to the headless phase coordinator and command/event flow.
+5. Capture an original new-game fixture to validate the implemented city,
+   HQ/Right Hands, initial-offer and RNG sequence, including seed/setup context.
+6. Build the M1 UI shell: setup screens, screen router, mouse input and the first
+   mapped atlas slices on top of the authoritative generated match.
+7. Replace remaining provisional control and economy formulas with observed rules.
 8. Implement each action vertically: validation, resolution, event, UI, media,
    documentation and reference fixture before starting the next.
 9. Complete objectives/hot-seat, then AI, then audiovisual parity.

@@ -163,7 +163,7 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    public const int CurrentFormatVersion = 1;
+    public const int CurrentFormatVersion = 2;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 

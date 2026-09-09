@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 1;
+    public const int CurrentFormatVersion = 2;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -56,7 +56,7 @@ public static class NativeSaveSerializer
 
     private static MatchState RestoreDocument(NativeSaveDocument document, OriginalData definitions)
     {
-        if (document.FormatVersion != CurrentFormatVersion)
+        if (document.FormatVersion is not (1 or CurrentFormatVersion))
             throw new InvalidDataException($"Unsupported native save format {document.FormatVersion}.");
         if (!CryptographicOperations.FixedTimeEquals(
                 DecodeSha256(document.DefinitionsSha256, "definition fingerprint"),
@@ -70,7 +70,8 @@ public static class NativeSaveSerializer
             document.Setup.Players.Select(player => new MatchPlayerSetup(
                 new PlayerId(player.Id), player.Name, player.Controller)).ToArray());
         var players = document.Players.Select(player => RestorePlayer(setup, player)).ToArray();
-        var sectors = document.Sectors.Select(RestoreSector).ToArray();
+        var sectors = document.Sectors.Select(sector => RestoreSector(
+            sector, definitions, document.FormatVersion)).ToArray();
         var notifications = document.Runtime.Notifications.ToDictionary(
             entry => new PlayerId(entry.Player),
             entry => (IReadOnlyList<GameNotification>)entry.Items);
@@ -94,7 +95,9 @@ public static class NativeSaveSerializer
         var state = new MatchState(definitions, setup, players, sectors, runtime);
         if (!CryptographicOperations.FixedTimeEquals(
                 DecodeSha256(document.StateSha256, "state fingerprint"),
-                DecodeSha256(MatchStateHasher.ComputeSha256(state), "restored state fingerprint")))
+                DecodeSha256(document.FormatVersion == 1
+                    ? MatchStateHasher.ComputeLegacySha256(state)
+                    : MatchStateHasher.ComputeSha256(state), "restored state fingerprint")))
             throw new InvalidDataException("Native save state fingerprint does not match its contents.");
         return state;
     }
@@ -191,9 +194,13 @@ public static class NativeSaveSerializer
         sector.CrackdownActive,
         sector.IsImportant,
         sector.Sites.Select(site => new SiteDocument(
-            site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy?.Value)).ToArray());
+            site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy?.Value)).ToArray(),
+        sector.Income);
 
-    private static MatchSectorState RestoreSector(SectorDocument sector) => new(
+    private static MatchSectorState RestoreSector(
+        SectorDocument sector,
+        OriginalData definitions,
+        int formatVersion) => new(
         sector.Id,
         sector.Sites.Select(site => new MatchSiteState(
             site.Slot,
@@ -204,7 +211,11 @@ public static class NativeSaveSerializer
         sector.Tolerance,
         sector.Chaos,
         sector.CrackdownActive,
-        sector.IsImportant);
+        sector.IsImportant,
+        formatVersion == 1
+            ? sector.Sites.Sum(site => definitions.Sites.Single(
+                definition => definition.Id == site.DefinitionId).Cash)
+            : sector.Income ?? throw new InvalidDataException("Native save sector income is missing."));
 
     private static MemoryStream ReadBounded(Stream source)
     {
@@ -315,7 +326,8 @@ internal sealed record SectorDocument(
     int Chaos,
     bool CrackdownActive,
     bool IsImportant,
-    IReadOnlyList<SiteDocument> Sites);
+    IReadOnlyList<SiteDocument> Sites,
+    int? Income = null);
 
 internal sealed record SiteDocument(int Slot, short DefinitionId, int Resistance, int? InfluencedBy);
 

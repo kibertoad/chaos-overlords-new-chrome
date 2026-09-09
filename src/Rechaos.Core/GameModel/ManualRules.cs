@@ -19,6 +19,8 @@ public static class ManualRules
     public const int PoliceDetect = 12;
     public const int HealBaseDice = 4;
     public const int ControlledSectorTax = 1;
+    public const int MinimumSectorIncome = 3;
+    public const int MaximumSectorIncome = 7;
 
     public static int ApplyBribe(int tolerance)
     {

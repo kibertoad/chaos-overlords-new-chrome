@@ -191,7 +191,8 @@ public sealed class MatchSectorState
         int tolerance = ManualRules.MinimumTolerance,
         int chaos = 0,
         bool crackdownActive = false,
-        bool isImportant = false)
+        bool isImportant = false,
+        int income = ManualRules.MinimumSectorIncome)
     {
         if (id is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(id));
@@ -203,6 +204,7 @@ public sealed class MatchSectorState
         if (tolerance is < ManualRules.MinimumTolerance or > ManualRules.MaximumTolerance)
             throw new ArgumentOutOfRangeException(nameof(tolerance));
         if (chaos < 0) throw new ArgumentOutOfRangeException(nameof(chaos));
+        if (income < 0) throw new ArgumentOutOfRangeException(nameof(income));
         Id = id;
         Sites = sites.OrderBy(site => site.Slot).ToArray();
         Owner = owner;
@@ -210,6 +212,7 @@ public sealed class MatchSectorState
         Chaos = chaos;
         CrackdownActive = crackdownActive;
         IsImportant = isImportant;
+        Income = income;
     }
 
     public int Id { get; }
@@ -219,6 +222,7 @@ public sealed class MatchSectorState
     public int Chaos { get; internal set; }
     public bool CrackdownActive { get; internal set; }
     public bool IsImportant { get; }
+    public int Income { get; }
 }
 
 public sealed class MatchSiteState
@@ -304,7 +308,7 @@ public sealed class MatchState
         MatchSetup setup,
         IReadOnlyList<MatchPlayerState> players,
         IReadOnlyList<MatchSectorState> sectors)
-        : this(definitions, setup, players, sectors, null)
+        : this(definitions, setup, players, sectors, (MatchRuntimeRestore?)null)
     {
     }
 
@@ -348,6 +352,24 @@ public sealed class MatchState
         _notifications = Players.ToDictionary(player => player.Id, _ => new NotificationQueue());
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         if (restore is not null) RestoreRuntime(restore);
+    }
+
+    internal MatchState(
+        OriginalData definitions,
+        MatchSetup setup,
+        IReadOnlyList<MatchPlayerState> players,
+        IReadOnlyList<MatchSectorState> sectors,
+        DeterministicRandom initialRandom)
+        : this(definitions, setup, players, sectors, new MatchRuntimeRestore(
+            1, TurnPhase.Upkeep, null, null,
+            initialRandom.State, initialRandom.ConsumptionCount,
+            [], 0, [], 0,
+            players.ToDictionary(player => player.Id,
+                _ => (IReadOnlyList<GameNotification>)Array.Empty<GameNotification>()),
+            players.ToDictionary(player => player.Id, _ => 0L),
+            [], null))
+    {
+        ArgumentNullException.ThrowIfNull(initialRandom);
     }
 
     public OriginalData Definitions { get; }
@@ -475,6 +497,8 @@ public sealed class MatchState
             foreach (var gang in Players.SelectMany(player => player.Gangs))
                 gang.QueuedCommand = Commands.TryGet(gang.Id, out var queued) ? queued : null;
         }
+        if (transition.Phase == TurnPhase.Hire && transition.ActivePlayer is { } hiringPlayer)
+            HireResolver.FillInitialOffers(this, FindPlayer(hiringPlayer)!);
         return CaptureBoundary(transition);
     }
     public TurnTransition FinishHire(PlayerId player)
@@ -483,7 +507,10 @@ public sealed class MatchState
             return CaptureBoundary(Coordinator.FinishHire(player));
         var state = FindPlayer(player) ?? throw new ArgumentOutOfRangeException(nameof(player));
         LastHireResolutions = HireResolver.Resolve(this, state);
-        return CaptureBoundary(Coordinator.FinishHire(player));
+        var transition = Coordinator.FinishHire(player);
+        if (transition.Phase == TurnPhase.Hire && transition.ActivePlayer is { } hiringPlayer)
+            HireResolver.FillInitialOffers(this, FindPlayer(hiringPlayer)!);
+        return CaptureBoundary(transition);
     }
 
     public TurnTransition FinishPlayerElimination()

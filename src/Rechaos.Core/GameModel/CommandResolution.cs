@@ -602,9 +602,7 @@ public static class CommandResolver
         }
     }
 
-    private static int SectorIncome(MatchState state, MatchSectorState sector) =>
-        sector.Sites.Sum(site =>
-            state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
+    private static int SectorIncome(MatchState state, MatchSectorState sector) => sector.Income;
 
     private static CommandResolutionResult ResolveHeal(MatchState state, GameCommand command)
     {

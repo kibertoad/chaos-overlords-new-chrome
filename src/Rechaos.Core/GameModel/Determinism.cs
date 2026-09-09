@@ -64,16 +64,21 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 4;
+    private const int FormatVersion = 5;
+
+    internal static string ComputeLegacySha256(MatchState state) => ComputeSha256(state, 4, includeSectorIncome: false);
 
     public static string ComputeSha256(MatchState state)
+        => ComputeSha256(state, FormatVersion, includeSectorIncome: true);
+
+    private static string ComputeSha256(MatchState state, int formatVersion, bool includeSectorIncome)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
         using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
         {
             writer.Write(Encoding.ASCII.GetBytes("RCHS"));
-            writer.Write(FormatVersion);
+            writer.Write(formatVersion);
             WriteDefinitions(writer, state.Definitions);
             writer.Write((byte)state.Setup.Scenario);
             writer.Write((byte)state.Setup.Duration);
@@ -121,7 +126,7 @@ public static class MatchStateHasher
             writer.Write(state.Players.Count);
             foreach (var player in state.Players.OrderBy(item => item.Id.Value)) WritePlayer(writer, player);
             writer.Write(state.Sectors.Count);
-            foreach (var sector in state.Sectors.OrderBy(item => item.Id)) WriteSector(writer, sector);
+            foreach (var sector in state.Sectors.OrderBy(item => item.Id)) WriteSector(writer, sector, includeSectorIncome);
 
             var commands = state.Commands.ExecutionPlan().OrderBy(item => item.Sequence).ToArray();
             writer.Write(state.Commands.NextSequence);
@@ -190,7 +195,7 @@ public static class MatchStateHasher
         writer.Write(player.Statistics.TimesHidden);
     }
 
-    private static void WriteSector(BinaryWriter writer, MatchSectorState sector)
+    private static void WriteSector(BinaryWriter writer, MatchSectorState sector, bool includeIncome)
     {
         writer.Write(sector.Id); WriteNullableInt(writer, sector.Owner?.Value); writer.Write(sector.Tolerance); writer.Write(sector.Chaos);
         writer.Write(sector.CrackdownActive); writer.Write(sector.IsImportant); writer.Write(sector.Sites.Count);
@@ -198,6 +203,7 @@ public static class MatchStateHasher
         {
             writer.Write(site.Slot); writer.Write(site.DefinitionId); writer.Write(site.Resistance); WriteNullableInt(writer, site.InfluencedBy?.Value);
         }
+        if (includeIncome) writer.Write(sector.Income);
     }
 
     private static void WriteCommand(BinaryWriter writer, GameCommand command)

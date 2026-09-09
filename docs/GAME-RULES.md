@@ -30,12 +30,13 @@ controlled reference observation confirms its execution timing and edge cases.
   before the panel is next shown. Hired and snubbed vacancies are filled
   independently, so hiring and snubbing in one turn restores all three offers.
   A recruit's initial Force is generated uniformly in the inclusive range 5–9
-  through the recovered bounded RNG wrapper.
-- Current exclusions: the original offer-eligibility and replacement ordering,
-  the exact starting-Force RNG call site/distribution, and behavior when no
-  eligible replacement remains have not been confirmed against the executable.
-- Confidence: High for three offers, one rejected offer, next-turn replacement,
-  and the 5–9 Force range; Low for replacement selection and RNG ordering.
+  through the recovered bounded RNG wrapper. Initial and replacement offers use
+  rejection sampling over definition IDs 1 through 89, rejecting other visible
+  offers and the offer just removed.
+- Current exclusions: controlled runtime confirmation of panel refill timing and
+  behavior with modified or incomplete definition data.
+- Confidence: High for the range, static call sites, rejection behavior and RNG
+  ordering; runtime correlation remains pending.
 - Implementation: `MatchState.SnubHireOffer`, `HireRules.ValidateSnub`,
   `HireResolver.Resolve`, and `ManualRules.MinimumHiredGangForce` /
   `MaximumHiredGangForce`.

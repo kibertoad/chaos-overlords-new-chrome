@@ -169,7 +169,7 @@ internal static class HireResolver
                 HiredThisTurn = true
             };
             player.AddGang(gang);
-            var replacement = RefillOffer(state, player);
+            var replacement = RefillOffer(state, player, pending.GangDefinitionId);
             var details = new HireResolutionDetails(
                 pending.GangDefinitionId, pending.TargetSectorId,
                 HireRules.InitialCost(definition), gang.Id, replacement, initialForce);
@@ -183,7 +183,7 @@ internal static class HireResolver
         player.ClearPendingHires();
         if (player.HasSnubbedHireOfferThisTurn)
         {
-            var replacement = RefillOffer(state, player);
+            var replacement = RefillOffer(state, player, player.SnubbedHireOffer);
             if (replacement is { } gangDefinitionId)
             {
                 var gameEvent = state.AppendHireOfferEvent(
@@ -197,15 +197,23 @@ internal static class HireResolver
         return results;
     }
 
-    private static short? RefillOffer(MatchState state, MatchPlayerState player)
+    internal static void FillInitialOffers(MatchState state, MatchPlayerState player)
+    {
+        while (player.HirePool.Count < MatchLimits.HireOffersPerPlayer)
+            RefillOffer(state, player, excludedDefinitionId: null);
+    }
+
+    private static short? RefillOffer(
+        MatchState state,
+        MatchPlayerState player,
+        short? excludedDefinitionId)
     {
         if (player.HirePool.Count >= MatchLimits.HireOffersPerPlayer) return null;
-        var candidates = state.Definitions.Gangs
-            .Where(definition => definition.Id != 0 && !player.HirePool.Contains(definition.Id))
-            .OrderBy(definition => definition.Id)
-            .ToArray();
-        if (candidates.Length == 0) return null;
-        var selected = candidates[state.Random.NextInt(candidates.Length)].Id;
+        short selected;
+        do selected = checked((short)state.Random.NextInclusive(89));
+        while (player.HirePool.Contains(selected) || selected == excludedDefinitionId);
+        if (!state.Definitions.Gangs.Any(definition => definition.Id == selected))
+            throw new InvalidOperationException("Original hire refill requires gang definitions 1 through 89.");
         player.AddHireOffer(selected);
         return selected;
     }

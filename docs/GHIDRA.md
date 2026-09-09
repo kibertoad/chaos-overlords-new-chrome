@@ -114,6 +114,11 @@ decompiler output with:
 Use this only for bounded navigation and interpretation. Do not redirect broad
 decompiler output into the repository.
 
+`ReportReferences.java` reports references to explicitly supplied addresses and
+their containing functions. `ReportDataBytes.java` prints at most 256 bytes at
+an explicitly supplied virtual address. Both are navigation aids for small,
+reviewable questions; their output must not be committed.
+
 ## Evidence discipline
 
 - Record executable hash, Ghidra version, virtual address, call relationship,
