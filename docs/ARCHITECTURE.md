@@ -50,7 +50,9 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   grouped phase dispatch and result codes; all Instant actions (Bribe, Heal,
   Hide, Influence, Research, and Snitch) now resolve.
 - `GameModel/EconomyResolution.cs`: ordered Upkeep-phase sector/site income,
-  gang upkeep, zero-floor results, events, and notifications.
+  gang upkeep, persistent negative balances, events, and notifications.
+- `GameModel/ToleranceResolver.cs`: income/site-derived normal tolerance and
+  one-point Upkeep restoration of temporary Bribe/Snitch changes.
 - `GameModel/Notifications.cs`: bounded per-player mechanical notification queues
   with presentation-independent payloads.
 - `GameModel/Determinism.cs`: serializable recovered Visual C++ random step and

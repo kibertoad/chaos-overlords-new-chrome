@@ -189,6 +189,23 @@ controlled reference observation confirms its execution timing and edge cases.
 - Next experiment: execute Snitch at tolerance 0–4 with and without influenced
   sites and compare immediate plus next-turn save deltas.
 
+### RULE-TOLERANCE-001 — Return toward normal tolerance
+
+- Source: `MANUAL-GOG-1`; sector and site statistic descriptions.
+- Observed statement: a sector's normal tolerance is determined by its income,
+  with influenced-site Tolerance values modifying that normal. Temporary
+  tolerance changes move one point toward normal each turn.
+- Interpretation: normal tolerance is `17 - sector Income + sum(Tolerance)` for
+  currently influenced sites, clamped to 0–40. During Upkeep, every sector's
+  current tolerance moves exactly one point toward that value.
+- Confidence: High for the formula and one-point adjustment; Medium for the
+  exact turn boundary and whether an influence change applies immediately.
+- Implementation: `ToleranceResolver`, invoked by `MatchState.FinishUpkeep`.
+- Tests: `ToleranceResolverTests` covers movement from both directions, stable
+  values, and inclusion of influenced while excluding uninfluenced sites.
+- Next experiment: compare saves before and after Upkeep around a Bribe or
+  Snitch, then repeat while gaining or losing influence over modifier sites.
+
 ## Resolution safety policy
 
 The headless resolver preflights every command in the current subphase. If any

@@ -460,6 +460,7 @@ public sealed class MatchState
             gang.Hidden = false;
             gang.HiredThisTurn = false;
         }
+        ToleranceResolver.ResolveUpkeep(this);
         LastUpkeepResolutions = EconomyResolver.ResolveUpkeep(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }
