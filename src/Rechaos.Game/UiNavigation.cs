@@ -696,10 +696,9 @@ public static class HireDockLayout
     {
         var cell = PriceCell(slot);
         const int twoGlyphWidth = 11; // 5px glyph + 1px advance + 5px glyph.
-        const int glyphHeight = 7;
         return new Point(
             cell.X + (cell.Width - twoGlyphWidth) / 2,
-            cell.Y + (cell.Height - glyphHeight) / 2);
+            cell.Y + 5);
     }
 
     public static string PriceText(int amount)

@@ -51,8 +51,8 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(new Rectangle(438, 436, 33, 24), HireDockLayout.PriceCell(0));
         Assert.Equal(new Rectangle(471, 436, 33, 24), HireDockLayout.Reject(0));
-        Assert.Equal(new Point(449, 444), HireDockLayout.Price(0));
-        Assert.Equal(new Point(581, 444), HireDockLayout.Price(2));
+        Assert.Equal(new Point(449, 441), HireDockLayout.Price(0));
+        Assert.Equal(new Point(581, 441), HireDockLayout.Price(2));
         Assert.Equal("06", HireDockLayout.PriceText(6));
         Assert.Equal("12", HireDockLayout.PriceText(12));
         Assert.Equal("123", HireDockLayout.PriceText(123));
