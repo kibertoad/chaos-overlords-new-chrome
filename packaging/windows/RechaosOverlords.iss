@@ -50,6 +50,8 @@ var
   ImportCheckBox: TNewCheckBox;
   PurchaseButton: TNewButton;
   DetectedOriginalPath: String;
+  ImportOutput: String;
+  ImportFailed: Boolean;
 
 function IsOriginalInstall(const Candidate: String): Boolean;
 var
@@ -202,23 +204,86 @@ begin
   else Result := OriginalPage.Values[0];
 end;
 
-procedure CurStepChanged(CurStep: TSetupStep);
+procedure ImportLogLine(const S: String; const Error, FirstLine: Boolean);
+var
+  Line: String;
+begin
+  Line := Trim(S);
+  if Line = '' then exit;
+  if Error then Line := 'ERROR: ' + Line;
+  Log('Asset importer: ' + Line);
+  ImportOutput := ImportOutput + Line + #13#10;
+  if Length(ImportOutput) > 12000 then
+    Delete(ImportOutput, 1, Length(ImportOutput) - 12000);
+  WizardForm.StatusLabel.Caption := Line;
+end;
+
+function RunAssetImport(const Source: String; var Failure: String): Boolean;
 var
   ResultCode: Integer;
   Extractor, Parameters: String;
+  Started: Boolean;
+begin
+  Extractor := ExpandConstant('{app}\Tools\Rechaos.Extractor.exe');
+  Parameters := '--source "' + Source + '" --output "' +
+    ExpandConstant('{app}\Game\Assets') + '"';
+  ImportOutput := '';
+  Failure := '';
+  ResultCode := -1;
+  WizardForm.StatusLabel.Caption := 'Importing assets from your legal Chaos Overlords copy...';
+  try
+    Started := ExecAndLogOutput(Extractor, Parameters, ExpandConstant('{app}'), SW_HIDE,
+      ewWaitUntilTerminated, ResultCode, @ImportLogLine);
+  except
+    Started := False;
+    Failure := 'The asset importer could not be started: ' + GetExceptionMessage;
+  end;
+  if not Started and (Failure = '') then
+    Failure := 'The asset importer could not be started.';
+  if Started and (ResultCode <> 0) then
+    Failure := 'Asset import failed with error ' + IntToStr(ResultCode) + '.' + #13#10#13#10 +
+      ImportOutput;
+  if Started and (ResultCode = 0) and
+     not FileExists(ExpandConstant('{app}\Game\Assets\manifest.json')) then
+    Failure := 'Asset import reported success, but Game\Assets\manifest.json was not created.';
+  Result := Started and (ResultCode = 0) and (Failure = '');
+end;
+
+procedure RaiseImportFailure(const Failure: String);
+begin
+  ImportFailed := True;
+  RaiseException(Failure);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  Source, Failure: String;
 begin
   if (CurStep <> ssPostInstall) or not ShouldImportOriginal then exit;
 
-  Extractor := ExpandConstant('{app}\Tools\Rechaos.Extractor.exe');
-  Parameters := '--source "' + SelectedOriginalPath + '" --output "' +
-    ExpandConstant('{app}\Game\Assets') + '"';
-  WizardForm.StatusLabel.Caption := 'Importing art, music, sound, video, and other assets from your legal copy...';
-  if not Exec(Extractor, Parameters, ExpandConstant('{app}'), SW_SHOW,
-      ewWaitUntilTerminated, ResultCode) then
-    MsgBox('The asset importer could not be started. You can retry later with ' +
-      'Import Assets from Original Chaos Overlords in the Start menu.', mbError, MB_OK)
-  else if ResultCode <> 0 then
-    MsgBox('The recreation was installed, but resource extraction returned error ' +
-      IntToStr(ResultCode) + '. You can retry later with Import Assets from Original Chaos Overlords ' +
-      'in the Start menu.', mbError, MB_OK);
+  Source := SelectedOriginalPath;
+  while not RunAssetImport(Source, Failure) do
+  begin
+    if WizardSilent then
+      RaiseImportFailure(Failure);
+    if MsgBox(Failure + #13#10#13#10 +
+       'Choose Retry to select another installed copy of Chaos Overlords, or Cancel to stop setup.',
+       mbError, MB_RETRYCANCEL) <> IDRETRY then
+      RaiseImportFailure(Failure);
+
+    repeat
+      if not BrowseForFolder('Select the folder where Chaos Overlords is installed:', Source, False) then
+        RaiseImportFailure('Asset import failed and no replacement Chaos Overlords installation was selected.');
+      if not IsOriginalInstall(Source) then
+        MsgBox('That folder does not contain DATA\PX16, DATA\SITES, DATA\GANGS, and DATA\ITEMS. ' +
+          'Select the installed Chaos Overlords folder.', mbError, MB_OK);
+    until IsOriginalInstall(Source);
+  end;
+  WizardForm.StatusLabel.Caption := 'Original Chaos Overlords assets imported and verified.';
+end;
+
+function GetCustomSetupExitCode: Integer;
+begin
+  if ImportFailed then Result := 10
+  else Result := 0;
 end;

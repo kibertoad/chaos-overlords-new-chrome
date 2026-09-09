@@ -134,6 +134,19 @@ fragments, reports at most 100 matching defined strings, and reports at most
 message to the small set of functions that consume it; never use an empty or
 generic fragment to inventory the executable's text.
 
+`ReportSymbolReferences.java` performs the same bounded navigation for one or
+more explicit symbol-name fragments, such as a known imported API.
+`ReportInstructionContext.java` accepts explicit instruction addresses and
+prints at most eight instructions on either side without crossing the
+containing function. Use these together to classify a narrow call site or
+scalar hit before requesting any decompiler text.
+
+`ReportCallSitesWithScalars.java` accepts one callee address followed by exact
+scalar values and reports only calls whose preceding 12-instruction argument
+setup (bounded by the previous call) contains one of those values. Use it to
+distinguish a known resource ID from unrelated occurrences of the same small
+integer, then confirm the actual argument position in the emitted context.
+
 ## Evidence discipline
 
 - Record executable hash, Ghidra version, virtual address, call relationship,

@@ -47,6 +47,12 @@ your legal copy before running this installer. If no installed copy is found,
 the installer explains how to select it or skip import and offers a link to the
 legal
 [Chaos Overlords GOG page](https://www.gog.com/en/game/chaos_overlords).
+During import, Setup displays each verification/extraction stage and records
+the extractor output in its setup log. A failed interactive import offers to
+select another installation and retry in place; cancelling reports a failed
+installation. Imported files are stored below the installed `Game\Assets`
+directory. A game startup failure also produces a visible error dialog and a
+diagnostic log below `%LOCALAPPDATA%\ChaosOverlordsNewChrome\Logs`.
 Neither the portable package nor installer contains original assets. Silent
 installation accepts `/ORIGINAL="C:\path\to\Chaos Overlords"`; `/NOIMPORT=1`
 explicitly skips extraction.
@@ -67,10 +73,11 @@ succeed, the workflow creates that tag and a GitHub Release containing matching
 Windows x64, Linux x64, macOS arm64, and macOS x64 installers. It has no
 scheduled or push trigger.
 
-Ordinary pushes and pull requests run build/test/startup checks on Windows,
-Linux, and both macOS architectures and build smoke-tested installer artifacts.
-They do not create tags or releases. A separate blocking zizmor workflow audits
-all GitHub Actions definitions on pushes and pull requests.
+The `Continuous integration` workflow is manual-only and runs build, test,
+startup, and installer checks on Windows, Linux, and both macOS architectures.
+Ordinary pushes do not start CI. A separate zizmor workflow remains automatic
+for pull requests so policy violations can block merging, and can also be run
+manually; it does not run on pushes.
 
 To keep assets elsewhere, pass `--output` to the extractor and the same path as
 `--assets` to the game. Extracted files are ignored by Git and must not be

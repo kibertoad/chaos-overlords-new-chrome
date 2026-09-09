@@ -35,8 +35,6 @@ $common = @(
     '--configuration', 'Release',
     '--runtime', 'win-x64',
     '--self-contained', 'true',
-    '-p:PublishSingleFile=true',
-    '-p:IncludeNativeLibrariesForSelfExtract=true',
     '-p:DebugType=None',
     '-p:DebugSymbols=false',
     '-p:UseSharedCompilation=false',
@@ -47,7 +45,8 @@ $common = @(
 & dotnet publish (Join-Path $repositoryRoot 'src/Rechaos.Game/Rechaos.Game.csproj') @common `
     '-p:IncludeOriginalAssets=false' --output $gameOutput
 if ($LASTEXITCODE -ne 0) { throw 'Game publish failed.' }
-& dotnet publish (Join-Path $repositoryRoot 'src/Rechaos.Extractor/Rechaos.Extractor.csproj') @common --output $toolOutput
+& dotnet publish (Join-Path $repositoryRoot 'src/Rechaos.Extractor/Rechaos.Extractor.csproj') @common `
+    '-p:PublishSingleFile=true' --output $toolOutput
 if ($LASTEXITCODE -ne 0) { throw 'Extractor publish failed.' }
 Remove-Item -LiteralPath $buildRoot -Recurse -Force
 
@@ -60,6 +59,13 @@ if (Test-Path -LiteralPath (Join-Path $gameOutput 'Assets/manifest.json')) {
 }
 & (Join-Path $gameOutput 'Rechaos.Game.exe') --smoke-test
 if ($LASTEXITCODE -ne 0) { throw 'Packaged game smoke check failed.' }
+& (Join-Path $gameOutput 'Rechaos.Game.exe') --platform-smoke-test
+if ($LASTEXITCODE -ne 0) { throw 'Packaged game could not initialize its native platform libraries.' }
+foreach ($nativeLibrary in @('SDL2.dll', 'openal.dll')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $gameOutput $nativeLibrary))) {
+        throw "Packaged game is missing native library '$nativeLibrary'."
+    }
+}
 if (-not (Test-Path -LiteralPath (Join-Path $toolOutput 'Rechaos.Extractor.exe'))) {
     throw 'Packaged extractor is missing.'
 }

@@ -165,8 +165,11 @@ The audio router consumes newly appended attack-resolution events and maps an
 equipped item's original Sound field to `SND005xx`; it never feeds playback
 state or timing back into the simulation.
 
-Platform distribution scripts publish separate self-contained game and
-extractor executables while forcing original assets out of every package.
+Platform distribution scripts publish self-contained game and extractor
+payloads while forcing original assets out of every package. On Windows the
+game uses a directory deployment so MonoGame's SDL2 and OpenAL libraries remain
+adjacent to `Rechaos.Game.exe`; a platform-initialization smoke test enforces
+that runtime boundary. The extractor remains a single-file utility.
 `Build-WindowsInstaller.ps1` produces an Inno Setup `.exe`,
 `Build-LinuxInstaller.ps1` produces an amd64 Debian package, and
 `Build-MacInstaller.ps1` produces native x64/arm64 application-bundle `.pkg`
@@ -175,11 +178,13 @@ tracked-file legal boundary from `tools/repository-policy.json`.
 `packaging/windows/RechaosOverlords.iss` detects a
 legal GOG source through registry records and bounded conventional paths, then
 optionally runs the extractor into the installed game's private `Assets`
-directory. Linux and macOS use a per-user writable asset root when an adjacent
+directory. Import output is surfaced through Setup, invalid sources can be
+reselected and retried, and a failed or incomplete import gives Setup a nonzero
+exit code. Linux and macOS use a per-user writable asset root when an adjacent
 pack is absent. The manual release workflow builds and verifies all four
 installers before it creates a requested version tag, so failed builds cannot
-publish a tag. Continuous workflows may upload short-lived build artifacts but
-never create a tag or release.
+publish a tag. Validation is also manually dispatched and may upload
+short-lived build artifacts, but never creates a tag or release.
 
 Target presentation layers:
 

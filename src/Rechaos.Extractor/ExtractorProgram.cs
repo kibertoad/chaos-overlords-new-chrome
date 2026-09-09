@@ -58,6 +58,7 @@ public static class ExtractorProgram
 
             var source = options.Source
                 ?? throw new ArgumentException("--source is required; the port does not distribute original assets.");
+            Console.WriteLine($"Checking the original Chaos Overlords installation at {Path.GetFullPath(source)}...");
             var sourcePack = await VerifySourceAsync(source);
             if (options.Mode == ExtractorMode.VerifySource)
             {
@@ -74,6 +75,7 @@ public static class ExtractorProgram
                 return 0;
             }
 
+            Console.WriteLine("Original installation verified. Importing assets...");
             var manifest = await InstallVerifiedAsync(sourcePack, options.Output);
             Console.WriteLine($"Extracted and verified {manifest.Files.Count} assets to {Path.GetFullPath(options.Output)}");
             return 0;
@@ -124,6 +126,7 @@ public static class ExtractorProgram
         var files = new List<ExtractedAsset>();
         var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
 
+        Console.WriteLine("Importing artwork...");
         var px16 = Path.Combine(source.DataDirectory, "PX16");
         foreach (var sourceImage in Directory.EnumerateFiles(px16).OrderBy(Path.GetFileName))
         {
@@ -138,6 +141,7 @@ public static class ExtractorProgram
                 new AssetConversion("bmp-header-repair", size.Width, size.Height, 16, "RGB555")));
         }
 
+        Console.WriteLine("Importing sound and music...");
         foreach (var sound in Directory.EnumerateFiles(source.DataDirectory, "SND*", SearchOption.TopDirectoryOnly))
         {
             var name = Path.GetFileName(sound).ToUpperInvariant();
@@ -151,6 +155,7 @@ public static class ExtractorProgram
                 files.Add(await CopyAsync(output, music, Path.Combine(output, "music", name),
                     $"MUSIC/{name}", "audio/ogg"));
             }
+        Console.WriteLine("Importing video and game data...");
         foreach (var videoName in new[] { "MVINTRO", "MVLOGOS" })
         {
             var video = OriginalDataReader.FindCaseInsensitive(Path.Combine(source.DataDirectory, videoName));
@@ -189,6 +194,7 @@ public static class ExtractorProgram
                 new AssetConversion(sourceCompression == 1 ? "rle8-decode" : "bmp-header-repair",
                     size.Width, size.Height, 8, "indexed BGRA palette")));
         }
+        Console.WriteLine("Importing help files...");
         if (Directory.Exists(source.HelpDirectory))
             foreach (var help in Directory.EnumerateFiles(source.HelpDirectory, "*", SearchOption.AllDirectories))
             {
@@ -197,6 +203,7 @@ public static class ExtractorProgram
                     $"HELP/{relative}", MediaTypes.ForPath(help)));
             }
 
+        Console.WriteLine("Writing and verifying the imported asset manifest...");
         var manifest = new AssetManifest(FormatVersion, "Chaos Overlords original asset pack", source.Fingerprint,
             DateTimeOffset.UtcNow, files.OrderBy(file => file.Path).ToArray(),
             typeof(ExtractorProgram).Assembly.GetName().Version?.ToString() ?? "unknown");

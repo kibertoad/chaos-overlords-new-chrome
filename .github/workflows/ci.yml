@@ -1,9 +1,7 @@
 name: Continuous integration
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -133,8 +131,12 @@ jobs:
           if ($link.TargetPath -ne $expectedTarget -or [IO.Path]::GetExtension($link.TargetPath) -ne '.exe') {
             throw "Shortcut target is invalid: '$($link.TargetPath)' (expected '$expectedTarget')."
           }
+          foreach ($nativeLibrary in @('SDL2.dll', 'openal.dll')) {
+            $nativePath = Join-Path (Split-Path -Parent $link.TargetPath) $nativeLibrary
+            if (-not (Test-Path -LiteralPath $nativePath)) { throw "Installed native library is missing: $nativePath" }
+          }
           $game = Start-Process -FilePath $link.TargetPath `
-            -ArgumentList '--smoke-test' -WorkingDirectory $link.WorkingDirectory `
+            -ArgumentList '--platform-smoke-test' -WorkingDirectory $link.WorkingDirectory `
             -Wait -PassThru -WindowStyle Hidden
           if ($game.ExitCode -ne 0) { throw "Packaged game returned $($game.ExitCode)." }
           $uninstall = Start-Process -FilePath (Join-Path $testRoot 'unins000.exe') `

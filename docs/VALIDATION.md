@@ -21,16 +21,19 @@ A pass at one layer does not imply a pass at the next.
 dotnet restore Rechaos.slnx
 dotnet build Rechaos.slnx --no-restore
 dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj --no-build `
-  --no-progress --minimum-expected-tests 330
+  --no-progress --minimum-expected-tests 331
 ```
 
-The continuous-integration workflow runs this verification on Windows x64,
-Linux x64, macOS arm64, and macOS x64. It also publishes with
+The manually dispatched continuous-integration workflow runs this verification
+on Windows x64, Linux x64, macOS arm64, and macOS x64. It also publishes with
 `IncludeOriginalAssets=false`, rejects any resulting `Assets` directory, and
 runs the published `--smoke-test` entry point without an original asset pack.
 After all four platforms pass, its Windows packaging job builds the clean-room
 self-contained package and installer, installs with `/NOIMPORT=1`, launches the
-packaged smoke-test entry point, uninstalls it, and uploads both artifacts.
+packaged `--platform-smoke-test` entry point, uninstalls it, and uploads both
+artifacts. The Windows publisher and installer gate require adjacent SDL2 and
+OpenAL libraries so a metadata-only smoke test cannot mask a real launch
+failure. Ordinary pushes do not dispatch this workflow.
 
 `Verify-Repository.ps1` applies `tools/repository-policy.json` to Git-tracked
 files. It rejects extracted/imported roots, original-media extensions outside
@@ -53,7 +56,8 @@ is implemented.
 GitHub Actions dependencies are pinned to immutable commits corresponding to
 their documented latest releases. `.github/workflows/zizmor.yml` uses the
 official zizmor action in non-Advanced-Security auditor mode, causing any
-finding to fail its push or pull-request check.
+finding to fail its pull-request check. It also supports manual dispatch and
+does not run on pushes.
 
 Validate a legal original installation without writing anything:
 

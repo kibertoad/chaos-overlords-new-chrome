@@ -355,6 +355,38 @@ outer AI planner; Medium for command-history/countdown/strategy semantics.
 saved recurring and one-off command, then trace the four-valued global setup
 selection independently of the ten-way scenario selector.
 
+### BIN-AI-004 - global AI Mentality byte and first consumers
+
+**Observation:** The Win32 string table in EXE-GOG-1.1 maps resource IDs 46,
+47, 48, and 49 to `GOON`, `CRIMINAL`, `CRIME LORD`, and `HOMICIDAL MANIAC`.
+The setup presenter `0x0045519d` loads the displayed choice at call site
+`0x00455502` using resource ID `46 + (signed byte)[0x00487850]`. In the central
+state-query function `0x00402d70`, case `0x36` returns that same signed byte.
+This distinguishes it from the scenario-like global `0x004abbe8` and from
+query selectors `0x2f` and `0x31` used elsewhere in the planner.
+
+Focused xrefs identify writes at `0x00461bf6`, `0x00461fea`, `0x00463bc7`,
+`0x00463bf1`, `0x00464618`, and `0x00439542`. Exact selector-`0x36` consumers
+include `0x0040a1a7` and family-1 handler `0x00434080`. The first compares the
+returned value against thresholds 1 and 2. The family handler contains repeated
+tests for zero, at least one, and exactly two before selecting subsequent state
+queries/branches.
+
+**Interpretation:** `0x00487850` is the original match-global, zero-based AI
+Mentality setting. At least family handler 1 changes its decision path by
+mentality; the second consumer also changes a player-pair selection path. The
+meaning of those chosen paths and the treatment of value 3 beyond falling
+through the observed threshold tests are not yet established.
+
+**Confidence:** Verified for resource IDs, address, display expression, query
+selector, xrefs, and comparison constants; High for the global's identity;
+Low for the branch outcomes and public command semantics.
+
+**Next validation:** classify the six write sites as initialization, setup
+input, or load-state restoration; then expand only the selected basic blocks in
+`0x00434080` and `0x0040a1a7` to map each mentality value to observable command
+selection behavior.
+
 ## New-game initialization
 
 ### BIN-CITY-001 - density-derived sector income and tolerance
