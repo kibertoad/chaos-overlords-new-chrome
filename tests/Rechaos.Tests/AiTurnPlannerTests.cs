@@ -1,5 +1,6 @@
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -50,6 +51,70 @@ public sealed class AiTurnPlannerTests
         if (choice is not null)
             Assert.True(HireRules.Validate(match, new PlayerId(0),
                 choice.GangDefinitionId, choice.SectorId).IsValid);
+    }
+
+    [Theory]
+    [InlineData(ScenarioId.Greed)]
+    [InlineData(ScenarioId.Power)]
+    [InlineData(ScenarioId.Acceptance)]
+    [InlineData(ScenarioId.Dominance)]
+    public void AllComputerTimedMatchCompletesDeterministicallyAndReplays(ScenarioId scenario)
+    {
+        var first = DriveTimedMatch(scenario, 1984);
+        var second = DriveTimedMatch(scenario, 1984);
+
+        Assert.NotNull(first.State.Outcome);
+        Assert.Equal(MatchEndReason.TimeLimit, first.State.Outcome!.Reason);
+        Assert.Equal(MatchStateHasher.ComputeSha256(first.State), MatchStateHasher.ComputeSha256(second.State));
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, first);
+        replay.Position = 0;
+        var replayed = MatchReplaySerializer.LoadAndReplay(replay, first.State.Definitions);
+        Assert.Equal(MatchStateHasher.ComputeSha256(first.State), MatchStateHasher.ComputeSha256(replayed));
+    }
+
+    private static MatchReplayRecorder DriveTimedMatch(ScenarioId scenario, int seed)
+    {
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU ONE", PlayerController.Computer),
+            new(new PlayerId(1), "CPU TWO", PlayerController.Computer)
+        ];
+        var recorder = new MatchReplayRecorder(OriginalMatchFactory.Create(
+            data, new MatchSetup(scenario, GameDuration.SixMonths, seed, setups)));
+        var boundaries = 0;
+        while (recorder.State.Outcome is null && boundaries++ < 1_000)
+        {
+            var state = recorder.State;
+            switch (state.Coordinator.Phase)
+            {
+                case TurnPhase.Upkeep:
+                    recorder.FinishUpkeep();
+                    break;
+                case TurnPhase.Command:
+                    var commandPlayer = state.Coordinator.ActivePlayer!.Value;
+                    foreach (var command in AiTurnPlanner.Plan(state, commandPlayer))
+                        Assert.True(recorder.Submit(command).Accepted);
+                    recorder.FinishCommand(commandPlayer);
+                    break;
+                case TurnPhase.Execution:
+                    recorder.FinishExecutionPhase();
+                    break;
+                case TurnPhase.Hire:
+                    var hiringPlayer = state.Coordinator.ActivePlayer!.Value;
+                    if (AiTurnPlanner.ChooseHire(state, hiringPlayer) is { } hire)
+                        Assert.True(recorder.QueueHire(
+                            hiringPlayer, hire.GangDefinitionId, hire.SectorId).Accepted);
+                    recorder.FinishHire(hiringPlayer);
+                    break;
+                case TurnPhase.PlayerElimination:
+                    recorder.FinishPlayerElimination();
+                    break;
+            }
+        }
+        Assert.True(boundaries < 1_000, "AI match exceeded the phase-boundary safety limit.");
+        return recorder;
     }
 
     private static MatchState CreateMatch(PlayerController controller = PlayerController.Computer)

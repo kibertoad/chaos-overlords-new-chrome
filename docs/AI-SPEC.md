@@ -34,6 +34,11 @@ Greed/Dominance. Terminate is deliberately last-resort.
 Hiring ranks valid affordable offers by Force, Tech, Upkeep, and initial cost.
 It currently chooses at most one offer per Hire phase.
 
+The test suite drives Greed, Power, Acceptance, and Dominance through complete
+two-computer six-month matches. Each scenario is run twice at a fixed seed and
+must produce the same final state hash; its complete mutation stream must also
+round-trip through the replay serializer to that hash.
+
 ## Required parity work
 
 1. Recover original difficulty levels, bonuses, observable information, and
@@ -42,5 +47,5 @@ It currently chooses at most one offer per Hire phase.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those
    fixtures.
-4. Add multi-turn tournament tests proving no stalls, invalid commands, replay
-   divergence, or nondeterministic state hashes.
+4. Extend the current timed-scenario tournament coverage to objective scenarios,
+   larger player counts, difficulty variants, and statistical reference traces.
