@@ -365,19 +365,20 @@ public static class CommandResolver
         var gang = state.FindGang(command.Gang)!;
         var itemIndex = checked((short)command.Target.Id);
         var item = state.Definitions.Items[itemIndex];
-        if (player.Cash < item.Cost)
+        var cost = SpecialSiteRules.EquipmentCost(state, gang, item);
+        if (player.Cash < cost)
             return Complete(state, command, GameEventKind.CommandFailed,
                 new CommandResolutionDetails(
                     CommandResolutionCode.InsufficientCash, [], 0, CashDelta: 0, ItemId: itemIndex),
                 GameNotificationKind.Equipment);
 
-        player.Cash -= item.Cost;
-        player.Statistics.CashSpent += item.Cost;
+        player.Cash -= cost;
+        player.Statistics.CashSpent += cost;
         var replaced = EquipmentRules.Equip(gang, EquipmentRules.SlotFor(item), itemIndex);
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(
                 CommandResolutionCode.Resolved, [], 0,
-                PreviousValue: replaced, ResultValue: itemIndex, CashDelta: -item.Cost,
+                PreviousValue: replaced, ResultValue: itemIndex, CashDelta: -cost,
                 ItemId: itemIndex, ReplacedItemId: replaced),
             GameNotificationKind.Equipment);
     }

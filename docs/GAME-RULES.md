@@ -133,15 +133,19 @@ controlled reference observation confirms its execution timing and edge cases.
 - Interpretation: calculate gang-definition plus equipped-item Research
   modifiers, roll `max(0, Force + Research)` six-sided dice, count results at
   least four, persist unfinished progress, and mark the item researched at zero.
-- Current exclusions: tech-level restrictions, Science Center/Research Lab
-  effects, influenced-site/contextual modifiers, ownership/unlock effects, and
-  the exact behavior of zero-difficulty items.
+- Tech restrictions: a gang cannot research above its own Tech. Without a local
+  influenced special research site the ceiling is Tech 5; an influenced Science
+  Center raises it to 8 and a Research Lab to 10. The recreation requires the
+  player to control that sector. Locality and ownership timing remain provisional.
+- Current exclusions: the exact behavior of zero-difficulty items and binary
+  confirmation of special-site timing.
 - Confidence: High for the manual formula and completion threshold; Medium for
   equipment aggregation and repeat-command rejection; High for the recovered
   RNG step/range wrapper; Low for initial seed and complete RNG call order.
 - Implementation: `MatchPlayerState.RemainingResearch`,
   `MatchPlayerState.ApplyResearch`, `ManualRules.ResearchDiceCount`, and
-  `CommandResolver.ResolveResearch`.
+  `CommandResolver.ResolveResearch`; `SpecialSiteRules.ResearchTechLimit`
+  enforces the gang/site ceiling during validation.
 - Tests: `ResearchResolutionTests` covers effective dice count, recorded rolls,
   progress, completion, repeat rejection, state invariants, RNG consumption,
   notifications, and deterministic phase hashes.
@@ -262,8 +266,9 @@ claim about original-game behavior.
 - Interpretation: `EffectiveStatisticsCalculator` adds every influenced site's
   complete statistic vector to the owner's gangs located in that sector, after
   definition and equipment statistics. Enemy gangs receive no benefit.
-- Current exclusions: special Science Center/Research Lab tech caps, Factory
-  discount, protection/upkeep behavior, and exact negative-stat clamping.
+- Special Science Center/Research Lab research caps and the Factory purchase
+  discount are implemented as local, controlled, influenced-site effects.
+  Protection/upkeep behavior and exact negative-stat clamping remain excluded.
 - Confidence: High for ownership and local scope; Medium for aggregation order.
 - Tests: `CombatResolutionTests.InfluencedSiteStatisticsApplyOnlyToOwnersGangsInThatSector`
   plus existing Heal, Research, Influence, Chaos, Control, and Combat tests that
@@ -282,11 +287,13 @@ claim about original-game behavior.
 - Interpretation: zero-research-difficulty items are immediately available;
   other items require completed player research. Successful purchase replaces
   and loses the previous same-slot item and records cash spent.
-- Confidence: High for cost, categories, research, and tech gates; Medium for
-  same-slot purchase replacement behavior; Low for factory discounts and repeat
-  commands.
-- Implementation: `EquipmentRules`, transaction validation, and
-  `CommandResolver.ResolveEquip`.
+- Factory rule: an influenced Factory in the acting gang's controlled sector
+  reduces purchase price by 30%; the recreation floors `Cost * 70 / 100`.
+- Confidence: High for cost, categories, research, tech gates and the 30% value;
+  Medium for same-slot replacement and Factory locality; Low for discount
+  rounding and repeat commands.
+- Implementation: `EquipmentRules`, `SpecialSiteRules.EquipmentCost`,
+  transaction validation, and `CommandResolver.ResolveEquip`.
 - Tests: `TransactionResolutionTests` covers purchase, replacement, cash and
   statistics, research/tech validation, insufficient funds, and replay hashes.
 

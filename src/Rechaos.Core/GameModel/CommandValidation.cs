@@ -24,7 +24,8 @@ public enum CommandValidationCode
     ItemAlreadyEquipped,
     DestinationAtCapacity,
     SectorNotControlled,
-    CommandNotQueued
+    CommandNotQueued,
+    ResearchTechLevelUnavailable
 }
 
 public readonly record struct CommandValidation(CommandValidationCode Code, string Message)
@@ -112,6 +113,10 @@ public static class CommandValidator
         if (command.Action == GangAction.Research
             && state.FindPlayer(command.Player)!.ResearchedItems.Contains((short)command.Target.Id))
             return CommandValidation.Reject(CommandValidationCode.ItemAlreadyResearched);
+        if (command.Action == GangAction.Research
+            && state.Definitions.Items[command.Target.Id].TechLevel
+                > SpecialSiteRules.ResearchTechLimit(state, actor))
+            return CommandValidation.Reject(CommandValidationCode.ResearchTechLevelUnavailable);
         if (command.Action == GangAction.Influence)
         {
             var sector = state.Sectors[command.Target.Id / MatchLimits.SitesPerSector];
@@ -285,6 +290,7 @@ internal static class CommandValidationMessages
             [CommandValidationCode.TargetOutsideSector] = "The target must be in the acting gang's sector.",
             [CommandValidationCode.DestinationNotAdjacent] = "Movement requires an orthogonally adjacent sector.",
             [CommandValidationCode.ItemAlreadyResearched] = "The targeted item has already been researched.",
+            [CommandValidationCode.ResearchTechLevelUnavailable] = "The gang or its local research site cannot support that tech level.",
             [CommandValidationCode.SiteAlreadyInfluenced] = "The targeted site is already influenced.",
             [CommandValidationCode.ItemNotResearched] = "The item has not been researched.",
             [CommandValidationCode.InsufficientTechLevel] = "The gang's tech level is too low for this item.",

@@ -1022,11 +1022,16 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             var item = items[_itemCursor];
             var remaining = player.RemainingResearch(state.Definitions, item.Id);
             var researched = remaining == 0 ? "COMPLETE" : $"{remaining} REMAIN";
+            var equipmentCost = gang is null ? item.Cost : SpecialSiteRules.EquipmentCost(state, gang, item);
             font.Draw(batch, item.Name, new Vector2(350, 112), Color.Gold, 1);
             font.Draw(batch, $"{EquipmentRules.SlotFor(item).ToString().ToUpperInvariant()}  TECH {item.TechLevel}",
                 new Vector2(350, 136), Color.White, 1);
-            font.Draw(batch, $"COST ${item.Cost}", new Vector2(350, 152), Color.White, 1);
+            font.Draw(batch, $"COST ${equipmentCost}" + (equipmentCost < item.Cost ? "  FACTORY" : ""),
+                new Vector2(350, 152), Color.White, 1);
             font.Draw(batch, $"RESEARCH {researched}", new Vector2(350, 168), Color.White, 1);
+            if (gang is not null)
+                font.Draw(batch, $"TECH LIMIT {SpecialSiteRules.ResearchTechLimit(state, gang)}",
+                    new Vector2(350, 184), Color.White, 1);
             font.Draw(batch, "MODIFIERS", new Vector2(350, 202), new Color(180, 230, 170), 1);
             var modifiers = ItemModifiers(item).ToArray();
             for (var index = 0; index < modifiers.Length; index++)

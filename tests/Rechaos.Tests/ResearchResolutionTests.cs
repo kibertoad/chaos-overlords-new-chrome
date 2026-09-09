@@ -74,6 +74,37 @@ public sealed class ResearchResolutionTests
     }
 
     [Fact]
+    public void ResearchTechRequiresGangAndLocalSpecialSiteCapacity()
+    {
+        var data = BundledOriginalData.Load();
+        var techEightItem = data.Items.First(item =>
+            item.Type != 99 && item.ResearchDifficulty > 0 && item.TechLevel == 8);
+        var techTenItem = data.Items.First(item =>
+            item.Type != 99 && item.ResearchDifficulty > 0 && item.TechLevel == 10);
+        var techTenGang = data.Gangs.First(gang => gang.TechLevel == 10);
+
+        var unsupported = CreateMatch(gangDefinitionId: techTenGang.Id);
+        unsupported.FinishUpkeep();
+        Assert.Equal(CommandValidationCode.ResearchTechLevelUnavailable,
+            unsupported.Submit(new GameCommand(new PlayerId(0), new GangId(10), GangAction.Research,
+                CommandTarget.Item(techEightItem.Id))).Validation.Code);
+
+        var science = CreateMatch(gangDefinitionId: techTenGang.Id, specialSiteDefinition: 8);
+        science.FinishUpkeep();
+        Assert.True(science.Submit(new GameCommand(new PlayerId(0), new GangId(10), GangAction.Research,
+            CommandTarget.Item(techEightItem.Id))).Accepted);
+        Assert.Equal(SpecialSiteRules.ScienceCenterTechLimit,
+            SpecialSiteRules.ResearchTechLimit(science, science.FindGang(new GangId(10))!));
+
+        var lab = CreateMatch(gangDefinitionId: techTenGang.Id, specialSiteDefinition: 4);
+        lab.FinishUpkeep();
+        Assert.True(lab.Submit(new GameCommand(new PlayerId(0), new GangId(10), GangAction.Research,
+            CommandTarget.Item(techTenItem.Id))).Accepted);
+        Assert.Equal(SpecialSiteRules.ResearchLabTechLimit,
+            SpecialSiteRules.ResearchTechLimit(lab, lab.FindGang(new GangId(10))!));
+    }
+
+    [Fact]
     public void EquivalentResearchRunsProduceIdenticalStateAndPhaseHash()
     {
         var first = CreateMatch();
@@ -126,7 +157,9 @@ public sealed class ResearchResolutionTests
 
     private static MatchState CreateMatch(
         IReadOnlyDictionary<short, int>? researchProgress = null,
-        IReadOnlySet<short>? researchedItems = null)
+        IReadOnlySet<short>? researchedItems = null,
+        short? gangDefinitionId = null,
+        short? specialSiteDefinition = null)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
@@ -135,7 +168,9 @@ public sealed class ResearchResolutionTests
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups);
-        var researchGang = data.Gangs.OrderByDescending(gang => gang.Stats.Research).First();
+        var researchGang = gangDefinitionId is { } definitionId
+            ? data.Gangs.Single(gang => gang.Id == definitionId)
+            : data.Gangs.OrderByDescending(gang => gang.Stats.Research).First();
         MatchPlayerState[] players =
         [
             new(setup.Players[0], 500,
@@ -149,9 +184,10 @@ public sealed class ResearchResolutionTests
             .Select(id => new MatchSectorState(id,
             [
                 new MatchSiteState(0, 0, 7),
-                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(1, specialSiteDefinition ?? 1, 5,
+                    id == 0 && specialSiteDefinition.HasValue ? new PlayerId(0) : null),
                 new MatchSiteState(2, 2, 4)
-            ]))
+            ], owner: id == 0 && specialSiteDefinition.HasValue ? new PlayerId(0) : null))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }

@@ -53,6 +53,24 @@ public sealed class TransactionResolutionTests
     }
 
     [Fact]
+    public void InfluencedLocalFactoryDiscountsEquipmentThirtyPercent()
+    {
+        var data = BundledOriginalData.Load();
+        var item = ResearchedWeapon(data);
+        var match = CreateMatch(cash: 100, researchedItems: new HashSet<short> { item },
+            influencedFactory: true);
+        QueueEquip(match, item);
+        var cashBefore = match.Players[0].Cash;
+
+        match.FinishExecutionPhase();
+
+        var expectedCost = data.Items[item].Cost * SpecialSiteRules.FactoryPricePercent / 100;
+        Assert.Equal(cashBefore - expectedCost, match.Players[0].Cash);
+        Assert.Equal(-expectedCost, Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.CashDelta);
+        Assert.Equal(expectedCost, match.Players[0].Statistics.CashSpent);
+    }
+
+    [Fact]
     public void GiveTransfersItemAndDestroysRecipientsReplacement()
     {
         var data = BundledOriginalData.Load();
@@ -223,7 +241,8 @@ public sealed class TransactionResolutionTests
         short? actorItem = null,
         IReadOnlySet<short>? researchedItems = null,
         bool useLowTechGangs = false,
-        IReadOnlyDictionary<short, int>? inventory = null)
+        IReadOnlyDictionary<short, int>? inventory = null,
+        bool influencedFactory = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -263,10 +282,11 @@ public sealed class TransactionResolutionTests
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
-                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(0, influencedFactory ? (short)15 : (short)0, 7,
+                    id == 0 && influencedFactory ? new PlayerId(0) : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ]))
+            ], owner: id == 0 && influencedFactory ? new PlayerId(0) : null))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }
