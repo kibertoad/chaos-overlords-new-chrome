@@ -1,0 +1,274 @@
+name: Release installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version tag to create, for example 0.1.0
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  prepare:
+    name: Validate release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      commit: ${{ steps.version.outputs.commit }}
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate version tag
+        id: version
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          if ($env:RELEASE_TAG -notmatch '^(\d+\.\d+\.\d+)$') {
+            throw "Tag '$env:RELEASE_TAG' must look like 0.1.0."
+          }
+          $existing = git ls-remote --tags origin "refs/tags/$env:RELEASE_TAG"
+          if ($existing) { throw "Tag '$env:RELEASE_TAG' already exists." }
+          $commit = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve the release commit.' }
+          "commit=$commit" >> $env:GITHUB_OUTPUT
+          "tag=$env:RELEASE_TAG" >> $env:GITHUB_OUTPUT
+          "version=$($Matches[1])" >> $env:GITHUB_OUTPUT
+
+  test:
+    name: Test release commit
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Verify legal boundary and tests
+        shell: pwsh
+        run: |
+          ./tools/Verify-Repository.ps1
+          dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj `
+            --no-progress --minimum-expected-tests 330 -v minimal
+
+  build-windows:
+    name: Build Windows x64 installer
+    needs: [prepare, test]
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Install Inno Setup 7.1.0
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP 'innosetup-7.1.0-x64.exe'
+          $compilerRoot = Join-Path $env:RUNNER_TEMP 'InnoSetup'
+          gh release download is-7_1_0 `
+            --repo jrsoftware/issrc `
+            --pattern 'innosetup-7.1.0-x64.exe' `
+            --dir $env:RUNNER_TEMP
+          gh release verify-asset $installer --repo jrsoftware/issrc
+          $signature = Get-AuthenticodeSignature -LiteralPath $installer
+          if ($signature.Status -ne 'Valid' -or
+              $signature.SignerCertificate.Subject -notlike '*Pyrsys B.V.*') {
+            throw "Unexpected Inno Setup signature: $($signature.Status) $($signature.SignerCertificate.Subject)"
+          }
+          $install = Start-Process -FilePath $installer `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/CURRENTUSER', '/SP-', '/NORESTART', "/DIR=`"$compilerRoot`"") `
+            -Wait -PassThru -WindowStyle Hidden
+          if ($install.ExitCode -ne 0) {
+            throw "Inno Setup installation returned $($install.ExitCode)."
+          }
+          "INNO_COMPILER=$compilerRoot\ISCC.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Build installer
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: ./tools/Build-WindowsInstaller.ps1 -Version $env:RELEASE_VERSION -Compiler "$env:INNO_COMPILER"
+
+      - name: Smoke-test installer
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          $testRoot = Join-Path $env:RUNNER_TEMP 'ChaosOverlordsNewChrome-installer-test'
+          $installer = "artifacts/ChaosOverlords-NewChrome-Setup-$env:RELEASE_VERSION.exe"
+          $setup = Start-Process -FilePath $installer `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/NOICONS', '/NOIMPORT=1', "/DIR=`"$testRoot`"") `
+            -Wait -PassThru -WindowStyle Hidden
+          if ($setup.ExitCode -ne 0) { throw "Installer returned $($setup.ExitCode)." }
+          $game = Start-Process -FilePath (Join-Path $testRoot 'Game/Rechaos.Game.exe') `
+            -ArgumentList '--smoke-test' -WorkingDirectory (Join-Path $testRoot 'Game') `
+            -Wait -PassThru -WindowStyle Hidden
+          if ($game.ExitCode -ne 0) { throw "Packaged game returned $($game.ExitCode)." }
+          $uninstall = Start-Process -FilePath (Join-Path $testRoot 'unins000.exe') `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') `
+            -Wait -PassThru -WindowStyle Hidden
+          if ($uninstall.ExitCode -ne 0) { throw "Uninstaller returned $($uninstall.ExitCode)." }
+
+      - name: Upload installer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-windows-x64
+          path: artifacts/ChaosOverlords-NewChrome-Setup-*.exe
+          if-no-files-found: error
+
+  build-linux:
+    name: Build Linux x64 installer
+    needs: [prepare, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Build installer
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: ./tools/Build-LinuxInstaller.ps1 -Version $env:RELEASE_VERSION
+
+      - name: Upload installer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-linux-x64
+          path: artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-*.deb
+          if-no-files-found: error
+
+  build-macos:
+    name: Build macOS ${{ matrix.arch }} installer
+    needs: [prepare, test]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            os: macos-15
+            runtime: osx-arm64
+          - arch: x64
+            os: macos-15-intel
+            runtime: osx-x64
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Build installer
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          TARGET_RUNTIME: ${{ matrix.runtime }}
+        run: ./tools/Build-MacInstaller.ps1 -Version $env:RELEASE_VERSION -Runtime $env:TARGET_RUNTIME
+
+      - name: Upload installer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-macos-${{ matrix.arch }}
+          path: artifacts/ChaosOverlords-NewChrome-${{ matrix.runtime }}-Setup-*.pkg
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs: [prepare, build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Download installers
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create annotated tag
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          $commit = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve release commit.' }
+          $tagObject = gh api --method POST "repos/$env:GITHUB_REPOSITORY/git/tags" `
+            -f "tag=$env:RELEASE_TAG" `
+            -f "message=Release $env:RELEASE_TAG" `
+            -f "object=$commit" `
+            -f 'type=commit' | ConvertFrom-Json
+          gh api --method POST "repos/$env:GITHUB_REPOSITORY/git/refs" `
+            -f "ref=refs/tags/$env:RELEASE_TAG" `
+            -f "sha=$($tagObject.sha)"
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to create release tag reference.' }
+
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          mapfile -t assets < <(find release-assets -type f -print | sort)
+          if (( ${#assets[@]} != 4 )); then
+            echo "Expected four installers, found ${#assets[@]}." >&2
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" "${assets[@]}" \
+            --verify-tag \
+            --generate-notes \
+            --title "Chaos Overlords: New Chrome $RELEASE_TAG"

@@ -37,8 +37,8 @@ $compilerVersion = (& $Compiler --version | Out-String).Trim()
 if ($LASTEXITCODE -ne 0 -or $compilerVersion -ne $requiredCompilerVersion) {
     throw "Inno Setup $requiredCompilerVersion is required; '$Compiler' reports '$compilerVersion'."
 }
-if ($Version -notmatch '^\d+\.\d+\.\d+([.-][0-9A-Za-z.-]+)?$') {
-    throw "Invalid installer version '$Version'."
+if ($Version -notmatch '^\d+\.\d+\.\d+$') {
+    throw "Invalid installer version '$Version'; expected x.y.z."
 }
 
 $script = Join-Path $repositoryRoot 'packaging/windows/RechaosOverlords.iss'

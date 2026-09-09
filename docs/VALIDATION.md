@@ -21,7 +21,7 @@ A pass at one layer does not imply a pass at the next.
 dotnet restore Rechaos.slnx
 dotnet build Rechaos.slnx --no-restore
 dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj --no-build `
-  --no-progress --minimum-expected-tests 326
+  --no-progress --minimum-expected-tests 330
 ```
 
 The continuous-integration workflow runs this verification on Windows x64,
@@ -37,6 +37,23 @@ files. It rejects extracted/imported roots, original-media extensions outside
 explicit clean-room or synthetic fixture roots, and unreviewed files larger
 than 1 MiB. The Windows publisher invokes the same check before deleting or
 creating package output.
+
+The first complete hosted run of this matrix and installer path was GitHub
+Actions run `34400362789` on 2026-09-09; every platform and packaging job
+passed. Hosted runs remain the authority for runner-specific compatibility.
+
+Linux and macOS installer builders run only on matching native hosted runners.
+The Linux gate opens the generated `.deb` and smoke-runs its installed-layout
+executable. Each macOS gate validates the generated plist, smoke-runs the app
+bundle executable, builds the `.pkg`, expands it again, and confirms the game
+payload. Windows additionally exercises silent install and uninstall. Unsigned
+packages are development artifacts until the signing/notarization release gate
+is implemented.
+
+GitHub Actions dependencies are pinned to immutable commits corresponding to
+their documented latest releases. `.github/workflows/zizmor.yml` uses the
+official zizmor action in non-Advanced-Security auditor mode, causing any
+finding to fail its push or pull-request check.
 
 Validate a legal original installation without writing anything:
 

@@ -156,15 +156,21 @@ The audio router consumes newly appended attack-resolution events and maps an
 equipped item's original Sound field to `SND005xx`; it never feeds playback
 state or timing back into the simulation.
 
-Windows distribution is built by `tools/Publish-Windows.ps1`, which publishes
-separate self-contained game and extractor executables while forcing original
-assets out of the package. Before publishing, `tools/Verify-Repository.ps1`
-enforces the tracked-file legal boundary from `tools/repository-policy.json`.
+Platform distribution scripts publish separate self-contained game and
+extractor executables while forcing original assets out of every package.
+`Build-WindowsInstaller.ps1` produces an Inno Setup `.exe`,
+`Build-LinuxInstaller.ps1` produces an amd64 Debian package, and
+`Build-MacInstaller.ps1` produces native x64/arm64 application-bundle `.pkg`
+installers. Before publishing, `tools/Verify-Repository.ps1` enforces the
+tracked-file legal boundary from `tools/repository-policy.json`.
 `packaging/windows/RechaosOverlords.iss` detects a
 legal GOG source through registry records and bounded conventional paths, then
 optionally runs the extractor into the installed game's private `Assets`
-directory. The manual release workflow builds the same installer before it
-creates a requested version tag, so failed builds cannot publish a tag.
+directory. Linux and macOS use a per-user writable asset root when an adjacent
+pack is absent. The manual release workflow builds and verifies all four
+installers before it creates a requested version tag, so failed builds cannot
+publish a tag. Continuous workflows may upload short-lived build artifacts but
+never create a tag or release.
 
 Target presentation layers:
 

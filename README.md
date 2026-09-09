@@ -48,10 +48,26 @@ Neither the portable package nor installer contains original assets. Silent
 installation accepts `/ORIGINAL="C:\path\to\Chaos Overlords"`; `/NOIMPORT=1`
 explicitly skips extraction.
 
-Maintainers can run the manual-only `Release Windows installer` GitHub Actions
+Linux x64 and macOS arm64/x64 installers are built on their native hosts with
+`./tools/Build-LinuxInstaller.ps1 -Version 0.1.0` and
+`./tools/Build-MacInstaller.ps1 -Version 0.1.0 -Runtime osx-arm64` (or
+`osx-x64`). The Linux `.deb` installs launch and import commands; the macOS
+`.pkg` installs an application bundle containing the game, extractor, and an
+`Install Original Resources` helper. These packages are currently unsigned.
+When no adjacent `Assets` directory exists, the game reads extracted resources
+from the platform's per-user local application-data directory under
+`ChaosOverlordsNewChrome/Assets`.
+
+Maintainers can run the manual-only `Release installers` GitHub Actions
 workflow and enter a tag such as `0.1.0`. After tests and installer compilation
-succeed, the workflow creates that tag and a GitHub Release containing the
-matching versioned installer. It has no scheduled or push trigger.
+succeed, the workflow creates that tag and a GitHub Release containing matching
+Windows x64, Linux x64, macOS arm64, and macOS x64 installers. It has no
+scheduled or push trigger.
+
+Ordinary pushes and pull requests run build/test/startup checks on Windows,
+Linux, and both macOS architectures and build smoke-tested installer artifacts.
+They do not create tags or releases. A separate blocking zizmor workflow audits
+all GitHub Actions definitions on pushes and pull requests.
 
 To keep assets elsewhere, pass `--output` to the extractor and the same path as
 `--assets` to the game. Extracted files are ignored by Git and must not be

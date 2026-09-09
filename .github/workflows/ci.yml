@@ -32,14 +32,16 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Verify repository legal boundary
         shell: pwsh
         run: ./tools/Verify-Repository.ps1
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.400
 
@@ -50,7 +52,7 @@ jobs:
         run: dotnet build Rechaos.slnx --no-restore -p:IncludeOriginalAssets=false -v minimal
 
       - name: Test
-        run: dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj --no-restore --no-progress --minimum-expected-tests 326 -v minimal
+        run: dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj --no-restore --no-progress --minimum-expected-tests 330 -v minimal
 
       - name: Publish assetless game
         run: dotnet publish src/Rechaos.Game/Rechaos.Game.csproj --no-restore -c Release -p:IncludeOriginalAssets=false --output artifacts/assetless-game -v minimal
@@ -74,10 +76,12 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v6
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.400
 
@@ -132,15 +136,115 @@ jobs:
           if ($uninstall.ExitCode -ne 0) { throw "Uninstaller returned $($uninstall.ExitCode)." }
 
       - name: Upload clean-room Windows package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ChaosOverlordsNewChrome-win-x64
           path: artifacts/ChaosOverlordsNewChrome-win-x64
           if-no-files-found: error
 
       - name: Upload Windows installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ChaosOverlords-NewChrome-Setup
           path: artifacts/ChaosOverlords-NewChrome-Setup-0.1.0.exe
+          if-no-files-found: error
+
+  package-linux:
+    name: Linux installer
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Verify repository legal boundary
+        shell: pwsh
+        run: ./tools/Verify-Repository.ps1
+
+      - name: Build Debian installer
+        shell: pwsh
+        run: ./tools/Build-LinuxInstaller.ps1
+
+      - name: Verify installed filesystem layout
+        shell: pwsh
+        run: |
+          $testRoot = Join-Path $env:RUNNER_TEMP 'chaos-overlords-deb-test'
+          dpkg-deb --info artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-0.1.0.deb
+          if ($LASTEXITCODE -ne 0) { throw 'Debian package metadata is invalid.' }
+          dpkg-deb --extract artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-0.1.0.deb $testRoot
+          if ($LASTEXITCODE -ne 0) { throw 'Debian package extraction failed.' }
+          & (Join-Path $testRoot 'opt/chaos-overlords-new-chrome/Game/Rechaos.Game') --smoke-test
+          if ($LASTEXITCODE -ne 0) { throw 'Installed Debian game smoke test failed.' }
+
+      - name: Upload Linux installer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ChaosOverlords-NewChrome-linux-x64-Setup
+          path: artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-0.1.0.deb
+          if-no-files-found: error
+
+  package-macos:
+    name: macOS installer (${{ matrix.arch }})
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            os: macos-15
+            runtime: osx-arm64
+          - arch: x64
+            os: macos-15-intel
+            runtime: osx-x64
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Verify repository legal boundary
+        shell: pwsh
+        run: ./tools/Verify-Repository.ps1
+
+      - name: Build macOS installer
+        shell: pwsh
+        env:
+          TARGET_RUNTIME: ${{ matrix.runtime }}
+        run: ./tools/Build-MacInstaller.ps1 -Runtime $env:TARGET_RUNTIME
+
+      - name: Verify package structure
+        shell: pwsh
+        env:
+          TARGET_RUNTIME: ${{ matrix.runtime }}
+        run: |
+          $package = "artifacts/ChaosOverlords-NewChrome-$env:TARGET_RUNTIME-Setup-0.1.0.pkg"
+          $expanded = Join-Path $env:RUNNER_TEMP "chaos-overlords-$env:TARGET_RUNTIME-pkg"
+          pkgutil --expand-full $package $expanded
+          if ($LASTEXITCODE -ne 0) { throw 'macOS package expansion failed.' }
+          $executable = Get-ChildItem -LiteralPath $expanded -Recurse -Filter 'Rechaos.Game' |
+            Select-Object -First 1
+          if (-not $executable) { throw 'macOS package does not contain the game executable.' }
+
+      - name: Upload macOS installer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ChaosOverlords-NewChrome-${{ matrix.runtime }}-Setup
+          path: artifacts/ChaosOverlords-NewChrome-${{ matrix.runtime }}-Setup-0.1.0.pkg
           if-no-files-found: error
