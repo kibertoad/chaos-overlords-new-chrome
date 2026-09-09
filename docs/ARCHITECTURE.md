@@ -122,7 +122,7 @@ and machine-readable diagnostics.
 ### `Rechaos.Game`
 
 The current client owns the MonoGame loop, point-scaled virtual canvas, asset
-loading, title/setup/hot-seat-handoff/city/sector/gang/finance/ranking/items/commands/hire/events/endgame routing,
+loading, title/setup/hot-seat-handoff/city/sector/gang/finance/ranking/items/combat-summary/commands/hire/events/endgame routing,
 keyboard and inverse-mapped mouse input,
 prototype board renderer, and an internal pixel font. `UI-ATLAS.md` records the
 first full-screen resource and hit-region mappings.

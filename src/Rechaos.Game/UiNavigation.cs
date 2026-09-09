@@ -17,6 +17,7 @@ public enum ClientScreen
     Finance,
     Ranking,
     Items,
+    CombatSummary,
     Handoff,
     Endgame
 }
@@ -33,6 +34,7 @@ public sealed class ScreenRouter
         Current = Current is ClientScreen.Events or ClientScreen.Commands or ClientScreen.Hire
             or ClientScreen.Sector or ClientScreen.Gang or ClientScreen.Finance or ClientScreen.Ranking
             or ClientScreen.Items
+            or ClientScreen.CombatSummary
             ? ClientScreen.City
             : ClientScreen.Title;
         return true;

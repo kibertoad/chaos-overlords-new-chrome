@@ -51,7 +51,7 @@ or mouse. In the city, use arrows/WASD or click to select, Enter or a second
 click to act, G to cycle gangs, C to open the legal-command picker, H to open
 the three-offer hire panel (including snubbing), I for sector details, F for the
 next-upkeep financial projection, R for scenario ranking, T for research and
-equipment, and Space to advance.
+equipment, B for the combat summary, and Space to advance.
 The mapped city-panel buttons also open gang, sector, finance, and ranking views;
 gang, hire, and site panels use the original portrait sheets.
 F5/F9 save/load and F6/F10
