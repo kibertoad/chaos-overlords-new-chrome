@@ -13,17 +13,23 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Color[] PlayerColors =
         [Color.Crimson, Color.CornflowerBlue, Color.LimeGreen, Color.Gold, Color.MediumPurple, Color.DarkOrange];
     private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
-    private static readonly Rectangle TitleNewGame = new(220, 250, 200, 34);
-    private static readonly Rectangle TitleLoadGame = new(220, 294, 200, 34);
-    private static readonly Rectangle TitleQuit = new(220, 338, 200, 34);
-    private static readonly Rectangle SetupScenarioPrevious = new(92, 134, 42, 30);
-    private static readonly Rectangle SetupScenarioNext = new(506, 134, 42, 30);
-    private static readonly Rectangle SetupDurationPrevious = new(92, 204, 42, 30);
-    private static readonly Rectangle SetupDurationNext = new(506, 204, 42, 30);
-    private static readonly Rectangle SetupPlayersPrevious = new(92, 274, 42, 30);
-    private static readonly Rectangle SetupPlayersNext = new(506, 274, 42, 30);
-    private static readonly Rectangle SetupStart = new(220, 352, 200, 34);
-    private static readonly Rectangle SetupBack = new(220, 396, 200, 28);
+    private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
+    private static readonly Rectangle TitleLoadGame = new(220, 334, 200, 34);
+    private static readonly Rectangle TitleQuit = new(220, 376, 200, 34);
+    private static readonly Rectangle[] SetupScenarios =
+    [
+        new(80, 102, 108, 31), new(192, 102, 108, 31),
+        new(80, 137, 108, 31), new(192, 137, 108, 31),
+        new(80, 171, 108, 31), new(192, 171, 108, 31),
+        new(80, 206, 108, 31), new(192, 206, 108, 31),
+        new(80, 241, 108, 30), new(192, 241, 108, 30)
+    ];
+    private static readonly Rectangle[] SetupDurations =
+    [new(80, 282, 50, 24), new(136, 282, 50, 24), new(192, 282, 50, 24), new(248, 282, 52, 24)];
+    private static readonly Rectangle SetupPlayersAdd = new(370, 326, 92, 30);
+    private static readonly Rectangle SetupPlayersRemove = new(466, 326, 96, 30);
+    private static readonly Rectangle SetupStart = new(370, 374, 92, 50);
+    private static readonly Rectangle SetupBack = new(466, 374, 96, 50);
     private static readonly Rectangle CityAction = new(430, 415, 86, 24);
     private static readonly Rectangle CityAdvance = new(524, 415, 96, 24);
     private readonly GraphicsDeviceManager _graphics;
@@ -33,7 +39,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string _replayPath;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
-    private Texture2D? _background;
+    private Texture2D? _titleBackground;
+    private Texture2D? _setupBackground;
+    private Texture2D? _cityBackground;
     private PixelFont? _font;
     private MatchState? _state;
     private MatchReplayRecorder? _replay;
@@ -78,12 +86,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _font = new PixelFont(_pixel);
         _definitions = BundledOriginalData.Load();
 
-        var backgroundPath = Path.Combine(_assetRoot, "images", "PX00100.bmp");
-        if (File.Exists(backgroundPath))
-        {
-            using var stream = File.OpenRead(backgroundPath);
-            _background = Texture2D.FromStream(GraphicsDevice, stream);
-        }
+        _titleBackground = LoadTexture("PX00130.bmp");
+        _setupBackground = LoadTexture("PX00143.bmp");
+        _cityBackground = LoadTexture("PX00128.bmp");
     }
 
     protected override void Update(GameTime gameTime)
@@ -118,10 +123,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         var viewport = GraphicsDevice.Viewport;
         var transform = VirtualInput.Transform(viewport);
         _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);
-        if (_background is not null)
-            _batch.Draw(_background, new Rectangle(0, 0, 640, 460), Color.White);
-        else
-            _batch.Draw(_pixel, new Rectangle(0, 0, 640, 460), new Color(22, 27, 28));
+        _batch.Draw(_pixel, new Rectangle(0, 0, 640, 460), new Color(8, 10, 12));
         switch (_screens.Current)
         {
             case ClientScreen.Title:
@@ -181,12 +183,12 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 else if (TitleQuit.Contains(point)) Exit();
                 break;
             case ClientScreen.Setup:
-                if (SetupScenarioPrevious.Contains(point)) ChangeScenario(-1);
-                else if (SetupScenarioNext.Contains(point)) ChangeScenario(1);
-                else if (SetupDurationPrevious.Contains(point)) ChangeDuration(-1);
-                else if (SetupDurationNext.Contains(point)) ChangeDuration(1);
-                else if (SetupPlayersPrevious.Contains(point)) ChangePlayerCount(-1);
-                else if (SetupPlayersNext.Contains(point)) ChangePlayerCount(1);
+                var scenario = Array.FindIndex(SetupScenarios, rectangle => rectangle.Contains(point));
+                var duration = Array.FindIndex(SetupDurations, rectangle => rectangle.Contains(point));
+                if (scenario >= 0) _selectedScenario = (ScenarioId)scenario;
+                else if (duration >= 0) _selectedDuration = Durations[duration];
+                else if (SetupPlayersAdd.Contains(point)) ChangePlayerCount(1);
+                else if (SetupPlayersRemove.Contains(point)) ChangePlayerCount(-1);
                 else if (SetupStart.Contains(point)) StartMatch();
                 else if (SetupBack.Contains(point)) _screens.Show(ClientScreen.Title);
                 break;
@@ -198,7 +200,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void HandleCityClick(Point point)
     {
-        const int left = 58, top = 51, cellWidth = 65, cellHeight = 42;
+        const int left = 10, top = 49, cellWidth = 52, cellHeight = 42;
         if (point.X >= left && point.X < left + cellWidth * 8
             && point.Y >= top && point.Y < top + cellHeight * 8)
         {
@@ -250,9 +252,13 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        batch.Draw(pixel, new Rectangle(92, 72, 456, 112), new Color(0, 0, 0, 210));
-        DrawCentered(font, batch, "CHAOS OVERLORDS", 103, Color.Gold, 3);
-        DrawCentered(font, batch, "A CLEAN ROOM REIMPLEMENTATION", 151, Color.White, 1);
+        if (_titleBackground is not null)
+            batch.Draw(_titleBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        else
+        {
+            batch.Draw(pixel, new Rectangle(92, 72, 456, 112), new Color(0, 0, 0, 210));
+            DrawCentered(font, batch, "CHAOS OVERLORDS", 103, Color.Gold, 3);
+        }
         DrawButton(batch, pixel, font, TitleNewGame, "NEW GAME", true);
         DrawButton(batch, pixel, font, TitleLoadGame, "LOAD GAME", true);
         DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
@@ -261,55 +267,37 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void DrawSetup(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        batch.Draw(pixel, new Rectangle(70, 52, 500, 384), new Color(0, 0, 0, 220));
-        DrawCentered(font, batch, "NEW GAME SETUP", 72, Color.Gold, 2);
-        DrawCentered(font, batch, "SCENARIO", 111, new Color(170, 190, 190), 1);
-        DrawSelector(batch, pixel, font, SetupScenarioPrevious, SetupScenarioNext,
-            ScenarioCatalog.Get(_selectedScenario).Name, 134);
-        DrawCentered(font, batch, ScenarioCatalog.Get(_selectedScenario).Objective, 174, Color.White, 1);
-        DrawCentered(font, batch, "DURATION", 191, new Color(170, 190, 190), 1);
-        DrawSelector(batch, pixel, font, SetupDurationPrevious, SetupDurationNext,
-            DurationLabel(_selectedDuration), 204);
-        DrawCentered(font, batch, "PLAYERS", 261, new Color(170, 190, 190), 1);
-        DrawSelector(batch, pixel, font, SetupPlayersPrevious, SetupPlayersNext,
-            _selectedPlayerCount.ToString(), 274);
-        DrawCentered(font, batch, "LOCAL HOT SEAT PLAYERS", 320, Color.White, 1);
-        DrawButton(batch, pixel, font, SetupStart, "START", true);
-        DrawButton(batch, pixel, font, SetupBack, "BACK", false);
+        if (_setupBackground is not null)
+            batch.Draw(_setupBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        else
+            batch.Draw(pixel, new Rectangle(70, 52, 500, 384), new Color(0, 0, 0, 220));
+        DrawBorder(batch, pixel, SetupScenarios[(int)_selectedScenario], Color.Gold, 2);
+        DrawBorder(batch, pixel, SetupDurations[Array.IndexOf(Durations, _selectedDuration)], Color.Gold, 2);
+        font.Draw(batch, $"PLAYERS {_selectedPlayerCount}", new Vector2(376, 306), Color.White, 1);
+        for (var index = 0; index < _selectedPlayerCount; index++)
+        {
+            var column = index % 2;
+            var row = index / 2;
+            var x = 374 + column * 96;
+            var y = 130 + row * 64;
+            font.Draw(batch, $"P{index + 1}", new Vector2(x, y), PlayerColors[index], 1);
+            font.Draw(batch, "HUMAN", new Vector2(x, y + 12), Color.White, 1);
+        }
     }
-
-    private void DrawSelector(
-        SpriteBatch batch, Texture2D pixel, PixelFont font,
-        Rectangle previous, Rectangle next, string value, int y)
-    {
-        DrawButton(batch, pixel, font, previous, "-", false);
-        DrawButton(batch, pixel, font, next, "+", false);
-        batch.Draw(pixel, new Rectangle(144, y, 352, 30), new Color(24, 37, 39, 235));
-        DrawBorder(batch, pixel, new Rectangle(144, y, 352, 30), new Color(100, 125, 112), 1);
-        DrawCentered(font, batch, value, y + 11, Color.White, 1);
-    }
-
-    private static string DurationLabel(GameDuration duration) => duration switch
-    {
-        GameDuration.SixMonths => "6 MONTHS",
-        GameDuration.OneYear => "1 YEAR",
-        GameDuration.TwoYears => "2 YEARS",
-        GameDuration.FourYears => "4 YEARS",
-        _ => throw new ArgumentOutOfRangeException(nameof(duration))
-    };
 
     private static int Mod(int value, int divisor) => (value % divisor + divisor) % divisor;
 
     private void DrawBoard(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
+        if (_cityBackground is not null)
+            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
         var player = state.Players[playerIndex];
-        batch.Draw(pixel, new Rectangle(11, 8, 618, 29), new Color(0, 0, 0, 205));
-        font.Draw(batch, "CHAOS OVERLORDS", new Vector2(20, 15), Color.Gold, 2);
-        font.Draw(batch, $"TURN {state.Coordinator.Turn}   {player.Setup.Name}   CASH ${player.Cash}",
-            new Vector2(236, 17), Color.White, 1);
+        batch.Draw(pixel, new Rectangle(8, 7, 420, 29), new Color(0, 0, 0, 205));
+        font.Draw(batch, $"TURN {state.Coordinator.Turn}  {player.Setup.Name}  ${player.Cash}",
+            new Vector2(16, 17), Color.White, 1);
 
-        const int left = 58, top = 51, cellWidth = 65, cellHeight = 42;
+        const int left = 10, top = 49, cellWidth = 52, cellHeight = 42;
         batch.Draw(pixel, new Rectangle(left - 4, top - 4, cellWidth * 8 + 8, cellHeight * 8 + 8), new Color(0, 0, 0, 190));
         for (var index = 0; index < state.Sectors.Count; index++)
         {
@@ -326,10 +314,10 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             if (index == _cursor) DrawBorder(batch, pixel, new Rectangle(x, y, cellWidth, cellHeight), Color.Gold, 2);
         }
 
-        batch.Draw(pixel, new Rectangle(11, 389, 618, 60), new Color(0, 0, 0, 220));
-        font.Draw(batch, SectorSummary(state, state.Sectors[_cursor]), new Vector2(18, 395), Color.White, 1);
-        font.Draw(batch, $"GANGS {player.Gangs.Count}/{MatchLimits.GangsPerPlayer}", new Vector2(18, 410), PlayerColors[playerIndex], 1);
-        font.Draw(batch, _message, new Vector2(116, 410), Color.Gold, 1);
+        batch.Draw(pixel, new Rectangle(8, 389, 420, 60), new Color(0, 0, 0, 220));
+        font.Draw(batch, SectorSummary(state, state.Sectors[_cursor]), new Vector2(14, 395), Color.White, 1);
+        font.Draw(batch, $"GANGS {player.Gangs.Count}/{MatchLimits.GangsPerPlayer}", new Vector2(14, 410), PlayerColors[playerIndex], 1);
+        font.Draw(batch, _message, new Vector2(112, 410), Color.Gold, 1);
         DrawButton(batch, pixel, font, CityAction,
             state.Coordinator.Phase == TurnPhase.Hire ? "HIRE" : "ACTION", false);
         DrawButton(batch, pixel, font, CityAdvance, "ADVANCE", false);
@@ -517,6 +505,14 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     }
 
     private bool Pressed(KeyboardState current, Keys key) => current.IsKeyDown(key) && !_previousKeyboard.IsKeyDown(key);
+
+    private Texture2D? LoadTexture(string fileName)
+    {
+        var path = Path.Combine(_assetRoot, "images", fileName);
+        if (!File.Exists(path)) return null;
+        using var stream = File.OpenRead(path);
+        return Texture2D.FromStream(GraphicsDevice, stream);
+    }
 
     private void ValidateAssetPack()
     {

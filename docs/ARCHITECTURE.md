@@ -120,7 +120,9 @@ and machine-readable diagnostics.
 ### `Rechaos.Game`
 
 The current client owns the MonoGame loop, point-scaled virtual canvas, asset
-loading, keyboard input, prototype board renderer, and an internal pixel font.
+loading, title/setup/city routing, keyboard and inverse-mapped mouse input,
+prototype board renderer, and an internal pixel font. `UI-ATLAS.md` records the
+first full-screen resource and hit-region mappings.
 It reads original media only from the extracted asset directory.
 
 Target presentation layers:
