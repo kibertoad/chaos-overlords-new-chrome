@@ -119,6 +119,10 @@ their containing functions. `ReportDataBytes.java` prints at most 256 bytes at
 an explicitly supplied virtual address. Both are navigation aids for small,
 reviewable questions; their output must not be committed.
 
+`ReportScalarConstants.java` accepts explicit decimal or `0x`-prefixed scalar
+values and reports at most 300 instructions containing them. Use it to locate a
+small known resource id or timing constant, never as an unrestricted dump.
+
 `ReportDecompileMatches.java` accepts one function address followed by literal
 text patterns and emits at most 240 lines with two lines of context. Use it to
 answer a narrow question inside a large function without retaining or

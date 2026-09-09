@@ -1,7 +1,7 @@
 # Original executable internals research
 
 Status: active clean-room research log
-Last updated: 2026-09-08
+Last updated: 2026-09-09
 Reference executable SHA-256:
 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`
 
@@ -67,6 +67,32 @@ selected within this platform layer.
 
 **Next validation:** Find cross-references from the literal PX paths and palette
 APIs, then map the load/convert/blit functions and color-key behavior.
+
+### BIN-UI-001 - combat animation cadence
+
+**Observation:** `FUN_0042e040` references the four combat-strip resource bases:
+7000 at `0x0042e812`, 7100 at `0x0042e86d`, 7300 at `0x0042eb41`, and 7200 at
+`0x0042eb9f`, then enters the presentation loop in `FUN_00430c23`. That loop
+reads and clears timer slot zero and advances its local phase; cases 3 through
+10 render the eight consecutive 64-pixel frames. Cases 13 and 15 draw the
+changed portions of the two force bars in white, cases 14 and 16 restore the
+bar areas, and cases 17 through 21 retain the completed result before case 22
+exits. During initialization,
+`FUN_00460ccf` calls `FUN_004327dc(0, 6)`. The timer helper configures
+`timeSetEvent` with an integer period of `1000 / rate` milliseconds.
+
+**Interpretation:** Combat presentation advances at 6 Hz: 166 milliseconds per
+frame in the original integer timer configuration, or about 1.33 seconds for
+one eight-frame attack/hit clip. Damage removed from each force bar flashes
+white twice before settling into the missing-force color, followed by a
+five-tick result hold.
+
+**Confidence:** High static evidence. The recovered timer setup, timer-slot use,
+and frame-phase sequence agree; behavioral observation also identified the
+previous recreation playback as too fast.
+
+**Next validation:** Capture an original combat sequence with frame timestamps
+to quantify any scheduling jitter around the 166-millisecond nominal period.
 
 ### BIN-API-002 - audio and video
 

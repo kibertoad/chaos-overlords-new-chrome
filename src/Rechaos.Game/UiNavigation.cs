@@ -302,6 +302,11 @@ public static class SectorDetailLayout
         var portrait = SitePortrait(slot);
         return new Rectangle(portrait.X + 2, portrait.Bottom - 5, portrait.Width - 4, 4);
     }
+
+    public static Color SiteControlColor(PlayerId? influencedBy, PlayerId viewer) =>
+        influencedBy is { } owner && owner != viewer
+            ? new Color(190, 0, 220)
+            : Color.Lime;
 }
 
 public static class SectorGangCardLayout
@@ -563,6 +568,25 @@ public static class AttackCommandLayout
         if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
         return new Rectangle(240 + slot * 22, 207, 20, 20);
     }
+}
+
+public static class AttackTargetRoster
+{
+    /// <summary>
+    /// Keeps every owner's gangs contiguous and in the same owner order as the
+    /// portrait selector. Raw legal commands are gang-id ordered, which begins
+    /// to interleave owners after several hires and eliminations.
+    /// </summary>
+    public static IReadOnlyList<GameCommand> Order(
+        MatchState state,
+        IEnumerable<GameCommand> commands) => commands
+        .Select(command => (command,
+            target: state.FindGang(new GangId(command.Target.Id))))
+        .Where(entry => entry.target is not null)
+        .OrderBy(entry => entry.target!.Owner.Value)
+        .ThenBy(entry => entry.target!.Id.Value)
+        .Select(entry => entry.command)
+        .ToArray();
 }
 
 public static class StatusConsoleLayout

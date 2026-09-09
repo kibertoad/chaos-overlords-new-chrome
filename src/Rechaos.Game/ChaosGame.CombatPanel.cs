@@ -28,10 +28,10 @@ public sealed partial class ChaosGame
             DrawPoliceCombatant(batch, pixel, font, rightSide: false);
         else if (left is not null)
             DrawCombatant(batch, pixel, font, state, left, rightSide: false,
-                gameEvent?.Resolution?.ItemId);
+                gameEvent?.Resolution?.ItemId, clip, gameEvent);
         if (right is not null)
             DrawCombatant(batch, pixel, font, state, right, rightSide: true,
-                gameEvent?.Resolution?.RetaliationItemId);
+                gameEvent?.Resolution?.RetaliationItemId, clip, gameEvent);
 
         DrawCombatFrames(batch, pixel, clip);
     }
@@ -52,7 +52,9 @@ public sealed partial class ChaosGame
         MatchState state,
         MatchGangState gang,
         bool rightSide,
-        short? eventWeapon)
+        short? eventWeapon,
+        CombatAnimationClip clip,
+        GameEvent? gameEvent)
     {
         var player = state.FindPlayer(gang.Owner)!;
         batch.Draw(pixel, CombatPanelLayout.HeaderColor(rightSide), PlayerColors[gang.Owner.Value]);
@@ -69,7 +71,8 @@ public sealed partial class ChaosGame
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, new Rectangle(gangCell.X + 1, gangCell.Y + 1, 64, 64),
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
-        DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide), gang.Force);
+        var damage = gang.Id == clip.Defender ? CombatDamage(gameEvent, clip) : 0;
+        DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide), gang.Force, damage);
 
         var weaponCell = rightSide ? CombatPanelLayout.RightWeapon : CombatPanelLayout.LeftWeapon;
         DrawCombatItem(batch, eventWeapon ?? gang.WeaponItemId, weaponCell.Center.X, weaponCell.Y + 27);
@@ -86,7 +89,7 @@ public sealed partial class ChaosGame
         if (_policeSprites is not null)
             batch.Draw(_policeSprites, new Rectangle(gangCell.X + 8, gangCell.Y + 8, 48, 64),
                 OriginalSpriteLayout.PolicePatrolCar, Color.White);
-        DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide), ManualRules.MaximumForce);
+        DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide), ManualRules.MaximumForce, 0);
     }
 
     private void DrawCombatItem(SpriteBatch batch, short? itemId, int centerX, int centerY)
@@ -96,12 +99,34 @@ public sealed partial class ChaosGame
             OriginalSpriteLayout.ItemPortrait(resolved), Color.White);
     }
 
-    private static void DrawCombatForce(SpriteBatch batch, Texture2D pixel, Rectangle bar, int force)
+    private void DrawCombatForce(
+        SpriteBatch batch,
+        Texture2D pixel,
+        Rectangle bar,
+        int force,
+        int damage = 0)
     {
         batch.Draw(pixel, bar, Color.DarkRed);
         var width = Math.Clamp(bar.Width * force / ManualRules.MaximumForce, 0, bar.Width);
         if (width > 0)
             batch.Draw(pixel, new Rectangle(bar.X, bar.Y, width, bar.Height), Color.Lime);
+
+        var previousForce = Math.Clamp(force + damage, 0, ManualRules.MaximumForce);
+        var previousWidth = Math.Clamp(
+            bar.Width * previousForce / ManualRules.MaximumForce, width, bar.Width);
+        if (previousWidth <= width) return;
+        if (_combatAnimationPlayer.ShowsPreDamageForce)
+            batch.Draw(pixel, new Rectangle(bar.X + width, bar.Y, previousWidth - width, bar.Height), Color.Lime);
+        else if (_combatAnimationPlayer.ShowsDamageFlash)
+            batch.Draw(pixel, new Rectangle(bar.X + width, bar.Y, previousWidth - width, bar.Height), Color.White);
+    }
+
+    private static int CombatDamage(GameEvent? gameEvent, CombatAnimationClip clip)
+    {
+        if (gameEvent?.Kind == GameEventKind.PoliceAttackResolved)
+            return gameEvent.PoliceAttack?.Damage ?? 0;
+        if (gameEvent?.Resolution is not { } resolution) return 0;
+        return clip.Reversed ? resolution.RetaliationDamage : resolution.Damage;
     }
 
     private void DrawCombatFrames(SpriteBatch batch, Texture2D pixel, CombatAnimationClip clip)

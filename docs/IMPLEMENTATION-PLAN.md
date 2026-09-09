@@ -35,9 +35,8 @@ Reimplementing or interoperating with the original WinSock/IPX, modem, serial,
 AppleTalk, or MacTCP networking is explicitly out of scope. Those paths were
 buggy and insecure, are not required for completion, and will not be exposed,
 ported, protocol-matched, or accepted as a release dependency. The recreation
-supports local single-player and hot-seat play. A wholly new authenticated
-command transport may be considered after local parity, but it is a separate
-optional project and will not reuse the legacy protocol.
+supports local single-player and hot-seat play. Networked multiplayer of any
+kind is not part of this implementation plan.
 
 ## 2. Current baseline
 
@@ -512,20 +511,14 @@ mute, loop and skip paths are stable.
 **Exit gate:** the original corpus imports exactly; native saves migrate; any
 enabled original export passes byte-aware round-trip validation.
 
-### M. Hot-seat and optional modern multiplayer
+### M. Hot-seat play
 
 - Complete hot-seat support first, including hidden hand-off screens if needed.
 - Do not port, analyze for interoperability, or expose the original network
   stack or protocols.
-- Design a modern authenticated, versioned protocol transporting commands and
-  periodic state hashes rather than arbitrary serialized objects.
-- Add lobby, readiness, player assignment, reconnect, desync diagnostics and
-  deterministic replay recovery.
-- Threat-model malformed peers and impose strict bounds/timeouts.
 
-**Exit gate:** hot-seat parity is complete. If the separate optional modern
-networking project is undertaken, it passes deterministic multi-process and
-adversarial protocol tests. Legacy interoperability remains prohibited.
+**Exit gate:** local hot-seat parity is complete. Networked multiplayer remains
+an explicit non-goal.
 
 ### N. Platform, packaging, and quality
 
@@ -575,9 +568,8 @@ unmarked guess.
 | M6 | Foundation started | Deterministic non-mutating objective-aware command planner, cash budgeting, validated hire choice, per-player Human/Computer setup and replay-recorded client driver; global four-level AI Mentality with docs-backed fair-play and aggression direction; timed scenarios complete and objective scenarios run 20-turn deterministic replay-verified two-AI tournaments | Statically recover original difficulty branches/weights and visibility; reference decision snapshots; larger-player and objective-completion tournaments; M5 gate |
 | M7 | Foundation started | Original city ownership layers and site/gang portraits are rendered; resolved equipped attacks route item-defined original weapon sounds | Complete atlas/event integration, animations, remaining audio/music/video, golden screens and M1-M6 dependencies |
 | M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
-| M9 | Not started | None | Frozen deterministic simulation after M8 |
 
-Current automated baseline: the solution builds successfully, 287 tests
+Current automated baseline: the solution builds successfully, 322 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.
@@ -660,15 +652,6 @@ UX, cross-platform CI, performance/accessibility improvements and release docs.
 
 Depends on: M7.
 Gate: release checklist passes from clean installations on all target platforms.
-
-### M9 - Optional modern multiplayer
-
-Deliver safe command-based networking after simulation parity is frozen.
-This milestone is not part of original-game parity and never includes legacy
-protocol interoperability or reused original networking code.
-
-Depends on: M8 deterministic state/replay stability.
-Gate: threat model, desync recovery and multi-process tests pass.
 
 ## 7. Cross-cutting test matrix
 

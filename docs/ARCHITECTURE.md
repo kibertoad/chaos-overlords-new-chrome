@@ -136,7 +136,9 @@ retains the loop, shared client state, and top-level input/screen routing.
 `ChaosGame.Assets.cs`, `ChaosGame.Setup.cs`, and `ChaosGame.Persistence.cs`
 isolate media loading, setup, and snapshot/replay I/O. `ChaosGame.TurnFlow.cs`
 owns planning handoff and computer-turn orchestration; `ChaosGame.Hire.cs` owns
-the hire dock, comparison screen, and hire interactions. Gang, site, and item
+the hire dock, comparison screen, and hire interactions. `ChaosGame.Sector.cs`
+owns the detailed-sector projection, gang/site interaction, drag/drop command
+assignment, and hover target feedback. Gang, site, and item
 information modal navigation lives with its corresponding renderer in
 `ChaosGame.GangDetails.cs`, `ChaosGame.SiteDetails.cs`, and
 `ChaosGame.ItemDetails.cs`. Attack selection, combat presentation, results, and

@@ -128,7 +128,13 @@ validated against the executable.
   retaliation uses the mirrored `PX072xx`+`PX073xx` pair. The presentation also
   routes the recovered question/evasion and police-car/beam sheets. Weapon IDs
   used by both sides are retained in the combat event so later elimination or
-  equipment changes cannot alter sound or animation selection.
+  equipment changes cannot alter sound or animation selection. Static analysis
+  establishes a 6 Hz presentation timer for these strips: each frame remains
+  visible for 166 ms, making a complete eight-frame clip about 1.33 seconds.
+  After the strip finishes, the force lost by the struck gang alternates as a
+  white segment twice before the bar settles to green remaining force and red
+  missing force; the recovered timer state machine also retains the result for
+  five final ticks.
 - The recreation Give target panel reuses `PX03000` portraits and lists only
   validator-approved friendly recipients in the acting gang's sector. Its
   layout remains provisional pending identification of the original panel.
@@ -169,9 +175,13 @@ visible; only dynamic values are painted over the console's baked labels.
 Each friendly card exposes separate one-off and repeating order controls; both
 use the authoritative legal-command picker and set the existing
 `GameCommand.Repeat` flag appropriately. The repeating control uses the
-reference's vertically stacked double-arrow mark, and the thin owner-colored
-track above the portrait reports current Force. Once an order is assigned, the
+reference's vertically stacked double-arrow mark. The thin track above the
+portrait is red, filled green in proportion to current Force. Once an order is assigned, the
 two arrow cells are replaced by one full-width strip naming the queued action.
+Dragging an owned gang card onto an influenceable building in the detailed
+sector queues a recurring Influence command for that exact site.
+Hovering a gang with an assigned Move, Influence, or Attack command outlines
+its destination tile, building portrait, or target gang card respectively.
 The gang-card frame ends at the bottom of its three equipment slots; the next
 eight rows in `PX00000` are separate command-arrow artwork and must not be
 included in the card source rectangle.
@@ -179,9 +189,14 @@ The first themed overlay preserves the original fifteen-action ordering:
 Attack, Bribe, Chaos, Control, Equip, Give, Heal, Hide, Influence, Move,
 Research, Sell, Snitch, None, and Terminate. Individual equipment and other
 targets appear only in a second target overlay, never as top-level actions.
+The Attack target-acquisition roster groups candidate gangs by ascending player
+slot before gang id, matching the vertical opponent-portrait selector; raw
+global gang-id ordering must not be used because hires can interleave owners.
 Each detailed-sector building has a red control track filled green in proportion
 to reduced resistance; the starting Headquarters is fully green while neutral
-buildings begin red.
+buildings begin red. A building already influenced by an opponent uses purple
+instead of green for its completed control track, while its portrait border
+continues to identify the influencing player's color.
 
 `PX05016` is the original 344-by-209 `GANGS FOR HIRE` comparison panel. The
 Hire console button overlays it on the live city, with three 32-by-32 gang

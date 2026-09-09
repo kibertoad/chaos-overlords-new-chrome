@@ -68,6 +68,7 @@ public sealed class CombatAnimationTests
     [Fact]
     public void FileGroupsAndFrameCoordinatesMatchRecoveredStrips()
     {
+        Assert.Equal(166, CombatAnimationRouting.FrameMilliseconds);
         Assert.Equal("PX07003.bmp", CombatAnimationRouting.AttackFile(3, false));
         Assert.Equal("PX07102.bmp", CombatAnimationRouting.HitFile(2, false));
         Assert.Equal("PX07228.bmp", CombatAnimationRouting.AttackFile(28, true));
@@ -78,7 +79,7 @@ public sealed class CombatAnimationTests
     }
 
     [Fact]
-    public void PlayerAdvancesEightFramesAndPreservesQueuedClipOrder()
+    public void PlayerRunsRecoveredAnimationBlinkAndHoldTimelineInQueuedOrder()
     {
         var player = new CombatAnimationPlayer();
         var first = new CombatAnimationClip(1, new GangId(10), new GangId(20), 3, 2, false);
@@ -86,13 +87,27 @@ public sealed class CombatAnimationTests
         player.Enqueue(first);
         player.Enqueue(second);
 
-        player.Advance(TimeSpan.FromMilliseconds(7 * CombatAnimationRouting.FrameMilliseconds));
+        player.Advance(TimeSpan.FromMilliseconds(
+            (CombatAnimationRouting.FirstAnimationTick + 7) * CombatAnimationRouting.FrameMilliseconds));
         Assert.Equal(first, player.Active);
         Assert.Equal(7, player.Frame);
+        Assert.True(player.ShowsPreDamageForce);
+        player.Advance(TimeSpan.FromMilliseconds(
+            (CombatAnimationRouting.FirstDamageFlashTick - player.TimelineTick)
+            * CombatAnimationRouting.FrameMilliseconds));
+        Assert.True(player.ShowsDamageFlash);
         player.Advance(TimeSpan.FromMilliseconds(CombatAnimationRouting.FrameMilliseconds));
+        Assert.False(player.ShowsDamageFlash);
+        player.Advance(TimeSpan.FromMilliseconds(CombatAnimationRouting.FrameMilliseconds));
+        Assert.True(player.ShowsDamageFlash);
+        player.Advance(TimeSpan.FromMilliseconds(
+            (CombatAnimationRouting.CompletionTick - player.TimelineTick)
+            * CombatAnimationRouting.FrameMilliseconds));
         Assert.Equal(second, player.Active);
         Assert.Equal(0, player.Frame);
-        player.Advance(TimeSpan.FromMilliseconds(8 * CombatAnimationRouting.FrameMilliseconds));
+        Assert.Equal(0, player.TimelineTick);
+        player.Advance(TimeSpan.FromMilliseconds(
+            CombatAnimationRouting.CompletionTick * CombatAnimationRouting.FrameMilliseconds));
         Assert.False(player.IsPlaying);
         Assert.Null(player.Active);
     }

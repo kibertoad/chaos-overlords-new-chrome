@@ -17,7 +17,14 @@ public static class CombatAnimationRouting
 {
     public const int FrameCount = 8;
     public const int FrameSize = 64;
-    public const int FrameMilliseconds = 90;
+    public const int FrameMilliseconds = 166;
+    public const int FirstAnimationTick = 3;
+    public const int LastAnimationTick = 10;
+    public const int PreDamageTick = 12;
+    public const int FirstDamageFlashTick = 13;
+    public const int SecondDamageFlashTick = 15;
+    public const int FinalResultTick = 16;
+    public const int CompletionTick = 22;
     public const short EvadedAnimation = 27;
     public const short PoliceAttackAnimation = 28;
     public const short PoliceHitAnimation = 20;
@@ -129,7 +136,15 @@ public sealed class CombatAnimationPlayer
     private double _elapsedMilliseconds;
 
     public CombatAnimationClip? Active { get; private set; }
-    public int Frame { get; private set; }
+    public int TimelineTick { get; private set; }
+    public int Frame => Math.Clamp(
+        TimelineTick - CombatAnimationRouting.FirstAnimationTick,
+        0,
+        CombatAnimationRouting.FrameCount - 1);
+    public bool ShowsPreDamageForce => TimelineTick <= CombatAnimationRouting.PreDamageTick;
+    public bool ShowsDamageFlash => TimelineTick is
+        CombatAnimationRouting.FirstDamageFlashTick or
+        CombatAnimationRouting.SecondDamageFlashTick;
     public bool IsPlaying => Active is not null;
 
     public void Enqueue(CombatAnimationClip clip)
@@ -138,7 +153,7 @@ public sealed class CombatAnimationPlayer
         if (Active is null)
         {
             Active = clip;
-            Frame = 0;
+            TimelineTick = 0;
             _elapsedMilliseconds = 0;
         }
         else
@@ -155,10 +170,10 @@ public sealed class CombatAnimationPlayer
         while (Active is not null && _elapsedMilliseconds >= CombatAnimationRouting.FrameMilliseconds)
         {
             _elapsedMilliseconds -= CombatAnimationRouting.FrameMilliseconds;
-            Frame++;
-            if (Frame < CombatAnimationRouting.FrameCount) continue;
+            TimelineTick++;
+            if (TimelineTick < CombatAnimationRouting.CompletionTick) continue;
             Active = _queue.Count > 0 ? _queue.Dequeue() : null;
-            Frame = 0;
+            TimelineTick = 0;
             if (Active is null) _elapsedMilliseconds = 0;
         }
     }
@@ -167,7 +182,7 @@ public sealed class CombatAnimationPlayer
     {
         _queue.Clear();
         Active = null;
-        Frame = 0;
+        TimelineTick = 0;
         _elapsedMilliseconds = 0;
     }
 }

@@ -205,6 +205,12 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(83, 358, 120, 64), SectorDetailLayout.SitePortrait(2));
         Assert.Equal(new Rectangle(32, 42, 406, 418), SectorDetailLayout.Workspace);
         Assert.Equal(new Rectangle(85, 417, 116, 4), SectorDetailLayout.SiteControlBar(2));
+        Assert.Equal(Color.Lime,
+            SectorDetailLayout.SiteControlColor(null, new PlayerId(0)));
+        Assert.Equal(Color.Lime,
+            SectorDetailLayout.SiteControlColor(new PlayerId(0), new PlayerId(0)));
+        Assert.Equal(new Color(190, 0, 220),
+            SectorDetailLayout.SiteControlColor(new PlayerId(1), new PlayerId(0)));
         Assert.Equal(new Rectangle(4, 394, 28, 66), SectorDetailLayout.Back);
     }
 
