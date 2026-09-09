@@ -17,7 +17,7 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
-    public void CrackdownDurationIsThreeToFiveTurnsAndCountsDownAtUpkeep()
+    public void CrackdownDurationIsThreeToFivePoliceCombatPhases()
     {
         var match = CreateMatch(tolerance: 0);
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
@@ -27,7 +27,13 @@ public sealed class ChaosResolutionTests
         var duration = match.Sectors[0].CrackdownTurnsRemaining;
         Assert.InRange(duration, ManualRules.MinimumCrackdownTurns, ManualRules.MaximumCrackdownTurns);
         CrackdownResolver.ResolveUpkeep(match);
+        Assert.Equal(duration, match.Sectors[0].CrackdownTurnsRemaining);
+        CrackdownResolver.FinishCombat(match);
         Assert.Equal(duration - 1, match.Sectors[0].CrackdownTurnsRemaining);
+        for (var phase = 1; phase < duration; phase++)
+            CrackdownResolver.FinishCombat(match);
+        Assert.False(match.Sectors[0].CrackdownActive);
+        Assert.Equal(0, match.Sectors[0].CrackdownTurnsRemaining);
     }
 
     [Fact]

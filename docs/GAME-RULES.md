@@ -248,8 +248,8 @@ claim about original-game behavior.
 - Hidden target behavior: a target that became Hidden during Instant receives
   an individual Detect-versus-Stealth percentage roll. Evasion produces an
   ordered `TargetEvaded` result; a successful hit prevents retaliation.
-- Current exclusions: crackdown duration/aftermath, animation/audio timing,
-  original overkill-stat attribution and police/gang ordering,
+- Current exclusions: animation/audio timing, original overkill-stat attribution
+  and police/gang ordering,
   repeated mutual attacks, and binary confirmation of resolver/RNG order.
 - Confidence: High for weapon-skill associations and Martial Arts exception;
   Medium/High for the Force-corrected formula and retaliation; Low for ordering,
@@ -426,13 +426,14 @@ claim about original-game behavior.
   clamped to 0–100, instead of the non-hidden police stealth table.
 - Interpretation: each trigger draws an inclusive three-to-five-turn duration
   from the deterministic simulation RNG and adds it to any remaining police
-  presence. Upkeep consumes one remaining turn; the sector detail panel exposes
-  the authoritative count. Each sector retains its latest two occurrence turns;
+  presence. Each Combat phase in which police are present consumes one remaining
+  turn after their attacks, producing exactly three to five attack opportunities;
+  the sector detail panel exposes the authoritative count. Each sector retains
+  its latest two occurrence turns;
   a third occurrence no more than four turns after the oldest neutralizes the
   sector and resets its influenced sites, Support, Tolerance modifiers, and
-  resistance just like an overthrow. The displaced owner receives a Control
-  distinct `ControlLost` notification in addition to the global Crackdown
-  notification.
+  resistance just like an overthrow. The displaced owner receives a distinct
+  `ControlLost` notification in addition to the global Crackdown notification.
 - Current exclusions: original timing within Combat, whether 0%/100% checks
   consume RNG, weapon/damage-cap treatment, exact duration RNG call/order,
   exact original message wording, and
@@ -446,10 +447,12 @@ claim about original-game behavior.
   lockout at both relevant boundaries; `CrackdownResolver` owns duration and
   extension plus the two-turn history represented in the original save layout.
 - Tests: `PoliceCombatResolutionTests` covers stable sector/gang ordering,
-  effective Stealth/Defense, undetectability at Stealth 25, deterministic RNG
-  consumption/hashes, notifications, casualties, and equipment loss.
-  `BoardResolutionTests` covers submission-time and execution-time Control
-  lockout without ownership mutation.
+  normal and hidden detection, effective Stealth/Defense, undetectability at
+  Stealth 25, deterministic RNG consumption/hashes, notifications, casualties,
+  and equipment loss. `ChaosResolutionTests` covers duration, extension,
+  five-turn history boundaries, neutralization and cleanup. `BoardResolutionTests`
+  covers submission-time and execution-time Control lockout without ownership
+  mutation; save/replay tests cover migration and multi-turn continuation.
 - Next experiment: capture otherwise identical pre-Combat saves spanning
   Stealth 5/6/24/25 and several Defense values, with and without a player
   Attack command, then compare detection, damage, ordering, and RNG deltas.

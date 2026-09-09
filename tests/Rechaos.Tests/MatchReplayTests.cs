@@ -54,12 +54,13 @@ public sealed class MatchReplayTests
         FinishHireAndElimination(recorder);
 
         recorder.FinishUpkeep();
-        Assert.Equal(initialDuration - 1, recorder.State.Sectors[0].CrackdownTurnsRemaining);
+        Assert.Equal(initialDuration, recorder.State.Sectors[0].CrackdownTurnsRemaining);
         FinishCommands(recorder);
         while (recorder.State.Coordinator.ExecutionPhase != ExecutionPhase.Combat)
             recorder.FinishExecutionPhase();
         recorder.FinishExecutionPhase();
         Assert.NotEmpty(recorder.State.LastPoliceAttackResolutions);
+        Assert.Equal(initialDuration - 1, recorder.State.Sectors[0].CrackdownTurnsRemaining);
 
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);

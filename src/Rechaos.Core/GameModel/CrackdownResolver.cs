@@ -12,11 +12,15 @@ public static class CrackdownResolver
     {
         ArgumentNullException.ThrowIfNull(state);
         foreach (var sector in state.Sectors.OrderBy(sector => sector.Id))
-        {
             sector.Chaos = 0;
+    }
+
+    public static void FinishCombat(MatchState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        foreach (var sector in state.Sectors.OrderBy(sector => sector.Id))
             if (sector.CrackdownTurnsRemaining > 0)
                 sector.CrackdownTurnsRemaining--;
-        }
     }
 
     public static CrackdownTriggerResult Trigger(MatchState state, MatchSectorState sector)

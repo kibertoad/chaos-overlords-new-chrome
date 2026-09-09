@@ -518,6 +518,7 @@ public sealed class MatchState
             var combat = CommandResolver.ResolveCombatPhase(this, commands);
             LastPhaseResolutions = combat.Commands;
             LastPoliceAttackResolutions = combat.PoliceAttacks;
+            CrackdownResolver.FinishCombat(this);
         }
         else
         {
