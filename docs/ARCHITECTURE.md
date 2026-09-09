@@ -143,9 +143,11 @@ Finance, Search, and Ranking projections and their shared panel shell. Gang,
 site, and item information modal navigation lives with its corresponding renderer in
 `ChaosGame.GangDetails.cs`, `ChaosGame.SiteDetails.cs`, and
 `ChaosGame.ItemDetails.cs`. `ChaosGame.Items.cs` owns the research/equipment
-browser and Give workflow. Attack selection, combat presentation, results, and
-turn events likewise remain in their focused partials. Further screen groups
-should follow these boundaries instead of growing the shell again.
+browser and Give workflow. `ChaosGame.Commands.cs` owns command-picker state
+transitions and input handling, while the specialized attack picker remains in
+`ChaosGame.AttackPicker.cs`. Combat presentation, results, and turn events
+likewise remain in their focused partials. Further screen groups should follow
+these boundaries instead of growing the shell again.
 It reads original media only from the extracted asset directory.
 The item workflow projects research/equipment state and submits Research,
 Equip, Give, and Sell through the replay recorder and authoritative Core

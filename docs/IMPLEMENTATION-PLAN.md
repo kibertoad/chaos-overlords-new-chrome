@@ -42,7 +42,7 @@ kind is not part of this implementation plan.
 
 | Area | Present now | Remaining |
 |---|---|---|
-| Build | .NET 10 solution, MonoGame DesktopGL 3.8.5.1, xUnit v3 4.0.0; self-contained Windows/Inno, Linux/Debian, and macOS arm64/x64/pkg installers; manual-only multi-platform GitHub Release workflow; continuous cross-platform build/test, assetless startup, packaging, and zizmor workflows | First green Linux/macOS installer and zizmor runs, signing/notarization, native interactive play tests |
+| Build | .NET 10 solution, MonoGame DesktopGL 3.8.5.1, xUnit v3 4.0.0; self-contained Windows/Inno, Linux/Debian, and macOS arm64/x64/pkg installers; manual-only multi-platform GitHub Release workflow; continuous cross-platform build/test, assetless startup, packaging, and zizmor workflows; green cross-platform installer run `34403047147` and zizmor run `34403047115` | Signing/notarization and native interactive play tests |
 | Original data | Embedded 22 sites, 90 gangs, and 64 items with pinned provenance | Semantic/formula validation, versioned generation tool |
 | Extraction | Transactional/versioned full-pack SHA-256 validation; 215 repaired RGB555 PX16 images, 214 retained plus decoded PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files; generated 685-output factual catalog | Transparency/color-key validation, video strategy, semantic role/owner resolution |
 | Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, Upkeep, all 14 command resolvers, simultaneous gang/Crackdown combat, 3–5-turn police duration/extension and three-in-five control loss, hidden attack/visibility checks, and local influenced-site stats | Crackdown notification/timing fixtures, special buildings, original RNG seeding/order and exact parity formulas |
@@ -260,6 +260,34 @@ Recover and document, without copying original executable code:
 Use symbol-neutral names until semantics are demonstrated. Keep disassembly
 addresses/version hashes in research notes, not as dependencies in production
 code.
+
+### 4.4 Full accuracy audit
+
+Before any parity milestone can pass, perform a systematic static-analysis and
+reference-observation audit of the fingerprinted GOG executable against the
+recreation. This is not a one-off visual review: every result must be captured
+under the evidence rules in section 4.2 and linked to the affected production
+code, parity row, and regression fixture.
+
+The audit must cover:
+
+- screen geometry, hit regions, draw order, typography, colors, and resource
+  selection for every non-network screen;
+- setup, economy, command validation, phase ordering, combat, research,
+  equipment, objectives, elimination, scoring, and persistence behavior;
+- animation frame selection, frame durations, pauses, damage blinking, sound
+  trigger points, interruption, and audiovisual sequencing;
+- RNG seeding, range reduction, call order, rejection behavior, and tie breaks;
+- AI information boundaries, difficulty branches, evaluation weights, action
+  ordering, target choice, and end-turn behavior;
+- all discrepancies between the current implementation, manual, controlled
+  observations, saves, and binary-derived facts.
+
+Use clean-room factual findings only; do not copy original implementation code.
+Original WinSock/IPX, modem, serial, AppleTalk, MacTCP, or other networking code
+and protocols are excluded from both this audit and the product as an explicit
+non-goal. The audit is complete only when every in-scope parity-matrix row has a
+reproducible comparison result and no unexplained discrepancy remains.
 
 ## 5. Workstreams
 
@@ -567,9 +595,9 @@ unmarked guess.
 | M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v5 snapshots with v1-v4 migration and v4 authoritative-operation replays plus client save/replay flows; equipment Give recipient workflow | Siege setup/visual mapping, objective ranking/tie fixtures, checked-in persistence fixtures, remaining management UI deliverable and M4 gate |
 | M6 | Foundation started | Deterministic non-mutating objective-aware command planner, cash budgeting, validated hire choice, per-player Human/Computer setup and replay-recorded client driver; global four-level AI Mentality with docs-backed fair-play and aggression direction; timed scenarios complete and objective scenarios run 20-turn deterministic replay-verified two-AI tournaments | Statically recover original difficulty branches/weights and visibility; reference decision snapshots; larger-player and objective-completion tournaments; M5 gate |
 | M7 | Foundation started | Original city ownership layers and site/gang portraits are rendered; resolved equipped attacks route item-defined original weapon sounds | Complete atlas/event integration, animations, remaining audio/music/video, golden screens and M1-M6 dependencies |
-| M8 | Foundation started | Windows local launcher; legal-copy extraction; self-contained Windows package and GOG-aware Inno installer; Linux amd64 `.deb`; macOS arm64/x64 application-bundle `.pkg`; manually dispatched four-installer GitHub Release workflow; continuous cross-platform build, test, assetless startup, packaging, and blocking zizmor workflows; clean-room Windows run `34400362789` passed every job | First green Linux/macOS installer and zizmor runs, signing/notarization, compatibility and full release gate |
+| M8 | Foundation started | Windows local launcher; legal-copy extraction; self-contained Windows package and GOG-aware Inno installer; Linux amd64 `.deb`; macOS arm64/x64 application-bundle `.pkg`; manually dispatched four-installer GitHub Release workflow; continuous cross-platform build, test, assetless startup, packaging, and zizmor workflows; clean-room run `34403047147` passed Windows, Linux, both macOS architectures, and all installer jobs; zizmor run `34403047115` passed | Signing/notarization, native interactive tests, accuracy audit, compatibility and full release gate |
 
-Current automated baseline: the solution builds successfully, 326 tests
+Current automated baseline: the solution builds successfully, 330 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.
@@ -709,7 +737,11 @@ not lines of code or asset counts.
 8. Implement each action vertically: validation, resolution, event, UI, media,
    documentation and reference fixture before starting the next.
 9. Complete objectives/hot-seat, then AI, then audiovisual parity.
-10. Finish persistence, cross-platform packaging and optional modern features.
+10. Run the full section 4.4 accuracy audit across layouts, rules, animations,
+    AI, RNG, media, and persistence; resolve or explicitly classify every
+    in-scope discrepancy. Original networking remains excluded.
+11. Finish persistence, signing/notarization, native platform validation, and
+    optional modern features.
 
 ## 10. Source hierarchy
 
