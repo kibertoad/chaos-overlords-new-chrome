@@ -32,6 +32,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle SetupBack = new(466, 374, 96, 50);
     private static readonly Rectangle CityAction = new(430, 415, 86, 24);
     private static readonly Rectangle CityAdvance = new(524, 415, 96, 24);
+    private static readonly Rectangle CityEvents = new(492, 124, 50, 51);
+    private static readonly Rectangle EventsDismiss = new(218, 414, 96, 28);
+    private static readonly Rectangle EventsBack = new(322, 414, 96, 28);
     private static readonly Rectangle EndgameDone = new(320, 404, 104, 54);
     private static readonly Rectangle HandoffReady = new(266, 246, 108, 66);
     private readonly GraphicsDeviceManager _graphics;
@@ -120,6 +123,10 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))
                     _screens.Show(ClientScreen.City);
                 break;
+            case ClientScreen.Events:
+                if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)) DismissNotification();
+                if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
+                break;
         }
         if (mouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released
             && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint))
@@ -153,6 +160,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Handoff when _state is not null:
                 DrawHandoff(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.Events when _state is not null:
+                DrawEvents(_batch, _pixel, _font, _state);
                 break;
         }
         _batch.End();
@@ -220,6 +230,10 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Handoff:
                 if (HandoffReady.Contains(point)) _screens.Show(ClientScreen.City);
                 break;
+            case ClientScreen.Events:
+                if (EventsDismiss.Contains(point)) DismissNotification();
+                else if (EventsBack.Contains(point)) _screens.Show(ClientScreen.City);
+                break;
         }
     }
 
@@ -243,6 +257,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             else QueueBoardCommand();
         }
         else if (CityAdvance.Contains(point)) AdvancePhase();
+        else if (CityEvents.Contains(point)) _screens.Show(ClientScreen.Events);
     }
 
     private void ChangeScenario(int delta)
@@ -401,6 +416,43 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         var player = state.FindPlayer(playerId)!;
         DrawCentered(font, batch, player.Setup.Name, 194, PlayerColors[playerId.Value], 1);
         DrawBorder(batch, pixel, HandoffReady, Color.Gold, 2);
+    }
+
+    private void DrawEvents(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
+        if (_cityBackground is not null)
+            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
+        font.Draw(batch, "LAST TURN EVENTS", new Vector2(18, 60), Color.Gold, 2);
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        font.Draw(batch, state.FindPlayer(playerId)!.Setup.Name, new Vector2(18, 84), PlayerColors[playerId.Value], 1);
+        var notifications = state.NotificationsFor(playerId);
+        if (notifications.Count == 0)
+        {
+            font.Draw(batch, "NO EVENTS", new Vector2(18, 112), Color.White, 1);
+        }
+        else
+        {
+            foreach (var entry in notifications.Take(18).Select((notification, index) => (notification, index)))
+            {
+                var notification = entry.notification;
+                var detail = notification.Gang is { } gang ? $" GANG {gang.Value}" : "";
+                if (notification.SectorId is { } sector) detail += $" SECTOR {sector + 1}";
+                font.Draw(batch, $"T{notification.Turn} {notification.Kind}{detail}",
+                    new Vector2(18, 110 + entry.index * 16), Color.White, 1);
+            }
+        }
+        DrawButton(batch, pixel, font, EventsDismiss, "DISMISS", false);
+        DrawButton(batch, pixel, font, EventsBack, "BACK", false);
+    }
+
+    private void DismissNotification()
+    {
+        if (_state is null || _replay is null) return;
+        var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        _message = _replay.TryDismissNotification(playerId, out _)
+            ? "EVENT DISMISSED"
+            : "NO EVENT TO DISMISS";
     }
 
     private void MoveCursor(int dx, int dy)

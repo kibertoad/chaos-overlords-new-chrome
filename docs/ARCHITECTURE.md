@@ -120,7 +120,7 @@ and machine-readable diagnostics.
 ### `Rechaos.Game`
 
 The current client owns the MonoGame loop, point-scaled virtual canvas, asset
-loading, title/setup/hot-seat-handoff/city/endgame routing, keyboard and inverse-mapped mouse input,
+loading, title/setup/hot-seat-handoff/city/events/endgame routing, keyboard and inverse-mapped mouse input,
 prototype board renderer, and an internal pixel font. `UI-ATLAS.md` records the
 first full-screen resource and hit-region mappings.
 It reads original media only from the extracted asset directory.
@@ -308,8 +308,9 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
   candidates, Right Hands setup and deferred initial offers; original seed
   selection and complete setup-mode context remain provisional.
 - The client has a title/setup/city router and virtual-coordinate mouse input,
-  original next-player privacy handoff, plus a state-driven endgame summary on
-  the mapped original frame, but still
+  original next-player privacy handoff, an event/notification viewer whose
+  dismissal mutations are replay-recorded, plus a state-driven endgame summary
+  on the mapped original frame, but still
   lacks the original setup detail, command picker, AI turn driver, notifications,
   animations and most original panels.
 - Exact control edges and within-subphase command ordering remain provisional.
