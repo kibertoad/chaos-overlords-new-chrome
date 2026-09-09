@@ -72,6 +72,9 @@ workstream can be marked complete.
    and test without original art, audio, video, help, or narrative assets.
 7. **Small vertical milestones.** Each milestone ends in a playable build and a
    documented parity gate, not just disconnected subsystems.
+8. **Bounded source modules.** Every compiled C# file is limited to 1,000 lines
+   by `Directory.Build.targets`; exceeding the ceiling fails local builds, tests,
+   CI, packaging, and releases.
 
 ### 3.1 Manual-derived implementation checklist
 

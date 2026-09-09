@@ -148,6 +148,11 @@ transitions and input handling, while the specialized attack picker remains in
 `ChaosGame.AttackPicker.cs`. Combat presentation, results, and turn events
 likewise remain in their focused partials. Further screen groups should follow
 these boundaries instead of growing the shell again.
+`Directory.Build.targets` enforces a 1,000-line ceiling for every compiled C#
+source file in every project, making oversized responsibilities a local-build,
+test, CI, and release failure rather than a review-only convention. The limit
+can be lowered with `MaximumSourceFileLines` for validation; disabling it
+requires the explicit `DisableSourceFileLineLimit=true` MSBuild property.
 It reads original media only from the extracted asset directory.
 The item workflow projects research/equipment state and submits Research,
 Equip, Give, and Sell through the replay recorder and authoritative Core
