@@ -44,9 +44,6 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle EventsBack = new(322, 414, 96, 28);
     private static readonly Rectangle CommandsQueue = new(218, 414, 96, 28);
     private static readonly Rectangle CommandsBack = new(322, 414, 96, 28);
-    private static readonly Rectangle HireQueue = new(114, 414, 96, 28);
-    private static readonly Rectangle HireSnub = new(218, 414, 96, 28);
-    private static readonly Rectangle HireBack = new(322, 414, 96, 28);
     private static readonly Rectangle ManagementBack = new(322, 414, 96, 28);
     private static readonly Rectangle ItemsResearch = new(10, 414, 96, 28);
     private static readonly Rectangle ItemsEquip = new(114, 414, 96, 28);
@@ -72,6 +69,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _endgameBackground;
     private Texture2D? _handoffPanel;
     private Texture2D? _gangInfoBackground;
+    private Texture2D? _hireComparisonBackground;
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
     private Texture2D? _policeSprites;
@@ -84,6 +82,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private MatchReplayRecorder? _replay;
     private OriginalData? _definitions;
     private readonly ScreenRouter _screens = new();
+    private readonly CitySectorClickTracker _citySectorClicks = new();
     private readonly bool[] _computerPlayers = new bool[MatchLimits.PlayerCount];
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.SixMonths;
@@ -92,6 +91,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private int _selectedGangIndex;
     private IReadOnlyList<GameCommand> _commandOptions = [];
     private int _commandCursor;
+    private bool _commandRepeats;
+    private ClientScreen _commandReturnScreen = ClientScreen.City;
     private int _hireCursor;
     private int _itemCursor;
     private IReadOnlyList<GameCommand> _giveOptions = [];
@@ -105,6 +106,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private MouseState _previousMouse;
     private long _lastAudibleEventSequence = -1;
     private long _lastAnimatedEventSequence = -1;
+    private TimeSpan _inputTime;
 
     public ChaosGame(string assetRoot, bool debugPhaseStepping = false)
     {
@@ -147,6 +149,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _endgameBackground = LoadTexture("PX00200.bmp");
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
+        _hireComparisonBackground = LoadTexture("PX05016.bmp");
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
         _policeSprites = LoadTexture("PX00300.bmp", transparentBlack: true);
@@ -161,6 +164,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     protected override void Update(GameTime gameTime)
     {
+        _inputTime = gameTime.TotalGameTime;
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
         RunComputerTurns();
@@ -201,14 +205,14 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
                 if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
                 if (Pressed(keyboard, Keys.Enter)) SubmitSelectedCommand();
-                if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
+                if (Pressed(keyboard, Keys.Back)) _screens.Show(_commandReturnScreen);
                 break;
             case ClientScreen.Hire:
-                if (Pressed(keyboard, Keys.Up)) MoveHireCursor(-1);
-                if (Pressed(keyboard, Keys.Down)) MoveHireCursor(1);
-                if (Pressed(keyboard, Keys.Enter)) QueueSelectedHireOffer();
+                if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveHireCursor(-1);
+                if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveHireCursor(1);
                 if (Pressed(keyboard, Keys.S)) SnubSelectedHireOffer();
-                if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
+                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    _screens.Show(ClientScreen.City);
                 break;
             case ClientScreen.Sector:
                 UpdateSector(keyboard);
@@ -449,7 +453,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void HandleSectorClick(Point point)
     {
-        if (ManagementBack.Contains(point))
+        if (SectorDetailLayout.Back.Contains(point) || ManagementBack.Contains(point))
         {
             _screens.Show(ClientScreen.City);
             return;
@@ -463,9 +467,11 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
         var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var visible = SectorGangView.Visible(_state, playerId, _cursor)
-            .Take(SectorGangView.MaximumPortraits).ToArray();
+            .OrderBy(gang => gang.Owner == playerId ? 0 : 1)
+            .ThenBy(gang => gang.Id.Value)
+            .Take(SectorGangCardLayout.VisibleCards).ToArray();
         var index = Enumerable.Range(0, visible.Length)
-            .FirstOrDefault(value => SectorGangView.Portrait(value).Contains(point), -1);
+            .FirstOrDefault(value => SectorGangCardLayout.Frame(value).Contains(point), -1);
         if (index < 0) return;
         var gang = visible[index];
         if (gang.Owner != playerId)
@@ -475,38 +481,54 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
         var ownGangs = _state.FindPlayer(playerId)!.Gangs.Where(candidate => candidate.IsActive).ToArray();
         _selectedGangIndex = Array.FindIndex(ownGangs, candidate => candidate.Id == gang.Id);
-        _screens.Show(ClientScreen.Gang);
+        if (SectorGangCardLayout.OneOffAction(index).Contains(point))
+            OpenCommands(repeat: false, returnScreen: ClientScreen.Sector);
+        else if (SectorGangCardLayout.RepeatingAction(index).Contains(point))
+            OpenCommands(repeat: true, returnScreen: ClientScreen.Sector);
+        else
+            _screens.Show(ClientScreen.Gang);
     }
 
     private void HandleCityClick(Point point)
     {
+        var rejectSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
+            .FirstOrDefault(slot => HireDockLayout.Reject(slot).Contains(point), -1);
         var hireSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
-            .FirstOrDefault(slot => HireDockLayout.Cell(slot).Contains(point), -1);
-        if (hireSlot >= 0)
+            .FirstOrDefault(slot => HireDockLayout.Portrait(slot).Contains(point), -1);
+        if (rejectSlot >= 0)
+        {
+            SnubHireDockOffer(rejectSlot);
+        }
+        else if (hireSlot >= 0)
         {
             BeginHireDrag(hireSlot, point);
         }
         else if (CityMapLayout.TrySectorAt(point, out var selected))
         {
-            if (_cursor == selected) QueueBoardCommand();
-            else
+            _cursor = selected;
+            _message = $"SECTOR {_cursor + 1}";
+            if (_citySectorClicks.Register(selected, _inputTime))
             {
-                _cursor = selected;
-                _message = $"SECTOR {_cursor + 1}";
+                _screens.Show(ClientScreen.Sector);
+                _message = $"SECTOR {_cursor + 1} DETAIL";
             }
         }
-        else if (CityDone.Contains(point)) AdvanceTurn();
-        else if (CityEvents.Contains(point)) _screens.Show(ClientScreen.Events);
-        else if (CityCombatSummary.Contains(point)) _screens.Show(ClientScreen.CombatSummary);
-        else if (CityFinance.Contains(point)) _screens.Show(ClientScreen.Finance);
-        else if (CityGangs.Contains(point)) _screens.Show(ClientScreen.Gang);
-        else if (CityHire.Contains(point)) OpenHire();
-        else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
-        else if (CityRanking.Contains(point)) _screens.Show(ClientScreen.Ranking);
-        else if (CitySearch.Contains(point)) _screens.Show(ClientScreen.Search);
+        else
+        {
+            _citySectorClicks.Cancel();
+            if (CityDone.Contains(point)) AdvanceTurn();
+            else if (CityEvents.Contains(point)) _screens.Show(ClientScreen.Events);
+            else if (CityCombatSummary.Contains(point)) _screens.Show(ClientScreen.CombatSummary);
+            else if (CityFinance.Contains(point)) _screens.Show(ClientScreen.Finance);
+            else if (CityGangs.Contains(point)) _screens.Show(ClientScreen.Gang);
+            else if (CityHire.Contains(point)) OpenHire();
+            else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
+            else if (CityRanking.Contains(point)) _screens.Show(ClientScreen.Ranking);
+            else if (CitySearch.Contains(point)) _screens.Show(ClientScreen.Search);
+        }
     }
 
-    private void OpenCommands()
+    private void OpenCommands(bool repeat = false, ClientScreen returnScreen = ClientScreen.City)
     {
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
@@ -522,6 +544,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
         _commandOptions = CommandOptionCatalog.LegalCommands(_state, playerId, gang.Id);
         _commandCursor = 0;
+        _commandRepeats = repeat;
+        _commandReturnScreen = returnScreen;
         _screens.Show(ClientScreen.Commands);
     }
 
@@ -650,18 +674,18 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             if (index < _commandOptions.Count) _commandCursor = index;
         }
         else if (CommandsQueue.Contains(point)) SubmitSelectedCommand();
-        else if (CommandsBack.Contains(point)) _screens.Show(ClientScreen.City);
+        else if (CommandsBack.Contains(point)) _screens.Show(_commandReturnScreen);
     }
 
     private void SubmitSelectedCommand()
     {
         if (_commandOptions.Count == 0 || _replay is null) return;
-        var command = _commandOptions[_commandCursor];
+        var command = _commandOptions[_commandCursor] with { Repeat = _commandRepeats };
         var result = _replay.Submit(command);
         _message = result.Accepted
-            ? $"{command.Action.ToString().ToUpperInvariant()} QUEUED"
+            ? $"{(_commandRepeats ? "REPEATING " : "")}{command.Action.ToString().ToUpperInvariant()} QUEUED"
             : result.Validation.Message.ToUpperInvariant();
-        _screens.Show(ClientScreen.City);
+        _screens.Show(_commandReturnScreen);
     }
 
     private void CycleGang(int delta)
@@ -943,7 +967,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
-        font.Draw(batch, "COMMANDS", new Vector2(18, 60), Color.Gold, 2);
+        font.Draw(batch, _commandRepeats ? "RECURRING COMMAND" : "ONE-OFF COMMAND",
+            new Vector2(18, 60), Color.Gold, 2);
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var gang = SelectedGang(state.FindPlayer(playerId)!);
         var gangName = gang is null
@@ -968,48 +993,53 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void DrawHire(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
-        font.Draw(batch, "NEW RECRUITS", new Vector2(18, 60), Color.Gold, 2);
+        DrawBoard(batch, pixel, font, state);
+        if (_hireComparisonBackground is not null)
+            batch.Draw(_hireComparisonBackground, HireComparisonLayout.Panel, Color.White);
+        else
+            batch.Draw(pixel, HireComparisonLayout.Panel, new Color(0, 0, 0, 245));
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var player = state.FindPlayer(playerId)!;
-        font.Draw(batch, $"{player.Setup.Name}  CASH ${player.Cash}  SECTOR {_cursor + 1}",
-            new Vector2(18, 84), PlayerColors[playerId.Value], 1);
-        for (var index = 0; index < player.HirePool.Count; index++)
+        var entries = CurrentHireDock(player);
+        var valuesBySlot = entries.Select(entry => entry is null
+            ? null
+            : HireComparisonValues(state.Definitions.Gangs.Single(gang => gang.Id == entry.GangDefinitionId)))
+            .ToArray();
+        for (var slot = 0; slot < entries.Count; slot++)
         {
-            var y = 112 + index * 72;
-            if (index == _hireCursor)
-                batch.Draw(pixel, new Rectangle(14, y - 6, 404, 54), new Color(72, 54, 18));
-            var definition = state.Definitions.Gangs.Single(gang => gang.Id == player.HirePool[index]);
+            if (entries[slot] is not { } entry) continue;
+            var definition = state.Definitions.Gangs.Single(gang => gang.Id == entry.GangDefinitionId);
             if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, new Rectangle(20, y - 5, 48, 48),
+                batch.Draw(_gangPortraits, HireComparisonLayout.Portrait(slot),
                     OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
-            font.Draw(batch, definition.Name, new Vector2(78, y), Color.White, 1);
-            font.Draw(batch, $"FORCE {definition.Force}  UPKEEP {definition.Upkeep}  COST {HireRules.InitialCost(definition)}",
-                new Vector2(78, y + 16), new Color(180, 230, 170), 1);
+            var values = valuesBySlot[slot]!;
+            for (var row = 0; row < values.Length; row++)
+                font.Draw(batch, values[row].ToString(), HireComparisonLayout.StatPosition(slot, row),
+                    HireComparisonLayout.IsBestValue(row, values[row],
+                        valuesBySlot.Where(candidate => candidate is not null).Select(candidate => candidate![row]))
+                        ? Color.Lime : Color.Red, 1);
         }
-        if (player.HirePool.Count == 0)
-            font.Draw(batch, "NO HIRE OFFERS", new Vector2(18, 112), Color.White, 1);
-        DrawButton(batch, pixel, font, HireQueue, "HIRE", false);
-        DrawButton(batch, pixel, font, HireSnub, "SNUB", false);
-        DrawButton(batch, pixel, font, HireBack, "BACK", false);
     }
+
+    private static short[] HireComparisonValues(GangDefinition definition) =>
+    [
+        definition.TechLevel, definition.Upkeep,
+        definition.Stats.Combat, definition.Stats.Defense,
+        definition.Stats.Stealth, definition.Stats.Detect,
+        definition.Stats.Chaos, definition.Stats.Control,
+        definition.Stats.Heal, definition.Stats.Influence,
+        definition.Stats.Research, definition.Stats.Strength,
+        definition.Stats.Blade, definition.Stats.Range,
+        definition.Stats.Fighting, definition.Stats.MartialArts
+    ];
 
     private void DrawSectorDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
+        DrawSectorSideRail(batch, pixel, font);
         var sector = state.Sectors[_cursor];
-        font.Draw(batch, $"SECTOR {_cursor + 1}", new Vector2(18, 52), Color.Gold, 2);
         DrawSectorNeighborhood(batch, pixel, font, state);
-        var owner = sector.Owner is { } ownerId ? state.FindPlayer(ownerId)!.Setup.Name : "NEUTRAL";
-        font.Draw(batch, $"OWNER {owner}", new Vector2(18, 246), Color.White, 1);
-        font.Draw(batch, $"INCOME {sector.Income}  TOLERANCE {sector.Tolerance}",
-            new Vector2(18, 262), Color.White, 1);
-        font.Draw(batch, $"CHAOS {sector.Chaos}  CRACKDOWN {(sector.CrackdownActive ? $"{sector.CrackdownTurnsRemaining} TURNS" : "NO")}",
-            new Vector2(18, 278), Color.White, 1);
         foreach (var site in sector.Sites)
         {
             var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
@@ -1017,27 +1047,80 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             if (_sitePortraits is not null)
                 batch.Draw(_sitePortraits, portrait,
                     OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
-            var name = definition.Name.Length <= 20 ? definition.Name : definition.Name[..20];
-            font.Draw(batch, name, new Vector2(portrait.X, portrait.Bottom + 2),
-                site.InfluencedBy is { } influencedBy ? PlayerColors[influencedBy.Value] : new Color(180, 230, 170), 1);
+            DrawBorder(batch, pixel, portrait,
+                site.InfluencedBy is { } influencedBy ? PlayerColors[influencedBy.Value] : Color.Gray, 1);
         }
         var viewer = state.Coordinator.ActivePlayer ?? new PlayerId(0);
-        var visibleGangs = SectorGangView.Visible(state, viewer, sector.Id);
-        font.Draw(batch, "GANGS", new Vector2(18, 352), Color.Gold, 1);
-        foreach (var entry in visibleGangs.Take(SectorGangView.MaximumPortraits)
+        var visibleGangs = SectorGangView.Visible(state, viewer, sector.Id)
+            .OrderBy(gang => gang.Owner == viewer ? 0 : 1)
+            .ThenBy(gang => gang.Id.Value)
+            .ToArray();
+        foreach (var entry in visibleGangs.Take(SectorGangCardLayout.VisibleCards)
                      .Select((gang, index) => (gang, index)))
+            DrawSectorGangCard(batch, pixel, font, state, viewer, entry.gang, entry.index);
+        if (visibleGangs.Length > SectorGangCardLayout.VisibleCards)
+            font.Draw(batch, $"+{visibleGangs.Length - SectorGangCardLayout.VisibleCards}",
+                new Vector2(397, 123), Color.White, 1);
+    }
+
+    private void DrawSectorSideRail(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        var rail = new Rectangle(4, 0, 28, 460);
+        batch.Draw(pixel, rail, new Color(105, 105, 105));
+        DrawBorder(batch, pixel, rail, new Color(185, 185, 185), 1);
+        batch.Draw(pixel, new Rectangle(8, 0, 18, 100), new Color(0, 180, 20));
+        batch.Draw(pixel, new Rectangle(10, 0, 14, 98), new Color(210, 0, 0));
+        batch.Draw(pixel, new Rectangle(8, 100, 18, 290), Color.Black);
+        for (var y = 104; y < 390; y += 8)
+            batch.Draw(pixel, new Rectangle(9, y, 16, 1), new Color(0, 20, 115));
+        if (_uiSprites is not null)
+            batch.Draw(_uiSprites, SectorDetailLayout.Back,
+                OriginalSpriteLayout.SectorBackArrow, Color.White);
+        else
+            font.Draw(batch, "<", new Vector2(8, 410), Color.Lime, 2);
+    }
+
+    private void DrawSectorGangCard(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        MatchState state,
+        PlayerId viewer,
+        MatchGangState gang,
+        int slot)
+    {
+        var frame = SectorGangCardLayout.Frame(slot);
+        if (_uiSprites is not null)
+            batch.Draw(_uiSprites, frame, OriginalSpriteLayout.GangCardFrame, Color.White);
+        else
         {
-            var definition = state.Definitions.Gangs.Single(value => value.Id == entry.gang.DefinitionId);
-            var destination = SectorGangView.Portrait(entry.index);
-            if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, destination,
-                    OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
-            DrawBorder(batch, pixel, destination, PlayerColors[entry.gang.Owner.Value], 1);
+            batch.Draw(pixel, frame, new Color(115, 115, 115));
+            batch.Draw(pixel, new Rectangle(frame.X + 3, frame.Y + 3, frame.Width - 6, frame.Height - 7), Color.Black);
         }
-        if (visibleGangs.Count > SectorGangView.MaximumPortraits)
-            font.Draw(batch, $"+{visibleGangs.Count - SectorGangView.MaximumPortraits}",
-                new Vector2(420, 383), Color.White, 1);
-        DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
+        DrawBorder(batch, pixel, frame, PlayerColors[gang.Owner.Value], 2);
+
+        var details = SectorGangCardLayout.Details(slot);
+        DrawBorder(batch, pixel, details, Color.LightGray, 1);
+        font.Draw(batch, "V", new Vector2(details.Center.X - 3, details.Y + 4), Color.Lime, 1);
+
+        var once = SectorGangCardLayout.OneOffAction(slot);
+        var repeat = SectorGangCardLayout.RepeatingAction(slot);
+        batch.Draw(pixel, once, new Color(34, 34, 34));
+        batch.Draw(pixel, repeat, new Color(34, 34, 34));
+        DrawBorder(batch, pixel, once, Color.LightGray, 1);
+        DrawBorder(batch, pixel, repeat, Color.LightGray, 1);
+        var controlsEnabled = gang.Owner == viewer;
+        font.Draw(batch, "V", new Vector2(once.Center.X - 3, once.Y + 4),
+            controlsEnabled ? Color.Lime : Color.Gray, 1);
+        font.Draw(batch, "VV", new Vector2(repeat.Center.X - 6, repeat.Y + 4),
+            controlsEnabled ? Color.Lime : Color.Gray, 1);
+
+        var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
+        if (_gangPortraits is not null)
+            batch.Draw(_gangPortraits, SectorGangCardLayout.Portrait(slot),
+                OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
+        for (var itemSlot = 0; itemSlot < 3; itemSlot++)
+            DrawBorder(batch, pixel, SectorGangCardLayout.ItemSlot(slot, itemSlot), Color.LightGray, 1);
     }
 
     private void DrawSectorNeighborhood(
@@ -1079,13 +1162,12 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var player = state.FindPlayer(playerId)!;
-        var selectedGang = SelectedGang(player);
-        if (selectedGang is { IsActive: true }
-            && SectorDetailLayout.Marker(_cursor, selectedGang.SectorId) is { } gangMarker)
-            DrawGangStatusMarker(batch, gangMarker,
-                selectedGang.QueuedCommand is null
-                    ? OriginalSpriteLayout.IdleGangStatus
-                    : OriginalSpriteLayout.AssignedGangStatus);
+        foreach (var gang in player.Gangs.Where(gang => gang.IsActive))
+            if (SectorDetailLayout.Marker(_cursor, gang.SectorId) is { } gangMarker)
+                DrawGangStatusMarker(batch, gangMarker,
+                    gang.QueuedCommand is null
+                        ? OriginalSpriteLayout.IdleGangStatus
+                        : OriginalSpriteLayout.AssignedGangStatus);
         foreach (var pending in player.PendingHires)
             if (SectorDetailLayout.Marker(_cursor, pending.TargetSectorId) is { } hireMarker)
                 DrawGangStatusMarker(batch, hireMarker, OriginalSpriteLayout.IncomingGangStatus);
@@ -1674,15 +1756,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void HandleHireClick(Point point)
     {
-        if (_state?.Coordinator.ActivePlayer is { } playerId
-            && point.X is >= 14 and < 418 && point.Y is >= 106 and < 322)
-        {
-            var index = (point.Y - 106) / 72;
-            if (index < _state.FindPlayer(playerId)!.HirePool.Count) _hireCursor = index;
-        }
-        else if (HireQueue.Contains(point)) QueueSelectedHireOffer();
-        else if (HireSnub.Contains(point)) SnubSelectedHireOffer();
-        else if (HireBack.Contains(point)) _screens.Show(ClientScreen.City);
+        if (HireComparisonLayout.Ok.Contains(point)) _screens.Show(ClientScreen.City);
     }
 
     private void QueueSelectedHireOffer()
@@ -1711,6 +1785,20 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         var result = _replay.SnubHireOffer(playerId, offer);
         _message = result.Accepted ? "OFFER SNUBBED" : result.Validation.Message.ToUpperInvariant();
         _hireCursor = Math.Clamp(_hireCursor, 0, Math.Max(0, player.HirePool.Count - 1));
+    }
+
+    private void SnubHireDockOffer(int slot)
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
+        PrepareCurrentHireOffers();
+        var entry = CurrentHireDock(_state.FindPlayer(playerId)!)[slot];
+        if (entry is null || entry.Hired)
+        {
+            _message = entry is null ? "NO HIRE OFFER IN THIS SLOT" : "GANG ALREADY HIRED THIS TURN";
+            return;
+        }
+        var result = _replay.SnubHireOffer(playerId, entry.GangDefinitionId);
+        _message = result.Accepted ? "OFFER REJECTED" : result.Validation.Message.ToUpperInvariant();
     }
 
     private void AdvanceTurn()

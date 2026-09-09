@@ -48,10 +48,12 @@ layers. It parses all 22 sites, 90 gangs, and 64 items and provides title,
 new-game setup, and deterministic 8x8 hot-seat city screens.
 Setup supports scenario, duration, and one-to-six human/computer players using
 keyboard or mouse; click a player slot or press 1-6 to toggle its controller.
-The default two-player setup is Human vs Computer. In the city, use arrows/WASD or click to select, Enter or a second
-click to act, G to cycle gangs, C to open the legal-command picker, H to open
-the three-offer hire panel during planning (including snubbing), I for the
-clickable 3x3 detailed-sector neighborhood and its three buildings, F for the
+The default two-player setup is Human vs Computer. In the city, use arrows/WASD
+or click to select, double-click a sector for its detailed view, Enter to act,
+G to cycle gangs, C to open the legal-command picker, H to open the original
+three-column hire comparison during planning (including dock snubbing), I for
+the clickable 3x3 detailed-sector neighborhood, its three buildings, and
+one-off/repeating gang-order controls, F for the
 next-upkeep financial projection, R for scenario ranking, T for research and
 equipment, B for the combat summary, and Space to finish planning. Recruit
 portraits remain in the lower-right city dock and can be dragged onto a

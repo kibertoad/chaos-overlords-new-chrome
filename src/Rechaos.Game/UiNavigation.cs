@@ -70,6 +70,27 @@ public static class VirtualInput
     }
 }
 
+public sealed class CitySectorClickTracker
+{
+    public static readonly TimeSpan DoubleClickWindow = TimeSpan.FromMilliseconds(500);
+    private int? _lastSector;
+    private TimeSpan _lastClick;
+
+    public bool Register(int sectorId, TimeSpan timestamp)
+    {
+        _ = CityMapLayout.Source(sectorId);
+        if (timestamp < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timestamp));
+        var doubleClick = _lastSector == sectorId
+            && timestamp >= _lastClick
+            && timestamp - _lastClick <= DoubleClickWindow;
+        _lastSector = doubleClick ? null : sectorId;
+        _lastClick = timestamp;
+        return doubleClick;
+    }
+
+    public void Cancel() => _lastSector = null;
+}
+
 /// <summary>Native layout of the 8x8 sector cells in the PX10000-PX10006 city layers.</summary>
 public static class CityMapLayout
 {
@@ -123,6 +144,8 @@ public static class OriginalSpriteLayout
     public static Rectangle AssignedGangStatus => new(492, 67, 20, 20);
     public static Rectangle IdleGangStatus => new(492, 107, 20, 20);
     public static Rectangle IncomingGangStatus => new(492, 147, 20, 20);
+    public static Rectangle GangCardFrame => new(164, 17, 70, 118);
+    public static Rectangle SectorBackArrow => new(120, 211, 30, 47);
 
     public static Rectangle SitePortrait(int definitionId)
     {
@@ -148,10 +171,11 @@ public static class GangStatusMarkerLayout
 
 public static class SectorDetailLayout
 {
-    public const int Left = 18;
-    public const int Top = 78;
+    public const int Left = 64;
+    public const int Top = 4;
     public const int Columns = 3;
     public const int Rows = 3;
+    public static Rectangle Back => new(4, 394, 28, 66);
 
     public static Rectangle Cell(int column, int row)
     {
@@ -206,7 +230,32 @@ public static class SectorDetailLayout
     {
         if (slot is < 0 or >= MatchLimits.SitesPerSector)
             throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(204, 78 + slot * 78, 120, 64);
+        return new Rectangle(85, 172 + slot * 66, 120, 64);
+    }
+}
+
+public static class SectorGangCardLayout
+{
+    public const int VisibleCards = 2;
+    public const int Left = 251;
+    public const int Top = 4;
+    public const int Stride = 74;
+
+    public static Rectangle Frame(int slot) => At(slot, 0, 0, 70, 134);
+    public static Rectangle Details(int slot) => At(slot, 1, 1, 68, 17);
+    public static Rectangle OneOffAction(int slot) => At(slot, 3, 22, 30, 18);
+    public static Rectangle RepeatingAction(int slot) => At(slot, 36, 22, 30, 18);
+    public static Rectangle Portrait(int slot) => At(slot, 3, 42, 64, 64);
+    public static Rectangle ItemSlot(int slot, int itemSlot)
+    {
+        if (itemSlot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(itemSlot));
+        return At(slot, 3 + itemSlot * 21, 108, 21, 22);
+    }
+
+    private static Rectangle At(int slot, int x, int y, int width, int height)
+    {
+        if (slot is < 0 or >= VisibleCards) throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(Left + slot * Stride + x, Top + y, width, height);
     }
 }
 
@@ -275,6 +324,12 @@ public static class HireDockLayout
         return new Rectangle(439 + slot * 66, 371, 64, 64);
     }
 
+    public static Rectangle Reject(int slot)
+    {
+        ValidateSlot(slot);
+        return new Rectangle(438 + slot * 66, 436, 66, 24);
+    }
+
     public static IReadOnlyList<HireDockEntry?> Project(
         IReadOnlyList<short> offers,
         PendingHireState? pending,
@@ -297,5 +352,35 @@ public static class HireDockLayout
     private static void ValidateSlot(int slot)
     {
         if (slot is < 0 or >= SlotCount) throw new ArgumentOutOfRangeException(nameof(slot));
+    }
+}
+
+public static class HireComparisonLayout
+{
+    public static Rectangle Panel => new(0, 0, 344, 209);
+    public static Rectangle Ok => new(32, 168, 50, 24);
+
+    public static Rectangle Portrait(int slot)
+    {
+        if (slot is < 0 or >= HireDockLayout.SlotCount)
+            throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(164 + slot * 41, 10, 32, 32);
+    }
+
+    public static Vector2 StatPosition(int slot, int row)
+    {
+        if (slot is < 0 or >= HireDockLayout.SlotCount)
+            throw new ArgumentOutOfRangeException(nameof(slot));
+        if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
+        return new Vector2(166 + slot * 41, 49 + row * 9);
+    }
+
+    public static bool IsBestValue(int row, short value, IEnumerable<short> comparison)
+    {
+        ArgumentNullException.ThrowIfNull(comparison);
+        if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
+        var values = comparison.ToArray();
+        if (values.Length == 0) throw new ArgumentException("At least one value is required.", nameof(comparison));
+        return row == 1 ? value == values.Min() : value == values.Max();
     }
 }

@@ -121,6 +121,22 @@ their exact edges and pressed states.
 Done uses the original panel cell at `(492,278,106,54)` in the recreation;
 normal mode resolves the internal phases automatically, while `--debug-phases`
 retains explicit advancement.
+Single-clicking a whole-city sector selects it; a second click on the same
+sector within 500 ms opens the detailed Sector view. It does not queue a gang
+command. Enter remains the keyboard command shortcut.
+
+The detailed view follows the original full-screen composition from the
+reference capture: the 3-by-3 neighborhood begins at `(64,4)`, three 120-by-64
+site portraits stack at `(85,172)`, and up to two visible gang cards begin at
+`(251,4)`. Each friendly card exposes separate one-off and repeating order
+controls; both use the authoritative legal-command picker and set the existing
+`GameCommand.Repeat` flag appropriately.
+
+`PX05016` is the original 344-by-209 `GANGS FOR HIRE` comparison panel. The
+Hire console button overlays it on the live city, with three 32-by-32 gang
+portraits and their sixteen comparison values. Hiring itself remains the
+original drag-from-dock interaction; the comparison panel's OK control closes
+the overlay.
 
 ## Next mapping work
 
