@@ -489,7 +489,7 @@ public static class LastTurnEventsLayout
     public static Rectangle Page => new(133, 135, 59, 13);
     public static Rectangle Previous => new(135, 151, 25, 21);
     public static Rectangle Next => new(163, 151, 25, 21);
-    public static Rectangle Artwork => new(221, 141, 221, 169);
+    public static Rectangle Artwork => new(198, 133, 242, 158);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 }
 
@@ -693,7 +693,7 @@ public static class HireDockLayout
     public static Point Price(int slot)
     {
         var cell = PriceCell(slot);
-        return new Point(cell.X + 10, cell.Y + 6);
+        return new Point(cell.X + 10, cell.Y + 7);
     }
 
     public static IReadOnlyList<HireDockEntry?> Project(

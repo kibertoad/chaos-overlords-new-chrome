@@ -51,8 +51,8 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(new Rectangle(438, 436, 33, 24), HireDockLayout.PriceCell(0));
         Assert.Equal(new Rectangle(471, 436, 33, 24), HireDockLayout.Reject(0));
-        Assert.Equal(new Point(448, 442), HireDockLayout.Price(0));
-        Assert.Equal(new Point(580, 442), HireDockLayout.Price(2));
+        Assert.Equal(new Point(448, 443), HireDockLayout.Price(0));
+        Assert.Equal(new Point(580, 443), HireDockLayout.Price(2));
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(208, 141, 96, 179), CombatResultsLayout.FriendlyPanel);
         Assert.Equal(new Rectangle(313, 289, 32, 32), CombatResultsLayout.Opponent(4));
         Assert.Equal(EquipmentCommandLayout.Panel, LastTurnEventsLayout.Panel);
-        Assert.Equal(new Rectangle(221, 141, 221, 169), LastTurnEventsLayout.Artwork);
+        Assert.Equal(new Rectangle(198, 133, 242, 158), LastTurnEventsLayout.Artwork);
         Assert.Equal(new Rectangle(135, 151, 25, 21), LastTurnEventsLayout.Previous);
     }
 

@@ -292,6 +292,20 @@ public sealed class BoardResolutionTests
         Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
     }
 
+    [Fact]
+    public void CompletedRepeatingControlCommandIsRemovedFromGang()
+    {
+        var match = CreateMatch([Gang(10, 0, 0, 10)], [Gang(20, 1, 3, 5)]);
+        Queue(match, Control(0, 10) with { Repeat = true });
+        EnterControl(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
+        Assert.False(match.Commands.TryGet(new GangId(10), out _));
+        Assert.Null(match.FindGang(new GangId(10))!.QueuedCommand);
+    }
+
     private static GameCommand Control(int player, int gang) =>
         new(new PlayerId(player), new GangId(gang), GangAction.Control, CommandTarget.None);
 

@@ -109,7 +109,8 @@ controlled reference observation confirms its execution timing and edge cases.
   4-6 restores one Force, capped at 10.
 - Interpretation: calculate gang-definition plus equipped-item Heal modifiers,
   roll `max(0, 4 + Heal)` six-sided dice, count results at least four, and add
-  successes to Force with a maximum of ten.
+  successes to Force with a maximum of ten. Heal cannot be assigned at maximum
+  Force; a repeating Heal order clears as soon as Force reaches ten.
 - Current exclusions: influenced-site and other contextual stat modifiers are
   not applied until their ownership/scope is verified.
 - Confidence: High for dice threshold and Force cap; Medium for dice-pool and
@@ -133,6 +134,7 @@ controlled reference observation confirms its execution timing and edge cases.
 - Interpretation: calculate gang-definition plus equipped-item Research
   modifiers, roll `max(0, Force + Research)` six-sided dice, count results at
   least four, persist unfinished progress, and mark the item researched at zero.
+  A repeating Research order clears on completion.
 - Tech restrictions: a gang cannot research above its own Tech. Without a local
   influenced special research site the ceiling is Tech 5; an influenced Science
   Center raises it to 8 and a Research Lab to 10. The recreation requires the
@@ -495,7 +497,12 @@ claim about original-game behavior.
   target the same neutral sector, evaluate every group from the phase-start
   owner snapshot and permit only the unique highest margin to attempt capture.
   On an overthrow, increment the attacker's statistic, remove the former
-  owner's site Support, clear influence, and restore table resistance.
+  owner's site Support, clear influence, and restore table resistance. A
+  repeating Control order clears once its player owns the sector; repeating
+  Influence similarly clears when its target reaches zero resistance. Other
+  terminal repeat targets (completed Move/transactions, eliminated Attack
+  target, maximum Heal, zero-tolerance Snitch) are removed while ongoing
+  behaviors such as Hide and Chaos remain repeatable across turns.
 - Current exclusions: equal-highest neutral ties, simultaneous challenges to an
   already controlled sector, precise definition of sector income, crackdown
   restrictions, abandoned-sector rules, and negative-total edge behavior.

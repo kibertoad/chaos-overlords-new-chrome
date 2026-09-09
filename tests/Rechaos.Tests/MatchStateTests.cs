@@ -134,6 +134,20 @@ public sealed class MatchStateTests
         Assert.False(match.Commands.TryGet(gang, out _));
     }
 
+    [Fact]
+    public void HealIsRejectedWhenGangAlreadyHasMaximumForce()
+    {
+        var match = CreateMatch();
+        match.Coordinator.FinishUpkeep();
+        var gang = match.FindGang(new GangId(10))!;
+        gang.Force = ManualRules.MaximumForce;
+
+        var validation = CommandValidator.Validate(match, new GameCommand(
+            new PlayerId(0), gang.Id, GangAction.Heal, CommandTarget.None));
+
+        Assert.Equal(CommandValidationCode.GangAtFullForce, validation.Code);
+    }
+
     private static MatchState CreateMatch()
     {
         var data = BundledOriginalData.Load();

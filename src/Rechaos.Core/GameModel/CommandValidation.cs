@@ -27,7 +27,8 @@ public enum CommandValidationCode
     CommandNotQueued,
     ResearchTechLevelUnavailable,
     SectorInCrackdown,
-    SectorAlreadyControlled
+    SectorAlreadyControlled,
+    GangAtFullForce
 }
 
 public readonly record struct CommandValidation(CommandValidationCode Code, string Message)
@@ -135,6 +136,8 @@ public static class CommandValidator
             return CommandValidation.Reject(CommandValidationCode.SectorInCrackdown);
         if (command.Action == GangAction.Control && state.Sectors[actor.SectorId].Owner == command.Player)
             return CommandValidation.Reject(CommandValidationCode.SectorAlreadyControlled);
+        if (command.Action == GangAction.Heal && actor.Force >= ManualRules.MaximumForce)
+            return CommandValidation.Reject(CommandValidationCode.GangAtFullForce);
         return ValidateTransaction(state, command, actor);
     }
 
@@ -308,7 +311,8 @@ internal static class CommandValidationMessages
             [CommandValidationCode.SectorNotControlled] = "The player must control the target sector.",
             [CommandValidationCode.CommandNotQueued] = "The gang has no queued command.",
             [CommandValidationCode.SectorInCrackdown] = "A sector cannot be controlled while police are present.",
-            [CommandValidationCode.SectorAlreadyControlled] = "The player already controls this sector."
+            [CommandValidationCode.SectorAlreadyControlled] = "The player already controls this sector.",
+            [CommandValidationCode.GangAtFullForce] = "A gang at full Force does not need healing."
         };
 
     public static string For(CommandValidationCode code) => Messages.GetValueOrDefault(code, string.Empty);

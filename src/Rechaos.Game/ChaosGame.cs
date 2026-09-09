@@ -76,6 +76,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _combatBackground;
     private Texture2D? _combatResultsBackground;
     private Texture2D? _lastTurnEventsBackground;
+    private readonly Texture2D?[] _lastTurnEventArtwork = new Texture2D?[10];
     private Texture2D? _hireComparisonBackground;
     private Texture2D? _influenceBackground;
     private Texture2D? _targetAcquisitionBackground;
@@ -194,6 +195,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _combatBackground = LoadTexture("PX05014.bmp");
         _combatResultsBackground = LoadTexture("PX05012.bmp");
         _lastTurnEventsBackground = LoadTexture("PX05010.bmp");
+        for (var eventArt = 1; eventArt <= 9; eventArt++)
+            _lastTurnEventArtwork[eventArt] = LoadTexture($"PX060{eventArt:00}.bmp");
         _hireComparisonBackground = LoadTexture("PX05016.bmp");
         _influenceBackground = LoadTexture("PX05005.bmp");
         _targetAcquisitionBackground = LoadTexture("PX05003.bmp");
@@ -1125,12 +1128,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     Color.White);
             if (index == _cursor) DrawBorder(batch, pixel, destination, Color.Gold, 2);
         }
-        var selectedGang = SelectedGang(player);
-        if (!_hireDragStarted && selectedGang is { IsActive: true })
-            DrawGangStatusMarker(batch, selectedGang.SectorId,
-                selectedGang.QueuedCommand is null
-                    ? OriginalSpriteLayout.IdleGangStatus
-                    : OriginalSpriteLayout.AssignedGangStatus);
+        foreach (var gangs in player.Gangs.Where(gang => gang.IsActive).GroupBy(gang => gang.SectorId))
+            DrawGangStatusMarker(batch, gangs.Key,
+                gangs.Any(gang => gang.QueuedCommand is not null)
+                    ? OriginalSpriteLayout.AssignedGangStatus
+                    : OriginalSpriteLayout.IdleGangStatus);
         foreach (var pending in player.PendingHires)
             DrawGangStatusMarker(batch, pending.TargetSectorId, OriginalSpriteLayout.IncomingGangStatus);
         if (_draggedHireDefinitionId is not null

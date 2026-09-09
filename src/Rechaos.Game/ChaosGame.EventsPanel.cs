@@ -73,33 +73,37 @@ public sealed partial class ChaosGame
         var notification = notifications[_eventCursor];
         font.Draw(batch, $"{_eventCursor + 1:00} OF {notifications.Count:00}",
             new Vector2(136, 137), Color.Lime, 1);
-        DrawEventArtwork(batch, state, notification);
+        DrawEventArtwork(batch, pixel, state, notification);
         var heading = $"DATE {MatchDate(notification.Turn)} OBJECT {EventObject(state, notification)}";
-        if (heading.Length > 36) heading = heading[..36];
-        font.Draw(batch, heading, new Vector2(221, 313), Color.White, 1);
+        if (heading.Length > 40) heading = heading[..40];
+        font.Draw(batch, heading, new Vector2(198, 293), Color.White, 1);
         var status = NotificationPresentation.LastTurnStatus(notification);
-        if (status.Length > 35) status = status[..35];
-        font.Draw(batch, "STATUS " + status, new Vector2(221, 322), Color.Lime, 1);
+        if (status.Length > 39) status = status[..39];
+        font.Draw(batch, "STATUS " + status, new Vector2(198, 302), Color.Lime, 1);
     }
 
-    private void DrawEventArtwork(SpriteBatch batch, MatchState state, GameNotification notification)
+    private void DrawEventArtwork(
+        SpriteBatch batch,
+        Texture2D pixel,
+        MatchState state,
+        GameNotification notification)
     {
-        batch.Draw(_pixel!, LastTurnEventsLayout.Artwork, Color.Black);
-        if (notification.SectorId is { } sectorId)
+        batch.Draw(pixel, LastTurnEventsLayout.Artwork, Color.Black);
+        var related = RelatedEvent(state, notification);
+        var artworkIndex = notification.Kind switch
         {
-            var sector = state.Sectors[sectorId];
-            var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
-            if (layer is not null)
-                batch.Draw(layer, LastTurnEventsLayout.Artwork, CityMapLayout.Source(sectorId), Color.White);
-        }
-        if (notification.Gang is { } gangId && state.FindGang(gangId) is { } gang && _gangPortraits is not null)
-        {
-            var portrait = new Rectangle(
-                LastTurnEventsLayout.Artwork.Right - 76,
-                LastTurnEventsLayout.Artwork.Y + 12, 64, 64);
-            batch.Draw(_gangPortraits, portrait,
-                OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
-        }
+            GameNotificationKind.Crackdown => 1,
+            GameNotificationKind.Control => 2,
+            GameNotificationKind.ControlLost => 3,
+            GameNotificationKind.Elimination when related?.Kind == GameEventKind.PlayerEliminated => 9,
+            GameNotificationKind.Elimination => 4,
+            GameNotificationKind.Research => 5,
+            GameNotificationKind.Influence => 6,
+            GameNotificationKind.Objective => 7,
+            _ => 0
+        };
+        if (artworkIndex > 0 && _lastTurnEventArtwork[artworkIndex] is { } artwork)
+            batch.Draw(artwork, LastTurnEventsLayout.Artwork, Color.White);
     }
 
     private static string EventObject(MatchState state, GameNotification notification)
@@ -116,9 +120,7 @@ public sealed partial class ChaosGame
         var sectorMilestones = new HashSet<(int Turn, GameNotificationKind Kind, int? Sector)>();
         foreach (var notification in state.NotificationsFor(playerId))
         {
-            var related = notification.RelatedEventSequence is { } sequence
-                ? state.Events.FirstOrDefault(gameEvent => gameEvent.Sequence == sequence)
-                : null;
+            var related = RelatedEvent(state, notification);
             if (!NotificationPresentation.IsLastTurnReport(notification, related)) continue;
             if ((notification.Kind is GameNotificationKind.Control or GameNotificationKind.Influence)
                 && !sectorMilestones.Add((notification.Turn, notification.Kind, notification.SectorId)))
@@ -128,9 +130,14 @@ public sealed partial class ChaosGame
         return reports;
     }
 
+    private static GameEvent? RelatedEvent(MatchState state, GameNotification notification) =>
+        notification.RelatedEventSequence is { } sequence
+            ? state.Events.FirstOrDefault(gameEvent => gameEvent.Sequence == sequence)
+            : null;
+
     private static void ClearLastTurnEventFields(SpriteBatch batch, Texture2D pixel)
     {
         batch.Draw(pixel, LastTurnEventsLayout.Page, Color.Black);
-        batch.Draw(pixel, new Rectangle(221, 311, 221, 19), Color.Black);
+        batch.Draw(pixel, new Rectangle(198, 291, 242, 19), Color.Black);
     }
 }

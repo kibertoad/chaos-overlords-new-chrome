@@ -98,8 +98,10 @@ validated against the executable.
   price in the left 33-by-24 half of the footer at y 436; the reject control
   occupies the right half. This interaction and placement were confirmed in the
   user-supplied original-game capture and footage at 03:57.
-- The selected gang's sector displays the original idle/question or assigned
-  20-by-20 status marker. A pending or actively dragged hire uses the red-edged
+- Each sector containing the active player's gangs displays the original
+  idle/question or assigned 20-by-20 status marker. The whole-city map projects every sector containing
+  an active gang (assigned wins when a sector contains mixed command states),
+  matching the detailed-sector minimap. A pending or actively dragged hire uses the red-edged
   incoming marker at the prospective sector; incoming state wins if markers
   overlap. All three mappings were confirmed against user-supplied captures.
 - Whole-city and detailed-sector views are distinct. The detailed Sector screen
@@ -213,8 +215,10 @@ their template text, apertures, and the supplied original Combat capture.
 `PX05010` is the paged Last Turn Events panel. At the next human-player handoff,
 the recreation opens it automatically when that player has queued notifications
 and otherwise proceeds directly to the city. Its counter and arrow cells page
-one report at a time; the artwork aperture uses the affected sector ownership
-tile or gang portrait, and the two footer lines report date/object and status.
+one report at a time. Its `(198,133,242,158)` aperture uses the dedicated
+`PX06001`-`PX06009` report illustrations (`PX06002` is sector control attained),
+not stretched city tiles or gang portraits; the two footer lines report
+date/object and status.
 Routine implementation notifications such as upkeep/economy, movement,
 equipment transactions and ordinary command completion do not create reports;
 captured/lost control, newly influenced sites, completed research, crackdowns,
