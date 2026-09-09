@@ -25,7 +25,8 @@ public enum CommandValidationCode
     DestinationAtCapacity,
     SectorNotControlled,
     CommandNotQueued,
-    ResearchTechLevelUnavailable
+    ResearchTechLevelUnavailable,
+    SectorInCrackdown
 }
 
 public readonly record struct CommandValidation(CommandValidationCode Code, string Message)
@@ -129,6 +130,8 @@ public static class CommandValidator
             && state.FindPlayer(command.Player)!.Gangs.Count(gang =>
                 gang.IsActive && gang.SectorId == command.Target.Id) >= MatchLimits.FriendlyGangsPerSector)
             return CommandValidation.Reject(CommandValidationCode.DestinationAtCapacity);
+        if (command.Action == GangAction.Control && state.Sectors[actor.SectorId].CrackdownActive)
+            return CommandValidation.Reject(CommandValidationCode.SectorInCrackdown);
         return ValidateTransaction(state, command, actor);
     }
 
@@ -298,7 +301,8 @@ internal static class CommandValidationMessages
             [CommandValidationCode.ItemAlreadyEquipped] = "The acting gang already has that item equipped.",
             [CommandValidationCode.DestinationAtCapacity] = "The destination already has the maximum friendly gangs.",
             [CommandValidationCode.SectorNotControlled] = "The player must control the target sector.",
-            [CommandValidationCode.CommandNotQueued] = "The gang has no queued command."
+            [CommandValidationCode.CommandNotQueued] = "The gang has no queued command.",
+            [CommandValidationCode.SectorInCrackdown] = "A sector cannot be controlled while police are present."
         };
 
     public static string For(CommandValidationCode code) => Messages.GetValueOrDefault(code, string.Empty);

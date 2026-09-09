@@ -8,7 +8,8 @@ public enum CommandResolutionCode : byte
     ItemUnavailable,
     DestinationFull,
     TargetHidden,
-    TargetEvaded
+    TargetEvaded,
+    SectorInCrackdown
 }
 
 public sealed record CommandResolutionResult(
@@ -610,6 +611,15 @@ public static class CommandResolver
         var first = participants[0].Command;
         var player = state.FindPlayer(first.Player)!;
         var sector = state.Sectors[state.FindGang(first.Gang)!.SectorId];
+        if (sector.CrackdownActive)
+        {
+            return participants.Select(participant => Complete(
+                state, participant.Command, GameEventKind.CommandFailed,
+                new CommandResolutionDetails(
+                    CommandResolutionCode.SectorInCrackdown, [], 0,
+                    PreviousValue: sector.Owner?.Value, ResultValue: sector.Owner?.Value),
+                GameNotificationKind.Control)).ToArray();
+        }
         var attackers = participants.Select(queued =>
         {
             var gang = state.FindGang(queued.Command.Gang)!;

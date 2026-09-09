@@ -405,14 +405,17 @@ claim about original-game behavior.
 - Observed statement: during a crackdown, police attack every gang in the
   sector with Combat 20. Police detection is certain through Stealth 5 and
   drops five percentage points per additional Stealth point, reaching zero at
-  Stealth 25; the manual separately lists police Detect as 12.
+  Stealth 25; the manual separately lists police Detect as 12. No gang may
+  attempt to control the sector until the police leave.
 - Interpretation: at the Combat phase boundary, snapshot every active gang in
   a crackdown sector in sector/gang-ID order. Roll one percentile detection
   check per gang. On detection, roll `max(0, 20 - effective Defense)` dice and
   apply one damage per success. Police attacks do not retaliate or credit a
   player's damage statistic. Gang-command and police damage are accumulated
   against the same phase-start snapshots before casualties and equipment loss
-  are applied.
+  are applied. Control is rejected at submission while a crackdown is already
+  active and fails without changing ownership if police arrive before the
+  later Control subphase.
 - Current exclusions: original timing within Combat, whether 0%/100% checks
   consume RNG, weapon/damage-cap treatment, use of the separately documented
   Detect 12 value, crackdown duration/reset, ownership/site aftermath, and
@@ -420,10 +423,14 @@ claim about original-game behavior.
 - Confidence: High for the detection percentage table and Combat 20; Medium
   for defense subtraction; Low for phase ordering and the listed exclusions.
 - Implementation: `CommandResolver.ResolveCombatPhase`, exposed through
-  `MatchState.LastPoliceAttackResolutions` and `PoliceAttackResolved` events.
+  `MatchState.LastPoliceAttackResolutions` and `PoliceAttackResolved` events;
+  `CommandValidator` and `CommandResolver.ResolveControl` enforce the Control
+  lockout at both relevant boundaries.
 - Tests: `PoliceCombatResolutionTests` covers stable sector/gang ordering,
   effective Stealth/Defense, undetectability at Stealth 25, deterministic RNG
   consumption/hashes, notifications, casualties, and equipment loss.
+  `BoardResolutionTests` covers submission-time and execution-time Control
+  lockout without ownership mutation.
 - Next experiment: capture otherwise identical pre-Combat saves spanning
   Stealth 5/6/24/25 and several Defense values, with and without a player
   Attack command, then compare detection, damage, ordering, and RNG deltas.

@@ -165,6 +165,37 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
+    public void ControlRejectsSectorWithActiveCrackdown()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 5)], [Gang(20, 1, 3, 5)], crackdownActive: true);
+        match.FinishUpkeep();
+
+        var result = match.Submit(Control(0, 10));
+
+        Assert.False(result.Accepted);
+        Assert.Equal(CommandValidationCode.SectorInCrackdown, result.Validation.Code);
+        Assert.Equal("A sector cannot be controlled while police are present.", result.Validation.Message);
+    }
+
+    [Fact]
+    public void ControlFailsAtExecutionIfCrackdownStartedAfterSubmission()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 5)], [Gang(20, 1, 3, 5)]);
+        Queue(match, Control(0, 10));
+        EnterControl(match);
+        match.Sectors[0].CrackdownActive = true;
+
+        match.FinishExecutionPhase();
+
+        Assert.Null(match.Sectors[0].Owner);
+        var result = Assert.Single(match.LastPhaseResolutions);
+        Assert.Equal(CommandResolutionCode.SectorInCrackdown, result.Code);
+        Assert.Equal(GameEventKind.CommandFailed, result.Event!.Kind);
+    }
+
+    [Fact]
     public void HidingDefenderDoesNotResistEnemyControl()
     {
         var data = BundledOriginalData.Load();
@@ -309,7 +340,8 @@ public sealed class BoardResolutionTests
         PlayerId? owner = null,
         PlayerId? influencedBy = null,
         int playerOneSupport = 0,
-        bool filledHirePool = false)
+        bool filledHirePool = false,
+        bool crackdownActive = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -331,7 +363,8 @@ public sealed class BoardResolutionTests
                     id == 0 ? influencedBy : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ], id == 0 ? owner : null, income: 2))
+            ], id == 0 ? owner : null,
+                crackdownActive: id == 0 && crackdownActive, income: 2))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }
