@@ -36,7 +36,8 @@ public sealed record CommandResolutionDetails(
     int? DetectionRoll = null,
     int? DetectionChance = null,
     int? ChanceRoll = null,
-    int? ChanceSides = null);
+    int? ChanceSides = null,
+    short? RetaliationItemId = null);
 
 public sealed record EconomyResolutionDetails(
     int PreviousCash,

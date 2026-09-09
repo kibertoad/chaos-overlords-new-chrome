@@ -37,6 +37,8 @@ original-game capture confirms the screen and interaction state.
 | `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; patrol-car cell `(116,0,48,64)` | High for sheet contents, Medium for patrol-car crop |
 | `PX02000` | 22 vertically stacked site portraits, 120x64 each | High from dimensions and definition coverage |
 | `PX03000` | 10x9 gang portrait grid, 64x64 each, covering all 90 definitions | High from dimensions and definition coverage |
+| `PX07000`-`PX07027`, `PX07200`-`PX07228` | Eight-frame 64x64 attacker overlays facing opposite directions; index 27 is target-evasion/question art and right-facing index 28 is the police car | High from frame inspection and item-table indices |
+| `PX07100`-`PX07119`, `PX07300`-`PX07320` | Eight-frame 64x64 hit/background layers facing opposite directions; right-facing index 20 is the police beam impact | High from composited frame inspection and item-table indices |
 | `PX05000`-`PX05024` | Gang-information panel family | Medium from visible template fields |
 | `PX10000`-`PX10006` | Neutral plus six player-colored 8x8 city layers; each sector is a 54x52 source cell | High from dimensions, grid, and color inspection |
 
@@ -99,6 +101,11 @@ validated against the executable.
 - Combat Summary places compact owner-colored attacker and defender portraits
   beside each visible attack result; police rows use the `PX00300` patrol car
   opposite the attacked gang.
+- Resolved combat plays the item-selected `PX070xx`+`PX071xx` eight-frame pair;
+  retaliation uses the mirrored `PX072xx`+`PX073xx` pair. The presentation also
+  routes the recovered question/evasion and police-car/beam sheets. Weapon IDs
+  used by both sides are retained in the combat event so later elimination or
+  equipment changes cannot alter sound or animation selection.
 - The recreation Give target panel reuses `PX03000` portraits and lists only
   validator-approved friendly recipients in the acting gang's sector. Its
   layout remains provisional pending identification of the original panel.

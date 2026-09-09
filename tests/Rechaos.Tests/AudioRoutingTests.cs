@@ -44,7 +44,10 @@ public sealed class AudioRoutingTests
             0, 1, TurnPhase.Execution, ExecutionPhase.Combat,
             GameEventKind.CommandResolved, setupPlayer.Id, gang.Id, GangAction.Attack,
             CommandTarget.Gang(new GangId(20)),
-            Resolution: new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0));
+            Resolution: new CommandResolutionDetails(
+                CommandResolutionCode.Resolved, [], 0, ItemId: weapon.Id));
+
+        gang.WeaponItemId = null;
 
         Assert.Equal(weapon.Sound, AudioRouting.WeaponSound(state, gameEvent));
         Assert.Null(AudioRouting.WeaponSound(state,

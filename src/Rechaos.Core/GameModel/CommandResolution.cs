@@ -219,6 +219,7 @@ public static class CommandResolver
                 new CommandResolutionDetails(
                     outcome.Code, outcome.AttackRolls, outcome.AttackSuccesses,
                     outcome.Target.Force, state.FindGang(outcome.Target.Id)!.Force,
+                    ItemId: outcome.Attacker.WeaponItemId,
                     AttackValue: outcome.AttackRolls.Count,
                     DefenseValue: outcome.Target.Statistics.Defense,
                     RetaliationRolls: outcome.RetaliationRolls,
@@ -226,7 +227,8 @@ public static class CommandResolver
                     Damage: outcome.Damage,
                     RetaliationDamage: outcome.RetaliationDamage,
                     DetectionRoll: outcome.DetectionRoll,
-                    DetectionChance: outcome.DetectionChance),
+                    DetectionChance: outcome.DetectionChance,
+                    RetaliationItemId: outcome.Target.WeaponItemId),
                 GameNotificationKind.Combat);
             results.Add(result);
             firstEventByGang.TryAdd(outcome.Target.Id, result.Event!.Sequence);
@@ -327,12 +329,14 @@ public static class CommandResolver
         int Force,
         bool Hidden,
         EffectiveStatistics Statistics,
-        short? WeaponType)
+        short? WeaponType,
+        short? WeaponItemId)
     {
         public static CombatSnapshot For(MatchState state, MatchGangState gang) => new(
             gang.Id, gang.Owner, gang.SectorId, gang.Force, gang.Hidden,
             EffectiveStatisticsCalculator.ForGang(state, gang),
-            gang.WeaponItemId is { } weapon ? state.Definitions.Items[weapon].Type : null);
+            gang.WeaponItemId is { } weapon ? state.Definitions.Items[weapon].Type : null,
+            gang.WeaponItemId);
     }
 
     private sealed record CombatOutcome(

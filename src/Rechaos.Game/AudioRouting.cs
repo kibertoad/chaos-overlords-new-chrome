@@ -11,8 +11,8 @@ public static class AudioRouting
         if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution?.Code != CommandResolutionCode.Resolved
             || gameEvent.Gang is not { } gangId)
             return null;
-        var gang = state.FindGang(gangId);
-        return gang?.WeaponItemId is { } itemId ? state.Definitions.Items[itemId].Sound : null;
+        var itemId = gameEvent.Resolution.ItemId ?? state.FindGang(gangId)?.WeaponItemId;
+        return itemId is { } weapon ? state.Definitions.Items[weapon].Sound : null;
     }
 
     public static string SoundFile(short index)

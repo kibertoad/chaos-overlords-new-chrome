@@ -174,6 +174,9 @@ public sealed class CombatResolutionTests
         match.FinishExecutionPhase();
 
         var target = match.FindGang(new GangId(20))!;
+        var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.Equal((short)weapon, resolution.ItemId);
+        Assert.Equal((short)0, resolution.RetaliationItemId);
         Assert.Equal(0, target.Force);
         Assert.Null(target.WeaponItemId);
         Assert.Null(target.ArmorItemId);

@@ -78,6 +78,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _uiSprites;
     private PixelFont? _font;
     private readonly Dictionary<short, SoundEffect> _weaponSounds = [];
+    private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
+    private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
     private MatchState? _state;
     private MatchReplayRecorder? _replay;
     private OriginalData? _definitions;
@@ -102,6 +104,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
     private long _lastAudibleEventSequence = -1;
+    private long _lastAnimatedEventSequence = -1;
 
     public ChaosGame(string assetRoot, bool debugPhaseStepping = false)
     {
@@ -148,6 +151,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _gangPortraits = LoadTexture("PX03000.bmp");
         _policeSprites = LoadTexture("PX00300.bmp", transparentBlack: true);
         _uiSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
+        LoadCombatAnimationTextures();
         for (short index = 0; index <= 18; index++)
         {
             var sound = LoadSound(AudioRouting.SoundFile(index));
@@ -160,6 +164,16 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
         RunComputerTurns();
+        CaptureNewCombatAnimations();
+        _combatAnimationPlayer.Advance(gameTime.ElapsedGameTime);
+        if (_combatAnimationPlayer.IsPlaying)
+        {
+            PlayNewCombatSounds();
+            _previousKeyboard = keyboard;
+            _previousMouse = mouse;
+            base.Update(gameTime);
+            return;
+        }
         if (Pressed(keyboard, Keys.Escape) && !_screens.Back()) Exit();
         switch (_screens.Current)
         {
@@ -246,6 +260,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             else CancelHireDrag();
         }
         PlayNewCombatSounds();
+        CaptureNewCombatAnimations();
         _previousKeyboard = keyboard;
         _previousMouse = mouse;
         base.Update(gameTime);
@@ -310,6 +325,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 DrawSearch(_batch, _pixel, _font, _state);
                 break;
         }
+        if (_state is not null && _combatAnimationPlayer.IsPlaying)
+            DrawCombatAnimation(_batch, _pixel, _font, _state);
         _batch.End();
         base.Draw(gameTime);
     }
@@ -706,6 +723,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _selectedGangIndex = 0;
         _message = _debugPhaseStepping ? "ADVANCE UPKEEP TO BEGIN" : "PLAN YOUR TURN";
         _lastAudibleEventSequence = -1;
+        _lastAnimatedEventSequence = -1;
+        _combatAnimationPlayer.Clear();
         _screens.Show(ClientScreen.City);
     }
 
@@ -1200,6 +1219,35 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 gameEvent.Kind == GameEventKind.CommandFailed ? Color.OrangeRed : new Color(180, 230, 170), 1);
         }
         DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
+    }
+
+    private void DrawCombatAnimation(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        MatchState state)
+    {
+        if (_combatAnimationPlayer.Active is not { } clip) return;
+        var panel = new Rectangle(70, 48, 374, 364);
+        var destination = new Rectangle(129, 78, 256, 256);
+        batch.Draw(pixel, panel, new Color(0, 0, 0, 242));
+        DrawBorder(batch, pixel, panel, Color.Lime, 2);
+        var frame = CombatAnimationRouting.FrameSource(_combatAnimationPlayer.Frame);
+        if (clip.HitAnimation is { } hit
+            && _combatAnimationTextures.TryGetValue(
+                CombatAnimationRouting.HitFile(hit, clip.Reversed), out var hitTexture))
+            batch.Draw(hitTexture, destination, frame, Color.White);
+        else
+            batch.Draw(pixel, destination, Color.Black);
+        if (_combatAnimationTextures.TryGetValue(
+                CombatAnimationRouting.AttackFile(clip.AttackAnimation, clip.Reversed), out var attackTexture))
+            batch.Draw(attackTexture, destination, frame, Color.White);
+        DrawBorder(batch, pixel, destination, Color.White, 1);
+        var attacker = clip.Police ? "POLICE" : GangLabel(state, clip.Attacker);
+        font.Draw(batch, attacker + " > " + GangLabel(state, clip.Defender),
+            new Vector2(88, 350), Color.Gold, 1);
+        font.Draw(batch, clip.Reversed && !clip.Police ? "RETALIATION" : "COMBAT",
+            new Vector2(88, 368), Color.White, 1);
     }
 
     private void DrawCombatGangPortrait(
@@ -1838,6 +1886,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             _selectedGangIndex = 0;
             _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
             _lastAudibleEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
+            _lastAnimatedEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
+            _combatAnimationPlayer.Clear();
             _screens.Show(_state.Outcome is null ? ClientScreen.City : ClientScreen.Endgame);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -1872,6 +1922,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _message = "REPLAY VERIFIED";
             _lastAudibleEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
+            _lastAnimatedEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
+            _combatAnimationPlayer.Clear();
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -1931,6 +1983,24 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         return texture;
     }
 
+    private void LoadCombatAnimationTextures()
+    {
+        for (short animation = 0; animation <= 27; animation++)
+            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, false), transparentBlack: true);
+        for (short animation = 0; animation <= 28; animation++)
+            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, true), transparentBlack: true);
+        for (short animation = 0; animation <= 19; animation++)
+            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, false), transparentBlack: false);
+        for (short animation = 0; animation <= 20; animation++)
+            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, true), transparentBlack: false);
+    }
+
+    private void LoadCombatAnimationTexture(string fileName, bool transparentBlack)
+    {
+        var texture = LoadTexture(fileName, transparentBlack: transparentBlack);
+        if (texture is not null) _combatAnimationTextures[fileName] = texture;
+    }
+
     private SoundEffect? LoadSound(string fileName)
     {
         var path = Path.Combine(_assetRoot, "audio", fileName);
@@ -1949,6 +2019,21 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 && _weaponSounds.TryGetValue(soundIndex, out var sound))
                 sound.Play();
             _lastAudibleEventSequence = gameEvent.Sequence;
+        }
+    }
+
+    private void CaptureNewCombatAnimations()
+    {
+        if (_state is null) return;
+        var viewer = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        foreach (var gameEvent in _state.Events
+                     .Where(value => value.Sequence > _lastAnimatedEventSequence)
+                     .OrderBy(value => value.Sequence))
+        {
+            if (_combatAnimationTextures.Count > 0 && IsVisibleCombatEvent(_state, viewer, gameEvent))
+                foreach (var clip in CombatAnimationRouting.ForEvent(_state, gameEvent))
+                    _combatAnimationPlayer.Enqueue(clip);
+            _lastAnimatedEventSequence = gameEvent.Sequence;
         }
     }
 
