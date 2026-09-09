@@ -376,7 +376,7 @@ players, hire pools, and objective state as the reference.
   simultaneous/sequential execution, notifications, elimination, scoring, and
   next-player/round transition.
 - Implement income from sectors, sites, chaos and special gang/item modifiers.
-- Implement upkeep, insufficient-funds behavior, desertion, cash floor/overflow,
+- Implement upkeep, insufficient-funds behavior, desertion, negative cash/overflow,
   spending and earnings statistics.
 - Implement site influence/support, control, tolerance/progress decay, ownership
   loss, sector takeover and special site effects.
@@ -572,7 +572,7 @@ unmarked guess.
 | M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
 | M9 | Not started | None | Frozen deterministic simulation after M8 |
 
-Current automated baseline: the solution builds successfully, 262 tests
+Current automated baseline: the solution builds successfully, 264 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.

@@ -13,6 +13,7 @@ public sealed record EconomyForecast(
     int ResultCash)
 {
     public int NetChange => ResultCash - CurrentCash;
+    public bool IsInDebt => ResultCash < 0;
 }
 
 /// <summary>
@@ -61,6 +62,6 @@ public static class EconomyResolver
         var gangUpkeep = player.Gangs.Where(gang => gang.IsActive)
             .Sum(gang => state.Definitions.Gangs.Single(definition => definition.Id == gang.DefinitionId).Upkeep);
         return new EconomyForecast(previousCash, sectorIncome, siteIncome, gangUpkeep,
-            Math.Max(0, previousCash + sectorIncome + siteIncome - gangUpkeep));
+            checked(previousCash + sectorIncome + siteIncome - gangUpkeep));
     }
 }

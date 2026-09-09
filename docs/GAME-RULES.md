@@ -443,25 +443,29 @@ claim about original-game behavior.
 
 ## Upkeep economy
 
-### RULE-UPKEEP-001 — Base income, upkeep, and cash floor
+### RULE-UPKEEP-001 — Base income, upkeep, and debt
 
 - Source: `MANUAL-GOG-1`; Upkeep, Finance, Sector Tax, and Gang Upkeep
   descriptions. Exact scan page locations still need transcription.
 - Observed statement: each controlled sector grants $1; influenced sites apply
-  their listed cash values; active gangs charge their listed upkeep; projected
-  cash below zero ends at zero.
+  their listed cash values; active gangs charge their listed upkeep. Cash may
+  become negative. While it is negative, equipment cannot be bought, Bribe and
+  Snitch cannot execute, and only gangs with zero initial cost can be hired.
 - Interpretation: for each active player in stable ID order, calculate
-  `max(0, cash + controlled sectors + influenced-site cash - active-gang upkeep)`.
+  `cash + controlled sectors + influenced-site cash - active-gang upkeep` with
+  checked integer arithmetic. Runtime affordability rejects equipment, Bribe,
+  and Snitch without changing cash or the target; hiring permits a zero-cost
+  gang even while the balance is negative.
 - Current exclusions: insufficient-funds desertion, site protection, cash
   adjustment, special gang/item/site modifiers, integer overflow behavior, and
   the exact statistics accounting boundary.
-- Confidence: High for the component values and zero floor; Medium for whether
+- Confidence: High for the component values and negative-cash restrictions; Medium for whether
   all components commit in one Upkeep boundary; Low for excluded edge cases.
 - Implementation: `EconomyResolver.ResolveUpkeep` and
   `MatchState.FinishUpkeep`.
-- Tests: `EconomyResolutionTests` covers component accounting, negative cash
-  flooring, eliminated players, ordered events/notifications, and deterministic
-  phase hashes.
+- Tests: `EconomyResolutionTests` covers component accounting, persistent debt,
+  eliminated players, ordered events/notifications, and deterministic phase
+  hashes. Command, transaction, and hire tests cover debt restrictions.
 - Next experiment: prepare saves around zero projected cash with controlled
   combinations of sectors, positive/negative sites, and gangs, then compare
   Finance/Event panels and post-Upkeep saves.

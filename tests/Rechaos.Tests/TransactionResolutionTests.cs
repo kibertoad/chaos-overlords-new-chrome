@@ -43,11 +43,13 @@ public sealed class TransactionResolutionTests
         Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(10), GangAction.Equip, CommandTarget.Item(item))).Accepted);
         EnterTransaction(match);
+        var cashBefore = match.Players[0].Cash;
 
         match.FinishExecutionPhase();
 
         Assert.Null(match.FindGang(new GangId(10))!.WeaponItemId);
-        Assert.Equal(0, match.Players[0].Cash);
+        Assert.True(cashBefore < 0);
+        Assert.Equal(cashBefore, match.Players[0].Cash);
         Assert.Equal(CommandResolutionCode.InsufficientCash, Assert.Single(match.LastPhaseResolutions).Code);
         Assert.Equal(GameEventKind.CommandFailed, match.LastPhaseResolutions[0].Event!.Kind);
     }

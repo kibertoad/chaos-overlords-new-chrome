@@ -44,7 +44,7 @@ public sealed record EconomyResolutionDetails(
     int ResultCash)
 {
     public int NetChange => ResultCash - PreviousCash;
-    public bool WasFlooredAtZero => PreviousCash + SectorIncome + SiteIncome - GangUpkeep < 0;
+    public bool IsInDebt => ResultCash < 0;
 }
 
 public sealed record HireResolutionDetails(

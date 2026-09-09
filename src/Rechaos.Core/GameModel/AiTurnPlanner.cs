@@ -18,7 +18,7 @@ public static class AiTurnPlanner
         if (player.Setup.Controller != PlayerController.Computer)
             throw new ArgumentException("AI planning requires a computer-controlled player.", nameof(playerId));
 
-        var cashBudget = player.Cash;
+        var cashBudget = Math.Max(0, player.Cash);
         var commands = new List<GameCommand>();
         foreach (var gang in player.Gangs.Where(gang => gang.IsActive).OrderBy(gang => gang.Id.Value))
         {

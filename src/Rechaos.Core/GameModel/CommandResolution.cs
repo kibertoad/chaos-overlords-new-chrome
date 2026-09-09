@@ -663,8 +663,15 @@ public static class CommandResolver
 
     private static CommandResolutionResult ResolveSnitch(MatchState state, GameCommand command)
     {
+        var player = state.FindPlayer(command.Player)!;
         var gang = state.FindGang(command.Gang)!;
         var before = state.Sectors[gang.SectorId].Tolerance;
+        if (player.Cash < 0)
+        {
+            return Complete(state, command, GameEventKind.CommandFailed,
+                new CommandResolutionDetails(CommandResolutionCode.InsufficientCash, [], 0, before, before));
+        }
+
         var after = ManualRules.ApplySnitch(before);
         state.Sectors[gang.SectorId].Tolerance = after;
         return Complete(state, command, GameEventKind.CommandResolved,

@@ -18,8 +18,9 @@ It must not be cited as behavioral parity with the original AI.
   detection query exposed to players, so the baseline does not target gangs it
   cannot observe.
 - Selection is stable by score, action, target kind, target ID, and secondary ID.
-- A shared projected cash budget prevents the planner from intentionally queuing
-  more Bribe/Equip cost than the player currently holds.
+- A shared nonnegative spending budget prevents the planner from intentionally
+  queuing more Bribe/Equip cost than the player currently holds while still
+  allowing validator-approved free actions from a negative balance.
 - `ChooseHire` considers only authoritative `HireRules.Validate` successes in
   controlled sectors and does not mutate state.
 - The client submits every selected command/hire and phase transition through

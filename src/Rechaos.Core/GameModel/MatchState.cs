@@ -68,7 +68,6 @@ public sealed class MatchPlayerState
         MatchStatistics? statistics = null,
         short? snubbedHireOffer = null)
     {
-        if (cash < 0) throw new ArgumentOutOfRangeException(nameof(cash));
         if (bigManPoints < 0) throw new ArgumentOutOfRangeException(nameof(bigManPoints));
         if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         Setup = setup ?? throw new ArgumentNullException(nameof(setup));

@@ -82,7 +82,8 @@ public static class HireRules
             context => context.Player!.PendingHires.Count != 0),
         new DelegateRule(HireValidationCode.InsufficientCash,
             "The player cannot afford the selected gang.",
-            context => context.Player!.Cash < InitialCost(
+            context => !CanAffordInitialCost(
+                context.Player!.Cash,
                 context.State.Definitions.Gangs.Single(item => item.Id == context.GangDefinitionId))),
         new DelegateRule(HireValidationCode.SectorNotControlled,
             "A recruit must be placed in a sector controlled by the hiring player.",
@@ -113,6 +114,12 @@ public static class HireRules
     {
         ArgumentNullException.ThrowIfNull(definition);
         return definition.Force;
+    }
+
+    public static bool CanAffordInitialCost(int cash, GangDefinition definition)
+    {
+        var cost = InitialCost(definition);
+        return cost == 0 || cash >= cost;
     }
 
     public static HireValidation Validate(

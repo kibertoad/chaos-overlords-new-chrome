@@ -21,7 +21,7 @@ public sealed class EconomyResolutionTests
         Assert.Equal(3, first.Details.GangUpkeep);
         Assert.Equal(24, first.Details.ResultCash);
         Assert.Equal(4, first.Details.NetChange);
-        Assert.False(first.Details.WasFlooredAtZero);
+        Assert.False(first.Details.IsInDebt);
         Assert.Equal(24, match.Players[0].Cash);
 
         Assert.Equal(2, match.LastUpkeepResolutions.Count);
@@ -33,7 +33,7 @@ public sealed class EconomyResolutionTests
     }
 
     [Fact]
-    public void NegativeProjectedCashFloorsAtZeroAndRecordsTheCondition()
+    public void NegativeProjectedCashPersistsAndRecordsDebt()
     {
         var match = CreateMatch(playerZeroCash: 0);
 
@@ -41,13 +41,14 @@ public sealed class EconomyResolutionTests
 
         var details = match.LastUpkeepResolutions[0].Details;
         Assert.Equal(4, details.ResultCash);
-        Assert.False(details.WasFlooredAtZero);
+        Assert.False(details.IsInDebt);
 
         var noIncomeMatch = CreateMatch(playerZeroCash: 1, playerZeroOwnsSectors: false, playerZeroInfluencesSite: false);
         noIncomeMatch.FinishUpkeep();
-        var floored = noIncomeMatch.LastUpkeepResolutions[0].Details;
-        Assert.Equal(0, floored.ResultCash);
-        Assert.True(floored.WasFlooredAtZero);
+        var debt = noIncomeMatch.LastUpkeepResolutions[0].Details;
+        Assert.Equal(-2, debt.ResultCash);
+        Assert.True(debt.IsInDebt);
+        Assert.Equal(-2, noIncomeMatch.Players[0].Cash);
     }
 
     [Fact]

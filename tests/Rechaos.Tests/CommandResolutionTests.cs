@@ -56,6 +56,20 @@ public sealed class CommandResolutionTests
     }
 
     [Fact]
+    public void SnitchFailsWithoutChangingToleranceWhilePlayerIsInDebt()
+    {
+        var match = CreateMatch(cash: -1);
+        QueueAndEnterExecution(match, GangAction.Snitch);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(-1, match.Players[0].Cash);
+        Assert.Equal(0, match.Sectors[0].Tolerance);
+        Assert.Equal(CommandResolutionCode.InsufficientCash, Assert.Single(match.LastPhaseResolutions).Code);
+        Assert.Equal(GameEventKind.CommandFailed, match.Events[^1].Kind);
+    }
+
+    [Fact]
     public void HealUsesEffectiveSkillAndRecordsEveryDeterministicRoll()
     {
         var match = CreateMatch(cash: 10, healingGang: true);

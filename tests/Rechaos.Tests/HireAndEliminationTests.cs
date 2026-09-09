@@ -7,6 +7,18 @@ namespace Rechaos.Tests;
 public sealed class HireAndEliminationTests
 {
     [Fact]
+    public void DebtStillAllowsAZeroInitialCostGang()
+    {
+        var free = new GangDefinition("FREE", 90, "", 0, 0, 1,
+            new Statistics(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        var paid = free with { Name = "PAID", Id = 91, Force = 1 };
+
+        Assert.True(HireRules.CanAffordInitialCost(-5, free));
+        Assert.False(HireRules.CanAffordInitialCost(-5, paid));
+        Assert.True(HireRules.CanAffordInitialCost(1, paid));
+    }
+
+    [Fact]
     public void HireIsPaidAndQueuedBeforeDeferredPlacement()
     {
         var match = CreateMatch();
