@@ -1,4 +1,4 @@
-# Re: Chaos Overlords
+# Chaos Overlords: New Chrome
 
 A clean-room MonoGame reimplementation of the 1996 turn-based strategy game.
 This repository intentionally contains **no original game assets**. You must own
@@ -35,6 +35,23 @@ dotnet run --project src/Rechaos.Extractor -- --catalog
 
 On Windows, [`play.bat`](play.bat) performs both steps and uses the default GOG
 location. Set `CHAOS_OVERLORDS_PATH` first if your legal copy is elsewhere.
+
+For an SDK-free Windows package, run `./tools/Publish-Windows.ps1`. To compile
+the versioned Inno Setup installer, run
+`./tools/Build-WindowsInstaller.ps1 -Version 0.1.0`; this requires the pinned
+Inno Setup 7.1.0 compiler. The installer scans GOG and Windows uninstall
+registry records plus common GOG paths, accepts a manually selected install,
+and can run the bundled extractor automatically. If no owned installation is
+found, it offers a link to the legal
+[Chaos Overlords GOG page](https://www.gog.com/en/game/chaos_overlords).
+Neither the portable package nor installer contains original assets. Silent
+installation accepts `/ORIGINAL="C:\path\to\Chaos Overlords"`; `/NOIMPORT=1`
+explicitly skips extraction.
+
+Maintainers can run the manual-only `Release Windows installer` GitHub Actions
+workflow and enter a tag such as `v0.1.0`. After tests and installer compilation
+succeed, the workflow creates that tag and a GitHub Release containing the
+matching versioned installer. It has no scheduled or push trigger.
 
 To keep assets elsewhere, pass `--output` to the extractor and the same path as
 `--assets` to the game. Extracted files are ignored by Git and must not be

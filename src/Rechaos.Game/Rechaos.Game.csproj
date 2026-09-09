@@ -2,10 +2,14 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <ApplicationIcon />
+    <AssemblyTitle>Chaos Overlords: New Chrome</AssemblyTitle>
+    <Product>Chaos Overlords: New Chrome</Product>
+    <Company>kibertoad</Company>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Rechaos.Core/Rechaos.Core.csproj" />
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
-    <None Include="Assets/**/*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Assets/**/*" CopyToOutputDirectory="PreserveNewest"
+          Condition="'$(IncludeOriginalAssets)' != 'false'" />
   </ItemGroup>
 </Project>

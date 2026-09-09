@@ -42,7 +42,7 @@ kind is not part of this implementation plan.
 
 | Area | Present now | Remaining |
 |---|---|---|
-| Build | .NET 10 solution, MonoGame DesktopGL 3.8.5.1, xUnit v3 4.0.0 | CI, packaging, other OS smoke tests |
+| Build | .NET 10 solution, MonoGame DesktopGL 3.8.5.1, xUnit v3 4.0.0; self-contained Windows package and Inno installer with manual versioned GitHub Release workflow | Continuous CI and other OS smoke tests |
 | Original data | Embedded 22 sites, 90 gangs, and 64 items with pinned provenance | Semantic/formula validation, versioned generation tool |
 | Extraction | Transactional/versioned full-pack SHA-256 validation; 215 repaired RGB555 PX16 images, 214 retained plus decoded PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files; generated 685-output factual catalog | Transparency/color-key validation, video strategy, semantic role/owner resolution |
 | Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, Upkeep, all 14 command resolvers, simultaneous gang/Crackdown combat, 3–5-turn police duration/extension and three-in-five control loss, hidden attack/visibility checks, and local influenced-site stats | Crackdown notification/timing fixtures, special buildings, original RNG seeding/order and exact parity formulas |
@@ -567,9 +567,9 @@ unmarked guess.
 | M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v5 snapshots with v1-v4 migration and v4 authoritative-operation replays plus client save/replay flows; equipment Give recipient workflow | Siege setup/visual mapping, objective ranking/tie fixtures, checked-in persistence fixtures, remaining management UI deliverable and M4 gate |
 | M6 | Foundation started | Deterministic non-mutating objective-aware command planner, cash budgeting, validated hire choice, per-player Human/Computer setup and replay-recorded client driver; global four-level AI Mentality with docs-backed fair-play and aggression direction; timed scenarios complete and objective scenarios run 20-turn deterministic replay-verified two-AI tournaments | Statically recover original difficulty branches/weights and visibility; reference decision snapshots; larger-player and objective-completion tournaments; M5 gate |
 | M7 | Foundation started | Original city ownership layers and site/gang portraits are rendered; resolved equipped attacks route item-defined original weapon sounds | Complete atlas/event integration, animations, remaining audio/music/video, golden screens and M1-M6 dependencies |
-| M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
+| M8 | Foundation started | Windows local launcher; legal-copy extraction; self-contained package; GOG-aware Inno installer; manually dispatched version-tag and GitHub Release workflow | Compatibility, continuous CI, cross-platform packaging and release gate |
 
-Current automated baseline: the solution builds successfully, 322 tests
+Current automated baseline: the solution builds successfully, 326 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.

@@ -169,7 +169,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             SynchronizeWithVerticalRetrace = true
         };
         IsMouseVisible = true;
-        Window.Title = "Re: Chaos Overlords";
+        Window.Title = "Chaos Overlords: New Chrome";
         _computerPlayers[1] = true;
     }
 

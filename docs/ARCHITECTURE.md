@@ -154,6 +154,14 @@ The audio router consumes newly appended attack-resolution events and maps an
 equipped item's original Sound field to `SND005xx`; it never feeds playback
 state or timing back into the simulation.
 
+Windows distribution is built by `tools/Publish-Windows.ps1`, which publishes
+separate self-contained game and extractor executables while forcing original
+assets out of the package. `packaging/windows/RechaosOverlords.iss` detects a
+legal GOG source through registry records and bounded conventional paths, then
+optionally runs the extractor into the installed game's private `Assets`
+directory. The manual release workflow builds the same installer before it
+creates a requested version tag, so failed builds cannot publish a tag.
+
 Target presentation layers:
 
 1. `ScreenRouter` - title, setup, city, sector, panels, modal and endgame states.
