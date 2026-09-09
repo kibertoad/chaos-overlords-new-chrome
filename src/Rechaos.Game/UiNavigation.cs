@@ -91,6 +91,26 @@ public sealed class CitySectorClickTracker
     public void Cancel() => _lastSector = null;
 }
 
+public sealed class IndexedDoubleClickTracker
+{
+    private int? _lastIndex;
+    private TimeSpan _lastClick;
+
+    public bool Register(int index, TimeSpan timestamp)
+    {
+        if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
+        if (timestamp < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timestamp));
+        var doubleClick = _lastIndex == index
+            && timestamp >= _lastClick
+            && timestamp - _lastClick <= CitySectorClickTracker.DoubleClickWindow;
+        _lastIndex = doubleClick ? null : index;
+        _lastClick = timestamp;
+        return doubleClick;
+    }
+
+    public void Cancel() => _lastIndex = null;
+}
+
 /// <summary>Native layout of the 8x8 sector cells in the PX10000-PX10006 city layers.</summary>
 public static class CityMapLayout
 {
@@ -177,8 +197,8 @@ public static class GangStatusMarkerLayout
 
 public static class SectorDetailLayout
 {
-    public const int Left = 64;
-    public const int Top = 4;
+    public const int Left = 61;
+    public const int Top = 48;
     public const int Columns = 3;
     public const int Rows = 3;
     public static Rectangle Back => new(4, 394, 28, 66);
@@ -236,7 +256,7 @@ public static class SectorDetailLayout
     {
         if (slot is < 0 or >= MatchLimits.SitesPerSector)
             throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(85, 172 + slot * 66, 120, 64);
+        return new Rectangle(83, 226 + slot * 66, 120, 64);
     }
 
     public static Rectangle SiteControlBar(int slot)
@@ -250,18 +270,17 @@ public static class SectorGangCardLayout
 {
     public const int VisibleCards = 2;
     public const int Left = 251;
-    public const int Top = 4;
+    public const int Top = 80;
     public const int Stride = 74;
 
-    public static Rectangle Frame(int slot) => At(slot, 0, 0, 70, 134);
-    public static Rectangle Details(int slot) => At(slot, 1, 1, 68, 17);
-    public static Rectangle OneOffAction(int slot) => At(slot, 3, 22, 30, 18);
-    public static Rectangle RepeatingAction(int slot) => At(slot, 36, 22, 30, 18);
-    public static Rectangle Portrait(int slot) => At(slot, 3, 42, 64, 64);
+    public static Rectangle Frame(int slot) => At(slot, 0, 0, 70, 118);
+    public static Rectangle OneOffAction(int slot) => At(slot, 3, 3, 30, 24);
+    public static Rectangle RepeatingAction(int slot) => At(slot, 36, 3, 30, 24);
+    public static Rectangle Portrait(int slot) => At(slot, 3, 28, 64, 64);
     public static Rectangle ItemSlot(int slot, int itemSlot)
     {
         if (itemSlot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(itemSlot));
-        return At(slot, 3 + itemSlot * 21, 108, 21, 22);
+        return At(slot, 3 + itemSlot * 21, 93, 21, 22);
     }
 
     private static Rectangle At(int slot, int x, int y, int width, int height)
@@ -300,6 +319,26 @@ public static class CommandOverlayLayout
         or GangAction.Move or GangAction.Research or GangAction.Sell;
 }
 
+public static class EquipmentCommandLayout
+{
+    public static Rectangle Panel => new(104, 125, 344, 209);
+    public static Rectangle Portrait => new(128, 142, 64, 64);
+    public static Rectangle Cancel => new(136, 262, 49, 24);
+    public static Rectangle Ok => new(136, 294, 49, 24);
+    public static Rectangle ItemRow(int row)
+    {
+        if (row is < 0 or >= 12) throw new ArgumentOutOfRangeException(nameof(row));
+        return new Rectangle(248, 143 + row * 12, 184, 11);
+    }
+}
+
+public static class GangInformationLayout
+{
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Portrait => new(130, 143, 64, 64);
+    public static Rectangle Ok => EquipmentCommandLayout.Ok;
+}
+
 public static class DifficultyPresentation
 {
     public static string Label(AiDifficulty difficulty) => difficulty switch
@@ -328,7 +367,7 @@ public static class PlayerPortraitLayout
     public static Rectangle SetupTop(int player)
     {
         Validate(player);
-        return new Rectangle(361 + player * 36, 33, 32, 32);
+        return new Rectangle(360 + player * 36, 32, 32, 32);
     }
 
     public static Rectangle CityTop(int player)
@@ -336,9 +375,9 @@ public static class PlayerPortraitLayout
         Validate(player);
         return new Rectangle(8 + player * 72, 4, 32, 32);
     }
-    public static Rectangle SetupLarge(int player) => Player(player, 376, 82, 106, 64, 64, rowStride: 92);
-    public static Rectangle Previous(int player) => Player(player, 361, 103, 106, 12, 18, rowStride: 92);
-    public static Rectangle Next(int player) => Player(player, 443, 103, 106, 12, 18, rowStride: 92);
+    public static Rectangle SetupLarge(int player) => Player(player, 379, 83, 106, 64, 64, rowStride: 92);
+    public static Rectangle Previous(int player) => Player(player, 363, 106, 106, 12, 18, rowStride: 92);
+    public static Rectangle Next(int player) => Player(player, 447, 106, 106, 12, 18, rowStride: 92);
 
     private static Rectangle Player(
         int player,

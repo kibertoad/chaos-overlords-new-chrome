@@ -61,7 +61,11 @@ one-off/repeating gang-order controls, F for the
 next-upkeep financial projection, R for scenario ranking, T for research and
 equipment, B for the combat summary, and Space to finish planning. Recruit
 portraits remain in the lower-right city dock and can be dragged onto a
-controlled sector. Resolution phases run automatically in normal play; pass
+controlled sector after the pointer begins moving; double-clicking a stationary
+offer opens gang information. Double-clicking an owned gang card in Sector view
+opens the same original-art information panel. Equip and Research use their
+dedicated original `PX05004`/`PX05007` overlays. Resolution phases run
+automatically in normal play; pass
 `--debug-phases` to expose individual deterministic phase steps.
 X opens the selected sector's detection-filtered gang search.
 In the equipment panel, V opens the legal same-sector recipient list for an

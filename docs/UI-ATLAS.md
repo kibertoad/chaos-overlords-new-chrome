@@ -101,7 +101,8 @@ validated against the executable.
   incoming marker at the prospective sector; incoming state wins if markers
   overlap. All three mappings were confirmed against user-supplied captures.
 - Whole-city and detailed-sector views are distinct. The detailed Sector screen
-  renders the selected sector at the center of a native-size 3-by-3 crop of the
+  preserves the shared overlord strip at y=0, starts its selected-sector content
+  at y=48, and renders the selected sector at the center of a native-size 3-by-3 crop of the
   `PX10000`-`PX10006` ownership layers, clips neighbors at the city boundary,
   and overlays coordinate labels, police, and gang-status art. Its three site
   slots use the matching 120-by-64 strips from `PX02000`; clicking a neighboring
@@ -117,6 +118,14 @@ validated against the executable.
 - The recreation Give target panel reuses `PX03000` portraits and lists only
   validator-approved friendly recipients in the acting gang's sector. Its
   layout remains provisional pending identification of the original panel.
+- `PX05004` and `PX05007` are the original Equipment to Purchase and Equipment
+  to Research overlays. Equip and Research route legal item choices through
+  these panels over the live detailed-sector view; equipment is not expanded
+  into separate entries in the top-level action menu.
+- `PX05000` is the gang-information overlay. Double-clicking an owned gang card
+  or a stationary Hire-dock portrait opens it over the current view. Hire art is
+  not promoted to a drag token until the pointer moves beyond the click
+  threshold, preserving double-click inspection.
 
 ## `PX00128` provisional control routes
 
@@ -134,9 +143,11 @@ sector within 500 ms opens the detailed Sector view. It does not queue a gang
 command. Enter remains the keyboard command shortcut.
 
 The detailed view follows the original full-screen composition from the
-reference capture: the 3-by-3 neighborhood begins at `(64,4)`, three 120-by-64
-site portraits stack at `(85,172)`, and up to two visible gang cards begin at
-`(251,4)`. The live right console and three-offer Hire dock remain visible.
+reference capture: the 3-by-3 neighborhood begins at `(61,48)`, three 120-by-64
+site portraits stack at `(83,226)`, and up to two visible gang cards begin at
+`(251,80)`. Framed coordinate badges overlap the neighborhood edges. The live
+right console, shared top portrait strip, and three-offer Hire dock remain
+visible; only dynamic values are painted over the console's baked labels.
 Each friendly card exposes separate one-off and repeating order controls; both
 use the authoritative legal-command picker and set the existing
 `GameCommand.Repeat` flag appropriately.
