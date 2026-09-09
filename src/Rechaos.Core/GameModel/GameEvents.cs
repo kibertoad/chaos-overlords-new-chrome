@@ -58,6 +58,7 @@ public sealed record MatchOutcomeDetails(
     MatchEndReason Reason,
     int CompletedTurn,
     IReadOnlyList<PlayerId> Winners,
+    IReadOnlyList<MatchStanding> Standings,
     IReadOnlyList<EndgameAwardResult> Awards);
 
 public sealed record PoliceAttackResolutionDetails(

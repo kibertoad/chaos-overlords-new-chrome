@@ -101,6 +101,13 @@ public static class MatchStateHasher
                 writer.Write(outcome.Turn);
                 writer.Write(outcome.Winners.Count);
                 foreach (var winner in outcome.Winners) writer.Write(winner.Value);
+                writer.Write(outcome.Standings.Count);
+                foreach (var standing in outcome.Standings)
+                {
+                    writer.Write(standing.Player.Value);
+                    writer.Write(standing.Place);
+                    writer.Write(standing.Score);
+                }
                 writer.Write(outcome.Awards.Count);
                 foreach (var award in outcome.Awards)
                 {

@@ -65,6 +65,10 @@ public sealed class MatchOutcomeTests
         Assert.Equal(26, match.Outcome!.Turn);
         Assert.Equal(MatchEndReason.TimeLimit, match.Outcome.Reason);
         Assert.Equal([new PlayerId(0), new PlayerId(1)], match.Outcome.Winners);
+        Assert.Equal(
+            [new MatchStanding(new PlayerId(0), 1, match.Players[0].Cash),
+                new MatchStanding(new PlayerId(1), 1, match.Players[1].Cash)],
+            match.Outcome.Standings);
         Assert.Single(match.Events, value => value.Kind == GameEventKind.MatchEnded);
     }
 

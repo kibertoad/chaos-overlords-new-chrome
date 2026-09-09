@@ -586,7 +586,8 @@ public sealed class MatchState
     private GameEvent AppendMatchEndedEvent(MatchOutcome outcome)
     {
         var details = new MatchOutcomeDetails(
-            outcome.Scenario, outcome.Reason, outcome.Turn, outcome.Winners, outcome.Awards);
+            outcome.Scenario, outcome.Reason, outcome.Turn, outcome.Winners,
+            outcome.Standings, outcome.Awards);
         var gameEvent = new GameEvent(
             _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
             Coordinator.ExecutionPhase, GameEventKind.MatchEnded,

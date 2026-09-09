@@ -445,9 +445,12 @@ claim about original-game behavior.
   players tied for the highest score. Objective games preserve all qualifying
   players in player-ID order. Emit one `MatchEnded` event and one Objective
   notification per player; include the outcome in canonical state hashes and
-  prevent the following Upkeep phase from resolving.
+  prevent the following Upkeep phase from resolving. Timed outcomes include
+  score-descending standings; equal scores share a competition rank, with the
+  next place skipped.
 - Current exclusions: binary end-boundary timing, tie-break presentation,
-  eliminated-player ranking, Siege's exact important-sector identity,
+  eliminated-player eligibility, objective-scenario ranking, the original
+  display order within a timed tie, Siege's exact important-sector identity,
   Eliminate neutralization, Big Man point accrual, endgame rankings and award
   edge-case parity.
   Headquarters sites are provisionally treated as Siege-important sectors.
@@ -457,7 +460,9 @@ claim about original-game behavior.
   `MatchState.FinishPlayerElimination`; canonical hash format version 2.
 - Tests: `MatchOutcomeTests` covers authoritative projection, objective event
   and notification emission, Eliminate's Right Hands distinction, exact timed
-  boundary ties, and outcome hashing.
+  boundary ties/standings, and outcome hashing; `EndgameRankingTests` covers
+  descending scores, competition ties, and rejecting unsupported objective
+  rankings.
 - Next experiment: capture the last two turns of each timed scenario and
   simultaneous-threshold states for objective scenarios, then compare event,
   ranking, tie, and next-screen behavior.

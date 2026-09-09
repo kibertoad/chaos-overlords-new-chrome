@@ -11,6 +11,7 @@ public sealed record MatchOutcome(
     MatchEndReason Reason,
     int Turn,
     IReadOnlyList<PlayerId> Winners,
+    IReadOnlyList<MatchStanding> Standings,
     IReadOnlyList<EndgameAwardResult> Awards);
 
 /// <summary>
@@ -39,6 +40,7 @@ public static class MatchOutcomeEvaluator
                 MatchEndReason.TimeLimit,
                 state.Coordinator.Turn,
                 scores.Where(value => value.Score == best).Select(value => value.Id).ToArray(),
+                EndgameRankingEvaluator.EvaluateTimed(state),
                 EndgameAwardEvaluator.Evaluate(state));
         }
 
@@ -55,6 +57,7 @@ public static class MatchOutcomeEvaluator
                 MatchEndReason.ObjectiveCompleted,
                 state.Coordinator.Turn,
                 winners,
+                [],
                 EndgameAwardEvaluator.Evaluate(state));
     }
 
