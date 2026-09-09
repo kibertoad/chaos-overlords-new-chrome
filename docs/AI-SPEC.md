@@ -70,15 +70,18 @@ replay-verified two-computer harness through 20 turns or objective completion.
 
 ## Required parity work
 
-1. Identify the target enumerators and earlier guards feeding the recovered
-   command-continuity gates. Selector `0x3e` is now identified as the
+1. Finish naming the subordinate predicates feeding shared weighted sector
+   selector `0x00408642`. Its ring search, modes 1-5, mode-5 movement weights
+   (neutral/owned/enemy `5:2:1`), maximum-score random ties, and orthogonal
+   next-step routing are now bounded, while modes 6-16 remain only
+   structurally mapped. Selector `0x3e` is identified as the
    previous-turn action byte. Selectors 3 (player cash), 4 (sector
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
    (Heal), plus action bytes 3 (Chaos), 10 (Move), and 13 (Snitch), are now
    bounded in `ORIGINAL-INTERNALS.md`. Capture the resulting cash 50/51, Force
    8/9, and Tolerance 3/4 boundaries as fixed-state reference fixtures before
-   replacing recreation policy.
+   replacing recreation policy or its provisional destination weights.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those
    fixtures.

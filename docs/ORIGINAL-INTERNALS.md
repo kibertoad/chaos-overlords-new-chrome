@@ -477,6 +477,73 @@ guards feeding each command-continuity gate. Then capture fixed-state
 command-selection fixtures for the cash 50/51, Force 8/9, and Tolerance 3/4
 boundaries before changing recreation policy.
 
+### BIN-AI-005 - shared weighted sector selector
+
+**Observation:** `0x00408642` is the shared sector-target routine used by the
+recovered family handlers. Its parameters are the active player, a selection
+mode, and the active gang. Mode 0 chooses one of the eight immediate neighbors
+(`-9`, `-8`, `-7`, `-1`, `+1`, `+7`, `+8`, `+9`) with uniform calls to the
+original bounded RNG, rejecting row-wrap and off-board results.
+
+For nonzero modes the routine clears an 8-by-8 integer score map, obtains the
+gang's current sector through selector `0x5a`, and examines successively larger
+square rings around it, from radius 1 through 7, stopping after the first ring
+which contributes any candidate. The current sector is removed before final
+selection. Modes 1 through 5 have bounded scoring rules:
+
+- mode 1 scores a neutral sector `+1` only when selector `0x2c` says the gang
+  can take it by strict solo Control;
+- mode 2 scores an owned sector `+1`;
+- mode 3 scores a sector owned by another player `+1`;
+- mode 4 scores `+1` when player-pair predicate `0x2d` accepts its owner; and
+- mode 5 scores a solo-controllable neutral sector `+5`, an owned sector with
+  no previous-Chaos gang assignment (selector `0x5b` equals zero) `+2`, and an
+  enemy-owned sector `+1`.
+
+The remaining modes are structurally bounded but not all subordinate fields
+are named yet. Mode 6 combines a global selector-`0x32` branch, human-owner
+classification, selector `0x2e`, a per-owner table, and selector `0x5e`.
+Modes 7, 8, and 9 restrict candidates to owned sectors and score their three
+building slots using selectors `0x0c`, `0x0d`, and `0x10`, respectively; mode
+7 additionally requires selector `0x6f` to be zero. Mode 10 changes its owner
+test according to global selector `0x32`. Mode 11 gives `+1` to the sector
+returned by selector `0x5a` for the active player. Modes 12 and 14 restrict
+selection to sectors 27, 28, 35, and 36; modes 13 and 15 restrict it to sectors
+9, 12, 30, 33, 51, and 54. These four modes require a per-player path value
+below 6 and award `+5` for a human-owned target versus `+1` otherwise, with
+modes 12 and 13 also excluding sectors already owned by the active player.
+Mode 16 gives `+1` to the sector returned by selector `0x77`. A mode above
+`0x3f` directly adds `+1` to sector `mode - 0x40`.
+
+`0x00408553` sorts the 64 sector scores descending while retaining their sector
+indices. The caller chooses uniformly among every sector tied for the maximum.
+If that strategic target is outside the immediate 3-by-3 neighborhood, the
+routine returns one orthogonal step toward it rather than the distant target,
+and refuses an axis step whose per-player path value exceeds 5. If the selected
+target is already adjacent, the sector itself is returned. Candidate sectors
+are also removed late when marked unavailable or when the active gang cannot
+strictly Control a non-owned destination under the relevant gang-state branch.
+
+**Interpretation:** mode 5 is the general movement fallback recovered in the
+family-1 continuity paths. Its exact neutral/owned/enemy ratio is 5:2:1, and
+the routine separates strategic target scoring from the single-tile Move that
+is ultimately queued. Randomness is used only for mode-0 neighbor selection
+and equal-best final scores in the bounded paths inspected here.
+
+**Confidence:** High for the address, ring expansion, score-map sorting,
+mode-0 directions, modes 1 through 5 weights, fixed sector sets, maximum-score
+tie randomization, and orthogonal next-step return. Medium for the late
+candidate filtering due to decompiler control-flow folding. Low for semantic
+names of selectors `0x0c`, `0x0d`, `0x10`, `0x2d`, `0x2e`, `0x32`, `0x5e`,
+`0x6f`, and `0x77`, and therefore for the complete meaning of modes 6 through
+16.
+
+**Next validation:** name the subordinate selectors used by modes 6 through
+16 and map each mode to its family-handler call site. Then reproduce the
+5:2:1 mode-5 target score, path threshold, and equal-best RNG with fixed-state
+reference traces before replacing the recreation's provisional destination
+weights.
+
 ## New-game initialization
 
 ### BIN-CITY-001 - density-derived sector income and tolerance
