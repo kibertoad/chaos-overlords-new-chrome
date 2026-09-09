@@ -41,6 +41,39 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void ReplaysCrackdownTriggerCountdownAndFollowingPoliceCombat()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch(negativeTolerance: true));
+        recorder.FinishUpkeep();
+        FinishCommands(recorder);
+        while (recorder.State.Coordinator.Phase == TurnPhase.Execution)
+            recorder.FinishExecutionPhase();
+        Assert.True(recorder.State.Sectors[0].CrackdownActive);
+        Assert.Equal([1], recorder.State.Sectors[0].CrackdownHistory);
+        var initialDuration = recorder.State.Sectors[0].CrackdownTurnsRemaining;
+        FinishHireAndElimination(recorder);
+
+        recorder.FinishUpkeep();
+        Assert.Equal(initialDuration - 1, recorder.State.Sectors[0].CrackdownTurnsRemaining);
+        FinishCommands(recorder);
+        while (recorder.State.Coordinator.ExecutionPhase != ExecutionPhase.Combat)
+            recorder.FinishExecutionPhase();
+        recorder.FinishExecutionPhase();
+        Assert.NotEmpty(recorder.State.LastPoliceAttackResolutions);
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
+
+        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(recorder.State.Sectors[0].CrackdownTurnsRemaining,
+            restored.Sectors[0].CrackdownTurnsRemaining);
+        Assert.Equal(recorder.State.Sectors[0].CrackdownHistory, restored.Sectors[0].CrackdownHistory);
+        Assert.Equal(recorder.State.Events, restored.Events);
+    }
+
+    [Fact]
     public void RejectsReplayWhoseExpectedStepHashWasModified()
     {
         var recorder = new MatchReplayRecorder(CreateMatch());
@@ -101,7 +134,18 @@ public sealed class MatchReplayTests
         }
     }
 
-    private static MatchState CreateMatch()
+    private static void FinishCommands(MatchReplayRecorder recorder)
+    {
+        foreach (var player in recorder.State.Players) recorder.FinishCommand(player.Id);
+    }
+
+    private static void FinishHireAndElimination(MatchReplayRecorder recorder)
+    {
+        foreach (var player in recorder.State.Players) recorder.FinishHire(player.Id);
+        recorder.FinishPlayerElimination();
+    }
+
+    private static MatchState CreateMatch(bool negativeTolerance = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
@@ -117,7 +161,7 @@ public sealed class MatchReplayTests
                     id is 0 or 63 ? 0 : 7),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ]))
+            ], tolerance: id == 0 && negativeTolerance ? -2 : ManualRules.MinimumTolerance))
             .ToArray();
         return MatchBootstrap.Create(data, setup, sectors,
         [

@@ -132,6 +132,50 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void VersionTwoSaveMigratesActiveCrackdownToMinimumDuration()
+    {
+        var match = CreateMatch();
+        match.Sectors[0].CrackdownActive = true;
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 2;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionTwoSha256(match);
+        foreach (var sector in document["sectors"]!.AsArray())
+        {
+            sector!.AsObject().Remove("crackdownTurnsRemaining");
+            sector.AsObject().Remove("crackdownHistory");
+        }
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.Equal(ManualRules.MinimumCrackdownTurns, restored.Sectors[0].CrackdownTurnsRemaining);
+        Assert.Empty(restored.Sectors[0].CrackdownHistory);
+    }
+
+    [Fact]
+    public void VersionThreeSavePreservesDurationAndStartsWithEmptyHistory()
+    {
+        var match = CreateMatch();
+        match.Sectors[0].CrackdownActive = true;
+        match.Sectors[0].CrackdownTurnsRemaining = 5;
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 3;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionThreeSha256(match);
+        foreach (var sector in document["sectors"]!.AsArray())
+            sector!.AsObject().Remove("crackdownHistory");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.Equal(5, restored.Sectors[0].CrackdownTurnsRemaining);
+        Assert.Empty(restored.Sectors[0].CrackdownHistory);
+    }
+
+    [Fact]
     public void RejectsParsedContentWhoseAuthoritativeStateWasModified()
     {
         var match = CreateMatch();
