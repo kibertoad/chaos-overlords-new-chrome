@@ -46,6 +46,10 @@ public sealed class ManualRulesTests
     public void PoliceDetectionMatchesManualTable(int stealth, int percent) =>
         Assert.Equal(percent, ManualRules.PoliceDetectionPercent(stealth));
 
+    [Fact]
+    public void HiddenPoliceDetectionUsesDetectTwelveAgainstStealth() =>
+        Assert.Equal(60, ManualRules.PoliceDetectionPercent(10, hidden: true));
+
     [Theory]
     [InlineData(1, 3, 4)]
     [InlineData(9, 5, 10)]

@@ -274,7 +274,8 @@ public static class CommandResolver
 
     private static PoliceCombatOutcome RollPoliceAttack(MatchState state, CombatSnapshot target)
     {
-        var detectionChance = ManualRules.PoliceDetectionPercent(target.Statistics.Stealth);
+        var detectionChance = ManualRules.PoliceDetectionPercent(
+            target.Statistics.Stealth, target.Hidden);
         var detectionRoll = state.Random.NextInclusive(100);
         var detected = detectionRoll <= detectionChance;
         var attackValue = detected ? Math.Max(0, ManualRules.PoliceCombat - target.Statistics.Defense) : 0;

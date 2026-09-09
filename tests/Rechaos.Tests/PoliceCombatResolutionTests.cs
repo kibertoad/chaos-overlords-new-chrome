@@ -56,6 +56,27 @@ public sealed class PoliceCombatResolutionTests
     }
 
     [Fact]
+    public void HiddenGangUsesPoliceDetectTwelveProbability()
+    {
+        var match = CreateMatch(
+            new MatchGangState(new GangId(10), new PlayerId(0), 1, 0, 10));
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Hide, CommandTarget.None)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishExecutionPhase();
+        Assert.True(match.FindGang(new GangId(10))!.Hidden);
+
+        match.FinishExecutionPhase();
+
+        var result = Assert.Single(match.LastPoliceAttackResolutions);
+        var stealth = EffectiveStatisticsCalculator.ForGang(match, match.FindGang(new GangId(10))!).Stealth;
+        Assert.Equal(ManualRules.HiddenAttackHitPercent(ManualRules.PoliceDetect, stealth),
+            result.Details.DetectionChance);
+        Assert.NotEqual(ManualRules.PoliceDetectionPercent(stealth), result.Details.DetectionChance);
+    }
+
+    [Fact]
     public void PoliceDamageEliminatesGangAndClearsEquipment()
     {
         var data = BundledOriginalData.Load();

@@ -55,6 +55,10 @@ public static class ManualRules
         return Math.Clamp(100 - Math.Max(0, stealth - 5) * 5, 0, 100);
     }
 
+    public static int PoliceDetectionPercent(int stealth, bool hidden) => hidden
+        ? HiddenAttackHitPercent(PoliceDetect, stealth)
+        : PoliceDetectionPercent(stealth);
+
     public static int RestoreForce(int currentForce, int successes)
     {
         if (currentForce is < 0 or > MaximumForce) throw new ArgumentOutOfRangeException(nameof(currentForce));

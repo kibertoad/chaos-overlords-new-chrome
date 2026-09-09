@@ -421,6 +421,9 @@ claim about original-game behavior.
   are applied. Control is rejected at submission while a crackdown is already
   active and fails without changing ownership if police arrive before the
   later Control subphase.
+- Interpretation: a gang that resolved Hide during Instant uses the ordinary
+  hidden-hit formula with police Detect 12 (`50% + 5% * (12 - Stealth)`),
+  clamped to 0–100, instead of the non-hidden police stealth table.
 - Interpretation: each trigger draws an inclusive three-to-five-turn duration
   from the deterministic simulation RNG and adds it to any remaining police
   presence. Upkeep consumes one remaining turn; the sector detail panel exposes
@@ -431,11 +434,12 @@ claim about original-game behavior.
   distinct `ControlLost` notification in addition to the global Crackdown
   notification.
 - Current exclusions: original timing within Combat, whether 0%/100% checks
-  consume RNG, weapon/damage-cap treatment, use of the separately documented
-  Detect 12 value, exact duration RNG call/order, exact original message wording, and
+  consume RNG, weapon/damage-cap treatment, exact duration RNG call/order,
+  exact original message wording, and
   exact binary RNG/event order.
-- Confidence: High for the detection percentage table and Combat 20; Medium
-  for defense subtraction; Low for phase ordering and the listed exclusions.
+- Confidence: High for the detection percentage table, hidden Detect 12 branch,
+  Combat 20, and defense subtraction; Low for phase/RNG ordering and the listed
+  exclusions.
 - Implementation: `CommandResolver.ResolveCombatPhase`, exposed through
   `MatchState.LastPoliceAttackResolutions` and `PoliceAttackResolved` events;
   `CommandValidator` and `CommandResolver.ResolveControl` enforce the Control
