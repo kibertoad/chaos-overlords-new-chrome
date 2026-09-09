@@ -37,6 +37,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle EventsBack = new(322, 414, 96, 28);
     private static readonly Rectangle CommandsQueue = new(218, 414, 96, 28);
     private static readonly Rectangle CommandsBack = new(322, 414, 96, 28);
+    private static readonly Rectangle HireQueue = new(114, 414, 96, 28);
+    private static readonly Rectangle HireSnub = new(218, 414, 96, 28);
+    private static readonly Rectangle HireBack = new(322, 414, 96, 28);
     private static readonly Rectangle EndgameDone = new(320, 404, 104, 54);
     private static readonly Rectangle HandoffReady = new(266, 246, 108, 66);
     private readonly GraphicsDeviceManager _graphics;
@@ -63,6 +66,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private int _selectedGangIndex;
     private IReadOnlyList<GameCommand> _commandOptions = [];
     private int _commandCursor;
+    private int _hireCursor;
     private string _message = "SELECT NEW GAME";
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
@@ -138,6 +142,13 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Enter)) SubmitSelectedCommand();
                 if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
                 break;
+            case ClientScreen.Hire:
+                if (Pressed(keyboard, Keys.Up)) MoveHireCursor(-1);
+                if (Pressed(keyboard, Keys.Down)) MoveHireCursor(1);
+                if (Pressed(keyboard, Keys.Enter)) QueueSelectedHireOffer();
+                if (Pressed(keyboard, Keys.S)) SnubSelectedHireOffer();
+                if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
+                break;
         }
         if (mouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released
             && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint))
@@ -178,6 +189,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Commands when _state is not null:
                 DrawCommands(_batch, _pixel, _font, _state);
                 break;
+            case ClientScreen.Hire when _state is not null:
+                DrawHire(_batch, _pixel, _font, _state);
+                break;
         }
         _batch.End();
         base.Draw(gameTime);
@@ -210,7 +224,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.Enter)) QueueBoardCommand();
         if (Pressed(keyboard, Keys.C)) OpenCommands();
         if (Pressed(keyboard, Keys.G)) CycleGang();
-        if (Pressed(keyboard, Keys.H)) QueueFirstHireOffer();
+        if (Pressed(keyboard, Keys.H)) OpenHire();
         if (Pressed(keyboard, Keys.Space)) AdvancePhase();
         if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
         if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
@@ -253,6 +267,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Commands:
                 HandleCommandsClick(point);
                 break;
+            case ClientScreen.Hire:
+                HandleHireClick(point);
+                break;
         }
     }
 
@@ -272,7 +289,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
         else if (CityAction.Contains(point))
         {
-            if (_state?.Coordinator.Phase == TurnPhase.Hire) QueueFirstHireOffer();
+            if (_state?.Coordinator.Phase == TurnPhase.Hire) OpenHire();
             else OpenCommands();
         }
         else if (CityAdvance.Contains(point)) AdvancePhase();
@@ -562,6 +579,33 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         DrawButton(batch, pixel, font, CommandsBack, "BACK", false);
     }
 
+    private void DrawHire(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
+        if (_cityBackground is not null)
+            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
+        font.Draw(batch, "NEW RECRUITS", new Vector2(18, 60), Color.Gold, 2);
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var player = state.FindPlayer(playerId)!;
+        font.Draw(batch, $"{player.Setup.Name}  CASH ${player.Cash}  SECTOR {_cursor + 1}",
+            new Vector2(18, 84), PlayerColors[playerId.Value], 1);
+        for (var index = 0; index < player.HirePool.Count; index++)
+        {
+            var y = 112 + index * 72;
+            if (index == _hireCursor)
+                batch.Draw(pixel, new Rectangle(14, y - 6, 404, 54), new Color(72, 54, 18));
+            var definition = state.Definitions.Gangs.Single(gang => gang.Id == player.HirePool[index]);
+            font.Draw(batch, definition.Name, new Vector2(20, y), Color.White, 1);
+            font.Draw(batch, $"FORCE {definition.Force}  UPKEEP {definition.Upkeep}  COST {HireRules.InitialCost(definition)}",
+                new Vector2(20, y + 16), new Color(180, 230, 170), 1);
+        }
+        if (player.HirePool.Count == 0)
+            font.Draw(batch, "NO HIRE OFFERS", new Vector2(18, 112), Color.White, 1);
+        DrawButton(batch, pixel, font, HireQueue, "HIRE", false);
+        DrawButton(batch, pixel, font, HireSnub, "SNUB", false);
+        DrawButton(batch, pixel, font, HireBack, "BACK", false);
+    }
+
     private static string FormatCommand(MatchState state, GameCommand command)
     {
         var text = command.Action.ToString().ToUpperInvariant();
@@ -620,7 +664,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _message = result.Accepted ? $"{command.Action.ToString().ToUpperInvariant()} QUEUED" : result.Validation.Message.ToUpperInvariant();
     }
 
-    private void QueueFirstHireOffer()
+    private void OpenHire()
     {
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Hire
             || _state.Coordinator.ActivePlayer is not { } playerId)
@@ -634,9 +678,52 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             _message = "NO HIRE OFFER AVAILABLE";
             return;
         }
-        var offer = player.HirePool[0];
+        _hireCursor = 0;
+        _screens.Show(ClientScreen.Hire);
+    }
+
+    private void MoveHireCursor(int delta)
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        var count = _state.FindPlayer(playerId)!.HirePool.Count;
+        if (count > 0) _hireCursor = Mod(_hireCursor + delta, count);
+    }
+
+    private void HandleHireClick(Point point)
+    {
+        if (_state?.Coordinator.ActivePlayer is { } playerId
+            && point.X is >= 14 and < 418 && point.Y is >= 106 and < 322)
+        {
+            var index = (point.Y - 106) / 72;
+            if (index < _state.FindPlayer(playerId)!.HirePool.Count) _hireCursor = index;
+        }
+        else if (HireQueue.Contains(point)) QueueSelectedHireOffer();
+        else if (HireSnub.Contains(point)) SnubSelectedHireOffer();
+        else if (HireBack.Contains(point)) _screens.Show(ClientScreen.City);
+    }
+
+    private void QueueSelectedHireOffer()
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
+        var player = _state.FindPlayer(playerId)!;
+        if (player.HirePool.Count == 0) return;
+        _hireCursor = Math.Clamp(_hireCursor, 0, player.HirePool.Count - 1);
+        var offer = player.HirePool[_hireCursor];
         var result = _replay!.QueueHire(playerId, offer, _cursor);
         _message = result.Accepted ? "HIRE QUEUED" : result.Validation.Message.ToUpperInvariant();
+        if (result.Accepted) _screens.Show(ClientScreen.City);
+    }
+
+    private void SnubSelectedHireOffer()
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
+        var player = _state.FindPlayer(playerId)!;
+        if (player.HirePool.Count == 0) return;
+        _hireCursor = Math.Clamp(_hireCursor, 0, player.HirePool.Count - 1);
+        var offer = player.HirePool[_hireCursor];
+        var result = _replay.SnubHireOffer(playerId, offer);
+        _message = result.Accepted ? "OFFER SNUBBED" : result.Validation.Message.ToUpperInvariant();
+        _hireCursor = Math.Clamp(_hireCursor, 0, Math.Max(0, player.HirePool.Count - 1));
     }
 
     private void AdvancePhase()

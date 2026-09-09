@@ -122,7 +122,8 @@ and machine-readable diagnostics.
 ### `Rechaos.Game`
 
 The current client owns the MonoGame loop, point-scaled virtual canvas, asset
-loading, title/setup/hot-seat-handoff/city/events/endgame routing, keyboard and inverse-mapped mouse input,
+loading, title/setup/hot-seat-handoff/city/commands/hire/events/endgame routing,
+keyboard and inverse-mapped mouse input,
 prototype board renderer, and an internal pixel font. `UI-ATLAS.md` records the
 first full-screen resource and hit-region mappings.
 It reads original media only from the extracted asset directory.
@@ -315,7 +316,8 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
   on the mapped original frame, but still
   lacks the original setup detail, AI turn driver, notification presentation
   detail, animations and most original panels. Its command picker projects all
-  currently legal commands from Core rather than maintaining parallel UI rules.
+  currently legal commands from Core rather than maintaining parallel UI rules;
+  its Hire panel exposes all three offers, selected-sector placement and snubbing.
 - Exact control edges and within-subphase command ordering remain provisional.
 - Runtime manifest checking validates version only.
 - Media resources are extracted but not presented.

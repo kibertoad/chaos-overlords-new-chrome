@@ -9,6 +9,7 @@ public enum ClientScreen
     Setup,
     City,
     Commands,
+    Hire,
     Events,
     Handoff,
     Endgame
@@ -23,7 +24,9 @@ public sealed class ScreenRouter
     public bool Back()
     {
         if (Current == ClientScreen.Title) return false;
-        Current = Current is ClientScreen.Events or ClientScreen.Commands ? ClientScreen.City : ClientScreen.Title;
+        Current = Current is ClientScreen.Events or ClientScreen.Commands or ClientScreen.Hire
+            ? ClientScreen.City
+            : ClientScreen.Title;
         return true;
     }
 }

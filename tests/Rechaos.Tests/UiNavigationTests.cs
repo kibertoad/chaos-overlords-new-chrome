@@ -31,5 +31,8 @@ public sealed class UiNavigationTests
         router.Show(ClientScreen.Commands);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.City, router.Current);
+        router.Show(ClientScreen.Hire);
+        Assert.True(router.Back());
+        Assert.Equal(ClientScreen.City, router.Current);
     }
 }
