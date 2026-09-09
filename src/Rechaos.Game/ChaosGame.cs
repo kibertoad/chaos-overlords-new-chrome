@@ -795,9 +795,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             foreach (var entry in notifications.Take(18).Select((notification, index) => (notification, index)))
             {
                 var notification = entry.notification;
-                var detail = notification.Gang is { } gang ? $" GANG {gang.Value}" : "";
-                if (notification.SectorId is { } sector) detail += $" SECTOR {sector + 1}";
-                font.Draw(batch, $"T{notification.Turn} {notification.Kind}{detail}",
+                font.Draw(batch, NotificationPresentation.Describe(notification),
                     new Vector2(18, 110 + entry.index * 16), Color.White, 1);
             }
         }

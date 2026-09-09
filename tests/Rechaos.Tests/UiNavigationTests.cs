@@ -93,4 +93,15 @@ public sealed class UiNavigationTests
         Assert.Throws<ArgumentOutOfRangeException>(() => OriginalSpriteLayout.SitePortrait(22));
         Assert.Throws<ArgumentOutOfRangeException>(() => OriginalSpriteLayout.GangPortrait(90));
     }
+
+    [Fact]
+    public void EventPresentationUsesDistinctPoliceAndControlLossLabels()
+    {
+        Assert.Equal("T5 CONTROL LOST SECTOR 8", NotificationPresentation.Describe(
+            new GameNotification(0, 5, TurnPhase.Execution, ExecutionPhase.Chaos,
+                GameNotificationKind.ControlLost, SectorId: 7)));
+        Assert.Equal("T3 POLICE ATTACK GANG 12 SECTOR 2", NotificationPresentation.Describe(
+            new GameNotification(0, 3, TurnPhase.Execution, ExecutionPhase.Combat,
+                GameNotificationKind.Police, new GangId(12), 1)));
+    }
 }

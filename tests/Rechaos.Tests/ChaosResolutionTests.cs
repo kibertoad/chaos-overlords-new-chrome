@@ -77,7 +77,7 @@ public sealed class ChaosResolutionTests
         Assert.Equal(20, sector.Tolerance);
         Assert.Equal([3, 5], sector.CrackdownHistory);
         Assert.Contains(match.NotificationsFor(new PlayerId(0)), notification =>
-            notification.Kind == GameNotificationKind.Control && notification.SectorId == sector.Id);
+            notification.Kind == GameNotificationKind.ControlLost && notification.SectorId == sector.Id);
     }
 
     [Fact]

@@ -37,7 +37,7 @@ public static class CrackdownResolver
             SectorControlResolver.Neutralize(state, sector);
             state.QueueNotification(
                 previousOwner!.Value,
-                GameNotificationKind.Control,
+                GameNotificationKind.ControlLost,
                 sectorId: sector.Id);
         }
         return new CrackdownTriggerResult(duration, previousOwner, controlLost);
