@@ -3,43 +3,49 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Rechaos.Game;
 
-public sealed class PixelFont(Texture2D pixel)
+/// <summary>Draws text with the original PX00129 glyph artwork.</summary>
+public sealed class PixelFont
 {
-    private const string Characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:;!?+-/$()'";
-    private static readonly string[] Glyphs =
-    [
-        "011101000110001111111000110001", "111101000111110100011000111110", "011111000010000100001000001111",
-        "111101000110001100011000111110", "111111000011110100001000011111", "111111000011110100001000010000",
-        "011111000010111100011000101111", "100011000111111100011000110001", "111110010000100001000010011111",
-        "001110001000010000101001001100", "100011001011100100101000110001", "100001000010000100001000011111",
-        "100011101110101100011000110001", "100011100110101100111000110001", "011101000110001100011000101110",
-        "111101000110001111101000010000", "011101000110001101011001001101", "111101000110001111101001010001",
-        "011111000001110000011000111110", "111110010000100001000010000100", "100011000110001100011000101110",
-        "100011000110001100010101000100", "100011000110101101011010101010", "100011000101010001001010110001",
-        "100011000101010001000010000100", "111110001000100010001000011111",
-        "01110100011001110101110011000101110", "001000110000100001000010001110", "011101000100001001100100011111", "111100000100110000011000101110",
-        "000100011001010111110001000010", "111111000011110000011000101110", "011101000010000111101000101110", "111110000100010001000100001000",
-        "011101000101110100011000101110", "011101000110001011110000101110", "00000000000000000000000000010000100", "00000000000000000000000000010001000",
-        "00000001000010000000001000010000000", "00000001000010000000001000010001000", "001000010000100001000000000100", "011101000100010001000000000100",
-        "000000010000100111110010000100", "00000000000000011111000000000000000", "000010001000100010001000010000", "011101000110011101011100110001",
-        "001000100010000100000100000100", "001000001000001000010001000100", "001000010000000000000000000000"
-    ];
+    private readonly Texture2D _glyphMask;
+
+    public PixelFont(GraphicsDevice graphicsDevice, Texture2D uiAtlas)
+    {
+        var bounds = OriginalFontLayout.AtlasBounds;
+        var atlas = new Color[uiAtlas.Width * uiAtlas.Height];
+        uiAtlas.GetData(atlas);
+        var mask = new Color[bounds.Width * bounds.Height];
+        for (var y = 0; y < bounds.Height; y++)
+        for (var x = 0; x < bounds.Width; x++)
+        {
+            var source = atlas[(bounds.Y + y) * uiAtlas.Width + bounds.X + x];
+            var intensity = Math.Max(source.R, Math.Max(source.G, source.B));
+            mask[y * bounds.Width + x] = intensity == 0
+                ? Color.Transparent
+                : new Color(intensity, intensity, intensity, intensity);
+        }
+
+        _glyphMask = new Texture2D(graphicsDevice, bounds.Width, bounds.Height);
+        _glyphMask.SetData(mask);
+    }
 
     public void Draw(SpriteBatch batch, string text, Vector2 position, Color color, int scale)
     {
         var startX = position.X;
         foreach (var character in text.ToUpperInvariant())
         {
-            if (character == '\n') { position.X = startX; position.Y += 9 * scale; continue; }
-            var index = Characters.IndexOf(character);
-            if ((uint)index < (uint)Glyphs.Length)
+            if (character == '\n')
             {
-                var glyph = Glyphs[index];
-                for (var i = 0; i < Math.Min(35, glyph.Length); i++)
-                    if (glyph[i] == '1') batch.Draw(pixel,
-                        new Rectangle((int)position.X + i % 5 * scale, (int)position.Y + i / 5 * scale, scale, scale), color);
+                position.X = startX;
+                position.Y += OriginalFontLayout.LineHeight * scale;
+                continue;
             }
-            position.X += 6 * scale;
+
+            if (OriginalFontLayout.TryGlyph(character, out var source))
+                batch.Draw(_glyphMask,
+                    new Rectangle((int)position.X, (int)position.Y,
+                        source.Width * scale, source.Height * scale),
+                    source, color);
+            position.X += OriginalFontLayout.CellWidth * scale;
         }
     }
 }

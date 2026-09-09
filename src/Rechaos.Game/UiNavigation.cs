@@ -4,6 +4,31 @@ using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
+public static class OriginalFontLayout
+{
+    public const char FirstCharacter = ' ';
+    public const char LastCharacter = 'Z';
+    public const int CellWidth = 6;
+    public const int GlyphHeight = 7;
+    public const int LineHeight = 9;
+    public static Rectangle AtlasBounds => new(0, 0,
+        (LastCharacter - FirstCharacter + 1) * CellWidth, GlyphHeight);
+
+    public static bool TryGlyph(char character, out Rectangle source)
+    {
+        character = char.ToUpperInvariant(character);
+        if (character is < FirstCharacter or > LastCharacter)
+        {
+            source = Rectangle.Empty;
+            return false;
+        }
+
+        source = new Rectangle((character - FirstCharacter) * CellWidth, 0,
+            CellWidth, GlyphHeight);
+        return true;
+    }
+}
+
 public enum ClientScreen
 {
     Title,

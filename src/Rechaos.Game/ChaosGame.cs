@@ -179,7 +179,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _batch = new SpriteBatch(GraphicsDevice);
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData([Color.White]);
-        _font = new PixelFont(_pixel);
         _definitions = BundledOriginalData.Load();
 
         _titleBackground = LoadTexture("PX00130.bmp");
@@ -207,6 +206,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);
         _policeSprites = LoadTexture("PX00300.bmp", transparentBlack: true);
         _uiSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
+        _font = _uiSprites is null
+            ? throw new InvalidDataException("PX00129 is required for the original UI font.")
+            : new PixelFont(GraphicsDevice, _uiSprites);
         LoadCombatAnimationTextures();
         for (short index = 0; index <= 18; index++)
         {

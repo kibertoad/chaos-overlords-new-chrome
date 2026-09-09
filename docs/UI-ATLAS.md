@@ -25,7 +25,7 @@ original-game capture confirms the screen and interaction state.
 
 | Resource | Mapping | Confidence |
 |---|---|---|
-| `PX00129` | Main UI composite sheet: glyphs, action names, player bars, arrows, buttons, portraits, message controls and command icons; diagonal `HIRED` stamp `(120,300,60,60)`; assigned `(492,67,20,20)`, idle/question `(492,107,20,20)`, and incoming-hire `(492,147,20,20)` gang-status markers | High from visible content and user captures; remaining rectangles not yet complete |
+| `PX00129` | Main UI composite sheet: original font strip `(0,0,354,7)` containing six-pixel ASCII cells from space through `Z`, action names, player bars, arrows, buttons, portraits, message controls and command icons; diagonal `HIRED` stamp `(120,300,60,60)`; assigned `(492,67,20,20)`, idle/question `(492,107,20,20)`, and incoming-hire `(492,147,20,20)` gang-status markers | High from pixel inspection, visible content, and user captures; remaining rectangles not yet complete |
 | `PX00132` | Next-player/Ready handoff panel | High from visible labels |
 | `PX00137`, `PX00139` | Empty and filled horizontal meter frames | Medium |
 | `PX00138` | Circular action/command icons | High from repeated command imagery |
@@ -236,6 +236,6 @@ notifications that were present when it opened.
    `PX00128` and validate/complete its provisional right-panel button rectangles.
 2. Correlate `PX00143` through `PX00146` with local player counts; legacy
    network setup variants are explicitly out of scope.
-3. Map fonts, cursor frames, selection/pressed-state sprites and transparency.
+3. Map remaining cursor frames, selection/pressed-state sprites and transparency.
 4. Capture reference screenshots for title, every setup configuration and the
    initial city, then add masked native-resolution golden comparisons.

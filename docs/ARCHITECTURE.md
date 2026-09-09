@@ -128,7 +128,8 @@ and machine-readable diagnostics.
 The current client owns the MonoGame loop, point-scaled virtual canvas, asset
 loading, title/setup/hot-seat-handoff/city/sector/gang/finance/ranking/items/Give/combat-summary/search/commands/hire/events/endgame routing,
 keyboard and inverse-mapped mouse input,
-prototype board renderer, and an internal pixel font. `UI-ATLAS.md` records the
+prototype board renderer, and an atlas-backed renderer for the original
+`PX00129` pixel font. `UI-ATLAS.md` records the
 first full-screen resource and hit-region mappings.
 The client shell is a partial class split by responsibility. `ChaosGame.cs`
 retains the loop, shared client state, and top-level input/screen routing.
