@@ -16,6 +16,35 @@ controlled reference observation confirms its execution timing and edge cases.
   SHA-256 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`.
   No resolver finding below has yet been verified against this executable.
 
+## Hiring
+
+### RULE-HIRE-001 — Offer replacement and starting Force
+
+- Source: `MANUAL-GOG-1`, numbered page 17.
+- Observed statement: the Hire panel contains three gangs. Hiring a gang removes
+  it from the panel and a replacement appears next turn. The player may instead
+  fire one unwanted offer; its replacement likewise appears next turn. A hired
+  gang begins with Force from 5 through 9 and may later be healed to 10.
+- Interpretation: one offer may be snubbed by the active player during each Hire
+  phase. It is removed immediately and refilled at `FinishHire`, the boundary
+  before the panel is next shown. Hired and snubbed vacancies are filled
+  independently, so hiring and snubbing in one turn restores all three offers.
+  A recruit's initial Force is generated uniformly in the inclusive range 5–9
+  through the recovered bounded RNG wrapper.
+- Current exclusions: the original offer-eligibility and replacement ordering,
+  the exact starting-Force RNG call site/distribution, and behavior when no
+  eligible replacement remains have not been confirmed against the executable.
+- Confidence: High for three offers, one rejected offer, next-turn replacement,
+  and the 5–9 Force range; Low for replacement selection and RNG ordering.
+- Implementation: `MatchState.SnubHireOffer`, `HireRules.ValidateSnub`,
+  `HireResolver.Resolve`, and `ManualRules.MinimumHiredGangForce` /
+  `MaximumHiredGangForce`.
+- Tests: `HireAndEliminationTests` covers phase/player validation, the one-snub
+  limit, deferred refill, simultaneous hire plus snub, initial Force bounds,
+  event details, RNG consumption, and deterministic hashes.
+- Next experiment: record repeated Hire panels and new-gang Force values from a
+  fixed reference save, then correlate offer order and RNG consumption.
+
 ## Instant commands
 
 ### RULE-HIDE-001 — Enter hidden state

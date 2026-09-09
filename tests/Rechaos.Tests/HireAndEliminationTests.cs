@@ -39,12 +39,14 @@ public sealed class HireAndEliminationTests
         var recruit = match.FindGang(resolution.Gang)!;
         Assert.Equal((short)2, recruit.DefinitionId);
         Assert.Equal(0, recruit.SectorId);
-        Assert.Equal(ManualRules.MaximumForce, recruit.Force);
+        Assert.InRange(recruit.Force, ManualRules.MinimumHiredGangForce, ManualRules.MaximumHiredGangForce);
+        Assert.Equal(recruit.Force, resolution.InitialForce);
+        Assert.Equal(recruit.Force, resolution.Event.Hire!.InitialForce);
         Assert.True(recruit.HiredThisTurn);
         Assert.Empty(match.Players[0].PendingHires);
         Assert.Equal(MatchLimits.HireOffersPerPlayer, match.Players[0].HirePool.Count);
         Assert.Equal(match.Players[0].HirePool.Count, match.Players[0].HirePool.Distinct().Count());
-        Assert.Equal(3, match.Random.ConsumptionCount);
+        Assert.Equal(6, match.Random.ConsumptionCount);
         Assert.Equal(GameEventKind.HireResolved, resolution.Event.Kind);
         Assert.Single(match.NotificationsFor(new PlayerId(0)), item => item.Kind == GameNotificationKind.Hire);
 
@@ -75,6 +77,53 @@ public sealed class HireAndEliminationTests
         Assert.Equal(cashBefore, match.Players[0].Cash);
         Assert.Empty(match.Players[0].PendingHires);
         Assert.Equal(eventCountBefore, match.Events.Count);
+    }
+
+    [Fact]
+    public void SnubRemovesOneOfferAndRefillsItWhenHirePhaseFinishes()
+    {
+        var match = CreateMatch();
+        Assert.Equal(HireValidationCode.InvalidPhase,
+            match.SnubHireOffer(new PlayerId(0), 2).Validation.Code);
+        AdvanceToHire(match);
+
+        var snub = match.SnubHireOffer(new PlayerId(0), 2);
+
+        Assert.True(snub.Accepted);
+        Assert.Equal((short)2, match.Players[0].SnubbedHireOffer);
+        Assert.DoesNotContain((short)2, match.Players[0].HirePool);
+        Assert.Equal(GameEventKind.HireOfferSnubbed, snub.Event!.Kind);
+        Assert.Equal(HireValidationCode.OfferAlreadySnubbed,
+            match.SnubHireOffer(new PlayerId(0), 1).Validation.Code);
+
+        match.FinishHire(new PlayerId(0));
+
+        Assert.Null(match.Players[0].SnubbedHireOffer);
+        Assert.Equal(MatchLimits.HireOffersPerPlayer, match.Players[0].HirePool.Count);
+        Assert.Equal(match.Players[0].HirePool.Count, match.Players[0].HirePool.Distinct().Count());
+        var refill = Assert.Single(match.Events, item => item.Kind == GameEventKind.HireOfferRefilled);
+        Assert.Equal((short)2, refill.HireOffer!.RemovedOffer);
+        Assert.Contains(refill.HireOffer.AddedOffer!.Value, match.Players[0].HirePool);
+        Assert.Equal(3, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
+    public void HiringAndSnubbingRefillBothVacanciesDeterministically()
+    {
+        var first = CreateMatch();
+        var second = CreateMatch();
+        foreach (var match in new[] { first, second })
+        {
+            AdvanceToHire(match);
+            Assert.True(match.SnubHireOffer(new PlayerId(0), 1).Accepted);
+            Assert.True(match.QueueHire(new PlayerId(0), 2, 0).Accepted);
+            match.FinishHire(new PlayerId(0));
+        }
+
+        Assert.Equal(3, first.Players[0].HirePool.Count);
+        Assert.Equal(first.Players[0].HirePool, second.Players[0].HirePool);
+        Assert.Equal(9, first.Random.ConsumptionCount);
+        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
     }
 
     [Fact]

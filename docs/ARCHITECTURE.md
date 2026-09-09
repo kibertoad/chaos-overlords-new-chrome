@@ -202,12 +202,13 @@ component. Desertion and unverified special modifiers remain outside this slice.
 
 Hiring uses the same deferred boundary as the manual: selecting one of a
 player's three offers reserves the recruit, charges its initial price, and
-removes that offer, but does not create a gang. `FinishHire` places the recruit
-at full Force, assigns a stable match-wide gang ID, and deterministically fills
-the vacant offer while preserving three distinct choices. Validation is an
-ordered set of side-effect-free `IValidationRule` implementations. Each rule
-owns both its typed failure code and user-facing message so UI previews, AI
-queries, and authoritative submission cannot disagree about eligibility.
+removes that offer, but does not create a gang. A player may also snub one offer
+per Hire phase. `FinishHire` places each recruit at a rolled 5–9 Force, assigns
+a stable match-wide gang ID, and deterministically fills hired and snubbed
+vacancies while preserving three distinct choices. Validation is an ordered set
+of side-effect-free `IValidationRule` implementations. Each rule owns both its
+typed failure code and user-facing message so UI previews, AI queries, and
+authoritative submission cannot disagree about eligibility.
 
 Player Elimination now runs at its named phase boundary. An active player with
 neither an active gang nor an owned sector becomes eliminated; any remaining
@@ -226,7 +227,7 @@ ordering still require binary fixtures.
   support, income, chaos, police and crackdown history;
 - at most 80 gang slots per player with stable IDs, force, position, equipment,
   queued/repeat action, targets, flags and effective stats;
-- three-entry hire pool and pending hire placement per player;
+- three-entry hire pool, pending hire placement and per-turn snub state per player;
 - bounded notification queues;
 - deterministic PRNG state and consumption counter.
 

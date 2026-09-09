@@ -10,6 +10,8 @@ public enum GameEventKind : byte
     CommandFailed,
     HireQueued,
     HireResolved,
+    HireOfferSnubbed,
+    HireOfferRefilled,
     PoliceAttackResolved,
     PlayerEliminated,
     BigManPointsAwarded,
@@ -50,7 +52,10 @@ public sealed record HireResolutionDetails(
     int SectorId,
     int Cost,
     GangId? Gang = null,
-    short? ReplacementOffer = null);
+    short? ReplacementOffer = null,
+    int? InitialForce = null);
+
+public sealed record HireOfferDetails(short? RemovedOffer, short? AddedOffer);
 
 public sealed record EliminationDetails(PlayerId EliminatedPlayer, int RemainingPlayers);
 
@@ -95,6 +100,7 @@ public sealed record GameEvent(
     CommandResolutionDetails? Resolution = null,
     EconomyResolutionDetails? Economy = null,
     HireResolutionDetails? Hire = null,
+    HireOfferDetails? HireOffer = null,
     EliminationDetails? Elimination = null,
     PoliceAttackResolutionDetails? PoliceAttack = null,
     BigManPointDetails? BigManPoints = null,

@@ -65,7 +65,8 @@ public sealed class MatchPlayerState
         int support = 0,
         int bigManPoints = 0,
         PlayerStatus status = PlayerStatus.Active,
-        MatchStatistics? statistics = null)
+        MatchStatistics? statistics = null,
+        short? snubbedHireOffer = null)
     {
         if (cash < 0) throw new ArgumentOutOfRangeException(nameof(cash));
         if (bigManPoints < 0) throw new ArgumentOutOfRangeException(nameof(bigManPoints));
@@ -82,6 +83,7 @@ public sealed class MatchPlayerState
         BigManPoints = bigManPoints;
         Status = status;
         Statistics = statistics ?? new MatchStatistics();
+        SnubbedHireOffer = snubbedHireOffer;
     }
 
     public MatchPlayerSetup Setup { get; }
@@ -97,6 +99,8 @@ public sealed class MatchPlayerState
     public IReadOnlySet<short> ResearchedItems => _researchedItems;
     public IReadOnlyDictionary<short, int> Inventory => _inventory;
     public MatchStatistics Statistics { get; }
+    public short? SnubbedHireOffer { get; private set; }
+    public bool HasSnubbedHireOfferThisTurn => SnubbedHireOffer.HasValue;
 
     public int RemainingResearch(OriginalData definitions, short itemIndex)
     {
@@ -126,6 +130,8 @@ public sealed class MatchPlayerState
     internal void ClearPendingHires() => _pendingHires.Clear();
     internal bool RemoveHireOffer(short gangDefinitionId) => _hirePool.Remove(gangDefinitionId);
     internal void AddHireOffer(short gangDefinitionId) => _hirePool.Add(gangDefinitionId);
+    internal void MarkHireOfferSnubbed(short gangDefinitionId) => SnubbedHireOffer = gangDefinitionId;
+    internal void ClearSnubbedHireOffer() => SnubbedHireOffer = null;
 
     private static void ValidateResearchItem(OriginalData definitions, short itemIndex)
     {
@@ -434,6 +440,19 @@ public sealed class MatchState
         return new HireSubmissionResult(validation, pending, gameEvent);
     }
 
+    public HireOfferSnubResult SnubHireOffer(PlayerId playerId, short gangDefinitionId)
+    {
+        var validation = HireRules.ValidateSnub(this, playerId, gangDefinitionId);
+        if (!validation.IsValid) return new HireOfferSnubResult(validation);
+        var player = FindPlayer(playerId)!;
+        player.RemoveHireOffer(gangDefinitionId);
+        player.MarkHireOfferSnubbed(gangDefinitionId);
+        var gameEvent = AppendHireOfferEvent(
+            GameEventKind.HireOfferSnubbed, playerId,
+            new HireOfferDetails(gangDefinitionId, null));
+        return new HireOfferSnubResult(validation, gangDefinitionId, gameEvent);
+    }
+
     public CommandSubmissionResult Submit(GameCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -529,6 +548,21 @@ public sealed class MatchState
             _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
             Coordinator.ExecutionPhase, kind, player, hire.Gang,
             GangAction.None, CommandTarget.Sector(hire.SectorId), Hire: hire);
+        _events.Add(gameEvent);
+        return gameEvent;
+    }
+
+    internal GameEvent AppendHireOfferEvent(
+        GameEventKind kind,
+        PlayerId player,
+        HireOfferDetails hireOffer)
+    {
+        if (kind is not (GameEventKind.HireOfferSnubbed or GameEventKind.HireOfferRefilled))
+            throw new ArgumentOutOfRangeException(nameof(kind));
+        var gameEvent = new GameEvent(
+            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
+            Coordinator.ExecutionPhase, kind, player, null,
+            GangAction.None, CommandTarget.None, HireOffer: hireOffer);
         _events.Add(gameEvent);
         return gameEvent;
     }
@@ -703,6 +737,11 @@ public sealed class MatchState
                 throw new ArgumentException($"Player {player.Id} has duplicate hire offers.", nameof(players));
             if (player.HirePool.Any(id => id == 0 || !definitions.Gangs.Any(definition => definition.Id == id)))
                 throw new ArgumentException($"Player {player.Id} has an invalid hire offer.", nameof(players));
+            if (player.SnubbedHireOffer is { } snubbed
+                && (snubbed == 0
+                    || !definitions.Gangs.Any(definition => definition.Id == snubbed)
+                    || player.HirePool.Contains(snubbed)))
+                throw new ArgumentException($"Player {player.Id} has invalid snubbed hire-offer state.", nameof(players));
             if (player.PendingHires.Count > 1)
                 throw new ArgumentException($"Player {player.Id} has more than one pending hire.", nameof(players));
             if (player.PendingHires.Any(hire => !player.HirePool.Contains(hire.GangDefinitionId) &&

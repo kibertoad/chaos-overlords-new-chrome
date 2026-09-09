@@ -9,6 +9,7 @@ public enum HireValidationCode : byte
     InactivePlayer,
     PlayerEliminated,
     OfferUnavailable,
+    OfferAlreadySnubbed,
     HireAlreadyPending,
     InsufficientCash,
     SectorNotControlled,
@@ -30,6 +31,14 @@ public sealed record HireSubmissionResult(
     public bool Accepted => Validation.IsValid;
 }
 
+public sealed record HireOfferSnubResult(
+    HireValidation Validation,
+    short? GangDefinitionId = null,
+    GameEvent? Event = null)
+{
+    public bool Accepted => Validation.IsValid;
+}
+
 public sealed record HireResolutionResult(
     PlayerId Player,
     short GangDefinitionId,
@@ -37,6 +46,7 @@ public sealed record HireResolutionResult(
     int Cost,
     GangId Gang,
     short? ReplacementOffer,
+    int InitialForce,
     GameEvent Event);
 
 public static class HireRules
@@ -119,6 +129,26 @@ public static class HireRules
             ? new HireValidation(rejected.Code, rejected.Message)
             : HireValidation.Accept();
     }
+
+    public static HireValidation ValidateSnub(
+        MatchState state,
+        PlayerId playerId,
+        short gangDefinitionId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var player = state.FindPlayer(playerId);
+        if (state.Coordinator.Phase != TurnPhase.Hire)
+            return new HireValidation(HireValidationCode.InvalidPhase, "Hire offers may only be snubbed during the Hire phase.");
+        if (state.Coordinator.ActivePlayer != playerId || player is null)
+            return new HireValidation(HireValidationCode.InactivePlayer, "The hiring player is not active.");
+        if (player.Status != PlayerStatus.Active)
+            return new HireValidation(HireValidationCode.PlayerEliminated, "An eliminated player cannot snub hire offers.");
+        if (!player.HirePool.Contains(gangDefinitionId))
+            return new HireValidation(HireValidationCode.OfferUnavailable, "The selected gang is not in the player's hire pool.");
+        if (player.HasSnubbedHireOfferThisTurn)
+            return new HireValidation(HireValidationCode.OfferAlreadySnubbed, "Only one hire offer may be snubbed per turn.");
+        return HireValidation.Accept();
+    }
 }
 
 internal static class HireResolver
@@ -129,9 +159,12 @@ internal static class HireResolver
         foreach (var pending in player.PendingHires.ToArray())
         {
             var definition = state.Definitions.Gangs.Single(item => item.Id == pending.GangDefinitionId);
+            var initialForce = state.Random.NextInclusive(
+                ManualRules.MaximumHiredGangForce - ManualRules.MinimumHiredGangForce + 1)
+                + ManualRules.MinimumHiredGangForce - 1;
             var gang = new MatchGangState(
                 state.NextGangId(), player.Id, pending.GangDefinitionId,
-                pending.TargetSectorId, ManualRules.MaximumForce)
+                pending.TargetSectorId, initialForce)
             {
                 HiredThisTurn = true
             };
@@ -139,15 +172,28 @@ internal static class HireResolver
             var replacement = RefillOffer(state, player);
             var details = new HireResolutionDetails(
                 pending.GangDefinitionId, pending.TargetSectorId,
-                HireRules.InitialCost(definition), gang.Id, replacement);
+                HireRules.InitialCost(definition), gang.Id, replacement, initialForce);
             var gameEvent = state.AppendHireEvent(GameEventKind.HireResolved, player.Id, details);
             state.QueueNotification(player.Id, GameNotificationKind.Hire, gang.Id,
                 pending.TargetSectorId, gameEvent.Sequence);
             results.Add(new HireResolutionResult(
                 player.Id, pending.GangDefinitionId, pending.TargetSectorId,
-                details.Cost, gang.Id, replacement, gameEvent));
+                details.Cost, gang.Id, replacement, initialForce, gameEvent));
         }
         player.ClearPendingHires();
+        if (player.HasSnubbedHireOfferThisTurn)
+        {
+            var replacement = RefillOffer(state, player);
+            if (replacement is { } gangDefinitionId)
+            {
+                var gameEvent = state.AppendHireOfferEvent(
+                    GameEventKind.HireOfferRefilled, player.Id,
+                    new HireOfferDetails(player.SnubbedHireOffer, gangDefinitionId));
+                state.QueueNotification(player.Id, GameNotificationKind.Hire,
+                    relatedEventSequence: gameEvent.Sequence);
+            }
+            player.ClearSnubbedHireOffer();
+        }
         return results;
     }
 

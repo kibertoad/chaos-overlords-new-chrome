@@ -64,7 +64,7 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 3;
+    private const int FormatVersion = 4;
 
     public static string ComputeSha256(MatchState state)
     {
@@ -180,6 +180,7 @@ public static class MatchStateHasher
             WriteNullableShort(writer, gang.WeaponItemId); WriteNullableShort(writer, gang.ArmorItemId); WriteNullableShort(writer, gang.MiscellaneousItemId);
         }
         writer.Write(player.HirePool.Count); foreach (var id in player.HirePool) writer.Write(id);
+        WriteNullableShort(writer, player.SnubbedHireOffer);
         writer.Write(player.PendingHires.Count); foreach (var hire in player.PendingHires) { writer.Write(hire.GangDefinitionId); writer.Write(hire.TargetSectorId); }
         writer.Write(player.ResearchProgress.Count); foreach (var pair in player.ResearchProgress.OrderBy(item => item.Key)) { writer.Write(pair.Key); writer.Write(pair.Value); }
         writer.Write(player.ResearchedItems.Count); foreach (var id in player.ResearchedItems.Order()) writer.Write(id);

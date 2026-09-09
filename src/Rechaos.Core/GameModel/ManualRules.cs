@@ -8,6 +8,8 @@ namespace Rechaos.Core.GameModel;
 public static class ManualRules
 {
     public const int MaximumForce = 10;
+    public const int MinimumHiredGangForce = 5;
+    public const int MaximumHiredGangForce = 9;
     public const int BribeCost = 3;
     public const int BribeToleranceIncrease = 5;
     public const int SnitchToleranceDecrease = 3;
