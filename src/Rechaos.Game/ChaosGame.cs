@@ -75,6 +75,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private MatchReplayRecorder? _replay;
     private OriginalData? _definitions;
     private readonly ScreenRouter _screens = new();
+    private readonly bool[] _computerPlayers = new bool[MatchLimits.PlayerCount];
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.SixMonths;
     private int _selectedPlayerCount = 2;
@@ -108,6 +109,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         };
         IsMouseVisible = true;
         Window.Title = "Re: Chaos Overlords";
+        _computerPlayers[1] = true;
     }
 
     protected override void LoadContent()
@@ -135,6 +137,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     {
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
+        RunComputerTurns();
         if (Pressed(keyboard, Keys.Escape) && !_screens.Back()) Exit();
         switch (_screens.Current)
         {
@@ -284,6 +287,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.Down)) ChangeDuration(-1);
         if (Pressed(keyboard, Keys.OemMinus)) ChangePlayerCount(-1);
         if (Pressed(keyboard, Keys.OemPlus)) ChangePlayerCount(1);
+        Keys[] controllerKeys = [Keys.D1, Keys.D2, Keys.D3, Keys.D4, Keys.D5, Keys.D6];
+        for (var index = 0; index < _selectedPlayerCount; index++)
+            if (Pressed(keyboard, controllerKeys[index])) ToggleController(index);
         if (Pressed(keyboard, Keys.Enter)) StartMatch();
     }
 
@@ -323,8 +329,11 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Setup:
                 var scenario = Array.FindIndex(SetupScenarios, rectangle => rectangle.Contains(point));
                 var duration = Array.FindIndex(SetupDurations, rectangle => rectangle.Contains(point));
+                var playerSlot = Enumerable.Range(0, _selectedPlayerCount)
+                    .FirstOrDefault(index => SetupPlayerSlot(index).Contains(point), -1);
                 if (scenario >= 0) _selectedScenario = (ScenarioId)scenario;
                 else if (duration >= 0) _selectedDuration = Durations[duration];
+                else if (playerSlot >= 0) ToggleController(playerSlot);
                 else if (SetupPlayersAdd.Contains(point)) ChangePlayerCount(1);
                 else if (SetupPlayersRemove.Contains(point)) ChangePlayerCount(-1);
                 else if (SetupStart.Contains(point)) StartMatch();
@@ -520,13 +529,23 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private void ChangePlayerCount(int delta) =>
         _selectedPlayerCount = Math.Clamp(_selectedPlayerCount + delta, 1, MatchLimits.PlayerCount);
 
+    private void ToggleController(int index)
+    {
+        if (index < 0 || index >= _selectedPlayerCount) return;
+        _computerPlayers[index] = !_computerPlayers[index];
+        _message = $"PLAYER {index + 1} {(_computerPlayers[index] ? "COMPUTER" : "HUMAN")}";
+    }
+
+    private static Rectangle SetupPlayerSlot(int index) =>
+        new(368 + index % 2 * 96, 120 + index / 2 * 64, 94, 44);
+
     private void StartMatch()
     {
         if (_definitions is null) return;
         var players = Enumerable.Range(0, _selectedPlayerCount)
             .Select(index => new MatchPlayerSetup(
                 new PlayerId(index), $"PLAYER {index + 1}",
-                PlayerController.Human))
+                _computerPlayers[index] ? PlayerController.Computer : PlayerController.Human))
             .ToArray();
         var setup = new MatchSetup(_selectedScenario, _selectedDuration, Environment.TickCount, players);
         _state = OriginalMatchFactory.Create(_definitions, setup);
@@ -568,7 +587,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             var x = 374 + column * 96;
             var y = 130 + row * 64;
             font.Draw(batch, $"P{index + 1}", new Vector2(x, y), PlayerColors[index], 1);
-            font.Draw(batch, "HUMAN", new Vector2(x, y + 12), Color.White, 1);
+            font.Draw(batch, _computerPlayers[index] ? "COMPUTER" : "HUMAN",
+                new Vector2(x, y + 12), Color.White, 1);
+            if (_computerPlayers[index]) DrawBorder(batch, pixel, SetupPlayerSlot(index), PlayerColors[index], 1);
         }
     }
 
@@ -1255,6 +1276,52 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         {
             _selectedGangIndex = 0;
             _screens.Show(ClientScreen.Handoff);
+        }
+    }
+
+    private void RunComputerTurns()
+    {
+        if (_state is null || _replay is null
+            || _screens.Current is ClientScreen.Title or ClientScreen.Setup or ClientScreen.Endgame) return;
+        var acted = false;
+        while (_state.Coordinator.ActivePlayer is { } playerId)
+        {
+            var player = _state.FindPlayer(playerId)!;
+            if (player.Setup.Controller != PlayerController.Computer) break;
+            if (_state.Coordinator.Phase == TurnPhase.Command)
+            {
+                foreach (var command in AiTurnPlanner.Plan(_state, playerId))
+                    _replay.Submit(command);
+                _replay.FinishCommand(playerId);
+            }
+            else if (_state.Coordinator.Phase == TurnPhase.Hire)
+            {
+                if (AiTurnPlanner.ChooseHire(_state, playerId) is { } hire)
+                    _replay.QueueHire(playerId, hire.GangDefinitionId, hire.SectorId);
+                _replay.FinishHire(playerId);
+            }
+            else
+            {
+                break;
+            }
+            acted = true;
+        }
+        if (!acted) return;
+        _selectedGangIndex = 0;
+        _message = "COMPUTER TURN COMPLETE";
+        if (_state.Outcome is not null)
+        {
+            _screens.Show(ClientScreen.Endgame);
+        }
+        else if (_state.Coordinator.ActivePlayer is { } nextPlayer
+                 && _state.FindPlayer(nextPlayer)!.Setup.Controller == PlayerController.Human)
+        {
+            _cursor = _state.FindPlayer(nextPlayer)!.Gangs.FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
+            _screens.Show(ClientScreen.Handoff);
+        }
+        else
+        {
+            _screens.Show(ClientScreen.City);
         }
     }
 

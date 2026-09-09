@@ -46,8 +46,9 @@ The port loads the original 16-bit artwork at native 640x460 resolution with
 integer-friendly point scaling, including ownership-composited `PX1000x` city
 layers. It parses all 22 sites, 90 gangs, and 64 items and provides title,
 new-game setup, and deterministic 8x8 hot-seat city screens.
-Setup supports scenario, duration, and one-to-six local players using keyboard
-or mouse. In the city, use arrows/WASD or click to select, Enter or a second
+Setup supports scenario, duration, and one-to-six human/computer players using
+keyboard or mouse; click a player slot or press 1-6 to toggle its controller.
+The default two-player setup is Human vs Computer. In the city, use arrows/WASD or click to select, Enter or a second
 click to act, G to cycle gangs, C to open the legal-command picker, H to open
 the three-offer hire panel (including snubbing), I for sector details, F for the
 next-upkeep financial projection, R for scenario ranking, T for research and
