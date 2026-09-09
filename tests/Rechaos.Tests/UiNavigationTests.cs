@@ -51,8 +51,8 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(new Rectangle(438, 436, 33, 24), HireDockLayout.PriceCell(0));
         Assert.Equal(new Rectangle(471, 436, 33, 24), HireDockLayout.Reject(0));
-        Assert.Equal(new Point(449, 438), HireDockLayout.Price(0));
-        Assert.Equal(new Point(581, 438), HireDockLayout.Price(2));
+        Assert.Equal(new Point(449, 444), HireDockLayout.Price(0));
+        Assert.Equal(new Point(581, 444), HireDockLayout.Price(2));
         Assert.Equal("06", HireDockLayout.PriceText(6));
         Assert.Equal("12", HireDockLayout.PriceText(12));
         Assert.Equal("123", HireDockLayout.PriceText(123));
@@ -217,7 +217,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(254, 87, 30, 15), SectorGangCardLayout.OneOffAction(0));
         Assert.Equal(new Rectangle(287, 87, 30, 15), SectorGangCardLayout.RepeatingAction(0));
         Assert.Equal(new Rectangle(254, 103, 64, 64), SectorGangCardLayout.Portrait(0));
-        Assert.Equal(new Rectangle(296, 168, 21, 22), SectorGangCardLayout.ItemSlot(0, 2));
+        Assert.Equal(new Rectangle(296, 168, 21, 21), SectorGangCardLayout.ItemSlot(0, 2));
         Assert.Throws<ArgumentOutOfRangeException>(() => SectorGangCardLayout.Frame(2));
     }
 

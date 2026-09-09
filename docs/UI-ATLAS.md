@@ -96,7 +96,7 @@ validated against the executable.
   a reserved recruit retains its cell under the color-keyed original `HIRED`
   stamp from `PX00129`. Available candidates show their two-digit initial hire
   price with a minimum width of two digits (`06`, but `11` remains `11`),
-  horizontally centered near the top of the left 33-by-24 footer half at y 436;
+  centered in the left 33-by-24 footer half at y 436;
   the reject control
   occupies the right half. This interaction and placement were confirmed in the
   user-supplied original-game capture and footage at 03:57.

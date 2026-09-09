@@ -295,7 +295,7 @@ public static class SectorGangCardLayout
     public static Rectangle ItemSlot(int slot, int itemSlot)
     {
         if (itemSlot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(itemSlot));
-        return At(slot, 3 + itemSlot * 21, 88, 21, 22);
+        return At(slot, 3 + itemSlot * 21, 88, 21, 21);
     }
 
     private static Rectangle At(int slot, int x, int y, int width, int height)
@@ -696,7 +696,10 @@ public static class HireDockLayout
     {
         var cell = PriceCell(slot);
         const int twoGlyphWidth = 11; // 5px glyph + 1px advance + 5px glyph.
-        return new Point(cell.X + (cell.Width - twoGlyphWidth) / 2, cell.Y + 2);
+        const int glyphHeight = 7;
+        return new Point(
+            cell.X + (cell.Width - twoGlyphWidth) / 2,
+            cell.Y + (cell.Height - glyphHeight) / 2);
     }
 
     public static string PriceText(int amount)
