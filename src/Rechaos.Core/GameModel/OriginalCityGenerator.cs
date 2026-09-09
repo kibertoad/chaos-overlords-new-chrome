@@ -104,7 +104,7 @@ public static class OriginalCityGenerator
             sectors[sectorId] = new MatchSectorState(
                 sector.Id, sites, tolerance: sector.Tolerance, chaos: sector.Chaos,
                 crackdownActive: sector.CrackdownActive, isImportant: sector.IsImportant,
-                income: sector.Income);
+                income: sector.Income, crackdownTurnsRemaining: sector.CrackdownTurnsRemaining);
         }
         return assigned;
     }

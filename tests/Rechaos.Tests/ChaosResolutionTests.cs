@@ -17,6 +17,37 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
+    public void CrackdownDurationIsThreeToFiveTurnsAndCountsDownAtUpkeep()
+    {
+        var match = CreateMatch(tolerance: 0);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+
+        match.FinishExecutionPhase();
+
+        var duration = match.Sectors[0].CrackdownTurnsRemaining;
+        Assert.InRange(duration, ManualRules.MinimumCrackdownTurns, ManualRules.MaximumCrackdownTurns);
+        CrackdownResolver.ResolveUpkeep(match);
+        Assert.Equal(duration - 1, match.Sectors[0].CrackdownTurnsRemaining);
+    }
+
+    [Fact]
+    public void AnotherCrackdownExtendsExistingPolicePresence()
+    {
+        var match = CreateMatch(tolerance: 0, crackdownActive: true);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+        var remainingBeforeChaos = match.Sectors[0].CrackdownTurnsRemaining;
+
+        match.FinishExecutionPhase();
+
+        Assert.InRange(
+            match.Sectors[0].CrackdownTurnsRemaining - remainingBeforeChaos,
+            ManualRules.MinimumCrackdownTurns,
+            ManualRules.MaximumCrackdownTurns);
+        Assert.Contains(match.NotificationsFor(new PlayerId(0)),
+            notification => notification.Kind == GameNotificationKind.Crackdown);
+    }
+
+    [Fact]
     public void FriendlyGangsPoolOneChaosRollAndControlledSectorPaysEverySuccess()
     {
         var match = CreateMatch(twoPlayerZeroGangs: true, owner: new PlayerId(0), tolerance: 40);

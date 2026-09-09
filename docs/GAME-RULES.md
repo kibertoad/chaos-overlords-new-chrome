@@ -409,6 +409,8 @@ claim about original-game behavior.
   drops five percentage points per additional Stealth point, reaching zero at
   Stealth 25; the manual separately lists police Detect as 12. No gang may
   attempt to control the sector until the police leave.
+- Observed statement: police remain for three to five turns. Triggering another
+  Crackdown while they are present makes them stay longer.
 - Interpretation: at the Combat phase boundary, snapshot every active gang in
   a crackdown sector in sector/gang-ID order. Roll one percentile detection
   check per gang. On detection, roll `max(0, 20 - effective Defense)` dice and
@@ -418,16 +420,21 @@ claim about original-game behavior.
   are applied. Control is rejected at submission while a crackdown is already
   active and fails without changing ownership if police arrive before the
   later Control subphase.
+- Interpretation: each trigger draws an inclusive three-to-five-turn duration
+  from the deterministic simulation RNG and adds it to any remaining police
+  presence. Upkeep consumes one remaining turn; the sector detail panel exposes
+  the authoritative count.
 - Current exclusions: original timing within Combat, whether 0%/100% checks
   consume RNG, weapon/damage-cap treatment, use of the separately documented
-  Detect 12 value, crackdown duration/reset, ownership/site aftermath, and
+  Detect 12 value, exact duration RNG call/order, ownership/site aftermath, and
   exact binary RNG/event order.
 - Confidence: High for the detection percentage table and Combat 20; Medium
   for defense subtraction; Low for phase ordering and the listed exclusions.
 - Implementation: `CommandResolver.ResolveCombatPhase`, exposed through
   `MatchState.LastPoliceAttackResolutions` and `PoliceAttackResolved` events;
   `CommandValidator` and `CommandResolver.ResolveControl` enforce the Control
-  lockout at both relevant boundaries.
+  lockout at both relevant boundaries; `CrackdownResolver` owns duration and
+  extension.
 - Tests: `PoliceCombatResolutionTests` covers stable sector/gang ordering,
   effective Stealth/Defense, undetectability at Stealth 25, deterministic RNG
   consumption/hashes, notifications, casualties, and equipment loss.

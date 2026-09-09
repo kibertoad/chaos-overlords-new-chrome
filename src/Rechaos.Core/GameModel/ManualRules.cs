@@ -17,6 +17,8 @@ public static class ManualRules
     public const int MaximumTolerance = 40;
     public const int PoliceCombat = 20;
     public const int PoliceDetect = 12;
+    public const int MinimumCrackdownTurns = 3;
+    public const int MaximumCrackdownTurns = 5;
     public const int HealBaseDice = 4;
     public const int ControlledSectorTax = 1;
     public const int MinimumSectorIncome = 3;

@@ -34,6 +34,20 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void RoundTripPreservesCrackdownDuration()
+    {
+        var match = CreateMatch();
+        match.Sectors[0].CrackdownActive = true;
+        match.Sectors[0].CrackdownTurnsRemaining = 5;
+
+        var restored = RoundTrip(match);
+
+        Assert.True(restored.Sectors[0].CrackdownActive);
+        Assert.Equal(5, restored.Sectors[0].CrackdownTurnsRemaining);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void RestoredMatchContinuesWithIdenticalResolutionAndRandomStream()
     {
         var original = CreateMatch();

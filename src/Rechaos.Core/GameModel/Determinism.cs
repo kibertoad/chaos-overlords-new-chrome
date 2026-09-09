@@ -64,14 +64,22 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 5;
+    private const int FormatVersion = 6;
 
-    internal static string ComputeLegacySha256(MatchState state) => ComputeSha256(state, 4, includeSectorIncome: false);
+    internal static string ComputeLegacySha256(MatchState state) =>
+        ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false);
+
+    internal static string ComputeVersionTwoSha256(MatchState state) =>
+        ComputeSha256(state, 5, includeSectorIncome: true, includeCrackdownDuration: false);
 
     public static string ComputeSha256(MatchState state)
-        => ComputeSha256(state, FormatVersion, includeSectorIncome: true);
+        => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true);
 
-    private static string ComputeSha256(MatchState state, int formatVersion, bool includeSectorIncome)
+    private static string ComputeSha256(
+        MatchState state,
+        int formatVersion,
+        bool includeSectorIncome,
+        bool includeCrackdownDuration)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -126,7 +134,8 @@ public static class MatchStateHasher
             writer.Write(state.Players.Count);
             foreach (var player in state.Players.OrderBy(item => item.Id.Value)) WritePlayer(writer, player);
             writer.Write(state.Sectors.Count);
-            foreach (var sector in state.Sectors.OrderBy(item => item.Id)) WriteSector(writer, sector, includeSectorIncome);
+            foreach (var sector in state.Sectors.OrderBy(item => item.Id))
+                WriteSector(writer, sector, includeSectorIncome, includeCrackdownDuration);
 
             var commands = state.Commands.ExecutionPlan().OrderBy(item => item.Sequence).ToArray();
             writer.Write(state.Commands.NextSequence);
@@ -195,7 +204,11 @@ public static class MatchStateHasher
         writer.Write(player.Statistics.TimesHidden);
     }
 
-    private static void WriteSector(BinaryWriter writer, MatchSectorState sector, bool includeIncome)
+    private static void WriteSector(
+        BinaryWriter writer,
+        MatchSectorState sector,
+        bool includeIncome,
+        bool includeCrackdownDuration)
     {
         writer.Write(sector.Id); WriteNullableInt(writer, sector.Owner?.Value); writer.Write(sector.Tolerance); writer.Write(sector.Chaos);
         writer.Write(sector.CrackdownActive); writer.Write(sector.IsImportant); writer.Write(sector.Sites.Count);
@@ -204,6 +217,7 @@ public static class MatchStateHasher
             writer.Write(site.Slot); writer.Write(site.DefinitionId); writer.Write(site.Resistance); WriteNullableInt(writer, site.InfluencedBy?.Value);
         }
         if (includeIncome) writer.Write(sector.Income);
+        if (includeCrackdownDuration) writer.Write(sector.CrackdownTurnsRemaining);
     }
 
     private static void WriteCommand(BinaryWriter writer, GameCommand command)

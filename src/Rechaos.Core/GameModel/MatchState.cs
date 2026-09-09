@@ -191,7 +191,8 @@ public sealed class MatchSectorState
         int chaos = 0,
         bool crackdownActive = false,
         bool isImportant = false,
-        int income = ManualRules.MinimumSectorIncome)
+        int income = ManualRules.MinimumSectorIncome,
+        int crackdownTurnsRemaining = 0)
     {
         if (id is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(id));
@@ -202,12 +203,17 @@ public sealed class MatchSectorState
             throw new ArgumentException("Site slots must be exactly 0, 1, and 2.", nameof(sites));
         if (chaos < 0) throw new ArgumentOutOfRangeException(nameof(chaos));
         if (income < 0) throw new ArgumentOutOfRangeException(nameof(income));
+        if (crackdownTurnsRemaining < 0) throw new ArgumentOutOfRangeException(nameof(crackdownTurnsRemaining));
+        if (!crackdownActive && crackdownTurnsRemaining != 0)
+            throw new ArgumentException("Inactive police cannot have turns remaining.", nameof(crackdownTurnsRemaining));
         Id = id;
         Sites = sites.OrderBy(site => site.Slot).ToArray();
         Owner = owner;
         Tolerance = tolerance;
         Chaos = chaos;
-        CrackdownActive = crackdownActive;
+        CrackdownTurnsRemaining = crackdownActive
+            ? Math.Max(ManualRules.MinimumCrackdownTurns, crackdownTurnsRemaining)
+            : 0;
         IsImportant = isImportant;
         Income = income;
     }
@@ -217,7 +223,14 @@ public sealed class MatchSectorState
     public PlayerId? Owner { get; internal set; }
     public int Tolerance { get; internal set; }
     public int Chaos { get; internal set; }
-    public bool CrackdownActive { get; internal set; }
+    public bool CrackdownActive
+    {
+        get => CrackdownTurnsRemaining > 0;
+        internal set => CrackdownTurnsRemaining = value
+            ? Math.Max(ManualRules.MinimumCrackdownTurns, CrackdownTurnsRemaining)
+            : 0;
+    }
+    public int CrackdownTurnsRemaining { get; internal set; }
     public bool IsImportant { get; }
     public int Income { get; }
 }
@@ -458,8 +471,7 @@ public sealed class MatchState
             gang.Hidden = false;
             gang.HiredThisTurn = false;
         }
-        foreach (var sector in Sectors)
-            sector.Chaos = 0;
+        CrackdownResolver.ResolveUpkeep(this);
         ToleranceResolver.ResolveUpkeep(this);
         LastUpkeepResolutions = EconomyResolver.ResolveUpkeep(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());

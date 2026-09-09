@@ -873,7 +873,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         var owner = sector.Owner is { } ownerId ? state.FindPlayer(ownerId)!.Setup.Name : "NEUTRAL";
         font.Draw(batch, $"OWNER {owner}  INCOME {sector.Income}  TOLERANCE {sector.Tolerance}",
             new Vector2(18, 86), Color.White, 1);
-        font.Draw(batch, $"CHAOS {sector.Chaos}  CRACKDOWN {(sector.CrackdownActive ? "YES" : "NO")}",
+        font.Draw(batch, $"CHAOS {sector.Chaos}  CRACKDOWN {(sector.CrackdownActive ? $"{sector.CrackdownTurnsRemaining} TURNS" : "NO")}",
             new Vector2(18, 102), Color.White, 1);
         foreach (var site in sector.Sites)
         {

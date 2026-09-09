@@ -484,7 +484,7 @@ public static class CommandResolver
             .GroupBy(group => group.Sector.Id)
             .ToDictionary(group => group.Key, group => group.Sum(value => value.Successes));
         var sectorBefore = sectorSuccesses.Keys.ToDictionary(id => id, id => state.Sectors[id].Chaos);
-        var newlyTriggered = new HashSet<int>();
+        var triggered = new HashSet<int>();
         foreach (var (sectorId, successes) in sectorSuccesses.OrderBy(value => value.Key))
         {
             var sector = state.Sectors[sectorId];
@@ -492,9 +492,9 @@ public static class CommandResolver
         }
         foreach (var sector in state.Sectors.OrderBy(value => value.Id))
         {
-            if (sector.CrackdownActive || !ManualRules.TriggersCrackdown(sector.Chaos, sector.Tolerance)) continue;
-            sector.CrackdownActive = true;
-            newlyTriggered.Add(sector.Id);
+            if (!ManualRules.TriggersCrackdown(sector.Chaos, sector.Tolerance)) continue;
+            CrackdownResolver.Trigger(state, sector);
+            triggered.Add(sector.Id);
         }
 
         var results = new List<CommandResolutionResult>(commands.Count);
@@ -522,7 +522,7 @@ public static class CommandResolver
             }
         }
 
-        foreach (var sectorId in newlyTriggered.Order())
+        foreach (var sectorId in triggered.Order())
         {
             foreach (var player in state.Players.Where(player => player.Status == PlayerStatus.Active))
                 state.QueueNotification(
