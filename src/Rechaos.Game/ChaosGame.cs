@@ -45,6 +45,10 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle HireSnub = new(218, 414, 96, 28);
     private static readonly Rectangle HireBack = new(322, 414, 96, 28);
     private static readonly Rectangle ManagementBack = new(322, 414, 96, 28);
+    private static readonly Rectangle ItemsResearch = new(114, 414, 96, 28);
+    private static readonly Rectangle ItemsEquip = new(218, 414, 96, 28);
+    private static readonly Rectangle ItemsSell = new(322, 414, 96, 28);
+    private static readonly Rectangle ItemsBack = new(426, 414, 96, 28);
     private static readonly Rectangle EndgameDone = new(320, 404, 104, 54);
     private static readonly Rectangle HandoffReady = new(266, 246, 108, 66);
     private readonly GraphicsDeviceManager _graphics;
@@ -76,6 +80,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private IReadOnlyList<GameCommand> _commandOptions = [];
     private int _commandCursor;
     private int _hireCursor;
+    private int _itemCursor;
     private string _message = "SELECT NEW GAME";
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
@@ -178,6 +183,16 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                     _screens.Show(ClientScreen.City);
                 break;
+            case ClientScreen.Items:
+                if (Pressed(keyboard, Keys.Up)) MoveItemCursor(-1);
+                if (Pressed(keyboard, Keys.Down)) MoveItemCursor(1);
+                if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.G)) CycleGang(-1);
+                if (Pressed(keyboard, Keys.Right)) CycleGang(1);
+                if (Pressed(keyboard, Keys.R)) QueueItemCommand(GangAction.Research);
+                if (Pressed(keyboard, Keys.E)) QueueItemCommand(GangAction.Equip);
+                if (Pressed(keyboard, Keys.S)) QueueItemCommand(GangAction.Sell);
+                if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
+                break;
         }
         if (mouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released
             && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint))
@@ -233,6 +248,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Ranking when _state is not null:
                 DrawRanking(_batch, _pixel, _font, _state);
                 break;
+            case ClientScreen.Items when _state is not null:
+                DrawItems(_batch, _pixel, _font, _state);
+                break;
         }
         _batch.End();
         base.Draw(gameTime);
@@ -268,6 +286,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.I)) _screens.Show(ClientScreen.Sector);
         if (Pressed(keyboard, Keys.F)) _screens.Show(ClientScreen.Finance);
         if (Pressed(keyboard, Keys.R)) _screens.Show(ClientScreen.Ranking);
+        if (Pressed(keyboard, Keys.T)) OpenItems();
         if (Pressed(keyboard, Keys.H)) OpenHire();
         if (Pressed(keyboard, Keys.Space)) AdvancePhase();
         if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
@@ -320,6 +339,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Ranking:
                 if (ManagementBack.Contains(point)) _screens.Show(ClientScreen.City);
                 break;
+            case ClientScreen.Items:
+                HandleItemsClick(point);
+                break;
         }
     }
 
@@ -364,6 +386,56 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _commandOptions = CommandOptionCatalog.LegalCommands(_state, playerId, gang.Id);
         _commandCursor = 0;
         _screens.Show(ClientScreen.Commands);
+    }
+
+    private void OpenItems()
+    {
+        if (_state is null) return;
+        var items = RealItems(_state);
+        _itemCursor = Math.Clamp(_itemCursor, 0, Math.Max(0, items.Length - 1));
+        _screens.Show(ClientScreen.Items);
+    }
+
+    private void MoveItemCursor(int delta)
+    {
+        if (_state is null) return;
+        var count = RealItems(_state).Length;
+        if (count > 0) _itemCursor = Mod(_itemCursor + delta, count);
+    }
+
+    private void HandleItemsClick(Point point)
+    {
+        if (_state is null) return;
+        if (point.X is >= 14 and < 330 && point.Y is >= 108 and < 396)
+        {
+            var items = RealItems(_state);
+            var first = Math.Max(0, _itemCursor - 8);
+            var index = first + (point.Y - 108) / 16;
+            if (index < items.Length) _itemCursor = index;
+        }
+        else if (ItemsResearch.Contains(point)) QueueItemCommand(GangAction.Research);
+        else if (ItemsEquip.Contains(point)) QueueItemCommand(GangAction.Equip);
+        else if (ItemsSell.Contains(point)) QueueItemCommand(GangAction.Sell);
+        else if (ItemsBack.Contains(point)) _screens.Show(ClientScreen.City);
+    }
+
+    private void QueueItemCommand(GangAction action)
+    {
+        if (_state is null || _replay is null) return;
+        var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var gang = SelectedGang(_state.FindPlayer(playerId)!);
+        var items = RealItems(_state);
+        if (gang is null || items.Length == 0)
+        {
+            _message = "NO ACTIVE GANG OR ITEM";
+            return;
+        }
+        var command = new GameCommand(playerId, gang.Id, action, CommandTarget.Item(items[_itemCursor].Id));
+        var result = _replay.Submit(command);
+        _message = result.Accepted
+            ? $"{action.ToString().ToUpperInvariant()} QUEUED"
+            : result.Validation.Message.ToUpperInvariant();
+        if (result.Accepted) _screens.Show(ClientScreen.City);
     }
 
     private void MoveCommandCursor(int delta)
@@ -806,6 +878,61 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
     }
 
+    private void DrawItems(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
+        if (_cityBackground is not null)
+            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        batch.Draw(pixel, new Rectangle(8, 48, 624, 402), new Color(0, 0, 0, 240));
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var player = state.FindPlayer(playerId)!;
+        var gang = SelectedGang(player);
+        var items = RealItems(state);
+        font.Draw(batch, "RESEARCH AND EQUIPMENT", new Vector2(18, 60), Color.Gold, 2);
+        font.Draw(batch, gang is null ? "NO ACTIVE GANG" :
+            $"{state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Name}  CASH ${player.Cash}",
+            new Vector2(18, 86), PlayerColors[playerId.Value], 1);
+
+        var first = Math.Max(0, _itemCursor - 8);
+        foreach (var entry in items.Skip(first).Take(18).Select((item, index) => (item, index)))
+        {
+            var itemIndex = first + entry.index;
+            var y = 108 + entry.index * 16;
+            if (itemIndex == _itemCursor)
+                batch.Draw(pixel, new Rectangle(14, y - 3, 316, 14), new Color(72, 54, 18));
+            var marker = player.ResearchedItems.Contains(entry.item.Id) || entry.item.ResearchDifficulty == 0
+                ? "+"
+                : player.ResearchProgress.ContainsKey(entry.item.Id) ? ">" : " ";
+            font.Draw(batch, $"{marker} {entry.item.Name}", new Vector2(18, y), Color.White, 1);
+        }
+
+        if (items.Length > 0)
+        {
+            var item = items[_itemCursor];
+            var remaining = player.RemainingResearch(state.Definitions, item.Id);
+            var researched = remaining == 0 ? "COMPLETE" : $"{remaining} REMAIN";
+            font.Draw(batch, item.Name, new Vector2(350, 112), Color.Gold, 1);
+            font.Draw(batch, $"{EquipmentRules.SlotFor(item).ToString().ToUpperInvariant()}  TECH {item.TechLevel}",
+                new Vector2(350, 136), Color.White, 1);
+            font.Draw(batch, $"COST ${item.Cost}", new Vector2(350, 152), Color.White, 1);
+            font.Draw(batch, $"RESEARCH {researched}", new Vector2(350, 168), Color.White, 1);
+            font.Draw(batch, "MODIFIERS", new Vector2(350, 202), new Color(180, 230, 170), 1);
+            var modifiers = ItemModifiers(item).ToArray();
+            for (var index = 0; index < modifiers.Length; index++)
+                font.Draw(batch, modifiers[index], new Vector2(350, 220 + index * 16), Color.White, 1);
+            if (gang is not null)
+            {
+                var equipped = EquipmentRules.EquippedItem(gang, EquipmentRules.SlotFor(item));
+                font.Draw(batch, equipped == item.Id ? "EQUIPPED" : "NOT EQUIPPED",
+                    new Vector2(350, 348), equipped == item.Id ? Color.Lime : Color.White, 1);
+            }
+        }
+        font.Draw(batch, "UP/DOWN ITEM  LEFT/RIGHT GANG", new Vector2(18, 395), Color.White, 1);
+        DrawButton(batch, pixel, font, ItemsResearch, "RESEARCH", false);
+        DrawButton(batch, pixel, font, ItemsEquip, "EQUIP", false);
+        DrawButton(batch, pixel, font, ItemsSell, "SELL", false);
+        DrawButton(batch, pixel, font, ItemsBack, "BACK", false);
+    }
+
     private void DrawManagementPanel(SpriteBatch batch, Texture2D pixel)
     {
         if (_cityBackground is not null)
@@ -814,6 +941,29 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     }
 
     private static string Signed(int value) => value >= 0 ? $"+${value}" : $"-${Math.Abs(value)}";
+
+    private static Rechaos.Core.Assets.ItemDefinition[] RealItems(MatchState state) =>
+        state.Definitions.Items.Where(item => item.Type != 99).OrderBy(item => item.Id).ToArray();
+
+    private static IEnumerable<string> ItemModifiers(Rechaos.Core.Assets.ItemDefinition item)
+    {
+        var stats = item.Stats;
+        (string Name, int Value)[] values =
+        [
+            ("COMBAT", stats.Combat), ("DEFENSE", stats.Defense), ("STEALTH", stats.Stealth),
+            ("DETECT", stats.Detect), ("CHAOS", stats.Chaos), ("CONTROL", stats.Control),
+            ("HEAL", stats.Heal), ("INFLUENCE", stats.Influence), ("RESEARCH", stats.Research),
+            ("STRENGTH", stats.Strength), ("BLADE", stats.Blade), ("RANGE", stats.Range),
+            ("FIGHTING", stats.Fighting), ("M ARTS", stats.MartialArts)
+        ];
+        var any = false;
+        foreach (var value in values.Where(value => value.Value != 0).Take(8))
+        {
+            any = true;
+            yield return $"{value.Name} {(value.Value > 0 ? "+" : "")}{value.Value}";
+        }
+        if (!any) yield return "NONE";
+    }
 
     private static string ObjectiveProgress(ScenarioId scenario, PlayerScoreState score) => scenario switch
     {

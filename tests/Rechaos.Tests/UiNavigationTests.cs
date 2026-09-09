@@ -48,6 +48,9 @@ public sealed class UiNavigationTests
         router.Show(ClientScreen.Ranking);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.City, router.Current);
+        router.Show(ClientScreen.Items);
+        Assert.True(router.Back());
+        Assert.Equal(ClientScreen.City, router.Current);
     }
 
     [Fact]
