@@ -117,4 +117,21 @@ public sealed class TurnCommandQueue
     }
 
     public void Clear() => _byGang.Clear();
+
+    internal static TurnCommandQueue Restore(
+        IReadOnlyList<QueuedCommand> commands,
+        long nextSequence)
+    {
+        ArgumentNullException.ThrowIfNull(commands);
+        if (nextSequence < 0) throw new ArgumentOutOfRangeException(nameof(nextSequence));
+        if (commands.Select(command => command.Command.Gang).Distinct().Count() != commands.Count)
+            throw new ArgumentException("A restored queue cannot contain multiple commands for one gang.", nameof(commands));
+        if (commands.Select(command => command.Sequence).Distinct().Count() != commands.Count
+            || commands.Any(command => command.Sequence < 0 || command.Sequence >= nextSequence))
+            throw new ArgumentException("Restored command sequences are invalid.", nameof(commands));
+
+        var queue = new TurnCommandQueue { _nextSequence = nextSequence };
+        foreach (var command in commands) queue._byGang.Add(command.Command.Gang, command);
+        return queue;
+    }
 }

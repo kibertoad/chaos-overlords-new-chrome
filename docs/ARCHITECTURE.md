@@ -57,6 +57,10 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   aggregation and deterministic six-sided dice rolls.
 - `GameModel/Equipment.cs`: item-type slot mapping, replacement/unequip
   mutations, and manual half-price sale calculation.
+- `Persistence/NativeSaveSerializer.cs`: bounded, versioned deterministic
+  snapshots with definition/state fingerprints and complete runtime restoration.
+- `Persistence/NativeSaveStore.cs`: atomic file promotion, previous-save backup,
+  and corruption recovery.
 
 Target subdivisions:
 
@@ -66,7 +70,8 @@ Target subdivisions:
 - `Resolution`: phase processors and exact formulas.
 - `Events`: ordered facts emitted by resolution.
 - `Scenarios`: setup, scoring, objectives, and victory.
-- `Persistence`: native snapshots and replay schema.
+- `Persistence`: native snapshots are implemented; replay schema and original
+  save compatibility remain separate workstreams.
 - `Determinism`: original-compatible PRNG and state hashing.
 - `MatchOutcome`: state projection and end-of-turn scenario completion.
 - `EndgameAwards`: deterministic award projection from player statistics.

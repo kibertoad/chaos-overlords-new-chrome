@@ -271,8 +271,24 @@ public sealed class MatchStatistics
     public int TimesHidden { get; internal set; }
 }
 
+internal sealed record MatchRuntimeRestore(
+    int Turn,
+    TurnPhase Phase,
+    ExecutionPhase? ExecutionPhase,
+    PlayerId? ActivePlayer,
+    uint RandomState,
+    long RandomConsumptionCount,
+    IReadOnlyList<QueuedCommand> Commands,
+    long NextCommandSequence,
+    IReadOnlyList<GameEvent> Events,
+    long NextEventSequence,
+    IReadOnlyDictionary<PlayerId, IReadOnlyList<GameNotification>> Notifications,
+    IReadOnlyDictionary<PlayerId, long> NextNotificationSequences,
+    IReadOnlyList<PhaseBoundaryHash> PhaseHashes,
+    MatchOutcome? Outcome);
+
 /// <summary>
-/// Headless compatibility state. It is initialized from explicit mechanical data;
+/// Authoritative headless state. It is initialized from explicit mechanical data;
 /// exact original city and player placement remain a separate M1 research task.
 /// </summary>
 public sealed class MatchState
@@ -288,6 +304,16 @@ public sealed class MatchState
         MatchSetup setup,
         IReadOnlyList<MatchPlayerState> players,
         IReadOnlyList<MatchSectorState> sectors)
+        : this(definitions, setup, players, sectors, null)
+    {
+    }
+
+    internal MatchState(
+        OriginalData definitions,
+        MatchSetup setup,
+        IReadOnlyList<MatchPlayerState> players,
+        IReadOnlyList<MatchSectorState> sectors,
+        MatchRuntimeRestore? restore)
     {
         Definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
         Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -309,10 +335,19 @@ public sealed class MatchState
 
         Players = players.ToArray();
         Sectors = sectors.ToArray();
-        Coordinator = new TurnCoordinator(players.Count);
-        Random = new DeterministicRandom(setup.InitialSeed);
+        Coordinator = restore is null
+            ? new TurnCoordinator(players.Count)
+            : new TurnCoordinator(players.Count, restore.Turn, restore.Phase,
+                restore.ExecutionPhase, restore.ActivePlayer);
+        Random = restore is null
+            ? new DeterministicRandom(setup.InitialSeed)
+            : new DeterministicRandom(restore.RandomState, restore.RandomConsumptionCount);
+        Commands = restore is null
+            ? new TurnCommandQueue()
+            : TurnCommandQueue.Restore(restore.Commands, restore.NextCommandSequence);
         _notifications = Players.ToDictionary(player => player.Id, _ => new NotificationQueue());
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
+        if (restore is not null) RestoreRuntime(restore);
     }
 
     public OriginalData Definitions { get; }
@@ -321,7 +356,7 @@ public sealed class MatchState
     public IReadOnlyList<MatchSectorState> Sectors { get; }
     public TurnCoordinator Coordinator { get; }
     public DeterministicRandom Random { get; }
-    public TurnCommandQueue Commands { get; } = new();
+    public TurnCommandQueue Commands { get; }
     public IReadOnlyList<GameEvent> Events => _events;
     public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashes;
     public IReadOnlyList<CommandResolutionResult> LastPhaseResolutions { get; private set; } = [];
@@ -330,6 +365,49 @@ public sealed class MatchState
     public IReadOnlyList<HireResolutionResult> LastHireResolutions { get; private set; } = [];
     public MatchOutcome? Outcome { get; private set; }
     internal long NextEventSequence => _nextEventSequence;
+
+    private void RestoreRuntime(MatchRuntimeRestore restore)
+    {
+        ArgumentNullException.ThrowIfNull(restore);
+        if (restore.NextEventSequence < 0
+            || restore.Events.Any(gameEvent => gameEvent.Sequence < 0 || gameEvent.Sequence >= restore.NextEventSequence)
+            || restore.Events.Select(gameEvent => gameEvent.Sequence).Distinct().Count() != restore.Events.Count
+            || !restore.Events.Select(gameEvent => gameEvent.Sequence).SequenceEqual(
+                restore.Events.Select(gameEvent => gameEvent.Sequence).Order()))
+            throw new ArgumentException("Restored event sequences are invalid.", nameof(restore));
+        foreach (var queued in restore.Commands)
+        {
+            var gang = FindGang(queued.Command.Gang);
+            if (gang is null || gang.Owner != queued.Command.Player)
+                throw new ArgumentException("A restored command does not belong to an existing gang.", nameof(restore));
+        }
+        if (!restore.Notifications.Keys.OrderBy(player => player.Value)
+                .SequenceEqual(Players.Select(player => player.Id))
+            || !restore.NextNotificationSequences.Keys.OrderBy(player => player.Value)
+                .SequenceEqual(Players.Select(player => player.Id)))
+            throw new ArgumentException("Restored notification players do not match the match setup.", nameof(restore));
+
+        _events.AddRange(restore.Events.OrderBy(gameEvent => gameEvent.Sequence));
+        _nextEventSequence = restore.NextEventSequence;
+        foreach (var gang in Players.SelectMany(player => player.Gangs))
+            gang.QueuedCommand = Commands.TryGet(gang.Id, out var queued) ? queued : null;
+        foreach (var player in Players)
+        {
+            var next = restore.NextNotificationSequences[player.Id];
+            var notifications = restore.Notifications[player.Id];
+            if (notifications.Count > MatchLimits.NotificationsPerPlayer
+                || next < 0
+                || notifications.Any(notification => notification.Sequence < 0 || notification.Sequence >= next)
+                || notifications.Select(notification => notification.Sequence).Distinct().Count() != notifications.Count
+                || !notifications.Select(notification => notification.Sequence).SequenceEqual(
+                    notifications.Select(notification => notification.Sequence).Order()))
+                throw new ArgumentException("Restored notification sequences are invalid.", nameof(restore));
+            foreach (var notification in notifications) _notifications[player.Id].Enqueue(notification);
+            _nextNotificationSequences[player.Id] = next;
+        }
+        _phaseHashes.AddRange(restore.PhaseHashes);
+        Outcome = restore.Outcome;
+    }
 
     public MatchPlayerState? FindPlayer(PlayerId id) => Players.SingleOrDefault(player => player.Id == id);
     public MatchGangState? FindGang(GangId id) => Players.SelectMany(player => player.Gangs).SingleOrDefault(gang => gang.Id == id);

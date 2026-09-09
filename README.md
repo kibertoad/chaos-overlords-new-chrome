@@ -73,6 +73,8 @@ Current boundaries and validation procedures are documented in
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md),
 [`docs/VALIDATION.md`](docs/VALIDATION.md), and
 [`docs/PARITY-MATRIX.md`](docs/PARITY-MATRIX.md).
+The recreation-native versioned snapshot schema is documented in
+[`docs/NATIVE-SAVE-FORMAT.md`](docs/NATIVE-SAVE-FORMAT.md).
 Clean-room findings from the fingerprinted original executable are recorded in
 [`docs/ORIGINAL-INTERNALS.md`](docs/ORIGINAL-INTERNALS.md).
 The reproducible temporary-project workflow for the locally installed Ghidra

@@ -1,0 +1,397 @@
+using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Rechaos.Core.Assets;
+using Rechaos.Core.GameModel;
+
+namespace Rechaos.Core.Persistence;
+
+/// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
+public static class NativeSaveSerializer
+{
+    public const int CurrentFormatVersion = 1;
+    public const int MaximumSaveBytes = 16 * 1024 * 1024;
+
+    private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
+
+    public static void Save(Stream destination, MatchState state)
+    {
+        ArgumentNullException.ThrowIfNull(destination);
+        ArgumentNullException.ThrowIfNull(state);
+        if (!destination.CanWrite) throw new ArgumentException("Destination stream is not writable.", nameof(destination));
+        JsonSerializer.Serialize(destination, Capture(state), JsonOptions);
+    }
+
+    public static MatchState Load(Stream source, OriginalData definitions)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(definitions);
+        if (!source.CanRead) throw new ArgumentException("Source stream is not readable.", nameof(source));
+        using var bounded = ReadBounded(source);
+        NativeSaveDocument document;
+        try
+        {
+            document = JsonSerializer.Deserialize<NativeSaveDocument>(bounded, JsonOptions)
+                ?? throw new InvalidDataException("Native save is empty.");
+        }
+        catch (JsonException exception)
+        {
+            throw new InvalidDataException("Native save JSON is invalid.", exception);
+        }
+        try
+        {
+            return RestoreDocument(document, definitions);
+        }
+        catch (InvalidDataException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is ArgumentException
+            or InvalidOperationException or KeyNotFoundException or OverflowException)
+        {
+            throw new InvalidDataException("Native save state is invalid.", exception);
+        }
+    }
+
+    private static MatchState RestoreDocument(NativeSaveDocument document, OriginalData definitions)
+    {
+        if (document.FormatVersion != CurrentFormatVersion)
+            throw new InvalidDataException($"Unsupported native save format {document.FormatVersion}.");
+        if (!CryptographicOperations.FixedTimeEquals(
+                DecodeSha256(document.DefinitionsSha256, "definition fingerprint"),
+                DecodeSha256(DefinitionFingerprint(definitions), "current definition fingerprint")))
+            throw new InvalidDataException("Native save gameplay definitions do not match this installation.");
+
+        var setup = new MatchSetup(
+            document.Setup.Scenario,
+            document.Setup.Duration,
+            document.Setup.InitialSeed,
+            document.Setup.Players.Select(player => new MatchPlayerSetup(
+                new PlayerId(player.Id), player.Name, player.Controller)).ToArray());
+        var players = document.Players.Select(player => RestorePlayer(setup, player)).ToArray();
+        var sectors = document.Sectors.Select(RestoreSector).ToArray();
+        var notifications = document.Runtime.Notifications.ToDictionary(
+            entry => new PlayerId(entry.Player),
+            entry => (IReadOnlyList<GameNotification>)entry.Items);
+        var notificationSequences = document.Runtime.Notifications.ToDictionary(
+            entry => new PlayerId(entry.Player), entry => entry.NextSequence);
+        var runtime = new MatchRuntimeRestore(
+            document.Runtime.Turn,
+            document.Runtime.Phase,
+            document.Runtime.ExecutionPhase,
+            document.Runtime.ActivePlayer is { } active ? new PlayerId(active) : null,
+            document.Runtime.RandomState,
+            document.Runtime.RandomConsumptionCount,
+            document.Runtime.Commands,
+            document.Runtime.NextCommandSequence,
+            document.Runtime.Events,
+            document.Runtime.NextEventSequence,
+            notifications,
+            notificationSequences,
+            document.Runtime.PhaseHashes,
+            document.Runtime.Outcome);
+        var state = new MatchState(definitions, setup, players, sectors, runtime);
+        if (!CryptographicOperations.FixedTimeEquals(
+                DecodeSha256(document.StateSha256, "state fingerprint"),
+                DecodeSha256(MatchStateHasher.ComputeSha256(state), "restored state fingerprint")))
+            throw new InvalidDataException("Native save state fingerprint does not match its contents.");
+        return state;
+    }
+
+    private static NativeSaveDocument Capture(MatchState state) => new(
+        CurrentFormatVersion,
+        DefinitionFingerprint(state.Definitions),
+        MatchStateHasher.ComputeSha256(state),
+        new MatchSetupDocument(
+            state.Setup.Scenario,
+            state.Setup.Duration,
+            state.Setup.InitialSeed,
+            state.Setup.Players.Select(player => new PlayerSetupDocument(
+                player.Id.Value, player.Name, player.Controller)).ToArray()),
+        state.Players.Select(CapturePlayer).ToArray(),
+        state.Sectors.Select(CaptureSector).ToArray(),
+        new RuntimeDocument(
+            state.Coordinator.Turn,
+            state.Coordinator.Phase,
+            state.Coordinator.ExecutionPhase,
+            state.Coordinator.ActivePlayer?.Value,
+            state.Random.State,
+            state.Random.ConsumptionCount,
+            state.Commands.ExecutionPlan().ToArray(),
+            state.Commands.NextSequence,
+            state.Events.ToArray(),
+            state.NextEventSequence,
+            state.Players.Select(player => new PlayerNotificationsDocument(
+                player.Id.Value,
+                state.NextNotificationSequence(player.Id),
+                state.NotificationsFor(player.Id).ToArray())).ToArray(),
+            state.PhaseHashes.ToArray(),
+            state.Outcome));
+
+    private static PlayerDocument CapturePlayer(MatchPlayerState player) => new(
+        player.Id.Value,
+        player.Cash,
+        player.Support,
+        player.BigManPoints,
+        player.Status,
+        player.Gangs.Select(gang => new GangDocument(
+            gang.Id.Value, gang.DefinitionId, gang.SectorId, gang.Force,
+            gang.Hidden, gang.HiredThisTurn,
+            gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId)).ToArray(),
+        player.HirePool.ToArray(),
+        player.PendingHires.ToArray(),
+        player.ResearchProgress.OrderBy(entry => entry.Key).ToDictionary(),
+        player.ResearchedItems.Order().ToArray(),
+        player.Inventory.OrderBy(entry => entry.Key).ToDictionary(),
+        new StatisticsDocument(
+            player.Statistics.CashEarned,
+            player.Statistics.CashSpent,
+            player.Statistics.DamageInflicted,
+            player.Statistics.Casualties,
+            player.Statistics.Overthrows,
+            player.Statistics.TimesHidden),
+        player.SnubbedHireOffer);
+
+    private static MatchPlayerState RestorePlayer(MatchSetup setup, PlayerDocument player)
+    {
+        if (player.Id < 0 || player.Id >= setup.Players.Count)
+            throw new InvalidDataException("Native save contains an invalid player identifier.");
+        var playerId = new PlayerId(player.Id);
+        var gangs = player.Gangs.Select(gang =>
+        {
+            var restored = new MatchGangState(
+                new GangId(gang.Id), playerId, gang.DefinitionId, gang.SectorId, gang.Force,
+                gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId)
+            {
+                Hidden = gang.Hidden,
+                HiredThisTurn = gang.HiredThisTurn
+            };
+            return restored;
+        }).ToArray();
+        var statistics = new MatchStatistics(
+            player.Statistics.CashEarned,
+            player.Statistics.CashSpent,
+            player.Statistics.DamageInflicted,
+            player.Statistics.Casualties,
+            player.Statistics.Overthrows,
+            player.Statistics.TimesHidden);
+        return new MatchPlayerState(
+            setup.Players[player.Id], player.Cash, gangs, player.HirePool,
+            player.PendingHires, player.ResearchProgress, player.ResearchedItems.ToHashSet(),
+            player.Inventory, player.Support, player.BigManPoints, player.Status,
+            statistics, player.SnubbedHireOffer);
+    }
+
+    private static SectorDocument CaptureSector(MatchSectorState sector) => new(
+        sector.Id,
+        sector.Owner?.Value,
+        sector.Tolerance,
+        sector.Chaos,
+        sector.CrackdownActive,
+        sector.IsImportant,
+        sector.Sites.Select(site => new SiteDocument(
+            site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy?.Value)).ToArray());
+
+    private static MatchSectorState RestoreSector(SectorDocument sector) => new(
+        sector.Id,
+        sector.Sites.Select(site => new MatchSiteState(
+            site.Slot,
+            site.DefinitionId,
+            site.Resistance,
+            site.InfluencedBy is { } influencedBy ? new PlayerId(influencedBy) : null)).ToArray(),
+        sector.Owner is { } owner ? new PlayerId(owner) : null,
+        sector.Tolerance,
+        sector.Chaos,
+        sector.CrackdownActive,
+        sector.IsImportant);
+
+    private static MemoryStream ReadBounded(Stream source)
+    {
+        if (source.CanSeek && source.Length - source.Position > MaximumSaveBytes)
+            throw new InvalidDataException("Native save exceeds the size limit.");
+        var memory = new MemoryStream();
+        var buffer = new byte[81920];
+        while (true)
+        {
+            var read = source.Read(buffer, 0, buffer.Length);
+            if (read == 0) break;
+            if (memory.Length + read > MaximumSaveBytes)
+                throw new InvalidDataException("Native save exceeds the size limit.");
+            memory.Write(buffer, 0, read);
+        }
+        memory.Position = 0;
+        return memory;
+    }
+
+    private static string DefinitionFingerprint(OriginalData definitions) =>
+        Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(definitions, JsonOptions)));
+
+    private static byte[] DecodeSha256(string value, string field)
+    {
+        try
+        {
+            var bytes = Convert.FromHexString(value);
+            if (bytes.Length != 32) throw new FormatException();
+            return bytes;
+        }
+        catch (FormatException exception)
+        {
+            throw new InvalidDataException($"Native save {field} is invalid.", exception);
+        }
+    }
+
+    private static JsonSerializerOptions CreateOptions()
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+            RespectRequiredConstructorParameters = true,
+            MaxDepth = 64
+        };
+        options.Converters.Add(new PlayerIdJsonConverter());
+        options.Converters.Add(new GangIdJsonConverter());
+        options.Converters.Add(new CommandTargetJsonConverter());
+        return options;
+    }
+}
+
+internal sealed record NativeSaveDocument(
+    int FormatVersion,
+    string DefinitionsSha256,
+    string StateSha256,
+    MatchSetupDocument Setup,
+    IReadOnlyList<PlayerDocument> Players,
+    IReadOnlyList<SectorDocument> Sectors,
+    RuntimeDocument Runtime);
+
+internal sealed record MatchSetupDocument(
+    ScenarioId Scenario,
+    GameDuration Duration,
+    int InitialSeed,
+    IReadOnlyList<PlayerSetupDocument> Players);
+
+internal sealed record PlayerSetupDocument(int Id, string Name, PlayerController Controller);
+
+internal sealed record PlayerDocument(
+    int Id,
+    int Cash,
+    int Support,
+    int BigManPoints,
+    PlayerStatus Status,
+    IReadOnlyList<GangDocument> Gangs,
+    IReadOnlyList<short> HirePool,
+    IReadOnlyList<PendingHireState> PendingHires,
+    IReadOnlyDictionary<short, int> ResearchProgress,
+    IReadOnlyList<short> ResearchedItems,
+    IReadOnlyDictionary<short, int> Inventory,
+    StatisticsDocument Statistics,
+    short? SnubbedHireOffer);
+
+internal sealed record GangDocument(
+    int Id,
+    short DefinitionId,
+    int SectorId,
+    int Force,
+    bool Hidden,
+    bool HiredThisTurn,
+    short? WeaponItemId,
+    short? ArmorItemId,
+    short? MiscellaneousItemId);
+
+internal sealed record StatisticsDocument(
+    long CashEarned,
+    long CashSpent,
+    int DamageInflicted,
+    int Casualties,
+    int Overthrows,
+    int TimesHidden);
+
+internal sealed record SectorDocument(
+    int Id,
+    int? Owner,
+    int Tolerance,
+    int Chaos,
+    bool CrackdownActive,
+    bool IsImportant,
+    IReadOnlyList<SiteDocument> Sites);
+
+internal sealed record SiteDocument(int Slot, short DefinitionId, int Resistance, int? InfluencedBy);
+
+internal sealed record RuntimeDocument(
+    int Turn,
+    TurnPhase Phase,
+    ExecutionPhase? ExecutionPhase,
+    int? ActivePlayer,
+    uint RandomState,
+    long RandomConsumptionCount,
+    IReadOnlyList<QueuedCommand> Commands,
+    long NextCommandSequence,
+    IReadOnlyList<GameEvent> Events,
+    long NextEventSequence,
+    IReadOnlyList<PlayerNotificationsDocument> Notifications,
+    IReadOnlyList<PhaseBoundaryHash> PhaseHashes,
+    MatchOutcome? Outcome);
+
+internal sealed record PlayerNotificationsDocument(
+    int Player,
+    long NextSequence,
+    IReadOnlyList<GameNotification> Items);
+
+internal sealed class PlayerIdJsonConverter : JsonConverter<PlayerId>
+{
+    public override PlayerId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        new(reader.GetInt32());
+
+    public override void Write(Utf8JsonWriter writer, PlayerId value, JsonSerializerOptions options) =>
+        writer.WriteNumberValue(value.Value);
+}
+
+internal sealed class GangIdJsonConverter : JsonConverter<GangId>
+{
+    public override GangId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        new(reader.GetInt32());
+
+    public override void Write(Utf8JsonWriter writer, GangId value, JsonSerializerOptions options) =>
+        writer.WriteNumberValue(value.Value);
+}
+
+internal sealed class CommandTargetJsonConverter : JsonConverter<CommandTarget>
+{
+    public override CommandTarget Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.StartObject) throw new JsonException("Command target must be an object.");
+        CommandTargetKind? kind = null;
+        int? id = null;
+        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+        {
+            if (reader.TokenType != JsonTokenType.PropertyName) throw new JsonException();
+            var property = reader.GetString();
+            reader.Read();
+            switch (property)
+            {
+                case "kind": kind = (CommandTargetKind)reader.GetByte(); break;
+                case "id": id = reader.GetInt32(); break;
+                default: throw new JsonException($"Unknown command-target property '{property}'.");
+            }
+        }
+        if (kind is null || id is null) throw new JsonException("Command target is incomplete.");
+        return kind.Value switch
+        {
+            CommandTargetKind.None when id == -1 => CommandTarget.None,
+            CommandTargetKind.Gang => CommandTarget.Gang(new GangId(id.Value)),
+            CommandTargetKind.Sector => CommandTarget.Sector(id.Value),
+            CommandTargetKind.Site => CommandTarget.Site(id.Value),
+            CommandTargetKind.Item => CommandTarget.Item(id.Value),
+            _ => throw new JsonException("Command target kind or identifier is invalid.")
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, CommandTarget value, JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+        writer.WriteNumber("kind", (byte)value.Kind);
+        writer.WriteNumber("id", value.Id);
+        writer.WriteEndObject();
+    }
+}

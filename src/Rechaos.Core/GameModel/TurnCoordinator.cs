@@ -24,6 +24,31 @@ public sealed class TurnCoordinator
         _playerCount = playerCount;
     }
 
+    internal TurnCoordinator(
+        int playerCount,
+        int turn,
+        TurnPhase phase,
+        ExecutionPhase? executionPhase,
+        PlayerId? activePlayer)
+        : this(playerCount)
+    {
+        if (turn < 1) throw new ArgumentOutOfRangeException(nameof(turn));
+        if (!Enum.IsDefined(phase)) throw new ArgumentOutOfRangeException(nameof(phase));
+        if (phase == TurnPhase.Execution != executionPhase.HasValue)
+            throw new ArgumentException("Execution subphase presence does not match the top-level phase.");
+        if (executionPhase is { } execution && !Enum.IsDefined(execution))
+            throw new ArgumentOutOfRangeException(nameof(executionPhase));
+        var expectsPlayer = phase is TurnPhase.Command or TurnPhase.Hire;
+        if (expectsPlayer != activePlayer.HasValue)
+            throw new ArgumentException("Active-player presence does not match the top-level phase.");
+        if (activePlayer is { } active && active.Value >= playerCount)
+            throw new ArgumentOutOfRangeException(nameof(activePlayer));
+        Turn = turn;
+        Phase = phase;
+        ExecutionPhase = executionPhase;
+        ActivePlayer = activePlayer;
+    }
+
     public int Turn { get; private set; } = 1;
     public TurnPhase Phase { get; private set; } = TurnPhase.Upkeep;
     public ExecutionPhase? ExecutionPhase { get; private set; }
