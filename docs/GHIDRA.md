@@ -128,6 +128,12 @@ text patterns and emits at most 240 lines with two lines of context. Use it to
 answer a narrow question inside a large function without retaining or
 committing the complete decompiler listing.
 
+`ReportStringReferences.java` accepts explicit case-insensitive string
+fragments, reports at most 100 matching defined strings, and reports at most
+100 references per match. Use it to navigate from a known UI label or error
+message to the small set of functions that consume it; never use an empty or
+generic fragment to inventory the executable's text.
+
 ## Evidence discipline
 
 - Record executable hash, Ghidra version, virtual address, call relationship,
