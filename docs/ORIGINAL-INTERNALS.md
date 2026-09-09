@@ -394,30 +394,77 @@ at Mentality 1 or higher; all other type values enter it only below Mentality 2.
 The successful path sets a pair flag and writes `-10` to a paired score field.
 The player-type and pair-field meanings remain unlabeled.
 
-The six family-handler calls form three paired gates. They select among record
-action bytes 3, 10, and 13, with additional queries using selectors 3, 4,
-`0x21`, and `0x35`. The exact tests include Mentality equal to zero, at least
-one, and exactly two. Value 3 follows the `>= 1` paths but not the `== 2` paths;
-there is no dedicated comparison for it in these blocks. Public command names
-must not yet be assigned to those action bytes solely because the recreation's
-enum currently uses the same numbers.
+The six family-handler calls form three paired gates. Four formerly anonymous
+state selectors are now bounded:
+
+- selector 3 returns the active player's cash. The turn resolver at
+  `0x00472775` compares this field with action and equipment costs, subtracts
+  those costs, and adds received income back into the same per-player word;
+- selector 4 returns the selected sector's signed Tolerance byte at sector
+  stride `0x24`. The right-panel presenter `0x004120ef` independently renders
+  this byte on the `TOLERANCE` row;
+- selector `0x21` returns the sector owner, or `-2` for a disabled sector; and
+- selector `0x35` tests whether that owner has player type 0 or 3. Setup and
+  initialization paths identify those types as local-human and legacy-remote
+  human respectively, so the selector is a human-owner predicate. This is a
+  planner classification only: original networking remains an explicit
+  non-goal and no transport or protocol behavior is being recreated.
+
+The raw planned-action bytes are also identified. The command atlas
+`PX00129.bmp` lists the fourteen commands in numeric order, while the turn
+resolver groups byte 10 by destination sector and accounts byte 3 using sector
+income. Together these independently map byte 3 to **Chaos**, byte 10 to
+**Move**, and byte 13 to **Snitch**.
+
+The bounded family-1 blocks now establish several observable decisions. One
+path keeps Snitch only when cash is greater than 50 and otherwise writes Move.
+Another path requires at least 50 cash before entering its crime choice, then
+writes Chaos when the target sector has Tolerance below 4 and Snitch otherwise;
+its fallback writes Move. For a human-owned target, Mentality 1 or higher can
+enter that crime choice. The paired non-human-owner path admits Mentality 0,
+while another pair has an exact-Mentality-2 override. Mentality 3 shares the
+`>= 1` branches but not that exact-value override.
+
+The remaining selectors in those gates are now structurally identified:
+
+- `0x3c` reads the gang's Force byte;
+- `0x3d` reads its queued-action byte;
+- `0x51` reads its effective Heal statistic; and
+- `0x2c` is a strict single-gang Control feasibility predicate. It rejects
+  disabled, unavailable, or already-owned sectors. For a neutral sector it
+  tests whether gang Force + Control exceeds sector Income + Support. For an
+  enemy sector it adds every defending gang's Force + Control to that defense
+  and performs the same strict comparison. The field at record offset `+23`
+  is independently used by the Control resolver at `0x00472775`; offset `+24`
+  returned by selector `0x51` is the following Heal statistic.
+
+These are verified branch facts, not yet a complete policy table: the target
+enumeration and earlier guards still determine which gang/sector pair reaches
+each gate. Selector `0x3e`, which drives the handler's switch, is the
+previous-turn action byte rather than a gang family. At the start of
+`0x00458fa0`, each gang's three-byte action/target tuple at record offsets
+`+7..+9` shifts to `+4..+6`, then the new tuple is cleared. Selector `0x3e`
+reads offset `+4`; selector `0x3d` reads the newly planned action at `+7`.
+The branches above are therefore command-continuity decisions, including the
+case entered after a prior Snitch command.
 
 **Interpretation:** `0x00487850` is the original match-global, zero-based AI
 Mentality setting, seeded from a persisted preference and then carried through
-setup staging/serialization. Family handler 1 and a player-pair scoring pass
-both change paths by mentality. The branch mechanics are now bounded, but their
-state-query meanings and public command effects are not yet established.
+setup staging/serialization. Family handler 1 uses it to redirect cash-qualified
+crime behavior between human and non-human owners and between Chaos, Snitch,
+and Move. A player-pair scoring pass also changes paths by mentality.
 
 **Confidence:** Verified for resource IDs, address, display expression, query
 selector, all six write classifications, all eight genuine consumer call sites,
+cash/Tolerance/owner/human-owner selector meanings, command-byte mappings,
 comparison constants, and resulting raw record writes; High for the global's
-identity and persistence/setup flow; Low for state-query and public command
-semantics.
+identity, persistence/setup flow, selector meanings, and the bounded decisions
+above; Low for the complete planner policy and its target enumeration.
 
-**Next validation:** label selectors 3, 4, `0x21`, and `0x35`, then correlate
-raw action bytes 3, 10, and 13 with controlled original queued-command
-observations. Use those labels to turn the enumerated branch table into
-observable command-selection fixtures before changing recreation policy.
+**Next validation:** identify the sector/gang target enumerators and earlier
+guards feeding each command-continuity gate. Then capture fixed-state
+command-selection fixtures for the cash 50/51, Force 8/9, and Tolerance 3/4
+boundaries before changing recreation policy.
 
 ## New-game initialization
 

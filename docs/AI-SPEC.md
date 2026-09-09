@@ -63,11 +63,15 @@ replay-verified two-computer harness through 20 turns or objective completion.
 
 ## Required parity work
 
-1. Label state-query selectors 3, 4, `0x21`, and `0x35`, and correlate raw
-   action bytes 3, 10, and 13 with controlled original commands. The mentality
-   preference/setup writes and every selector-`0x36` consumer are now classified
-   structurally in `ORIGINAL-INTERNALS.md`; their public command meanings are
-   still deliberately unresolved.
+1. Identify the target enumerators and earlier guards feeding the recovered
+   command-continuity gates. Selector `0x3e` is now identified as the
+   previous-turn action byte. Selectors 3 (player cash), 4 (sector
+   Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
+   `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
+   (Heal), plus action bytes 3 (Chaos), 10 (Move), and 13 (Snitch), are now
+   bounded in `ORIGINAL-INTERNALS.md`. Capture the resulting cash 50/51, Force
+   8/9, and Tolerance 3/4 boundaries as fixed-state reference fixtures before
+   replacing recreation policy.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those
    fixtures.
