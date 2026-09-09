@@ -60,12 +60,12 @@ foreach ($path in $trackedPaths) {
     }
 
     $absolutePath = Join-Path $root $path
-    if (-not (Test-Path -LiteralPath $absolutePath -PathType Leaf)) {
+    if (-not [IO.File]::Exists($absolutePath)) {
         $violations.Add("tracked path is missing from the worktree: $path")
         continue
     }
 
-    $length = (Get-Item -LiteralPath $absolutePath).Length
+    $length = [IO.FileInfo]::new($absolutePath).Length
     $approvedLargeFile = $policy.approvedLargeFiles -contains $path
     if ($length -gt $policy.maximumTrackedFileBytes -and -not $approvedLargeFile) {
         $violations.Add("unreviewed large file ($length bytes): $path")
