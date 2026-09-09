@@ -1,6 +1,6 @@
 # Recreation-native save format
 
-Status: implemented format version 2
+Status: implemented format version 5
 Last updated: 2026-09-09
 
 This format belongs to the recreation. It is deliberately separate from the
@@ -9,7 +9,7 @@ claim of binary compatibility with either of them.
 
 ## Container and limits
 
-- UTF-8 JSON with camel-case property names and `formatVersion: 2`.
+- UTF-8 JSON with camel-case property names and `formatVersion: 5`.
 - Maximum accepted size: 16 MiB.
 - Unknown properties, missing constructor fields, invalid identifiers, invalid
   enum/phase combinations, and inconsistent sequence counters are rejected.
@@ -23,16 +23,16 @@ same-directory temporary file, flushes it to disk, retains the previous primary
 as `<save>.bak`, and promotes the temporary file over the primary. Recovery
 loads the backup only when the primary is missing, unreadable, or invalid.
 
-## Version 2 document
+## Version 5 document
 
 The top-level members are:
 
 | Member | Contents |
 |---|---|
-| `formatVersion` | Schema discriminator; currently `2` |
+| `formatVersion` | Schema discriminator; currently `5` |
 | `definitionsSha256` | Gameplay-definition compatibility fingerprint |
 | `stateSha256` | Canonical authoritative-state fingerprint |
-| `setup` | Scenario, duration, initial seed, ordered player definitions |
+| `setup` | Scenario, duration, initial seed, global AI mentality, and ordered player definitions including portrait IDs |
 | `players` | Cash/support/objective state, gangs, hire state, research, inventory, statistics |
 | `sectors` | Ownership, explicit base income, tolerance, chaos/crackdown/importance, and three site instances |
 | `runtime` | Phase coordinator, RNG state/count, command queue/counter, event history/counter, notification queues/counters, phase hashes, and outcome |
@@ -47,16 +47,18 @@ snapshot.
 
 ## Compatibility policy
 
-Readers accept version 1 and migrate its formerly implicit sector income from
-the sum of each sector's three site cash values. The legacy version-4 canonical
-hash is verified before the migrated state is returned. Unknown versions remain
-rejected. Future incompatible changes must increment `formatVersion`, retain
-fixtures, and preserve deterministic continuation during migration.
+Readers accept versions 1 through 4. Older documents migrate formerly implicit
+sector income and later Crackdown state according to their schema; all v1-v4
+setups migrate to Criminal AI mentality and map each player to its matching
+default portrait. The appropriate legacy canonical hash is verified before the
+migrated state is returned. Unknown versions remain rejected. Future
+incompatible changes must increment `formatVersion`, retain fixtures, and
+preserve deterministic continuation during migration.
 
 Original-save import/export remains a separate research task. Native snapshots
 must never be presented as converted original saves.
 
-## Replay format version 2
+## Replay format version 4
 
 `MatchReplayRecorder` captures an initial native snapshot, then requires every
 authoritative mutation to pass through its API. It covers command submission and
@@ -76,7 +78,9 @@ save plus verified playback through F6 and F10.
 
 Replay version 3 embeds a native-save version 4 initial snapshot and records
 planning-time hire-offer preparation so opening the persistent Hire dock does
-not become an out-of-band RNG mutation. Version 2 replay documents remain
-accepted. The current canonical state hash is version 7. The initial snapshot
+not become an out-of-band RNG mutation. Replay version 4 embeds the version 5
+snapshot and includes global AI mentality and player portraits in the canonical
+state. Version 2 and 3 replay documents remain accepted through their legacy
+hash paths. The current canonical state hash is version 8. The initial snapshot
 remains required until original seed selection and the complete setup context
 are verified.

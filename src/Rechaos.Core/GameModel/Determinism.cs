@@ -64,30 +64,35 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 7;
+    private const int FormatVersion = 8;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
-            includeCrackdownHistory: false);
+            includeCrackdownHistory: false, includeDifficulty: false);
 
     internal static string ComputeVersionTwoSha256(MatchState state) =>
         ComputeSha256(state, 5, includeSectorIncome: true, includeCrackdownDuration: false,
-            includeCrackdownHistory: false);
+            includeCrackdownHistory: false, includeDifficulty: false);
 
     internal static string ComputeVersionThreeSha256(MatchState state) =>
         ComputeSha256(state, 6, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: false);
+            includeCrackdownHistory: false, includeDifficulty: false);
+
+    internal static string ComputeVersionFourSha256(MatchState state) =>
+        ComputeSha256(state, 7, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: false);
 
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true);
+            includeCrackdownHistory: true, includeDifficulty: true);
 
     private static string ComputeSha256(
         MatchState state,
         int formatVersion,
         bool includeSectorIncome,
         bool includeCrackdownDuration,
-        bool includeCrackdownHistory)
+        bool includeCrackdownHistory,
+        bool includeDifficulty)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -99,12 +104,14 @@ public static class MatchStateHasher
             writer.Write((byte)state.Setup.Scenario);
             writer.Write((byte)state.Setup.Duration);
             writer.Write(state.Setup.InitialSeed);
+            if (includeDifficulty) writer.Write((byte)state.Setup.AiMentality);
             writer.Write(state.Setup.Players.Count);
             foreach (var player in state.Setup.Players)
             {
                 writer.Write(player.Id.Value);
                 WriteString(writer, player.Name);
                 writer.Write((byte)player.Controller);
+                if (includeDifficulty) writer.Write(player.PortraitId);
             }
 
             writer.Write(state.Coordinator.Turn);

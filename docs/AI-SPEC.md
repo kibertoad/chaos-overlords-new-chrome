@@ -35,6 +35,18 @@ sector acquisition for Power/Big 40/Armageddon, important sectors for Siege,
 central sectors for Big Man, Support for Acceptance, and income for
 Greed/Dominance. Terminate is deliberately last-resort.
 
+Difficulty is one global match setting, matching the original setup panel's
+**AI Mentality** choice rather than a property selected per opponent. Goon,
+Criminal, and Crime Lord progressively increase attack preference. Homicidal
+Maniac adds the largest attack bias and particularly favors human-controlled
+targets. These weights are provisional recreation policy: the manual and
+contemporary FAQ support the behavioral direction, but not the numeric values.
+
+Every mentality uses the same authoritative information, validation, economy,
+combat formulas, and RNG as a human player. The AI receives no extra cash,
+statistics, rolls, visibility, or other difficulty bonus. Setup hover text makes
+that fair-play invariant explicit.
+
 Hiring ranks valid affordable offers by Force, Tech, Upkeep, and initial cost.
 It currently chooses at most one offer during its planning turn; placement is
 deferred to the internal Hire phase.
@@ -48,8 +60,9 @@ replay-verified two-computer harness through 20 turns or objective completion.
 
 ## Required parity work
 
-1. Recover original difficulty levels, bonuses, observable-information rules, and
-   command-selection entry points around the dispatcher noted in
+1. Statically analyze the original difficulty branches, observable-information
+   rules, and command-selection entry points around `0x00432da0` and its known
+   callers (`0x00401000`, `0x0040abc0`, `0x00428ef0`, `0x00436c70`) noted in
    `ORIGINAL-INTERNALS.md`.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those
@@ -57,3 +70,9 @@ replay-verified two-computer harness through 20 turns or objective completion.
 4. Extend the current ten-scenario two-player coverage to larger player counts,
    difficulty variants, objective completion stress cases, and statistical
    reference traces.
+
+The original manual and contemporary developer FAQ corroborate four global
+mentalities, increasing aggression, a player-denial emphasis at Homicidal
+Maniac, and fair play without AI bonuses. They do not corroborate the current
+score constants; exact parity remains blocked on the static-analysis and
+reference-decision work above.

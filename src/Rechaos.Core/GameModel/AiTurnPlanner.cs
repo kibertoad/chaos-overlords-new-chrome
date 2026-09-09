@@ -69,8 +69,7 @@ public static class AiTurnPlanner
         var objective = state.Setup.Scenario;
         return command.Action switch
         {
-            GangAction.Attack => 700 + CombatObjectiveBonus(objective)
-                - state.FindGang(new GangId(command.Target.Id))!.Force,
+            GangAction.Attack => AttackValue(state, player, command, objective),
             GangAction.Control => (state.Sectors[gang.SectorId].Owner == player.Id ? 250 : 850)
                 + ControlObjectiveBonus(objective, state.Sectors[gang.SectorId]),
             GangAction.Influence => 650 + InfluenceValue(state, command.Target.Id, objective),
@@ -91,6 +90,30 @@ public static class AiTurnPlanner
             _ => 0
         };
     }
+
+    private static int AttackValue(
+        MatchState state,
+        MatchPlayerState player,
+        GameCommand command,
+        ScenarioId objective)
+    {
+        var target = state.FindGang(new GangId(command.Target.Id))!;
+        var aggression = DifficultyAttackBias(state.Setup.AiMentality);
+        var denyHuman = state.Setup.AiMentality == AiDifficulty.HomicidalManiac
+            && state.FindPlayer(target.Owner)!.Setup.Controller == PlayerController.Human
+            ? 300
+            : 0;
+        return 700 + CombatObjectiveBonus(objective) + aggression + denyHuman - target.Force;
+    }
+
+    internal static int DifficultyAttackBias(AiDifficulty difficulty) => difficulty switch
+        {
+            AiDifficulty.Goon => -300,
+            AiDifficulty.Criminal => 0,
+            AiDifficulty.CrimeLord => 250,
+            AiDifficulty.HomicidalManiac => 900,
+            _ => throw new ArgumentOutOfRangeException(nameof(difficulty))
+        };
 
     private static int CombatObjectiveBonus(ScenarioId scenario) => scenario switch
     {

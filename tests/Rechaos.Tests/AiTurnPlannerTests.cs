@@ -73,6 +73,33 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void DifficultyChangesAggressionWithoutChangingRulesOrConsumingRandomness()
+    {
+        var goon = CreateMatch(difficulty: AiDifficulty.Goon);
+        var crimeLord = CreateMatch(difficulty: AiDifficulty.CrimeLord);
+        goon.FinishUpkeep();
+        crimeLord.FinishUpkeep();
+        var goonConsumption = goon.Random.ConsumptionCount;
+        var crimeLordConsumption = crimeLord.Random.ConsumptionCount;
+
+        var goonPlan = AiTurnPlanner.Plan(goon, new PlayerId(0));
+        var crimeLordPlan = AiTurnPlanner.Plan(crimeLord, new PlayerId(0));
+
+        Assert.True(AiTurnPlanner.DifficultyAttackBias(AiDifficulty.Goon)
+            < AiTurnPlanner.DifficultyAttackBias(AiDifficulty.Criminal));
+        Assert.True(AiTurnPlanner.DifficultyAttackBias(AiDifficulty.Criminal)
+            < AiTurnPlanner.DifficultyAttackBias(AiDifficulty.CrimeLord));
+        Assert.True(AiTurnPlanner.DifficultyAttackBias(AiDifficulty.CrimeLord)
+            < AiTurnPlanner.DifficultyAttackBias(AiDifficulty.HomicidalManiac));
+        Assert.All(goonPlan.Concat(crimeLordPlan), command =>
+            Assert.True(CommandValidator.Validate(
+                command.Player == new PlayerId(0) && goonPlan.Contains(command) ? goon : crimeLord,
+                command).IsValid));
+        Assert.Equal(goonConsumption, goon.Random.ConsumptionCount);
+        Assert.Equal(crimeLordConsumption, crimeLord.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void HirePlannerSelectsOnlyAnAffordableValidOfferWithoutMutation()
     {
         var match = CreateMatch();
@@ -177,7 +204,9 @@ public sealed class AiTurnPlannerTests
         return recorder;
     }
 
-    private static MatchState CreateMatch(PlayerController controller = PlayerController.Computer)
+    private static MatchState CreateMatch(
+        PlayerController controller = PlayerController.Computer,
+        AiDifficulty difficulty = AiDifficulty.Criminal)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -199,6 +228,6 @@ public sealed class AiTurnPlannerTests
             ], owner: id == 0 ? new PlayerId(0) : null, income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Power, GameDuration.SixMonths, 7, setups), players, sectors);
+            ScenarioId.Power, GameDuration.SixMonths, 7, setups, difficulty), players, sectors);
     }
 }

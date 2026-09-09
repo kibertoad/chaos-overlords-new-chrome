@@ -107,6 +107,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(492, 147, 20, 20), OriginalSpriteLayout.IncomingGangStatus);
         Assert.Equal(new Rectangle(164, 17, 70, 118), OriginalSpriteLayout.GangCardFrame);
         Assert.Equal(new Rectangle(120, 211, 30, 47), OriginalSpriteLayout.SectorBackArrow);
+        Assert.Equal(new Rectangle(480, 480, 32, 32), OriginalSpriteLayout.OverlordPortrait(15));
         Assert.Equal(new Rectangle(0, 0, 120, 64), OriginalSpriteLayout.SitePortrait(0));
         Assert.Equal(new Rectangle(0, 21 * 64, 120, 64), OriginalSpriteLayout.SitePortrait(21));
         Assert.Equal(new Rectangle(0, 0, 64, 64), OriginalSpriteLayout.GangPortrait(0));
@@ -139,6 +140,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(150, 76, 20, 20), SectorDetailLayout.Marker(27, 27));
         Assert.Null(SectorDetailLayout.Marker(27, 29));
         Assert.Equal(new Rectangle(85, 304, 120, 64), SectorDetailLayout.SitePortrait(2));
+        Assert.Equal(new Rectangle(87, 363, 116, 4), SectorDetailLayout.SiteControlBar(2));
         Assert.Equal(new Rectangle(4, 394, 28, 66), SectorDetailLayout.Back);
     }
 
@@ -152,6 +154,47 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(254, 46, 64, 64), SectorGangCardLayout.Portrait(0));
         Assert.Equal(new Rectangle(296, 112, 21, 22), SectorGangCardLayout.ItemSlot(0, 2));
         Assert.Throws<ArgumentOutOfRangeException>(() => SectorGangCardLayout.Frame(2));
+    }
+
+    [Fact]
+    public void CommandOverlayUsesOriginalActionFirstOrdering()
+    {
+        Assert.Equal(
+        [
+            GangAction.Attack, GangAction.Bribe, GangAction.Chaos, GangAction.Control,
+            GangAction.Equip, GangAction.Give, GangAction.Heal, GangAction.Hide,
+            GangAction.Influence, GangAction.Move, GangAction.Research, GangAction.Sell,
+            GangAction.Snitch, GangAction.None, GangAction.Terminate
+        ], CommandOverlayLayout.Actions);
+        Assert.True(CommandOverlayLayout.OpensTargetPicker(GangAction.Equip));
+        Assert.True(CommandOverlayLayout.OpensTargetPicker(GangAction.Move));
+        Assert.False(CommandOverlayLayout.OpensTargetPicker(GangAction.Chaos));
+        Assert.Equal(new Rectangle(256, 61, 158, 22), CommandOverlayLayout.ActionRow(0));
+    }
+
+    [Theory]
+    [InlineData(AiDifficulty.Goon, "GOON")]
+    [InlineData(AiDifficulty.Criminal, "CRIMINAL")]
+    [InlineData(AiDifficulty.CrimeLord, "CRIME LORD")]
+    [InlineData(AiDifficulty.HomicidalManiac, "HOMICIDAL")]
+    public void DifficultyTooltipNamesEveryOriginalLevelAndPromisesFairPlay(
+        AiDifficulty difficulty,
+        string label)
+    {
+        Assert.Equal(label, DifficultyPresentation.Label(difficulty));
+        Assert.Contains(DifficultyPresentation.Tooltip(difficulty),
+            line => line.Contains("NO BONUSES", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void PlayerPortraitLayoutUsesOriginalTopStripsAndSelectionSlots()
+    {
+        Assert.Equal(new Rectangle(361, 33, 32, 32), PlayerPortraitLayout.SetupTop(0));
+        Assert.Equal(new Rectangle(541, 33, 32, 32), PlayerPortraitLayout.SetupTop(5));
+        Assert.Equal(new Rectangle(8, 4, 32, 32), PlayerPortraitLayout.CityTop(0));
+        Assert.Equal(new Rectangle(368, 4, 32, 32), PlayerPortraitLayout.CityTop(5));
+        Assert.Equal(new Rectangle(482, 174, 64, 64), PlayerPortraitLayout.SetupLarge(3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.SetupTop(6));
     }
 
     [Fact]

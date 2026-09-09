@@ -67,6 +67,14 @@ validated against the executable.
 - Mouse coordinates are inverse-mapped through the same scale/offset as drawing.
 - Extracted RGB555 bitmaps are loaded from the installed asset pack; they are
   not embedded in source or redistributed.
+- `PX00129` contains sixteen 32-by-32 overlord portraits across source row
+  y=480. Setup renders these in the top strip and scales the selected portrait
+  into each active player slot; green left/right arrows cycle that player's
+  portrait. Newly added players default to Computer.
+- AI difficulty is the setup screen's single global **AI Mentality** selection,
+  not a per-player field. The four baked rows select Goon, Criminal, Crime Lord,
+  or Homicidal Maniac; hover-only thematic tooltips explain the behavioral
+  emphasis and state that the AI receives no bonuses.
 - City sectors use their fixed 54 by 52 cell from `PX10000` when neutral or
   `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
 - Active Crackdown sectors overlay the color-keyed patrol-car slice from
@@ -132,6 +140,13 @@ site portraits stack at `(85,172)`, and up to two visible gang cards begin at
 Each friendly card exposes separate one-off and repeating order controls; both
 use the authoritative legal-command picker and set the existing
 `GameCommand.Repeat` flag appropriately.
+The first themed overlay preserves the original fifteen-action ordering:
+Attack, Bribe, Chaos, Control, Equip, Give, Heal, Hide, Influence, Move,
+Research, Sell, Snitch, None, and Terminate. Individual equipment and other
+targets appear only in a second target overlay, never as top-level actions.
+Each detailed-sector building has a red control track filled green in proportion
+to reduced resistance; the starting Headquarters is fully green while neutral
+buildings begin red.
 
 `PX05016` is the original 344-by-209 `GANGS FOR HIRE` comparison panel. The
 Hire console button overlays it on the live city, with three 32-by-32 gang

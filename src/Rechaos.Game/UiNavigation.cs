@@ -147,6 +147,12 @@ public static class OriginalSpriteLayout
     public static Rectangle GangCardFrame => new(164, 17, 70, 118);
     public static Rectangle SectorBackArrow => new(120, 211, 30, 47);
 
+    public static Rectangle OverlordPortrait(int portraitId)
+    {
+        if (portraitId is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(portraitId));
+        return new Rectangle(portraitId * 32, 480, 32, 32);
+    }
+
     public static Rectangle SitePortrait(int definitionId)
     {
         if (definitionId is < 0 or >= 22) throw new ArgumentOutOfRangeException(nameof(definitionId));
@@ -232,6 +238,12 @@ public static class SectorDetailLayout
             throw new ArgumentOutOfRangeException(nameof(slot));
         return new Rectangle(85, 172 + slot * 66, 120, 64);
     }
+
+    public static Rectangle SiteControlBar(int slot)
+    {
+        var portrait = SitePortrait(slot);
+        return new Rectangle(portrait.X + 2, portrait.Bottom - 5, portrait.Width - 4, 4);
+    }
 }
 
 public static class SectorGangCardLayout
@@ -256,6 +268,94 @@ public static class SectorGangCardLayout
     {
         if (slot is < 0 or >= VisibleCards) throw new ArgumentOutOfRangeException(nameof(slot));
         return new Rectangle(Left + slot * Stride + x, Top + y, width, height);
+    }
+}
+
+public static class CommandOverlayLayout
+{
+    public static readonly IReadOnlyList<GangAction> Actions =
+    [
+        GangAction.Attack, GangAction.Bribe, GangAction.Chaos, GangAction.Control,
+        GangAction.Equip, GangAction.Give, GangAction.Heal, GangAction.Hide,
+        GangAction.Influence, GangAction.Move, GangAction.Research, GangAction.Sell,
+        GangAction.Snitch, GangAction.None, GangAction.Terminate
+    ];
+
+    public static Rectangle Panel => new(248, 50, 174, 400);
+    public static Rectangle TargetPanel => new(218, 70, 214, 320);
+    public static Rectangle ActionRow(int index)
+    {
+        if (index < 0 || index >= Actions.Count) throw new ArgumentOutOfRangeException(nameof(index));
+        return new Rectangle(256, 61 + index * 24, 158, 22);
+    }
+
+    public static Rectangle TargetRow(int index)
+    {
+        if (index is < 0 or >= 13) throw new ArgumentOutOfRangeException(nameof(index));
+        return new Rectangle(226, 100 + index * 20, 198, 18);
+    }
+
+    public static bool OpensTargetPicker(GangAction action) => action is
+        GangAction.Attack or GangAction.Equip or GangAction.Give or GangAction.Influence
+        or GangAction.Move or GangAction.Research or GangAction.Sell;
+}
+
+public static class DifficultyPresentation
+{
+    public static string Label(AiDifficulty difficulty) => difficulty switch
+    {
+        AiDifficulty.Goon => "GOON",
+        AiDifficulty.Criminal => "CRIMINAL",
+        AiDifficulty.CrimeLord => "CRIME LORD",
+        AiDifficulty.HomicidalManiac => "HOMICIDAL",
+        _ => throw new ArgumentOutOfRangeException(nameof(difficulty))
+    };
+
+    public static IReadOnlyList<string> Tooltip(AiDifficulty difficulty) => difficulty switch
+    {
+        AiDifficulty.Goon => ["GOON - EASIEST", "PLAYS TO WIN; LEAST AGGRESSIVE.", "AI PLAYS FAIR: NO BONUSES."],
+        AiDifficulty.Criminal => ["CRIMINAL - NORMAL", "PLAYS TO WIN; BALANCED AGGRESSION.", "AI PLAYS FAIR: NO BONUSES."],
+        AiDifficulty.CrimeLord => ["CRIME LORD - VERY HARD", "PLAYS TO WIN; MORE AGGRESSIVE.", "AI PLAYS FAIR: NO BONUSES."],
+        AiDifficulty.HomicidalManiac => ["HOMICIDAL MANIAC", "TRIES TO STOP YOU WINNING,", "USUALLY BY KILLING YOU.", "AI PLAYS FAIR: NO BONUSES."],
+        _ => throw new ArgumentOutOfRangeException(nameof(difficulty))
+    };
+}
+
+public static class PlayerPortraitLayout
+{
+    public const int Count = 16;
+
+    public static Rectangle SetupTop(int player)
+    {
+        Validate(player);
+        return new Rectangle(361 + player * 36, 33, 32, 32);
+    }
+
+    public static Rectangle CityTop(int player)
+    {
+        Validate(player);
+        return new Rectangle(8 + player * 72, 4, 32, 32);
+    }
+    public static Rectangle SetupLarge(int player) => Player(player, 376, 82, 106, 64, 64, rowStride: 92);
+    public static Rectangle Previous(int player) => Player(player, 361, 103, 106, 12, 18, rowStride: 92);
+    public static Rectangle Next(int player) => Player(player, 443, 103, 106, 12, 18, rowStride: 92);
+
+    private static Rectangle Player(
+        int player,
+        int left,
+        int top,
+        int columnStride,
+        int width,
+        int height,
+        int rowStride = 0)
+    {
+        if (player is < 0 or >= MatchLimits.PlayerCount) throw new ArgumentOutOfRangeException(nameof(player));
+        return new Rectangle(left + player % 2 * columnStride, top + player / 2 * rowStride, width, height);
+    }
+
+    private static void Validate(int player)
+    {
+        if (player is < 0 or >= MatchLimits.PlayerCount) throw new ArgumentOutOfRangeException(nameof(player));
     }
 }
 

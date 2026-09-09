@@ -29,6 +29,11 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     [new(80, 282, 50, 24), new(136, 282, 50, 24), new(192, 282, 50, 24), new(248, 282, 52, 24)];
     private static readonly Rectangle SetupPlayersAdd = new(370, 326, 92, 30);
     private static readonly Rectangle SetupPlayersRemove = new(466, 326, 96, 30);
+    private static readonly Rectangle[] SetupAiMentalities =
+    [
+        new(80, 330, 108, 27), new(80, 359, 108, 27),
+        new(80, 388, 108, 27), new(80, 417, 108, 27)
+    ];
     private static readonly Rectangle SetupStart = new(370, 374, 92, 50);
     private static readonly Rectangle SetupBack = new(466, 374, 96, 50);
     private static readonly Rectangle CityDone = new(492, 278, 106, 54);
@@ -42,8 +47,6 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle CitySearch = new(548, 260, 50, 17);
     private static readonly Rectangle EventsDismiss = new(218, 414, 96, 28);
     private static readonly Rectangle EventsBack = new(322, 414, 96, 28);
-    private static readonly Rectangle CommandsQueue = new(218, 414, 96, 28);
-    private static readonly Rectangle CommandsBack = new(322, 414, 96, 28);
     private static readonly Rectangle ManagementBack = new(322, 414, 96, 28);
     private static readonly Rectangle ItemsResearch = new(10, 414, 96, 28);
     private static readonly Rectangle ItemsEquip = new(114, 414, 96, 28);
@@ -84,13 +87,19 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly ScreenRouter _screens = new();
     private readonly CitySectorClickTracker _citySectorClicks = new();
     private readonly bool[] _computerPlayers = new bool[MatchLimits.PlayerCount];
+    private readonly short[] _playerPortraits = Enumerable.Range(0, MatchLimits.PlayerCount)
+        .Select(index => checked((short)index)).ToArray();
+    private AiDifficulty _selectedAiMentality = AiDifficulty.Criminal;
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.SixMonths;
     private int _selectedPlayerCount = 2;
     private int _cursor;
     private int _selectedGangIndex;
     private IReadOnlyList<GameCommand> _commandOptions = [];
+    private IReadOnlyList<GameCommand> _commandTargetOptions = [];
     private int _commandCursor;
+    private int _commandTargetCursor;
+    private bool _choosingCommandTarget;
     private bool _commandRepeats;
     private ClientScreen _commandReturnScreen = ClientScreen.City;
     private int _hireCursor;
@@ -101,6 +110,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private short? _draggedHireDefinitionId;
     private int? _pendingHireSlot;
     private Point _dragPoint;
+    private Point? _hoverPoint;
     private string _message = "SELECT NEW GAME";
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
@@ -204,8 +214,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Commands:
                 if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
                 if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
-                if (Pressed(keyboard, Keys.Enter)) SubmitSelectedCommand();
-                if (Pressed(keyboard, Keys.Back)) _screens.Show(_commandReturnScreen);
+                if (Pressed(keyboard, Keys.Enter)) ActivateCommandSelection();
+                if (Pressed(keyboard, Keys.Back)) BackFromCommands();
                 break;
             case ClientScreen.Hire:
                 if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveHireCursor(-1);
@@ -252,6 +262,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
         }
         var pointerMapped = VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint);
+        _hoverPoint = pointerMapped ? virtualPoint : null;
         if (pointerMapped && mouse.LeftButton == ButtonState.Pressed)
         {
             _dragPoint = virtualPoint;
@@ -352,6 +363,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         Keys[] controllerKeys = [Keys.D1, Keys.D2, Keys.D3, Keys.D4, Keys.D5, Keys.D6];
         for (var index = 0; index < _selectedPlayerCount; index++)
             if (Pressed(keyboard, controllerKeys[index])) ToggleController(index);
+        if (Pressed(keyboard, Keys.M)) CycleDifficulty();
         if (Pressed(keyboard, Keys.Enter)) StartMatch();
     }
 
@@ -405,13 +417,24 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 var duration = Array.FindIndex(SetupDurations, rectangle => rectangle.Contains(point));
                 var playerSlot = Enumerable.Range(0, _selectedPlayerCount)
                     .FirstOrDefault(index => SetupPlayerSlot(index).Contains(point), -1);
+                var previousPortrait = Enumerable.Range(0, _selectedPlayerCount)
+                    .FirstOrDefault(index => PlayerPortraitLayout.Previous(index).Contains(point), -1);
+                var nextPortrait = Enumerable.Range(0, _selectedPlayerCount)
+                    .FirstOrDefault(index => PlayerPortraitLayout.Next(index).Contains(point), -1);
                 if (scenario >= 0) _selectedScenario = (ScenarioId)scenario;
                 else if (duration >= 0) _selectedDuration = Durations[duration];
-                else if (playerSlot >= 0) ToggleController(playerSlot);
-                else if (SetupPlayersAdd.Contains(point)) ChangePlayerCount(1);
-                else if (SetupPlayersRemove.Contains(point)) ChangePlayerCount(-1);
-                else if (SetupStart.Contains(point)) StartMatch();
-                else if (SetupBack.Contains(point)) _screens.Show(ClientScreen.Title);
+                else if (previousPortrait >= 0) CyclePortrait(previousPortrait, -1);
+                else if (nextPortrait >= 0) CyclePortrait(nextPortrait, 1);
+                else
+                {
+                    var mentality = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(point));
+                    if (mentality >= 0) SelectDifficulty((AiDifficulty)mentality);
+                    else if (playerSlot >= 0) ToggleController(playerSlot);
+                    else if (SetupPlayersAdd.Contains(point)) ChangePlayerCount(1);
+                    else if (SetupPlayersRemove.Contains(point)) ChangePlayerCount(-1);
+                    else if (SetupStart.Contains(point)) StartMatch();
+                    else if (SetupBack.Contains(point)) _screens.Show(ClientScreen.Title);
+                }
                 break;
             case ClientScreen.City:
                 HandleCityClick(point);
@@ -544,6 +567,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
         _commandOptions = CommandOptionCatalog.LegalCommands(_state, playerId, gang.Id);
         _commandCursor = 0;
+        _commandTargetOptions = [];
+        _commandTargetCursor = 0;
+        _choosingCommandTarget = false;
         _commandRepeats = repeat;
         _commandReturnScreen = returnScreen;
         _screens.Show(ClientScreen.Commands);
@@ -661,30 +687,104 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void MoveCommandCursor(int delta)
     {
-        if (_commandOptions.Count == 0) return;
-        _commandCursor = Mod(_commandCursor + delta, _commandOptions.Count);
+        if (_choosingCommandTarget)
+        {
+            if (_commandTargetOptions.Count > 0)
+                _commandTargetCursor = Mod(_commandTargetCursor + delta, _commandTargetOptions.Count);
+        }
+        else
+        {
+            _commandCursor = Mod(_commandCursor + delta, CommandOverlayLayout.Actions.Count);
+        }
     }
 
     private void HandleCommandsClick(Point point)
     {
-        if (point.X is >= 14 and < 418 && point.Y is >= 102 and < 390)
+        if (_choosingCommandTarget)
         {
-            var first = Math.Max(0, _commandCursor - 8);
-            var index = first + (point.Y - 102) / 16;
-            if (index < _commandOptions.Count) _commandCursor = index;
+            var first = Math.Max(0, _commandTargetCursor - 6);
+            var visible = Math.Min(13, _commandTargetOptions.Count - first);
+            var index = Enumerable.Range(0, Math.Max(0, visible))
+                .FirstOrDefault(row => CommandOverlayLayout.TargetRow(row).Contains(point), -1);
+            if (index >= 0)
+            {
+                _commandTargetCursor = first + index;
+                ActivateCommandSelection();
+            }
+            else if (!CommandOverlayLayout.TargetPanel.Contains(point)) BackFromCommands();
+            return;
         }
-        else if (CommandsQueue.Contains(point)) SubmitSelectedCommand();
-        else if (CommandsBack.Contains(point)) _screens.Show(_commandReturnScreen);
+        var actionIndex = Enumerable.Range(0, CommandOverlayLayout.Actions.Count)
+            .FirstOrDefault(index => CommandOverlayLayout.ActionRow(index).Contains(point), -1);
+        if (actionIndex >= 0)
+        {
+            _commandCursor = actionIndex;
+            ActivateCommandSelection();
+        }
+        else if (!CommandOverlayLayout.Panel.Contains(point)) BackFromCommands();
     }
 
-    private void SubmitSelectedCommand()
+    private void ActivateCommandSelection()
     {
-        if (_commandOptions.Count == 0 || _replay is null) return;
-        var command = _commandOptions[_commandCursor] with { Repeat = _commandRepeats };
+        if (_replay is null) return;
+        if (_choosingCommandTarget)
+        {
+            if (_commandTargetOptions.Count > 0)
+                SubmitCommand(_commandTargetOptions[_commandTargetCursor]);
+            return;
+        }
+
+        var action = CommandOverlayLayout.Actions[_commandCursor];
+        if (action == GangAction.None)
+        {
+            CancelSelectedCommand();
+            return;
+        }
+        var options = _commandOptions.Where(command => command.Action == action).ToArray();
+        if (options.Length == 0)
+        {
+            _message = $"{action.ToString().ToUpperInvariant()} IS NOT AVAILABLE";
+            return;
+        }
+        if (CommandOverlayLayout.OpensTargetPicker(action))
+        {
+            _commandTargetOptions = options;
+            _commandTargetCursor = 0;
+            _choosingCommandTarget = true;
+            return;
+        }
+        SubmitCommand(options[0]);
+    }
+
+    private void SubmitCommand(GameCommand selection)
+    {
+        if (_replay is null) return;
+        var command = selection with { Repeat = _commandRepeats };
         var result = _replay.Submit(command);
         _message = result.Accepted
             ? $"{(_commandRepeats ? "REPEATING " : "")}{command.Action.ToString().ToUpperInvariant()} QUEUED"
             : result.Validation.Message.ToUpperInvariant();
+        if (result.Accepted) _screens.Show(_commandReturnScreen);
+    }
+
+    private void CancelSelectedCommand()
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
+        var gang = SelectedGang(_state.FindPlayer(playerId)!);
+        if (gang is null) return;
+        var result = _replay.Cancel(playerId, gang.Id);
+        _message = result.Accepted ? "COMMAND CLEARED" : result.Validation.Message.ToUpperInvariant();
+        if (result.Accepted) _screens.Show(_commandReturnScreen);
+    }
+
+    private void BackFromCommands()
+    {
+        if (_choosingCommandTarget)
+        {
+            _choosingCommandTarget = false;
+            _commandTargetOptions = [];
+            return;
+        }
         _screens.Show(_commandReturnScreen);
     }
 
@@ -717,8 +817,13 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _selectedDuration = Durations[Mod(Array.IndexOf(Durations, _selectedDuration) + delta, Durations.Length)];
     }
 
-    private void ChangePlayerCount(int delta) =>
+    private void ChangePlayerCount(int delta)
+    {
+        var previous = _selectedPlayerCount;
         _selectedPlayerCount = Math.Clamp(_selectedPlayerCount + delta, 1, MatchLimits.PlayerCount);
+        for (var index = previous; index < _selectedPlayerCount; index++)
+            _computerPlayers[index] = true;
+    }
 
     private void ToggleController(int index)
     {
@@ -727,8 +832,30 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _message = $"PLAYER {index + 1} {(_computerPlayers[index] ? "COMPUTER" : "HUMAN")}";
     }
 
+    private void CycleDifficulty()
+    {
+        var values = Enum.GetValues<AiDifficulty>();
+        _selectedAiMentality = values[Mod(
+            Array.IndexOf(values, _selectedAiMentality) + 1, values.Length)];
+        _message = $"AI MENTALITY {DifficultyPresentation.Label(_selectedAiMentality)}";
+    }
+
+    private void SelectDifficulty(AiDifficulty difficulty)
+    {
+        _selectedAiMentality = difficulty;
+        _message = $"AI MENTALITY {DifficultyPresentation.Label(difficulty)}";
+    }
+
+    private void CyclePortrait(int player, int delta)
+    {
+        if (player < 0 || player >= _selectedPlayerCount) return;
+        _playerPortraits[player] = checked((short)Mod(
+            _playerPortraits[player] + delta, PlayerPortraitLayout.Count));
+        _message = $"PLAYER {player + 1} PORTRAIT {_playerPortraits[player] + 1}";
+    }
+
     private static Rectangle SetupPlayerSlot(int index) =>
-        new(368 + index % 2 * 96, 120 + index / 2 * 64, 94, 44);
+        new(368 + index % 2 * 96, 120 + index / 2 * 64, 94, 54);
 
     private void StartMatch()
     {
@@ -736,9 +863,11 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         var players = Enumerable.Range(0, _selectedPlayerCount)
             .Select(index => new MatchPlayerSetup(
                 new PlayerId(index), $"PLAYER {index + 1}",
-                _computerPlayers[index] ? PlayerController.Computer : PlayerController.Human))
+                _computerPlayers[index] ? PlayerController.Computer : PlayerController.Human,
+                _playerPortraits[index]))
             .ToArray();
-        var setup = new MatchSetup(_selectedScenario, _selectedDuration, Environment.TickCount, players);
+        var setup = new MatchSetup(
+            _selectedScenario, _selectedDuration, Environment.TickCount, players, _selectedAiMentality);
         _state = OriginalMatchFactory.Create(_definitions, setup);
         _replay = new MatchReplayRecorder(_state);
         if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_replay);
@@ -775,18 +904,48 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             batch.Draw(pixel, new Rectangle(70, 52, 500, 384), new Color(0, 0, 0, 220));
         DrawBorder(batch, pixel, SetupScenarios[(int)_selectedScenario], Color.Gold, 2);
         DrawBorder(batch, pixel, SetupDurations[Array.IndexOf(Durations, _selectedDuration)], Color.Gold, 2);
+        for (var index = 0; index < MatchLimits.PlayerCount; index++)
+            if (_uiSprites is not null)
+                batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
+                    OriginalSpriteLayout.OverlordPortrait(
+                        index < _selectedPlayerCount ? _playerPortraits[index] : PlayerPortraitLayout.Count - 1),
+                    Color.White);
         font.Draw(batch, $"PLAYERS {_selectedPlayerCount}", new Vector2(376, 306), Color.White, 1);
         for (var index = 0; index < _selectedPlayerCount; index++)
         {
-            var column = index % 2;
-            var row = index / 2;
-            var x = 374 + column * 96;
-            var y = 130 + row * 64;
-            font.Draw(batch, $"P{index + 1}", new Vector2(x, y), PlayerColors[index], 1);
-            font.Draw(batch, _computerPlayers[index] ? "COMPUTER" : "HUMAN",
-                new Vector2(x, y + 12), Color.White, 1);
-            if (_computerPlayers[index]) DrawBorder(batch, pixel, SetupPlayerSlot(index), PlayerColors[index], 1);
+            var portrait = PlayerPortraitLayout.SetupLarge(index);
+            if (_uiSprites is not null)
+                batch.Draw(_uiSprites, portrait,
+                    OriginalSpriteLayout.OverlordPortrait(_playerPortraits[index]), Color.White);
+            DrawBorder(batch, pixel, portrait, PlayerColors[index], 1);
+            DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Previous(index), left: true, Color.Lime);
+            DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Next(index), left: false, Color.Lime);
+            var label = $"P{index + 1} {(_computerPlayers[index] ? "CPU" : "HUMAN")}";
+            font.Draw(batch, label, new Vector2(portrait.X, portrait.Bottom + 2), PlayerColors[index], 1);
         }
+        DrawBorder(batch, pixel, SetupAiMentalities[(int)_selectedAiMentality], Color.Gold, 2);
+        if (_hoverPoint is { } hover)
+        {
+            var hovered = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(hover));
+            if (hovered >= 0) DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)hovered);
+        }
+    }
+
+    private static void DrawDifficultyTooltip(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        AiDifficulty difficulty)
+    {
+        var panel = new Rectangle(70, 210, 286, 104);
+        batch.Draw(pixel, panel, new Color(8, 18, 16, 248));
+        DrawBorder(batch, pixel, panel, Color.Lime, 2);
+        var lines = DifficultyPresentation.Tooltip(difficulty)
+            .Concat(["NO CASH, STAT, RNG, OR", "INFORMATION BONUSES."])
+            .ToArray();
+        for (var row = 0; row < lines.Length; row++)
+            font.Draw(batch, lines[row], new Vector2(panel.X + 8, panel.Y + 8 + row * 12),
+                row == 0 ? Color.Gold : Color.White, 1);
     }
 
     private static int Mod(int value, int divisor) => (value % divisor + divisor) % divisor;
@@ -795,6 +954,10 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     {
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        if (_uiSprites is not null)
+            foreach (var setupPlayer in state.Setup.Players)
+                batch.Draw(_uiSprites, PlayerPortraitLayout.CityTop(setupPlayer.Id.Value),
+                    OriginalSpriteLayout.OverlordPortrait(setupPlayer.PortraitId), Color.White);
         var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
         var player = state.Players[playerIndex];
         for (var index = 0; index < state.Sectors.Count; index++)
@@ -964,31 +1127,65 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void DrawCommands(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
-        font.Draw(batch, _commandRepeats ? "RECURRING COMMAND" : "ONE-OFF COMMAND",
-            new Vector2(18, 60), Color.Gold, 2);
+        if (_commandReturnScreen == ClientScreen.Sector) DrawSectorDetails(batch, pixel, font, state);
+        else DrawBoard(batch, pixel, font, state);
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var gang = SelectedGang(state.FindPlayer(playerId)!);
-        var gangName = gang is null
-            ? "NO ACTIVE GANG"
-            : state.Definitions.Gangs.Single(definition => definition.Id == gang.DefinitionId).Name;
-        font.Draw(batch, gangName, new Vector2(18, 84), PlayerColors[playerId.Value], 1);
-
-        var first = Math.Max(0, _commandCursor - 8);
-        foreach (var entry in _commandOptions.Skip(first).Take(18).Select((command, index) => (command, index)))
+        if (_choosingCommandTarget)
         {
-            var optionIndex = first + entry.index;
-            var y = 102 + entry.index * 16;
-            if (optionIndex == _commandCursor)
-                batch.Draw(pixel, new Rectangle(14, y - 3, 404, 14), new Color(72, 54, 18));
-            font.Draw(batch, FormatCommand(state, entry.command), new Vector2(18, y), Color.White, 1);
+            DrawCommandTargets(batch, pixel, font, state);
+            return;
         }
-        if (_commandOptions.Count == 0)
-            font.Draw(batch, "NO LEGAL COMMANDS", new Vector2(18, 102), Color.White, 1);
-        DrawButton(batch, pixel, font, CommandsQueue, "QUEUE", false);
-        DrawButton(batch, pixel, font, CommandsBack, "BACK", false);
+
+        var panel = CommandOverlayLayout.Panel;
+        batch.Draw(pixel, panel, new Color(12, 18, 18, 246));
+        DrawBorder(batch, pixel, panel, new Color(0, 190, 65), 2);
+        font.Draw(batch, _commandRepeats ? "RECURRING ACTION" : "ONE-OFF ACTION",
+            new Vector2(panel.X + 8, panel.Y + 5), Color.Gold, 1);
+        for (var index = 0; index < CommandOverlayLayout.Actions.Count; index++)
+        {
+            var action = CommandOverlayLayout.Actions[index];
+            var row = CommandOverlayLayout.ActionRow(index);
+            var available = action == GangAction.None
+                ? gang?.QueuedCommand is not null
+                : _commandOptions.Any(command => command.Action == action);
+            if (index == _commandCursor)
+                batch.Draw(pixel, row, new Color(65, 35, 25));
+            if (action is GangAction.None or GangAction.Terminate)
+                batch.Draw(pixel, new Rectangle(row.X, row.Y - 2, row.Width, 1), new Color(65, 95, 80));
+            var label = action.ToString().ToUpperInvariant()
+                + (CommandOverlayLayout.OpensTargetPicker(action) ? "..." : "");
+            font.Draw(batch, label, new Vector2(row.X + 5, row.Y + 6),
+                available ? Color.White : new Color(90, 105, 100), 1);
+        }
+    }
+
+    private void DrawCommandTargets(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        MatchState state)
+    {
+        var panel = CommandOverlayLayout.TargetPanel;
+        batch.Draw(pixel, panel, new Color(12, 18, 18, 248));
+        DrawBorder(batch, pixel, panel, new Color(0, 190, 65), 2);
+        var action = _commandTargetOptions.Count == 0
+            ? GangAction.None
+            : _commandTargetOptions[_commandTargetCursor].Action;
+        font.Draw(batch, action.ToString().ToUpperInvariant(),
+            new Vector2(panel.X + 8, panel.Y + 8), Color.Gold, 1);
+        var first = Math.Max(0, _commandTargetCursor - 6);
+        foreach (var entry in _commandTargetOptions.Skip(first).Take(13)
+                     .Select((command, row) => (command, row)))
+        {
+            var index = first + entry.row;
+            var rectangle = CommandOverlayLayout.TargetRow(entry.row);
+            if (index == _commandTargetCursor)
+                batch.Draw(pixel, rectangle, new Color(65, 35, 25));
+            var label = FormatCommandTargets(state, entry.command);
+            if (label.Length > 30) label = label[..30];
+            font.Draw(batch, label, new Vector2(rectangle.X + 4, rectangle.Y + 5), Color.White, 1);
+        }
     }
 
     private void DrawHire(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
@@ -1049,6 +1246,15 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                     OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
             DrawBorder(batch, pixel, portrait,
                 site.InfluencedBy is { } influencedBy ? PlayerColors[influencedBy.Value] : Color.Gray, 1);
+            var control = SectorDetailLayout.SiteControlBar(site.Slot);
+            batch.Draw(pixel, control, Color.Red);
+            var controlled = definition.Resistance == 0
+                ? control.Width
+                : (int)Math.Round(control.Width
+                    * (definition.Resistance - Math.Clamp(site.Resistance, 0, definition.Resistance))
+                    / (double)definition.Resistance);
+            if (controlled > 0)
+                batch.Draw(pixel, new Rectangle(control.X, control.Y, controlled, control.Height), Color.Lime);
         }
         var viewer = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var visibleGangs = SectorGangView.Visible(state, viewer, sector.Id)
@@ -1101,7 +1307,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
         var details = SectorGangCardLayout.Details(slot);
         DrawBorder(batch, pixel, details, Color.LightGray, 1);
-        font.Draw(batch, "V", new Vector2(details.Center.X - 3, details.Y + 4), Color.Lime, 1);
+        DrawDownArrow(batch, pixel, details.Center.X, details.Y + 5, Color.Lime);
 
         var once = SectorGangCardLayout.OneOffAction(slot);
         var repeat = SectorGangCardLayout.RepeatingAction(slot);
@@ -1110,10 +1316,12 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         DrawBorder(batch, pixel, once, Color.LightGray, 1);
         DrawBorder(batch, pixel, repeat, Color.LightGray, 1);
         var controlsEnabled = gang.Owner == viewer;
-        font.Draw(batch, "V", new Vector2(once.Center.X - 3, once.Y + 4),
-            controlsEnabled ? Color.Lime : Color.Gray, 1);
-        font.Draw(batch, "VV", new Vector2(repeat.Center.X - 6, repeat.Y + 4),
-            controlsEnabled ? Color.Lime : Color.Gray, 1);
+        DrawDownArrow(batch, pixel, once.Center.X, once.Y + 5,
+            controlsEnabled ? Color.Lime : Color.Gray);
+        DrawDownArrow(batch, pixel, repeat.Center.X, repeat.Y + 3,
+            controlsEnabled ? Color.Lime : Color.Gray, compact: true);
+        DrawDownArrow(batch, pixel, repeat.Center.X, repeat.Y + 10,
+            controlsEnabled ? Color.Lime : Color.Gray, compact: true);
 
         var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
         if (_gangPortraits is not null)
@@ -1121,6 +1329,34 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
         for (var itemSlot = 0; itemSlot < 3; itemSlot++)
             DrawBorder(batch, pixel, SectorGangCardLayout.ItemSlot(slot, itemSlot), Color.LightGray, 1);
+    }
+
+    private static void DrawDownArrow(
+        SpriteBatch batch,
+        Texture2D pixel,
+        int centerX,
+        int top,
+        Color color,
+        bool compact = false)
+    {
+        var widths = compact ? new[] { 7, 5, 3, 1 } : new[] { 9, 7, 5, 3, 1 };
+        for (var row = 0; row < widths.Length; row++)
+            batch.Draw(pixel, new Rectangle(centerX - widths[row] / 2, top + row, widths[row], 1), color);
+    }
+
+    private static void DrawHorizontalArrow(
+        SpriteBatch batch,
+        Texture2D pixel,
+        Rectangle bounds,
+        bool left,
+        Color color)
+    {
+        for (var offset = 0; offset < 7; offset++)
+        {
+            var height = 1 + offset * 2;
+            var x = left ? bounds.X + 2 + offset : bounds.Right - 3 - offset;
+            batch.Draw(pixel, new Rectangle(x, bounds.Center.Y - height / 2, 1, height), color);
+        }
     }
 
     private void DrawSectorNeighborhood(
@@ -1603,11 +1839,11 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static string ItemName(MatchState state, short? itemId) =>
         itemId is { } id ? state.Definitions.Items[id].Name : "NONE";
 
-    private static string FormatCommand(MatchState state, GameCommand command)
+    private static string FormatCommandTargets(MatchState state, GameCommand command)
     {
-        var text = command.Action.ToString().ToUpperInvariant();
-        if (command.Target.Kind != CommandTargetKind.None)
-            text += " " + FormatTarget(state, command.Target);
+        var text = command.Target.Kind == CommandTargetKind.None
+            ? command.Action.ToString().ToUpperInvariant()
+            : FormatTarget(state, command.Target);
         if (command.SecondaryTarget is { } secondary)
             text += " / " + FormatTarget(state, secondary);
         return text;

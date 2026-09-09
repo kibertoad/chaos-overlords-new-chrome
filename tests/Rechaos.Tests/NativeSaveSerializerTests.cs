@@ -30,6 +30,8 @@ public sealed class NativeSaveSerializerTests
         Assert.Equal(GangAction.Hide, restored.FindGang(new GangId(0))!.QueuedCommand!.Command.Action);
         Assert.True(restored.FindGang(new GangId(0))!.QueuedCommand!.Command.Repeat);
         Assert.Equal(GangAction.Move, restored.FindGang(new GangId(1))!.QueuedCommand!.Command.Action);
+        Assert.Equal(AiDifficulty.CrimeLord, restored.Setup.AiMentality);
+        Assert.Equal(7, restored.Setup.Players[1].PortraitId);
         Assert.Equal(SaveBytes(match), SaveBytes(restored));
     }
 
@@ -176,6 +178,25 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void VersionFourSaveMigratesMissingDifficultyToCriminal()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 4;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionFourSha256(match);
+        foreach (var player in document["setup"]!["players"]!.AsArray())
+            player!.AsObject().Remove("difficulty");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.Equal(AiDifficulty.Criminal, restored.Setup.AiMentality);
+        Assert.Equal([0, 1], restored.Setup.Players.Select(player => (int)player.PortraitId));
+    }
+
+    [Fact]
     public void RejectsParsedContentWhoseAuthoritativeStateWasModified()
     {
         var match = CreateMatch();
@@ -255,9 +276,10 @@ public sealed class NativeSaveSerializerTests
         MatchPlayerSetup[] playerSetups =
         [
             new(new PlayerId(0), "ONE", PlayerController.Human),
-            new(new PlayerId(1), "TWO", PlayerController.Computer)
+            new(new PlayerId(1), "TWO", PlayerController.Computer, PortraitId: 7)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups);
+        var setup = new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups, AiDifficulty.CrimeLord);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [

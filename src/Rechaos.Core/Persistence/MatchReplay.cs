@@ -172,7 +172,7 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    public const int CurrentFormatVersion = 3;
+    public const int CurrentFormatVersion = 4;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -219,18 +219,18 @@ public static class MatchReplaySerializer
 
     private static MatchState Apply(ReplayDocument document, OriginalData definitions)
     {
-        if (document.FormatVersion is not (2 or CurrentFormatVersion))
+        if (document.FormatVersion is < 2 or > CurrentFormatVersion)
             throw new InvalidDataException($"Unsupported replay format {document.FormatVersion}.");
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
         using var snapshot = new MemoryStream(document.InitialSnapshot, writable: false);
         var state = NativeSaveSerializer.Load(snapshot, definitions);
-        VerifyHash(document.InitialStateSha256, state, -1);
+        VerifyHash(document.InitialStateSha256, state, -1, document.FormatVersion);
         for (var index = 0; index < document.Steps.Count; index++)
         {
             var step = document.Steps[index];
             ApplyStep(state, step, index);
-            VerifyHash(step.ResultingStateSha256, state, index);
+            VerifyHash(step.ResultingStateSha256, state, index, document.FormatVersion);
         }
         return state;
     }
@@ -297,7 +297,7 @@ public static class MatchReplaySerializer
     private static T Required<T>(T? value, int index) where T : struct =>
         value ?? throw new InvalidDataException($"Replay step {index} is missing a required value.");
 
-    private static void VerifyHash(string expected, MatchState state, int index)
+    private static void VerifyHash(string expected, MatchState state, int index, int replayVersion)
     {
         byte[] expectedBytes;
         try
@@ -308,9 +308,18 @@ public static class MatchReplaySerializer
         {
             throw new InvalidDataException($"Replay step {index} has an invalid state fingerprint.", exception);
         }
-        var actualBytes = Convert.FromHexString(MatchStateHasher.ComputeSha256(state));
-        if (expectedBytes.Length != actualBytes.Length
-            || !CryptographicOperations.FixedTimeEquals(expectedBytes, actualBytes))
+        var candidateHashes = replayVersion >= 4
+            ? [MatchStateHasher.ComputeSha256(state)]
+            : new[]
+            {
+                MatchStateHasher.ComputeVersionFourSha256(state),
+                MatchStateHasher.ComputeVersionThreeSha256(state),
+                MatchStateHasher.ComputeVersionTwoSha256(state),
+                MatchStateHasher.ComputeLegacySha256(state)
+            };
+        if (!candidateHashes.Select(Convert.FromHexString).Any(actualBytes =>
+                expectedBytes.Length == actualBytes.Length
+                && CryptographicOperations.FixedTimeEquals(expectedBytes, actualBytes)))
             throw new InvalidDataException($"Replay diverged after step {index}.");
     }
 

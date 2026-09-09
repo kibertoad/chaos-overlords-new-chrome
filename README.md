@@ -48,7 +48,11 @@ layers. It parses all 22 sites, 90 gangs, and 64 items and provides title,
 new-game setup, and deterministic 8x8 hot-seat city screens.
 Setup supports scenario, duration, and one-to-six human/computer players using
 keyboard or mouse; click a player slot or press 1-6 to toggle its controller.
-The default two-player setup is Human vs Computer. In the city, use arrows/WASD
+The default two-player setup is Human vs Computer, newly added opponents default
+to Computer, and each player's original portrait can be cycled with its green
+arrows. The single global AI Mentality selector controls computer aggression;
+its hover tooltips explain each level and the no-bonuses fair-play rule. In the
+city, use arrows/WASD
 or click to select, double-click a sector for its detailed view, Enter to act,
 G to cycle gangs, C to open the legal-command picker, H to open the original
 three-column hire comparison during planning (including dock snubbing), I for
