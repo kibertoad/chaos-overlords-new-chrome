@@ -224,13 +224,14 @@ and notifications expose the transition. Exact original cleanup and simultaneous
 ordering still require binary fixtures.
 
 `MatchBootstrap` converts an explicit city and player-placement layout into the
-authoritative state graph without guessing the still-unrecovered generation
-algorithm. It verifies a distinct neutral Headquarters sector for every player,
+authoritative state graph. It remains useful for tests, imported scenarios and
+future editors. It verifies a distinct neutral Headquarters sector for every player,
 creates stable-ID Right Hands gangs there, transfers sector control, and leaves
 the caller's reusable layout untouched. Armageddon setup applies its manual-only
-$500 and all-items-researched overrides at this boundary. Starting positions,
-Right Hands Force, ordinary-scenario cash, hire pools and city contents remain
-explicit inputs until reference fixtures establish them.
+$500 and all-items-researched overrides at this boundary. `OriginalMatchFactory`
+uses the recovered density/site algorithm, fixed HQ candidates, Force 10 Right
+Hands, $20 standard cash and deferred offer initialization. Original seed and
+setup-mode selection remain provisional pending a reference fixture.
 
 ## State ownership target
 
@@ -304,7 +305,8 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
   replay. New matches now use the recovered density/site generator, fixed HQ
   candidates, Right Hands setup and deferred initial offers; original seed
   selection and complete setup-mode context remain provisional.
-- The client still lacks a screen router, command picker, AI turn driver,
+- The client has a title/setup/city router and virtual-coordinate mouse input,
+  but still lacks the original setup detail, command picker, AI turn driver,
   notifications, animations and most original panels.
 - Exact control edges and within-subphase command ordering remain provisional.
 - Runtime manifest checking validates version only.

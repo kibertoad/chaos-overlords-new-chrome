@@ -44,10 +44,11 @@ redistributed.
 
 The port loads the original 16-bit artwork at native 640x460 resolution with
 integer-friendly point scaling, parses all 22 sites, 90 gangs, and 64 items,
-and provides a deterministic 8x8 hot-seat campaign loop. Use arrows/WASD to
-move, Enter to take control of a sector, H to hire, Space to end the turn, and
-Escape to quit. Economy, sector resistance, gang cost/upkeep, ownership, and
-six-player turn rotation are active.
+and provides title, new-game setup, and deterministic 8x8 hot-seat city screens.
+Setup supports scenario, duration, and one-to-six local players using keyboard
+or mouse. In the city, use arrows/WASD or click to select, Enter or a second
+click to act, H to hire, and Space to advance. F5/F9 save/load and F6/F10
+save/verify replays. Escape returns to the title screen before quitting.
 
 ## Projects
 

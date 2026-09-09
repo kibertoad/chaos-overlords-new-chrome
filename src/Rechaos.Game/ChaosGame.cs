@@ -12,6 +12,20 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 {
     private static readonly Color[] PlayerColors =
         [Color.Crimson, Color.CornflowerBlue, Color.LimeGreen, Color.Gold, Color.MediumPurple, Color.DarkOrange];
+    private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
+    private static readonly Rectangle TitleNewGame = new(220, 250, 200, 34);
+    private static readonly Rectangle TitleLoadGame = new(220, 294, 200, 34);
+    private static readonly Rectangle TitleQuit = new(220, 338, 200, 34);
+    private static readonly Rectangle SetupScenarioPrevious = new(92, 134, 42, 30);
+    private static readonly Rectangle SetupScenarioNext = new(506, 134, 42, 30);
+    private static readonly Rectangle SetupDurationPrevious = new(92, 204, 42, 30);
+    private static readonly Rectangle SetupDurationNext = new(506, 204, 42, 30);
+    private static readonly Rectangle SetupPlayersPrevious = new(92, 274, 42, 30);
+    private static readonly Rectangle SetupPlayersNext = new(506, 274, 42, 30);
+    private static readonly Rectangle SetupStart = new(220, 352, 200, 34);
+    private static readonly Rectangle SetupBack = new(220, 396, 200, 28);
+    private static readonly Rectangle CityAction = new(430, 415, 86, 24);
+    private static readonly Rectangle CityAdvance = new(524, 415, 96, 24);
     private readonly GraphicsDeviceManager _graphics;
     private readonly string _assetRoot;
     private readonly string _quickSavePath;
@@ -23,9 +37,15 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private PixelFont? _font;
     private MatchState? _state;
     private MatchReplayRecorder? _replay;
+    private OriginalData? _definitions;
+    private readonly ScreenRouter _screens = new();
+    private ScenarioId _selectedScenario = ScenarioId.Greed;
+    private GameDuration _selectedDuration = GameDuration.SixMonths;
+    private int _selectedPlayerCount = 2;
     private int _cursor;
-    private string _message = "ADVANCE UPKEEP TO BEGIN";
+    private string _message = "SELECT NEW GAME";
     private KeyboardState _previousKeyboard;
+    private MouseState _previousMouse;
 
     public ChaosGame(string assetRoot)
     {
@@ -56,8 +76,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData([Color.White]);
         _font = new PixelFont(_pixel);
-        _state = CreateInitialMatch(BundledOriginalData.Load());
-        _replay = new MatchReplayRecorder(_state);
+        _definitions = BundledOriginalData.Load();
 
         var backgroundPath = Path.Combine(_assetRoot, "images", "PX00100.bmp");
         if (File.Exists(backgroundPath))
@@ -70,42 +89,216 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     protected override void Update(GameTime gameTime)
     {
         var keyboard = Keyboard.GetState();
-        if (Pressed(keyboard, Keys.Escape)) Exit();
-        if (_state is not null)
+        var mouse = Mouse.GetState();
+        if (Pressed(keyboard, Keys.Escape) && !_screens.Back()) Exit();
+        switch (_screens.Current)
         {
-            if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.A)) MoveCursor(-1, 0);
-            if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.D)) MoveCursor(1, 0);
-            if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.W)) MoveCursor(0, -1);
-            if (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.S)) MoveCursor(0, 1);
-            if (Pressed(keyboard, Keys.Enter)) QueueBoardCommand();
-            if (Pressed(keyboard, Keys.H)) QueueFirstHireOffer();
-            if (Pressed(keyboard, Keys.Space)) AdvancePhase();
-            if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
-            if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
-            if (Pressed(keyboard, Keys.F6)) SaveReplay();
-            if (Pressed(keyboard, Keys.F10)) LoadReplay();
+            case ClientScreen.Title:
+                UpdateTitle(keyboard);
+                break;
+            case ClientScreen.Setup:
+                UpdateSetup(keyboard);
+                break;
+            case ClientScreen.City:
+                UpdateCity(keyboard);
+                break;
         }
+        if (mouse.LeftButton == ButtonState.Pressed && _previousMouse.LeftButton == ButtonState.Released
+            && VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint))
+            HandleClick(virtualPoint);
         _previousKeyboard = keyboard;
+        _previousMouse = mouse;
         base.Update(gameTime);
     }
 
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(new Color(8, 10, 12));
-        if (_batch is null || _pixel is null || _font is null || _state is null) return;
+        if (_batch is null || _pixel is null || _font is null) return;
         var viewport = GraphicsDevice.Viewport;
-        var scale = MathF.Min(viewport.Width / 640f, viewport.Height / 460f);
-        var transform = Matrix.CreateScale(scale) * Matrix.CreateTranslation(
-            (viewport.Width - 640 * scale) / 2, (viewport.Height - 460 * scale) / 2, 0);
+        var transform = VirtualInput.Transform(viewport);
         _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);
         if (_background is not null)
             _batch.Draw(_background, new Rectangle(0, 0, 640, 460), Color.White);
         else
             _batch.Draw(_pixel, new Rectangle(0, 0, 640, 460), new Color(22, 27, 28));
-        DrawBoard(_batch, _pixel, _font, _state);
+        switch (_screens.Current)
+        {
+            case ClientScreen.Title:
+                DrawTitle(_batch, _pixel, _font);
+                break;
+            case ClientScreen.Setup:
+                DrawSetup(_batch, _pixel, _font);
+                break;
+            case ClientScreen.City when _state is not null:
+                DrawBoard(_batch, _pixel, _font, _state);
+                break;
+        }
         _batch.End();
         base.Draw(gameTime);
     }
+
+    private void UpdateTitle(KeyboardState keyboard)
+    {
+        if (Pressed(keyboard, Keys.Enter)) _screens.Show(ClientScreen.Setup);
+        if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
+    }
+
+    private void UpdateSetup(KeyboardState keyboard)
+    {
+        if (Pressed(keyboard, Keys.Left)) ChangeScenario(-1);
+        if (Pressed(keyboard, Keys.Right)) ChangeScenario(1);
+        if (Pressed(keyboard, Keys.Up)) ChangeDuration(1);
+        if (Pressed(keyboard, Keys.Down)) ChangeDuration(-1);
+        if (Pressed(keyboard, Keys.OemMinus)) ChangePlayerCount(-1);
+        if (Pressed(keyboard, Keys.OemPlus)) ChangePlayerCount(1);
+        if (Pressed(keyboard, Keys.Enter)) StartMatch();
+    }
+
+    private void UpdateCity(KeyboardState keyboard)
+    {
+        if (_state is null) return;
+        if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.A)) MoveCursor(-1, 0);
+        if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.D)) MoveCursor(1, 0);
+        if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.W)) MoveCursor(0, -1);
+        if (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.S)) MoveCursor(0, 1);
+        if (Pressed(keyboard, Keys.Enter)) QueueBoardCommand();
+        if (Pressed(keyboard, Keys.H)) QueueFirstHireOffer();
+        if (Pressed(keyboard, Keys.Space)) AdvancePhase();
+        if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
+        if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
+        if (Pressed(keyboard, Keys.F6)) SaveReplay();
+        if (Pressed(keyboard, Keys.F10)) LoadReplay();
+    }
+
+    private void HandleClick(Point point)
+    {
+        switch (_screens.Current)
+        {
+            case ClientScreen.Title:
+                if (TitleNewGame.Contains(point)) _screens.Show(ClientScreen.Setup);
+                else if (TitleLoadGame.Contains(point)) LoadQuickGame();
+                else if (TitleQuit.Contains(point)) Exit();
+                break;
+            case ClientScreen.Setup:
+                if (SetupScenarioPrevious.Contains(point)) ChangeScenario(-1);
+                else if (SetupScenarioNext.Contains(point)) ChangeScenario(1);
+                else if (SetupDurationPrevious.Contains(point)) ChangeDuration(-1);
+                else if (SetupDurationNext.Contains(point)) ChangeDuration(1);
+                else if (SetupPlayersPrevious.Contains(point)) ChangePlayerCount(-1);
+                else if (SetupPlayersNext.Contains(point)) ChangePlayerCount(1);
+                else if (SetupStart.Contains(point)) StartMatch();
+                else if (SetupBack.Contains(point)) _screens.Show(ClientScreen.Title);
+                break;
+            case ClientScreen.City:
+                HandleCityClick(point);
+                break;
+        }
+    }
+
+    private void HandleCityClick(Point point)
+    {
+        const int left = 58, top = 51, cellWidth = 65, cellHeight = 42;
+        if (point.X >= left && point.X < left + cellWidth * 8
+            && point.Y >= top && point.Y < top + cellHeight * 8)
+        {
+            var selected = (point.Y - top) / cellHeight * 8 + (point.X - left) / cellWidth;
+            if (_cursor == selected) QueueBoardCommand();
+            else
+            {
+                _cursor = selected;
+                _message = $"SECTOR {_cursor + 1}";
+            }
+        }
+        else if (CityAction.Contains(point))
+        {
+            if (_state?.Coordinator.Phase == TurnPhase.Hire) QueueFirstHireOffer();
+            else QueueBoardCommand();
+        }
+        else if (CityAdvance.Contains(point)) AdvancePhase();
+    }
+
+    private void ChangeScenario(int delta)
+    {
+        var count = ScenarioCatalog.All.Count;
+        _selectedScenario = ScenarioCatalog.All[Mod((int)_selectedScenario + delta, count)].Id;
+    }
+
+    private void ChangeDuration(int delta)
+    {
+        _selectedDuration = Durations[Mod(Array.IndexOf(Durations, _selectedDuration) + delta, Durations.Length)];
+    }
+
+    private void ChangePlayerCount(int delta) =>
+        _selectedPlayerCount = Math.Clamp(_selectedPlayerCount + delta, 1, MatchLimits.PlayerCount);
+
+    private void StartMatch()
+    {
+        if (_definitions is null) return;
+        var players = Enumerable.Range(0, _selectedPlayerCount)
+            .Select(index => new MatchPlayerSetup(
+                new PlayerId(index), $"PLAYER {index + 1}",
+                PlayerController.Human))
+            .ToArray();
+        var setup = new MatchSetup(_selectedScenario, _selectedDuration, Environment.TickCount, players);
+        _state = OriginalMatchFactory.Create(_definitions, setup);
+        _replay = new MatchReplayRecorder(_state);
+        _cursor = _state.Players[0].Gangs[0].SectorId;
+        _message = "ADVANCE UPKEEP TO BEGIN";
+        _screens.Show(ClientScreen.City);
+    }
+
+    private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        batch.Draw(pixel, new Rectangle(92, 72, 456, 112), new Color(0, 0, 0, 210));
+        DrawCentered(font, batch, "CHAOS OVERLORDS", 103, Color.Gold, 3);
+        DrawCentered(font, batch, "A CLEAN ROOM REIMPLEMENTATION", 151, Color.White, 1);
+        DrawButton(batch, pixel, font, TitleNewGame, "NEW GAME", true);
+        DrawButton(batch, pixel, font, TitleLoadGame, "LOAD GAME", true);
+        DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
+        DrawCentered(font, batch, _message, 410, new Color(185, 195, 195), 1);
+    }
+
+    private void DrawSetup(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        batch.Draw(pixel, new Rectangle(70, 52, 500, 384), new Color(0, 0, 0, 220));
+        DrawCentered(font, batch, "NEW GAME SETUP", 72, Color.Gold, 2);
+        DrawCentered(font, batch, "SCENARIO", 111, new Color(170, 190, 190), 1);
+        DrawSelector(batch, pixel, font, SetupScenarioPrevious, SetupScenarioNext,
+            ScenarioCatalog.Get(_selectedScenario).Name, 134);
+        DrawCentered(font, batch, ScenarioCatalog.Get(_selectedScenario).Objective, 174, Color.White, 1);
+        DrawCentered(font, batch, "DURATION", 191, new Color(170, 190, 190), 1);
+        DrawSelector(batch, pixel, font, SetupDurationPrevious, SetupDurationNext,
+            DurationLabel(_selectedDuration), 204);
+        DrawCentered(font, batch, "PLAYERS", 261, new Color(170, 190, 190), 1);
+        DrawSelector(batch, pixel, font, SetupPlayersPrevious, SetupPlayersNext,
+            _selectedPlayerCount.ToString(), 274);
+        DrawCentered(font, batch, "LOCAL HOT SEAT PLAYERS", 320, Color.White, 1);
+        DrawButton(batch, pixel, font, SetupStart, "START", true);
+        DrawButton(batch, pixel, font, SetupBack, "BACK", false);
+    }
+
+    private void DrawSelector(
+        SpriteBatch batch, Texture2D pixel, PixelFont font,
+        Rectangle previous, Rectangle next, string value, int y)
+    {
+        DrawButton(batch, pixel, font, previous, "-", false);
+        DrawButton(batch, pixel, font, next, "+", false);
+        batch.Draw(pixel, new Rectangle(144, y, 352, 30), new Color(24, 37, 39, 235));
+        DrawBorder(batch, pixel, new Rectangle(144, y, 352, 30), new Color(100, 125, 112), 1);
+        DrawCentered(font, batch, value, y + 11, Color.White, 1);
+    }
+
+    private static string DurationLabel(GameDuration duration) => duration switch
+    {
+        GameDuration.SixMonths => "6 MONTHS",
+        GameDuration.OneYear => "1 YEAR",
+        GameDuration.TwoYears => "2 YEARS",
+        GameDuration.FourYears => "4 YEARS",
+        _ => throw new ArgumentOutOfRangeException(nameof(duration))
+    };
+
+    private static int Mod(int value, int divisor) => (value % divisor + divisor) % divisor;
 
     private void DrawBoard(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
@@ -133,11 +326,14 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             if (index == _cursor) DrawBorder(batch, pixel, new Rectangle(x, y, cellWidth, cellHeight), Color.Gold, 2);
         }
 
-        batch.Draw(pixel, new Rectangle(11, 397, 618, 52), new Color(0, 0, 0, 220));
-        font.Draw(batch, SectorSummary(state, state.Sectors[_cursor]), new Vector2(18, 404), Color.White, 1);
-        font.Draw(batch, $"GANGS {player.Gangs.Count}/{MatchLimits.GangsPerPlayer}", new Vector2(18, 420), PlayerColors[playerIndex], 1);
-        font.Draw(batch, _message, new Vector2(116, 420), Color.Gold, 1);
-        font.Draw(batch, "ARROWS ENTER/H/SPACE  F5/F9 SAVE/LOAD  F6/F10 REPLAY", new Vector2(18, 436), new Color(180, 190, 190), 1);
+        batch.Draw(pixel, new Rectangle(11, 389, 618, 60), new Color(0, 0, 0, 220));
+        font.Draw(batch, SectorSummary(state, state.Sectors[_cursor]), new Vector2(18, 395), Color.White, 1);
+        font.Draw(batch, $"GANGS {player.Gangs.Count}/{MatchLimits.GangsPerPlayer}", new Vector2(18, 410), PlayerColors[playerIndex], 1);
+        font.Draw(batch, _message, new Vector2(116, 410), Color.Gold, 1);
+        DrawButton(batch, pixel, font, CityAction,
+            state.Coordinator.Phase == TurnPhase.Hire ? "HIRE" : "ACTION", false);
+        DrawButton(batch, pixel, font, CityAdvance, "ADVANCE", false);
+        font.Draw(batch, "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY", new Vector2(18, 439), new Color(180, 190, 190), 1);
     }
 
     private void MoveCursor(int dx, int dy)
@@ -239,14 +435,15 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void LoadQuickGame()
     {
-        if (_state is null) return;
+        if (_definitions is null) return;
         try
         {
-            var result = NativeSaveStore.LoadRecoveringBackup(_quickSavePath, _state.Definitions);
+            var result = NativeSaveStore.LoadRecoveringBackup(_quickSavePath, _definitions);
             _state = result.State;
             _replay = new MatchReplayRecorder(_state);
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
+            _screens.Show(ClientScreen.City);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -291,11 +488,24 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         + string.Join(", ", sector.Sites.Select(site =>
             state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Name));
 
-    private static MatchState CreateInitialMatch(OriginalData data)
+    private static void DrawCentered(
+        PixelFont font, SpriteBatch batch, string text, int y, Color color, int scale)
     {
-        var playerSetup = new MatchPlayerSetup(new PlayerId(0), "PLAYER 1", PlayerController.Human);
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [playerSetup]);
-        return OriginalMatchFactory.Create(data, setup);
+        var width = text.Length * 6 * scale;
+        font.Draw(batch, text, new Vector2((VirtualInput.Width - width) / 2, y), color, scale);
+    }
+
+    private static void DrawButton(
+        SpriteBatch batch, Texture2D pixel, PixelFont font,
+        Rectangle rectangle, string text, bool prominent)
+    {
+        var fill = prominent ? new Color(72, 54, 18, 235) : new Color(24, 37, 39, 235);
+        var border = prominent ? Color.Gold : new Color(100, 125, 112);
+        batch.Draw(pixel, rectangle, fill);
+        DrawBorder(batch, pixel, rectangle, border, prominent ? 2 : 1);
+        var x = rectangle.X + (rectangle.Width - text.Length * 6) / 2;
+        var y = rectangle.Y + (rectangle.Height - 7) / 2;
+        font.Draw(batch, text, new Vector2(x, y), Color.White, 1);
     }
 
     private static void DrawBorder(SpriteBatch batch, Texture2D pixel, Rectangle rectangle, Color color, int thickness)

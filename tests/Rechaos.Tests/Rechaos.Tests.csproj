@@ -10,5 +10,6 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />
     <ProjectReference Include="../../src/Rechaos.Core/Rechaos.Core.csproj" />
     <ProjectReference Include="../../src/Rechaos.Extractor/Rechaos.Extractor.csproj" />
+    <ProjectReference Include="../../src/Rechaos.Game/Rechaos.Game.csproj" />
   </ItemGroup>
 </Project>
