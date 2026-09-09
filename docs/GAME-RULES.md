@@ -443,7 +443,7 @@ claim about original-game behavior.
   vanish and formerly controlled sectors become neutral.
 - Interpretation: after Player Elimination and before advancing the turn,
   project cash, support, controlled sectors, active opponents, opposing active
-  Right Hands, controlled Headquarters sectors, and Big Man points from the
+  Right Hands, explicitly designated important sectors, and Big Man points from the
   authoritative match. Timed games end on turns 26/52/104/208 and preserve all
   players tied for the highest score. Objective games preserve all qualifying
   players in player-ID order. Emit one `MatchEnded` event and one Objective
@@ -455,9 +455,8 @@ claim about original-game behavior.
   pending hires, and the eliminated player's site influence.
 - Current exclusions: binary end-boundary timing, tie-break presentation,
   eliminated-player eligibility, objective-scenario ranking, the original
-  display order within a timed tie, Siege's exact important-sector identity,
+  display order within a timed tie, Siege important-sector setup/appearance,
   exact Eliminate cleanup timing, and award edge-case parity.
-  Headquarters sites are provisionally treated as Siege-important sectors.
 - Confidence: High for thresholds, durations, score components and weights;
   Low for timing, ties, Siege mapping and special objective edge cases.
 - Implementation: `MatchOutcomeEvaluator`, scenario-specific elimination and

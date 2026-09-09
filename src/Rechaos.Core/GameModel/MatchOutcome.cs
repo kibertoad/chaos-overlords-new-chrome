@@ -21,7 +21,6 @@ public sealed record MatchOutcome(
 public static class MatchOutcomeEvaluator
 {
     private const short RightHandsDefinitionId = 0;
-    private const short HeadquartersDefinitionId = 21;
 
     public static MatchOutcome? Evaluate(MatchState state)
     {
@@ -71,8 +70,7 @@ public static class MatchOutcomeEvaluator
         var controlledSectors = state.Sectors.Count(sector => sector.Owner == player.Id);
         var opponents = state.Players.Where(candidate => candidate.Id != player.Id).ToArray();
         var importantSectors = state.Sectors.Count(sector =>
-            sector.Owner == player.Id
-            && sector.Sites.Any(site => site.DefinitionId == HeadquartersDefinitionId));
+            sector.Owner == player.Id && sector.IsImportant);
         return new PlayerScoreState(
             player.Cash,
             player.Support,

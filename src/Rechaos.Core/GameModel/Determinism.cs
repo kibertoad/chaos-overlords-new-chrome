@@ -64,7 +64,7 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 2;
+    private const int FormatVersion = 3;
 
     public static string ComputeSha256(MatchState state)
     {
@@ -192,7 +192,7 @@ public static class MatchStateHasher
     private static void WriteSector(BinaryWriter writer, MatchSectorState sector)
     {
         writer.Write(sector.Id); WriteNullableInt(writer, sector.Owner?.Value); writer.Write(sector.Tolerance); writer.Write(sector.Chaos);
-        writer.Write(sector.CrackdownActive); writer.Write(sector.Sites.Count);
+        writer.Write(sector.CrackdownActive); writer.Write(sector.IsImportant); writer.Write(sector.Sites.Count);
         foreach (var site in sector.Sites.OrderBy(item => item.Slot))
         {
             writer.Write(site.Slot); writer.Write(site.DefinitionId); writer.Write(site.Resistance); WriteNullableInt(writer, site.InfluencedBy?.Value);

@@ -184,7 +184,8 @@ public sealed class MatchSectorState
         PlayerId? owner = null,
         int tolerance = ManualRules.MinimumTolerance,
         int chaos = 0,
-        bool crackdownActive = false)
+        bool crackdownActive = false,
+        bool isImportant = false)
     {
         if (id is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(id));
@@ -202,6 +203,7 @@ public sealed class MatchSectorState
         Tolerance = tolerance;
         Chaos = chaos;
         CrackdownActive = crackdownActive;
+        IsImportant = isImportant;
     }
 
     public int Id { get; }
@@ -210,6 +212,7 @@ public sealed class MatchSectorState
     public int Tolerance { get; internal set; }
     public int Chaos { get; internal set; }
     public bool CrackdownActive { get; internal set; }
+    public bool IsImportant { get; }
 }
 
 public sealed class MatchSiteState

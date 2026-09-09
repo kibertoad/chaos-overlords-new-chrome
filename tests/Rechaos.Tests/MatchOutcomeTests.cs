@@ -7,9 +7,9 @@ namespace Rechaos.Tests;
 public sealed class MatchOutcomeTests
 {
     [Fact]
-    public void ProjectionUsesAuthoritativeSectorsHeadquartersAndRightHands()
+    public void ProjectionUsesAuthoritativeImportantSectorsAndRightHands()
     {
-        var match = CreateMatch(ScenarioId.Siege, headquartersOwners: [0, 0, 0, 0, 0, 0]);
+        var match = CreateMatch(ScenarioId.Siege, importantSectorOwners: [0, 0, 0, 0, 0, 0]);
 
         var score = MatchOutcomeEvaluator.Project(match, match.Players[0]);
 
@@ -17,6 +17,7 @@ public sealed class MatchOutcomeTests
         Assert.Equal(6, score.ImportantSectorsControlled);
         Assert.Equal(1, score.OpponentsAlive);
         Assert.Equal(1, score.OpposingRightHandsAlive);
+        Assert.Equal([new PlayerId(0)], MatchOutcomeEvaluator.Evaluate(match)!.Winners);
     }
 
     [Fact]
@@ -110,7 +111,7 @@ public sealed class MatchOutcomeTests
         int playerZeroControlledSectors = 0,
         int playerOneControlledSectors = 0,
         bool playerOneHasRightHands = true,
-        int[]? headquartersOwners = null)
+        int[]? importantSectorOwners = null)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -129,11 +130,11 @@ public sealed class MatchOutcomeTests
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id =>
             {
-                var headquartersOwner = headquartersOwners is not null && id < headquartersOwners.Length
-                    ? headquartersOwners[id]
+                var importantOwner = importantSectorOwners is not null && id < importantSectorOwners.Length
+                    ? importantSectorOwners[id]
                     : -1;
-                PlayerId? owner = headquartersOwner >= 0
-                    ? new PlayerId(headquartersOwner)
+                PlayerId? owner = importantOwner >= 0
+                    ? new PlayerId(importantOwner)
                     : id < playerZeroControlledSectors
                         ? new PlayerId(0)
                         : id < playerZeroControlledSectors + playerOneControlledSectors
@@ -141,11 +142,10 @@ public sealed class MatchOutcomeTests
                             : null;
                 return new MatchSectorState(id,
                 [
-                    new MatchSiteState(0, headquartersOwner >= 0 ? (short)21 : (short)0,
-                        headquartersOwner >= 0 ? 0 : 7),
+                    new MatchSiteState(0, 0, 7),
                     new MatchSiteState(1, 1, 5),
                     new MatchSiteState(2, 2, 4)
-                ], owner);
+                ], owner, isImportant: importantOwner >= 0);
             })
             .ToArray();
         return new MatchState(data, setup, players, sectors);
