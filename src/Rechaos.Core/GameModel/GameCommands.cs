@@ -4,7 +4,7 @@ public readonly record struct PlayerId
 {
     public PlayerId(int value)
     {
-        if (value is < 0 or >= GameState.MaximumPlayers)
+        if (value is < 0 or >= MatchLimits.PlayerCount)
             throw new ArgumentOutOfRangeException(nameof(value));
         Value = value;
     }

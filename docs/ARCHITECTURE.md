@@ -30,7 +30,7 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
 - `Assets/OriginalDataReader.cs`: strict fixed-record binary readers.
 - `Assets/BundledOriginalData.cs`: embedded canonical gameplay definitions.
 - `Assets/GameplayDataProvenance.cs`: pinned source and generated-data hashes.
-- `GameModel/GameState.cs`: current playable prototype match state.
+- `GameModel/MatchBootstrap.cs`: explicit-layout, scenario-aware new-match initialization.
 - `GameModel/TurnStructure.cs`: original five turn phases, six execution
   subphases, action IDs, and phase routing.
 - `GameModel/TurnCoordinator.cs`: headless phase state machine and explicit
@@ -287,9 +287,6 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
 
 ## Known architectural debt
 
-- The unused legacy `GameState` compatibility prototype still combines
-  cursor/UI messages with simulation state and hires immediately; it should be
-  removed after its remaining tests migrate.
 - The client now consumes authoritative `MatchState`, advances its real phase
   coordinator, submits validated Move/Control commands, and uses deferred Hire
   placement. Its single-player city/site layout, starting values and initial

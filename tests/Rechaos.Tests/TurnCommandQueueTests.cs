@@ -63,7 +63,7 @@ public sealed class TurnCommandQueueTests
     public void IdentifiersAndTargetsRejectOutOfRangeValues()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new PlayerId(-1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new PlayerId(GameState.MaximumPlayers));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PlayerId(MatchLimits.PlayerCount));
         Assert.Throws<ArgumentOutOfRangeException>(() => new GangId(-1));
         Assert.Throws<ArgumentOutOfRangeException>(() => CommandTarget.Sector(64));
         Assert.Throws<ArgumentOutOfRangeException>(() => CommandTarget.Site(192));

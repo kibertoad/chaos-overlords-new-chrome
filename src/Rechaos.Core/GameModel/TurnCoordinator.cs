@@ -17,9 +17,9 @@ public sealed class TurnCoordinator
 {
     private readonly int _playerCount;
 
-    public TurnCoordinator(int playerCount = GameState.MaximumPlayers)
+    public TurnCoordinator(int playerCount = MatchLimits.PlayerCount)
     {
-        if (playerCount is < 1 or > GameState.MaximumPlayers)
+        if (playerCount is < 1 or > MatchLimits.PlayerCount)
             throw new ArgumentOutOfRangeException(nameof(playerCount));
         _playerCount = playerCount;
     }

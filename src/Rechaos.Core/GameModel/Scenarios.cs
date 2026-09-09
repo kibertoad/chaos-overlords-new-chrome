@@ -89,7 +89,7 @@ public static class ScenarioCatalog
         ScenarioId.Eliminate => state.OpposingRightHandsAlive == 0,
         ScenarioId.Siege => state.ImportantSectorsControlled >= 6,
         ScenarioId.BigMan => state.BigManPoints >= 40,
-        ScenarioId.Armageddon => state.ControlledSectors >= GameState.BoardSize * GameState.BoardSize,
+        ScenarioId.Armageddon => state.ControlledSectors >= MatchLimits.SectorCount,
         _ => false
     };
 
