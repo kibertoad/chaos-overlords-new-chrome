@@ -4,6 +4,32 @@ namespace Rechaos.Game;
 
 public static class NotificationPresentation
 {
+    public static bool IsLastTurnReport(GameNotification notification, GameEvent? relatedEvent)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+        return notification.Kind switch
+        {
+            GameNotificationKind.Control => relatedEvent?.Resolution?.Successes > 0,
+            GameNotificationKind.Influence or GameNotificationKind.Research =>
+                relatedEvent?.Resolution is { PreviousValue: > 0, ResultValue: 0 },
+            GameNotificationKind.ControlLost or GameNotificationKind.Crackdown
+                or GameNotificationKind.Elimination or GameNotificationKind.Objective => true,
+            _ => false
+        };
+    }
+
+    public static string LastTurnStatus(GameNotification notification) => notification.Kind switch
+    {
+        GameNotificationKind.Control => "SECTOR CONTROL ATTAINED.",
+        GameNotificationKind.ControlLost => "SECTOR CONTROL LOST.",
+        GameNotificationKind.Influence => "SITE INFLUENCE ATTAINED.",
+        GameNotificationKind.Research => "RESEARCH COMPLETED.",
+        GameNotificationKind.Crackdown => "POLICE CRACKDOWN.",
+        GameNotificationKind.Elimination => "GANG OR PLAYER ELIMINATED.",
+        GameNotificationKind.Objective => "OBJECTIVE STATUS UPDATED.",
+        _ => throw new ArgumentOutOfRangeException(nameof(notification))
+    };
+
     public static string Describe(GameNotification notification)
     {
         ArgumentNullException.ThrowIfNull(notification);

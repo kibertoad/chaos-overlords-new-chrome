@@ -212,6 +212,7 @@ public static class SectorDetailLayout
     public const int Columns = 3;
     public const int Rows = 3;
     public static Rectangle Back => new(4, 394, 28, 66);
+    public static Rectangle Workspace => new(32, 42, 406, 418);
 
     public static Rectangle Cell(int column, int row)
     {
@@ -465,6 +466,33 @@ public static class CombatPanelLayout
         : new Rectangle(255, 249, 63, 3);
 }
 
+public static class CombatResultsLayout
+{
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Page => new(133, 136, 58, 12);
+    public static Rectangle Previous => new(135, 152, 25, 20);
+    public static Rectangle Next => new(163, 152, 25, 20);
+    public static Rectangle Sector => new(132, 174, 56, 64);
+    public static Rectangle FriendlyPanel => new(208, 141, 96, 179);
+    public static Rectangle EnemyPanel => new(352, 141, 94, 179);
+    public static Rectangle Ok => EquipmentCommandLayout.Ok;
+    public static Rectangle Opponent(int slot)
+    {
+        if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(313, 141 + slot * 37, 32, 32);
+    }
+}
+
+public static class LastTurnEventsLayout
+{
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Page => new(133, 135, 59, 13);
+    public static Rectangle Previous => new(135, 151, 25, 21);
+    public static Rectangle Next => new(163, 151, 25, 21);
+    public static Rectangle Artwork => new(221, 141, 221, 169);
+    public static Rectangle Ok => EquipmentCommandLayout.Ok;
+}
+
 public static class InfluenceCommandLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
@@ -653,13 +681,19 @@ public static class HireDockLayout
     public static Rectangle Reject(int slot)
     {
         ValidateSlot(slot);
-        return new Rectangle(438 + slot * 66, 436, 66, 24);
+        return new Rectangle(471 + slot * 66, 436, 33, 24);
+    }
+
+    public static Rectangle PriceCell(int slot)
+    {
+        ValidateSlot(slot);
+        return new Rectangle(438 + slot * 66, 436, 33, 24);
     }
 
     public static Point Price(int slot)
     {
-        var reject = Reject(slot);
-        return new Point(reject.X + 4, reject.Y + 7);
+        var cell = PriceCell(slot);
+        return new Point(cell.X + 10, cell.Y + 6);
     }
 
     public static IReadOnlyList<HireDockEntry?> Project(

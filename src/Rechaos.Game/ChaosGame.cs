@@ -74,6 +74,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _siteInfoBackground;
     private Texture2D? _itemInfoBackground;
     private Texture2D? _combatBackground;
+    private Texture2D? _combatResultsBackground;
+    private Texture2D? _lastTurnEventsBackground;
     private Texture2D? _hireComparisonBackground;
     private Texture2D? _influenceBackground;
     private Texture2D? _targetAcquisitionBackground;
@@ -118,6 +120,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private ClientScreen _managementReturnScreen = ClientScreen.City;
     private int _hireCursor;
     private int _itemCursor;
+    private int _combatSummaryCursor;
+    private int _eventCursor;
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
     private int? _draggedHireSlot;
@@ -188,6 +192,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _siteInfoBackground = LoadTexture("PX05002.bmp");
         _itemInfoBackground = LoadTexture("PX05001.bmp");
         _combatBackground = LoadTexture("PX05014.bmp");
+        _combatResultsBackground = LoadTexture("PX05012.bmp");
+        _lastTurnEventsBackground = LoadTexture("PX05010.bmp");
         _hireComparisonBackground = LoadTexture("PX05016.bmp");
         _influenceBackground = LoadTexture("PX05005.bmp");
         _targetAcquisitionBackground = LoadTexture("PX05003.bmp");
@@ -239,11 +245,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Handoff:
                 if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))
-                    _screens.Show(ClientScreen.City);
+                    FinishHandoff();
                 break;
             case ClientScreen.Events:
-                if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)) DismissNotification();
-                if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
+                if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveEventCursor(-1);
+                if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveEventCursor(1);
+                if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)) CloseEvents();
+                if (Pressed(keyboard, Keys.Back)) CloseEvents();
                 break;
             case ClientScreen.Commands:
                 if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
@@ -301,6 +309,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.Items);
                 break;
             case ClientScreen.CombatSummary:
+                if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveCombatSummary(-1);
+                if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveCombatSummary(1);
+                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                    _screens.Show(_managementReturnScreen);
+                break;
             case ClientScreen.Search:
                 if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                     _screens.Show(_managementReturnScreen);
@@ -516,11 +529,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 if (EndgameDone.Contains(point)) _screens.Show(ClientScreen.Title);
                 break;
             case ClientScreen.Handoff:
-                if (HandoffReady.Contains(point)) _screens.Show(ClientScreen.City);
+                if (HandoffReady.Contains(point)) FinishHandoff();
                 break;
             case ClientScreen.Events:
-                if (EventsDismiss.Contains(point)) DismissNotification();
-                else if (EventsBack.Contains(point)) _screens.Show(_managementReturnScreen);
+                HandleEventsClick(point);
                 break;
             case ClientScreen.Commands:
                 HandleCommandsClick(point);
@@ -542,9 +554,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Finance:
             case ClientScreen.Ranking:
-            case ClientScreen.CombatSummary:
             case ClientScreen.Search:
                 if (ManagementBack.Contains(point)) _screens.Show(_managementReturnScreen);
+                break;
+            case ClientScreen.CombatSummary:
+                HandleCombatSummaryClick(point);
                 break;
             case ClientScreen.Items:
                 HandleItemsClick(point);
@@ -670,6 +684,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private void OpenManagement(ClientScreen screen, ClientScreen returnScreen)
     {
         _managementReturnScreen = returnScreen;
+        if (screen == ClientScreen.CombatSummary) _combatSummaryCursor = 0;
+        if (screen == ClientScreen.Events) _eventCursor = 0;
         _screens.Show(screen);
     }
 
@@ -1249,28 +1265,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void DrawEvents(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
-        font.Draw(batch, "LAST TURN EVENTS", new Vector2(18, 60), Color.Gold, 2);
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
-        font.Draw(batch, state.FindPlayer(playerId)!.Setup.Name, new Vector2(18, 84), PlayerColors[playerId.Value], 1);
-        var notifications = state.NotificationsFor(playerId);
-        if (notifications.Count == 0)
-        {
-            font.Draw(batch, "NO EVENTS", new Vector2(18, 112), Color.White, 1);
-        }
-        else
-        {
-            foreach (var entry in notifications.Take(18).Select((notification, index) => (notification, index)))
-            {
-                var notification = entry.notification;
-                font.Draw(batch, NotificationPresentation.Describe(notification),
-                    new Vector2(18, 110 + entry.index * 16), Color.White, 1);
-            }
-        }
-        DrawButton(batch, pixel, font, EventsDismiss, "DISMISS", false);
-        DrawButton(batch, pixel, font, EventsBack, "BACK", false);
+        DrawLastTurnEventsPanel(batch, pixel, font, state);
     }
 
     private void DrawCommands(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
@@ -1525,6 +1520,36 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             font.Draw(batch, $"+{visibleGangs.Length - SectorGangCardLayout.VisibleCards}",
                 new Vector2(397, 123), Color.White, 1);
         DrawGangMoveDrag(batch, pixel, state);
+        DrawSectorHireDrag(batch, pixel, state);
+    }
+
+    private void DrawSectorHireDrag(SpriteBatch batch, Texture2D pixel, MatchState state)
+    {
+        if (!_hireDragStarted || _draggedHireDefinitionId is not { } definitionId) return;
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var overMap = SectorDetailLayout.TrySectorAt(_dragPoint, _cursor, out var dropSector);
+        if (!overMap && SectorDetailLayout.Workspace.Contains(_dragPoint)) dropSector = _cursor;
+        if (overMap)
+        {
+            var marker = SectorDetailLayout.Marker(_cursor, dropSector);
+            if (marker is { } destination && _uiSprites is not null)
+                batch.Draw(_uiSprites, destination, OriginalSpriteLayout.IncomingGangStatus, Color.White);
+            for (var column = 0; column < SectorDetailLayout.Columns; column++)
+            for (var row = 0; row < SectorDetailLayout.Rows; row++)
+                if (SectorDetailLayout.SectorAt(_cursor, column, row) == dropSector)
+                    DrawBorder(batch, pixel, SectorDetailLayout.Cell(column, row),
+                        state.Sectors[dropSector].Owner == playerId ? Color.Lime : Color.OrangeRed, 2);
+        }
+        else if (SectorDetailLayout.Workspace.Contains(_dragPoint))
+        {
+            DrawBorder(batch, pixel, SectorDetailLayout.Workspace,
+                state.Sectors[_cursor].Owner == playerId ? Color.Lime : Color.OrangeRed, 2);
+        }
+        if (_gangPortraits is null) return;
+        var token = new Rectangle(_dragPoint.X - 18, _dragPoint.Y - 18, 36, 36);
+        batch.Draw(_gangPortraits, token,
+            OriginalSpriteLayout.GangPortrait(definitionId), Color.White);
+        DrawBorder(batch, pixel, token, Color.White, 1);
     }
 
     private void BeginGangDrag(MatchGangState gang, Point point)
@@ -1815,50 +1840,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     private void DrawCombatSummary(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        DrawManagementPanel(batch, pixel);
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
-        font.Draw(batch, "COMBAT SUMMARY", new Vector2(18, 60), Color.Gold, 2);
-        font.Draw(batch, state.FindPlayer(playerId)!.Setup.Name, new Vector2(18, 86),
-            PlayerColors[playerId.Value], 1);
-        var events = state.Events
-            .Where(gameEvent => IsVisibleCombatEvent(state, playerId, gameEvent))
-            .OrderByDescending(gameEvent => gameEvent.Sequence)
-            .Take(12)
-            .Reverse()
-            .ToArray();
-        if (events.Length == 0)
-        {
-            font.Draw(batch, "NO COMBAT TO REPORT", new Vector2(18, 116), Color.White, 1);
-        }
-        for (var index = 0; index < events.Length; index++)
-        {
-            var gameEvent = events[index];
-            var y = 112 + index * 24;
-            var attackerPortrait = GangArtLayout.CombatPortrait(index, false);
-            if (gameEvent.Kind == GameEventKind.PoliceAttackResolved)
-            {
-                if (_policeSprites is not null)
-                    batch.Draw(_policeSprites, attackerPortrait,
-                        OriginalSpriteLayout.PolicePatrolCar, Color.White);
-                DrawBorder(batch, pixel, attackerPortrait, Color.LightBlue, 1);
-            }
-            else
-            {
-                DrawCombatGangPortrait(batch, pixel, state, gameEvent.Gang, attackerPortrait);
-            }
-            var targetGang = gameEvent.Kind == GameEventKind.PoliceAttackResolved
-                ? gameEvent.Gang
-                : gameEvent.Target.Kind == CommandTargetKind.Gang
-                    ? new GangId(gameEvent.Target.Id)
-                    : null;
-            DrawCombatGangPortrait(batch, pixel, state, targetGang,
-                GangArtLayout.CombatPortrait(index, true));
-            font.Draw(batch, $"T{gameEvent.Turn} {CombatHeading(state, gameEvent)}",
-                new Vector2(68, y), Color.White, 1);
-            font.Draw(batch, CombatResult(gameEvent), new Vector2(300, y),
-                gameEvent.Kind == GameEventKind.CommandFailed ? Color.OrangeRed : new Color(180, 230, 170), 1);
-        }
-        DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
+        DrawCombatResultsPanel(batch, pixel, font, state);
     }
 
     private void DrawCombatAnimation(
@@ -2284,9 +2266,21 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             || _replay is null)
             return;
         _hireDragStarted = false;
-        var hasSector = _screens.Current == ClientScreen.Sector
-            ? SectorDetailLayout.TrySectorAt(point, _cursor, out var sectorId)
-            : CityMapLayout.TrySectorAt(point, out sectorId);
+        bool hasSector;
+        int sectorId;
+        if (_screens.Current == ClientScreen.Sector)
+        {
+            hasSector = SectorDetailLayout.TrySectorAt(point, _cursor, out sectorId);
+            if (!hasSector && SectorDetailLayout.Workspace.Contains(point))
+            {
+                sectorId = _cursor;
+                hasSector = true;
+            }
+        }
+        else
+        {
+            hasSector = CityMapLayout.TrySectorAt(point, out sectorId);
+        }
         if (!hasSector)
         {
             _message = "HIRE CANCELLED";

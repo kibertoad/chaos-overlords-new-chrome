@@ -49,8 +49,10 @@ public sealed class UiNavigationTests
     [Fact]
     public void HirePriceSitsBesideRejectControl()
     {
-        Assert.Equal(new Point(442, 443), HireDockLayout.Price(0));
-        Assert.Equal(new Point(574, 443), HireDockLayout.Price(2));
+        Assert.Equal(new Rectangle(438, 436, 33, 24), HireDockLayout.PriceCell(0));
+        Assert.Equal(new Rectangle(471, 436, 33, 24), HireDockLayout.Reject(0));
+        Assert.Equal(new Point(448, 442), HireDockLayout.Price(0));
+        Assert.Equal(new Point(580, 442), HireDockLayout.Price(2));
     }
 
     [Fact]
@@ -198,6 +200,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(147, 120, 20, 20), SectorDetailLayout.Marker(27, 27));
         Assert.Null(SectorDetailLayout.Marker(27, 29));
         Assert.Equal(new Rectangle(83, 358, 120, 64), SectorDetailLayout.SitePortrait(2));
+        Assert.Equal(new Rectangle(32, 42, 406, 418), SectorDetailLayout.Workspace);
         Assert.Equal(new Rectangle(85, 417, 116, 4), SectorDetailLayout.SiteControlBar(2));
         Assert.Equal(new Rectangle(4, 394, 28, 66), SectorDetailLayout.Back);
     }
@@ -256,6 +259,13 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(253, 255, 67, 64), CombatPanelLayout.LeftAction);
         Assert.Equal(new Rectangle(324, 255, 67, 64), CombatPanelLayout.RightAction);
         Assert.Equal(new Rectangle(255, 249, 63, 3), CombatPanelLayout.ForceBar(false));
+        Assert.Equal(EquipmentCommandLayout.Panel, CombatResultsLayout.Panel);
+        Assert.Equal(new Rectangle(132, 174, 56, 64), CombatResultsLayout.Sector);
+        Assert.Equal(new Rectangle(208, 141, 96, 179), CombatResultsLayout.FriendlyPanel);
+        Assert.Equal(new Rectangle(313, 289, 32, 32), CombatResultsLayout.Opponent(4));
+        Assert.Equal(EquipmentCommandLayout.Panel, LastTurnEventsLayout.Panel);
+        Assert.Equal(new Rectangle(221, 141, 221, 169), LastTurnEventsLayout.Artwork);
+        Assert.Equal(new Rectangle(135, 151, 25, 21), LastTurnEventsLayout.Previous);
     }
 
     [Theory]
@@ -295,6 +305,26 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void LastTurnReportsExcludeRoutineEconomyAndMovementNotifications()
+    {
+        var economy = new GameNotification(0, 2, TurnPhase.Upkeep, null,
+            GameNotificationKind.Economy);
+        var movement = new GameNotification(1, 2, TurnPhase.Execution, ExecutionPhase.Movement,
+            GameNotificationKind.Movement, new GangId(12), 7);
+        var control = new GameNotification(2, 2, TurnPhase.Execution, ExecutionPhase.Control,
+            GameNotificationKind.Control, new GangId(12), 7, 42);
+        var capture = new GameEvent(42, 2, TurnPhase.Execution, ExecutionPhase.Control,
+            GameEventKind.CommandResolved, new PlayerId(0), new GangId(12), GangAction.Control,
+            CommandTarget.Sector(7), Resolution: new CommandResolutionDetails(
+                CommandResolutionCode.Resolved, [], 1));
+
+        Assert.False(NotificationPresentation.IsLastTurnReport(economy, null));
+        Assert.False(NotificationPresentation.IsLastTurnReport(movement, null));
+        Assert.True(NotificationPresentation.IsLastTurnReport(control, capture));
+        Assert.Equal("SECTOR CONTROL ATTAINED.", NotificationPresentation.LastTurnStatus(control));
+    }
+
+    [Fact]
     public void SectorGangPortraitStripHasStableNonOverlappingHitRegions()
     {
         var portraits = Enumerable.Range(0, SectorGangView.MaximumPortraits)
@@ -323,7 +353,8 @@ public sealed class UiNavigationTests
         Assert.Equal(new HireDockEntry(1, false), cells[0]);
         Assert.Equal(new HireDockEntry(2, true), cells[1]);
         Assert.Equal(new HireDockEntry(3, false), cells[2]);
-        Assert.Equal(new Rectangle(570, 436, 66, 24), HireDockLayout.Reject(2));
+        Assert.Equal(new Rectangle(570, 436, 33, 24), HireDockLayout.PriceCell(2));
+        Assert.Equal(new Rectangle(603, 436, 33, 24), HireDockLayout.Reject(2));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireDockLayout.Cell(3));
     }
 

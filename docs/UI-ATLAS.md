@@ -95,7 +95,8 @@ validated against the executable.
   portrait shows a 36-by-36 token and highlights valid controlled-sector drops;
   a reserved recruit retains its cell under the color-keyed original `HIRED`
   stamp from `PX00129`. Available candidates show their two-digit initial hire
-  price in the footer beside the reject control. This interaction and placement were confirmed in the
+  price in the left 33-by-24 half of the footer at y 436; the reject control
+  occupies the right half. This interaction and placement were confirmed in the
   user-supplied original-game capture and footage at 03:57.
 - The selected gang's sector displays the original idle/question or assigned
   20-by-20 status marker. A pending or actively dragged hire uses the red-edged
@@ -112,6 +113,10 @@ validated against the executable.
   Hire creates a 36-by-28 scaled-art token and highlights only validator-legal
   neighboring minimap sectors. Dropping queues a one-off Move command;
   stationary clicks retain gang selection and double-click inspection.
+- Hire dragging remains active over the detailed-sector screen. A drop on its
+  workspace reserves the recruit for the centered sector, while a drop on the
+  visible minimap uses the indicated controlled sector. The drag token and
+  destination feedback render above the sector-detail layer.
 - Combat Summary places compact owner-colored attacker and defender portraits
   beside each visible attack result; police rows use the `PX00300` patrol car
   opposite the attacked gang.
@@ -200,8 +205,21 @@ target list. It identifies the sector, places attacker and defender owner/gang
 art side by side, shows equipment and green/red Force tracks, and reserves the
 mirrored lower-center cells for the recovered attack and hit animations.
 `PX05012` is the separate paged Combat Results panel behind the right-console
-Combat Summary control. Both identities are confirmed by their template text,
-apertures, and the supplied original Combat capture.
+Combat Summary control. It pages the viewer's combat notifications, identifies
+the affected sector, and presents both sides with gang/equipment art and Force
+tracks; police uses the recovered police art. Both identities are confirmed by
+their template text, apertures, and the supplied original Combat capture.
+
+`PX05010` is the paged Last Turn Events panel. At the next human-player handoff,
+the recreation opens it automatically when that player has queued notifications
+and otherwise proceeds directly to the city. Its counter and arrow cells page
+one report at a time; the artwork aperture uses the affected sector ownership
+tile or gang portrait, and the two footer lines report date/object and status.
+Routine implementation notifications such as upkeep/economy, movement,
+equipment transactions and ordinary command completion do not create reports;
+captured/lost control, newly influenced sites, completed research, crackdowns,
+eliminations and objective changes do. Closing the panel consumes the queued
+notifications that were present when it opened.
 
 ## Next mapping work
 
