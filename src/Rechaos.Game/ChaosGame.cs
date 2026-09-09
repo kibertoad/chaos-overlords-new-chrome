@@ -385,6 +385,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleHireClick(point);
                 break;
             case ClientScreen.Sector:
+                HandleSectorClick(point);
+                break;
             case ClientScreen.Gang:
             case ClientScreen.Finance:
             case ClientScreen.Ranking:
@@ -399,6 +401,31 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleGiveClick(point);
                 break;
         }
+    }
+
+    private void HandleSectorClick(Point point)
+    {
+        if (ManagementBack.Contains(point))
+        {
+            _screens.Show(ClientScreen.City);
+            return;
+        }
+        if (_state is null) return;
+        var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var visible = SectorGangView.Visible(_state, playerId, _cursor)
+            .Take(SectorGangView.MaximumPortraits).ToArray();
+        var index = Enumerable.Range(0, visible.Length)
+            .FirstOrDefault(value => SectorGangView.Portrait(value).Contains(point), -1);
+        if (index < 0) return;
+        var gang = visible[index];
+        if (gang.Owner != playerId)
+        {
+            _message = "ENEMY GANG DETECTED";
+            return;
+        }
+        var ownGangs = _state.FindPlayer(playerId)!.Gangs.Where(candidate => candidate.IsActive).ToArray();
+        _selectedGangIndex = Array.FindIndex(ownGangs, candidate => candidate.Id == gang.Id);
+        _screens.Show(ClientScreen.Gang);
     }
 
     private void HandleCityClick(Point point)
@@ -896,6 +923,22 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 : "NONE";
             font.Draw(batch, "INFLUENCED BY " + influence, new Vector2(146, y + 32), Color.White, 1);
         }
+        var viewer = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var visibleGangs = SectorGangView.Visible(state, viewer, sector.Id);
+        font.Draw(batch, "GANGS", new Vector2(18, 356), Color.Gold, 1);
+        foreach (var entry in visibleGangs.Take(SectorGangView.MaximumPortraits)
+                     .Select((gang, index) => (gang, index)))
+        {
+            var definition = state.Definitions.Gangs.Single(value => value.Id == entry.gang.DefinitionId);
+            var destination = SectorGangView.Portrait(entry.index);
+            if (_gangPortraits is not null)
+                batch.Draw(_gangPortraits, destination,
+                    OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
+            DrawBorder(batch, pixel, destination, PlayerColors[entry.gang.Owner.Value], 1);
+        }
+        if (visibleGangs.Count > SectorGangView.MaximumPortraits)
+            font.Draw(batch, $"+{visibleGangs.Count - SectorGangView.MaximumPortraits}",
+                new Vector2(420, 383), Color.White, 1);
         DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
     }
 
@@ -1012,14 +1055,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         font.Draw(batch, $"SEARCH SECTOR {_cursor + 1}", new Vector2(18, 60), Color.Gold, 2);
         font.Draw(batch, state.FindPlayer(playerId)!.Setup.Name, new Vector2(18, 86),
             PlayerColors[playerId.Value], 1);
-        var visible = state.Players
-            .SelectMany(player => player.Gangs)
-            .Where(gang => gang.IsActive && gang.SectorId == _cursor
-                && (gang.Owner == playerId || state.CanPlayerDetectGang(playerId, gang.Id)))
-            .OrderBy(gang => gang.Owner.Value)
-            .ThenBy(gang => gang.Id.Value)
-            .ToArray();
-        if (visible.Length == 0)
+        var visible = SectorGangView.Visible(state, playerId, _cursor);
+        if (visible.Count == 0)
             font.Draw(batch, "NO GANGS DETECTED", new Vector2(18, 116), Color.White, 1);
         foreach (var entry in visible.Take(14).Select((gang, index) => (gang, index)))
         {
@@ -1031,8 +1068,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             font.Draw(batch, $"{owner.Setup.Name}  FORCE {gang.Force}"
                 + (gang.Hidden ? "  HIDDEN" : ""), new Vector2(190, y), Color.White, 1);
         }
-        if (visible.Length > 14)
-            font.Draw(batch, $"+{visible.Length - 14} MORE", new Vector2(18, 390), Color.White, 1);
+        if (visible.Count > 14)
+            font.Draw(batch, $"+{visible.Count - 14} MORE", new Vector2(18, 390), Color.White, 1);
         DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
     }
 

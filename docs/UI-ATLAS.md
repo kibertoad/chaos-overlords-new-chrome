@@ -71,6 +71,9 @@ validated against the executable.
   `PX00300`; pure black is treated as transparent for this sprite sheet.
 - Sector detail uses `PX02000` source `(0, siteId*64, 120, 64)`; gang detail
   and hiring use `PX03000` source `((gangId%10)*64, (gangId/10)*64, 64, 64)`.
+- Sector detail also shows up to ten friendly or detected enemy portraits from
+  `PX03000` in owner colors. Friendly portraits are mouse-selectable and open
+  that gang's information panel; enemy portraits remain read-only.
 - The recreation Give target panel reuses `PX03000` portraits and lists only
   validator-approved friendly recipients in the acting gang's sector. Its
   layout remains provisional pending identification of the original panel.

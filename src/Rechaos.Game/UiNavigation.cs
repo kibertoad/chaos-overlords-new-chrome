@@ -132,3 +132,31 @@ public static class OriginalSpriteLayout
         return new Rectangle(definitionId % 10 * 64, definitionId / 10 * 64, 64, 64);
     }
 }
+
+public static class SectorGangView
+{
+    public const int MaximumPortraits = 10;
+
+    public static IReadOnlyList<MatchGangState> Visible(
+        MatchState state,
+        PlayerId viewer,
+        int sectorId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if (state.FindPlayer(viewer) is null) throw new ArgumentOutOfRangeException(nameof(viewer));
+        if (sectorId is < 0 or >= MatchLimits.SectorCount)
+            throw new ArgumentOutOfRangeException(nameof(sectorId));
+        return state.Players.SelectMany(player => player.Gangs)
+            .Where(gang => gang.IsActive && gang.SectorId == sectorId
+                && (gang.Owner == viewer || state.CanPlayerDetectGang(viewer, gang.Id)))
+            .OrderBy(gang => gang.Owner.Value)
+            .ThenBy(gang => gang.Id.Value)
+            .ToArray();
+    }
+
+    public static Rectangle Portrait(int index)
+    {
+        if (index is < 0 or >= MaximumPortraits) throw new ArgumentOutOfRangeException(nameof(index));
+        return new Rectangle(18 + index * 40, 370, 36, 36);
+    }
+}

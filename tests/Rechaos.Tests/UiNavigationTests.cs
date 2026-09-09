@@ -105,4 +105,16 @@ public sealed class UiNavigationTests
             new GameNotification(0, 3, TurnPhase.Execution, ExecutionPhase.Combat,
                 GameNotificationKind.Police, new GangId(12), 1)));
     }
+
+    [Fact]
+    public void SectorGangPortraitStripHasStableNonOverlappingHitRegions()
+    {
+        var portraits = Enumerable.Range(0, SectorGangView.MaximumPortraits)
+            .Select(SectorGangView.Portrait).ToArray();
+
+        Assert.Equal(new Rectangle(18, 370, 36, 36), portraits[0]);
+        Assert.Equal(new Rectangle(378, 370, 36, 36), portraits[^1]);
+        Assert.All(portraits.SelectMany((left, index) => portraits.Skip(index + 1)
+            .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
+    }
 }

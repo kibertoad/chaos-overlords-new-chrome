@@ -199,8 +199,9 @@ eligible retaliation in queue order; then commits aggregate damage. This keeps
 an eliminated gang's simultaneous response independent of event emission order.
 Hidden attacks use an individual Detect-versus-Stealth roll and suppress
 retaliation on a hit. Cooperative sector visibility is a separate deterministic
-query because Hide does not affect whether a gang is displayed. Police combat
-and original overkill attribution remain explicit gaps.
+query shared by the Sector portrait strip and Search screen because Hide does
+not affect whether a gang is displayed. Original police/gang ordering and
+overkill attribution remain explicit binary-parity gaps.
 
 All action resolvers consume the same effective-stat projection. It adds gang
 definition, three equipment slots, and every same-sector site influenced by the
