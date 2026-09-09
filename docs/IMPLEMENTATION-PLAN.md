@@ -558,13 +558,13 @@ unmarked guess.
 | M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; common typed validation-rule pipeline; deferred hire purchase/placement with deterministic offer refill; player elimination; declarative validation for all action target shapes; typed queue mutations and ordered events; bounded notification queues; recovered RNG; canonical phase hashes | Hire snubbing, binary-validated offer and within-phase ordering, and remaining reference-derived edge rules |
 | M3 | Foundation started | Ordered base Upkeep economy; all Instant and Transaction actions; Move/Terminate; grouped Influence and Control with ownership/site reset; phase-wide grouped Chaos income/accumulation/crackdown; local influenced-site stat projection; deterministic Research; pure police helpers | Binary Chaos/reset/police fixtures, cross-player Influence/Control conflicts, special buildings, desertion, research caps, factory discounts/acquisition/swap fixtures and M2 gate |
 | M4 | Foundation started | Recovered raw RNG/range algorithms; serializable state; effective item/site stats; phase-wide Attack/retaliation and Crackdown police snapshots; hidden/police detection; elimination and recorded rolls | Crackdown duration/aftermath, reveal timing, RNG seed/call-order validation, binary combat fixtures, and M2-M3 gates |
-| M5 | Foundation started | Scenario predicates, timed scores, live end-of-turn evaluation, state-derived winners, outcome events/notifications and hashing | Big Man accrual, Eliminate/Siege special behavior, ranking, awards, persistence, UI deliverable and M4 gate |
+| M5 | Foundation started | Scenario predicates, timed scores, live end-of-turn evaluation, state-derived winners, all five award projections, outcome events/notifications and hashing | Big Man accrual, Eliminate/Siege special behavior, ranking/tie fixtures, persistence, UI deliverable and M4 gate |
 | M6 | Not started | None | M5 and AI research/implementation |
 | M7 | Not started | Proprietary media is extracted and classified only | Complete atlas/event integration and M1-M6 dependencies |
 | M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
 | M9 | Not started | None | Frozen deterministic simulation after M8 |
 
-Current automated baseline: the solution builds successfully, 210 tests
+Current automated baseline: the solution builds successfully, 213 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.

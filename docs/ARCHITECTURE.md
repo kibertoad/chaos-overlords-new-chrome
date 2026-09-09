@@ -69,6 +69,7 @@ Target subdivisions:
 - `Persistence`: native snapshots and replay schema.
 - `Determinism`: original-compatible PRNG and state hashing.
 - `MatchOutcome`: state projection and end-of-turn scenario completion.
+- `EndgameAwards`: deterministic award projection from player statistics.
 
 ### `Rechaos.Extractor`
 

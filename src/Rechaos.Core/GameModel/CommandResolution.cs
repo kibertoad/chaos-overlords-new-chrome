@@ -301,7 +301,6 @@ public static class CommandResolver
         foreach (var outcome in outcomes.Where(outcome => outcome.Code == CommandResolutionCode.Resolved))
         {
             Credit(outcome.Attacker.Owner, outcome.Target.Id, outcome.Damage);
-            Credit(outcome.Target.Owner, outcome.Attacker.Id, outcome.RetaliationDamage);
         }
 
         void Credit(PlayerId source, GangId victim, int attempted)
@@ -624,6 +623,7 @@ public static class CommandResolver
         var gang = state.FindGang(command.Gang)!;
         var before = gang.Hidden;
         gang.Hidden = true;
+        state.FindPlayer(gang.Owner)!.Statistics.TimesHidden++;
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before ? 1 : 0, 1));
     }

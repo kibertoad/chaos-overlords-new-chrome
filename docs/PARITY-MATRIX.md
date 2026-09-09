@@ -38,7 +38,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Player elimination | Remove players with neither a sector nor an active gang | End-of-turn status transition, influence cleanup, events and notifications implemented | Manual, High for trigger; cleanup ordering Medium | Binary multi-player elimination/order fixture |
 | Objectives | Ten named scenarios and objective thresholds | Provisional live end-of-turn evaluation, authoritative state projection, tied winners, event/notifications and outcome hashing | Manual, High for thresholds/weights; timing and special edges Low | Big Man accrual, Eliminate neutralization, Siege mapping and binary boundary/tie fixtures |
 | Timers | 26/52/104/208 turns | Implemented as model | Manual, High | End-turn boundary fixtures |
-| Endgame | Ranking, five awards, statistics | Mechanical match outcome/winners implemented; ranking and awards documented only | Manual, High for listed outputs; ordering Low | Implement rankings, awards, ties/no-award cases and UI |
+| Endgame | Ranking, five awards, statistics | All five award projections, tied recipients, Hide count, retaliation exclusion and outcome/event/hash integration implemented; ranking/UI absent | Manual pages 46–47, High mappings; zero threshold/ties Low | Binary tie/no-award fixtures; implement ranking and Endgame screen |
 | AI | Objective/difficulty-aware computer players | Unknown | Binary research required, Low | Decision snapshots |
 | Save import | Two known magic/size variants | Documented | Reverse-engineering notes, Medium | Obtain and parse corpus |
 | Native saves | Versioned safe recreation format | Unknown | Design required | Snapshot/replay schema |

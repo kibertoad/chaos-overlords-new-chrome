@@ -10,7 +10,8 @@ public sealed record MatchOutcome(
     ScenarioId Scenario,
     MatchEndReason Reason,
     int Turn,
-    IReadOnlyList<PlayerId> Winners);
+    IReadOnlyList<PlayerId> Winners,
+    IReadOnlyList<EndgameAwardResult> Awards);
 
 /// <summary>
 /// Projects authoritative match state into the manual-defined scenario rules.
@@ -37,7 +38,8 @@ public static class MatchOutcomeEvaluator
                 state.Setup.Scenario,
                 MatchEndReason.TimeLimit,
                 state.Coordinator.Turn,
-                scores.Where(value => value.Score == best).Select(value => value.Id).ToArray());
+                scores.Where(value => value.Score == best).Select(value => value.Id).ToArray(),
+                EndgameAwardEvaluator.Evaluate(state));
         }
 
         var winners = state.Players
@@ -52,7 +54,8 @@ public static class MatchOutcomeEvaluator
                 state.Setup.Scenario,
                 MatchEndReason.ObjectiveCompleted,
                 state.Coordinator.Turn,
-                winners);
+                winners,
+                EndgameAwardEvaluator.Evaluate(state));
     }
 
     public static PlayerScoreState Project(MatchState state, MatchPlayerState player)

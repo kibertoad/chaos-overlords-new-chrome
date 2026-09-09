@@ -101,6 +101,14 @@ public static class MatchStateHasher
                 writer.Write(outcome.Turn);
                 writer.Write(outcome.Winners.Count);
                 foreach (var winner in outcome.Winners) writer.Write(winner.Value);
+                writer.Write(outcome.Awards.Count);
+                foreach (var award in outcome.Awards)
+                {
+                    writer.Write((byte)award.Award);
+                    writer.Write(award.Value);
+                    writer.Write(award.Recipients.Count);
+                    foreach (var recipient in award.Recipients) writer.Write(recipient.Value);
+                }
             }
 
             writer.Write(state.Players.Count);
@@ -171,6 +179,7 @@ public static class MatchStateHasher
         writer.Write(player.Inventory.Count); foreach (var pair in player.Inventory.OrderBy(item => item.Key)) { writer.Write(pair.Key); writer.Write(pair.Value); }
         writer.Write(player.Statistics.CashEarned); writer.Write(player.Statistics.CashSpent); writer.Write(player.Statistics.DamageInflicted);
         writer.Write(player.Statistics.Casualties); writer.Write(player.Statistics.Overthrows);
+        writer.Write(player.Statistics.TimesHidden);
     }
 
     private static void WriteSector(BinaryWriter writer, MatchSectorState sector)

@@ -22,6 +22,7 @@ public sealed class InstantResolutionTests
         Assert.Equal(0, resolution.PreviousValue);
         Assert.Equal(1, resolution.ResultValue);
         Assert.Empty(resolution.Rolls);
+        Assert.Equal(1, match.Players[0].Statistics.TimesHidden);
     }
 
     [Fact]

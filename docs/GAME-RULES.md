@@ -183,12 +183,13 @@ claim about original-game behavior.
   together. Consequently, a gang eliminated by one result still completes
   attacks and retaliation calculated from its phase-start Force. Force is
   floored at zero; elimination clears equipment and Hidden state. Actual damage
-  credit is allocated in stable result order when attacks overkill one target.
+  credit is allocated in stable result order when attacks overkill one target;
+  retaliation is not credited to Damage Inflicted.
 - Hidden target behavior: a target that became Hidden during Instant receives
   an individual Detect-versus-Stealth percentage roll. Evasion produces an
   ordered `TargetEvaded` result; a successful hit prevents retaliation.
-- Current exclusions: crackdown police attacks, animation/audio timing,
-  original overkill-stat attribution,
+- Current exclusions: crackdown duration/aftermath, animation/audio timing,
+  original overkill-stat attribution and police/gang ordering,
   repeated mutual attacks, and binary confirmation of resolver/RNG order.
 - Confidence: High for weapon-skill associations and Martial Arts exception;
   Medium/High for the Force-corrected formula and retaliation; Low for ordering,
@@ -447,7 +448,8 @@ claim about original-game behavior.
   prevent the following Upkeep phase from resolving.
 - Current exclusions: binary end-boundary timing, tie-break presentation,
   eliminated-player ranking, Siege's exact important-sector identity,
-  Eliminate neutralization, Big Man point accrual, endgame rankings and awards.
+  Eliminate neutralization, Big Man point accrual, endgame rankings and award
+  edge-case parity.
   Headquarters sites are provisionally treated as Siege-important sectors.
 - Confidence: High for thresholds, durations, score components and weights;
   Low for timing, ties, Siege mapping and special objective edge cases.
@@ -459,3 +461,33 @@ claim about original-game behavior.
 - Next experiment: capture the last two turns of each timed scenario and
   simultaneous-threshold states for objective scenarios, then compare event,
   ranking, tie, and next-screen behavior.
+
+### RULE-AWARDS-001 — Endgame performance awards
+
+- Source: `MANUAL-GOG-1`; numbered pages 46–47, Endgame Screen, Awards, and
+  Stats. The page images were inspected directly from the fingerprinted GOG
+  manual scan.
+- Observed statement: Skull goes to most total combat damage; Fist to most
+  Overthrows; Dollar Sign to most cash spent; Safe to least cash spent; and Big
+  Fat Chicken to most hiding. Awards do not affect victory. Retaliatory damage
+  is excluded from Damage Inflicted. The manual says no combat/hiding category
+  award is given when that activity is not significant.
+- Interpretation: calculate all five superlatives from authoritative player
+  statistics at match completion. Preserve every tied recipient in player-ID
+  order. Treat zero direct damage and zero Hide resolutions as not significant,
+  omitting Skull and Big Fat Chicken respectively. Other zero-valued categories
+  are retained because the manual states no equivalent exclusion for them.
+- Current exclusions: the original significance threshold, tie presentation,
+  eliminated-player eligibility, and whether a repeated Hide while already
+  hidden increments the counter.
+- Confidence: High for award/statistic mapping and retaliation exclusion;
+  Medium for zero-activity omission; Low for ties and repeated Hide behavior.
+- Implementation: `EndgameAwardEvaluator`, `MatchStatistics.TimesHidden`,
+  direct-damage accounting in `CommandResolver`, and award snapshots in
+  `MatchOutcome`, `MatchEnded` events, and canonical hashes.
+- Tests: `EndgameAwardTests` covers every category, ties, zero combat/hiding,
+  outcome/event integration and hashes; `CombatResolutionTests` verifies that
+  retaliation is not credited; `InstantResolutionTests` verifies Hide counts.
+- Next experiment: finish controlled games with tied and zero values for every
+  statistic and repeat Hide commands across turns, then compare which icons and
+  recipients the original Endgame Screen displays.

@@ -64,7 +64,8 @@ public sealed class MatchPlayerState
         IReadOnlyDictionary<short, int>? inventory = null,
         int support = 0,
         int bigManPoints = 0,
-        PlayerStatus status = PlayerStatus.Active)
+        PlayerStatus status = PlayerStatus.Active,
+        MatchStatistics? statistics = null)
     {
         if (cash < 0) throw new ArgumentOutOfRangeException(nameof(cash));
         if (bigManPoints < 0) throw new ArgumentOutOfRangeException(nameof(bigManPoints));
@@ -80,6 +81,7 @@ public sealed class MatchPlayerState
         Support = support;
         BigManPoints = bigManPoints;
         Status = status;
+        Statistics = statistics ?? new MatchStatistics();
     }
 
     public MatchPlayerSetup Setup { get; }
@@ -94,7 +96,7 @@ public sealed class MatchPlayerState
     public IReadOnlyDictionary<short, int> ResearchProgress => _researchProgress;
     public IReadOnlySet<short> ResearchedItems => _researchedItems;
     public IReadOnlyDictionary<short, int> Inventory => _inventory;
-    public MatchStatistics Statistics { get; } = new();
+    public MatchStatistics Statistics { get; }
 
     public int RemainingResearch(OriginalData definitions, short itemIndex)
     {
@@ -230,11 +232,34 @@ public sealed class MatchSiteState
 
 public sealed class MatchStatistics
 {
+    public MatchStatistics(
+        long cashEarned = 0,
+        long cashSpent = 0,
+        int damageInflicted = 0,
+        int casualties = 0,
+        int overthrows = 0,
+        int timesHidden = 0)
+    {
+        if (cashEarned < 0) throw new ArgumentOutOfRangeException(nameof(cashEarned));
+        if (cashSpent < 0) throw new ArgumentOutOfRangeException(nameof(cashSpent));
+        if (damageInflicted < 0) throw new ArgumentOutOfRangeException(nameof(damageInflicted));
+        if (casualties < 0) throw new ArgumentOutOfRangeException(nameof(casualties));
+        if (overthrows < 0) throw new ArgumentOutOfRangeException(nameof(overthrows));
+        if (timesHidden < 0) throw new ArgumentOutOfRangeException(nameof(timesHidden));
+        CashEarned = cashEarned;
+        CashSpent = cashSpent;
+        DamageInflicted = damageInflicted;
+        Casualties = casualties;
+        Overthrows = overthrows;
+        TimesHidden = timesHidden;
+    }
+
     public long CashEarned { get; internal set; }
     public long CashSpent { get; internal set; }
     public int DamageInflicted { get; internal set; }
     public int Casualties { get; internal set; }
     public int Overthrows { get; internal set; }
+    public int TimesHidden { get; internal set; }
 }
 
 /// <summary>
@@ -561,7 +586,7 @@ public sealed class MatchState
     private GameEvent AppendMatchEndedEvent(MatchOutcome outcome)
     {
         var details = new MatchOutcomeDetails(
-            outcome.Scenario, outcome.Reason, outcome.Turn, outcome.Winners);
+            outcome.Scenario, outcome.Reason, outcome.Turn, outcome.Winners, outcome.Awards);
         var gameEvent = new GameEvent(
             _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
             Coordinator.ExecutionPhase, GameEventKind.MatchEnded,

@@ -33,6 +33,8 @@ public sealed class CombatResolutionTests
             resolution.RetaliationDamage);
         Assert.Equal(Math.Max(0, targetForce - resolution.Damage), target.Force);
         Assert.Equal(Math.Max(0, attackerForce - resolution.RetaliationDamage), attacker.Force);
+        Assert.Equal(Math.Min(targetForce, resolution.Damage), match.Players[0].Statistics.DamageInflicted);
+        Assert.Equal(0, match.Players[1].Statistics.DamageInflicted);
         Assert.Equal((attackDice + retaliationDice) * 3, match.Random.ConsumptionCount);
         Assert.Equal(GameNotificationKind.Combat,
             Assert.Single(match.NotificationsFor(new PlayerId(0)), value => value.Kind == GameNotificationKind.Combat).Kind);
