@@ -95,7 +95,9 @@ validated against the executable.
   portrait shows a 36-by-36 token and highlights valid controlled-sector drops;
   a reserved recruit retains its cell under the color-keyed original `HIRED`
   stamp from `PX00129`. Available candidates show their two-digit initial hire
-  price in the left 33-by-24 half of the footer at y 436; the reject control
+  price with a minimum width of two digits (`06`, but `11` remains `11`),
+  horizontally centered near the top of the left 33-by-24 footer half at y 436;
+  the reject control
   occupies the right half. This interaction and placement were confirmed in the
   user-supplied original-game capture and footage at 03:57.
 - Each sector containing the active player's gangs displays the original
@@ -170,6 +172,9 @@ use the authoritative legal-command picker and set the existing
 reference's vertically stacked double-arrow mark, and the thin owner-colored
 track above the portrait reports current Force. Once an order is assigned, the
 two arrow cells are replaced by one full-width strip naming the queued action.
+The gang-card frame ends at the bottom of its three equipment slots; the next
+eight rows in `PX00000` are separate command-arrow artwork and must not be
+included in the card source rectangle.
 The first themed overlay preserves the original fifteen-action ordering:
 Attack, Bribe, Chaos, Control, Equip, Give, Heal, Hide, Influence, Move,
 Research, Sell, Snitch, None, and Terminate. Individual equipment and other

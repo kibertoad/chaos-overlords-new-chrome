@@ -51,8 +51,11 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(new Rectangle(438, 436, 33, 24), HireDockLayout.PriceCell(0));
         Assert.Equal(new Rectangle(471, 436, 33, 24), HireDockLayout.Reject(0));
-        Assert.Equal(new Point(448, 443), HireDockLayout.Price(0));
-        Assert.Equal(new Point(580, 443), HireDockLayout.Price(2));
+        Assert.Equal(new Point(449, 438), HireDockLayout.Price(0));
+        Assert.Equal(new Point(581, 438), HireDockLayout.Price(2));
+        Assert.Equal("06", HireDockLayout.PriceText(6));
+        Assert.Equal("12", HireDockLayout.PriceText(12));
+        Assert.Equal("123", HireDockLayout.PriceText(123));
     }
 
     [Fact]
@@ -165,7 +168,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(492, 67, 20, 20), OriginalSpriteLayout.AssignedGangStatus);
         Assert.Equal(new Rectangle(492, 107, 20, 20), OriginalSpriteLayout.IdleGangStatus);
         Assert.Equal(new Rectangle(492, 147, 20, 20), OriginalSpriteLayout.IncomingGangStatus);
-        Assert.Equal(new Rectangle(164, 17, 70, 118), OriginalSpriteLayout.GangCardFrame);
+        Assert.Equal(new Rectangle(164, 17, 70, 110), OriginalSpriteLayout.GangCardFrame);
         Assert.Equal(new Rectangle(120, 211, 30, 47), OriginalSpriteLayout.SectorBackArrow);
         Assert.Equal(new Rectangle(480, 480, 32, 32), OriginalSpriteLayout.OverlordPortrait(15));
         Assert.Equal(new Rectangle(0, 0, 120, 64), OriginalSpriteLayout.SitePortrait(0));
@@ -208,8 +211,8 @@ public sealed class UiNavigationTests
     [Fact]
     public void SectorGangCardsExposeDetailAndBothActionControls()
     {
-        Assert.Equal(new Rectangle(251, 80, 70, 118), SectorGangCardLayout.Frame(0));
-        Assert.Equal(new Rectangle(325, 80, 70, 118), SectorGangCardLayout.Frame(1));
+        Assert.Equal(new Rectangle(251, 80, 70, 110), SectorGangCardLayout.Frame(0));
+        Assert.Equal(new Rectangle(325, 80, 70, 110), SectorGangCardLayout.Frame(1));
         Assert.Equal(new Rectangle(254, 82, 64, 3), SectorGangCardLayout.ForceBar(0));
         Assert.Equal(new Rectangle(254, 87, 30, 15), SectorGangCardLayout.OneOffAction(0));
         Assert.Equal(new Rectangle(287, 87, 30, 15), SectorGangCardLayout.RepeatingAction(0));

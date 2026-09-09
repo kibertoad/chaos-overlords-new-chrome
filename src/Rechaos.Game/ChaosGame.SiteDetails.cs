@@ -6,6 +6,22 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private void OpenSiteDetails(int sectorId, int slot, ClientScreen returnScreen)
+    {
+        _siteDetailsSectorId = sectorId;
+        _siteDetailsSlot = slot;
+        _siteDetailsReturnScreen = returnScreen;
+        _screens.Show(ClientScreen.Site);
+    }
+
+    private void CloseSiteDetails()
+    {
+        var returnScreen = _siteDetailsReturnScreen;
+        _siteDetailsSectorId = null;
+        _siteDetailsSlot = null;
+        _screens.Show(returnScreen);
+    }
+
     private void DrawSiteDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         if (_siteDetailsReturnScreen == ClientScreen.Commands)

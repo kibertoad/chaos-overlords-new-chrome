@@ -168,7 +168,9 @@ public static class OriginalSpriteLayout
     public static Rectangle AssignedGangStatus => new(492, 67, 20, 20);
     public static Rectangle IdleGangStatus => new(492, 107, 20, 20);
     public static Rectangle IncomingGangStatus => new(492, 147, 20, 20);
-    public static Rectangle GangCardFrame => new(164, 17, 70, 118);
+    // The following eight rows in PX00000 are command-arrow artwork, not part
+    // of the gang card. The card ends with its three equipment slots.
+    public static Rectangle GangCardFrame => new(164, 17, 70, 110);
     public static Rectangle SectorBackArrow => new(120, 211, 30, 47);
 
     public static Rectangle OverlordPortrait(int portraitId)
@@ -284,7 +286,7 @@ public static class SectorGangCardLayout
     public const int Top = 80;
     public const int Stride = 74;
 
-    public static Rectangle Frame(int slot) => At(slot, 0, 0, 70, 118);
+    public static Rectangle Frame(int slot) => At(slot, 0, 0, 70, 110);
     public static Rectangle ForceBar(int slot) => At(slot, 3, 2, 64, 3);
     public static Rectangle OneOffAction(int slot) => At(slot, 3, 7, 30, 15);
     public static Rectangle RepeatingAction(int slot) => At(slot, 36, 7, 30, 15);
@@ -693,7 +695,14 @@ public static class HireDockLayout
     public static Point Price(int slot)
     {
         var cell = PriceCell(slot);
-        return new Point(cell.X + 10, cell.Y + 7);
+        const int twoGlyphWidth = 11; // 5px glyph + 1px advance + 5px glyph.
+        return new Point(cell.X + (cell.Width - twoGlyphWidth) / 2, cell.Y + 2);
+    }
+
+    public static string PriceText(int amount)
+    {
+        if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
+        return amount < 10 ? $"0{amount}" : amount.ToString();
     }
 
     public static IReadOnlyList<HireDockEntry?> Project(

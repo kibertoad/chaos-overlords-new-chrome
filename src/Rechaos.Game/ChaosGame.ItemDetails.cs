@@ -6,6 +6,18 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private void OpenItemDetails(short itemId)
+    {
+        _itemDetailsId = itemId;
+        _screens.Show(ClientScreen.ItemInformation);
+    }
+
+    private void CloseItemDetails()
+    {
+        _itemDetailsId = null;
+        _screens.Show(ClientScreen.Commands);
+    }
+
     private void DrawItemDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         DrawCommands(batch, pixel, font, state);

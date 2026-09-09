@@ -6,6 +6,37 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private void OpenSelectedGangDetails(ClientScreen returnScreen)
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        var gang = SelectedGang(_state.FindPlayer(playerId)!);
+        if (gang is not null) OpenGangDetails(gang, returnScreen);
+    }
+
+    private void OpenGangDetails(MatchGangState gang, ClientScreen returnScreen)
+    {
+        _gangDetailsInstanceId = gang.Id;
+        _gangDetailsDefinitionId = gang.DefinitionId;
+        _gangDetailsReturnScreen = returnScreen;
+        _screens.Show(ClientScreen.Gang);
+    }
+
+    private void OpenGangDefinitionDetails(short definitionId, ClientScreen returnScreen)
+    {
+        _gangDetailsInstanceId = null;
+        _gangDetailsDefinitionId = definitionId;
+        _gangDetailsReturnScreen = returnScreen;
+        _screens.Show(ClientScreen.Gang);
+    }
+
+    private void CloseGangDetails()
+    {
+        var returnScreen = _gangDetailsReturnScreen;
+        _gangDetailsInstanceId = null;
+        _gangDetailsDefinitionId = null;
+        _screens.Show(returnScreen);
+    }
+
     private void DrawGangDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         if (_gangDetailsReturnScreen == ClientScreen.Sector) DrawSectorDetails(batch, pixel, font, state);

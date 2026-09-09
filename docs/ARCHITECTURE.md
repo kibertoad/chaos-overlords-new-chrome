@@ -130,12 +130,17 @@ loading, title/setup/hot-seat-handoff/city/sector/gang/finance/ranking/items/Giv
 keyboard and inverse-mapped mouse input,
 prototype board renderer, and an internal pixel font. `UI-ATLAS.md` records the
 first full-screen resource and hit-region mappings.
-The client shell is a partial class split by responsibility: the primary
-`ChaosGame.cs` owns the loop and routing, while `ChaosGame.Setup.cs`,
-`ChaosGame.GangDetails.cs`, `ChaosGame.Persistence.cs`, and
-`ChaosGame.Assets.cs` isolate setup rendering/state, gang-information form
-composition, snapshot/replay I/O, and original-media loading/playback. Further
-screen groups should follow the same split instead of growing the shell again.
+The client shell is a partial class split by responsibility. `ChaosGame.cs`
+retains the loop, shared client state, and top-level input/screen routing.
+`ChaosGame.Assets.cs`, `ChaosGame.Setup.cs`, and `ChaosGame.Persistence.cs`
+isolate media loading, setup, and snapshot/replay I/O. `ChaosGame.TurnFlow.cs`
+owns planning handoff and computer-turn orchestration; `ChaosGame.Hire.cs` owns
+the hire dock, comparison screen, and hire interactions. Gang, site, and item
+information modal navigation lives with its corresponding renderer in
+`ChaosGame.GangDetails.cs`, `ChaosGame.SiteDetails.cs`, and
+`ChaosGame.ItemDetails.cs`. Attack selection, combat presentation, results, and
+turn events likewise remain in their focused partials. Further screen groups
+should follow these boundaries instead of growing the shell again.
 It reads original media only from the extracted asset directory.
 The item workflow projects research/equipment state and submits Research,
 Equip, Give, and Sell through the replay recorder and authoritative Core
