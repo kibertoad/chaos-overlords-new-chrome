@@ -756,10 +756,21 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                     Color.White);
             if (index == _cursor) DrawBorder(batch, pixel, destination, Color.Gold, 2);
         }
+        var selectedGang = SelectedGang(player);
+        if (_draggedHireDefinitionId is null && selectedGang is { IsActive: true })
+            DrawGangStatusMarker(batch, selectedGang.SectorId,
+                selectedGang.QueuedCommand is null
+                    ? OriginalSpriteLayout.IdleGangStatus
+                    : OriginalSpriteLayout.AssignedGangStatus);
+        foreach (var pending in player.PendingHires)
+            DrawGangStatusMarker(batch, pending.TargetSectorId, OriginalSpriteLayout.IncomingGangStatus);
         if (_draggedHireDefinitionId is not null
             && CityMapLayout.TrySectorAt(_dragPoint, out var dropSector))
+        {
+            DrawGangStatusMarker(batch, dropSector, OriginalSpriteLayout.IncomingGangStatus);
             DrawBorder(batch, pixel, CityMapLayout.Destination(dropSector),
                 state.Sectors[dropSector].Owner == player.Id ? Color.Lime : Color.OrangeRed, 2);
+        }
 
         var selectedSector = state.Sectors[_cursor];
         batch.Draw(pixel, new Rectangle(474, 5, 114, 108), new Color(0, 0, 0, 205));
@@ -783,6 +794,12 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             DrawBorder(batch, pixel, token, Color.White, 1);
         }
         font.Draw(batch, "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY", new Vector2(18, 439), new Color(180, 190, 190), 1);
+    }
+
+    private void DrawGangStatusMarker(SpriteBatch batch, int sectorId, Rectangle source)
+    {
+        if (_uiSprites is not null)
+            batch.Draw(_uiSprites, GangStatusMarkerLayout.Destination(sectorId), source, Color.White);
     }
 
     private void DrawHireDock(

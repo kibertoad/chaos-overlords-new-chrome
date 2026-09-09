@@ -25,7 +25,7 @@ original-game capture confirms the screen and interaction state.
 
 | Resource | Mapping | Confidence |
 |---|---|---|
-| `PX00129` | Main UI composite sheet: glyphs, action names, player bars, arrows, buttons, portraits, message controls and command icons; diagonal `HIRED` stamp `(120,300,60,60)` | High from visible content; remaining rectangles not yet complete |
+| `PX00129` | Main UI composite sheet: glyphs, action names, player bars, arrows, buttons, portraits, message controls and command icons; diagonal `HIRED` stamp `(120,300,60,60)`; assigned `(492,67,20,20)`, idle/question `(492,107,20,20)`, and incoming-hire `(492,147,20,20)` gang-status markers | High from visible content and user captures; remaining rectangles not yet complete |
 | `PX00132` | Next-player/Ready handoff panel | High from visible labels |
 | `PX00137`, `PX00139` | Empty and filled horizontal meter frames | Medium |
 | `PX00138` | Circular action/command icons | High from repeated command imagery |
@@ -86,6 +86,10 @@ validated against the executable.
   a reserved recruit retains its cell under the color-keyed original `HIRED`
   stamp from `PX00129`. This interaction and placement were confirmed in the
   user-supplied original-game capture and footage at 03:57.
+- The selected gang's sector displays the original idle/question or assigned
+  20-by-20 status marker. A pending or actively dragged hire uses the red-edged
+  incoming marker at the prospective sector; incoming state wins if markers
+  overlap. All three mappings were confirmed against user-supplied captures.
 - Combat Summary places compact owner-colored attacker and defender portraits
   beside each visible attack result; police rows use the `PX00300` patrol car
   opposite the attacked gang.

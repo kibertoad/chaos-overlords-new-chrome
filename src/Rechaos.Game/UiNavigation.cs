@@ -120,6 +120,9 @@ public static class OriginalSpriteLayout
 {
     public static Rectangle PolicePatrolCar => new(116, 0, 48, 64);
     public static Rectangle HiredStamp => new(120, 300, 60, 60);
+    public static Rectangle AssignedGangStatus => new(492, 67, 20, 20);
+    public static Rectangle IdleGangStatus => new(492, 107, 20, 20);
+    public static Rectangle IncomingGangStatus => new(492, 147, 20, 20);
 
     public static Rectangle SitePortrait(int definitionId)
     {
@@ -131,6 +134,15 @@ public static class OriginalSpriteLayout
     {
         if (definitionId is < 0 or >= 90) throw new ArgumentOutOfRangeException(nameof(definitionId));
         return new Rectangle(definitionId % 10 * 64, definitionId / 10 * 64, 64, 64);
+    }
+}
+
+public static class GangStatusMarkerLayout
+{
+    public static Rectangle Destination(int sectorId)
+    {
+        var sector = CityMapLayout.Destination(sectorId);
+        return new Rectangle(sector.Right - 22, sector.Y + 20, 20, 20);
     }
 }
 
