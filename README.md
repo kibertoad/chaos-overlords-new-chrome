@@ -54,6 +54,8 @@ the three-offer hire panel (including snubbing), I for sector details, F for the
 next-upkeep financial projection, R for scenario ranking, T for research and
 equipment, B for the combat summary, and Space to advance.
 X opens the selected sector's detection-filtered gang search.
+In the equipment panel, V opens the legal same-sector recipient list for an
+equipped item; choose a gang with arrows or mouse and press Enter to queue Give.
 The mapped city-panel buttons also open gang, sector, finance, and ranking views;
 gang, hire, and site panels use the original portrait sheets.
 Resolved equipped-weapon attacks play their original extracted `SND005xx` cue.

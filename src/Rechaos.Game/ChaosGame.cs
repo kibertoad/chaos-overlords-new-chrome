@@ -49,10 +49,13 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle HireSnub = new(218, 414, 96, 28);
     private static readonly Rectangle HireBack = new(322, 414, 96, 28);
     private static readonly Rectangle ManagementBack = new(322, 414, 96, 28);
-    private static readonly Rectangle ItemsResearch = new(114, 414, 96, 28);
-    private static readonly Rectangle ItemsEquip = new(218, 414, 96, 28);
+    private static readonly Rectangle ItemsResearch = new(10, 414, 96, 28);
+    private static readonly Rectangle ItemsEquip = new(114, 414, 96, 28);
+    private static readonly Rectangle ItemsGive = new(218, 414, 96, 28);
     private static readonly Rectangle ItemsSell = new(322, 414, 96, 28);
     private static readonly Rectangle ItemsBack = new(426, 414, 96, 28);
+    private static readonly Rectangle GiveQueue = new(218, 414, 96, 28);
+    private static readonly Rectangle GiveBack = new(322, 414, 96, 28);
     private static readonly Rectangle EndgameDone = new(320, 404, 104, 54);
     private static readonly Rectangle HandoffReady = new(266, 246, 108, 66);
     private readonly GraphicsDeviceManager _graphics;
@@ -87,6 +90,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private int _commandCursor;
     private int _hireCursor;
     private int _itemCursor;
+    private IReadOnlyList<GameCommand> _giveOptions = [];
+    private int _giveCursor;
     private string _message = "SELECT NEW GAME";
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
@@ -204,8 +209,15 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Right)) CycleGang(1);
                 if (Pressed(keyboard, Keys.R)) QueueItemCommand(GangAction.Research);
                 if (Pressed(keyboard, Keys.E)) QueueItemCommand(GangAction.Equip);
+                if (Pressed(keyboard, Keys.V)) OpenGiveTargets();
                 if (Pressed(keyboard, Keys.S)) QueueItemCommand(GangAction.Sell);
                 if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
+                break;
+            case ClientScreen.Give:
+                if (Pressed(keyboard, Keys.Up)) MoveGiveCursor(-1);
+                if (Pressed(keyboard, Keys.Down)) MoveGiveCursor(1);
+                if (Pressed(keyboard, Keys.Enter)) QueueSelectedGive();
+                if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.Items);
                 break;
             case ClientScreen.CombatSummary:
             case ClientScreen.Search:
@@ -270,6 +282,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Items when _state is not null:
                 DrawItems(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.Give when _state is not null:
+                DrawGiveTargets(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.CombatSummary when _state is not null:
                 DrawCombatSummary(_batch, _pixel, _font, _state);
@@ -378,6 +393,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Items:
                 HandleItemsClick(point);
                 break;
+            case ClientScreen.Give:
+                HandleGiveClick(point);
+                break;
         }
     }
 
@@ -454,8 +472,68 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
         else if (ItemsResearch.Contains(point)) QueueItemCommand(GangAction.Research);
         else if (ItemsEquip.Contains(point)) QueueItemCommand(GangAction.Equip);
+        else if (ItemsGive.Contains(point)) OpenGiveTargets();
         else if (ItemsSell.Contains(point)) QueueItemCommand(GangAction.Sell);
         else if (ItemsBack.Contains(point)) _screens.Show(ClientScreen.City);
+    }
+
+    private void OpenGiveTargets()
+    {
+        if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
+            || _state.Coordinator.ActivePlayer is not { } playerId)
+        {
+            _message = "GIVE REQUIRES THE COMMAND PHASE";
+            return;
+        }
+        var player = _state.FindPlayer(playerId)!;
+        var gang = SelectedGang(player);
+        var items = RealItems(_state);
+        if (gang is null || items.Length == 0)
+        {
+            _message = "NO ACTIVE GANG OR ITEM";
+            return;
+        }
+
+        var itemId = items[_itemCursor].Id;
+        _giveOptions = CommandOptionCatalog.LegalCommands(_state, playerId, gang.Id)
+            .Where(command => command.Action == GangAction.Give
+                && command.SecondaryTarget == CommandTarget.Item(itemId))
+            .OrderBy(command => command.Target.Id)
+            .ToArray();
+        _giveCursor = 0;
+        if (_giveOptions.Count == 0)
+        {
+            _message = "NO LEGAL RECIPIENT FOR EQUIPPED ITEM";
+            return;
+        }
+        _screens.Show(ClientScreen.Give);
+    }
+
+    private void MoveGiveCursor(int delta)
+    {
+        if (_giveOptions.Count > 0) _giveCursor = Mod(_giveCursor + delta, _giveOptions.Count);
+    }
+
+    private void HandleGiveClick(Point point)
+    {
+        if (point.X is >= 14 and < 418 && point.Y is >= 110 and < 390)
+        {
+            var index = (point.Y - 110) / 56;
+            if (index < _giveOptions.Count) _giveCursor = index;
+        }
+        else if (GiveQueue.Contains(point)) QueueSelectedGive();
+        else if (GiveBack.Contains(point)) _screens.Show(ClientScreen.Items);
+    }
+
+    private void QueueSelectedGive()
+    {
+        if (_giveOptions.Count == 0 || _replay is null) return;
+        var command = _giveOptions[_giveCursor];
+        var result = _replay.Submit(command);
+        _message = result.Accepted
+            ? "GIVE QUEUED"
+            : result.Validation.Message.ToUpperInvariant();
+        if (result.Accepted) _screens.Show(ClientScreen.City);
     }
 
     private void QueueItemCommand(GangAction action)
@@ -1046,8 +1124,46 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         font.Draw(batch, "UP/DOWN ITEM  LEFT/RIGHT GANG", new Vector2(18, 395), Color.White, 1);
         DrawButton(batch, pixel, font, ItemsResearch, "RESEARCH", false);
         DrawButton(batch, pixel, font, ItemsEquip, "EQUIP", false);
+        DrawButton(batch, pixel, font, ItemsGive, "GIVE", false);
         DrawButton(batch, pixel, font, ItemsSell, "SELL", false);
         DrawButton(batch, pixel, font, ItemsBack, "BACK", false);
+    }
+
+    private void DrawGiveTargets(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
+        if (_cityBackground is not null)
+            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 240));
+        font.Draw(batch, "GIVE EQUIPMENT", new Vector2(18, 60), Color.Gold, 2);
+        if (_giveOptions.Count == 0)
+        {
+            font.Draw(batch, "NO LEGAL RECIPIENT", new Vector2(18, 92), Color.White, 1);
+        }
+        else
+        {
+            var selected = _giveOptions[Math.Clamp(_giveCursor, 0, _giveOptions.Count - 1)];
+            var actor = state.FindGang(selected.Gang)!;
+            var item = state.Definitions.Items[selected.SecondaryTarget!.Value.Id];
+            var actorName = state.Definitions.Gangs.Single(value => value.Id == actor.DefinitionId).Name;
+            font.Draw(batch, $"{actorName} GIVES {item.Name}", new Vector2(18, 86), Color.White, 1);
+            foreach (var entry in _giveOptions.Take(5).Select((command, index) => (command, index)))
+            {
+                var recipient = state.FindGang(new GangId(entry.command.Target.Id))!;
+                var definition = state.Definitions.Gangs.Single(value => value.Id == recipient.DefinitionId);
+                var y = 116 + entry.index * 56;
+                if (entry.index == _giveCursor)
+                    batch.Draw(pixel, new Rectangle(14, y - 6, 404, 50), new Color(72, 54, 18));
+                if (_gangPortraits is not null)
+                    batch.Draw(_gangPortraits, new Rectangle(20, y - 5, 42, 42),
+                        OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
+                font.Draw(batch, definition.Name, new Vector2(78, y), Color.White, 1);
+                font.Draw(batch, $"FORCE {recipient.Force}  SECTOR {recipient.SectorId + 1}",
+                    new Vector2(78, y + 16), new Color(180, 230, 170), 1);
+            }
+        }
+        font.Draw(batch, "UP/DOWN RECIPIENT  ENTER GIVE", new Vector2(18, 395), Color.White, 1);
+        DrawButton(batch, pixel, font, GiveQueue, "GIVE", false);
+        DrawButton(batch, pixel, font, GiveBack, "BACK", false);
     }
 
     private void DrawManagementPanel(SpriteBatch batch, Texture2D pixel)

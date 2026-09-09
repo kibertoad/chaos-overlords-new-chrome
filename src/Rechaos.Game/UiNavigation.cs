@@ -17,6 +17,7 @@ public enum ClientScreen
     Finance,
     Ranking,
     Items,
+    Give,
     CombatSummary,
     Search,
     Handoff,
@@ -34,10 +35,10 @@ public sealed class ScreenRouter
         if (Current == ClientScreen.Title) return false;
         Current = Current is ClientScreen.Events or ClientScreen.Commands or ClientScreen.Hire
             or ClientScreen.Sector or ClientScreen.Gang or ClientScreen.Finance or ClientScreen.Ranking
-            or ClientScreen.Items
+            or ClientScreen.Items or ClientScreen.Give
             or ClientScreen.CombatSummary
             or ClientScreen.Search
-            ? ClientScreen.City
+            ? Current == ClientScreen.Give ? ClientScreen.Items : ClientScreen.City
             : ClientScreen.Title;
         return true;
     }

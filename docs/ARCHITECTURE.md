@@ -126,13 +126,14 @@ and machine-readable diagnostics.
 ### `Rechaos.Game`
 
 The current client owns the MonoGame loop, point-scaled virtual canvas, asset
-loading, title/setup/hot-seat-handoff/city/sector/gang/finance/ranking/items/combat-summary/search/commands/hire/events/endgame routing,
+loading, title/setup/hot-seat-handoff/city/sector/gang/finance/ranking/items/Give/combat-summary/search/commands/hire/events/endgame routing,
 keyboard and inverse-mapped mouse input,
 prototype board renderer, and an internal pixel font. `UI-ATLAS.md` records the
 first full-screen resource and hit-region mappings.
 It reads original media only from the extracted asset directory.
 The item workflow projects research/equipment state and submits Research,
-Equip, and Sell through the replay recorder and authoritative Core validator.
+Equip, Give, and Sell through the replay recorder and authoritative Core
+validator; Give expands only legal same-sector recipients for the equipped item.
 Computer Command/Hire turns use the deterministic baseline in `AI-SPEC.md` and
 submit through that same recorder; its policy is not an original-parity claim.
 The audio router consumes newly appended attack-resolution events and maps an

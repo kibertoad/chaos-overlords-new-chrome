@@ -69,6 +69,9 @@ validated against the executable.
   `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
 - Sector detail uses `PX02000` source `(0, siteId*64, 120, 64)`; gang detail
   and hiring use `PX03000` source `((gangId%10)*64, (gangId/10)*64, 64, 64)`.
+- The recreation Give target panel reuses `PX03000` portraits and lists only
+  validator-approved friendly recipients in the acting gang's sector. Its
+  layout remains provisional pending identification of the original panel.
 
 ## `PX00128` provisional control routes
 
