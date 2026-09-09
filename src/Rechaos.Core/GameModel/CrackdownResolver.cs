@@ -1,6 +1,11 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>Manual-backed police duration and turn-boundary state.</summary>
+public sealed record CrackdownTriggerResult(
+    int Duration,
+    PlayerId? PreviousOwner,
+    bool ControlLost);
+
 public static class CrackdownResolver
 {
     public static void ResolveUpkeep(MatchState state)
@@ -14,7 +19,7 @@ public static class CrackdownResolver
         }
     }
 
-    public static int Trigger(MatchState state, MatchSectorState sector)
+    public static CrackdownTriggerResult Trigger(MatchState state, MatchSectorState sector)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sector);
@@ -25,6 +30,9 @@ public static class CrackdownResolver
             ManualRules.MaximumCrackdownTurns - ManualRules.MinimumCrackdownTurns + 1)
             + ManualRules.MinimumCrackdownTurns - 1;
         sector.CrackdownTurnsRemaining = checked(sector.CrackdownTurnsRemaining + duration);
-        return duration;
+        var previousOwner = sector.Owner;
+        var controlLost = sector.RecordCrackdown(state.Coordinator.Turn) && previousOwner is not null;
+        if (controlLost) SectorControlResolver.Neutralize(state, sector);
+        return new CrackdownTriggerResult(duration, previousOwner, controlLost);
     }
 }

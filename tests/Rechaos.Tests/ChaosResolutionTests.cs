@@ -48,6 +48,54 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
+    public void ThirdCrackdownWithinFiveTurnsNeutralizesSectorAndResetsInfluence()
+    {
+        var match = CreateMatch(owner: new PlayerId(0));
+        var sector = match.Sectors[0];
+        var site = sector.Sites[1];
+        var definition = match.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+        site.InfluencedBy = new PlayerId(0);
+        site.Resistance = 0;
+        sector.Tolerance += definition.Tolerance;
+        match.Players[0].Support = definition.Support;
+
+        CrackdownResolver.Trigger(match, sector);
+        AdvanceCoordinatorTurn(match);
+        AdvanceCoordinatorTurn(match);
+        CrackdownResolver.Trigger(match, sector);
+        AdvanceCoordinatorTurn(match);
+        AdvanceCoordinatorTurn(match);
+
+        var result = CrackdownResolver.Trigger(match, sector);
+
+        Assert.True(result.ControlLost);
+        Assert.Equal(new PlayerId(0), result.PreviousOwner);
+        Assert.Null(sector.Owner);
+        Assert.Null(site.InfluencedBy);
+        Assert.Equal(definition.Resistance, site.Resistance);
+        Assert.Equal(0, match.Players[0].Support);
+        Assert.Equal(20, sector.Tolerance);
+        Assert.Equal([3, 5], sector.CrackdownHistory);
+    }
+
+    [Fact]
+    public void CrackdownsOutsideFiveTurnWindowDoNotNeutralizeSector()
+    {
+        var match = CreateMatch(owner: new PlayerId(0));
+        var sector = match.Sectors[0];
+        CrackdownResolver.Trigger(match, sector);
+        AdvanceCoordinatorTurn(match);
+        CrackdownResolver.Trigger(match, sector);
+        for (var index = 0; index < 5; index++) AdvanceCoordinatorTurn(match);
+
+        var result = CrackdownResolver.Trigger(match, sector);
+
+        Assert.False(result.ControlLost);
+        Assert.Equal(new PlayerId(0), sector.Owner);
+        Assert.Equal([7], sector.CrackdownHistory);
+    }
+
+    [Fact]
     public void FriendlyGangsPoolOneChaosRollAndControlledSectorPaysEverySuccess()
     {
         var match = CreateMatch(twoPlayerZeroGangs: true, owner: new PlayerId(0), tolerance: 40);
@@ -187,6 +235,16 @@ public sealed class ChaosResolutionTests
     private static int SectorIncome(MatchState match, int sectorId) =>
         match.Sectors[sectorId].Sites.Sum(site =>
             match.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
+
+    private static void AdvanceCoordinatorTurn(MatchState match)
+    {
+        var coordinator = match.Coordinator;
+        coordinator.FinishUpkeep();
+        foreach (var player in match.Players) coordinator.FinishCommand(player.Id);
+        while (coordinator.Phase == TurnPhase.Execution) coordinator.FinishExecutionPhase();
+        foreach (var player in match.Players) coordinator.FinishHire(player.Id);
+        coordinator.FinishPlayerElimination();
+    }
 
     private sealed class RollCollectionComparer : IEqualityComparer<IReadOnlyList<int>>
     {

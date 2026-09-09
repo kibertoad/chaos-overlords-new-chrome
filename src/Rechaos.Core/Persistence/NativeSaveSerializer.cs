@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 3;
+    public const int CurrentFormatVersion = 4;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -56,7 +56,7 @@ public static class NativeSaveSerializer
 
     private static MatchState RestoreDocument(NativeSaveDocument document, OriginalData definitions)
     {
-        if (document.FormatVersion is not (1 or 2 or CurrentFormatVersion))
+        if (document.FormatVersion is not (1 or 2 or 3 or CurrentFormatVersion))
             throw new InvalidDataException($"Unsupported native save format {document.FormatVersion}.");
         if (!CryptographicOperations.FixedTimeEquals(
                 DecodeSha256(document.DefinitionsSha256, "definition fingerprint"),
@@ -99,6 +99,7 @@ public static class NativeSaveSerializer
                 {
                     1 => MatchStateHasher.ComputeLegacySha256(state),
                     2 => MatchStateHasher.ComputeVersionTwoSha256(state),
+                    3 => MatchStateHasher.ComputeVersionThreeSha256(state),
                     _ => MatchStateHasher.ComputeSha256(state)
                 }, "restored state fingerprint")))
             throw new InvalidDataException("Native save state fingerprint does not match its contents.");
@@ -199,7 +200,8 @@ public static class NativeSaveSerializer
         sector.Sites.Select(site => new SiteDocument(
             site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy?.Value)).ToArray(),
         sector.Income,
-        sector.CrackdownTurnsRemaining);
+        sector.CrackdownTurnsRemaining,
+        sector.CrackdownHistory.ToArray());
 
     private static MatchSectorState RestoreSector(
         SectorDocument sector,
@@ -223,7 +225,11 @@ public static class NativeSaveSerializer
         formatVersion < 3
             ? sector.CrackdownActive ? ManualRules.MinimumCrackdownTurns : 0
             : sector.CrackdownTurnsRemaining
-                ?? throw new InvalidDataException("Native save crackdown duration is missing."));
+                ?? throw new InvalidDataException("Native save crackdown duration is missing."),
+        formatVersion < 4
+            ? []
+            : sector.CrackdownHistory
+                ?? throw new InvalidDataException("Native save crackdown history is missing."));
 
     private static MemoryStream ReadBounded(Stream source)
     {
@@ -336,7 +342,8 @@ internal sealed record SectorDocument(
     bool IsImportant,
     IReadOnlyList<SiteDocument> Sites,
     int? Income = null,
-    int? CrackdownTurnsRemaining = null);
+    int? CrackdownTurnsRemaining = null,
+    IReadOnlyList<int>? CrackdownHistory = null);
 
 internal sealed record SiteDocument(int Slot, short DefinitionId, int Resistance, int? InfluencedBy);
 

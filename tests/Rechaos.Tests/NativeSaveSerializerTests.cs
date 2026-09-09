@@ -39,11 +39,14 @@ public sealed class NativeSaveSerializerTests
         var match = CreateMatch();
         match.Sectors[0].CrackdownActive = true;
         match.Sectors[0].CrackdownTurnsRemaining = 5;
+        match.Sectors[0].RecordCrackdown(1);
+        match.Sectors[0].RecordCrackdown(3);
 
         var restored = RoundTrip(match);
 
         Assert.True(restored.Sectors[0].CrackdownActive);
         Assert.Equal(5, restored.Sectors[0].CrackdownTurnsRemaining);
+        Assert.Equal([1, 3], restored.Sectors[0].CrackdownHistory);
         Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
     }
 

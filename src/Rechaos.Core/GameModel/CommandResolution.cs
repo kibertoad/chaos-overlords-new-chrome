@@ -648,7 +648,7 @@ public static class CommandResolver
             if (previousOwner is { } oldOwner)
             {
                 player.Statistics.Overthrows++;
-                ResetInfluencedSites(state, sector, oldOwner);
+                SectorControlResolver.ResetInfluencedSites(state, sector, oldOwner);
             }
             sector.Owner = first.Player;
         }
@@ -665,20 +665,6 @@ public static class CommandResolver
                 GameNotificationKind.Control));
         }
         return results;
-    }
-
-    private static void ResetInfluencedSites(MatchState state, MatchSectorState sector, PlayerId previousOwner)
-    {
-        var player = state.FindPlayer(previousOwner)!;
-        foreach (var site in sector.Sites)
-        {
-            var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
-            if (site.InfluencedBy == previousOwner) player.Support -= definition.Support;
-            if (site.InfluencedBy is not null)
-                sector.Tolerance = checked(sector.Tolerance - definition.Tolerance);
-            site.InfluencedBy = null;
-            site.Resistance = definition.Resistance;
-        }
     }
 
     private static int SectorIncome(MatchState state, MatchSectorState sector) => sector.Income;

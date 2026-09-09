@@ -90,5 +90,5 @@ public static class MatchBootstrap
         sector.Sites.Select(site => new MatchSiteState(
             site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy)).ToArray(),
         sector.Owner, sector.Tolerance, sector.Chaos, sector.CrackdownActive, sector.IsImportant, sector.Income,
-        sector.CrackdownTurnsRemaining);
+        sector.CrackdownTurnsRemaining, sector.CrackdownHistory);
 }

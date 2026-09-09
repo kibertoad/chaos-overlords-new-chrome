@@ -41,7 +41,7 @@ is ever attempted.
 | Build | .NET 10 solution, MonoGame DesktopGL 3.8.5.1, xUnit v3 4.0.0 | CI, packaging, other OS smoke tests |
 | Original data | Embedded 22 sites, 90 gangs, and 64 items with pinned provenance | Semantic/formula validation, versioned generation tool |
 | Extraction | Transactional/versioned full-pack SHA-256 validation; 215 repaired RGB555 PX16 images, 214 retained plus decoded PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files; generated 685-output factual catalog | Transparency/color-key validation, video strategy, semantic role/owner resolution |
-| Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, Upkeep, all 14 command resolvers, simultaneous gang/Crackdown combat, 3–5-turn police duration/extension, hidden attack/visibility checks, and local influenced-site stats | Crackdown three-in-five aftermath, special buildings, original RNG seeding/order and exact parity formulas |
+| Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, Upkeep, all 14 command resolvers, simultaneous gang/Crackdown combat, 3–5-turn police duration/extension and three-in-five control loss, hidden attack/visibility checks, and local influenced-site stats | Crackdown notification/timing fixtures, special buildings, original RNG seeding/order and exact parity formulas |
 | Client | Scaled 640x460 routed setup/handoff/city/sector/gang/finance/ranking/items/Give/combat-summary/search/commands/hire/events/endgame UI backed by authoritative `MatchState`; original neutral/player city layers composited per sector; recovered setup; local controls; private handoff; Core-derived commands, projections, visibility, combat results, research/equipment transfer, hire/snub and notification panels; mouse/keyboard, saves/replays | Full setup detail, remaining sprites/atlas and management panels/hit maps, animation, sound/music, accessibility |
 | Tests | Parser/header/provenance, asset verification, scenarios, manual rules, deterministic non-combat action resolution, command queue and phase coordinator | Reference fixtures, combat, AI snapshots, save compatibility, visual tests |
 | Documentation | File/binary research, generated factual asset catalog, architecture, validation, parity matrix, roadmap and initial full-screen UI atlas/hit map | Complete sprite atlas, rules, original save map and remaining documents listed in section 4 |
@@ -574,7 +574,7 @@ unmarked guess.
 | M8 | Not started | Windows local launcher and legal-copy extraction workflow only | Compatibility, CI, packaging and release gate |
 | M9 | Not started | None | Frozen deterministic simulation after M8 |
 
-Current automated baseline: the solution builds successfully, 278 tests
+Current automated baseline: the solution builds successfully, 280 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.

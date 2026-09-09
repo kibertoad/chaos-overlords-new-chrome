@@ -183,6 +183,8 @@ public sealed record PendingHireState(short GangDefinitionId, int TargetSectorId
 
 public sealed class MatchSectorState
 {
+    private readonly List<int> _crackdownHistory;
+
     public MatchSectorState(
         int id,
         IReadOnlyList<MatchSiteState> sites,
@@ -192,7 +194,8 @@ public sealed class MatchSectorState
         bool crackdownActive = false,
         bool isImportant = false,
         int income = ManualRules.MinimumSectorIncome,
-        int crackdownTurnsRemaining = 0)
+        int crackdownTurnsRemaining = 0,
+        IReadOnlyList<int>? crackdownHistory = null)
     {
         if (id is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(id));
@@ -206,6 +209,10 @@ public sealed class MatchSectorState
         if (crackdownTurnsRemaining < 0) throw new ArgumentOutOfRangeException(nameof(crackdownTurnsRemaining));
         if (!crackdownActive && crackdownTurnsRemaining != 0)
             throw new ArgumentException("Inactive police cannot have turns remaining.", nameof(crackdownTurnsRemaining));
+        if (crackdownHistory is { Count: > 2 }
+            || crackdownHistory?.Any(turn => turn < 1) == true
+            || crackdownHistory?.Zip(crackdownHistory.Skip(1), (left, right) => left >= right).Any(invalid => invalid) == true)
+            throw new ArgumentException("Crackdown history must contain at most two increasing positive turns.", nameof(crackdownHistory));
         Id = id;
         Sites = sites.OrderBy(site => site.Slot).ToArray();
         Owner = owner;
@@ -216,6 +223,7 @@ public sealed class MatchSectorState
             : 0;
         IsImportant = isImportant;
         Income = income;
+        _crackdownHistory = crackdownHistory?.ToList() ?? [];
     }
 
     public int Id { get; }
@@ -231,8 +239,21 @@ public sealed class MatchSectorState
             : 0;
     }
     public int CrackdownTurnsRemaining { get; internal set; }
+    public IReadOnlyList<int> CrackdownHistory => _crackdownHistory;
     public bool IsImportant { get; }
     public int Income { get; }
+
+    internal bool RecordCrackdown(int turn)
+    {
+        if (turn < 1) throw new ArgumentOutOfRangeException(nameof(turn));
+        if (_crackdownHistory.Count > 0 && turn <= _crackdownHistory[^1])
+            throw new InvalidOperationException("A sector can record at most one Crackdown per turn.");
+        _crackdownHistory.RemoveAll(previous => previous < turn - 4);
+        var losesControl = _crackdownHistory.Count >= 2;
+        _crackdownHistory.Add(turn);
+        while (_crackdownHistory.Count > 2) _crackdownHistory.RemoveAt(0);
+        return losesControl;
+    }
 }
 
 public sealed class MatchSiteState

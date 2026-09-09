@@ -410,7 +410,8 @@ claim about original-game behavior.
   Stealth 25; the manual separately lists police Detect as 12. No gang may
   attempt to control the sector until the police leave.
 - Observed statement: police remain for three to five turns. Triggering another
-  Crackdown while they are present makes them stay longer.
+  Crackdown while they are present makes them stay longer. Three Crackdowns in
+  a five-turn period make the controlling Overlord lose the sector.
 - Interpretation: at the Combat phase boundary, snapshot every active gang in
   a crackdown sector in sector/gang-ID order. Roll one percentile detection
   check per gang. On detection, roll `max(0, 20 - effective Defense)` dice and
@@ -423,10 +424,13 @@ claim about original-game behavior.
 - Interpretation: each trigger draws an inclusive three-to-five-turn duration
   from the deterministic simulation RNG and adds it to any remaining police
   presence. Upkeep consumes one remaining turn; the sector detail panel exposes
-  the authoritative count.
+  the authoritative count. Each sector retains its latest two occurrence turns;
+  a third occurrence no more than four turns after the oldest neutralizes the
+  sector and resets its influenced sites, Support, Tolerance modifiers, and
+  resistance just like an overthrow.
 - Current exclusions: original timing within Combat, whether 0%/100% checks
   consume RNG, weapon/damage-cap treatment, use of the separately documented
-  Detect 12 value, exact duration RNG call/order, ownership/site aftermath, and
+  Detect 12 value, exact duration RNG call/order, control-loss notification, and
   exact binary RNG/event order.
 - Confidence: High for the detection percentage table and Combat 20; Medium
   for defense subtraction; Low for phase ordering and the listed exclusions.
@@ -434,7 +438,7 @@ claim about original-game behavior.
   `MatchState.LastPoliceAttackResolutions` and `PoliceAttackResolved` events;
   `CommandValidator` and `CommandResolver.ResolveControl` enforce the Control
   lockout at both relevant boundaries; `CrackdownResolver` owns duration and
-  extension.
+  extension plus the two-turn history represented in the original save layout.
 - Tests: `PoliceCombatResolutionTests` covers stable sector/gang ordering,
   effective Stealth/Defense, undetectability at Stealth 25, deterministic RNG
   consumption/hashes, notifications, casualties, and equipment loss.
