@@ -136,6 +136,7 @@ public static class OriginalSpriteLayout
 public static class SectorGangView
 {
     public const int MaximumPortraits = 10;
+    public const int MaximumSearchRows = 7;
 
     public static IReadOnlyList<MatchGangState> Visible(
         MatchState state,
@@ -158,5 +159,11 @@ public static class SectorGangView
     {
         if (index is < 0 or >= MaximumPortraits) throw new ArgumentOutOfRangeException(nameof(index));
         return new Rectangle(18 + index * 40, 370, 36, 36);
+    }
+
+    public static Rectangle SearchPortrait(int index)
+    {
+        if (index is < 0 or >= MaximumSearchRows) throw new ArgumentOutOfRangeException(nameof(index));
+        return new Rectangle(18, 107 + index * 40, 36, 36);
     }
 }

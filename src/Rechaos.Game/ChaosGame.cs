@@ -1058,18 +1058,25 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         var visible = SectorGangView.Visible(state, playerId, _cursor);
         if (visible.Count == 0)
             font.Draw(batch, "NO GANGS DETECTED", new Vector2(18, 116), Color.White, 1);
-        foreach (var entry in visible.Take(14).Select((gang, index) => (gang, index)))
+        foreach (var entry in visible.Take(SectorGangView.MaximumSearchRows)
+                     .Select((gang, index) => (gang, index)))
         {
             var gang = entry.gang;
             var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
             var owner = state.FindPlayer(gang.Owner)!;
-            var y = 112 + entry.index * 21;
-            font.Draw(batch, definition.Name, new Vector2(18, y), PlayerColors[gang.Owner.Value], 1);
+            var y = 112 + entry.index * 40;
+            var portrait = SectorGangView.SearchPortrait(entry.index);
+            if (_gangPortraits is not null)
+                batch.Draw(_gangPortraits, portrait,
+                    OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
+            DrawBorder(batch, pixel, portrait, PlayerColors[gang.Owner.Value], 1);
+            font.Draw(batch, definition.Name, new Vector2(62, y), PlayerColors[gang.Owner.Value], 1);
             font.Draw(batch, $"{owner.Setup.Name}  FORCE {gang.Force}"
                 + (gang.Hidden ? "  HIDDEN" : ""), new Vector2(190, y), Color.White, 1);
         }
-        if (visible.Count > 14)
-            font.Draw(batch, $"+{visible.Count - 14} MORE", new Vector2(18, 390), Color.White, 1);
+        if (visible.Count > SectorGangView.MaximumSearchRows)
+            font.Draw(batch, $"+{visible.Count - SectorGangView.MaximumSearchRows} MORE",
+                new Vector2(18, 390), Color.White, 1);
         DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
     }
 

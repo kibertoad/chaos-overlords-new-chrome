@@ -74,6 +74,8 @@ validated against the executable.
 - Sector detail also shows up to ten friendly or detected enemy portraits from
   `PX03000` in owner colors. Friendly portraits are mouse-selectable and open
   that gang's information panel; enemy portraits remain read-only.
+- Search results reuse the same sheet and visibility projection for seven
+  portrait-led rows, with owner-colored borders and overflow count.
 - The recreation Give target panel reuses `PX03000` portraits and lists only
   validator-approved friendly recipients in the acting gang's sector. Its
   layout remains provisional pending identification of the original panel.

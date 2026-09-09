@@ -116,5 +116,8 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(378, 370, 36, 36), portraits[^1]);
         Assert.All(portraits.SelectMany((left, index) => portraits.Skip(index + 1)
             .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
+        Assert.Equal(new Rectangle(18, 107, 36, 36), SectorGangView.SearchPortrait(0));
+        Assert.Equal(new Rectangle(18, 347, 36, 36),
+            SectorGangView.SearchPortrait(SectorGangView.MaximumSearchRows - 1));
     }
 }
