@@ -556,6 +556,17 @@ come through a computed argument. `tools/ghidra/ReportCallArguments.java`
 provides a repeatable bounded inventory of the three pushed arguments at each
 direct call.
 
+The surrounding action writes give the site modes public command semantics.
+Family 5 uses mode 7 after writing Move; when the selected Support-priority
+site is already local, the same branches write Influence instead. Family 3
+has the identical shape around mode 8 but ranks sites by Cash. These are thus
+Support-focused and Cash-focused Influence strategies, not distinct movement
+rules. Family 10 calls mode 9, compares selector 8 for the chosen and current
+sectors, and moves only when the chosen sector has the larger value. Selector
+8 sums Stealth across completed/influenced sites, so this path seeks a stronger
+local Stealth modifier before its Hide-or-Chaos decision. The dispatcher also
+contains a scenario-specific mode-9 Move for gang slot zero.
+
 `0x00408553` sorts the 64 sector scores descending while retaining their sector
 indices. The caller chooses uniformly among every sector tied for the maximum.
 If that strategic target is outside the immediate 3-by-3 neighborhood, the
@@ -578,10 +589,10 @@ maximum-score tie randomization, and orthogonal next-step return. Medium for
 the player-order predicates, family-11 anchor, dynamic call arguments, and late
 candidate filtering due to decompiler control-flow folding. Low for the
 remaining per-owner table, planning byte `+5`, and therefore the complete
-meaning of modes 6, 7, 10, and 16.
+meaning of modes 6, 10, and 16.
 
 **Next validation:** resolve the mode-6 per-owner table and planning byte `+5`,
-then map the surrounding guards at each family call site to public commands.
+then map the surrounding guards for modes 6 and 10 through 16 to public commands.
 After that, reproduce the 5:2:1 mode-5 target score, path threshold, and
 equal-best RNG with fixed-state reference traces before replacing the
 recreation's provisional destination weights.

@@ -74,8 +74,10 @@ replay-verified two-computer harness through 20 turns or objective completion.
    selector `0x00408642`. Its ring search, all direct family call sites,
    modes 1-5, site Support/Cash/Stealth modes 7-9, human-player count,
    mode-5 movement weights (neutral/owned/enemy `5:2:1`), maximum-score random
-   ties, and orthogonal next-step routing are now bounded. Mode 6's per-owner
-   table and the mode-7 planning-history byte remain unnamed. Selector `0x3e`
+   ties, and orthogonal next-step routing are now bounded. Modes 7 and 8 are
+   confirmed as Support- and Cash-focused Influence routing, while mode 9 seeks
+   influenced-site Stealth for a Hide/Chaos path. Mode 6's per-owner table and
+   its remaining planning-history byte are unnamed. Selector `0x3e`
    is identified as the
    previous-turn action byte. Selectors 3 (player cash), 4 (sector
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
