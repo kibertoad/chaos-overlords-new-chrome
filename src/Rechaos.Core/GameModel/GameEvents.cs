@@ -12,6 +12,7 @@ public enum GameEventKind : byte
     HireResolved,
     PoliceAttackResolved,
     PlayerEliminated,
+    BigManPointsAwarded,
     MatchEnded
 }
 
@@ -53,6 +54,11 @@ public sealed record HireResolutionDetails(
 
 public sealed record EliminationDetails(PlayerId EliminatedPlayer, int RemainingPlayers);
 
+public sealed record BigManPointDetails(
+    int PreviousPoints,
+    int ControlledCentralSectors,
+    int ResultPoints);
+
 public sealed record MatchOutcomeDetails(
     ScenarioId Scenario,
     MatchEndReason Reason,
@@ -91,4 +97,5 @@ public sealed record GameEvent(
     HireResolutionDetails? Hire = null,
     EliminationDetails? Elimination = null,
     PoliceAttackResolutionDetails? PoliceAttack = null,
+    BigManPointDetails? BigManPoints = null,
     MatchOutcomeDetails? MatchOutcome = null);

@@ -437,7 +437,10 @@ claim about original-game behavior.
 - Observed statement: Greed, Power, Acceptance, and Dominance end at their
   selected time limit; the other six scenarios end when their stated objective
   is achieved. Dominance uses the duration-specific weights recorded in
-  `ScenarioCatalog`.
+  `ScenarioCatalog`. In Big Man, each of the four center sectors grants one
+  point per turn to its controller and the first player to 40 wins. In
+  Eliminate, losing the Right Hands removes that player: all remaining gangs
+  vanish and formerly controlled sectors become neutral.
 - Interpretation: after Player Elimination and before advancing the turn,
   project cash, support, controlled sectors, active opponents, opposing active
   Right Hands, controlled Headquarters sectors, and Big Man points from the
@@ -447,22 +450,25 @@ claim about original-game behavior.
   notification per player; include the outcome in canonical state hashes and
   prevent the following Upkeep phase from resolving. Timed outcomes include
   score-descending standings; equal scores share a competition rank, with the
-  next place skipped.
+  next place skipped. Big Man points are awarded in player-ID order at this
+  boundary before its victory check. Eliminate cleanup also clears equipment,
+  pending hires, and the eliminated player's site influence.
 - Current exclusions: binary end-boundary timing, tie-break presentation,
   eliminated-player eligibility, objective-scenario ranking, the original
   display order within a timed tie, Siege's exact important-sector identity,
-  Eliminate neutralization, Big Man point accrual, endgame rankings and award
-  edge-case parity.
+  exact Eliminate cleanup timing, and award edge-case parity.
   Headquarters sites are provisionally treated as Siege-important sectors.
 - Confidence: High for thresholds, durations, score components and weights;
   Low for timing, ties, Siege mapping and special objective edge cases.
-- Implementation: `MatchOutcomeEvaluator`, `MatchState.Outcome`, and
-  `MatchState.FinishPlayerElimination`; canonical hash format version 2.
+- Implementation: `MatchOutcomeEvaluator`, scenario-specific elimination and
+  Big Man accrual in `MatchState.FinishPlayerElimination`, `MatchState.Outcome`,
+  and canonical hash format version 2.
 - Tests: `MatchOutcomeTests` covers authoritative projection, objective event
   and notification emission, Eliminate's Right Hands distinction, exact timed
   boundary ties/standings, and outcome hashing; `EndgameRankingTests` covers
   descending scores, competition ties, and rejecting unsupported objective
-  rankings.
+  rankings; `ScenarioLifecycleTests` covers Big Man accrual/event order and
+  Eliminate cleanup/neutralization.
 - Next experiment: capture the last two turns of each timed scenario and
   simultaneous-threshold states for objective scenarios, then compare event,
   ranking, tie, and next-screen behavior.

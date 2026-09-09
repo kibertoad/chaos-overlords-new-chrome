@@ -40,14 +40,14 @@ public sealed class MatchOutcomeTests
     }
 
     [Fact]
-    public void EliminateScenarioTracksOpposingRightHandsRatherThanPlayerSurvival()
+    public void EliminateScenarioEndsWhenOpposingRightHandsIsGone()
     {
         var match = CreateMatch(ScenarioId.Eliminate, playerOneHasRightHands: false);
 
         FinishTurn(match);
 
         Assert.Equal([new PlayerId(0)], match.Outcome!.Winners);
-        Assert.Equal(PlayerStatus.Active, match.Players[1].Status);
+        Assert.Equal(PlayerStatus.Eliminated, match.Players[1].Status);
     }
 
     [Fact]

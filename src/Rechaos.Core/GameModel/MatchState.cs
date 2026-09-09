@@ -404,6 +404,7 @@ public sealed class MatchState
         if (Coordinator.Phase != TurnPhase.PlayerElimination)
             return CaptureBoundary(Coordinator.FinishPlayerElimination());
         ResolvePlayerEliminations();
+        AwardBigManPoints();
         if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this) is { } outcome)
         {
             Outcome = outcome;
@@ -547,8 +548,10 @@ public sealed class MatchState
     {
         var eliminated = Players
             .Where(player => player.Status == PlayerStatus.Active)
-            .Where(player => player.Gangs.All(gang => !gang.IsActive))
-            .Where(player => Sectors.All(sector => sector.Owner != player.Id))
+            .Where(player => Setup.Scenario == ScenarioId.Eliminate
+                ? player.Gangs.All(gang => !gang.IsActive || gang.DefinitionId != 0)
+                : player.Gangs.All(gang => !gang.IsActive)
+                  && Sectors.All(sector => sector.Owner != player.Id))
             .OrderBy(player => player.Id.Value)
             .ToArray();
 
@@ -556,6 +559,16 @@ public sealed class MatchState
         {
             player.Status = PlayerStatus.Eliminated;
             player.ClearPendingHires();
+            if (Setup.Scenario == ScenarioId.Eliminate)
+            {
+                foreach (var gang in player.Gangs)
+                {
+                    Commands.Cancel(gang.Id);
+                    gang.QueuedCommand = null;
+                    if (gang.IsActive) RemoveGang(gang);
+                }
+                foreach (var sector in Sectors.Where(sector => sector.Owner == player.Id)) sector.Owner = null;
+            }
             foreach (var sector in Sectors)
             foreach (var site in sector.Sites.Where(site => site.InfluencedBy == player.Id))
             {
@@ -573,12 +586,48 @@ public sealed class MatchState
         }
     }
 
+    private void AwardBigManPoints()
+    {
+        if (Setup.Scenario != ScenarioId.BigMan) return;
+        int[] centralSectors = [27, 28, 35, 36];
+        foreach (var player in Players.Where(player => player.Status == PlayerStatus.Active).OrderBy(player => player.Id.Value))
+        {
+            var controlled = centralSectors.Count(sectorId => Sectors[sectorId].Owner == player.Id);
+            if (controlled == 0) continue;
+            var previous = player.BigManPoints;
+            player.BigManPoints = checked(previous + controlled);
+            var details = new BigManPointDetails(previous, controlled, player.BigManPoints);
+            var gameEvent = AppendBigManPointsEvent(player.Id, details);
+            QueueNotification(player.Id, GameNotificationKind.Objective,
+                relatedEventSequence: gameEvent.Sequence);
+        }
+    }
+
+    private static void RemoveGang(MatchGangState gang)
+    {
+        gang.Force = 0;
+        gang.Hidden = false;
+        gang.WeaponItemId = null;
+        gang.ArmorItemId = null;
+        gang.MiscellaneousItemId = null;
+    }
+
     private GameEvent AppendEliminationEvent(PlayerId player, EliminationDetails elimination)
     {
         var gameEvent = new GameEvent(
             _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
             Coordinator.ExecutionPhase, GameEventKind.PlayerEliminated, player,
             null, GangAction.None, CommandTarget.None, Elimination: elimination);
+        _events.Add(gameEvent);
+        return gameEvent;
+    }
+
+    private GameEvent AppendBigManPointsEvent(PlayerId player, BigManPointDetails bigManPoints)
+    {
+        var gameEvent = new GameEvent(
+            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
+            Coordinator.ExecutionPhase, GameEventKind.BigManPointsAwarded, player,
+            null, GangAction.None, CommandTarget.None, BigManPoints: bigManPoints);
         _events.Add(gameEvent);
         return gameEvent;
     }
