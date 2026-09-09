@@ -122,7 +122,7 @@ and machine-readable diagnostics.
 ### `Rechaos.Game`
 
 The current client owns the MonoGame loop, point-scaled virtual canvas, asset
-loading, title/setup/hot-seat-handoff/city/commands/hire/events/endgame routing,
+loading, title/setup/hot-seat-handoff/city/sector/gang/commands/hire/events/endgame routing,
 keyboard and inverse-mapped mouse input,
 prototype board renderer, and an internal pixel font. `UI-ATLAS.md` records the
 first full-screen resource and hit-region mappings.
@@ -317,7 +317,9 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
   lacks the original setup detail, AI turn driver, notification presentation
   detail, animations and most original panels. Its command picker projects all
   currently legal commands from Core rather than maintaining parallel UI rules;
-  its Hire panel exposes all three offers, selected-sector placement and snubbing.
+  its Hire panel exposes all three offers, selected-sector placement and snubbing,
+  while sector/gang views project authoritative sites, influence, effective stats,
+  equipment and queued commands.
 - Exact control edges and within-subphase command ordering remain provisional.
 - Runtime manifest checking validates version only.
 - Media resources are extracted but not presented.

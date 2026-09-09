@@ -11,6 +11,8 @@ public enum ClientScreen
     Commands,
     Hire,
     Events,
+    Sector,
+    Gang,
     Handoff,
     Endgame
 }
@@ -25,6 +27,7 @@ public sealed class ScreenRouter
     {
         if (Current == ClientScreen.Title) return false;
         Current = Current is ClientScreen.Events or ClientScreen.Commands or ClientScreen.Hire
+            or ClientScreen.Sector or ClientScreen.Gang
             ? ClientScreen.City
             : ClientScreen.Title;
         return true;
