@@ -52,28 +52,24 @@ public static class CommandResolver
             throw new ArgumentException("Every command must belong to the current execution subphase.", nameof(commands));
         if (phase == ExecutionPhase.Combat) return ResolveCombatPhase(state, commands).Commands;
         if (phase == ExecutionPhase.Chaos) return ResolveChaosPhase(state, commands);
+        if (phase == ExecutionPhase.Control) return ResolveControlPhase(state, commands);
         var results = new List<CommandResolutionResult>(commands.Count);
         var resolvedSequences = new HashSet<long>();
         foreach (var queued in commands)
         {
             if (!resolvedSequences.Add(queued.Sequence)) continue;
-            if (queued.Command.Action is not (GangAction.Influence or GangAction.Control))
+            if (queued.Command.Action != GangAction.Influence)
             {
                 results.Add(Resolve(state, queued));
                 continue;
             }
 
-            var sectorId = state.FindGang(queued.Command.Gang)!.SectorId;
             var participants = commands.Where(candidate =>
-                candidate.Command.Action == queued.Command.Action
+                candidate.Command.Action == GangAction.Influence
                 && candidate.Command.Player == queued.Command.Player
-                && (queued.Command.Action == GangAction.Influence
-                    ? candidate.Command.Target == queued.Command.Target
-                    : state.FindGang(candidate.Command.Gang)!.SectorId == sectorId)).ToArray();
+                && candidate.Command.Target == queued.Command.Target).ToArray();
             foreach (var participant in participants) resolvedSequences.Add(participant.Sequence);
-            results.AddRange(queued.Command.Action == GangAction.Influence
-                ? ResolveInfluence(state, participants)
-                : ResolveControl(state, participants));
+            results.AddRange(ResolveInfluence(state, participants));
         }
         return results;
     }
@@ -542,6 +538,69 @@ public static class CommandResolver
         IReadOnlyList<int> Rolls,
         int Successes,
         int DiceCount);
+
+    private static IReadOnlyList<CommandResolutionResult> ResolveControlPhase(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> commands)
+    {
+        var results = new List<CommandResolutionResult>(commands.Count);
+        foreach (var sectorCommands in commands
+            .GroupBy(queued => state.FindGang(queued.Command.Gang)!.SectorId)
+            .OrderBy(group => group.Min(queued => queued.Sequence)))
+        {
+            var groups = sectorCommands
+                .GroupBy(queued => queued.Command.Player)
+                .Select(group => group.OrderBy(queued => queued.Sequence).ToArray())
+                .OrderBy(group => group[0].Sequence)
+                .ToArray();
+            var sector = state.Sectors[sectorCommands.Key];
+            if (sector.Owner is null && groups.Length > 1)
+                results.AddRange(ResolveNeutralControlConflict(state, sector, groups));
+            else
+                foreach (var group in groups) results.AddRange(ResolveControl(state, group));
+        }
+        return results;
+    }
+
+    private static IReadOnlyList<CommandResolutionResult> ResolveNeutralControlConflict(
+        MatchState state,
+        MatchSectorState sector,
+        IReadOnlyList<QueuedCommand[]> groups)
+    {
+        var attempts = groups.Select(participants =>
+        {
+            var attack = ManualRules.ControlStrength(participants.Select(queued =>
+            {
+                var gang = state.FindGang(queued.Command.Gang)!;
+                return (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Control);
+            }));
+            return (Participants: participants, Attack: attack,
+                Margin: ManualRules.ControlMargin(attack, SectorIncome(state, sector)));
+        }).ToArray();
+        var bestMargin = attempts.Max(attempt => attempt.Margin);
+        var leaders = attempts.Where(attempt => attempt.Margin == bestMargin).ToArray();
+        var winner = leaders.Length == 1 && bestMargin >= 0 ? leaders[0] : default;
+        int? chanceRoll = null;
+        var captured = winner.Participants is not null && (bestMargin > 0
+            || (chanceRoll = state.Random.NextInclusive(2)) == 1);
+        if (captured) sector.Owner = winner.Participants![0].Command.Player;
+
+        var results = new List<CommandResolutionResult>(groups.Sum(group => group.Length));
+        foreach (var attempt in attempts)
+        foreach (var participant in attempt.Participants)
+        {
+            var won = captured && ReferenceEquals(attempt.Participants, winner.Participants);
+            results.Add(Complete(state, participant.Command, GameEventKind.CommandResolved,
+                new CommandResolutionDetails(
+                    CommandResolutionCode.Resolved, [], won ? 1 : 0,
+                    PreviousValue: null, ResultValue: sector.Owner?.Value,
+                    AttackValue: attempt.Attack, DefenseValue: SectorIncome(state, sector),
+                    ChanceRoll: ReferenceEquals(attempt.Participants, winner.Participants) ? chanceRoll : null,
+                    ChanceSides: ReferenceEquals(attempt.Participants, winner.Participants) && chanceRoll is not null ? 2 : null),
+                GameNotificationKind.Control));
+        }
+        return results;
+    }
 
     private static IReadOnlyList<CommandResolutionResult> ResolveControl(
         MatchState state,

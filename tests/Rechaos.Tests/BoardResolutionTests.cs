@@ -142,6 +142,29 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
+    public void UniqueHighestControlMarginWinsNeutralConflictFromPhaseSnapshot()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 3)],
+            [Gang(20, 1, 0, 5)]);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Control(0, 10)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(Control(1, 20)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        EnterControlFromExecution(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(new PlayerId(1), match.Sectors[0].Owner);
+        Assert.Equal(2, match.LastPhaseResolutions.Count);
+        Assert.Equal(0, match.LastPhaseResolutions.Single(
+            result => result.Command.Player == new PlayerId(0)).Event!.Resolution!.Successes);
+        Assert.Equal(1, match.LastPhaseResolutions.Single(
+            result => result.Command.Player == new PlayerId(1)).Event!.Resolution!.Successes);
+    }
+
+    [Fact]
     public void HidingDefenderDoesNotResistEnemyControl()
     {
         var data = BundledOriginalData.Load();

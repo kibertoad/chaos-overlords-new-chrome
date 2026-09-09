@@ -454,20 +454,21 @@ claim about original-game behavior.
 - Interpretation: group same-player Control commands by sector, calculate the
   signed margin without dice, and capture when it is positive. At exactly zero,
   draw a deterministic two-outcome random value and capture on one outcome,
-  recording the roll and range in the resolution event.
+  recording the roll and range in the resolution event. When multiple players
+  target the same neutral sector, evaluate every group from the phase-start
+  owner snapshot and permit only the unique highest margin to attempt capture.
   On an overthrow, increment the attacker's statistic, remove the former
   owner's site Support, clear influence, and restore table resistance.
-- Current exclusions: cross-player simultaneous tie/conflict ordering, precise
-  definition of sector income, crackdown restrictions, abandoned-sector rules,
-  and negative-total edge behavior. Groups currently resolve at their earliest
-  stable queue position.
-- Confidence: High for equation components, influence loss, and the zero-margin
-  50% rule; Low for simultaneous ordering.
+- Current exclusions: equal-highest neutral ties, simultaneous challenges to an
+  already controlled sector, precise definition of sector income, crackdown
+  restrictions, abandoned-sector rules, and negative-total edge behavior.
+- Confidence: High for equation components, influence loss, the zero-margin 50%
+  rule, and unique-highest neutral conflicts; Low for unresolved tie ordering.
 - Implementation: `ManualRules.ControlStrength`, `ManualRules.ControlMargin`,
   grouped `CommandResolver.ResolveControl`, and site-reset handling.
 - Tests: `BoardResolutionTests` covers neutral capture, pooled strength, defended
-  failure, recorded deterministic zero-margin chance, overthrow/statistics,
-  influence reset, deterministic hashes, and Hide expiration;
+  failure, recorded deterministic zero-margin chance, unique-highest neutral
+  conflicts, overthrow/statistics, influence reset, deterministic hashes, and Hide expiration;
   `ManualRulesTests` covers equation arithmetic.
 
 ## Upkeep economy
