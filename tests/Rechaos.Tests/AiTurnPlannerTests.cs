@@ -179,6 +179,20 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void EliminateMovementPrefersRecoveredHeadquartersCandidateSet()
+    {
+        var match = CreateMatch();
+        const int ordinarySector = 10;
+
+        foreach (var headquarters in OriginalCityGenerator.HeadquartersCandidates)
+            Assert.True(
+                AiTurnPlanner.DestinationValue(
+                    match, new PlayerId(0), headquarters, ScenarioId.Eliminate)
+                > AiTurnPlanner.DestinationValue(
+                    match, new PlayerId(0), ordinarySector, ScenarioId.Eliminate));
+    }
+
+    [Fact]
     public void HirePlannerSelectsOnlyAnAffordableValidOfferWithoutMutation()
     {
         var match = CreateMatch();

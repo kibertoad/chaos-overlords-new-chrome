@@ -200,7 +200,7 @@ public static class AiTurnPlanner
         return 550 + utility * 10 - item.Cost;
     }
 
-    private static int DestinationValue(
+    internal static int DestinationValue(
         MatchState state,
         PlayerId player,
         int sectorId,
@@ -210,6 +210,8 @@ public static class AiTurnPlanner
         var value = sector.Owner == player ? 0 : 100;
         if (scenario == ScenarioId.Siege && sector.IsImportant) value += 300;
         if (scenario == ScenarioId.BigMan && sectorId is 27 or 28 or 35 or 36) value += 300;
+        if (scenario == ScenarioId.Eliminate
+            && OriginalCityGenerator.HeadquartersCandidates.Contains(sectorId)) value += 300;
         return value + sector.Income * 10;
     }
 

@@ -521,8 +521,8 @@ counts a player's gangs in the sector whose planning-record byte at offset
 
 Mode 10 changes its owner test according to the human-player count. Mode 11
 gives `+1` to the sector returned by selector `0x5a` for the active player.
-Modes 12 and 14 restrict
-selection to sectors 27, 28, 35, and 36; modes 13 and 15 restrict it to sectors
+Modes 12 and 14 restrict selection to Big Man's central sectors 27, 28, 35,
+and 36; modes 13 and 15 restrict it to Eliminate's six headquarters candidates
 9, 12, 30, 33, 51, and 54. These four modes require a per-player path value
 below 6 and award `+5` for a human-owned target versus `+1` otherwise, with
 modes 12 and 13 also excluding sectors already owned by the active player.
@@ -566,6 +566,14 @@ sectors, and moves only when the chosen sector has the larger value. Selector
 8 sums Stealth across completed/influenced sites, so this path seeks a stronger
 local Stealth modifier before its Hide-or-Chaos decision. The dispatcher also
 contains a scenario-specific mode-9 Move for gang slot zero.
+
+Families 13 and 14 both use the fixed objective sets as Move destinations:
+scenario value 8 selects modes 12/14 and is Big Man, while scenario value 6
+selects modes 13/15 and is Eliminate. Family 13 uses the variants that exclude
+already-owned objectives; family 14 uses the variants that retain them. This
+establishes an original Eliminate movement bias toward every possible
+headquarters location, not merely an attack-score bonus against a currently
+visible Right Hands gang.
 
 `0x00408553` sorts the 64 sector scores descending while retaining their sector
 indices. The caller chooses uniformly among every sector tied for the maximum.

@@ -61,6 +61,11 @@ Hiring ranks valid affordable offers by Force, Tech, Upkeep, and initial cost.
 It currently chooses at most one offer during its planning turn; placement is
 deferred to the internal Hire phase.
 
+Movement scoring currently includes the recovered objective geography for
+both Big Man (sectors 27, 28, 35, and 36) and Eliminate (the six possible
+headquarters sectors 9, 12, 30, 33, 51, and 54). The exact original ring search,
+path-cost gate, and random tie consumption remain pending as described below.
+
 The test suite drives Greed, Power, Acceptance, and Dominance through complete
 two-computer six-month matches. Each scenario is run twice at a fixed seed and
 must produce the same final state hash; its complete mutation stream must also
