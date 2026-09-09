@@ -376,22 +376,24 @@ claim about original-game behavior.
   controlled sector and counts toward crackdown; activity outside a controlled
   sector earns half as much. When total Chaos exceeds Tolerance, a crackdown
   prevents all Chaos income in that sector.
-- Interpretation: group one player's Chaos commands by sector, add sector Income
+- Interpretation: reset the prior turn's sector Chaos during Upkeep, then group
+  one player's Chaos commands by sector, add sector Income
   once per group, and roll each group in earliest queue order. Accumulate every
   player's successes into `MatchSectorState.Chaos` before paying anybody. A
   sector already in crackdown, or crossing the strict `Chaos > Tolerance`
   threshold during this phase, pays no group; otherwise controlled groups earn
   all successes and uncontrolled groups earn `floor(successes / 2)`. A newly
   triggered crackdown notifies every active player.
-- Current exclusions: crackdown duration/reset, police detection and combat,
-  special site modifiers, whether the original compares turn-only or persisted
-  Chaos, exact half-dollar rounding, and binary within-phase RNG/event order.
+- Current exclusions: crackdown duration, police detection and combat, special
+  site modifiers, exact half-dollar rounding, and binary within-phase RNG/event
+  order.
 - Confidence: High for the base pool, control multiplier, and suppression rule;
   Medium for friendly pooling; Low for accumulation, rounding, and ordering.
 - Implementation: `CommandResolver.ResolveChaosPhase`,
   `ManualRules.ChaosDiceCount`, `ManualRules.ChaosIncome`, and
   `ManualRules.TriggersCrackdown`.
-- Tests: `ChaosResolutionTests` covers pooling, income, statistics, sector-wide
+- Tests: `ChaosResolutionTests` covers turn-start reset, pooling, income,
+  statistics, sector-wide
   cross-player aggregation, existing/new crackdown behavior, notifications,
   RNG consumption, and phase hashes; `ManualRulesTests` covers arithmetic and
   the strict threshold.

@@ -7,6 +7,16 @@ namespace Rechaos.Tests;
 public sealed class ChaosResolutionTests
 {
     [Fact]
+    public void UpkeepClearsPreviousTurnsChaosBeforeCommands()
+    {
+        var match = CreateMatch(initialChaos: 17);
+
+        match.FinishUpkeep();
+
+        Assert.Equal(0, match.Sectors[0].Chaos);
+    }
+
+    [Fact]
     public void FriendlyGangsPoolOneChaosRollAndControlledSectorPaysEverySuccess()
     {
         var match = CreateMatch(twoPlayerZeroGangs: true, owner: new PlayerId(0), tolerance: 40);
@@ -160,7 +170,8 @@ public sealed class ChaosResolutionTests
         int secondPlayerSector = 3,
         PlayerId? owner = null,
         int tolerance = 20,
-        bool crackdownActive = false)
+        bool crackdownActive = false,
+        int initialChaos = 0)
     {
         var data = BundledOriginalData.Load();
         var chaosGang = data.Gangs.OrderByDescending(gang => gang.Stats.Chaos).First().Id;
@@ -189,6 +200,7 @@ public sealed class ChaosResolutionTests
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
             ], id == 0 ? owner : null, id == 0 ? tolerance : 20,
+                chaos: id == 0 ? initialChaos : 0,
                 crackdownActive: id == 0 && crackdownActive, income: 2))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
