@@ -241,6 +241,13 @@ commands, equipment, and hiring can be edited in any order. Done drains
 Execution, deferred Hire placement, Player Elimination, and Upkeep through
 replay-recorded transitions. `--debug-phases` retains boundary-at-a-time stepping.
 
+The client keeps the whole-city board and detailed-sector presentation as
+separate projections over the same authoritative sector collection. The detail
+screen centers its selected sector in a clipped 3-by-3 neighborhood assembled
+from the ownership sheets, then places the sector's three `PX02000` site images
+beside it. Neighbor clicks only change the presentation cursor and never mutate
+match state.
+
 Player Elimination now runs at its named phase boundary. An active player with
 neither an active gang nor an owned sector becomes eliminated; any remaining
 site influence is cleared back to the site's base resistance, and ordered events

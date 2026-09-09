@@ -90,6 +90,12 @@ validated against the executable.
   20-by-20 status marker. A pending or actively dragged hire uses the red-edged
   incoming marker at the prospective sector; incoming state wins if markers
   overlap. All three mappings were confirmed against user-supplied captures.
+- Whole-city and detailed-sector views are distinct. The detailed Sector screen
+  renders the selected sector at the center of a native-size 3-by-3 crop of the
+  `PX10000`-`PX10006` ownership layers, clips neighbors at the city boundary,
+  and overlays coordinate labels, police, and gang-status art. Its three site
+  slots use the matching 120-by-64 strips from `PX02000`; clicking a neighboring
+  tile recenters the detail view.
 - Combat Summary places compact owner-colored attacker and defender portraits
   beside each visible attack result; police rows use the `PX00300` patrol car
   opposite the attacked gang.

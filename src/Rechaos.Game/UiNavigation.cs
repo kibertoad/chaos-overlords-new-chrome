@@ -146,6 +146,70 @@ public static class GangStatusMarkerLayout
     }
 }
 
+public static class SectorDetailLayout
+{
+    public const int Left = 18;
+    public const int Top = 78;
+    public const int Columns = 3;
+    public const int Rows = 3;
+
+    public static Rectangle Cell(int column, int row)
+    {
+        if (column is < 0 or >= Columns) throw new ArgumentOutOfRangeException(nameof(column));
+        if (row is < 0 or >= Rows) throw new ArgumentOutOfRangeException(nameof(row));
+        return new Rectangle(
+            Left + column * CityMapLayout.TileWidth,
+            Top + row * CityMapLayout.TileHeight,
+            CityMapLayout.TileWidth,
+            CityMapLayout.TileHeight);
+    }
+
+    public static int? SectorAt(int centerSectorId, int column, int row)
+    {
+        _ = CityMapLayout.Source(centerSectorId);
+        _ = Cell(column, row);
+        var centerColumn = centerSectorId % 8;
+        var centerRow = centerSectorId / 8;
+        var sectorColumn = centerColumn + column - 1;
+        var sectorRow = centerRow + row - 1;
+        return sectorColumn is < 0 or >= 8 || sectorRow is < 0 or >= 8
+            ? null
+            : sectorRow * 8 + sectorColumn;
+    }
+
+    public static bool TrySectorAt(Point point, int centerSectorId, out int sectorId)
+    {
+        var column = (point.X - Left) / CityMapLayout.TileWidth;
+        var row = (point.Y - Top) / CityMapLayout.TileHeight;
+        if (point.X < Left || point.Y < Top || column is < 0 or >= Columns || row is < 0 or >= Rows
+            || SectorAt(centerSectorId, column, row) is not { } mapped)
+        {
+            sectorId = -1;
+            return false;
+        }
+        sectorId = mapped;
+        return true;
+    }
+
+    public static Rectangle? Marker(int centerSectorId, int sectorId)
+    {
+        _ = CityMapLayout.Source(centerSectorId);
+        _ = CityMapLayout.Source(sectorId);
+        var deltaColumn = sectorId % 8 - centerSectorId % 8;
+        var deltaRow = sectorId / 8 - centerSectorId / 8;
+        if (deltaColumn is < -1 or > 1 || deltaRow is < -1 or > 1) return null;
+        var cell = Cell(deltaColumn + 1, deltaRow + 1);
+        return new Rectangle(cell.Right - 22, cell.Y + 20, 20, 20);
+    }
+
+    public static Rectangle SitePortrait(int slot)
+    {
+        if (slot is < 0 or >= MatchLimits.SitesPerSector)
+            throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(204, 78 + slot * 78, 120, 64);
+    }
+}
+
 public static class SectorGangView
 {
     public const int MaximumPortraits = 10;

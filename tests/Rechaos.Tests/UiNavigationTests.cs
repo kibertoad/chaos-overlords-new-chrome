@@ -107,6 +107,25 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void SectorDetailProjectsClippedThreeByThreeNeighborhood()
+    {
+        Assert.Equal(new Rectangle(18, 78, 54, 52), SectorDetailLayout.Cell(0, 0));
+        Assert.Equal(new Rectangle(126, 182, 54, 52), SectorDetailLayout.Cell(2, 2));
+        Assert.Equal(18, SectorDetailLayout.SectorAt(27, 0, 0));
+        Assert.Equal(27, SectorDetailLayout.SectorAt(27, 1, 1));
+        Assert.Equal(36, SectorDetailLayout.SectorAt(27, 2, 2));
+        Assert.Null(SectorDetailLayout.SectorAt(0, 0, 0));
+        Assert.True(SectorDetailLayout.TrySectorAt(
+            SectorDetailLayout.Cell(2, 1).Center, 27, out var right));
+        Assert.Equal(28, right);
+        Assert.False(SectorDetailLayout.TrySectorAt(
+            SectorDetailLayout.Cell(0, 0).Center, 0, out _));
+        Assert.Equal(new Rectangle(104, 150, 20, 20), SectorDetailLayout.Marker(27, 27));
+        Assert.Null(SectorDetailLayout.Marker(27, 29));
+        Assert.Equal(new Rectangle(204, 234, 120, 64), SectorDetailLayout.SitePortrait(2));
+    }
+
+    [Fact]
     public void EventPresentationUsesDistinctPoliceAndControlLossLabels()
     {
         Assert.Equal("T5 CONTROL LOST SECTOR 8", NotificationPresentation.Describe(

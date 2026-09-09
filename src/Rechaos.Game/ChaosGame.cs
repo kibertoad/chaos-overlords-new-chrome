@@ -197,8 +197,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
                 if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
                 break;
             case ClientScreen.Sector:
-                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    _screens.Show(ClientScreen.City);
+                UpdateSector(keyboard);
                 break;
             case ClientScreen.Gang:
                 if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) CycleGang(-1);
@@ -359,6 +358,18 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.F10)) LoadReplay();
     }
 
+    private void UpdateSector(KeyboardState keyboard)
+    {
+        var column = _cursor % 8;
+        var row = _cursor / 8;
+        if (Pressed(keyboard, Keys.Left) && column > 0) _cursor--;
+        if (Pressed(keyboard, Keys.Right) && column < 7) _cursor++;
+        if (Pressed(keyboard, Keys.Up) && row > 0) _cursor -= 8;
+        if (Pressed(keyboard, Keys.Down) && row < 7) _cursor += 8;
+        if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+            _screens.Show(ClientScreen.City);
+    }
+
     private void HandleClick(Point point)
     {
         switch (_screens.Current)
@@ -427,6 +438,12 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             return;
         }
         if (_state is null) return;
+        if (SectorDetailLayout.TrySectorAt(point, _cursor, out var selectedSector))
+        {
+            _cursor = selectedSector;
+            _message = $"SECTOR {_cursor + 1}";
+            return;
+        }
         var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var visible = SectorGangView.Visible(_state, playerId, _cursor)
             .Take(SectorGangView.MaximumPortraits).ToArray();
@@ -966,30 +983,28 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
         var sector = state.Sectors[_cursor];
-        font.Draw(batch, $"SECTOR {_cursor + 1}", new Vector2(18, 60), Color.Gold, 2);
+        font.Draw(batch, $"SECTOR {_cursor + 1}", new Vector2(18, 52), Color.Gold, 2);
+        DrawSectorNeighborhood(batch, pixel, font, state);
         var owner = sector.Owner is { } ownerId ? state.FindPlayer(ownerId)!.Setup.Name : "NEUTRAL";
-        font.Draw(batch, $"OWNER {owner}  INCOME {sector.Income}  TOLERANCE {sector.Tolerance}",
-            new Vector2(18, 86), Color.White, 1);
+        font.Draw(batch, $"OWNER {owner}", new Vector2(18, 246), Color.White, 1);
+        font.Draw(batch, $"INCOME {sector.Income}  TOLERANCE {sector.Tolerance}",
+            new Vector2(18, 262), Color.White, 1);
         font.Draw(batch, $"CHAOS {sector.Chaos}  CRACKDOWN {(sector.CrackdownActive ? $"{sector.CrackdownTurnsRemaining} TURNS" : "NO")}",
-            new Vector2(18, 102), Color.White, 1);
+            new Vector2(18, 278), Color.White, 1);
         foreach (var site in sector.Sites)
         {
-            var y = 136 + site.Slot * 76;
             var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+            var portrait = SectorDetailLayout.SitePortrait(site.Slot);
             if (_sitePortraits is not null)
-                batch.Draw(_sitePortraits, new Rectangle(18, y - 5, 120, 64),
+                batch.Draw(_sitePortraits, portrait,
                     OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
-            font.Draw(batch, definition.Name, new Vector2(146, y), new Color(180, 230, 170), 1);
-            font.Draw(batch, $"RESISTANCE {site.Resistance}  CASH {definition.Cash}  SUPPORT {definition.Support}",
-                new Vector2(146, y + 16), Color.White, 1);
-            var influence = site.InfluencedBy is { } influencedBy
-                ? state.FindPlayer(influencedBy)!.Setup.Name
-                : "NONE";
-            font.Draw(batch, "INFLUENCED BY " + influence, new Vector2(146, y + 32), Color.White, 1);
+            var name = definition.Name.Length <= 20 ? definition.Name : definition.Name[..20];
+            font.Draw(batch, name, new Vector2(portrait.X, portrait.Bottom + 2),
+                site.InfluencedBy is { } influencedBy ? PlayerColors[influencedBy.Value] : new Color(180, 230, 170), 1);
         }
         var viewer = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var visibleGangs = SectorGangView.Visible(state, viewer, sector.Id);
-        font.Draw(batch, "GANGS", new Vector2(18, 356), Color.Gold, 1);
+        font.Draw(batch, "GANGS", new Vector2(18, 352), Color.Gold, 1);
         foreach (var entry in visibleGangs.Take(SectorGangView.MaximumPortraits)
                      .Select((gang, index) => (gang, index)))
         {
@@ -1004,6 +1019,62 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             font.Draw(batch, $"+{visibleGangs.Count - SectorGangView.MaximumPortraits}",
                 new Vector2(420, 383), Color.White, 1);
         DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
+    }
+
+    private void DrawSectorNeighborhood(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        MatchState state)
+    {
+        for (var row = 0; row < SectorDetailLayout.Rows; row++)
+        for (var column = 0; column < SectorDetailLayout.Columns; column++)
+        {
+            var destination = SectorDetailLayout.Cell(column, row);
+            if (SectorDetailLayout.SectorAt(_cursor, column, row) is not { } sectorId)
+            {
+                batch.Draw(pixel, destination, Color.Black);
+                DrawBorder(batch, pixel, destination, new Color(0, 110, 30), 1);
+                continue;
+            }
+            var sector = state.Sectors[sectorId];
+            var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
+            if (layer is not null)
+                batch.Draw(layer, destination, CityMapLayout.Source(sectorId), Color.White);
+            else
+                batch.Draw(pixel, destination, new Color(24, 37, 39));
+            if (sector.CrackdownActive && _policeSprites is not null)
+                batch.Draw(_policeSprites,
+                    new Rectangle(destination.X + 14, destination.Y + 10, 27, 32),
+                    OriginalSpriteLayout.PolicePatrolCar, Color.White);
+            DrawBorder(batch, pixel, destination,
+                column == 1 && row == 1 ? Color.White : new Color(0, 150, 45),
+                column == 1 && row == 1 ? 2 : 1);
+            if (row == 0)
+                font.Draw(batch, ((char)('A' + sectorId % 8)).ToString(),
+                    new Vector2(destination.X + 23, destination.Y + 2), Color.Lime, 1);
+            if (column == 0)
+                font.Draw(batch, (sectorId / 8 + 1).ToString(),
+                    new Vector2(destination.X + 2, destination.Y + 20), Color.Lime, 1);
+        }
+
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var player = state.FindPlayer(playerId)!;
+        var selectedGang = SelectedGang(player);
+        if (selectedGang is { IsActive: true }
+            && SectorDetailLayout.Marker(_cursor, selectedGang.SectorId) is { } gangMarker)
+            DrawGangStatusMarker(batch, gangMarker,
+                selectedGang.QueuedCommand is null
+                    ? OriginalSpriteLayout.IdleGangStatus
+                    : OriginalSpriteLayout.AssignedGangStatus);
+        foreach (var pending in player.PendingHires)
+            if (SectorDetailLayout.Marker(_cursor, pending.TargetSectorId) is { } hireMarker)
+                DrawGangStatusMarker(batch, hireMarker, OriginalSpriteLayout.IncomingGangStatus);
+    }
+
+    private void DrawGangStatusMarker(SpriteBatch batch, Rectangle destination, Rectangle source)
+    {
+        if (_uiSprites is not null) batch.Draw(_uiSprites, destination, source, Color.White);
     }
 
     private void DrawGangDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
