@@ -142,7 +142,7 @@ the exact RNG consumption order.
   support, cash, tolerance, and stat modifiers.
 - Control is a non-dice comparison of total Force + Control, including the
   manual's site-influence contribution and contested-sector rules.
-- Bribe costs $3 and raises sector tolerance by 5, capped at 40. Snitch is free
+- Bribe costs $5 and raises sector tolerance by 3, capped at 40. Snitch is free
   and lowers tolerance by 3, floored at zero. Automatic tolerance behavior for
   sectors with no influenced sites must be verified.
 - Chaos uses total Force + Chaos, earns cash subject to sector income/control,

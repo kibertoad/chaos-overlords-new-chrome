@@ -155,22 +155,22 @@ controlled reference observation confirms its execution timing and edge cases.
 
 ### RULE-BRIBE-001 — Bribe tolerance adjustment
 
-- Source: `MANUAL-GOG-1`; Bribe command description. Exact scan page location
+- Source: `MANUAL-GOG-1`; command formula summary. Exact scan page location
   still needs transcription into the evidence log.
-- Observed statement: Bribe costs $3 and raises the acting gang's sector
-  tolerance by 5, with a maximum tolerance of 40.
-- Interpretation: during the Instant execution subphase, deduct $3 from the
+- Observed statement: Bribe costs $5 and raises the acting gang's sector
+  tolerance by 3, with a maximum base tolerance of 40.
+- Interpretation: during the Instant execution subphase, deduct $5 from the
   commanding player, record it as cash spent, and set sector tolerance to
-  `min(40, tolerance + 5)`.
+  `min(40, tolerance + 3)`.
 - Current insufficient-cash behavior: the recreation emits an ordered failed
   result and does not change cash or tolerance. This edge case is provisional.
 - Confidence: High for cost/delta/cap; Low for execution-time affordability and
   failure notification behavior.
 - Implementation: `ManualRules.ApplyBribe`, `CommandResolver.ResolveBribe`.
-- Tests: `ManualRulesTests.BribeAddsFiveAndCapsAtForty`,
-  `CommandResolutionTests.BribeSpendsThreeAndAddsFiveTolerance`, and
+- Tests: `ManualRulesTests.BribeAddsThreeAndCapsAtForty`,
+  `CommandResolutionTests.BribeSpendsFiveAndAddsThreeTolerance`, and
   `CommandResolutionTests.BribeFailureIsOrderedAndDoesNotMutateCashOrTolerance`.
-- Next experiment: queue Bribe with $0–$3 in identical reference saves and
+- Next experiment: queue Bribe with $0–$5 in identical reference saves and
   compare command retention, cash, tolerance, and event ordering.
 
 ### RULE-SNITCH-001 — Snitch tolerance adjustment

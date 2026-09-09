@@ -20,11 +20,11 @@ public sealed class ManualRulesTests
         Assert.Equal(3, ManualRules.CountSuccesses([1, 4, 2, 5, 6]));
 
     [Theory]
-    [InlineData(0, 5)]
-    [InlineData(34, 39)]
+    [InlineData(0, 3)]
+    [InlineData(34, 37)]
     [InlineData(38, 40)]
     [InlineData(40, 40)]
-    public void BribeAddsFiveAndCapsAtForty(int before, int after) =>
+    public void BribeAddsThreeAndCapsAtForty(int before, int after) =>
         Assert.Equal(after, ManualRules.ApplyBribe(before));
 
     [Theory]

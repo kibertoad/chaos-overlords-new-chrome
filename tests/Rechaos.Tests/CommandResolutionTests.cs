@@ -7,16 +7,16 @@ namespace Rechaos.Tests;
 public sealed class CommandResolutionTests
 {
     [Fact]
-    public void BribeSpendsThreeAndAddsFiveTolerance()
+    public void BribeSpendsFiveAndAddsThreeTolerance()
     {
         var match = CreateMatch(cash: 10);
         QueueAndEnterExecution(match, GangAction.Bribe);
 
         match.FinishExecutionPhase();
 
-        Assert.Equal(7, match.Players[0].Cash);
-        Assert.Equal(3, match.Players[0].Statistics.CashSpent);
-        Assert.Equal(5, match.Sectors[0].Tolerance);
+        Assert.Equal(5, match.Players[0].Cash);
+        Assert.Equal(5, match.Players[0].Statistics.CashSpent);
+        Assert.Equal(3, match.Sectors[0].Tolerance);
         Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
         Assert.Equal(GameEventKind.CommandResolved, match.Events[^1].Kind);
         Assert.Equal(CommandResolutionCode.Resolved, match.Events[^1].Resolution!.Code);

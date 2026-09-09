@@ -10,8 +10,8 @@ public static class ManualRules
     public const int MaximumForce = 10;
     public const int MinimumHiredGangForce = 5;
     public const int MaximumHiredGangForce = 9;
-    public const int BribeCost = 3;
-    public const int BribeToleranceIncrease = 5;
+    public const int BribeCost = 5;
+    public const int BribeToleranceIncrease = 3;
     public const int SnitchToleranceDecrease = 3;
     public const int MinimumTolerance = 0;
     public const int MaximumTolerance = 40;
