@@ -144,7 +144,9 @@ public static class AiTurnPlanner
         if (sector.Owner is { } owner && owner != playerId)
         {
             defense = checked(defense + ManualRules.ControlStrength(state.FindPlayer(owner)!.Gangs
-                .Where(candidate => candidate.IsActive && !candidate.Hidden && candidate.SectorId == sector.Id)
+                .Where(candidate => candidate.IsActive
+                    && candidate.SectorId == sector.Id
+                    && state.CanPlayerDetectGang(playerId, candidate.Id))
                 .Select(candidate =>
                 {
                     var candidateStatistics = EffectiveStatisticsCalculator.ForGang(state, candidate);

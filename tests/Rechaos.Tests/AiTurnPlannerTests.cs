@@ -122,6 +122,42 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void SoloControlEstimateDoesNotCountUndetectableDefenders()
+    {
+        var data = BundledOriginalData.Load();
+        var attackerDefinition = data.Gangs.OrderBy(candidate => candidate.Stats.Detect).First();
+        var defenderDefinition = data.Gangs.OrderByDescending(candidate =>
+            candidate.Stats.Stealth + candidate.Stats.Control).First();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU", PlayerController.Computer),
+            new(new PlayerId(1), "RIVAL", PlayerController.Human)
+        ];
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20,
+                [new MatchGangState(new GangId(10), new PlayerId(0), attackerDefinition.Id, 0, 10)]),
+            new(setups[1], 20,
+                [new MatchGangState(new GangId(20), new PlayerId(1), defenderDefinition.Id, 0, 10)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 5),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 5)
+            ], owner: id == 0 ? new PlayerId(1) : null,
+                income: ManualRules.MinimumSectorIncome))
+            .ToArray();
+        var match = new MatchState(data, new MatchSetup(
+            ScenarioId.Power, GameDuration.SixMonths, 23, setups), players, sectors);
+        var attacker = match.FindGang(new GangId(10))!;
+
+        Assert.False(match.CanPlayerDetectGang(new PlayerId(0), new GangId(20)));
+        Assert.True(AiTurnPlanner.CanSoloControl(match, new PlayerId(0), attacker));
+    }
+
+    [Fact]
     public void HirePlannerSelectsOnlyAnAffordableValidOfferWithoutMutation()
     {
         var match = CreateMatch();

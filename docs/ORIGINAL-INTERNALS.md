@@ -434,8 +434,11 @@ The remaining selectors in those gates are now structurally identified:
   disabled, unavailable, or already-owned sectors. For a neutral sector it
   tests whether gang Force + Control exceeds sector Income + Support. For an
   enemy sector it adds every defending gang's Force + Control to that defense
-  and performs the same strict comparison. The field at record offset `+23`
-  is independently used by the Control resolver at `0x00472775`; offset `+24`
+  and performs the same strict comparison. Its nested selector `0x91`
+  enumerates other players' gangs in that sector only when the querying
+  player's per-gang visibility byte is nonzero, so unseen defenders are not
+  included in the AI estimate. The field at record offset `+23` is
+  independently used by the Control resolver at `0x00472775`; offset `+24`
   returned by selector `0x51` is the following Heal statistic.
 
 These are verified branch facts, not yet a complete policy table: the target
