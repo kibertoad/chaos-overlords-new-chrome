@@ -297,9 +297,10 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
 - The client now consumes authoritative `MatchState`, advances its real phase
   coordinator, submits validated Move/Control commands, and uses deferred Hire
   placement. F5/F9 expose atomic native quick-save/load with backup recovery in
-  the user's local application-data directory. Its single-player city/site
-  layout, starting values and initial offers are explicitly a presentation
-  prototype, not a parity claim.
+  the user's local application-data directory. All client mutations pass through
+  `MatchReplayRecorder`; F6/F10 atomically save and verify/play the current
+  replay. Its single-player city/site layout, starting values and initial offers
+  are explicitly a presentation prototype, not a parity claim.
 - The client still lacks a screen router, command picker, AI turn driver,
   notifications, animations and most original panels.
 - Exact control edges and city generation remain provisional.

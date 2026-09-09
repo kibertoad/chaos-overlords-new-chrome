@@ -79,6 +79,28 @@ public sealed class MatchReplayTests
             MatchReplaySerializer.Save(new MemoryStream(), recorder));
     }
 
+    [Fact]
+    public void AtomicReplayStoreWritesAndReplaysAFile()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-replay-tests", Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(directory, "match.rchreplay");
+        try
+        {
+            var recorder = new MatchReplayRecorder(CreateMatch());
+            recorder.FinishUpkeep();
+            MatchReplayStore.SaveAtomic(path, recorder);
+
+            var replayed = MatchReplayStore.LoadAndReplay(path, recorder.State.Definitions);
+
+            Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(replayed));
+            Assert.Empty(Directory.EnumerateFiles(directory, "*.tmp"));
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static MatchState CreateMatch()
     {
         var data = BundledOriginalData.Load();

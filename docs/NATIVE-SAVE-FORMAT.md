@@ -69,6 +69,9 @@ result where applicable, and the canonical state SHA-256 after the operation.
 operations, checks validation outcomes, and rejects the file at the first hash
 divergence. Replay input is limited to 32 MiB and 1,000,000 operations. Unknown
 members, missing values, unknown versions, and malformed operations are rejected.
+`MatchReplayStore` provides same-directory temporary-file promotion for replay
+files. The prototype client records all of its mutations and exposes atomic
+save plus verified playback through F6 and F10.
 
 The initial snapshot is required while original-compatible city generation is
 still unresolved. Once exact seed-to-city setup is recovered, a future replay

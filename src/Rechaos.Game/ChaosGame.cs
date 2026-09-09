@@ -15,11 +15,13 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly GraphicsDeviceManager _graphics;
     private readonly string _assetRoot;
     private readonly string _quickSavePath;
+    private readonly string _replayPath;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
     private Texture2D? _background;
     private PixelFont? _font;
     private MatchState? _state;
+    private MatchReplayRecorder? _replay;
     private int _cursor;
     private string _message = "ADVANCE UPKEEP TO BEGIN";
     private KeyboardState _previousKeyboard;
@@ -30,6 +32,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _quickSavePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords", "quicksave.rchsave");
+        _replayPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Rechaos Overlords", "last-match.rchreplay");
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -48,6 +53,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _pixel.SetData([Color.White]);
         _font = new PixelFont(_pixel);
         _state = CreatePrototypeMatch(BundledOriginalData.Load());
+        _replay = new MatchReplayRecorder(_state);
 
         var backgroundPath = Path.Combine(_assetRoot, "images", "PX00100.bmp");
         if (File.Exists(backgroundPath))
@@ -72,6 +78,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             if (Pressed(keyboard, Keys.Space)) AdvancePhase();
             if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
             if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
+            if (Pressed(keyboard, Keys.F6)) SaveReplay();
+            if (Pressed(keyboard, Keys.F10)) LoadReplay();
         }
         _previousKeyboard = keyboard;
         base.Update(gameTime);
@@ -125,7 +133,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         font.Draw(batch, SectorSummary(state, state.Sectors[_cursor]), new Vector2(18, 404), Color.White, 1);
         font.Draw(batch, $"GANGS {player.Gangs.Count}/{MatchLimits.GangsPerPlayer}", new Vector2(18, 420), PlayerColors[playerIndex], 1);
         font.Draw(batch, _message, new Vector2(116, 420), Color.Gold, 1);
-        font.Draw(batch, "ARROWS  ENTER MOVE/CONTROL  H HIRE  SPACE PHASE  F5 SAVE  F9 LOAD", new Vector2(18, 436), new Color(180, 190, 190), 1);
+        font.Draw(batch, "ARROWS ENTER/H/SPACE  F5/F9 SAVE/LOAD  F6/F10 REPLAY", new Vector2(18, 436), new Color(180, 190, 190), 1);
     }
 
     private void MoveCursor(int dx, int dy)
@@ -153,7 +161,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         var command = gang.SectorId == _cursor
             ? new GameCommand(playerId, gang.Id, GangAction.Control, CommandTarget.None)
             : new GameCommand(playerId, gang.Id, GangAction.Move, CommandTarget.Sector(_cursor));
-        var result = _state.Submit(command);
+        var result = _replay!.Submit(command);
         _message = result.Accepted ? $"{command.Action.ToString().ToUpperInvariant()} QUEUED" : result.Validation.Message.ToUpperInvariant();
     }
 
@@ -172,7 +180,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             return;
         }
         var offer = player.HirePool[0];
-        var result = _state.QueueHire(playerId, offer, _cursor);
+        var result = _replay!.QueueHire(playerId, offer, _cursor);
         _message = result.Accepted ? "HIRE QUEUED" : result.Validation.Message.ToUpperInvariant();
     }
 
@@ -186,11 +194,11 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         }
         var transition = _state.Coordinator.Phase switch
         {
-            TurnPhase.Upkeep => _state.FinishUpkeep(),
-            TurnPhase.Command => _state.FinishCommand(_state.Coordinator.ActivePlayer!.Value),
-            TurnPhase.Execution => _state.FinishExecutionPhase(),
-            TurnPhase.Hire => _state.FinishHire(_state.Coordinator.ActivePlayer!.Value),
-            TurnPhase.PlayerElimination => _state.FinishPlayerElimination(),
+            TurnPhase.Upkeep => _replay!.FinishUpkeep(),
+            TurnPhase.Command => _replay!.FinishCommand(_state.Coordinator.ActivePlayer!.Value),
+            TurnPhase.Execution => _replay!.FinishExecutionPhase(),
+            TurnPhase.Hire => _replay!.FinishHire(_state.Coordinator.ActivePlayer!.Value),
+            TurnPhase.PlayerElimination => _replay!.FinishPlayerElimination(),
             _ => throw new InvalidOperationException("Unknown turn phase.")
         };
         _message = transition.ExecutionPhase is { } execution
@@ -219,12 +227,43 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         {
             var result = NativeSaveStore.LoadRecoveringBackup(_quickSavePath, _state.Definitions);
             _state = result.State;
+            _replay = new MatchReplayRecorder(_state);
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
         {
             _message = "LOAD FAILED";
+        }
+    }
+
+    private void SaveReplay()
+    {
+        if (_replay is null) return;
+        try
+        {
+            MatchReplayStore.SaveAtomic(_replayPath, _replay);
+            _message = "REPLAY SAVED";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _message = "REPLAY SAVE FAILED";
+        }
+    }
+
+    private void LoadReplay()
+    {
+        if (_state is null) return;
+        try
+        {
+            _state = MatchReplayStore.LoadAndReplay(_replayPath, _state.Definitions);
+            _replay = new MatchReplayRecorder(_state);
+            _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
+            _message = "REPLAY VERIFIED";
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            _message = "REPLAY FAILED";
         }
     }
 

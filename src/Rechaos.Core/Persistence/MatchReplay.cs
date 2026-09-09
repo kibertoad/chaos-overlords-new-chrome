@@ -326,3 +326,41 @@ internal sealed record ReplayDocument(
     string InitialStateSha256,
     byte[] InitialSnapshot,
     IReadOnlyList<ReplayStep> Steps);
+
+public static class MatchReplayStore
+{
+    public static void SaveAtomic(string path, MatchReplayRecorder recorder)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(recorder);
+        var fullPath = Path.GetFullPath(path);
+        var directory = Path.GetDirectoryName(fullPath)
+            ?? throw new ArgumentException("Replay path has no parent directory.", nameof(path));
+        Directory.CreateDirectory(directory);
+        var temporaryPath = Path.Combine(
+            directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            using (var stream = new FileStream(
+                temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                bufferSize: 81920, FileOptions.WriteThrough))
+            {
+                MatchReplaySerializer.Save(stream, recorder);
+                stream.Flush(flushToDisk: true);
+            }
+            File.Move(temporaryPath, fullPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
+        }
+    }
+
+    public static MatchState LoadAndReplay(string path, OriginalData definitions)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        using var stream = new FileStream(
+            Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read);
+        return MatchReplaySerializer.LoadAndReplay(stream, definitions);
+    }
+}
