@@ -15,6 +15,7 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\ChaosOverlordsNewChrome
+DisableDirPage=no
 DefaultGroupName={#MyAppGroupName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
