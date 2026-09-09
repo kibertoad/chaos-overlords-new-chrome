@@ -287,12 +287,16 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
 
 ## Known architectural debt
 
-- `GameState` combines cursor/UI messages with simulation state.
-- The legacy `GameState` prototype still hires immediately; authoritative
-  `MatchState` hiring is deferred to the Hire phase.
-- Control and city generation formulas are placeholders.
-- The new `MatchState` gang schema has force, equipment, and a read-only command
-  projection, but the prototype client still consumes the legacy `GameState`.
+- The unused legacy `GameState` compatibility prototype still combines
+  cursor/UI messages with simulation state and hires immediately; it should be
+  removed after its remaining tests migrate.
+- The client now consumes authoritative `MatchState`, advances its real phase
+  coordinator, submits validated Move/Control commands, and uses deferred Hire
+  placement. Its single-player city/site layout, starting values and initial
+  offers are explicitly a presentation prototype, not a parity claim.
+- The client still lacks a screen router, command picker, AI turn driver,
+  notifications, animations and most original panels.
+- Exact control edges and city generation remain provisional.
 - The prototype client still advances its older per-player turn directly rather
   than driving `TurnCoordinator`; within-subphase command ordering is explicitly
   provisional until the binary tie-breaker is recovered.

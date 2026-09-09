@@ -42,7 +42,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | AI | Objective/difficulty-aware computer players | Unknown | Binary research required, Low | Decision snapshots |
 | Save import | Two known magic/size variants | Documented | Reverse-engineering notes, Medium | Obtain and parse corpus |
 | Native saves | Versioned safe recreation format | Unknown | Design required | Snapshot/replay schema |
-| City/Sector UI | Original screen/panel workflow | Provisional | Manual/PX assets, Medium | UI atlas and golden screens |
+| City/Sector UI | Original screen/panel workflow | Provisional authoritative-state client: board selection, real phase advancement, validated Move/Control queueing and deferred Hire placement | Manual/PX assets, Medium for board geometry; prototype layout/interaction Low | UI atlas, exact setup integration, screen router, mouse input and golden screens |
 | Input | Original mouse plus modern keyboard | Provisional | Manual/current client | Full hit-map/navigation |
 | Audio | 28 WAV resources and triggers | Extracted only | File inspection, High format | Resource-to-event map |
 | Music | Eight Ogg tracks | Extracted only | GOG pack, High format | Track sequencing behavior |

@@ -17,7 +17,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _pixel;
     private Texture2D? _background;
     private PixelFont? _font;
-    private GameState? _state;
+    private MatchState? _state;
+    private int _cursor;
+    private string _message = "ADVANCE UPKEEP TO BEGIN";
     private KeyboardState _previousKeyboard;
 
     public ChaosGame(string assetRoot)
@@ -40,7 +42,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData([Color.White]);
         _font = new PixelFont(_pixel);
-        _state = new GameState(BundledOriginalData.Load());
+        _state = CreatePrototypeMatch(BundledOriginalData.Load());
 
         var backgroundPath = Path.Combine(_assetRoot, "images", "PX00100.bmp");
         if (File.Exists(backgroundPath))
@@ -56,13 +58,13 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.Escape)) Exit();
         if (_state is not null)
         {
-            if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.A)) _state.MoveCursor(-1, 0);
-            if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.D)) _state.MoveCursor(1, 0);
-            if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.W)) _state.MoveCursor(0, -1);
-            if (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.S)) _state.MoveCursor(0, 1);
-            if (Pressed(keyboard, Keys.Enter)) _state.TakeControl();
-            if (Pressed(keyboard, Keys.H)) _state.HireGang();
-            if (Pressed(keyboard, Keys.Space)) _state.EndTurn();
+            if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.A)) MoveCursor(-1, 0);
+            if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.D)) MoveCursor(1, 0);
+            if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.W)) MoveCursor(0, -1);
+            if (Pressed(keyboard, Keys.Down) || Pressed(keyboard, Keys.S)) MoveCursor(0, 1);
+            if (Pressed(keyboard, Keys.Enter)) QueueBoardCommand();
+            if (Pressed(keyboard, Keys.H)) QueueFirstHireOffer();
+            if (Pressed(keyboard, Keys.Space)) AdvancePhase();
         }
         _previousKeyboard = keyboard;
         base.Update(gameTime);
@@ -86,34 +88,139 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         base.Draw(gameTime);
     }
 
-    private static void DrawBoard(SpriteBatch batch, Texture2D pixel, PixelFont font, GameState state)
+    private void DrawBoard(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
+        var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
+        var player = state.Players[playerIndex];
         batch.Draw(pixel, new Rectangle(11, 8, 618, 29), new Color(0, 0, 0, 205));
         font.Draw(batch, "CHAOS OVERLORDS", new Vector2(20, 15), Color.Gold, 2);
-        font.Draw(batch, $"TURN {state.Turn}   {state.Players[state.CurrentPlayer].Name}   CASH ${state.Players[state.CurrentPlayer].Cash}",
+        font.Draw(batch, $"TURN {state.Coordinator.Turn}   {player.Setup.Name}   CASH ${player.Cash}",
             new Vector2(236, 17), Color.White, 1);
 
         const int left = 58, top = 51, cellWidth = 65, cellHeight = 42;
         batch.Draw(pixel, new Rectangle(left - 4, top - 4, cellWidth * 8 + 8, cellHeight * 8 + 8), new Color(0, 0, 0, 190));
-        for (var index = 0; index < state.Sectors.Length; index++)
+        for (var index = 0; index < state.Sectors.Count; index++)
         {
             var sector = state.Sectors[index];
             var x = left + index % 8 * cellWidth;
             var y = top + index / 8 * cellHeight;
-            var fill = sector.Owner < 0 ? new Color(24, 37, 39, 220) : PlayerColors[sector.Owner] * .68f;
+            var fill = sector.Owner is null
+                ? new Color(24, 37, 39, 220)
+                : PlayerColors[sector.Owner.Value.Value] * .68f;
             batch.Draw(pixel, new Rectangle(x + 1, y + 1, cellWidth - 2, cellHeight - 2), fill);
             batch.Draw(pixel, new Rectangle(x + 4, y + 5, cellWidth - 8, 1), new Color(100, 125, 112));
             font.Draw(batch, (index + 1).ToString("00"), new Vector2(x + 5, y + 13), Color.White, 1);
-            font.Draw(batch, "$" + sector.Income, new Vector2(x + 30, y + 13), new Color(180, 230, 170), 1);
-            if (index == state.Cursor) DrawBorder(batch, pixel, new Rectangle(x, y, cellWidth, cellHeight), Color.Gold, 2);
+            font.Draw(batch, "$" + SectorSiteIncome(state, sector), new Vector2(x + 30, y + 13), new Color(180, 230, 170), 1);
+            if (index == _cursor) DrawBorder(batch, pixel, new Rectangle(x, y, cellWidth, cellHeight), Color.Gold, 2);
         }
 
-        var player = state.Players[state.CurrentPlayer];
         batch.Draw(pixel, new Rectangle(11, 397, 618, 52), new Color(0, 0, 0, 220));
-        font.Draw(batch, state.Sectors[state.Cursor].Summary, new Vector2(18, 404), Color.White, 1);
-        font.Draw(batch, $"GANGS {player.Gangs.Count}/80", new Vector2(18, 420), PlayerColors[state.CurrentPlayer], 1);
-        font.Draw(batch, state.Message, new Vector2(116, 420), Color.Gold, 1);
-        font.Draw(batch, "ARROWS MOVE  ENTER CONTROL  H HIRE  SPACE END TURN  ESC QUIT", new Vector2(18, 436), new Color(180, 190, 190), 1);
+        font.Draw(batch, SectorSummary(state, state.Sectors[_cursor]), new Vector2(18, 404), Color.White, 1);
+        font.Draw(batch, $"GANGS {player.Gangs.Count}/{MatchLimits.GangsPerPlayer}", new Vector2(18, 420), PlayerColors[playerIndex], 1);
+        font.Draw(batch, _message, new Vector2(116, 420), Color.Gold, 1);
+        font.Draw(batch, "ARROWS SELECT  ENTER MOVE/CONTROL  H HIRE  SPACE NEXT PHASE  ESC QUIT", new Vector2(18, 436), new Color(180, 190, 190), 1);
+    }
+
+    private void MoveCursor(int dx, int dy)
+    {
+        var x = Math.Clamp(_cursor % MatchLimits.BoardWidth + dx, 0, MatchLimits.BoardWidth - 1);
+        var y = Math.Clamp(_cursor / MatchLimits.BoardWidth + dy, 0, MatchLimits.BoardWidth - 1);
+        _cursor = y * MatchLimits.BoardWidth + x;
+        _message = $"SECTOR {_cursor + 1}";
+    }
+
+    private void QueueBoardCommand()
+    {
+        if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
+            || _state.Coordinator.ActivePlayer is not { } playerId)
+        {
+            _message = "BOARD COMMANDS REQUIRE THE COMMAND PHASE";
+            return;
+        }
+        var gang = _state.FindPlayer(playerId)!.Gangs.FirstOrDefault(candidate => candidate.IsActive);
+        if (gang is null)
+        {
+            _message = "NO ACTIVE GANG";
+            return;
+        }
+        var command = gang.SectorId == _cursor
+            ? new GameCommand(playerId, gang.Id, GangAction.Control, CommandTarget.None)
+            : new GameCommand(playerId, gang.Id, GangAction.Move, CommandTarget.Sector(_cursor));
+        var result = _state.Submit(command);
+        _message = result.Accepted ? $"{command.Action.ToString().ToUpperInvariant()} QUEUED" : result.Validation.Message.ToUpperInvariant();
+    }
+
+    private void QueueFirstHireOffer()
+    {
+        if (_state is null || _state.Coordinator.Phase != TurnPhase.Hire
+            || _state.Coordinator.ActivePlayer is not { } playerId)
+        {
+            _message = "HIRING REQUIRES THE HIRE PHASE";
+            return;
+        }
+        var player = _state.FindPlayer(playerId)!;
+        if (player.HirePool.Count == 0)
+        {
+            _message = "NO HIRE OFFER AVAILABLE";
+            return;
+        }
+        var offer = player.HirePool[0];
+        var result = _state.QueueHire(playerId, offer, _cursor);
+        _message = result.Accepted ? "HIRE QUEUED" : result.Validation.Message.ToUpperInvariant();
+    }
+
+    private void AdvancePhase()
+    {
+        if (_state is null) return;
+        if (_state.Outcome is not null)
+        {
+            _message = "MATCH COMPLETE";
+            return;
+        }
+        var transition = _state.Coordinator.Phase switch
+        {
+            TurnPhase.Upkeep => _state.FinishUpkeep(),
+            TurnPhase.Command => _state.FinishCommand(_state.Coordinator.ActivePlayer!.Value),
+            TurnPhase.Execution => _state.FinishExecutionPhase(),
+            TurnPhase.Hire => _state.FinishHire(_state.Coordinator.ActivePlayer!.Value),
+            TurnPhase.PlayerElimination => _state.FinishPlayerElimination(),
+            _ => throw new InvalidOperationException("Unknown turn phase.")
+        };
+        _message = transition.ExecutionPhase is { } execution
+            ? execution.ToString().ToUpperInvariant()
+            : transition.Phase.ToString().ToUpperInvariant();
+    }
+
+    private static int SectorSiteIncome(MatchState state, MatchSectorState sector) =>
+        sector.Sites.Sum(site => state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
+
+    private static string SectorSummary(MatchState state, MatchSectorState sector) =>
+        $"SECTOR {sector.Id + 1}  TOL {sector.Tolerance}  "
+        + string.Join(", ", sector.Sites.Select(site =>
+            state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Name));
+
+    private static MatchState CreatePrototypeMatch(OriginalData data)
+    {
+        var playerSetup = new MatchPlayerSetup(new PlayerId(0), "PLAYER 1", PlayerController.Human);
+        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, [playerSetup]);
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount).Select(id =>
+        {
+            var siteIds = id == 0
+                ? new short[] { MatchBootstrap.HeadquartersDefinitionId, 0, 1 }
+                : Enumerable.Range(0, MatchLimits.SitesPerSector)
+                    .Select(slot => data.Sites[(id * MatchLimits.SitesPerSector + slot) % (data.Sites.Count - 1)].Id)
+                    .ToArray();
+            return new MatchSectorState(id, siteIds.Select((siteId, slot) =>
+            {
+                var definition = data.Sites.Single(site => site.Id == siteId);
+                return new MatchSiteState(slot, siteId, definition.Resistance);
+            }).ToArray());
+        }).ToArray();
+        MatchPlayerStart[] starts =
+        [
+            new(new PlayerId(0), 0, ManualRules.MaximumForce, 500, [2, 3, 4])
+        ];
+        return MatchBootstrap.Create(data, setup, sectors, starts);
     }
 
     private static void DrawBorder(SpriteBatch batch, Texture2D pixel, Rectangle rectangle, Color color, int thickness)
