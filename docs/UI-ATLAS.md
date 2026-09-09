@@ -35,7 +35,8 @@ original-game capture confirms the screen and interaction state.
 | `PX00201` | Endgame award/statistics symbols and controls | High from visible labels |
 | `PX00202`, `PX00203` | Victory and elimination panels | High from visible text |
 | `PX00300` | Police unit/equipment header sprites | High from visible content |
-| `PX03000` | Gang portrait/sprite composite | High from visible content |
+| `PX02000` | 22 vertically stacked site portraits, 120x64 each | High from dimensions and definition coverage |
+| `PX03000` | 10x9 gang portrait grid, 64x64 each, covering all 90 definitions | High from dimensions and definition coverage |
 | `PX05000`-`PX05024` | Gang-information panel family | Medium from visible template fields |
 | `PX10000`-`PX10006` | Neutral plus six player-colored 8x8 city layers; each sector is a 54x52 source cell | High from dimensions, grid, and color inspection |
 
@@ -66,6 +67,8 @@ validated against the executable.
   not embedded in source or redistributed.
 - City sectors use their fixed 54 by 52 cell from `PX10000` when neutral or
   `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
+- Sector detail uses `PX02000` source `(0, siteId*64, 120, 64)`; gang detail
+  and hiring use `PX03000` source `((gangId%10)*64, (gangId/10)*64, 64, 64)`.
 
 ## `PX00128` provisional control routes
 

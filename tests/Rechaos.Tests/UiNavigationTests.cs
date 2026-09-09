@@ -69,4 +69,15 @@ public sealed class UiNavigationTests
         Assert.Equal(6, CityMapLayout.OwnershipSheet(new PlayerId(5)));
         Assert.False(CityMapLayout.TrySectorAt(new Point(434, 460), out _));
     }
+
+    [Fact]
+    public void OriginalPortraitLayoutsCoverAllDefinitionSlots()
+    {
+        Assert.Equal(new Rectangle(0, 0, 120, 64), OriginalSpriteLayout.SitePortrait(0));
+        Assert.Equal(new Rectangle(0, 21 * 64, 120, 64), OriginalSpriteLayout.SitePortrait(21));
+        Assert.Equal(new Rectangle(0, 0, 64, 64), OriginalSpriteLayout.GangPortrait(0));
+        Assert.Equal(new Rectangle(576, 512, 64, 64), OriginalSpriteLayout.GangPortrait(89));
+        Assert.Throws<ArgumentOutOfRangeException>(() => OriginalSpriteLayout.SitePortrait(22));
+        Assert.Throws<ArgumentOutOfRangeException>(() => OriginalSpriteLayout.GangPortrait(90));
+    }
 }

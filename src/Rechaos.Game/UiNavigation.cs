@@ -108,3 +108,18 @@ public static class CityMapLayout
             throw new ArgumentOutOfRangeException(nameof(sectorId));
     }
 }
+
+public static class OriginalSpriteLayout
+{
+    public static Rectangle SitePortrait(int definitionId)
+    {
+        if (definitionId is < 0 or >= 22) throw new ArgumentOutOfRangeException(nameof(definitionId));
+        return new Rectangle(0, definitionId * 64, 120, 64);
+    }
+
+    public static Rectangle GangPortrait(int definitionId)
+    {
+        if (definitionId is < 0 or >= 90) throw new ArgumentOutOfRangeException(nameof(definitionId));
+        return new Rectangle(definitionId % 10 * 64, definitionId / 10 * 64, 64, 64);
+    }
+}

@@ -61,6 +61,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _endgameBackground;
     private Texture2D? _handoffPanel;
     private Texture2D? _gangInfoBackground;
+    private Texture2D? _sitePortraits;
+    private Texture2D? _gangPortraits;
     private PixelFont? _font;
     private MatchState? _state;
     private MatchReplayRecorder? _replay;
@@ -117,6 +119,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _endgameBackground = LoadTexture("PX00200.bmp");
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
+        _sitePortraits = LoadTexture("PX02000.bmp");
+        _gangPortraits = LoadTexture("PX03000.bmp");
     }
 
     protected override void Update(GameTime gameTime)
@@ -643,9 +647,12 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             if (index == _hireCursor)
                 batch.Draw(pixel, new Rectangle(14, y - 6, 404, 54), new Color(72, 54, 18));
             var definition = state.Definitions.Gangs.Single(gang => gang.Id == player.HirePool[index]);
-            font.Draw(batch, definition.Name, new Vector2(20, y), Color.White, 1);
+            if (_gangPortraits is not null)
+                batch.Draw(_gangPortraits, new Rectangle(20, y - 5, 48, 48),
+                    OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
+            font.Draw(batch, definition.Name, new Vector2(78, y), Color.White, 1);
             font.Draw(batch, $"FORCE {definition.Force}  UPKEEP {definition.Upkeep}  COST {HireRules.InitialCost(definition)}",
-                new Vector2(20, y + 16), new Color(180, 230, 170), 1);
+                new Vector2(78, y + 16), new Color(180, 230, 170), 1);
         }
         if (player.HirePool.Count == 0)
             font.Draw(batch, "NO HIRE OFFERS", new Vector2(18, 112), Color.White, 1);
@@ -670,13 +677,16 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         {
             var y = 136 + site.Slot * 76;
             var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
-            font.Draw(batch, definition.Name, new Vector2(18, y), new Color(180, 230, 170), 1);
+            if (_sitePortraits is not null)
+                batch.Draw(_sitePortraits, new Rectangle(18, y - 5, 120, 64),
+                    OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
+            font.Draw(batch, definition.Name, new Vector2(146, y), new Color(180, 230, 170), 1);
             font.Draw(batch, $"RESISTANCE {site.Resistance}  CASH {definition.Cash}  SUPPORT {definition.Support}",
-                new Vector2(18, y + 16), Color.White, 1);
+                new Vector2(146, y + 16), Color.White, 1);
             var influence = site.InfluencedBy is { } influencedBy
                 ? state.FindPlayer(influencedBy)!.Setup.Name
                 : "NONE";
-            font.Draw(batch, "INFLUENCED BY " + influence, new Vector2(18, y + 32), Color.White, 1);
+            font.Draw(batch, "INFLUENCED BY " + influence, new Vector2(146, y + 32), Color.White, 1);
         }
         DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
     }
@@ -698,6 +708,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         {
             var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
             var stats = EffectiveStatisticsCalculator.ForGang(state, gang);
+            if (_gangPortraits is not null)
+                batch.Draw(_gangPortraits, new Rectangle(54, 98, 64, 64),
+                    OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
             batch.Draw(pixel, new Rectangle(138, 92, 238, 181), Color.Black);
             font.Draw(batch, definition.Name, new Vector2(144, 98), PlayerColors[playerId.Value], 1);
             font.Draw(batch, $"FORCE {gang.Force}  SECTOR {gang.SectorId + 1}  TECH {definition.TechLevel}",
