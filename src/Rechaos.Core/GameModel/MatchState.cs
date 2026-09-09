@@ -291,6 +291,7 @@ public sealed class MatchState
     public IReadOnlyList<GameEvent> Events => _events;
     public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashes;
     public IReadOnlyList<CommandResolutionResult> LastPhaseResolutions { get; private set; } = [];
+    public IReadOnlyList<PoliceAttackResolutionResult> LastPoliceAttackResolutions { get; private set; } = [];
     public IReadOnlyList<UpkeepResolutionResult> LastUpkeepResolutions { get; private set; } = [];
     public IReadOnlyList<HireResolutionResult> LastHireResolutions { get; private set; } = [];
     internal long NextEventSequence => _nextEventSequence;
@@ -333,6 +334,7 @@ public sealed class MatchState
             throw new InvalidOperationException($"Cannot complete Execution while in {Coordinator.Phase}.");
         var phase = Coordinator.ExecutionPhase
             ?? throw new InvalidOperationException("Execution subphase is missing.");
+        LastPoliceAttackResolutions = [];
         var commands = Commands.ForPhase(phase);
         var unsupported = commands.FirstOrDefault(command => !CommandResolver.IsSupported(command.Command.Action));
         if (unsupported is not null)
@@ -341,7 +343,16 @@ public sealed class MatchState
             throw new NotSupportedException($"{unsupported.Command.Action} resolution has not been implemented.");
         }
 
-        LastPhaseResolutions = CommandResolver.ResolvePhase(this, commands);
+        if (phase == ExecutionPhase.Combat)
+        {
+            var combat = CommandResolver.ResolveCombatPhase(this, commands);
+            LastPhaseResolutions = combat.Commands;
+            LastPoliceAttackResolutions = combat.PoliceAttacks;
+        }
+        else
+        {
+            LastPhaseResolutions = CommandResolver.ResolvePhase(this, commands);
+        }
         var transition = Coordinator.FinishExecutionPhase();
         if (phase == TurnStructure.ExecutionOrder[^1])
         {
@@ -481,6 +492,20 @@ public sealed class MatchState
             _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
             Coordinator.ExecutionPhase, kind, player, hire.Gang,
             GangAction.None, CommandTarget.Sector(hire.SectorId), Hire: hire);
+        _events.Add(gameEvent);
+        return gameEvent;
+    }
+
+    internal GameEvent AppendPoliceAttackEvent(
+        PlayerId player,
+        GangId gang,
+        PoliceAttackResolutionDetails policeAttack)
+    {
+        var gameEvent = new GameEvent(
+            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
+            Coordinator.ExecutionPhase, GameEventKind.PoliceAttackResolved, player,
+            gang, GangAction.None, CommandTarget.Sector(policeAttack.SectorId),
+            PoliceAttack: policeAttack);
         _events.Add(gameEvent);
         return gameEvent;
     }

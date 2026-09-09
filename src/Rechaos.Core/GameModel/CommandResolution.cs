@@ -19,6 +19,16 @@ public sealed record CommandResolutionResult(
     public bool Succeeded => Code == CommandResolutionCode.Resolved;
 }
 
+public sealed record PoliceAttackResolutionResult(
+    GangId Gang,
+    PlayerId Owner,
+    PoliceAttackResolutionDetails Details,
+    GameEvent Event);
+
+public sealed record CombatPhaseResolution(
+    IReadOnlyList<CommandResolutionResult> Commands,
+    IReadOnlyList<PoliceAttackResolutionResult> PoliceAttacks);
+
 /// <summary>
 /// Deterministic action dispatch. Only actions backed by recorded evidence are
 /// enabled; unsupported actions are rejected before a subphase mutates state.
@@ -40,7 +50,7 @@ public static class CommandResolver
             throw new InvalidOperationException("A command phase can only resolve during Execution.");
         if (commands.Any(command => command.ExecutionPhase != phase))
             throw new ArgumentException("Every command must belong to the current execution subphase.", nameof(commands));
-        if (phase == ExecutionPhase.Combat) return ResolveCombatPhase(state, commands);
+        if (phase == ExecutionPhase.Combat) return ResolveCombatPhase(state, commands).Commands;
         if (phase == ExecutionPhase.Chaos) return ResolveChaosPhase(state, commands);
         var results = new List<CommandResolutionResult>(commands.Count);
         var resolvedSequences = new HashSet<long>();
@@ -78,7 +88,7 @@ public static class CommandResolver
 
         return queued.Command.Action switch
         {
-            GangAction.Attack => ResolveCombatPhase(state, [queued]).Single(),
+            GangAction.Attack => ResolveCombatPhase(state, [queued]).Commands.Single(),
             GangAction.Bribe => ResolveBribe(state, queued.Command),
             GangAction.Chaos => ResolveChaosPhase(state, [queued]).Single(),
             GangAction.Control => ResolveControl(state, [queued]).Single(),
@@ -117,10 +127,18 @@ public static class CommandResolver
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after, -cost));
     }
 
-    private static IReadOnlyList<CommandResolutionResult> ResolveCombatPhase(
+    public static CombatPhaseResolution ResolveCombatPhase(
         MatchState state,
         IReadOnlyList<QueuedCommand> commands)
     {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(commands);
+        if (state.Coordinator.Phase != TurnPhase.Execution
+            || state.Coordinator.ExecutionPhase != ExecutionPhase.Combat)
+            throw new InvalidOperationException("Police and gang combat can only resolve during Combat.");
+        if (commands.Any(command => command.ExecutionPhase != ExecutionPhase.Combat))
+            throw new ArgumentException("Every command must belong to Combat.", nameof(commands));
+
         var snapshots = state.Players.SelectMany(player => player.Gangs)
             .ToDictionary(gang => gang.Id, gang => CombatSnapshot.For(state, gang));
         var outcomes = new List<CombatOutcome>(commands.Count);
@@ -169,12 +187,21 @@ public static class CommandResolver
                 detectionRoll, detectionChance));
         }
 
+        var policeOutcomes = snapshots.Values
+            .Where(snapshot => snapshot.Force > 0 && state.Sectors[snapshot.SectorId].CrackdownActive)
+            .OrderBy(snapshot => snapshot.SectorId)
+            .ThenBy(snapshot => snapshot.Id.Value)
+            .Select(snapshot => RollPoliceAttack(state, snapshot))
+            .ToArray();
+
         var incomingDamage = new Dictionary<GangId, int>();
         foreach (var outcome in outcomes.Where(outcome => outcome.Code == CommandResolutionCode.Resolved))
         {
             AddDamage(incomingDamage, outcome.Target.Id, outcome.Damage);
             AddDamage(incomingDamage, outcome.Attacker.Id, outcome.RetaliationDamage);
         }
+        foreach (var outcome in policeOutcomes.Where(outcome => outcome.Detected))
+            AddDamage(incomingDamage, outcome.Target.Id, outcome.Successes);
 
         foreach (var (gangId, damage) in incomingDamage)
         {
@@ -208,6 +235,31 @@ public static class CommandResolver
             firstEventByGang.TryAdd(outcome.Attacker.Id, result.Event.Sequence);
         }
 
+        var policeResults = new List<PoliceAttackResolutionResult>(policeOutcomes.Length);
+        foreach (var outcome in policeOutcomes)
+        {
+            var gang = state.FindGang(outcome.Target.Id)!;
+            var details = new PoliceAttackResolutionDetails(
+                outcome.Target.SectorId,
+                outcome.DetectionChance,
+                outcome.DetectionRoll,
+                outcome.Detected,
+                outcome.AttackValue,
+                outcome.Target.Statistics.Defense,
+                outcome.Rolls,
+                outcome.Successes,
+                Math.Min(outcome.Successes, outcome.Target.Force),
+                outcome.Target.Force,
+                gang.Force);
+            var gameEvent = state.AppendPoliceAttackEvent(outcome.Target.Owner, outcome.Target.Id, details);
+            state.QueueNotification(
+                outcome.Target.Owner, GameNotificationKind.Police, outcome.Target.Id,
+                outcome.Target.SectorId, gameEvent.Sequence);
+            policeResults.Add(new PoliceAttackResolutionResult(
+                outcome.Target.Id, outcome.Target.Owner, details, gameEvent));
+            firstEventByGang.TryAdd(outcome.Target.Id, gameEvent.Sequence);
+        }
+
         foreach (var snapshot in snapshots.Values
                      .Where(snapshot => snapshot.Force > 0 && state.FindGang(snapshot.Id)!.Force == 0)
                      .OrderBy(snapshot => snapshot.Id.Value))
@@ -219,7 +271,19 @@ public static class CommandResolver
                 gang.Owner, GameNotificationKind.Elimination, gang.Id, gang.SectorId,
                 firstEventByGang.GetValueOrDefault(gang.Id));
         }
-        return results;
+        return new CombatPhaseResolution(results, policeResults);
+    }
+
+    private static PoliceCombatOutcome RollPoliceAttack(MatchState state, CombatSnapshot target)
+    {
+        var detectionChance = ManualRules.PoliceDetectionPercent(target.Statistics.Stealth);
+        var detectionRoll = state.Random.NextInclusive(100);
+        var detected = detectionRoll <= detectionChance;
+        var attackValue = detected ? Math.Max(0, ManualRules.PoliceCombat - target.Statistics.Defense) : 0;
+        var rolls = detected ? DiceRoller.RollD6(state.Random, attackValue) : [];
+        return new PoliceCombatOutcome(
+            target, detectionChance, detectionRoll, detected, attackValue,
+            rolls, ManualRules.CountSuccesses(rolls));
     }
 
     private static void AddDamage(Dictionary<GangId, int> damage, GangId gang, int amount)
@@ -286,6 +350,15 @@ public static class CommandResolver
         int RetaliationDamage,
         int? DetectionRoll,
         int? DetectionChance);
+
+    private sealed record PoliceCombatOutcome(
+        CombatSnapshot Target,
+        int DetectionChance,
+        int DetectionRoll,
+        bool Detected,
+        int AttackValue,
+        IReadOnlyList<int> Rolls,
+        int Successes);
 
     private static CommandResolutionResult ResolveEquip(MatchState state, GameCommand command)
     {

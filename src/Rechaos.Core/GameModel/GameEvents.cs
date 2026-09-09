@@ -10,6 +10,7 @@ public enum GameEventKind : byte
     CommandFailed,
     HireQueued,
     HireResolved,
+    PoliceAttackResolved,
     PlayerEliminated
 }
 
@@ -51,6 +52,19 @@ public sealed record HireResolutionDetails(
 
 public sealed record EliminationDetails(PlayerId EliminatedPlayer, int RemainingPlayers);
 
+public sealed record PoliceAttackResolutionDetails(
+    int SectorId,
+    int DetectionChance,
+    int DetectionRoll,
+    bool Detected,
+    int AttackValue,
+    int DefenseValue,
+    IReadOnlyList<int> Rolls,
+    int Successes,
+    int Damage,
+    int PreviousForce,
+    int ResultForce);
+
 /// <summary>An ordered mechanical fact suitable for UI, replay, and parity fixtures.</summary>
 public sealed record GameEvent(
     long Sequence,
@@ -66,4 +80,5 @@ public sealed record GameEvent(
     CommandResolutionDetails? Resolution = null,
     EconomyResolutionDetails? Economy = null,
     HireResolutionDetails? Hire = null,
-    EliminationDetails? Elimination = null);
+    EliminationDetails? Elimination = null,
+    PoliceAttackResolutionDetails? PoliceAttack = null);

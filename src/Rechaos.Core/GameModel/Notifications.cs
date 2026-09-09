@@ -15,7 +15,8 @@ public enum GameNotificationKind : byte
     Movement,
     Control,
     Chaos,
-    Crackdown
+    Crackdown,
+    Police
 }
 
 /// <summary>A mechanical notification reference; presentation supplies localized text.</summary>

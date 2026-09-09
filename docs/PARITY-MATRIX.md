@@ -34,7 +34,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Movement | Adjacent-sector move with six-friendly-gang capacity | Ordered resolver, submission/runtime capacity checks, events and notifications implemented | Manual adjacency/capacity High; collision ordering Low | Simultaneous swap/final-slot fixtures |
 | Equipment | One weapon/armor/misc; research/tech gates; purchase, transfer, replacement loss, half-price sale | Equip/Give/Sell Transaction resolvers, typed slots, cash/statistics, validation, events and notifications implemented | Manual formulas High; replacement/swap ordering Medium; discounts Low | Factory discount, multi-item UI, swap and acquisition fixtures |
 | Research | Force + Research dice, persistent progress/completion; tech/site caps | Instant-phase resolver with deterministic rolls, progress/completion state, validation, result notification and hashes implemented; caps excluded | Manual formula High; equipment/repeat behavior Medium; recovered RNG algorithm High; seed/context Low | Reference fixtures for tech/site caps, unlock effects, zero-difficulty items and RNG order |
-| Police | Combat 20, Detect 12, stealth detection curve | Pure police constants/curve implemented; generic Hide detection now wired to combat | Manual, High | Wire crackdown duration/attacks and exact aftermath |
+| Police | Combat 20, Detect 12, stealth detection curve | Provisional phase-wide crackdown attacks, detection, damage, events, notifications and casualties implemented | Manual, High for constants/curve; defense formula and ordering Low | Binary fixtures for timing, defense/damage formula, RNG consumption, duration and aftermath |
 | Player elimination | Remove players with neither a sector nor an active gang | End-of-turn status transition, influence cleanup, events and notifications implemented | Manual, High for trigger; cleanup ordering Medium | Binary multi-player elimination/order fixture |
 | Objectives | Ten named scenarios and objective thresholds | Implemented as model | Manual, High | Wire match setup; binary edge/tie fixtures |
 | Timers | 26/52/104/208 turns | Implemented as model | Manual, High | End-turn boundary fixtures |
@@ -66,8 +66,8 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 - Command replacement gets a new sequence number and resolution otherwise uses
   submission order inside a subphase; both are provisional recreation rules,
   not binary-validated behavior.
-- AI, combat, crackdown police execution, full scenario flow, victory and saves
-  are not implemented; research/equipment omit the parity gaps listed above.
+- AI, full scenario flow, victory and saves are not implemented; combat,
+  crackdown, research and equipment retain the parity gaps listed above.
 
 These blockers prevent describing the current playable slice as a faithful
 gameplay recreation even though its decoded tables and asset pack are verified.
