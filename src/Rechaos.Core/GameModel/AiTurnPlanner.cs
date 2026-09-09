@@ -72,9 +72,7 @@ public static class AiTurnPlanner
             GangAction.Attack => AttackValue(state, player, command, objective),
             GangAction.Control => ControlValue(state, player, gang, objective),
             GangAction.Influence => 650 + InfluenceValue(state, command.Target.Id, objective),
-            GangAction.Heal => gang.Force < ManualRules.MaximumForce
-                ? 800 + ManualRules.MaximumForce - gang.Force
-                : 100,
+            GangAction.Heal => HealValue(state, gang),
             GangAction.Equip => EquipmentValue(state, command),
             GangAction.Research => 500 - player.RemainingResearch(
                 state.Definitions, checked((short)command.Target.Id)),
@@ -113,6 +111,14 @@ public static class AiTurnPlanner
             AiDifficulty.HomicidalManiac => 900,
             _ => throw new ArgumentOutOfRangeException(nameof(difficulty))
         };
+
+    private static int HealValue(MatchState state, MatchGangState gang)
+    {
+        var heal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
+        return gang.Force < 9 && heal >= -3
+            ? 800 + ManualRules.MaximumForce - gang.Force
+            : -1_000;
+    }
 
     private static int ControlValue(
         MatchState state,

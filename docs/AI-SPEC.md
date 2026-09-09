@@ -24,6 +24,9 @@ It must not be cited as behavioral parity with the original AI.
   gang's Force + Control must exceed sector Income plus detectable defending
   Force + Control and owner-influenced Support. Equal or weaker solo attempts
   are demoted below useful commands.
+- Heal ranking follows the recovered continuation gates: effective Heal must
+  be at least -3 and Force must be below 9. A gang at Force 9 can legally Heal,
+  but the original planner does not select it in any recovered family-1 path.
 - Selection is stable by score, action, target kind, target ID, and secondary ID.
 - A shared nonnegative spending budget prevents the planner from intentionally
   queuing more Bribe/Equip cost than the player currently holds while still

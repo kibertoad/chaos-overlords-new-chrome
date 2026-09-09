@@ -50,7 +50,7 @@ jobs:
         run: dotnet build Rechaos.slnx --no-restore -p:IncludeOriginalAssets=false -v minimal
 
       - name: Test
-        run: dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj --no-restore --no-progress --minimum-expected-tests 333 -v minimal
+        run: dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj --no-restore --no-progress --minimum-expected-tests 334 -v minimal
 
       - name: Publish assetless game
         run: dotnet publish src/Rechaos.Game/Rechaos.Game.csproj --no-restore -c Release -p:IncludeOriginalAssets=false --output artifacts/assetless-game -v minimal

@@ -451,6 +451,14 @@ reads offset `+4`; selector `0x3d` reads the newly planned action at `+7`.
 The branches above are therefore command-continuity decisions, including the
 case entered after a prior Snitch command.
 
+All four action-7 (**Heal**) assignments in this handler are now bounded.
+Every path first requires effective Heal at least `-3`; three require Force
+below 9, while the path following no prior action or prior Chaos requires Force
+below 8. No recovered family-1 path heals at Force 9. The recreation therefore
+uses the conservative common boundary—Force below 9 and Heal at least `-3`—for
+its provisional planner, while preserving the stricter history-specific gate
+as pending continuity work.
+
 **Interpretation:** `0x00487850` is the original match-global, zero-based AI
 Mentality setting, seeded from a persisted preference and then carried through
 setup staging/serialization. Family handler 1 uses it to redirect cash-qualified

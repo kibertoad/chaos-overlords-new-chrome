@@ -158,6 +158,27 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void PlannerUsesOriginalHealForceAndSkillBoundaries()
+    {
+        var data = BundledOriginalData.Load();
+        var capable = data.Gangs.First(candidate => candidate.Stats.Heal >= -3).Id;
+        var incapable = data.Gangs.First(candidate => candidate.Stats.Heal < -3).Id;
+        var forceEight = CreateMatch(definitionId: capable, force: 8);
+        var forceNine = CreateMatch(definitionId: capable, force: 9);
+        var noHealSkill = CreateMatch(definitionId: incapable, force: 8);
+        forceEight.FinishUpkeep();
+        forceNine.FinishUpkeep();
+        noHealSkill.FinishUpkeep();
+
+        Assert.Contains(AiTurnPlanner.Plan(forceEight, new PlayerId(0)),
+            command => command.Action == GangAction.Heal);
+        Assert.DoesNotContain(AiTurnPlanner.Plan(forceNine, new PlayerId(0)),
+            command => command.Action == GangAction.Heal);
+        Assert.DoesNotContain(AiTurnPlanner.Plan(noHealSkill, new PlayerId(0)),
+            command => command.Action == GangAction.Heal);
+    }
+
+    [Fact]
     public void HirePlannerSelectsOnlyAnAffordableValidOfferWithoutMutation()
     {
         var match = CreateMatch();
@@ -264,7 +285,9 @@ public sealed class AiTurnPlannerTests
 
     private static MatchState CreateMatch(
         PlayerController controller = PlayerController.Computer,
-        AiDifficulty difficulty = AiDifficulty.Criminal)
+        AiDifficulty difficulty = AiDifficulty.Criminal,
+        short definitionId = 1,
+        int force = 10)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -274,7 +297,8 @@ public sealed class AiTurnPlannerTests
         ];
         MatchPlayerState[] players =
         [
-            new(setups[0], 20, [new MatchGangState(new GangId(10), new PlayerId(0), 1, 0, 10)]),
+            new(setups[0], 20,
+                [new MatchGangState(new GangId(10), new PlayerId(0), definitionId, 0, force)]),
             new(setups[1], 20, [new MatchGangState(new GangId(20), new PlayerId(1), 2, 1, 10)])
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
