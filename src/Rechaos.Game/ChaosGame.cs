@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
 
 namespace Rechaos.Game;
 
@@ -13,6 +14,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         [Color.Crimson, Color.CornflowerBlue, Color.LimeGreen, Color.Gold, Color.MediumPurple, Color.DarkOrange];
     private readonly GraphicsDeviceManager _graphics;
     private readonly string _assetRoot;
+    private readonly string _quickSavePath;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
     private Texture2D? _background;
@@ -25,6 +27,9 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
     public ChaosGame(string assetRoot)
     {
         _assetRoot = assetRoot;
+        _quickSavePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Rechaos Overlords", "quicksave.rchsave");
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -65,6 +70,8 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
             if (Pressed(keyboard, Keys.Enter)) QueueBoardCommand();
             if (Pressed(keyboard, Keys.H)) QueueFirstHireOffer();
             if (Pressed(keyboard, Keys.Space)) AdvancePhase();
+            if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
+            if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
         }
         _previousKeyboard = keyboard;
         base.Update(gameTime);
@@ -118,7 +125,7 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         font.Draw(batch, SectorSummary(state, state.Sectors[_cursor]), new Vector2(18, 404), Color.White, 1);
         font.Draw(batch, $"GANGS {player.Gangs.Count}/{MatchLimits.GangsPerPlayer}", new Vector2(18, 420), PlayerColors[playerIndex], 1);
         font.Draw(batch, _message, new Vector2(116, 420), Color.Gold, 1);
-        font.Draw(batch, "ARROWS SELECT  ENTER MOVE/CONTROL  H HIRE  SPACE NEXT PHASE  ESC QUIT", new Vector2(18, 436), new Color(180, 190, 190), 1);
+        font.Draw(batch, "ARROWS  ENTER MOVE/CONTROL  H HIRE  SPACE PHASE  F5 SAVE  F9 LOAD", new Vector2(18, 436), new Color(180, 190, 190), 1);
     }
 
     private void MoveCursor(int dx, int dy)
@@ -189,6 +196,36 @@ public sealed class ChaosGame : Microsoft.Xna.Framework.Game
         _message = transition.ExecutionPhase is { } execution
             ? execution.ToString().ToUpperInvariant()
             : transition.Phase.ToString().ToUpperInvariant();
+    }
+
+    private void SaveQuickGame()
+    {
+        if (_state is null) return;
+        try
+        {
+            NativeSaveStore.SaveAtomic(_quickSavePath, _state);
+            _message = "GAME SAVED";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            _message = "SAVE FAILED";
+        }
+    }
+
+    private void LoadQuickGame()
+    {
+        if (_state is null) return;
+        try
+        {
+            var result = NativeSaveStore.LoadRecoveringBackup(_quickSavePath, _state.Definitions);
+            _state = result.State;
+            _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
+            _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            _message = "LOAD FAILED";
+        }
     }
 
     private static int SectorSiteIncome(MatchState state, MatchSectorState sector) =>
