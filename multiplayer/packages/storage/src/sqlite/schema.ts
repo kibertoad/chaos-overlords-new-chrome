@@ -4,7 +4,8 @@ import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlit
  * The SQLite dialect, shared byte-for-byte by better-sqlite3 (Node) and D1 (Cloudflare): one
  * migration lineage serves both. Timestamps are epoch milliseconds; JSON columns are text.
  * `name`, `visibility` and `max_players` are copied out of `settings` so the lobby list and the
- * seat-capacity check are plain SQL; `settings` stays the source clients read back.
+ * seat-capacity check are plain SQL; `settings` stays the source clients read back. Every child
+ * table cascades from `matches`, so retention is one delete of the rows a match owns.
  */
 export const matches = sqliteTable('matches', {
   id: text('id').primaryKey(),
@@ -19,7 +20,8 @@ export const matches = sqliteTable('matches', {
   seed: integer('seed'),
   currentTurn: integer('current_turn').notNull().default(0),
   seatCount: integer('seat_count').notNull().default(1),
-  eventSeq: integer('event_seq').notNull().default(0),
+  /** Monotonic: seats ever claimed. Never decremented, so `join_order` stays a total order. */
+  joinCounter: integer('join_counter').notNull().default(1),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 })
@@ -32,8 +34,10 @@ export const players = sqliteTable(
       .notNull()
       .references(() => matches.id, { onDelete: 'cascade' }),
     slot: integer('slot').notNull().default(-1),
+    joinOrder: integer('join_order').notNull().default(0),
     displayName: text('display_name').notNull(),
-    tokenHash: text('token_hash').notNull().unique(),
+    /** Null once revoked; SQL equality never matches null, so a revoked token resolves to nobody. */
+    tokenHash: text('token_hash').unique(),
     status: text('status').notNull(),
     joinedAt: integer('joined_at', { mode: 'timestamp_ms' }).notNull(),
   },
@@ -52,6 +56,8 @@ export const turns = sqliteTable(
     deadlineAt: integer('deadline_at', { mode: 'timestamp_ms' }),
     sealedAt: integer('sealed_at', { mode: 'timestamp_ms' }),
     orderSetHash: text('order_set_hash'),
+    /** `[{ playerId, slot }]` frozen at seal time: exactly what `order_set_hash` was taken over. */
+    sealedSlots: text('sealed_slots', { mode: 'json' }),
   },
   (table) => [
     primaryKey({ columns: [table.matchId, table.number] }),
@@ -62,7 +68,9 @@ export const turns = sqliteTable(
 export const turnOrders = sqliteTable(
   'turn_orders',
   {
-    matchId: text('match_id').notNull(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
     turn: integer('turn').notNull(),
     playerId: text('player_id').notNull(),
     orders: text('orders', { mode: 'json' }),
@@ -76,7 +84,9 @@ export const turnOrders = sqliteTable(
 export const turnReports = sqliteTable(
   'turn_reports',
   {
-    matchId: text('match_id').notNull(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
     turn: integer('turn').notNull(),
     playerId: text('player_id').notNull(),
     stateHash: text('state_hash').notNull(),
@@ -89,7 +99,9 @@ export const turnReports = sqliteTable(
 export const snapshots = sqliteTable(
   'snapshots',
   {
-    matchId: text('match_id').notNull(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
     turn: integer('turn').notNull(),
     formatVersion: integer('format_version').notNull(),
     stateHash: text('state_hash').notNull(),
@@ -103,7 +115,9 @@ export const snapshots = sqliteTable(
 export const matchEvents = sqliteTable(
   'match_events',
   {
-    matchId: text('match_id').notNull(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
     seq: integer('seq').notNull(),
     type: text('type').notNull(),
     payload: text('payload', { mode: 'json' }).notNull(),

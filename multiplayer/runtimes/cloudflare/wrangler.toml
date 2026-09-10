@@ -9,6 +9,9 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 PUBLIC_LISTING = "false"
 RATE_LIMIT_PER_MINUTE = "30"
+MEMBER_RATE_LIMIT_PER_MINUTE = "240"
+UPLOAD_RATE_LIMIT_PER_MINUTE = "10"
+RETENTION_DAYS = "30"
 
 [[d1_databases]]
 binding = "DB"
@@ -24,6 +27,7 @@ class_name = "MatchHub"
 tag = "v1"
 new_sqlite_classes = ["MatchHub"]
 
-# Safety net for turn deadlines whose alarm was lost; the alarm is the precise path.
+# Safety net for deadlines whose alarm was lost, seals interrupted mid-flight, and retention;
+# the Durable Object alarm remains the precise path for a deadline.
 [triggers]
 crons = ["*/5 * * * *"]

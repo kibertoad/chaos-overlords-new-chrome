@@ -17,7 +17,10 @@ import type { TurnService } from './TurnService'
 
 const JOIN_CODE_LENGTH = LIMITS.joinCodeLength
 const MIN_PLAYERS_TO_START = LIMITS.minPlayers
+/** Attempts at an unused join code. The space is ~40 bits, so a second attempt is already rare. */
 const JOIN_CODE_ATTEMPTS = 5
+/** The host always holds the first position in the join sequence. */
+const HOST_JOIN_ORDER = 0
 
 export interface LobbyServiceOptions {
   /** Generates the player/match ids; defaults to `crypto.randomUUID`. */
@@ -44,36 +47,37 @@ export class LobbyService {
     const matchId = this.newId()
     const hostId = this.newId()
     const token = generateToken()
-    const match: Match = {
+    const passwordHash = request.password ? await hashPassword(request.password) : null
+    const match = await this.createWithFreshJoinCode({
       id: matchId,
       status: 'lobby',
       settings: request.settings,
       hostPlayerId: hostId,
-      joinCode: await this.freshJoinCode(),
-      passwordHash: request.password ? await hashPassword(request.password) : null,
+      joinCode: '',
+      passwordHash,
       seed: null,
       currentTurn: 0,
       seatCount: 1,
-      eventSeq: 0,
+      joinCounter: 1,
       createdAt: now,
       updatedAt: now,
-    }
+    })
     const host: Player = {
       id: hostId,
       matchId,
       slot: -1,
+      joinOrder: HOST_JOIN_ORDER,
       displayName: request.hostDisplayName,
       tokenHash: await hashToken(token),
       status: 'active',
       joinedAt: now,
     }
-    await this.deps.storage.matches.create(match)
     await this.deps.storage.players.create(host)
     await this.publisher.publish(matchId, {
       type: 'lobby.playerJoined',
       payload: { player: toPlayerView(host, hostId) },
     })
-    return this.membership(matchId, host, token)
+    return this.membership(match, host, token)
   }
 
   async join(request: JoinMatchRequest): Promise<MembershipView> {
@@ -91,7 +95,8 @@ export class LobbyService {
         throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
       }
     }
-    if (!(await this.deps.storage.matches.claimSeat(match.id))) {
+    const joinOrder = await this.deps.storage.matches.claimSeat(match.id)
+    if (joinOrder === null) {
       throw new ConflictError('The match is full or no longer joinable', { reason: 'match_full' })
     }
     const token = generateToken()
@@ -99,17 +104,24 @@ export class LobbyService {
       id: this.newId(),
       matchId: match.id,
       slot: -1,
+      joinOrder,
       displayName: request.displayName,
       tokenHash: await hashToken(token),
       status: 'active',
       joinedAt: this.deps.clock.now(),
     }
-    await this.deps.storage.players.create(player)
+    try {
+      await this.deps.storage.players.create(player)
+    } catch (error) {
+      // The seat is claimed before the row exists; giving it back keeps capacity honest.
+      await this.deps.storage.matches.releaseSeat(match.id)
+      throw error
+    }
     await this.publisher.publish(match.id, {
       type: 'lobby.playerJoined',
       payload: { player: toPlayerView(player, match.hostPlayerId) },
     })
-    return this.membership(match.id, player, token)
+    return this.membership(match, player, token)
   }
 
   async leave(principal: Principal): Promise<void> {
@@ -184,6 +196,9 @@ export class LobbyService {
       return
     }
     await this.deps.storage.players.setStatus(target.id, reason)
+    // Membership is the only thing the token ever proved, so it stops working here: a kicked player
+    // keeps neither the event stream nor the sealed order sets of the turns that follow.
+    await this.deps.storage.players.revokeToken(target.id)
     await this.publisher.publish(match.id, {
       type: 'lobby.playerLeft',
       payload: { playerId: target.id, reason },
@@ -222,23 +237,22 @@ export class LobbyService {
     }
   }
 
-  private async freshJoinCode(): Promise<string> {
+  /**
+   * Inserts the match with a join code no other match holds. The uniqueness is the database's to
+   * enforce, not ours to check first: a `getByJoinCode` probe before the insert would be a race, so
+   * a refused insert is what drives the retry.
+   */
+  private async createWithFreshJoinCode(draft: Match): Promise<Match> {
     for (let attempt = 0; attempt < JOIN_CODE_ATTEMPTS; attempt += 1) {
-      const code = generateJoinCode(JOIN_CODE_LENGTH)
-      if (!(await this.deps.storage.matches.getByJoinCode(code))) return code
+      const match: Match = { ...draft, joinCode: generateJoinCode(JOIN_CODE_LENGTH) }
+      if (await this.deps.storage.matches.create(match)) return match
     }
     throw new ConflictError('Could not allocate a join code; retry', {
       reason: 'join_code_exhausted',
     })
   }
 
-  private async membership(
-    matchId: string,
-    player: Player,
-    token: string,
-  ): Promise<MembershipView> {
-    const match = await this.deps.storage.matches.get(matchId)
-    if (!match) throw new NotFoundError('Match vanished during join', { reason: 'unknown_match' })
+  private async membership(match: Match, player: Player, token: string): Promise<MembershipView> {
     return {
       match: await this.query.view(match),
       player: toPlayerView(player, match.hostPlayerId),

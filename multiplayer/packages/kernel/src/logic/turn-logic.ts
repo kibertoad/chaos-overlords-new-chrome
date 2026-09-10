@@ -58,7 +58,11 @@ export function evaluateConsensus(
   }
 }
 
-/** Host takes slot 0; everyone else follows join order. Stable, so every client agrees. */
+/**
+ * Host takes slot 0; everyone else follows the match's monotonic join sequence. The sequence, not
+ * the join timestamp, is the key: two players seated in the same millisecond would otherwise be
+ * ordered by their random ids, and the slot order decides resolution order on every client.
+ */
 export function assignSlots(
   players: readonly Player[],
   hostPlayerId: string,
@@ -66,10 +70,10 @@ export function assignSlots(
   const ordered = [...players]
     .filter((player) => player.status === 'active')
     .sort((a, b) => {
+      if (a.id === b.id) return 0
       if (a.id === hostPlayerId) return -1
       if (b.id === hostPlayerId) return 1
-      const byTime = a.joinedAt.getTime() - b.joinedAt.getTime()
-      return byTime !== 0 ? byTime : a.id.localeCompare(b.id)
+      return a.joinOrder - b.joinOrder || a.id.localeCompare(b.id)
     })
   return ordered.map((player, slot) => ({ playerId: player.id, slot }))
 }

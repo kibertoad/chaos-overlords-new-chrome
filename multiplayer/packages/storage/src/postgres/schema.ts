@@ -27,7 +27,8 @@ export const matches = pgTable('matches', {
   seed: bigint('seed', { mode: 'number' }),
   currentTurn: integer('current_turn').notNull().default(0),
   seatCount: integer('seat_count').notNull().default(1),
-  eventSeq: integer('event_seq').notNull().default(0),
+  /** Monotonic: seats ever claimed. Never decremented, so `join_order` stays a total order. */
+  joinCounter: integer('join_counter').notNull().default(1),
   createdAt: stamp('created_at').notNull(),
   updatedAt: stamp('updated_at').notNull(),
 })
@@ -40,8 +41,10 @@ export const players = pgTable(
       .notNull()
       .references(() => matches.id, { onDelete: 'cascade' }),
     slot: integer('slot').notNull().default(-1),
+    joinOrder: integer('join_order').notNull().default(0),
     displayName: text('display_name').notNull(),
-    tokenHash: text('token_hash').notNull().unique(),
+    /** Null once revoked; SQL equality never matches null, so a revoked token resolves to nobody. */
+    tokenHash: text('token_hash').unique(),
     status: text('status').notNull(),
     joinedAt: stamp('joined_at').notNull(),
   },
@@ -60,6 +63,8 @@ export const turns = pgTable(
     deadlineAt: stamp('deadline_at'),
     sealedAt: stamp('sealed_at'),
     orderSetHash: text('order_set_hash'),
+    /** `[{ playerId, slot }]` frozen at seal time: exactly what `order_set_hash` was taken over. */
+    sealedSlots: jsonb('sealed_slots'),
   },
   (table) => [
     primaryKey({ columns: [table.matchId, table.number] }),
@@ -70,7 +75,9 @@ export const turns = pgTable(
 export const turnOrders = pgTable(
   'turn_orders',
   {
-    matchId: text('match_id').notNull(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
     turn: integer('turn').notNull(),
     playerId: text('player_id').notNull(),
     orders: jsonb('orders'),
@@ -84,7 +91,9 @@ export const turnOrders = pgTable(
 export const turnReports = pgTable(
   'turn_reports',
   {
-    matchId: text('match_id').notNull(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
     turn: integer('turn').notNull(),
     playerId: text('player_id').notNull(),
     stateHash: text('state_hash').notNull(),
@@ -97,7 +106,9 @@ export const turnReports = pgTable(
 export const snapshots = pgTable(
   'snapshots',
   {
-    matchId: text('match_id').notNull(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
     turn: integer('turn').notNull(),
     formatVersion: integer('format_version').notNull(),
     stateHash: text('state_hash').notNull(),
@@ -111,7 +122,9 @@ export const snapshots = pgTable(
 export const matchEvents = pgTable(
   'match_events',
   {
-    matchId: text('match_id').notNull(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
     seq: integer('seq').notNull(),
     type: text('type').notNull(),
     payload: jsonb('payload').notNull(),

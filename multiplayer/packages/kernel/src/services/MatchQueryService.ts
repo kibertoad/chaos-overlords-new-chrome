@@ -4,6 +4,7 @@ import type {
   OwnSubmissionView,
   PlayerView,
   SealedOrdersView,
+  SealedPlayerOrders,
   TurnView,
 } from '@chaos-overlords/contracts'
 import type { Match, Player, Turn } from '../domain/entities'
@@ -26,9 +27,10 @@ export class MatchQueryService {
 
   async view(match: Match): Promise<MatchView> {
     const players = await this.storage.players.listByMatch(match.id)
-    const [turn, previousTurn] = await Promise.all([
+    const [turn, previousTurn, lastEventSeq] = await Promise.all([
       this.turnView(match.id, match.currentTurn),
       this.turnView(match.id, match.currentTurn - 1),
+      this.storage.events.lastSeq(match.id),
     ])
     return {
       id: match.id,
@@ -40,7 +42,7 @@ export class MatchQueryService {
       players: players.map((player) => toPlayerView(player, match.hostPlayerId)),
       turn,
       previousTurn,
-      lastEventSeq: match.eventSeq,
+      lastEventSeq,
       createdAt: match.createdAt.toISOString(),
     }
   }
@@ -75,26 +77,30 @@ export class MatchQueryService {
     return { turn: number, orders: row.orders, ready: row.ready, ordersHash: row.ordersHash }
   }
 
-  /** The full order set of a turn, only once sealed: before that, other players' plans are secret. */
+  /**
+   * The full order set of a turn, only once sealed: before that, other players' plans are secret.
+   *
+   * The participants come from the set the seal froze, never from the roster as it stands now. That
+   * is what makes the response re-hash to the `orderSetHash` it is served with: someone leaving
+   * between the submission and the seal (their orders are excluded, their slot becomes a computer
+   * player) or after it (their orders stay in) changes the roster but not this set.
+   */
   async sealedOrders(match: Match, number: number): Promise<SealedOrdersView> {
     const turn = await this.requireTurn(match.id, number)
-    if (turn.status === 'open' || turn.orderSetHash === null) {
+    if (turn.status === 'open' || turn.orderSetHash === null || turn.sealedSlots === null) {
       throw new ConflictError('The turn has not been sealed yet', { reason: 'turn_open' })
     }
-    const [orders, players] = await Promise.all([
-      this.storage.turns.listOrders(match.id, number),
-      this.storage.players.listByMatch(match.id),
-    ])
-    const slotOf = new Map(players.map((player) => [player.id, player.slot]))
-    const rows = orders
-      .filter((row) => row.orders !== null && row.ordersHash !== null)
-      .map((row) => ({
-        playerId: row.playerId,
-        slot: slotOf.get(row.playerId) ?? -1,
-        orders: row.orders as NonNullable<typeof row.orders>,
-        ordersHash: row.ordersHash as string,
-      }))
-      .sort((a, b) => a.slot - b.slot)
+    const orders = new Map(
+      (await this.storage.turns.listOrders(match.id, number)).map((row) => [row.playerId, row]),
+    )
+    const rows: SealedPlayerOrders[] = []
+    for (const { playerId, slot } of [...turn.sealedSlots].sort((a, b) => a.slot - b.slot)) {
+      const row = orders.get(playerId)
+      if (!row || row.orders === null || row.ordersHash === null) {
+        throw new Error(`sealed turn ${match.id}/${number} is missing orders for ${playerId}`)
+      }
+      rows.push({ playerId, slot, orders: row.orders, ordersHash: row.ordersHash })
+    }
     return { turn: number, orderSetHash: turn.orderSetHash, players: rows }
   }
 

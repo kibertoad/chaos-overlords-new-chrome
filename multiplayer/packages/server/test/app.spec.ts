@@ -12,6 +12,7 @@ import { createApp, DEFAULT_SERVER_CONFIG, LocalEventHub, type ServerContainer }
 function build(
   overrides: Partial<ServerContainer['config']> = {},
   rateLimit = { limit: 1000, windowMs: 60_000 },
+  memberRateLimit = { limit: 1000, windowMs: 60_000 },
 ) {
   const storage = new InMemoryStorage()
   const clock = new ManualClock()
@@ -26,7 +27,11 @@ function build(
   const container: ServerContainer = {
     kernel,
     eventStream: hub,
-    rateLimiter: new RateLimiter(clock, rateLimit),
+    rateLimiters: {
+      anonymous: new RateLimiter(clock, rateLimit),
+      member: new RateLimiter(clock, memberRateLimit),
+      upload: new RateLimiter(clock, memberRateLimit),
+    },
     config: { ...DEFAULT_SERVER_CONFIG, publicListing: true, ...overrides },
   }
   const app = createApp(container)
@@ -40,7 +45,7 @@ describe('server app over in-memory storage', () => {
     publicListing: true,
     expireDeadlines: async () => {
       clock.advance(60_000)
-      await kernel.turns.sweepExpiredTurns()
+      await kernel.turns.sweep()
     },
   })
 
@@ -74,6 +79,50 @@ describe('server app over in-memory storage', () => {
       headers: { ...headers, 'x-forwarded-for': '198.51.100.1' },
     })
     expect(otherClient.status).toBe(404)
+  })
+
+  it('rate-limits an authenticated member per player, not per address', async () => {
+    const limited = build({}, { limit: 1000, windowMs: 60_000 }, { limit: 2, windowMs: 60_000 })
+    const created = await limited.app.request('/api/v1/matches', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        settings: {
+          name: 'x',
+          maxPlayers: 2,
+          turnTimerSeconds: 0,
+          visibility: 'private',
+          gameSettings: {},
+        },
+        hostDisplayName: 'h',
+      }),
+    })
+    const { token, match, joinCode } = (await created.json()) as {
+      token: string
+      match: { id: string }
+      joinCode: string
+    }
+    const read = () =>
+      limited.app.request(`/api/v1/matches/${match.id}`, {
+        headers: { authorization: `Bearer ${token}` },
+      })
+    expect((await read()).status).toBe(200)
+    expect((await read()).status).toBe(200)
+    const throttled = await read()
+    expect(throttled.status).toBe(429)
+    expect(throttled.headers.get('retry-after')).toMatch(/^\d+$/)
+
+    // Another member of the same match has their own budget.
+    const joined = await limited.app.request('/api/v1/matches/join', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ joinCode, displayName: 'g' }),
+    })
+    const guest = (await joined.json()) as { token: string }
+    const guestRead = await limited.app.request(`/api/v1/matches/${match.id}`, {
+      headers: { authorization: `Bearer ${guest.token}` },
+    })
+    expect(guestRead.status).toBe(200)
   })
 
   it('refuses an oversized order document before parsing it', async () => {

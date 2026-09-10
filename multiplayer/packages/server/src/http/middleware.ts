@@ -1,5 +1,6 @@
 import { RateLimitedError, UnauthorizedError } from '@chaos-overlords/kernel'
 import type { Context, MiddlewareHandler } from 'hono'
+import type { RateLimiters } from '../container'
 import type { AppEnv } from './types'
 
 /** Mints or adopts `X-Request-Id`; it rides every error envelope so a player can quote it. */
@@ -27,15 +28,35 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
 export const rateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
   const container = c.get('container')
   const key = (container.clientAddress ?? defaultClientAddress)(c)
-  const retryAfter = container.rateLimiter.take(key)
-  if (retryAfter !== null) {
-    c.header('Retry-After', String(retryAfter))
-    throw new RateLimitedError('Too many attempts; slow down', {
-      reason: 'rate_limited',
-      retryAfterSeconds: retryAfter,
-    })
-  }
+  enforce(container.rateLimiters, 'anonymous', key, c)
   await next()
+}
+
+/**
+ * Limiter for an authenticated member, keyed by player rather than address so one player on a shared
+ * address cannot spend another's budget. Must run after `bearerAuth`.
+ */
+export function memberRateLimited(tier: keyof RateLimiters = 'member'): MiddlewareHandler<AppEnv> {
+  return async (c, next) => {
+    const container = c.get('container')
+    enforce(container.rateLimiters, tier, c.get('principal').player.id, c)
+    await next()
+  }
+}
+
+function enforce(
+  limiters: RateLimiters,
+  tier: keyof RateLimiters,
+  key: string,
+  c: Context<AppEnv>,
+): void {
+  const retryAfter = limiters[tier].take(`${tier}:${key}`)
+  if (retryAfter === null) return
+  c.header('Retry-After', String(retryAfter))
+  throw new RateLimitedError('Too many attempts; slow down', {
+    reason: 'rate_limited',
+    retryAfterSeconds: retryAfter,
+  })
 }
 
 export function defaultClientAddress(c: Context<AppEnv>): string {

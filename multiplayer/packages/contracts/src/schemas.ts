@@ -14,10 +14,23 @@ const jsonValue: z.ZodType<JsonValue> = z.lazy(() =>
   z.union([jsonPrimitive, z.array(jsonValue), z.record(z.string(), jsonValue)]),
 )
 
+/**
+ * UTF-8 length without a `TextEncoder`: this package is deliberately environment-free, imported by
+ * the server, a Worker and a browser alike.
+ */
+function utf8Bytes(text: string): number {
+  let bytes = 0
+  for (const character of text) {
+    const code = character.codePointAt(0) ?? 0
+    bytes += code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0x10000 ? 3 : 4
+  }
+  return bytes
+}
+
 /** An opaque object the client owns (scenario, portraits, difficulty…); size-bounded only. */
 export const gameSettingsSchema = z
   .record(z.string(), jsonValue)
-  .refine((value) => JSON.stringify(value).length <= LIMITS.gameSettingsBytes, {
+  .refine((value) => utf8Bytes(JSON.stringify(value)) <= LIMITS.gameSettingsBytes, {
     message: `gameSettings exceeds ${LIMITS.gameSettingsBytes} bytes`,
   })
 
@@ -47,6 +60,19 @@ export const joinMatchRequestSchema = z.object({
 })
 
 /**
+ * A numeric op argument. Only safe integers are allowed, and `-0` is refused: the order digest is
+ * SHA-256 over canonical JSON, and a float's shortest round-trip text differs between JSON writers
+ * (JavaScript's `1e+21` against .NET's `1E+21`), which would make the digest unreproducible on a
+ * client written in another language. Non-integral quantities travel as scaled integers or strings.
+ */
+const opArgNumber = z
+  .number()
+  .int()
+  .refine((value) => Number.isSafeInteger(value) && !Object.is(value, -0), {
+    message: 'op arguments are safe integers; -0 is not distinguishable across JSON writers',
+  })
+
+/**
  * One authoritative operation as the game core records it in a replay: a named op with flat
  * scalar arguments. The server never interprets ops; it bounds, stores, hashes and relays them.
  */
@@ -59,12 +85,7 @@ export const orderOpSchema = z.object({
   args: z
     .record(
       z.string().min(1).max(LIMITS.opArgKeyLength),
-      z.union([
-        z.string().max(LIMITS.opArgStringLength),
-        z.number().finite(),
-        z.boolean(),
-        z.null(),
-      ]),
+      z.union([z.string().max(LIMITS.opArgStringLength), opArgNumber, z.boolean(), z.null()]),
     )
     .refine((args) => Object.keys(args).length <= LIMITS.opArgsMaxKeys, {
       message: `an op takes at most ${LIMITS.opArgsMaxKeys} arguments`,

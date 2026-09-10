@@ -18,10 +18,11 @@ import type {
 } from '../ports/storage'
 
 /**
- * A reference implementation of the storage ports with the same atomicity semantics as the SQL
- * ones (single-threaded JS makes every method atomic). It runs the kernel and HTTP tests
- * hermetically and doubles as the executable specification the conformance suite pins the
- * SQL implementations to.
+ * A reference implementation of the storage ports with the same semantics as the SQL ones:
+ * single-threaded JS makes every method atomic, and the uniqueness a database index would enforce
+ * (match id, join code, token hash, turn and event keys) is enforced here by hand so a service can
+ * be tested against the same refusals. The storage conformance suite runs against it, which is what
+ * keeps the claim honest.
  */
 export class InMemoryStorage implements MultiplayerStorage {
   private readonly matchRows = new Map<string, Match>()
@@ -34,7 +35,10 @@ export class InMemoryStorage implements MultiplayerStorage {
 
   readonly matches: MatchRepository = {
     create: async (match) => {
+      const taken = [...this.matchRows.values()].some((row) => row.joinCode === match.joinCode)
+      if (taken || this.matchRows.has(match.id)) return false
       this.matchRows.set(match.id, { ...match })
+      return true
     },
     get: async (id) => clone(this.matchRows.get(id)),
     getByJoinCode: async (joinCode) =>
@@ -61,14 +65,23 @@ export class InMemoryStorage implements MultiplayerStorage {
     claimSeat: async (matchId) => {
       const match = this.matchRows.get(matchId)
       if (match?.status !== 'lobby' || match.seatCount >= match.settings.maxPlayers) {
-        return false
+        return null
       }
       match.seatCount += 1
-      return true
+      match.joinCounter += 1
+      return match.joinCounter - 1
     },
     releaseSeat: async (matchId) => {
       const match = this.matchRows.get(matchId)
       if (match && match.seatCount > 0) match.seatCount -= 1
+    },
+    deleteInactive: async (statuses, before, limit) => {
+      const doomed = [...this.matchRows.values()]
+        .filter((match) => statuses.includes(match.status) && match.updatedAt < before)
+        .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())
+        .slice(0, limit)
+      for (const match of doomed) this.deleteMatch(match.id)
+      return doomed.length
     },
     transition: async (matchId, from, patch) => {
       const match = this.matchRows.get(matchId)
@@ -76,34 +89,37 @@ export class InMemoryStorage implements MultiplayerStorage {
       Object.assign(match, definedOnly(patch))
       return true
     },
-    allocateEventSeq: async (matchId) => {
-      const match = this.matchRows.get(matchId)
-      if (!match) throw new Error(`no match ${matchId}`)
-      match.eventSeq += 1
-      return match.eventSeq
-    },
   }
 
   readonly players: PlayerRepository = {
     create: async (player) => {
+      const clash = [...this.playerRows.values()].some(
+        (row) => player.tokenHash !== null && row.tokenHash === player.tokenHash,
+      )
+      if (clash || this.playerRows.has(player.id)) {
+        throw new Error(`player ${player.id} or its token already exists`)
+      }
       this.playerRows.set(player.id, { ...player })
     },
     get: async (id) => clone(this.playerRows.get(id)),
     getByTokenHash: async (tokenHash) =>
-      clone([...this.playerRows.values()].find((player) => player.tokenHash === tokenHash)),
+      clone(
+        [...this.playerRows.values()].find(
+          (player) => player.tokenHash !== null && player.tokenHash === tokenHash,
+        ),
+      ),
     listByMatch: async (matchId) =>
       [...this.playerRows.values()]
         .filter((player) => player.matchId === matchId)
-        .sort(
-          (a, b) =>
-            a.slot - b.slot ||
-            a.joinedAt.getTime() - b.joinedAt.getTime() ||
-            a.id.localeCompare(b.id),
-        )
+        .sort((a, b) => a.slot - b.slot || a.joinOrder - b.joinOrder || a.id.localeCompare(b.id))
         .map((player) => ({ ...player })),
     setStatus: async (playerId, status) => {
       const player = this.playerRows.get(playerId)
       if (player) player.status = status
+    },
+    revokeToken: async (playerId) => {
+      const player = this.playerRows.get(playerId)
+      if (player) player.tokenHash = null
     },
     assignSlots: async (assignments) => {
       for (const { playerId, slot } of assignments) {
@@ -118,9 +134,12 @@ export class InMemoryStorage implements MultiplayerStorage {
 
   readonly turns: TurnRepository = {
     open: async (turn, playerIds) => {
-      this.turnRows.set(turnKey(turn.matchId, turn.number), { ...turn })
+      const created = !this.turnRows.has(turnKey(turn.matchId, turn.number))
+      if (created) this.turnRows.set(turnKey(turn.matchId, turn.number), { ...turn })
       for (const playerId of playerIds) {
-        this.orderRows.set(orderKey(turn.matchId, turn.number, playerId), {
+        const key = orderKey(turn.matchId, turn.number, playerId)
+        if (this.orderRows.has(key)) continue
+        this.orderRows.set(key, {
           matchId: turn.matchId,
           turn: turn.number,
           playerId,
@@ -130,6 +149,7 @@ export class InMemoryStorage implements MultiplayerStorage {
           submittedAt: null,
         })
       }
+      return created
     },
     get: async (matchId, number) => clone(this.turnRows.get(turnKey(matchId, number))),
     submitOrders: async (matchId, number, playerId, submission) => {
@@ -150,6 +170,12 @@ export class InMemoryStorage implements MultiplayerStorage {
       const turn = this.turnRows.get(turnKey(matchId, number))
       if (!turn || !from.includes(turn.status)) return false
       Object.assign(turn, definedOnly(patch))
+      return true
+    },
+    rescheduleDeadline: async (matchId, number, deadlineAt) => {
+      const turn = this.turnRows.get(turnKey(matchId, number))
+      if (turn?.status !== 'open') return false
+      turn.deadlineAt = deadlineAt
       return true
     },
     upsertReport: async (report) => {
@@ -177,6 +203,16 @@ export class InMemoryStorage implements MultiplayerStorage {
         .sort((a, b) => (a.deadlineAt?.getTime() ?? 0) - (b.deadlineAt?.getTime() ?? 0))
         .slice(0, limit)
         .map((turn) => ({ matchId: turn.matchId, number: turn.number })),
+    listStalledSeals: async (limit) =>
+      [...this.turnRows.values()]
+        .filter((turn) => {
+          const match = this.matchRows.get(turn.matchId)
+          if (!match || (match.status !== 'running' && match.status !== 'desynced')) return false
+          return turn.number === match.currentTurn && turn.status !== 'open'
+        })
+        .sort((a, b) => a.matchId.localeCompare(b.matchId) || a.number - b.number)
+        .slice(0, limit)
+        .map((turn) => ({ matchId: turn.matchId, number: turn.number })),
   }
 
   readonly snapshots: SnapshotRepository = {
@@ -195,18 +231,38 @@ export class InMemoryStorage implements MultiplayerStorage {
   readonly events: EventRepository = {
     append: async (event) => {
       const log = this.eventRows.get(event.matchId) ?? []
-      if (log.some((existing) => existing.seq === event.seq)) {
-        throw new Error(`duplicate event seq ${event.seq} for ${event.matchId}`)
-      }
-      log.push({ ...event })
-      log.sort((a, b) => a.seq - b.seq)
+      const persisted = { ...event, seq: (log.at(-1)?.seq ?? 0) + 1 } as PersistedEvent
+      log.push(persisted)
       this.eventRows.set(event.matchId, log)
+      return { ...persisted }
     },
     listAfter: async (matchId, afterSeq, limit) =>
       (this.eventRows.get(matchId) ?? [])
         .filter((event) => event.seq > afterSeq)
         .slice(0, limit)
         .map((event) => ({ ...event })),
+    lastSeq: async (matchId) => this.eventRows.get(matchId)?.at(-1)?.seq ?? 0,
+  }
+
+  /** What a cascading delete does in SQL: the match row and everything keyed by it. */
+  private deleteMatch(matchId: string): void {
+    this.matchRows.delete(matchId)
+    this.eventRows.delete(matchId)
+    for (const [id, player] of this.playerRows) {
+      if (player.matchId === matchId) this.playerRows.delete(id)
+    }
+    for (const [key, turn] of this.turnRows) {
+      if (turn.matchId === matchId) this.turnRows.delete(key)
+    }
+    for (const [key, row] of this.orderRows) {
+      if (row.matchId === matchId) this.orderRows.delete(key)
+    }
+    for (const [key, row] of this.reportRows) {
+      if (row.matchId === matchId) this.reportRows.delete(key)
+    }
+    for (const [key, row] of this.snapshotRows) {
+      if (row.matchId === matchId) this.snapshotRows.delete(key)
+    }
   }
 
   /** Test hook: the match statuses on file, for assertions that bypass the services. */
@@ -224,7 +280,7 @@ function orderKey(matchId: string, number: number, playerId: string): string {
 }
 
 function clone<T>(value: T | undefined): T | null {
-  return value === undefined ? null : { ...value }
+  return value === undefined ? null : structuredClone(value)
 }
 
 function definedOnly<T extends object>(patch: T): Partial<T> {

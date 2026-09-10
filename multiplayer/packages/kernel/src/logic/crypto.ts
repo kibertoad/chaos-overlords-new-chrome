@@ -40,10 +40,21 @@ export function hashToken(token: string): Promise<string> {
 /** Crockford-ish alphabet without the glyphs players misread over voice chat (0/O, 1/I/L). */
 const JOIN_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 
+/**
+ * A join code of uniformly distributed glyphs. The alphabet's size does not divide 256, so bytes
+ * above the largest whole multiple are rejected and redrawn rather than folded with `%`, which
+ * would make the first glyphs ~3% likelier and cost entropy on a code that guards a lobby.
+ */
 export function generateJoinCode(length: number): string {
-  const bytes = randomBytes(length)
+  const limit = Math.floor(256 / JOIN_CODE_ALPHABET.length) * JOIN_CODE_ALPHABET.length
   let code = ''
-  for (const byte of bytes) code += JOIN_CODE_ALPHABET[byte % JOIN_CODE_ALPHABET.length]
+  while (code.length < length) {
+    for (const byte of randomBytes(length)) {
+      if (byte >= limit) continue
+      code += JOIN_CODE_ALPHABET[byte % JOIN_CODE_ALPHABET.length]
+      if (code.length === length) break
+    }
+  }
   return code
 }
 

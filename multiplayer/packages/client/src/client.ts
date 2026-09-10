@@ -22,15 +22,27 @@ export interface ClientOptions {
   baseUrl: string
   fetch?: FetchLike
   token?: string
+  /**
+   * Abandons a request that has produced nothing for this long. Event streams are exempt: they are
+   * expected to stay open and carry their own keepalives.
+   */
+  requestTimeoutMs?: number
 }
 
 export interface StreamOptions {
   /** Resume after this sequence number (the last event seen). */
   after?: number
   signal?: AbortSignal
-  /** Delay before reconnecting after a dropped stream, in milliseconds. */
+  /** First reconnect delay; it doubles up to `maxReconnectDelayMs`, with jitter. */
   reconnectDelayMs?: number
+  maxReconnectDelayMs?: number
+  /** Called for each dropped connection, so a caller can surface "reconnecting" to the player. */
+  onReconnect?: (error: unknown, attempt: number) => void
 }
+
+const DEFAULT_REQUEST_TIMEOUT_MS = 15_000
+const DEFAULT_RECONNECT_DELAY_MS = 1_000
+const DEFAULT_MAX_RECONNECT_DELAY_MS = 30_000
 
 export interface MatchDetail {
   match: MatchView
@@ -46,15 +58,22 @@ export class MultiplayerClient {
   private readonly fetchImpl: FetchLike
   private readonly baseUrl: string
   private readonly token: string | undefined
+  private readonly requestTimeoutMs: number
 
   constructor(options: ClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '')
     this.fetchImpl = options.fetch ?? ((input, init) => fetch(input, init))
     this.token = options.token
+    this.requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS
   }
 
   withToken(token: string): MultiplayerClient {
-    return new MultiplayerClient({ baseUrl: this.baseUrl, fetch: this.fetchImpl, token })
+    return new MultiplayerClient({
+      baseUrl: this.baseUrl,
+      fetch: this.fetchImpl,
+      token,
+      requestTimeoutMs: this.requestTimeoutMs,
+    })
   }
 
   listLobbies(): Promise<{ matches: LobbyListing[] }> {
@@ -80,6 +99,7 @@ export class MultiplayerClient {
     if (body !== undefined) headers['Content-Type'] = 'application/json'
     const init: RequestInit = { method, headers }
     if (body !== undefined) init.body = JSON.stringify(body)
+    if (this.requestTimeoutMs > 0) init.signal = AbortSignal.timeout(this.requestTimeoutMs)
     const response = await this.fetchImpl(`${this.baseUrl}${API}${path}`, init)
     if (!response.ok) throw await MultiplayerApiError.fromResponse(response)
     if (response.status === 204) return undefined as T
@@ -177,22 +197,50 @@ export class MatchHandle {
   /**
    * Events forever: reconnects after a drop, resuming from the last sequence seen, until the
    * signal aborts. The seq is the only state a client needs to keep to never miss an event.
+   *
+   * Reconnects back off exponentially with jitter and a ceiling, so a server that is down or
+   * restarting is not hammered once a second by every client at once, and a refusal the server will
+   * keep repeating (anything below 500: a revoked token, a deleted match) ends the stream instead of
+   * being retried forever.
    */
   async *stream(options: StreamOptions = {}): AsyncGenerator<MatchEvent> {
     let after = options.after ?? 0
-    const delay = options.reconnectDelayMs ?? 1000
+    let attempt = 0
+    const base = options.reconnectDelayMs ?? DEFAULT_RECONNECT_DELAY_MS
+    const ceiling = options.maxReconnectDelayMs ?? DEFAULT_MAX_RECONNECT_DELAY_MS
     while (!options.signal?.aborted) {
       try {
         for await (const event of this.streamOnce({ ...options, after })) {
           after = Math.max(after, event.seq)
+          attempt = 0
           yield event
         }
       } catch (error) {
         if (options.signal?.aborted) return
         if (error instanceof MultiplayerApiError && error.status < 500) throw error
+        options.onReconnect?.(error, attempt + 1)
       }
       if (options.signal?.aborted) return
-      await new Promise((resolve) => setTimeout(resolve, delay))
+      attempt += 1
+      await sleep(backoff(base, ceiling, attempt), options.signal)
     }
   }
+}
+
+/** Exponential with full jitter: every client picks a different point in the window. */
+function backoff(baseMs: number, ceilingMs: number, attempt: number): number {
+  const window = Math.min(ceilingMs, baseMs * 2 ** (attempt - 1))
+  return Math.round(window * (0.5 + Math.random() / 2))
+}
+
+function sleep(ms: number, signal: AbortSignal | undefined): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(finish, ms)
+    signal?.addEventListener('abort', finish, { once: true })
+    function finish(): void {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', finish)
+      resolve()
+    }
+  })
 }

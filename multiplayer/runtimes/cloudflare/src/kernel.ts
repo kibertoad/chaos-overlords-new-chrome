@@ -17,6 +17,9 @@ export const workerLogger: Logger = {
   error: (msg, fields) => console.error(JSON.stringify({ level: 'error', msg, ...fields })),
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+const DEFAULT_RETENTION_DAYS = 30
+
 export const HUB_PATHS = {
   notify: '/notify',
   schedule: '/schedule',
@@ -53,11 +56,23 @@ export function buildKernel(
       })
     },
   }
-  return createKernel({
-    storage,
-    notifier,
-    scheduler,
-    clock: { now: () => new Date() },
-    logger: workerLogger,
-  })
+  const retentionDays = Number(env.RETENTION_DAYS ?? DEFAULT_RETENTION_DAYS)
+  return createKernel(
+    {
+      storage,
+      notifier,
+      scheduler,
+      clock: { now: () => new Date() },
+      logger: workerLogger,
+    },
+    {
+      retention: {
+        maxAgeMs:
+          (Number.isInteger(retentionDays) && retentionDays >= 0
+            ? retentionDays
+            : DEFAULT_RETENTION_DAYS) * DAY_MS,
+        batchSize: 50,
+      },
+    },
+  )
 }

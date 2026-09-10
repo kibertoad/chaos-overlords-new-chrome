@@ -5,12 +5,22 @@ export interface NodeConfig {
   databaseUrl: string
   publicListing: boolean
   logLevel: 'debug' | 'info' | 'warn' | 'error'
-  /** How often the safety-net sweep looks for expired turns the timers missed. */
+  /** How often the safety-net sweep looks for expired turns and interrupted seals. */
   sweepIntervalMs: number
   /** Unauthenticated create/join attempts allowed per client address per minute. */
   rateLimitPerMinute: number
+  /** Authenticated calls allowed per player per minute, and snapshot uploads within that. */
+  memberRateLimitPerMinute: number
+  uploadRateLimitPerMinute: number
+  /**
+   * Days after which a finished, abandoned or never-started match is deleted with everything it
+   * owns. 0 keeps every match forever, which a long-lived server will feel in its database size.
+   */
+  retentionDays: number
   /** Trust `X-Forwarded-For` for the client address (set when behind a reverse proxy). */
   trustProxy: boolean
+  /** How long an in-flight request (or an open event stream) may delay shutdown. */
+  shutdownGraceMs: number
 }
 
 /**
@@ -26,7 +36,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
     logLevel: level(env.LOG_LEVEL),
     sweepIntervalMs: integer(env.SWEEP_INTERVAL_MS, 15_000),
     rateLimitPerMinute: integer(env.RATE_LIMIT_PER_MINUTE, 30),
+    memberRateLimitPerMinute: integer(env.MEMBER_RATE_LIMIT_PER_MINUTE, 240),
+    uploadRateLimitPerMinute: integer(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10),
+    retentionDays: integer(env.RETENTION_DAYS, 30),
     trustProxy: flag(env.TRUST_PROXY, false),
+    shutdownGraceMs: integer(env.SHUTDOWN_GRACE_MS, 5_000),
   }
 }
 

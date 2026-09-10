@@ -1,6 +1,6 @@
 import type { OrderDocument } from '@chaos-overlords/contracts'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ConflictError, createKernel, type Kernel, type Principal } from '../src'
+import { ConflictError, createKernel, hashOrderSet, type Kernel, type Principal } from '../src'
 import {
   InMemoryStorage,
   ManualClock,
@@ -212,7 +212,7 @@ describe('multiplayer kernel', () => {
     ])
     expect(await kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
     clock.advance(60_000)
-    expect(await kernel.turns.sweepExpiredTurns()).toBe(1)
+    expect(await kernel.turns.sweep()).toEqual({ sealed: 1, repaired: 0 })
     expect(await kernel.turns.trySeal(host.match.id, 1, 'deadline')).toBe(false)
     expect((await principalOf(host.token)).match.currentTurn).toBe(2)
     expect(scheduler.scheduled).toHaveLength(2)
@@ -230,16 +230,220 @@ describe('multiplayer kernel', () => {
     })
     await kernel.lobby.kick(await principalOf(host.token), guest.player.id)
     expect((await principalOf(host.token)).match.currentTurn).toBe(2)
-    await expect(
-      kernel.turns.submitOrders(await principalOf(guest.token), 2, {
-        orders: orders(1),
-        ready: true,
-      }),
-    ).rejects.toMatchObject({
-      details: { reason: 'not_active' },
+    // The kick revokes the membership, so the token stops resolving at all: a kicked player loses
+    // the event stream and the sealed order sets of the turns that follow, not just the right to act.
+    await expect(principalOf(guest.token)).rejects.toMatchObject({
+      details: { reason: 'invalid_token' },
     })
     await kernel.lobby.leave(await principalOf(host.token))
     expect(storage.statusOf(host.match.id)).toBe('abandoned')
+  })
+
+  it('serves a sealed set that re-hashes to the digest it was announced with', async () => {
+    const { host, guest } = await startedMatch()
+    // The guest plans, is then kicked, and the turn seals without them: their slot becomes a
+    // computer player on every client, so their orders must be in neither the set nor its digest.
+    await kernel.turns.submitOrders(await principalOf(guest.token), 1, {
+      orders: orders(2),
+      ready: false,
+    })
+    await kernel.lobby.kick(await principalOf(host.token), guest.player.id)
+    await kernel.turns.submitOrders(await principalOf(host.token), 1, {
+      orders: orders(1),
+      ready: true,
+    })
+
+    const hostP = await principalOf(host.token)
+    const sealed = await kernel.query.sealedOrders(hostP.match, 1)
+    expect(sealed.players.map((row) => row.playerId)).toEqual([host.player.id])
+    expect(
+      await hashOrderSet(
+        sealed.players.map((row) => ({ slot: row.slot, ordersHash: row.ordersHash })),
+      ),
+    ).toBe(sealed.orderSetHash)
+  })
+
+  it('keeps a departed player in the set of a turn that sealed before they left', async () => {
+    const { host, guest } = await startedMatch()
+    for (const token of [host.token, guest.token]) {
+      await kernel.turns.submitOrders(await principalOf(token), 1, {
+        orders: orders(1),
+        ready: true,
+      })
+    }
+    await kernel.lobby.kick(await principalOf(host.token), guest.player.id)
+    const hostP = await principalOf(host.token)
+    const sealed = await kernel.query.sealedOrders(hostP.match, 1)
+    expect(sealed.players.map((row) => row.slot)).toEqual([0, 1])
+    expect(
+      await hashOrderSet(
+        sealed.players.map((row) => ({ slot: row.slot, ordersHash: row.ordersHash })),
+      ),
+    ).toBe(sealed.orderSetHash)
+  })
+
+  it('numbers the event log without gaps when two players act at the same time', async () => {
+    const { host, guest } = await startedMatch()
+    const [hostP, guestP] = await Promise.all([principalOf(host.token), principalOf(guest.token)])
+    await Promise.all([
+      kernel.turns.submitOrders(hostP, 1, { orders: orders(1), ready: true }),
+      kernel.turns.submitOrders(guestP, 1, { orders: orders(2), ready: true }),
+    ])
+    const log = await storage.events.listAfter(hostP.match.id, 0, 100)
+    // Contiguous from 1: a hole would be a sequence number a stream cursor has already passed.
+    expect(log.map((event) => event.seq)).toEqual(log.map((_, index) => index + 1))
+    expect(await storage.events.lastSeq(hostP.match.id)).toBe(log.length)
+    const types = log.map((event) => event.type)
+    expect(types.filter((type) => type === 'turn.readiness')).toHaveLength(2)
+    expect(types.filter((type) => type === 'turn.sealed')).toHaveLength(1)
+    expect(notifier.events.map((event) => event.seq)).toEqual(log.map((event) => event.seq))
+  })
+
+  it('finishes a seal that was interrupted before the next turn opened', async () => {
+    const { host, guest } = await startedMatch()
+    for (const token of [host.token, guest.token]) {
+      await kernel.turns.submitOrders(await principalOf(token), 1, {
+        orders: orders(1),
+        ready: false,
+      })
+    }
+    // What a process dying mid-seal leaves behind: turn 1 sealed, no digest, no turn 2.
+    expect(
+      await storage.turns.transition(host.match.id, 1, ['open'], {
+        status: 'sealed',
+        sealedAt: clock.now(),
+      }),
+    ).toBe(true)
+    expect((await principalOf(host.token)).match.currentTurn).toBe(1)
+
+    expect(await kernel.turns.sweep()).toEqual({ sealed: 0, repaired: 1 })
+
+    const hostP = await principalOf(host.token)
+    expect(hostP.match.currentTurn).toBe(2)
+    const sealed = await kernel.query.sealedOrders(hostP.match, 1)
+    expect(sealed.players).toHaveLength(2)
+    expect(notifier.events.map((event) => event.type)).toContain('turn.sealed')
+    // And a second sweep has nothing left to do.
+    expect(await kernel.turns.sweep()).toEqual({ sealed: 0, repaired: 0 })
+  })
+
+  it('restarts the open turn clock when a desync pause lifts', async () => {
+    const { host, guest } = await startedMatch(60)
+    for (const token of [host.token, guest.token]) {
+      await kernel.turns.submitOrders(await principalOf(token), 1, {
+        orders: orders(1),
+        ready: true,
+      })
+    }
+    await kernel.turns.report(await principalOf(host.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+    await kernel.turns.report(await principalOf(guest.token), 1, {
+      stateHash: HASH_B,
+      finished: false,
+    })
+    expect(storage.statusOf(host.match.id)).toBe('desynced')
+
+    // The pause outlasts the turn timer; orders are refused throughout, so the turn must not seal
+    // empty the moment the match resumes.
+    clock.advance(120_000)
+    await kernel.snapshots.upload(await principalOf(host.token), {
+      turn: 1,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+    })
+    await kernel.turns.report(await principalOf(guest.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+    expect(storage.statusOf(host.match.id)).toBe('running')
+
+    const open = await storage.turns.get(host.match.id, 2)
+    expect(open?.deadlineAt).toEqual(new Date(clock.now().getTime() + 60_000))
+    expect(notifier.events.map((event) => event.type)).toContain('turn.deadlineExtended')
+    expect(scheduler.scheduled.at(-1)).toEqual({
+      matchId: host.match.id,
+      turn: 2,
+      dueAt: open?.deadlineAt,
+    })
+    expect(await kernel.turns.sweep()).toEqual({ sealed: 0, repaired: 0 })
+  })
+
+  it('collects matches past their retention age, and never a live one', async () => {
+    const { host } = await startedMatch()
+    const abandoned = await kernel.lobby.createMatch({
+      settings: {
+        name: 'empty',
+        maxPlayers: 2,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Nobody',
+    })
+    await kernel.lobby.leave(await principalOf(abandoned.token))
+    expect(storage.statusOf(abandoned.match.id)).toBe('abandoned')
+
+    expect(await kernel.retention.collect()).toBe(0)
+    clock.advance(31 * 24 * 60 * 60 * 1000)
+    expect(await kernel.retention.collect()).toBe(1)
+    expect(storage.statusOf(abandoned.match.id)).toBeUndefined()
+    expect(storage.statusOf(host.match.id)).toBe('running')
+  })
+
+  it('gives the seat back when the player row cannot be written', async () => {
+    const created = await kernel.lobby.createMatch({
+      settings: {
+        name: 'x',
+        maxPlayers: 2,
+        turnTimerSeconds: 0,
+        visibility: 'public',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Host',
+    })
+    // The seat is claimed before the row exists, so a failure in between would otherwise shrink the
+    // lobby's capacity for good.
+    const create = storage.players.create
+    storage.players.create = async () => {
+      throw new Error('disk on fire')
+    }
+    await expect(
+      kernel.lobby.join({ joinCode: created.joinCode, displayName: 'G' }),
+    ).rejects.toThrow('disk on fire')
+    storage.players.create = create
+    expect((await kernel.query.listPublicLobbies(10))[0]?.playerCount).toBe(1)
+    const recovered = await kernel.lobby.join({ joinCode: created.joinCode, displayName: 'G' })
+    expect(recovered.player.displayName).toBe('G')
+  })
+
+  it('refuses a snapshot that contradicts a confirmed turn, and allows the same bytes again', async () => {
+    const { host, guest } = await startedMatch()
+    for (const token of [host.token, guest.token]) {
+      await kernel.turns.submitOrders(await principalOf(token), 1, {
+        orders: orders(1),
+        ready: true,
+      })
+    }
+    for (const token of [host.token, guest.token]) {
+      await kernel.turns.report(await principalOf(token), 1, {
+        stateHash: HASH_A,
+        finished: false,
+      })
+    }
+    const upload = async (stateHash: string) =>
+      kernel.snapshots.upload(await principalOf(host.token), {
+        turn: 1,
+        formatVersion: 1,
+        stateHash,
+        body: 'AAAA',
+      })
+    // The same bytes again are fine (a reconnecting client may need them); a different state hash
+    // would contradict consensus the match already reached.
+    await expect(upload(HASH_A)).resolves.toBeUndefined()
+    await expect(upload(HASH_B)).rejects.toMatchObject({ details: { reason: 'turn_confirmed' } })
   })
 
   it('a host leaving the lobby abandons it; a guest leaving frees the seat', async () => {

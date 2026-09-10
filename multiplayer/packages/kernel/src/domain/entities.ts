@@ -19,8 +19,11 @@ export interface Match {
   currentTurn: number
   /** Seats taken in the lobby; capacity is enforced on this counter atomically. */
   seatCount: number
-  /** Last allocated event sequence number. */
-  eventSeq: number
+  /**
+   * Monotonic count of seats ever claimed. It never decreases, so the value handed to each player
+   * as `joinOrder` is a stable total order even after someone leaves and a newcomer takes the seat.
+   */
+  joinCounter: number
   createdAt: Date
   updatedAt: Date
 }
@@ -30,10 +33,22 @@ export interface Player {
   matchId: string
   /** Assigned at match start; -1 while in the lobby. */
   slot: number
+  /** Position in the match's monotonic join sequence; the host is always 0. */
+  joinOrder: number
   displayName: string
-  tokenHash: string
+  /**
+   * SHA-256 of the player's bearer token, or null once the membership is revoked (left or kicked
+   * from a running match). A null hash matches no token, so revocation needs no extra check.
+   */
+  tokenHash: string | null
   status: PlayerStatus
   joinedAt: Date
+}
+
+/** One participant of a sealed turn: the slot its orders were hashed under. */
+export interface SealedSlot {
+  playerId: string
+  slot: number
 }
 
 export interface Turn {
@@ -44,6 +59,12 @@ export interface Turn {
   deadlineAt: Date | null
   sealedAt: Date | null
   orderSetHash: string | null
+  /**
+   * The participants whose orders the seal folded into `orderSetHash`, frozen at seal time and
+   * never recomputed. Readers of the sealed set serve exactly these rows, so the set a client
+   * fetches always re-hashes to the digest that was announced, no matter who leaves afterwards.
+   */
+  sealedSlots: readonly SealedSlot[] | null
 }
 
 /** One player's row for a turn. Rows are pre-created when the turn opens (see TurnRepository). */

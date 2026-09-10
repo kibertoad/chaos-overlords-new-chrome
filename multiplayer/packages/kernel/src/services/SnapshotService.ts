@@ -36,6 +36,19 @@ export class SnapshotService {
         reason: 'turn_open',
       })
     }
+    // A confirmed turn's state hash is settled consensus. Re-uploading the same bytes is fine (a
+    // reconnecting client may need them); contradicting it is not, or the snapshot clients bootstrap
+    // from would disagree with the turn they already agreed on.
+    const turn = await this.deps.storage.turns.get(match.id, request.turn)
+    if (turn?.status === 'confirmed') {
+      const existing = await this.deps.storage.snapshots.get(match.id, request.turn)
+      if (existing && existing.stateHash !== request.stateHash) {
+        throw new ConflictError('Turn already confirmed with a different state hash', {
+          reason: 'turn_confirmed',
+          stateHash: existing.stateHash,
+        })
+      }
+    }
     const snapshot: Snapshot = {
       matchId: match.id,
       turn: request.turn,
@@ -48,7 +61,12 @@ export class SnapshotService {
     await this.deps.storage.snapshots.put(snapshot)
     await this.publisher.publish(match.id, {
       type: 'snapshot.available',
-      payload: { turn: request.turn, stateHash: request.stateHash, uploadedByPlayerId: player.id },
+      payload: {
+        turn: request.turn,
+        formatVersion: request.formatVersion,
+        stateHash: request.stateHash,
+        uploadedByPlayerId: player.id,
+      },
     })
     await this.turns.settle(match.id, request.turn)
   }

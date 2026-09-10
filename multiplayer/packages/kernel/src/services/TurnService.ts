@@ -3,7 +3,7 @@ import type {
   SubmitOrdersRequest,
   TurnReportRequest,
 } from '@chaos-overlords/contracts'
-import { activePlayers, type Match, type Turn } from '../domain/entities'
+import { activePlayers, type Match, type SealedSlot } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError } from '../domain/errors'
 import { hashOrderDocument, hashOrderSet } from '../logic/crypto'
 import { allActiveReady, evaluateConsensus, turnDeadline } from '../logic/turn-logic'
@@ -21,7 +21,8 @@ export type SealTrigger = 'ready' | 'deadline'
  *
  * Every state change here is a compare-and-swap, so concurrent callers (the last player's ready
  * racing the timer, two players' reports landing together) produce exactly one seal and one
- * verdict.
+ * verdict. Sealing is a CAS followed by `completeSeal`, which is idempotent from any point: that is
+ * what lets `sweep` finish a seal whose process died halfway through instead of stranding the match.
  */
 export class TurnService {
   constructor(
@@ -83,48 +84,67 @@ export class TurnService {
       ])
       if (!allActiveReady(players, orders)) return false
     }
-    return this.seal(match, turn, trigger)
-  }
-
-  private async seal(match: Match, turn: Turn, trigger: SealTrigger): Promise<boolean> {
-    const sealedAt = this.deps.clock.now()
-    const won = await this.deps.storage.turns.transition(match.id, turn.number, ['open'], {
+    const won = await this.deps.storage.turns.transition(matchId, number, ['open'], {
       status: 'sealed',
-      sealedAt,
+      sealedAt: this.deps.clock.now(),
     })
     if (!won) return false
-    // Orders are immutable from here: submitOrders is conditional on `open`.
-    const [orders, players] = await Promise.all([
-      this.deps.storage.turns.listOrders(match.id, turn.number),
-      this.deps.storage.players.listByMatch(match.id),
-    ])
-    const slotOf = new Map(activePlayers(players).map((player) => [player.id, player.slot]))
-    const entries = orders.flatMap((row) => {
-      const slot = slotOf.get(row.playerId)
-      return slot === undefined || row.ordersHash === null
-        ? []
-        : [{ slot, ordersHash: row.ordersHash }]
-    })
-    const orderSetHash = await hashOrderSet(entries)
-    await this.deps.storage.turns.transition(match.id, turn.number, ['sealed'], {
-      status: 'sealed',
-      orderSetHash,
-    })
-    this.deps.logger.info('turn sealed', { matchId: match.id, turn: turn.number, trigger })
-    await this.publisher.publish(match.id, {
-      type: 'turn.sealed',
-      payload: { turn: turn.number, orderSetHash },
-    })
-    await this.openTurn(match, turn.number + 1)
+    this.deps.logger.info('turn sealed', { matchId, turn: number, trigger })
+    await this.completeSeal(match, number)
     return true
   }
 
-  /** Opens turn `number` for every active player and arms its deadline. */
-  async openTurn(match: Match, number: number): Promise<void> {
+  /**
+   * Everything that follows the seal's compare-and-swap: freeze the participant set and its digest,
+   * announce it, and open the next turn. Each step is conditional on its own predecessor, so a call
+   * on a turn that is already complete changes nothing and a call on one that stopped halfway
+   * finishes it. Orders are immutable from the CAS onwards, so the digest it derives is stable.
+   */
+  private async completeSeal(match: Match, number: number): Promise<boolean> {
+    const turn = await this.deps.storage.turns.get(match.id, number)
+    if (!turn || turn.status === 'open') return false
+    let advanced = false
+    if (turn.orderSetHash === null || turn.sealedSlots === null) {
+      const [orders, players] = await Promise.all([
+        this.deps.storage.turns.listOrders(match.id, number),
+        this.deps.storage.players.listByMatch(match.id),
+      ])
+      const slotOf = new Map(activePlayers(players).map((player) => [player.id, player.slot]))
+      const sealedSlots: SealedSlot[] = []
+      const entries: Array<{ slot: number; ordersHash: string }> = []
+      for (const row of orders) {
+        const slot = slotOf.get(row.playerId)
+        if (slot === undefined || row.ordersHash === null) continue
+        sealedSlots.push({ playerId: row.playerId, slot })
+        entries.push({ slot, ordersHash: row.ordersHash })
+      }
+      const orderSetHash = await hashOrderSet(entries)
+      const frozen = await this.deps.storage.turns.transition(match.id, number, [turn.status], {
+        status: turn.status,
+        orderSetHash,
+        sealedSlots,
+      })
+      if (frozen) {
+        advanced = true
+        await this.publisher.publish(match.id, {
+          type: 'turn.sealed',
+          payload: { turn: number, orderSetHash },
+        })
+      }
+    }
+    return (await this.openTurn(match, number + 1)) || advanced
+  }
+
+  /**
+   * Opens turn `number` for every active player and arms its deadline. Idempotent: the insert is
+   * refused if the turn already exists, and only the caller that created it announces it. Returns
+   * whether this call created the turn.
+   */
+  async openTurn(match: Match, number: number): Promise<boolean> {
     const openedAt = this.deps.clock.now()
     const deadlineAt = turnDeadline(openedAt, match.settings.turnTimerSeconds)
     const players = activePlayers(await this.deps.storage.players.listByMatch(match.id))
-    await this.deps.storage.turns.open(
+    const created = await this.deps.storage.turns.open(
       {
         matchId: match.id,
         number,
@@ -133,36 +153,61 @@ export class TurnService {
         deadlineAt,
         sealedAt: null,
         orderSetHash: null,
+        sealedSlots: null,
       },
       players.map((player) => player.id),
     )
-    await this.deps.storage.matches.transition(match.id, ['running'], {
+    // A desynced match counts: a repaired seal must still point `currentTurn` at the turn that is
+    // actually open, even though nobody may submit to it until the pause lifts.
+    await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {
       currentTurn: number,
       updatedAt: openedAt,
     })
-    await this.publisher.publish(match.id, {
-      type: 'turn.opened',
-      payload: { turn: number, deadlineAt: deadlineAt?.toISOString() ?? null },
-    })
+    if (created) {
+      await this.publisher.publish(match.id, {
+        type: 'turn.opened',
+        payload: { turn: number, deadlineAt: deadlineAt?.toISOString() ?? null },
+      })
+    }
     if (deadlineAt) {
       await this.deps.scheduler.schedule({ matchId: match.id, turn: number, dueAt: deadlineAt })
     }
+    return created
   }
 
-  /** The safety net behind the scheduler: seal every open turn whose deadline has passed. */
-  async sweepExpiredTurns(limit = 100): Promise<number> {
+  /**
+   * The safety net behind the scheduler and behind any interrupted seal: seal every open turn whose
+   * deadline has passed, then finish every seal that stopped before opening its successor. Runtimes
+   * call this on an interval (Node) or a cron (Cloudflare).
+   */
+  async sweep(limit = 100): Promise<{ sealed: number; repaired: number }> {
     const expired = await this.deps.storage.turns.listExpiredOpen(this.deps.clock.now(), limit)
     let sealed = 0
     for (const { matchId, number } of expired) {
       if (await this.trySeal(matchId, number, 'deadline')) sealed += 1
     }
-    return sealed
+    // A seal in flight looks stalled for the moment between its compare-and-swap and the next turn
+    // opening, so this also runs against healthy matches. `completeSeal` changes nothing there, and
+    // only a call that actually had work left to do is reported.
+    let repaired = 0
+    for (const { matchId, number } of await this.deps.storage.turns.listStalledSeals(limit)) {
+      const match = await this.deps.storage.matches.get(matchId)
+      if (!match) continue
+      if (await this.completeSeal(match, number)) {
+        this.deps.logger.warn('finished an interrupted seal', { matchId, turn: number })
+        repaired += 1
+      }
+    }
+    return { sealed, repaired }
   }
 
   async report(principal: Principal, number: number, request: TurnReportRequest): Promise<void> {
     const { match, player } = principal
     if (match.status !== 'running' && match.status !== 'desynced') {
       throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
+    }
+    if (player.status !== 'active') {
+      throw new ForbiddenError('You are no longer part of this match', { reason: 'not_active' })
     }
     const turn = await this.deps.storage.turns.get(match.id, number)
     if (!turn) throw new NotFoundError('No such turn', { reason: 'unknown_turn' })
@@ -218,19 +263,7 @@ export class TurnService {
         type: 'turn.confirmed',
         payload: { turn: number, stateHash: verdict.stateHash },
       })
-      if (
-        match.status === 'desynced' &&
-        (await this.deps.storage.turns.listUnsettled(matchId)).length === 0 &&
-        (await this.deps.storage.matches.transition(matchId, ['desynced'], {
-          status: 'running',
-          updatedAt: now,
-        }))
-      ) {
-        await this.publisher.publish(matchId, {
-          type: 'match.statusChanged',
-          payload: { status: 'running' },
-        })
-      }
+      if (match.status === 'desynced') await this.resumeAfterDesync(matchId, now)
       if (
         verdict.finished &&
         (await this.deps.storage.matches.transition(matchId, ['running', 'desynced'], {
@@ -267,6 +300,41 @@ export class TurnService {
         })
       }
     }
+  }
+
+  /**
+   * Lift a desync pause once nothing is unsettled. Orders were refused for the whole pause while
+   * the open turn's deadline kept running, so the turn would otherwise seal empty the moment the
+   * match resumes: its clock restarts here, and clients are told the new deadline.
+   */
+  private async resumeAfterDesync(matchId: string, now: Date): Promise<void> {
+    if ((await this.deps.storage.turns.listUnsettled(matchId)).length > 0) return
+    const match = await this.deps.storage.matches.get(matchId)
+    if (!match) return
+    if (
+      !(await this.deps.storage.matches.transition(matchId, ['desynced'], {
+        status: 'running',
+        updatedAt: now,
+      }))
+    ) {
+      return
+    }
+    await this.publisher.publish(matchId, {
+      type: 'match.statusChanged',
+      payload: { status: 'running' },
+    })
+    const deadlineAt = turnDeadline(now, match.settings.turnTimerSeconds)
+    if (deadlineAt === null) return // A match without a turn timer has no clock to restart.
+    if (
+      !(await this.deps.storage.turns.rescheduleDeadline(matchId, match.currentTurn, deadlineAt))
+    ) {
+      return
+    }
+    await this.publisher.publish(matchId, {
+      type: 'turn.deadlineExtended',
+      payload: { turn: match.currentTurn, deadlineAt: deadlineAt.toISOString() },
+    })
+    await this.deps.scheduler.schedule({ matchId, turn: match.currentTurn, dueAt: deadlineAt })
   }
 }
 

@@ -54,8 +54,12 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `DATABASE_URL` | `sqlite:./chaos-overlords.db` | `sqlite:<path>`, `sqlite::memory:`, or `postgres://…`. |
 | `PUBLIC_LISTING` | `false` | Serve `GET /api/v1/matches` so clients can browse public lobbies. |
 | `RATE_LIMIT_PER_MINUTE` | `30` | Create/join attempts per client address per minute. |
+| `MEMBER_RATE_LIMIT_PER_MINUTE` | `240` | Authenticated calls per player per minute. |
+| `UPLOAD_RATE_LIMIT_PER_MINUTE` | `10` | Snapshot uploads per player per minute (a snapshot can be a megabyte). |
+| `RETENTION_DAYS` | `30` | Delete finished, abandoned and never-started matches older than this, with everything they own. `0` keeps every match forever. |
 | `TRUST_PROXY` | `false` | Read the client address from `X-Forwarded-For` / `CF-Connecting-IP`. Set it behind a reverse proxy, never otherwise. |
-| `SWEEP_INTERVAL_MS` | `15000` | How often expired turn deadlines are swept (the timers are the precise path). |
+| `SWEEP_INTERVAL_MS` | `15000` | How often the safety net runs: expired turn deadlines, interrupted seals, retention (the timers are the precise path for a deadline). |
+| `SHUTDOWN_GRACE_MS` | `5000` | How long open event streams may delay shutdown before they are cut. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
 
 Put TLS in front of it (Caddy, nginx, a tunnel): player tokens are bearer credentials.
@@ -69,10 +73,11 @@ pnpm db:migrate:remote
 wrangler deploy
 ```
 
-`wrangler.toml` declares the D1 binding, the `MatchHub` Durable Object and a five-minute cron.
-Set `PUBLIC_LISTING = "true"` in `[vars]` for a browsable public server. The in-Worker rate limiter
-is per isolate; add a Cloudflare rate limiting rule on `/api/v1/matches` and `/api/v1/matches/join`
-for the real gate.
+`wrangler.toml` declares the D1 binding, the `MatchHub` Durable Object and a five-minute cron. The
+same `PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
+`UPLOAD_RATE_LIMIT_PER_MINUTE` and `RETENTION_DAYS` knobs are `[vars]` there. The in-Worker rate
+limiter counts per isolate, so it softens abuse on one edge node rather than globally; add a
+Cloudflare rate limiting rule on `/api/v1/matches` and `/api/v1/matches/join` for the real gate.
 
 ## Develop
 
@@ -85,7 +90,12 @@ pnpm db:generate          # regenerate migrations after a schema change (both di
 ```
 
 The Cloudflare suite runs inside workerd with a real local D1 and the real Durable Object
-(`@cloudflare/vitest-pool-workers`). Rules that keep the two runtimes honest:
+(`@cloudflare/vitest-pool-workers`). The Node facade takes an injected clock in tests, so the
+deadline route — expired turn, sweep, seal, next turn — runs over real HTTP against both SQLite and
+Postgres; in workerd time cannot be moved, so there the deadline is covered by the alarm-arming test
+and by `listExpiredOpen` in the D1 storage lane instead.
+
+Rules that keep the two runtimes honest:
 
 - A storage method is added to the kernel port, both repository files, and the storage
   conformance suite in the same change.
@@ -93,3 +103,7 @@ The Cloudflare suite runs inside workerd with a real local D1 and the real Durab
   conformance suite running on both.
 - No transactions: D1 has none. Every race is a single conditional statement whose row count says
   who won (see the port comments in `packages/kernel/src/ports/storage.ts`).
+- A write a unique index can refuse returns `false` instead of throwing. Driver error shapes are
+  interpreted in exactly one place, `packages/storage/src/shared/constraints.ts`.
+- The in-memory reference storage runs the storage conformance suite too, so the fast kernel and HTTP
+  tests cannot be passing against semantics the SQL repositories do not have.

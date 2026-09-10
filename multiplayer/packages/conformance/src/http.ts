@@ -242,9 +242,13 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       await thirdApi.submitOrders(1, { orders: orders(3), ready: true })
       await host.api.kick(guest.player.id)
       expect((await host.api.get()).match.currentTurn).toBe(2)
+      // The kick revokes the token, so the kicked player loses reads as well as writes: no orders,
+      // no sealed sets of the turns that follow, no stream.
       await expect(
         guest.api.submitOrders(2, { orders: orders(1), ready: true }),
-      ).rejects.toMatchObject({ status: 403, reason: 'not_active' })
+      ).rejects.toMatchObject({ status: 401, reason: 'invalid_token' })
+      await expect(guest.api.get()).rejects.toMatchObject({ status: 401 })
+      await expect(guest.api.sealedOrders(1)).rejects.toMatchObject({ status: 401 })
       await host.api.leave()
       const detail = await thirdApi.get()
       expect(detail.match.hostPlayerId).toBe(third.player.id)

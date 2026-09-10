@@ -1,4 +1,4 @@
-import type { Clock, DeadlineScheduler, Logger, TurnService } from '@chaos-overlords/kernel'
+import type { Clock, DeadlineScheduler, Kernel, Logger, TurnService } from '@chaos-overlords/kernel'
 
 /**
  * One `setTimeout` per open turn, replaced when the same match schedules again. Timers do not
@@ -45,18 +45,30 @@ export class TimerDeadlineScheduler implements DeadlineScheduler {
   }
 }
 
-/** The safety net: seals expired turns whose timer was lost to a restart. Returns the stop handle. */
-export function startSweeper(turns: TurnService, intervalMs: number, logger: Logger): () => void {
+/**
+ * The periodic safety net: seals turns whose timer was lost to a restart, finishes seals that were
+ * interrupted halfway, and collects matches past their retention age. Returns the stop handle.
+ */
+export function startSweeper(kernel: Kernel, intervalMs: number, logger: Logger): () => void {
   const tick = () => {
-    turns.sweepExpiredTurns().then(
-      (sealed) => {
-        if (sealed > 0) logger.info('sweeper sealed expired turns', { sealed })
-      },
-      (error: unknown) => logger.warn('sweep failed', { error: String(error) }),
-    )
+    void sweep(kernel, logger)
   }
   const timer = setInterval(tick, intervalMs)
   timer.unref()
   tick()
   return () => clearInterval(timer)
+}
+
+async function sweep(kernel: Kernel, logger: Logger): Promise<void> {
+  try {
+    const { sealed, repaired } = await kernel.turns.sweep()
+    if (sealed > 0 || repaired > 0) logger.info('sweeper advanced turns', { sealed, repaired })
+  } catch (error) {
+    logger.warn('turn sweep failed', { error: String(error) })
+  }
+  try {
+    await kernel.retention.collect()
+  } catch (error) {
+    logger.warn('retention sweep failed', { error: String(error) })
+  }
 }

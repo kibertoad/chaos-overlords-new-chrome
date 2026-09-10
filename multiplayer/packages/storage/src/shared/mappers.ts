@@ -9,6 +9,7 @@ import type {
   Match,
   PersistedEvent,
   Player,
+  SealedSlot,
   Snapshot,
   Turn,
   TurnOrders,
@@ -30,7 +31,7 @@ export interface MatchRow {
   seed: number | null
   currentTurn: number
   seatCount: number
-  eventSeq: number
+  joinCounter: number
   createdAt: Date
   updatedAt: Date
 }
@@ -39,8 +40,9 @@ export interface PlayerRow {
   id: string
   matchId: string
   slot: number
+  joinOrder: number
   displayName: string
-  tokenHash: string
+  tokenHash: string | null
   status: string
   joinedAt: Date
 }
@@ -53,6 +55,7 @@ export interface TurnRow {
   deadlineAt: Date | null
   sealedAt: Date | null
   orderSetHash: string | null
+  sealedSlots: unknown
 }
 
 export interface TurnOrdersRow {
@@ -102,7 +105,7 @@ export const toMatch = (row: MatchRow): Match => ({
   seed: row.seed,
   currentTurn: row.currentTurn,
   seatCount: row.seatCount,
-  eventSeq: row.eventSeq,
+  joinCounter: row.joinCounter,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
 })
@@ -120,7 +123,7 @@ export const toMatchInsert = (match: Match) => ({
   seed: match.seed,
   currentTurn: match.currentTurn,
   seatCount: match.seatCount,
-  eventSeq: match.eventSeq,
+  joinCounter: match.joinCounter,
   createdAt: match.createdAt,
   updatedAt: match.updatedAt,
 })
@@ -130,7 +133,11 @@ export const toPlayer = (row: PlayerRow): Player => ({
   status: row.status as PlayerStatus,
 })
 
-export const toTurn = (row: TurnRow): Turn => ({ ...row, status: row.status as TurnStatus })
+export const toTurn = (row: TurnRow): Turn => ({
+  ...row,
+  status: row.status as TurnStatus,
+  sealedSlots: (row.sealedSlots ?? null) as readonly SealedSlot[] | null,
+})
 
 export const toTurnOrders = (row: TurnOrdersRow): TurnOrders => ({
   ...row,
@@ -149,13 +156,5 @@ export const toEvent = (row: EventRow): PersistedEvent =>
     payload: row.payload,
     createdAt: row.createdAt.toISOString(),
   }) as PersistedEvent
-
-export const toEventInsert = (event: PersistedEvent) => ({
-  matchId: event.matchId,
-  seq: event.seq,
-  type: event.type,
-  payload: event.payload,
-  createdAt: new Date(event.createdAt),
-})
 
 export const firstOrNull = <T>(rows: T[]): T | null => rows[0] ?? null

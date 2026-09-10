@@ -1,22 +1,47 @@
 import { RateLimiter } from '@chaos-overlords/kernel'
-import { createApp, DEFAULT_SERVER_CONFIG, type ServerContainer } from '@chaos-overlords/server'
+import {
+  type AppEnv,
+  createApp,
+  DEFAULT_RATE_LIMITS,
+  DEFAULT_SERVER_CONFIG,
+  type ServerContainer,
+} from '@chaos-overlords/server'
 import type { ExecutionContext, ScheduledController } from '@cloudflare/workers-types'
+import type { Hono } from 'hono'
 import type { Env } from './env'
 import { buildKernel, HUB_PATHS, hubFor, workerLogger } from './kernel'
 
 export { MatchHub } from './MatchHub'
 
 /**
- * The limiter is per isolate, so it only softens abuse on one edge node; put Cloudflare's own
- * rate limiting rule in front of `/api/v1/matches` and `/api/v1/matches/join` for the real gate.
+ * One container per isolate, keyed by the bindings object the runtime hands every request.
+ *
+ * It has to be cached: a rate limiter counts requests within a window, so building a fresh one per
+ * request would reset the window every time and limit nothing. The router and the D1-backed kernel
+ * are per-isolate state for the same reason a server builds them once at startup — there is nothing
+ * request-specific in either. Cloudflare's own rate limiting rules still belong in front of a public
+ * deployment, because an isolate is not the whole world.
  */
-const rateLimiter = new RateLimiter({ now: () => new Date() }, { limit: 30, windowMs: 60_000 })
+const containers = new WeakMap<Env, { container: ServerContainer; app: Hono<AppEnv> }>()
+
+export function containerFor(env: Env): { container: ServerContainer; app: Hono<AppEnv> } {
+  const existing = containers.get(env)
+  if (existing) return existing
+  const container = buildContainer(env)
+  const built = { container, app: createApp(container) }
+  containers.set(env, built)
+  return built
+}
 
 export function buildContainer(env: Env): ServerContainer {
-  const kernel = buildKernel(env)
-  const limit = Number(env.RATE_LIMIT_PER_MINUTE ?? '30')
+  const clock = { now: () => new Date() }
+  const perMinute = (raw: string | undefined, fallback: number) => {
+    const limit = Number(raw ?? fallback)
+    const effective = Number.isInteger(limit) && limit > 0 ? limit : fallback
+    return new RateLimiter(clock, { limit: effective, windowMs: 60_000 })
+  }
   return {
-    kernel,
+    kernel: buildKernel(env),
     eventStream: {
       open: async ({ matchId, afterSeq, signal }) => {
         const url = `https://hub${HUB_PATHS.subscribe}?matchId=${encodeURIComponent(matchId)}&after=${afterSeq}`
@@ -27,28 +52,36 @@ export function buildContainer(env: Env): ServerContainer {
         })
       },
     },
-    rateLimiter:
-      Number.isFinite(limit) && limit > 0
-        ? new RateLimiter({ now: () => new Date() }, { limit, windowMs: 60_000 })
-        : rateLimiter,
+    rateLimiters: {
+      anonymous: perMinute(env.RATE_LIMIT_PER_MINUTE, DEFAULT_RATE_LIMITS.anonymousPerMinute),
+      member: perMinute(env.MEMBER_RATE_LIMIT_PER_MINUTE, DEFAULT_RATE_LIMITS.memberPerMinute),
+      upload: perMinute(env.UPLOAD_RATE_LIMIT_PER_MINUTE, DEFAULT_RATE_LIMITS.uploadPerMinute),
+    },
     config: { ...DEFAULT_SERVER_CONFIG, publicListing: env.PUBLIC_LISTING === 'true' },
   }
 }
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const app = createApp(buildContainer(env))
-    return app.fetch(request, env, ctx)
+    return containerFor(env).app.fetch(request, env, ctx)
   },
+  /** The cron safety net: expired deadlines, interrupted seals, and retention. */
   async scheduled(
     _controller: ScheduledController,
     env: Env,
     ctx: ExecutionContext,
   ): Promise<void> {
-    const kernel = buildKernel(env)
+    const { container } = containerFor(env)
+    const { kernel } = container
     ctx.waitUntil(
-      kernel.turns.sweepExpiredTurns().then((sealed) => {
-        if (sealed > 0) workerLogger.info('cron sealed expired turns', { sealed })
+      (async () => {
+        const { sealed, repaired } = await kernel.turns.sweep()
+        if (sealed > 0 || repaired > 0) {
+          workerLogger.info('cron advanced turns', { sealed, repaired })
+        }
+        await kernel.retention.collect()
+      })().catch((error: unknown) => {
+        workerLogger.error('cron sweep failed', { error: String(error) })
       }),
     )
   },

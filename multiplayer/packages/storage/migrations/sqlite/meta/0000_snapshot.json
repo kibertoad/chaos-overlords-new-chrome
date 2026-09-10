@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "207045a4-4ca6-4540-8063-7aa53643d78c",
+  "id": "515c978d-04c0-4401-8e0b-7816536c3313",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "match_events": {
@@ -44,7 +44,17 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "match_events_match_id_matches_id_fk": {
+          "name": "match_events_match_id_matches_id_fk",
+          "tableFrom": "match_events",
+          "tableTo": "matches",
+          "columnsFrom": ["match_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "match_events_match_id_seq_pk": {
           "columns": ["match_id", "seq"],
@@ -143,13 +153,13 @@
           "autoincrement": false,
           "default": 1
         },
-        "event_seq": {
-          "name": "event_seq",
+        "join_counter": {
+          "name": "join_counter",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": 0
+          "default": 1
         },
         "created_at": {
           "name": "created_at",
@@ -203,6 +213,14 @@
           "autoincrement": false,
           "default": -1
         },
+        "join_order": {
+          "name": "join_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
         "display_name": {
           "name": "display_name",
           "type": "text",
@@ -214,7 +232,7 @@
           "name": "token_hash",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "status": {
@@ -313,7 +331,17 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "snapshots_match_id_matches_id_fk": {
+          "name": "snapshots_match_id_matches_id_fk",
+          "tableFrom": "snapshots",
+          "tableTo": "matches",
+          "columnsFrom": ["match_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "snapshots_match_id_turn_pk": {
           "columns": ["match_id", "turn"],
@@ -378,7 +406,17 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "turn_orders_match_id_matches_id_fk": {
+          "name": "turn_orders_match_id_matches_id_fk",
+          "tableFrom": "turn_orders",
+          "tableTo": "matches",
+          "columnsFrom": ["match_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "turn_orders_match_id_turn_player_id_pk": {
           "columns": ["match_id", "turn", "player_id"],
@@ -436,7 +474,17 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "turn_reports_match_id_matches_id_fk": {
+          "name": "turn_reports_match_id_matches_id_fk",
+          "tableFrom": "turn_reports",
+          "tableTo": "matches",
+          "columnsFrom": ["match_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {
         "turn_reports_match_id_turn_player_id_pk": {
           "columns": ["match_id", "turn", "player_id"],
@@ -493,6 +541,13 @@
         },
         "order_set_hash": {
           "name": "order_set_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sealed_slots": {
+          "name": "sealed_slots",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

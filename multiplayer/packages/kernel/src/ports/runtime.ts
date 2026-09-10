@@ -25,7 +25,7 @@ export interface EventNotifier {
 
 /**
  * Wakes the turn service at a turn's deadline. Sealing is idempotent, so a duplicate or late
- * wake is harmless; a MISSED wake is what the periodic `sweepExpiredTurns` safety net covers.
+ * wake is harmless; a MISSED wake is what the periodic `TurnService.sweep` safety net covers.
  */
 export interface DeadlineScheduler {
   schedule(input: { matchId: string; turn: number; dueAt: Date }): Promise<void>

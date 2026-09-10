@@ -3,16 +3,17 @@ import type {
   EventRepository,
   MatchRepository,
   MultiplayerStorage,
+  PersistedEvent,
   PlayerRepository,
   SnapshotRepository,
   TurnRepository,
 } from '@chaos-overlords/kernel'
-import { and, asc, desc, eq, exists, inArray, isNotNull, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, exists, inArray, isNotNull, lt, lte, ne, sql } from 'drizzle-orm'
 import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core'
+import { APPEND_ATTEMPTS, insertUnlessTaken, isUniqueViolation } from '../shared/constraints'
 import {
   firstOrNull,
   toEvent,
-  toEventInsert,
   toMatch,
   toMatchInsert,
   toPlayer,
@@ -44,7 +45,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
   const { matches, players } = schema
   return {
     async create(match) {
-      await db.insert(matches).values(toMatchInsert(match))
+      return insertUnlessTaken(() => db.insert(matches).values(toMatchInsert(match)))
     },
     async get(id) {
       return firstOrNull((await db.select().from(matches).where(eq(matches.id, id))).map(toMatch))
@@ -79,7 +80,10 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
     async claimSeat(matchId) {
       const rows = await db
         .update(matches)
-        .set({ seatCount: sql`${matches.seatCount} + 1` })
+        .set({
+          seatCount: sql`${matches.seatCount} + 1`,
+          joinCounter: sql`${matches.joinCounter} + 1`,
+        })
         .where(
           and(
             eq(matches.id, matchId),
@@ -87,14 +91,28 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
             sql`${matches.seatCount} < ${matches.maxPlayers}`,
           ),
         )
-        .returning({ id: matches.id })
-      return rows.length === 1
+        .returning({ joinCounter: matches.joinCounter })
+      const row = rows[0]
+      return row ? row.joinCounter - 1 : null
     },
     async releaseSeat(matchId) {
       await db
         .update(matches)
         .set({ seatCount: sql`${matches.seatCount} - 1` })
         .where(and(eq(matches.id, matchId), sql`${matches.seatCount} > 0`))
+    },
+    async deleteInactive(statuses, before, limit) {
+      const collectable = db
+        .select({ id: matches.id })
+        .from(matches)
+        .where(and(inArray(matches.status, [...statuses]), lt(matches.updatedAt, before)))
+        .limit(limit)
+      // Children cascade from the match row, so one delete takes the whole match with it.
+      const rows = await db
+        .delete(matches)
+        .where(inArray(matches.id, collectable))
+        .returning({ id: matches.id })
+      return rows.length
     },
     async transition(matchId, from, patch) {
       const rows = await db
@@ -103,16 +121,6 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
         .where(and(eq(matches.id, matchId), inArray(matches.status, [...from])))
         .returning({ id: matches.id })
       return rows.length === 1
-    },
-    async allocateEventSeq(matchId) {
-      const rows = await db
-        .update(matches)
-        .set({ eventSeq: sql`${matches.eventSeq} + 1` })
-        .where(eq(matches.id, matchId))
-        .returning({ eventSeq: matches.eventSeq })
-      const row = rows[0]
-      if (!row) throw new Error(`cannot allocate an event for unknown match ${matchId}`)
-      return row.eventSeq
     },
   }
 }
@@ -136,11 +144,14 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
         .select()
         .from(players)
         .where(eq(players.matchId, matchId))
-        .orderBy(asc(players.slot), asc(players.joinedAt), asc(players.id))
+        .orderBy(asc(players.slot), asc(players.joinOrder), asc(players.id))
       return rows.map(toPlayer)
     },
     async setStatus(playerId, status) {
       await db.update(players).set({ status }).where(eq(players.id, playerId))
+    },
+    async revokeToken(playerId) {
+      await db.update(players).set({ tokenHash: null }).where(eq(players.id, playerId))
     },
     async assignSlots(assignments) {
       for (const { playerId, slot } of assignments) {
@@ -154,17 +165,21 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
 }
 
 function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
-  const { turns, turnOrders, turnReports } = schema
+  const { matches, turns, turnOrders, turnReports } = schema
   return {
     async open(turn, playerIds) {
-      await db.insert(turns).values(turn)
+      const created = await insertUnlessTaken(() => db.insert(turns).values(turn))
       if (playerIds.length > 0) {
+        // Topped up rather than assumed: a re-run of the open step (a repaired seal) fills any row
+        // an interrupted one never wrote, and a player who already has a row keeps it untouched.
         await db
           .insert(turnOrders)
           .values(
             playerIds.map((playerId) => ({ matchId: turn.matchId, turn: turn.number, playerId })),
           )
+          .onConflictDoNothing()
       }
+      return created
     },
     async get(matchId, number) {
       const rows = await db
@@ -231,6 +246,14 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
         .returning({ number: turns.number })
       return rows.length === 1
     },
+    async rescheduleDeadline(matchId, number, deadlineAt) {
+      const rows = await db
+        .update(turns)
+        .set({ deadlineAt })
+        .where(and(eq(turns.matchId, matchId), eq(turns.number, number), eq(turns.status, 'open')))
+        .returning({ number: turns.number })
+      return rows.length === 1
+    },
     async upsertReport(report) {
       await db
         .insert(turnReports)
@@ -268,6 +291,21 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
           and(eq(turns.status, 'open'), isNotNull(turns.deadlineAt), lte(turns.deadlineAt, now)),
         )
         .orderBy(asc(turns.deadlineAt))
+        .limit(limit)
+    },
+    async listStalledSeals(limit) {
+      return db
+        .select({ matchId: turns.matchId, number: turns.number })
+        .from(turns)
+        .innerJoin(matches, eq(matches.id, turns.matchId))
+        .where(
+          and(
+            inArray(matches.status, ['running', 'desynced']),
+            eq(turns.number, matches.currentTurn),
+            ne(turns.status, 'open'),
+          ),
+        )
+        .orderBy(asc(turns.matchId), asc(turns.number))
         .limit(limit)
     },
   }
@@ -313,8 +351,34 @@ function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
 function sqliteEventRepository(db: SqliteDatabase): EventRepository {
   const { matchEvents } = schema
   return {
-    async append(event) {
-      await db.insert(matchEvents).values(toEventInsert(event))
+    /**
+     * The sequence number comes from the log itself inside the insert, so the allocation cannot be
+     * separated from the write: a committed `seq` therefore implies every lower one is committed,
+     * which is the invariant a stream cursor relies on. Concurrent appends collide on the primary
+     * key and the loser simply re-reads the maximum.
+     */
+    async append(event): Promise<PersistedEvent> {
+      const nextSeq = sql<number>`(select coalesce(max(${matchEvents.seq}), 0) + 1 from ${matchEvents} where ${eq(matchEvents.matchId, event.matchId)})`
+      for (let attempt = 1; attempt <= APPEND_ATTEMPTS; attempt += 1) {
+        try {
+          const rows = await db
+            .insert(matchEvents)
+            .values({
+              matchId: event.matchId,
+              seq: nextSeq,
+              type: event.type,
+              payload: event.payload,
+              createdAt: new Date(event.createdAt),
+            })
+            .returning({ seq: matchEvents.seq })
+          const row = rows[0]
+          if (!row) throw new Error(`append to ${event.matchId} reported no row`)
+          return { ...event, seq: row.seq } as PersistedEvent
+        } catch (error) {
+          if (!isUniqueViolation(error) || attempt === APPEND_ATTEMPTS) throw error
+        }
+      }
+      throw new Error(`could not append an event for ${event.matchId}`)
     },
     async listAfter(matchId, afterSeq, limit) {
       const rows = await db
@@ -324,6 +388,15 @@ function sqliteEventRepository(db: SqliteDatabase): EventRepository {
         .orderBy(asc(matchEvents.seq))
         .limit(limit)
       return rows.map(toEvent)
+    },
+    async lastSeq(matchId) {
+      const rows = await db
+        .select({ seq: matchEvents.seq })
+        .from(matchEvents)
+        .where(eq(matchEvents.matchId, matchId))
+        .orderBy(desc(matchEvents.seq))
+        .limit(1)
+      return rows[0]?.seq ?? 0
     },
   }
 }

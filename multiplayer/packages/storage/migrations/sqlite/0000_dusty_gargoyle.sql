@@ -4,7 +4,8 @@ CREATE TABLE `match_events` (
 	`type` text NOT NULL,
 	`payload` text NOT NULL,
 	`created_at` integer NOT NULL,
-	PRIMARY KEY(`match_id`, `seq`)
+	PRIMARY KEY(`match_id`, `seq`),
+	FOREIGN KEY (`match_id`) REFERENCES `matches`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `matches` (
@@ -20,7 +21,7 @@ CREATE TABLE `matches` (
 	`seed` integer,
 	`current_turn` integer DEFAULT 0 NOT NULL,
 	`seat_count` integer DEFAULT 1 NOT NULL,
-	`event_seq` integer DEFAULT 0 NOT NULL,
+	`join_counter` integer DEFAULT 1 NOT NULL,
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL
 );
@@ -30,8 +31,9 @@ CREATE TABLE `players` (
 	`id` text PRIMARY KEY NOT NULL,
 	`match_id` text NOT NULL,
 	`slot` integer DEFAULT -1 NOT NULL,
+	`join_order` integer DEFAULT 0 NOT NULL,
 	`display_name` text NOT NULL,
-	`token_hash` text NOT NULL,
+	`token_hash` text,
 	`status` text NOT NULL,
 	`joined_at` integer NOT NULL,
 	FOREIGN KEY (`match_id`) REFERENCES `matches`(`id`) ON UPDATE no action ON DELETE cascade
@@ -47,7 +49,8 @@ CREATE TABLE `snapshots` (
 	`uploaded_by_player_id` text NOT NULL,
 	`uploaded_at` integer NOT NULL,
 	`body` text NOT NULL,
-	PRIMARY KEY(`match_id`, `turn`)
+	PRIMARY KEY(`match_id`, `turn`),
+	FOREIGN KEY (`match_id`) REFERENCES `matches`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `turn_orders` (
@@ -58,7 +61,8 @@ CREATE TABLE `turn_orders` (
 	`orders_hash` text,
 	`ready` integer DEFAULT false NOT NULL,
 	`submitted_at` integer,
-	PRIMARY KEY(`match_id`, `turn`, `player_id`)
+	PRIMARY KEY(`match_id`, `turn`, `player_id`),
+	FOREIGN KEY (`match_id`) REFERENCES `matches`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `turn_reports` (
@@ -68,7 +72,8 @@ CREATE TABLE `turn_reports` (
 	`state_hash` text NOT NULL,
 	`finished` integer DEFAULT false NOT NULL,
 	`reported_at` integer NOT NULL,
-	PRIMARY KEY(`match_id`, `turn`, `player_id`)
+	PRIMARY KEY(`match_id`, `turn`, `player_id`),
+	FOREIGN KEY (`match_id`) REFERENCES `matches`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `turns` (
@@ -79,6 +84,7 @@ CREATE TABLE `turns` (
 	`deadline_at` integer,
 	`sealed_at` integer,
 	`order_set_hash` text,
+	`sealed_slots` text,
 	PRIMARY KEY(`match_id`, `number`),
 	FOREIGN KEY (`match_id`) REFERENCES `matches`(`id`) ON UPDATE no action ON DELETE cascade
 );

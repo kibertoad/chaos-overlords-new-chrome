@@ -7,5 +7,5 @@
     "noEmit": true,
     "lib": ["ES2022", "DOM", "DOM.AsyncIterable"]
   },
-  "include": ["src"]
+  "include": ["src", "test", "vitest.config.ts"]
 }

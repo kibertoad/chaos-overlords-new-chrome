@@ -7,7 +7,7 @@ import { NotFoundError } from '@chaos-overlords/kernel'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { parseBody, requireMember } from '../http/guards'
-import { bearerAuth, rateLimited } from '../http/middleware'
+import { bearerAuth, memberRateLimited, rateLimited } from '../http/middleware'
 import type { AppEnv } from '../http/types'
 
 const SMALL_BODY = 16 * 1024
@@ -43,8 +43,10 @@ export function matchRoutes(): Hono<AppEnv> {
     return c.json(membership, 201)
   })
 
-  app.use('/:matchId/*', bearerAuth)
-  app.use('/:matchId', bearerAuth)
+  // `/:matchId/*` also matches the bare `/:matchId`, so this is the only mount: adding a second one
+  // for the bare path would authenticate (a token lookup plus a match read) and charge the member's
+  // rate limit twice on every request to it.
+  app.use('/:matchId/*', bearerAuth, memberRateLimited())
 
   app.get('/:matchId', async (c) => {
     const principal = requireMember(c)
