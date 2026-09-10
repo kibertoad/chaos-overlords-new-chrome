@@ -109,6 +109,32 @@ public sealed class OriginalAiHireRulesTests
             offers, ScenarioId.Greed, requestedMode: 3, availableCash: 7));
     }
 
+    [Fact]
+    public void GreedAlwaysRejectsFirstOfferAfterFailedHire()
+    {
+        var offers = new[]
+        {
+            Gang(upkeep: 9),
+            Gang(upkeep: 1),
+            Gang(upkeep: 2)
+        };
+
+        Assert.Equal(0, OriginalAiHireRules.SelectRejectedOfferIndex(offers, ScenarioId.Greed));
+    }
+
+    [Fact]
+    public void OtherScenariosRejectLowestEfficiencyAndKeepFirstTie()
+    {
+        var offers = new[]
+        {
+            Gang(force: 1, upkeep: 1, combat: 1, stealth: 10),
+            Gang(force: 9, upkeep: 9, combat: 1, stealth: 10),
+            Gang(force: 9, upkeep: 9, combat: 1, stealth: 10)
+        };
+
+        Assert.Equal(1, OriginalAiHireRules.SelectRejectedOfferIndex(offers, ScenarioId.Power));
+    }
+
     private static GangDefinition Gang(
         short force = 1,
         short upkeep = 1,

@@ -14,11 +14,7 @@ internal static class OriginalAiHireRules
         int requestedMode,
         int availableCash)
     {
-        ArgumentNullException.ThrowIfNull(offers);
-        if (offers.Count != 3)
-            throw new ArgumentException("The original AI ranks exactly three hire offers.", nameof(offers));
-        if (offers.Any(offer => offer is null))
-            throw new ArgumentException("Hire offers cannot contain null definitions.", nameof(offers));
+        ValidateOffers(offers);
 
         var mode = requestedMode == 0 && availableCash > 200 && scenario != ScenarioId.Greed
             ? 3
@@ -54,6 +50,40 @@ internal static class OriginalAiHireRules
         // The original ranks all three offers first, then rejects an unaffordable
         // winner without falling back to the next-best affordable candidate.
         return selected is { } index && offers[index].Force <= availableCash ? index : null;
+    }
+
+    public static int SelectRejectedOfferIndex(
+        IReadOnlyList<GangDefinition> offers,
+        ScenarioId scenario)
+    {
+        ValidateOffers(offers);
+        if (scenario == ScenarioId.Greed) return 0;
+
+        var selected = 0;
+        var best = 5_000;
+        for (var index = 0; index < offers.Count; index++)
+        {
+            var offer = offers[index];
+            var stats = offer.Stats;
+            var positiveTotal = Math.Max(0, (int)stats.Combat)
+                + Math.Max(0, (int)stats.Defense)
+                + Math.Max(0, (int)stats.Control)
+                + Math.Max(0, (int)stats.Heal)
+                + Math.Max(0, (int)stats.Influence)
+                + Math.Max(0, (int)stats.Research)
+                + Math.Max(0, (int)stats.Strength)
+                + Math.Max(0, (int)stats.Blade)
+                + Math.Max(0, (int)stats.Range)
+                + Math.Max(0, (int)stats.Fighting)
+                + Math.Max(0, (int)stats.MartialArts)
+                + Math.Max(0, (int)offer.TechLevel);
+            var score = stats.Stealth * positiveTotal * 20
+                / (offer.Force + offer.Upkeep + 1);
+            if (score >= best) continue;
+            best = score;
+            selected = index;
+        }
+        return selected;
     }
 
     private static int CombatScore(GangDefinition offer) => offer.Stats.Combat
@@ -117,5 +147,14 @@ internal static class OriginalAiHireRules
             selected = index;
         }
         return selected;
+    }
+
+    private static void ValidateOffers(IReadOnlyList<GangDefinition> offers)
+    {
+        ArgumentNullException.ThrowIfNull(offers);
+        if (offers.Count != 3)
+            throw new ArgumentException("The original AI ranks exactly three hire offers.", nameof(offers));
+        if (offers.Any(offer => offer is null))
+            throw new ArgumentException("Hire offers cannot contain null definitions.", nameof(offers));
     }
 }

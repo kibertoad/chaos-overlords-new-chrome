@@ -396,9 +396,23 @@ decompiler reused the player parameter as a local accumulator and emitted
 misleading pseudocode. `OriginalAiHireRules` implements the instruction-level
 behavior in isolation.
 
+When no offer survives ranking/affordability, selector `0x8e` chooses the slot
+passed to `0x004078b8`, which writes `0xfe` into that offer's per-player state.
+Greed always chooses slot zero (confirmed from the emitted instructions; the
+decompiler renders its zero-iteration loop misleadingly). Every other scenario
+chooses the first strict minimum of this integer score, initialized to 5000:
+
+`Stealth * 20 * positive-stat-sum / (Force + Upkeep + 1)`
+
+The sum includes positive Combat, Defense, Control, Heal, Influence, Research,
+Strength, Blade, Range, Fighting, Martial Arts, and Tech; it excludes Stealth,
+Detect, and Chaos. `OriginalAiHireRules.SelectRejectedOfferIndex` implements
+this exact failure-path choice, but live snubbing remains pending the outer
+attempt gate.
+
 **Confidence:** Verified for all comparisons, eligibility boundaries, tie
 directions, the cash-200 override, post-selection affordability, and no-fallback
-behavior.
+behavior, plus the failed-hire rejection formula and tie direction.
 
 **Next validation:** recover the scenario-specific role selection in
 `0x00458fa0`, then use its chosen role to integrate this selector with live AI

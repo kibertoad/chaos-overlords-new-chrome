@@ -108,7 +108,10 @@ replay-verified two-computer harness through 20 turns or objective completion.
    `0x7c`'s per-player strategic-mode word. The three-offer helper's six exact
    role rankings, scenario-specific filters and tie directions, rich-player
    mode override, post-ranking affordability check, and no-fallback behavior
-   are isolated in `OriginalAiHireRules`; they are not yet used by the live
+   are isolated in `OriginalAiHireRules`. Its failed-hire rejection selector is
+   also exact: Greed rejects slot zero while other scenarios minimize a
+   Stealth-weighted positive-stat efficiency ratio with first-tie priority.
+   These rules are not yet used by the live
    planner because its scenario-specific role selector is still being
    recovered. Selector `0x3e` is identified as the
    previous-turn action byte. Selectors 0 (scenario), `0x48` (planning-record
