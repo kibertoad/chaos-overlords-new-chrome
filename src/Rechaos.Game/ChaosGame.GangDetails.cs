@@ -55,7 +55,7 @@ public sealed partial class ChaosGame
         else
         {
             var definition = state.Definitions.Gangs.Single(value => value.Id == definitionId.Value);
-            var stats = gang is null
+            var stats = gang is null || _showBaseStatistics
                 ? EffectiveStatistics.From(definition.Stats)
                 : EffectiveStatisticsCalculator.ForGang(state, gang);
             ClearGangInformationFields(batch, pixel);

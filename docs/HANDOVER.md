@@ -10,15 +10,16 @@ Last updated: 2026-09-11
 - The last pushed functional checkpoints are `86b2f08` (planning timer),
   `20a7500` (bounded serialized validation), and `b74bc01` (renamed repository
   links). The handover/documentation commit follows those checkpoints.
-- The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest run
-  built Release with no warnings and passed all 1,018 tests.
+- The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
+  isolated Release build passed all 1,020 tests; its only warnings were NuGet
+  vulnerability-feed lookups blocked by the offline sandbox.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
 - Native saves are format v16, replays are v17, canonical hashes are v19, asset
-  manifests are v4, extracted help is v1, and client preferences are v4. Save
+  manifests are v4, extracted help is v1, and client preferences are v5. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
 
@@ -41,6 +42,10 @@ Last updated: 2026-09-11
   and explicitly provisional fallback scoring. The next AI gate is evidence,
   not another structural rewrite: fixed original-runtime traces plus larger-player
   and objective-completion stress coverage.
+- Options now persists base/current gang statistics, automatic Detailed/Simple
+  combat presentation, bounded panel motion, and the existing audio, idle-warning,
+  and planning-timer choices. Version-4 preferences migrate forward. The legacy
+  16-bit color choice is explicitly always enabled by the modern renderer.
 
 ## Reference environment
 
@@ -57,9 +62,8 @@ Last updated: 2026-09-11
 1. Capture the original planning countdown to settle bar rounding, warning
    cadence, modal behavior, and deactivation timing; adjust presentation only
    where the capture contradicts the current bounded implementation.
-2. Recover and implement the remaining local Options behaviors: base statistics,
-   detailed/simple combat presentation, sliding panels, and color-depth handling
-   or an explicit modern classification where the legacy choice is meaningless.
+2. Capture the original Options defaults and panel/combat cadence, then adjust
+   the bounded presentation where the reference contradicts it.
 3. Investigate the reported GOG/1.1 Detailed Combat freeze, preserve identical
    combat mechanics between presentation modes, and add a no-hang stress gate.
 4. Recover WinHelp links, inline formatting, and context IDs, then expand exact

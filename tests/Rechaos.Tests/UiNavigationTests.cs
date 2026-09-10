@@ -168,9 +168,9 @@ public sealed class UiNavigationTests
         Assert.Equal(OriginalSoundtrackPolicy.MaximumVolumeLevel + 1,
             OptionsLayout.MusicLevels.Count);
         Assert.Equal(OptionsLayout.MusicLevels.Count, OptionsLayout.SoundEffectLevels.Count);
-        Assert.Equal(new Rectangle(140, 158, 28, 32), OptionsLayout.MusicLevels[0]);
-        Assert.Equal(new Rectangle(470, 158, 28, 32), OptionsLayout.MusicLevels[^1]);
-        Assert.Equal(new Rectangle(140, 240, 28, 32), OptionsLayout.SoundEffectLevels[0]);
+        Assert.Equal(new Rectangle(132, 78, 28, 28), OptionsLayout.MusicLevels[0]);
+        Assert.Equal(new Rectangle(472, 78, 28, 28), OptionsLayout.MusicLevels[^1]);
+        Assert.Equal(new Rectangle(132, 140, 28, 28), OptionsLayout.SoundEffectLevels[0]);
         Assert.All(OptionsLayout.MusicLevels.Concat(OptionsLayout.SoundEffectLevels),
             level => Assert.True(OptionsLayout.Panel.Contains(level)));
         var levels = OptionsLayout.MusicLevels.Concat(OptionsLayout.SoundEffectLevels).ToArray();
@@ -178,7 +178,28 @@ public sealed class UiNavigationTests
                 levels.Skip(index + 1).Select(right => (left, right))),
             pair => Assert.False(pair.left.Intersects(pair.right)));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.WarnIfIdleGangs));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.BaseStatistics));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.DetailedCombat));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.SlidePanels));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ColorDepth));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
+    }
+
+    [Fact]
+    public void PanelSlideIsBoundedAndOnlyAppliesToPanelScreens()
+    {
+        var slide = new PanelSlideTransition();
+        var start = TimeSpan.FromSeconds(4);
+
+        slide.Begin(ClientScreen.Gang, start);
+
+        Assert.Equal(PanelSlideTransition.StartOffset, slide.Offset(ClientScreen.Gang, start));
+        Assert.InRange(slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration / 2),
+            1, PanelSlideTransition.StartOffset - 1);
+        Assert.Equal(0, slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration));
+        Assert.Equal(0, slide.Offset(ClientScreen.City, start));
+        slide.Begin(ClientScreen.City, start);
+        Assert.Equal(0, slide.Offset(ClientScreen.City, start));
     }
 
     [Fact]

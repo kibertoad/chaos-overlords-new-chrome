@@ -211,7 +211,10 @@ conversion. `GamePreferencesStore`
 loads and atomically replaces a bounded, recreation-versioned local preferences
 file; malformed, unsupported, or out-of-range data falls back to the recovered
 Music level-5, Effects level-6, enabled idle-gang-warning, and disabled planning
-timer defaults. Playback and preference-write failures remain presentation-only;
+timer defaults. Version 5 also persists base/current gang-stat projection,
+automatic Detailed Combat playback, and bounded panel motion while migrating
+version-4 audio/warning/timer choices. Legacy color depth is always enabled by
+the modern renderer. Playback and preference-write failures remain presentation-only;
 media state never enters Core, saves, replays, commands, events, or deterministic
 hashes.
 

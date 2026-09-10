@@ -217,7 +217,11 @@ a simulation rule; continuing still permits unassigned gangs.
 **Confidence:** High from the initialized data, string table, bounded Done-path
 scan, dialog call graph, and matching Help description.
 
-**Recreation status:** Options persists an enabled-by-default warning toggle.
+**Recreation status:** Options persists an enabled-by-default warning toggle,
+base/current gang-stat display, automatic Detailed Combat playback, and bounded
+panel motion. The legacy 16-bit color choice is displayed as always enabled by
+the modern renderer. Version-4 recreation preferences migrate into version 5
+without losing their audio, warning, or timer selections.
 Finishing planning checks only the active player's living gangs and offers a
 Continue/Go Back modal when any lacks a queued command. Opening and closing the
 modal route the recovered general-effect slots 0 and 1.

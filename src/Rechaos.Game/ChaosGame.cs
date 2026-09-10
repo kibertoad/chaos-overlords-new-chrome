@@ -75,6 +75,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly Dictionary<int, SoundEffect> _generalSounds = [];
     private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
+    private readonly PanelSlideTransition _panelSlideTransition = new();
     private MatchState? _state;
     /// <summary>
     /// Where a player's mutations go, and the only handle on the match's recorder.
@@ -155,6 +156,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 ["from"] = previous.ToString(),
                 ["to"] = current.ToString()
             });
+        _screens.Changed += (_, current) =>
+        {
+            if (_slidePanels) _panelSlideTransition.Begin(current, _inputTime);
+        };
         var userDataRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords");
@@ -167,6 +172,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _soundEffectVolumeLevel = preferences.SoundEffectVolumeLevel;
         _warnIfIdleGangs = preferences.WarnIfIdleGangs;
         _selectedPlanningTimeLimit = preferences.PlanningTimeLimit;
+        _showBaseStatistics = preferences.ShowBaseStatistics;
+        _detailedCombat = preferences.DetailedCombat;
+        _slidePanels = preferences.SlidePanels;
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -381,6 +389,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             }
         }
         var pointerMapped = VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint);
+        if (pointerMapped && _slidePanels)
+        {
+            var offset = _panelSlideTransition.Offset(_screens.Current, gameTime.TotalGameTime);
+            virtualPoint = new Point(virtualPoint.X - offset, virtualPoint.Y);
+        }
         _hoverPoint = pointerMapped ? virtualPoint : null;
         var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
         if (pointerMapped && _screens.Current == ClientScreen.Help && wheelDelta != 0)
@@ -430,7 +443,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         GraphicsDevice.Clear(new Color(8, 10, 12));
         if (_batch is null || _pixel is null || _font is null) return;
         var viewport = GraphicsDevice.Viewport;
-        var transform = VirtualInput.Transform(viewport);
+        var slideOffset = _slidePanels
+            ? _panelSlideTransition.Offset(_screens.Current, gameTime.TotalGameTime)
+            : 0;
+        var transform = Matrix.CreateTranslation(slideOffset, 0, 0)
+            * VirtualInput.Transform(viewport);
         _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);
         _batch.Draw(_pixel, new Rectangle(0, 0, 640, 460), new Color(8, 10, 12));
         switch (_screens.Current)

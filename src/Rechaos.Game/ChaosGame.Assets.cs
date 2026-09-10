@@ -94,7 +94,8 @@ public sealed partial class ChaosGame
                      .Where(value => value.Sequence > _lastAnimatedEventSequence)
                      .OrderBy(value => value.Sequence))
         {
-            if (_combatAnimationTextures.Count > 0 && IsVisibleCombatEvent(_state, viewer, gameEvent))
+            if (_detailedCombat && _combatAnimationTextures.Count > 0
+                && IsVisibleCombatEvent(_state, viewer, gameEvent))
                 foreach (var clip in CombatAnimationRouting.ForEvent(_state, gameEvent))
                     _combatAnimationPlayer.Enqueue(clip);
             _lastAnimatedEventSequence = gameEvent.Sequence;
