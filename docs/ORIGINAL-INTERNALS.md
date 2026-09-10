@@ -1066,6 +1066,18 @@ resolution. This establishes one on-objective family-14 continuation; the
 handlers' preceding Attack, Control, equipment, Influence, and Research paths
 remain unintegrated.
 
+The shared owned-objective branch at family-13 lines `100..110` and family-14
+lines `103..114` is also bounded. Strategic refresh `0x0040a1a7` caches
+selector `0x90` per player and sector, and selector `0xaf` reads that cache.
+Selector `0x90` scans other players and their 81 gang slots in ascending order;
+for the first observer-visible gang in the requested sector it returns 10 for
+a hostile human owner and 1 otherwise, or zero when no visible opponent is
+present. When an objective sector belongs to the acting player and this cache
+is zero, both handlers choose Heal before their equipment/site branches at
+Force below 10 and effective Heal at least `-3`. This shared Heal path is now
+live and replay-verified for both objective scenarios. Family 14 still applies
+its later family-13 transition when the previous action was Control.
+
 `0x00408553` sorts the 64 sector scores descending while retaining their sector
 indices. The caller chooses uniformly among every sector tied for the maximum;
 a unique maximum consumes no RNG, while a tie consumes one bounded call (three
@@ -1107,9 +1119,10 @@ filtering due to decompiler control-flow folding. Mode 10 and mode 16's
 remaining family-11 guards are not yet fully labeled.
 
 **Next validation:** map the remaining family-11 guards for modes 10 and 16 to
-public commands. Recover the remaining on-objective family-13/14 branches, and
-reproduce the now-live objective routes plus the mode-16 follower route as
-fixed original decisions before claiming runtime parity.
+public commands. Recover the remaining on-objective family-13/14 Attack,
+Control, equipment, Influence, and Research branches, and reproduce the
+now-live objective routes plus the mode-16 follower route as fixed original
+decisions before claiming runtime parity.
 
 ### BIN-AI-006 - directional attitude and hostility matrix
 

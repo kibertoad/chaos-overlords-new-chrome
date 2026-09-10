@@ -52,4 +52,17 @@ internal static class OriginalAiObjectiveFamilyRules
         && previousAction == GangAction.Control
         && force < FamilyFourteenHealForceLimit
         && effectiveHeal >= OriginalAiFamilyOneRules.MinimumEffectiveHeal;
+
+    public static bool ShouldHealOwnedObjectiveWithoutVisibleOpponent(
+        ScenarioId scenario,
+        int currentSectorId,
+        bool ownedByActingPlayer,
+        bool hasVisibleOpponent,
+        int force,
+        int effectiveHeal) =>
+        IsObjectiveSector(scenario, currentSectorId)
+        && ownedByActingPlayer
+        && !hasVisibleOpponent
+        && force < FamilyFourteenHealForceLimit
+        && effectiveHeal >= OriginalAiFamilyOneRules.MinimumEffectiveHeal;
 }

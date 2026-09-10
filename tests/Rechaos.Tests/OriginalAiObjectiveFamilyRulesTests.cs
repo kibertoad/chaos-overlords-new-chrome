@@ -64,4 +64,24 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
         Assert.Equal(expected,
             OriginalAiObjectiveFamilyRules.ShouldFamilyFourteenTerminalHeal(
                 scenario, sector, plannedAction, previousAction, force, effectiveHeal));
+
+    [Theory]
+    [InlineData(ScenarioId.BigMan, 27, true, false, 9, -3, true)]
+    [InlineData(ScenarioId.Eliminate, 54, true, false, 9, -3, true)]
+    [InlineData(ScenarioId.BigMan, 0, true, false, 9, -3, false)]
+    [InlineData(ScenarioId.BigMan, 27, false, false, 9, -3, false)]
+    [InlineData(ScenarioId.BigMan, 27, true, true, 9, -3, false)]
+    [InlineData(ScenarioId.BigMan, 27, true, false, 10, -3, false)]
+    [InlineData(ScenarioId.BigMan, 27, true, false, 9, -4, false)]
+    public void OwnedObjectiveHealPreservesSelectorNinetyAndStatBoundaries(
+        ScenarioId scenario,
+        int sector,
+        bool ownedByActingPlayer,
+        bool hasVisibleOpponent,
+        int force,
+        int effectiveHeal,
+        bool expected) =>
+        Assert.Equal(expected,
+            OriginalAiObjectiveFamilyRules.ShouldHealOwnedObjectiveWithoutVisibleOpponent(
+                scenario, sector, ownedByActingPlayer, hasVisibleOpponent, force, effectiveHeal));
 }

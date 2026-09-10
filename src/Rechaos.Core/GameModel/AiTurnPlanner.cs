@@ -178,6 +178,18 @@ public static class AiTurnPlanner
         IReadOnlyList<int> playerOrder)
     {
         var plannedAction = state.AiPlanning.PlannedAction(playerId, gangSlot);
+        var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
+        if (OriginalAiObjectiveFamilyRules.ShouldHealOwnedObjectiveWithoutVisibleOpponent(
+                state.Setup.Scenario,
+                gang.SectorId,
+                state.Sectors[gang.SectorId].Owner == playerId,
+                HasVisibleOpponentInSector(state, playerId, gang.SectorId),
+                gang.Force,
+                effectiveHeal))
+        {
+            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
+            plannedAction = GangAction.Heal;
+        }
         if (family == 14
             && OriginalAiObjectiveFamilyRules.ShouldFamilyFourteenTerminalHeal(
                 state.Setup.Scenario,
@@ -185,7 +197,7 @@ public static class AiTurnPlanner
                 plannedAction,
                 state.AiPlanning.PreviousAction(playerId, gangSlot),
                 gang.Force,
-                EffectiveStatisticsCalculator.ForGang(state, gang).Heal))
+                effectiveHeal))
         {
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
             state.AiPlanning.SetFamily(playerId, gangSlot, 13);
@@ -213,6 +225,16 @@ public static class AiTurnPlanner
             playerId, gangSlot, GangAction.Move,
             new AiActionTarget(checked((byte)target), 0));
     }
+
+    private static bool HasVisibleOpponentInSector(
+        MatchState state,
+        PlayerId observer,
+        int sectorId) => state.Players
+        .Where(player => player.Id != observer)
+        .SelectMany(player => player.Gangs)
+        .Any(candidate => candidate.IsActive
+            && candidate.SectorId == sectorId
+            && state.CanPlayerDetectGang(observer, candidate.Id));
 
     private static RecoveredFamilyChoice DesiredRecoveredFamilyChoice(
         MatchState state,

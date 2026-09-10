@@ -448,6 +448,48 @@ public sealed class AiTurnPlannerTests
         Assert.Equal(GangAction.Heal, restored.AiPlanning.PlannedAction(player, 0));
     }
 
+    [Theory]
+    [InlineData(ScenarioId.BigMan, 27)]
+    [InlineData(ScenarioId.Eliminate, 9)]
+    public void FamilyThirteenOwnedObjectiveWithoutVisibleOpponentHealsAndReplays(
+        ScenarioId scenario,
+        int objectiveSector)
+    {
+        var data = BundledOriginalData.Load();
+        var capable = data.Gangs.First(candidate => candidate.Stats.Heal >= -3).Id;
+        var match = CreateMatch(
+            definitionId: capable,
+            force: 9,
+            scenario: scenario,
+            startingSector: objectiveSector,
+            data: data);
+        var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
+        match.AiPlanning.SetCurrentHireRole(player, 1);
+        var recorder = new MatchReplayRecorder(match);
+        recorder.FinishUpkeep();
+
+        recorder.PrepareAiPlanning(player);
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+
+        Assert.Equal(13, match.AiPlanning.Family(player, 0));
+        Assert.Equal(GangAction.Heal, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(GangAction.Heal, command.Action);
+
+        Assert.True(recorder.Submit(command).Accepted);
+        recorder.FinishCommand(player);
+        recorder.FinishCommand(new PlayerId(1));
+        while (match.Coordinator.Phase == TurnPhase.Execution)
+            recorder.FinishExecutionPhase();
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(GangAction.Heal, restored.AiPlanning.PlannedAction(player, 0));
+    }
+
     [Fact]
     public void FamilyOnePreparationUsesRecoveredModeFiveMoveDestination()
     {

@@ -140,7 +140,10 @@ replay-verified two-computer harness through 20 turns or objective completion.
    gang is off-objective. Family 14 also has a live on-objective terminal
    continuation: an immediately previous Control changes to Heal at Force below
    10 and effective Heal at least `-3`, then changes the stored family to 13.
-   The remaining on-objective handler behavior remains to be integrated.
+   Both families also use their shared owned-objective branch to Heal at those
+   same stat boundaries when selector `0x90` finds no visible opposing gang in
+   the sector. The remaining on-objective Attack, Control, equipment,
+   Influence, and Research behavior remains to be integrated.
    The six-by-six directional
    attitude matrix, Homicidal human/computer initialization, non-Homicidal per-turn recovery,
    negative-hostility enumerators, `3..6` non-Homicidal reaction values, exact
