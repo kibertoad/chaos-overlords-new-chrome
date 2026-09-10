@@ -522,10 +522,23 @@ The remaining modes are structurally bounded but not all subordinate fields
 are named yet. Selector `0x32` counts players whose controller type is 0 or 3,
 so mode 6 and mode 10 branch on the number of human players. Selector `0x2d`
 compares two players' positions in the six-byte player-order table, rejecting
-neutral and self comparisons. Selector `0x2e` returns the one player occupying
-the table's zero-valued slot, or `-1` unless exactly one does. Selector `0x5e`
-counts one player's nonempty gang records in a sector. Mode 6 combines those
-facts with human-owner classification and an as-yet unnamed per-owner table.
+neutral and self comparisons. Selector `0x2e` returns the sole player whose
+scenario standing byte at `0x004abc08` is zero, or `-1` when zero or multiple
+players share that value. `0x0047712a` builds the scenario score at
+`0x004a2790`, then sets each active player's standing byte to the number of
+players with a strictly greater score and inactive slots to `0xff`; selector
+`0x2e` therefore returns the unique current leader. Selector `0x5e` counts one
+player's nonempty gang records in a sector.
+
+Mode 6 is now bounded. If at least one human participates, a sector owned by a
+player whom the active AI views negatively receives `+2` only when that owner
+is human. It then adds one independent leader-routing point: with a unique
+leader other than the active player, only that leader's sectors receive `+1`;
+with no unique leader, every sector owned by a player tied at standing zero
+receives `+1`; when the active player is the unique leader, every other
+player-owned sector containing fewer than four active-player gangs receives
+`+1`. These additions feed the same nearest-ring, maximum-tie RNG, and
+orthogonal-step logic as the other nonzero modes.
 
 The site-data offsets used by modes 7 through 9 align exactly with the decoded
 62-byte `SITES` record: selectors `0x0c`, `0x0d`, and `0x10` return Support,
@@ -576,6 +589,18 @@ come through a computed argument. `tools/ghidra/ReportCallArguments.java`
 provides a repeatable bounded inventory of the three pushed arguments at each
 direct call.
 
+Both mode-6 calls belong to family 2. That handler writes public action byte 10
+(**Move**) with the selected mode-6 destination when its current/selected
+sector branch cannot proceed locally. Its visible-gang path writes action byte
+1 (**Attack**). At the later local-sector decision, the pair flag from
+`0x0040a1a7` supplies one of two exact action-byte-4 (**Control**) gates: the
+sector owner must already be viewed negatively, no defending owner gang may be
+visible, and the observer-to-owner combat-advantage flag must be set. The other
+Control gate is restricted to a hostile human-owned sector with zero visible
+human gangs and rejects a previous-turn Control action. Thus the pair flag does
+not directly select an attack; it permits Control after the territorial
+Combat + Defense test has established overwhelming local advantage.
+
 The surrounding action writes give the site modes public command semantics.
 Family 5 uses mode 7 after writing Move; when the selected Support-priority
 site is already local, the same branches write Influence instead. Family 3
@@ -612,16 +637,16 @@ and equal-best final scores in the bounded paths inspected here.
 
 **Confidence:** High for the address, ring expansion, score-map sorting,
 mode-0 directions, modes 1 through 5 weights, site-field offsets, human-player
-count, gang-in-sector count, fixed sector sets, direct call inventory,
-maximum-score tie randomization, and orthogonal next-step return. Medium for
-the player-order predicates, family-11 anchor, dynamic call arguments, and late
-candidate filtering due to decompiler control-flow folding. Low for the
-remaining attitude-dependent mode-6 branches and therefore the complete
-meaning of modes 6, 10, and 16.
+count, gang-in-sector count, unique-leader selector, mode-6 weights and owner
+branches, fixed sector sets, direct call inventory, maximum-score tie
+randomization, and orthogonal next-step return. Medium for the player-order
+predicates, family-11 anchor, dynamic call arguments, and late candidate
+filtering due to decompiler control-flow folding. Mode 10 and mode 16's
+remaining family-11 guards are not yet fully labeled.
 
-**Next validation:** map the remaining attitude-dependent mode-6 branches,
-then map the surrounding guards for modes 6 and 10 through 16 to public commands.
-After that, reproduce the 5:2:1 mode-5 target score, path threshold, and
+**Next validation:** map the remaining family-11 guards for modes 10 and 16 to
+public commands. After that, reproduce the 5:2:1 mode-5 target score, mode-6
+leader/hostility weights, path threshold, and
 equal-best RNG with fixed-state reference traces before replacing the
 recreation's provisional destination weights.
 
@@ -687,10 +712,9 @@ whole-turn resolver boundary, applies the recovered combat and Control changes,
 uses hostility for AI attack candidates, and includes the state in canonical
 hashes, native saves, and replays.
 
-**Next validation:** resolve every mode-6 consumer and the pair flag's remaining
-downstream command branch, then capture fixed original traces proving the
-combat-advantage threshold, reaction, and recovery ordering through the first
-two complete turns.
+**Next validation:** capture fixed original traces proving the combat-advantage
+threshold, reaction, and recovery ordering through the first two complete
+turns, then finish the remaining family-11 mode-10/16 guards.
 
 ### BIN-AI-007 - per-player difficulty resolution band
 

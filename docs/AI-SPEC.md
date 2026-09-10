@@ -100,7 +100,11 @@ replay-verified two-computer harness through 20 turns or objective completion.
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
    (Heal), plus action bytes 3 (Chaos), 10 (Move), and 13 (Snitch), are now
-   bounded in `ORIGINAL-INTERNALS.md`. The hostility pass counts only visible
+   bounded in `ORIGINAL-INTERNALS.md`. Mode 6 is now recovered as a family-2
+   Move route toward the unique scenario leader (or all tied leaders), with an
+   additional two-point preference for hostile human owners when humans
+   participate. Its pair flag permits Control—not Attack—when no defending
+   owner gang is visible. The hostility pass counts only visible
    defenders, requires a strict integer ratio above 75 percent, and writes
    `-10` in the observer-to-owner direction. Capture the resulting hostility,
    cash 50/51, Force 8/9, and Tolerance 3/4 boundaries as fixed-state reference
