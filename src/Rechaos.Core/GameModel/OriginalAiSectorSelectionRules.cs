@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Pure implementation of the original weighted sector selector at 0x00408642
-/// for its fully recovered modes 1 through 5, 8, 10, and 12 through 16. Planner-specific
+/// for its fully recovered modes 1 through 5, 7, 8, 10, and 12 through 16. Planner-specific
 /// queries remain explicit inputs so this kernel does not guess at unrecovered
 /// outer policy.
 /// </summary>
@@ -29,13 +29,15 @@ internal static class OriginalAiSectorSelectionRules
         DeterministicRandom random,
         bool? hasHumanPlayers = null,
         int? formationSectorId = null,
-        Func<int, int>? unfinishedSiteScore = null)
+        Func<int, int>? unfinishedSiteScore = null,
+        Func<int, bool>? hasPriorInfluence = null)
     {
         ValidateInputs(
             mode, sourceSectorId, family, sectorOwners, sectorDisabled,
             sectorGangCounts, canSoloControl, hasPriorChaos,
             isHostileOwner, isHumanOwner, playerOrderValues, random,
-            hasHumanPlayers, formationSectorId, unfinishedSiteScore);
+            hasHumanPlayers, formationSectorId, unfinishedSiteScore,
+            hasPriorInfluence);
 
         var scores = new int[MatchLimits.SectorCount];
         var sourceX = sourceSectorId % MatchLimits.BoardWidth;
@@ -57,7 +59,8 @@ internal static class OriginalAiSectorSelectionRules
                         mode, sectorId, player.Value, owner,
                         sectorGangCounts, canSoloControl, hasPriorChaos,
                         isHostileOwner, isHumanOwner, playerOrderValues,
-                        hasHumanPlayers, formationSectorId, unfinishedSiteScore);
+                        hasHumanPlayers, formationSectorId, unfinishedSiteScore,
+                        hasPriorInfluence);
                     if (added > 0)
                     {
                         scores[sectorId] = checked(scores[sectorId] + added);
@@ -144,7 +147,8 @@ internal static class OriginalAiSectorSelectionRules
         IReadOnlyList<int> playerOrderValues,
         bool? hasHumanPlayers,
         int? formationSectorId,
-        Func<int, int>? unfinishedSiteScore) => mode switch
+        Func<int, int>? unfinishedSiteScore,
+        Func<int, bool>? hasPriorInfluence) => mode switch
         {
             1 => owner == NeutralOwner && canSoloControl(sectorId) ? 1 : 0,
             2 => owner == player ? 1 : 0,
@@ -153,6 +157,8 @@ internal static class OriginalAiSectorSelectionRules
             5 when owner == NeutralOwner && canSoloControl(sectorId) => 5,
             5 when owner == player && !hasPriorChaos(sectorId) => 2,
             5 when owner != player && owner > NeutralOwner => 1,
+            7 when owner == player && !hasPriorInfluence!(sectorId) =>
+                Math.Max(0, unfinishedSiteScore!(sectorId)),
             8 when owner == player => Math.Max(0, unfinishedSiteScore!(sectorId)),
             10 when hasHumanPlayers == true && owner >= 0 && isHumanOwner(owner) => 1,
             10 when hasHumanPlayers == false && owner >= 0 && owner != player => 1,
@@ -219,9 +225,10 @@ internal static class OriginalAiSectorSelectionRules
         DeterministicRandom random,
         bool? hasHumanPlayers,
         int? formationSectorId,
-        Func<int, int>? unfinishedSiteScore)
+        Func<int, int>? unfinishedSiteScore,
+        Func<int, bool>? hasPriorInfluence)
     {
-        if (mode is not (>= 1 and <= 5 or 8 or 10 or >= 12 and <= 16))
+        if (mode is not (>= 1 and <= 5 or 7 or 8 or 10 or >= 12 and <= 16))
             throw new ArgumentOutOfRangeException(nameof(mode));
         if (sourceSectorId is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sourceSectorId));
@@ -259,7 +266,9 @@ internal static class OriginalAiSectorSelectionRules
             && formationSectorId is not (>= AiPlanningState.InactiveFormationSector
                 and < MatchLimits.SectorCount))
             throw new ArgumentOutOfRangeException(nameof(formationSectorId));
-        if (mode == 8 && unfinishedSiteScore is null)
+        if (mode is 7 or 8 && unfinishedSiteScore is null)
             throw new ArgumentNullException(nameof(unfinishedSiteScore));
+        if (mode == 7 && hasPriorInfluence is null)
+            throw new ArgumentNullException(nameof(hasPriorInfluence));
     }
 }

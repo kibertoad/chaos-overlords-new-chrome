@@ -315,6 +315,20 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
+    public void ModeSevenScoresSupportAndExcludesPriorInfluenceSectors()
+    {
+        var facts = new Facts(source: 20);
+        facts.Owners[21] = facts.Player.Value;
+        facts.SiteScores[21] = 3;
+        facts.Owners[28] = facts.Player.Value;
+        facts.SiteScores[28] = 9;
+        facts.PriorInfluence.Add(28);
+
+        Assert.Equal(21, facts.Select(mode: 7, family: 5));
+        Assert.Equal(0, facts.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void MalformedShapesAndSelectorValuesAreRejected()
     {
         var facts = new Facts(source: 27);
@@ -328,6 +342,12 @@ public sealed class OriginalAiSectorSelectionRulesTests
             facts.Owners, facts.Disabled, facts.GangCounts,
             _ => false, _ => false, _ => false, _ => false,
             facts.PlayerOrder, facts.Random));
+        Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
+            7, 27, new PlayerId(0), 5,
+            facts.Owners, facts.Disabled, facts.GangCounts,
+            _ => false, _ => false, _ => false, _ => false,
+            facts.PlayerOrder, facts.Random,
+            unfinishedSiteScore: facts.SiteScores.ElementAt));
         Assert.Throws<ArgumentException>(() => OriginalAiSectorSelectionRules.Select(
             3, 27, new PlayerId(0), 2,
             facts.Owners[..^1], facts.Disabled, facts.GangCounts,
@@ -388,6 +408,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
         public int[] PlayerOrder { get; set; }
         public HashSet<int> SoloControl { get; } = [];
         public HashSet<int> PriorChaos { get; } = [];
+        public HashSet<int> PriorInfluence { get; } = [];
         public HashSet<int> HostileOwners { get; } = [];
         public HashSet<int> HumanOwners { get; } = [];
         public int[] SiteScores { get; } = new int[MatchLimits.SectorCount];
@@ -410,6 +431,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
                 Random,
                 hasHumanPlayers,
                 formationSectorId,
-                SiteScores.ElementAt);
+                SiteScores.ElementAt,
+                PriorInfluence.Contains);
     }
 }

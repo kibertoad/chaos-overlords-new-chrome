@@ -70,7 +70,7 @@ public static partial class AiTurnPlanner
         IReadOnlyList<GameCommand> options)
     {
         var family = state.AiPlanning.Family(player.Id, gangSlot);
-        if (family is not (1 or 3 or 11 or 13 or 14)) return null;
+        if (family is not (1 or 3 or 5 or 11 or 13 or 14)) return null;
 
         var preparedAction = state.AiPlanning.PlannedAction(player.Id, gangSlot);
         var choice = family == 1 && preparedAction == GangAction.None
@@ -97,7 +97,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         int gangSlot) =>
         state.AiPlanning.HasPlanned(playerId)
-        && state.AiPlanning.Family(playerId, gangSlot) is 3 or 13 or 14
+        && state.AiPlanning.Family(playerId, gangSlot) is 3 or 5 or 13 or 14
         && state.AiPlanning.PlannedAction(playerId, gangSlot) == GangAction.None;
 
     internal static void PrepareRecoveredFamilyCommands(MatchState state, PlayerId playerId)
@@ -125,6 +125,10 @@ public static partial class AiTurnPlanner
             if (!entry.gang.IsActive) continue;
             var family = state.AiPlanning.Family(playerId, entry.slot);
             if (family == 3 && PrepareFamilyThreeCommand(
+                    state, playerId, entry.gang, entry.slot,
+                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
+                continue;
+            if (family == 5 && PrepareFamilyFiveCommand(
                     state, playerId, entry.gang, entry.slot,
                     sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
                 continue;

@@ -1086,6 +1086,42 @@ and the late Greed Terminate override.
 site scan order, tie behavior, mode-8 score sum, and call order from the
 fingerprinted version-1.1 executable; runtime corroboration remains pending.
 
+Focused inspection of family 5 at `0x0043a1d0` establishes that it has the
+same complete action-switch and terminal shape as family 3, with Support-site
+selection and mode 7 substituted for Cash-site selection and mode 8. Previous
+None, Control, Equip, and Heal use the same Force-below-8 and effective-Heal-
+at-least-`-3` gate, then select the first strict maximum positive-Support
+unfinished site in an owned sector, attempt strict solo Control, or Move.
+Previous Influence uses the same weapon-before-armor equipment opportunity and
+cost-times-three cooldowns, Heal gate, previous-site retention, and local site
+rescan. Previous Snitch moves directly through mode 7.
+
+The previous Attack/Hide/Move branch is also instruction-for-instruction
+equivalent in public behavior: visible-opponent weight 10 performs one bounded
+draw, optionally chooses the actual target from visible human-controller gangs,
+resolves the comparison ordinal through the full visible-opponent pool, and
+uses the same quarter-strength combat predicate before writing Attack or None.
+Its terminal block applies the same three-consecutive-Move family change (11 in
+Siege, 2 otherwise) and the same final-three-turn Greed Terminate overwrite.
+
+Mode 7 adds one distinction beyond its Support score. Selector `0x6f` scans all
+81 planning records for the acting player and counts records whose mirrored
+gang sector matches the candidate and whose immediately previous action at
+offset `+5` is Influence. A candidate owned sector is scored only when that
+count is zero; its score is then the sum of positive Support values for all
+unfinished sites. Selector `0x41` reads planning offset `+6`, confirming that
+the previous-Influence continuation retains the previous target's first byte,
+which is the local site slot.
+
+**Recreation status:** the complete family-5 handler and mode-7 selector are
+live and replay-recorded, including duplicate previous-Influence destination
+exclusion.
+
+**Confidence:** High static evidence for the listed branches, selector fields,
+Support scan/sum, target-pool asymmetry, terminal order, and RNG call order in
+the fingerprinted version-1.1 executable; runtime corroboration remains
+pending.
+
 Families 13 and 14 both use the fixed objective sets as Move destinations:
 scenario value 8 selects modes 12/14 and is Big Man, while scenario value 6
 selects modes 13/15 and is Eliminate. Family 13 uses the variants that exclude

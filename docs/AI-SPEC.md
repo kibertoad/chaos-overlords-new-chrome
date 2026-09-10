@@ -184,6 +184,12 @@ replay-verified two-computer harness through 20 turns or objective completion.
    Three consecutive Moves switch the family to 11 in Siege and 2 otherwise;
    Greed's final three turns overwrite the result with Terminate. Unsupported
    previous-action cases intentionally preserve None, matching the handler.
+   Family 5's complete recovered handler mirrors that sequence around Support
+   rather than Cash. Its local scan and mode-7 movement sum positive Support
+   from unfinished owned sites, and mode 7 excludes any candidate sector where
+   another planning record already has previous Influence. Its equipment,
+   opponent targeting/comparison, three-Move transition, Greed override, and
+   intentional None cases are live at the same replay-recorded boundary.
    The exact ten-scenario by
    seven-hire-role family table is implemented by `OriginalAiFamilyRules`,
    including unmapped cells which preserve the current family. AI planning
