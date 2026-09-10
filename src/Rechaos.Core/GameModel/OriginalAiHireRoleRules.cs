@@ -28,6 +28,51 @@ internal static class OriginalAiHireRoleRules
         return schedule[turn % schedule.Length];
     }
 
+    /// <summary>
+    /// Applies the instruction-verified adjustment block shared verbatim by
+    /// Power, Kill 'Em All, and Big 40 before their final role switch.
+    /// Unidentified query results deliberately retain their binary selector names.
+    /// </summary>
+    public static OriginalAiHireRoleSelection SelectPowerAdjusted(
+        ScenarioId scenario,
+        int turn,
+        OriginalAiPowerHireInputs inputs)
+    {
+        if (scenario is not (ScenarioId.Power or ScenarioId.KillEmAll or ScenarioId.Big40))
+            throw new ArgumentException("Only scenarios sharing the original Power branch are valid.", nameof(scenario));
+        if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
+        ArgumentOutOfRangeException.ThrowIfNegative(inputs.TurnsRemaining);
+
+        var slot = turn % 10;
+        if (inputs.TurnsRemaining < 10 && slot == 4) slot = 1;
+        if (slot == 8 && (inputs.TurnsRemaining < 10 || inputs.Cash < 100)) slot = 1;
+
+        var changesSix = inputs.Selector9aResult == 100
+            || inputs.Selector5fResult != -1
+            || inputs.Family5Count < 1
+            || inputs.Family7Count < 1
+            || inputs.PreviousRole == 6;
+        if (!changesSix)
+        {
+            slot = 6;
+        }
+        else if (slot == 6)
+        {
+            slot = inputs.Family7Count == 0
+                ? 4
+                : inputs.Family5Count == 0 ? 9 : 8;
+        }
+
+        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        if (slot == 8 && inputs.Family2Count >= durationFactor * 4f) slot = 0;
+        if (slot == 6 && inputs.Family6Or12Count >= durationFactor * 4f) slot = 0;
+        if (slot == 9 && inputs.Family5Count >= durationFactor * 3f) slot = 0;
+        if (slot == 4 && inputs.Family7Count >= durationFactor) slot = 0;
+        if (inputs.Family0Or4Count < 4) slot = 0;
+
+        return Power[slot];
+    }
+
     private static readonly OriginalAiHireRoleSelection[] Greed =
     [
         S(0, 1), S(4, 6), S(0, 1), S(2, 2), S(0, 1),
@@ -82,3 +127,16 @@ internal static class OriginalAiHireRoleRules
 }
 
 internal readonly record struct OriginalAiHireRoleSelection(int RankingMode, int Role);
+
+internal readonly record struct OriginalAiPowerHireInputs(
+    int TurnsRemaining,
+    int Cash,
+    int Selector9aResult,
+    int Selector5fResult,
+    int Family5Count,
+    int Family7Count,
+    int PreviousRole,
+    int Family2Count,
+    int Family6Or12Count,
+    int Family0Or4Count,
+    GameDuration Duration);

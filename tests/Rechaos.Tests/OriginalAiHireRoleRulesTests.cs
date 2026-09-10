@@ -50,4 +50,102 @@ public sealed class OriginalAiHireRoleRulesTests
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             OriginalAiHireRoleRules.SelectScheduled(ScenarioId.Greed, -1));
     }
+
+    [Theory]
+    [InlineData(ScenarioId.Power)]
+    [InlineData(ScenarioId.KillEmAll)]
+    [InlineData(ScenarioId.Big40)]
+    public void PowerFamilyScenariosShareAdjustedBranch(ScenarioId scenario)
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(1, 1),
+            OriginalAiHireRoleRules.SelectPowerAdjusted(scenario, turn: 4,
+                PowerInputs(turnsRemaining: 9)));
+    }
+
+    [Theory]
+    [InlineData(0, 1, 4, 6)]
+    [InlineData(1, 0, 2, 5)]
+    [InlineData(1, 1, 3, 3)]
+    public void PowerSlotSixRedirectsToMissingOrFallbackFamily(
+        int family7Count,
+        int family5Count,
+        int expectedMode,
+        int expectedRole)
+    {
+        var result = OriginalAiHireRoleRules.SelectPowerAdjusted(
+            ScenarioId.Power,
+            turn: 6,
+            PowerInputs(
+                selector9aResult: 100,
+                family7Count: family7Count,
+                family5Count: family5Count));
+
+        Assert.Equal(new OriginalAiHireRoleSelection(expectedMode, expectedRole), result);
+    }
+
+    [Theory]
+    [InlineData(8, 2, 4)]
+    [InlineData(6, 6, 4)]
+    [InlineData(9, 5, 3)]
+    [InlineData(4, 7, 1)]
+    public void PowerQuotasResetSlotAtExactOneYearBoundary(
+        int turn,
+        int countedFamily,
+        int boundary)
+    {
+        var inputs = countedFamily == 6
+            ? PowerInputs(selector9aResult: 0, selector5fResult: -1)
+            : PowerInputs();
+        inputs = countedFamily switch
+        {
+            2 => inputs with { Family2Count = boundary },
+            5 => inputs with { Family5Count = boundary },
+            6 => inputs with { Family6Or12Count = boundary },
+            7 => inputs with { Family7Count = boundary },
+            _ => throw new ArgumentOutOfRangeException(nameof(countedFamily))
+        };
+
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(0, 0),
+            OriginalAiHireRoleRules.SelectPowerAdjusted(ScenarioId.Power, turn, inputs));
+    }
+
+    [Fact]
+    public void PowerDurationFactorScalesQuota()
+    {
+        var result = OriginalAiHireRoleRules.SelectPowerAdjusted(
+            ScenarioId.Power,
+            turn: 8,
+            PowerInputs(duration: GameDuration.FourYears, family2Count: 15));
+
+        Assert.Equal(new OriginalAiHireRoleSelection(3, 3), result);
+    }
+
+    [Fact]
+    public void PowerMinimumBaseFamilyCountOverridesOtherSlots()
+    {
+        var result = OriginalAiHireRoleRules.SelectPowerAdjusted(
+            ScenarioId.Power,
+            turn: 1,
+            PowerInputs(family0Or4Count: 3));
+
+        Assert.Equal(new OriginalAiHireRoleSelection(0, 0), result);
+    }
+
+    private static OriginalAiPowerHireInputs PowerInputs(
+        int turnsRemaining = 52,
+        int cash = 100,
+        int selector9aResult = 100,
+        int selector5fResult = -1,
+        int family5Count = 1,
+        int family7Count = 1,
+        int previousRole = 0,
+        int family2Count = 0,
+        int family6Or12Count = 0,
+        int family0Or4Count = 4,
+        GameDuration duration = GameDuration.OneYear) =>
+        new(turnsRemaining, cash, selector9aResult, selector5fResult,
+            family5Count, family7Count, previousRole, family2Count,
+            family6Or12Count, family0Or4Count, duration);
 }

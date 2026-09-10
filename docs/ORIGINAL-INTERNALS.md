@@ -399,11 +399,18 @@ constants at `0x00481018` onward decode as floats 52, 4, 2, 100, 3, and 6.
 The planner computes `total duration turns / 52` and retains that factor in an
 x87/local-stack value used by quota comparisons. Ghidra misleadingly renders
 several later uses as multiplication by `0.0`; instruction windows confirm they
-still consume the saved factor. For that reason `OriginalAiHireRoleRules`
-implements only this exact pre-adjustment schedule, not speculative quota logic.
+still consume the saved factor. `OriginalAiHireRoleRules` implements the exact
+pre-adjustment schedule. It also implements the identical Power/Kill 'Em All/
+Big 40 adjustment block: late turns remap slots 4 and 8; selector `0x9a`,
+selector `0x5f`, the prior role, and family-5/family-7 presence redirect slot 6;
+family counts cap slots 8, 6, 9, and 4 at respectively `factor * 4`,
+`factor * 4`, `factor * 3`, and `factor`; and fewer than four family-0-or-4
+gangs forces slot zero. Unidentified selector inputs retain their numeric names
+in the isolated input record rather than receiving speculative domain names.
 
 **Confidence:** Verified for scenario order, periods, every ranking-mode call,
-every hire-role write, shared scenario bodies, constants, and retained factor.
+every hire-role write, shared scenario bodies, constants, retained factor, x87
+comparison direction, equality boundaries, and adjustment ordering.
 
 **Next validation:** transcribe each adjustment as raw selector/count inputs and
 verify its x87 comparison direction at instruction level before integration.
