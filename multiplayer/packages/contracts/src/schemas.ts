@@ -61,22 +61,8 @@ export const uploadSnapshotRequestSchema = strictObject({
   body: base64BodySchema,
 })
 
-/**
- * `?after=&limit=`, both optional.
- *
- * The defaults are applied here rather than by the handler, so the contract says what a bare
- * `GET /events` means instead of each caller deciding again. They are written as the text a query
- * string would have carried, because that is what `optional` substitutes and the pipe then coerces:
- * a numeric default would skip the coercion it is standing in for.
- */
-export const eventsQuerySchema = strictObject({
-  after: optional(integerQueryParam(0, INT32_MAX), '0'),
-  limit: optional(integerQueryParam(1, LIMITS.eventsPageSize), String(LIMITS.eventsPageSize)),
-})
-
 export type CreateMatchRequest = InferOutput<typeof createMatchRequestSchema>
 export type JoinMatchRequest = InferOutput<typeof joinMatchRequestSchema>
 export type SubmitOrdersRequest = InferOutput<typeof submitOrdersRequestSchema>
 export type TurnReportRequest = InferOutput<typeof turnReportRequestSchema>
 export type UploadSnapshotRequest = InferOutput<typeof uploadSnapshotRequestSchema>
-export type EventsQuery = InferOutput<typeof eventsQuerySchema>

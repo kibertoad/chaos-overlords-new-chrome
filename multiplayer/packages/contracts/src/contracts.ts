@@ -4,9 +4,9 @@ import { object } from 'valibot'
 import { errorEnvelopeSchema } from './errors'
 import { eventPageSchema, matchEventSchema } from './events'
 import { resourceIdSchema, turnPathParamSchema } from './primitives'
+import { eventsQuerySchema } from './queries'
 import {
   createMatchRequestSchema,
-  eventsQuerySchema,
   joinMatchRequestSchema,
   submitOrdersRequestSchema,
   turnReportRequestSchema,

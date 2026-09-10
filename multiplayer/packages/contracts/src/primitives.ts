@@ -13,7 +13,7 @@ import {
   transform,
   trim,
 } from 'valibot'
-import { INT32_MAX, INT32_MIN, LIMITS } from './limits'
+import { LIMITS } from './limits'
 
 /**
  * The scalar shapes every request, view and event is built from.
@@ -66,12 +66,18 @@ export const playerCountSchema = pipe(
   notNegativeZero,
 )
 
-/** A turn number. Turn 0 is the lobby; the client holds it in an `int`. */
+/**
+ * A turn number. Turn 0 is the lobby; the client holds it in an `int`.
+ *
+ * The bound is written out rather than as {@link INT32_MAX}. The C# generator reads this source
+ * without running it, so a named bound is a bound it cannot see, and a bound it cannot see is a
+ * `long` on the other side. `primitives.spec.ts` holds the literals and the constants in step.
+ */
 export const turnNumberSchema = pipe(
   number(),
   integer(),
   minValue(0),
-  maxValue(INT32_MAX),
+  maxValue(2_147_483_647),
   notNegativeZero,
 )
 
@@ -80,7 +86,7 @@ export const eventSeqSchema = pipe(
   number(),
   integer(),
   minValue(0),
-  maxValue(INT32_MAX),
+  maxValue(2_147_483_647),
   notNegativeZero,
 )
 
@@ -93,8 +99,8 @@ export const eventSeqSchema = pipe(
 export const seedSchema = pipe(
   number(),
   integer(),
-  minValue(INT32_MIN),
-  maxValue(INT32_MAX),
+  minValue(-2_147_483_648),
+  maxValue(2_147_483_647),
   notNegativeZero,
 )
 
@@ -103,7 +109,7 @@ export const formatVersionSchema = pipe(
   number(),
   integer(),
   minValue(1),
-  maxValue(INT32_MAX),
+  maxValue(2_147_483_647),
   notNegativeZero,
 )
 
@@ -222,7 +228,7 @@ export const turnPathParamSchema = pipe(
   number(),
   integer(),
   minValue(0),
-  maxValue(INT32_MAX),
+  maxValue(2_147_483_647),
 )
 
 /**
