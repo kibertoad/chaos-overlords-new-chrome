@@ -7,11 +7,9 @@ Last updated: 2026-09-11
 
 - Work continues on `main` at
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`.
-- The latest pushed functional checkpoint is `d24332b` (complete local
-  presentation Options, including version-4 preference migration).
+- The latest pushed functional checkpoint is the tip of `main`.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,022 tests; its only warnings were NuGet
-  vulnerability-feed lookups blocked by the offline sandbox.
+  isolated Release build passed all 1,025 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -49,6 +47,10 @@ Last updated: 2026-09-11
   panel in either presentation mode. Escape or the panel Cancel control clears
   the queue immediately; cancellation and large-elapsed stress tests guard the
   no-hang presentation boundary.
+- Snapshot and replay stores read back each flushed temporary generation before
+  promotion, retain the last valid primary as a backup, and do not poison a good
+  backup when replacing a corrupt primary. F10 transparently verifies the
+  replay backup when the primary is missing or invalid.
 
 ## Reference environment
 

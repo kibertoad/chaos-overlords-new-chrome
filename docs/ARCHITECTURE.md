@@ -80,10 +80,11 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   originating handler.
 - `Persistence/NativeSaveSerializer.cs`: bounded, versioned deterministic
   snapshots with definition/state fingerprints and complete runtime restoration.
-- `Persistence/NativeSaveStore.cs`: atomic file promotion, previous-save backup,
-  and corruption recovery.
+- `Persistence/NativeSaveStore.cs`: verified atomic file promotion,
+  last-valid-generation backup, and corruption recovery.
 - `Persistence/MatchReplay.cs`: mutation recorder plus bounded deterministic
-  replay reader that checks validation results and state hashes after every step.
+  replay reader that checks validation results and state hashes after every
+  step, with the same verified promotion and backup recovery policy.
 
 Target subdivisions:
 
@@ -451,8 +452,9 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
   the user's local application-data directory; the same store writes an
   automatic recovery checkpoint after Player Elimination completes each turn.
   All client mutations pass through `MatchReplayRecorder`; F6/F10 atomically
-  save and verify/play the current
-  replay. New matches now use the recovered density/site generator, fixed HQ
+  save and verify/play the current replay, recovering the previous verified
+  generation when the primary is missing or corrupt. New matches now use the
+  recovered density/site generator, fixed HQ
   candidates, Right Hands setup and deferred initial offers; omitted local slots
   are completed as Computers with the recovered pre-city portrait/name RNG, and
   original seed selection remains provisional.

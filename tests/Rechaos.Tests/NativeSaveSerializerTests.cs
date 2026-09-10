@@ -731,6 +731,36 @@ public sealed class NativeSaveSerializerTests
         }
     }
 
+    [Fact]
+    public void AtomicStoreDoesNotOverwriteGoodBackupWithCorruptCurrentSave()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-save-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, "match.rchsave");
+        try
+        {
+            var match = CreateMatch();
+            NativeSaveStore.SaveAtomic(path, match);
+            match.FinishUpkeep();
+            NativeSaveStore.SaveAtomic(path, match);
+            var backupHash = MatchStateHasher.ComputeSha256(
+                NativeSaveStore.Load(path + NativeSaveStore.BackupSuffix, match.Definitions));
+            File.WriteAllText(path, "corrupt");
+
+            match.FinishCommand(new PlayerId(0));
+            NativeSaveStore.SaveAtomic(path, match);
+
+            Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(
+                NativeSaveStore.Load(path, match.Definitions)));
+            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(
+                NativeSaveStore.Load(path + NativeSaveStore.BackupSuffix, match.Definitions)));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static MatchState RoundTrip(MatchState match)
     {
         using var stream = new MemoryStream(SaveBytes(match));

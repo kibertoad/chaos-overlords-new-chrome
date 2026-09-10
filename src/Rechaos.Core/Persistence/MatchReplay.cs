@@ -391,8 +391,12 @@ internal sealed record ReplayDocument(
     byte[] InitialSnapshot,
     IReadOnlyList<ReplayStep> Steps);
 
+public sealed record MatchReplayLoadResult(MatchState State, bool RecoveredFromBackup);
+
 public static class MatchReplayStore
 {
+    public const string BackupSuffix = ".bak";
+
     public static void SaveAtomic(string path, MatchReplayRecorder recorder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -412,7 +416,22 @@ public static class MatchReplayStore
                 MatchReplaySerializer.Save(stream, recorder);
                 stream.Flush(flushToDisk: true);
             }
-            File.Move(temporaryPath, fullPath, overwrite: true);
+
+            // Replays are long-lived verification artifacts. Read back the new
+            // file before promotion and preserve the last valid generation.
+            _ = LoadAndReplay(temporaryPath, recorder.State.Definitions);
+            if (!File.Exists(fullPath))
+            {
+                File.Move(temporaryPath, fullPath);
+            }
+            else if (IsValid(fullPath, recorder.State.Definitions))
+            {
+                File.Replace(temporaryPath, fullPath, fullPath + BackupSuffix);
+            }
+            else
+            {
+                File.Move(temporaryPath, fullPath, overwrite: true);
+            }
         }
         finally
         {
@@ -426,5 +445,36 @@ public static class MatchReplayStore
         using var stream = new FileStream(
             Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read);
         return MatchReplaySerializer.LoadAndReplay(stream, definitions);
+    }
+
+    public static MatchReplayLoadResult LoadAndReplayRecoveringBackup(
+        string path,
+        OriginalData definitions)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(definitions);
+        try
+        {
+            return new MatchReplayLoadResult(LoadAndReplay(path, definitions), false);
+        }
+        catch (Exception primaryFailure) when (primaryFailure is IOException or InvalidDataException)
+        {
+            var backupPath = Path.GetFullPath(path) + BackupSuffix;
+            if (!File.Exists(backupPath)) throw;
+            return new MatchReplayLoadResult(LoadAndReplay(backupPath, definitions), true);
+        }
+    }
+
+    private static bool IsValid(string path, OriginalData definitions)
+    {
+        try
+        {
+            _ = LoadAndReplay(path, definitions);
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException)
+        {
+            return false;
+        }
     }
 }

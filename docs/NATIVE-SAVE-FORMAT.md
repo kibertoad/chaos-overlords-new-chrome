@@ -1,7 +1,7 @@
 # Recreation-native save format
 
 Status: implemented format version 16
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 
 This format belongs to the recreation. It is deliberately separate from the
 two partially mapped original *Chaos Overlords* save variants and makes no
@@ -18,10 +18,12 @@ claim of binary compatibility with either of them.
 - `stateSha256` is the canonical `MatchStateHasher` digest captured at save
   time and verified after reconstruction.
 
-`NativeSaveSerializer` reads and writes streams. `NativeSaveStore` writes a
-same-directory temporary file, flushes it to disk, retains the previous primary
-as `<save>.bak`, and promotes the temporary file over the primary. Recovery
-loads the backup only when the primary is missing, unreadable, or invalid.
+`NativeSaveSerializer` reads and writes streams. `NativeSaveStore` writes and
+flushes a same-directory temporary file, reads it back through the bounded
+serializer, then atomically promotes it. A valid previous primary becomes
+`<save>.bak`; an invalid primary is replaced without overwriting an existing
+good backup. Recovery loads the backup only when the primary is missing,
+unreadable, or invalid.
 
 ## Version 16 document
 
@@ -123,9 +125,10 @@ result where applicable, and the canonical state SHA-256 after the operation.
 operations, checks validation outcomes, and rejects the file at the first hash
 divergence. Replay input is limited to 32 MiB and 1,000,000 operations. Unknown
 members, missing values, unknown versions, and malformed operations are rejected.
-`MatchReplayStore` provides same-directory temporary-file promotion for replay
-files. The prototype client records all of its mutations and exposes atomic
-save plus verified playback through F6 and F10.
+`MatchReplayStore` applies the same read-back-before-promotion and
+last-valid-generation backup policy to replay files. The prototype client
+records all of its mutations and exposes atomic save plus verified primary or
+backup playback through F6 and F10.
 
 Replay version 3 embeds a native-save version 4 initial snapshot and records
 planning-time hire-offer preparation so opening the persistent Hire dock does

@@ -495,6 +495,64 @@ public sealed class MatchReplayTests
         }
     }
 
+    [Fact]
+    public void AtomicReplayStoreRecoversPreviousValidGeneration()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-replay-tests", Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(directory, "match.rchreplay");
+        try
+        {
+            var recorder = new MatchReplayRecorder(CreateMatch());
+            recorder.FinishUpkeep();
+            MatchReplayStore.SaveAtomic(path, recorder);
+            var previousHash = MatchStateHasher.ComputeSha256(recorder.State);
+            recorder.FinishCommand(new PlayerId(0));
+            MatchReplayStore.SaveAtomic(path, recorder);
+            File.WriteAllText(path, "corrupt");
+
+            var recovered = MatchReplayStore.LoadAndReplayRecoveringBackup(
+                path, recorder.State.Definitions);
+
+            Assert.True(recovered.RecoveredFromBackup);
+            Assert.Equal(previousHash, MatchStateHasher.ComputeSha256(recovered.State));
+            Assert.Empty(Directory.EnumerateFiles(directory, "*.tmp"));
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AtomicReplayStorePreservesGoodBackupWhenCurrentReplayIsCorrupt()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-replay-tests", Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(directory, "match.rchreplay");
+        try
+        {
+            var recorder = new MatchReplayRecorder(CreateMatch());
+            recorder.FinishUpkeep();
+            MatchReplayStore.SaveAtomic(path, recorder);
+            recorder.FinishCommand(new PlayerId(0));
+            MatchReplayStore.SaveAtomic(path, recorder);
+            var backupHash = MatchStateHasher.ComputeSha256(MatchReplayStore.LoadAndReplay(
+                path + MatchReplayStore.BackupSuffix, recorder.State.Definitions));
+            File.WriteAllText(path, "corrupt");
+
+            recorder.FinishCommand(new PlayerId(1));
+            MatchReplayStore.SaveAtomic(path, recorder);
+
+            Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(
+                MatchReplayStore.LoadAndReplay(path, recorder.State.Definitions)));
+            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(MatchReplayStore.LoadAndReplay(
+                path + MatchReplayStore.BackupSuffix, recorder.State.Definitions)));
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static void AdvanceToHire(MatchState state)
     {
         state.FinishUpkeep();
