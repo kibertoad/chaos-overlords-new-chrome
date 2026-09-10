@@ -1168,13 +1168,18 @@ explicitly rather than deriving it from site definitions.
 ### BIN-CITY-002 - three-site rejection sampling
 
 **Observation:** `0x004764b6` draws a site ID from 0 through 20. In scenario
-index 9 it rejects IDs 4 and 8. `0x00475fe1` rejects duplicate second/third
-sites, and `0x00476516` rejects a partial combination when the sum of any of
-the 14 site statistic modifiers is outside -6 through +6.
+index 9 it rejects IDs 4 and 8 before returning the proposal. Slot zero accepts
+its first proposal without balance validation. Slot one rejects a duplicate of
+slot zero before validating the partial combination; slot two compares slot
+zero and then slot one before validation. Every rejected proposal therefore
+consumes its bounded draw before retrying. `0x00476516` rejects a partial
+combination when the sum of any of the 14 site statistic modifiers is outside
+-6 through +6.
 
-**Interpretation:** Site frequency is not used by this generation path. Scenario
-9 is Armageddon; its excluded Research Lab and Science Center agree with the
-scenario's initially completed research.
+**Interpretation:** Proposals are uniform and this generation path has no
+frequency or class selector; duplicate and statistic rejection condition the
+accepted second and third slots. Scenario 9 is Armageddon; its excluded Research
+Lab and Science Center agree with the scenario's initially completed research.
 
 **Confidence:** High static evidence; runtime reference fixture pending.
 
@@ -1191,6 +1196,22 @@ Right Hands is definition zero and always starts at maximum Force.
 
 **Confidence:** High static evidence; active-player-count presentation and a
 runtime reference fixture remain pending.
+
+### BIN-SETUP-001 - `SMGFUNDAGE` starting cash override
+
+**Observation:** Fresh-game initialization assigns each player $500 in scenario
+9 and $20 otherwise at `0x0046e766`. The adjacent name scan sets a transient
+per-player byte only for the exact uppercase name `SMGFUNDAGE`. After the city
+and player setup calls return, `0x0046ec72` reads that byte and overwrites the
+player's cash with 0x5dc ($1,500). The transient byte has no save/load references;
+the resulting cash value is what persists.
+
+**Interpretation:** `SMGFUNDAGE` overrides both ordinary and Armageddon starting
+cash. Case variants do not match, and no authoritative cheat flag is needed
+after fresh-game bootstrap.
+
+**Confidence:** High static evidence for the exact trigger, value, ordering, and
+transient lifetime; runtime corroboration remains pending.
 
 ### BIN-HIRE-001 - initial and replacement offers
 

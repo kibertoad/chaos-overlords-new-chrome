@@ -11,7 +11,8 @@ public sealed record MatchPlayerStart(
 
 /// <summary>
 /// Builds authoritative match state from an explicit city and placement layout.
-/// City generation and headquarters selection remain separate parity tasks.
+/// The recovered original generator and headquarters selector feed this boundary,
+/// while explicit layouts remain available for tests and imported scenarios.
 /// </summary>
 public static class MatchBootstrap
 {
@@ -74,9 +75,11 @@ public static class MatchBootstrap
                 start.HeadquartersSectorId, start.RightHandsForce);
             players[index] = new MatchPlayerState(
                 setup.Players[index],
-                setup.Scenario == ScenarioId.Armageddon
-                    ? ArmageddonStartingCash
-                    : start.StandardStartingCash,
+                OriginalSetupNameRules.ApplyStartingCash(
+                    setup.Players[index].Name,
+                    setup.Scenario == ScenarioId.Armageddon
+                        ? ArmageddonStartingCash
+                        : start.StandardStartingCash),
                 [rightHands], start.HirePool,
                 researchedItems: startingResearch,
                 usesMaximumHireForce: OriginalHireCheatRules.DetectMaximumHireForce(

@@ -1,11 +1,43 @@
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using System.Security.Cryptography;
+using System.Text;
 using Xunit;
 
 namespace Rechaos.Tests;
 
 public sealed class OriginalCityGeneratorTests
 {
+    [Fact]
+    public void FixedSeedsMatchRecoveredCityAndHeadquartersVectors()
+    {
+        var random = new DeterministicRandom(1996);
+        var city = OriginalCityGenerator.Generate(BundledOriginalData.Load(), ScenarioId.Greed, random);
+        var cityHash = Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes(string.Join('|', city.Select(Snapshot))))).ToLowerInvariant();
+        var cityVector = $"{cityHash}:{random.State}:{random.ConsumptionCount}";
+
+        var headquarters = OriginalCityGenerator.AssignHeadquarters(city, random);
+        var headquartersVector =
+            $"{string.Join(',', headquarters)}:{random.State}:{random.ConsumptionCount}";
+
+        var armageddonRandom = new DeterministicRandom(17);
+        var armageddon = OriginalCityGenerator.Generate(
+            BundledOriginalData.Load(), ScenarioId.Armageddon, armageddonRandom);
+        var armageddonHash = Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes(string.Join('|', armageddon.Select(Snapshot))))).ToLowerInvariant();
+        var armageddonVector =
+            $"{armageddonHash}:{armageddonRandom.State}:{armageddonRandom.ConsumptionCount}";
+
+        Assert.Equal(
+            "55c46e53770856a1ab86fb5016730a95de3ea4dca941b02e88f23d0bd91a13f0:2435272594:846",
+            cityVector);
+        Assert.Equal("12,54,9,51,33,30:3517730563:885", headquartersVector);
+        Assert.Equal(
+            "eb56820b0a571a2fc7df3b5f229ae41d4c036d04d61eb94fe41e165dd69b8dcb:50447269:900",
+            armageddonVector);
+    }
+
     [Fact]
     public void FixedSeedProducesStableBalancedCityAndRandomContinuation()
     {

@@ -562,21 +562,26 @@ claim about original-game behavior.
 
 ## Objectives and match completion
 
-### RULE-SETUP-001 — Armageddon starting resources
+### RULE-SETUP-001 — Starting resources and `SMGFUNDAGE`
 
-- Source: `MANUAL-GOG-1`; Armageddon scenario description.
+- Source: `MANUAL-GOG-1`; Armageddon scenario description; `EXE-GOG-1.1`
+  fresh-game routine `0x0046e766` and name scan `0x0046dc10`.
 - Observed statement: Armageddon starts every player with $500 and all equipment
   already researched.
 - Interpretation: new-match bootstrapping replaces the ordinary-scenario cash
   input with 500 and marks every real item-table entry (excluding type-99 padding)
-  as researched before turn one.
-- Current exclusions: exact city generation, Headquarters/Right Hands placement,
-  ordinary-scenario starting cash and Force, initial hire offers, and RNG usage.
-- Confidence: High for the Armageddon cash and research overrides; Low for the
-  excluded setup mechanics.
+  as researched before turn one. Ordinary starting cash is $20. The exact
+  uppercase player name `SMGFUNDAGE` then overwrites either starting amount with
+  $1,500; the setup-only flag is transient and cash itself persists.
+- Current exclusions: initial seed selection, complete setup-mode call context,
+  active-player presentation, initial hire offers, and an original runtime fixture.
+- Confidence: High static evidence for ordinary/Armageddon cash, the name
+  override, city/HQ generation and Right Hands Force; runtime correlation pending.
 - Implementation: `MatchBootstrap.Create`.
-- Tests: `MatchBootstrapTests` covers both overrides and verifies the resulting
-  research state through the normal query API.
+- Tests: `MatchBootstrapTests` covers Armageddon resources, exact-case
+  `SMGFUNDAGE` behavior in ordinary and Armageddon games, and verifies research
+  state through the normal query API. `OriginalCityGeneratorTests` locks fixed
+  city, Armageddon-rejection, HQ-permutation, and RNG-continuation vectors.
 
 ### RULE-OBJECTIVE-001 — End-of-turn objective evaluation
 

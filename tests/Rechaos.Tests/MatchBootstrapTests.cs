@@ -81,6 +81,31 @@ public sealed class MatchBootstrapTests
     }
 
     [Fact]
+    public void FreshLocalSetupAppliesExactSmgFundageCashOverride()
+    {
+        foreach (var scenario in new[] { ScenarioId.Greed, ScenarioId.Armageddon })
+        {
+            var (data, _, sectors, starts) = Inputs(scenario);
+            MatchPlayerSetup[] players =
+            [
+                new(new PlayerId(0), "SMGFUNDAGE", PlayerController.Human),
+                new(new PlayerId(1), "smgfundage", PlayerController.Computer)
+            ];
+            var setup = new MatchSetup(
+                scenario, GameDuration.SixMonths, 1996, players);
+
+            var match = MatchBootstrap.Create(data, setup, sectors, starts);
+
+            Assert.Equal(1_500, match.Players[0].Cash);
+            Assert.Equal(
+                scenario == ScenarioId.Armageddon
+                    ? MatchBootstrap.ArmageddonStartingCash
+                    : starts[1].StandardStartingCash,
+                match.Players[1].Cash);
+        }
+    }
+
+    [Fact]
     public void RejectsAStartOutsideANeutralHeadquartersSector()
     {
         var (data, setup, sectors, starts) = Inputs(ScenarioId.Greed);

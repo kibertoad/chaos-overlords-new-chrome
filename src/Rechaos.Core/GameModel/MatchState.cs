@@ -343,8 +343,8 @@ public sealed class MatchStatistics
 }
 
 /// <summary>
-/// Authoritative headless state. It is initialized from explicit mechanical data;
-/// exact original city and player placement remain a separate M1 research task.
+/// Authoritative headless state initialized from explicit mechanical data or the
+/// statically recovered original city and headquarters generation path.
 /// </summary>
 public sealed partial class MatchState
 {
