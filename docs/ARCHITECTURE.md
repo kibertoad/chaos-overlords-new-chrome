@@ -64,7 +64,8 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
 - `GameModel/AiTurnPlanner.Dispatch.cs`: recovered family dispatch and the
   immutable sector/family snapshot shared across one ordered AI planning pass;
   family-specific branch order remains in separate partial files, while
-  provisional command scoring remains isolated in `AiTurnPlanner.cs`.
+  provisional command scoring is isolated in
+  `AiTurnPlanner.ProvisionalFallback.cs`.
 - `GameModel/AiTurnPlanner.RecoveredOperations.cs`: narrowly shared recovered
   operations whose ordering is identical across handlers. The human-weighted/
   full-pool projection remains shared by families 0, 4, and 6; the asymmetric
