@@ -4,5 +4,6 @@
   <Project Path="src/Rechaos.Game/Rechaos.Game.csproj" />
   <Project Path="src/Rechaos.Multiplayer/Rechaos.Multiplayer.csproj" />
   <Project Path="src/Rechaos.Tools/Rechaos.Tools.csproj" />
+  <Project Path="tools/OnlineSmoke/OnlineSmoke.csproj" />
   <Project Path="tests/Rechaos.Tests/Rechaos.Tests.csproj" />
 </Solution>

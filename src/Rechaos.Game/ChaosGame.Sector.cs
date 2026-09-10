@@ -216,7 +216,7 @@ public sealed partial class ChaosGame
         var gangId = _draggedGangId;
         _draggedGangId = null;
         _gangDragStarted = false;
-        if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang || _replay is null) return;
+        if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang || _actions is null) return;
         var siteSlot = Enumerable.Range(0, MatchLimits.SitesPerSector)
             .FirstOrDefault(slot => SectorDetailLayout.SitePortrait(slot).Contains(point), -1);
         if (siteSlot >= 0)
@@ -230,7 +230,7 @@ public sealed partial class ChaosGame
                 _message = "BUILDING CANNOT BE INFLUENCED";
                 return;
             }
-            var influenceResult = _replay.Submit(influence with { Repeat = true });
+            var influenceResult = _actions.Submit(influence with { Repeat = true });
             _message = influenceResult.Accepted
                 ? $"INFLUENCE SITE {siteSlot + 1} QUEUED"
                 : influenceResult.Validation.Message.ToUpperInvariant();
@@ -249,7 +249,7 @@ public sealed partial class ChaosGame
             _message = "MOVE REQUIRES A NEIGHBORING SECTOR";
             return;
         }
-        var result = _replay.Submit(legal with { Repeat = false });
+        var result = _actions.Submit(legal with { Repeat = false });
         _message = result.Accepted
             ? $"MOVE TO SECTOR {sectorId + 1} QUEUED"
             : result.Validation.Message.ToUpperInvariant();

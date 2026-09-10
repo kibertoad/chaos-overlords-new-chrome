@@ -198,6 +198,58 @@ public sealed class MultiplayerSealedTurnTests
             () => builder.Cancel(new PlayerId(0), new GangId(1)));
     }
 
+    /// <summary>
+    /// The interface plans on a copy, and the copy makes the local seat the active one — without
+    /// which the core refuses everything a player in any seat but the first tries.
+    /// </summary>
+    [Fact]
+    public void PlansOnACopyThatMakesTheLocalSeatActive()
+    {
+        var (authoritative, definitions) = NewClient();
+        var before = MatchStateHasher.ComputeSha256(authoritative.State);
+
+        var turn = SpeculativeTurn.For(authoritative.State, definitions, slot: 1);
+        var gang = turn.State.FindPlayer(new PlayerId(1))!.Gangs.First(g => g.IsActive).Id;
+        var result = turn.Submit(new GameCommand(new PlayerId(1), gang, GangAction.Hide, CoreTarget.None));
+
+        Assert.True(result.Accepted);
+        Assert.Equal(new PlayerId(1), turn.State.Coordinator.ActivePlayer);
+        // Recorded once, and the authoritative state is untouched by any of it.
+        Assert.Equal(1, turn.Orders.Count);
+        Assert.Equal(before, MatchStateHasher.ComputeSha256(authoritative.State));
+    }
+
+    /// <summary>
+    /// The dock a player plans against is the dock the sealed turn grants: offers are drawn for
+    /// every seat before anyone plans, so the copy inherits them rather than drawing its own.
+    /// </summary>
+    [Fact]
+    public void ShowsTheSameHireOffersTheSealedTurnWillGrant()
+    {
+        var (authoritative, definitions) = NewClient();
+        var authoritativeOffers = authoritative.State.FindPlayer(new PlayerId(1))!.HirePool;
+
+        var turn = SpeculativeTurn.For(authoritative.State, definitions, slot: 1);
+
+        Assert.NotEmpty(authoritativeOffers);
+        Assert.Equal(authoritativeOffers, turn.State.FindPlayer(new PlayerId(1))!.HirePool);
+    }
+
+    /// <summary>An op the core refused is not recorded: it would spend the document's budget saying nothing.</summary>
+    [Fact]
+    public void RecordsOnlyWhatTheCoreAccepted()
+    {
+        var (authoritative, definitions) = NewClient();
+        var turn = SpeculativeTurn.For(authoritative.State, definitions, slot: 0);
+
+        // Slot 0 does not own this gang, so the core refuses the command.
+        var foreignGang = turn.State.FindPlayer(new PlayerId(1))!.Gangs[0].Id;
+        var result = turn.Submit(new GameCommand(new PlayerId(0), foreignGang, GangAction.Hide, CoreTarget.None));
+
+        Assert.False(result.Accepted);
+        Assert.Equal(0, turn.Orders.Count);
+    }
+
     /// <summary>One turn's worth of a player's real commands, so the fixture is a legal document.</summary>
     private static OrderDocument OrdersFor(MatchState state, int slot)
     {

@@ -97,9 +97,9 @@ public sealed partial class ChaosGame
 
     private void QueueSelectedGive()
     {
-        if (_giveOptions.Count == 0 || _replay is null) return;
+        if (_giveOptions.Count == 0 || _actions is null) return;
         var command = _giveOptions[_giveCursor];
-        var result = _replay.Submit(command);
+        var result = _actions.Submit(command);
         _message = result.Accepted
             ? "GIVE QUEUED"
             : result.Validation.Message.ToUpperInvariant();
@@ -108,7 +108,7 @@ public sealed partial class ChaosGame
 
     private void QueueItemCommand(GangAction action)
     {
-        if (_state is null || _replay is null) return;
+        if (_state is null || _actions is null) return;
         var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         var items = RealItems(_state);
@@ -118,7 +118,7 @@ public sealed partial class ChaosGame
             return;
         }
         var command = new GameCommand(playerId, gang.Id, action, CommandTarget.Item(items[_itemCursor].Id));
-        var result = _replay.Submit(command);
+        var result = _actions.Submit(command);
         _message = result.Accepted
             ? $"{action.ToString().ToUpperInvariant()} QUEUED"
             : result.Validation.Message.ToUpperInvariant();

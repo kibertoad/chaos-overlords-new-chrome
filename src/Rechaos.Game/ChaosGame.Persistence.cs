@@ -26,8 +26,8 @@ public sealed partial class ChaosGame
         {
             var result = NativeSaveStore.LoadRecoveringBackup(_quickSavePath, _definitions);
             _state = result.State;
-            _replay = new MatchReplayRecorder(_state);
-            if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_replay);
+            _actions = new MatchActions(new MatchReplayRecorder(_state));
+            if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.Replay);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _selectedGangIndex = 0;
@@ -45,10 +45,10 @@ public sealed partial class ChaosGame
 
     private void SaveReplay()
     {
-        if (_replay is null) return;
+        if (_actions is null) return;
         try
         {
-            MatchReplayStore.SaveAtomic(_replayPath, _replay);
+            MatchReplayStore.SaveAtomic(_replayPath, _actions.Replay);
             _message = "REPLAY SAVED";
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -63,8 +63,8 @@ public sealed partial class ChaosGame
         try
         {
             _state = MatchReplayStore.LoadAndReplay(_replayPath, _state.Definitions);
-            _replay = new MatchReplayRecorder(_state);
-            if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_replay);
+            _actions = new MatchActions(new MatchReplayRecorder(_state));
+            if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.Replay);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _message = "REPLAY VERIFIED";

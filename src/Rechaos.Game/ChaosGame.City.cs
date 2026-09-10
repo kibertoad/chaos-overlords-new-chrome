@@ -170,7 +170,12 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.GangPortrait(draggedDefinition), Color.White);
             DrawBorder(batch, pixel, token, Color.White, 1);
         }
-        font.Draw(batch, "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY", new Vector2(18, 439), new Color(180, 190, 190), 1);
+        // Online, the footer says where the turn stands instead of which keys save: a match nobody
+        // can save is one where the only thing worth knowing is whether it is waiting on you.
+        var footer = _session is null
+            ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
+            : OnlineTurnStatus();
+        font.Draw(batch, footer, new Vector2(18, 439), new Color(180, 190, 190), 1);
     }
 
     private void DrawGangStatusMarker(SpriteBatch batch, int sectorId, Rectangle source)
@@ -204,7 +209,7 @@ public sealed partial class ChaosGame
         var command = gang.SectorId == _cursor
             ? new GameCommand(playerId, gang.Id, GangAction.Control, CommandTarget.None)
             : new GameCommand(playerId, gang.Id, GangAction.Move, CommandTarget.Sector(_cursor));
-        var result = _replay!.Submit(command);
+        var result = _actions!.Replay.Submit(command);
         _message = result.Accepted
             ? $"{command.Action.ToString().ToUpperInvariant()} QUEUED"
             : result.Validation.Message.ToUpperInvariant();

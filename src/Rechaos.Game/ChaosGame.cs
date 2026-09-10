@@ -14,7 +14,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         [Color.Red, Color.LimeGreen, Color.Blue, Color.Yellow, Color.Magenta, Color.Cyan];
     private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
-    private static readonly Rectangle TitleLoadGame = new(220, 334, 200, 34);
+    private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
+    private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
     private static readonly Rectangle TitleOptions = new(196, 376, 80, 34);
     private static readonly Rectangle TitleHelp = new(280, 376, 80, 34);
     private static readonly Rectangle TitleQuit = new(364, 376, 80, 34);
@@ -74,7 +75,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
     private MatchState? _state;
-    private MatchReplayRecorder? _replay;
+    /// <summary>
+    /// Where a player's mutations go, and the only handle on the match's recorder.
+    /// </summary>
+    /// <remarks>
+    /// There is no separate recorder field on purpose. A call site that reached for one would
+    /// mutate a hot-seat match correctly and an online one silently wrongly — applied locally and
+    /// never recorded as an order — and the two are indistinguishable at the point of the call.
+    /// </remarks>
+    private MatchActions? _actions;
     private OriginalData? _definitions;
     private readonly ScreenRouter _screens = new();
     private readonly CitySectorClickTracker _citySectorClicks = new();
@@ -161,6 +170,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         };
         IsMouseVisible = true;
         Window.Title = "Chaos Overlords: New Chrome";
+        // The only text the game takes: a server address, a name and a join code. The platform has
+        // already decoded the keystroke, so a non-US layout types what it should.
+        Window.TextInput += (_, args) => HandleTextInput(args.Character);
         _computerPlayers[1] = true;
     }
 
@@ -222,6 +234,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         UpdateSoundtrack(gameTime);
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
+        PumpOnlineNotices();
         RunComputerTurns();
         CaptureNewCombatAnimations();
         _combatAnimationPlayer.Advance(gameTime.ElapsedGameTime);
@@ -253,6 +266,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     break;
                 case ClientScreen.Setup:
                     UpdateSetup(keyboard);
+                    break;
+                case ClientScreen.Online:
+                    UpdateOnline(keyboard);
+                    break;
+                case ClientScreen.Lobby:
+                    if (Pressed(keyboard, Keys.Enter)) StartHostedMatch();
+                    else PollLobby(gameTime);
                     break;
                 case ClientScreen.City:
                     UpdateCity(keyboard);
@@ -404,6 +424,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Setup:
                 DrawSetup(_batch, _pixel, _font);
                 break;
+            case ClientScreen.Online:
+                DrawOnline(_batch, _pixel, _font);
+                break;
+            case ClientScreen.Lobby:
+                DrawLobby(_batch, _pixel, _font);
+                break;
             case ClientScreen.City when _state is not null:
                 DrawBoard(_batch, _pixel, _font, _state);
                 break;
@@ -487,6 +513,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Title:
                 if (TitleNewGame.Contains(point)) _screens.Show(ClientScreen.Setup);
                 else if (TitleLoadGame.Contains(point)) LoadQuickGame();
+                else if (TitleOnline.Contains(point)) OpenOnline();
                 else if (TitleOptions.Contains(point)) OpenOptions();
                 else if (TitleHelp.Contains(point)) OpenHelp();
                 else if (TitleQuit.Contains(point)) Exit();
@@ -496,6 +523,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Help:
                 HandleHelpClick(point);
+                break;
+            case ClientScreen.Online:
+                HandleOnlineClick(point);
+                break;
+            case ClientScreen.Lobby:
+                HandleLobbyClick(point);
                 break;
             case ClientScreen.Setup:
                 var scenario = Array.FindIndex(SetupScenarios, rectangle => rectangle.Contains(point));

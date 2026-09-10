@@ -39,11 +39,11 @@ public sealed partial class ChaosGame
 
     private void CloseEvents()
     {
-        if (_state?.Coordinator.ActivePlayer is { } playerId && _replay is not null)
+        if (_state?.Coordinator.ActivePlayer is { } playerId && _actions is not null)
         {
             var count = _state.NotificationsFor(playerId).Count;
             for (var index = 0; index < count; index++)
-                _replay.TryDismissNotification(playerId, out _);
+                _actions.DismissNotification(playerId);
         }
         _eventCursor = 0;
         _screens.Show(_managementReturnScreen);

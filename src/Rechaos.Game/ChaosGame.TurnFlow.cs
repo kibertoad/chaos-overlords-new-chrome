@@ -12,13 +12,16 @@ public sealed partial class ChaosGame
 
     private void AdvanceTurn()
     {
-        if (_debugPhaseStepping) AdvanceDebugPhase();
+        // Online, finishing planning sends the turn and waits: the match advances when the server
+        // seals it and every client applies the same set, not when this one decides it is done.
+        if (_session is not null) SubmitOnlineTurn();
+        else if (_debugPhaseStepping) AdvanceDebugPhase();
         else FinishPlanningTurn();
     }
 
     private void FinishPlanningTurn()
     {
-        if (_state is null || _replay is null) return;
+        if (_state is null || _actions is null) return;
         if (_state.Outcome is not null)
         {
             _message = "MATCH COMPLETE";
@@ -27,13 +30,13 @@ public sealed partial class ChaosGame
         if (_state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
-            GameplayTurnFlow.AdvanceToPlanning(_replay);
+            GameplayTurnFlow.AdvanceToPlanning(_actions.Replay);
             _message = "PLANNING TURN READY";
             return;
         }
 
         var previousTurn = _state.Coordinator.Turn;
-        GameplayTurnFlow.FinishPlanningTurn(_replay, playerId);
+        GameplayTurnFlow.FinishPlanningTurn(_actions.Replay, playerId);
         _diagnostics?.Write("planning.finished", new Dictionary<string, string?>
         {
             ["player"] = playerId.Value.ToString(),
@@ -80,11 +83,11 @@ public sealed partial class ChaosGame
         var completedTurn = _state.Coordinator.Phase == TurnPhase.PlayerElimination;
         var transition = _state.Coordinator.Phase switch
         {
-            TurnPhase.Upkeep => _replay!.FinishUpkeep(),
-            TurnPhase.Command => _replay!.FinishCommand(_state.Coordinator.ActivePlayer!.Value),
-            TurnPhase.Execution => _replay!.FinishExecutionPhase(),
-            TurnPhase.Hire => _replay!.FinishHire(_state.Coordinator.ActivePlayer!.Value),
-            TurnPhase.PlayerElimination => _replay!.FinishPlayerElimination(),
+            TurnPhase.Upkeep => _actions!.Replay.FinishUpkeep(),
+            TurnPhase.Command => _actions!.Replay.FinishCommand(_state.Coordinator.ActivePlayer!.Value),
+            TurnPhase.Execution => _actions!.Replay.FinishExecutionPhase(),
+            TurnPhase.Hire => _actions!.Replay.FinishHire(_state.Coordinator.ActivePlayer!.Value),
+            TurnPhase.PlayerElimination => _actions!.Replay.FinishPlayerElimination(),
             _ => throw new InvalidOperationException("Unknown turn phase.")
         };
         _message = transition.ExecutionPhase is { } execution
@@ -111,11 +114,21 @@ public sealed partial class ChaosGame
         }
     }
 
+    /// <summary>
+    /// Plays out the computer players of a hot-seat match.
+    /// </summary>
+    /// <remarks>
+    /// It does nothing online. Every unseated slot is a computer player there too, but it is
+    /// planned inside the sealed turn, by the same code on every client — planning one here would
+    /// be this client alone deciding what a shared player did.
+    /// </remarks>
     private void RunComputerTurns()
     {
-        if (_state is null || _replay is null
+        if (_session is not null) return;
+        if (_state is null || _actions is null
             || _screens.Current is ClientScreen.Title or ClientScreen.Options or ClientScreen.Help
-                or ClientScreen.Setup or ClientScreen.Endgame) return;
+                or ClientScreen.Setup or ClientScreen.Online or ClientScreen.Lobby
+                or ClientScreen.Endgame) return;
         var acted = false;
         while (_state.Coordinator.ActivePlayer is { } playerId)
         {
@@ -123,10 +136,10 @@ public sealed partial class ChaosGame
             if (player.Setup.Controller != PlayerController.Computer) break;
             if (_state.Coordinator.Phase == TurnPhase.Command)
             {
-                _replay.PrepareAiPlanning(playerId);
+                _actions.Replay.PrepareAiPlanning(playerId);
                 var commands = AiTurnPlanner.Plan(_state, playerId);
                 foreach (var command in commands)
-                    _replay.Submit(command);
+                    _actions.Replay.Submit(command);
                 _diagnostics?.Write("ai.planned", new Dictionary<string, string?>
                 {
                     ["player"] = playerId.Value.ToString(),
@@ -134,19 +147,19 @@ public sealed partial class ChaosGame
                     ["commands"] = commands.Count.ToString()
                 });
                 PrepareCurrentHireOffers();
-                var hiring = _replay.PrepareAiHiring(playerId);
+                var hiring = _actions.Replay.PrepareAiHiring(playerId);
                 if (hiring.Choice is { } planningHire)
-                    _replay.QueueHire(playerId, planningHire.GangDefinitionId, planningHire.SectorId);
+                    _actions.Replay.QueueHire(playerId, planningHire.GangDefinitionId, planningHire.SectorId);
                 else if (hiring.RejectedGangDefinitionId is { } rejectedOffer)
-                    _replay.SnubHireOffer(playerId, rejectedOffer);
-                if (_debugPhaseStepping) _replay.FinishCommand(playerId);
-                else GameplayTurnFlow.FinishPlanningTurn(_replay, playerId);
+                    _actions.Replay.SnubHireOffer(playerId, rejectedOffer);
+                if (_debugPhaseStepping) _actions.Replay.FinishCommand(playerId);
+                else GameplayTurnFlow.FinishPlanningTurn(_actions.Replay, playerId);
             }
             else if (_debugPhaseStepping && _state.Coordinator.Phase == TurnPhase.Hire)
             {
                 if (AiTurnPlanner.ChooseHire(_state, playerId) is { } hire)
-                    _replay.QueueHire(playerId, hire.GangDefinitionId, hire.SectorId);
-                _replay.FinishHire(playerId);
+                    _actions.Replay.QueueHire(playerId, hire.GangDefinitionId, hire.SectorId);
+                _actions.Replay.FinishHire(playerId);
             }
             else
             {
