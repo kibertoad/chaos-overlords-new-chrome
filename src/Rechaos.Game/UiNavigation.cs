@@ -779,21 +779,17 @@ public static class HireDockLayout
     }
 
     public static IReadOnlyList<HireDockEntry?> Project(
-        IReadOnlyList<short> offers,
-        PendingHireState? pending,
-        int? pendingSlot)
+        IReadOnlyList<HireOfferSlotState> offers,
+        PendingHireState? pending)
     {
         ArgumentNullException.ThrowIfNull(offers);
+        if (offers.Count != SlotCount)
+            throw new ArgumentException("Hire dock requires exactly three offer slots.", nameof(offers));
         var result = new HireDockEntry?[SlotCount];
-        var reserved = pending is null ? -1 : Math.Clamp(pendingSlot ?? 0, 0, SlotCount - 1);
-        if (pending is not null)
-            result[reserved] = new HireDockEntry(pending.GangDefinitionId, true);
-        var offerIndex = 0;
-        for (var slot = 0; slot < SlotCount && offerIndex < offers.Count; slot++)
-        {
-            if (slot == reserved) continue;
-            result[slot] = new HireDockEntry(offers[offerIndex++], false);
-        }
+        for (var slot = 0; slot < SlotCount; slot++)
+            if (offers[slot].GangDefinitionId is { } definitionId)
+                result[slot] = new HireDockEntry(
+                    definitionId, pending?.OfferSlot == slot);
         return result;
     }
 

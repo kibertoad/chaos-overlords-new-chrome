@@ -64,10 +64,10 @@ public sealed class MatchSetup
     public AiDifficulty AiMentality { get; }
 }
 
-public sealed class MatchPlayerState
+public sealed partial class MatchPlayerState
 {
     private readonly List<MatchGangState> _gangs;
-    private readonly List<short> _hirePool;
+    private readonly HireOfferSlotState[] _hireOfferSlots;
     private readonly List<PendingHireState> _pendingHires;
     private readonly Dictionary<short, int> _researchProgress;
     private readonly HashSet<short> _researchedItems;
@@ -86,13 +86,25 @@ public sealed class MatchPlayerState
         int bigManPoints = 0,
         PlayerStatus status = PlayerStatus.Active,
         MatchStatistics? statistics = null,
-        short? snubbedHireOffer = null)
+        short? snubbedHireOffer = null,
+        IReadOnlyList<HireOfferSlotState>? hireOfferSlots = null,
+        int? snubbedHireOfferSlot = null)
     {
         if (bigManPoints < 0) throw new ArgumentOutOfRangeException(nameof(bigManPoints));
         if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
         Setup = setup ?? throw new ArgumentNullException(nameof(setup));
         _gangs = gangs?.ToList() ?? [];
-        _hirePool = hirePool?.ToList() ?? [];
+        var compactHirePool = hirePool?.ToArray() ?? [];
+        if (compactHirePool.Length > MatchLimits.HireOffersPerPlayer)
+            throw new ArgumentException("Hire pool exceeds the three original offer slots.", nameof(hirePool));
+        _hireOfferSlots = hireOfferSlots?.ToArray()
+            ?? Enumerable.Range(0, MatchLimits.HireOffersPerPlayer)
+                .Select(slot => slot < compactHirePool.Length
+                    ? HireOfferSlotState.Available(compactHirePool[slot])
+                    : HireOfferSlotState.Uninitialized)
+                .ToArray();
+        if (_hireOfferSlots.Length != MatchLimits.HireOffersPerPlayer)
+            throw new ArgumentException("Hire offers must contain exactly three fixed slots.", nameof(hireOfferSlots));
         _pendingHires = pendingHires?.ToList() ?? [];
         _researchProgress = researchProgress?.ToDictionary() ?? [];
         _researchedItems = researchedItems is null ? [] : new HashSet<short>(researchedItems);
@@ -103,6 +115,7 @@ public sealed class MatchPlayerState
         Status = status;
         Statistics = statistics ?? new MatchStatistics();
         SnubbedHireOffer = snubbedHireOffer;
+        SnubbedHireOfferSlot = snubbedHireOfferSlot;
     }
 
     public MatchPlayerSetup Setup { get; }
@@ -112,13 +125,13 @@ public sealed class MatchPlayerState
     public int Support { get; internal set; }
     public int BigManPoints { get; internal set; }
     public IReadOnlyList<MatchGangState> Gangs => _gangs;
-    public IReadOnlyList<short> HirePool => _hirePool;
     public IReadOnlyList<PendingHireState> PendingHires => _pendingHires;
     public IReadOnlyDictionary<short, int> ResearchProgress => _researchProgress;
     public IReadOnlySet<short> ResearchedItems => _researchedItems;
     public IReadOnlyDictionary<short, int> Inventory => _inventory;
     public MatchStatistics Statistics { get; }
     public short? SnubbedHireOffer { get; private set; }
+    public int? SnubbedHireOfferSlot { get; private set; }
     public bool HasSnubbedHireOfferThisTurn => SnubbedHireOffer.HasValue;
 
     public int RemainingResearch(OriginalData definitions, short itemIndex)
@@ -147,10 +160,6 @@ public sealed class MatchPlayerState
     internal void AddGang(MatchGangState gang) => _gangs.Add(gang);
     internal void AddPendingHire(PendingHireState hire) => _pendingHires.Add(hire);
     internal void ClearPendingHires() => _pendingHires.Clear();
-    internal bool RemoveHireOffer(short gangDefinitionId) => _hirePool.Remove(gangDefinitionId);
-    internal void AddHireOffer(short gangDefinitionId) => _hirePool.Add(gangDefinitionId);
-    internal void MarkHireOfferSnubbed(short gangDefinitionId) => SnubbedHireOffer = gangDefinitionId;
-    internal void ClearSnubbedHireOffer() => SnubbedHireOffer = null;
 
     private static void ValidateResearchItem(OriginalData definitions, short itemIndex)
     {
@@ -199,7 +208,7 @@ public sealed class MatchGangState
     public bool IsActive => Force > 0;
 }
 
-public sealed record PendingHireState(short GangDefinitionId, int TargetSectorId);
+public sealed record PendingHireState(short GangDefinitionId, int TargetSectorId, int OfferSlot = -1);
 
 public sealed class MatchSectorState
 {
@@ -551,8 +560,6 @@ public sealed partial class MatchState
             foreach (var gang in Players.SelectMany(player => player.Gangs))
                 gang.QueuedCommand = Commands.TryGet(gang.Id, out var queued) ? queued : null;
         }
-        if (transition.Phase == TurnPhase.Hire && transition.ActivePlayer is { } hiringPlayer)
-            HireResolver.FillInitialOffers(this, FindPlayer(hiringPlayer)!);
         return CaptureBoundary(transition);
     }
 
@@ -581,8 +588,6 @@ public sealed partial class MatchState
         var state = FindPlayer(player) ?? throw new ArgumentOutOfRangeException(nameof(player));
         LastHireResolutions = HireResolver.Resolve(this, state);
         var transition = Coordinator.FinishHire(player);
-        if (transition.Phase == TurnPhase.Hire && transition.ActivePlayer is { } hiringPlayer)
-            HireResolver.FillInitialOffers(this, FindPlayer(hiringPlayer)!);
         return CaptureBoundary(transition);
     }
 
@@ -608,10 +613,10 @@ public sealed partial class MatchState
         var player = FindPlayer(playerId)!;
         var definition = Definitions.Gangs.Single(item => item.Id == gangDefinitionId);
         var cost = HireRules.InitialCost(definition);
-        var pending = new PendingHireState(gangDefinitionId, targetSectorId);
+        var offerSlot = player.FindHireOfferSlot(gangDefinitionId);
+        var pending = new PendingHireState(gangDefinitionId, targetSectorId, offerSlot);
         player.Cash -= cost;
         player.Statistics.CashSpent += cost;
-        player.RemoveHireOffer(gangDefinitionId);
         player.AddPendingHire(pending);
         var gameEvent = AppendHireEvent(GameEventKind.HireQueued, playerId,
             new HireResolutionDetails(gangDefinitionId, targetSectorId, cost));
@@ -626,9 +631,7 @@ public sealed partial class MatchState
         var player = FindPlayer(playerId) ?? throw new ArgumentOutOfRangeException(nameof(playerId));
         if (player.Status != PlayerStatus.Active)
             throw new InvalidOperationException("An eliminated player cannot prepare hire offers.");
-        if (player.HirePool.Count == 0 && player.PendingHires.Count == 0
-            && !player.HasSnubbedHireOfferThisTurn)
-            HireResolver.FillInitialOffers(this, player);
+        HireResolver.FillOffers(this, player);
         return player.HirePool;
     }
 
@@ -637,8 +640,7 @@ public sealed partial class MatchState
         var validation = HireRules.ValidateSnub(this, playerId, gangDefinitionId);
         if (!validation.IsValid) return new HireOfferSnubResult(validation);
         var player = FindPlayer(playerId)!;
-        player.RemoveHireOffer(gangDefinitionId);
-        player.MarkHireOfferSnubbed(gangDefinitionId);
+        player.MarkHireOfferSnubbed(gangDefinitionId, player.FindHireOfferSlot(gangDefinitionId));
         var gameEvent = AppendHireOfferEvent(
             GameEventKind.HireOfferSnubbed, playerId,
             new HireOfferDetails(gangDefinitionId, null));
@@ -916,75 +918,4 @@ public sealed partial class MatchState
         return transition;
     }
 
-    private static void ValidateDefinitionsAndCapacities(
-        OriginalData definitions,
-        IReadOnlyList<MatchPlayerState> players,
-        IReadOnlyList<MatchSectorState> sectors)
-    {
-        foreach (var player in players)
-        {
-            if (player.Gangs.Count > MatchLimits.GangsPerPlayer)
-                throw new ArgumentException($"Player {player.Id} exceeds gang capacity.", nameof(players));
-            if (player.HirePool.Count > MatchLimits.HireOffersPerPlayer)
-                throw new ArgumentException($"Player {player.Id} exceeds hire-pool capacity.", nameof(players));
-            if (player.HirePool.Count != player.HirePool.Distinct().Count())
-                throw new ArgumentException($"Player {player.Id} has duplicate hire offers.", nameof(players));
-            if (player.HirePool.Any(id => id == 0 || !definitions.Gangs.Any(definition => definition.Id == id)))
-                throw new ArgumentException($"Player {player.Id} has an invalid hire offer.", nameof(players));
-            if (player.SnubbedHireOffer is { } snubbed
-                && (snubbed == 0
-                    || !definitions.Gangs.Any(definition => definition.Id == snubbed)
-                    || player.HirePool.Contains(snubbed)))
-                throw new ArgumentException($"Player {player.Id} has invalid snubbed hire-offer state.", nameof(players));
-            if (player.PendingHires.Count > 1)
-                throw new ArgumentException($"Player {player.Id} has more than one pending hire.", nameof(players));
-            if (player.PendingHires.Any(hire => !player.HirePool.Contains(hire.GangDefinitionId) &&
-                    !definitions.Gangs.Any(definition => definition.Id == hire.GangDefinitionId)))
-                throw new ArgumentException($"Player {player.Id} has an invalid pending hire.", nameof(players));
-            if (player.PendingHires.Any(hire => hire.TargetSectorId is < 0 or >= MatchLimits.SectorCount))
-                throw new ArgumentException($"Player {player.Id} has an invalid pending-hire sector.", nameof(players));
-            if (player.Gangs.Any(gang => gang.Owner != player.Id))
-                throw new ArgumentException($"Player {player.Id} contains a gang owned by another player.", nameof(players));
-            if (player.Gangs.Any(gang => !definitions.Gangs.Any(definition => definition.Id == gang.DefinitionId)))
-                throw new ArgumentException($"Player {player.Id} contains an unknown gang definition.", nameof(players));
-            if (player.Gangs.Any(gang => EquippedItemIds(gang).Any(itemId =>
-                    itemId < 0 || itemId >= definitions.Items.Count || definitions.Items[itemId].Type == 99)))
-                throw new ArgumentException($"Player {player.Id} contains invalid equipped item state.", nameof(players));
-            if (player.ResearchProgress.Any(pair =>
-                    !IsActualItem(definitions, pair.Key) || pair.Value <= 0))
-                throw new ArgumentException($"Player {player.Id} contains invalid research progress.", nameof(players));
-            if (player.ResearchedItems.Any(itemId => !IsActualItem(definitions, itemId)))
-                throw new ArgumentException($"Player {player.Id} contains an invalid researched item.", nameof(players));
-            if (player.ResearchProgress.Keys.Any(player.ResearchedItems.Contains))
-                throw new ArgumentException($"Player {player.Id} has overlapping active and completed research.", nameof(players));
-            if (player.Inventory.Any(pair => !IsActualItem(definitions, pair.Key) || pair.Value <= 0))
-                throw new ArgumentException($"Player {player.Id} contains invalid inventory state.", nameof(players));
-        }
-
-        var overcrowded = players.SelectMany(player => player.Gangs)
-            .GroupBy(gang => (gang.Owner, gang.SectorId))
-            .FirstOrDefault(group => group.Count() > MatchLimits.FriendlyGangsPerSector);
-        if (overcrowded is not null)
-            throw new ArgumentException($"Player {overcrowded.Key.Owner} exceeds sector {overcrowded.Key.SectorId} capacity.", nameof(players));
-
-        if (sectors.SelectMany(sector => sector.Sites)
-            .Any(site => !definitions.Sites.Any(definition => definition.Id == site.DefinitionId)))
-            throw new ArgumentException("A sector contains an unknown site definition.", nameof(sectors));
-        var playerIds = players.Select(player => player.Id).ToHashSet();
-        if (sectors.Any(sector => sector.Owner is { } owner && !playerIds.Contains(owner)))
-            throw new ArgumentException("A sector owner is not part of the match.", nameof(sectors));
-        if (sectors.SelectMany(sector => sector.Sites)
-            .Any(site => site.InfluencedBy is { } owner && !playerIds.Contains(owner)))
-            throw new ArgumentException("A site influencer is not part of the match.", nameof(sectors));
-    }
-
-    private static IEnumerable<short> EquippedItemIds(MatchGangState gang)
-    {
-        if (gang.WeaponItemId is { } weapon) yield return weapon;
-        if (gang.ArmorItemId is { } armor) yield return armor;
-        if (gang.MiscellaneousItemId is { } miscellaneous) yield return miscellaneous;
-    }
-
-    private static bool IsActualItem(OriginalData definitions, short itemId) =>
-        itemId >= 0 && itemId < definitions.Items.Count && definitions.Items[itemId].Type != 99;
 }

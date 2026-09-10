@@ -34,19 +34,21 @@ controlled reference observation confirms its execution timing and edge cases.
   recovered bounded RNG wrapper. Initial and replacement offers use rejection
   sampling over definition IDs 1 through 89, rejecting other visible offers and
   the offer just removed.
-- Current exclusions: the recreation still compacts offers, permits simultaneous
-  hire plus snub, and refills during resolution; fixed slots and delayed refill
-  are the next migration task. Controlled runtime corroboration and behavior
-  with modified or incomplete definition data also remain pending.
+- Current exclusions: selecting another offer in the original replaces the
+  prior action, and selecting Reject again toggles it off; the recreation's
+  public API currently rejects a second action instead. Controlled runtime
+  corroboration and behavior with modified or incomplete definition data also
+  remain pending.
 - Confidence: High for the range, static call sites, rejection behavior and RNG
   ordering; runtime correlation remains pending.
 - Implementation: `MatchState.SnubHireOffer`, `HireRules.ValidateSnub`,
   `HireResolver.Resolve`, and `ManualRules.MinimumHiredGangForce` /
   `MaximumHiredGangForce`.
-- Tests: current `HireAndEliminationTests` cover the recreation behavior, initial
-  Force bounds, event details, RNG consumption, and deterministic hashes; their
-  compact/refill and simultaneous-action expectations must be replaced by fixed
-  slot and next-planning-entry fixtures.
+- Tests: `HireAndEliminationTests` covers fixed middle-slot selection and
+  tombstones, next-planning-entry same-slot refill, removed-ID exclusion,
+  mutually exclusive hire/snub actions, initial Force bounds, events, RNG
+  consumption, and deterministic hashes. Save/replay tests cover slot-state
+  persistence and migration.
 - Next experiment: record repeated Hire panels and new-gang Force values from a
   fixed reference save, then correlate offer order and RNG consumption.
 

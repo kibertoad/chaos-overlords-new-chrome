@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 7;
+    public const int CurrentFormatVersion = 8;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -71,7 +71,9 @@ public static class NativeSaveSerializer
                 new PlayerId(player.Id), player.Name, player.Controller,
                 document.FormatVersion >= 5 ? player.PortraitId : checked((short)player.Id))).ToArray(),
             document.FormatVersion >= 5 ? document.Setup.AiMentality : AiDifficulty.Criminal);
-        var players = document.Players.Select(player => RestorePlayer(setup, player)).ToArray();
+        var players = document.Players
+            .Select(player => RestorePlayer(setup, player, document.FormatVersion))
+            .ToArray();
         var sectors = document.Sectors.Select(sector => RestoreSector(
             sector, definitions, document.FormatVersion)).ToArray();
         var notifications = document.Runtime.Notifications.ToDictionary(
@@ -110,18 +112,20 @@ public static class NativeSaveSerializer
             aiStrategy,
             aiPlanning);
         var state = new MatchState(definitions, setup, players, sectors, runtime);
+        var restoredHash = document.FormatVersion switch
+        {
+            1 => MatchStateHasher.ComputeLegacySha256(state),
+            2 => MatchStateHasher.ComputeVersionTwoSha256(state),
+            3 => MatchStateHasher.ComputeVersionThreeSha256(state),
+            4 => MatchStateHasher.ComputeVersionFourSha256(state),
+            5 => MatchStateHasher.ComputeVersionFiveSha256(state),
+            6 => MatchStateHasher.ComputeVersionSixSha256(state),
+            7 => MatchStateHasher.ComputeVersionTenSha256(state),
+            _ => MatchStateHasher.ComputeSha256(state)
+        };
         if (!CryptographicOperations.FixedTimeEquals(
                 DecodeSha256(document.StateSha256, "state fingerprint"),
-                DecodeSha256(document.FormatVersion switch
-                {
-                    1 => MatchStateHasher.ComputeLegacySha256(state),
-                    2 => MatchStateHasher.ComputeVersionTwoSha256(state),
-                    3 => MatchStateHasher.ComputeVersionThreeSha256(state),
-                    4 => MatchStateHasher.ComputeVersionFourSha256(state),
-                    5 => MatchStateHasher.ComputeVersionFiveSha256(state),
-                    6 => MatchStateHasher.ComputeVersionSixSha256(state),
-                    _ => MatchStateHasher.ComputeSha256(state)
-                }, "restored state fingerprint")))
+                DecodeSha256(restoredHash, "restored state fingerprint")))
             throw new InvalidDataException("Native save state fingerprint does not match its contents.");
         return state;
     }
@@ -186,9 +190,14 @@ public static class NativeSaveSerializer
             player.Statistics.Casualties,
             player.Statistics.Overthrows,
             player.Statistics.TimesHidden),
-        player.SnubbedHireOffer);
+        player.SnubbedHireOffer,
+        player.HireOfferSlots.ToArray(),
+        player.SnubbedHireOfferSlot);
 
-    private static MatchPlayerState RestorePlayer(MatchSetup setup, PlayerDocument player)
+    private static MatchPlayerState RestorePlayer(
+        MatchSetup setup,
+        PlayerDocument player,
+        int formatVersion)
     {
         if (player.Id < 0 || player.Id >= setup.Players.Count)
             throw new InvalidDataException("Native save contains an invalid player identifier.");
@@ -211,11 +220,67 @@ public static class NativeSaveSerializer
             player.Statistics.Casualties,
             player.Statistics.Overthrows,
             player.Statistics.TimesHidden);
+        var hireState = formatVersion >= 8
+            ? (Slots: player.HireOfferSlots
+                    ?? throw new InvalidDataException("Native save hire-offer slots are missing."),
+                Pending: player.PendingHires,
+                SnubSlot: player.SnubbedHireOfferSlot)
+            : MigrateLegacyHireState(player);
         return new MatchPlayerState(
             setup.Players[player.Id], player.Cash, gangs, player.HirePool,
-            player.PendingHires, player.ResearchProgress, player.ResearchedItems.ToHashSet(),
+            hireState.Pending, player.ResearchProgress, player.ResearchedItems.ToHashSet(),
             player.Inventory, player.Support, player.BigManPoints, player.Status,
-            statistics, player.SnubbedHireOffer);
+            statistics, player.SnubbedHireOffer,
+            hireState.Slots, hireState.SnubSlot);
+    }
+
+    private static (
+        IReadOnlyList<HireOfferSlotState> Slots,
+        IReadOnlyList<PendingHireState> Pending,
+        int? SnubSlot) MigrateLegacyHireState(PlayerDocument player)
+    {
+        var actionCount = player.PendingHires.Count + (player.SnubbedHireOffer.HasValue ? 1 : 0);
+        if (actionCount == 0)
+        {
+            var ordinary = Enumerable.Range(0, MatchLimits.HireOffersPerPlayer)
+                .Select(slot => slot < player.HirePool.Count
+                    ? HireOfferSlotState.Available(player.HirePool[slot])
+                    : HireOfferSlotState.Uninitialized)
+                .ToArray();
+            return (ordinary, player.PendingHires, null);
+        }
+
+        var survivorCount = Math.Max(0, MatchLimits.HireOffersPerPlayer - actionCount);
+        var visibleSurvivors = player.HirePool.Take(survivorCount).ToArray();
+        var prefetched = player.HirePool.Skip(visibleSurvivors.Length).ToArray();
+        var slots = visibleSurvivors.Select(HireOfferSlotState.Available).ToList();
+        var migratedPending = new List<PendingHireState>(player.PendingHires.Count);
+        var prefetchIndex = 0;
+        foreach (var pending in player.PendingHires)
+        {
+            var slot = slots.Count;
+            var replacement = prefetchIndex < prefetched.Length
+                ? prefetched[prefetchIndex++]
+                : (short?)null;
+            slots.Add(new HireOfferSlotState(
+                pending.GangDefinitionId, null, replacement));
+            migratedPending.Add(pending with { OfferSlot = slot });
+        }
+
+        int? snubSlot = null;
+        if (player.SnubbedHireOffer is { } snubbed)
+        {
+            snubSlot = slots.Count;
+            var replacement = prefetchIndex < prefetched.Length
+                ? prefetched[prefetchIndex]
+                : (short?)null;
+            slots.Add(new HireOfferSlotState(snubbed, null, replacement));
+        }
+        while (slots.Count < MatchLimits.HireOffersPerPlayer)
+            slots.Add(HireOfferSlotState.Uninitialized);
+        if (slots.Count != MatchLimits.HireOffersPerPlayer)
+            throw new InvalidDataException("Legacy hire state cannot be mapped to three fixed slots.");
+        return (slots, migratedPending, snubSlot);
     }
 
     private static SectorDocument CaptureSector(MatchSectorState sector) => new(
@@ -345,7 +410,9 @@ internal sealed record PlayerDocument(
     IReadOnlyList<short> ResearchedItems,
     IReadOnlyDictionary<short, int> Inventory,
     StatisticsDocument Statistics,
-    short? SnubbedHireOffer);
+    short? SnubbedHireOffer,
+    IReadOnlyList<HireOfferSlotState>? HireOfferSlots = null,
+    int? SnubbedHireOfferSlot = null);
 
 internal sealed record GangDocument(
     int Id,

@@ -97,6 +97,7 @@ public sealed class OriginalCityGeneratorTests
         var before = match.Random.ConsumptionCount;
 
         match.FinishUpkeep();
+        match.PrepareHireOffers(player.Id);
         match.FinishCommand(player.Id);
         while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
 

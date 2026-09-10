@@ -110,7 +110,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private GangId? _draggedGangId;
     private Point _gangPressPoint;
     private bool _gangDragStarted;
-    private int? _pendingHireSlot;
     private Point _dragPoint;
     private Point? _hoverPoint;
     private string _message = "SELECT NEW GAME";

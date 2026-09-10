@@ -79,7 +79,8 @@ public static class HireRules
             context => !context.Player!.HirePool.Contains(context.GangDefinitionId)),
         new DelegateRule(HireValidationCode.HireAlreadyPending,
             "The player has already selected a recruit this turn.",
-            context => context.Player!.PendingHires.Count != 0),
+            context => context.Player!.PendingHires.Count != 0
+                || context.Player.HasSnubbedHireOfferThisTurn),
         new DelegateRule(HireValidationCode.InsufficientCash,
             "The player cannot afford the selected gang.",
             context => !CanAffordInitialCost(
@@ -154,6 +155,8 @@ public static class HireRules
             return new HireValidation(HireValidationCode.OfferUnavailable, "The selected gang is not in the player's hire pool.");
         if (player.HasSnubbedHireOfferThisTurn)
             return new HireValidation(HireValidationCode.OfferAlreadySnubbed, "Only one hire offer may be snubbed per turn.");
+        if (player.PendingHires.Count != 0)
+            return new HireValidation(HireValidationCode.HireAlreadyPending, "The player has already selected a recruit this turn.");
         return HireValidation.Accept();
     }
 }
@@ -176,52 +179,75 @@ internal static class HireResolver
                 HiredThisTurn = true
             };
             player.AddGang(gang);
-            var replacement = RefillOffer(state, player, pending.GangDefinitionId);
+            var offerSlot = pending.OfferSlot >= 0
+                ? pending.OfferSlot
+                : player.FindHireOfferSlot(pending.GangDefinitionId);
+            if (offerSlot >= 0)
+            {
+                var slot = player.HireOfferSlots[offerSlot];
+                player.SetHireOfferSlot(offerSlot,
+                    slot.LegacyReplacementDefinitionId is { } replacement
+                        ? HireOfferSlotState.Available(replacement)
+                        : HireOfferSlotState.Vacant(pending.GangDefinitionId));
+            }
             var details = new HireResolutionDetails(
                 pending.GangDefinitionId, pending.TargetSectorId,
-                HireRules.InitialCost(definition), gang.Id, replacement, initialForce);
+                HireRules.InitialCost(definition), gang.Id, null, initialForce);
             var gameEvent = state.AppendHireEvent(GameEventKind.HireResolved, player.Id, details);
             state.QueueNotification(player.Id, GameNotificationKind.Hire, gang.Id,
                 pending.TargetSectorId, gameEvent.Sequence);
             results.Add(new HireResolutionResult(
                 player.Id, pending.GangDefinitionId, pending.TargetSectorId,
-                details.Cost, gang.Id, replacement, initialForce, gameEvent));
+                details.Cost, gang.Id, null, initialForce, gameEvent));
         }
         player.ClearPendingHires();
         if (player.HasSnubbedHireOfferThisTurn)
         {
-            var replacement = RefillOffer(state, player, player.SnubbedHireOffer);
-            if (replacement is { } gangDefinitionId)
+            var snubbed = player.SnubbedHireOffer!.Value;
+            var offerSlot = player.SnubbedHireOfferSlot
+                ?? player.FindHireOfferSlot(snubbed);
+            if (offerSlot >= 0)
             {
-                var gameEvent = state.AppendHireOfferEvent(
-                    GameEventKind.HireOfferRefilled, player.Id,
-                    new HireOfferDetails(player.SnubbedHireOffer, gangDefinitionId));
-                state.QueueNotification(player.Id, GameNotificationKind.Hire,
-                    relatedEventSequence: gameEvent.Sequence);
+                var slot = player.HireOfferSlots[offerSlot];
+                player.SetHireOfferSlot(offerSlot,
+                    slot.LegacyReplacementDefinitionId is { } replacement
+                        ? HireOfferSlotState.Available(replacement)
+                        : HireOfferSlotState.Vacant(snubbed));
             }
             player.ClearSnubbedHireOffer();
         }
         return results;
     }
 
-    internal static void FillInitialOffers(MatchState state, MatchPlayerState player)
+    internal static void FillOffers(MatchState state, MatchPlayerState player)
     {
-        while (player.HirePool.Count < MatchLimits.HireOffersPerPlayer)
-            RefillOffer(state, player, excludedDefinitionId: null);
+        for (var slot = 0; slot < player.HireOfferSlots.Count; slot++)
+        {
+            var current = player.HireOfferSlots[slot];
+            if (current.GangDefinitionId.HasValue) continue;
+            var replacement = DrawOffer(state, player, current.ExcludedDefinitionId);
+            player.SetHireOfferSlot(slot, HireOfferSlotState.Available(replacement));
+            if (current.ExcludedDefinitionId is { } removed)
+            {
+                var gameEvent = state.AppendHireOfferEvent(
+                    GameEventKind.HireOfferRefilled, player.Id,
+                    new HireOfferDetails(removed, replacement));
+                state.QueueNotification(player.Id, GameNotificationKind.Hire,
+                    relatedEventSequence: gameEvent.Sequence);
+            }
+        }
     }
 
-    private static short? RefillOffer(
+    private static short DrawOffer(
         MatchState state,
         MatchPlayerState player,
         short? excludedDefinitionId)
     {
-        if (player.HirePool.Count >= MatchLimits.HireOffersPerPlayer) return null;
         short selected;
         do selected = checked((short)state.Random.NextInclusive(89));
         while (player.HirePool.Contains(selected) || selected == excludedDefinitionId);
         if (!state.Definitions.Gangs.Any(definition => definition.Id == selected))
             throw new InvalidOperationException("Original hire refill requires gang definitions 1 through 89.");
-        player.AddHireOffer(selected);
         return selected;
     }
 }

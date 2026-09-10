@@ -388,7 +388,13 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(new Rectangle(438, 370, 66, 90), HireDockLayout.Cell(0));
         Assert.Equal(new Rectangle(571, 371, 64, 64), HireDockLayout.Portrait(2));
-        var cells = HireDockLayout.Project([1, 3], new PendingHireState(2, 12), 1);
+        HireOfferSlotState[] offers =
+        [
+            HireOfferSlotState.Available(1),
+            HireOfferSlotState.Available(2),
+            HireOfferSlotState.Available(3)
+        ];
+        var cells = HireDockLayout.Project(offers, new PendingHireState(2, 12, 1));
         Assert.Equal(new HireDockEntry(1, false), cells[0]);
         Assert.Equal(new HireDockEntry(2, true), cells[1]);
         Assert.Equal(new HireDockEntry(3, false), cells[2]);

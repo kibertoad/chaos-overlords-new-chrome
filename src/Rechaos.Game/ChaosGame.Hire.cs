@@ -102,13 +102,14 @@ public sealed partial class ChaosGame
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
         var player = _state.FindPlayer(playerId)!;
-        if (player.HirePool.Count == 0 && player.PendingHires.Count == 0
+        if (player.HireOfferSlots.Any(slot => !slot.GangDefinitionId.HasValue)
+            && player.PendingHires.Count == 0
             && !player.HasSnubbedHireOfferThisTurn)
             _replay.PrepareHireOffers(playerId);
     }
 
     private IReadOnlyList<HireDockEntry?> CurrentHireDock(MatchPlayerState player) =>
-        HireDockLayout.Project(player.HirePool, player.PendingHires.FirstOrDefault(), _pendingHireSlot);
+        HireDockLayout.Project(player.HireOfferSlots, player.PendingHires.FirstOrDefault());
 
     private void BeginHireDrag(int slot, Point point)
     {
@@ -186,7 +187,6 @@ public sealed partial class ChaosGame
         _message = result.Accepted
             ? $"HIRED FOR SECTOR {sectorId + 1}"
             : result.Validation.Message.ToUpperInvariant();
-        if (result.Accepted) _pendingHireSlot = slot;
     }
 
     private void CancelHireDrag()
@@ -220,7 +220,6 @@ public sealed partial class ChaosGame
         _message = result.Accepted ? "HIRE QUEUED" : result.Validation.Message.ToUpperInvariant();
         if (result.Accepted)
         {
-            _pendingHireSlot = _hireCursor;
             _screens.Show(ClientScreen.City);
         }
     }

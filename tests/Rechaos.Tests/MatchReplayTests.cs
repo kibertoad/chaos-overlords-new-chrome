@@ -25,7 +25,6 @@ public sealed class MatchReplayTests
         while (recorder.State.Coordinator.Phase == TurnPhase.Execution)
             recorder.FinishExecutionPhase();
         Assert.True(recorder.QueueHire(new PlayerId(0), 2, 0).Accepted);
-        Assert.True(recorder.SnubHireOffer(new PlayerId(0), 3).Accepted);
         recorder.FinishHire(new PlayerId(0));
         recorder.FinishHire(new PlayerId(1));
         recorder.FinishPlayerElimination();
@@ -38,7 +37,7 @@ public sealed class MatchReplayTests
         Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
         Assert.Equal(recorder.State.Events, restored.Events);
         Assert.Equal(recorder.State.PhaseHashes, restored.PhaseHashes);
-        Assert.Equal(17, recorder.Steps.Count);
+        Assert.Equal(16, recorder.Steps.Count);
     }
 
     [Fact]
@@ -217,6 +216,37 @@ public sealed class MatchReplayTests
         var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
 
         Assert.Equal(MatchStateHasher.ComputeSha256(initial), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void VersionEightReplayMigratesVersionSevenInitialHireSlots()
+    {
+        var initial = CreateMatch();
+        var oldInitialHash = MatchStateHasher.ComputeVersionTenSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = 8;
+        document["initialStateSha256"] = oldInitialHash;
+        var snapshotBytes = Convert.FromBase64String(
+            document["initialSnapshot"]!.GetValue<string>());
+        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
+        snapshot["formatVersion"] = 7;
+        snapshot["stateSha256"] = oldInitialHash;
+        foreach (var player in snapshot["players"]!.AsArray())
+        {
+            player!.AsObject().Remove("hireOfferSlots");
+            player.AsObject().Remove("snubbedHireOfferSlot");
+        }
+        document["initialSnapshot"] = Convert.ToBase64String(
+            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
+
+        Assert.Equal(initial.Players[0].HirePool, restored.Players[0].HirePool);
+        Assert.Equal(initial.Players[0].HireOfferSlots, restored.Players[0].HireOfferSlots);
     }
 
     [Fact]

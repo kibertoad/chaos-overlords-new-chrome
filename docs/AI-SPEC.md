@@ -133,8 +133,10 @@ replay-verified two-computer harness through 20 turns or objective completion.
    computes the post-command role from the exact schedule and adjustments, and
    uses its ranking mode for exact three-offer selection. For selector `0x5f`,
    queued Move targets project the recovered family-6 coverage behavior; the
-   underlying two auxiliary shorts remain deliberately unmodeled. Exact hire
-   destination selection and stable original offer-slot refill remain pending.
+   underlying two auxiliary shorts remain deliberately unmodeled. The hire
+   model now preserves three fixed slots, same-slot tombstones, mutually
+   exclusive actions, and next-planning-entry refill. Exact hire destination
+   selection remains pending.
    A failed ranking now uses the recovered scenario-specific rejection selector
    and records the resulting snub. Selector `0x3e` is
    identified as the previous-turn action byte. Selectors 0 (scenario), `0x48`

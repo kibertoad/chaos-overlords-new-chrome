@@ -81,12 +81,11 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
-    public void RoundTripPreservesPendingHireAndSnubForDeterministicRefill()
+    public void RoundTripPreservesPendingHireSlotForDeterministicRefill()
     {
         var original = CreateMatch();
         AdvanceToHire(original);
         Assert.True(original.QueueHire(new PlayerId(0), 2, 0).Accepted);
-        Assert.True(original.SnubHireOffer(new PlayerId(0), 3).Accepted);
         var restored = RoundTrip(original);
 
         Assert.Equal(MatchStateHasher.ComputeSha256(original), MatchStateHasher.ComputeSha256(restored));
@@ -95,6 +94,33 @@ public sealed class NativeSaveSerializerTests
         Assert.Equal(MatchStateHasher.ComputeSha256(original), MatchStateHasher.ComputeSha256(restored));
         Assert.Equal(original.Random.ConsumptionCount, restored.Random.ConsumptionCount);
         Assert.Equal(original.Players[0].HirePool, restored.Players[0].HirePool);
+        Assert.Equal(original.Players[0].HireOfferSlots, restored.Players[0].HireOfferSlots);
+        var tombstoneRestored = RoundTrip(original);
+        Assert.Equal(HireOfferSlotState.Vacant(2),
+            tombstoneRestored.Players[0].HireOfferSlots[0]);
+        Assert.Equal(MatchStateHasher.ComputeSha256(original),
+            MatchStateHasher.ComputeSha256(tombstoneRestored));
+        Assert.Equal(SaveBytes(original), SaveBytes(tombstoneRestored));
+    }
+
+    [Fact]
+    public void RoundTripPreservesPendingSnubSlotAndTombstone()
+    {
+        var original = CreateMatch();
+        AdvanceToHire(original);
+        Assert.True(original.SnubHireOffer(new PlayerId(0), 3).Accepted);
+
+        var restored = RoundTrip(original);
+
+        Assert.Equal(1, restored.Players[0].SnubbedHireOfferSlot);
+        Assert.Equal(MatchStateHasher.ComputeSha256(original),
+            MatchStateHasher.ComputeSha256(restored));
+        original.FinishHire(new PlayerId(0));
+        restored.FinishHire(new PlayerId(0));
+        Assert.Equal(HireOfferSlotState.Vacant(3),
+            restored.Players[0].HireOfferSlots[1]);
+        Assert.Equal(MatchStateHasher.ComputeSha256(original),
+            MatchStateHasher.ComputeSha256(restored));
     }
 
     [Fact]
@@ -245,6 +271,88 @@ public sealed class NativeSaveSerializerTests
         Assert.All(restored.AiPlanning.CaptureFamilies(),
             family => Assert.Equal(AiPlanningState.UnusedFamily, family));
         Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void VersionSevenSaveMigratesCompactHirePoolIntoFixedSlots()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 7;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionTenSha256(match);
+        foreach (var player in document["players"]!.AsArray())
+        {
+            player!.AsObject().Remove("hireOfferSlots");
+            player.AsObject().Remove("snubbedHireOfferSlot");
+        }
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.Equal(
+            match.Players[0].HirePool.Select(HireOfferSlotState.Available),
+            restored.Players[0].HireOfferSlots);
+    }
+
+    [Fact]
+    public void VersionSevenMidHireMigrationPreservesPrematureReplacementWithoutNewRng()
+    {
+        var match = CreateMatch();
+        AdvanceToHire(match);
+        Assert.True(match.QueueHire(new PlayerId(0), 2, 0).Accepted);
+        match.Players[0].SetHireOfferSlot(0,
+            new HireOfferSlotState(2, null, LegacyReplacementDefinitionId: 8));
+        var legacyHash = MatchStateHasher.ComputeVersionTenSha256(match);
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 7;
+        document["stateSha256"] = legacyHash;
+        var player = document["players"]![0]!.AsObject();
+        player["hirePool"] = JsonNode.Parse("[3,4,8]");
+        player.Remove("hireOfferSlots");
+        player.Remove("snubbedHireOfferSlot");
+        player["pendingHires"]![0]!.AsObject().Remove("offerSlot");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+        var randomBefore = restored.Random.ConsumptionCount;
+
+        restored.FinishHire(new PlayerId(0));
+
+        Assert.Equal([3, 4, 8], restored.Players[0].HirePool);
+        Assert.Equal(randomBefore + 3, restored.Random.ConsumptionCount);
+    }
+
+    [Fact]
+    public void VersionSevenMigrationPreservesLegacySimultaneousHireAndSnub()
+    {
+        var match = CreateMatch();
+        AdvanceToHire(match);
+        Assert.True(match.QueueHire(new PlayerId(0), 2, 0).Accepted);
+        match.Players[0].MarkHireOfferSnubbed(3, 1);
+        var legacyHash = MatchStateHasher.ComputeVersionTenSha256(match);
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 7;
+        document["stateSha256"] = legacyHash;
+        var player = document["players"]![0]!.AsObject();
+        player["hirePool"] = JsonNode.Parse("[4]");
+        player.Remove("hireOfferSlots");
+        player.Remove("snubbedHireOfferSlot");
+        player["pendingHires"]![0]!.AsObject().Remove("offerSlot");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.Single(restored.Players[0].PendingHires);
+        Assert.Equal((short)3, restored.Players[0].SnubbedHireOffer);
+        restored.FinishHire(new PlayerId(0));
+        Assert.Equal(HireOfferSlotState.Vacant(2), restored.Players[0].HireOfferSlots[1]);
+        Assert.Equal(HireOfferSlotState.Vacant(3), restored.Players[0].HireOfferSlots[2]);
     }
 
     [Fact]

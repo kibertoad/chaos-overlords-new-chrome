@@ -34,7 +34,6 @@ public sealed partial class ChaosGame
 
         var previousTurn = _state.Coordinator.Turn;
         GameplayTurnFlow.FinishPlanningTurn(_replay, playerId);
-        _pendingHireSlot = null;
         PrepareCurrentHireOffers();
         if (_state.Coordinator.Turn != previousTurn)
         {
