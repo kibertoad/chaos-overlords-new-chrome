@@ -182,6 +182,57 @@ public sealed class AiFamilyTwelveTurnPlannerTests
     }
 
     [Fact]
+    public void EmptyHumanOnlyPoolDegradesToNoActionWithoutThrowing()
+    {
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU", PlayerController.Computer),
+            new(new PlayerId(1), "HUMAN OWNER", PlayerController.Human),
+            new(new PlayerId(2), "VISIBLE CPU", PlayerController.Computer)
+        ];
+        var attackerDefinition = data.Gangs
+            .OrderByDescending(gang => gang.Stats.Detect)
+            .First();
+        var visibleDefinition = data.Gangs
+            .OrderBy(gang => gang.Stats.Stealth)
+            .First();
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20,
+                [new MatchGangState(new GangId(10), setups[0].Id,
+                    attackerDefinition.Id, 0, 10)]),
+            new(setups[1], 20,
+                [new MatchGangState(new GangId(20), setups[1].Id, 2, 63, 10)]),
+            new(setups[2], 20,
+                [new MatchGangState(new GangId(30), setups[2].Id,
+                    visibleDefinition.Id, 0, 10)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(1, 3, 13),
+                new MatchSiteState(2, 5, 15)
+            ], owner: id == 0 ? setups[1].Id : null, income: 3))
+            .ToArray();
+        var match = new MatchState(data, new MatchSetup(
+            ScenarioId.Siege, GameDuration.SixMonths, 41, setups,
+            AiDifficulty.HomicidalManiac), players, sectors);
+        var player = new PlayerId(0);
+        BeginFamilyTwelveTurn(match, player);
+        match.FinishUpkeep();
+        Assert.True(match.CanPlayerDetectGang(player, new GangId(30)));
+        Assert.False(match.CanPlayerDetectGang(player, new GangId(20)));
+
+        match.PrepareAiPlanning(player);
+
+        Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Empty(AiTurnPlanner.Plan(match, player));
+        Assert.Equal(3, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void FinalThreeGreedTurnsOverridePreparedActionWithTerminate()
     {
         var data = BundledOriginalData.Load();

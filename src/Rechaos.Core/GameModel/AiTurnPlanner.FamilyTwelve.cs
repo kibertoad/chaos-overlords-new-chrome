@@ -126,7 +126,7 @@ public static partial class AiTurnPlanner
         int gangSlot,
         IReadOnlyList<ObjectiveTarget> visible)
     {
-        ObjectiveTarget selected = default;
+        ObjectiveTarget? selected = null;
         for (var attempt = 0; attempt < OriginalAiFamilyTwelveRules.AttackAttempts;
              attempt++)
         {
@@ -138,8 +138,9 @@ public static partial class AiTurnPlanner
                             .Setup.Controller == PlayerController.Human)
                         .ToArray()
                     : visible;
-            var ordinal = state.Random.NextInclusive(targetPool.Count);
-            selected = targetPool[ordinal - 1];
+            var ordinal = state.Random.NextInclusive(Math.Max(1, targetPool.Count));
+            selected = ordinal <= targetPool.Count ? targetPool[ordinal - 1] : null;
+            if (selected is null) break;
             var comparisonTarget = visible[ordinal - 1].Gang;
             var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
             var targetStats = EffectiveStatisticsCalculator.ForGang(state, comparisonTarget);
@@ -149,10 +150,16 @@ public static partial class AiTurnPlanner
                 break;
         }
 
+        if (selected is null)
+        {
+            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.None);
+            return;
+        }
+
         state.AiPlanning.SetPlannedAction(
             playerId, gangSlot, GangAction.Attack,
             new AiActionTarget(
-                checked((byte)selected.Gang.Owner.Value),
-                checked((byte)selected.Slot)));
+                checked((byte)selected.Value.Gang.Owner.Value),
+                checked((byte)selected.Value.Slot)));
     }
 }

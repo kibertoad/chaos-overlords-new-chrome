@@ -193,6 +193,17 @@ replay-verified two-computer harness through 20 turns or objective completion.
    another planning record already has previous Influence. Its equipment,
    opponent targeting/comparison, three-Move transition, Greed override, and
    intentional None cases are live at the same replay-recorded boundary.
+   Family 7's complete research-specialist handler is live as well. It makes
+   one conditional hostile Attack draw, otherwise tries the family-1
+   weapon/armor opportunity, then applies the Force-8 Heal gate. Its persisted
+   polymorphic focus value tracks a Research sector or item. The handler moves
+   toward the strictly greatest owned sum of all site Research modifiers,
+   Influences the first unfinished positive-Research local site, repeats or
+   cycles exact Research item categories, and falls back through ranged,
+   blade, melee, armor, and a fixed eight-item miscellaneous priority. Exhausted
+   research changes the gang to family 0 and mode-5 Move; Greed's final three
+   turns still force Terminate. Exact targets, focus writes, and RNG
+   consumption are replay-recorded.
    Family 9's complete handler tries weapon and armor upgrades without checking
    their existing cooldowns, then writes a cost-times-three replacement
    cooldown. Without equipment it moves from owned territory through mode 3,
@@ -216,14 +227,18 @@ replay-verified two-computer harness through 20 turns or objective completion.
    makes up to five bounded target draws, preserves the human-pool/full-pool
    ordinal asymmetry, and attacks the final target even when every combat
    comparison fails. Greed's final three turns overwrite the result with
-   Terminate. Exact actions, targets, cooldowns, and RNG consumption are live
-   and replay-recorded.
+   Terminate. An empty human-only actual-target pool consumes one safe bounded
+   draw and preserves None, preventing a zero-range RNG failure; the reference
+   outcome for that sparse multiplayer edge is not yet runtime-corroborated.
+   Exact actions, targets, cooldowns, and RNG consumption are live and
+   replay-recorded.
    The exact ten-scenario by
    seven-hire-role family table is implemented by `OriginalAiFamilyRules`,
    including unmapped cells which preserve the current family. AI planning
    preparation now rolls the current role into the previous role and updates
-   every active gang's authoritative family slot. The mode-4 auxiliary-sector
-   copy awaits representation of that separately stored field. The original objective-specific base
+   every active gang's authoritative family slot. The mode-4 second auxiliary-
+   sector copy awaits representation; the first auxiliary short is the live
+   family-7 focus/family-11 formation value. The original objective-specific base
    turn schedules are isolated in `OriginalAiHireRoleRules`; Dominance alone
    uses an eleven-turn period, while the other nine objectives use ten. The
    objective-specific adjustments and hire-attempt gates are also
@@ -247,7 +262,7 @@ replay-verified two-computer harness through 20 turns or objective completion.
    computes the post-command role from the exact schedule and adjustments, and
    uses its ranking mode for exact three-offer selection. For selector `0x5f`,
    queued Move targets project the recovered family-6 coverage behavior; the
-   underlying two auxiliary shorts remain deliberately unmodeled. The hire
+   underlying second auxiliary short remains deliberately unmodeled. The hire
    model now preserves three fixed slots, same-slot tombstones, mutually
    exclusive actions, and next-planning-entry refill. Exact hire destination
    selection and its persisted anchor are statically recovered in
