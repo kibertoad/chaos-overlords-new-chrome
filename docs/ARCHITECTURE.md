@@ -61,6 +61,23 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   aggregation and deterministic six-sided dice rolls.
 - `GameModel/Equipment.cs`: item-type slot mapping, replacement/unequip
   mutations, and manual half-price sale calculation.
+- `GameModel/AiTurnPlanner.Dispatch.cs`: recovered family dispatch and the
+  immutable sector/family snapshot shared across one ordered AI planning pass;
+  family-specific branch order remains in separate partial files, while
+  provisional command scoring is isolated in
+  `AiTurnPlanner.ProvisionalFallback.cs`.
+- `GameModel/AiTurnPlanner.RecoveredOperations.cs`: narrowly shared recovered
+  operations whose ordering is identical across handlers. The human-weighted/
+  full-pool projection remains shared by families 0, 4, and 6; the asymmetric
+  draw/comparison primitive and authoritative Attack tuple write are shared by
+  families 0, 2, 3, 4, 5, 6, 7, and 9. A separate focused-Attack operation makes
+  the subset of those families that also persist the current sector explicit.
+  Cost-based replacement equipment writes are likewise split into ordinary
+  family-1/3/5 and focus-clearing family-0/2/4/6/7 operations; equipment choice
+  and branch order remain family-local. Recovered Move destinations are also
+  committed through ordinary and focus-clearing operations, while destination
+  selection and family-specific formation/coverage side effects stay with the
+  originating handler.
 - `Persistence/NativeSaveSerializer.cs`: bounded, versioned deterministic
   snapshots with definition/state fingerprints and complete runtime restoration.
 - `Persistence/NativeSaveStore.cs`: atomic file promotion, previous-save backup,
@@ -167,6 +184,10 @@ submit through that same recorder; its policy is not an original-parity claim.
 The audio router consumes newly appended attack-resolution events and maps an
 equipped item's original Sound field to `SND005xx`; it never feeds playback
 state or timing back into the simulation.
+`SoundtrackCatalog` discovers the extracted `Track02`-`Track09` Ogg files in a
+stable order, while `ChaosGame.Media.cs` owns their optional streaming lifecycle.
+Playback failure disables music only; media state never enters Core, saves,
+replays, commands, events, or deterministic hashes.
 
 Platform distribution scripts publish self-contained game and extractor
 payloads while forcing original assets out of every package. On Windows the

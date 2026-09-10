@@ -70,6 +70,19 @@ public sealed class DeterminismTests
     }
 
     [Fact]
+    public void FamilySixCoverageContributesToCanonicalHash()
+    {
+        var first = CreateMatch();
+        var second = CreateMatch();
+
+        first.AiPlanning.SetCoverageSector(new PlayerId(1), 0, 23);
+
+        Assert.NotEqual(
+            MatchStateHasher.ComputeSha256(first),
+            MatchStateHasher.ComputeSha256(second));
+    }
+
+    [Fact]
     public void MatchTransitionCapturesResultingPhaseHash()
     {
         var match = CreateMatch();

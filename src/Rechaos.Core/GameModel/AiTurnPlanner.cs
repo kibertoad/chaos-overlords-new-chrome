@@ -1,9 +1,9 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Deterministic baseline planner for computer-controlled command turns.
-/// The scoring is recreation-native and remains provisional until the original
-/// difficulty branches and evaluation weights are recovered.
+/// Deterministic planner for computer-controlled command turns. Recovered
+/// family decisions are authoritative; the recreation-native fallback used
+/// outside a prepared family trace is isolated in AiTurnPlanner.ProvisionalFallback.cs.
 /// </summary>
 public static partial class AiTurnPlanner
 {
@@ -47,14 +47,8 @@ public static partial class AiTurnPlanner
             if (choice is null
                 && PreservesPreparedNoAction(state, playerId, entry.slot))
                 continue;
-            choice ??= options
-                    .Where(command => IsObservableFallbackAttack(state, playerId, command))
-                    .OrderByDescending(command => Score(state, player, gang, command))
-                    .ThenBy(command => command.Action)
-                    .ThenBy(command => command.Target.Kind)
-                    .ThenBy(command => command.Target.Id)
-                    .ThenBy(command => command.SecondaryTarget?.Id ?? -1)
-                    .FirstOrDefault();
+            choice ??= SelectProvisionalFallbackCommand(
+                state, player, gang, options);
             if (choice is null) continue;
             commands.Add(choice);
             cashBudget -= EstimatedCost(state, choice);
@@ -87,7 +81,8 @@ public static partial class AiTurnPlanner
             // Prepared live turns use the recovered mode-5 target. Retain the
             // recreation's deterministic target ranking only when this pure
             // query is invoked without its replay-recorded preparation boundary.
-            .OrderByDescending(command => Score(state, player, gang, command))
+            .OrderByDescending(command =>
+                ScoreProvisionalCommand(state, player, gang, command))
             .ThenBy(command => command.Target.Id)
             .FirstOrDefault();
     }
@@ -97,127 +92,8 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         int gangSlot) =>
         state.AiPlanning.HasPlanned(playerId)
-        && state.AiPlanning.Family(playerId, gangSlot) is 3 or 5 or 12 or 13 or 14
+        && state.AiPlanning.Family(playerId, gangSlot) is 0 or 3 or 4 or 5 or 12 or 13 or 14
         && state.AiPlanning.PlannedAction(playerId, gangSlot) == GangAction.None;
-
-    internal static void PrepareRecoveredFamilyCommands(MatchState state, PlayerId playerId)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-        var player = state.FindPlayer(playerId)
-            ?? throw new ArgumentOutOfRangeException(nameof(playerId));
-        var sectorOwners = state.Sectors
-            .Select(sector => sector.Owner?.Value ?? -1)
-            .ToArray();
-        var sectorDisabled = state.Sectors
-            .Select(sector => sector.CrackdownActive)
-            .ToArray();
-        var sectorGangCounts = Enumerable.Range(0, MatchLimits.SectorCount)
-            .Select(sectorId => player.Gangs.Count(gang =>
-                gang.IsActive && gang.SectorId == sectorId))
-            .ToArray();
-        var playerOrder = Enumerable.Range(0, MatchLimits.PlayerCount).ToArray();
-        var familySlots = Enumerable.Range(0, AiPlanningState.GangSlotsPerPlayer)
-            .Select(slot => state.AiPlanning.Family(playerId, slot))
-            .ToArray();
-
-        foreach (var entry in player.Gangs.Select((gang, slot) => (gang, slot)))
-        {
-            if (!entry.gang.IsActive) continue;
-            var family = state.AiPlanning.Family(playerId, entry.slot);
-            if (family == 2 && PrepareFamilyTwoCommand(
-                    state, playerId, entry.gang, entry.slot,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
-                continue;
-            if (family == 3 && PrepareFamilyThreeCommand(
-                    state, playerId, entry.gang, entry.slot,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
-                continue;
-            if (family == 5 && PrepareFamilyFiveCommand(
-                    state, playerId, entry.gang, entry.slot,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
-                continue;
-            if (family == 7 && PrepareFamilySevenCommand(
-                    state, playerId, entry.gang, entry.slot,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
-                continue;
-            if (family == 9 && PrepareFamilyNineCommand(
-                    state, playerId, entry.gang, entry.slot,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
-                continue;
-            if (family == 10 && PrepareFamilyTenCommand(
-                    state, playerId, entry.gang, entry.slot,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
-                continue;
-            if (family == 12 && PrepareFamilyTwelveCommand(
-                    state, playerId, entry.gang, entry.slot,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
-                continue;
-            if (family == 11)
-            {
-                PrepareFamilyElevenCommand(
-                    state, playerId, entry.gang, entry.slot,
-                    sectorOwners, sectorDisabled, sectorGangCounts,
-                    playerOrder, familySlots);
-                continue;
-            }
-            if (family is 13 or 14)
-            {
-                PrepareObjectiveFamilyCommand(
-                    state, playerId, entry.gang, entry.slot, family,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
-                continue;
-            }
-            if (family != 1) continue;
-            var choice = DesiredRecoveredFamilyChoice(
-                state, player, entry.gang, entry.slot);
-            if (choice.Action == GangAction.None) continue;
-            if (choice.Action == GangAction.Equip)
-            {
-                var itemId = checked((short)choice.TargetId!.Value);
-                state.AiPlanning.SetPlannedAction(
-                    playerId, entry.slot, GangAction.Equip,
-                    new AiActionTarget(checked((byte)itemId), 0));
-                state.AiPlanning.SetEquipmentCooldown(
-                    playerId,
-                    entry.slot,
-                    choice.EquipmentSlot!.Value,
-                    OriginalAiEquipmentRules.EquipmentReplacementCooldown(
-                        state.Definitions.Items[itemId].Cost));
-                continue;
-            }
-            if (choice.Action != GangAction.Move)
-            {
-                state.AiPlanning.SetPlannedAction(playerId, entry.slot, choice.Action);
-                continue;
-            }
-
-            var target = OriginalAiSectorSelectionRules.Select(
-                mode: 5,
-                sourceSectorId: entry.gang.SectorId,
-                player: playerId,
-                family: 1,
-                sectorOwners,
-                sectorDisabled,
-                sectorGangCounts,
-                canSoloControl: sectorId =>
-                    CanSoloControl(state, playerId, entry.gang, sectorId),
-                hasPriorChaos: sectorId => player.Gangs
-                    .Select((gang, slot) => (gang, slot))
-                    .Any(candidate => candidate.gang.IsActive
-                        && candidate.gang.SectorId == sectorId
-                        && state.AiPlanning.PreviousAction(playerId, candidate.slot)
-                            == GangAction.Chaos),
-                isHostileOwner: owner =>
-                    state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-                isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                    .Setup.Controller == PlayerController.Human,
-                playerOrder,
-                state.Random);
-            state.AiPlanning.SetPlannedAction(
-                playerId, entry.slot, GangAction.Move,
-                new AiActionTarget(checked((byte)target), 0));
-        }
-    }
 
     private static void PrepareFamilyElevenCommand(
         MatchState state,
@@ -314,9 +190,7 @@ public static partial class AiTurnPlanner
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
             formationSectorId: formationSectorId);
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)target), 0));
+        SetRecoveredMoveAction(state, playerId, gangSlot, target);
         if (mode == 10 && state.Sectors[gang.SectorId].Owner != playerId)
             state.AiPlanning.SetFormationSector(playerId, gangSlot, target);
     }
@@ -406,9 +280,7 @@ public static partial class AiTurnPlanner
                 == PlayerController.Human,
             playerOrder,
             state.Random);
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)target), 0));
+        SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }
 
     private static int? PreparedCommandTargetId(
@@ -665,84 +537,6 @@ public static partial class AiTurnPlanner
             : new HirePreparation(null);
     }
 
-    private static int Score(
-        MatchState state,
-        MatchPlayerState player,
-        MatchGangState gang,
-        GameCommand command)
-    {
-        var objective = state.Setup.Scenario;
-        return command.Action switch
-        {
-            GangAction.Attack => AttackValue(state, player, command, objective),
-            GangAction.Control => ControlValue(state, player, gang, objective),
-            GangAction.Influence => 650 + InfluenceValue(state, command.Target.Id, objective),
-            GangAction.Heal => HealValue(state, gang),
-            GangAction.Equip => EquipmentValue(state, command),
-            GangAction.Research => 500 - player.RemainingResearch(
-                state.Definitions, checked((short)command.Target.Id)),
-            GangAction.Move => 420 + DestinationValue(state, player.Id, command.Target.Id, objective),
-            GangAction.Chaos => 480 + (objective is ScenarioId.Greed or ScenarioId.Dominance ? 80 : 0),
-            GangAction.Hide => 300,
-            GangAction.Snitch => 280,
-            GangAction.Bribe => 260,
-            GangAction.Sell => 120,
-            GangAction.Give => 100,
-            GangAction.Terminate => -10_000,
-            _ => 0
-        };
-    }
-
-    private static int AttackValue(
-        MatchState state,
-        MatchPlayerState player,
-        GameCommand command,
-        ScenarioId objective)
-    {
-        var target = state.FindGang(new GangId(command.Target.Id))!;
-        var aggression = DifficultyAttackBias(state.Setup.AiMentality);
-        var denyHuman = state.Setup.AiMentality == AiDifficulty.HomicidalManiac
-            && state.FindPlayer(target.Owner)!.Setup.Controller == PlayerController.Human
-            ? 300
-            : 0;
-        return 700 + CombatObjectiveBonus(objective) + aggression + denyHuman - target.Force;
-    }
-
-    internal static int DifficultyAttackBias(AiDifficulty difficulty) => difficulty switch
-        {
-            AiDifficulty.Goon => -300,
-            AiDifficulty.Criminal => 0,
-            AiDifficulty.CrimeLord => 250,
-            AiDifficulty.HomicidalManiac => 900,
-            _ => throw new ArgumentOutOfRangeException(nameof(difficulty))
-        };
-
-    private static int HealValue(MatchState state, MatchGangState gang)
-    {
-        var heal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
-        return OriginalAiFamilyOneRules.CanHeal(
-                gang.Force, heal, OriginalAiFamilyOneRules.CommonHealForceLimit)
-            ? 800 + ManualRules.MaximumForce - gang.Force
-            : -1_000;
-    }
-
-    private static int ControlValue(
-        MatchState state,
-        MatchPlayerState player,
-        MatchGangState gang,
-        ScenarioId objective)
-    {
-        var sector = state.Sectors[gang.SectorId];
-        if (sector.Owner == player.Id) return 250 + ControlObjectiveBonus(objective, sector);
-
-        // The original planner's selector 0x2c only proceeds when one gang's
-        // Force + Control strictly exceeds the sector and defending strength.
-        // Keep the recreation's objective weights, but do not rank a known
-        // futile solo attempt above useful actions.
-        return (CanSoloControl(state, player.Id, gang) ? 850 : -1_000)
-            + ControlObjectiveBonus(objective, sector);
-    }
-
     internal static bool CanSoloControl(MatchState state, PlayerId playerId, MatchGangState gang)
         => CanSoloControl(state, playerId, gang, gang.SectorId);
 
@@ -781,55 +575,6 @@ public static partial class AiTurnPlanner
         return attack > defense;
     }
 
-    private static int CombatObjectiveBonus(ScenarioId scenario) => scenario switch
-    {
-        ScenarioId.KillEmAll or ScenarioId.Eliminate => 500,
-        _ => 0
-    };
-
-    private static int ControlObjectiveBonus(ScenarioId scenario, MatchSectorState sector) => scenario switch
-    {
-        ScenarioId.Power or ScenarioId.Big40 or ScenarioId.Armageddon => 400,
-        ScenarioId.Siege when sector.IsImportant => 600,
-        ScenarioId.BigMan when sector.Id is 27 or 28 or 35 or 36 => 600,
-        ScenarioId.Greed or ScenarioId.Dominance => sector.Income * 20,
-        _ => 0
-    };
-
-    private static int InfluenceValue(MatchState state, int siteTarget, ScenarioId scenario)
-    {
-        var site = state.FindSite(siteTarget)!;
-        var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
-        return scenario == ScenarioId.Acceptance
-            ? definition.Support * 30
-            : definition.Cash * 20 + definition.Support * 5;
-    }
-
-    private static int EquipmentValue(MatchState state, GameCommand command)
-    {
-        var item = state.Definitions.Items[command.Target.Id];
-        var stats = item.Stats;
-        var utility = stats.Combat + stats.Defense + stats.Stealth + stats.Detect
-            + stats.Chaos + stats.Control + stats.Heal + stats.Influence + stats.Research
-            + stats.Strength + stats.Blade + stats.Range + stats.Fighting + stats.MartialArts;
-        return 550 + utility * 10 - item.Cost;
-    }
-
-    internal static int DestinationValue(
-        MatchState state,
-        PlayerId player,
-        int sectorId,
-        ScenarioId scenario)
-    {
-        var sector = state.Sectors[sectorId];
-        var value = sector.Owner == player ? 0 : 100;
-        if (scenario == ScenarioId.Siege && sector.IsImportant) value += 300;
-        if (scenario == ScenarioId.BigMan && sectorId is 27 or 28 or 35 or 36) value += 300;
-        if (scenario == ScenarioId.Eliminate
-            && OriginalCityGenerator.HeadquartersCandidates.Contains(sectorId)) value += 300;
-        return value + sector.Income * 10;
-    }
-
     private static int EstimatedCost(MatchState state, GameCommand command) => command.Action switch
     {
         GangAction.Bribe => ManualRules.BribeCost,
@@ -837,15 +582,6 @@ public static partial class AiTurnPlanner
             state, state.FindGang(command.Gang)!, state.Definitions.Items[command.Target.Id]),
         _ => 0
     };
-
-    private static bool IsObservableFallbackAttack(
-        MatchState state,
-        PlayerId player,
-        GameCommand command) =>
-        command.Action != GangAction.Attack
-        || state.FindGang(new GangId(command.Target.Id)) is { } target
-        && state.AiStrategy.IsHostile(player, target.Owner)
-        && state.CanPlayerDetectGang(player, target.Id);
 
     private static bool IsDetectableAttack(
         MatchState state,

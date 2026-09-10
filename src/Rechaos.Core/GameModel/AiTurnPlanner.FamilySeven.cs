@@ -22,7 +22,8 @@ public static partial class AiTurnPlanner
             TryPrepareFamilySevenAttack(state, playerId, gang, gangSlot, visible);
         else if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
                      state, player, gang, gangSlot) is { } upgrade)
-            SetFamilySevenEquipment(state, playerId, gangSlot, upgrade);
+            SetRecoveredFocusedReplacementEquipmentAction(
+                state, playerId, gangSlot, upgrade);
 
         var plannedAction = state.AiPlanning.PlannedAction(playerId, gangSlot);
         if (!OriginalAiFamilySevenRules.EndsAfterPreliminaryAction(plannedAction))
@@ -36,23 +37,6 @@ public static partial class AiTurnPlanner
                 state.Setup.Scenario, turnsRemaining))
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
         return true;
-    }
-
-    private static void SetFamilySevenEquipment(
-        MatchState state,
-        PlayerId playerId,
-        int gangSlot,
-        OriginalAiEquipmentRules.Upgrade upgrade)
-    {
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Equip,
-            new AiActionTarget(checked((byte)upgrade.ItemId), 0));
-        state.AiPlanning.SetEquipmentCooldown(
-            playerId, gangSlot, upgrade.Slot,
-            OriginalAiEquipmentRules.EquipmentReplacementCooldown(
-                state.Definitions.Items[upgrade.ItemId].Cost));
-        state.AiPlanning.SetFocusValue(
-            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
     private static void TryPrepareFamilySevenAttack(
@@ -69,23 +53,14 @@ public static partial class AiTurnPlanner
                         .Setup.Controller == PlayerController.Human)
                     .ToArray()
                 : visible;
-        var ordinal = state.Random.NextInclusive(targetPool.Count);
-        var selected = targetPool[ordinal - 1];
-        var comparisonTarget = visible[ordinal - 1].Gang;
-        var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
-        var targetStats = EffectiveStatisticsCalculator.ForGang(state, comparisonTarget);
-        if (!OriginalAiFamilySevenRules.CanAttackSelectedTarget(
-                gang.Force, attackerStats.Combat, attackerStats.Defense,
-                comparisonTarget.Force, targetStats.Combat, targetStats.Defense)
-            || !state.AiStrategy.IsHostile(playerId, selected.Gang.Owner))
+        var draw = DrawRecoveredAttackTarget(
+            state, gang, visible, targetPool,
+            OriginalAiFamilySevenRules.CanAttackSelectedTarget);
+        if (!draw.Accepted
+            || !state.AiStrategy.IsHostile(playerId, draw.Selected.Gang.Owner))
             return;
 
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Attack,
-            new AiActionTarget(
-                checked((byte)selected.Gang.Owner.Value),
-                checked((byte)selected.Slot)));
-        state.AiPlanning.SetFocusValue(playerId, gangSlot, gang.SectorId);
+        SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw.Selected);
     }
 
     private static void PrepareFamilySevenResearchContinuation(
@@ -138,11 +113,7 @@ public static partial class AiTurnPlanner
                     .Setup.Controller == PlayerController.Human,
                 playerOrder,
                 state.Random);
-            state.AiPlanning.SetPlannedAction(
-                playerId, gangSlot, GangAction.Move,
-                new AiActionTarget(checked((byte)target), 0));
-            state.AiPlanning.SetFocusValue(
-                playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+            SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
             return;
         }
 
@@ -208,10 +179,6 @@ public static partial class AiTurnPlanner
                 .Setup.Controller == PlayerController.Human,
             playerOrderValues: playerOrder,
             random: state.Random);
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)target), 0));
-        state.AiPlanning.SetFocusValue(
-            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+        SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }
 }

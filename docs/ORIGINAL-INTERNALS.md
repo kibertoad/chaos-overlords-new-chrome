@@ -481,15 +481,13 @@ a formation sector. Family 7 writes a sector while attacking or establishing a
 research position, an item while researching, and `-1` after equipment or
 routing. The same six-by-81 storage is hashed, saved, and replayed; its existing
 `formationSectors` serialized name is retained as a pre-1.0 implementation
-detail. The record's second short remains deliberately unmodeled. It is
-initialized to the current sector by every assigning hire-role-4/family-6
-dispatch and later updated by family-6 routing. Selector `0x5f` treats that
-second short as coverage only when the first equals `-1`; otherwise it tests
-the gang's live sector.
-
-**Next validation:** recover and represent the second per-gang auxiliary short
-so family-6 coverage no longer relies on the current-sector/queued-Move
-semantic projection.
+detail. The record's second short is now represented independently as the
+family-6 coverage sector. Every assigning hire-role-4 dispatch initializes it
+to the gang's current sector. Family 6 writes a selected strategic destination
+before routing, then overwrites it with the actual one-step Move destination.
+Selector `0x5f` uses this persisted value only when the first short equals
+`-1`; otherwise it tests the gang's live sector. Both shorts are authoritative,
+hashed, saved, and replayed.
 
 ### BIN-AI-003A - strategic hire-offer ranking
 
@@ -1022,6 +1020,68 @@ come through a computed argument. `tools/ghidra/ReportCallArguments.java`
 provides a repeatable bounded inventory of the three pushed arguments at each
 direct call.
 
+The complete family-6 handler is live. With cached current-sector weight below
+one it Moves: selector `0x60` enumerates weight-10 sectors in ascending order
+and chooses the first not covered according to selector `0x5f`, or falls back
+to mode 2. It clears the first auxiliary short and stores the routed one-step
+destination in the second. With positive weight it makes one preliminary
+target draw using the human-only pool for a hostile-owned weight-10 sector and
+the complete visible pool otherwise; selector `0x2b` applies the established
+quarter-strength comparison through the same ordinal in the complete visible
+list. A passing draw Attacks immediately. A failure tries weapon then armor,
+with nonpositive cooldowns and replacement cooldown `cost * 3`. It then retains
+literal Heal and local Control/Move branches which are unreachable while the
+cached positive weight remains unchanged, followed by up to five more target
+draws and an Attack of the final target after all comparison failures. Attack
+stores the current sector in the first auxiliary short; equipment and Move
+clear it. Greed with fewer than four turns remaining overwrites the result with
+Terminate.
+
+Focused inspection of family 0 at `0x00428ef0` establishes a switch on the
+immediately previous action (`0x3e`) and a final comparison against the older
+action (`0x3f`). Previous None applies the Force-8/effective-Heal-`-3` gate,
+then selector `0x5b` counts previous Hide assignments in the gang's current
+sector: zero chooses Hide and a positive count chooses mode-5 Move. Previous
+Attack moves immediately unless cached opponent weight is 10; at weight 10 it
+makes one human-pool/full-pool asymmetric draw and uses selector `0x2b` for the
+quarter-strength comparison, then Attack, strict-solo Control, or Move.
+
+Previous Hide or Equip makes up to five such draws at weight 10 and attacks the
+last selected target even if every comparison fails. When no Attack was
+prepared, positive selector `0x6c` enables weapon then armor equipment with
+nonpositive cooldown and `cost * 3` replacement, followed by owned-sector
+Heal/Hide or non-owned mode-5 Move. Previous Control Hides in owned territory
+and Moves elsewhere. Previous Heal, Snitch, or Move first applies the same Heal
+gate. At weight 10 it makes exactly one target draw: success Attacks, while
+failure writes None and clears both auxiliary shorts to `-1`. Without weight
+10 it uses strict solo Control where possible, otherwise selector `0x5b`
+chooses Hide or Move. Previous Research Moves; unlisted action values retain
+None. Finally, a newly planned Move with an older Move changes the family byte
+to 11 in Siege and 2 otherwise. This literal older-action test is broader than
+an inferred three-consecutive-Move rule. The complete handler, target draws,
+mode-5 calls, cooldowns, auxiliary behavior, no-action path, and transition are
+live and replay-wired.
+
+Family 4 at `0x00401000` is the final dispatcher handler. It switches on the
+same previous-action byte but uses mode 2 for all routing. Previous None,
+Control, or Heal applies the Force-8/effective-Heal-`-3` gate, then selector
+`0x5b` chooses Hide at count zero or Move otherwise. Previous Attack, Snitch,
+or Move makes one asymmetric target draw at weight 10; selector `0x2b` success
+Attacks, while failure writes None and clears both auxiliary shorts. Without
+weight 10, owned territory chooses Hide at count zero and Move otherwise;
+non-owned territory chooses Control only when previous and older actions are
+both Move and strict solo Control succeeds, otherwise Move.
+
+Previous Hide or Equip makes up to five weight-10 draws and attacks the last
+selection even after all failures. Without Attack, selector `0x6c` enables the
+same weapon-before-armor equipment opportunity and `cost * 3` cooldowns. The
+remaining owned-sector branch Hides when selector `0x5b` is below two and
+otherwise Moves; non-owned territory Moves. No handler-local family transition
+or Greed override exists. Although no mapped scenario/hire-role table cell
+assigns family 4, an unmapped cell preserves a pre-existing family value. The
+complete handler and a live Greed-role-5 preservation/replay path are now
+implemented.
+
 Both mode-6 calls belong to family 2. That handler writes public action byte 10
 (**Move**) with the selected mode-6 destination when its current/selected
 sector branch cannot proceed locally. Its visible-gang path writes action byte
@@ -1436,8 +1496,9 @@ filtering due to decompiler control-flow folding. Mode 10 and mode 16's
 remaining family-11 guards are not yet fully labeled.
 
 **Next validation:** reproduce the now-live objective routes and attacks plus
-the mode-16 follower route as fixed original decisions, then continue bounding
-the remaining family handlers before claiming runtime parity.
+the mode-16 follower route as fixed original decisions, then validate the
+complete recovered family inventory with controlled runtime traces before
+claiming parity.
 
 ### BIN-AI-006 - directional attitude and hostility matrix
 

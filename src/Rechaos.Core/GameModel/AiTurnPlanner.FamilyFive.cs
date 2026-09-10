@@ -117,24 +117,16 @@ public static partial class AiTurnPlanner
                         .Setup.Controller == PlayerController.Human)
                     .ToArray()
                 : visible;
-        var ordinal = state.Random.NextInclusive(targetPool.Count);
-        var selected = targetPool[ordinal - 1];
-        var comparisonTarget = visible[ordinal - 1].Gang;
-        var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
-        var targetStats = EffectiveStatisticsCalculator.ForGang(state, comparisonTarget);
-        if (!OriginalAiFamilyFiveRules.CanAttackSelectedTarget(
-                gang.Force, attackerStats.Combat, attackerStats.Defense,
-                comparisonTarget.Force, targetStats.Combat, targetStats.Defense))
+        var draw = DrawRecoveredAttackTarget(
+            state, gang, visible, targetPool,
+            OriginalAiFamilyFiveRules.CanAttackSelectedTarget);
+        if (!draw.Accepted)
         {
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.None);
             return;
         }
 
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Attack,
-            new AiActionTarget(
-                checked((byte)selected.Gang.Owner.Value),
-                checked((byte)selected.Slot)));
+        SetRecoveredAttackAction(state, playerId, gangSlot, draw.Selected);
     }
 
     private static void PrepareFamilyFiveInfluenceContinuation(
@@ -152,13 +144,8 @@ public static partial class AiTurnPlanner
         if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
                 state, player, gang, gangSlot) is { } upgrade)
         {
-            state.AiPlanning.SetPlannedAction(
-                playerId, gangSlot, GangAction.Equip,
-                new AiActionTarget(checked((byte)upgrade.ItemId), 0));
-            state.AiPlanning.SetEquipmentCooldown(
-                playerId, gangSlot, upgrade.Slot,
-                OriginalAiEquipmentRules.EquipmentReplacementCooldown(
-                    state.Definitions.Items[upgrade.ItemId].Cost));
+            SetRecoveredReplacementEquipmentAction(
+                state, playerId, gangSlot, upgrade.ItemId, upgrade.Slot);
             return;
         }
 
@@ -256,8 +243,6 @@ public static partial class AiTurnPlanner
                     && entry.candidate.SectorId == sectorId
                     && state.AiPlanning.PreviousAction(playerId, entry.slot)
                         == GangAction.Influence));
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)target), 0));
+        SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }
 }

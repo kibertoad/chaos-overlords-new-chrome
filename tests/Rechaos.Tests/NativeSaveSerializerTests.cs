@@ -24,6 +24,7 @@ public sealed class NativeSaveSerializerTests
         match.AiPlanning.SetEquipmentCooldown(new PlayerId(1), 0, EquipmentSlot.Weapon, 12);
         match.AiPlanning.SetEquipmentCooldown(new PlayerId(1), 0, EquipmentSlot.Armor, 15);
         match.AiPlanning.SetFocusValue(new PlayerId(1), 0, 37);
+        match.AiPlanning.SetCoverageSector(new PlayerId(1), 0, 23);
         match.FinishUpkeep();
         Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(0), GangAction.Hide, CommandTarget.None, Repeat: true)).Accepted);
@@ -58,6 +59,7 @@ public sealed class NativeSaveSerializerTests
         Assert.Equal(15, restored.AiPlanning.ArmorCooldown(new PlayerId(1), 0));
         Assert.Equal(37, restored.AiPlanning.FormationSector(new PlayerId(1), 0));
         Assert.Equal(37, restored.AiPlanning.FocusValue(new PlayerId(1), 0));
+        Assert.Equal(23, restored.AiPlanning.CoverageSector(new PlayerId(1), 0));
         Assert.Equal(SaveBytes(match), SaveBytes(restored));
     }
 
@@ -102,6 +104,26 @@ public sealed class NativeSaveSerializerTests
                     restored.AiPlanning.FormationSector(player.Id, gangSlot));
         Assert.Equal(MatchStateHasher.ComputeVersionSeventeenSha256(match),
             MatchStateHasher.ComputeVersionSeventeenSha256(restored));
+    }
+
+    [Fact]
+    public void VersionFifteenSaveInitializesFamilySixCoverageAsInactive()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 15;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionEighteenSha256(match);
+        document["runtime"]!["aiPlanning"]!.AsObject().Remove("coverageSectors");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.All(restored.AiPlanning.CaptureCoverageSectors(), value =>
+            Assert.Equal(AiPlanningState.InactiveCoverageSector, value));
+        Assert.Equal(MatchStateHasher.ComputeVersionEighteenSha256(match),
+            MatchStateHasher.ComputeVersionEighteenSha256(restored));
     }
 
     [Fact]

@@ -189,6 +189,38 @@ replay-verified two-computer harness through 20 turns or objective completion.
    Three consecutive Moves switch the family to 11 in Siege and 2 otherwise;
    Greed's final three turns overwrite the result with Terminate. Unsupported
    previous-action cases intentionally preserve None, matching the handler.
+   Family 0's complete general-purpose state machine is live. Previous None
+   Heals below Force 8 at effective Heal `-3` or better, otherwise Hides unless
+   another gang in the sector already has previous Hide, then Moves through
+   mode 5. Previous Attack makes one weight-10 opponent draw and attacks only
+   on a passing quarter-strength comparison; failure Controls when strict solo
+   Control succeeds and otherwise Moves. Previous Hide or Equip makes up to
+   five weight-10 draws and attacks the final target even after five failures,
+   then tries the shared nearby-danger weapon/armor opportunity before its
+   owned-sector Heal/Hide or non-owned Move continuation. Previous Control
+   Hides in owned territory and Moves elsewhere. Previous Heal, Snitch, or Move
+   repeats Heal first, makes one weight-10 draw whose failed comparison
+   deliberately preserves no action while clearing both auxiliary shorts, or
+   chooses Control/Hide/Move locally. Previous Research always Moves. A newly
+   planned Move paired with an older Move changes the family to 11 in Siege and
+   2 otherwise. Unsupported previous actions preserve None. Exact targets,
+   mode-5 destinations, cooldowns, auxiliary writes, family changes, and RNG
+   consumption are live and replay-recorded.
+   Family 4's complete state machine is live as well. Previous None, Control,
+   or Heal applies the same Force-8/effective-Heal-`-3` gate, then Hides when
+   no gang in the sector has previous Hide and otherwise Moves through mode 2.
+   Previous Attack, Snitch, or Move makes one weight-10 draw whose failed
+   comparison deliberately produces no action and clears both auxiliary
+   shorts. Without weight 10, owned territory uses Hide/Move allocation;
+   non-owned territory Controls only when both previous and older actions are
+   Move and strict solo Control succeeds, otherwise it Moves. Previous Hide or
+   Equip makes up to five weight-10 draws and attacks the final target, then
+   tries nearby-danger weapon/armor equipment. Its remaining owned-sector path
+   permits Hide while at most one previous Hide already exists, whereas other
+   cases Move through mode 2. The dispatch table does not assign family 4 in a
+   mapped scenario/role cell, but an unmapped role preserves it; that live path
+   is replay-tested. Exact targets, cooldowns, auxiliary writes, mode-2 RNG,
+   and no-action behavior are integrated.
    Family 2's complete aggressive territorial handler is live. It tries armor
    before weapon, requires an expired slot cooldown and a previous action other
    than Attack, and writes a raw-cost-times-three replacement cooldown. It Heals
@@ -248,13 +280,22 @@ replay-verified two-computer harness through 20 turns or objective completion.
    outcome for that sparse multiplayer edge is not yet runtime-corroborated.
    Exact actions, targets, cooldowns, and RNG consumption are live and
    replay-recorded.
+   Family 6 is also live. An uncontested gang routes toward the first visible
+   hostile-human sector not covered by another active family-6 gang, falling
+   back to mode 2 when none exists. In combat it makes one preliminary bounded
+   target draw, tries weapon then armor equipment after a failed comparison,
+   and otherwise makes up to five more draws before attacking the final target.
+   Its recovered but stable-state-unreachable Heal and local Control/Move
+   branches remain explicit in the handler. Greed's final three turns overwrite
+   the result with Terminate.
    The exact ten-scenario by
    seven-hire-role family table is implemented by `OriginalAiFamilyRules`,
    including unmapped cells which preserve the current family. AI planning
    preparation now rolls the current role into the previous role and updates
-   every active gang's authoritative family slot. The mode-4 second auxiliary-
-   sector copy awaits representation; the first auxiliary short is the live
-   family-2/7 focus or family-11 formation value. The original objective-specific base
+   every active gang's authoritative family slot. Mode-4 family assignment
+   copies the gang's current sector into the second auxiliary short. The first
+   auxiliary short is the live family-2/7 focus or family-11 formation value;
+   family 6 uses both shorts for coverage selection. The original objective-specific base
    turn schedules are isolated in `OriginalAiHireRoleRules`; Dominance alone
    uses an eleven-turn period, while the other nine objectives use ten. The
    objective-specific adjustments and hire-attempt gates are also
@@ -277,8 +318,8 @@ replay-verified two-computer harness through 20 turns or objective completion.
    and six-by-81 family slots. The live planner applies the hire attempt gate,
    computes the post-command role from the exact schedule and adjustments, and
    uses its ranking mode for exact three-offer selection. For selector `0x5f`,
-   queued Move targets project the recovered family-6 coverage behavior; the
-   underlying second auxiliary short remains deliberately unmodeled. The hire
+   family-6 coverage uses the live gang sector while the first auxiliary short
+   is active, and the persisted second auxiliary sector otherwise. The hire
    model now preserves three fixed slots, same-slot tombstones, mutually
    exclusive actions, and next-planning-entry refill. Exact hire destination
    selection and its persisted anchor are statically recovered in
@@ -325,8 +366,8 @@ replay-verified two-computer harness through 20 turns or objective completion.
    selector `0x6c`'s 3-by-3 danger test, selectors `0x61`/`0x64`'s exact weapon/
    armor choices, and selectors `0x65`/`0x66`'s planning cooldowns into live
    command submission and resolution. Capture controlled original turns that
-   reach the remaining family choices through their complete selector context
-   before replacing more recreation policy.
+   exercise the recovered family choices through their complete selector
+   context before replacing more recreation policy.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those
    fixtures.

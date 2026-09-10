@@ -20,6 +20,9 @@ internal static class AiPlanningPreparation
                 state.AiPlanning.CurrentHireRole(player),
                 state.AiPlanning.Family(player, gangSlot));
             state.AiPlanning.SetFamily(player, gangSlot, selection.Family);
+            if (selection.CopiesProjectedGangValue)
+                state.AiPlanning.SetCoverageSector(
+                    player, gangSlot, gangs[gangSlot].SectorId);
         }
     }
 
@@ -146,8 +149,8 @@ internal static class AiPlanningPreparation
         .Select((gang, slot) => (gang, slot))
         .Any(entry => entry.gang.IsActive
             && state.AiPlanning.Family(player, entry.slot) == 6
-            && (entry.gang.QueuedCommand?.Command is
-                    { Action: GangAction.Move, Target.Kind: CommandTargetKind.Sector } move
-                ? move.Target.Id
-                : entry.gang.SectorId) == sectorId);
+            && (state.AiPlanning.FocusValue(player, entry.slot)
+                    != AiPlanningState.InactiveFocusValue
+                ? entry.gang.SectorId
+                : state.AiPlanning.CoverageSector(player, entry.slot)) == sectorId);
 }

@@ -192,11 +192,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             var sound = LoadSound(AudioRouting.SoundFile(index));
             if (sound is not null) _weaponSounds.Add(index, sound);
         }
+        LoadSoundtrack();
     }
 
     protected override void Update(GameTime gameTime)
     {
         _inputTime = gameTime.TotalGameTime;
+        UpdateSoundtrack(gameTime);
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
         RunComputerTurns();
