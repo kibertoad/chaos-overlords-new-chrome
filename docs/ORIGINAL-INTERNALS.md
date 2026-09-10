@@ -1062,6 +1062,26 @@ an inferred three-consecutive-Move rule. The complete handler, target draws,
 mode-5 calls, cooldowns, auxiliary behavior, no-action path, and transition are
 live and replay-wired.
 
+Family 4 at `0x00401000` is the final dispatcher handler. It switches on the
+same previous-action byte but uses mode 2 for all routing. Previous None,
+Control, or Heal applies the Force-8/effective-Heal-`-3` gate, then selector
+`0x5b` chooses Hide at count zero or Move otherwise. Previous Attack, Snitch,
+or Move makes one asymmetric target draw at weight 10; selector `0x2b` success
+Attacks, while failure writes None and clears both auxiliary shorts. Without
+weight 10, owned territory chooses Hide at count zero and Move otherwise;
+non-owned territory chooses Control only when previous and older actions are
+both Move and strict solo Control succeeds, otherwise Move.
+
+Previous Hide or Equip makes up to five weight-10 draws and attacks the last
+selection even after all failures. Without Attack, selector `0x6c` enables the
+same weapon-before-armor equipment opportunity and `cost * 3` cooldowns. The
+remaining owned-sector branch Hides when selector `0x5b` is below two and
+otherwise Moves; non-owned territory Moves. No handler-local family transition
+or Greed override exists. Although no mapped scenario/hire-role table cell
+assigns family 4, an unmapped cell preserves a pre-existing family value. The
+complete handler and a live Greed-role-5 preservation/replay path are now
+implemented.
+
 Both mode-6 calls belong to family 2. That handler writes public action byte 10
 (**Move**) with the selected mode-6 destination when its current/selected
 sector branch cannot proceed locally. Its visible-gang path writes action byte
@@ -1476,8 +1496,9 @@ filtering due to decompiler control-flow folding. Mode 10 and mode 16's
 remaining family-11 guards are not yet fully labeled.
 
 **Next validation:** reproduce the now-live objective routes and attacks plus
-the mode-16 follower route as fixed original decisions, then continue bounding
-the remaining family handlers before claiming runtime parity.
+the mode-16 follower route as fixed original decisions, then validate the
+complete recovered family inventory with controlled runtime traces before
+claiming parity.
 
 ### BIN-AI-006 - directional attitude and hostility matrix
 

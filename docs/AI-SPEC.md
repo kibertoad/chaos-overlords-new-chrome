@@ -206,6 +206,21 @@ replay-verified two-computer harness through 20 turns or objective completion.
    2 otherwise. Unsupported previous actions preserve None. Exact targets,
    mode-5 destinations, cooldowns, auxiliary writes, family changes, and RNG
    consumption are live and replay-recorded.
+   Family 4's complete state machine is live as well. Previous None, Control,
+   or Heal applies the same Force-8/effective-Heal-`-3` gate, then Hides when
+   no gang in the sector has previous Hide and otherwise Moves through mode 2.
+   Previous Attack, Snitch, or Move makes one weight-10 draw whose failed
+   comparison deliberately produces no action and clears both auxiliary
+   shorts. Without weight 10, owned territory uses Hide/Move allocation;
+   non-owned territory Controls only when both previous and older actions are
+   Move and strict solo Control succeeds, otherwise it Moves. Previous Hide or
+   Equip makes up to five weight-10 draws and attacks the final target, then
+   tries nearby-danger weapon/armor equipment. Its remaining owned-sector path
+   permits Hide while at most one previous Hide already exists, whereas other
+   cases Move through mode 2. The dispatch table does not assign family 4 in a
+   mapped scenario/role cell, but an unmapped role preserves it; that live path
+   is replay-tested. Exact targets, cooldowns, auxiliary writes, mode-2 RNG,
+   and no-action behavior are integrated.
    Family 2's complete aggressive territorial handler is live. It tries armor
    before weapon, requires an expired slot cooldown and a previous action other
    than Attack, and writes a raw-cost-times-three replacement cooldown. It Heals
@@ -351,8 +366,8 @@ replay-verified two-computer harness through 20 turns or objective completion.
    selector `0x6c`'s 3-by-3 danger test, selectors `0x61`/`0x64`'s exact weapon/
    armor choices, and selectors `0x65`/`0x66`'s planning cooldowns into live
    command submission and resolution. Capture controlled original turns that
-   reach the remaining family choices through their complete selector context
-   before replacing more recreation policy.
+   exercise the recovered family choices through their complete selector
+   context before replacing more recreation policy.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those
    fixtures.
