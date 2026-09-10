@@ -3,12 +3,17 @@ import type { Context, MiddlewareHandler } from 'hono'
 import type { RateLimiters } from '../container'
 import type { AppEnv } from './types'
 
-/** Mints or adopts `X-Request-Id`; it rides every error envelope so a player can quote it. */
+/**
+ * Mints or adopts `X-Request-Id`; it rides every error envelope so a player can quote it.
+ *
+ * The header is set before the handler runs, not after: a handler that throws never comes back
+ * here, and the response most worth correlating is exactly the one that failed.
+ */
 export const requestId: MiddlewareHandler<AppEnv> = async (c, next) => {
   const id = c.req.header('x-request-id')?.slice(0, 64) || crypto.randomUUID()
   c.set('requestId', id)
-  await next()
   c.header('X-Request-Id', id)
+  await next()
 }
 
 /** Resolves the bearer token to a principal or refuses with 401. */

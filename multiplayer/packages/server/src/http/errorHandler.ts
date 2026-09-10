@@ -31,11 +31,24 @@ export function handleError(error: Error, c: Context<AppEnv>): Response {
   return respond(c, 'internal', 'Internal server error', { reason: 'internal' }, requestId)
 }
 
+/**
+ * The error code a framework `HTTPException` maps to. Written out rather than derived by scanning
+ * `STATUS_BY_CODE` for a matching value: that scan silently picks whichever code was declared first
+ * the moment two of them share a status, and the mapping is worth being able to read.
+ */
+const CODE_BY_STATUS: Readonly<Record<number, ErrorCode>> = {
+  400: 'bad_request',
+  401: 'unauthorized',
+  403: 'forbidden',
+  404: 'not_found',
+  409: 'conflict',
+  413: 'payload_too_large',
+  422: 'validation_failed',
+  429: 'rate_limited',
+}
+
 function codeForStatus(status: number): ErrorCode {
-  const match = (Object.entries(STATUS_BY_CODE) as Array<[ErrorCode, number]>).find(
-    ([, value]) => value === status,
-  )
-  return match?.[0] ?? 'internal'
+  return CODE_BY_STATUS[status] ?? 'internal'
 }
 
 function respond(

@@ -7,6 +7,7 @@ import type { Clock } from '../ports/runtime'
  */
 export class RateLimiter {
   private readonly windows = new Map<string, { windowStart: number; count: number }>()
+  private lastPrune = Number.NEGATIVE_INFINITY
 
   constructor(
     private readonly clock: Clock,
@@ -29,8 +30,17 @@ export class RateLimiter {
     return null
   }
 
+  /**
+   * Drop windows that have expired, at most once per window period.
+   *
+   * The sweep is O(size), so running it on every new key would be quadratic exactly when the map is
+   * busiest — a burst of distinct keys is both what fills the map and what triggers the sweep. The
+   * time guard makes the amortised cost one pass per window regardless of traffic, and expired
+   * entries can never outlive two windows.
+   */
   private prune(now: number): void {
-    if (this.windows.size < 10_000) return
+    if (now - this.lastPrune < this.options.windowMs) return
+    this.lastPrune = now
     for (const [key, entry] of this.windows) {
       if (now - entry.windowStart >= this.options.windowMs) this.windows.delete(key)
     }

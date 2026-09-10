@@ -8,6 +8,13 @@
       "when": 1789066485482,
       "tag": "0000_dusty_gargoyle",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789070855809,
+      "tag": "0001_minor_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }

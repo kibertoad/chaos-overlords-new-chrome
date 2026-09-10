@@ -13,24 +13,36 @@ import { buildKernel, HUB_PATHS, hubFor, workerLogger } from './kernel'
 
 export { MatchHub } from './MatchHub'
 
+type Built = { container: ServerContainer; app: Hono<AppEnv> }
+
 /**
- * One container per isolate, keyed by the bindings object the runtime hands every request.
+ * One container per isolate, held in module scope.
  *
  * It has to be cached: a rate limiter counts requests within a window, so building a fresh one per
  * request would reset the window every time and limit nothing. The router and the D1-backed kernel
  * are per-isolate state for the same reason a server builds them once at startup — there is nothing
  * request-specific in either. Cloudflare's own rate limiting rules still belong in front of a public
  * deployment, because an isolate is not the whole world.
+ *
+ * A module-scoped singleton rather than a `WeakMap` keyed on `env`: the bindings object being the
+ * same identity on every request is not a documented guarantee, and if it ever stopped being one the
+ * cache would silently miss and the rate limiter would reset per request — a limiter that looks
+ * configured and enforces nothing. Module scope has exactly the lifetime we want, the isolate's.
+ * `env` is captured from the first request, which is the same bindings for the isolate's whole life.
  */
-const containers = new WeakMap<Env, { container: ServerContainer; app: Hono<AppEnv> }>()
+let built: Built | undefined
 
-export function containerFor(env: Env): { container: ServerContainer; app: Hono<AppEnv> } {
-  const existing = containers.get(env)
-  if (existing) return existing
-  const container = buildContainer(env)
-  const built = { container, app: createApp(container) }
-  containers.set(env, built)
+export function containerFor(env: Env): Built {
+  if (!built) {
+    const container = buildContainer(env)
+    built = { container, app: createApp(container) }
+  }
   return built
+}
+
+/** Drops the cached container. Tests that assert per-isolate construction need a fresh isolate. */
+export function resetContainerForTests(): void {
+  built = undefined
 }
 
 export function buildContainer(env: Env): ServerContainer {

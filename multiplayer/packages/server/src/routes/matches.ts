@@ -16,7 +16,9 @@ const SMALL_BODY = 16 * 1024
 export function matchRoutes(): Hono<AppEnv> {
   const app = new Hono<AppEnv>()
 
-  app.get('/', async (c) => {
+  // Unauthenticated like create and join, so it is throttled like them: it is a database read a
+  // stranger can ask for, and the only one that enumerates matches.
+  app.get('/', rateLimited, async (c) => {
     const { config, kernel } = c.get('container')
     if (!config.publicListing) {
       throw new NotFoundError('This server does not list public matches', {

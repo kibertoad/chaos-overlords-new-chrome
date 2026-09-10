@@ -200,8 +200,10 @@ export class MatchHandle {
    *
    * Reconnects back off exponentially with jitter and a ceiling, so a server that is down or
    * restarting is not hammered once a second by every client at once, and a refusal the server will
-   * keep repeating (anything below 500: a revoked token, a deleted match) ends the stream instead of
-   * being retried forever.
+   * keep repeating (a revoked token, a deleted match) ends the stream instead of being retried
+   * forever. A refusal that is *about* this attempt rather than about the membership — being rate
+   * limited, a timeout — is retried: it is the reconnect loop itself that spends the rate limit
+   * budget, so treating 429 as fatal would make the recovery path destroy the thing it recovers.
    */
   async *stream(options: StreamOptions = {}): AsyncGenerator<MatchEvent> {
     let after = options.after ?? 0
@@ -217,7 +219,7 @@ export class MatchHandle {
         }
       } catch (error) {
         if (options.signal?.aborted) return
-        if (error instanceof MultiplayerApiError && error.status < 500) throw error
+        if (error instanceof MultiplayerApiError && isFatalStreamError(error.status)) throw error
         options.onReconnect?.(error, attempt + 1)
       }
       if (options.signal?.aborted) return
@@ -225,6 +227,19 @@ export class MatchHandle {
       await sleep(backoff(base, ceiling, attempt), options.signal)
     }
   }
+}
+
+/**
+ * Statuses that will not change on a retry, so the stream ends instead of reconnecting forever.
+ *
+ * Everything at 500 and above is the server having a bad moment. Below that, only a refusal about
+ * the membership itself is permanent; 408 (timeout) and 429 (rate limited) describe this attempt,
+ * and backing off is exactly the right response to both.
+ */
+const RETRYABLE_STREAM_STATUSES = new Set([408, 425, 429])
+
+export function isFatalStreamError(status: number): boolean {
+  return status < 500 && !RETRYABLE_STREAM_STATUSES.has(status)
 }
 
 /** Exponential with full jitter: every client picks a different point in the window. */
