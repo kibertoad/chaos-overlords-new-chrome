@@ -20,6 +20,11 @@ public sealed partial class ChaosGame
     private void UpdateCity(KeyboardState keyboard)
     {
         if (_state is null) return;
+        if (_idleGangWarningOpen)
+        {
+            UpdateIdleGangWarning(keyboard);
+            return;
+        }
         if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.A)) MoveCursor(-1, 0);
         if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.D)) MoveCursor(1, 0);
         if (Pressed(keyboard, Keys.Up) || Pressed(keyboard, Keys.W)) MoveCursor(0, -1);
@@ -43,6 +48,11 @@ public sealed partial class ChaosGame
 
     private void HandleCityClick(Point point)
     {
+        if (_idleGangWarningOpen)
+        {
+            HandleIdleGangWarningClick(point);
+            return;
+        }
         var rejectSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
             .FirstOrDefault(slot => HireDockLayout.Reject(slot).Contains(point), -1);
         var hireSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
@@ -176,6 +186,7 @@ public sealed partial class ChaosGame
             ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
             : OnlineTurnStatus();
         font.Draw(batch, footer, new Vector2(18, 439), new Color(180, 190, 190), 1);
+        if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
     }
 
     private void DrawGangStatusMarker(SpriteBatch batch, int sectorId, Rectangle source)

@@ -20,7 +20,7 @@ then; the versioned migration machinery is retained for post-1.0 compatibility.
    [*Chaos Overlords* from GOG](https://www.gog.com/en/game/chaos_overlords).
    The GOG release is fully compatible with the new runtime.
 2. Download and run the latest **Chaos Overlords: New Chrome** Windows installer
-   from [GitHub Releases](https://github.com/kibertoad/rechaos-overlords/releases/latest).
+   from [GitHub Releases](https://github.com/kibertoad/chaos-overlords-new-chrome/releases/latest).
 3. Let Setup detect your GOG installation, or select its folder when prompted.
    Setup verifies and imports the required assets, then installs the new runtime.
 
@@ -32,8 +32,8 @@ when importing them.
 | Area | Supported now | Not yet / current limitation |
 |---|---|---|
 | Installation and assets | Windows installer detects or prompts for the legal GOG installation, verifies it, repairs the original 16-bit graphics, and imports the required media. Linux and macOS packages can also import assets. | By design, original assets are never bundled and must be imported from a legal copy. All installers are currently unsigned. |
-| Game setup | All ten scenarios, four durations, the global AI Mentality setting, original portraits, and one-to-six explicitly configured human/computer players. Omitted slots become computer players, so every match has six participants. | Some setup-screen alignment and original hit regions still need parity work. |
-| Local play | Complete deterministic hot-seat turn flow across Upkeep, Command, Execution, Hire, and Elimination, with the original handoff screen between human players. | Legacy protocol compatibility is a permanent non-goal. |
+| Game setup | All ten scenarios, four durations, the global AI Mentality setting, original portraits, one-to-six explicitly configured human/computer players, and the recovered optional 30-second/2-minute/5-minute planning timer. Omitted slots become computer players, so every match has six participants. | Some setup-screen alignment and original hit regions still need parity work. |
+| Local play | Complete deterministic hot-seat turn flow across Upkeep, Command, Execution, Hire, and Elimination, with the original handoff screen between human players. The recovered optional warning prevents accidentally finishing planning while active gangs lack commands. | Legacy protocol compatibility is a permanent non-goal. |
 | Online play | Host or join a match from the title screen against a self-hostable or central coordination server (`multiplayer/`), which seals each simultaneous turn, relays the order set and verifies every client's state hash. Every client resolves the turn through the same deterministic core, so a disagreement is caught the turn it happens; see [`docs/MULTIPLAYER.md`](docs/MULTIPLAYER.md). | No lobby browser, no chat, and no joining a match already in progress. Desync recovery waits on the host to send a snapshot. |
 | City and sector UI | Native 640x460 presentation with integer-friendly scaling, ownership-composited city art, selectable 8x8 city, detailed 3x3 sector view, gang/site information, finance, ranking, research, equipment, hire, combat summary, search, events, endgame, and a modern viewer for the locally imported original help. Keyboard and mouse navigation are supported. | Remaining original hit maps, right-click/cancel behavior, configurable bindings, rich help formatting/links, and golden-screen alignment are unfinished. |
 | Gangs and commands | All 14 original command types are represented, validated, queued, repeated/cancelled, and resolved. Drag-to-move, drag-to-hire, Give, Sell, equipment replacement, research, Influence, Chaos, Control, Hide, Heal, Bribe, Snitch, and combat are playable. | Some resolver edge ordering, special-building boundaries, and exact message wording still need reference validation. |
@@ -42,7 +42,7 @@ when importing them.
 | Objectives and endgame | Live scenario scoring and completion, timed standings, tied winners, five awards, statistics, elimination cleanup, and an endgame summary. | Some objective timing/tie edges and final presentation details remain provisional. |
 | Computer players | Deterministic objective-aware AI with recovered mentality, attitudes, reactions, hiring, placement, difficulty calibration, and handlers for every original strategy family wired into gameplay. | Fixed original-reference boundaries and larger-player stress coverage are still incomplete; unsupported decision edges retain an isolated provisional fallback. |
 | Saves and replays | F5/F9 recreation-native save/load, end-turn autosaves, F6/F10 deterministic record/playback verification, bounded loading, and backup recovery. | These formats may change incompatibly before 1.0.0. Original 1996 save import/export is not supported. |
-| Audio, music, and video | Original audio, eight music tracks, and two videos are extracted; equipped-weapon attacks play their mapped original sound cues. The recovered soundtrack uses Track 2 for title/setup, Tracks 3-8 for gameplay, and Track 9 for endgame, with repeat and focus pause/resume. An Options panel exposes the recovered 0-10 music scale, starts at the original level 5, and remembers the selected level between launches. | Exact menu restart boundaries and native-platform playback still need validation. Video playback and most UI/police/impact sound triggers are not wired yet. |
+| Audio, music, and video | Original audio, eight music tracks, and two videos are extracted; equipped-weapon attacks, setup selection/rejection, panel confirmation, and planning-timer warnings play their mapped original sounds. The recovered soundtrack uses Track 2 for title/setup, Tracks 3-8 for gameplay, and Track 9 for endgame, with repeat and focus pause/resume. Options exposes independent original 0-10 Music and Sound Effects scales, using the recovered defaults of 5 and 6 respectively and remembered between launches. | Exact menu restart boundaries and native-platform playback still need validation. Video playback and the remaining UI/police/impact sound triggers are not wired yet. |
 
 ## Controls
 
@@ -59,7 +59,8 @@ when importing them.
 | Research and equipment | T | Click Research or Equipment |
 | Combat summary | B | Click Combat Summary |
 | Search | X | Click Search |
-| Music options | O | Click Options on the title screen, then click a volume level |
+| Audio options | O | Click Options on the title screen, then choose separate Music and Sound Effects levels |
+| Planning timer (setup) | L | Click None, 30 Seconds, 2 Minutes, or 5 Minutes |
 | Help | F1 | Click Help on the title screen; point at the topic list or article and use the mouse wheel to scroll it |
 | Online play | Tab between fields, Enter to host or join | Click Online on the title screen, then Host or Join |
 | Finish planning | Space | Click the end-turn control |

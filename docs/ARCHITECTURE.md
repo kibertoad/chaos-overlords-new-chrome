@@ -1,7 +1,7 @@
 # Architecture
 
 Status: evolving implementation architecture
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 
 ## Dependency direction
 
@@ -165,7 +165,10 @@ first full-screen resource and hit-region mappings.
 The client shell is a partial class split by responsibility. `ChaosGame.cs`
 retains the loop, shared client state, and top-level input/screen routing.
 `ChaosGame.Assets.cs`, `ChaosGame.Setup.cs`, and `ChaosGame.Persistence.cs`
-isolate media loading, setup, and snapshot/replay I/O. `ChaosGame.TurnFlow.cs`
+isolate media loading, setup, and snapshot/replay I/O. The testable
+`PlanningTimer` state machine and its client integration live in
+`ChaosGame.PlanningTimer.cs`; expiry uses the ordinary replay-recorded planning
+completion path and never enters deterministic Core state. `ChaosGame.TurnFlow.cs`
 owns planning handoff, its presentation, and computer-turn orchestration;
 `ChaosGame.Endgame.cs` owns completed-match presentation; `ChaosGame.Hire.cs` owns
 the hire dock, comparison screen, and hire interactions. `ChaosGame.City.cs`
@@ -194,15 +197,21 @@ validator; Give expands only legal same-sector recipients for the equipped item.
 Computer Command/Hire turns use the deterministic baseline in `AI-SPEC.md` and
 submit through that same recorder; its policy is not an original-parity claim.
 The audio router consumes newly appended attack-resolution events and maps an
-equipped item's original Sound field to `SND005xx`; it never feeds playback
-state or timing back into the simulation.
+equipped item's original Sound field to `SND005xx`. It also owns the recovered
+nine-entry general-effect slot table (`SND00200`-`SND00208`, with no slot 5);
+the setup shell currently uses the statically identified slot 3 accepted-input
+and slot 4 rejected-input cues. Neither route feeds playback state or timing
+back into the simulation.
 `SoundtrackCatalog` discovers the extracted `Track02`-`Track09` Ogg files and
 encodes the recovered title/setup, gameplay, and endgame track programs, while
 `ChaosGame.Media.cs` owns their optional streaming, screen transition, repeat,
-focus pause/resume, and recovered 0-10 volume behavior. `GamePreferencesStore`
+focus pause/resume, and recovered 0-10 volume behavior. Effects use an
+independent recovered 0-10 scale with a level-6 default and the same amplitude
+conversion. `GamePreferencesStore`
 loads and atomically replaces a bounded, recreation-versioned local preferences
 file; malformed, unsupported, or out-of-range data falls back to the recovered
-level-5 default. Playback and preference-write failures remain presentation-only;
+Music level-5, Effects level-6, enabled idle-gang-warning, and disabled planning
+timer defaults. Playback and preference-write failures remain presentation-only;
 media state never enters Core, saves, replays, commands, events, or deterministic
 hashes.
 

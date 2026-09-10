@@ -11,17 +11,20 @@ public sealed partial class ChaosGame
     {
         var count = ScenarioCatalog.All.Count;
         _selectedScenario = ScenarioCatalog.All[Mod((int)_selectedScenario + delta, count)].Id;
+        PlayGeneralSound(3);
     }
 
     private void ChangeDuration(int delta)
     {
         _selectedDuration = Durations[Mod(Array.IndexOf(Durations, _selectedDuration) + delta, Durations.Length)];
+        PlayGeneralSound(3);
     }
 
     private void ChangePlayerCount(int delta)
     {
         var previous = _selectedPlayerCount;
         _selectedPlayerCount = Math.Clamp(_selectedPlayerCount + delta, 1, MatchLimits.PlayerCount);
+        PlayGeneralSound(previous == _selectedPlayerCount ? 4 : 3);
         for (var index = previous; index < _selectedPlayerCount; index++)
             _computerPlayers[index] = true;
     }
@@ -30,6 +33,7 @@ public sealed partial class ChaosGame
     {
         if (index < 0 || index >= _selectedPlayerCount) return;
         _computerPlayers[index] = !_computerPlayers[index];
+        PlayGeneralSound(3);
         _message = $"PLAYER {index + 1} {(_computerPlayers[index] ? "COMPUTER" : "HUMAN")}";
     }
 
@@ -38,11 +42,13 @@ public sealed partial class ChaosGame
         var values = Enum.GetValues<AiDifficulty>();
         _selectedAiMentality = values[Mod(
             Array.IndexOf(values, _selectedAiMentality) + 1, values.Length)];
+        PlayGeneralSound(3);
         _message = $"AI MENTALITY {DifficultyPresentation.Label(_selectedAiMentality)}";
     }
 
     private void SelectDifficulty(AiDifficulty difficulty)
     {
+        if (_selectedAiMentality != difficulty) PlayGeneralSound(3);
         _selectedAiMentality = difficulty;
         _message = $"AI MENTALITY {DifficultyPresentation.Label(difficulty)}";
     }
@@ -52,6 +58,7 @@ public sealed partial class ChaosGame
         if (player < 0 || player >= _selectedPlayerCount) return;
         _playerPortraits[player] = checked((short)Mod(
             _playerPortraits[player] + delta, PlayerPortraitLayout.Count));
+        PlayGeneralSound(3);
         _message = $"PLAYER {player + 1} PORTRAIT {_playerPortraits[player] + 1}";
     }
 
@@ -89,6 +96,7 @@ public sealed partial class ChaosGame
         _lastAnimatedEventSequence = -1;
         _combatAnimationPlayer.Clear();
         _screens.Show(ClientScreen.City);
+        StartPlanningTimer(_inputTime);
     }
 
     private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)
@@ -140,6 +148,8 @@ public sealed partial class ChaosGame
             font.Draw(batch, label, new Vector2(portrait.X, portrait.Bottom + 2), PlayerColors[index], 1);
         }
         DrawBorder(batch, pixel, SetupAiMentalities[(int)_selectedAiMentality], Color.Gold, 2);
+        DrawBorder(batch, pixel,
+            PlanningTimerLayout.SetupChoices[(int)_selectedPlanningTimeLimit], Color.Gold, 2);
         if (_hoverPoint is { } hover)
         {
             var hovered = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(hover));

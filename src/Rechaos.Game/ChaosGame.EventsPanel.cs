@@ -11,8 +11,10 @@ public sealed partial class ChaosGame
         if (_state?.Coordinator.ActivePlayer is not { } playerId)
         {
             _screens.Show(ClientScreen.City);
+            StartPlanningTimer(_inputTime);
             return;
         }
+        StartPlanningTimer(_inputTime);
         if (LastTurnReports(_state, playerId).Count == 0)
         {
             _screens.Show(ClientScreen.City);

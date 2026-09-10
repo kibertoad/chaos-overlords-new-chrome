@@ -217,6 +217,10 @@ public sealed partial class ChaosGame
     protected override void UnloadContent()
     {
         DisposeSoundtrack();
+        foreach (var sound in _weaponSounds.Values) sound.Dispose();
+        foreach (var sound in _generalSounds.Values) sound.Dispose();
+        _weaponSounds.Clear();
+        _generalSounds.Clear();
         base.UnloadContent();
     }
 }

@@ -1,7 +1,7 @@
 # Original executable internals research
 
 Status: active clean-room research log
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 Reference executable SHA-256:
 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`
 
@@ -143,7 +143,7 @@ controlled runtime capture is available.
 **Recreation status:** `SoundtrackCatalog` encodes the three track programs and
 `ChaosGame.Media.cs` switches them for title/setup, gameplay and endgame
 screens, advances/repeats them, and pauses/resumes on focus changes. Playback
-uses the recovered level-5 default and exact normalized volume conversion. The
+uses the recovered level-5 Music default and exact normalized volume conversion. The
 title and in-game Options overlay exposes all 11 levels, with zero stopping music
 and a later nonzero selection restarting the active program. A bounded,
 versioned recreation-native preferences file remembers the selection safely;
@@ -154,6 +154,111 @@ deterministic simulation.
 **Next validation:** Capture title/setup transitions and whether/how the original
 persists Options levels, then validate playback, focus changes, volume, and track
 transitions on each supported native platform.
+
+### BIN-SOUND-001 - effect slots, volume and setup cues
+
+**Observation:** The loader at `0x0045867c` accepts a 0-47 memory slot and a
+five-digit sound resource ID. Title initialization at `0x00460ccf` loads slots
+0-4 from `SND00200`-`SND00204`, skips slot 5, and loads slots 6-9 from
+`SND00205`-`SND00208`. The gated wrapper at `0x00464290` plays a loaded slot
+only while byte `0x0048783c` enables effects. In both the title handler at
+`0x0040b9c0` and setup handler at `0x0040e0a0`, accepted selector-arrow input
+plays slot 3 while rejected input plays slot 4.
+
+The Options application helper at `0x004652a0` reads effect level byte
+`0x00487864`, enables effects when it is nonzero, and passes `level * 25` to
+`0x00458b05`. That helper shifts the value by eight and duplicates it into the
+two 16-bit `auxSetVolume` channels. Thus the independently adjustable effects
+scale is 0-10: level 5 produces 32,000 per channel and level 10 produces
+64,000. The initialized data block is more specific than the Help text:
+Effects byte `0x00487864` starts at level 6 (38,400 per channel), while Music
+byte `0x00487868` starts at level 5 (32,000 per channel). The original Help
+describes each independent slider as having a Medium default but does not assign
+that label a number.
+
+**Interpretation:** Slots 3 and 4 are the general accepted-selection and
+rejected-input cues. Music and effects share the same numeric conversion but
+have separate state and enable flags.
+
+**Confidence:** High static evidence for slot/resource mapping, setup/title cue
+roles, scale, enable boundary, initialized levels, and channel values; High
+manual evidence for the independent controls. Other slot semantics remain
+partially classified.
+
+**Recreation status:** all nine general resources are loaded through the
+recovered slot table. Setup selector changes and bounded player-count rejection
+use slots 3 and 4, weapon effects and general effects share the independent
+recovered Effects level and its level-6 default, and both audio levels persist
+in the recreation-native preferences file.
+
+**Next validation:** Finish classifying slots 6 and 9 and validate slots 0-2
+(panel open, panel close, and held-button press) plus countdown-warning cadence
+at runtime,
+then validate overlap/interruption and native amplitude behavior.
+
+### BIN-OPTIONS-001 - registry keys and idle-gang warning
+
+**Observation:** The preference-name table contains `prefsVidDeep`,
+`prefsSlide`, `prefsBaseStats`, `prefsCombat`, `prefsFreeGang`, `commType`,
+`prefsVolumeSFX`, `prefsVolumeCD`, `prefsDiff`, `prefsTimeLimit`,
+`prefsObjective`, and `prefsFullScreen`. The initialized byte at `0x00487860`,
+corresponding to `prefsFreeGang`, is 1. In the city handler at `0x0046fd80`, the
+Done path scans all 81 gang slots; an active slot whose action byte is zero is
+idle. When `prefsFreeGang` is enabled and such a slot belongs to the active
+player, the path invokes the two-choice modal at `0x00448718`. Its open and
+close paths use the panel-slide functions at `0x0041953e` and `0x004196f5`,
+which play general-effect slots 0 and 1. The original Help independently says
+Done warns about gangs without commands unless Warn If Idle Gangs is off.
+
+**Interpretation:** `prefsFreeGang` is the enabled-by-default Warn If Idle Gangs
+option. The warning is a confirmation boundary around finishing planning, not
+a simulation rule; continuing still permits unassigned gangs.
+
+**Confidence:** High from the initialized data, string table, bounded Done-path
+scan, dialog call graph, and matching Help description.
+
+**Recreation status:** Options persists an enabled-by-default warning toggle.
+Finishing planning checks only the active player's living gangs and offers a
+Continue/Go Back modal when any lacks a queued command. Opening and closing the
+modal route the recovered general-effect slots 0 and 1.
+
+**Next validation:** Capture the original modal wording, button order, and
+whether keyboard shortcuts choose a default response.
+
+#### Planning timer
+
+The same preference block also initializes byte `0x00487854`, corresponding to
+`prefsTimeLimit`, to zero. New-match initialization at `0x0046e766` maps values
+0, 1, 2, and 3 to `-1` (disabled), 30,000 ms, 120,000 ms, and 300,000 ms.
+The original Game Settings Help independently describes None, 30 seconds,
+2 minutes, and 5 minutes and says the limit exists to constrain slow turns in
+multiplayer games. The four controls occupy the right-hand rows alongside AI
+Mentality in `PX00143`.
+
+For a human planning entry, `0x0046fd80` calls the start helper at `0x0041b8bc`,
+which records `timeGetTime`; computer planning skips it. The expiry helper at
+`0x0041bdd5` returns true once elapsed milliseconds exceed the selected limit,
+and the human loop then exits as if Done had been accepted. This check occurs
+after the user-triggered idle-gang confirmation path, so timer expiry does not
+open that confirmation. The drawing helper at `0x0041b8fc` scales a 60-pixel
+bar by elapsed/limit. It calls general slot 7 while remaining time is strictly
+between 1 and 10 seconds and slot 8 from 1 second through zero. The input pump
+refreshes this helper every seventh eligible pump call; exact wall-clock sound
+cadence therefore still needs a controlled capture. In the supported asset
+pack, those two PCM clips last approximately 0.117 and 1.189 seconds.
+
+**Recreation status:** Setup exposes the four original choices at the original
+hit regions and safely persists the selection, defaulting to None. A bounded
+presentation-only timer starts when a human accepts the private handoff, remains
+active through planning panels, renders the original 60-by-3 aperture, and
+routes the recovered warning slots once per remaining-second bucket. Expiry
+submits the normal replay-recorded finish-planning operation and deliberately
+bypasses the idle-gang confirmation. The timer itself is absent from Core state,
+state hashes, snapshots, and replay payloads; only its resulting ordinary
+operation is authoritative.
+
+**Next validation:** Capture the original bar rounding, warning cadence,
+deactivation behavior, and whether modal dialogs perceptibly pause the timer.
 
 ### BIN-API-003 - files and persistence
 

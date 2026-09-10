@@ -14,14 +14,20 @@ public sealed partial class ChaosGame
     {
         // Online, finishing planning sends the turn and waits: the match advances when the server
         // seals it and every client applies the same set, not when this one decides it is done.
-        if (_session is not null) SubmitOnlineTurn();
+        // The idle-gang warning still gets its say first — an unordered gang is as easy to miss
+        // online as off, and harder to fix once the turn has sealed.
+        if (_session is not null)
+        {
+            if (!TryOpenIdleGangWarning()) SubmitOnlineTurn();
+        }
         else if (_debugPhaseStepping) AdvanceDebugPhase();
-        else FinishPlanningTurn();
+        else if (!TryOpenIdleGangWarning()) FinishPlanningTurn();
     }
 
     private void FinishPlanningTurn()
     {
         if (_state is null || _actions is null) return;
+        StopPlanningTimer();
         if (_state.Outcome is not null)
         {
             _message = "MATCH COMPLETE";

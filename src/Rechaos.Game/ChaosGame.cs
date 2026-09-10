@@ -72,6 +72,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _uiSprites;
     private PixelFont? _font;
     private readonly Dictionary<short, SoundEffect> _weaponSounds = [];
+    private readonly Dictionary<int, SoundEffect> _generalSounds = [];
     private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
     private MatchState? _state;
@@ -161,7 +162,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _autoSavePath = Path.Combine(userDataRoot, "autosave.rchsave");
         _replayPath = Path.Combine(userDataRoot, "last-match.rchreplay");
         _preferencesPath = Path.Combine(userDataRoot, "preferences.json");
-        _musicVolumeLevel = GamePreferencesStore.LoadOrDefault(_preferencesPath).MusicVolumeLevel;
+        var preferences = GamePreferencesStore.LoadOrDefault(_preferencesPath);
+        _musicVolumeLevel = preferences.MusicVolumeLevel;
+        _soundEffectVolumeLevel = preferences.SoundEffectVolumeLevel;
+        _warnIfIdleGangs = preferences.WarnIfIdleGangs;
+        _selectedPlanningTimeLimit = preferences.PlanningTimeLimit;
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -219,11 +224,17 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             var sound = LoadSound(AudioRouting.SoundFile(index));
             if (sound is not null) _weaponSounds.Add(index, sound);
         }
+        foreach (var slot in AudioRouting.GeneralSoundSlots)
+        {
+            var sound = LoadSound(AudioRouting.GeneralSoundFile(slot));
+            if (sound is not null) _generalSounds.Add(slot, sound);
+        }
         LoadSoundtrack();
         _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
         {
             ["helpAvailable"] = (_helpDocument is not null).ToString(),
             ["weaponSounds"] = _weaponSounds.Count.ToString(),
+            ["generalSounds"] = _generalSounds.Count.ToString(),
             ["combatAnimations"] = _combatAnimationTextures.Count.ToString()
         });
     }
@@ -234,7 +245,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         UpdateSoundtrack(gameTime);
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
+        // Before the planning timer, so a turn that resolved on the server is adopted even on the
+        // frame the local clock would otherwise have taken over the loop.
         PumpOnlineNotices();
+        if (UpdatePlanningTimer(gameTime.TotalGameTime))
+        {
+            _previousKeyboard = keyboard;
+            _previousMouse = mouse;
+            base.Update(gameTime);
+            return;
+        }
         RunComputerTurns();
         CaptureNewCombatAnimations();
         _combatAnimationPlayer.Advance(gameTime.ElapsedGameTime);
@@ -256,9 +276,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         else
         {
-            if (Pressed(keyboard, Keys.F1)) OpenHelp();
-            else if (Pressed(keyboard, Keys.O)) OpenOptions();
-            else if (Pressed(keyboard, Keys.Escape) && !_screens.Back()) Exit();
+            if (!_idleGangWarningOpen)
+            {
+                if (Pressed(keyboard, Keys.F1)) OpenHelp();
+                else if (Pressed(keyboard, Keys.O)) OpenOptions();
+                else if (Pressed(keyboard, Keys.Escape) && !_screens.Back()) Exit();
+            }
             switch (_screens.Current)
             {
                 case ClientScreen.Title:
@@ -481,6 +504,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         if (_state is not null && _combatAnimationPlayer.IsPlaying)
             DrawCombatPanel(_batch, _pixel, _font, _state);
+        DrawPlanningTimer(_batch, _pixel);
         _batch.End();
         base.Draw(gameTime);
     }
@@ -503,6 +527,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         for (var index = 0; index < _selectedPlayerCount; index++)
             if (Pressed(keyboard, controllerKeys[index])) ToggleController(index);
         if (Pressed(keyboard, Keys.M)) CycleDifficulty();
+        if (Pressed(keyboard, Keys.L)) CyclePlanningTimeLimit();
         if (Pressed(keyboard, Keys.Enter)) StartMatch();
     }
 
@@ -533,14 +558,27 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Setup:
                 var scenario = Array.FindIndex(SetupScenarios, rectangle => rectangle.Contains(point));
                 var duration = Array.FindIndex(SetupDurations, rectangle => rectangle.Contains(point));
+                var planningTimeLimit = Array.FindIndex(
+                    PlanningTimerLayout.SetupChoices.ToArray(),
+                    rectangle => rectangle.Contains(point));
                 var playerSlot = Enumerable.Range(0, _selectedPlayerCount)
                     .FirstOrDefault(index => SetupPlayerSlot(index).Contains(point), -1);
                 var previousPortrait = Enumerable.Range(0, _selectedPlayerCount)
                     .FirstOrDefault(index => PlayerPortraitLayout.Previous(index).Contains(point), -1);
                 var nextPortrait = Enumerable.Range(0, _selectedPlayerCount)
                     .FirstOrDefault(index => PlayerPortraitLayout.Next(index).Contains(point), -1);
-                if (scenario >= 0) _selectedScenario = (ScenarioId)scenario;
-                else if (duration >= 0) _selectedDuration = Durations[duration];
+                if (scenario >= 0)
+                {
+                    if (_selectedScenario != (ScenarioId)scenario) PlayGeneralSound(3);
+                    _selectedScenario = (ScenarioId)scenario;
+                }
+                else if (duration >= 0)
+                {
+                    if (_selectedDuration != Durations[duration]) PlayGeneralSound(3);
+                    _selectedDuration = Durations[duration];
+                }
+                else if (planningTimeLimit >= 0)
+                    SelectPlanningTimeLimit((PlanningTimeLimit)planningTimeLimit);
                 else if (previousPortrait >= 0) CyclePortrait(previousPortrait, -1);
                 else if (nextPortrait >= 0) CyclePortrait(nextPortrait, 1);
                 else
