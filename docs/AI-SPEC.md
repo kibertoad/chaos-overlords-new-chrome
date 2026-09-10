@@ -134,8 +134,9 @@ replay-verified two-computer harness through 20 turns or objective completion.
    uses its ranking mode for exact three-offer selection. For selector `0x5f`,
    queued Move targets project the recovered family-6 coverage behavior; the
    underlying two auxiliary shorts remain deliberately unmodeled. Exact hire
-   destination selection, stable original offer-slot refill, and failed-attempt
-   offer snubbing remain pending. Selector `0x3e` is
+   destination selection and stable original offer-slot refill remain pending.
+   A failed ranking now uses the recovered scenario-specific rejection selector
+   and records the resulting snub. Selector `0x3e` is
    identified as the previous-turn action byte. Selectors 0 (scenario), `0x48`
    (planning-record initialized flag), `0x5a` (mirrored gang projection),
    `0x7c` (per-player hire role), 3 (player cash), 4 (sector

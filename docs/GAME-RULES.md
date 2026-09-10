@@ -25,24 +25,28 @@ controlled reference observation confirms its execution timing and edge cases.
   it from the panel and a replacement appears next turn. The player may instead
   fire one unwanted offer; its replacement likewise appears next turn. A hired
   gang begins with Force from 5 through 9 and may later be healed to 10.
-- Interpretation: hiring and one offer snub are available throughout the active
-  player's planning turn. The choice is removed immediately and refilled at `FinishHire`, the boundary
-  before the panel is next shown. Hired and snubbed vacancies are filled
-  independently, so hiring and snubbing in one turn restores all three offers.
-  A recruit's initial Force is generated uniformly in the inclusive range 5–9
-  through the recovered bounded RNG wrapper. Initial and replacement offers use
-  rejection sampling over definition IDs 1 through 89, rejecting other visible
-  offers and the offer just removed.
-- Current exclusions: controlled runtime confirmation of panel refill timing and
-  behavior with modified or incomplete definition data.
+- Interpretation: the panel uses three permanent slots and one mutually
+  exclusive action selection: choosing a hire or snub clears any selection on
+  the other two slots. Resolution negates the successful hire's or snub's offer
+  in place. Its replacement is drawn into that same slot at the player's next
+  planning entry, in ascending slot order, not during `FinishHire`. A recruit's
+  initial Force is generated uniformly in the inclusive range 5–9 through the
+  recovered bounded RNG wrapper. Initial and replacement offers use rejection
+  sampling over definition IDs 1 through 89, rejecting other visible offers and
+  the offer just removed.
+- Current exclusions: the recreation still compacts offers, permits simultaneous
+  hire plus snub, and refills during resolution; fixed slots and delayed refill
+  are the next migration task. Controlled runtime corroboration and behavior
+  with modified or incomplete definition data also remain pending.
 - Confidence: High for the range, static call sites, rejection behavior and RNG
   ordering; runtime correlation remains pending.
 - Implementation: `MatchState.SnubHireOffer`, `HireRules.ValidateSnub`,
   `HireResolver.Resolve`, and `ManualRules.MinimumHiredGangForce` /
   `MaximumHiredGangForce`.
-- Tests: `HireAndEliminationTests` covers planning/player validation, the one-snub
-  limit, deferred refill, simultaneous hire plus snub, initial Force bounds,
-  event details, RNG consumption, and deterministic hashes.
+- Tests: current `HireAndEliminationTests` cover the recreation behavior, initial
+  Force bounds, event details, RNG consumption, and deterministic hashes; their
+  compact/refill and simultaneous-action expectations must be replaced by fixed
+  slot and next-planning-entry fixtures.
 - Next experiment: record repeated Hire panels and new-gang Force values from a
   fixed reference save, then correlate offer order and RNG consumption.
 

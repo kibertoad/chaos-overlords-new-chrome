@@ -8,6 +8,9 @@ namespace Rechaos.Core.GameModel;
 public static class AiTurnPlanner
 {
     public sealed record HireChoice(short GangDefinitionId, int SectorId);
+    public sealed record HirePreparation(
+        HireChoice? Choice,
+        short? RejectedGangDefinitionId = null);
 
     public static IReadOnlyList<GameCommand> Plan(MatchState state, PlayerId playerId)
     {
@@ -50,10 +53,10 @@ public static class AiTurnPlanner
 
         if (AiPlanningPreparation.SelectHireRole(state, playerId) is not { } selection)
             return null;
-        return ChooseHire(state, playerId, selection);
+        return PrepareHire(state, playerId, selection).Choice;
     }
 
-    internal static HireChoice? ChooseHire(
+    internal static HirePreparation PrepareHire(
         MatchState state,
         PlayerId playerId,
         OriginalAiHireRoleSelection selection)
@@ -61,16 +64,20 @@ public static class AiTurnPlanner
         var player = state.FindPlayer(playerId)
             ?? throw new ArgumentOutOfRangeException(nameof(playerId));
         if (player.HirePool.Count != MatchLimits.HireOffersPerPlayer)
-            return null;
+            return new HirePreparation(null);
         var offers = player.HirePool
             .Select(definitionId => state.Definitions.Gangs.Single(gang => gang.Id == definitionId))
             .ToArray();
         if (OriginalAiHireRules.SelectOfferIndex(
                 offers, state.Setup.Scenario, selection.RankingMode, player.Cash) is not { } offerIndex)
-            return null;
+        {
+            var rejectedIndex = OriginalAiHireRules.SelectRejectedOfferIndex(
+                offers, state.Setup.Scenario);
+            return new HirePreparation(null, player.HirePool[rejectedIndex]);
+        }
         var definitionId = player.HirePool[offerIndex];
 
-        return state.Sectors
+        var choice = state.Sectors
             .Where(sector => sector.Owner == playerId)
             .Select(sector => new HireChoice(definitionId, sector.Id))
             .Where(choice => HireRules.Validate(
@@ -79,6 +86,7 @@ public static class AiTurnPlanner
             // original selected-offer destination path.
             .OrderBy(choice => choice.SectorId)
             .FirstOrDefault();
+        return new HirePreparation(choice);
     }
 
     private static int Score(

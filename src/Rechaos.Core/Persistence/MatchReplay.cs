@@ -103,7 +103,7 @@ public sealed class MatchReplayRecorder
         Add(new ReplayStep(ReplayOperationKind.PrepareAiPlanning, CurrentHash(), Player: player));
     }
 
-    public AiTurnPlanner.HireChoice? PrepareAiHiring(PlayerId player)
+    public AiTurnPlanner.HirePreparation PrepareAiHiring(PlayerId player)
     {
         EnsureSynchronized();
         var choice = State.PrepareAiHiring(player);

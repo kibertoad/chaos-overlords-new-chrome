@@ -526,8 +526,9 @@ chooses the first strict minimum of this integer score, initialized to 5000:
 The sum includes positive Combat, Defense, Control, Heal, Influence, Research,
 Strength, Blade, Range, Fighting, Martial Arts, and Tech; it excludes Stealth,
 Detect, and Chaos. `OriginalAiHireRules.SelectRejectedOfferIndex` implements
-this exact failure-path choice, but live snubbing remains pending the outer
-attempt gate.
+this exact failure-path choice. The live post-command AI preparation returns
+that choice when ranking or affordability fails, and the replay recorder applies
+the snub as a separate authoritative mutation.
 
 **Confidence:** Verified for all comparisons, eligibility boundaries, tie
 directions, the cash-200 override, post-selection affordability, and no-fallback
@@ -1051,20 +1052,32 @@ runtime reference fixture remain pending.
 
 ### BIN-HIRE-001 - initial and replacement offers
 
-**Observation:** `0x0046e766` initializes all three offer bytes per internal
-player to signed -100. Before a human interaction it calls `0x004716eb`, which
-fills negative slots using repeated bounded `1..89` draws, rejecting duplicates
-among the three slots and the positive ID represented by the replaced negative
-slot. The hire resolver at `0x00472775` negates removed offers before refill and
-creates a hired gang with a bounded `1..5` result plus four.
+**Observation:** `0x0046e766` initializes each player's three fixed offer bytes
+at `0x004abbc0` to signed -100 and the matching action bytes at `0x004a27c8` to
+-1. `0x004078b8` writes snub action -2 to the selected slot. The resolver at
+`0x00472775` scans players 0..5 and slots 0..2, negates that same slot's offer
+for a snub or successful hire, clears its action, and creates a hired gang with
+a bounded `1..5` result plus four. Failed hires clear the action without
+negating the offer. The planning-entry helper `0x004716eb` later scans slots
+0..2 and fills each negative slot in place using repeated bounded `1..89` draws,
+rejecting all currently positive slot values and that slot's negated old ID.
+Its only callers are the computer and human planning-entry paths at `0x0046f4e3`
+and `0x0046fe8b`; the resolver does not call it. The human handler at
+`0x00416c75` assigns the selected slot and clears both other action bytes, so
+hire and snub are mutually exclusive selections rather than two actions in one
+turn.
 
-**Interpretation:** Initial offers are populated on first interaction. Replacement
-selection is rejection sampling over gang IDs 1 through 89; a just-hired or
-snubbed gang cannot immediately replace itself. Hired Force is uniformly 5
-through 9 through the recovered bounded wrapper.
+**Interpretation:** Initial offers are populated on planning entry. Successful
+hire or snub leaves a signed tombstone in its permanent slot until that player's
+next planning entry; refill never compacts or shifts slots. Multiple malformed
+vacancies would refill in ascending slot order. Replacement selection is
+rejection sampling over gang IDs 1 through 89; a just-hired or snubbed gang
+cannot immediately replace itself. Hired Force is uniformly 5 through 9 through
+the recovered bounded wrapper.
 
-**Confidence:** High static evidence; panel timing and runtime sequences still
-need a controlled original-game observation.
+**Confidence:** High static evidence for arrays, sentinels, selected-slot writes,
+mutual exclusion, resolver/refill order, call sites, and RNG bounds; a controlled
+runtime sequence remains useful corroboration.
 
 ## Toolchain hypothesis
 

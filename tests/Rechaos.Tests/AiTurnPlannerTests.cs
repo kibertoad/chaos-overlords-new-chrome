@@ -273,10 +273,34 @@ public sealed class AiTurnPlannerTests
             offers, ScenarioId.Power, requestedMode: 0,
             availableCash: match.Players[0].Cash)!.Value;
 
-        var choice = match.PrepareAiHiring(new PlayerId(0));
+        var choice = match.PrepareAiHiring(new PlayerId(0)).Choice;
 
         Assert.NotNull(choice);
         Assert.Equal(offers[expectedIndex].Id, choice.GangDefinitionId);
+    }
+
+    [Fact]
+    public void PreparedHireUsesOriginalFailedRankingRejection()
+    {
+        var data = BundledOriginalData.Load();
+        var offers = data.Gangs
+            .Where(gang => gang.Id != 0 && gang.Force > 0)
+            .Take(MatchLimits.HireOffersPerPlayer)
+            .ToArray();
+        var match = CreateMatch(data: data, cash: -100,
+            hirePool: offers.Select(gang => gang.Id).ToArray());
+        match.FinishUpkeep();
+        var selection = new OriginalAiHireRoleSelection(RankingMode: 3, Role: 4);
+        var rejectedIndex = OriginalAiHireRules.SelectRejectedOfferIndex(
+            offers, ScenarioId.Power);
+
+        var preparation = AiTurnPlanner.PrepareHire(
+            match, new PlayerId(0), selection);
+
+        Assert.Null(preparation.Choice);
+        Assert.Equal(offers[rejectedIndex].Id, preparation.RejectedGangDefinitionId);
+        Assert.True(match.SnubHireOffer(
+            new PlayerId(0), preparation.RejectedGangDefinitionId!.Value).Accepted);
     }
 
     [Theory]
@@ -346,9 +370,12 @@ public sealed class AiTurnPlannerTests
                     recorder.PrepareAiPlanning(commandPlayer);
                     foreach (var command in AiTurnPlanner.Plan(state, commandPlayer))
                         Assert.True(recorder.Submit(command).Accepted);
-                    if (recorder.PrepareAiHiring(commandPlayer) is { } planningHire)
+                    var hiring = recorder.PrepareAiHiring(commandPlayer);
+                    if (hiring.Choice is { } planningHire)
                         Assert.True(recorder.QueueHire(commandPlayer,
                             planningHire.GangDefinitionId, planningHire.SectorId).Accepted);
+                    else if (hiring.RejectedGangDefinitionId is { } rejectedOffer)
+                        Assert.True(recorder.SnubHireOffer(commandPlayer, rejectedOffer).Accepted);
                     recorder.FinishCommand(commandPlayer);
                     break;
                 case TurnPhase.Execution:
