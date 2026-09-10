@@ -20,7 +20,7 @@ then; the versioned migration machinery is retained for post-1.0 compatibility.
    [*Chaos Overlords* from GOG](https://www.gog.com/en/game/chaos_overlords).
    The GOG release is fully compatible with the new runtime.
 2. Download and run the latest **Chaos Overlords: New Chrome** Windows installer
-   from [GitHub Releases](https://github.com/kibertoad/rechaos-overlords/releases/latest).
+   from [GitHub Releases](https://github.com/kibertoad/chaos-overlords-new-chrome/releases/latest).
 3. Let Setup detect your GOG installation, or select its folder when prompted.
    Setup verifies and imports the required assets, then installs the new runtime.
 
