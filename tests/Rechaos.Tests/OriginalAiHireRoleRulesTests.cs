@@ -20,6 +20,54 @@ public sealed class OriginalAiHireRoleRulesTests
     };
 
     [Theory]
+    [InlineData(GameDuration.SixMonths, 3)]
+    [InlineData(GameDuration.OneYear, 6)]
+    [InlineData(GameDuration.TwoYears, 13)]
+    [InlineData(GameDuration.FourYears, 26)]
+    public void GreedStopsHiringAtFinalDurationEighth(
+        GameDuration duration,
+        int cutoff)
+    {
+        Assert.False(OriginalAiHireRoleRules.ShouldAttemptHire(
+            ScenarioId.Greed, 5, 5, cutoff, duration));
+        Assert.True(OriginalAiHireRoleRules.ShouldAttemptHire(
+            ScenarioId.Greed, 5, 5, cutoff + 1, duration));
+    }
+
+    [Theory]
+    [InlineData(ScenarioId.Power)]
+    [InlineData(ScenarioId.Acceptance)]
+    [InlineData(ScenarioId.Dominance)]
+    public void TimedNonGreedScenariosStopWithTwoTurnsRemaining(ScenarioId scenario)
+    {
+        Assert.False(OriginalAiHireRoleRules.ShouldAttemptHire(
+            scenario, 5, 5, 2, GameDuration.OneYear));
+        Assert.True(OriginalAiHireRoleRules.ShouldAttemptHire(
+            scenario, 5, 5, 3, GameDuration.OneYear));
+    }
+
+    [Theory]
+    [InlineData(ScenarioId.KillEmAll)]
+    [InlineData(ScenarioId.Big40)]
+    [InlineData(ScenarioId.Eliminate)]
+    [InlineData(ScenarioId.Siege)]
+    [InlineData(ScenarioId.Armageddon)]
+    public void UntimedBranchesUseInclusiveGangLimit(ScenarioId scenario)
+    {
+        Assert.True(OriginalAiHireRoleRules.ShouldAttemptHire(
+            scenario, 5, 5, 0, GameDuration.OneYear));
+        Assert.False(OriginalAiHireRoleRules.ShouldAttemptHire(
+            scenario, 6, 5, 0, GameDuration.OneYear));
+    }
+
+    [Fact]
+    public void BigManBypassesNormalGangLimitGate()
+    {
+        Assert.True(OriginalAiHireRoleRules.ShouldAttemptHire(
+            ScenarioId.BigMan, 81, 0, 0, GameDuration.OneYear));
+    }
+
+    [Theory]
     [MemberData(nameof(Schedules))]
     public void MatchesEveryOriginalScheduleSlot(
         ScenarioId scenario,

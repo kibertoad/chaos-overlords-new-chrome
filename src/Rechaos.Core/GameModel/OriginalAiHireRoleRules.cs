@@ -8,6 +8,32 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiHireRoleRules
 {
+    public static bool ShouldAttemptHire(
+        ScenarioId scenario,
+        int activeGangCount,
+        int hireGangLimit,
+        int turnsRemaining,
+        GameDuration duration)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(activeGangCount);
+        ArgumentOutOfRangeException.ThrowIfNegative(hireGangLimit);
+        ArgumentOutOfRangeException.ThrowIfNegative(turnsRemaining);
+
+        return scenario switch
+        {
+            ScenarioId.Greed => activeGangCount <= hireGangLimit
+                && ScenarioCatalog.Turns(duration) / 8 < turnsRemaining,
+            ScenarioId.Power or ScenarioId.Acceptance or ScenarioId.Dominance =>
+                activeGangCount <= hireGangLimit && turnsRemaining > 2,
+            ScenarioId.KillEmAll or ScenarioId.Big40 or ScenarioId.Eliminate
+                or ScenarioId.Siege or ScenarioId.Armageddon =>
+                activeGangCount <= hireGangLimit,
+            // The original Big Man case enters its turn schedule directly.
+            ScenarioId.BigMan => true,
+            _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, null)
+        };
+    }
+
     public static OriginalAiHireRoleSelection SelectAdjusted(
         ScenarioId scenario,
         int turn,

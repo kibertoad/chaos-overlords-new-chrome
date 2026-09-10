@@ -108,9 +108,12 @@ replay-verified two-computer harness through 20 turns or objective completion.
    `0x7c`'s per-player hire-role word. The original objective-specific base
    turn schedules are isolated in `OriginalAiHireRoleRules`; Dominance alone
    uses an eleven-turn period, while the other nine objectives use ten. The
-   objective-specific adjustments are also instruction-verified and isolated,
-   including late-game remaps, duration-scaled family quotas, and final
-   mandatory-family overrides. The three-offer helper's six exact
+   objective-specific adjustments and hire-attempt gates are also
+   instruction-verified and isolated, including late-game remaps,
+   duration-scaled family quotas, and final mandatory-family overrides. Greed
+   stops at the final duration eighth, Power/Acceptance/Dominance stop with two
+   turns left, most other scenarios use only an inclusive gang limit, and Big
+   Man uniquely bypasses that normal limit gate. The three-offer helper's six exact
    role rankings, scenario-specific filters and tie directions, rich-player
    mode override, post-ranking affordability check, and no-fallback behavior
    are isolated in `OriginalAiHireRules`. Its failed-hire rejection selector is

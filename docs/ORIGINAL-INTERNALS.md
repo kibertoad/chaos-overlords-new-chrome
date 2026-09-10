@@ -416,12 +416,20 @@ override is last even after another rule has reset the slot. Greed, Acceptance,
 and Dominance retain their distinct late-turn windows, selector-driven fallback
 chains, quota multipliers, and Dominance's unique slot 10.
 
+The enclosing attempt gates are also scenario-specific. Greed requires the
+active gang count to be at or below its computed limit and requires remaining
+turns to be strictly greater than integer `total duration / 8`. Power,
+Acceptance, and Dominance require the inclusive gang limit plus more than two
+remaining turns. Kill 'Em All, Big 40, Eliminate, Siege, and Armageddon use only
+the inclusive gang limit. Big Man enters its schedule without that limit check.
+`OriginalAiHireRoleRules.ShouldAttemptHire` implements these boundaries.
+
 **Confidence:** Verified for scenario order, periods, every ranking-mode call,
 every hire-role write, shared scenario bodies, constants, retained factor, x87
 comparison direction, equality boundaries, and adjustment ordering.
 
-**Next validation:** recover the scenario-specific hire-attempt gates and map
-the raw selector inputs into authoritative match state before live integration.
+**Next validation:** map the raw selector inputs into authoritative match state
+before live integration.
 
 ### BIN-AI-003A - strategic hire-offer ranking
 
