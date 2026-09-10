@@ -9,7 +9,7 @@ Last updated: 2026-09-11
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`.
 - The latest pushed functional checkpoint is the tip of that branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,036 tests with no warnings.
+  isolated Release build passed all 1,043 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -31,7 +31,8 @@ Last updated: 2026-09-11
   planning confirmation, and planning-countdown warnings use mapped sounds.
 - Setup now offers the original None, 30 Seconds, 2 Minutes, and 5 Minutes
   planning limits. Human planning displays the recovered 60-by-3 bar, continues
-  through planning panels, uses warning slots 7/8, and finishes through the
+  through planning panels, uses the original percent-first width quantization,
+  checks warning slots 7/8 every sixth fixed update, and finishes through the
   ordinary replay-recorded operation when time expires. Computer turns and Core
   deterministic state never use wall-clock time.
 - Every recovered AI strategy family has a live handler and the earlier cleanup
@@ -71,8 +72,8 @@ Last updated: 2026-09-11
 
 ## Recommended next evidence batches
 
-1. Capture the original planning countdown to settle bar rounding, warning
-   cadence, modal behavior, and deactivation timing; adjust presentation only
+1. Capture the original planning countdown to settle wall-clock warning cadence,
+   modal behavior, and deactivation timing; adjust presentation only
    where the capture contradicts the current bounded implementation.
 2. Capture the original Options defaults and panel/combat cadence, then adjust
    the bounded presentation where the reference contradicts it.

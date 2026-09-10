@@ -244,24 +244,32 @@ which records `timeGetTime`; computer planning skips it. The expiry helper at
 `0x0041bdd5` returns true once elapsed milliseconds exceed the selected limit,
 and the human loop then exits as if Done had been accepted. This check occurs
 after the user-triggered idle-gang confirmation path, so timer expiry does not
-open that confirmation. The drawing helper at `0x0041b8fc` scales a 60-pixel
-bar by elapsed/limit. It calls general slot 7 while remaining time is strictly
-between 1 and 10 seconds and slot 8 from 1 second through zero. The input pump
-refreshes this helper every seventh eligible pump call; exact wall-clock sound
-cadence therefore still needs a controlled capture. In the supported asset
-pack, those two PCM clips last approximately 0.117 and 1.189 seconds.
+open that confirmation. The drawing helper at `0x0041b8fc` first computes
+integer elapsed percent as `(elapsedMilliseconds * 100) / limitMilliseconds`,
+then computes visible width as `60 - (elapsedPercent * 60) / 100`; both
+divisions truncate. This percent-first quantization differs from scaling the
+remaining duration directly. It calls general slot 7 while remaining time is
+strictly between 1 and 10 seconds and slot 8 while remaining time is greater
+than zero and at most 1 second. In the input pump at `0x00462579`, counter
+`0x00487898` is decremented before comparison; a zero calls the helper and
+resets the counter to 6. Timer drawing and warning checks therefore recur every
+sixth eligible pump call. The sound wrapper at `0x00464290` forwards every call
+to the low-level player at `0x0045851a`; it has no timer-specific suppression.
+Exact wall-clock cadence still depends on the original pump rate and needs a
+controlled capture. In the supported asset pack, those two PCM clips last
+approximately 0.117 and 1.189 seconds.
 
 **Recreation status:** Setup exposes the four original choices at the original
 hit regions and safely persists the selection, defaulting to None. A bounded
 presentation-only timer starts when a human accepts the private handoff, remains
-active through planning panels, renders the original 60-by-3 aperture, and
-routes the recovered warning slots once per remaining-second bucket. Expiry
+active through planning panels, renders the original percent-quantized 60-by-3
+aperture, and checks the recovered warning slots every sixth fixed update. Expiry
 submits the normal replay-recorded finish-planning operation and deliberately
 bypasses the idle-gang confirmation. The timer itself is absent from Core state,
 state hashes, snapshots, and replay payloads; only its resulting ordinary
 operation is authoritative.
 
-**Next validation:** Capture the original bar rounding, warning cadence,
+**Next validation:** Capture the original wall-clock warning cadence,
 deactivation behavior, and whether modal dialogs perceptibly pause the timer.
 
 ### BIN-API-003 - files and persistence
