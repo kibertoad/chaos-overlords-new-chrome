@@ -111,11 +111,11 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        var selected = DrawFamilyZeroTarget(
-            state, playerId, gang, visible, visibleWeight, out var accepted);
-        if (accepted)
+        var draw = DrawFamilyZeroTarget(
+            state, playerId, gang, visible, visibleWeight);
+        if (draw.Accepted)
         {
-            SetFamilyZeroAttack(state, playerId, gang, gangSlot, selected);
+            SetRecoveredAttack(state, playerId, gang, gangSlot, draw.Selected);
             return;
         }
 
@@ -142,16 +142,16 @@ public static partial class AiTurnPlanner
     {
         if (visibleWeight == 10)
         {
-            ObjectiveTarget selected = default;
+            RecoveredAttackDraw draw = default;
             for (var attempt = 0;
                  attempt < OriginalAiFamilyZeroRules.AttackAttemptsAfterHideOrEquip;
                  attempt++)
             {
-                selected = DrawFamilyZeroTarget(
-                    state, playerId, gang, visible, visibleWeight, out var accepted);
-                if (accepted) break;
+                draw = DrawFamilyZeroTarget(
+                    state, playerId, gang, visible, visibleWeight);
+                if (draw.Accepted) break;
             }
-            SetFamilyZeroAttack(state, playerId, gang, gangSlot, selected);
+            SetRecoveredAttack(state, playerId, gang, gangSlot, draw.Selected);
         }
 
         var player = state.FindPlayer(playerId)!;
@@ -204,10 +204,10 @@ public static partial class AiTurnPlanner
 
         if (visibleWeight == 10)
         {
-            var selected = DrawFamilyZeroTarget(
-                state, playerId, gang, visible, visibleWeight, out var accepted);
-            if (accepted)
-                SetFamilyZeroAttack(state, playerId, gang, gangSlot, selected);
+            var draw = DrawFamilyZeroTarget(
+                state, playerId, gang, visible, visibleWeight);
+            if (draw.Accepted)
+                SetRecoveredAttack(state, playerId, gang, gangSlot, draw.Selected);
             else
             {
                 state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.None);
@@ -234,46 +234,18 @@ public static partial class AiTurnPlanner
                 sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
     }
 
-    private static ObjectiveTarget DrawFamilyZeroTarget(
+    private static RecoveredAttackDraw DrawFamilyZeroTarget(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         IReadOnlyList<ObjectiveTarget> visible,
-        int visibleWeight,
-        out bool accepted)
+        int visibleWeight)
     {
-        var owner = state.Sectors[gang.SectorId].Owner;
-        var targetPool = owner is { } sectorOwner
-            && state.AiStrategy.IsHostile(playerId, sectorOwner)
-            && visibleWeight == 10
-                ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
-                        .Setup.Controller == PlayerController.Human)
-                    .ToArray()
-                : visible;
-        var ordinal = state.Random.NextInclusive(targetPool.Count);
-        var selected = targetPool[ordinal - 1];
-        var comparisonTarget = visible[ordinal - 1].Gang;
-        var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
-        var targetStats = EffectiveStatisticsCalculator.ForGang(state, comparisonTarget);
-        accepted = OriginalAiFamilyZeroRules.CanAttackSelectedTarget(
-            gang.Force, attackerStats.Combat, attackerStats.Defense,
-            comparisonTarget.Force, targetStats.Combat, targetStats.Defense);
-        return selected;
-    }
-
-    private static void SetFamilyZeroAttack(
-        MatchState state,
-        PlayerId playerId,
-        MatchGangState gang,
-        int gangSlot,
-        ObjectiveTarget selected)
-    {
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Attack,
-            new AiActionTarget(
-                checked((byte)selected.Gang.Owner.Value),
-                checked((byte)selected.Slot)));
-        state.AiPlanning.SetFocusValue(playerId, gangSlot, gang.SectorId);
+        var targetPool = SelectHumanWeightedTargetPool(
+            state, playerId, gang.SectorId, visible, visibleWeight);
+        return DrawRecoveredAttackTarget(
+            state, gang, visible, targetPool,
+            OriginalAiFamilyZeroRules.CanAttackSelectedTarget);
     }
 
     private static void SetFamilyZeroEquipment(

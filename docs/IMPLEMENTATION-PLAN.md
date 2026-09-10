@@ -814,9 +814,10 @@ not lines of code or asset counts.
 
 1. Continue the dedicated AI structure pass now that every dispatcher family
    has a fixed decision-order/RNG trace. Recovered dispatch and its immutable
-   planning snapshot are isolated; next extract shared target/equipment/
-   movement operations from family handlers without generalizing away original
-   branch order, then isolate the provisional fallback policy.
+   planning snapshot are isolated, and the identical family-0/4/6 asymmetric
+   target draw plus Attack write are shared. Continue extracting only proven-
+   identical target/equipment/movement operations without generalizing away
+   original branch order, then isolate the provisional fallback policy.
 2. Capture controlled original-turn fixtures for the now-guarded family-1 cash
    50/51, Force 8/9, effective-Heal -3/-4, and Tolerance 3/4 boundaries, plus
    fixed band 0/1/2 retaliation Hide and Martial Arts branches and family-0/4
