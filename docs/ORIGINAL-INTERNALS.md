@@ -821,9 +821,9 @@ Crackdown and Move through mode 5 when police are active; outside that boundary
 an older Snitch writes Chaos and every other older action writes mode-5 Move.
 The recreation executes this action-level branch through
 `OriginalAiFamilyOneRules`. Replay-recorded preparation now supplies its exact
-positive-score mode-5 destination and tie RNG. The original result when late
-filters leave no positive score, and the fallback when the desired action has
-no legal recreation candidate, remain provisional.
+mode-5 destination and tie RNG, including the all-zero post-filter path. Only
+the fallback when the selected action/step has no legal recreation candidate
+remains provisional.
 
 The other family-1 paths use the common Force-below-9 Heal gate. The isolated
 rules also guard two distinct cash comparisons: the strict continuation changes
@@ -837,9 +837,9 @@ under the common Force-below-9/effective-Heal-at-least-`-3` gate. Otherwise it
 queries selector `0x2c` for the acting gang's current sector, writes Control
 when that strict solo-control predicate succeeds, and writes Move with a mode-5
 destination when it fails. `OriginalAiFamilyOneRules.SelectHealContinuation`
-and the live planner preserve this branch. Its ordinary mode-5 target selection
-is live; only the zero-score post-filter result and the recreation fallback when
-the desired command is unavailable remain provisional.
+and the live planner preserve this branch. Its complete mode-5 target selection
+is live; only the recreation fallback when the selected command is unavailable
+remains provisional.
 
 **Interpretation:** `0x00487850` is the original match-global, zero-based AI
 Mentality setting, seeded from a persisted preference and then carried through
@@ -870,9 +870,8 @@ confirm the Move, Equip, Attack, Influence, and Research cases; resolver lines
 earlier guards feeding each command-continuity gate. The disassembly-derived
 cash 50/51, Force 8/9, effective-Heal -3/-4, Crackdown on/off, and Tolerance 3/4
 vectors are executable regression tests. Capture controlled original-turn
-decisions for the still-isolated branches, corroborate the two live continuation
-branches, and capture the zero-score post-filter edge before replacing more
-recreation policy.
+decisions for the still-isolated branches and corroborate the two live
+continuation branches before replacing more recreation policy.
 
 ### BIN-AI-005 - shared weighted sector selector
 
@@ -1011,11 +1010,15 @@ raw `rand()` calls). If record zero's strategic target is outside the immediate
 3-by-3 neighborhood, the routine moves first along x and then independently
 along y, retaining each component only when the resulting sector contains at
 most five of the active player's gangs. It can therefore return a diagonal
-neighbor without exceeding the six-friendly-gang capacity. If record
-zero is adjacent and positive, the randomly selected maximum-tied sector is
-returned directly. Candidate sectors
-are also removed late when marked unavailable or when the active gang cannot
-strictly Control a non-owned destination under the relevant gang-state branch.
+neighbor without exceeding the six-friendly-gang capacity. If record zero is
+adjacent and positive, the randomly selected maximum-tied sector is returned
+directly. Candidate sectors are also removed late when marked unavailable or
+when the active gang cannot strictly Control a non-owned destination under the
+relevant gang-state branch. If those late filters leave a maximum below 1, the
+routine still counts the maximum-tied entries, which are then all 64 zero-score
+sectors, consumes one bounded draw, and runs the same x-then-y capacity routing
+toward the drawn sector. It does not resume the radius search or return a
+special sentinel.
 
 `0x0040a1a7` proves the capacity field's identity: it clears all 64 integers at
 `0x00489950 + player*0x100`, scans the player's 81 gang records, and increments
@@ -1041,10 +1044,9 @@ filtering due to decompiler control-flow folding. Mode 10 and mode 16's
 remaining family-11 guards are not yet fully labeled.
 
 **Next validation:** map the remaining family-11 guards for modes 10 and 16 to
-public commands. Capture the mode-5 zero-score post-filter edge, then reproduce
-mode-6 leader/hostility routes, modes 12-15 objective sets, and the mode-16
-follower route as fixed original decisions before wiring their remaining live
-consumers.
+public commands. Reproduce mode-6 leader/hostility routes, modes 12-15 objective
+sets, and the mode-16 follower route as fixed original decisions before wiring
+their remaining live consumers.
 
 ### BIN-AI-006 - directional attitude and hostility matrix
 

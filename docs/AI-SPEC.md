@@ -37,15 +37,15 @@ It must not be cited as behavioral parity with the original AI.
   is None or Chaos. With Force below 8 and effective Heal at least -3 it chooses
   Heal unless the current sector has an active Crackdown, in which case it
   chooses Move. Otherwise an older Snitch chooses Chaos and every other older
-  action chooses Move. The action branch and ordinary positive-score mode-5
-  Move destination are recovered and live. Only the original zero-score
-  post-filter result and unavailable-command fallback remain provisional.
+  action chooses Move. The action branch and complete mode-5 Move selection are
+  recovered and live. Only the unavailable-command fallback remains
+  provisional when the selected step is not legal in the recreation.
 - When family 1's immediately previous action is Heal, it repeats Heal while
   Force is below 9 and effective Heal is at least -3. Outside that gate it
   chooses Control when the strict selector-`0x2c` solo-control predicate
-  succeeds, and mode-5 Move otherwise. This action branch and ordinary mode-5
-  destination are also live; the same zero-score/unavailable-action fallback
-  qualification applies.
+  succeeds, and mode-5 Move otherwise. This action branch and complete mode-5
+  destination are also live; the same unavailable-action fallback qualification
+  applies.
 - Selection is stable by score, action, target kind, target ID, and secondary ID.
 - A shared nonnegative spending budget prevents the planner from intentionally
   queuing more Bribe/Equip cost than the player currently holds while still
@@ -99,7 +99,9 @@ headquarters sectors 9, 12, 30, 33, 51, and 54). A pure kernel implements the
 exact original modes 1-5 clipped-square search, late filters, stable maximum
 ties, RNG consumption, and x-then-y six-gang-capacity gate. Mode 5 is wired for
 the two recovered family-1 continuations during replay-recorded preparation;
-the other mode consumers remain unwired pending their complete outer guards.
+when late filtering leaves a zero maximum it draws uniformly among all 64 tied
+sectors and capacity-routes toward that draw. The other mode consumers remain
+unwired pending their complete outer guards.
 
 The test suite drives Greed, Power, Acceptance, and Dominance through complete
 two-computer six-month matches. Each scenario is run twice at a fixed seed and

@@ -77,16 +77,12 @@ internal static class OriginalAiSectorSelectionRules
             .OrderByDescending(sectorId => scores[sectorId])
             .ToArray();
         var maximum = scores[sorted[0]];
-        if (maximum <= 0)
-            throw new InvalidOperationException(
-                "Original AI sector selection requires a positive candidate after late filtering.");
-
-        var near = IsNear(sourceSectorId, sorted[0]);
+        var routeOneStep = maximum < 1 || !IsNear(sourceSectorId, sorted[0]);
         var tieCount = sorted.TakeWhile(sectorId => scores[sectorId] == maximum).Count();
         var target = tieCount == 1
             ? sorted[0]
             : sorted[random.NextInclusive(tieCount) - 1];
-        if (near) return target;
+        if (!routeOneStep) return target;
 
         var result = sourceSectorId;
         var targetX = target % MatchLimits.BoardWidth;

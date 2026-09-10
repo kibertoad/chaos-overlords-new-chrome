@@ -58,8 +58,8 @@ planner: previous None/Chaos selects Heal, Move, or Chaos from the recovered
 strict Heal, active-Crackdown, and older-Snitch gates; previous Heal repeats
 Heal or selects strict solo Control, then Move. Replay-recorded preparation uses
 the exact mode-5 `5:2:1` destination search, maximum-tie RNG, and x-then-y
-six-gang-capacity routing. Only its zero-score post-filter behavior and the
-unavailable-command fallback remain provisional.
+six-gang-capacity routing, including the all-zero post-filter draw across all 64
+sectors. Only the unavailable-command fallback remains provisional.
 
 ## Current blockers to parity claims
 

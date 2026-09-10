@@ -86,8 +86,8 @@ workstream can be marked complete.
   Heal/Move/Chaos branch and previous-Heal Heal/Control/Move branch are wired
   into the live planner, including active-Crackdown selector `0x2a`, strict
   solo-Control selector `0x2c`, and exact mode-5 destinations with replayed tie
-  RNG and six-gang routing capacity. Capture controlled original decisions for
-  the remaining selector contexts and the zero-score post-filter edge,
+  RNG, all-zero post-filter fallback, and six-gang routing capacity. Capture
+  controlled original decisions for the remaining selector contexts,
   then follow with larger-player and objective-completion AI stress traces.
 - Static-analysis conclusions, addresses, confidence, and rejected hypotheses
   belong in `ORIGINAL-INTERNALS.md`; player-visible intended behavior belongs in

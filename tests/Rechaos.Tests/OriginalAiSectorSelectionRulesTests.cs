@@ -89,14 +89,19 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
-    public void DisabledLateFilterDoesNotResumeRadiusSearch()
+    public void DisabledLateFilterUsesZeroMaximumFallbackWithoutResumingRadiusSearch()
     {
         var facts = new Facts(source: 27);
         facts.Owners[28] = 1;
         facts.Disabled[28] = true;
         facts.Owners[29] = 1;
+        var expectedRandom = new DeterministicRandom(
+            facts.Random.State, facts.Random.ConsumptionCount);
+        var expected = ZeroMaximumStep(facts.Source, facts.GangCounts, expectedRandom);
 
-        Assert.Throws<InvalidOperationException>(() => facts.Select(mode: 3, family: 2));
+        Assert.Equal(expected, facts.Select(mode: 3, family: 2));
+        Assert.Equal(expectedRandom.State, facts.Random.State);
+        Assert.Equal(expectedRandom.ConsumptionCount, facts.Random.ConsumptionCount);
     }
 
     [Fact]
@@ -106,8 +111,13 @@ public sealed class OriginalAiSectorSelectionRulesTests
         {
             var facts = new Facts(source: 27);
             facts.Owners[28] = 1;
+            var expectedRandom = new DeterministicRandom(
+                facts.Random.State, facts.Random.ConsumptionCount);
+            var expected = ZeroMaximumStep(facts.Source, facts.GangCounts, expectedRandom);
 
-            Assert.Throws<InvalidOperationException>(() => facts.Select(mode: 3, family));
+            Assert.Equal(expected, facts.Select(mode: 3, family));
+            Assert.Equal(expectedRandom.State, facts.Random.State);
+            Assert.Equal(expectedRandom.ConsumptionCount, facts.Random.ConsumptionCount);
         }
 
         var unfiltered = new Facts(source: 27);
@@ -188,11 +198,24 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
-    public void NoPositiveCandidateThrowsInsteadOfInventingOriginalSentinel()
+    public void ZeroMaximumDrawsAmongAllSectorsAndCapacityRoutesOneStep()
     {
-        var facts = new Facts(source: 27);
+        const int source = 27;
+        var facts = new Facts(source, seed: 4321);
+        var expectedRandom = new DeterministicRandom(
+            facts.Random.State, facts.Random.ConsumptionCount);
+        var expected = ZeroMaximumStep(source, facts.GangCounts, expectedRandom);
 
-        Assert.Throws<InvalidOperationException>(() => facts.Select(mode: 3, family: 2));
+        var selected = facts.Select(mode: 3, family: 2);
+
+        Assert.Equal(expected, selected);
+        Assert.Equal(expectedRandom.State, facts.Random.State);
+        Assert.Equal(expectedRandom.ConsumptionCount, facts.Random.ConsumptionCount);
+
+        var blocked = new Facts(source, seed: 4321);
+        Array.Fill(blocked.GangCounts, MatchLimits.FriendlyGangsPerSector);
+        Assert.Equal(source, blocked.Select(mode: 3, family: 2));
+        Assert.Equal(3, blocked.Random.ConsumptionCount);
     }
 
     [Fact]
@@ -216,6 +239,30 @@ public sealed class OriginalAiSectorSelectionRulesTests
         facts.GangCounts[28] = 0;
         facts.Owners[28] = 6;
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 2));
+    }
+
+    private static int ZeroMaximumStep(
+        int source,
+        IReadOnlyList<int> gangCounts,
+        DeterministicRandom random)
+    {
+        var target = random.NextInclusive(MatchLimits.SectorCount) - 1;
+        var result = source;
+        if (source % MatchLimits.BoardWidth < target % MatchLimits.BoardWidth
+            && gangCounts[result + 1] < MatchLimits.FriendlyGangsPerSector)
+            result++;
+        if (source % MatchLimits.BoardWidth > target % MatchLimits.BoardWidth
+            && gangCounts[result - 1] < MatchLimits.FriendlyGangsPerSector)
+            result--;
+        if (source / MatchLimits.BoardWidth < target / MatchLimits.BoardWidth
+            && gangCounts[result + MatchLimits.BoardWidth]
+                < MatchLimits.FriendlyGangsPerSector)
+            result += MatchLimits.BoardWidth;
+        if (source / MatchLimits.BoardWidth > target / MatchLimits.BoardWidth
+            && gangCounts[result - MatchLimits.BoardWidth]
+                < MatchLimits.FriendlyGangsPerSector)
+            result -= MatchLimits.BoardWidth;
+        return result;
     }
 
     private sealed class Facts

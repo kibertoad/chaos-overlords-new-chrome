@@ -108,40 +108,31 @@ public static class AiTurnPlanner
                 continue;
             }
 
-            try
-            {
-                var target = OriginalAiSectorSelectionRules.Select(
-                    mode: 5,
-                    sourceSectorId: entry.gang.SectorId,
-                    player: playerId,
-                    family: 1,
-                    sectorOwners,
-                    sectorDisabled,
-                    sectorGangCounts,
-                    canSoloControl: sectorId =>
-                        CanSoloControl(state, playerId, entry.gang, sectorId),
-                    hasPriorChaos: sectorId => player.Gangs
-                        .Select((gang, slot) => (gang, slot))
-                        .Any(candidate => candidate.gang.IsActive
-                            && candidate.gang.SectorId == sectorId
-                            && state.AiPlanning.PreviousAction(playerId, candidate.slot)
-                                == GangAction.Chaos),
-                    isHostileOwner: owner =>
-                        state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
-                    isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
-                        .Setup.Controller == PlayerController.Human,
-                    playerOrder,
-                    state.Random);
-                state.AiPlanning.SetPlannedAction(
-                    playerId, entry.slot, GangAction.Move,
-                    new AiActionTarget(checked((byte)target), 0));
-            }
-            catch (InvalidOperationException)
-            {
-                // The original zero-score post-filter edge is not yet bounded.
-                // Leave the tuple empty so the provisional legal-command
-                // fallback remains available instead of inventing a target.
-            }
+            var target = OriginalAiSectorSelectionRules.Select(
+                mode: 5,
+                sourceSectorId: entry.gang.SectorId,
+                player: playerId,
+                family: 1,
+                sectorOwners,
+                sectorDisabled,
+                sectorGangCounts,
+                canSoloControl: sectorId =>
+                    CanSoloControl(state, playerId, entry.gang, sectorId),
+                hasPriorChaos: sectorId => player.Gangs
+                    .Select((gang, slot) => (gang, slot))
+                    .Any(candidate => candidate.gang.IsActive
+                        && candidate.gang.SectorId == sectorId
+                        && state.AiPlanning.PreviousAction(playerId, candidate.slot)
+                            == GangAction.Chaos),
+                isHostileOwner: owner =>
+                    state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
+                isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
+                    .Setup.Controller == PlayerController.Human,
+                playerOrder,
+                state.Random);
+            state.AiPlanning.SetPlannedAction(
+                playerId, entry.slot, GangAction.Move,
+                new AiActionTarget(checked((byte)target), 0));
         }
     }
 
