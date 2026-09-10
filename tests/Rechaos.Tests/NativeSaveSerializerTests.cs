@@ -32,6 +32,8 @@ public sealed class NativeSaveSerializerTests
         Assert.Equal(GangAction.Move, restored.FindGang(new GangId(1))!.QueuedCommand!.Command.Action);
         Assert.Equal(AiDifficulty.CrimeLord, restored.Setup.AiMentality);
         Assert.Equal(7, restored.Setup.Players[1].PortraitId);
+        Assert.Equal(match.AiStrategy.CaptureReactions(), restored.AiStrategy.CaptureReactions());
+        Assert.Equal(match.AiStrategy.CaptureAttitudes(), restored.AiStrategy.CaptureAttitudes());
         Assert.Equal(SaveBytes(match), SaveBytes(restored));
     }
 
@@ -194,6 +196,43 @@ public sealed class NativeSaveSerializerTests
 
         Assert.Equal(AiDifficulty.Criminal, restored.Setup.AiMentality);
         Assert.Equal([0, 1], restored.Setup.Players.Select(player => (int)player.PortraitId));
+    }
+
+    [Fact]
+    public void VersionFiveSaveReconstructsAiStrategyWithoutAdvancingSavedRandomStream()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 5;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionFiveSha256(match);
+        document["runtime"]!.AsObject().Remove("aiStrategy");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.Equal(match.Random.State, restored.Random.State);
+        Assert.Equal(match.Random.ConsumptionCount, restored.Random.ConsumptionCount);
+        Assert.Equal(match.AiStrategy.CaptureReactions(), restored.AiStrategy.CaptureReactions());
+        Assert.Equal(match.AiStrategy.CaptureAttitudes(), restored.AiStrategy.CaptureAttitudes());
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void RejectsModifiedAiStrategyWhoseFingerprintWasNotUpdated()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        var reactions = document["runtime"]!["aiStrategy"]!["reactions"]!.AsArray();
+        reactions[0] = reactions[0]!.GetValue<int>() == 5 ? 4 : 5;
+
+        using var changed = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(changed, match.Definitions));
     }
 
     [Fact]

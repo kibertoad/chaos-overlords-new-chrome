@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Nodes;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
@@ -132,6 +133,36 @@ public sealed class MatchReplayTests
 
         Assert.Throws<InvalidOperationException>(() =>
             MatchReplaySerializer.Save(new MemoryStream(), recorder));
+    }
+
+    [Fact]
+    public void VersionFourReplayUsesVersionFiveStateHashesAfterStrategyMigration()
+    {
+        var initial = CreateMatch();
+        var oldInitialHash = MatchStateHasher.ComputeVersionFiveSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
+        recorder.FinishUpkeep();
+        var oldResultHash = MatchStateHasher.ComputeVersionFiveSha256(initial);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = 4;
+        document["initialStateSha256"] = oldInitialHash;
+        document["steps"]![0]!["resultingStateSha256"] = oldResultHash;
+
+        var snapshotBytes = Convert.FromBase64String(
+            document["initialSnapshot"]!.GetValue<string>());
+        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
+        snapshot["formatVersion"] = 5;
+        snapshot["stateSha256"] = oldInitialHash;
+        snapshot["runtime"]!.AsObject().Remove("aiStrategy");
+        document["initialSnapshot"] = Convert.ToBase64String(
+            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
+
+        Assert.Equal(MatchStateHasher.ComputeSha256(initial), MatchStateHasher.ComputeSha256(restored));
     }
 
     [Fact]

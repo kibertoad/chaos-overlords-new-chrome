@@ -516,8 +516,10 @@ whether that site's definition Resistance minus its accumulated influence is
 below one. Modes 7 and 8 score the Support and Cash of not-yet-influenced sites
 in owned sectors. Mode 9 scores Stealth for already-influenced sites in owned
 sectors. Mode 7 additionally requires selector `0x6f` to be zero; `0x6f`
-counts a player's gangs in the sector whose planning-record byte at offset
-`+5` equals 9, but the precise history-field label still needs a save delta.
+counts a player's gangs in the sector whose immediately previous action at
+planning-record offset `+5` is 9 (**Influence**). Before dispatch, the outer
+planner also rewrites one prior-action byte when more than one gang retained
+Influence in the same sector, preventing duplicate continuity assignments.
 
 Mode 10 changes its owner test according to the human-player count. Mode 11
 gives `+1` to the sector returned by selector `0x5a` for the active player.
@@ -596,14 +598,102 @@ count, gang-in-sector count, fixed sector sets, direct call inventory,
 maximum-score tie randomization, and orthogonal next-step return. Medium for
 the player-order predicates, family-11 anchor, dynamic call arguments, and late
 candidate filtering due to decompiler control-flow folding. Low for the
-remaining per-owner table, planning byte `+5`, and therefore the complete
+remaining attitude-dependent mode-6 branches and therefore the complete
 meaning of modes 6, 10, and 16.
 
-**Next validation:** resolve the mode-6 per-owner table and planning byte `+5`,
+**Next validation:** map the remaining attitude-dependent mode-6 branches,
 then map the surrounding guards for modes 6 and 10 through 16 to public commands.
 After that, reproduce the 5:2:1 mode-5 target score, path threshold, and
 equal-best RNG with fixed-state reference traces before replacing the
 recreation's provisional destination weights.
+
+### BIN-AI-006 - directional attitude and hostility matrix
+
+**Observation:** `0x004ab590` is a six-by-six signed integer matrix indexed as
+`observer * 6 + other player`. Initialization at `0x0046dc10` depends on the
+global AI Mentality. At Homicidal Maniac, every cell whose target player has
+human controller type 0 or 3 is initialized to `-10`, while cells targeting a
+computer player are initialized to `+10`. At all lower mentalities every cell
+starts at zero. This changes preferences only; it grants no resources,
+statistics, rolls, or visibility.
+
+At the start of turn resolution, every entry below `+10` increases by one.
+Later resolution paths subtract from one directed cell and clamp the result at
+`-10`. At non-Homicidal mentalities, initialization gives every player a fixed
+reaction value from one bounded RNG draw, `Next(4) + 2`, producing 2 through 5.
+Homicidal Maniac assigns reaction zero and consumes no such draw. No later
+writer modifies these values. The combat path lowers the defender owner's
+attitude toward the attacker by `max(reaction, damage dealt)`. A sector-control
+transfer lowers the previous owner's attitude toward the new owner by exactly
+twice that previous owner's reaction value.
+The player-pair ratio pass at `0x0040a1a7` can also force a directed entry to
+`-10` under its mentality-dependent guards.
+
+Negative entries are the hostility boundary used by central target queries.
+Selector `0x92` enumerates visible gangs in a requested sector only from
+players whose observer-relative entry is negative; selector `0xab` performs a
+corresponding count for visibility state 1. Selector `0x90` returns weight 10
+for a visible human gang belonging to a negatively viewed player and weight 1
+for other visible gangs. Numerous AI handlers read the same `< 0` predicate
+directly, including shared sector-selector mode 6.
+
+Family 11 (`0x00420950`) supplies the clearest consumer. After its Equip and
+Heal opportunities, it attacks a resolved visible target when one exists.
+Otherwise it writes Move and uses mode 10 to seek opponent territory. If the
+match contains any human player, mode 10 admits only human-owned sectors; when
+there are no humans, it admits any enemy-owned sector. Selector `0x76` chooses
+between that search and mode 16, whose selector-`0x77` anchor keeps blocks of
+six family-11 gangs moving together.
+
+**Interpretation:** this is an attitude/hostility system, not a scalar combat
+bonus. Homicidal Maniac begins maximally hostile toward human players and
+maximally friendly toward computer players; ordinary interactions can create
+directed hostility at other mentalities, and hostility decays toward
+friendliness by one point per turn. The recreation's current attack score
+approximates part of the visible outcome but does not yet persist or resolve
+this matrix.
+
+**Confidence:** High for matrix dimensions and direction, `[-10,+10]` bounds,
+initial values, per-turn recovery, reaction range/immutability, combat and
+Control decrements, negative-hostility target gating, controller classification,
+and mode-10 target ownership. Medium for mode-16 group semantics. Low only for
+the original public/internal name of the reaction value.
+
+The exact new-match order is now bounded. For non-Homicidal games the six
+reaction draws are the only RNG calls between entry to `0x0046dc10` and city
+generation at its decompiled line 85. Homicidal games skip those draws. The
+offer filler remains later in the outer setup caller. The recreation now
+initializes at this point, recovers attitudes at the Command-to-Execution
+whole-turn resolver boundary, applies the recovered combat and Control changes,
+uses hostility for AI attack candidates, and includes the state in canonical
+hashes, native saves, and replays.
+
+**Next validation:** resolve the mentality-dependent pair-ratio force-hostility
+guard and every mode-6 consumer, then capture fixed original traces proving
+reaction and recovery ordering through the first two complete turns.
+
+### BIN-AI-007 - per-player difficulty resolution band
+
+**Observation:** new-match initialization also fills a six-entry integer table
+at `0x004a2570`. Every slot starts at 1. At Goon, computer-controlled slots are
+changed to 0; Criminal leaves all slots at 1; Crime Lord and Homicidal Maniac
+change computer-controlled slots to 2. Human-controlled slots remain 1 at all
+four mentalities.
+
+The whole-turn resolver `0x00472775` reads this table repeatedly while resolving
+gang actions. Its attack block chooses different constants and bounded helper
+arguments for bands 0, 1, and 2, and further action blocks read the same table.
+This is therefore a resolution calibration, not merely a planning preference.
+The direction and exact public effect of every branch are not yet fully mapped,
+so the recreation does not implement the table yet.
+
+**Confidence:** High for initialization and controller/mentality mapping, and
+High that the table changes resolver formulas. Low for the complete mechanical
+meaning and whether the original UI described it as skill, luck, or difficulty.
+
+**Next validation:** enumerate each `0x004a2570` read by action-code branch,
+recover the helper semantics and constants, and compare fixed rolls at bands
+0, 1, and 2 before implementing it.
 
 ## New-game initialization
 

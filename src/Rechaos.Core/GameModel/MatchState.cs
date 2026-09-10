@@ -326,22 +326,6 @@ public sealed class MatchStatistics
     public int TimesHidden { get; internal set; }
 }
 
-internal sealed record MatchRuntimeRestore(
-    int Turn,
-    TurnPhase Phase,
-    ExecutionPhase? ExecutionPhase,
-    PlayerId? ActivePlayer,
-    uint RandomState,
-    long RandomConsumptionCount,
-    IReadOnlyList<QueuedCommand> Commands,
-    long NextCommandSequence,
-    IReadOnlyList<GameEvent> Events,
-    long NextEventSequence,
-    IReadOnlyDictionary<PlayerId, IReadOnlyList<GameNotification>> Notifications,
-    IReadOnlyDictionary<PlayerId, long> NextNotificationSequences,
-    IReadOnlyList<PhaseBoundaryHash> PhaseHashes,
-    MatchOutcome? Outcome);
-
 /// <summary>
 /// Authoritative headless state. It is initialized from explicit mechanical data;
 /// exact original city and player placement remain a separate M1 research task.
@@ -400,6 +384,7 @@ public sealed class MatchState
         Commands = restore is null
             ? new TurnCommandQueue()
             : TurnCommandQueue.Restore(restore.Commands, restore.NextCommandSequence);
+        AiStrategy = restore?.AiStrategy ?? AiStrategicState.MigrateLegacy(setup);
         _notifications = Players.ToDictionary(player => player.Id, _ => new NotificationQueue());
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         if (restore is not null) RestoreRuntime(restore);
@@ -410,7 +395,8 @@ public sealed class MatchState
         MatchSetup setup,
         IReadOnlyList<MatchPlayerState> players,
         IReadOnlyList<MatchSectorState> sectors,
-        DeterministicRandom initialRandom)
+        DeterministicRandom initialRandom,
+        AiStrategicState aiStrategy)
         : this(definitions, setup, players, sectors, new MatchRuntimeRestore(
             1, TurnPhase.Upkeep, null, null,
             initialRandom.State, initialRandom.ConsumptionCount,
@@ -418,9 +404,10 @@ public sealed class MatchState
             players.ToDictionary(player => player.Id,
                 _ => (IReadOnlyList<GameNotification>)Array.Empty<GameNotification>()),
             players.ToDictionary(player => player.Id, _ => 0L),
-            [], null))
+            [], null, aiStrategy))
     {
         ArgumentNullException.ThrowIfNull(initialRandom);
+        ArgumentNullException.ThrowIfNull(aiStrategy);
     }
 
     public OriginalData Definitions { get; }
@@ -430,6 +417,7 @@ public sealed class MatchState
     public TurnCoordinator Coordinator { get; }
     public DeterministicRandom Random { get; }
     public TurnCommandQueue Commands { get; }
+    public AiStrategicState AiStrategy { get; }
     public IReadOnlyList<GameEvent> Events => _events;
     public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashes;
     public IReadOnlyList<CommandResolutionResult> LastPhaseResolutions { get; private set; } = [];
@@ -517,7 +505,12 @@ public sealed class MatchState
         LastUpkeepResolutions = EconomyResolver.ResolveUpkeep(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }
-    public TurnTransition FinishCommand(PlayerId player) => CaptureBoundary(Coordinator.FinishCommand(player));
+    public TurnTransition FinishCommand(PlayerId player)
+    {
+        var transition = Coordinator.FinishCommand(player);
+        if (transition.Phase == TurnPhase.Execution) AiStrategy.RecoverForResolution();
+        return CaptureBoundary(transition);
+    }
     public TurnTransition FinishExecutionPhase()
     {
         if (Coordinator.Phase != TurnPhase.Execution)

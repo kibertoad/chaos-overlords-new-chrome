@@ -205,6 +205,8 @@ public static class CommandResolver
         var incomingDamage = new Dictionary<GangId, int>();
         foreach (var outcome in outcomes.Where(outcome => outcome.Code == CommandResolutionCode.Resolved))
         {
+            state.AiStrategy.RecordCombat(
+                outcome.Attacker.Owner, outcome.Target.Owner, outcome.Damage);
             AddDamage(incomingDamage, outcome.Target.Id, outcome.Damage);
             AddDamage(incomingDamage, outcome.Attacker.Id, outcome.RetaliationDamage);
         }
@@ -663,6 +665,7 @@ public static class CommandResolver
             if (previousOwner is { } oldOwner)
             {
                 player.Statistics.Overthrows++;
+                state.AiStrategy.RecordControl(oldOwner, first.Player);
                 SectorControlResolver.ResetInfluencedSites(state, sector, oldOwner);
             }
             sector.Owner = first.Player;

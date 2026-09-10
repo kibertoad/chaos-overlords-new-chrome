@@ -114,6 +114,28 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
+    public void CapturedOwnerReactsTowardNewOwnerByTwiceTheirReaction()
+    {
+        var data = BundledOriginalData.Load();
+        var strong = data.Gangs.OrderByDescending(gang => gang.Stats.Control).First().Id;
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 10, strong)],
+            [],
+            owner: new PlayerId(1));
+        Queue(match, Control(0, 10));
+        EnterControl(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
+        Assert.Equal(
+            Math.Max(AiStrategicState.MinimumAttitude,
+                1 - 2 * match.AiStrategy.Reaction(new PlayerId(1))),
+            match.AiStrategy.Attitude(new PlayerId(1), new PlayerId(0)));
+        Assert.Equal(1, match.AiStrategy.Attitude(new PlayerId(0), new PlayerId(1)));
+    }
+
+    [Fact]
     public void ZeroMarginControlUsesRecordedDeterministicFiftyPercentChance()
     {
         var first = CreateMatch(

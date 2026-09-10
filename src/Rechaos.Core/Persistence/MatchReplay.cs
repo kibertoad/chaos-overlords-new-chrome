@@ -172,7 +172,7 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    public const int CurrentFormatVersion = 4;
+    public const int CurrentFormatVersion = 5;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -308,15 +308,18 @@ public static class MatchReplaySerializer
         {
             throw new InvalidDataException($"Replay step {index} has an invalid state fingerprint.", exception);
         }
-        var candidateHashes = replayVersion >= 4
-            ? [MatchStateHasher.ComputeSha256(state)]
-            : new[]
-            {
+        string[] candidateHashes = replayVersion switch
+        {
+            >= 5 => [MatchStateHasher.ComputeSha256(state)],
+            4 => [MatchStateHasher.ComputeVersionFiveSha256(state)],
+            _ =>
+            [
                 MatchStateHasher.ComputeVersionFourSha256(state),
                 MatchStateHasher.ComputeVersionThreeSha256(state),
                 MatchStateHasher.ComputeVersionTwoSha256(state),
                 MatchStateHasher.ComputeLegacySha256(state)
-            };
+            ]
+        };
         if (!candidateHashes.Select(Convert.FromHexString).Any(actualBytes =>
                 expectedBytes.Length == actualBytes.Length
                 && CryptographicOperations.FixedTimeEquals(expectedBytes, actualBytes)))

@@ -154,7 +154,6 @@ public static class OriginalCityGenerator
 public static class OriginalMatchFactory
 {
     public const int StandardStartingCash = 20;
-    private const int OriginalPreludeRolls = MatchLimits.PlayerCount;
 
     public static MatchState Create(OriginalData definitions, MatchSetup setup)
     {
@@ -162,10 +161,9 @@ public static class OriginalMatchFactory
         ArgumentNullException.ThrowIfNull(setup);
         var random = new DeterministicRandom(setup.InitialSeed);
 
-        // Standard modes initialize one recovered 2..5 value per internal player
-        // before constructing the city. The value is not yet used by our model,
-        // but consuming it preserves the original random stream.
-        for (var player = 0; player < OriginalPreludeRolls; player++) random.NextInclusive(4);
+        // The original initializes AI reactions and attitudes immediately before
+        // city generation. Homicidal games intentionally consume no reaction RNG.
+        var aiStrategy = AiStrategicState.Initialize(setup, random);
 
         var sectors = OriginalCityGenerator.Generate(definitions, setup.Scenario, random);
         var headquarters = OriginalCityGenerator.AssignHeadquarters(sectors, random);
@@ -173,6 +171,7 @@ public static class OriginalMatchFactory
             player.Id, headquarters[index], ManualRules.MaximumForce,
             StandardStartingCash, Array.Empty<short>())).ToArray();
         var bootstrapped = MatchBootstrap.Create(definitions, setup, sectors, starts);
-        return new MatchState(definitions, setup, bootstrapped.Players, bootstrapped.Sectors, random);
+        return new MatchState(
+            definitions, setup, bootstrapped.Players, bootstrapped.Sectors, random, aiStrategy);
     }
 }

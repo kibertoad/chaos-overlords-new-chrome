@@ -74,7 +74,8 @@ validated against the executable.
 - AI difficulty is the setup screen's single global **AI Mentality** selection,
   not a per-player field. The four baked rows select Goon, Criminal, Crime Lord,
   or Homicidal Maniac; hover-only thematic tooltips explain the behavioral
-  emphasis and state that the AI receives no bonuses.
+  emphasis and avoid claiming hidden resources; static analysis now confirms
+  mentality-dependent resolution calibration that is still being mapped.
 - City sectors use their fixed 54 by 52 cell from `PX10000` when neutral or
   `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
 - Active Crackdown sectors overlay the color-keyed patrol-car slice from

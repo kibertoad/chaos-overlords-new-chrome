@@ -594,7 +594,7 @@ claim about original-game behavior.
   Low for timing, ties, Siege mapping and special objective edge cases.
 - Implementation: `MatchOutcomeEvaluator`, scenario-specific elimination and
   Big Man accrual in `MatchState.FinishPlayerElimination`, `MatchState.Outcome`,
-  and canonical hash format version 4.
+  and the canonical state hash.
 - Tests: `MatchOutcomeTests` covers authoritative projection, objective event
   and notification emission, Eliminate's Right Hands distinction, exact timed
   boundary ties/standings, and outcome hashing; `EndgameRankingTests` covers

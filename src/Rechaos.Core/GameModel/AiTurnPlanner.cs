@@ -225,7 +225,9 @@ public static class AiTurnPlanner
 
     private static bool IsObservable(MatchState state, PlayerId player, GameCommand command) =>
         command.Action != GangAction.Attack
-        || state.CanPlayerDetectGang(player, new GangId(command.Target.Id));
+        || state.FindGang(new GangId(command.Target.Id)) is { } target
+        && state.AiStrategy.IsHostile(player, target.Owner)
+        && state.CanPlayerDetectGang(player, target.Id);
 
     private static int HireValue(MatchState state, short definitionId)
     {

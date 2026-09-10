@@ -81,9 +81,13 @@ replay-verified two-computer harness through 20 turns or objective completion.
    mode-5 movement weights (neutral/owned/enemy `5:2:1`), maximum-score random
    ties, and orthogonal next-step routing are now bounded. Modes 7 and 8 are
    confirmed as Support- and Cash-focused Influence routing, while mode 9 seeks
-   influenced-site Stealth for a Hide/Chaos path. Mode 6's per-owner table and
-   its remaining planning-history byte are unnamed. Selector `0x3e`
-   is identified as the
+   influenced-site Stealth for a Hide/Chaos path. The six-by-six directional
+   attitude matrix, Homicidal human/computer initialization, per-turn recovery,
+   negative-hostility enumerators, `2..5` non-Homicidal reaction values, and
+   exact combat/Control decrements are also identified and implemented with
+   their exact pre-city RNG order. A separate per-player resolution band is
+   initialized to 0/1/2 for computer players at Goon/Criminal/higher settings;
+   its action-specific formulas remain unmapped. Selector `0x3e` is identified as the
    previous-turn action byte. Selectors 3 (player cash), 4 (sector
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
@@ -98,8 +102,13 @@ replay-verified two-computer harness through 20 turns or objective completion.
    difficulty variants, objective completion stress cases, and statistical
    reference traces.
 
+The persisted simulation now carries the recovered directional attitude matrix
+and reaction values through hashing, saves, and replays. The current scalar
+Mentality ranking bonuses and the omitted 0/1/2 resolution band remain
+explicitly provisional and must not be described as exact original policy.
+
 The original manual and contemporary developer FAQ corroborate four global
 mentalities, increasing aggression, a player-denial emphasis at Homicidal
-Maniac, and fair play without AI bonuses. They do not corroborate the current
+Maniac, and fair play without hidden resources. They do not corroborate the current
 score constants; exact parity remains blocked on completing the consumer trace
 and reference-decision work above.
