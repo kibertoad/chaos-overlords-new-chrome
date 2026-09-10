@@ -107,6 +107,45 @@ public sealed class AiStrategicStateTests
                 && command.Target == CommandTarget.Gang(new GangId(20)));
     }
 
+    [Fact]
+    public void SectorCombatAdvantageUsesStrictInteger75PercentBoundary()
+    {
+        var exactlyThreeOfFour = CreateTerritorialPressureMatch(
+            AiDifficulty.Criminal, PlayerController.Human, advantagedSectors: 3);
+        var allFour = CreateTerritorialPressureMatch(
+            AiDifficulty.Criminal, PlayerController.Human, advantagedSectors: 4);
+        exactlyThreeOfFour.FinishUpkeep();
+        allFour.FinishUpkeep();
+
+        exactlyThreeOfFour.PrepareAiPlanning(new PlayerId(0));
+        allFour.PrepareAiPlanning(new PlayerId(0));
+
+        Assert.Equal(0, exactlyThreeOfFour.AiStrategy.Attitude(new PlayerId(0), new PlayerId(1)));
+        Assert.Equal(AiStrategicState.MinimumAttitude,
+            allFour.AiStrategy.Attitude(new PlayerId(0), new PlayerId(1)));
+    }
+
+    [Theory]
+    [InlineData(AiDifficulty.Goon, PlayerController.Human, false)]
+    [InlineData(AiDifficulty.Goon, PlayerController.Computer, true)]
+    [InlineData(AiDifficulty.Criminal, PlayerController.Human, true)]
+    [InlineData(AiDifficulty.Criminal, PlayerController.Computer, true)]
+    [InlineData(AiDifficulty.CrimeLord, PlayerController.Human, true)]
+    [InlineData(AiDifficulty.CrimeLord, PlayerController.Computer, false)]
+    [InlineData(AiDifficulty.HomicidalManiac, PlayerController.Computer, false)]
+    public void SectorCombatAdvantageUsesOriginalMentalityAndTargetTypeGate(
+        AiDifficulty difficulty,
+        PlayerController targetController,
+        bool expectedHostile)
+    {
+        var match = CreateTerritorialPressureMatch(difficulty, targetController, advantagedSectors: 4);
+        match.FinishUpkeep();
+
+        match.PrepareAiPlanning(new PlayerId(0));
+
+        Assert.Equal(expectedHostile, match.AiStrategy.IsHostile(new PlayerId(0), new PlayerId(1)));
+    }
+
     private static MatchSetup Setup(AiDifficulty difficulty) => new(
         ScenarioId.Greed,
         GameDuration.SixMonths,
@@ -165,6 +204,49 @@ public sealed class AiStrategicStateTests
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
             ], owner: id == 0 ? new PlayerId(0) : null, income: 3))
+            .ToArray();
+        return new MatchState(definitions, new MatchSetup(
+            ScenarioId.KillEmAll, GameDuration.SixMonths, 1996, setups, difficulty), players, sectors);
+    }
+
+    private static MatchState CreateTerritorialPressureMatch(
+        AiDifficulty difficulty,
+        PlayerController targetController,
+        int advantagedSectors)
+    {
+        var definitions = BundledOriginalData.Load();
+        var strong = definitions.Gangs
+            .Where(gang => gang.Stats.Detect >= 10)
+            .OrderByDescending(gang => gang.Stats.Combat + gang.Stats.Defense)
+            .First();
+        var weak = definitions.Gangs
+            .Where(gang => gang.Stats.Stealth <= strong.Stats.Detect
+                && gang.Stats.Combat + gang.Stats.Defense >= 1)
+            .OrderBy(gang => gang.Stats.Combat + gang.Stats.Defense)
+            .First();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU", PlayerController.Computer),
+            new(new PlayerId(1), "TARGET", targetController)
+        ];
+        var observerGangs = Enumerable.Range(0, advantagedSectors)
+            .Select(id => new MatchGangState(new GangId(id), new PlayerId(0), strong.Id, id, 10))
+            .ToArray();
+        var targetGangs = Enumerable.Range(0, 4)
+            .Select(id => new MatchGangState(new GangId(100 + id), new PlayerId(1), weak.Id, id, 10))
+            .ToArray();
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20, observerGangs),
+            new(setups[1], 20, targetGangs)
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 4)
+            ], owner: id < 4 ? new PlayerId(1) : null, income: 3))
             .ToArray();
         return new MatchState(definitions, new MatchSetup(
             ScenarioId.KillEmAll, GameDuration.SixMonths, 1996, setups, difficulty), players, sectors);

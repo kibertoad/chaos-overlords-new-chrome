@@ -116,6 +116,7 @@ public sealed partial class ChaosGame
             if (player.Setup.Controller != PlayerController.Computer) break;
             if (_state.Coordinator.Phase == TurnPhase.Command)
             {
+                _replay.PrepareAiPlanning(playerId);
                 foreach (var command in AiTurnPlanner.Plan(_state, playerId))
                     _replay.Submit(command);
                 PrepareCurrentHireOffers();

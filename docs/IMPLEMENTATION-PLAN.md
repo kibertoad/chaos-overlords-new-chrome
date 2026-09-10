@@ -47,7 +47,7 @@ kind is not part of this implementation plan.
 | Extraction | Transactional/versioned full-pack SHA-256 validation; 215 repaired RGB555 PX16 images, 214 retained plus decoded PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files; generated 685-output factual catalog | Transparency/color-key validation, video strategy, semantic role/owner resolution |
 | Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, Upkeep, all 14 command resolvers, simultaneous gang/Crackdown combat, 3–5-turn police duration/extension and three-in-five control loss, hidden attack/visibility checks, and local influenced-site stats | Crackdown notification/timing fixtures, special buildings, original RNG seeding/order and exact parity formulas |
 | Client | Scaled 640x460 routed setup/handoff/city/sector/gang/finance/ranking/items/Give/combat-summary/search/commands/hire/events/endgame UI backed by authoritative `MatchState`; distinct whole-city and detailed-sector projections composite original ownership tiles, the latter as a clickable 3x3 neighborhood beside all three building portraits; normal planning turns auto-resolve internal phases while debug mode can step them; persistent original-art Hire dock supports portrait drag/drop from city or sector detail, split price/reject footers and `HIRED` stamping; `PX05010` automatically pages queued turn reports after handoff; `PX05012` presents paged combat results; recovered item-selected eight-frame attack/hit, retaliation, evasion and police animation playback; recovered setup; local controls; private handoff; Core-derived commands, projections, visibility, combat results, research/equipment transfer and notifications; mouse/keyboard, saves/replays | Full setup detail, remaining sprites/atlas and management panels/hit maps, remaining sound/music/video, accessibility |
-| Tests | 354 tests covering parsers/provenance, extraction, scenarios, deterministic command and phase resolution, difficulty bands, AI strategic state, combat, saves, replays, installers, and repository policy | Original-reference fixtures, checked-in save migrations, visual tests, larger-player AI stress, and native interactive installer/play tests |
+| Tests | 362 tests covering parsers/provenance, extraction, scenarios, deterministic command and phase resolution, difficulty bands, AI strategic state, combat, saves, replays, installers, and repository policy | Original-reference fixtures, checked-in save migrations, visual tests, larger-player AI stress, and native interactive installer/play tests |
 | Documentation | File/binary research, generated factual asset catalog, architecture, validation, parity matrix, roadmap and initial full-screen UI atlas/hit map | Complete sprite atlas, rules, original save map and remaining documents listed in section 4 |
 
 The current game is a playable architectural slice, not evidence of rule parity.
@@ -56,19 +56,17 @@ workstream can be marked complete.
 
 ### Handover checkpoint - 2026-09-10
 
-- Last known good implementation commit: `dc9fb64` (`Implement original
-  difficulty resolution bands`), pushed to `main` before this documentation
-  checkpoint. The baseline is 354 passing tests plus the repository policy
-  check, with native save v6, replay v5, and canonical hash v9.
+- The current implementation baseline includes the recovered sector Combat +
+  Defense advantage hostility pass and 362 passing tests. Native saves remain
+  v6, replay is v6, and the canonical hash remains v9.
 - The latest completed AI work implements exact fixed-six-player reaction and
   directional-attitude initialization, non-Homicidal recovery, combat/Control
   attitude changes, hostility-filtered attack candidates, and all nine known
   consumers of the recovered 0/1/2 resolution band. The scalar outer planner
   remains provisional and must not be presented as original-AI parity.
-- Resume static analysis at `FUN_0040a1a7`: map its two selector-`0x36` reads,
-  identify the two positive pair fields, recover the exact ratio-`>75` formula,
-  and establish the direction of the pair flag and force-to-10 attitude write.
-  Then map the remaining attitude-dependent mode-6 sector-selector branches,
+- Resume static analysis at the remaining attitude-dependent mode-6
+  sector-selector branches and the downstream command use of the now-labeled
+  `FUN_0040a1a7` pair flag. Then map
   modes 10-16 public-command guards, and the exact retaliation-eligibility
   compound operands.
 - After those bounded traces, capture fixed original decisions at resolution
@@ -624,12 +622,12 @@ unmarked guess.
 | M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; common typed validation-rule pipeline; deferred hire purchase/placement, one-offer-per-turn snubbing, binary-derived 1–89 rejection refill and 5–9 initial Force; player elimination; declarative validation for all action target shapes; typed queue mutations and ordered events; bounded notification queues; recovered RNG; canonical phase hashes | Runtime offer/Force fixtures, within-phase ordering, and remaining reference-derived edge rules |
 | M3 | Foundation started | Ordered base Upkeep economy; all Instant and Transaction actions; Move/Terminate; grouped Influence and Control; per-turn Chaos; Crackdown lifecycle; influenced-site stats; Research caps; Factory discount; recovered 0/1/2 difficulty pools and thresholds for Heal, Influence, Research, Chaos, plus high-band owned-sector Crackdown reduction | Binary police/call-order fixtures, Control conflict edges, remaining special buildings, Factory acquisition/swap fixtures, and M2 gate |
 | M4 | Foundation started | Recovered raw RNG/range algorithms; serializable state; effective item/site stats; phase-wide Attack/retaliation and police snapshots; recovered difficulty-specific d20 hidden detection, band-0 Defense reduction, 6+/5+/4+ main rolls with quarter-pool damage floor, 5+/5+/4+ halved retaliation, elimination and recorded rolls | Label exact retaliation eligibility, reveal timing, reference combat/Crackdown fixtures, animation/audio mapping, and M2-M3 gates |
-| M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v6 snapshots with v1-v5 migration and v5 authoritative-operation replays plus client save/replay flows; equipment Give recipient workflow | Siege setup/visual mapping, objective ranking/tie fixtures, checked-in persistence fixtures, remaining management UI deliverable and M4 gate |
-| M6 | Foundation started | Deterministic objective-aware planner and replay driver; recovered outer planner, all family dispatch values, action history, selector inventory and strategic routing; exact pre-city six-player reactions, directional attitudes, non-Homicidal recovery, combat/Control reactions, hostility-aware targets, hashes/saves/replays; exact 0/1/2 per-computer resolution calibration implemented for all nine consumers | Resolve mode-6/pair-ratio hostility guards and modes 10-16 command guards; replace provisional scalar scoring with handler-exact policy; capture reference boundaries and larger-player/objective-completion stress cases; M5 gate |
+| M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v6 snapshots with v1-v5 migration and v6 authoritative-operation replays plus client save/replay flows; equipment Give recipient workflow | Siege setup/visual mapping, objective ranking/tie fixtures, checked-in persistence fixtures, remaining management UI deliverable and M4 gate |
+| M6 | Foundation started | Deterministic objective-aware planner and replay driver; recovered outer planner, all family dispatch values, action history, selector inventory and strategic routing; exact pre-city six-player reactions, directional attitudes, non-Homicidal recovery, combat/Control and sector Combat + Defense advantage hostility, hostility-aware targets, hashes/saves/replays; exact 0/1/2 per-computer resolution calibration implemented for all nine consumers | Resolve remaining mode-6 and modes 10-16 command guards; replace provisional scalar scoring with handler-exact policy; capture reference boundaries and larger-player/objective-completion stress cases; M5 gate |
 | M7 | Foundation started | Original city ownership layers and site/gang portraits are rendered; resolved equipped attacks route item-defined original weapon sounds | Complete atlas/event integration, animations, remaining audio/music/video, golden screens and M1-M6 dependencies |
 | M8 | Foundation started | Windows local launcher; legal-copy extraction; self-contained Windows package and GOG-aware Inno installer with an always-visible New Chrome destination page, separate original-asset source page, visible import stages, retryable source selection, nonzero failure exit and runtime error dialog; Linux amd64 `.deb`; macOS arm64/x64 application-bundle `.pkg`; manually dispatched validation and selectable Windows-only (default) or all-platform GitHub Release workflow; pull-request/manual zizmor gate; clean-room run `34403047147` passed Windows, Linux, both macOS architectures, and all installer jobs; zizmor run `34403047115` passed | Signing/notarization, native interactive tests, accuracy audit, compatibility and full release gate |
 
-Current automated baseline: the solution builds successfully, 354 tests
+Current automated baseline: the solution builds successfully, 362 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.
@@ -750,9 +748,9 @@ not lines of code or asset counts.
 
 ## 9. Immediate next implementation sequence
 
-1. Complete the bounded `FUN_0040a1a7` pair-ratio hostility trace described in
-   the handover checkpoint, then the remaining mode-6 and modes 10-16 planner
-   guards. Record facts and rejected hypotheses before changing planner code.
+1. Complete the remaining mode-6 and modes 10-16 planner guards, including the
+   downstream command use of `FUN_0040a1a7`'s now-labeled pair flag. Record
+   facts and rejected hypotheses before changing planner code.
 2. Label the exact retaliation-eligibility compound operands and capture fixed
    band 0/1/2 resolution fixtures, including cash 50/51, Force 8/9, and
    Tolerance 3/4 boundaries.

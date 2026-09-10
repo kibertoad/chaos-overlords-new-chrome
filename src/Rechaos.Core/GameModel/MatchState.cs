@@ -488,6 +488,15 @@ public sealed class MatchState
     }
     public IReadOnlyList<GameNotification> NotificationsFor(PlayerId player) => GetNotificationQueue(player).Items;
 
+    public void PrepareAiPlanning(PlayerId player)
+    {
+        if (Coordinator.Phase != TurnPhase.Command || Coordinator.ActivePlayer != player)
+            throw new InvalidOperationException("AI preparation requires that player's active Command phase.");
+        if (FindPlayer(player)?.Setup.Controller != PlayerController.Computer)
+            throw new ArgumentException("AI preparation requires a computer-controlled player.", nameof(player));
+        AiStrategy.ApplySectorCombatAdvantageHostility(this, player);
+    }
+
     public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>
         GetNotificationQueue(player).TryDequeue(out notification);
 

@@ -17,7 +17,8 @@ public enum ReplayOperationKind : byte
     FinishHire,
     FinishPlayerElimination,
     DismissNotification,
-    PrepareHireOffers
+    PrepareHireOffers,
+    PrepareAiPlanning
 }
 
 public sealed record ReplayStep(
@@ -92,6 +93,13 @@ public sealed class MatchReplayRecorder
         var offers = State.PrepareHireOffers(player);
         Add(new ReplayStep(ReplayOperationKind.PrepareHireOffers, CurrentHash(), Player: player));
         return offers;
+    }
+
+    public void PrepareAiPlanning(PlayerId player)
+    {
+        EnsureSynchronized();
+        State.PrepareAiPlanning(player);
+        Add(new ReplayStep(ReplayOperationKind.PrepareAiPlanning, CurrentHash(), Player: player));
     }
 
     public HireOfferSnubResult SnubHireOffer(PlayerId player, short gangDefinitionId)
@@ -172,7 +180,7 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    public const int CurrentFormatVersion = 5;
+    public const int CurrentFormatVersion = 6;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -283,6 +291,9 @@ public static class MatchReplaySerializer
             }
             case ReplayOperationKind.PrepareHireOffers:
                 state.PrepareHireOffers(Required(step.Player, index));
+                break;
+            case ReplayOperationKind.PrepareAiPlanning:
+                state.PrepareAiPlanning(Required(step.Player, index));
                 break;
             default: throw new InvalidDataException($"Replay step {index} has an unknown operation kind.");
         }

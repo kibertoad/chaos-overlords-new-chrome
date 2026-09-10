@@ -274,6 +274,7 @@ public sealed class AiTurnPlannerTests
                     break;
                 case TurnPhase.Command:
                     var commandPlayer = state.Coordinator.ActivePlayer!.Value;
+                    recorder.PrepareAiPlanning(commandPlayer);
                     foreach (var command in AiTurnPlanner.Plan(state, commandPlayer))
                         Assert.True(recorder.Submit(command).Accepted);
                     recorder.FinishCommand(commandPlayer);

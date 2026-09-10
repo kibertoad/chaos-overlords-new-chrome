@@ -388,11 +388,27 @@ family-1 handler `0x00434080`. A nearby call at `0x0040950f` is not a consumer:
 its actual selector argument is `0x21`; `0x36` only appears in a preceding
 comparison.
 
-`0x0040a1a7` updates a player-pair table only when two positive pair fields
-produce a ratio above 75 percent. Player-type values 0 or 3 enter that path only
-at Mentality 1 or higher; all other type values enter it only below Mentality 2.
-The successful path sets a pair flag and writes `-10` to a paired score field.
-The player-type and pair-field meanings remain unlabeled.
+`0x0040a1a7` rebuilds a 24-byte record for each ordered player pair. For the
+active observer, offset `+0` counts every sector owned by the other player.
+Offset `+2` counts those sectors where the observer's gangs present there have
+a strictly greater combined effective Combat + Defense total than the visible
+defending owner's gangs. Selectors `0xb0`/`0xb1` enumerate only defenders whose
+per-observer visibility byte is 1; selectors `0x5e`/`0x47` enumerate the
+observer's own local gangs. The runtime gang bytes at `0x00498dba` and
+`0x00498dbb` are effective Combat and Defense: the attack resolver independently
+adds the former to Force at `0x00473dd3` and consumes the latter as Defense at
+`0x00473b17`.
+
+When both counts are positive, the exact test at `0x0040a816` is signed integer
+`(advantaged sectors * 100) / owned sectors > 75`; exactly 75 percent does not
+qualify. Target controller types 0 or 3 (local or legacy-remote human) enter the
+test at Mentality 1 or higher. Other controller types enter it only below
+Mentality 2. On success, `0x0040a859` sets the ordered pair's byte at `+20`, and
+`0x0040a86d` writes `-10` to `attitude[observer, other]`. The row stride `0x90`,
+pair stride `0x18`, and the same observer-major indexing in the flag's only
+external consumer at `0x0042085d` establish the direction. The flag is an
+ephemeral planner predicate; its consumer can admit a later branch when the
+owner is already hostile and no visible defending gang is available.
 
 The six family-handler calls form three paired gates. Four formerly anonymous
 state selectors are now bounded:
@@ -468,9 +484,11 @@ and Move. A player-pair scoring pass also changes paths by mentality.
 **Confidence:** Verified for resource IDs, address, display expression, query
 selector, all six write classifications, all eight genuine consumer call sites,
 cash/Tolerance/owner/human-owner selector meanings, command-byte mappings,
-comparison constants, and resulting raw record writes; High for the global's
-identity, persistence/setup flow, selector meanings, and the bounded decisions
-above; Low for the complete planner policy and its target enumeration.
+comparison constants, pair counters, integer ratio, observer-to-target write
+direction, and resulting raw record writes; High for the global's identity,
+persistence/setup flow, selector meanings, effective-stat labels, and the
+bounded decisions above; Low for the complete planner policy and its target
+enumeration.
 
 **Next validation:** identify the sector/gang target enumerators and earlier
 guards feeding each command-continuity gate. Then capture fixed-state
@@ -669,9 +687,10 @@ whole-turn resolver boundary, applies the recovered combat and Control changes,
 uses hostility for AI attack candidates, and includes the state in canonical
 hashes, native saves, and replays.
 
-**Next validation:** resolve the mentality-dependent pair-ratio force-hostility
-guard and every mode-6 consumer, then capture fixed original traces proving
-reaction and recovery ordering through the first two complete turns.
+**Next validation:** resolve every mode-6 consumer and the pair flag's remaining
+downstream command branch, then capture fixed original traces proving the
+combat-advantage threshold, reaction, and recovery ordering through the first
+two complete turns.
 
 ### BIN-AI-007 - per-player difficulty resolution band
 

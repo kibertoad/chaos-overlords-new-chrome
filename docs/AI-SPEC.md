@@ -20,6 +20,10 @@ It must not be cited as behavioral parity with the original AI.
 - Attack candidates are additionally restricted by the same cooperative sector
   detection query exposed to players, so the baseline does not target gangs it
   cannot observe.
+- Before each computer player's plan, a replay-recorded preparation step applies
+  the recovered directional hostility rule. Eligible opponents become maximally
+  hostile when the computer has a strict effective Combat + Defense advantage
+  in more than 75 percent of that opponent's controlled sectors.
 - Control ranking uses the recovered strict solo-strength boundary: the acting
   gang's Force + Control must exceed sector Income plus detectable defending
   Force + Control and owner-influenced Support. Equal or weaker solo attempts
@@ -85,9 +89,10 @@ replay-verified two-computer harness through 20 turns or objective completion.
    confirmed as Support- and Cash-focused Influence routing, while mode 9 seeks
    influenced-site Stealth for a Hide/Chaos path. The six-by-six directional
    attitude matrix, Homicidal human/computer initialization, non-Homicidal per-turn recovery,
-   negative-hostility enumerators, `3..6` non-Homicidal reaction values, and
-   exact combat/Control decrements are also identified and implemented with
-   their exact pre-city RNG order. The separate per-player resolution band is
+   negative-hostility enumerators, `3..6` non-Homicidal reaction values, exact
+   combat/Control decrements, and the mentality-gated sector Combat + Defense
+   advantage hostility pass are also identified and implemented with their
+   exact pre-city RNG order. The separate per-player resolution band is
    initialized to 0/1/2 for computer players at Goon/Criminal/higher settings;
    all nine consumers now drive the recovered Heal, Influence, Research, Chaos,
    Crackdown, hidden-detection, Attack, and retaliation formulas. Selector `0x3e` is identified as the
@@ -95,9 +100,12 @@ replay-verified two-computer harness through 20 turns or objective completion.
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
    (Heal), plus action bytes 3 (Chaos), 10 (Move), and 13 (Snitch), are now
-   bounded in `ORIGINAL-INTERNALS.md`. Capture the resulting cash 50/51, Force
-   8/9, and Tolerance 3/4 boundaries as fixed-state reference fixtures before
-   replacing recreation policy or its provisional destination weights.
+   bounded in `ORIGINAL-INTERNALS.md`. The hostility pass counts only visible
+   defenders, requires a strict integer ratio above 75 percent, and writes
+   `-10` in the observer-to-owner direction. Capture the resulting hostility,
+   cash 50/51, Force 8/9, and Tolerance 3/4 boundaries as fixed-state reference
+   fixtures before replacing recreation policy or its provisional destination
+   weights.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those
    fixtures.

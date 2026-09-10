@@ -119,7 +119,9 @@ The mapped city-panel buttons also open gang, sector, finance, and ranking views
 gang, hire, and site panels use the original portrait sheets.
 Resolved equipped-weapon attacks play their original extracted `SND005xx` cue.
 F5/F9 save/load and F6/F10
-save/verify replays. Escape returns to the title screen before quitting.
+save/verify replays. AI planning preparation, including the recovered
+territorial Combat + Defense hostility check, is recorded in replay v6. Escape
+returns to the title screen before quitting.
 
 ## Projects
 

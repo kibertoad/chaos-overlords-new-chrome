@@ -83,6 +83,27 @@ public sealed class AiStrategicState
             if (_attitudes[index] < MaximumAttitude) _attitudes[index]++;
     }
 
+    internal void ApplySectorCombatAdvantageHostility(MatchState state, PlayerId observer)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        foreach (var other in state.Players.Where(player => player.Id != observer))
+        {
+            var targetsHuman = other.Setup.Controller == PlayerController.Human;
+            var eligible = targetsHuman
+                ? state.Setup.AiMentality >= AiDifficulty.Criminal
+                : state.Setup.AiMentality < AiDifficulty.CrimeLord;
+            if (!eligible) continue;
+
+            var ownedSectors = state.Sectors.Where(sector => sector.Owner == other.Id).ToArray();
+            if (ownedSectors.Length == 0) continue;
+            var advantagedSectors = ownedSectors.Count(sector =>
+                LocalCombatAndDefense(state, observer, sector.Id)
+                > LocalCombatAndDefense(state, other.Id, sector.Id, observer));
+            if (advantagedSectors > 0 && advantagedSectors * 100 / ownedSectors.Length > 75)
+                _attitudes[MatrixIndex(observer, other.Id)] = MinimumAttitude;
+        }
+    }
+
     internal void RecordCombat(PlayerId attacker, PlayerId defender, int damage)
     {
         if (damage < 0) throw new ArgumentOutOfRangeException(nameof(damage));
@@ -97,6 +118,20 @@ public sealed class AiStrategicState
         var index = MatrixIndex(observer, other);
         _attitudes[index] = Math.Max(MinimumAttitude, _attitudes[index] - amount);
     }
+
+    private static int LocalCombatAndDefense(
+        MatchState state,
+        PlayerId owner,
+        int sectorId,
+        PlayerId? observer = null) => state.FindPlayer(owner)!.Gangs
+        .Where(gang => gang.IsActive
+            && gang.SectorId == sectorId
+            && (observer is null || state.CanPlayerDetectGang(observer.Value, gang.Id)))
+        .Sum(gang =>
+        {
+            var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
+            return checked(statistics.Combat + statistics.Defense);
+        });
 
     private static int MatrixIndex(PlayerId observer, PlayerId other) =>
         checked(PlayerIndex(observer) * MatchLimits.PlayerCount + PlayerIndex(other));
