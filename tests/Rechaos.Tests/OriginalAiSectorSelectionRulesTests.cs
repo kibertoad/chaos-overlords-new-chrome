@@ -155,21 +155,21 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
-    public void RoutingTestsVerticalPathFromTheAcceptedHorizontalStep()
+    public void RoutingTestsVerticalCapacityFromTheAcceptedHorizontalStep()
     {
         var facts = new Facts(source: 27);
         facts.Owners[45] = 1;
-        facts.Paths[36] = 6;
+        facts.GangCounts[36] = MatchLimits.FriendlyGangsPerSector;
 
         Assert.Equal(28, facts.Select(mode: 3, family: 2));
     }
 
     [Fact]
-    public void RoutingTestsVerticalPathFromSourceWhenHorizontalStepIsBlocked()
+    public void RoutingTestsVerticalCapacityFromSourceWhenHorizontalStepIsBlocked()
     {
         var facts = new Facts(source: 27);
         facts.Owners[45] = 1;
-        facts.Paths[28] = 6;
+        facts.GangCounts[28] = MatchLimits.FriendlyGangsPerSector;
 
         Assert.Equal(35, facts.Select(mode: 3, family: 2));
     }
@@ -206,9 +206,14 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 8));
         Assert.Throws<ArgumentException>(() => OriginalAiSectorSelectionRules.Select(
             3, 27, new PlayerId(0), 2,
-            facts.Owners[..^1], facts.Disabled, facts.Paths,
+            facts.Owners[..^1], facts.Disabled, facts.GangCounts,
             _ => false, _ => false, _ => false, _ => false,
             facts.PlayerOrder, facts.Random));
+        facts.GangCounts[28] = -1;
+        Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 2));
+        facts.GangCounts[28] = AiPlanningState.GangSlotsPerPlayer + 1;
+        Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 2));
+        facts.GangCounts[28] = 0;
         facts.Owners[28] = 6;
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 2));
     }
@@ -222,7 +227,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
             Owners = Enumerable.Repeat(-3, MatchLimits.SectorCount).ToArray();
             Owners[source] = Player.Value;
             Disabled = new bool[MatchLimits.SectorCount];
-            Paths = new int[MatchLimits.SectorCount];
+            GangCounts = new int[MatchLimits.SectorCount];
             PlayerOrder = [0, 1, 2, 3, 4, 5];
             Random = new DeterministicRandom(seed);
         }
@@ -231,7 +236,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
         public PlayerId Player { get; }
         public int[] Owners { get; }
         public bool[] Disabled { get; }
-        public int[] Paths { get; }
+        public int[] GangCounts { get; }
         public int[] PlayerOrder { get; set; }
         public HashSet<int> SoloControl { get; } = [];
         public HashSet<int> PriorChaos { get; } = [];
@@ -245,7 +250,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
             Func<int, bool>? canSoloControl = null) =>
             OriginalAiSectorSelectionRules.Select(
                 mode, Source, Player, family,
-                Owners, Disabled, Paths,
+                Owners, Disabled, GangCounts,
                 canSoloControl ?? SoloControl.Contains,
                 PriorChaos.Contains,
                 HostileOwners.Contains,

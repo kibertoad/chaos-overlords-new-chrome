@@ -58,9 +58,103 @@ public static class AiTurnPlanner
     {
         if (state.AiPlanning.Family(player.Id, gangSlot) != 1) return null;
 
-        var previousAction = state.AiPlanning.PreviousAction(player.Id, gangSlot);
+        var desiredAction = DesiredRecoveredFamilyAction(
+            state, player, gang, gangSlot);
+        if (desiredAction == GangAction.None) return null;
+
+        var candidates = options.Where(command => command.Action == desiredAction);
+        if (desiredAction == GangAction.Move
+            && state.AiPlanning.PlannedAction(player.Id, gangSlot) == GangAction.Move)
+        {
+            var preparedSector = state.AiPlanning.PlannedTarget(player.Id, gangSlot).First;
+            candidates = candidates.Where(command => command.Target.Id == preparedSector);
+        }
+        return candidates
+            // Prepared live turns use the recovered mode-5 target. Retain the
+            // recreation's deterministic target ranking only when this pure
+            // query is invoked without its replay-recorded preparation boundary.
+            .OrderByDescending(command => Score(state, player, gang, command))
+            .ThenBy(command => command.Target.Id)
+            .FirstOrDefault();
+    }
+
+    internal static void PrepareRecoveredFamilyCommands(MatchState state, PlayerId playerId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var player = state.FindPlayer(playerId)
+            ?? throw new ArgumentOutOfRangeException(nameof(playerId));
+        var sectorOwners = state.Sectors
+            .Select(sector => sector.Owner?.Value ?? -1)
+            .ToArray();
+        var sectorDisabled = state.Sectors
+            .Select(sector => sector.CrackdownActive)
+            .ToArray();
+        var sectorGangCounts = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(sectorId => player.Gangs.Count(gang =>
+                gang.IsActive && gang.SectorId == sectorId))
+            .ToArray();
+        var playerOrder = Enumerable.Range(0, MatchLimits.PlayerCount).ToArray();
+
+        foreach (var entry in player.Gangs.Select((gang, slot) => (gang, slot)))
+        {
+            if (!entry.gang.IsActive || state.AiPlanning.Family(playerId, entry.slot) != 1)
+                continue;
+            var desiredAction = DesiredRecoveredFamilyAction(
+                state, player, entry.gang, entry.slot);
+            if (desiredAction == GangAction.None) continue;
+            if (desiredAction != GangAction.Move)
+            {
+                state.AiPlanning.SetPlannedAction(playerId, entry.slot, desiredAction);
+                continue;
+            }
+
+            try
+            {
+                var target = OriginalAiSectorSelectionRules.Select(
+                    mode: 5,
+                    sourceSectorId: entry.gang.SectorId,
+                    player: playerId,
+                    family: 1,
+                    sectorOwners,
+                    sectorDisabled,
+                    sectorGangCounts,
+                    canSoloControl: sectorId =>
+                        CanSoloControl(state, playerId, entry.gang, sectorId),
+                    hasPriorChaos: sectorId => player.Gangs
+                        .Select((gang, slot) => (gang, slot))
+                        .Any(candidate => candidate.gang.IsActive
+                            && candidate.gang.SectorId == sectorId
+                            && state.AiPlanning.PreviousAction(playerId, candidate.slot)
+                                == GangAction.Chaos),
+                    isHostileOwner: owner =>
+                        state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
+                    isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
+                        .Setup.Controller == PlayerController.Human,
+                    playerOrder,
+                    state.Random);
+                state.AiPlanning.SetPlannedAction(
+                    playerId, entry.slot, GangAction.Move,
+                    new AiActionTarget(checked((byte)target), 0));
+            }
+            catch (InvalidOperationException)
+            {
+                // The original zero-score post-filter edge is not yet bounded.
+                // Leave the tuple empty so the provisional legal-command
+                // fallback remains available instead of inventing a target.
+            }
+        }
+    }
+
+    private static GangAction DesiredRecoveredFamilyAction(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        int gangSlot)
+    {
+        if (state.AiPlanning.Family(player.Id, gangSlot) != 1)
+            return GangAction.None;
         var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
-        var desiredAction = previousAction switch
+        return state.AiPlanning.PreviousAction(player.Id, gangSlot) switch
         {
             GangAction.None or GangAction.Chaos =>
                 OriginalAiFamilyOneRules.SelectNoActionOrChaosContinuation(
@@ -74,16 +168,6 @@ public static class AiTurnPlanner
                 CanSoloControl(state, player.Id, gang)),
             _ => GangAction.None
         };
-        if (desiredAction == GangAction.None) return null;
-
-        return options
-            .Where(command => command.Action == desiredAction)
-            // The original mode-5 Move target remains provisional. Retain the
-            // recreation's deterministic target ranking while honoring the
-            // recovered action branch itself.
-            .OrderByDescending(command => Score(state, player, gang, command))
-            .ThenBy(command => command.Target.Id)
-            .FirstOrDefault();
     }
 
     public static HireChoice? ChooseHire(MatchState state, PlayerId playerId)
@@ -221,10 +305,19 @@ public static class AiTurnPlanner
     }
 
     internal static bool CanSoloControl(MatchState state, PlayerId playerId, MatchGangState gang)
+        => CanSoloControl(state, playerId, gang, gang.SectorId);
+
+    internal static bool CanSoloControl(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        int sectorId)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gang);
-        var sector = state.Sectors[gang.SectorId];
+        if (sectorId is < 0 or >= MatchLimits.SectorCount)
+            throw new ArgumentOutOfRangeException(nameof(sectorId));
+        var sector = state.Sectors[sectorId];
         if (sector.Owner == playerId || sector.CrackdownActive) return false;
 
         var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);

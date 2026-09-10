@@ -23,7 +23,9 @@ It must not be cited as behavioral parity with the original AI.
 - Before each computer player's plan, a replay-recorded preparation step applies
   the recovered directional hostility rule. Eligible opponents become maximally
   hostile when the computer has a strict effective Combat + Defense advantage
-  in more than 75 percent of that opponent's controlled sectors.
+  in more than 75 percent of that opponent's controlled sectors. The same step
+  prepares recovered family-1 commands and consumes any mode-5 maximum-tie RNG
+  exactly once; subsequent `Plan` queries do not consume it again.
 - Control ranking uses the recovered strict solo-strength boundary: the acting
   gang's Force + Control must exceed sector Income plus detectable defending
   Force + Control and owner-influenced Support. Equal or weaker solo attempts
@@ -35,15 +37,15 @@ It must not be cited as behavioral parity with the original AI.
   is None or Chaos. With Force below 8 and effective Heal at least -3 it chooses
   Heal unless the current sector has an active Crackdown, in which case it
   chooses Move. Otherwise an older Snitch chooses Chaos and every other older
-  action chooses Move. The action branch is recovered; the mode-5 Move
-  destination and fallback when the desired action is not legal remain
-  provisional recreation policy.
+  action chooses Move. The action branch and ordinary positive-score mode-5
+  Move destination are recovered and live. Only the original zero-score
+  post-filter result and unavailable-command fallback remain provisional.
 - When family 1's immediately previous action is Heal, it repeats Heal while
   Force is below 9 and effective Heal is at least -3. Outside that gate it
   chooses Control when the strict selector-`0x2c` solo-control predicate
-  succeeds, and mode-5 Move otherwise. This action branch is also live; the
-  Move destination and unavailable-action fallback carry the same provisional
-  qualification.
+  succeeds, and mode-5 Move otherwise. This action branch and ordinary mode-5
+  destination are also live; the same zero-score/unavailable-action fallback
+  qualification applies.
 - Selection is stable by score, action, target kind, target ID, and secondary ID.
 - A shared nonnegative spending budget prevents the planner from intentionally
   queuing more Bribe/Equip cost than the player currently holds while still
@@ -93,10 +95,11 @@ deferred to the internal Hire phase.
 
 Movement scoring currently includes the recovered objective geography for
 both Big Man (sectors 27, 28, 35, and 36) and Eliminate (the six possible
-headquarters sectors 9, 12, 30, 33, 51, and 54). A pure, unwired kernel now
-implements the exact original modes 1-5 clipped-square search, late filters,
-stable maximum ties, RNG consumption, and x-then-y path-cost gate. The live
-planner remains provisional until its outer guards and inputs are represented.
+headquarters sectors 9, 12, 30, 33, 51, and 54). A pure kernel implements the
+exact original modes 1-5 clipped-square search, late filters, stable maximum
+ties, RNG consumption, and x-then-y six-gang-capacity gate. Mode 5 is wired for
+the two recovered family-1 continuations during replay-recorded preparation;
+the other mode consumers remain unwired pending their complete outer guards.
 
 The test suite drives Greed, Power, Acceptance, and Dominance through complete
 two-computer six-month matches. Each scenario is run twice at a fixed seed and
@@ -111,7 +114,9 @@ replay-verified two-computer harness through 20 turns or objective completion.
    selector `0x00408642`. Its ring search, all direct family call sites,
    modes 1-5, site Support/Cash/Stealth modes 7-9, human-player count,
    mode-5 movement weights (neutral/owned/enemy `5:2:1`), maximum-score random
-   ties, and x-then-y one-step routing are now bounded. Modes 7 and 8 are
+   ties, and x-then-y one-step routing are now bounded. The routing field at
+   `0x00489950` is the active player's per-sector gang count, so the `<=5`
+   checks are the original six-friendly-gang destination limit. Modes 7 and 8 are
    confirmed as Support- and Cash-focused Influence routing, while mode 9 seeks
    influenced-site Stealth for a Hide/Chaos path. The six-by-six directional
    attitude matrix, Homicidal human/computer initialization, non-Homicidal per-turn recovery,
@@ -194,11 +199,10 @@ replay-verified two-computer harness through 20 turns or objective completion.
    guard family-1's cash 50/51, Force 8/9, effective-Heal -3/-4, and Tolerance
    3/4 boundaries. The complete previous-None/Chaos and previous-Heal action
    branches are live, including selector `0x2a` as the current-sector
-   active-Crackdown predicate and selector `0x2c` as strict solo Control; their
-   mode-5 destinations remain provisional. Capture controlled original turns
-   that reach the remaining terminal choices through their complete selector
-   context before replacing recreation policy or its provisional destination
-   weights.
+   active-Crackdown predicate, selector `0x2c` as strict solo Control, and
+   replay-recorded mode-5 destinations. Capture controlled original turns that
+   reach the remaining terminal choices through their complete selector context
+   before replacing more recreation policy.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those
    fixtures.

@@ -9,7 +9,8 @@ internal static class OriginalAiSectorSelectionRules
 {
     private const int NeutralOwner = -1;
     private const int MinimumRawOwner = -3;
-    private const int MaximumPathValue = 5;
+    private const int MaximumDestinationGangCount =
+        MatchLimits.FriendlyGangsPerSector - 1;
 
     public static int Select(
         int mode,
@@ -18,7 +19,7 @@ internal static class OriginalAiSectorSelectionRules
         int family,
         IReadOnlyList<int> sectorOwners,
         IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorPathValues,
+        IReadOnlyList<int> sectorGangCounts,
         Func<int, bool> canSoloControl,
         Func<int, bool> hasPriorChaos,
         Func<int, bool> isHostileOwner,
@@ -28,7 +29,7 @@ internal static class OriginalAiSectorSelectionRules
     {
         ValidateInputs(
             mode, sourceSectorId, family, sectorOwners, sectorDisabled,
-            sectorPathValues, canSoloControl, hasPriorChaos,
+            sectorGangCounts, canSoloControl, hasPriorChaos,
             isHostileOwner, isHumanOwner, playerOrderValues, random);
 
         var scores = new int[MatchLimits.SectorCount];
@@ -90,13 +91,19 @@ internal static class OriginalAiSectorSelectionRules
         var result = sourceSectorId;
         var targetX = target % MatchLimits.BoardWidth;
         var targetY = target / MatchLimits.BoardWidth;
-        if (sourceX < targetX && sectorPathValues[result + 1] <= MaximumPathValue)
+        if (sourceX < targetX
+            && sectorGangCounts[result + 1] <= MaximumDestinationGangCount)
             result++;
-        if (sourceX > targetX && sectorPathValues[result - 1] <= MaximumPathValue)
+        if (sourceX > targetX
+            && sectorGangCounts[result - 1] <= MaximumDestinationGangCount)
             result--;
-        if (sourceY < targetY && sectorPathValues[result + MatchLimits.BoardWidth] <= MaximumPathValue)
+        if (sourceY < targetY
+            && sectorGangCounts[result + MatchLimits.BoardWidth]
+                <= MaximumDestinationGangCount)
             result += MatchLimits.BoardWidth;
-        if (sourceY > targetY && sectorPathValues[result - MatchLimits.BoardWidth] <= MaximumPathValue)
+        if (sourceY > targetY
+            && sectorGangCounts[result - MatchLimits.BoardWidth]
+                <= MaximumDestinationGangCount)
             result -= MatchLimits.BoardWidth;
         return result;
     }
@@ -159,7 +166,7 @@ internal static class OriginalAiSectorSelectionRules
         int family,
         IReadOnlyList<int> sectorOwners,
         IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorPathValues,
+        IReadOnlyList<int> sectorGangCounts,
         Func<int, bool> canSoloControl,
         Func<int, bool> hasPriorChaos,
         Func<int, bool> isHostileOwner,
@@ -175,7 +182,7 @@ internal static class OriginalAiSectorSelectionRules
             throw new ArgumentOutOfRangeException(nameof(family));
         ArgumentNullException.ThrowIfNull(sectorOwners);
         ArgumentNullException.ThrowIfNull(sectorDisabled);
-        ArgumentNullException.ThrowIfNull(sectorPathValues);
+        ArgumentNullException.ThrowIfNull(sectorGangCounts);
         ArgumentNullException.ThrowIfNull(canSoloControl);
         ArgumentNullException.ThrowIfNull(hasPriorChaos);
         ArgumentNullException.ThrowIfNull(isHostileOwner);
@@ -186,8 +193,12 @@ internal static class OriginalAiSectorSelectionRules
             throw new ArgumentException("Sector owners must contain all 64 sectors.", nameof(sectorOwners));
         if (sectorDisabled.Count != MatchLimits.SectorCount)
             throw new ArgumentException("Disabled flags must contain all 64 sectors.", nameof(sectorDisabled));
-        if (sectorPathValues.Count != MatchLimits.SectorCount)
-            throw new ArgumentException("Path values must contain all 64 sectors.", nameof(sectorPathValues));
+        if (sectorGangCounts.Count != MatchLimits.SectorCount)
+            throw new ArgumentException(
+                "Gang counts must contain all 64 sectors.",
+                nameof(sectorGangCounts));
+        if (sectorGangCounts.Any(count => count is < 0 or > AiPlanningState.GangSlotsPerPlayer))
+            throw new ArgumentOutOfRangeException(nameof(sectorGangCounts));
         if (sectorOwners.Any(owner => owner is < MinimumRawOwner or >= MatchLimits.PlayerCount))
             throw new ArgumentOutOfRangeException(nameof(sectorOwners));
         if (playerOrderValues.Count != MatchLimits.PlayerCount)

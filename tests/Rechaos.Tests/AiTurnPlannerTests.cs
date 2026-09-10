@@ -233,6 +233,61 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void FamilyOnePreparationUsesRecoveredModeFiveMoveDestination()
+    {
+        var data = BundledOriginalData.Load();
+        var controller = data.Gangs.MaxBy(candidate => candidate.Stats.Control)!.Id;
+        var match = CreateMatch(definitionId: controller, force: 8, data: data);
+        var player = new PlayerId(0);
+        match.AiPlanning.SetCurrentHireRole(player, 1);
+        match.Sectors[8].CrackdownActive = true;
+        match.Sectors[9].CrackdownActive = true;
+        match.FinishUpkeep();
+        var consumptionBefore = match.Random.ConsumptionCount;
+
+        match.PrepareAiPlanning(player);
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+
+        Assert.Equal(1, match.AiPlanning.Family(player, 0));
+        Assert.Equal(GangAction.Move, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(new AiActionTarget(1, 0), match.AiPlanning.PlannedTarget(player, 0));
+        Assert.Equal(GangAction.Move, command.Action);
+        Assert.Equal(CommandTarget.Sector(1), command.Target);
+        Assert.Equal(consumptionBefore, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
+    public void ModeFiveTieConsumesOneBoundedDrawDuringReplayablePreparationOnly()
+    {
+        var data = BundledOriginalData.Load();
+        var controller = data.Gangs.MaxBy(candidate => candidate.Stats.Control)!.Id;
+        var match = CreateMatch(definitionId: controller, force: 8, data: data);
+        var player = new PlayerId(0);
+        match.AiPlanning.SetCurrentHireRole(player, 1);
+        var recorder = new MatchReplayRecorder(match);
+        recorder.FinishUpkeep();
+        var consumptionBefore = match.Random.ConsumptionCount;
+
+        recorder.PrepareAiPlanning(player);
+        var consumptionAfterPreparation = match.Random.ConsumptionCount;
+        var first = Assert.Single(AiTurnPlanner.Plan(match, player));
+        var second = Assert.Single(AiTurnPlanner.Plan(match, player));
+
+        Assert.Equal(consumptionBefore + 3, consumptionAfterPreparation);
+        Assert.Equal(consumptionAfterPreparation, match.Random.ConsumptionCount);
+        Assert.Equal(first, second);
+        Assert.Equal(GangAction.Move, first.Action);
+        Assert.Contains(first.Target.Id, new[] { 1, 8, 9 });
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match),
+            MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void EliminateMovementPrefersRecoveredHeadquartersCandidateSet()
     {
         var match = CreateMatch();

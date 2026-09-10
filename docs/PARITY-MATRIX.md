@@ -56,9 +56,10 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 The AI row includes two handler-exact family-1 continuations in the live
 planner: previous None/Chaos selects Heal, Move, or Chaos from the recovered
 strict Heal, active-Crackdown, and older-Snitch gates; previous Heal repeats
-Heal or selects strict solo Control, then Move. Both preserve provisional
-mode-5 Move destination ranking and unavailable-command fallback until original
-runtime fixtures validate those edges.
+Heal or selects strict solo Control, then Move. Replay-recorded preparation uses
+the exact mode-5 `5:2:1` destination search, maximum-tie RNG, and x-then-y
+six-gang-capacity routing. Only its zero-score post-filter behavior and the
+unavailable-command fallback remain provisional.
 
 ## Current blockers to parity claims
 

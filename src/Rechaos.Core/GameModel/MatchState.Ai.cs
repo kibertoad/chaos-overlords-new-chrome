@@ -29,6 +29,7 @@ public sealed partial class MatchState
             throw new ArgumentException("AI preparation requires a computer-controlled player.", nameof(player));
         AiPlanningPreparation.ApplyFamilyAssignments(this, player);
         AiStrategy.ApplySectorCombatAdvantageHostility(this, player);
+        AiTurnPlanner.PrepareRecoveredFamilyCommands(this, player);
     }
 
     public AiTurnPlanner.HirePreparation PrepareAiHiring(PlayerId player)
