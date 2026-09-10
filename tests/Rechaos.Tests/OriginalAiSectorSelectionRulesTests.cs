@@ -219,6 +219,67 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
+    public void ModesTwelveAndFourteenUseBigManObjectivesAndOwnedExclusion()
+    {
+        var excludingOwned = new Facts(source: 19);
+        excludingOwned.Owners[27] = excludingOwned.Player.Value;
+        excludingOwned.Owners[28] = -1;
+        excludingOwned.Owners[18] = 1;
+        var retainingOwned = new Facts(source: 19);
+        retainingOwned.Owners[27] = retainingOwned.Player.Value;
+        retainingOwned.Owners[28] = -1;
+        retainingOwned.GangCounts[28] = MatchLimits.FriendlyGangsPerSector;
+        retainingOwned.Owners[18] = 1;
+
+        Assert.Equal(28, excludingOwned.Select(mode: 12, family: 13));
+        Assert.Equal(27, retainingOwned.Select(mode: 14, family: 14));
+    }
+
+    [Fact]
+    public void ModesThirteenAndFifteenUseHeadquartersAndOwnedExclusion()
+    {
+        var excludingOwned = new Facts(source: 2);
+        excludingOwned.Owners[9] = excludingOwned.Player.Value;
+        excludingOwned.Owners[12] = -1;
+        excludingOwned.Owners[3] = 1;
+        var retainingOwned = new Facts(source: 2);
+        retainingOwned.Owners[9] = retainingOwned.Player.Value;
+        retainingOwned.Owners[12] = -1;
+        retainingOwned.Owners[3] = 1;
+
+        Assert.Equal(11, excludingOwned.Select(mode: 13, family: 13));
+        Assert.Equal(9, retainingOwned.Select(mode: 15, family: 14));
+    }
+
+    [Fact]
+    public void ObjectiveModesRejectSectorsAtSixFriendlyGangs()
+    {
+        var facts = new Facts(source: 19);
+        facts.Owners[27] = -1;
+        facts.Owners[28] = -1;
+        facts.GangCounts[27] = MatchLimits.FriendlyGangsPerSector;
+
+        Assert.Equal(28, facts.Select(mode: 12, family: 13));
+    }
+
+    [Fact]
+    public void ObjectiveModesCompoundTheirHostileHumanWeight()
+    {
+        var facts = new Facts(source: 20);
+        facts.Owners[27] = 2;
+        facts.Owners[28] = 1;
+        facts.HostileOwners.Add(1);
+        facts.HumanOwners.Add(1);
+
+        Assert.Equal(5, OriginalAiSectorSelectionRules.ObjectiveModeBaseScore(
+            1, facts.HostileOwners.Contains, facts.HumanOwners.Contains));
+        Assert.Equal(1, OriginalAiSectorSelectionRules.ObjectiveModeBaseScore(
+            2, facts.HostileOwners.Contains, facts.HumanOwners.Contains));
+        Assert.Equal(28, facts.Select(mode: 14, family: 14));
+        Assert.Equal(0, facts.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void MalformedShapesAndSelectorValuesAreRejected()
     {
         var facts = new Facts(source: 27);

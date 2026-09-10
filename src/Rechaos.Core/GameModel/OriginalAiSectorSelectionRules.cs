@@ -2,8 +2,9 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Pure implementation of the original weighted sector selector at 0x00408642
-/// for its fully recovered modes 1 through 5. Planner-specific queries remain
-/// explicit inputs so this kernel does not guess at unrecovered outer policy.
+/// for its fully recovered modes 1 through 5 and 12 through 15. Planner-specific
+/// queries remain explicit inputs so this kernel does not guess at unrecovered
+/// outer policy.
 /// </summary>
 internal static class OriginalAiSectorSelectionRules
 {
@@ -50,7 +51,8 @@ internal static class OriginalAiSectorSelectionRules
                     var owner = sectorOwners[sectorId];
                     var added = BaseScore(
                         mode, sectorId, player.Value, owner,
-                        canSoloControl, hasPriorChaos, playerOrderValues);
+                        sectorGangCounts, canSoloControl, hasPriorChaos,
+                        isHostileOwner, isHumanOwner, playerOrderValues);
                     if (added > 0)
                     {
                         scores[sectorId] = checked(scores[sectorId] + added);
@@ -129,8 +131,11 @@ internal static class OriginalAiSectorSelectionRules
         int sectorId,
         int player,
         int owner,
+        IReadOnlyList<int> sectorGangCounts,
         Func<int, bool> canSoloControl,
         Func<int, bool> hasPriorChaos,
+        Func<int, bool> isHostileOwner,
+        Func<int, bool> isHumanOwner,
         IReadOnlyList<int> playerOrderValues) => mode switch
         {
             1 => owner == NeutralOwner && canSoloControl(sectorId) ? 1 : 0,
@@ -140,8 +145,39 @@ internal static class OriginalAiSectorSelectionRules
             5 when owner == NeutralOwner && canSoloControl(sectorId) => 5,
             5 when owner == player && !hasPriorChaos(sectorId) => 2,
             5 when owner != player && owner > NeutralOwner => 1,
+            12 when IsBigManObjective(sectorId)
+                && owner != player
+                && sectorGangCounts[sectorId] < MatchLimits.FriendlyGangsPerSector =>
+                ObjectiveModeBaseScore(owner, isHostileOwner, isHumanOwner),
+            13 when IsEliminateObjective(sectorId)
+                && owner != player
+                && sectorGangCounts[sectorId] < MatchLimits.FriendlyGangsPerSector =>
+                ObjectiveModeBaseScore(owner, isHostileOwner, isHumanOwner),
+            14 when IsBigManObjective(sectorId)
+                && sectorGangCounts[sectorId] < MatchLimits.FriendlyGangsPerSector =>
+                ObjectiveModeBaseScore(owner, isHostileOwner, isHumanOwner),
+            15 when IsEliminateObjective(sectorId)
+                && sectorGangCounts[sectorId] < MatchLimits.FriendlyGangsPerSector =>
+                ObjectiveModeBaseScore(owner, isHostileOwner, isHumanOwner),
             _ => 0
         };
+
+    internal static int ObjectiveModeBaseScore(
+        int owner,
+        Func<int, bool> isHostileOwner,
+        Func<int, bool> isHumanOwner) => owner >= 0
+            && isHostileOwner(owner)
+            && isHumanOwner(owner)
+                // The common post-switch multiplier applies again, preserving
+                // the original objective mode's effective 25-point weight.
+                ? 5
+                : 1;
+
+    private static bool IsBigManObjective(int sectorId) =>
+        sectorId is 27 or 28 or 35 or 36;
+
+    private static bool IsEliminateObjective(int sectorId) =>
+        OriginalCityGenerator.HeadquartersCandidates.Contains(sectorId);
 
     private static bool IsNear(int sourceSectorId, int targetSectorId) =>
         Math.Abs(sourceSectorId % MatchLimits.BoardWidth
@@ -170,7 +206,8 @@ internal static class OriginalAiSectorSelectionRules
         IReadOnlyList<int> playerOrderValues,
         DeterministicRandom random)
     {
-        if (mode is < 1 or > 5) throw new ArgumentOutOfRangeException(nameof(mode));
+        if (mode is not (>= 1 and <= 5 or >= 12 and <= 15))
+            throw new ArgumentOutOfRangeException(nameof(mode));
         if (sourceSectorId is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sourceSectorId));
         if (family != AiPlanningState.UnusedFamily

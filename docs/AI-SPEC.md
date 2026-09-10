@@ -130,7 +130,12 @@ replay-verified two-computer harness through 20 turns or objective completion.
    `0x00489950` is the active player's per-sector gang count, so the `<=5`
    checks are the original six-friendly-gang destination limit. Modes 7 and 8 are
    confirmed as Support- and Cash-focused Influence routing, while mode 9 seeks
-   influenced-site Stealth for a Hide/Chaos path. The six-by-six directional
+   influenced-site Stealth for a Hide/Chaos path. Objective modes 12-15 are
+   implemented as exact shared-selector kernels for Big Man's four central
+   sectors and Eliminate's six headquarters candidates, including ownership,
+   six-gang capacity, nearest-ring, tie-RNG, step-routing, and compounded
+   hostile-human weighting. Their surrounding family-13/14 handlers remain to
+   be integrated. The six-by-six directional
    attitude matrix, Homicidal human/computer initialization, non-Homicidal per-turn recovery,
    negative-hostility enumerators, `3..6` non-Homicidal reaction values, exact
    combat/Control decrements, and the mentality-gated sector Combat + Defense

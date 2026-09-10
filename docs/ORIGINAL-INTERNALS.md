@@ -974,9 +974,12 @@ gives `+1` to the sector returned by selector `0x5a` for the active player.
 Modes 12 and 14 restrict selection to Big Man's central sectors 27, 28, 35,
 and 36; modes 13 and 15 restrict it to Eliminate's six headquarters candidates
 9, 12, 30, 33, 51, and 54. These four modes require the active player's gang
-count in that sector to be below 6 and award `+5` for a human-owned target
-versus `+1` otherwise, with
-modes 12 and 13 also excluding sectors already owned by the active player.
+count in that sector to be below 6. Modes 12 and 13 also exclude sectors already
+owned by the active player. Instruction-level inspection at
+`0x004093d3..0x004099ad` corrects the earlier shorthand about their weight: a
+hostile human-owned objective receives `+5` inside the mode case and is then
+multiplied by five again in the common post-switch block, for an effective
+weight of 25. Every other admitted objective receives `+1`.
 Mode 16 gives `+1` to the sector returned by selector `0x77`; that selector
 groups planning-family-11 records in blocks of six and returns the stored
 anchor sector for the block containing the active gang. A mode above `0x3f`
@@ -1065,7 +1068,7 @@ pathfinding cost.
 family-1 continuity paths. Its exact neutral/owned/enemy ratio is 5:2:1, and
 the routine separates strategic target scoring from the capacity-checked
 single-tile Move ultimately queued. Replay-recorded AI preparation now uses
-this kernel for the two live family-1 continuations. Randomness is used only
+this kernel for all three live family-1 continuations. Randomness is used only
 for mode-0 neighbor selection and equal-best final scores in the bounded paths
 inspected here.
 
@@ -1079,9 +1082,10 @@ filtering due to decompiler control-flow folding. Mode 10 and mode 16's
 remaining family-11 guards are not yet fully labeled.
 
 **Next validation:** map the remaining family-11 guards for modes 10 and 16 to
-public commands. Reproduce mode-6 leader/hostility routes, modes 12-15 objective
-sets, and the mode-16 follower route as fixed original decisions before wiring
-their remaining live consumers.
+public commands. Modes 12-15 now have exact pure kernels; recover and wire their
+remaining family-13/14 handler context, and reproduce those objective routes
+and the mode-16 follower route as fixed original decisions before claiming
+runtime parity.
 
 ### BIN-AI-006 - directional attitude and hostility matrix
 
