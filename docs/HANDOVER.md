@@ -53,7 +53,9 @@ Last updated: 2026-09-11
 - Combat Summary now replays the selected result through the detailed combat
   panel in either presentation mode. Escape or the panel Cancel control clears
   the queue immediately; cancellation and large-elapsed stress tests guard the
-  no-hang presentation boundary.
+  no-hang presentation boundary. A twin-resolution fixture also drains Detailed
+  playback and proves its rolls, Force, phase hash, and full authoritative hash
+  remain identical to Simple presentation.
 - Snapshot and replay stores read back each flushed temporary generation before
   promotion, retain the last valid primary as a backup, and do not poison a good
   backup when replacing a corrupt primary. F10 transparently verifies the

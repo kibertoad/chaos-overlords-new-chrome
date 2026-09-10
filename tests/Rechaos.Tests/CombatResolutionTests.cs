@@ -1,5 +1,7 @@
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
+using Rechaos.Game;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -256,23 +258,30 @@ public sealed class CombatResolutionTests
     }
 
     [Fact]
-    public void EquivalentCombatRunsProduceIdenticalOutcomesAndHash()
+    public void SimpleAndDetailedPresentationProduceIdenticalOutcomesAndHash()
     {
-        var first = CreateMatch();
-        var second = CreateMatch();
-        QueueAndEnterCombat(first, playerOneAction: null);
-        QueueAndEnterCombat(second, playerOneAction: null);
+        var simple = CreateMatch();
+        var detailed = CreateMatch();
+        QueueAndEnterCombat(simple, playerOneAction: null);
+        QueueAndEnterCombat(detailed, playerOneAction: null);
 
-        first.FinishExecutionPhase();
-        second.FinishExecutionPhase();
+        simple.FinishExecutionPhase();
+        detailed.FinishExecutionPhase();
+        var player = new CombatAnimationPlayer();
+        var detailedEvent = Assert.Single(detailed.LastPhaseResolutions).Event!;
+        foreach (var clip in CombatAnimationRouting.ForEvent(detailed, detailedEvent))
+            player.Enqueue(clip);
+        player.Advance(TimeSpan.FromDays(1));
 
-        Assert.Equal(first.FindGang(new GangId(10))!.Force, second.FindGang(new GangId(10))!.Force);
-        Assert.Equal(first.FindGang(new GangId(20))!.Force, second.FindGang(new GangId(20))!.Force);
-        Assert.Equal(first.LastPhaseResolutions[0].Event!.Resolution!.Rolls,
-            second.LastPhaseResolutions[0].Event!.Resolution!.Rolls);
-        Assert.Equal(first.LastPhaseResolutions[0].Event!.Resolution!.RetaliationRolls,
-            second.LastPhaseResolutions[0].Event!.Resolution!.RetaliationRolls);
-        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+        Assert.False(player.IsPlaying);
+        Assert.Equal(simple.FindGang(new GangId(10))!.Force, detailed.FindGang(new GangId(10))!.Force);
+        Assert.Equal(simple.FindGang(new GangId(20))!.Force, detailed.FindGang(new GangId(20))!.Force);
+        Assert.Equal(simple.LastPhaseResolutions[0].Event!.Resolution!.Rolls,
+            detailed.LastPhaseResolutions[0].Event!.Resolution!.Rolls);
+        Assert.Equal(simple.LastPhaseResolutions[0].Event!.Resolution!.RetaliationRolls,
+            detailed.LastPhaseResolutions[0].Event!.Resolution!.RetaliationRolls);
+        Assert.Equal(simple.PhaseHashes[^1].Sha256, detailed.PhaseHashes[^1].Sha256);
+        Assert.Equal(MatchStateHasher.ComputeSha256(simple), MatchStateHasher.ComputeSha256(detailed));
     }
 
     private static short? WeaponType(MatchState match, MatchGangState gang) =>
