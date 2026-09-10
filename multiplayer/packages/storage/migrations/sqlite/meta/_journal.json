@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1789066485482,
-      "tag": "0000_dusty_gargoyle",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1789070855809,
-      "tag": "0001_minor_grey_gargoyle",
+      "when": 1789071992397,
+      "tag": "0000_exotic_warbird",
       "breakpoints": true
     }
   ]

@@ -17,7 +17,7 @@ CREATE TABLE "matches" (
 	"host_player_id" text NOT NULL,
 	"join_code" text NOT NULL,
 	"password_hash" text,
-	"seed" bigint,
+	"seed" integer,
 	"current_turn" integer DEFAULT 0 NOT NULL,
 	"seat_count" integer DEFAULT 1 NOT NULL,
 	"join_counter" integer DEFAULT 1 NOT NULL,
@@ -88,5 +88,7 @@ ALTER TABLE "snapshots" ADD CONSTRAINT "snapshots_match_id_matches_id_fk" FOREIG
 ALTER TABLE "turn_orders" ADD CONSTRAINT "turn_orders_match_id_matches_id_fk" FOREIGN KEY ("match_id") REFERENCES "public"."matches"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "turn_reports" ADD CONSTRAINT "turn_reports_match_id_matches_id_fk" FOREIGN KEY ("match_id") REFERENCES "public"."matches"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "turns" ADD CONSTRAINT "turns_match_id_matches_id_fk" FOREIGN KEY ("match_id") REFERENCES "public"."matches"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "matches_status_updated_idx" ON "matches" USING btree ("status","updated_at");--> statement-breakpoint
+CREATE INDEX "matches_lobby_idx" ON "matches" USING btree ("status","visibility","created_at");--> statement-breakpoint
 CREATE INDEX "players_match_idx" ON "players" USING btree ("match_id");--> statement-breakpoint
 CREATE INDEX "turns_deadline_idx" ON "turns" USING btree ("status","deadline_at");

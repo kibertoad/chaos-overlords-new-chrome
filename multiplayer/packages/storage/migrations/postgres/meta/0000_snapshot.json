@@ -1,5 +1,5 @@
 {
-  "id": "611cd98e-5415-44c8-8cb1-9e226c05b200",
+  "id": "e5b74c76-a00e-4ea0-a1ae-a93161ed6111",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -122,7 +122,7 @@
         },
         "seed": {
           "name": "seed",
-          "type": "bigint",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },
@@ -160,7 +160,56 @@
           "notNull": true
         }
       },
-      "indexes": {},
+      "indexes": {
+        "matches_status_updated_idx": {
+          "name": "matches_status_updated_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "matches_lobby_idx": {
+          "name": "matches_lobby_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "visibility",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {

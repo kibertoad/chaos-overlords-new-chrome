@@ -27,6 +27,8 @@ CREATE TABLE `matches` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `matches_join_code_unique` ON `matches` (`join_code`);--> statement-breakpoint
+CREATE INDEX `matches_status_updated_idx` ON `matches` (`status`,`updated_at`);--> statement-breakpoint
+CREATE INDEX `matches_lobby_idx` ON `matches` (`status`,`visibility`,`created_at`);--> statement-breakpoint
 CREATE TABLE `players` (
 	`id` text PRIMARY KEY NOT NULL,
 	`match_id` text NOT NULL,

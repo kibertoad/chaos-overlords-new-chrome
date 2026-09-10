@@ -1,5 +1,4 @@
 import {
-  bigint,
   boolean,
   index,
   integer,
@@ -26,12 +25,11 @@ export const matches = pgTable(
     joinCode: text('join_code').notNull().unique(),
     passwordHash: text('password_hash'),
     /**
-     * The seed is a SIGNED 32-bit integer, because `MatchSetup.InitialSeed` in the game core is a
-     * C# `int`. It would fit Postgres' own signed `integer`; the column stays a `bigint` only so the
-     * one migration already applied to a deployment does not have to be rewritten, and a wider
-     * column costs nothing. The SQLite lineage shares the dialect-neutral `integer`.
+     * A signed 32-bit integer, which is exactly what Postgres' `integer` holds: the seed is drawn to
+     * fit `MatchSetup.InitialSeed`, a C# `int`. No dialect divergence here — both lineages store the
+     * seed in the same width.
      */
-    seed: bigint('seed', { mode: 'number' }),
+    seed: integer('seed'),
     currentTurn: integer('current_turn').notNull().default(0),
     seatCount: integer('seat_count').notNull().default(1),
     /** Monotonic: seats ever claimed. Never decremented, so `join_order` stays a total order. */

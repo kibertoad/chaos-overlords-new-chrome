@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "515c978d-04c0-4401-8e0b-7816536c3313",
+  "id": "bf035090-4ece-429e-a3d1-f63b7a571494",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "match_events": {
@@ -181,6 +181,16 @@
           "name": "matches_join_code_unique",
           "columns": ["join_code"],
           "isUnique": true
+        },
+        "matches_status_updated_idx": {
+          "name": "matches_status_updated_idx",
+          "columns": ["status", "updated_at"],
+          "isUnique": false
+        },
+        "matches_lobby_idx": {
+          "name": "matches_lobby_idx",
+          "columns": ["status", "visibility", "created_at"],
+          "isUnique": false
         }
       },
       "foreignKeys": {},
