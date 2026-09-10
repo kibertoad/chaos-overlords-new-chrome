@@ -1091,9 +1091,20 @@ the recovered bounded wrapper. Selecting a hire reserves no cash: affordability
 is evaluated during resolution, and an unaffordable action is cleared without
 creating a vacancy.
 
+The six-byte array at `0x004a5ef0` is a persistent per-player modifier. Fresh
+local-game setup clears each byte, compares that player's Pascal name with the
+exact uppercase string `SMGMILK` at `0x0046e23f`-`0x0046e272`, and sets the
+matching byte. The save reader/writer transfers all six bytes at `0x00463b6c`
+and `0x00464071`; no per-turn or post-hire reset exists. At `0x00475aaa` the
+resolver gives a flagged player's recruit Force 10 and bypasses the normal
+bounded Force draw. The same name scan identifies adjacent original cheat
+flags, corroborating that this is a name-triggered modifier rather than a
+scenario or controller rule.
+
 **Confidence:** High static evidence for arrays, sentinels, selected-slot writes,
-mutual exclusion, resolver/refill order, call sites, and RNG bounds; a controlled
-runtime sequence remains useful corroboration.
+mutual exclusion, resolver/refill order, call sites, RNG bounds, and the exact
+`SMGMILK` trigger/effect; a controlled runtime sequence remains useful
+corroboration.
 
 ## Toolchain hypothesis
 

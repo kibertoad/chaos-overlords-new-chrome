@@ -217,9 +217,11 @@ internal static class HireResolver
                 continue;
             }
 
-            var initialForce = state.Random.NextInclusive(
-                ManualRules.MaximumHiredGangForce - ManualRules.MinimumHiredGangForce + 1)
-                + ManualRules.MinimumHiredGangForce - 1;
+            var initialForce = OriginalHireCheatRules.UsesMaximumHireForce(player)
+                ? ManualRules.MaximumForce
+                : state.Random.NextInclusive(
+                    ManualRules.MaximumHiredGangForce - ManualRules.MinimumHiredGangForce + 1)
+                    + ManualRules.MinimumHiredGangForce - 1;
             var hasGangCapacity = player.Gangs.Count(gang => gang.IsActive) < MatchLimits.GangsPerPlayer;
             if (!pending.InitialCostPaid && !hasGangCapacity)
             {

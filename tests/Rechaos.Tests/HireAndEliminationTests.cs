@@ -328,6 +328,45 @@ public sealed class HireAndEliminationTests
     }
 
     [Fact]
+    public void SmgMilkNameGivesEveryHireMaximumForceWithoutForceRng()
+    {
+        var match = CreateMatch(playerName: "SMGMILK");
+        AdvanceToHire(match);
+        var randomBefore = match.Random.ConsumptionCount;
+
+        Assert.True(match.QueueHire(new PlayerId(0), 2, 0).Accepted);
+        match.FinishHire(new PlayerId(0));
+
+        var result = Assert.Single(match.LastHireResolutions);
+        Assert.Equal(ManualRules.MaximumForce, result.InitialForce);
+        Assert.Equal(randomBefore, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
+    public void SmgMilkNameMatchIsExactAndSuppressesFailedCapacityForceRng()
+    {
+        var ordinary = CreateMatch(playerName: "smgmilk");
+        AdvanceToHire(ordinary);
+        var ordinaryRandom = ordinary.Random.ConsumptionCount;
+        Assert.True(ordinary.QueueHire(new PlayerId(0), 2, 0).Accepted);
+        ordinary.FinishHire(new PlayerId(0));
+        Assert.Equal(ordinaryRandom + 3, ordinary.Random.ConsumptionCount);
+
+        var gangs = Enumerable.Range(0, MatchLimits.GangsPerPlayer)
+            .Select(index => new MatchGangState(
+                new GangId(10 + index), new PlayerId(0), 1,
+                1 + index / MatchLimits.FriendlyGangsPerSector, 5))
+            .ToArray();
+        var full = CreateMatch(gangs: gangs, playerName: "SMGMILK");
+        AdvanceToHire(full);
+        var fullRandom = full.Random.ConsumptionCount;
+        Assert.True(full.QueueHire(new PlayerId(0), 2, 0).Accepted);
+        full.FinishHire(new PlayerId(0));
+        Assert.Empty(full.LastHireResolutions);
+        Assert.Equal(fullRandom, full.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void ReplacingLegacyPrepaidHireRefundsItAndQueuesDeferredAction()
     {
         var match = CreateMatch();
@@ -415,12 +454,13 @@ public sealed class HireAndEliminationTests
     private static MatchState CreateMatch(
         bool influencedBySecondPlayer = false,
         int initialCash = 10,
-        IReadOnlyList<MatchGangState>? gangs = null)
+        IReadOnlyList<MatchGangState>? gangs = null,
+        string playerName = "ONE")
     {
         var definitions = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
         [
-            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(0), playerName, PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);

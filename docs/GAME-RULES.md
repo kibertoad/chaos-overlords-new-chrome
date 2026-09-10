@@ -36,9 +36,11 @@ controlled reference observation confirms its execution timing and edge cases.
   the offer just removed. A later valid drop replaces or retargets the selection;
   Reject selects another slot, toggles an existing rejection off, or cancels a
   hire on that same slot. Cash is checked and charged only at resolution.
-- Current exclusions: controlled runtime corroboration, the original Force-10
-  player flag, and behavior with modified or incomplete definition data remain
-  pending.
+- Exact name modifier: in a fresh local game, the exact uppercase player name
+  `SMGMILK` makes every later successful hire start at Force 10 and skips the
+  normal three-call Force RNG sequence. Case variants do not match.
+- Current exclusions: controlled runtime corroboration and behavior with
+  modified or incomplete definition data remain pending.
 - Confidence: High for the range, static call sites, rejection behavior and RNG
   ordering; runtime correlation remains pending.
 - Implementation: `MatchState.SnubHireOffer`, `HireRules.ValidateSnub`,
@@ -47,9 +49,9 @@ controlled reference observation confirms its execution timing and edge cases.
 - Tests: `HireAndEliminationTests` covers fixed middle-slot selection and
   tombstones, next-planning-entry same-slot refill, removed-ID exclusion,
   replacement/toggle actions, deferred payment, the recovered sector/cash/Force/
-  global-capacity resolution order, initial Force bounds, events, RNG consumption,
-  and deterministic hashes. Save/replay tests cover slot/payment persistence and
-  migration.
+  global-capacity resolution order, initial Force bounds, `SMGMILK` Force/RNG
+  behavior, events, RNG consumption, and deterministic hashes. Save/replay tests
+  cover slot/payment persistence and migration.
 - Next experiment: record repeated Hire panels and new-gang Force values from a
   fixed reference save, then correlate offer order and RNG consumption.
 
