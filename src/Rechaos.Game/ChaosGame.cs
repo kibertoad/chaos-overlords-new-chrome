@@ -157,6 +157,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _musicVolumeLevel = preferences.MusicVolumeLevel;
         _soundEffectVolumeLevel = preferences.SoundEffectVolumeLevel;
         _warnIfIdleGangs = preferences.WarnIfIdleGangs;
+        _selectedPlanningTimeLimit = preferences.PlanningTimeLimit;
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -232,6 +233,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         UpdateSoundtrack(gameTime);
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
+        if (UpdatePlanningTimer(gameTime.TotalGameTime))
+        {
+            _previousKeyboard = keyboard;
+            _previousMouse = mouse;
+            base.Update(gameTime);
+            return;
+        }
         RunComputerTurns();
         CaptureNewCombatAnimations();
         _combatAnimationPlayer.Advance(gameTime.ElapsedGameTime);
@@ -468,6 +476,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         if (_state is not null && _combatAnimationPlayer.IsPlaying)
             DrawCombatPanel(_batch, _pixel, _font, _state);
+        DrawPlanningTimer(_batch, _pixel);
         _batch.End();
         base.Draw(gameTime);
     }
@@ -490,6 +499,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         for (var index = 0; index < _selectedPlayerCount; index++)
             if (Pressed(keyboard, controllerKeys[index])) ToggleController(index);
         if (Pressed(keyboard, Keys.M)) CycleDifficulty();
+        if (Pressed(keyboard, Keys.L)) CyclePlanningTimeLimit();
         if (Pressed(keyboard, Keys.Enter)) StartMatch();
     }
 
@@ -513,6 +523,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Setup:
                 var scenario = Array.FindIndex(SetupScenarios, rectangle => rectangle.Contains(point));
                 var duration = Array.FindIndex(SetupDurations, rectangle => rectangle.Contains(point));
+                var planningTimeLimit = Array.FindIndex(
+                    PlanningTimerLayout.SetupChoices.ToArray(),
+                    rectangle => rectangle.Contains(point));
                 var playerSlot = Enumerable.Range(0, _selectedPlayerCount)
                     .FirstOrDefault(index => SetupPlayerSlot(index).Contains(point), -1);
                 var previousPortrait = Enumerable.Range(0, _selectedPlayerCount)
@@ -529,6 +542,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (_selectedDuration != Durations[duration]) PlayGeneralSound(3);
                     _selectedDuration = Durations[duration];
                 }
+                else if (planningTimeLimit >= 0)
+                    SelectPlanningTimeLimit((PlanningTimeLimit)planningTimeLimit);
                 else if (previousPortrait >= 0) CyclePortrait(previousPortrait, -1);
                 else if (nextPortrait >= 0) CyclePortrait(nextPortrait, 1);
                 else

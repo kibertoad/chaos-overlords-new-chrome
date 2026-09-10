@@ -96,6 +96,7 @@ public sealed partial class ChaosGame
         _lastAnimatedEventSequence = -1;
         _combatAnimationPlayer.Clear();
         _screens.Show(ClientScreen.City);
+        StartPlanningTimer(_inputTime);
     }
 
     private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)
@@ -146,6 +147,8 @@ public sealed partial class ChaosGame
             font.Draw(batch, label, new Vector2(portrait.X, portrait.Bottom + 2), PlayerColors[index], 1);
         }
         DrawBorder(batch, pixel, SetupAiMentalities[(int)_selectedAiMentality], Color.Gold, 2);
+        DrawBorder(batch, pixel,
+            PlanningTimerLayout.SetupChoices[(int)_selectedPlanningTimeLimit], Color.Gold, 2);
         if (_hoverPoint is { } hover)
         {
             var hovered = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(hover));

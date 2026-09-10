@@ -136,7 +136,8 @@ public sealed partial class ChaosGame
                 GamePreferences.CurrentFormatVersion,
                 _musicVolumeLevel,
                 _soundEffectVolumeLevel,
-                _warnIfIdleGangs));
+                _warnIfIdleGangs,
+                _selectedPlanningTimeLimit));
 
     private void DrawOptions(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {

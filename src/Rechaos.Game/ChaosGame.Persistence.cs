@@ -36,6 +36,7 @@ public sealed partial class ChaosGame
             _lastAnimatedEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
             _combatAnimationPlayer.Clear();
             _screens.Show(_state.Outcome is null ? ClientScreen.City : ClientScreen.Endgame);
+            if (_state.Outcome is null) StartPlanningTimer(_inputTime);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
         {
@@ -71,6 +72,7 @@ public sealed partial class ChaosGame
             _lastAudibleEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
             _lastAnimatedEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
             _combatAnimationPlayer.Clear();
+            StartPlanningTimer(_inputTime);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
         {

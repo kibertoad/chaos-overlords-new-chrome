@@ -6,21 +6,27 @@ public sealed record GamePreferences(
     int FormatVersion,
     int MusicVolumeLevel,
     int SoundEffectVolumeLevel,
-    bool WarnIfIdleGangs)
+    bool WarnIfIdleGangs,
+    PlanningTimeLimit PlanningTimeLimit)
 {
-    public const int CurrentFormatVersion = 3;
+    public const int CurrentFormatVersion = 4;
 
     public static GamePreferences Default { get; } =
         new(CurrentFormatVersion,
             OriginalSoundtrackPolicy.DefaultVolumeLevel,
             AudioRouting.DefaultEffectVolumeLevel,
-            true);
+            true,
+            PlanningTimeLimit.None);
 }
 
 public static class GamePreferencesStore
 {
     private const long MaximumFileBytes = 4096;
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        RespectRequiredConstructorParameters = true
+    };
 
     public static GamePreferences LoadOrDefault(string path)
     {
@@ -80,5 +86,5 @@ public static class GamePreferencesStore
                 and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
             SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
                 and <= AudioRouting.MaximumEffectVolumeLevel
-        };
+        } && Enum.IsDefined(preferences.PlanningTimeLimit);
 }

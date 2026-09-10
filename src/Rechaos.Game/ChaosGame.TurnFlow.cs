@@ -19,6 +19,7 @@ public sealed partial class ChaosGame
     private void FinishPlanningTurn()
     {
         if (_state is null || _replay is null) return;
+        StopPlanningTimer();
         if (_state.Outcome is not null)
         {
             _message = "MATCH COMPLETE";

@@ -47,6 +47,17 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void SetupPlanningTimerButtonsMatchOriginalArtworkRows()
+    {
+        Assert.Equal(
+        [
+            new Rectangle(192, 330, 108, 27), new Rectangle(192, 359, 108, 27),
+            new Rectangle(192, 388, 108, 27), new Rectangle(192, 417, 108, 27)
+        ], PlanningTimerLayout.SetupChoices);
+        Assert.Equal(new Rectangle(520, 336, 60, 3), PlanningTimerLayout.Bar);
+    }
+
+    [Fact]
     public void HirePriceSitsBesideRejectControl()
     {
         Assert.Equal(new Rectangle(438, 436, 33, 24), HireDockLayout.PriceCell(0));

@@ -192,8 +192,8 @@ recovered Effects level and its level-6 default, and both audio levels persist
 in the recreation-native preferences file.
 
 **Next validation:** Finish classifying slots 6 and 9 and validate slots 0-2
-(panel open, panel close, and held-button press) plus countdown-warning slots
-7-8 at runtime,
+(panel open, panel close, and held-button press) plus countdown-warning cadence
+at runtime,
 then validate overlap/interruption and native amplitude behavior.
 
 ### BIN-OPTIONS-001 - registry keys and idle-gang warning
@@ -224,6 +224,41 @@ modal route the recovered general-effect slots 0 and 1.
 
 **Next validation:** Capture the original modal wording, button order, and
 whether keyboard shortcuts choose a default response.
+
+#### Planning timer
+
+The same preference block also initializes byte `0x00487854`, corresponding to
+`prefsTimeLimit`, to zero. New-match initialization at `0x0046e766` maps values
+0, 1, 2, and 3 to `-1` (disabled), 30,000 ms, 120,000 ms, and 300,000 ms.
+The original Game Settings Help independently describes None, 30 seconds,
+2 minutes, and 5 minutes and says the limit exists to constrain slow turns in
+multiplayer games. The four controls occupy the right-hand rows alongside AI
+Mentality in `PX00143`.
+
+For a human planning entry, `0x0046fd80` calls the start helper at `0x0041b8bc`,
+which records `timeGetTime`; computer planning skips it. The expiry helper at
+`0x0041bdd5` returns true once elapsed milliseconds exceed the selected limit,
+and the human loop then exits as if Done had been accepted. This check occurs
+after the user-triggered idle-gang confirmation path, so timer expiry does not
+open that confirmation. The drawing helper at `0x0041b8fc` scales a 60-pixel
+bar by elapsed/limit. It calls general slot 7 while remaining time is strictly
+between 1 and 10 seconds and slot 8 from 1 second through zero. The input pump
+refreshes this helper every seventh eligible pump call; exact wall-clock sound
+cadence therefore still needs a controlled capture. In the supported asset
+pack, those two PCM clips last approximately 0.117 and 1.189 seconds.
+
+**Recreation status:** Setup exposes the four original choices at the original
+hit regions and safely persists the selection, defaulting to None. A bounded
+presentation-only timer starts when a human accepts the private handoff, remains
+active through planning panels, renders the original 60-by-3 aperture, and
+routes the recovered warning slots once per remaining-second bucket. Expiry
+submits the normal replay-recorded finish-planning operation and deliberately
+bypasses the idle-gang confirmation. The timer itself is absent from Core state,
+state hashes, snapshots, and replay payloads; only its resulting ordinary
+operation is authoritative.
+
+**Next validation:** Capture the original bar rounding, warning cadence,
+deactivation behavior, and whether modal dialogs perceptibly pause the timer.
 
 ### BIN-API-003 - files and persistence
 
