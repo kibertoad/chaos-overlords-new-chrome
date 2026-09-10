@@ -73,7 +73,8 @@ Huge thanks to [wfr](https://github.com/wfr) for publishing the
 careful early format research gave this project a tremendously useful head
 start.
 
-Special thanks as well to Russell Webb et al. for the remarkably thorough
+Special thanks as well to Russell Webb, with contributors Drew Fudenberg,
+Tim Jordan, Adam K. Rixey, and George Ruof, for the remarkably thorough
 [*Chaos Overlords* FAQ](https://gamefaqs.gamespot.com/pc/196900-chaos-overlords/faqs/1684).
 It has been invaluable for clarifying game mechanics whose presentation in the
 original game and manual can otherwise be delightfully cryptic.
