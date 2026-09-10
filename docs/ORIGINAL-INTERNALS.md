@@ -1054,15 +1054,37 @@ candidate sector is scored by the sum of every positive Cash value among its
 unfinished sites, before the common nearest-square, maximum-tie RNG, and
 x-then-y routing logic.
 
-**Recreation status:** these family-3 branches, their exact local site targets,
-equipment cooldowns, and mode-8 Move targets are live and replay-recorded. The
-previous Attack/Hide/Move opponent branch, the terminal three-Move family
-transition, and the late Greed Terminate override remain deliberately on the
-provisional path until their complete selector context is bounded.
+Previous Attack, Hide, and Move share an opponent-continuation branch. When the
+cached visible-opponent weight is not 10, it returns to the owned cash-site,
+strict Control, or mode-8 Move sequence without the earlier Heal gate. At
+weight 10 it makes one bounded draw. Hostile-owned sectors draw an actual
+target from visible gangs belonging to human-controller players; other sectors
+draw from every visible opponent. Both pools scan player-major, then gang-slot
+order.
 
-**Confidence:** High for the listed switch cases, comparisons, action writes,
-site scan/tie behavior, mode-8 score sum, and call order from the fingerprinted
-version-1.1 executable; runtime corroboration remains pending.
+The comparison selector preserves a notable original asymmetry: it receives
+the selected ordinal but resolves that ordinal through the every-visible-
+opponent pool even when the actual target came from the human-only pool. It
+permits Attack when
+`(target Force + target Combat) / 4 - attacker Defense` is no greater than
+`attacker Force + attacker Combat - target Defense`; failure leaves None and
+clears the auxiliary target fields. A successful comparison attacks the actual
+selected player/slot tuple, not necessarily the gang used for the comparison.
+
+After the switch, three consecutive Move actions change the stored family to
+11 in Siege and 2 in every other scenario. Finally, with fewer than four turns
+remaining in Greed, the handler unconditionally overwrites the planned action
+with Terminate. Switch cases without a recovered action body intentionally
+leave None rather than invoking a generic fallback.
+
+**Recreation status:** the complete family-3 handler is live and replay-
+recorded, including local site targets, equipment cooldowns, mode-8 Move
+targets, opponent-pool selection and comparison, terminal family transitions,
+and the late Greed Terminate override.
+
+**Confidence:** High for the switch cases, comparisons, action writes, pool and
+site scan order, tie behavior, mode-8 score sum, and call order from the
+fingerprinted version-1.1 executable; runtime corroboration remains pending.
 
 Families 13 and 14 both use the fixed objective sets as Move destinations:
 scenario value 8 selects modes 12/14 and is Big Man, while scenario value 6

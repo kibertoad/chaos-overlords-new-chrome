@@ -171,16 +171,19 @@ replay-verified two-computer harness through 20 turns or objective completion.
    previous-Attack, and cooldown gates. Its blocks-of-six mode-10 formation
    anchors and mode-16 followers are also live; their separate per-gang
    formation-sector shorts are authoritative, hashed, saved, and replayed.
-   Family 3's recovered cash-site core is live for previous None, Control,
-   Equip, Heal, Influence, and Snitch. It heals below Force 8 at effective Heal
+   Family 3's complete recovered handler is live. Its cash-site core handles
+   previous None, Control, Equip, Heal, Influence, and Snitch. It heals below Force 8 at effective Heal
    `-3` or better, otherwise retains or selects the first strict maximum
    positive-Cash unfinished local site for Influence, attempts strict solo
    Control where applicable, or follows exact mode-8 movement toward the
    nearest owned sector with the greatest summed unfinished positive Cash.
    Its previous-Influence equipment opportunity uses the recovered
-   weapon-before-armor selector and cost-scaled cooldowns. The family-3
-   previous Attack/Hide/Move opponent branch and late family/Terminate
-   overrides remain provisional.
+   weapon-before-armor selector and cost-scaled cooldowns. After Attack, Hide,
+   or Move, it either repeats the territorial cash-site logic or selects a
+   visible opponent and applies the recovered asymmetric combat comparison.
+   Three consecutive Moves switch the family to 11 in Siege and 2 otherwise;
+   Greed's final three turns overwrite the result with Terminate. Unsupported
+   previous-action cases intentionally preserve None, matching the handler.
    The exact ten-scenario by
    seven-hire-role family table is implemented by `OriginalAiFamilyRules`,
    including unmapped cells which preserve the current family. AI planning

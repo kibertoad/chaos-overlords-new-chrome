@@ -30,6 +30,64 @@ public sealed class OriginalAiFamilyThreeRulesTests
         Assert.Equal(expected,
             OriginalAiFamilyThreeRules.UsesCashSiteContinuation(previousAction));
 
+    [Theory]
+    [InlineData(GangAction.Attack, true)]
+    [InlineData(GangAction.Hide, true)]
+    [InlineData(GangAction.Move, true)]
+    [InlineData(GangAction.Influence, false)]
+    public void OpponentContinuationHasExactPreviousActionCases(
+        GangAction previousAction,
+        bool expected) =>
+        Assert.Equal(expected,
+            OriginalAiFamilyThreeRules.UsesOpponentContinuation(previousAction));
+
+    [Theory]
+    [InlineData(5, 3, 1, 8, 4, 2, true)]
+    [InlineData(1, -3, 0, 10, 12, 5, false)]
+    public void AttackGateUsesComparisonTargetQuarterStrengthFormula(
+        int attackerForce,
+        int attackerCombat,
+        int attackerDefense,
+        int targetForce,
+        int targetCombat,
+        int targetDefense,
+        bool expected) =>
+        Assert.Equal(expected, OriginalAiFamilyThreeRules.CanAttackSelectedTarget(
+            attackerForce, attackerCombat, attackerDefense,
+            targetForce, targetCombat, targetDefense));
+
+    [Theory]
+    [InlineData(ScenarioId.Siege, 11)]
+    [InlineData(ScenarioId.Greed, 2)]
+    public void ThreeMovesTransitionToScenarioSpecificFamily(
+        ScenarioId scenario,
+        int expected) =>
+        Assert.Equal(expected, OriginalAiFamilyThreeRules.ThreeMoveTransitionFamily(
+            scenario, GangAction.Move, GangAction.Move, GangAction.Move));
+
+    [Fact]
+    public void ThreeMoveTransitionRequiresAllThreeMoveActions()
+    {
+        Assert.Null(OriginalAiFamilyThreeRules.ThreeMoveTransitionFamily(
+            ScenarioId.Siege, GangAction.Control, GangAction.Move, GangAction.Move));
+        Assert.Null(OriginalAiFamilyThreeRules.ThreeMoveTransitionFamily(
+            ScenarioId.Siege, GangAction.Move, GangAction.Heal, GangAction.Move));
+        Assert.Null(OriginalAiFamilyThreeRules.ThreeMoveTransitionFamily(
+            ScenarioId.Siege, GangAction.Move, GangAction.Move, GangAction.None));
+    }
+
+    [Theory]
+    [InlineData(ScenarioId.Greed, 3, true)]
+    [InlineData(ScenarioId.Greed, 4, false)]
+    [InlineData(ScenarioId.Power, 3, false)]
+    public void GreedTerminateOverrideUsesStrictFourTurnBoundary(
+        ScenarioId scenario,
+        int turnsRemaining,
+        bool expected) =>
+        Assert.Equal(expected,
+            OriginalAiFamilyThreeRules.ShouldTerminateForGreed(
+                scenario, turnsRemaining));
+
     [Fact]
     public void HighestCashSiteUsesFirstStrictMaximumAndSkipsFinishedSites()
     {

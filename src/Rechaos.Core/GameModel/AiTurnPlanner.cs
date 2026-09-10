@@ -97,7 +97,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         int gangSlot) =>
         state.AiPlanning.HasPlanned(playerId)
-        && state.AiPlanning.Family(playerId, gangSlot) is 13 or 14
+        && state.AiPlanning.Family(playerId, gangSlot) is 3 or 13 or 14
         && state.AiPlanning.PlannedAction(playerId, gangSlot) == GangAction.None;
 
     internal static void PrepareRecoveredFamilyCommands(MatchState state, PlayerId playerId)

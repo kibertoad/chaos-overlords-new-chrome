@@ -12,9 +12,41 @@ internal static class OriginalAiFamilyThreeRules
         previousAction is GangAction.None or GangAction.Control
             or GangAction.Equip or GangAction.Heal;
 
+    public static bool UsesOpponentContinuation(GangAction previousAction) =>
+        previousAction is GangAction.Attack or GangAction.Hide or GangAction.Move;
+
     public static bool ShouldHeal(int force, int effectiveHeal) =>
         force < HealForceLimit
         && effectiveHeal >= OriginalAiFamilyOneRules.MinimumEffectiveHeal;
+
+    public static bool CanAttackSelectedTarget(
+        int attackerForce,
+        int attackerCombat,
+        int attackerDefense,
+        int comparisonTargetForce,
+        int comparisonTargetCombat,
+        int comparisonTargetDefense) =>
+        (comparisonTargetForce + comparisonTargetCombat) / 4 - attackerDefense
+        <= attackerForce + attackerCombat - comparisonTargetDefense;
+
+    public static int? ThreeMoveTransitionFamily(
+        ScenarioId scenario,
+        GangAction plannedAction,
+        GangAction previousAction,
+        GangAction olderAction) =>
+        plannedAction == GangAction.Move
+        && previousAction == GangAction.Move
+        && olderAction == GangAction.Move
+            ? scenario == ScenarioId.Siege ? 11 : 2
+            : null;
+
+    public static bool ShouldTerminateForGreed(
+        ScenarioId scenario,
+        int turnsRemaining)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(turnsRemaining);
+        return scenario == ScenarioId.Greed && turnsRemaining < 4;
+    }
 
     public static int? SelectHighestCashUnfinishedSite(
         MatchState state,

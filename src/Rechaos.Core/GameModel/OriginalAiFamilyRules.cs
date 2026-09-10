@@ -4,9 +4,8 @@ namespace Rechaos.Core.GameModel;
 /// Scenario/hire-role dispatch recovered from the original planner at 0x00432da0.
 /// Match planning preparation applies this recovered family update. The three
 /// bounded family-1 continuations, their equipment gate, and their mode-5
-/// destinations are live, as are the complete family-13/14 handlers; remaining
-/// family command dispatch is still being recovered. Family 3's cash-site
-/// continuations and mode-8 movement are also live for their bounded cases.
+/// destinations are live, as are the complete family-3 and family-13/14
+/// handlers; remaining family command dispatch is still being recovered.
 /// </summary>
 internal static class OriginalAiFamilyRules
 {

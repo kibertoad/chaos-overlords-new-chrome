@@ -17,85 +17,199 @@ public static partial class AiTurnPlanner
         var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
 
         if (OriginalAiFamilyThreeRules.UsesCashSiteContinuation(previousAction))
-        {
-            if (OriginalAiFamilyThreeRules.ShouldHeal(gang.Force, effectiveHeal))
-            {
-                state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
-                return true;
-            }
-
-            if (state.Sectors[gang.SectorId].Owner == playerId
-                && OriginalAiFamilyThreeRules.SelectHighestCashUnfinishedSite(
-                    state, gang.SectorId) is { } siteSlot)
-            {
-                SetFamilyThreeInfluence(state, playerId, gangSlot, siteSlot);
-                return true;
-            }
-
-            if (CanSoloControl(state, playerId, gang))
-            {
-                state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Control);
-                return true;
-            }
-
+            PrepareFamilyThreeCashContinuation(
+                state, playerId, gang, gangSlot, effectiveHeal,
+                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+        else if (OriginalAiFamilyThreeRules.UsesOpponentContinuation(previousAction))
+            PrepareFamilyThreeOpponentContinuation(
+                state, playerId, gang, gangSlot,
+                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+        else if (previousAction == GangAction.Influence)
+            PrepareFamilyThreeInfluenceContinuation(
+                state, player, gang, gangSlot, effectiveHeal,
+                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+        else if (previousAction == GangAction.Snitch)
             PrepareFamilyThreeMove(
                 state, playerId, gang, gangSlot,
                 sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
-            return true;
-        }
 
-        if (previousAction == GangAction.Influence)
+        ApplyFamilyThreeTerminalOverrides(state, playerId, gangSlot);
+        return true;
+    }
+
+    private static void PrepareFamilyThreeCashContinuation(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        int gangSlot,
+        int effectiveHeal,
+        IReadOnlyList<int> sectorOwners,
+        IReadOnlyList<bool> sectorDisabled,
+        IReadOnlyList<int> sectorGangCounts,
+        IReadOnlyList<int> playerOrder)
+    {
+        if (OriginalAiFamilyThreeRules.ShouldHeal(gang.Force, effectiveHeal))
         {
-            if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
-                    state, player, gang, gangSlot) is { } upgrade)
-            {
-                state.AiPlanning.SetPlannedAction(
-                    playerId, gangSlot, GangAction.Equip,
-                    new AiActionTarget(checked((byte)upgrade.ItemId), 0));
-                state.AiPlanning.SetEquipmentCooldown(
-                    playerId, gangSlot, upgrade.Slot,
-                    OriginalAiEquipmentRules.EquipmentReplacementCooldown(
-                        state.Definitions.Items[upgrade.ItemId].Cost));
-                return true;
-            }
-
-            if (OriginalAiFamilyThreeRules.ShouldHeal(gang.Force, effectiveHeal))
-            {
-                state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
-                return true;
-            }
-
-            if (state.Sectors[gang.SectorId].Owner == playerId)
-            {
-                var previousSiteSlot = state.AiPlanning
-                    .PreviousTarget(playerId, gangSlot).First;
-                if (previousSiteSlot < MatchLimits.SitesPerSector
-                    && state.Sectors[gang.SectorId].Sites[previousSiteSlot].Resistance > 0)
-                {
-                    SetFamilyThreeInfluence(
-                        state, playerId, gangSlot, previousSiteSlot);
-                    return true;
-                }
-
-                if (OriginalAiFamilyThreeRules.SelectHighestCashUnfinishedSite(
-                        state, gang.SectorId) is { } siteSlot)
-                {
-                    SetFamilyThreeInfluence(state, playerId, gangSlot, siteSlot);
-                    return true;
-                }
-            }
-
-            PrepareFamilyThreeMove(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
-            return true;
+            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
+            return;
         }
 
-        if (previousAction != GangAction.Snitch) return false;
+        PrepareFamilyThreeCashSiteOrTerritorial(
+            state, playerId, gang, gangSlot,
+            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+    }
+
+    private static void PrepareFamilyThreeCashSiteOrTerritorial(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        int gangSlot,
+        IReadOnlyList<int> sectorOwners,
+        IReadOnlyList<bool> sectorDisabled,
+        IReadOnlyList<int> sectorGangCounts,
+        IReadOnlyList<int> playerOrder)
+    {
+        if (state.Sectors[gang.SectorId].Owner == playerId
+            && OriginalAiFamilyThreeRules.SelectHighestCashUnfinishedSite(
+                state, gang.SectorId) is { } siteSlot)
+        {
+            SetFamilyThreeInfluence(state, playerId, gangSlot, siteSlot);
+            return;
+        }
+
+        if (CanSoloControl(state, playerId, gang))
+        {
+            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Control);
+            return;
+        }
+
         PrepareFamilyThreeMove(
             state, playerId, gang, gangSlot,
             sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
-        return true;
+    }
+
+    private static void PrepareFamilyThreeOpponentContinuation(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        int gangSlot,
+        IReadOnlyList<int> sectorOwners,
+        IReadOnlyList<bool> sectorDisabled,
+        IReadOnlyList<int> sectorGangCounts,
+        IReadOnlyList<int> playerOrder)
+    {
+        var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
+        var visibleWeight = visible.Count == 0
+            ? 0
+            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+        if (visibleWeight != 10)
+        {
+            PrepareFamilyThreeCashSiteOrTerritorial(
+                state, playerId, gang, gangSlot,
+                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+            return;
+        }
+
+        var owner = state.Sectors[gang.SectorId].Owner;
+        var targetPool = owner is { } sectorOwner
+            && state.AiStrategy.IsHostile(playerId, sectorOwner)
+                ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
+                        .Setup.Controller == PlayerController.Human)
+                    .ToArray()
+                : visible;
+        var ordinal = state.Random.NextInclusive(targetPool.Count);
+        var selected = targetPool[ordinal - 1];
+        var comparisonTarget = visible[ordinal - 1].Gang;
+        var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
+        var targetStats = EffectiveStatisticsCalculator.ForGang(state, comparisonTarget);
+        if (!OriginalAiFamilyThreeRules.CanAttackSelectedTarget(
+                gang.Force, attackerStats.Combat, attackerStats.Defense,
+                comparisonTarget.Force, targetStats.Combat, targetStats.Defense))
+        {
+            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.None);
+            return;
+        }
+
+        state.AiPlanning.SetPlannedAction(
+            playerId, gangSlot, GangAction.Attack,
+            new AiActionTarget(
+                checked((byte)selected.Gang.Owner.Value),
+                checked((byte)selected.Slot)));
+    }
+
+    private static void PrepareFamilyThreeInfluenceContinuation(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        int gangSlot,
+        int effectiveHeal,
+        IReadOnlyList<int> sectorOwners,
+        IReadOnlyList<bool> sectorDisabled,
+        IReadOnlyList<int> sectorGangCounts,
+        IReadOnlyList<int> playerOrder)
+    {
+        var playerId = player.Id;
+        if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
+                state, player, gang, gangSlot) is { } upgrade)
+        {
+            state.AiPlanning.SetPlannedAction(
+                playerId, gangSlot, GangAction.Equip,
+                new AiActionTarget(checked((byte)upgrade.ItemId), 0));
+            state.AiPlanning.SetEquipmentCooldown(
+                playerId, gangSlot, upgrade.Slot,
+                OriginalAiEquipmentRules.EquipmentReplacementCooldown(
+                    state.Definitions.Items[upgrade.ItemId].Cost));
+            return;
+        }
+
+        if (OriginalAiFamilyThreeRules.ShouldHeal(gang.Force, effectiveHeal))
+        {
+            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
+            return;
+        }
+
+        if (state.Sectors[gang.SectorId].Owner == playerId)
+        {
+            var previousSiteSlot = state.AiPlanning
+                .PreviousTarget(playerId, gangSlot).First;
+            if (previousSiteSlot < MatchLimits.SitesPerSector
+                && state.Sectors[gang.SectorId].Sites[previousSiteSlot].Resistance > 0)
+            {
+                SetFamilyThreeInfluence(
+                    state, playerId, gangSlot, previousSiteSlot);
+                return;
+            }
+
+            if (OriginalAiFamilyThreeRules.SelectHighestCashUnfinishedSite(
+                    state, gang.SectorId) is { } siteSlot)
+            {
+                SetFamilyThreeInfluence(state, playerId, gangSlot, siteSlot);
+                return;
+            }
+        }
+
+        PrepareFamilyThreeMove(
+            state, playerId, gang, gangSlot,
+            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+    }
+
+    private static void ApplyFamilyThreeTerminalOverrides(
+        MatchState state,
+        PlayerId playerId,
+        int gangSlot)
+    {
+        if (OriginalAiFamilyThreeRules.ThreeMoveTransitionFamily(
+                state.Setup.Scenario,
+                state.AiPlanning.PlannedAction(playerId, gangSlot),
+                state.AiPlanning.PreviousAction(playerId, gangSlot),
+                state.AiPlanning.OlderAction(playerId, gangSlot)) is { } family)
+            state.AiPlanning.SetFamily(playerId, gangSlot, family);
+
+        var turnsRemaining = Math.Max(0,
+            ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
+        if (OriginalAiFamilyThreeRules.ShouldTerminateForGreed(
+                state.Setup.Scenario, turnsRemaining))
+            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
     }
 
     private static void SetFamilyThreeInfluence(
