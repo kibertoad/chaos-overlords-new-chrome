@@ -166,6 +166,36 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void VersionSixReplayUsesVersionSixHashesAfterPlanningMigration()
+    {
+        var initial = CreateMatch();
+        var oldInitialHash = MatchStateHasher.ComputeVersionSixSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
+        recorder.FinishUpkeep();
+        var oldResultHash = MatchStateHasher.ComputeVersionSixSha256(initial);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = 6;
+        document["initialStateSha256"] = oldInitialHash;
+        document["steps"]![0]!["resultingStateSha256"] = oldResultHash;
+
+        var snapshotBytes = Convert.FromBase64String(
+            document["initialSnapshot"]!.GetValue<string>());
+        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
+        snapshot["formatVersion"] = 6;
+        snapshot["stateSha256"] = oldInitialHash;
+        snapshot["runtime"]!.AsObject().Remove("aiPlanning");
+        document["initialSnapshot"] = Convert.ToBase64String(
+            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
+
+        Assert.Equal(MatchStateHasher.ComputeSha256(initial), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void AtomicReplayStoreWritesAndReplaysAFile()
     {
         var directory = Path.Combine(Path.GetTempPath(), "rechaos-replay-tests", Guid.NewGuid().ToString("N"));

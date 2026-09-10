@@ -15,4 +15,5 @@ internal sealed record MatchRuntimeRestore(
     IReadOnlyDictionary<PlayerId, long> NextNotificationSequences,
     IReadOnlyList<PhaseBoundaryHash> PhaseHashes,
     MatchOutcome? Outcome,
-    AiStrategicState AiStrategy);
+    AiStrategicState AiStrategy,
+    AiPlanningState AiPlanning);

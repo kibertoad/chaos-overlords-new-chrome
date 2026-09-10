@@ -346,7 +346,6 @@ public sealed class MatchState
         : this(definitions, setup, players, sectors, (MatchRuntimeRestore?)null)
     {
     }
-
     internal MatchState(
         OriginalData definitions,
         MatchSetup setup,
@@ -385,6 +384,7 @@ public sealed class MatchState
             ? new TurnCommandQueue()
             : TurnCommandQueue.Restore(restore.Commands, restore.NextCommandSequence);
         AiStrategy = restore?.AiStrategy ?? AiStrategicState.MigrateLegacy(setup);
+        AiPlanning = restore?.AiPlanning ?? AiPlanningState.Initialize();
         _notifications = Players.ToDictionary(player => player.Id, _ => new NotificationQueue());
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         if (restore is not null) RestoreRuntime(restore);
@@ -404,12 +404,11 @@ public sealed class MatchState
             players.ToDictionary(player => player.Id,
                 _ => (IReadOnlyList<GameNotification>)Array.Empty<GameNotification>()),
             players.ToDictionary(player => player.Id, _ => 0L),
-            [], null, aiStrategy))
+            [], null, aiStrategy, AiPlanningState.Initialize()))
     {
         ArgumentNullException.ThrowIfNull(initialRandom);
         ArgumentNullException.ThrowIfNull(aiStrategy);
     }
-
     public OriginalData Definitions { get; }
     public MatchSetup Setup { get; }
     public IReadOnlyList<MatchPlayerState> Players { get; }
@@ -418,6 +417,7 @@ public sealed class MatchState
     public DeterministicRandom Random { get; }
     public TurnCommandQueue Commands { get; }
     public AiStrategicState AiStrategy { get; }
+    public AiPlanningState AiPlanning { get; }
     public IReadOnlyList<GameEvent> Events => _events;
     public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashes;
     public IReadOnlyList<CommandResolutionResult> LastPhaseResolutions { get; private set; } = [];

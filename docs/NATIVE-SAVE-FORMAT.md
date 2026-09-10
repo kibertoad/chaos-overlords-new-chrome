@@ -1,7 +1,7 @@
 # Recreation-native save format
 
-Status: implemented format version 6
-Last updated: 2026-09-09
+Status: implemented format version 7
+Last updated: 2026-09-10
 
 This format belongs to the recreation. It is deliberately separate from the
 two partially mapped original *Chaos Overlords* save variants and makes no
@@ -9,7 +9,7 @@ claim of binary compatibility with either of them.
 
 ## Container and limits
 
-- UTF-8 JSON with camel-case property names and `formatVersion: 6`.
+- UTF-8 JSON with camel-case property names and `formatVersion: 7`.
 - Maximum accepted size: 16 MiB.
 - Unknown properties, missing constructor fields, invalid identifiers, invalid
   enum/phase combinations, and inconsistent sequence counters are rejected.
@@ -23,19 +23,19 @@ same-directory temporary file, flushes it to disk, retains the previous primary
 as `<save>.bak`, and promotes the temporary file over the primary. Recovery
 loads the backup only when the primary is missing, unreadable, or invalid.
 
-## Version 6 document
+## Version 7 document
 
 The top-level members are:
 
 | Member | Contents |
 |---|---|
-| `formatVersion` | Schema discriminator; currently `6` |
+| `formatVersion` | Schema discriminator; currently `7` |
 | `definitionsSha256` | Gameplay-definition compatibility fingerprint |
 | `stateSha256` | Canonical authoritative-state fingerprint |
 | `setup` | Scenario, duration, initial seed, global AI mentality, and ordered player definitions including portrait IDs |
 | `players` | Cash/support/objective state, gangs, hire state, research, inventory, statistics |
 | `sectors` | Ownership, explicit base income, tolerance, chaos/crackdown/importance, and three site instances |
-| `runtime` | Phase coordinator, RNG state/count, fixed-six-player AI reactions and directional attitudes, command queue/counter, event history/counter, notification queues/counters, phase hashes, and outcome |
+| `runtime` | Phase coordinator, RNG state/count, fixed-six-player AI reactions/directional attitudes, six current and previous AI hire roles, six-by-81 AI family records, command queue/counter, event history/counter, notification queues/counters, phase hashes, and outcome |
 
 Gang command projections are reconstructed from the authoritative command queue
 on load. Transient `Last*Resolutions` views are intentionally not serialized;
@@ -47,11 +47,13 @@ snapshot.
 
 ## Compatibility policy
 
-Readers accept versions 1 through 5. Older documents migrate formerly implicit
+Readers accept versions 1 through 6. Older documents migrate formerly implicit
 sector income and later Crackdown state according to their schema; all v1-v4
 setups migrate to Criminal AI mentality and map each player to its matching
 default portrait. Version 5 and earlier reconstruct the fixed AI reaction and
-attitude state without advancing the saved live RNG. The appropriate legacy
+attitude state without advancing the saved live RNG. Version 6 and earlier
+initialize the newly authoritative hire roles to zero and all planning-family
+slots to the original sentinel 99. The appropriate legacy
 canonical hash is verified before the migrated state is returned. Unknown versions remain rejected. Future
 incompatible changes must increment `formatVersion`, retain fixtures, and
 preserve deterministic continuation during migration.
@@ -59,7 +61,7 @@ preserve deterministic continuation during migration.
 Original-save import/export remains a separate research task. Native snapshots
 must never be presented as converted original saves.
 
-## Replay format version 5
+## Replay format version 7
 
 `MatchReplayRecorder` captures an initial native snapshot, then requires every
 authoritative mutation to pass through its API. It covers command submission and
@@ -82,7 +84,10 @@ planning-time hire-offer preparation so opening the persistent Hire dock does
 not become an out-of-band RNG mutation. Replay version 4 embeds the version 5
 snapshot and includes global AI mentality and player portraits in the canonical
 state. Replay version 5 embeds the version 6 snapshot and includes AI reactions
-and attitudes. Version 2 through 4 replay documents remain accepted through
-their legacy hash paths. The current canonical state hash is version 9. The initial snapshot
+and attitudes. Replay version 7 embeds the version 7 snapshot and includes AI
+hire roles and planning families; version 6 remains accepted through its
+version-9 hash path. Version 2 through 5 replay documents remain accepted
+through their legacy hash paths. The current canonical state hash is version
+10. The initial snapshot
 remains required until original seed selection and the complete setup context
 are verified.

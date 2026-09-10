@@ -13,6 +13,10 @@ public sealed class NativeSaveSerializerTests
     public void RoundTripPreservesCanonicalStateAndQueuedCommandProjection()
     {
         var match = CreateMatch();
+        match.AiPlanning.SetCurrentHireRole(new PlayerId(1), 4);
+        match.AiPlanning.BeginPlanning(new PlayerId(1));
+        match.AiPlanning.SetCurrentHireRole(new PlayerId(1), 2);
+        match.AiPlanning.SetFamily(new PlayerId(1), 0, 6);
         match.FinishUpkeep();
         Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(0), GangAction.Hide, CommandTarget.None, Repeat: true)).Accepted);
@@ -34,6 +38,9 @@ public sealed class NativeSaveSerializerTests
         Assert.Equal(7, restored.Setup.Players[1].PortraitId);
         Assert.Equal(match.AiStrategy.CaptureReactions(), restored.AiStrategy.CaptureReactions());
         Assert.Equal(match.AiStrategy.CaptureAttitudes(), restored.AiStrategy.CaptureAttitudes());
+        Assert.Equal(2, restored.AiPlanning.CurrentHireRole(new PlayerId(1)));
+        Assert.Equal(4, restored.AiPlanning.PreviousHireRole(new PlayerId(1)));
+        Assert.Equal(6, restored.AiPlanning.Family(new PlayerId(1), 0));
         Assert.Equal(SaveBytes(match), SaveBytes(restored));
     }
 
@@ -220,6 +227,27 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void VersionSixSaveMigratesEmptyAiPlanningState()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 6;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionSixSha256(match);
+        document["runtime"]!.AsObject().Remove("aiPlanning");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.Equal(0, restored.AiPlanning.CurrentHireRole(new PlayerId(0)));
+        Assert.Equal(0, restored.AiPlanning.PreviousHireRole(new PlayerId(0)));
+        Assert.All(restored.AiPlanning.CaptureFamilies(),
+            family => Assert.Equal(AiPlanningState.UnusedFamily, family));
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void RejectsModifiedAiStrategyWhoseFingerprintWasNotUpdated()
     {
         var match = CreateMatch();
@@ -228,6 +256,21 @@ public sealed class NativeSaveSerializerTests
         var document = JsonNode.Parse(current.ToArray())!.AsObject();
         var reactions = document["runtime"]!["aiStrategy"]!["reactions"]!.AsArray();
         reactions[0] = reactions[0]!.GetValue<int>() == 5 ? 4 : 5;
+
+        using var changed = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(changed, match.Definitions));
+    }
+
+    [Fact]
+    public void RejectsModifiedAiPlanningWhoseFingerprintWasNotUpdated()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["aiPlanning"]!["currentHireRoles"]![0] = 1;
 
         using var changed = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
 

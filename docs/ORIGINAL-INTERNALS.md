@@ -448,8 +448,13 @@ every hire-role write, shared scenario bodies, constants, retained factor, x87
 comparison direction, equality boundaries, adjustment ordering, and the
 Greed-only scenario-standing predicate.
 
-**Next validation:** represent per-gang family/destination planning records and
-the previous/current hire role in authoritative match state before live integration.
+The recreation's `AiPlanningState` now preserves the verified six current-role
+words, six previous-role words, and six-by-81 family slots in canonical hashes,
+native saves, and replays. Save/replay version 7 migrates earlier snapshots to
+role zero and family sentinel 99 without advancing the RNG.
+
+**Next validation:** recover and represent the per-gang destination/command
+planning fields before live integration.
 
 ### BIN-AI-003A - strategic hire-offer ranking
 

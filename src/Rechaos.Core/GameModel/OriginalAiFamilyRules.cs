@@ -2,8 +2,8 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Scenario/hire-role dispatch recovered from the original planner at 0x00432da0.
-/// This remains isolated until the per-player hire-role word (query 0x7c)
-/// and per-gang planning records are represented by the live match model.
+/// Live command integration remains pending the destination and command fields
+/// of the per-gang planning records.
 /// </summary>
 internal static class OriginalAiFamilyRules
 {

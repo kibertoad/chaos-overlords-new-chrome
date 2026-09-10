@@ -64,31 +64,42 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 9;
+    private const int FormatVersion = 10;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
-            includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false);
+            includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
+            includeAiPlanning: false);
 
     internal static string ComputeVersionTwoSha256(MatchState state) =>
         ComputeSha256(state, 5, includeSectorIncome: true, includeCrackdownDuration: false,
-            includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false);
+            includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
+            includeAiPlanning: false);
 
     internal static string ComputeVersionThreeSha256(MatchState state) =>
         ComputeSha256(state, 6, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false);
+            includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
+            includeAiPlanning: false);
 
     internal static string ComputeVersionFourSha256(MatchState state) =>
         ComputeSha256(state, 7, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: false, includeAiStrategy: false);
+            includeCrackdownHistory: true, includeDifficulty: false, includeAiStrategy: false,
+            includeAiPlanning: false);
 
     internal static string ComputeVersionFiveSha256(MatchState state) =>
         ComputeSha256(state, 8, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: false);
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: false,
+            includeAiPlanning: false);
+
+    internal static string ComputeVersionSixSha256(MatchState state) =>
+        ComputeSha256(state, 9, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: false);
 
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true);
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true);
 
     private static string ComputeSha256(
         MatchState state,
@@ -97,7 +108,8 @@ public static class MatchStateHasher
         bool includeCrackdownDuration,
         bool includeCrackdownHistory,
         bool includeDifficulty,
-        bool includeAiStrategy)
+        bool includeAiStrategy,
+        bool includeAiPlanning)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -129,6 +141,12 @@ public static class MatchStateHasher
             {
                 foreach (var reaction in state.AiStrategy.CaptureReactions()) writer.Write(reaction);
                 foreach (var attitude in state.AiStrategy.CaptureAttitudes()) writer.Write(attitude);
+            }
+            if (includeAiPlanning)
+            {
+                foreach (var role in state.AiPlanning.CaptureCurrentHireRoles()) writer.Write(role);
+                foreach (var role in state.AiPlanning.CapturePreviousHireRoles()) writer.Write(role);
+                foreach (var family in state.AiPlanning.CaptureFamilies()) writer.Write(family);
             }
             writer.Write(state.NextEventSequence);
             writer.Write(state.Outcome is not null);

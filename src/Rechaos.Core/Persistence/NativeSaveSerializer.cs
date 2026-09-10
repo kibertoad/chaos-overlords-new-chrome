@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 6;
+    public const int CurrentFormatVersion = 7;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -84,6 +84,14 @@ public static class NativeSaveSerializer
                 ? AiStrategicState.Restore(savedStrategy.Reactions, savedStrategy.Attitudes)
                 : throw new InvalidDataException("Native save AI strategic state is missing.")
             : AiStrategicState.MigrateLegacy(setup);
+        var aiPlanning = document.FormatVersion >= 7
+            ? document.Runtime.AiPlanning is { } savedPlanning
+                ? AiPlanningState.Restore(
+                    savedPlanning.CurrentHireRoles,
+                    savedPlanning.PreviousHireRoles,
+                    savedPlanning.Families)
+                : throw new InvalidDataException("Native save AI planning state is missing.")
+            : AiPlanningState.Initialize();
         var runtime = new MatchRuntimeRestore(
             document.Runtime.Turn,
             document.Runtime.Phase,
@@ -99,7 +107,8 @@ public static class NativeSaveSerializer
             notificationSequences,
             document.Runtime.PhaseHashes,
             document.Runtime.Outcome,
-            aiStrategy);
+            aiStrategy,
+            aiPlanning);
         var state = new MatchState(definitions, setup, players, sectors, runtime);
         if (!CryptographicOperations.FixedTimeEquals(
                 DecodeSha256(document.StateSha256, "state fingerprint"),
@@ -110,6 +119,7 @@ public static class NativeSaveSerializer
                     3 => MatchStateHasher.ComputeVersionThreeSha256(state),
                     4 => MatchStateHasher.ComputeVersionFourSha256(state),
                     5 => MatchStateHasher.ComputeVersionFiveSha256(state),
+                    6 => MatchStateHasher.ComputeVersionSixSha256(state),
                     _ => MatchStateHasher.ComputeSha256(state)
                 }, "restored state fingerprint")))
             throw new InvalidDataException("Native save state fingerprint does not match its contents.");
@@ -148,7 +158,11 @@ public static class NativeSaveSerializer
             state.Outcome,
             new AiStrategyDocument(
                 state.AiStrategy.CaptureReactions(),
-                state.AiStrategy.CaptureAttitudes())));
+                state.AiStrategy.CaptureAttitudes()),
+            new AiPlanningDocument(
+                state.AiPlanning.CaptureCurrentHireRoles(),
+                state.AiPlanning.CapturePreviousHireRoles(),
+                state.AiPlanning.CaptureFamilies())));
 
     private static PlayerDocument CapturePlayer(MatchPlayerState player) => new(
         player.Id.Value,
@@ -380,11 +394,17 @@ internal sealed record RuntimeDocument(
     IReadOnlyList<PlayerNotificationsDocument> Notifications,
     IReadOnlyList<PhaseBoundaryHash> PhaseHashes,
     MatchOutcome? Outcome,
-    AiStrategyDocument? AiStrategy = null);
+    AiStrategyDocument? AiStrategy = null,
+    AiPlanningDocument? AiPlanning = null);
 
 internal sealed record AiStrategyDocument(
     IReadOnlyList<int> Reactions,
     IReadOnlyList<int> Attitudes);
+
+internal sealed record AiPlanningDocument(
+    IReadOnlyList<int> CurrentHireRoles,
+    IReadOnlyList<int> PreviousHireRoles,
+    IReadOnlyList<int> Families);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,
