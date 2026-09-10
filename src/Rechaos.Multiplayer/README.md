@@ -42,7 +42,7 @@ cd multiplayer && pnpm codegen
 `Generated/WireContracts.cs` comes from the valibot schemas through
 [`@game-infra/valibot-to-csharp`](https://www.npmjs.com/package/@game-infra/valibot-to-csharp), and
 `Generated/RouteTemplates.cs` from the endpoint contracts. Both are committed so that building the
-game never needs Node; `pnpm codegen:check` fails when either has drifted.
+game never needs Node; CI runs `pnpm codegen:check` to fail when either has drifted.
 
 ## Dependencies
 

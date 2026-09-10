@@ -38,12 +38,19 @@ const ROUTES_PATH = join(GENERATED_DIR, 'RouteTemplates.cs')
 const NAMESPACE = 'Rechaos.Multiplayer.Generated'
 
 /**
- * The generator needs at least this much: `strictObject`, non-string literals, integer bounds and
- * spread field groups all landed together, and without them the emitted file is silently missing
- * whole types rather than failing.
+ * The generator, pinned exactly rather than to a range.
+ *
+ * The output is committed and this script also checks it, so the version that wrote the file has to
+ * be the version that reads it: under a range, a generator release would turn CI red on whatever
+ * unrelated pull request happened to be open that day. Adopting a new one is a deliberate commit —
+ * bump this line, run `pnpm codegen`, and the diff says what changed.
+ *
+ * 0.2.0 is the first release the output of this workspace compiles under: `strictObject`, non-string
+ * literals, integer bounds, spread field groups, the nullable context and a round-trippable
+ * discriminated union all landed in it.
  */
 const GENERATOR = 'https://registry.npmjs.org/@game-infra/valibot-to-csharp'
-const GENERATOR_SPEC = '@game-infra/valibot-to-csharp@^0.2.0'
+const GENERATOR_SPEC = '@game-infra/valibot-to-csharp@0.2.0'
 const DEFAULT_CLI = `npx --yes -p ${GENERATOR_SPEC} valibot-to-csharp`
 
 /**

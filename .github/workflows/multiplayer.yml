@@ -68,3 +68,8 @@ jobs:
         run: pnpm exec turbo run test:run --env-mode=loose
         env:
           TEST_DATABASE_URL: postgres://chaos:chaos@localhost:5432/chaos
+
+      # The game's C# wire types are generated from these schemas and committed, so building the
+      # game never needs Node. This is what stops the two from drifting apart in the meantime.
+      - name: Check the generated C# still matches the contracts
+        run: pnpm codegen:check

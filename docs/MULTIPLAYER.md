@@ -250,8 +250,8 @@ derivation: [`@game-infra/valibot-to-csharp`](https://www.npmjs.com/package/@gam
 walks the valibot schemas and emits `src/Rechaos.Multiplayer/Generated/WireContracts.cs`, whose
 records deserialize the same JSON; a second pass reads the endpoint contracts and emits
 `RouteTemplates.cs`, which `MultiplayerApiRouteTests` holds the C# client's paths to. Both files are
-committed, so building the game never needs Node, and `pnpm codegen:check` fails if either has
-drifted from the schemas.
+committed, so building the game never needs Node, and CI runs `pnpm codegen:check` to fail if either
+has drifted from the schemas.
 
 Three things the schemas say exist for that crossing:
 

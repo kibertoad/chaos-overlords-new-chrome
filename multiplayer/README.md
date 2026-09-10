@@ -89,7 +89,12 @@ pnpm codegen --generator "npx tsx ../game-infra/packages/valibot-to-csharp/src/c
 ```
 
 Run `pnpm codegen` after changing anything under `packages/contracts/src`, and commit what it
-writes.
+writes; CI runs `pnpm codegen:check` and fails if you did not.
+
+The generator is pinned to an exact version rather than a range, because this script both writes the
+committed output and checks it: under a range, a generator release would turn CI red on whatever
+unrelated pull request was open that day. Adopting a new one is a deliberate commit — bump the
+version in `scripts/generate-csharp.mjs`, run `pnpm codegen`, and the diff says what changed.
 
 ### Central server (Cloudflare)
 

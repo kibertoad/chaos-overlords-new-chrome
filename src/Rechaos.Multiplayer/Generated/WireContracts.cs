@@ -283,7 +283,15 @@ public enum ErrorCode
 
 public sealed record ErrorEnvelopeErrorDetails(
     [property: JsonPropertyName("reason"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Reason
-);
+)
+{
+    /// <summary>
+    /// JSON members this schema does not declare. A looseObject keeps them, so they are
+    /// carried here rather than dropped on the way back out.
+    /// </summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; set; }
+}
 
 public sealed record ErrorEnvelopeError(
     [property: JsonPropertyName("code")] ErrorCode Code,
