@@ -15,6 +15,7 @@ public sealed class AiPlanningStateTests
             var playerId = new PlayerId(player);
             Assert.Equal(0, planning.CurrentHireRole(playerId));
             Assert.Equal(0, planning.PreviousHireRole(playerId));
+            Assert.Equal(AiPlanningState.InactiveSectorAnchor, planning.SectorAnchor(playerId));
             for (var gang = 0; gang < AiPlanningState.GangSlotsPerPlayer; gang++)
                 Assert.Equal(AiPlanningState.UnusedFamily, planning.Family(playerId, gang));
         }
@@ -30,10 +31,12 @@ public sealed class AiPlanningStateTests
         planning.BeginPlanning(player);
         planning.SetCurrentHireRole(player, 6);
         planning.SetFamily(player, 80, 14);
+        planning.SetSectorAnchor(player, AiPlanningState.SectorAnchorOffset - 1);
 
         Assert.Equal(4, planning.PreviousHireRole(player));
         Assert.Equal(6, planning.CurrentHireRole(player));
         Assert.Equal(14, planning.Family(player, 80));
+        Assert.Equal(63, planning.SectorAnchor(player));
     }
 
     [Fact]
@@ -47,12 +50,18 @@ public sealed class AiPlanningStateTests
         invalidFamilies[0] = 8;
         var invalidRoles = roles.ToArray();
         invalidRoles[0] = 7;
+        var anchors = Enumerable.Repeat(
+            AiPlanningState.InactiveSectorAnchor, MatchLimits.PlayerCount).ToArray();
+        var invalidAnchors = anchors.ToArray();
+        invalidAnchors[0] = 128;
 
         Assert.Throws<ArgumentException>(() =>
-            AiPlanningState.Restore(roles[..^1], roles, families));
+            AiPlanningState.Restore(roles[..^1], roles, families, anchors));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            AiPlanningState.Restore(roles, roles, invalidFamilies));
+            AiPlanningState.Restore(roles, roles, invalidFamilies, anchors));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            AiPlanningState.Restore(invalidRoles, roles, families));
+            AiPlanningState.Restore(invalidRoles, roles, families, anchors));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            AiPlanningState.Restore(roles, roles, families, invalidAnchors));
     }
 }

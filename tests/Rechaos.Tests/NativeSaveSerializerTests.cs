@@ -17,6 +17,7 @@ public sealed class NativeSaveSerializerTests
         match.AiPlanning.BeginPlanning(new PlayerId(1));
         match.AiPlanning.SetCurrentHireRole(new PlayerId(1), 2);
         match.AiPlanning.SetFamily(new PlayerId(1), 0, 6);
+        match.AiPlanning.SetSectorAnchor(new PlayerId(1), 63);
         match.FinishUpkeep();
         Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(0), GangAction.Hide, CommandTarget.None, Repeat: true)).Accepted);
@@ -41,6 +42,7 @@ public sealed class NativeSaveSerializerTests
         Assert.Equal(2, restored.AiPlanning.CurrentHireRole(new PlayerId(1)));
         Assert.Equal(4, restored.AiPlanning.PreviousHireRole(new PlayerId(1)));
         Assert.Equal(6, restored.AiPlanning.Family(new PlayerId(1), 0));
+        Assert.Equal(63, restored.AiPlanning.SectorAnchor(new PlayerId(1)));
         Assert.Equal(SaveBytes(match), SaveBytes(restored));
     }
 
@@ -155,6 +157,43 @@ public sealed class NativeSaveSerializerTests
         Assert.False(restored.Players[0].UsesMaximumHireForce);
         Assert.Equal(MatchStateHasher.ComputeVersionTwelveSha256(match),
             MatchStateHasher.ComputeVersionTwelveSha256(restored));
+    }
+
+    [Fact]
+    public void VersionTenSaveDerivesInitialSectorAnchorsFromRestoredGangZero()
+    {
+        var match = CreateMatch();
+        match.AiPlanning.SetSectorAnchor(new PlayerId(0), 63);
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 10;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionThirteenSha256(match);
+        document["runtime"]!["aiPlanning"]!.AsObject().Remove("sectorAnchors");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        foreach (var player in restored.Players)
+            Assert.Equal(player.Gangs[0].SectorId + AiPlanningState.SectorAnchorOffset,
+                restored.AiPlanning.SectorAnchor(player.Id));
+        Assert.Equal(MatchStateHasher.ComputeVersionThirteenSha256(match),
+            MatchStateHasher.ComputeVersionThirteenSha256(restored));
+    }
+
+    [Fact]
+    public void RejectsModifiedSectorAnchorWhoseFingerprintWasNotUpdated()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["aiPlanning"]!["sectorAnchors"]![0] = 65;
+
+        using var changed = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(changed, match.Definitions));
     }
 
     [Fact]

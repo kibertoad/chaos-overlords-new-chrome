@@ -352,6 +352,35 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void VersionElevenReplayUsesVersionThirteenHashAndMigratesSectorAnchors()
+    {
+        var initial = CreateMatch();
+        initial.AiPlanning.SetSectorAnchor(new PlayerId(0), 63);
+        var oldInitialHash = MatchStateHasher.ComputeVersionThirteenSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = 11;
+        document["initialStateSha256"] = oldInitialHash;
+        var snapshotBytes = Convert.FromBase64String(
+            document["initialSnapshot"]!.GetValue<string>());
+        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
+        snapshot["formatVersion"] = 10;
+        snapshot["stateSha256"] = oldInitialHash;
+        snapshot["runtime"]!["aiPlanning"]!.AsObject().Remove("sectorAnchors");
+        document["initialSnapshot"] = Convert.ToBase64String(
+            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
+
+        Assert.Equal(restored.Players[0].Gangs[0].SectorId + AiPlanningState.SectorAnchorOffset,
+            restored.AiPlanning.SectorAnchor(new PlayerId(0)));
+        Assert.Equal(oldInitialHash, MatchStateHasher.ComputeVersionThirteenSha256(restored));
+    }
+
+    [Fact]
     public void AtomicReplayStoreWritesAndReplaysAFile()
     {
         var directory = Path.Combine(Path.GetTempPath(), "rechaos-replay-tests", Guid.NewGuid().ToString("N"));

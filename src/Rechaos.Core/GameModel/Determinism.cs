@@ -64,67 +64,73 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 13;
+    private const int FormatVersion = 14;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
             includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
             includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false);
+            includeMaximumHireForce: false, includeSectorAnchors: false);
 
     internal static string ComputeVersionTwoSha256(MatchState state) =>
         ComputeSha256(state, 5, includeSectorIncome: true, includeCrackdownDuration: false,
             includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
             includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false);
+            includeMaximumHireForce: false, includeSectorAnchors: false);
 
     internal static string ComputeVersionThreeSha256(MatchState state) =>
         ComputeSha256(state, 6, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
             includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false);
+            includeMaximumHireForce: false, includeSectorAnchors: false);
 
     internal static string ComputeVersionFourSha256(MatchState state) =>
         ComputeSha256(state, 7, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: false, includeAiStrategy: false,
             includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false);
+            includeMaximumHireForce: false, includeSectorAnchors: false);
 
     internal static string ComputeVersionFiveSha256(MatchState state) =>
         ComputeSha256(state, 8, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: false,
             includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false);
+            includeMaximumHireForce: false, includeSectorAnchors: false);
 
     internal static string ComputeVersionSixSha256(MatchState state) =>
         ComputeSha256(state, 9, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
             includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false);
+            includeMaximumHireForce: false, includeSectorAnchors: false);
 
     internal static string ComputeVersionTenSha256(MatchState state) =>
         ComputeSha256(state, 10, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
             includeAiPlanning: true, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false);
+            includeMaximumHireForce: false, includeSectorAnchors: false);
 
     internal static string ComputeVersionElevenSha256(MatchState state) =>
         ComputeSha256(state, 11, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
             includeAiPlanning: true, includeHireSlots: true, includeHirePayment: false,
-            includeMaximumHireForce: false);
+            includeMaximumHireForce: false, includeSectorAnchors: false);
 
     internal static string ComputeVersionTwelveSha256(MatchState state) =>
         ComputeSha256(state, 12, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
             includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: false);
+            includeMaximumHireForce: false, includeSectorAnchors: false);
+
+    internal static string ComputeVersionThirteenSha256(MatchState state) =>
+        ComputeSha256(state, 13, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: false);
 
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
             includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true);
+            includeMaximumHireForce: true, includeSectorAnchors: true);
 
     private static string ComputeSha256(
         MatchState state,
@@ -137,7 +143,8 @@ public static class MatchStateHasher
         bool includeAiPlanning,
         bool includeHireSlots,
         bool includeHirePayment,
-        bool includeMaximumHireForce)
+        bool includeMaximumHireForce,
+        bool includeSectorAnchors)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -175,6 +182,8 @@ public static class MatchStateHasher
                 foreach (var role in state.AiPlanning.CaptureCurrentHireRoles()) writer.Write(role);
                 foreach (var role in state.AiPlanning.CapturePreviousHireRoles()) writer.Write(role);
                 foreach (var family in state.AiPlanning.CaptureFamilies()) writer.Write(family);
+                if (includeSectorAnchors)
+                    foreach (var anchor in state.AiPlanning.CaptureSectorAnchors()) writer.Write(anchor);
             }
             writer.Write(state.NextEventSequence);
             writer.Write(state.Outcome is not null);

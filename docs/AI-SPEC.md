@@ -144,8 +144,9 @@ replay-verified two-computer harness through 20 turns or objective completion.
    model now preserves three fixed slots, same-slot tombstones, mutually
    exclusive actions, and next-planning-entry refill. Exact hire destination
    selection and its persisted anchor are statically recovered in
-   `BIN-AI-003C` and covered by pure isolated kernels, but remain deliberately
-   unwired pending authoritative-state representation.
+   `BIN-AI-003C` and covered by pure isolated kernels. The encoded anchors are
+   authoritative and persisted, but selection remains deliberately unwired
+   pending representation of the recovered prior-action input.
    A failed ranking now uses the recovered scenario-specific rejection selector
    and records the resulting snub. Selector `0x3e` is
    identified as the previous-turn action byte. Selectors 0 (scenario), `0x48`

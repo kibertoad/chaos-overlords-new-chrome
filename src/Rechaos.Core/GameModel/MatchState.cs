@@ -400,7 +400,7 @@ public sealed partial class MatchState
             ? new TurnCommandQueue()
             : TurnCommandQueue.Restore(restore.Commands, restore.NextCommandSequence);
         AiStrategy = restore?.AiStrategy ?? AiStrategicState.MigrateLegacy(setup);
-        AiPlanning = restore?.AiPlanning ?? AiPlanningState.Initialize();
+        AiPlanning = restore?.AiPlanning ?? AiPlanningState.Initialize(Players);
         _notifications = Players.ToDictionary(player => player.Id, _ => new NotificationQueue());
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         if (restore is not null) RestoreRuntime(restore);
@@ -419,7 +419,7 @@ public sealed partial class MatchState
             players.ToDictionary(player => player.Id,
                 _ => (IReadOnlyList<GameNotification>)Array.Empty<GameNotification>()),
             players.ToDictionary(player => player.Id, _ => 0L),
-            [], null, aiStrategy, AiPlanningState.Initialize()))
+            [], null, aiStrategy, AiPlanningState.Initialize(players)))
     {
         ArgumentNullException.ThrowIfNull(initialRandom);
         ArgumentNullException.ThrowIfNull(aiStrategy);

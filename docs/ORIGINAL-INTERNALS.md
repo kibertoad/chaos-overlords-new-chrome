@@ -567,8 +567,8 @@ the scenario is not Big Man; otherwise selector `0x25` chooses a replacement,
 which is stored plus `0x40`. The anchor is part of the original save/load state.
 
 Selector `0x24(player, center)` returns zero unless `center` is player-owned,
-then counts neutral, available cells in its 3-by-3 neighborhood in dy-major,
-dx-minor order. Its row-wrap check uses the literal linear bound
+then counts neutral cells whose Crackdown-duration byte is zero in its 3-by-3
+neighborhood in dy-major, dx-minor order. Its row-wrap check uses the literal linear bound
 `0 <= candidate < 65`, so a bottom-edge center can inspect sentinel cell 64.
 For ordinary scenarios selector `0x25` makes three deterministic ascending-
 sector passes over owned sectors with occupancy below six:
@@ -615,8 +615,14 @@ and persistence, selectors `0x24` through `0x26`, all direct call sites,
 scenario overrides, and the planner/resolver call path. The behavior is
 recovered but is not yet wired into the recreation's live AI planner.
 
-**Next validation:** represent the persistent anchor in authoritative match
-state, then connect the isolated kernels while preserving their tested pass
+**Implementation:** the six encoded anchors are authoritative `AiPlanningState`
+members covered by canonical hashes, native saves, and replays. Configured
+recreation players initialize from gang slot zero; because the recreation does
+not create the original's unused player slots, those slots use the mechanically
+valid inactive-sector encoding 164. The selector kernels remain unwired.
+
+**Next validation:** represent the prior-action bytes needed by selector
+`0x5b`, then connect the isolated kernels while preserving their tested pass
 order, Big Man ordering, overrides, and zero-RNG encoded path.
 
 ### BIN-AI-004 - global AI Mentality byte and first consumers

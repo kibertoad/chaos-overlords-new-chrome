@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 10;
+    public const int CurrentFormatVersion = 11;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -91,9 +91,13 @@ public static class NativeSaveSerializer
                 ? AiPlanningState.Restore(
                     savedPlanning.CurrentHireRoles,
                     savedPlanning.PreviousHireRoles,
-                    savedPlanning.Families)
+                    savedPlanning.Families,
+                    document.FormatVersion >= 11
+                        ? savedPlanning.SectorAnchors
+                            ?? throw new InvalidDataException("Native save AI sector anchors are missing.")
+                        : AiPlanningState.Initialize(players).CaptureSectorAnchors())
                 : throw new InvalidDataException("Native save AI planning state is missing.")
-            : AiPlanningState.Initialize();
+            : AiPlanningState.Initialize(players);
         var runtime = new MatchRuntimeRestore(
             document.Runtime.Turn,
             document.Runtime.Phase,
@@ -123,6 +127,7 @@ public static class NativeSaveSerializer
             7 => MatchStateHasher.ComputeVersionTenSha256(state),
             8 => MatchStateHasher.ComputeVersionElevenSha256(state),
             9 => MatchStateHasher.ComputeVersionTwelveSha256(state),
+            10 => MatchStateHasher.ComputeVersionThirteenSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
         if (!CryptographicOperations.FixedTimeEquals(
@@ -168,7 +173,8 @@ public static class NativeSaveSerializer
             new AiPlanningDocument(
                 state.AiPlanning.CaptureCurrentHireRoles(),
                 state.AiPlanning.CapturePreviousHireRoles(),
-                state.AiPlanning.CaptureFamilies())));
+                state.AiPlanning.CaptureFamilies(),
+                state.AiPlanning.CaptureSectorAnchors())));
 
     private static PlayerDocument CapturePlayer(MatchPlayerState player) => new(
         player.Id.Value,
@@ -479,7 +485,8 @@ internal sealed record AiStrategyDocument(
 internal sealed record AiPlanningDocument(
     IReadOnlyList<int> CurrentHireRoles,
     IReadOnlyList<int> PreviousHireRoles,
-    IReadOnlyList<int> Families);
+    IReadOnlyList<int> Families,
+    IReadOnlyList<int>? SectorAnchors = null);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,

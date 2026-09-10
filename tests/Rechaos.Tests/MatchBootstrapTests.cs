@@ -32,6 +32,11 @@ public sealed class MatchBootstrapTests
             Assert.Equal(63, gang.SectorId);
             Assert.Equal(8, gang.Force);
         });
+        Assert.Equal(64, match.AiPlanning.SectorAnchor(new PlayerId(0)));
+        Assert.Equal(127, match.AiPlanning.SectorAnchor(new PlayerId(1)));
+        for (var player = 2; player < MatchLimits.PlayerCount; player++)
+            Assert.Equal(AiPlanningState.InactiveSectorAnchor,
+                match.AiPlanning.SectorAnchor(new PlayerId(player)));
         Assert.Equal(
             ["BOOM BOXES", "COMBAT KNIFE", "COMBAT PISTOL", "COOL HATS", "LEATHERS", "METAL PIPE", "SHOCK PADS"],
             match.Players[0].ResearchedItems
