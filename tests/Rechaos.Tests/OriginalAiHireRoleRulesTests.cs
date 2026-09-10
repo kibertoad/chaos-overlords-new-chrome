@@ -316,9 +316,263 @@ public sealed class OriginalAiHireRoleRulesTests
                 PowerInputs(family2Count: 0, family0Or4Count: 3)));
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(6)]
+    [InlineData(8)]
+    public void GreedLateTurnsResetResearchScheduleSlots(int turn)
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(0, 1),
+            OriginalAiHireRoleRules.SelectGreedAdjusted(
+                turn,
+                PowerInputs(turnsRemaining: 9)));
+    }
+
+    [Theory]
+    [InlineData(0, 1, 4, 6)]
+    [InlineData(1, 0, 2, 2)]
+    [InlineData(1, 1, 3, 3)]
+    public void GreedSlotFiveRedirectsByMissingFamilies(
+        int family7Count,
+        int family3Count,
+        int expectedMode,
+        int expectedRole)
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(expectedMode, expectedRole),
+            OriginalAiHireRoleRules.SelectGreedAdjusted(
+                turn: 5,
+                PowerInputs(family7Count: family7Count, family3Count: family3Count)));
+    }
+
+    [Fact]
+    public void GreedClearSectorConditionForcesSlotFive()
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(3, 4),
+            OriginalAiHireRoleRules.SelectGreedAdjusted(
+                turn: 0,
+                PowerInputs(
+                    selector9aResult: 0,
+                    selector5fResult: -1,
+                    family3Count: 1,
+                    family6Or12Count: 1)));
+    }
+
+    [Fact]
+    public void GreedRawPlayerFlagAppliesExtraSixMonthCashFloor()
+    {
+        var inputs = PowerInputs(
+            cash: 75,
+            data4abc08IsSet: false,
+            family2Count: 0,
+            duration: GameDuration.SixMonths);
+
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(3, 3),
+            OriginalAiHireRoleRules.SelectGreedAdjusted(turn: 9, inputs));
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(0, 1),
+            OriginalAiHireRoleRules.SelectGreedAdjusted(
+                turn: 9,
+                inputs with { Data4abc08IsSet = true }));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    [InlineData(6)]
+    [InlineData(8)]
+    public void AcceptanceFinalFourTurnsResetSpecializedSlots(int turn)
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(0, 1),
+            OriginalAiHireRoleRules.SelectAcceptanceAdjusted(
+                turn,
+                PowerInputs(turnsRemaining: 4)));
+    }
+
+    [Theory]
+    [InlineData(0, 1, 4, 6)]
+    [InlineData(1, 0, 2, 2)]
+    [InlineData(1, 1, 3, 3)]
+    public void AcceptanceSlotTwoRedirectsByMissingFamilies(
+        int family7Count,
+        int family5Count,
+        int expectedMode,
+        int expectedRole)
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(expectedMode, expectedRole),
+            OriginalAiHireRoleRules.SelectAcceptanceAdjusted(
+                turn: 2,
+                PowerInputs(family7Count: family7Count, family5Count: family5Count)));
+    }
+
+    [Fact]
+    public void AcceptanceClearSectorConditionForcesSlotTwo()
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(3, 4),
+            OriginalAiHireRoleRules.SelectAcceptanceAdjusted(
+                turn: 0,
+                PowerInputs(
+                    selector9aResult: 0,
+                    selector5fResult: -1,
+                    family5Count: 1,
+                    family6Or12Count: 1)));
+    }
+
+    [Theory]
+    [InlineData(4, 5, 6)]
+    [InlineData(5, 2, 2)]
+    [InlineData(2, 6, 3)]
+    [InlineData(1, 7, 1)]
+    public void AcceptanceQuotasResetAtExactOneYearBoundary(
+        int turn,
+        int countedFamily,
+        int boundary)
+    {
+        var inputs = PowerInputs();
+        inputs = countedFamily switch
+        {
+            2 => inputs with { Family2Count = boundary },
+            5 => inputs with { Family5Count = boundary },
+            6 => inputs with
+            {
+                Selector9aResult = 0,
+                Selector5fResult = -1,
+                Family6Or12Count = boundary
+            },
+            7 => inputs with { Family7Count = boundary },
+            _ => throw new ArgumentOutOfRangeException(nameof(countedFamily))
+        };
+
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(0, 1),
+            OriginalAiHireRoleRules.SelectAcceptanceAdjusted(turn, inputs));
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(6)]
+    [InlineData(8)]
+    public void DominanceFinalSevenTurnsResetSpecializedSlots(int turn)
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(0, 1),
+            OriginalAiHireRoleRules.SelectDominanceAdjusted(
+                turn,
+                PowerInputs(turnsRemaining: 7)));
+    }
+
+    [Theory]
+    [InlineData(0, 1, 1, 4, 6)]
+    [InlineData(1, 0, 1, 2, 5)]
+    [InlineData(1, 1, 0, 2, 2)]
+    [InlineData(1, 1, 1, 3, 3)]
+    public void DominanceSlotTenRedirectsByMissingFamilies(
+        int family7Count,
+        int family3Count,
+        int family5Count,
+        int expectedMode,
+        int expectedRole)
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(expectedMode, expectedRole),
+            OriginalAiHireRoleRules.SelectDominanceAdjusted(
+                turn: 10,
+                PowerInputs(
+                    family7Count: family7Count,
+                    family3Count: family3Count,
+                    family5Count: family5Count)));
+    }
+
+    [Fact]
+    public void DominanceClearSectorConditionForcesUniqueSlotTen()
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(3, 4),
+            OriginalAiHireRoleRules.SelectDominanceAdjusted(
+                turn: 0,
+                PowerInputs(
+                    selector9aResult: 0,
+                    selector5fResult: -1,
+                    family3Count: 1)));
+    }
+
+    [Theory]
+    [InlineData(3, 5, 3)]
+    [InlineData(2, 3, 3)]
+    [InlineData(5, 2, 2)]
+    [InlineData(10, 6, 3)]
+    [InlineData(4, 7, 1)]
+    public void DominanceQuotasResetAtExactOneYearBoundary(
+        int turn,
+        int countedFamily,
+        int boundary)
+    {
+        var inputs = countedFamily == 6
+            ? PowerInputs(
+                selector9aResult: 0,
+                selector5fResult: -1,
+                family3Count: 1,
+                family6Or12Count: boundary)
+            : PowerInputs();
+        inputs = countedFamily switch
+        {
+            2 => inputs with { Family2Count = boundary },
+            3 => inputs with { Family3Count = boundary },
+            5 => inputs with { Family5Count = boundary },
+            7 => inputs with { Family7Count = boundary },
+            _ => inputs
+        };
+
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(0, 1),
+            OriginalAiHireRoleRules.SelectDominanceAdjusted(turn, inputs));
+    }
+
+    [Fact]
+    public void DominanceMinimumBaseFamilyCountOverridesOtherSlots()
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(0, 1),
+            OriginalAiHireRoleRules.SelectDominanceAdjusted(
+                turn: 1,
+                PowerInputs(family0Or4Count: 3)));
+    }
+
+    [Theory]
+    [InlineData(ScenarioId.Greed, 5, 2, 2)]
+    [InlineData(ScenarioId.Power, 6, 3, 3)]
+    [InlineData(ScenarioId.Acceptance, 2, 3, 3)]
+    [InlineData(ScenarioId.Dominance, 10, 2, 5)]
+    [InlineData(ScenarioId.KillEmAll, 6, 3, 3)]
+    [InlineData(ScenarioId.Big40, 6, 3, 3)]
+    [InlineData(ScenarioId.Eliminate, 9, 2, 5)]
+    [InlineData(ScenarioId.Siege, 1, 3, 4)]
+    [InlineData(ScenarioId.BigMan, 5, 2, 3)]
+    [InlineData(ScenarioId.Armageddon, 5, 3, 3)]
+    public void AdjustedDispatcherCoversEveryScenario(
+        ScenarioId scenario,
+        int turn,
+        int expectedMode,
+        int expectedRole)
+    {
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(expectedMode, expectedRole),
+            OriginalAiHireRoleRules.SelectAdjusted(scenario, turn, PowerInputs()));
+    }
+
     private static OriginalAiHireAdjustmentInputs PowerInputs(
         int turnsRemaining = 52,
         int cash = 100,
+        bool data4abc08IsSet = false,
         int selector9aResult = 100,
         int selector5fResult = -1,
         int family5Count = 1,
@@ -329,7 +583,7 @@ public sealed class OriginalAiHireRoleRulesTests
         int family6Or12Count = 0,
         int family0Or4Count = 5,
         GameDuration duration = GameDuration.OneYear) =>
-        new(turnsRemaining, cash, selector9aResult, selector5fResult,
+        new(turnsRemaining, cash, data4abc08IsSet, selector9aResult, selector5fResult,
             family5Count, family7Count, previousRole, family2Count,
             family3Count, family6Or12Count, family0Or4Count, duration);
 }

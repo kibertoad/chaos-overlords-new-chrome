@@ -108,10 +108,9 @@ replay-verified two-computer harness through 20 turns or objective completion.
    `0x7c`'s per-player hire-role word. The original objective-specific base
    turn schedules are isolated in `OriginalAiHireRoleRules`; Dominance alone
    uses an eleven-turn period, while the other nine objectives use ten. The
-   Power/Kill 'Em All/Big 40, Eliminate, Siege, Big Man, and Armageddon
-   adjustments are also instruction-verified and isolated, including late-game
-   remaps, duration-scaled family quotas, and final mandatory-family overrides;
-   Greed, Acceptance, and Dominance remain pending. The three-offer helper's six exact
+   objective-specific adjustments are also instruction-verified and isolated,
+   including late-game remaps, duration-scaled family quotas, and final
+   mandatory-family overrides. The three-offer helper's six exact
    role rankings, scenario-specific filters and tie directions, rich-player
    mode override, post-ranking affordability check, and no-fallback behavior
    are isolated in `OriginalAiHireRules`. Its failed-hire rejection selector is

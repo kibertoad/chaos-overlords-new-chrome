@@ -8,6 +8,23 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiHireRoleRules
 {
+    public static OriginalAiHireRoleSelection SelectAdjusted(
+        ScenarioId scenario,
+        int turn,
+        OriginalAiHireAdjustmentInputs inputs) => scenario switch
+        {
+            ScenarioId.Greed => SelectGreedAdjusted(turn, inputs),
+            ScenarioId.Power or ScenarioId.KillEmAll or ScenarioId.Big40 =>
+                SelectPowerAdjusted(scenario, turn, inputs),
+            ScenarioId.Acceptance => SelectAcceptanceAdjusted(turn, inputs),
+            ScenarioId.Dominance => SelectDominanceAdjusted(turn, inputs),
+            ScenarioId.Eliminate => SelectEliminateAdjusted(turn, inputs),
+            ScenarioId.Siege => SelectSiegeAdjusted(turn, inputs),
+            ScenarioId.BigMan => SelectBigManAdjusted(turn, inputs),
+            ScenarioId.Armageddon => SelectArmageddonAdjusted(turn, inputs),
+            _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, null)
+        };
+
     public static OriginalAiHireRoleSelection SelectScheduled(ScenarioId scenario, int turn)
     {
         if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
@@ -160,6 +177,132 @@ internal static class OriginalAiHireRoleRules
         return Armageddon[slot];
     }
 
+    /// <summary>
+    /// Applies the instruction-verified Greed adjustment block after its
+    /// separate duration/remaining-turn hire-attempt gate has passed.
+    /// </summary>
+    public static OriginalAiHireRoleSelection SelectGreedAdjusted(
+        int turn,
+        OriginalAiHireAdjustmentInputs inputs)
+    {
+        if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
+        ArgumentOutOfRangeException.ThrowIfNegative(inputs.TurnsRemaining);
+
+        var slot = turn % 10;
+        if (inputs.TurnsRemaining < 10 && slot is 1 or 3 or 6 or 8) slot = 0;
+        if (slot == 9 && inputs.Data4abc08IsSet
+            && (inputs.TurnsRemaining < 10 || inputs.Cash < 100)) slot = 0;
+
+        var changesFive = inputs.Selector9aResult == 100
+            || inputs.Selector5fResult != -1
+            || inputs.Family3Count < 1
+            || inputs.Family7Count < 1
+            || inputs.PreviousRole == 5;
+        if (!changesFive)
+        {
+            slot = 5;
+        }
+        else if (slot == 5)
+        {
+            slot = inputs.Family7Count == 0
+                ? 1
+                : inputs.Family3Count == 0 ? 3 : 9;
+        }
+
+        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        if (slot is 3 or 6 or 8 && inputs.Family3Count >= durationFactor * 4f) slot = 0;
+        if (slot == 5 && inputs.Family6Or12Count >= durationFactor * 2f) slot = 0;
+        if (slot == 9 && (inputs.Family2Count >= durationFactor * 2f
+            || inputs.Cash < durationFactor * 100f)) slot = 0;
+        if (slot == 1 && inputs.Family7Count >= durationFactor) slot = 0;
+        if (inputs.Family0Or4Count < 5) slot = 0;
+
+        return Greed[slot];
+    }
+
+    /// <summary>
+    /// Applies the instruction-verified Acceptance adjustment block.
+    /// </summary>
+    public static OriginalAiHireRoleSelection SelectAcceptanceAdjusted(
+        int turn,
+        OriginalAiHireAdjustmentInputs inputs)
+    {
+        if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
+        ArgumentOutOfRangeException.ThrowIfNegative(inputs.TurnsRemaining);
+
+        var slot = turn % 10;
+        if (inputs.TurnsRemaining < 5 && slot is 1 or 4 or 6 or 8) slot = 0;
+        if (slot == 5 && (inputs.TurnsRemaining < 10 || inputs.Cash < 100)) slot = 0;
+
+        var changesTwo = inputs.Selector9aResult == 100
+            || inputs.Selector5fResult != -1
+            || inputs.Family5Count < 1
+            || inputs.Family7Count < 1
+            || inputs.PreviousRole == 2;
+        if (!changesTwo)
+        {
+            slot = 2;
+        }
+        else if (slot == 2)
+        {
+            slot = inputs.Family7Count == 0
+                ? 1
+                : inputs.Family5Count == 0 ? 4 : 5;
+        }
+
+        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        if (slot is 4 or 6 or 8 && inputs.Family5Count >= durationFactor * 6f) slot = 0;
+        if (slot == 5 && inputs.Family2Count >= durationFactor * 2f) slot = 0;
+        if (slot == 2 && inputs.Family6Or12Count >= durationFactor * 3f) slot = 0;
+        if (slot == 1 && inputs.Family7Count >= durationFactor) slot = 0;
+        if (inputs.Family0Or4Count < 4) slot = 0;
+
+        return Acceptance[slot];
+    }
+
+    /// <summary>
+    /// Applies the instruction-verified Dominance adjustment block.
+    /// </summary>
+    public static OriginalAiHireRoleSelection SelectDominanceAdjusted(
+        int turn,
+        OriginalAiHireAdjustmentInputs inputs)
+    {
+        if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
+        ArgumentOutOfRangeException.ThrowIfNegative(inputs.TurnsRemaining);
+
+        var slot = turn % 11;
+        if (inputs.TurnsRemaining < 8 && slot is 2 or 3 or 4 or 6 or 8) slot = 0;
+        if (slot == 5 && (inputs.TurnsRemaining < 10 || inputs.Cash < 100)) slot = 0;
+
+        var changesTen = inputs.Selector9aResult == 100
+            || inputs.Selector5fResult != -1
+            || inputs.Family3Count < 1
+            || inputs.Family7Count < 1
+            || inputs.PreviousRole == 10;
+        if (!changesTen)
+        {
+            slot = 10;
+        }
+        else if (slot == 10)
+        {
+            slot = inputs.Family7Count == 0
+                ? 4
+                : inputs.Family3Count == 0
+                    ? 2
+                    : inputs.Family5Count == 0 ? 3 : 5;
+        }
+
+        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        if (slot is 3 or 6 && inputs.Family5Count >= durationFactor * 3f) slot = 0;
+        if (slot is 2 or 8 && inputs.Family3Count >= durationFactor * 3f) slot = 0;
+        if (slot == 5 && inputs.Family2Count >= durationFactor * 2f) slot = 0;
+        if (slot == 10 && inputs.Family6Or12Count >= durationFactor * 3f) slot = 0;
+        if (slot == 4 && inputs.Family7Count >= durationFactor) slot = 0;
+        if (inputs.Family0Or4Count < 4) slot = 0;
+
+        return Dominance[slot];
+    }
+
     private static readonly OriginalAiHireRoleSelection[] Greed =
     [
         S(0, 1), S(4, 6), S(0, 1), S(2, 2), S(0, 1),
@@ -218,6 +361,7 @@ internal readonly record struct OriginalAiHireRoleSelection(int RankingMode, int
 internal readonly record struct OriginalAiHireAdjustmentInputs(
     int TurnsRemaining,
     int Cash,
+    bool Data4abc08IsSet,
     int Selector9aResult,
     int Selector5fResult,
     int Family5Count,
