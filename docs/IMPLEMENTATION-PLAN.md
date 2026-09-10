@@ -588,6 +588,12 @@ transferred, equipped, used and sold with reference-matching values.
   skippable, and incapable of stalling phase completion even if an animation,
   sound, or imported media resource cannot advance.
 
+The recreation now applies Detailed Combat only to automatic playback. Combat
+Summary's Detail control (or `D`) replays its selected resolved event in either
+mode, and Escape/Cancel clears the presentation queue immediately. A large-elapsed
+queue stress test and explicit cancellation test guard the non-blocking boundary;
+the reported original freeze still requires reproduction and explanation.
+
 **Exit gate:** a matrix of representative stat/equipment matchups reproduces the
 reference result distribution and deterministic seeded outcomes; repeated
 Detailed Combat stress runs finish without a hang and produce the same model

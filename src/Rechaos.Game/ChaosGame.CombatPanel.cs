@@ -34,6 +34,7 @@ public sealed partial class ChaosGame
                 gameEvent?.Resolution?.RetaliationItemId, clip, gameEvent);
 
         DrawCombatFrames(batch, pixel, clip);
+        DrawButton(batch, pixel, font, CombatPanelLayout.Cancel, "CANCEL", true);
     }
 
     private void DrawCombatSector(SpriteBatch batch, PixelFont font, MatchState state, int sectorId)

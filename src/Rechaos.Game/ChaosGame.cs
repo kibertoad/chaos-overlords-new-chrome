@@ -253,11 +253,26 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _combatAnimationPlayer.Advance(gameTime.ElapsedGameTime);
         if (_combatAnimationPlayer.IsPlaying)
         {
-            PlayNewCombatSounds();
-            _previousKeyboard = keyboard;
-            _previousMouse = mouse;
-            base.Update(gameTime);
-            return;
+            var cancelPointMapped = VirtualInput.TryMap(
+                GraphicsDevice.Viewport, mouse.Position, out var cancelPoint);
+            var cancelClicked = cancelPointMapped
+                && mouse.LeftButton == ButtonState.Pressed
+                && _previousMouse.LeftButton == ButtonState.Released
+                && CombatPanelLayout.Cancel.Contains(cancelPoint);
+            if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Back)
+                || cancelClicked)
+            {
+                _combatAnimationPlayer.Clear();
+                _message = "COMBAT DETAIL SKIPPED";
+            }
+            else
+            {
+                PlayNewCombatSounds();
+                _previousKeyboard = keyboard;
+                _previousMouse = mouse;
+                base.Update(gameTime);
+                return;
+            }
         }
         if (_screens.Current == ClientScreen.Options)
         {
@@ -357,6 +372,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 case ClientScreen.CombatSummary:
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveCombatSummary(-1);
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveCombatSummary(1);
+                    if (Pressed(keyboard, Keys.D)) ReplaySelectedCombatDetail();
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                         _screens.Show(_managementReturnScreen);
                     break;

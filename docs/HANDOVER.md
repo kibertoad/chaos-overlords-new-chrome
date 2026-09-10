@@ -7,11 +7,10 @@ Last updated: 2026-09-11
 
 - Work continues on `main` at
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`.
-- The last pushed functional checkpoints are `86b2f08` (planning timer),
-  `20a7500` (bounded serialized validation), and `b74bc01` (renamed repository
-  links). The handover/documentation commit follows those checkpoints.
+- The latest pushed functional checkpoint is `d24332b` (complete local
+  presentation Options, including version-4 preference migration).
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,020 tests; its only warnings were NuGet
+  isolated Release build passed all 1,022 tests; its only warnings were NuGet
   vulnerability-feed lookups blocked by the offline sandbox.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -46,6 +45,10 @@ Last updated: 2026-09-11
   combat presentation, bounded panel motion, and the existing audio, idle-warning,
   and planning-timer choices. Version-4 preferences migrate forward. The legacy
   16-bit color choice is explicitly always enabled by the modern renderer.
+- Combat Summary now replays the selected result through the detailed combat
+  panel in either presentation mode. Escape or the panel Cancel control clears
+  the queue immediately; cancellation and large-elapsed stress tests guard the
+  no-hang presentation boundary.
 
 ## Reference environment
 
@@ -64,8 +67,8 @@ Last updated: 2026-09-11
    where the capture contradicts the current bounded implementation.
 2. Capture the original Options defaults and panel/combat cadence, then adjust
    the bounded presentation where the reference contradicts it.
-3. Investigate the reported GOG/1.1 Detailed Combat freeze, preserve identical
-   combat mechanics between presentation modes, and add a no-hang stress gate.
+3. Investigate and explain the reported GOG/1.1 Detailed Combat freeze, then
+   compare the bounded recreation cadence with a controlled original capture.
 4. Recover WinHelp links, inline formatting, and context IDs, then expand exact
    contextual Help entry points.
 5. Complete remaining sound triggers, native audio/music validation, and the

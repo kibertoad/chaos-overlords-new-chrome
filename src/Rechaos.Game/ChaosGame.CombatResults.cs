@@ -13,8 +13,42 @@ public sealed partial class ChaosGame
             _screens.Show(_managementReturnScreen);
             return;
         }
+        if (CombatResultsLayout.Detail.Contains(point))
+        {
+            ReplaySelectedCombatDetail();
+            return;
+        }
         if (CombatResultsLayout.Previous.Contains(point)) MoveCombatSummary(-1);
         else if (CombatResultsLayout.Next.Contains(point)) MoveCombatSummary(1);
+    }
+
+    private void ReplaySelectedCombatDetail()
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        var events = VisibleCombatResults(_state, viewer);
+        if (events.Count == 0)
+        {
+            _message = "NO COMBAT DETAIL AVAILABLE";
+            return;
+        }
+        _combatSummaryCursor = Math.Clamp(_combatSummaryCursor, 0, events.Count - 1);
+        IReadOnlyList<CombatAnimationClip> clips;
+        try
+        {
+            clips = CombatAnimationRouting.ForEvent(_state, events[_combatSummaryCursor]);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            clips = [];
+        }
+        if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
+        {
+            _message = "COMBAT DETAIL UNAVAILABLE";
+            return;
+        }
+        _combatAnimationPlayer.Clear();
+        foreach (var clip in clips) _combatAnimationPlayer.Enqueue(clip);
+        _message = "ESCAPE OR CANCEL SKIPS COMBAT DETAIL";
     }
 
     private void MoveCombatSummary(int delta)
@@ -61,6 +95,7 @@ public sealed partial class ChaosGame
             DrawCombatResultGang(batch, pixel, font, state, enemy,
                 CombatResultsLayout.EnemyPanel, false);
         DrawCombatResultOpponents(batch, pixel, state, viewer, events, gameEvent, policeEnemy);
+        DrawButton(batch, pixel, font, CombatResultsLayout.Detail, "DETAIL", true);
     }
 
     private static IReadOnlyList<GameEvent> VisibleCombatResults(MatchState state, PlayerId viewer) => state.Events
