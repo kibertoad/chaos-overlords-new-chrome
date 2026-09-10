@@ -688,7 +688,28 @@ Family 11 (`0x00420950`) supplies the clearest consumer. Instruction-level
 inspection is required here because the decompiler drops the assignments after
 the entry calls: selector `0x5a` is saved at stack local `-0x4` and is the
 active gang's current sector; selector `0x61` is independently saved at `-0x8`.
-After the handler's Equip and Heal opportunities, it reads the owner of that
+Selector `0x61` chooses a weapon upgrade. Its subordinate selector `0x6d`
+admits only a requested weapon class whose tech requirement does not exceed the
+gang's current tech, whose player research flag is clear (complete), and whose
+cost does not exceed current cash. It compares the best eligible item Combat
+bonus for the melee, blade, and ranged classes after adding the matching
+effective skills: Strength for melee, Strength + Blade for blade, Range for
+ranged, and Strength + Fighting + Martial Arts for bare hands. It then scans
+all 64 items in the winning class and retains only a strictly larger Combat
+bonus subject to the same research, tech, and cash gates. It returns `-1` when
+bare hands win, no upgrade beats the baseline, or the result is already the
+equipped weapon.
+
+Selector `0x65` reads the first of two planning-record shorts at offsets
+`+12/+14`. Planning initialization sets the first to zero for an unarmed gang
+and otherwise decrements it by one; a weapon Equip writes `item cost * 3` back
+to it. Family 11 admits the selector-`0x61` weapon only when this replacement
+cooldown is at most zero, the item is affordable, and the previous action is
+not **Attack**. It then writes **Equip**, the item ID, and the new three-times-
+cost cooldown. The following analogous opportunities use selectors `0x64` and
+`0x74` for the other equipment slots before the Heal gate.
+
+After those Equip and Heal opportunities, the handler reads the owner of its
 current sector. In an active-player-owned sector it always writes **Move** and
 calls mode 10.
 
@@ -737,8 +758,8 @@ uses hostility for AI attack candidates, and includes the state in canonical
 hashes, native saves, and replays.
 
 **Next validation:** capture fixed original traces proving the combat-advantage
-threshold, reaction, and recovery ordering through the first two complete
-turns, then identify selector `0x61` and the remaining family-11 Equip guard.
+threshold, reaction, recovery ordering, and family-11 weapon replacement
+cooldown through the first complete turns.
 
 ### BIN-AI-007 - per-player difficulty resolution band
 
