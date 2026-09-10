@@ -538,6 +538,87 @@ behavior, plus the failed-hire rejection formula and tie direction.
 `0x00458fa0`, then use its chosen role to integrate this selector with live AI
 hiring.
 
+### BIN-AI-003C - AI hire destination and persistent placement anchor
+
+**Observation:** The hire-destination helper `0x00408214` takes player, mode,
+and offer slot. Values at least `0x40` directly write and return sector
+`mode - 0x40`, without validation or RNG. Mode 1 builds a weighted multiset in
+exact order: every owned sector from 0 through 63 once, followed by every
+active gang slot from 0 through 80 once at that gang's current sector.
+Duplicate sectors remain duplicated, and one bounded draw selects a one-based
+ordinal. An empty multiset still calls the original wrapper with its bound
+clamped to one and resolves destination `-1`.
+
+Mode 0 first scans occupied gang records to find the minimum and maximum sector
+and each extreme's multiplicity. When an offer slot is present and either
+extreme contains fewer than six gangs, it consumes one bounded draw over two
+choices, tentatively picks that extreme, and falls back to the other when the
+chosen extreme is full. Execution then deliberately falls through mode 1 and
+overwrites the tentative result. Thus the extreme choice changes RNG state but
+not the final destination. If both extremes are full or the offer slot is
+negative, that preliminary draw is skipped. Modes 2 through 63 return sentinel
+99 without writing a destination or consuming RNG.
+
+The outer planner `0x00458fa0` maintains one per-player encoded placement anchor
+at `DAT_0048e2f8`. New-match initialization seeds it to the Right Hands sector
+plus `0x40`. It retains a proposed anchor only while that owned sector has at
+least one neutral, available immediate neighbor, occupancy at most five, and
+the scenario is not Big Man; otherwise selector `0x25` chooses a replacement,
+which is stored plus `0x40`. The anchor is part of the original save/load state.
+
+Selector `0x24(player, center)` returns zero unless `center` is player-owned,
+then counts neutral, available cells in its 3-by-3 neighborhood in dy-major,
+dx-minor order. Its row-wrap check uses the literal linear bound
+`0 <= candidate < 65`, so a bottom-edge center can inspect sentinel cell 64.
+For ordinary scenarios selector `0x25` makes three deterministic ascending-
+sector passes over owned sectors with occupancy below six:
+
+1. choose the first strict maximum positive selector-`0x24` count (baseline
+   zero, so zero never qualifies and equal values retain the earlier sector);
+2. if none, choose the first sector whose selector-`0x5b` previous-Chaos count
+   is zero; and
+3. if none, choose the first strict minimum nonzero selector-`0x26` count from
+   baseline nine. Selector `0x26` counts non-player-owned cells in the same
+   literal 3-by-3 bounds and does not test availability.
+
+If all three passes fail, selector `0x25` returns `-1`. Big Man (scenario 8)
+instead has an empty radius-zero list, then tests `[18, 26, 19, 27]`, then
+`[9, 17, 25, 33, 10, 18, 26, 34, 11, 19, 27, 35, 12, 20, 28, 36]`, taking the
+first player-owned sector with occupancy below six. If neither list succeeds,
+it preserves the incoming anchor even when that anchor is full. Selector
+`0x25` consumes no RNG.
+
+Normal planner calls to `0x00408214` pass this encoded anchor, so they always
+take the direct `>= 0x40` path and consume no placement RNG. The role-4 paths
+for Kill 'Em All, Power, Greed, Big 40, Acceptance, Dominance, and Armageddon
+(scenario IDs 0 through 5 and 9) can instead override the anchor with the first
+visible-hostile sector returned by selector `0x9a`, again encoded with
+`0x40`. Siege hire-role slots 5 and 7 override it with the Right Hands sector
+plus `0x40`. Resolution at `0x00472775` later consumes the selected destination
+during the internal Hire phase.
+
+The ten normal `0x00408214` call sites are `0x00459bc8`, `0x0045a08c`,
+`0x0045a55c`, `0x0045aafe`, `0x0045af7e`, `0x0045b3fe`, `0x0045b671`,
+`0x0045ba56`, `0x0045bc23`, and `0x0045bfe9`. The seven visible-hostile
+overrides occur at `0x00459bb1`, `0x0045a075`, `0x0045a545`, `0x0045aae7`,
+`0x0045af67`, `0x0045b3e7`, and `0x0045bfd2`; Siege's Right Hands override is
+at `0x0045ba3f`. All 18 direct xrefs are inside the outer planner.
+
+**Interpretation:** ordinary AI hiring does not use mode 0 or mode 1's random
+placement result: the planner has already reduced the choice to a persisted,
+encoded sector. The otherwise surprising mode-0 draw is relevant only if an
+unencoded caller reaches that helper.
+
+**Confidence:** High static evidence for `0x00408214` mode control flow, exact
+mode-1 multiset order and RNG use, encoded direct mode, anchor initialization
+and persistence, selectors `0x24` through `0x26`, all direct call sites,
+scenario overrides, and the planner/resolver call path. The behavior is
+recovered but is not yet wired into the recreation's live AI planner.
+
+**Next validation:** represent the persistent anchor in authoritative match
+state, then connect the isolated kernels while preserving their tested pass
+order, Big Man ordering, overrides, and zero-RNG encoded path.
+
 ### BIN-AI-004 - global AI Mentality byte and first consumers
 
 **Observation:** The Win32 string table in EXE-GOG-1.1 maps resource IDs 46,

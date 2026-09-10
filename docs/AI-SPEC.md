@@ -66,9 +66,14 @@ secret planner information or an added resource bonus.
 Hiring now applies the original scenario schedule, family-quota adjustments,
 attempt gate, and exact three-offer role ranking after command planning. An
 unaffordable ranked winner does not fall back to another offer. It chooses at
-most one offer during its planning turn; destination selection remains
-recreation-native (the lowest valid owned sector), and placement is deferred to
-the internal Hire phase.
+most one offer during its planning turn. Static analysis has now recovered the
+separate persistent placement anchor, its neutral-neighbor acceptance rule,
+deterministic fallback passes, Big Man central-sector ordering, visible-hostile
+and Siege overrides, and the encoded no-RNG destination path. These placement
+rules are isolated in `OriginalAiHireAnchorRules` and
+`OriginalAiHirePlacementRules`, but are not yet wired: the live planner still
+chooses the lowest valid owned sector, and placement remains deferred to the
+internal Hire phase.
 
 Movement scoring currently includes the recovered objective geography for
 both Big Man (sectors 27, 28, 35, and 36) and Eliminate (the six possible
@@ -138,7 +143,9 @@ replay-verified two-computer harness through 20 turns or objective completion.
    underlying two auxiliary shorts remain deliberately unmodeled. The hire
    model now preserves three fixed slots, same-slot tombstones, mutually
    exclusive actions, and next-planning-entry refill. Exact hire destination
-   selection remains pending.
+   selection and its persisted anchor are statically recovered in
+   `BIN-AI-003C` and covered by pure isolated kernels, but remain deliberately
+   unwired pending authoritative-state representation.
    A failed ranking now uses the recovered scenario-specific rejection selector
    and records the resulting snub. Selector `0x3e` is
    identified as the previous-turn action byte. Selectors 0 (scenario), `0x48`
