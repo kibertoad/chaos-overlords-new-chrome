@@ -2,7 +2,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Pure implementation of the original weighted sector selector at 0x00408642
-/// for its fully recovered modes 1 through 5, 7 through 10, 12 through 16,
+/// for its fully recovered modes 1 through 10, 12 through 16,
 /// and encoded fixed-sector modes 0x40 through 0x7f. Planner-specific
 /// queries remain explicit inputs so this kernel does not guess at unrecovered
 /// outer policy.
@@ -30,6 +30,7 @@ internal static class OriginalAiSectorSelectionRules
         DeterministicRandom random,
         bool? hasHumanPlayers = null,
         int? formationSectorId = null,
+        IReadOnlyList<int>? scenarioStandings = null,
         Func<int, int>? unfinishedSiteScore = null,
         Func<int, bool>? hasPriorInfluence = null,
         Func<int, int>? completedSiteScore = null)
@@ -38,7 +39,7 @@ internal static class OriginalAiSectorSelectionRules
             mode, sourceSectorId, family, sectorOwners, sectorDisabled,
             sectorGangCounts, canSoloControl, hasPriorChaos,
             isHostileOwner, isHumanOwner, playerOrderValues, random,
-            hasHumanPlayers, formationSectorId, unfinishedSiteScore,
+            hasHumanPlayers, formationSectorId, scenarioStandings, unfinishedSiteScore,
             hasPriorInfluence, completedSiteScore);
 
         var scores = new int[MatchLimits.SectorCount];
@@ -61,7 +62,7 @@ internal static class OriginalAiSectorSelectionRules
                         mode, sectorId, player.Value, owner,
                         sectorGangCounts, canSoloControl, hasPriorChaos,
                         isHostileOwner, isHumanOwner, playerOrderValues,
-                        hasHumanPlayers, formationSectorId, unfinishedSiteScore,
+                        hasHumanPlayers, formationSectorId, scenarioStandings, unfinishedSiteScore,
                         hasPriorInfluence, completedSiteScore);
                     if (added > 0)
                     {
@@ -149,6 +150,7 @@ internal static class OriginalAiSectorSelectionRules
         IReadOnlyList<int> playerOrderValues,
         bool? hasHumanPlayers,
         int? formationSectorId,
+        IReadOnlyList<int>? scenarioStandings,
         Func<int, int>? unfinishedSiteScore,
         Func<int, bool>? hasPriorInfluence,
         Func<int, int>? completedSiteScore) => mode switch
@@ -160,6 +162,10 @@ internal static class OriginalAiSectorSelectionRules
             5 when owner == NeutralOwner && canSoloControl(sectorId) => 5,
             5 when owner == player && !hasPriorChaos(sectorId) => 2,
             5 when owner != player && owner > NeutralOwner => 1,
+            6 => ModeSixBaseScore(
+                sectorId, player, owner, sectorGangCounts,
+                isHostileOwner, isHumanOwner,
+                hasHumanPlayers!.Value, scenarioStandings!),
             7 when owner == player && !hasPriorInfluence!(sectorId) =>
                 Math.Max(0, unfinishedSiteScore!(sectorId)),
             8 when owner == player => Math.Max(0, unfinishedSiteScore!(sectorId)),
@@ -196,6 +202,36 @@ internal static class OriginalAiSectorSelectionRules
                 ? 5
                 : 1;
 
+    internal static int ModeSixBaseScore(
+        int sectorId,
+        int player,
+        int owner,
+        IReadOnlyList<int> sectorGangCounts,
+        Func<int, bool> isHostileOwner,
+        Func<int, bool> isHumanOwner,
+        bool hasHumanPlayers,
+        IReadOnlyList<int> scenarioStandings)
+    {
+        if (owner < 0) return 0;
+
+        var score = hasHumanPlayers
+            && owner != player
+            && isHumanOwner(owner)
+            && isHostileOwner(owner)
+                ? 2
+                : 0;
+        var leaders = Enumerable.Range(0, MatchLimits.PlayerCount)
+            .Where(candidate => scenarioStandings[candidate] == 0)
+            .ToArray();
+        if (leaders.Length != 1)
+            return score + (scenarioStandings[owner] == 0 ? 1 : 0);
+
+        var leader = leaders[0];
+        if (leader != player) return score + (owner == leader ? 1 : 0);
+        return score + (owner != player
+            && sectorGangCounts[sectorId] < 4 ? 1 : 0);
+    }
+
     private static bool IsBigManObjective(int sectorId) =>
         sectorId is 27 or 28 or 35 or 36;
 
@@ -230,11 +266,12 @@ internal static class OriginalAiSectorSelectionRules
         DeterministicRandom random,
         bool? hasHumanPlayers,
         int? formationSectorId,
+        IReadOnlyList<int>? scenarioStandings,
         Func<int, int>? unfinishedSiteScore,
         Func<int, bool>? hasPriorInfluence,
         Func<int, int>? completedSiteScore)
     {
-        if (mode is not (>= 1 and <= 5 or >= 7 and <= 10 or >= 12 and <= 16
+        if (mode is not (>= 1 and <= 10 or >= 12 and <= 16
                 or >= 0x40 and < 0x80))
             throw new ArgumentOutOfRangeException(nameof(mode));
         if (sourceSectorId is < 0 or >= MatchLimits.SectorCount)
@@ -267,8 +304,16 @@ internal static class OriginalAiSectorSelectionRules
             throw new ArgumentException(
                 "Player-order values must contain all six original player slots.",
                 nameof(playerOrderValues));
-        if (mode == 10 && hasHumanPlayers is null)
+        if (mode is 6 or 10 && hasHumanPlayers is null)
             throw new ArgumentNullException(nameof(hasHumanPlayers));
+        if (mode == 6 && scenarioStandings is null)
+            throw new ArgumentNullException(nameof(scenarioStandings));
+        if (scenarioStandings is not null
+            && (scenarioStandings.Count != MatchLimits.PlayerCount
+                || scenarioStandings.Any(standing =>
+                    standing is < 0 or > MatchLimits.PlayerCount - 1
+                    && standing != byte.MaxValue)))
+            throw new ArgumentOutOfRangeException(nameof(scenarioStandings));
         if (mode == 16
             && formationSectorId is not (>= AiPlanningState.InactiveFormationSector
                 and < MatchLimits.SectorCount))

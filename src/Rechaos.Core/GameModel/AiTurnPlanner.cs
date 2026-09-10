@@ -124,6 +124,10 @@ public static partial class AiTurnPlanner
         {
             if (!entry.gang.IsActive) continue;
             var family = state.AiPlanning.Family(playerId, entry.slot);
+            if (family == 2 && PrepareFamilyTwoCommand(
+                    state, playerId, entry.gang, entry.slot,
+                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
+                continue;
             if (family == 3 && PrepareFamilyThreeCommand(
                     state, playerId, entry.gang, entry.slot,
                     sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))

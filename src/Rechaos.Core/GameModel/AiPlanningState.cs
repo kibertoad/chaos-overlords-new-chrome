@@ -11,7 +11,7 @@ public readonly record struct AiActionTarget(byte First, byte Second)
 
 /// <summary>
 /// Original-compatible per-player hire roles, per-gang strategy families, and
-/// polymorphic auxiliary focus values used by family 7 and family 11.
+/// polymorphic auxiliary focus values used by families 2, 7, and 11.
 /// The original executable reserves 81 planning records for each of its six
 /// player slots, independently of the recreation's active-gang limit.
 /// </summary>

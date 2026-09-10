@@ -947,6 +947,15 @@ players with a strictly greater score and inactive slots to `0xff`; selector
 `0x2e` therefore returns the unique current leader. Selector `0x5e` counts one
 player's nonempty gang records in a sector.
 
+The scorer uses cash for Greed; controlled-sector count for Power, Big 40, and
+Armageddon; accumulated current Support for Acceptance; and the duration-scaled
+Dominance numerator followed by signed integer division by ten. Kill 'Em All
+and Siege give every active player the same count of inactive player slots.
+Eliminate counts ownership of the six generated Headquarters sectors, while
+Big Man counts current ownership of sectors 27, 28, 35, and 36. These scores and
+the exact zero-based competition standings are now isolated in
+`OriginalAiScenarioStandingRules` and feed live mode-6 movement.
+
 Mode 6 is now bounded. If at least one human participates, a sector owned by a
 player whom the active AI views negatively receives `+2` only when that owner
 is human. It then adds one independent leader-routing point: with a unique
@@ -1024,6 +1033,32 @@ Control gate is restricted to a hostile human-owned sector with zero visible
 human gangs and rejects a previous-turn Control action. Thus the pair flag does
 not directly select an attack; it permits Control after the territorial
 Combat + Defense test has established overwhelming local advantage.
+
+Focused inspection of the complete family-2 handler at `0x0041fef0` establishes
+its exact action order. Selector `0x64`'s armor opportunity precedes selector
+`0x61`'s weapon opportunity. Each requires a nonpositive corresponding
+cooldown, a different affordable item, and an immediately previous action other
+than Attack; either Equip writes raw item cost times three to its cooldown and
+clears the first auxiliary short. Failed equipment Heals only below Force 8,
+at effective Heal at least `-3`, and with cached current-sector opponent weight
+strictly below 5. An owned current sector then Moves through mode 6.
+
+In a non-owned sector, positive cached opponent weight and at least one visible
+hostile gang enter a five-attempt Attack loop. Weight 10 draws the actual target
+from all visible human-controlled gangs; other weights draw from visible gangs
+whose owner is viewed negatively. Selector `0x2b` still resolves the same
+ordinal through the complete visible-opponent list for the quarter-strength
+comparison. A passing comparison stops early, but five failures still Attack
+the final actual target. The handler stores the current sector in the first
+auxiliary short for Attack and clears it for its other ordinary actions.
+
+Without that Attack path, previous Control, Armageddon, or failed strict solo
+Control writes mode-6 Move; otherwise the handler writes Control. The two late
+hostility gates described above can overwrite any earlier ordinary action with
+Control and clear the auxiliary short. Finally, Greed with fewer than four
+turns remaining overwrites the action with Terminate. The recreation now wires
+this complete branch order, mode-6 target, action target, cooldown, auxiliary
+write, and RNG consumption into replay-recorded planning.
 
 The surrounding action writes give the site modes public command semantics.
 Family 5 uses mode 7 after writing Move; when the selected Support-priority

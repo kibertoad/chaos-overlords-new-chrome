@@ -35,7 +35,7 @@ The top-level members are:
 | `setup` | Scenario, duration, initial seed, global AI mentality, and ordered player definitions including portrait IDs |
 | `players` | Cash/support/objective state, gangs, three fixed hire slots, pending action slot and legacy prepaid marker, persistent maximum-hire-Force modifier, research, inventory, statistics |
 | `sectors` | Ownership, explicit base income, tolerance, chaos/crackdown/importance, and three site instances |
-| `runtime` | Phase coordinator, RNG state/count, fixed-six-player AI reactions/directional attitudes, six current and previous AI hire roles, six-by-81 AI family records, three generations of action plus two command-dependent target bytes, weapon/armor planning cooldowns, polymorphic family-7 focus/family-11 formation values, six first-planning flags, six encoded hire-placement anchors, command queue/counter, event history/counter, notification queues/counters, phase hashes, and outcome |
+| `runtime` | Phase coordinator, RNG state/count, fixed-six-player AI reactions/directional attitudes, six current and previous AI hire roles, six-by-81 AI family records, three generations of action plus two command-dependent target bytes, weapon/armor planning cooldowns, polymorphic family-2/7 focus/family-11 formation values, six first-planning flags, six encoded hire-placement anchors, command queue/counter, event history/counter, notification queues/counters, phase hashes, and outcome |
 
 Gang command projections are reconstructed from the authoritative command queue
 on load. Transient `Last*Resolutions` views are intentionally not serialized;
@@ -110,7 +110,7 @@ first-planning flags plus all three generations of command-dependent AI target
 bytes.
 Version 15 embeds native snapshot version 14 and fingerprints weapon and armor
 planning cooldowns. Version 16 embeds native snapshot version 15 and
-fingerprints all six-by-81 polymorphic family-7 focus/family-11 formation
+fingerprints all six-by-81 polymorphic family-2/7 focus/family-11 formation
 values. The JSON member remains named `formationSectors` in schema version 15.
 
 Each ordered replay step stores its operation payload, the expected validation

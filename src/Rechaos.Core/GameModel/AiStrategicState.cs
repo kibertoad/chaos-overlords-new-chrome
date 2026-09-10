@@ -88,20 +88,32 @@ public sealed class AiStrategicState
         ArgumentNullException.ThrowIfNull(state);
         foreach (var other in state.Players.Where(player => player.Id != observer))
         {
-            var targetsHuman = other.Setup.Controller == PlayerController.Human;
-            var eligible = targetsHuman
-                ? state.Setup.AiMentality >= AiDifficulty.Criminal
-                : state.Setup.AiMentality < AiDifficulty.CrimeLord;
-            if (!eligible) continue;
-
-            var ownedSectors = state.Sectors.Where(sector => sector.Owner == other.Id).ToArray();
-            if (ownedSectors.Length == 0) continue;
-            var advantagedSectors = ownedSectors.Count(sector =>
-                LocalCombatAndDefense(state, observer, sector.Id)
-                > LocalCombatAndDefense(state, other.Id, sector.Id, observer));
-            if (advantagedSectors > 0 && advantagedSectors * 100 / ownedSectors.Length > 75)
+            if (HasSectorCombatAdvantageHostility(state, observer, other.Id))
                 _attitudes[MatrixIndex(observer, other.Id)] = MinimumAttitude;
         }
+    }
+
+    internal bool HasSectorCombatAdvantageHostility(
+        MatchState state,
+        PlayerId observer,
+        PlayerId other)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var otherState = state.FindPlayer(other)
+            ?? throw new ArgumentOutOfRangeException(nameof(other));
+        var targetsHuman = otherState.Setup.Controller == PlayerController.Human;
+        var eligible = targetsHuman
+            ? state.Setup.AiMentality >= AiDifficulty.Criminal
+            : state.Setup.AiMentality < AiDifficulty.CrimeLord;
+        if (!eligible) return false;
+
+        var ownedSectors = state.Sectors.Where(sector => sector.Owner == other).ToArray();
+        if (ownedSectors.Length == 0) return false;
+        var advantagedSectors = ownedSectors.Count(sector =>
+            LocalCombatAndDefense(state, observer, sector.Id)
+            > LocalCombatAndDefense(state, other, sector.Id, observer));
+        return advantagedSectors > 0
+            && advantagedSectors * 100 / ownedSectors.Length > 75;
     }
 
     internal void RecordCombat(PlayerId attacker, PlayerId defender, int damage)

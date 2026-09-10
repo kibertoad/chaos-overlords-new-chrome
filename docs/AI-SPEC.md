@@ -110,9 +110,11 @@ exact original modes 1-5 clipped-square search, late filters, stable maximum
 ties, RNG consumption, and x-then-y six-gang-capacity gate. Mode 5 is wired for
 the two recovered family-1 continuations during replay-recorded preparation;
 when late filtering leaves a zero maximum it draws uniformly among all 64 tied
-sectors and capacity-routes toward that draw. Modes 7-9 are live in families
-5, 3, and 10, objective modes 12-15 are live in families 13/14, and encoded
-`sector + 0x40` is live for family 12. Because family 12 encodes its current
+sectors and capacity-routes toward that draw. Mode 6 is live for family 2 and
+routes toward the current scenario leaders, including tied-leader and active-
+player-leads branches plus hostile-human weighting. Modes 7-9 are live in
+families 5, 3, and 10, objective modes 12-15 are live in families 13/14, and
+encoded `sector + 0x40` is live for family 12. Because family 12 encodes its current
 sector and the common selector later clears the source score, that path uses
 the original all-zero tie draw and one-step routing behavior.
 
@@ -187,6 +189,20 @@ replay-verified two-computer harness through 20 turns or objective completion.
    Three consecutive Moves switch the family to 11 in Siege and 2 otherwise;
    Greed's final three turns overwrite the result with Terminate. Unsupported
    previous-action cases intentionally preserve None, matching the handler.
+   Family 2's complete aggressive territorial handler is live. It tries armor
+   before weapon, requires an expired slot cooldown and a previous action other
+   than Attack, and writes a raw-cost-times-three replacement cooldown. It Heals
+   below Force 8 at effective Heal `-3` or better only while the current visible-
+   opponent weight is below 5. Owned sectors Move through mode 6. Elsewhere it
+   draws up to five hostile targets, preferring the human-only pool at weight
+   10, and attacks the final selection even when every quarter-strength combat
+   comparison fails. With no attack it Controls only when strict solo Control
+   is possible, the previous action was not Control, and the scenario is not
+   Armageddon; otherwise it Moves through mode 6. Two terminal hostility gates
+   can replace any prepared command with Control when visible defenders are
+   absent, and Greed's final three turns then force Terminate. Exact targets,
+   cooldowns, focus writes, standing-derived movement, and RNG consumption are
+   replay-recorded.
    Family 5's complete recovered handler mirrors that sequence around Support
    rather than Cash. Its local scan and mode-7 movement sum positive Support
    from unfinished owned sites, and mode 7 excludes any candidate sector where
@@ -238,7 +254,7 @@ replay-verified two-computer harness through 20 turns or objective completion.
    preparation now rolls the current role into the previous role and updates
    every active gang's authoritative family slot. The mode-4 second auxiliary-
    sector copy awaits representation; the first auxiliary short is the live
-   family-7 focus/family-11 formation value. The original objective-specific base
+   family-2/7 focus or family-11 formation value. The original objective-specific base
    turn schedules are isolated in `OriginalAiHireRoleRules`; Dominance alone
    uses an eleven-turn period, while the other nine objectives use ten. The
    objective-specific adjustments and hire-attempt gates are also
@@ -290,10 +306,12 @@ replay-verified two-computer harness through 20 turns or objective completion.
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
    (Heal), plus action bytes 3 (Chaos), 10 (Move), and 13 (Snitch), are now
-   bounded in `ORIGINAL-INTERNALS.md`. Mode 6 is now recovered as a family-2
+   bounded in `ORIGINAL-INTERNALS.md`. Mode 6 is now live as a family-2
    Move route toward the unique scenario leader (or all tied leaders), with an
    additional two-point preference for hostile human owners when humans
-   participate. Its pair flag permits Control—not Attack—when no defending
+   participate. The exact scenario scorer and competition-standing bytes are
+   rebuilt for all ten scenarios, including Dominance's final integer division.
+   Its pair flag permits Control—not Attack—when no defending
    owner gang is visible. The hostility pass counts only visible
    defenders, requires a strict integer ratio above 75 percent, and writes
    `-10` in the observer-to-owner direction. Static executable kernels now
