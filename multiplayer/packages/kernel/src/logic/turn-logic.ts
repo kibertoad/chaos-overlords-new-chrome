@@ -11,7 +11,43 @@ export function allActiveReady(players: readonly Player[], orders: readonly Turn
 export type Consensus =
   | { kind: 'pending' }
   | { kind: 'confirmed'; stateHash: string; finished: boolean }
-  | { kind: 'desynced'; reports: Array<{ playerId: string; stateHash: string }> }
+  | {
+      kind: 'desynced'
+      reports: Array<{ playerId: string; stateHash: string }>
+      /** The hashes tied for the most reports; what a recovery snapshot may claim. */
+      candidateStateHashes: string[]
+    }
+
+/**
+ * The state hashes that the most active players reported, tied if more than one.
+ *
+ * This is the corroboration a recovery snapshot is held to. Letting the host name any hash at all
+ * would make the host's client authoritative over a disagreement it is itself a party to: upload a
+ * doctored snapshot after a deliberate desync and every other client is told to adopt it. A hash
+ * that more players than any other already computed independently cannot be minted by one of them.
+ *
+ * A genuine tie (most of all, the 1-1 split of a two-player match) leaves nothing to count, and
+ * there is no third party to ask, so the host breaks it. Lockstep of three or more is where this
+ * bites, and that is the case worth defending: consistency is what matters, so converging on the
+ * majority's state is right even when the host's own client happens to be the correct one.
+ */
+export function authoritativeCandidates(
+  players: readonly Player[],
+  reports: readonly TurnReport[],
+): string[] {
+  const active = new Set(players.filter((player) => player.status === 'active').map((p) => p.id))
+  const counts = new Map<string, number>()
+  for (const report of reports) {
+    if (!active.has(report.playerId)) continue
+    counts.set(report.stateHash, (counts.get(report.stateHash) ?? 0) + 1)
+  }
+  const best = Math.max(0, ...counts.values())
+  if (best === 0) return []
+  return [...counts.entries()]
+    .filter(([, count]) => count === best)
+    .map(([stateHash]) => stateHash)
+    .sort()
+}
 
 /**
  * Compare the post-turn state hashes the active players reported.
@@ -55,6 +91,7 @@ export function evaluateConsensus(
   return {
     kind: 'desynced',
     reports: present.map((report) => ({ playerId: report.playerId, stateHash: report.stateHash })),
+    candidateStateHashes: authoritativeCandidates(players, reports),
   }
 }
 
