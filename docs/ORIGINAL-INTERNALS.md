@@ -569,7 +569,12 @@ which is stored plus `0x40`. The anchor is part of the original save/load state.
 Selector `0x24(player, center)` returns zero unless `center` is player-owned,
 then counts neutral cells whose Crackdown-duration byte is zero in its 3-by-3
 neighborhood in dy-major, dx-minor order. Its row-wrap check uses the literal linear bound
-`0 <= candidate < 65`, so a bottom-edge center can inspect sentinel cell 64.
+`0 <= candidate < 65`. Index 64 is not a fixed sentinel: its owner and
+Crackdown-offset reads alias bytes at `0x004a11e8` and `0x004a11f7` in the
+following persisted 486-by-10-byte runtime block. Active records populate these
+bytes during Hire resolution; otherwise they can retain stale or save-loaded
+values. The recreation therefore exposes both index-64 facts as explicit
+kernel inputs and does not invent values for live planning.
 For ordinary scenarios selector `0x25` makes three deterministic ascending-
 sector passes over owned sectors with occupancy below six:
 
@@ -587,6 +592,13 @@ instead has an empty radius-zero list, then tests `[18, 26, 19, 27]`, then
 first player-owned sector with occupancy below six. If neither list succeeds,
 it preserves the incoming anchor even when that anchor is full. Selector
 `0x25` consumes no RNG.
+
+The normal failure value `-1` is stored as encoded anchor 63. A later refresh
+subtracts 64 passes raw `-1` to selector `0x24`, whose center-owner read occurs
+before its neighborhood bounds checks and therefore aliases adjacent memory as
+well. Big Man is the only selector-`0x25` path that reads the incoming anchor;
+when its scans fail it returns `anchor - 64`, so the outer re-encoding preserves
+63, ordinary sector encodings, or the inactive encoding 164 unchanged.
 
 Normal planner calls to `0x00408214` pass this encoded anchor, so they always
 take the direct `>= 0x40` path and consume no placement RNG. The role-4 paths
@@ -631,8 +643,9 @@ generation, first-plan flags, duplicate cleanup, and reused-slot reset remain
 unmodeled.
 
 **Next validation:** use the authoritative previous-action bytes to wire the
-isolated hire-placement kernels, preserving their pass order, Big Man ordering,
-overrides, and zero-RNG encoded path.
+isolated hire-placement kernels after representing the two mutable index-64
+alias bytes. Preserve pass order, Big Man ordering, overrides, and the zero-RNG
+encoded path.
 
 ### BIN-AI-004 - global AI Mentality byte and first consumers
 

@@ -8,6 +8,8 @@ namespace Rechaos.Core.GameModel;
 internal static class OriginalAiHireAnchorRules
 {
     private const int NeutralOwner = -1;
+    private const int NoSector = -1;
+    private const int InactiveGangSector = 100;
     private const int OriginalNeighborLimit = 65;
 
     private static readonly int[] BigManRadiusOne = [18, 26, 19, 27];
@@ -85,7 +87,8 @@ internal static class OriginalAiHireAnchorRules
         IReadOnlyList<int> literalSectorOwners,
         IReadOnlyList<byte> literalAvailability)
     {
-        ValidateLiteralArrays(centerSectorId, literalSectorOwners, literalAvailability);
+        ValidateLiteralArrays(literalSectorOwners, literalAvailability);
+        ValidateCenter(centerSectorId);
         if (literalSectorOwners[centerSectorId] != player.Value) return 0;
 
         var count = 0;
@@ -170,19 +173,21 @@ internal static class OriginalAiHireAnchorRules
     {
         if (player.Value is < 0 or >= MatchLimits.PlayerCount)
             throw new ArgumentOutOfRangeException(nameof(player));
-        ValidateLiteralArrays(anchorSectorId, owners, availability);
+        if (anchorSectorId != NoSector
+            && anchorSectorId != InactiveGangSector
+            && anchorSectorId is < 0 or >= MatchLimits.SectorCount)
+            throw new ArgumentOutOfRangeException(nameof(anchorSectorId));
+        ValidateLiteralArrays(owners, availability);
         ArgumentNullException.ThrowIfNull(activeGangCount);
         ArgumentNullException.ThrowIfNull(priorChaosCount);
     }
 
     private static void ValidateLiteralArrays(
-        int centerSectorId,
         IReadOnlyList<int> owners,
         IReadOnlyList<byte> availability)
     {
         ArgumentNullException.ThrowIfNull(owners);
         ArgumentNullException.ThrowIfNull(availability);
-        ValidateCenter(centerSectorId);
         if (owners.Count != OriginalNeighborLimit)
             throw new ArgumentException(
                 "Literal sector owners must include the original index-64 sentinel.",

@@ -134,6 +134,16 @@ public sealed class OriginalAiHireAnchorRulesTests
         Assert.Equal(42, facts.Select(ScenarioId.BigMan));
     }
 
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(100)]
+    public void BigManPreservesRecoveredNonSectorAnchorSentinels(int anchor)
+    {
+        var facts = new Facts(defaultOwner: 1, anchor: anchor);
+
+        Assert.Equal(anchor, facts.Select(ScenarioId.BigMan));
+    }
+
     [Fact]
     public void Selector26CountsUnavailableAndNeutralNonOwnedNeighbors()
     {

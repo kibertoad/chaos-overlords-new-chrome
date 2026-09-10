@@ -47,7 +47,7 @@ snapshot.
 
 ## Compatibility policy
 
-Readers accept versions 1 through 11. Older documents migrate formerly implicit
+Readers accept versions 1 through 12. Older documents migrate formerly implicit
 sector income and later Crackdown state according to their schema; all v1-v4
 setups migrate to Criminal AI mentality and map each player to its matching
 default portrait. Version 5 and earlier reconstruct the fixed AI reaction and
