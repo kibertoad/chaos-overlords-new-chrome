@@ -60,7 +60,7 @@ public static class HireRules
         public MatchPlayerState? Player => State.FindPlayer(PlayerId);
     }
 
-    private static readonly IReadOnlyList<IValidationRule<Context, HireValidationCode>> Rules =
+    private static readonly IReadOnlyList<IValidationRule<Context, HireValidationCode>> SelectionRules =
     [
         new DelegateRule(HireValidationCode.InvalidPhase,
             "Gangs may only be hired during the player's planning turn.",
@@ -77,6 +77,17 @@ public static class HireRules
         new DelegateRule(HireValidationCode.OfferUnavailable,
             "The selected gang is not in the player's hire pool.",
             context => !context.Player!.HirePool.Contains(context.GangDefinitionId)),
+        new DelegateRule(HireValidationCode.SectorNotControlled,
+            "A recruit must be placed in a controlled sector or with one of the player's gangs.",
+            context => context.TargetSectorId is < 0 or >= MatchLimits.SectorCount ||
+                context.State.Sectors[context.TargetSectorId].Owner != context.PlayerId
+                && !context.Player!.Gangs.Any(gang =>
+                    gang.IsActive && gang.SectorId == context.TargetSectorId))
+    ];
+
+    private static readonly IReadOnlyList<IValidationRule<Context, HireValidationCode>> LegacyImmediatePaymentRules =
+    [
+        .. SelectionRules.Take(5),
         new DelegateRule(HireValidationCode.HireAlreadyPending,
             "The player has already selected a recruit this turn.",
             context => context.Player!.PendingHires.Count != 0
@@ -132,7 +143,22 @@ public static class HireRules
         var context = new Context(
             state ?? throw new ArgumentNullException(nameof(state)),
             playerId, gangDefinitionId, targetSectorId);
-        var failure = ValidationRuleSet.Evaluate(context, Rules);
+        var failure = ValidationRuleSet.Evaluate(context, SelectionRules);
+        return failure is { } rejected
+            ? new HireValidation(rejected.Code, rejected.Message)
+            : HireValidation.Accept();
+    }
+
+    internal static HireValidation ValidateLegacyImmediatePayment(
+        MatchState state,
+        PlayerId playerId,
+        short gangDefinitionId,
+        int targetSectorId)
+    {
+        var context = new Context(
+            state ?? throw new ArgumentNullException(nameof(state)),
+            playerId, gangDefinitionId, targetSectorId);
+        var failure = ValidationRuleSet.Evaluate(context, LegacyImmediatePaymentRules);
         return failure is { } rejected
             ? new HireValidation(rejected.Code, rejected.Message)
             : HireValidation.Accept();
@@ -153,6 +179,17 @@ public static class HireRules
             return new HireValidation(HireValidationCode.PlayerEliminated, "An eliminated player cannot snub hire offers.");
         if (!player.HirePool.Contains(gangDefinitionId))
             return new HireValidation(HireValidationCode.OfferUnavailable, "The selected gang is not in the player's hire pool.");
+        return HireValidation.Accept();
+    }
+
+    internal static HireValidation ValidateSnubLegacySingleAction(
+        MatchState state,
+        PlayerId playerId,
+        short gangDefinitionId)
+    {
+        var validation = ValidateSnub(state, playerId, gangDefinitionId);
+        if (!validation.IsValid) return validation;
+        var player = state.FindPlayer(playerId)!;
         if (player.HasSnubbedHireOfferThisTurn)
             return new HireValidation(HireValidationCode.OfferAlreadySnubbed, "Only one hire offer may be snubbed per turn.");
         if (player.PendingHires.Count != 0)
@@ -169,9 +206,31 @@ internal static class HireResolver
         foreach (var pending in player.PendingHires.ToArray())
         {
             var definition = state.Definitions.Gangs.Single(item => item.Id == pending.GangDefinitionId);
+            var cost = HireRules.InitialCost(definition);
+            var hasSectorCapacity = state.Players
+                .SelectMany(candidate => candidate.Gangs)
+                .Count(gang => gang.IsActive && gang.SectorId == pending.TargetSectorId)
+                < MatchLimits.FriendlyGangsPerSector;
+            var canAfford = HireRules.CanAffordInitialCost(player.Cash, definition);
+            if (!pending.InitialCostPaid && (!hasSectorCapacity || !canAfford))
+            {
+                continue;
+            }
+
             var initialForce = state.Random.NextInclusive(
                 ManualRules.MaximumHiredGangForce - ManualRules.MinimumHiredGangForce + 1)
                 + ManualRules.MinimumHiredGangForce - 1;
+            var hasGangCapacity = player.Gangs.Count(gang => gang.IsActive) < MatchLimits.GangsPerPlayer;
+            if (!pending.InitialCostPaid && !hasGangCapacity)
+            {
+                continue;
+            }
+
+            if (!pending.InitialCostPaid)
+            {
+                player.Cash -= cost;
+                player.Statistics.CashSpent += cost;
+            }
             var gang = new MatchGangState(
                 state.NextGangId(), player.Id, pending.GangDefinitionId,
                 pending.TargetSectorId, initialForce)
@@ -192,7 +251,7 @@ internal static class HireResolver
             }
             var details = new HireResolutionDetails(
                 pending.GangDefinitionId, pending.TargetSectorId,
-                HireRules.InitialCost(definition), gang.Id, null, initialForce);
+                cost, gang.Id, null, initialForce);
             var gameEvent = state.AppendHireEvent(GameEventKind.HireResolved, player.Id, details);
             state.QueueNotification(player.Id, GameNotificationKind.Hire, gang.Id,
                 pending.TargetSectorId, gameEvent.Sequence);
@@ -245,7 +304,9 @@ internal static class HireResolver
     {
         short selected;
         do selected = checked((short)state.Random.NextInclusive(89));
-        while (player.HirePool.Contains(selected) || selected == excludedDefinitionId);
+        while (player.HirePool.Contains(selected)
+               || player.HireOfferSlots.Any(slot => slot.LegacyReplacementDefinitionId == selected)
+               || selected == excludedDefinitionId);
         if (!state.Definitions.Gangs.Any(definition => definition.Id == selected))
             throw new InvalidOperationException("Original hire refill requires gang definitions 1 through 89.");
         return selected;

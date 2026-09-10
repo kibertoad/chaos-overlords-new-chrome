@@ -121,7 +121,7 @@ Resolved equipped-weapon attacks play their original extracted `SND005xx` cue.
 F5/F9 save/load and F6/F10
 save/verify replays. AI planning and post-command hiring preparation, including
 the recovered territorial Combat + Defense hostility check, are recorded in
-replay v9. Escape
+replay v10. Escape
 returns to the title screen before quitting.
 
 ## Projects

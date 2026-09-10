@@ -104,6 +104,70 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void RoundTripPreservesDeferredPendingHirePayment()
+    {
+        var original = CreateMatch();
+        AdvanceToHire(original);
+        var cashBefore = original.Players[0].Cash;
+        var spentBefore = original.Players[0].Statistics.CashSpent;
+        Assert.True(original.QueueHire(new PlayerId(0), 2, 0).Accepted);
+
+        var restored = RoundTrip(original);
+
+        var pending = Assert.Single(restored.Players[0].PendingHires);
+        Assert.False(pending.InitialCostPaid);
+        Assert.Equal(cashBefore, restored.Players[0].Cash);
+        Assert.Equal(spentBefore, restored.Players[0].Statistics.CashSpent);
+        restored.FinishHire(new PlayerId(0));
+        Assert.Equal(cashBefore - 1, restored.Players[0].Cash);
+        Assert.Equal(spentBefore + 1, restored.Players[0].Statistics.CashSpent);
+    }
+
+    [Fact]
+    public void VersionEightPaidPendingHireMigratesWithoutDoublePayment()
+    {
+        var match = CreateMatch();
+        AdvanceToHire(match);
+        Assert.True(match.QueueHireLegacyImmediatePayment(new PlayerId(0), 2, 0).Accepted);
+        var paidCash = match.Players[0].Cash;
+        var paidSpent = match.Players[0].Statistics.CashSpent;
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 8;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionElevenSha256(match);
+        document["players"]![0]!["pendingHires"]![0]!.AsObject().Remove("initialCostPaid");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.True(Assert.Single(restored.Players[0].PendingHires).InitialCostPaid);
+        var rerestored = RoundTrip(restored);
+        Assert.Equal(MatchStateHasher.ComputeSha256(restored), MatchStateHasher.ComputeSha256(rerestored));
+        Assert.True(Assert.Single(rerestored.Players[0].PendingHires).InitialCostPaid);
+        rerestored.FinishHire(new PlayerId(0));
+        Assert.Equal(paidCash, rerestored.Players[0].Cash);
+        Assert.Equal(paidSpent, rerestored.Players[0].Statistics.CashSpent);
+    }
+
+    [Fact]
+    public void RejectsModifiedPendingHirePaymentMarker()
+    {
+        var match = CreateMatch();
+        AdvanceToHire(match);
+        Assert.True(match.QueueHire(new PlayerId(0), 2, 0).Accepted);
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["players"]![0]!["pendingHires"]![0]!["initialCostPaid"] = true;
+
+        using var changed = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(changed, match.Definitions));
+    }
+
+    [Fact]
     public void RoundTripPreservesPendingSnubSlotAndTombstone()
     {
         var original = CreateMatch();
@@ -301,7 +365,7 @@ public sealed class NativeSaveSerializerTests
     {
         var match = CreateMatch();
         AdvanceToHire(match);
-        Assert.True(match.QueueHire(new PlayerId(0), 2, 0).Accepted);
+        Assert.True(match.QueueHireLegacyImmediatePayment(new PlayerId(0), 2, 0).Accepted);
         match.Players[0].SetHireOfferSlot(0,
             new HireOfferSlotState(2, null, LegacyReplacementDefinitionId: 8));
         var legacyHash = MatchStateHasher.ComputeVersionTenSha256(match);
@@ -331,7 +395,7 @@ public sealed class NativeSaveSerializerTests
     {
         var match = CreateMatch();
         AdvanceToHire(match);
-        Assert.True(match.QueueHire(new PlayerId(0), 2, 0).Accepted);
+        Assert.True(match.QueueHireLegacyImmediatePayment(new PlayerId(0), 2, 0).Accepted);
         match.Players[0].MarkHireOfferSnubbed(3, 1);
         var legacyHash = MatchStateHasher.ComputeVersionTenSha256(match);
         using var current = new MemoryStream();

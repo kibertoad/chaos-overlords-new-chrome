@@ -28,6 +28,13 @@ public sealed partial class MatchState
                 throw new ArgumentException($"Player {player.Id} has an unknown hire-offer slot value.", nameof(players));
             if (player.HirePool.Count != player.HirePool.Distinct().Count())
                 throw new ArgumentException($"Player {player.Id} has duplicate hire offers.", nameof(players));
+            var reservedHireOffers = player.HireOfferSlots
+                .SelectMany(slot => new[] { slot.GangDefinitionId, slot.LegacyReplacementDefinitionId })
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToArray();
+            if (reservedHireOffers.Length != reservedHireOffers.Distinct().Count())
+                throw new ArgumentException($"Player {player.Id} has duplicate visible or reserved hire offers.", nameof(players));
             if (player.SnubbedHireOffer is { } snubbed
                 && (snubbed == 0
                     || !definitions.Gangs.Any(definition => definition.Id == snubbed)

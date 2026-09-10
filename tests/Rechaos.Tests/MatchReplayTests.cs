@@ -250,6 +250,62 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void VersionNineReplayPreservesImmediateHirePaymentAndSingleActionValidation()
+    {
+        var initial = CreateMatch();
+        AdvanceToHire(initial);
+        var initialHash = MatchStateHasher.ComputeVersionElevenSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
+        Assert.True(recorder.QueueHire(new PlayerId(0), 2, 0).Accepted);
+        recorder.SnubHireOffer(new PlayerId(0), 3);
+        recorder.FinishHire(new PlayerId(0));
+
+        var expected = CreateMatch();
+        AdvanceToHire(expected);
+        var queued = expected.QueueHireLegacyImmediatePayment(new PlayerId(0), 2, 0);
+        Assert.True(queued.Accepted);
+        var queuedHash = MatchStateHasher.ComputeVersionElevenSha256(expected);
+        var snubbed = expected.SnubHireOfferLegacySingleAction(new PlayerId(0), 3);
+        Assert.False(snubbed.Accepted);
+        var snubbedHash = MatchStateHasher.ComputeVersionElevenSha256(expected);
+        expected.FinishHire(new PlayerId(0));
+        var finishedHash = MatchStateHasher.ComputeVersionElevenSha256(expected);
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = 9;
+        document["initialStateSha256"] = initialHash;
+        var steps = document["steps"]!.AsArray();
+        steps[0]!["resultingStateSha256"] = queuedHash;
+        steps[0]!["accepted"] = true;
+        steps[0]!["validationCode"] = (int)queued.Validation.Code;
+        steps[1]!["resultingStateSha256"] = snubbedHash;
+        steps[1]!["accepted"] = false;
+        steps[1]!["validationCode"] = (int)snubbed.Validation.Code;
+        steps[2]!["resultingStateSha256"] = finishedHash;
+
+        var snapshotBytes = Convert.FromBase64String(
+            document["initialSnapshot"]!.GetValue<string>());
+        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
+        snapshot["formatVersion"] = 8;
+        snapshot["stateSha256"] = initialHash;
+        document["initialSnapshot"] = Convert.ToBase64String(
+            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
+
+        Assert.Equal(expected.Players[0].Cash, restored.Players[0].Cash);
+        Assert.Equal(expected.Players[0].Statistics.CashSpent,
+            restored.Players[0].Statistics.CashSpent);
+        Assert.Equal(expected.Players[0].Gangs.Count, restored.Players[0].Gangs.Count);
+        Assert.Null(restored.Players[0].SnubbedHireOffer);
+        Assert.Equal(MatchStateHasher.ComputeSha256(expected),
+            MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void AtomicReplayStoreWritesAndReplaysAFile()
     {
         var directory = Path.Combine(Path.GetTempPath(), "rechaos-replay-tests", Guid.NewGuid().ToString("N"));
@@ -269,6 +325,15 @@ public sealed class MatchReplayTests
         {
             if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
         }
+    }
+
+    private static void AdvanceToHire(MatchState state)
+    {
+        state.FinishUpkeep();
+        state.FinishCommand(new PlayerId(0));
+        state.FinishCommand(new PlayerId(1));
+        while (state.Coordinator.Phase == TurnPhase.Execution)
+            state.FinishExecutionPhase();
     }
 
     private static void FinishCommands(MatchReplayRecorder recorder)

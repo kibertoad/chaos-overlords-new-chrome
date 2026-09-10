@@ -208,7 +208,11 @@ public sealed class MatchGangState
     public bool IsActive => Force > 0;
 }
 
-public sealed record PendingHireState(short GangDefinitionId, int TargetSectorId, int OfferSlot = -1);
+public sealed record PendingHireState(
+    short GangDefinitionId,
+    int TargetSectorId,
+    int OfferSlot = -1,
+    bool InitialCostPaid = false);
 
 public sealed class MatchSectorState
 {
@@ -614,7 +618,30 @@ public sealed partial class MatchState
         var definition = Definitions.Gangs.Single(item => item.Id == gangDefinitionId);
         var cost = HireRules.InitialCost(definition);
         var offerSlot = player.FindHireOfferSlot(gangDefinitionId);
-        var pending = new PendingHireState(gangDefinitionId, targetSectorId, offerSlot);
+        ClearHireAction(player);
+        var pending = new PendingHireState(
+            gangDefinitionId, targetSectorId, offerSlot, InitialCostPaid: false);
+        player.AddPendingHire(pending);
+        var gameEvent = AppendHireEvent(GameEventKind.HireQueued, playerId,
+            new HireResolutionDetails(gangDefinitionId, targetSectorId, cost));
+        return new HireSubmissionResult(validation, pending, gameEvent);
+    }
+
+    internal HireSubmissionResult QueueHireLegacyImmediatePayment(
+        PlayerId playerId,
+        short gangDefinitionId,
+        int targetSectorId)
+    {
+        var validation = HireRules.ValidateLegacyImmediatePayment(
+            this, playerId, gangDefinitionId, targetSectorId);
+        if (!validation.IsValid) return new HireSubmissionResult(validation);
+
+        var player = FindPlayer(playerId)!;
+        var definition = Definitions.Gangs.Single(item => item.Id == gangDefinitionId);
+        var cost = HireRules.InitialCost(definition);
+        var offerSlot = player.FindHireOfferSlot(gangDefinitionId);
+        var pending = new PendingHireState(
+            gangDefinitionId, targetSectorId, offerSlot, InitialCostPaid: true);
         player.Cash -= cost;
         player.Statistics.CashSpent += cost;
         player.AddPendingHire(pending);
@@ -640,11 +667,51 @@ public sealed partial class MatchState
         var validation = HireRules.ValidateSnub(this, playerId, gangDefinitionId);
         if (!validation.IsValid) return new HireOfferSnubResult(validation);
         var player = FindPlayer(playerId)!;
+        var offerSlot = player.FindHireOfferSlot(gangDefinitionId);
+        var selectedPending = player.PendingHires.SingleOrDefault();
+        var cancelsPending = selectedPending is not null
+            && (selectedPending.OfferSlot == offerSlot
+                || selectedPending.GangDefinitionId == gangDefinitionId);
+        var cancelsSnub = player.SnubbedHireOfferSlot == offerSlot
+            || player.SnubbedHireOffer == gangDefinitionId;
+        ClearHireAction(player);
+        if (cancelsPending || cancelsSnub)
+            return new HireOfferSnubResult(validation);
+
+        player.MarkHireOfferSnubbed(gangDefinitionId, offerSlot);
+        var gameEvent = AppendHireOfferEvent(
+            GameEventKind.HireOfferSnubbed, playerId,
+            new HireOfferDetails(gangDefinitionId, null));
+        return new HireOfferSnubResult(validation, gangDefinitionId, gameEvent);
+    }
+
+    internal HireOfferSnubResult SnubHireOfferLegacySingleAction(
+        PlayerId playerId,
+        short gangDefinitionId)
+    {
+        var validation = HireRules.ValidateSnubLegacySingleAction(
+            this, playerId, gangDefinitionId);
+        if (!validation.IsValid) return new HireOfferSnubResult(validation);
+        var player = FindPlayer(playerId)!;
         player.MarkHireOfferSnubbed(gangDefinitionId, player.FindHireOfferSlot(gangDefinitionId));
         var gameEvent = AppendHireOfferEvent(
             GameEventKind.HireOfferSnubbed, playerId,
             new HireOfferDetails(gangDefinitionId, null));
         return new HireOfferSnubResult(validation, gangDefinitionId, gameEvent);
+    }
+
+    private void ClearHireAction(MatchPlayerState player)
+    {
+        foreach (var pending in player.PendingHires)
+        {
+            if (!pending.InitialCostPaid) continue;
+            var definition = Definitions.Gangs.Single(item => item.Id == pending.GangDefinitionId);
+            var cost = HireRules.InitialCost(definition);
+            player.Cash += cost;
+            player.Statistics.CashSpent -= cost;
+        }
+        player.ClearPendingHires();
+        player.ClearSnubbedHireOffer();
     }
 
     public CommandSubmissionResult Submit(GameCommand command)

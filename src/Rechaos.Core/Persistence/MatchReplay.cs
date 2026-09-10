@@ -189,7 +189,7 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    public const int CurrentFormatVersion = 9;
+    public const int CurrentFormatVersion = 10;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -246,13 +246,13 @@ public static class MatchReplaySerializer
         for (var index = 0; index < document.Steps.Count; index++)
         {
             var step = document.Steps[index];
-            ApplyStep(state, step, index);
+            ApplyStep(state, step, index, document.FormatVersion);
             VerifyHash(step.ResultingStateSha256, state, index, document.FormatVersion);
         }
         return state;
     }
 
-    private static void ApplyStep(MatchState state, ReplayStep step, int index)
+    private static void ApplyStep(MatchState state, ReplayStep step, int index, int replayVersion)
     {
         switch (step.Kind)
         {
@@ -271,18 +271,25 @@ public static class MatchReplaySerializer
             }
             case ReplayOperationKind.QueueHire:
             {
-                var result = state.QueueHire(
-                    Required(step.Player, index),
-                    step.GangDefinitionId ?? throw new InvalidDataException($"Replay step {index} has no gang definition."),
-                    step.SectorId ?? throw new InvalidDataException($"Replay step {index} has no sector."));
+                var player = Required(step.Player, index);
+                var gangDefinitionId = step.GangDefinitionId
+                    ?? throw new InvalidDataException($"Replay step {index} has no gang definition.");
+                var sectorId = step.SectorId
+                    ?? throw new InvalidDataException($"Replay step {index} has no sector.");
+                var result = replayVersion <= 9
+                    ? state.QueueHireLegacyImmediatePayment(player, gangDefinitionId, sectorId)
+                    : state.QueueHire(player, gangDefinitionId, sectorId);
                 VerifyResult(step, result.Accepted, (int)result.Validation.Code, index);
                 break;
             }
             case ReplayOperationKind.SnubHireOffer:
             {
-                var result = state.SnubHireOffer(
-                    Required(step.Player, index),
-                    step.GangDefinitionId ?? throw new InvalidDataException($"Replay step {index} has no gang definition."));
+                var player = Required(step.Player, index);
+                var gangDefinitionId = step.GangDefinitionId
+                    ?? throw new InvalidDataException($"Replay step {index} has no gang definition.");
+                var result = replayVersion <= 9
+                    ? state.SnubHireOfferLegacySingleAction(player, gangDefinitionId)
+                    : state.SnubHireOffer(player, gangDefinitionId);
                 VerifyResult(step, result.Accepted, (int)result.Validation.Code, index);
                 break;
             }
@@ -333,7 +340,8 @@ public static class MatchReplaySerializer
         }
         string[] candidateHashes = replayVersion switch
         {
-            >= 9 => [MatchStateHasher.ComputeSha256(state)],
+            >= 10 => [MatchStateHasher.ComputeSha256(state)],
+            9 => [MatchStateHasher.ComputeVersionElevenSha256(state)],
             7 or 8 => [MatchStateHasher.ComputeVersionTenSha256(state)],
             5 or 6 => [MatchStateHasher.ComputeVersionSixSha256(state)],
             4 => [MatchStateHasher.ComputeVersionFiveSha256(state)],

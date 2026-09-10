@@ -793,6 +793,25 @@ public static class HireDockLayout
         return result;
     }
 
+    public static int MoveCursor(
+        IReadOnlyList<HireOfferSlotState> offers,
+        int currentSlot,
+        int delta)
+    {
+        ArgumentNullException.ThrowIfNull(offers);
+        if (offers.Count != SlotCount)
+            throw new ArgumentException("Hire dock requires exactly three offer slots.", nameof(offers));
+
+        var available = Enumerable.Range(0, SlotCount)
+            .Where(slot => offers[slot].GangDefinitionId.HasValue)
+            .ToArray();
+        if (available.Length == 0) return -1;
+
+        var index = Array.IndexOf(available, currentSlot);
+        if (index < 0) return delta < 0 ? available[^1] : available[0];
+        return available[(index + delta % available.Length + available.Length) % available.Length];
+    }
+
     private static void ValidateSlot(int slot)
     {
         if (slot is < 0 or >= SlotCount) throw new ArgumentOutOfRangeException(nameof(slot));

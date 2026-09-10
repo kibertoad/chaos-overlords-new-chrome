@@ -88,12 +88,12 @@ public sealed partial class ChaosGame
         }
         var player = _state.FindPlayer(playerId)!;
         PrepareCurrentHireOffers();
-        if (player.HirePool.Count == 0)
+        _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, -1, 1);
+        if (_hireCursor < 0)
         {
             _message = "NO HIRE OFFER AVAILABLE";
             return;
         }
-        _hireCursor = 0;
         _managementReturnScreen = returnScreen;
         _screens.Show(ClientScreen.Hire);
     }
@@ -124,11 +124,6 @@ public sealed partial class ChaosGame
         if (entry is null)
         {
             _message = "NO HIRE OFFER IN THIS SLOT";
-            return;
-        }
-        if (entry.Hired)
-        {
-            _message = "GANG ALREADY HIRED THIS TURN";
             return;
         }
         _draggedHireSlot = slot;
@@ -200,8 +195,8 @@ public sealed partial class ChaosGame
     private void MoveHireCursor(int delta)
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
-        var count = _state.FindPlayer(playerId)!.HirePool.Count;
-        if (count > 0) _hireCursor = Mod(_hireCursor + delta, count);
+        var offers = _state.FindPlayer(playerId)!.HireOfferSlots;
+        _hireCursor = HireDockLayout.MoveCursor(offers, _hireCursor, delta);
     }
 
     private void HandleHireClick(Point point)
@@ -213,9 +208,9 @@ public sealed partial class ChaosGame
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
         var player = _state.FindPlayer(playerId)!;
-        if (player.HirePool.Count == 0) return;
-        _hireCursor = Math.Clamp(_hireCursor, 0, player.HirePool.Count - 1);
-        var offer = player.HirePool[_hireCursor];
+        _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
+        if (_hireCursor < 0) return;
+        var offer = player.HireOfferSlots[_hireCursor].GangDefinitionId!.Value;
         var result = _replay.QueueHire(playerId, offer, _cursor);
         _message = result.Accepted ? "HIRE QUEUED" : result.Validation.Message.ToUpperInvariant();
         if (result.Accepted)
@@ -228,12 +223,17 @@ public sealed partial class ChaosGame
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
         var player = _state.FindPlayer(playerId)!;
-        if (player.HirePool.Count == 0) return;
-        _hireCursor = Math.Clamp(_hireCursor, 0, player.HirePool.Count - 1);
-        var offer = player.HirePool[_hireCursor];
+        _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
+        if (_hireCursor < 0) return;
+        var offer = player.HireOfferSlots[_hireCursor].GangDefinitionId!.Value;
+        var cancelsPendingHire = player.PendingHires.Any(hire => hire.OfferSlot == _hireCursor);
+        var cancelsSnub = player.SnubbedHireOfferSlot == _hireCursor;
         var result = _replay.SnubHireOffer(playerId, offer);
-        _message = result.Accepted ? "OFFER SNUBBED" : result.Validation.Message.ToUpperInvariant();
-        _hireCursor = Math.Clamp(_hireCursor, 0, Math.Max(0, player.HirePool.Count - 1));
+        _message = result.Accepted
+            ? cancelsPendingHire ? "HIRE CANCELLED"
+                : cancelsSnub ? "REJECTION CANCELLED" : "OFFER SNUBBED"
+            : result.Validation.Message.ToUpperInvariant();
+        _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
     }
 
     private void SnubHireDockOffer(int slot)
@@ -241,12 +241,17 @@ public sealed partial class ChaosGame
         if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
         PrepareCurrentHireOffers();
         var entry = CurrentHireDock(_state.FindPlayer(playerId)!)[slot];
-        if (entry is null || entry.Hired)
+        if (entry is null)
         {
-            _message = entry is null ? "NO HIRE OFFER IN THIS SLOT" : "GANG ALREADY HIRED THIS TURN";
+            _message = "NO HIRE OFFER IN THIS SLOT";
             return;
         }
+        var cancelsPendingHire = entry.Hired;
+        var cancelsSnub = _state.FindPlayer(playerId)!.SnubbedHireOfferSlot == slot;
         var result = _replay.SnubHireOffer(playerId, entry.GangDefinitionId);
-        _message = result.Accepted ? "OFFER REJECTED" : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted
+            ? cancelsPendingHire ? "HIRE CANCELLED"
+                : cancelsSnub ? "REJECTION CANCELLED" : "OFFER REJECTED"
+            : result.Validation.Message.ToUpperInvariant();
     }
 }

@@ -64,47 +64,52 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 11;
+    private const int FormatVersion = 12;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
             includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
-            includeAiPlanning: false, includeHireSlots: false);
+            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false);
 
     internal static string ComputeVersionTwoSha256(MatchState state) =>
         ComputeSha256(state, 5, includeSectorIncome: true, includeCrackdownDuration: false,
             includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
-            includeAiPlanning: false, includeHireSlots: false);
+            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false);
 
     internal static string ComputeVersionThreeSha256(MatchState state) =>
         ComputeSha256(state, 6, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
-            includeAiPlanning: false, includeHireSlots: false);
+            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false);
 
     internal static string ComputeVersionFourSha256(MatchState state) =>
         ComputeSha256(state, 7, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: false, includeAiStrategy: false,
-            includeAiPlanning: false, includeHireSlots: false);
+            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false);
 
     internal static string ComputeVersionFiveSha256(MatchState state) =>
         ComputeSha256(state, 8, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: false,
-            includeAiPlanning: false, includeHireSlots: false);
+            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false);
 
     internal static string ComputeVersionSixSha256(MatchState state) =>
         ComputeSha256(state, 9, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: false, includeHireSlots: false);
+            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false);
 
     internal static string ComputeVersionTenSha256(MatchState state) =>
         ComputeSha256(state, 10, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: false);
+            includeAiPlanning: true, includeHireSlots: false, includeHirePayment: false);
+
+    internal static string ComputeVersionElevenSha256(MatchState state) =>
+        ComputeSha256(state, 11, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: false);
 
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true);
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true);
 
     private static string ComputeSha256(
         MatchState state,
@@ -115,7 +120,8 @@ public static class MatchStateHasher
         bool includeDifficulty,
         bool includeAiStrategy,
         bool includeAiPlanning,
-        bool includeHireSlots)
+        bool includeHireSlots,
+        bool includeHirePayment)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -182,7 +188,7 @@ public static class MatchStateHasher
 
             writer.Write(state.Players.Count);
             foreach (var player in state.Players.OrderBy(item => item.Id.Value))
-                WritePlayer(writer, player, includeHireSlots);
+                WritePlayer(writer, player, includeHireSlots, includeHirePayment);
             writer.Write(state.Sectors.Count);
             foreach (var sector in state.Sectors.OrderBy(item => item.Id))
                 WriteSector(writer, sector, includeSectorIncome, includeCrackdownDuration, includeCrackdownHistory);
@@ -235,7 +241,8 @@ public static class MatchStateHasher
     private static void WritePlayer(
         BinaryWriter writer,
         MatchPlayerState player,
-        bool includeHireSlots)
+        bool includeHireSlots,
+        bool includeHirePayment)
     {
         writer.Write(player.Id.Value); writer.Write((byte)player.Status); writer.Write(player.Cash); writer.Write(player.Support);
         writer.Write(player.BigManPoints);
@@ -263,7 +270,14 @@ public static class MatchStateHasher
         }
         WriteNullableShort(writer, player.SnubbedHireOffer);
         if (includeHireSlots) WriteNullableInt(writer, player.SnubbedHireOfferSlot);
-        writer.Write(player.PendingHires.Count); foreach (var hire in player.PendingHires) { writer.Write(hire.GangDefinitionId); writer.Write(hire.TargetSectorId); if (includeHireSlots) writer.Write(hire.OfferSlot); }
+        writer.Write(player.PendingHires.Count);
+        foreach (var hire in player.PendingHires)
+        {
+            writer.Write(hire.GangDefinitionId);
+            writer.Write(hire.TargetSectorId);
+            if (includeHireSlots) writer.Write(hire.OfferSlot);
+            if (includeHirePayment) writer.Write(hire.InitialCostPaid);
+        }
         writer.Write(player.ResearchProgress.Count); foreach (var pair in player.ResearchProgress.OrderBy(item => item.Key)) { writer.Write(pair.Key); writer.Write(pair.Value); }
         writer.Write(player.ResearchedItems.Count); foreach (var id in player.ResearchedItems.Order()) writer.Write(id);
         writer.Write(player.Inventory.Count); foreach (var pair in player.Inventory.OrderBy(item => item.Key)) { writer.Write(pair.Key); writer.Write(pair.Value); }

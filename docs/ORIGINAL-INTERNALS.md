@@ -1065,7 +1065,21 @@ Its only callers are the computer and human planning-entry paths at `0x0046f4e3`
 and `0x0046fe8b`; the resolver does not call it. The human handler at
 `0x00416c75` assigns the selected slot and clears both other action bytes, so
 hire and snub are mutually exclusive selections rather than two actions in one
-turn.
+turn. Its Reject branch toggles the selected slot from -1 to -2 or from -2 to
+-1; clicking Reject on a slot holding a sector destination changes it to -1
+rather than directly snubbing it. Dragging an offer writes the new destination
+to that slot and unconditionally clears the other two slots, so a later drag
+replaces the earlier selection and dragging the same offer can retarget it.
+The handler does not read or update cash or cumulative cash spent. The resolver
+first counts all gang records in the target sector at `0x0047592b`-
+`0x004759a8`; six causes a failure with no random draw. It then checks
+then-current cash at `0x004759bd`-`0x00475a15`. Only after those checks does it
+roll Force at `0x00475ac4`; it subsequently searches the player's 80 gang slots
+at `0x00475bdb`-`0x00475c2d`, so a full roster failure consumes the Force draw.
+After successful gang creation, it updates cumulative cash spent at
+`0x00475c88`-`0x00475ca8` and subtracts cash at
+`0x00475cba`-`0x00475ce4`. Rejected, cancelled, and failed hires do not change
+either value.
 
 **Interpretation:** Initial offers are populated on planning entry. Successful
 hire or snub leaves a signed tombstone in its permanent slot until that player's
@@ -1073,7 +1087,9 @@ next planning entry; refill never compacts or shifts slots. Multiple malformed
 vacancies would refill in ascending slot order. Replacement selection is
 rejection sampling over gang IDs 1 through 89; a just-hired or snubbed gang
 cannot immediately replace itself. Hired Force is uniformly 5 through 9 through
-the recovered bounded wrapper.
+the recovered bounded wrapper. Selecting a hire reserves no cash: affordability
+is evaluated during resolution, and an unaffordable action is cleared without
+creating a vacancy.
 
 **Confidence:** High static evidence for arrays, sentinels, selected-slot writes,
 mutual exclusion, resolver/refill order, call sites, and RNG bounds; a controlled

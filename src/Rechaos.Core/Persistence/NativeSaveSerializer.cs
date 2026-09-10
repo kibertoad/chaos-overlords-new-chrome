@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 8;
+    public const int CurrentFormatVersion = 9;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -121,6 +121,7 @@ public static class NativeSaveSerializer
             5 => MatchStateHasher.ComputeVersionFiveSha256(state),
             6 => MatchStateHasher.ComputeVersionSixSha256(state),
             7 => MatchStateHasher.ComputeVersionTenSha256(state),
+            8 => MatchStateHasher.ComputeVersionElevenSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
         if (!CryptographicOperations.FixedTimeEquals(
@@ -226,9 +227,12 @@ public static class NativeSaveSerializer
                 Pending: player.PendingHires,
                 SnubSlot: player.SnubbedHireOfferSlot)
             : MigrateLegacyHireState(player);
+        var pendingHires = formatVersion >= 9
+            ? hireState.Pending
+            : hireState.Pending.Select(pending => pending with { InitialCostPaid = true }).ToArray();
         return new MatchPlayerState(
             setup.Players[player.Id], player.Cash, gangs, player.HirePool,
-            hireState.Pending, player.ResearchProgress, player.ResearchedItems.ToHashSet(),
+            pendingHires, player.ResearchProgress, player.ResearchedItems.ToHashSet(),
             player.Inventory, player.Support, player.BigManPoints, player.Status,
             statistics, player.SnubbedHireOffer,
             hireState.Slots, hireState.SnubSlot);

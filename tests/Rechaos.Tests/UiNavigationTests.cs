@@ -404,6 +404,26 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void HireDockCursorUsesPhysicalSlotsAndSkipsVacancies()
+    {
+        HireOfferSlotState[] offers =
+        [
+            HireOfferSlotState.Vacant(1),
+            HireOfferSlotState.Available(2),
+            HireOfferSlotState.Available(3)
+        ];
+
+        Assert.Equal(1, HireDockLayout.MoveCursor(offers, -1, 1));
+        Assert.Equal(2, HireDockLayout.MoveCursor(offers, 1, 1));
+        Assert.Equal(1, HireDockLayout.MoveCursor(offers, 2, 1));
+        Assert.Equal(2, HireDockLayout.MoveCursor(offers, 1, -1));
+        Assert.Equal(1, HireDockLayout.MoveCursor(offers, 0, 0));
+        Assert.Equal(-1, HireDockLayout.MoveCursor(
+            [HireOfferSlotState.Vacant(1), HireOfferSlotState.Vacant(2), HireOfferSlotState.Vacant(3)],
+            1, 1));
+    }
+
+    [Fact]
     public void HireComparisonMatchesOriginalThreeColumnPanel()
     {
         Assert.Equal(new Rectangle(0, 0, 344, 209), HireComparisonLayout.Panel);
