@@ -58,9 +58,7 @@ public static partial class AiTurnPlanner
             var target = SelectFamilyTenStealthSector(
                 state, playerId, gang, sectorOwners, sectorDisabled,
                 sectorGangCounts, playerOrder);
-            state.AiPlanning.SetPlannedAction(
-                playerId, gangSlot, GangAction.Move,
-                new AiActionTarget(checked((byte)target), 0));
+            SetRecoveredMoveAction(state, playerId, gangSlot, target);
             return true;
         }
 

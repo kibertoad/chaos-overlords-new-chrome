@@ -195,9 +195,7 @@ public static partial class AiTurnPlanner
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
             formationSectorId: formationSectorId);
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)target), 0));
+        SetRecoveredMoveAction(state, playerId, gangSlot, target);
         if (mode == 10 && state.Sectors[gang.SectorId].Owner != playerId)
             state.AiPlanning.SetFormationSector(playerId, gangSlot, target);
     }
@@ -287,9 +285,7 @@ public static partial class AiTurnPlanner
                 == PlayerController.Human,
             playerOrder,
             state.Random);
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)target), 0));
+        SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }
 
     private static int? PreparedCommandTargetId(

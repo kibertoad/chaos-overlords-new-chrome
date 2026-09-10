@@ -243,8 +243,6 @@ public static partial class AiTurnPlanner
                     && entry.candidate.SectorId == sectorId
                     && state.AiPlanning.PreviousAction(playerId, entry.slot)
                         == GangAction.Influence));
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)target), 0));
+        SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }
 }

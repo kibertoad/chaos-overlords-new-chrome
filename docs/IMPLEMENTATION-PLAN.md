@@ -819,8 +819,9 @@ not lines of code or asset counts.
    operations for handlers that do and do not persist sector focus. Identical
    cost-based equipment application is shared across families 0/1/2/3/4/5/6/7,
    again with focus-clearing and focus-preserving forms kept distinct. Continue
-   extracting only proven-identical movement operations without generalizing
-   away original branch order, then isolate the provisional fallback policy.
+   the structure pass by isolating the provisional fallback policy; recovered
+   Move tuple application is shared, while each handler retains its destination
+   selection, branch order, and any formation/coverage side effects.
 2. Capture controlled original-turn fixtures for the now-guarded family-1 cash
    50/51, Force 8/9, effective-Heal -3/-4, and Tolerance 3/4 boundaries, plus
    fixed band 0/1/2 retaliation Hide and Martial Arts branches and family-0/4

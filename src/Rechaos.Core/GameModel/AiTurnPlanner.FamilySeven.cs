@@ -113,11 +113,7 @@ public static partial class AiTurnPlanner
                     .Setup.Controller == PlayerController.Human,
                 playerOrder,
                 state.Random);
-            state.AiPlanning.SetPlannedAction(
-                playerId, gangSlot, GangAction.Move,
-                new AiActionTarget(checked((byte)target), 0));
-            state.AiPlanning.SetFocusValue(
-                playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+            SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
             return;
         }
 
@@ -183,10 +179,6 @@ public static partial class AiTurnPlanner
                 .Setup.Controller == PlayerController.Human,
             playerOrderValues: playerOrder,
             random: state.Random);
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)target), 0));
-        state.AiPlanning.SetFocusValue(
-            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+        SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }
 }

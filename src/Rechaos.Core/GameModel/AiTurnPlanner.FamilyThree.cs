@@ -236,8 +236,6 @@ public static partial class AiTurnPlanner
             state.Random,
             unfinishedSiteScore: sectorId =>
                 OriginalAiFamilyThreeRules.UnfinishedCashScore(state, sectorId));
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)target), 0));
+        SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }
 }

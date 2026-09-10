@@ -157,10 +157,7 @@ public static partial class AiTurnPlanner
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
             scenarioStandings: OriginalAiScenarioStandingRules.Build(state));
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)target), 0));
-        state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+        SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }
 
     private static void SetFamilyTwoAction(

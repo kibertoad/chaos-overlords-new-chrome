@@ -133,11 +133,7 @@ public static partial class AiTurnPlanner
                 .Setup.Controller == PlayerController.Human,
             playerOrder,
             state.Random);
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)destination), 0));
-        state.AiPlanning.SetFocusValue(
-            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+        SetRecoveredFocusedMoveAction(state, playerId, gangSlot, destination);
         state.AiPlanning.SetCoverageSector(playerId, gangSlot, destination);
     }
 

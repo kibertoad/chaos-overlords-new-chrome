@@ -91,4 +91,26 @@ public static partial class AiTurnPlanner
         state.AiPlanning.SetFocusValue(
             playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
+
+    private static void SetRecoveredMoveAction(
+        MatchState state,
+        PlayerId playerId,
+        int gangSlot,
+        int destination)
+    {
+        state.AiPlanning.SetPlannedAction(
+            playerId, gangSlot, GangAction.Move,
+            new AiActionTarget(checked((byte)destination), 0));
+    }
+
+    private static void SetRecoveredFocusedMoveAction(
+        MatchState state,
+        PlayerId playerId,
+        int gangSlot,
+        int destination)
+    {
+        SetRecoveredMoveAction(state, playerId, gangSlot, destination);
+        state.AiPlanning.SetFocusValue(
+            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+    }
 }

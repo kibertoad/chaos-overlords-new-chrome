@@ -73,7 +73,10 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   the subset of those families that also persist the current sector explicit.
   Cost-based replacement equipment writes are likewise split into ordinary
   family-1/3/5 and focus-clearing family-0/2/4/6/7 operations; equipment choice
-  and branch order remain family-local.
+  and branch order remain family-local. Recovered Move destinations are also
+  committed through ordinary and focus-clearing operations, while destination
+  selection and family-specific formation/coverage side effects stay with the
+  originating handler.
 - `Persistence/NativeSaveSerializer.cs`: bounded, versioned deterministic
   snapshots with definition/state fingerprints and complete runtime restoration.
 - `Persistence/NativeSaveStore.cs`: atomic file promotion, previous-save backup,

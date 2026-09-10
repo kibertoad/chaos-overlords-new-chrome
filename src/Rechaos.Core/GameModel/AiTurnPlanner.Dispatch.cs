@@ -170,8 +170,6 @@ public static partial class AiTurnPlanner
                 .Setup.Controller == PlayerController.Human,
             snapshot.PlayerOrder,
             state.Random);
-        state.AiPlanning.SetPlannedAction(
-            player.Id, gangSlot, GangAction.Move,
-            new AiActionTarget(checked((byte)target), 0));
+        SetRecoveredMoveAction(state, player.Id, gangSlot, target);
     }
 }
