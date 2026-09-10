@@ -84,4 +84,41 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
         Assert.Equal(expected,
             OriginalAiObjectiveFamilyRules.ShouldHealOwnedObjectiveWithoutVisibleOpponent(
                 scenario, sector, ownedByActingPlayer, hasVisibleOpponent, force, effectiveHeal));
+
+    [Theory]
+    [InlineData(26, 1, true)]
+    [InlineData(26, 10, true)]
+    [InlineData(25, 10, false)]
+    [InlineData(26, 0, false)]
+    public void ContestedObjectiveScanUsesRemainingTurnParityAndVisibility(
+        int turnsRemaining,
+        int visibleWeight,
+        bool expected) =>
+        Assert.Equal(expected,
+            OriginalAiObjectiveFamilyRules.ShouldScanContestedObjectiveTargets(
+                turnsRemaining, visibleWeight));
+
+    [Theory]
+    [InlineData(true, 5, -3, GangAction.Attack)]
+    [InlineData(true, 4, -3, GangAction.Heal)]
+    [InlineData(false, 9, -3, GangAction.Heal)]
+    [InlineData(false, 10, -3, GangAction.Control)]
+    [InlineData(false, 9, -4, GangAction.Control)]
+    public void ContestedObjectiveResultPreservesAttackAndHealBoundaries(
+        bool selectedTarget,
+        int force,
+        int effectiveHeal,
+        GangAction expected) =>
+        Assert.Equal(expected,
+            OriginalAiObjectiveFamilyRules.SelectContestedObjectiveResult(
+                selectedTarget, force, effectiveHeal));
+
+    [Fact]
+    public void AttackRetryUsesQuarterTargetAttackAndInclusiveBoundary()
+    {
+        Assert.True(OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry(
+            4, 2, 1, 8, 0, 5));
+        Assert.False(OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry(
+            4, 2, 1, 8, 0, 6));
+    }
 }

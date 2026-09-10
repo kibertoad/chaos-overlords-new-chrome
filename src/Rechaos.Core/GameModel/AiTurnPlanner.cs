@@ -12,6 +12,11 @@ public static class AiTurnPlanner
         int? TargetId = null,
         EquipmentSlot? EquipmentSlot = null);
 
+    private readonly record struct ObjectiveTarget(MatchGangState Gang, int Slot);
+    private readonly record struct PreparedObjectiveChoice(
+        GangAction Action,
+        AiActionTarget Target);
+
     public sealed record HireChoice(short GangDefinitionId, int SectorId);
     public sealed record HirePreparation(
         HireChoice? Choice,
@@ -35,12 +40,12 @@ public static class AiTurnPlanner
         {
             var gang = entry.gang;
             var options = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id)
-                .Where(command => IsObservable(state, playerId, command))
                 .Where(command => EstimatedCost(state, command) <= cashBudget)
                 .ToArray();
             var choice = SelectRecoveredFamilyCommand(
                     state, player, gang, entry.slot, options)
                 ?? options
+                .Where(command => IsObservableFallbackAttack(state, playerId, command))
                 .OrderByDescending(command => Score(state, player, gang, command))
                 .ThenBy(command => command.Action)
                 .ThenBy(command => command.Target.Kind)
@@ -67,16 +72,14 @@ public static class AiTurnPlanner
         var preparedAction = state.AiPlanning.PlannedAction(player.Id, gangSlot);
         var choice = family == 1 && preparedAction == GangAction.None
             ? DesiredRecoveredFamilyChoice(state, player, gang, gangSlot)
-            : new RecoveredFamilyChoice(
-                preparedAction,
-                preparedAction is GangAction.Move or GangAction.Equip
-                    ? state.AiPlanning.PlannedTarget(player.Id, gangSlot).First
-                    : null);
+            : new RecoveredFamilyChoice(preparedAction,
+                PreparedCommandTargetId(state, player.Id, gangSlot, preparedAction));
         if (choice.Action == GangAction.None) return null;
 
         var candidates = options.Where(command => command.Action == choice.Action);
         if (choice.TargetId is { } targetId)
             candidates = candidates.Where(command => command.Target.Id == targetId);
+        candidates = candidates.Where(command => IsDetectableAttack(state, player.Id, command));
         return candidates
             // Prepared live turns use the recovered mode-5 target. Retain the
             // recreation's deterministic target ranking only when this pure
@@ -179,6 +182,16 @@ public static class AiTurnPlanner
     {
         var plannedAction = state.AiPlanning.PlannedAction(playerId, gangSlot);
         var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
+        var objectiveSector = OriginalAiObjectiveFamilyRules.IsObjectiveSector(
+            state.Setup.Scenario, gang.SectorId);
+        if (objectiveSector && state.Sectors[gang.SectorId].Owner != playerId)
+        {
+            var choice = SelectContestedObjectiveChoice(
+                state, playerId, gang, effectiveHeal);
+            state.AiPlanning.SetPlannedAction(
+                playerId, gangSlot, choice.Action, choice.Target);
+            plannedAction = choice.Action;
+        }
         if (OriginalAiObjectiveFamilyRules.ShouldHealOwnedObjectiveWithoutVisibleOpponent(
                 state.Setup.Scenario,
                 gang.SectorId,
@@ -226,15 +239,104 @@ public static class AiTurnPlanner
             new AiActionTarget(checked((byte)target), 0));
     }
 
+    private static int? PreparedCommandTargetId(
+        MatchState state,
+        PlayerId playerId,
+        int gangSlot,
+        GangAction action)
+    {
+        var target = state.AiPlanning.PlannedTarget(playerId, gangSlot);
+        if (action is GangAction.Move or GangAction.Equip) return target.First;
+        if (action != GangAction.Attack) return null;
+        var targetPlayer = state.FindPlayer(new PlayerId(target.First));
+        return targetPlayer is not null && target.Second < targetPlayer.Gangs.Count
+            ? targetPlayer.Gangs[target.Second].Id.Value
+            : -1;
+    }
+
+    private static PreparedObjectiveChoice SelectContestedObjectiveChoice(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        int effectiveHeal)
+    {
+        var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
+        var visibleWeight = visible.Count == 0
+            ? 0
+            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+        var turnsRemaining = ScenarioCatalog.Turns(state.Setup.Duration)
+            - (state.Coordinator.Turn - 1);
+        if (!OriginalAiObjectiveFamilyRules.ShouldScanContestedObjectiveTargets(
+                turnsRemaining, visibleWeight))
+            return new PreparedObjectiveChoice(GangAction.Control, AiActionTarget.None);
+
+        var owner = state.Sectors[gang.SectorId].Owner;
+        var targetPool = owner is { } sectorOwner
+            && state.AiStrategy.IsHostile(playerId, sectorOwner)
+            && visibleWeight == 10
+                ? visible.Where(candidate => state.FindPlayer(candidate.Gang.Owner)?
+                        .Setup.Controller == PlayerController.Human)
+                    .ToArray()
+                : visible.Where(candidate => candidate.Gang.Owner == owner)
+                    .ToArray();
+        ObjectiveTarget? selected = null;
+        for (var attempt = 0;
+             attempt < OriginalAiObjectiveFamilyRules.ContestedAttackAttempts;
+             attempt++)
+        {
+            var ordinal = state.Random.NextInclusive(Math.Max(1, targetPool.Length));
+            selected = ordinal <= targetPool.Length ? targetPool[ordinal - 1] : null;
+            if (selected is null) break;
+            if (ordinal > visible.Count) continue;
+            var retryTarget = visible[ordinal - 1].Gang;
+            var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
+            var targetStats = EffectiveStatisticsCalculator.ForGang(state, retryTarget);
+            if (OriginalAiObjectiveFamilyRules.AcceptContestedAttackRetry(
+                    gang.Force, attackerStats.Combat, attackerStats.Defense,
+                    retryTarget.Force, targetStats.Combat, targetStats.Defense)) break;
+        }
+
+        var action = OriginalAiObjectiveFamilyRules.SelectContestedObjectiveResult(
+            selected.HasValue, gang.Force, effectiveHeal);
+        return action == GangAction.Attack
+            ? new PreparedObjectiveChoice(action, new AiActionTarget(
+                checked((byte)selected!.Value.Gang.Owner.Value),
+                checked((byte)selected.Value.Slot)))
+            : new PreparedObjectiveChoice(action, AiActionTarget.None);
+    }
+
+    private static int VisibleOpponentWeight(
+        MatchState state,
+        PlayerId observer,
+        PlayerId opponent) =>
+        state.FindPlayer(opponent)?.Setup.Controller == PlayerController.Human
+        && state.AiStrategy.IsHostile(observer, opponent)
+            ? 10
+            : 1;
+
+    private static IReadOnlyList<ObjectiveTarget> VisibleOpponentsInSector(
+        MatchState state,
+        PlayerId observer,
+        int sectorId)
+    {
+        var result = new List<ObjectiveTarget>();
+        for (var playerIndex = 0; playerIndex < MatchLimits.PlayerCount; playerIndex++)
+        {
+            var playerId = new PlayerId(playerIndex);
+            if (playerId == observer || state.FindPlayer(playerId) is not { } player) continue;
+            foreach (var candidate in player.Gangs.Select((gang, slot) => (gang, slot)))
+                if (candidate.gang.IsActive
+                    && candidate.gang.SectorId == sectorId
+                    && state.CanPlayerDetectGang(observer, candidate.gang.Id))
+                    result.Add(new ObjectiveTarget(candidate.gang, candidate.slot));
+        }
+        return result;
+    }
+
     private static bool HasVisibleOpponentInSector(
         MatchState state,
         PlayerId observer,
-        int sectorId) => state.Players
-        .Where(player => player.Id != observer)
-        .SelectMany(player => player.Gangs)
-        .Any(candidate => candidate.IsActive
-            && candidate.SectorId == sectorId
-            && state.CanPlayerDetectGang(observer, candidate.Id));
+        int sectorId) => VisibleOpponentsInSector(state, observer, sectorId).Count > 0;
 
     private static RecoveredFamilyChoice DesiredRecoveredFamilyChoice(
         MatchState state,
@@ -515,10 +617,21 @@ public static class AiTurnPlanner
         _ => 0
     };
 
-    private static bool IsObservable(MatchState state, PlayerId player, GameCommand command) =>
+    private static bool IsObservableFallbackAttack(
+        MatchState state,
+        PlayerId player,
+        GameCommand command) =>
         command.Action != GangAction.Attack
         || state.FindGang(new GangId(command.Target.Id)) is { } target
         && state.AiStrategy.IsHostile(player, target.Owner)
+        && state.CanPlayerDetectGang(player, target.Id);
+
+    private static bool IsDetectableAttack(
+        MatchState state,
+        PlayerId player,
+        GameCommand command) =>
+        command.Action != GangAction.Attack
+        || state.FindGang(new GangId(command.Target.Id)) is { } target
         && state.CanPlayerDetectGang(player, target.Id);
 
 }

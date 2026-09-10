@@ -1052,8 +1052,7 @@ equipment blocks are themselves inside selector-`0x1f` branches, so an
 off-objective gang cannot have written Equip before reaching this override.
 The recreation therefore safely applies the complete off-objective terminal
 path during replay-recorded planning and submits its exact one-step destination
-through normal Move resolution. The more complex on-objective branches remain
-unintegrated.
+through normal Move resolution.
 
 Family 14 continues at `0x00467700..0x004677df` when selector `0x1f` is one
 or the newly planned action is Equip. It changes the command to Heal and the
@@ -1063,8 +1062,8 @@ action query then rejects Attack, but that comparison is redundant after the
 exact-Control guard. The recreation applies this terminal override during
 replay-recorded preparation, including the family transition and normal Heal
 resolution. This establishes one on-objective family-14 continuation; the
-handlers' preceding Attack, Control, equipment, Influence, and Research paths
-remain unintegrated.
+handlers' preceding equipment, Influence, and Research paths remain
+unintegrated.
 
 The shared owned-objective branch at family-13 lines `100..110` and family-14
 lines `103..114` is also bounded. Strategic refresh `0x0040a1a7` caches
@@ -1077,6 +1076,26 @@ is zero, both handlers choose Heal before their equipment/site branches at
 Force below 10 and effective Heal at least `-3`. This shared Heal path is now
 live and replay-verified for both objective scenarios. Family 14 still applies
 its later family-13 transition when the previous action was Control.
+
+The preceding contested-objective branch is also bounded in both handlers.
+Selector 2 returns scenario turns remaining. Only even absolute parity with a
+nonzero cached selector-`0x90` weight enters target selection; the other path
+writes Control immediately. Target selection makes as many as three inclusive
+bounded draws. A hostile human-owned sector with cached weight 10 draws from
+visible human gangs in the sector; otherwise it draws from visible gangs owned
+by the sector owner. Selector `0x2b` evaluates each drawn ordinal against the
+same ordinal in the full ascending visible-opponent list using
+`(target Force + target Combat) / 4 - attacker Defense <= attacker Force +
+attacker Combat - target Defense`. Its result controls only whether the retry
+loop stops early: after three attempts the final selected gang is still used.
+At Force 5 or higher that gang becomes the exact Attack target. With no selected
+gang or lower Force, the handler chooses Heal when Force is below 10 and
+effective Heal is at least `-3`, otherwise Control. Replay-recorded planning now
+preserves the selected owner/roster-slot tuple, resolves it back to the stable
+gang ID, and submits the normal validated Attack command. This branch may
+attack a visible non-hostile sector owner, so recovered commands require
+visibility but do not inherit the provisional fallback planner's hostility
+filter.
 
 `0x00408553` sorts the 64 sector scores descending while retaining their sector
 indices. The caller chooses uniformly among every sector tied for the maximum;
@@ -1119,10 +1138,10 @@ filtering due to decompiler control-flow folding. Mode 10 and mode 16's
 remaining family-11 guards are not yet fully labeled.
 
 **Next validation:** map the remaining family-11 guards for modes 10 and 16 to
-public commands. Recover the remaining on-objective family-13/14 Attack,
-Control, equipment, Influence, and Research branches, and reproduce the
-now-live objective routes plus the mode-16 follower route as fixed original
-decisions before claiming runtime parity.
+public commands. Recover the remaining on-objective family-13/14 equipment,
+Influence, and Research branches, and reproduce the now-live objective routes,
+contested attacks, and mode-16 follower route as fixed original decisions
+before claiming runtime parity.
 
 ### BIN-AI-006 - directional attitude and hostility matrix
 

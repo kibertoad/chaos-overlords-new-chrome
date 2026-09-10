@@ -6,6 +6,8 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiObjectiveFamilyRules
 {
+    public const int ContestedAttackMinimumForce = 5;
+    public const int ContestedAttackAttempts = 3;
     public const int FamilyFourteenHealForceLimit = 10;
 
     public static bool IsObjectiveSector(ScenarioId scenario, int sectorId)
@@ -65,4 +67,32 @@ internal static class OriginalAiObjectiveFamilyRules
         && !hasVisibleOpponent
         && force < FamilyFourteenHealForceLimit
         && effectiveHeal >= OriginalAiFamilyOneRules.MinimumEffectiveHeal;
+
+    public static bool ShouldScanContestedObjectiveTargets(
+        int turnsRemaining,
+        int visibleOpponentWeight) =>
+        Math.Abs(turnsRemaining) % 2 == 0 && visibleOpponentWeight > 0;
+
+    public static bool AcceptContestedAttackRetry(
+        int attackerForce,
+        int attackerCombat,
+        int attackerDefense,
+        int targetForce,
+        int targetCombat,
+        int targetDefense) =>
+        (targetForce + targetCombat) / 4 - attackerDefense
+        <= attackerForce + attackerCombat - targetDefense;
+
+    public static GangAction SelectContestedObjectiveResult(
+        bool selectedTarget,
+        int force,
+        int effectiveHeal)
+    {
+        if (selectedTarget && force >= ContestedAttackMinimumForce)
+            return GangAction.Attack;
+        return force < FamilyFourteenHealForceLimit
+            && effectiveHeal >= OriginalAiFamilyOneRules.MinimumEffectiveHeal
+            ? GangAction.Heal
+            : GangAction.Control;
+    }
 }

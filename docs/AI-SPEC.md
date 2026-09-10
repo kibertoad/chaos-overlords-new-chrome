@@ -142,8 +142,14 @@ replay-verified two-computer harness through 20 turns or objective completion.
    10 and effective Heal at least `-3`, then changes the stored family to 13.
    Both families also use their shared owned-objective branch to Heal at those
    same stat boundaries when selector `0x90` finds no visible opposing gang in
-   the sector. The remaining on-objective Attack, Control, equipment,
-   Influence, and Research behavior remains to be integrated.
+   the sector. Their contested-objective branch is live as well: on even
+   remaining-turn parity with a visible opponent, it makes three bounded target
+   draws, applies the recovered combat retry predicate, and then submits the
+   exact selected visible gang as an Attack at Force 5 or higher. A missing
+   target or lower Force falls back to Heal at the same stat boundary, then
+   Control; odd parity or no visible opponent selects Control directly. The
+   remaining on-objective equipment, Influence, and Research behavior remains
+   to be integrated.
    The six-by-six directional
    attitude matrix, Homicidal human/computer initialization, non-Homicidal per-turn recovery,
    negative-hostility enumerators, `3..6` non-Homicidal reaction values, exact

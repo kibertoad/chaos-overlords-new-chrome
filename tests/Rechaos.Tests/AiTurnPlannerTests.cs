@@ -491,6 +491,69 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void ContestedObjectiveSelectsExactVisibleOwnerGangAndReplaysAttack()
+    {
+        var data = BundledOriginalData.Load();
+        var attackerDefinition = data.Gangs
+            .OrderByDescending(candidate => candidate.Stats.Detect)
+            .ThenByDescending(candidate => candidate.Stats.Combat)
+            .First();
+        var defenderDefinition = data.Gangs
+            .OrderBy(candidate => candidate.Stats.Stealth)
+            .ThenBy(candidate => candidate.Stats.Defense)
+            .First();
+        var match = CreateMatch(
+            definitionId: attackerDefinition.Id,
+            force: 10,
+            scenario: ScenarioId.BigMan,
+            ownsStartingSector: false,
+            startingSector: 27,
+            data: data,
+            rivalDefinitionId: defenderDefinition.Id);
+        var player = new PlayerId(0);
+        match.Players[1].Gangs[0].SectorId = 27;
+        match.Sectors[27].Owner = new PlayerId(1);
+        match.AiPlanning.BeginPlanning(player);
+        match.AiPlanning.SetCurrentHireRole(player, 1);
+        var recorder = new MatchReplayRecorder(match);
+        recorder.FinishUpkeep();
+        var consumptionBefore = match.Random.ConsumptionCount;
+
+        recorder.PrepareAiPlanning(player);
+        var expectedAttack = new GameCommand(
+            player,
+            new GangId(10),
+            GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)));
+        var validation = CommandValidator.Validate(match, expectedAttack);
+        Assert.True(validation.IsValid, validation.Code.ToString());
+        Assert.Contains(expectedAttack,
+            CommandOptionCatalog.LegalCommands(match, player, new GangId(10)));
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+
+        Assert.True(match.CanPlayerDetectGang(player, new GangId(20)));
+        Assert.False(match.AiStrategy.IsHostile(player, new PlayerId(1)));
+        Assert.Equal(13, match.AiPlanning.Family(player, 0));
+        Assert.Equal(GangAction.Attack, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(new AiActionTarget(1, 0), match.AiPlanning.PlannedTarget(player, 0));
+        Assert.Equal(GangAction.Attack, command.Action);
+        Assert.Equal(CommandTarget.Gang(new GangId(20)), command.Target);
+        Assert.Equal(consumptionBefore + 3, match.Random.ConsumptionCount);
+
+        Assert.True(recorder.Submit(command).Accepted);
+        recorder.FinishCommand(player);
+        recorder.FinishCommand(new PlayerId(1));
+        while (match.Coordinator.Phase == TurnPhase.Execution)
+            recorder.FinishExecutionPhase();
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void FamilyOnePreparationUsesRecoveredModeFiveMoveDestination()
     {
         var data = BundledOriginalData.Load();
