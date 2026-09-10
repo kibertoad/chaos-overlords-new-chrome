@@ -120,6 +120,27 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void ReplaysComputerPlannedActionHistory()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch());
+        recorder.FinishUpkeep();
+        recorder.FinishCommand(new PlayerId(0));
+        recorder.PrepareAiPlanning(new PlayerId(1));
+        Assert.True(recorder.Submit(new GameCommand(
+            new PlayerId(1), new GangId(1), GangAction.Hide, CommandTarget.None)).Accepted);
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
+
+        Assert.Equal(GangAction.Hide,
+            restored.AiPlanning.PlannedAction(new PlayerId(1), 0));
+        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State),
+            MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void RejectsReplayWhoseExpectedStepHashWasModified()
     {
         var recorder = new MatchReplayRecorder(CreateMatch());
@@ -378,6 +399,38 @@ public sealed class MatchReplayTests
         Assert.Equal(restored.Players[0].Gangs[0].SectorId + AiPlanningState.SectorAnchorOffset,
             restored.AiPlanning.SectorAnchor(new PlayerId(0)));
         Assert.Equal(oldInitialHash, MatchStateHasher.ComputeVersionThirteenSha256(restored));
+    }
+
+    [Fact]
+    public void VersionTwelveReplayUsesVersionFourteenHashAndMigratesAiActions()
+    {
+        var initial = CreateMatch();
+        initial.AiPlanning.SetPlannedAction(new PlayerId(1), 0, GangAction.Attack);
+        var oldInitialHash = MatchStateHasher.ComputeVersionFourteenSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = 12;
+        document["initialStateSha256"] = oldInitialHash;
+        var snapshotBytes = Convert.FromBase64String(
+            document["initialSnapshot"]!.GetValue<string>());
+        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
+        snapshot["formatVersion"] = 11;
+        snapshot["stateSha256"] = oldInitialHash;
+        var planning = snapshot["runtime"]!["aiPlanning"]!.AsObject();
+        planning.Remove("olderActions");
+        planning.Remove("previousActions");
+        planning.Remove("plannedActions");
+        document["initialSnapshot"] = Convert.ToBase64String(
+            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
+
+        Assert.All(restored.AiPlanning.CapturePlannedActions(),
+            action => Assert.Equal(GangAction.None, action));
+        Assert.Equal(oldInitialHash, MatchStateHasher.ComputeVersionFourteenSha256(restored));
     }
 
     [Fact]

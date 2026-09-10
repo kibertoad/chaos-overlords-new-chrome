@@ -8,6 +8,7 @@ internal static class AiPlanningPreparation
         var gangs = state.FindPlayer(player)?.Gangs
             ?? throw new ArgumentOutOfRangeException(nameof(player));
         state.AiPlanning.BeginPlanning(player);
+        state.AiPlanning.RollActiveGangActions(player, gangs);
         for (var gangSlot = 0; gangSlot < gangs.Count; gangSlot++)
         {
             if (!gangs[gangSlot].IsActive) continue;

@@ -145,11 +145,15 @@ replay-verified two-computer harness through 20 turns or objective completion.
    exclusive actions, and next-planning-entry refill. Exact hire destination
    selection and its persisted anchor are statically recovered in
    `BIN-AI-003C` and covered by pure isolated kernels. The encoded anchors are
-   authoritative and persisted, but selection remains deliberately unwired
-   pending representation of the recovered prior-action input.
+   authoritative and persisted, but selection remains deliberately unwired.
+   Static analysis now recovers the exact three-generation per-gang action
+   tuples, active-slot rollover, duplicate cleanup, dispatch/anchor ordering,
+   reset/reuse behavior, first-plan flags, and original save/load coverage.
+   The three action-byte generations are authoritative and persisted; tuple
+   targets, duplicate cleanup, reused-slot reset, and first-plan flags remain.
    A failed ranking now uses the recovered scenario-specific rejection selector
-   and records the resulting snub. Selector `0x3e` is
-   identified as the previous-turn action byte. Selectors 0 (scenario), `0x48`
+   and records the resulting snub. Selectors `0x3f`, `0x3e`, and `0x3d` read
+   the older, immediately previous, and newly planned action bytes. Selectors 0 (scenario), `0x48`
    (planning-record initialized flag), `0x5a` (mirrored gang projection),
    `0x7c` (per-player hire role), 3 (player cash), 4 (sector
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),

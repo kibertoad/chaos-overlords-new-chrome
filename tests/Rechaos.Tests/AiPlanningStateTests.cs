@@ -17,8 +17,38 @@ public sealed class AiPlanningStateTests
             Assert.Equal(0, planning.PreviousHireRole(playerId));
             Assert.Equal(AiPlanningState.InactiveSectorAnchor, planning.SectorAnchor(playerId));
             for (var gang = 0; gang < AiPlanningState.GangSlotsPerPlayer; gang++)
+            {
                 Assert.Equal(AiPlanningState.UnusedFamily, planning.Family(playerId, gang));
+                Assert.Equal(GangAction.None, planning.OlderAction(playerId, gang));
+                Assert.Equal(GangAction.None, planning.PreviousAction(playerId, gang));
+                Assert.Equal(GangAction.None, planning.PlannedAction(playerId, gang));
+            }
         }
+    }
+
+    [Fact]
+    public void PlanningStartRollsThreeActionGenerationsForActiveSlotsOnly()
+    {
+        var planning = AiPlanningState.Initialize();
+        var player = new PlayerId(2);
+        MatchGangState[] gangs =
+        [
+            new(new GangId(20), player, 1, 0, 5),
+            new(new GangId(21), player, 1, 0, 0)
+        ];
+        planning.SetPlannedAction(player, 0, GangAction.Attack);
+        planning.SetPlannedAction(player, 1, GangAction.Hide);
+        planning.RollActiveGangActions(player, gangs);
+        planning.SetPlannedAction(player, 0, GangAction.Move);
+
+        planning.RollActiveGangActions(player, gangs);
+
+        Assert.Equal(GangAction.Attack, planning.OlderAction(player, 0));
+        Assert.Equal(GangAction.Move, planning.PreviousAction(player, 0));
+        Assert.Equal(GangAction.None, planning.PlannedAction(player, 0));
+        Assert.Equal(GangAction.None, planning.OlderAction(player, 1));
+        Assert.Equal(GangAction.None, planning.PreviousAction(player, 1));
+        Assert.Equal(GangAction.Hide, planning.PlannedAction(player, 1));
     }
 
     [Fact]
@@ -54,6 +84,9 @@ public sealed class AiPlanningStateTests
             AiPlanningState.InactiveSectorAnchor, MatchLimits.PlayerCount).ToArray();
         var invalidAnchors = anchors.ToArray();
         invalidAnchors[0] = 128;
+        var actions = new GangAction[MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer];
+        var invalidActions = actions.ToArray();
+        invalidActions[0] = (GangAction)15;
 
         Assert.Throws<ArgumentException>(() =>
             AiPlanningState.Restore(roles[..^1], roles, families, anchors));
@@ -63,5 +96,11 @@ public sealed class AiPlanningStateTests
             AiPlanningState.Restore(invalidRoles, roles, families, anchors));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             AiPlanningState.Restore(roles, roles, families, invalidAnchors));
+        Assert.Throws<ArgumentException>(() =>
+            AiPlanningState.Restore(roles, roles, families, anchors,
+                actions[..^1], actions, actions));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            AiPlanningState.Restore(roles, roles, families, anchors,
+                invalidActions, actions, actions));
     }
 }

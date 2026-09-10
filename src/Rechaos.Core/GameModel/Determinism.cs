@@ -64,7 +64,7 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 14;
+    private const int FormatVersion = 15;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
@@ -126,11 +126,17 @@ public static class MatchStateHasher
             includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
             includeMaximumHireForce: true, includeSectorAnchors: false);
 
+    internal static string ComputeVersionFourteenSha256(MatchState state) =>
+        ComputeSha256(state, 14, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: true);
+
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
             includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true);
+            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true);
 
     private static string ComputeSha256(
         MatchState state,
@@ -144,7 +150,8 @@ public static class MatchStateHasher
         bool includeHireSlots,
         bool includeHirePayment,
         bool includeMaximumHireForce,
-        bool includeSectorAnchors)
+        bool includeSectorAnchors,
+        bool includeAiActions = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -184,6 +191,12 @@ public static class MatchStateHasher
                 foreach (var family in state.AiPlanning.CaptureFamilies()) writer.Write(family);
                 if (includeSectorAnchors)
                     foreach (var anchor in state.AiPlanning.CaptureSectorAnchors()) writer.Write(anchor);
+                if (includeAiActions)
+                {
+                    foreach (var action in state.AiPlanning.CaptureOlderActions()) writer.Write((byte)action);
+                    foreach (var action in state.AiPlanning.CapturePreviousActions()) writer.Write((byte)action);
+                    foreach (var action in state.AiPlanning.CapturePlannedActions()) writer.Write((byte)action);
+                }
             }
             writer.Write(state.NextEventSequence);
             writer.Write(state.Outcome is not null);

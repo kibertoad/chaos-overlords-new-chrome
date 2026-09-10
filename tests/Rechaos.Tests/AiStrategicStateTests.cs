@@ -162,6 +162,42 @@ public sealed class AiStrategicStateTests
         Assert.Equal(AiPlanningState.UnusedFamily, match.AiPlanning.Family(player, 1));
     }
 
+    [Fact]
+    public void ComputerSubmissionsRecordOnlyAcceptedActionInStableGangSlot()
+    {
+        var match = CreateOnePlayerMatch();
+        var player = new PlayerId(0);
+        match.Players[0].AddGang(new MatchGangState(new GangId(7), player, 1, 0, 10));
+        match.FinishUpkeep();
+        match.PrepareAiPlanning(player);
+
+        var rejected = match.Submit(new GameCommand(
+            player, new GangId(0), GangAction.Move, CommandTarget.Sector(18)));
+        var accepted = match.Submit(new GameCommand(
+            player, new GangId(7), GangAction.Hide, CommandTarget.None));
+
+        Assert.False(rejected.Accepted);
+        Assert.True(accepted.Accepted);
+        Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(GangAction.Hide, match.AiPlanning.PlannedAction(player, 1));
+    }
+
+    [Fact]
+    public void AcceptedComputerCancellationClearsPlannedAction()
+    {
+        var match = CreateOnePlayerMatch();
+        var player = new PlayerId(0);
+        match.FinishUpkeep();
+        match.PrepareAiPlanning(player);
+        Assert.True(match.Submit(new GameCommand(
+            player, new GangId(0), GangAction.Hide, CommandTarget.None)).Accepted);
+
+        var cancelled = match.Cancel(player, new GangId(0));
+
+        Assert.True(cancelled.Accepted);
+        Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(player, 0));
+    }
+
     private static MatchSetup Setup(AiDifficulty difficulty) => new(
         ScenarioId.Greed,
         GameDuration.SixMonths,

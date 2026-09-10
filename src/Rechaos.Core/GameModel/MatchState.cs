@@ -727,6 +727,7 @@ public sealed partial class MatchState
         var replaced = Commands.TryGet(command.Gang, out _);
         var queued = Commands.Set(command);
         FindGang(command.Gang)!.QueuedCommand = queued;
+        RecordAiPlannedAction(command.Player, command.Gang, command.Action);
         var gameEvent = AppendEvent(replaced ? GameEventKind.CommandReplaced : GameEventKind.CommandQueued, command);
         return new CommandSubmissionResult(validation, gameEvent);
     }
@@ -741,6 +742,7 @@ public sealed partial class MatchState
             return new CommandSubmissionResult(CommandValidation.Reject(CommandValidationCode.CommandNotQueued), null);
 
         FindGang(gangId)!.QueuedCommand = null;
+        RecordAiPlannedAction(player, gangId, GangAction.None);
         return new CommandSubmissionResult(validation, AppendEvent(GameEventKind.CommandCancelled, command));
     }
 

@@ -623,9 +623,16 @@ valid inactive-sector encoding 164. `OriginalAiHirePlacementModeRules` also
 isolates the exact transient role/scenario override, including the raw-100
 visible-hostile sentinel. The selector kernels remain unwired.
 
-**Next validation:** represent the prior-action bytes needed by selector
-`0x5b`, then connect the isolated kernels while preserving their tested pass
-order, Big Man ordering, overrides, and zero-RNG encoded path.
+**Implementation:** `AiPlanningState` now persists and hashes the older,
+immediately previous, and newly planned action bytes for all six-by-81 slots.
+Active slots roll at AI planning entry; accepted computer commands update the
+planned byte, and cancellation clears it. The two target bytes in each
+generation, first-plan flags, duplicate cleanup, and reused-slot reset remain
+unmodeled.
+
+**Next validation:** use the authoritative previous-action bytes to wire the
+isolated hire-placement kernels, preserving their pass order, Big Man ordering,
+overrides, and zero-RNG encoded path.
 
 ### BIN-AI-004 - global AI Mentality byte and first consumers
 
@@ -731,11 +738,39 @@ The remaining selectors in those gates are now structurally identified:
 
 These are verified branch facts, not yet a complete policy table: the target
 enumeration and earlier guards still determine which gang/sector pair reaches
-each gate. Selector `0x3e`, which drives the handler's switch, is the
-previous-turn action byte rather than a gang family. At the start of
-`0x00458fa0`, each gang's three-byte action/target tuple at record offsets
-`+7..+9` shifts to `+4..+6`, then the new tuple is cleared. Selector `0x3e`
-reads offset `+4`; selector `0x3d` reads the newly planned action at `+7`.
+each gate. The AI planning records begin at `0x0048a250`, use a 16-byte stride,
+and retain three three-byte action/target generations: older at offsets
+`+2..+4`, immediately previous at `+5..+7`, and newly planned at `+8..+10`.
+Selectors `0x3f`, `0x3e`, and `0x3d` read their action bytes at `+2`, `+5`,
+and `+8` respectively. The raw action values 0 through 14 are the public
+command IDs; this is planner history, not a separate internal action enum.
+
+For each active slot, `0x00458fa0` performs the exact rollover before planning:
+`+2..+4 <- +5..+7` at `0x004590a9`/`0x004590c2`, then
+`+5..+7 <- +8..+10` at `0x0045913f`/`0x00459158`, followed by clears of the
+new tuple at `0x004591d5`, `0x004591ef`, and `0x00459209`. Strategic refresh
+then runs at `0x0045936f`. The duplicate-Chaos cleanup queries selector `0x5b`
+at `0x0045939c` and may rewrite the immediately previous action at
+`0x004593d6`/`0x00459424`; only afterward does the dispatcher visit all active
+gangs at `0x004594df` and write their new actions at `+8`. The hire-anchor
+selector-`0x24` check at `0x00459502` and selector-`0x25` fallback at
+`0x00459553` therefore observe the `+5` immediately previous action. There is
+no second promotion at the end of planning.
+
+Selector `0x5b`'s dispatcher case at `0x004048b8` counts same-sector roster
+members whose `+5` action is 3 (**Chaos**); selector `0x6f` at `0x00404949`
+does the analogous count for previous action 9 (**Influence**). Inactive
+records use sector 100. Their tuples are not shifted or cleared by rollover,
+but the dispatcher resets a slot when it is reused, and selector `0x5b` omits
+inactive slots naturally through its same-sector test.
+
+Reset/initialization helper `0x00409de1` clears offsets `+2..+10`, family 99,
+and the other per-record planning fields. The complete six-by-81-by-16-byte
+record block (length `0x1e60`) and the six first-plan flags at `0x00482108`
+are both serialized by save/load paths `0x0046381a` and `0x00463cc5`. Thus the
+history survives save/load independently of the command resolver and has an
+explicit first-planning lifecycle.
+
 The branches above are therefore command-continuity decisions, including the
 case entered after a prior Snitch command.
 
@@ -758,14 +793,15 @@ selector, all six write classifications, all eight genuine consumer call sites,
 cash/Tolerance/owner/human-owner selector meanings, command-byte mappings,
 comparison constants, pair counters, integer ratio, observer-to-target write
 direction, and resulting raw record writes; High for the global's identity,
-persistence/setup flow, selector meanings, effective-stat labels, and the
-bounded decisions above; Low for the complete planner policy and its target
-enumeration.
+persistence/setup flow, selector meanings, effective-stat labels, the complete
+three-generation action-history lifecycle and serialization, and the bounded
+decisions above; Low for the complete planner policy and its target enumeration.
 
-**Next validation:** identify the sector/gang target enumerators and earlier
-guards feeding each command-continuity gate. Then capture fixed-state
-command-selection fixtures for the cash 50/51, Force 8/9, and Tolerance 3/4
-boundaries before changing recreation policy.
+**Next validation:** represent the recovered action-history targets and
+first-plan flags authoritatively, then identify the sector/gang target
+enumerators and earlier guards feeding each command-continuity gate. Capture
+fixed-state command-selection fixtures for the cash 50/51, Force 8/9, and
+Tolerance 3/4 boundaries before changing recreation policy.
 
 ### BIN-AI-005 - shared weighted sector selector
 

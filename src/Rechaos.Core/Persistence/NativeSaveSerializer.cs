@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 11;
+    public const int CurrentFormatVersion = 12;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -95,7 +95,19 @@ public static class NativeSaveSerializer
                     document.FormatVersion >= 11
                         ? savedPlanning.SectorAnchors
                             ?? throw new InvalidDataException("Native save AI sector anchors are missing.")
-                        : AiPlanningState.Initialize(players).CaptureSectorAnchors())
+                        : AiPlanningState.Initialize(players).CaptureSectorAnchors(),
+                    document.FormatVersion >= 12
+                        ? savedPlanning.OlderActions
+                            ?? throw new InvalidDataException("Native save older AI actions are missing.")
+                        : EmptyAiActions(),
+                    document.FormatVersion >= 12
+                        ? savedPlanning.PreviousActions
+                            ?? throw new InvalidDataException("Native save previous AI actions are missing.")
+                        : EmptyAiActions(),
+                    document.FormatVersion >= 12
+                        ? savedPlanning.PlannedActions
+                            ?? throw new InvalidDataException("Native save planned AI actions are missing.")
+                        : EmptyAiActions())
                 : throw new InvalidDataException("Native save AI planning state is missing.")
             : AiPlanningState.Initialize(players);
         var runtime = new MatchRuntimeRestore(
@@ -128,6 +140,7 @@ public static class NativeSaveSerializer
             8 => MatchStateHasher.ComputeVersionElevenSha256(state),
             9 => MatchStateHasher.ComputeVersionTwelveSha256(state),
             10 => MatchStateHasher.ComputeVersionThirteenSha256(state),
+            11 => MatchStateHasher.ComputeVersionFourteenSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
         if (!CryptographicOperations.FixedTimeEquals(
@@ -174,7 +187,13 @@ public static class NativeSaveSerializer
                 state.AiPlanning.CaptureCurrentHireRoles(),
                 state.AiPlanning.CapturePreviousHireRoles(),
                 state.AiPlanning.CaptureFamilies(),
-                state.AiPlanning.CaptureSectorAnchors())));
+                state.AiPlanning.CaptureSectorAnchors(),
+                state.AiPlanning.CaptureOlderActions(),
+                state.AiPlanning.CapturePreviousActions(),
+                state.AiPlanning.CapturePlannedActions())));
+
+    private static IReadOnlyList<GangAction> EmptyAiActions() =>
+        new GangAction[MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer];
 
     private static PlayerDocument CapturePlayer(MatchPlayerState player) => new(
         player.Id.Value,
@@ -486,7 +505,10 @@ internal sealed record AiPlanningDocument(
     IReadOnlyList<int> CurrentHireRoles,
     IReadOnlyList<int> PreviousHireRoles,
     IReadOnlyList<int> Families,
-    IReadOnlyList<int>? SectorAnchors = null);
+    IReadOnlyList<int>? SectorAnchors = null,
+    IReadOnlyList<GangAction>? OlderActions = null,
+    IReadOnlyList<GangAction>? PreviousActions = null,
+    IReadOnlyList<GangAction>? PlannedActions = null);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,
