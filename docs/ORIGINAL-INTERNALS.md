@@ -407,12 +407,18 @@ family counts cap slots 8, 6, 9, and 4 at respectively `factor * 4`,
 `factor * 4`, `factor * 3`, and `factor`; and fewer than four family-0-or-4
 gangs forces slot zero. Unidentified selector inputs retain their numeric names
 in the isolated input record rather than receiving speculative domain names.
+The same class now contains instruction-verified adjustments for Eliminate,
+Siege, Big Man, and Armageddon. These preserve strict versus inclusive quota
+boundaries and original statement order: Siege's cash floor is strict and its
+missing-family-6-or-12 fallback runs last; Big Man redirects four slots only
+when the family-0-or-4 count is strictly above five; Armageddon's missing-family-2
+override is last even after another rule has reset the slot.
 
 **Confidence:** Verified for scenario order, periods, every ranking-mode call,
 every hire-role write, shared scenario bodies, constants, retained factor, x87
 comparison direction, equality boundaries, and adjustment ordering.
 
-**Next validation:** transcribe each adjustment as raw selector/count inputs and
+**Next validation:** transcribe the Greed, Acceptance, and Dominance adjustments as raw selector/count inputs and
 verify its x87 comparison direction at instruction level before integration.
 
 ### BIN-AI-003A - strategic hire-offer ranking

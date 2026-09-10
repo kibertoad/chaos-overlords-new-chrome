@@ -36,7 +36,7 @@ internal static class OriginalAiHireRoleRules
     public static OriginalAiHireRoleSelection SelectPowerAdjusted(
         ScenarioId scenario,
         int turn,
-        OriginalAiPowerHireInputs inputs)
+        OriginalAiHireAdjustmentInputs inputs)
     {
         if (scenario is not (ScenarioId.Power or ScenarioId.KillEmAll or ScenarioId.Big40))
             throw new ArgumentException("Only scenarios sharing the original Power branch are valid.", nameof(scenario));
@@ -71,6 +71,93 @@ internal static class OriginalAiHireRoleRules
         if (inputs.Family0Or4Count < 4) slot = 0;
 
         return Power[slot];
+    }
+
+    /// <summary>
+    /// Applies the instruction-verified Eliminate adjustment block.
+    /// </summary>
+    public static OriginalAiHireRoleSelection SelectEliminateAdjusted(
+        int turn,
+        OriginalAiHireAdjustmentInputs inputs)
+    {
+        if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
+
+        var slot = turn % 10;
+        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        if (slot == 9 && inputs.Family5Count >= durationFactor * 3f) slot = 0;
+        if (slot == 4 && inputs.Family7Count >= durationFactor) slot = 0;
+        if (inputs.Family0Or4Count < 4) slot = 0;
+
+        return Eliminate[slot];
+    }
+
+    /// <summary>
+    /// Applies the instruction-verified Siege adjustment block.
+    /// </summary>
+    public static OriginalAiHireRoleSelection SelectSiegeAdjusted(
+        int turn,
+        OriginalAiHireAdjustmentInputs inputs)
+    {
+        if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
+
+        var slot = turn % 10;
+        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        if (slot is 3 or 6 or 8 && inputs.Family3Count >= durationFactor * 4f) slot = 0;
+        if (slot is 5 or 7 && inputs.Family6Or12Count >= durationFactor * 6f) slot = 0;
+        if (slot == 9 && (inputs.Family2Count >= durationFactor * 2f
+            || inputs.Cash < durationFactor * 100f)) slot = 0;
+        if (slot == 1 && inputs.Family7Count >= durationFactor) slot = 0;
+        if (inputs.Family0Or4Count < 5) slot = 0;
+        if (inputs.Family6Or12Count < 1) slot = 5;
+
+        return Siege[slot];
+    }
+
+    /// <summary>
+    /// Applies the instruction-verified Big Man adjustment block.
+    /// </summary>
+    public static OriginalAiHireRoleSelection SelectBigManAdjusted(
+        int turn,
+        OriginalAiHireAdjustmentInputs inputs)
+    {
+        if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
+
+        var slot = turn % 10;
+        if (slot is 0 or 2 or 5 or 7 && inputs.Family0Or4Count > 5) slot = 4;
+        return BigMan[slot];
+    }
+
+    /// <summary>
+    /// Applies the instruction-verified Armageddon adjustment block.
+    /// </summary>
+    public static OriginalAiHireRoleSelection SelectArmageddonAdjusted(
+        int turn,
+        OriginalAiHireAdjustmentInputs inputs)
+    {
+        if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
+
+        var slot = turn % 10;
+        var changesFive = inputs.Selector9aResult == 100
+            || inputs.Selector5fResult != -1
+            || inputs.Family3Count < 1
+            || inputs.PreviousRole == 5;
+        if (!changesFive)
+        {
+            slot = 5;
+        }
+        else if (slot == 5)
+        {
+            slot = inputs.Family3Count == 0 ? 9 : 3;
+        }
+
+        var durationFactor = ScenarioCatalog.Turns(inputs.Duration) / 52f;
+        if (slot == 3 && inputs.Family2Count >= durationFactor * 4f) slot = 0;
+        if (slot == 5 && inputs.Family6Or12Count >= durationFactor * 4f) slot = 0;
+        if (slot == 9 && inputs.Family3Count >= durationFactor * 3f) slot = 0;
+        if (inputs.Family0Or4Count < 4) slot = 0;
+        if (inputs.Family2Count < 1) slot = 3;
+
+        return Armageddon[slot];
     }
 
     private static readonly OriginalAiHireRoleSelection[] Greed =
@@ -128,7 +215,7 @@ internal static class OriginalAiHireRoleRules
 
 internal readonly record struct OriginalAiHireRoleSelection(int RankingMode, int Role);
 
-internal readonly record struct OriginalAiPowerHireInputs(
+internal readonly record struct OriginalAiHireAdjustmentInputs(
     int TurnsRemaining,
     int Cash,
     int Selector9aResult,
@@ -137,6 +224,7 @@ internal readonly record struct OriginalAiPowerHireInputs(
     int Family7Count,
     int PreviousRole,
     int Family2Count,
+    int Family3Count,
     int Family6Or12Count,
     int Family0Or4Count,
     GameDuration Duration);
