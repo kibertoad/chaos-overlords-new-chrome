@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 9;
+    public const int CurrentFormatVersion = 10;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -122,6 +122,7 @@ public static class NativeSaveSerializer
             6 => MatchStateHasher.ComputeVersionSixSha256(state),
             7 => MatchStateHasher.ComputeVersionTenSha256(state),
             8 => MatchStateHasher.ComputeVersionElevenSha256(state),
+            9 => MatchStateHasher.ComputeVersionTwelveSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
         if (!CryptographicOperations.FixedTimeEquals(
@@ -193,7 +194,8 @@ public static class NativeSaveSerializer
             player.Statistics.TimesHidden),
         player.SnubbedHireOffer,
         player.HireOfferSlots.ToArray(),
-        player.SnubbedHireOfferSlot);
+        player.SnubbedHireOfferSlot,
+        player.UsesMaximumHireForce);
 
     private static MatchPlayerState RestorePlayer(
         MatchSetup setup,
@@ -235,7 +237,8 @@ public static class NativeSaveSerializer
             pendingHires, player.ResearchProgress, player.ResearchedItems.ToHashSet(),
             player.Inventory, player.Support, player.BigManPoints, player.Status,
             statistics, player.SnubbedHireOffer,
-            hireState.Slots, hireState.SnubSlot);
+            hireState.Slots, hireState.SnubSlot,
+            usesMaximumHireForce: formatVersion >= 10 && player.UsesMaximumHireForce);
     }
 
     private static (
@@ -416,7 +419,8 @@ internal sealed record PlayerDocument(
     StatisticsDocument Statistics,
     short? SnubbedHireOffer,
     IReadOnlyList<HireOfferSlotState>? HireOfferSlots = null,
-    int? SnubbedHireOfferSlot = null);
+    int? SnubbedHireOfferSlot = null,
+    bool UsesMaximumHireForce = false);
 
 internal sealed record GangDocument(
     int Id,

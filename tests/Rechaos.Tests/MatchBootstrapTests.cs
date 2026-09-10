@@ -58,6 +58,24 @@ public sealed class MatchBootstrapTests
     }
 
     [Fact]
+    public void FreshLocalSetupDetectsExactSmgMilkPlayerName()
+    {
+        var (data, _, sectors, starts) = Inputs(ScenarioId.Greed);
+        MatchPlayerSetup[] players =
+        [
+            new(new PlayerId(0), "SMGMILK", PlayerController.Human),
+            new(new PlayerId(1), "smgmilk", PlayerController.Computer)
+        ];
+        var setup = new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, players);
+
+        var match = MatchBootstrap.Create(data, setup, sectors, starts);
+
+        Assert.True(match.Players[0].UsesMaximumHireForce);
+        Assert.False(match.Players[1].UsesMaximumHireForce);
+    }
+
+    [Fact]
     public void RejectsAStartOutsideANeutralHeadquartersSector()
     {
         var (data, setup, sectors, starts) = Inputs(ScenarioId.Greed);

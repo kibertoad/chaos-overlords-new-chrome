@@ -306,6 +306,52 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void CurrentReplayPreservesMaximumHireForceFlag()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch(firstPlayerName: "SMGMILK"));
+        Assert.True(recorder.State.Players[0].UsesMaximumHireForce);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+
+        var restored = MatchReplaySerializer.LoadAndReplay(
+            replay, recorder.State.Definitions);
+
+        Assert.True(restored.Players[0].UsesMaximumHireForce);
+        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State),
+            MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void VersionTenReplayUsesVersionTwelveHashAndMigratesMaximumHireForceToFalse()
+    {
+        var initial = CreateMatch(firstPlayerName: "SMGMILK");
+        var oldInitialHash = MatchStateHasher.ComputeVersionTwelveSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = 10;
+        document["initialStateSha256"] = oldInitialHash;
+        var snapshotBytes = Convert.FromBase64String(
+            document["initialSnapshot"]!.GetValue<string>());
+        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
+        snapshot["formatVersion"] = 9;
+        snapshot["stateSha256"] = oldInitialHash;
+        foreach (var player in snapshot["players"]!.AsArray())
+            player!.AsObject().Remove("usesMaximumHireForce");
+        document["initialSnapshot"] = Convert.ToBase64String(
+            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
+
+        Assert.False(restored.Players[0].UsesMaximumHireForce);
+        Assert.Equal(oldInitialHash,
+            MatchStateHasher.ComputeVersionTwelveSha256(restored));
+    }
+
+    [Fact]
     public void AtomicReplayStoreWritesAndReplaysAFile()
     {
         var directory = Path.Combine(Path.GetTempPath(), "rechaos-replay-tests", Guid.NewGuid().ToString("N"));
@@ -347,12 +393,14 @@ public sealed class MatchReplayTests
         recorder.FinishPlayerElimination();
     }
 
-    private static MatchState CreateMatch(bool negativeTolerance = false)
+    private static MatchState CreateMatch(
+        bool negativeTolerance = false,
+        string firstPlayerName = "ONE")
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
         [
-            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(0), firstPlayerName, PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups);

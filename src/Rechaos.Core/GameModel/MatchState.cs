@@ -88,7 +88,8 @@ public sealed partial class MatchPlayerState
         MatchStatistics? statistics = null,
         short? snubbedHireOffer = null,
         IReadOnlyList<HireOfferSlotState>? hireOfferSlots = null,
-        int? snubbedHireOfferSlot = null)
+        int? snubbedHireOfferSlot = null,
+        bool usesMaximumHireForce = false)
     {
         if (bigManPoints < 0) throw new ArgumentOutOfRangeException(nameof(bigManPoints));
         if (!Enum.IsDefined(status)) throw new ArgumentOutOfRangeException(nameof(status));
@@ -116,6 +117,7 @@ public sealed partial class MatchPlayerState
         Statistics = statistics ?? new MatchStatistics();
         SnubbedHireOffer = snubbedHireOffer;
         SnubbedHireOfferSlot = snubbedHireOfferSlot;
+        UsesMaximumHireForce = usesMaximumHireForce;
     }
 
     public MatchPlayerSetup Setup { get; }
@@ -132,6 +134,7 @@ public sealed partial class MatchPlayerState
     public MatchStatistics Statistics { get; }
     public short? SnubbedHireOffer { get; private set; }
     public int? SnubbedHireOfferSlot { get; private set; }
+    public bool UsesMaximumHireForce { get; }
     public bool HasSnubbedHireOfferThisTurn => SnubbedHireOffer.HasValue;
 
     public int RemainingResearch(OriginalData definitions, short itemIndex)

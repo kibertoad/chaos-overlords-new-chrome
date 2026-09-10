@@ -688,9 +688,10 @@ original bounded RNG, rejecting row-wrap and off-board results.
 
 For nonzero modes the routine clears an 8-by-8 integer score map, obtains the
 gang's current sector through selector `0x5a`, and examines successively larger
-square rings around it, from radius 1 through 7, stopping after the first ring
-which contributes any candidate. The current sector is removed before final
-selection. Modes 1 through 5 have bounded scoring rules:
+clipped squares around it, from radius 1 through 7. Each radius rescans the full
+square rather than only its perimeter, and the search stops after the first
+square which contributes any candidate. The current sector is removed before
+final selection. Modes 1 through 5 have bounded scoring rules:
 
 - mode 1 scores a neutral sector `+1` only when selector `0x2c` says the gang
   can take it by strict solo Control;
@@ -720,8 +721,8 @@ leader other than the active player, only that leader's sectors receive `+1`;
 with no unique leader, every sector owned by a player tied at standing zero
 receives `+1`; when the active player is the unique leader, every other
 player-owned sector containing fewer than four active-player gangs receives
-`+1`. These additions feed the same nearest-ring, maximum-tie RNG, and
-orthogonal-step logic as the other nonzero modes.
+`+1`. These additions feed the same nearest-square, maximum-tie RNG, and
+x-then-y step logic as the other nonzero modes.
 
 The site-data offsets used by modes 7 through 9 align exactly with the decoded
 62-byte `SITES` record: selectors `0x0c`, `0x0d`, and `0x10` return Support,
@@ -807,11 +808,14 @@ headquarters location, not merely an attack-score bonus against a currently
 visible Right Hands gang.
 
 `0x00408553` sorts the 64 sector scores descending while retaining their sector
-indices. The caller chooses uniformly among every sector tied for the maximum.
-If that strategic target is outside the immediate 3-by-3 neighborhood, the
-routine returns one orthogonal step toward it rather than the distant target,
-and refuses an axis step whose per-player path value exceeds 5. If the selected
-target is already adjacent, the sector itself is returned. Candidate sectors
+indices. The caller chooses uniformly among every sector tied for the maximum;
+a unique maximum consumes no RNG, while a tie consumes one bounded call (three
+raw `rand()` calls). If record zero's strategic target is outside the immediate
+3-by-3 neighborhood, the routine moves first along x and then independently
+along y, retaining each component only when the resulting sector's per-player
+path value is at most 5. It can therefore return a diagonal neighbor. If record
+zero is adjacent and positive, the randomly selected maximum-tied sector is
+returned directly. Candidate sectors
 are also removed late when marked unavailable or when the active gang cannot
 strictly Control a non-owned destination under the relevant gang-state branch.
 
@@ -825,7 +829,7 @@ and equal-best final scores in the bounded paths inspected here.
 mode-0 directions, modes 1 through 5 weights, site-field offsets, human-player
 count, gang-in-sector count, unique-leader selector, mode-6 weights and owner
 branches, fixed sector sets, direct call inventory, maximum-score tie
-randomization, and orthogonal next-step return. Medium for the player-order
+randomization, and x-then-y step return. Medium for the player-order
 predicates, family-11 anchor, dynamic call arguments, and late candidate
 filtering due to decompiler control-flow folding. Mode 10 and mode 16's
 remaining family-11 guards are not yet fully labeled.

@@ -189,7 +189,7 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    public const int CurrentFormatVersion = 10;
+    public const int CurrentFormatVersion = 11;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -340,7 +340,8 @@ public static class MatchReplaySerializer
         }
         string[] candidateHashes = replayVersion switch
         {
-            >= 10 => [MatchStateHasher.ComputeSha256(state)],
+            >= 11 => [MatchStateHasher.ComputeSha256(state)],
+            10 => [MatchStateHasher.ComputeVersionTwelveSha256(state)],
             9 => [MatchStateHasher.ComputeVersionElevenSha256(state)],
             7 or 8 => [MatchStateHasher.ComputeVersionTenSha256(state)],
             5 or 6 => [MatchStateHasher.ComputeVersionSixSha256(state)],

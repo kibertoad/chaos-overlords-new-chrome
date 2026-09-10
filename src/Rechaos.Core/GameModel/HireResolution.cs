@@ -217,7 +217,7 @@ internal static class HireResolver
                 continue;
             }
 
-            var initialForce = OriginalHireCheatRules.UsesMaximumHireForce(player)
+            var initialForce = player.UsesMaximumHireForce
                 ? ManualRules.MaximumForce
                 : state.Random.NextInclusive(
                     ManualRules.MaximumHiredGangForce - ManualRules.MinimumHiredGangForce + 1)

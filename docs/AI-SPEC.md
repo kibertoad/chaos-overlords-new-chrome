@@ -72,8 +72,10 @@ the internal Hire phase.
 
 Movement scoring currently includes the recovered objective geography for
 both Big Man (sectors 27, 28, 35, and 36) and Eliminate (the six possible
-headquarters sectors 9, 12, 30, 33, 51, and 54). The exact original ring search,
-path-cost gate, and random tie consumption remain pending as described below.
+headquarters sectors 9, 12, 30, 33, 51, and 54). A pure, unwired kernel now
+implements the exact original modes 1-5 clipped-square search, late filters,
+stable maximum ties, RNG consumption, and x-then-y path-cost gate. The live
+planner remains provisional until its outer guards and inputs are represented.
 
 The test suite drives Greed, Power, Acceptance, and Dominance through complete
 two-computer six-month matches. Each scenario is run twice at a fixed seed and
@@ -88,7 +90,7 @@ replay-verified two-computer harness through 20 turns or objective completion.
    selector `0x00408642`. Its ring search, all direct family call sites,
    modes 1-5, site Support/Cash/Stealth modes 7-9, human-player count,
    mode-5 movement weights (neutral/owned/enemy `5:2:1`), maximum-score random
-   ties, and orthogonal next-step routing are now bounded. Modes 7 and 8 are
+   ties, and x-then-y one-step routing are now bounded. Modes 7 and 8 are
    confirmed as Support- and Cash-focused Influence routing, while mode 9 seeks
    influenced-site Stealth for a Hide/Chaos path. The six-by-six directional
    attitude matrix, Homicidal human/computer initialization, non-Homicidal per-turn recovery,

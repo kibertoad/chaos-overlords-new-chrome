@@ -78,7 +78,9 @@ public static class MatchBootstrap
                     ? ArmageddonStartingCash
                     : start.StandardStartingCash,
                 [rightHands], start.HirePool,
-                researchedItems: startingResearch);
+                researchedItems: startingResearch,
+                usesMaximumHireForce: OriginalHireCheatRules.DetectMaximumHireForce(
+                    setup.Players[index].Name));
         }
 
         return new MatchState(definitions, setup, players, sectorArray);

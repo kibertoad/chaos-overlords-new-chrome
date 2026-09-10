@@ -468,7 +468,8 @@ public sealed class HireAndEliminationTests
         [
             new(setups[0], initialCash,
                 gangs ?? [new MatchGangState(new GangId(10), new PlayerId(0), 1, 0, 5)],
-                hirePool: [1, 2, 3]),
+                hirePool: [1, 2, 3],
+                usesMaximumHireForce: OriginalHireCheatRules.DetectMaximumHireForce(playerName)),
             new(setups[1], 10, hirePool: [4, 5, 6])
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)

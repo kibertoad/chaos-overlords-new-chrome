@@ -5,9 +5,9 @@ internal static class OriginalHireCheatRules
 {
     private const string MaximumForceName = "SMGMILK";
 
-    public static bool UsesMaximumHireForce(MatchPlayerState player)
+    public static bool DetectMaximumHireForce(string playerName)
     {
-        ArgumentNullException.ThrowIfNull(player);
-        return StringComparer.Ordinal.Equals(player.Setup.Name, MaximumForceName);
+        ArgumentNullException.ThrowIfNull(playerName);
+        return StringComparer.Ordinal.Equals(playerName, MaximumForceName);
     }
 }

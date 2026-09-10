@@ -124,6 +124,55 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void RoundTripPreservesMaximumHireForceFlag()
+    {
+        var match = CreateMatch("SMGMILK");
+        Assert.True(match.Players[0].UsesMaximumHireForce);
+
+        var restored = RoundTrip(match);
+
+        Assert.True(restored.Players[0].UsesMaximumHireForce);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match),
+            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(SaveBytes(match), SaveBytes(restored));
+    }
+
+    [Fact]
+    public void VersionNineSaveMigratesMaximumHireForceFlagToFalse()
+    {
+        var match = CreateMatch("SMGMILK");
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 9;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionTwelveSha256(match);
+        foreach (var player in document["players"]!.AsArray())
+            player!.AsObject().Remove("usesMaximumHireForce");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.False(restored.Players[0].UsesMaximumHireForce);
+        Assert.Equal(MatchStateHasher.ComputeVersionTwelveSha256(match),
+            MatchStateHasher.ComputeVersionTwelveSha256(restored));
+    }
+
+    [Fact]
+    public void RejectsModifiedMaximumHireForceFlagWhoseFingerprintWasNotUpdated()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["players"]![0]!["usesMaximumHireForce"] = true;
+
+        using var changed = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(changed, match.Definitions));
+    }
+
+    [Fact]
     public void VersionEightPaidPendingHireMigratesWithoutDoublePayment()
     {
         var match = CreateMatch();
@@ -524,12 +573,12 @@ public sealed class NativeSaveSerializerTests
         while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
     }
 
-    private static MatchState CreateMatch()
+    private static MatchState CreateMatch(string firstPlayerName = "ONE")
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
         [
-            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(0), firstPlayerName, PlayerController.Human),
             new(new PlayerId(1), "TWO", PlayerController.Computer, PortraitId: 7)
         ];
         var setup = new MatchSetup(
