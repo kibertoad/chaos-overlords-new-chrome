@@ -193,6 +193,13 @@ replay-verified two-computer harness through 20 turns or objective completion.
    another planning record already has previous Influence. Its equipment,
    opponent targeting/comparison, three-Move transition, Greed override, and
    intentional None cases are live at the same replay-recorded boundary.
+   Family 9's complete handler tries weapon and armor upgrades without checking
+   their existing cooldowns, then writes a cost-times-three replacement
+   cooldown. Without equipment it moves from owned territory through mode 3,
+   uses the shared five-draw visible-opponent Attack loop in non-owned
+   territory at weight 10, moves after a previous Control, and otherwise
+   Controls. Exact actions, targets, cooldowns, and RNG consumption are live
+   and replay-recorded.
    Family 10's complete recovered handler prioritizes a strict-Defense armor
    upgrade with a literal two-turn cooldown, then a special researched Smoke
    Bombs Equip, then Heal below Force 10 only with no visible local opponent.

@@ -1122,6 +1122,31 @@ Support scan/sum, target-pool asymmetry, terminal order, and RNG call order in
 the fingerprinted version-1.1 executable; runtime corroboration remains
 pending.
 
+Family 9 at `0x004605e0` is now completely bounded at the action level. It
+first tries selector `0x61`'s weapon and selector `0x64`'s armor. Each candidate
+must differ from the equipped item and be affordable. Unlike the equipment
+branches that query selectors `0x65` and `0x66`, family 9 does not inspect the
+existing weapon or armor cooldown before replacing the item; a successful
+Equip overwrites the matching cooldown with three times raw item cost.
+
+With neither upgrade available, a gang in its own sector always writes Move
+through shared sector mode 3, which seeks another player's owned territory.
+In a non-owned sector, cached visible-opponent weight 10 enters a five-draw
+target loop. Its hostile-human-owner pool choice, full-visible-list comparison
+ordinal, quarter-strength predicate, early success exit, and final Attack after
+five failed comparisons match family 12. When the weight is not 10, an
+immediately previous Control writes mode-3 Move; every other previous action
+writes Control. This handler has no Heal, miscellaneous equipment, or Greed
+terminal override.
+
+**Recreation status:** the complete family-9 weapon/armor, mode-3 Move,
+five-draw Attack, and Control sequence is live and replay-recorded, including
+the absence of an equipment-cooldown gate.
+
+**Confidence:** High static evidence for branch order, comparisons, action
+writes, selector arguments, target-pool order, and RNG call order in the
+fingerprinted version-1.1 executable; runtime corroboration remains pending.
+
 Family 10 at `0x0042a6e0` is now completely bounded at the action level. It
 first calls selector `0x72`, which scans researched type-3 armor within the
 gang's raw Tech and retains the first strict maximum Defense improvement. An
