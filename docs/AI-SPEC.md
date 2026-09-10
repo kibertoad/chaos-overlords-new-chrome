@@ -189,6 +189,23 @@ replay-verified two-computer harness through 20 turns or objective completion.
    Three consecutive Moves switch the family to 11 in Siege and 2 otherwise;
    Greed's final three turns overwrite the result with Terminate. Unsupported
    previous-action cases intentionally preserve None, matching the handler.
+   Family 0's complete general-purpose state machine is live. Previous None
+   Heals below Force 8 at effective Heal `-3` or better, otherwise Hides unless
+   another gang in the sector already has previous Hide, then Moves through
+   mode 5. Previous Attack makes one weight-10 opponent draw and attacks only
+   on a passing quarter-strength comparison; failure Controls when strict solo
+   Control succeeds and otherwise Moves. Previous Hide or Equip makes up to
+   five weight-10 draws and attacks the final target even after five failures,
+   then tries the shared nearby-danger weapon/armor opportunity before its
+   owned-sector Heal/Hide or non-owned Move continuation. Previous Control
+   Hides in owned territory and Moves elsewhere. Previous Heal, Snitch, or Move
+   repeats Heal first, makes one weight-10 draw whose failed comparison
+   deliberately preserves no action while clearing both auxiliary shorts, or
+   chooses Control/Hide/Move locally. Previous Research always Moves. A newly
+   planned Move paired with an older Move changes the family to 11 in Siege and
+   2 otherwise. Unsupported previous actions preserve None. Exact targets,
+   mode-5 destinations, cooldowns, auxiliary writes, family changes, and RNG
+   consumption are live and replay-recorded.
    Family 2's complete aggressive territorial handler is live. It tries armor
    before weapon, requires an expired slot cooldown and a previous action other
    than Attack, and writes a raw-cost-times-three replacement cooldown. It Heals

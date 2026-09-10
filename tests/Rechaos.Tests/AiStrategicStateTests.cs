@@ -170,6 +170,7 @@ public sealed class AiStrategicStateTests
         match.Players[0].AddGang(new MatchGangState(new GangId(7), player, 1, 0, 10));
         match.FinishUpkeep();
         match.PrepareAiPlanning(player);
+        var preparedFirstAction = match.AiPlanning.PlannedAction(player, 0);
 
         var rejected = match.Submit(new GameCommand(
             player, new GangId(0), GangAction.Move, CommandTarget.Sector(18)));
@@ -178,7 +179,7 @@ public sealed class AiStrategicStateTests
 
         Assert.False(rejected.Accepted);
         Assert.True(accepted.Accepted);
-        Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(preparedFirstAction, match.AiPlanning.PlannedAction(player, 0));
         Assert.Equal(GangAction.Hide, match.AiPlanning.PlannedAction(player, 1));
     }
 

@@ -1037,6 +1037,31 @@ stores the current sector in the first auxiliary short; equipment and Move
 clear it. Greed with fewer than four turns remaining overwrites the result with
 Terminate.
 
+Focused inspection of family 0 at `0x00428ef0` establishes a switch on the
+immediately previous action (`0x3e`) and a final comparison against the older
+action (`0x3f`). Previous None applies the Force-8/effective-Heal-`-3` gate,
+then selector `0x5b` counts previous Hide assignments in the gang's current
+sector: zero chooses Hide and a positive count chooses mode-5 Move. Previous
+Attack moves immediately unless cached opponent weight is 10; at weight 10 it
+makes one human-pool/full-pool asymmetric draw and uses selector `0x2b` for the
+quarter-strength comparison, then Attack, strict-solo Control, or Move.
+
+Previous Hide or Equip makes up to five such draws at weight 10 and attacks the
+last selected target even if every comparison fails. When no Attack was
+prepared, positive selector `0x6c` enables weapon then armor equipment with
+nonpositive cooldown and `cost * 3` replacement, followed by owned-sector
+Heal/Hide or non-owned mode-5 Move. Previous Control Hides in owned territory
+and Moves elsewhere. Previous Heal, Snitch, or Move first applies the same Heal
+gate. At weight 10 it makes exactly one target draw: success Attacks, while
+failure writes None and clears both auxiliary shorts to `-1`. Without weight
+10 it uses strict solo Control where possible, otherwise selector `0x5b`
+chooses Hide or Move. Previous Research Moves; unlisted action values retain
+None. Finally, a newly planned Move with an older Move changes the family byte
+to 11 in Siege and 2 otherwise. This literal older-action test is broader than
+an inferred three-consecutive-Move rule. The complete handler, target draws,
+mode-5 calls, cooldowns, auxiliary behavior, no-action path, and transition are
+live and replay-wired.
+
 Both mode-6 calls belong to family 2. That handler writes public action byte 10
 (**Move**) with the selected mode-6 destination when its current/selected
 sector branch cannot proceed locally. Its visible-gang path writes action byte
