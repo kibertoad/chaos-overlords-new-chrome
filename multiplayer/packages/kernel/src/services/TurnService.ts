@@ -1,10 +1,11 @@
-import type {
-  OwnSubmissionView,
-  SubmitOrdersRequest,
-  TurnReportRequest,
+import {
+  foreignOps,
+  type OwnSubmissionView,
+  type SubmitOrdersRequest,
+  type TurnReportRequest,
 } from '@chaos-overlords/contracts'
 import { activePlayers, type Match, type SealedSlot } from '../domain/entities'
-import { ConflictError, ForbiddenError, NotFoundError } from '../domain/errors'
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../domain/errors'
 import { hashOrderDocument, hashOrderSet } from '../logic/crypto'
 import { allActiveReady, evaluateConsensus, turnDeadline } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
@@ -12,6 +13,9 @@ import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
 
 export type SealTrigger = 'ready' | 'deadline'
+
+/** Turns are numbered from 1; 0 is the lobby's `currentTurn`, before any turn exists. */
+export const FIRST_TURN = 1
 
 /**
  * The simultaneous-turn barrier. Players submit orders privately; the turn seals when every
@@ -46,6 +50,7 @@ export class TurnService {
         currentTurn: match.currentTurn,
       })
     }
+    assertOwnOps(request, player.slot)
     const previous = await this.deps.storage.turns.getOrders(match.id, number, player.id)
     const ordersHash = await hashOrderDocument(request.orders)
     const accepted = await this.deps.storage.turns.submitOrders(match.id, number, player.id, {
@@ -102,7 +107,14 @@ export class TurnService {
    */
   private async completeSeal(match: Match, number: number): Promise<boolean> {
     const turn = await this.deps.storage.turns.get(match.id, number)
-    if (!turn || turn.status === 'open') return false
+    if (turn?.status === 'open') return false
+    if (!turn) {
+      // No row at all: the match is live and pointed at a turn that was never created, which is
+      // what `start` leaves behind when it dies between the status change and opening turn 1.
+      // There is no seal to finish, only the missing turn to open — `currentTurn` names it, except
+      // at 0, which is the lobby's value and means turn 1 was never reached.
+      return this.openTurn(match, Math.max(number, FIRST_TURN))
+    }
     let advanced = false
     if (turn.orderSetHash === null || turn.sealedSlots === null) {
       const [orders, players] = await Promise.all([
@@ -271,6 +283,11 @@ export class TurnService {
           updatedAt: now,
         }))
       ) {
+        // The seal opened the successor before anyone had reported, so a finished match is left
+        // holding an open turn with a live deadline. Nothing can be submitted to it (every write
+        // requires a running match) but it would sit in `listExpiredOpen` forever, and a client
+        // reading the match view would see a turn still counting down after the game ended.
+        await this.deps.storage.turns.rescheduleDeadline(matchId, turn.number + 1, null)
         await this.publisher.publish(matchId, {
           type: 'match.statusChanged',
           payload: { status: 'finished' },
@@ -286,7 +303,11 @@ export class TurnService {
       this.deps.logger.warn('turn desynced', { matchId, turn: number })
       await this.publisher.publish(matchId, {
         type: 'turn.desynced',
-        payload: { turn: number, reports: verdict.reports },
+        payload: {
+          turn: number,
+          reports: verdict.reports,
+          candidateStateHashes: verdict.candidateStateHashes,
+        },
       })
       if (
         await this.deps.storage.matches.transition(matchId, ['running'], {
@@ -336,6 +357,24 @@ export class TurnService {
     })
     await this.deps.scheduler.schedule({ matchId, turn: match.currentTurn, dueAt: deadlineAt })
   }
+}
+
+/**
+ * Refuse a document whose ops act for a slot other than the submitter's.
+ *
+ * The sealed set attributes every op to the slot it was submitted from, and that attribution is
+ * the one clients apply, so an op naming a different player can only be a client bug or an attempt
+ * to act as somebody else. Catching it here keeps the two attributions from ever disagreeing, and
+ * it is the one piece of order semantics the server can judge without knowing the rules.
+ */
+function assertOwnOps(request: SubmitOrdersRequest, slot: number): void {
+  const foreign = foreignOps(request.orders, slot)
+  if (foreign.length === 0) return
+  throw new ValidationError('Orders may only act for your own slot', {
+    reason: 'foreign_slot_ops',
+    slot,
+    ops: foreign.slice(0, 8).map((op) => ({ op: op.op, player: op.player })),
+  })
 }
 
 function requireRunning(match: Match): void {

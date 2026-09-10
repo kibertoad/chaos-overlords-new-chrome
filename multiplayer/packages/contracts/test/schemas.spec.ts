@@ -1,45 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { gameSettingsSchema, LIMITS, matchSettingsSchema, orderDocumentSchema } from '../src'
-
-describe('orderDocumentSchema', () => {
-  it('accepts a bounded op list', () => {
-    const parsed = orderDocumentSchema.safeParse({
-      schemaVersion: 1,
-      ops: [{ op: 'moveGang', args: { gangId: 4, sector: 'B3' } }],
-    })
-    expect(parsed.success).toBe(true)
-  })
-
-  /**
-   * The digest clients verify is taken over canonical JSON, and only integers are written identically
-   * by every language's JSON writer. A float accepted here would be a digest no C# client could
-   * reproduce.
-   */
-  it('refuses numeric arguments that would not survive another JSON writer', () => {
-    const withArg = (value: unknown) => ({
-      schemaVersion: 1,
-      ops: [{ op: 'moveGang', args: { n: value } }],
-    })
-    expect(orderDocumentSchema.safeParse(withArg(7)).success).toBe(true)
-    expect(orderDocumentSchema.safeParse(withArg(-7)).success).toBe(true)
-    expect(orderDocumentSchema.safeParse(withArg(1.5)).success).toBe(false)
-    expect(orderDocumentSchema.safeParse(withArg(-0)).success).toBe(false)
-    expect(orderDocumentSchema.safeParse(withArg(1e21)).success).toBe(false)
-    expect(orderDocumentSchema.safeParse(withArg(Number.NaN)).success).toBe(false)
-    expect(orderDocumentSchema.safeParse(withArg(Number.MAX_SAFE_INTEGER + 2)).success).toBe(false)
-  })
-
-  it('refuses nested arguments and oversize op lists', () => {
-    expect(
-      orderDocumentSchema.safeParse({
-        schemaVersion: 1,
-        ops: [{ op: 'moveGang', args: { nested: { a: 1 } } }],
-      }).success,
-    ).toBe(false)
-    const ops = Array.from({ length: LIMITS.ordersMaxOps + 1 }, () => ({ op: 'noop', args: {} }))
-    expect(orderDocumentSchema.safeParse({ schemaVersion: 1, ops }).success).toBe(false)
-  })
-})
+import {
+  gameSettingsSchema,
+  joinMatchRequestSchema,
+  LIMITS,
+  matchSettingsSchema,
+  uploadSnapshotRequestSchema,
+} from '../src'
 
 describe('matchSettingsSchema', () => {
   it('allows a disabled timer but not a tiny one', () => {
@@ -56,5 +22,51 @@ describe('gameSettingsSchema', () => {
     const wide = { blob: '漢'.repeat(LIMITS.gameSettingsBytes / 3) }
     expect(gameSettingsSchema.safeParse(wide).success).toBe(false)
     expect(gameSettingsSchema.safeParse({ blob: 'a'.repeat(100) }).success).toBe(true)
+  })
+})
+
+describe('joinMatchRequestSchema', () => {
+  /** Players type codes off a chat line or hear them over voice; the alphabet is uppercase only. */
+  it('normalises the case and surrounding space of a join code', () => {
+    const parsed = joinMatchRequestSchema.safeParse({
+      joinCode: '  abcd2345 ',
+      displayName: 'Ada',
+    })
+    expect(parsed.success && parsed.data.joinCode).toBe('ABCD2345')
+    expect(joinMatchRequestSchema.safeParse({ joinCode: 'ABC', displayName: 'Ada' }).success).toBe(
+      false,
+    )
+  })
+})
+
+describe('uploadSnapshotRequestSchema', () => {
+  const base = { turn: 1, formatVersion: 1, stateHash: 'a'.repeat(64) }
+
+  /** The server never decodes the body, so this is the only chance to notice it cannot be decoded. */
+  it('refuses base64 that could never decode', () => {
+    expect(uploadSnapshotRequestSchema.safeParse({ ...base, body: 'QUJD' }).success).toBe(true)
+    expect(uploadSnapshotRequestSchema.safeParse({ ...base, body: 'QQ==' }).success).toBe(true)
+    expect(uploadSnapshotRequestSchema.safeParse({ ...base, body: '' }).success).toBe(true)
+    expect(uploadSnapshotRequestSchema.safeParse({ ...base, body: 'QUJDQ' }).success).toBe(false)
+    expect(uploadSnapshotRequestSchema.safeParse({ ...base, body: 'QU_J' }).success).toBe(false)
+  })
+})
+
+describe('gameSettingsSchema depth', () => {
+  /**
+   * An unbounded recursion would overflow the stack on a body well inside the size limit, and a
+   * `RangeError` is not a `ZodError`, so the caller would see a 500 where a 422 is the truth.
+   */
+  it('refuses nesting deeper than the limit instead of overflowing the stack', () => {
+    const nest = (depth: number): unknown => (depth === 0 ? 1 : { next: nest(depth - 1) })
+    expect(gameSettingsSchema.safeParse({ a: nest(LIMITS.gameSettingsMaxDepth - 1) }).success).toBe(
+      true,
+    )
+    expect(gameSettingsSchema.safeParse({ a: nest(LIMITS.gameSettingsMaxDepth + 5) }).success).toBe(
+      false,
+    )
+    let deep: unknown = 1
+    for (let i = 0; i < 20_000; i += 1) deep = [deep]
+    expect(() => gameSettingsSchema.safeParse({ a: deep })).not.toThrow()
   })
 })

@@ -17,7 +17,16 @@ export type MatchEventBody =
   | EventBase<'turn.confirmed', { turn: number; stateHash: string }>
   | EventBase<
       'turn.desynced',
-      { turn: number; reports: Array<{ playerId: string; stateHash: string }> }
+      {
+        turn: number
+        reports: Array<{ playerId: string; stateHash: string }>
+        /**
+         * The hashes the most players reported, tied if more than one. A recovery snapshot has to
+         * claim one of these, so a client can see from the event alone whether it is the odd one
+         * out and what the match will converge on.
+         */
+        candidateStateHashes: string[]
+      }
     >
   | EventBase<
       'snapshot.available',

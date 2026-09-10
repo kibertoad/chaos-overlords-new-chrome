@@ -16,20 +16,13 @@ export const LIMITS = {
   turnTimerMaxSeconds: 86_400,
   /** Serialized `gameSettings` object the server stores verbatim for clients, in UTF-8 bytes. */
   gameSettingsBytes: 8 * 1024,
-  /** One player's order document per turn. */
+  /** Ops in one player's order document for a turn. */
   ordersMaxOps: 512,
-  opNameLength: 64,
-  opArgsMaxKeys: 16,
-  opArgKeyLength: 32,
-  opArgStringLength: 256,
   ordersBytes: 256 * 1024,
+  /** Nesting allowed inside the opaque `gameSettings` object, so a deep body cannot blow the stack. */
+  gameSettingsMaxDepth: 16,
   /** A base64-encoded native snapshot. 768 KiB raw fits a D1 row after encoding. */
   snapshotBase64Bytes: 1024 * 1024,
-  /**
-   * Op arguments are integers, never floats: the order digest is taken over canonical JSON, and
-   * only integers serialize identically in every language a client may be written in.
-   */
-  opArgIntegerMax: Number.MAX_SAFE_INTEGER,
   /** Event log page size for the REST fallback. */
   eventsPageSize: 200,
 } as const

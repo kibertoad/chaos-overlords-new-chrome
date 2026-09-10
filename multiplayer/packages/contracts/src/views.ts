@@ -1,4 +1,5 @@
-import type { MatchSettings, OrderDocument } from './schemas'
+import type { OrderDocument } from './orders'
+import type { MatchSettings } from './schemas'
 
 export type MatchStatus = 'lobby' | 'running' | 'desynced' | 'finished' | 'abandoned'
 export type PlayerStatus = 'active' | 'left' | 'kicked'

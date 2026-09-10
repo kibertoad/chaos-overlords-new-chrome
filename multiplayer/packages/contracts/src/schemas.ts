@@ -1,18 +1,47 @@
 import { z } from 'zod'
 import { LIMITS } from './limits'
+import { orderDocumentSchema } from './orders'
 
 const sha256Hex = z.string().regex(/^[0-9a-f]{64}$/, 'expected a lowercase hex SHA-256')
+/**
+ * A join code, normalised before it is matched: players read these off a chat message or hear them
+ * over voice and type them back in whatever case they like, and the alphabet is uppercase only, so
+ * refusing `abcd2345` would be refusing a correct code. Surrounding space goes the same way.
+ */
 const joinCode = z
   .string()
-  .regex(new RegExp(`^[A-Z0-9]{${LIMITS.joinCodeLength}}$`), 'expected an 8 character join code')
+  .trim()
+  .toUpperCase()
+  .pipe(
+    z
+      .string()
+      .regex(
+        new RegExp(`^[A-Z0-9]{${LIMITS.joinCodeLength}}$`),
+        `expected a ${LIMITS.joinCodeLength} character join code`,
+      ),
+  )
 const displayName = z.string().trim().min(1).max(LIMITS.displayNameLength)
 const password = z.string().min(LIMITS.passwordMinLength).max(LIMITS.passwordMaxLength)
 
 const jsonPrimitive = z.union([z.string(), z.number(), z.boolean(), z.null()])
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
-const jsonValue: z.ZodType<JsonValue> = z.lazy(() =>
-  z.union([jsonPrimitive, z.array(jsonValue), z.record(z.string(), jsonValue)]),
-)
+
+/**
+ * Depth-bounded JSON. An unbounded `z.lazy` recursion would let a body that is well within the
+ * size limit (a few kilobytes of `[[[[…]]]]`) recurse until the stack overflows, and a `RangeError`
+ * is not a `ZodError`, so the caller would get a 500 where a 422 is the truth. The bound is checked
+ * before the recursion rather than after it.
+ */
+const jsonValue = (depth: number = LIMITS.gameSettingsMaxDepth): z.ZodType<JsonValue> =>
+  z.lazy(() =>
+    depth <= 0
+      ? jsonPrimitive
+      : z.union([
+          jsonPrimitive,
+          z.array(jsonValue(depth - 1)),
+          z.record(z.string(), jsonValue(depth - 1)),
+        ]),
+  )
 
 /**
  * UTF-8 length without a `TextEncoder`: this package is deliberately environment-free, imported by
@@ -29,7 +58,7 @@ function utf8Bytes(text: string): number {
 
 /** An opaque object the client owns (scenario, portraits, difficulty…); size-bounded only. */
 export const gameSettingsSchema = z
-  .record(z.string(), jsonValue)
+  .record(z.string(), jsonValue())
   .refine((value) => utf8Bytes(JSON.stringify(value)) <= LIMITS.gameSettingsBytes, {
     message: `gameSettings exceeds ${LIMITS.gameSettingsBytes} bytes`,
   })
@@ -59,44 +88,6 @@ export const joinMatchRequestSchema = z.object({
   password: password.optional(),
 })
 
-/**
- * A numeric op argument. Only safe integers are allowed, and `-0` is refused: the order digest is
- * SHA-256 over canonical JSON, and a float's shortest round-trip text differs between JSON writers
- * (JavaScript's `1e+21` against .NET's `1E+21`), which would make the digest unreproducible on a
- * client written in another language. Non-integral quantities travel as scaled integers or strings.
- */
-const opArgNumber = z
-  .number()
-  .int()
-  .refine((value) => Number.isSafeInteger(value) && !Object.is(value, -0), {
-    message: 'op arguments are safe integers; -0 is not distinguishable across JSON writers',
-  })
-
-/**
- * One authoritative operation as the game core records it in a replay: a named op with flat
- * scalar arguments. The server never interprets ops; it bounds, stores, hashes and relays them.
- */
-export const orderOpSchema = z.object({
-  op: z
-    .string()
-    .min(1)
-    .max(LIMITS.opNameLength)
-    .regex(/^[a-z][a-zA-Z0-9]*$/, 'op names are lowerCamelCase identifiers'),
-  args: z
-    .record(
-      z.string().min(1).max(LIMITS.opArgKeyLength),
-      z.union([z.string().max(LIMITS.opArgStringLength), opArgNumber, z.boolean(), z.null()]),
-    )
-    .refine((args) => Object.keys(args).length <= LIMITS.opArgsMaxKeys, {
-      message: `an op takes at most ${LIMITS.opArgsMaxKeys} arguments`,
-    }),
-})
-
-export const orderDocumentSchema = z.object({
-  schemaVersion: z.literal(1),
-  ops: z.array(orderOpSchema).max(LIMITS.ordersMaxOps),
-})
-
 export const submitOrdersRequestSchema = z.object({
   orders: orderDocumentSchema,
   /** `true` = the player has finished planning; the turn seals once every human is ready. */
@@ -114,10 +105,16 @@ export const uploadSnapshotRequestSchema = z.object({
   turn: z.number().int().min(0),
   formatVersion: z.number().int().min(1),
   stateHash: sha256Hex,
+  /**
+   * The client's native snapshot. The server never decodes it, so this is the only chance to
+   * notice that it is not decodable at all: the alphabet, the padding, and the length, which
+   * standard base64 always makes a multiple of four.
+   */
   body: z
     .string()
     .max(LIMITS.snapshotBase64Bytes)
-    .regex(/^[A-Za-z0-9+/]*={0,2}$/, 'expected standard base64'),
+    .regex(/^[A-Za-z0-9+/]*={0,2}$/, 'expected standard base64')
+    .refine((value) => value.length % 4 === 0, 'base64 length must be a multiple of four'),
 })
 
 export const eventsQuerySchema = z.object({
@@ -129,8 +126,6 @@ export type MatchSettings = z.infer<typeof matchSettingsSchema>
 export type MatchVisibility = z.infer<typeof matchVisibilitySchema>
 export type CreateMatchRequest = z.infer<typeof createMatchRequestSchema>
 export type JoinMatchRequest = z.infer<typeof joinMatchRequestSchema>
-export type OrderOp = z.infer<typeof orderOpSchema>
-export type OrderDocument = z.infer<typeof orderDocumentSchema>
 export type SubmitOrdersRequest = z.infer<typeof submitOrdersRequestSchema>
 export type TurnReportRequest = z.infer<typeof turnReportRequestSchema>
 export type UploadSnapshotRequest = z.infer<typeof uploadSnapshotRequestSchema>
