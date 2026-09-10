@@ -15,8 +15,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 200, 34);
-    private static readonly Rectangle TitleOptions = new(220, 376, 96, 34);
-    private static readonly Rectangle TitleQuit = new(324, 376, 96, 34);
+    private static readonly Rectangle TitleOptions = new(196, 376, 80, 34);
+    private static readonly Rectangle TitleHelp = new(280, 376, 80, 34);
+    private static readonly Rectangle TitleQuit = new(364, 376, 80, 34);
     private static readonly Rectangle[] SetupScenarios =
     [
         new(80, 102, 108, 31), new(192, 102, 108, 31),
@@ -466,6 +467,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 if (TitleNewGame.Contains(point)) _screens.Show(ClientScreen.Setup);
                 else if (TitleLoadGame.Contains(point)) LoadQuickGame();
                 else if (TitleOptions.Contains(point)) OpenOptions();
+                else if (TitleHelp.Contains(point)) OpenHelp();
                 else if (TitleQuit.Contains(point)) Exit();
                 break;
             case ClientScreen.Options:

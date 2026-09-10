@@ -60,7 +60,7 @@ when importing them.
 | Combat summary | B | Click Combat Summary |
 | Search | X | Click Search |
 | Music options | O | Click Options on the title screen, then click a volume level |
-| Help | F1 | Select topics and page controls in the help viewer |
+| Help | F1 | Click Help on the title screen, or select topics and page controls in the viewer |
 | Finish planning | Space | Click the end-turn control |
 | Return to title | Escape | Use the on-screen back/cancel control where available |
 
