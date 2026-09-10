@@ -1,0 +1,29 @@
+# Cloudflare deployment of the multiplayer server. Bindings only; no account ids or secrets.
+# The D1 migration lineage is the storage package's SQLite one (shared with better-sqlite3), so
+# `wrangler d1 migrations apply` and the Node migrator run the same files.
+name = "chaos-overlords-multiplayer"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+PUBLIC_LISTING = "false"
+RATE_LIMIT_PER_MINUTE = "30"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "chaos_overlords"
+database_id = "replace-with-your-d1-database-id"
+migrations_dir = "../../packages/storage/migrations/sqlite"
+
+[[durable_objects.bindings]]
+name = "MATCH_HUB"
+class_name = "MatchHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MatchHub"]
+
+# Safety net for turn deadlines whose alarm was lost; the alarm is the precise path.
+[triggers]
+crons = ["*/5 * * * *"]

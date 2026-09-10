@@ -1,0 +1,34 @@
+{
+  "name": "@chaos-overlords/node-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Node.js runtime facade: serves the shared Hono app over @hono/node-server against SQLite or Postgres, with an in-process event hub and a timer-driven turn deadline scheduler.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "node dist/main.js",
+    "dev": "node --watch dist/main.js",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@chaos-overlords/contracts": "workspace:*",
+    "@chaos-overlords/kernel": "workspace:*",
+    "@chaos-overlords/server": "workspace:*",
+    "@chaos-overlords/storage": "workspace:*",
+    "@hono/node-server": "^2.1.1",
+    "better-sqlite3": "^13.0.3",
+    "hono": "^4.13.7",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@chaos-overlords/client": "workspace:*",
+    "@chaos-overlords/conformance": "workspace:*",
+    "@types/node": "^22.20.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}

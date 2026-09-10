@@ -1,0 +1,70 @@
+name: Multiplayer server
+
+on:
+  push:
+    branches: [main]
+    paths: ["multiplayer/**", ".github/workflows/multiplayer.yml"]
+  pull_request:
+    paths: ["multiplayer/**", ".github/workflows/multiplayer.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: multiplayer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, typecheck, test (SQLite, Postgres, workerd)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: multiplayer
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: chaos
+          POSTGRES_PASSWORD: chaos
+          POSTGRES_DB: chaos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chaos -d chaos"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          package_json_file: multiplayer/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: multiplayer/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build and typecheck
+        run: pnpm exec turbo run build typecheck
+
+      - name: Test
+        run: pnpm exec turbo run test:run --env-mode=loose
+        env:
+          TEST_DATABASE_URL: postgres://chaos:chaos@localhost:5432/chaos

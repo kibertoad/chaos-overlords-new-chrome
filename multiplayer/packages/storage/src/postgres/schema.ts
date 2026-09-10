@@ -1,0 +1,121 @@
+import {
+  bigint,
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+} from 'drizzle-orm/pg-core'
+
+/** The Postgres dialect. Column-for-column the SQLite schema; see that file for the layout notes. */
+const stamp = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' })
+
+export const matches = pgTable('matches', {
+  id: text('id').primaryKey(),
+  status: text('status').notNull(),
+  name: text('name').notNull(),
+  visibility: text('visibility').notNull(),
+  maxPlayers: integer('max_players').notNull(),
+  settings: jsonb('settings').notNull(),
+  hostPlayerId: text('host_player_id').notNull(),
+  joinCode: text('join_code').notNull().unique(),
+  passwordHash: text('password_hash'),
+  /** A uint32; Postgres' `integer` is signed 32-bit, so it takes a bigint column. */
+  seed: bigint('seed', { mode: 'number' }),
+  currentTurn: integer('current_turn').notNull().default(0),
+  seatCount: integer('seat_count').notNull().default(1),
+  eventSeq: integer('event_seq').notNull().default(0),
+  createdAt: stamp('created_at').notNull(),
+  updatedAt: stamp('updated_at').notNull(),
+})
+
+export const players = pgTable(
+  'players',
+  {
+    id: text('id').primaryKey(),
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
+    slot: integer('slot').notNull().default(-1),
+    displayName: text('display_name').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    status: text('status').notNull(),
+    joinedAt: stamp('joined_at').notNull(),
+  },
+  (table) => [index('players_match_idx').on(table.matchId)],
+)
+
+export const turns = pgTable(
+  'turns',
+  {
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
+    number: integer('number').notNull(),
+    status: text('status').notNull(),
+    openedAt: stamp('opened_at').notNull(),
+    deadlineAt: stamp('deadline_at'),
+    sealedAt: stamp('sealed_at'),
+    orderSetHash: text('order_set_hash'),
+  },
+  (table) => [
+    primaryKey({ columns: [table.matchId, table.number] }),
+    index('turns_deadline_idx').on(table.status, table.deadlineAt),
+  ],
+)
+
+export const turnOrders = pgTable(
+  'turn_orders',
+  {
+    matchId: text('match_id').notNull(),
+    turn: integer('turn').notNull(),
+    playerId: text('player_id').notNull(),
+    orders: jsonb('orders'),
+    ordersHash: text('orders_hash'),
+    ready: boolean('ready').notNull().default(false),
+    submittedAt: stamp('submitted_at'),
+  },
+  (table) => [primaryKey({ columns: [table.matchId, table.turn, table.playerId] })],
+)
+
+export const turnReports = pgTable(
+  'turn_reports',
+  {
+    matchId: text('match_id').notNull(),
+    turn: integer('turn').notNull(),
+    playerId: text('player_id').notNull(),
+    stateHash: text('state_hash').notNull(),
+    finished: boolean('finished').notNull().default(false),
+    reportedAt: stamp('reported_at').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.matchId, table.turn, table.playerId] })],
+)
+
+export const snapshots = pgTable(
+  'snapshots',
+  {
+    matchId: text('match_id').notNull(),
+    turn: integer('turn').notNull(),
+    formatVersion: integer('format_version').notNull(),
+    stateHash: text('state_hash').notNull(),
+    uploadedByPlayerId: text('uploaded_by_player_id').notNull(),
+    uploadedAt: stamp('uploaded_at').notNull(),
+    body: text('body').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.matchId, table.turn] })],
+)
+
+export const matchEvents = pgTable(
+  'match_events',
+  {
+    matchId: text('match_id').notNull(),
+    seq: integer('seq').notNull(),
+    type: text('type').notNull(),
+    payload: jsonb('payload').notNull(),
+    createdAt: stamp('created_at').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.matchId, table.seq] })],
+)

@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "types": ["node"],
+    "lib": ["ES2022", "DOM", "DOM.AsyncIterable"]
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/contracts/tsconfig.build.json" },
+    { "path": "../../packages/kernel/tsconfig.build.json" },
+    { "path": "../../packages/server/tsconfig.build.json" },
+    { "path": "../../packages/storage/tsconfig.build.json" }
+  ]
+}

@@ -1,0 +1,8 @@
+packages:
+  - packages/*
+  - runtimes/*
+# better-sqlite3 compiles or downloads a native binary; allow its build script.
+onlyBuiltDependencies:
+  - better-sqlite3
+  - workerd
+  - esbuild
