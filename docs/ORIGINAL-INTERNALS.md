@@ -306,7 +306,7 @@ by `0x00432da0`, and correlate each handler with controlled queued commands.
 identifies this byte as the scenario ID in the same 0-through-9 order used by
 `ScenarioId`. Query selector `0x7c` returns the per-player word at
 `0x00482128 + player * 4`. When query `0x48` reports that the planning record's
-byte at +1 is nonzero, `0x00432da0` maps scenario and `0x7c` strategic mode to
+byte at +1 is nonzero, `0x00432da0` maps scenario and query `0x7c`'s hire role to
 the family below. A dash means the switch performs no assignment and preserves
 the record's current family.
 
@@ -331,10 +331,11 @@ scenario global with values 6, 7, and 8 after family dispatch.
 
 **Confidence:** Verified for selector storage, scenario identity/order, table
 values, preserve behavior, mode-4 copy, and global comparisons. The semantic
-names of strategic modes 0 through 6 remain unknown.
+names of hire roles 0 through 6 remain unknown.
 
-**Next validation:** recover the outer planner transitions which write the
-`0x7c` strategic-mode word, then represent planning records in `MatchState`.
+**Next validation:** recover the outer planner's family-count adjustments before
+it writes the `0x7c` hire-role word, then represent planning records in
+`MatchState`.
 
 ### BIN-AI-003 - outer AI planning pass and command history
 
@@ -350,9 +351,10 @@ queries are nonnegative. It skips records whose mirrored `0x20`-stride byte at
 9 under a separate condition, and calls `0x00432da0` for every non-100 record.
 
 After the per-record pass, `0x00458fa0` performs a ten-way switch on the same
-state-query value 0 through 9 seen by `0x00432da0`. Each branch selects among
-strategy values, calls `0x004078d9` with small mode values, and updates
-per-player words at `0x00482128` and `0x00482140`. The function also iterates
+state-query value 0 through 9 seen by `0x00432da0`. Each branch starts from a
+deterministic current-turn schedule, adjusts that slot against existing family
+counts, calls `0x004078d9` with an offer-ranking mode, and writes the selected
+hire role to `0x00482128`. The function also iterates
 64 entries in a separate sector-sized pass before dispatching gangs.
 
 **Interpretation:** `0x00458fa0` is the outer AI planning pass. The +2..+4 and
@@ -363,12 +365,48 @@ countdowns. The post-dispatch ten-way switch is objective strategy, while the
 provisional until save deltas or controlled commands identify them.
 
 **Confidence:** Verified for callers, loop bounds, addresses, strides, copies,
-clears, decrements, sentinel, and dispatcher call coverage; High that this is an
-outer AI planner; Medium for command-history/countdown/strategy semantics.
+clears, decrements, sentinel, dispatcher call coverage, and the hire-role
+schedule; High that this is an outer AI planner; Medium for command-history and
+countdown semantics.
 
 **Next validation:** correlate the three byte triples and two words against a
 saved recurring and one-off command, then trace the four-valued global setup
 selection independently of the ten-way scenario selector.
+
+### BIN-AI-003B - base hire-role schedule
+
+**Observation:** Before its family-count and affordability adjustments,
+`0x00458fa0` seeds a schedule slot from the current turn (query `0x2f`). Nine
+scenarios use `turn % 10`; Dominance uniquely uses `turn % 11`. Each table cell
+below is `ranking mode / hire role`, directly matching the call argument to
+`0x004078d9` and the dword written to `0x00482128` by the final switch.
+
+| Scenario | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Greed | 0/1 | 4/6 | 0/1 | 2/2 | 0/1 | 3/4 | 2/2 | 0/1 | 2/2 | 3/3 | - |
+| Power | 0/0 | 1/1 | 0/0 | 0/0 | 4/6 | 0/0 | 3/4 | 0/0 | 3/3 | 2/5 | - |
+| Acceptance | 0/1 | 4/6 | 3/4 | 0/1 | 2/2 | 3/3 | 2/2 | 0/1 | 2/2 | 0/1 | - |
+| Dominance | 0/1 | 0/1 | 2/5 | 2/2 | 4/6 | 3/3 | 2/2 | 0/1 | 2/5 | 0/1 | 3/4 |
+| Kill 'Em All | 0/0 | 1/1 | 0/0 | 0/0 | 4/6 | 0/0 | 3/4 | 0/0 | 3/3 | 2/5 | - |
+| Big 40 | 0/0 | 1/1 | 0/0 | 0/0 | 4/6 | 0/0 | 3/4 | 0/0 | 3/3 | 2/5 | - |
+| Eliminate | 0/0 | 1/2 | 0/0 | 1/2 | 4/6 | 1/1 | 1/2 | 0/0 | 1/1 | 2/5 | - |
+| Siege | 0/1 | 4/6 | 0/1 | 2/2 | 0/1 | 3/4 | 2/2 | 3/4 | 2/2 | 5/3 | - |
+| Big Man | 0/0 | 1/2 | 0/0 | 1/1 | 1/1 | 2/3 | 1/2 | 0/0 | 1/1 | 1/2 | - |
+| Armageddon | 0/0 | 1/1 | 0/0 | 3/3 | 0/0 | 3/4 | 0/0 | 3/3 | 0/0 | 2/5 | - |
+
+The Power, Kill 'Em All, and Big 40 switch bodies are identical. Static
+constants at `0x00481018` onward decode as floats 52, 4, 2, 100, 3, and 6.
+The planner computes `total duration turns / 52` and retains that factor in an
+x87/local-stack value used by quota comparisons. Ghidra misleadingly renders
+several later uses as multiplication by `0.0`; instruction windows confirm they
+still consume the saved factor. For that reason `OriginalAiHireRoleRules`
+implements only this exact pre-adjustment schedule, not speculative quota logic.
+
+**Confidence:** Verified for scenario order, periods, every ranking-mode call,
+every hire-role write, shared scenario bodies, constants, and retained factor.
+
+**Next validation:** transcribe each adjustment as raw selector/count inputs and
+verify its x87 comparison direction at instruction level before integration.
 
 ### BIN-AI-003A - strategic hire-offer ranking
 

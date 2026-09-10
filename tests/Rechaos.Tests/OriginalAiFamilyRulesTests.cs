@@ -23,18 +23,18 @@ public sealed class OriginalAiFamilyRulesTests
 
     [Theory]
     [MemberData(nameof(Tables))]
-    public void ScenarioAndStrategicModeSelectOriginalFamily(
+    public void ScenarioAndHireRoleSelectOriginalFamily(
         ScenarioId scenario,
         int[] expected)
     {
         Assert.Equal(7, expected.Length);
 
-        for (var strategicMode = 0; strategicMode < expected.Length; strategicMode++)
+        for (var hireRole = 0; hireRole < expected.Length; hireRole++)
         {
-            var selection = OriginalAiFamilyRules.Select(scenario, strategicMode, Preserved);
+            var selection = OriginalAiFamilyRules.Select(scenario, hireRole, Preserved);
 
-            Assert.Equal(expected[strategicMode], selection.Family);
-            Assert.Equal(strategicMode == 4 && expected[strategicMode] != Preserved,
+            Assert.Equal(expected[hireRole], selection.Family);
+            Assert.Equal(hireRole == 4 && expected[hireRole] != Preserved,
                 selection.CopiesProjectedGangValue);
         }
     }
@@ -43,7 +43,7 @@ public sealed class OriginalAiFamilyRulesTests
     [InlineData(-1)]
     [InlineData(7)]
     [InlineData(100)]
-    public void UnknownStrategicModePreservesCurrentFamily(int strategicMode)
+    public void UnknownHireRolePreservesCurrentFamily(int strategicMode)
     {
         var selection = OriginalAiFamilyRules.Select(ScenarioId.Power, strategicMode, 11);
 

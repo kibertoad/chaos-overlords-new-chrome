@@ -102,21 +102,23 @@ replay-verified two-computer harness through 20 turns or objective completion.
    strict-improvement, previous-Attack, and cooldown gates, is isolated in
    `OriginalAiEquipmentRules`; it is intentionally not applied to unrelated
    families by the provisional scalar planner. The exact ten-scenario by
-   seven-strategic-mode family table is isolated in `OriginalAiFamilyRules`,
+   seven-hire-role family table is isolated in `OriginalAiFamilyRules`,
    including unmapped cells which preserve the current family and the mode-4
    planning-record copy; live integration awaits representation of query
-   `0x7c`'s per-player strategic-mode word. The three-offer helper's six exact
+   `0x7c`'s per-player hire-role word. The original objective-specific base
+   turn schedules are isolated in `OriginalAiHireRoleRules`; Dominance alone
+   uses an eleven-turn period, while the other nine objectives use ten. Dynamic
+   family-count adjustments remain pending. The three-offer helper's six exact
    role rankings, scenario-specific filters and tie directions, rich-player
    mode override, post-ranking affordability check, and no-fallback behavior
    are isolated in `OriginalAiHireRules`. Its failed-hire rejection selector is
    also exact: Greed rejects slot zero while other scenarios minimize a
    Stealth-weighted positive-stat efficiency ratio with first-tie priority.
-   These rules are not yet used by the live
-   planner because its scenario-specific role selector is still being
-   recovered. Selector `0x3e` is identified as the
-   previous-turn action byte. Selectors 0 (scenario), `0x48` (planning-record
-   initialized flag), `0x5a` (mirrored gang projection), `0x7c` (per-player
-   strategic mode), 3 (player cash), 4 (sector
+   These rules are not yet used by the live planner because the schedule's
+   family-count adjustments are still being recovered. Selector `0x3e` is
+   identified as the previous-turn action byte. Selectors 0 (scenario), `0x48`
+   (planning-record initialized flag), `0x5a` (mirrored gang projection),
+   `0x7c` (per-player hire role), 3 (player cash), 4 (sector
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
    (Heal), plus action bytes 3 (Chaos), 10 (Move), and 13 (Snitch), are now
