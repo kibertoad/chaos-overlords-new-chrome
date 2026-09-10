@@ -28,6 +28,8 @@ public sealed class AiPlanningStateTests
                 Assert.Equal(AiActionTarget.None, planning.PlannedTarget(playerId, gang));
                 Assert.Equal(0, planning.WeaponCooldown(playerId, gang));
                 Assert.Equal(0, planning.ArmorCooldown(playerId, gang));
+                Assert.Equal(AiPlanningState.InactiveFormationSector,
+                    planning.FormationSector(playerId, gang));
             }
         }
     }
@@ -147,6 +149,7 @@ public sealed class AiPlanningStateTests
         planning.SetFamily(player, 3, 11);
         planning.SetEquipmentCooldown(player, 3, EquipmentSlot.Weapon, 12);
         planning.SetEquipmentCooldown(player, 3, EquipmentSlot.Armor, 15);
+        planning.SetFormationSector(player, 3, 42);
         planning.SetPlannedAction(player, 3, GangAction.Attack);
         planning.RollActiveGangActions(player,
         [
@@ -165,6 +168,8 @@ public sealed class AiPlanningStateTests
         Assert.Equal(GangAction.None, planning.PlannedAction(player, 3));
         Assert.Equal(0, planning.WeaponCooldown(player, 3));
         Assert.Equal(0, planning.ArmorCooldown(player, 3));
+        Assert.Equal(AiPlanningState.InactiveFormationSector,
+            planning.FormationSector(player, 3));
     }
 
     [Fact]

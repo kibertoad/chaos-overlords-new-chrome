@@ -19,4 +19,19 @@ public sealed class OriginalAiFamilyElevenRulesTests
         Assert.Equal(expected,
             OriginalAiFamilyElevenRules.ShouldHeal(
                 force, effectiveHeal, previousAction));
+
+    [Fact]
+    public void FormationGroupsEverySixFamilySlotsIncludingInactiveRosterEntries()
+    {
+        var families = Enumerable.Repeat(
+            AiPlanningState.UnusedFamily,
+            AiPlanningState.GangSlotsPerPlayer).ToArray();
+        foreach (var slot in new[] { 0, 1, 3, 5, 8, 13, 20, 21 })
+            families[slot] = 11;
+
+        Assert.Equal(0, OriginalAiFamilyElevenRules.FormationLeaderSlot(families, 0));
+        Assert.Equal(0, OriginalAiFamilyElevenRules.FormationLeaderSlot(families, 13));
+        Assert.Equal(20, OriginalAiFamilyElevenRules.FormationLeaderSlot(families, 20));
+        Assert.Equal(20, OriginalAiFamilyElevenRules.FormationLeaderSlot(families, 21));
+    }
 }

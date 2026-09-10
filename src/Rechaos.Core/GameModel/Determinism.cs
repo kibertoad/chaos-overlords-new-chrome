@@ -64,7 +64,7 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 17;
+    private const int FormatVersion = 18;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
@@ -145,12 +145,20 @@ public static class MatchStateHasher
             includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
             includeFirstPlanningFlags: true, includeAiTargets: true);
 
+    internal static string ComputeVersionSeventeenSha256(MatchState state) =>
+        ComputeSha256(state, 17, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
+            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true);
+
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
             includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
             includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true);
+            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
+            includeAiFormationSectors: true);
 
     private static string ComputeSha256(
         MatchState state,
@@ -168,7 +176,8 @@ public static class MatchStateHasher
         bool includeAiActions = false,
         bool includeFirstPlanningFlags = false,
         bool includeAiTargets = false,
-        bool includeAiCooldowns = false)
+        bool includeAiCooldowns = false,
+        bool includeAiFormationSectors = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -227,6 +236,8 @@ public static class MatchStateHasher
                     foreach (var cooldown in state.AiPlanning.CaptureWeaponCooldowns()) writer.Write(cooldown);
                     foreach (var cooldown in state.AiPlanning.CaptureArmorCooldowns()) writer.Write(cooldown);
                 }
+                if (includeAiFormationSectors)
+                    foreach (var sector in state.AiPlanning.CaptureFormationSectors()) writer.Write(sector);
             }
             writer.Write(state.NextEventSequence);
             writer.Write(state.Outcome is not null);

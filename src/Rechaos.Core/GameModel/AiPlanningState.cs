@@ -20,6 +20,7 @@ public sealed class AiPlanningState
     public const int UnusedFamily = 99;
     public const int SectorAnchorOffset = MatchLimits.SectorCount;
     public const int InactiveSectorAnchor = 100 + SectorAnchorOffset;
+    public const int InactiveFormationSector = -1;
     private const int MaximumHireRole = 6;
     private const int MaximumFamily = 14;
 
@@ -36,6 +37,7 @@ public sealed class AiPlanningState
     private readonly bool[] _hasPlanned;
     private readonly short[] _weaponCooldowns;
     private readonly short[] _armorCooldowns;
+    private readonly short[] _formationSectors;
 
     private AiPlanningState(
         IReadOnlyList<int> currentHireRoles,
@@ -50,7 +52,8 @@ public sealed class AiPlanningState
         IReadOnlyList<AiActionTarget> plannedTargets,
         IReadOnlyList<bool> hasPlanned,
         IReadOnlyList<short> weaponCooldowns,
-        IReadOnlyList<short> armorCooldowns)
+        IReadOnlyList<short> armorCooldowns,
+        IReadOnlyList<short> formationSectors)
     {
         ArgumentNullException.ThrowIfNull(currentHireRoles);
         ArgumentNullException.ThrowIfNull(previousHireRoles);
@@ -65,6 +68,7 @@ public sealed class AiPlanningState
         ArgumentNullException.ThrowIfNull(hasPlanned);
         ArgumentNullException.ThrowIfNull(weaponCooldowns);
         ArgumentNullException.ThrowIfNull(armorCooldowns);
+        ArgumentNullException.ThrowIfNull(formationSectors);
         if (currentHireRoles.Count != MatchLimits.PlayerCount
             || previousHireRoles.Count != MatchLimits.PlayerCount)
             throw new ArgumentException("AI hire roles must contain all six original player slots.");
@@ -85,6 +89,8 @@ public sealed class AiPlanningState
             throw new ArgumentException("AI first-planning flags must contain all six original player slots.", nameof(hasPlanned));
         if (weaponCooldowns.Count != actionSlotCount || armorCooldowns.Count != actionSlotCount)
             throw new ArgumentException("AI equipment cooldowns must contain all six-by-81 original planning slots.");
+        if (formationSectors.Count != actionSlotCount)
+            throw new ArgumentException("AI formation sectors must contain all six-by-81 original planning slots.");
         if (currentHireRoles.Any(role => role is < 0 or > MaximumHireRole))
             throw new ArgumentOutOfRangeException(nameof(currentHireRoles));
         if (previousHireRoles.Any(role => role is < 0 or > MaximumHireRole))
@@ -97,6 +103,9 @@ public sealed class AiPlanningState
             || previousActions.Any(action => !IsValidAction(action))
             || plannedActions.Any(action => !IsValidAction(action)))
             throw new ArgumentOutOfRangeException(nameof(olderActions));
+        if (formationSectors.Any(sector => sector != InactiveFormationSector
+                && sector is < 0 or >= MatchLimits.SectorCount))
+            throw new ArgumentOutOfRangeException(nameof(formationSectors));
 
         _currentHireRoles = currentHireRoles.ToArray();
         _previousHireRoles = previousHireRoles.ToArray();
@@ -111,6 +120,7 @@ public sealed class AiPlanningState
         _hasPlanned = hasPlanned.ToArray();
         _weaponCooldowns = weaponCooldowns.ToArray();
         _armorCooldowns = armorCooldowns.ToArray();
+        _formationSectors = formationSectors.ToArray();
     }
 
     public int CurrentHireRole(PlayerId player) => _currentHireRoles[PlayerIndex(player)];
@@ -126,6 +136,7 @@ public sealed class AiPlanningState
     public bool HasPlanned(PlayerId player) => _hasPlanned[PlayerIndex(player)];
     public int WeaponCooldown(PlayerId player, int gangSlot) => _weaponCooldowns[GangSlotIndex(player, gangSlot)];
     public int ArmorCooldown(PlayerId player, int gangSlot) => _armorCooldowns[GangSlotIndex(player, gangSlot)];
+    public int FormationSector(PlayerId player, int gangSlot) => _formationSectors[GangSlotIndex(player, gangSlot)];
 
     internal IReadOnlyList<int> CaptureCurrentHireRoles() => _currentHireRoles.ToArray();
     internal IReadOnlyList<int> CapturePreviousHireRoles() => _previousHireRoles.ToArray();
@@ -140,6 +151,7 @@ public sealed class AiPlanningState
     internal IReadOnlyList<bool> CaptureHasPlanned() => _hasPlanned.ToArray();
     internal IReadOnlyList<short> CaptureWeaponCooldowns() => _weaponCooldowns.ToArray();
     internal IReadOnlyList<short> CaptureArmorCooldowns() => _armorCooldowns.ToArray();
+    internal IReadOnlyList<short> CaptureFormationSectors() => _formationSectors.ToArray();
 
     internal bool BeginPlanning(PlayerId player)
     {
@@ -238,6 +250,14 @@ public sealed class AiPlanningState
         }
     }
 
+    internal void SetFormationSector(PlayerId player, int gangSlot, int sectorId)
+    {
+        if (sectorId != InactiveFormationSector
+            && sectorId is < 0 or >= MatchLimits.SectorCount)
+            throw new ArgumentOutOfRangeException(nameof(sectorId));
+        _formationSectors[GangSlotIndex(player, gangSlot)] = checked((short)sectorId);
+    }
+
     internal void CleanupDuplicatePreviousActions(
         PlayerId player,
         IReadOnlyList<MatchGangState> gangs)
@@ -279,6 +299,7 @@ public sealed class AiPlanningState
         _plannedTargets[index] = AiActionTarget.None;
         _weaponCooldowns[index] = 0;
         _armorCooldowns[index] = 0;
+        _formationSectors[index] = InactiveFormationSector;
     }
 
     private void RewriteFirstDuplicate(
@@ -310,7 +331,10 @@ public sealed class AiPlanningState
         new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
         new bool[MatchLimits.PlayerCount],
         new short[MatchLimits.PlayerCount * GangSlotsPerPlayer],
-        new short[MatchLimits.PlayerCount * GangSlotsPerPlayer]);
+        new short[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+        Enumerable.Repeat(
+            checked((short)InactiveFormationSector),
+            MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray());
 
     internal static AiPlanningState Initialize(IReadOnlyList<MatchPlayerState> players)
     {
@@ -322,6 +346,10 @@ public sealed class AiPlanningState
                 ? checked(player.Gangs[0].SectorId + SectorAnchorOffset)
                 : InactiveSectorAnchor;
             planning.SetSectorAnchor(player.Id, anchor);
+            for (var gangSlot = 0; gangSlot < player.Gangs.Count; gangSlot++)
+                if (player.Gangs[gangSlot].IsActive)
+                    planning.SetFormationSector(
+                        player.Id, gangSlot, player.Gangs[gangSlot].SectorId);
         }
         return planning;
     }
@@ -384,12 +412,16 @@ public sealed class AiPlanningState
         IReadOnlyList<AiActionTarget> plannedTargets,
         IReadOnlyList<bool> hasPlanned,
         IReadOnlyList<short>? weaponCooldowns = null,
-        IReadOnlyList<short>? armorCooldowns = null) => new(
+        IReadOnlyList<short>? armorCooldowns = null,
+        IReadOnlyList<short>? formationSectors = null) => new(
             currentHireRoles, previousHireRoles, families, sectorAnchors,
             olderActions, previousActions, plannedActions,
             olderTargets, previousTargets, plannedTargets, hasPlanned,
             weaponCooldowns ?? new short[MatchLimits.PlayerCount * GangSlotsPerPlayer],
-            armorCooldowns ?? new short[MatchLimits.PlayerCount * GangSlotsPerPlayer]);
+            armorCooldowns ?? new short[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            formationSectors ?? Enumerable.Repeat(
+                checked((short)InactiveFormationSector),
+                MatchLimits.PlayerCount * GangSlotsPerPlayer).ToArray());
 
     private static bool IsValidFamily(int family) =>
         family == UnusedFamily || family is >= 0 and <= MaximumFamily and not 8;

@@ -169,9 +169,9 @@ replay-verified two-computer harness through 20 turns or objective completion.
    replay. Its weapon selector includes the recovered class scoring/ties,
    research, local-cap, raw-Tech, affordability, strict-improvement,
    previous-Attack, and cooldown gates. Its blocks-of-six mode-10 formation
-   anchors and mode-16 followers are bounded but await authoritative per-gang
-   formation-sector state, so those Move paths still use the provisional
-   fallback planner. The exact ten-scenario by
+   anchors and mode-16 followers are also live; their separate per-gang
+   formation-sector shorts are authoritative, hashed, saved, and replayed.
+   The exact ten-scenario by
    seven-hire-role family table is implemented by `OriginalAiFamilyRules`,
    including unmapped cells which preserve the current family. AI planning
    preparation now rolls the current role into the previous role and updates

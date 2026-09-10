@@ -1246,9 +1246,9 @@ each six family-11 gangs, while the first gang in each block establishes the
 formation destination.
 
 **Recreation status:** the equipment priority/cooldowns, Heal gate, and exact
-first-visible local Attack target are live and replay-wired. Modes 10 and 16
-remain on the provisional movement fallback until the original per-gang stored
-formation-sector short is represented authoritatively and persisted.
+first-visible local Attack target are live and replay-wired. Modes 10 and 16 are
+also live; the separate six-by-81 formation-sector shorts preserve inactive
+family records and are included in authoritative hashes, saves, and replays.
 
 **Interpretation:** this is an attitude/hostility system, not a scalar combat
 bonus. Homicidal Maniac begins maximally hostile toward human players and

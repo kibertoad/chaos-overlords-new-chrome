@@ -116,6 +116,9 @@ public static class AiTurnPlanner
                 gang.IsActive && gang.SectorId == sectorId))
             .ToArray();
         var playerOrder = Enumerable.Range(0, MatchLimits.PlayerCount).ToArray();
+        var familySlots = Enumerable.Range(0, AiPlanningState.GangSlotsPerPlayer)
+            .Select(slot => state.AiPlanning.Family(playerId, slot))
+            .ToArray();
 
         foreach (var entry in player.Gangs.Select((gang, slot) => (gang, slot)))
         {
@@ -124,7 +127,9 @@ public static class AiTurnPlanner
             if (family == 11)
             {
                 PrepareFamilyElevenCommand(
-                    state, playerId, entry.gang, entry.slot);
+                    state, playerId, entry.gang, entry.slot,
+                    sectorOwners, sectorDisabled, sectorGangCounts,
+                    playerOrder, familySlots);
                 continue;
             }
             if (family is 13 or 14)
@@ -190,9 +195,15 @@ public static class AiTurnPlanner
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
-        int gangSlot)
+        int gangSlot,
+        IReadOnlyList<int> sectorOwners,
+        IReadOnlyList<bool> sectorDisabled,
+        IReadOnlyList<int> sectorGangCounts,
+        IReadOnlyList<int> playerOrder,
+        IReadOnlyList<int> familySlots)
     {
         var player = state.FindPlayer(playerId)!;
+        state.AiPlanning.SetFormationSector(playerId, gangSlot, gang.SectorId);
         if (OriginalAiEquipmentRules.SelectFamilyElevenUpgrade(
                 state, player, gang, gangSlot) is { } upgrade)
         {
@@ -216,15 +227,70 @@ public static class AiTurnPlanner
             return;
         }
 
-        if (state.Sectors[gang.SectorId].Owner == playerId) return;
+        if (state.Sectors[gang.SectorId].Owner == playerId)
+        {
+            PrepareFamilyElevenMove(
+                state, playerId, gang, gangSlot, mode: 10,
+                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+            return;
+        }
         var target = VisibleOpponentsInSector(state, playerId, gang.SectorId)
             .FirstOrDefault();
-        if (target.Gang is null) return;
+        if (target.Gang is not null)
+        {
+            state.AiPlanning.SetPlannedAction(
+                playerId, gangSlot, GangAction.Attack,
+                new AiActionTarget(
+                    checked((byte)target.Gang.Owner.Value),
+                    checked((byte)target.Slot)));
+            return;
+        }
+
+        var leaderSlot = OriginalAiFamilyElevenRules.FormationLeaderSlot(
+            familySlots, gangSlot);
+        var isLeader = leaderSlot == gangSlot;
+        PrepareFamilyElevenMove(
+            state, playerId, gang, gangSlot, isLeader ? 10 : 16,
+            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder,
+            isLeader ? null : state.AiPlanning.FormationSector(playerId, leaderSlot));
+    }
+
+    private static void PrepareFamilyElevenMove(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        int gangSlot,
+        int mode,
+        IReadOnlyList<int> sectorOwners,
+        IReadOnlyList<bool> sectorDisabled,
+        IReadOnlyList<int> sectorGangCounts,
+        IReadOnlyList<int> playerOrder,
+        int? formationSectorId = null)
+    {
+        var target = OriginalAiSectorSelectionRules.Select(
+            mode,
+            gang.SectorId,
+            playerId,
+            family: 11,
+            sectorOwners,
+            sectorDisabled,
+            sectorGangCounts,
+            canSoloControl: _ => true,
+            hasPriorChaos: _ => false,
+            isHostileOwner: owner =>
+                state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
+            isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
+                .Setup.Controller == PlayerController.Human,
+            playerOrder,
+            state.Random,
+            hasHumanPlayers: state.Setup.Players.Any(candidate =>
+                candidate.Controller == PlayerController.Human),
+            formationSectorId: formationSectorId);
         state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Attack,
-            new AiActionTarget(
-                checked((byte)target.Gang.Owner.Value),
-                checked((byte)target.Slot)));
+            playerId, gangSlot, GangAction.Move,
+            new AiActionTarget(checked((byte)target), 0));
+        if (mode == 10 && state.Sectors[gang.SectorId].Owner != playerId)
+            state.AiPlanning.SetFormationSector(playerId, gangSlot, target);
     }
 
     private static void PrepareObjectiveFamilyCommand(

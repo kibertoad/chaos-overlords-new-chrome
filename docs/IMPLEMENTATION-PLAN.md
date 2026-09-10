@@ -60,8 +60,8 @@ workstream can be marked complete.
 - The current implementation baseline includes the recovered sector Combat +
   Defense advantage hostility pass, exact isolated scenario/strategy family
   dispatch, exact hire-offer ranking/rejection, the isolated modes 1-5 and
-  12-15 sector-selection kernels, live recovered hire-placement rules, and 711 passing tests. Native saves are
-  v14, replay is v15, and the canonical hash is v17.
+  12-16 sector-selection kernels, live recovered hire-placement rules, and 745 passing tests. Native saves are
+  v15, replay is v16, and the canonical hash is v18.
 - The latest completed setup checkpoint is commit `10a3a9d`: fixed Greed and
   Armageddon city/HQ/RNG vectors now guard the statically recovered generator,
   stale frequency/class claims were removed, and exact uppercase `SMGFUNDAGE`
@@ -78,10 +78,10 @@ workstream can be marked complete.
   remains provisional and must not be presented as original-AI parity.
 - Family 11's exact weapon/armor/miscellaneous Equip priority, replacement
   cooldowns, Heal gate, and first-visible-local-opponent Attack are live and
-  replay-wired. Its modes 10 and 16 are bounded as the blocks-of-six formation
-  anchor/follower Move paths, but still await authoritative per-gang formation-
-  sector state. Mode 6 and the downstream Control use of `FUN_0040a1a7`'s pair
-  flag are also bounded.
+  replay-wired. Its modes 10 and 16, blocks-of-six formation anchor/follower
+  Move paths, are live with authoritative per-gang formation-sector state.
+  Mode 6 and the downstream Control use of `FUN_0040a1a7`'s pair flag are also
+  bounded.
 - Static kernels guard family-1's cash 50/51, Force 8/9, effective-Heal -3/-4,
   Tolerance 3/4, and owner/Mentality terminal boundaries. The exact previous-
   None/Chaos Heal/Move/Chaos branch and previous-Heal Heal/Control/Move branch
@@ -643,8 +643,8 @@ unmarked guess.
 | M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; common typed validation-rule pipeline; deferred hire purchase/placement, one-offer-per-turn snubbing, binary-derived 1–89 rejection refill and 5–9 initial Force; player elimination; declarative validation for all action target shapes; typed queue mutations and ordered events; bounded notification queues; recovered RNG; canonical phase hashes | Runtime offer/Force fixtures, within-phase ordering, and remaining reference-derived edge rules |
 | M3 | Foundation started | Ordered base Upkeep economy; all Instant and Transaction actions; Move/Terminate; grouped Influence and Control; per-turn Chaos; Crackdown lifecycle; influenced-site stats; Research caps; Factory discount; recovered 0/1/2 difficulty pools and thresholds for Heal, Influence, Research, Chaos, plus high-band owned-sector Crackdown reduction | Binary police/call-order fixtures, Control conflict edges, remaining special buildings, Factory acquisition/swap fixtures, and M2 gate |
 | M4 | Foundation started | Recovered raw RNG/range algorithms; serializable state; effective item/site stats; phase-wide Attack/retaliation and police snapshots; recovered difficulty-specific d20 hidden detection, band-0 Defense reduction, 6+/5+/4+ main rolls with quarter-pool damage floor, exact Hide/weapon/Martial-Arts retaliation eligibility, 5+/5+/4+ halved retaliation, elimination and recorded rolls | Resolve reveal timing, reference combat/Crackdown fixtures, animation/audio mapping, and M2-M3 gates |
-| M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v14 snapshots with reusable migration machinery and v15 authoritative-operation replays plus client save/replay flows; equipment Give recipient workflow | Siege setup/visual mapping, objective ranking/tie fixtures, current-format persistence safety, remaining management UI deliverable and M4 gate |
-| M6 | Foundation started | Deterministic objective-aware planner and replay driver; recovered outer planner, all family dispatch values, exact ten-scenario by seven-hire-role dispatch table, exact base turn schedules and three-offer role rankings, complete three-generation action tuples, selector inventory and strategic routing including modes 12-15 Big Man/Eliminate objectives, complete live family-13/14 handlers with off-objective Move, owned-objective Heal/equipment/Influence, owned/contested exact Attack/Heal/Control, and family-14's prior-Control Heal/family-13 transition, mode-6 leader/hostility movement, pair-flag Control, family-1 equipment/cooldown and all three bounded continuations, and family-11 equipment/cooldown, local Attack, mode-10 anchor and mode-16 follower paths; the family table, every objective-specific hire-role adjustment, computed gang limit, hire-attempt gate, live post-command role update, exact live hire selector and failure-path snub, fixed three-slot offer tombstones/refill, ascending inactive roster-slot reuse/reset, exact family-1 and family-11 equipment choices, first-planning lifecycle, duplicate Chaos/Influence cleanup, and live persistent-anchor placement refresh with ordinary, Big Man, visible-hostile, and Siege paths are implemented; verified current/previous hire roles, first-plan flags, action/target tuples, equipment cooldowns, and six-by-81 family slots persist in authoritative state, with exact role rollover and active-gang family assignment during planning preparation; exact pre-city six-player reactions, directional attitudes, non-Homicidal recovery, combat/Control and sector Combat + Defense advantage hostility, hostility-aware fallback targets, hashes/saves/replays; exact 0/1/2 per-computer resolution calibration implemented for all nine consumers | Capture fixed family-13/14 reference boundaries and larger-player/objective-completion stress cases; recover remaining family handlers; M5 gate |
+| M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v15 snapshots with reusable migration machinery and v16 authoritative-operation replays plus client save/replay flows; equipment Give recipient workflow | Siege setup/visual mapping, objective ranking/tie fixtures, current-format persistence safety, remaining management UI deliverable and M4 gate |
+| M6 | Foundation started | Deterministic objective-aware planner and replay driver; recovered outer planner, all family dispatch values, exact ten-scenario by seven-hire-role dispatch table, exact base turn schedules and three-offer role rankings, complete three-generation action tuples, selector inventory and strategic routing including modes 12-16, complete live family-13/14 handlers with off-objective Move, owned-objective Heal/equipment/Influence, owned/contested exact Attack/Heal/Control, and family-14's prior-Control Heal/family-13 transition, mode-6 leader/hostility movement, pair-flag Control, family-1 equipment/cooldown and all three bounded continuations, and complete family-11 equipment/cooldown/Heal/local-Attack/mode-10 anchor/mode-16 follower paths; the family table, every objective-specific hire-role adjustment, computed gang limit, hire-attempt gate, live post-command role update, exact live hire selector and failure-path snub, fixed three-slot offer tombstones/refill, ascending inactive roster-slot reuse/reset, exact family-1 and family-11 equipment choices, first-planning lifecycle, duplicate Chaos/Influence cleanup, and live persistent-anchor placement refresh with ordinary, Big Man, visible-hostile, and Siege paths are implemented; verified current/previous hire roles, first-plan flags, action/target tuples, equipment cooldowns, formation sectors, and six-by-81 family slots persist in authoritative state, with exact role rollover and active-gang family assignment during planning preparation; exact pre-city six-player reactions, directional attitudes, non-Homicidal recovery, combat/Control and sector Combat + Defense advantage hostility, hostility-aware fallback targets, hashes/saves/replays; exact 0/1/2 per-computer resolution calibration implemented for all nine consumers | Capture fixed family-11/13/14 reference boundaries and larger-player/objective-completion stress cases; recover remaining family handlers; M5 gate |
 | M7 | Foundation started | Original city ownership layers and site/gang portraits are rendered; resolved equipped attacks route item-defined original weapon sounds | Complete atlas/event integration, animations, remaining audio/music/video, golden screens and M1-M6 dependencies |
 | M8 | Foundation started | Windows local launcher; legal-copy extraction; self-contained Windows package and GOG-aware Inno installer with an always-visible New Chrome destination page, separate original-asset source page, visible import stages, retryable source selection, nonzero failure exit and runtime error dialog; Linux amd64 `.deb`; macOS arm64/x64 application-bundle `.pkg`; manually dispatched validation and selectable Windows-only (default) or all-platform GitHub Release workflow; pull-request/manual zizmor gate; clean-room run `34403047147` passed Windows, Linux, both macOS architectures, and all installer jobs; zizmor run `34403047115` passed | Signing/notarization, native interactive tests, accuracy audit, compatibility and full release gate |
 
@@ -779,18 +779,22 @@ not lines of code or asset counts.
 3. Replace provisional AI scoring only where handler-exact evidence or fixed
    reference decisions support it; expand deterministic tournaments to larger
    player counts and objective-completion stress cases.
-4. Capture an original new-game fixture to validate city generation,
+4. After the remaining family handlers have fixed decision-order/RNG traces,
+   run a dedicated AI structure pass: split planner orchestration, family
+   handlers, shared selectors, and provisional fallback policy into explicit
+   boundaries without generalizing away original branch order.
+5. Capture an original new-game fixture to validate city generation,
    HQ/Right Hands placement, hire offers, initial Force, seeding, and complete
    setup RNG order.
-5. Close the remaining economy, police, special-building, objective, and
+6. Close the remaining economy, police, special-building, objective, and
    current-format persistence safety gates with binary/reference fixtures.
-6. Complete setup alignment, remaining management hit maps, atlas semantics,
+7. Complete setup alignment, remaining management hit maps, atlas semantics,
    transparency/color keys, combat cadence, audio/music/video triggers, and
    native-resolution golden screens.
-7. Run the full section 4.4 accuracy audit across layouts, rules, animations,
+8. Run the full section 4.4 accuracy audit across layouts, rules, animations,
    AI, RNG, media, and persistence; resolve or explicitly classify every
    in-scope discrepancy. Original networking remains excluded.
-8. Finish signing/notarization, native interactive Windows/Linux/macOS
+9. Finish signing/notarization, native interactive Windows/Linux/macOS
    validation, accessibility/performance work, and the complete release gate.
 
 ## 10. Source hierarchy

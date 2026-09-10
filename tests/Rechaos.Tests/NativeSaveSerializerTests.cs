@@ -23,6 +23,7 @@ public sealed class NativeSaveSerializerTests
         match.AiPlanning.RollActiveGangActions(new PlayerId(1), match.Players[1].Gangs);
         match.AiPlanning.SetEquipmentCooldown(new PlayerId(1), 0, EquipmentSlot.Weapon, 12);
         match.AiPlanning.SetEquipmentCooldown(new PlayerId(1), 0, EquipmentSlot.Armor, 15);
+        match.AiPlanning.SetFormationSector(new PlayerId(1), 0, 37);
         match.FinishUpkeep();
         Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(0), GangAction.Hide, CommandTarget.None, Repeat: true)).Accepted);
@@ -55,6 +56,7 @@ public sealed class NativeSaveSerializerTests
         Assert.True(restored.AiPlanning.HasPlanned(new PlayerId(1)));
         Assert.Equal(12, restored.AiPlanning.WeaponCooldown(new PlayerId(1), 0));
         Assert.Equal(15, restored.AiPlanning.ArmorCooldown(new PlayerId(1), 0));
+        Assert.Equal(37, restored.AiPlanning.FormationSector(new PlayerId(1), 0));
         Assert.Equal(SaveBytes(match), SaveBytes(restored));
     }
 
@@ -77,6 +79,28 @@ public sealed class NativeSaveSerializerTests
         Assert.All(restored.AiPlanning.CaptureArmorCooldowns(), value => Assert.Equal(0, value));
         Assert.Equal(MatchStateHasher.ComputeVersionSixteenSha256(match),
             MatchStateHasher.ComputeVersionSixteenSha256(restored));
+    }
+
+    [Fact]
+    public void VersionFourteenSaveInfersFormationSectorsFromActiveGangs()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 14;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionSeventeenSha256(match);
+        document["runtime"]!["aiPlanning"]!.AsObject().Remove("formationSectors");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        foreach (var player in restored.Players)
+            for (var gangSlot = 0; gangSlot < player.Gangs.Count; gangSlot++)
+                Assert.Equal(player.Gangs[gangSlot].SectorId,
+                    restored.AiPlanning.FormationSector(player.Id, gangSlot));
+        Assert.Equal(MatchStateHasher.ComputeVersionSeventeenSha256(match),
+            MatchStateHasher.ComputeVersionSeventeenSha256(restored));
     }
 
     [Fact]

@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 14;
+    public const int CurrentFormatVersion = 15;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -131,7 +131,11 @@ public static class NativeSaveSerializer
                     document.FormatVersion >= 14
                         ? savedPlanning.ArmorCooldowns
                             ?? throw new InvalidDataException("Native save AI armor cooldowns are missing.")
-                        : EmptyAiCooldowns())
+                        : EmptyAiCooldowns(),
+                    document.FormatVersion >= 15
+                        ? savedPlanning.FormationSectors
+                            ?? throw new InvalidDataException("Native save AI formation sectors are missing.")
+                        : InferLegacyFormationSectors(savedPlanning, players))
                 : throw new InvalidDataException("Native save AI planning state is missing.")
             : AiPlanningState.Initialize(players);
         var runtime = new MatchRuntimeRestore(
@@ -167,6 +171,7 @@ public static class NativeSaveSerializer
             11 => MatchStateHasher.ComputeVersionFourteenSha256(state),
             12 => MatchStateHasher.ComputeVersionFifteenSha256(state),
             13 => MatchStateHasher.ComputeVersionSixteenSha256(state),
+            14 => MatchStateHasher.ComputeVersionSeventeenSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
         if (!CryptographicOperations.FixedTimeEquals(
@@ -222,7 +227,8 @@ public static class NativeSaveSerializer
                 state.AiPlanning.CapturePlannedTargets(),
                 state.AiPlanning.CaptureHasPlanned(),
                 state.AiPlanning.CaptureWeaponCooldowns(),
-                state.AiPlanning.CaptureArmorCooldowns())));
+                state.AiPlanning.CaptureArmorCooldowns(),
+                state.AiPlanning.CaptureFormationSectors())));
 
     private static IReadOnlyList<GangAction> EmptyAiActions() =>
         new GangAction[MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer];
@@ -232,6 +238,26 @@ public static class NativeSaveSerializer
 
     private static IReadOnlyList<short> EmptyAiCooldowns() =>
         new short[MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer];
+
+    private static IReadOnlyList<short> InferLegacyFormationSectors(
+        AiPlanningDocument planning,
+        IReadOnlyList<MatchPlayerState> players)
+    {
+        var result = Enumerable.Repeat(
+            checked((short)AiPlanningState.InactiveFormationSector),
+            MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer).ToArray();
+        foreach (var player in players)
+        {
+            for (var gangSlot = 0; gangSlot < player.Gangs.Count; gangSlot++)
+            {
+                var gang = player.Gangs[gangSlot];
+                if (!gang.IsActive) continue;
+                result[player.Id.Value * AiPlanningState.GangSlotsPerPlayer + gangSlot] =
+                    checked((short)gang.SectorId);
+            }
+        }
+        return result;
+    }
 
     private static IReadOnlyList<bool> InferLegacyHasPlanned(AiPlanningDocument planning)
     {
@@ -571,7 +597,8 @@ internal sealed record AiPlanningDocument(
     IReadOnlyList<AiActionTarget>? PlannedTargets = null,
     IReadOnlyList<bool>? HasPlanned = null,
     IReadOnlyList<short>? WeaponCooldowns = null,
-    IReadOnlyList<short>? ArmorCooldowns = null);
+    IReadOnlyList<short>? ArmorCooldowns = null,
+    IReadOnlyList<short>? FormationSectors = null);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,

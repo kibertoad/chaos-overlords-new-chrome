@@ -47,6 +47,29 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
+    public void ModeTenSwitchesBetweenHumanAndAnyOpposingOwnership()
+    {
+        var withHumans = new Facts(source: 27);
+        withHumans.Owners[28] = 1;
+        withHumans.Owners[26] = 2;
+        withHumans.HumanOwners.Add(2);
+        Assert.Equal(26, withHumans.Select(mode: 10, family: 11, hasHumanPlayers: true));
+
+        var withoutHumans = new Facts(source: 27);
+        withoutHumans.Owners[28] = 1;
+        Assert.Equal(28, withoutHumans.Select(mode: 10, family: 11, hasHumanPlayers: false));
+    }
+
+    [Fact]
+    public void ModeSixteenRoutesTowardFormationLeaderSector()
+    {
+        var facts = new Facts(source: 27);
+
+        Assert.Equal(20, facts.Select(
+            mode: 16, family: 11, formationSectorId: 4));
+    }
+
+    [Fact]
     public void HostileHumanMultiplierAppliesAfterBaseWeight()
     {
         var facts = new Facts(source: 27);
@@ -355,7 +378,9 @@ public sealed class OriginalAiSectorSelectionRulesTests
         public int Select(
             int mode,
             int family,
-            Func<int, bool>? canSoloControl = null) =>
+            Func<int, bool>? canSoloControl = null,
+            bool? hasHumanPlayers = null,
+            int? formationSectorId = null) =>
             OriginalAiSectorSelectionRules.Select(
                 mode, Source, Player, family,
                 Owners, Disabled, GangCounts,
@@ -364,6 +389,8 @@ public sealed class OriginalAiSectorSelectionRulesTests
                 HostileOwners.Contains,
                 HumanOwners.Contains,
                 PlayerOrder,
-                Random);
+                Random,
+                hasHumanPlayers,
+                formationSectorId);
     }
 }

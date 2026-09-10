@@ -50,9 +50,10 @@ public sealed class AiFamilyElevenTurnPlannerTests
             researchedItems: new HashSet<short>(), cash: 20);
         var player = new PlayerId(0);
         BeginFamilyElevenTurn(match, player);
-        match.FinishUpkeep();
+        var recorder = new MatchReplayRecorder(match);
+        recorder.FinishUpkeep();
 
-        match.PrepareAiPlanning(player);
+        recorder.PrepareAiPlanning(player);
         var command = Assert.Single(AiTurnPlanner.Plan(match, player));
 
         Assert.Equal(11, match.AiPlanning.Family(player, 0));
@@ -99,6 +100,37 @@ public sealed class AiFamilyElevenTurnPlannerTests
         Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
     }
 
+    [Fact]
+    public void FormationFollowerUsesFirstFamilyElevenGangsStoredDestination()
+    {
+        var data = BundledOriginalData.Load();
+        var match = CreateMatch(data, definitionId: 58, force: 10,
+            ownsSector: false, rivalInSector: false,
+            researchedItems: new HashSet<short>(), cash: 20,
+            cpuGangCount: 2);
+        var player = new PlayerId(0);
+        BeginFamilyElevenTurn(match, player);
+        var recorder = new MatchReplayRecorder(match);
+        recorder.FinishUpkeep();
+
+        recorder.PrepareAiPlanning(player);
+
+        Assert.Equal(GangAction.Move, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(GangAction.Move, match.AiPlanning.PlannedAction(player, 1));
+        Assert.Equal(match.AiPlanning.PlannedTarget(player, 0),
+            match.AiPlanning.PlannedTarget(player, 1));
+        Assert.Equal(match.AiPlanning.PlannedTarget(player, 0).First,
+            match.AiPlanning.FormationSector(player, 0));
+        Assert.Equal(0, match.AiPlanning.FormationSector(player, 1));
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match),
+            MatchStateHasher.ComputeSha256(restored));
+    }
+
     private static void BeginFamilyElevenTurn(MatchState match, PlayerId player)
     {
         match.AiPlanning.BeginPlanning(player);
@@ -112,7 +144,8 @@ public sealed class AiFamilyElevenTurnPlannerTests
         bool ownsSector,
         bool rivalInSector,
         IReadOnlySet<short> researchedItems,
-        int cash)
+        int cash,
+        int cpuGangCount = 1)
     {
         MatchPlayerSetup[] setups =
         [
@@ -122,7 +155,10 @@ public sealed class AiFamilyElevenTurnPlannerTests
         MatchPlayerState[] players =
         [
             new(setups[0], cash,
-                [new MatchGangState(new GangId(10), setups[0].Id, definitionId, 0, force)],
+                Enumerable.Range(0, cpuGangCount)
+                    .Select(index => new MatchGangState(
+                        new GangId(10 + index), setups[0].Id, definitionId, 0, force))
+                    .ToArray(),
                 researchedItems: researchedItems),
             new(setups[1], 20,
                 [new MatchGangState(new GangId(20), setups[1].Id, 2,
