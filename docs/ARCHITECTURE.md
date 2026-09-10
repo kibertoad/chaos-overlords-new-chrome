@@ -395,6 +395,14 @@ clone must compile and run tests without them.
 The original executable is a research oracle only. It is never copied,
 redistributed, invoked by the shipped recreation, or required by the extractor.
 
+## Online play
+
+The multiplayer server under `multiplayer/` is a separate TypeScript workspace
+(Hono on Node.js or Cloudflare Workers). It never simulates: it seals each
+simultaneous turn, relays the order set, and verifies the state hash every
+client reports after resolving that set through `Rechaos.Core`. Design,
+protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
+
 ## Error and security model
 
 - Binary readers reject truncated/partial records and invalid signatures.

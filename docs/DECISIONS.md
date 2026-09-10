@@ -23,5 +23,9 @@ implementation plan.
 
 ## 2026-09-10 — Networking scope
 
-Original and modern networked multiplayer are outside the parity target. The
-supported multiplayer mode is local hot-seat play.
+Original network code and protocols are outside the parity target and are never
+reproduced. Modern online play is a new design: a coordination server under
+`multiplayer/` that relays sealed orders between deterministic clients and
+verifies state hashes, hostable by players or run centrally
+([`MULTIPLAYER.md`](./MULTIPLAYER.md)). Hot-seat play remains the local mode
+and the client-side wiring of online play is tracked as follow-up work.

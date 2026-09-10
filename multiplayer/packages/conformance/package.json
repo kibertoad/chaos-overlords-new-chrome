@@ -1,0 +1,33 @@
+{
+  "name": "@chaos-overlords/conformance",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runtime-neutral behaviour suites: every storage implementation and every runtime facade runs the same assertions.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@chaos-overlords/client": "workspace:*",
+    "@chaos-overlords/contracts": "workspace:*",
+    "@chaos-overlords/kernel": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  },
+  "peerDependencies": {
+    "vitest": "^4.1.0"
+  }
+}

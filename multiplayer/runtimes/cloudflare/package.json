@@ -1,0 +1,35 @@
+{
+  "name": "@chaos-overlords/worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloudflare Workers runtime facade: the shared Hono app over D1, with one Durable Object per match for SSE fan-out and turn-deadline alarms.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply chaos_overlords --local",
+    "db:migrate:remote": "wrangler d1 migrations apply chaos_overlords --remote",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@chaos-overlords/contracts": "workspace:*",
+    "@chaos-overlords/kernel": "workspace:*",
+    "@chaos-overlords/server": "workspace:*",
+    "@chaos-overlords/storage": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.13.7"
+  },
+  "devDependencies": {
+    "@chaos-overlords/client": "workspace:*",
+    "@chaos-overlords/conformance": "workspace:*",
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
+    "@cloudflare/workers-types": "^5.20260910.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.131.0"
+  }
+}

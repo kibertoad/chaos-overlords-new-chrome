@@ -1,0 +1,32 @@
+{
+  "name": "@chaos-overlords/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Hono application both runtimes serve: REST intents, the SSE event stream, auth and the error envelope. Takes its ports through a container.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@chaos-overlords/contracts": "workspace:*",
+    "@chaos-overlords/kernel": "workspace:*",
+    "hono": "^4.13.7",
+    "zod": "^4.6.1"
+  },
+  "devDependencies": {
+    "@chaos-overlords/conformance": "workspace:*",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}

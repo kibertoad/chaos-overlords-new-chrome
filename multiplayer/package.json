@@ -1,0 +1,25 @@
+{
+  "name": "chaos-overlords-multiplayer",
+  "private": true,
+  "description": "Multiplayer coordination server for Chaos Overlords: New Chrome. Turborepo + pnpm workspace; see README.md.",
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test:run",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "db:generate": "turbo run db:generate",
+    "dev:node": "turbo run dev --filter=@chaos-overlords/node-server",
+    "dev:worker": "turbo run dev --filter=@chaos-overlords/worker"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.13",
+    "turbo": "^2.10.12",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

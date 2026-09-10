@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.turbo/
+.wrangler/
+*.sqlite
+*.sqlite-journal
+*.db
+.env
+.dev.vars
