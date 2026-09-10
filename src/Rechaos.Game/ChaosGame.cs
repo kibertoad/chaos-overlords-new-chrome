@@ -386,7 +386,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (pointerMapped && _slidePanels)
         {
             var offset = _panelSlideTransition.Offset(_screens.Current, gameTime.TotalGameTime);
-            virtualPoint = new Point(virtualPoint.X, virtualPoint.Y - offset);
+            virtualPoint = new Point(virtualPoint.X - offset, virtualPoint.Y);
         }
         _hoverPoint = pointerMapped ? virtualPoint : null;
         var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
@@ -440,7 +440,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var slideOffset = _slidePanels
             ? _panelSlideTransition.Offset(_screens.Current, gameTime.TotalGameTime)
             : 0;
-        var transform = Matrix.CreateTranslation(0, slideOffset, 0)
+        var transform = Matrix.CreateTranslation(slideOffset, 0, 0)
             * VirtualInput.Transform(viewport);
         _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);
         _batch.Draw(_pixel, new Rectangle(0, 0, 640, 460), new Color(8, 10, 12));

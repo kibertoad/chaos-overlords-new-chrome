@@ -240,8 +240,13 @@ whether keyboard shortcuts choose a default response.
 #### Panel-slide geometry and speed calibration
 
 The panel-open function at `0x0041953e` and reverse close function at
-`0x004196f5` copy a 209-pixel-wide panel vertically from or toward the bottom
-edge. Their primary form travels 344 pixels; an alternate form travels 320.
+`0x004196f5` copy a 344-by-209 panel horizontally from or toward the right
+edge. The rectangle helper at `0x00425edf` packs its arguments as
+`(top, left, bottom, right)`, confirmed by the `BitBlt` coordinate extraction
+at `0x0042773e`; this also matches the decoded `PX050xx` dimensions. Their
+primary form travels 344 pixels from source-buffer x=0 into screen x=104..448.
+An alternate form reads a 320-pixel source region beginning at buffer x=344
+and moves it toward the same right-edge destination.
 Both calculate a step from the startup blit benchmark at `0x00432954`. That
 benchmark counts identical copies for just over one second. The transition
 divides the count by four, divides its travel by that result, and clamps the
@@ -251,10 +256,11 @@ copies on faster hardware. Slide enabled plays general-effect slot 0 before
 opening and slot 1 before closing; disabled mode skips intermediate copies and
 still presents the final state.
 
-The recreation now uses a bounded 250 ms time-based vertical entrance over the
-primary 344-pixel travel. It intentionally avoids the original startup-speed
-dependency. Runtime capture must still classify which panels use the alternate
-320-pixel form and validate close timing/interruption behavior.
+The recreation now uses a bounded 250 ms time-based horizontal entrance over
+the primary 344-pixel travel. It intentionally avoids the original startup-speed
+dependency. Runtime capture must still identify the visible role of the four
+callers that use the adjacent-buffer 320-pixel form and validate close
+timing/interruption behavior.
 
 #### Planning timer
 
