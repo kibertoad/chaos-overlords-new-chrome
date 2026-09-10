@@ -97,7 +97,11 @@ replay-verified two-computer harness through 20 turns or objective completion.
    all nine consumers now drive the recovered Heal, Influence, Research, Chaos,
    Crackdown, hidden-detection, Attack, and retaliation formulas. The family-11
    local Attack gate and its blocks-of-six mode-10 formation anchors/mode-16
-   followers are also bounded. Selector `0x3e` is identified as the
+   followers are also bounded. Its exact selector-`0x61` weapon upgrade rule,
+   including class scoring/ties, research, local-cap, raw-Tech, affordability,
+   strict-improvement, previous-Attack, and cooldown gates, is isolated in
+   `OriginalAiEquipmentRules`; it is intentionally not applied to unrelated
+   families by the provisional scalar planner. Selector `0x3e` is identified as the
    previous-turn action byte. Selectors 3 (player cash), 4 (sector
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`

@@ -689,14 +689,17 @@ inspection is required here because the decompiler drops the assignments after
 the entry calls: selector `0x5a` is saved at stack local `-0x4` and is the
 active gang's current sector; selector `0x61` is independently saved at `-0x8`.
 Selector `0x61` chooses a weapon upgrade. Its subordinate selector `0x6d`
-admits only a requested weapon class whose tech requirement does not exceed the
-gang's current tech, whose player research flag is clear (complete), and whose
-cost does not exceed current cash. It compares the best eligible item Combat
+admits only a requested weapon class whose tech requirement does not exceed
+selector `0x62`'s local research ceiling, whose player research flag is clear
+(complete), and whose cost does not exceed current cash. It compares the first
+eligible item Combat
 bonus for the melee, blade, and ranged classes after adding the matching
 effective skills: Strength for melee, Strength + Blade for blade, Range for
 ranged, and Strength + Fighting + Martial Arts for bare hands. It then scans
 all 64 items in the winning class and retains only a strictly larger Combat
-bonus subject to the same research, tech, and cash gates. It returns `-1` when
+bonus subject to the same research and cash gates, but this second pass compares
+item Tech against the gang's raw Tech rather than selector `0x62`. Class-score
+ties resolve ranged, then melee, then blade, then bare hands. It returns `-1` when
 bare hands win, no upgrade beats the baseline, or the result is already the
 equipped weapon.
 
