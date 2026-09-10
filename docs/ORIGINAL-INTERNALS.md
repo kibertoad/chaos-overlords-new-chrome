@@ -1055,6 +1055,17 @@ path during replay-recorded planning and submits its exact one-step destination
 through normal Move resolution. The more complex on-objective branches remain
 unintegrated.
 
+Family 14 continues at `0x00467700..0x004677df` when selector `0x1f` is one
+or the newly planned action is Equip. It changes the command to Heal and the
+stored family to 13 exactly when the immediately previous action is Control,
+Force is below 10, and effective Heal is at least `-3`. The repeated previous-
+action query then rejects Attack, but that comparison is redundant after the
+exact-Control guard. The recreation applies this terminal override during
+replay-recorded preparation, including the family transition and normal Heal
+resolution. This establishes one on-objective family-14 continuation; the
+handlers' preceding Attack, Control, equipment, Influence, and Research paths
+remain unintegrated.
+
 `0x00408553` sorts the 64 sector scores descending while retaining their sector
 indices. The caller chooses uniformly among every sector tied for the maximum;
 a unique maximum consumes no RNG, while a tie consumes one bounded call (three
@@ -1096,9 +1107,9 @@ filtering due to decompiler control-flow folding. Mode 10 and mode 16's
 remaining family-11 guards are not yet fully labeled.
 
 **Next validation:** map the remaining family-11 guards for modes 10 and 16 to
-public commands. Recover the on-objective family-13/14 branches, and reproduce
-the now-live objective routes plus the mode-16 follower route as fixed original
-decisions before claiming runtime parity.
+public commands. Recover the remaining on-objective family-13/14 branches, and
+reproduce the now-live objective routes plus the mode-16 follower route as
+fixed original decisions before claiming runtime parity.
 
 ### BIN-AI-006 - directional attitude and hostility matrix
 

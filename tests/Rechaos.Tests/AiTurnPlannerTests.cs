@@ -408,6 +408,47 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void FamilyFourteenOnObjectiveControlContinuationHealsAndBecomesFamilyThirteen()
+    {
+        var data = BundledOriginalData.Load();
+        var capable = data.Gangs.First(candidate => candidate.Stats.Heal >= -3).Id;
+        var match = CreateMatch(
+            definitionId: capable,
+            force: 9,
+            scenario: ScenarioId.BigMan,
+            startingSector: 27,
+            data: data);
+        var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
+        match.AiPlanning.SetCurrentHireRole(player, 2);
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Control);
+        var recorder = new MatchReplayRecorder(match);
+        recorder.FinishUpkeep();
+
+        recorder.PrepareAiPlanning(player);
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+
+        Assert.Equal(GangAction.Control, match.AiPlanning.PreviousAction(player, 0));
+        Assert.Equal(13, match.AiPlanning.Family(player, 0));
+        Assert.Equal(GangAction.Heal, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(GangAction.Heal, command.Action);
+
+        Assert.True(recorder.Submit(command).Accepted);
+        recorder.FinishCommand(player);
+        recorder.FinishCommand(new PlayerId(1));
+        while (match.Coordinator.Phase == TurnPhase.Execution)
+            recorder.FinishExecutionPhase();
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(13, restored.AiPlanning.Family(player, 0));
+        Assert.Equal(GangAction.Heal, restored.AiPlanning.PlannedAction(player, 0));
+    }
+
+    [Fact]
     public void FamilyOnePreparationUsesRecoveredModeFiveMoveDestination()
     {
         var data = BundledOriginalData.Load();

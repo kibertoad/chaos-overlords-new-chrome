@@ -109,7 +109,7 @@ public static class AiTurnPlanner
             var family = state.AiPlanning.Family(playerId, entry.slot);
             if (family is 13 or 14)
             {
-                PrepareObjectiveFamilyMove(
+                PrepareObjectiveFamilyCommand(
                     state, playerId, entry.gang, entry.slot, family,
                     sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
                 continue;
@@ -166,7 +166,7 @@ public static class AiTurnPlanner
         }
     }
 
-    private static void PrepareObjectiveFamilyMove(
+    private static void PrepareObjectiveFamilyCommand(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
@@ -178,6 +178,19 @@ public static class AiTurnPlanner
         IReadOnlyList<int> playerOrder)
     {
         var plannedAction = state.AiPlanning.PlannedAction(playerId, gangSlot);
+        if (family == 14
+            && OriginalAiObjectiveFamilyRules.ShouldFamilyFourteenTerminalHeal(
+                state.Setup.Scenario,
+                gang.SectorId,
+                plannedAction,
+                state.AiPlanning.PreviousAction(playerId, gangSlot),
+                gang.Force,
+                EffectiveStatisticsCalculator.ForGang(state, gang).Heal))
+        {
+            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
+            state.AiPlanning.SetFamily(playerId, gangSlot, 13);
+            return;
+        }
         if (!OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
                 state.Setup.Scenario, gang.SectorId, plannedAction)) return;
 

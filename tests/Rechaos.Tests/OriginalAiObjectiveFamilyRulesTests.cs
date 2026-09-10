@@ -44,4 +44,24 @@ public sealed class OriginalAiObjectiveFamilyRulesTests
         Assert.False(OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
             ScenarioId.BigMan, 27, GangAction.Attack));
     }
+
+    [Theory]
+    [InlineData(ScenarioId.BigMan, 27, GangAction.None, GangAction.Control, 9, -3, true)]
+    [InlineData(ScenarioId.Eliminate, 9, GangAction.None, GangAction.Control, 9, -3, true)]
+    [InlineData(ScenarioId.BigMan, 0, GangAction.Equip, GangAction.Control, 9, -3, true)]
+    [InlineData(ScenarioId.BigMan, 0, GangAction.None, GangAction.Control, 9, -3, false)]
+    [InlineData(ScenarioId.BigMan, 27, GangAction.None, GangAction.Attack, 9, -3, false)]
+    [InlineData(ScenarioId.BigMan, 27, GangAction.None, GangAction.Control, 10, -3, false)]
+    [InlineData(ScenarioId.BigMan, 27, GangAction.None, GangAction.Control, 9, -4, false)]
+    public void FamilyFourteenTerminalHealPreservesExactBoundaries(
+        ScenarioId scenario,
+        int sector,
+        GangAction plannedAction,
+        GangAction previousAction,
+        int force,
+        int effectiveHeal,
+        bool expected) =>
+        Assert.Equal(expected,
+            OriginalAiObjectiveFamilyRules.ShouldFamilyFourteenTerminalHeal(
+                scenario, sector, plannedAction, previousAction, force, effectiveHeal));
 }

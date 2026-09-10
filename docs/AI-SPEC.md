@@ -137,7 +137,10 @@ replay-verified two-computer harness through 20 turns or objective completion.
    hostile-human weighting. Their family-13/14 off-objective terminal handlers
    are live: unless an Equip was already selected, they replace the action with
    an exact objective Move. The upstream equipment blocks cannot run while the
-   gang is off-objective; on-objective handler behavior remains to be integrated.
+   gang is off-objective. Family 14 also has a live on-objective terminal
+   continuation: an immediately previous Control changes to Heal at Force below
+   10 and effective Heal at least `-3`, then changes the stored family to 13.
+   The remaining on-objective handler behavior remains to be integrated.
    The six-by-six directional
    attitude matrix, Homicidal human/computer initialization, non-Homicidal per-turn recovery,
    negative-hostility enumerators, `3..6` non-Homicidal reaction values, exact

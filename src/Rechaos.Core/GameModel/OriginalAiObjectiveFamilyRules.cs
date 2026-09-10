@@ -2,10 +2,12 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Objective routing shared by original AI families 13 and 14. Recovered from
-/// selector 0x1f and the terminal blocks at 0x0040b87d and 0x004675c8.
+/// selector 0x1f and the terminal blocks at 0x0040b87d through 0x004677df.
 /// </summary>
 internal static class OriginalAiObjectiveFamilyRules
 {
+    public const int FamilyFourteenHealForceLimit = 10;
+
     public static bool IsObjectiveSector(ScenarioId scenario, int sectorId)
     {
         if (sectorId is < 0 or >= MatchLimits.SectorCount)
@@ -37,4 +39,17 @@ internal static class OriginalAiObjectiveFamilyRules
         GangAction plannedAction) =>
         !IsObjectiveSector(scenario, currentSectorId)
         && plannedAction != GangAction.Equip;
+
+    public static bool ShouldFamilyFourteenTerminalHeal(
+        ScenarioId scenario,
+        int currentSectorId,
+        GangAction plannedAction,
+        GangAction previousAction,
+        int force,
+        int effectiveHeal) =>
+        (IsObjectiveSector(scenario, currentSectorId)
+            || plannedAction == GangAction.Equip)
+        && previousAction == GangAction.Control
+        && force < FamilyFourteenHealForceLimit
+        && effectiveHeal >= OriginalAiFamilyOneRules.MinimumEffectiveHeal;
 }
