@@ -114,7 +114,7 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       expect(invalid).toMatchObject({
         status: 422,
         code: 'validation_failed',
-        reason: 'invalid_body',
+        reason: 'invalid_request',
       })
       expect((invalid as MultiplayerApiError).requestId).toBeTruthy()
     })

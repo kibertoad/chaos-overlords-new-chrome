@@ -1,33 +1,33 @@
-import { LIMITS, uploadSnapshotRequestSchema } from '@chaos-overlords/contracts'
-import { Hono } from 'hono'
-import { bodyLimit } from 'hono/body-limit'
-import { parseBody, requireMember, turnParam } from '../http/guards'
-import { memberRateLimited } from '../http/middleware'
+import {
+  latestSnapshotContract,
+  snapshotContract,
+  uploadSnapshotContract,
+} from '@chaos-overlords/contracts'
+import type { Hono } from 'hono'
+import { requireMember } from '../http/guards'
+import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
 
-export function snapshotRoutes(): Hono<AppEnv> {
-  const app = new Hono<AppEnv>()
-
-  app.post(
-    '/',
-    memberRateLimited('upload'),
-    bodyLimit({ maxSize: LIMITS.snapshotBase64Bytes + 4096 }),
-    async (c) => {
-      const request = await parseBody(c, uploadSnapshotRequestSchema)
-      await c.get('container').kernel.snapshots.upload(requireMember(c), request)
-      return c.body(null, 204)
-    },
-  )
-
-  app.get('/latest', async (c) => {
-    const principal = requireMember(c)
-    return c.json(await c.get('container').kernel.snapshots.latest(principal.match.id))
+/** Native snapshots: the host's repair for a desynced turn, and the read every client resyncs from. */
+export function registerSnapshotRoutes(api: Hono<AppEnv>): void {
+  buildHonoRoute(api, uploadSnapshotContract, async (c) => {
+    await c
+      .get('container')
+      .kernel.snapshots.upload(
+        requireMember(c.get('principal'), c.req.valid('param').matchId),
+        c.req.valid('json'),
+      )
+    return c.body(null, 204)
   })
 
-  app.get('/:turn', async (c) => {
-    const principal = requireMember(c)
-    return c.json(await c.get('container').kernel.snapshots.get(principal.match.id, turnParam(c)))
+  buildHonoRoute(api, latestSnapshotContract, async (c) => {
+    const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
+    return c.json(await c.get('container').kernel.snapshots.latest(principal.match.id), 200)
   })
 
-  return app
+  buildHonoRoute(api, snapshotContract, async (c) => {
+    const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
+    const { turn } = c.req.valid('param')
+    return c.json(await c.get('container').kernel.snapshots.get(principal.match.id, turn), 200)
+  })
 }

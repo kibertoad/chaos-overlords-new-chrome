@@ -21,8 +21,9 @@
   "dependencies": {
     "@chaos-overlords/contracts": "workspace:*",
     "@chaos-overlords/kernel": "workspace:*",
-    "hono": "^4.13.7",
-    "zod": "^4.6.1"
+    "@toad-contracts/core": "0.4.0",
+    "@toad-contracts/hono": "0.3.2",
+    "hono": "^4.13.7"
   },
   "devDependencies": {
     "@chaos-overlords/conformance": "workspace:*",

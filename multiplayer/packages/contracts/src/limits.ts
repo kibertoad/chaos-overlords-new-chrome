@@ -26,3 +26,17 @@ export const LIMITS = {
   /** Event log page size for the REST fallback. */
   eventsPageSize: 200,
 } as const
+
+/**
+ * The ceiling on every counter the wire carries without a domain limit of its own: turn numbers,
+ * event sequence numbers, save format versions, gang ids.
+ *
+ * It is `int.MaxValue` because the C# client holds each of them in an `int`, and a value the
+ * client cannot deserialize is a match it drops out of rather than a number it rounds. Stating the
+ * bound also lets the generated C# use `int` at all: a JavaScript integer runs to 2^53, so an
+ * unbounded one has to be a `long` on the other side.
+ */
+export const INT32_MAX = 2_147_483_647
+
+/** `MatchSetup.InitialSeed` is a C# `int`, so half of all seeds are negative. */
+export const INT32_MIN = -2_147_483_648

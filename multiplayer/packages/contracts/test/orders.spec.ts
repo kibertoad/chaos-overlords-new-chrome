@@ -1,3 +1,4 @@
+import { parse, safeParse } from 'valibot'
 import { describe, expect, it } from 'vitest'
 import {
   foreignOps,
@@ -9,7 +10,7 @@ import {
 } from '../src'
 
 const document = (ops: unknown[]) => ({ schemaVersion: 1, ops })
-const accepts = (ops: unknown[]) => orderDocumentSchema.safeParse(document(ops)).success
+const accepts = (ops: unknown[]) => safeParse(orderDocumentSchema, document(ops)).success
 
 const submitCommand = {
   op: 'submitCommand',
@@ -124,8 +125,8 @@ describe('orderDocumentSchema', () => {
     expect(accepts([{ op: 'cancelCommand', player: 0 }])).toBe(false)
     expect(accepts([{ op: 'cancelCommand', player: 0, gang: 1, extra: 1 }])).toBe(false)
     expect(accepts([{ ...submitCommand, target: { kind: 'sector', id: 1, extra: 1 } }])).toBe(false)
-    expect(orderDocumentSchema.safeParse({ schemaVersion: 2, ops: [] }).success).toBe(false)
-    expect(orderDocumentSchema.safeParse({ schemaVersion: 1, ops: [], extra: true }).success).toBe(
+    expect(safeParse(orderDocumentSchema, { schemaVersion: 2, ops: [] }).success).toBe(false)
+    expect(safeParse(orderDocumentSchema, { schemaVersion: 1, ops: [], extra: true }).success).toBe(
       false,
     )
   })
@@ -147,7 +148,8 @@ describe('foreignOps', () => {
    * rather than silently re-attributing it.
    */
   it('finds the ops that act for a slot other than the submitter', () => {
-    const mine: OrderDocument = orderDocumentSchema.parse(
+    const mine: OrderDocument = parse(
+      orderDocumentSchema,
       document([
         { op: 'cancelCommand', player: 2, gang: 1 },
         { op: 'dismissNotification', player: 2 },
@@ -156,7 +158,8 @@ describe('foreignOps', () => {
     expect(foreignOps(mine, 2)).toEqual([])
     expect(foreignOps(mine, 0)).toHaveLength(2)
 
-    const mixed: OrderDocument = orderDocumentSchema.parse(
+    const mixed: OrderDocument = parse(
+      orderDocumentSchema,
       document([
         { op: 'cancelCommand', player: 1, gang: 1 },
         { op: 'dismissNotification', player: 4 },
