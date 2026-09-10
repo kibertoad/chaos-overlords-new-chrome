@@ -32,6 +32,7 @@ public static class OriginalFontLayout
 public enum ClientScreen
 {
     Title,
+    Options,
     Setup,
     City,
     Commands,

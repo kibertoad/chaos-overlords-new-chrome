@@ -187,8 +187,11 @@ state or timing back into the simulation.
 `SoundtrackCatalog` discovers the extracted `Track02`-`Track09` Ogg files and
 encodes the recovered title/setup, gameplay, and endgame track programs, while
 `ChaosGame.Media.cs` owns their optional streaming, screen transition, repeat,
-and focus pause/resume lifecycle. Playback failure disables music only; media
-state never enters Core, saves, replays, commands, events, or deterministic
+focus pause/resume, and recovered 0-10 volume behavior. `GamePreferencesStore`
+loads and atomically replaces a bounded, recreation-versioned local preferences
+file; malformed, unsupported, or out-of-range data falls back to the recovered
+level-5 default. Playback and preference-write failures remain presentation-only;
+media state never enters Core, saves, replays, commands, events, or deterministic
 hashes.
 
 Platform distribution scripts publish self-contained game and extractor

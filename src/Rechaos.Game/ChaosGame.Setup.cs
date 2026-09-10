@@ -93,6 +93,7 @@ public sealed partial class ChaosGame
         }
         DrawButton(batch, pixel, font, TitleNewGame, "NEW GAME", true);
         DrawButton(batch, pixel, font, TitleLoadGame, "LOAD GAME", true);
+        DrawButton(batch, pixel, font, TitleOptions, "OPTIONS", true);
         DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
         DrawCentered(font, batch, _message, 410, new Color(185, 195, 195), 1);
     }

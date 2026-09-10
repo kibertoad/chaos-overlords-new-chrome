@@ -12,13 +12,16 @@ public sealed partial class ChaosGame
     private IReadOnlyList<Song> _activeSoundtrack = [];
     private OriginalSoundtrackMode? _soundtrackMode;
     private int _soundtrackIndex = -1;
+    private int _musicVolumeLevel = OriginalSoundtrackPolicy.DefaultVolumeLevel;
     private bool _soundtrackEnabled;
+    private bool _soundtrackFailed;
     private bool _soundtrackAwaitingStart;
     private bool _soundtrackPausedByDeactivation;
     private TimeSpan _soundtrackStartDeadline;
 
     private void LoadSoundtrack()
     {
+        _soundtrackFailed = false;
         foreach (var path in SoundtrackCatalog.FindAvailableTracks(_assetRoot))
         {
             try
@@ -37,12 +40,9 @@ public sealed partial class ChaosGame
         if (_soundtrack.Count == 0) return;
         try
         {
-            _soundtrackEnabled = true;
             MediaPlayer.IsRepeating = false;
             MediaPlayer.IsShuffled = false;
-            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(
-                OriginalSoundtrackPolicy.DefaultVolumeLevel);
-            SelectSoundtrackMode(_screens.Current, TimeSpan.Zero);
+            ApplyMusicVolumeLevel(_musicVolumeLevel, TimeSpan.Zero);
         }
         catch
         {
@@ -55,7 +55,9 @@ public sealed partial class ChaosGame
         if (!_soundtrackEnabled) return;
         try
         {
-            SelectSoundtrackMode(_screens.Current, gameTime.TotalGameTime);
+            SelectSoundtrackMode(
+                _screens.Current == ClientScreen.Options ? _optionsReturnScreen : _screens.Current,
+                gameTime.TotalGameTime);
             if (_activeSoundtrack.Count == 0) return;
             if (MediaPlayer.State == MediaState.Playing)
             {
@@ -149,8 +151,43 @@ public sealed partial class ChaosGame
         }
     }
 
+    private void ApplyMusicVolumeLevel(int level, TimeSpan now)
+    {
+        if (level is < OriginalSoundtrackPolicy.MinimumVolumeLevel
+            or > OriginalSoundtrackPolicy.MaximumVolumeLevel)
+            throw new ArgumentOutOfRangeException(nameof(level));
+
+        _musicVolumeLevel = level;
+        if (_soundtrack.Count == 0 || _soundtrackFailed) return;
+        try
+        {
+            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(level);
+            if (level == 0)
+            {
+                _soundtrackEnabled = false;
+                _soundtrackAwaitingStart = false;
+                _soundtrackPausedByDeactivation = false;
+                if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
+                return;
+            }
+
+            var shouldStart = !_soundtrackEnabled;
+            _soundtrackEnabled = true;
+            if (!shouldStart) return;
+            _soundtrackMode = null;
+            SelectSoundtrackMode(
+                _screens.Current == ClientScreen.Options ? _optionsReturnScreen : _screens.Current,
+                now);
+        }
+        catch
+        {
+            DisableSoundtrack();
+        }
+    }
+
     private void DisableSoundtrack()
     {
+        _soundtrackFailed = true;
         _soundtrackEnabled = false;
         _soundtrackAwaitingStart = false;
         _soundtrackPausedByDeactivation = false;

@@ -135,6 +135,21 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void OptionsExposeEveryOriginalMusicLevelAsDistinctHitTargets()
+    {
+        Assert.Equal(OriginalSoundtrackPolicy.MaximumVolumeLevel + 1,
+            OptionsLayout.MusicLevels.Count);
+        Assert.Equal(new Rectangle(140, 210, 28, 32), OptionsLayout.MusicLevels[0]);
+        Assert.Equal(new Rectangle(470, 210, 28, 32), OptionsLayout.MusicLevels[^1]);
+        Assert.All(OptionsLayout.MusicLevels,
+            level => Assert.True(OptionsLayout.Panel.Contains(level)));
+        Assert.All(OptionsLayout.MusicLevels.SelectMany((left, index) =>
+                OptionsLayout.MusicLevels.Skip(index + 1).Select(right => (left, right))),
+            pair => Assert.False(pair.left.Intersects(pair.right)));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
+    }
+
+    [Fact]
     public void CitySectorDoubleClickRequiresSameSectorInsideBoundedWindow()
     {
         var clicks = new CitySectorClickTracker();

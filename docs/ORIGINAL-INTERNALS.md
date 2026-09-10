@@ -143,13 +143,17 @@ controlled runtime capture is available.
 **Recreation status:** `SoundtrackCatalog` encodes the three track programs and
 `ChaosGame.Media.cs` switches them for title/setup, gameplay and endgame
 screens, advances/repeats them, and pauses/resumes on focus changes. Playback
-uses the recovered level-5 default and exact normalized volume conversion.
-Playback failure remains presentation-only and cannot affect deterministic
-simulation.
+uses the recovered level-5 default and exact normalized volume conversion. The
+title and in-game Options overlay exposes all 11 levels, with zero stopping music
+and a later nonzero selection restarting the active program. A bounded,
+versioned recreation-native preferences file remembers the selection safely;
+this does not claim parity with the original persistence mechanism. Playback or
+preference-write failure remains presentation-only and cannot affect
+deterministic simulation.
 
-**Next validation:** Capture title/setup transitions and whether Options levels
-persist between launches, implement the Options control, then validate playback,
-focus changes, volume, and track transitions on each supported native platform.
+**Next validation:** Capture title/setup transitions and whether/how the original
+persists Options levels, then validate playback, focus changes, volume, and track
+transitions on each supported native platform.
 
 ### BIN-API-003 - files and persistence
 

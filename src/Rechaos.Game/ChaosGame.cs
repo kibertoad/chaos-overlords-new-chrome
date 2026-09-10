@@ -15,7 +15,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 200, 34);
-    private static readonly Rectangle TitleQuit = new(220, 376, 200, 34);
+    private static readonly Rectangle TitleOptions = new(220, 376, 96, 34);
+    private static readonly Rectangle TitleQuit = new(324, 376, 96, 34);
     private static readonly Rectangle[] SetupScenarios =
     [
         new(80, 102, 108, 31), new(192, 102, 108, 31),
@@ -41,6 +42,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string _quickSavePath;
     private readonly string _autoSavePath;
     private readonly string _replayPath;
+    private readonly string _preferencesPath;
     private readonly bool _debugPhaseStepping;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
@@ -130,15 +132,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     {
         _assetRoot = assetRoot;
         _debugPhaseStepping = debugPhaseStepping;
-        _quickSavePath = Path.Combine(
+        var userDataRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Rechaos Overlords", "quicksave.rchsave");
-        _autoSavePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Rechaos Overlords", "autosave.rchsave");
-        _replayPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Rechaos Overlords", "last-match.rchreplay");
+            "Rechaos Overlords");
+        _quickSavePath = Path.Combine(userDataRoot, "quicksave.rchsave");
+        _autoSavePath = Path.Combine(userDataRoot, "autosave.rchsave");
+        _replayPath = Path.Combine(userDataRoot, "last-match.rchreplay");
+        _preferencesPath = Path.Combine(userDataRoot, "preferences.json");
+        _musicVolumeLevel = GamePreferencesStore.LoadOrDefault(_preferencesPath).MusicVolumeLevel;
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -212,96 +213,104 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             base.Update(gameTime);
             return;
         }
-        if (Pressed(keyboard, Keys.Escape) && !_screens.Back()) Exit();
-        switch (_screens.Current)
+        if (_screens.Current == ClientScreen.Options)
         {
-            case ClientScreen.Title:
-                UpdateTitle(keyboard);
-                break;
-            case ClientScreen.Setup:
-                UpdateSetup(keyboard);
-                break;
-            case ClientScreen.City:
-                UpdateCity(keyboard);
-                break;
-            case ClientScreen.Endgame:
-                if (Pressed(keyboard, Keys.Enter)) _screens.Show(ClientScreen.Title);
-                break;
-            case ClientScreen.Handoff:
-                if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))
-                    FinishHandoff();
-                break;
-            case ClientScreen.Events:
-                if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveEventCursor(-1);
-                if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveEventCursor(1);
-                if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)) CloseEvents();
-                if (Pressed(keyboard, Keys.Back)) CloseEvents();
-                break;
-            case ClientScreen.Commands:
-                if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
-                if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
-                if (Pressed(keyboard, Keys.Enter)) ActivateCommandSelection();
-                if (Pressed(keyboard, Keys.Back)) BackFromCommands();
-                break;
-            case ClientScreen.Hire:
-                if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveHireCursor(-1);
-                if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveHireCursor(1);
-                if (Pressed(keyboard, Keys.S)) SnubSelectedHireOffer();
-                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    _screens.Show(_managementReturnScreen);
-                break;
-            case ClientScreen.Sector:
-                UpdateSector(keyboard);
-                break;
-            case ClientScreen.Gang:
-                if (_gangDetailsInstanceId is not null)
-                {
-                    if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) CycleGang(-1);
-                    if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) CycleGang(1);
-                }
-                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    CloseGangDetails();
-                break;
-            case ClientScreen.Site:
-                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    CloseSiteDetails();
-                break;
-            case ClientScreen.ItemInformation:
-                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    CloseItemDetails();
-                break;
-            case ClientScreen.Finance:
-            case ClientScreen.Ranking:
-                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    _screens.Show(_managementReturnScreen);
-                break;
-            case ClientScreen.Items:
-                if (Pressed(keyboard, Keys.Up)) MoveItemCursor(-1);
-                if (Pressed(keyboard, Keys.Down)) MoveItemCursor(1);
-                if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.G)) CycleGang(-1);
-                if (Pressed(keyboard, Keys.Right)) CycleGang(1);
-                if (Pressed(keyboard, Keys.R)) QueueItemCommand(GangAction.Research);
-                if (Pressed(keyboard, Keys.E)) QueueItemCommand(GangAction.Equip);
-                if (Pressed(keyboard, Keys.V)) OpenGiveTargets();
-                if (Pressed(keyboard, Keys.S)) QueueItemCommand(GangAction.Sell);
-                if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
-                break;
-            case ClientScreen.Give:
-                if (Pressed(keyboard, Keys.Up)) MoveGiveCursor(-1);
-                if (Pressed(keyboard, Keys.Down)) MoveGiveCursor(1);
-                if (Pressed(keyboard, Keys.Enter)) QueueSelectedGive();
-                if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.Items);
-                break;
-            case ClientScreen.CombatSummary:
-                if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveCombatSummary(-1);
-                if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveCombatSummary(1);
-                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    _screens.Show(_managementReturnScreen);
-                break;
-            case ClientScreen.Search:
-                if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    _screens.Show(_managementReturnScreen);
-                break;
+            UpdateOptions(keyboard);
+        }
+        else
+        {
+            if (Pressed(keyboard, Keys.O)) OpenOptions();
+            else if (Pressed(keyboard, Keys.Escape) && !_screens.Back()) Exit();
+            switch (_screens.Current)
+            {
+                case ClientScreen.Title:
+                    UpdateTitle(keyboard);
+                    break;
+                case ClientScreen.Setup:
+                    UpdateSetup(keyboard);
+                    break;
+                case ClientScreen.City:
+                    UpdateCity(keyboard);
+                    break;
+                case ClientScreen.Endgame:
+                    if (Pressed(keyboard, Keys.Enter)) _screens.Show(ClientScreen.Title);
+                    break;
+                case ClientScreen.Handoff:
+                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))
+                        FinishHandoff();
+                    break;
+                case ClientScreen.Events:
+                    if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveEventCursor(-1);
+                    if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveEventCursor(1);
+                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)) CloseEvents();
+                    if (Pressed(keyboard, Keys.Back)) CloseEvents();
+                    break;
+                case ClientScreen.Commands:
+                    if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
+                    if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
+                    if (Pressed(keyboard, Keys.Enter)) ActivateCommandSelection();
+                    if (Pressed(keyboard, Keys.Back)) BackFromCommands();
+                    break;
+                case ClientScreen.Hire:
+                    if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveHireCursor(-1);
+                    if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveHireCursor(1);
+                    if (Pressed(keyboard, Keys.S)) SnubSelectedHireOffer();
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        _screens.Show(_managementReturnScreen);
+                    break;
+                case ClientScreen.Sector:
+                    UpdateSector(keyboard);
+                    break;
+                case ClientScreen.Gang:
+                    if (_gangDetailsInstanceId is not null)
+                    {
+                        if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) CycleGang(-1);
+                        if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) CycleGang(1);
+                    }
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        CloseGangDetails();
+                    break;
+                case ClientScreen.Site:
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        CloseSiteDetails();
+                    break;
+                case ClientScreen.ItemInformation:
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        CloseItemDetails();
+                    break;
+                case ClientScreen.Finance:
+                case ClientScreen.Ranking:
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        _screens.Show(_managementReturnScreen);
+                    break;
+                case ClientScreen.Items:
+                    if (Pressed(keyboard, Keys.Up)) MoveItemCursor(-1);
+                    if (Pressed(keyboard, Keys.Down)) MoveItemCursor(1);
+                    if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.G)) CycleGang(-1);
+                    if (Pressed(keyboard, Keys.Right)) CycleGang(1);
+                    if (Pressed(keyboard, Keys.R)) QueueItemCommand(GangAction.Research);
+                    if (Pressed(keyboard, Keys.E)) QueueItemCommand(GangAction.Equip);
+                    if (Pressed(keyboard, Keys.V)) OpenGiveTargets();
+                    if (Pressed(keyboard, Keys.S)) QueueItemCommand(GangAction.Sell);
+                    if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
+                    break;
+                case ClientScreen.Give:
+                    if (Pressed(keyboard, Keys.Up)) MoveGiveCursor(-1);
+                    if (Pressed(keyboard, Keys.Down)) MoveGiveCursor(1);
+                    if (Pressed(keyboard, Keys.Enter)) QueueSelectedGive();
+                    if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.Items);
+                    break;
+                case ClientScreen.CombatSummary:
+                    if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveCombatSummary(-1);
+                    if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveCombatSummary(1);
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        _screens.Show(_managementReturnScreen);
+                    break;
+                case ClientScreen.Search:
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        _screens.Show(_managementReturnScreen);
+                    break;
+            }
         }
         var pointerMapped = VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint);
         _hoverPoint = pointerMapped ? virtualPoint : null;
@@ -357,6 +366,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         {
             case ClientScreen.Title:
                 DrawTitle(_batch, _pixel, _font);
+                break;
+            case ClientScreen.Options:
+                DrawOptions(_batch, _pixel, _font);
                 break;
             case ClientScreen.Setup:
                 DrawSetup(_batch, _pixel, _font);
@@ -444,7 +456,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Title:
                 if (TitleNewGame.Contains(point)) _screens.Show(ClientScreen.Setup);
                 else if (TitleLoadGame.Contains(point)) LoadQuickGame();
+                else if (TitleOptions.Contains(point)) OpenOptions();
                 else if (TitleQuit.Contains(point)) Exit();
+                break;
+            case ClientScreen.Options:
+                HandleOptionsClick(point);
                 break;
             case ClientScreen.Setup:
                 var scenario = Array.FindIndex(SetupScenarios, rectangle => rectangle.Contains(point));
