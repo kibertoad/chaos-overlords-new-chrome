@@ -302,24 +302,39 @@ by `0x00432da0`, and correlate each handler with controlled queued commands.
 
 ### BIN-AI-002 - scenario-sensitive family selection
 
-**Observation:** When a state query made by `0x00432da0` reports one, the
-dispatcher performs a ten-way switch on values 0 through 9. Each branch then
-switches on a second query whose observed results are 0 through 6 and maps that
-pair to family values drawn from 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, and 14.
-The same function contains separate explicit comparisons against global
-`0x004abbe8` values 6, 7, and 8.
+**Observation:** Query selector 0 returns `DAT_004abbe8`; setup/save analysis
+identifies this byte as the scenario ID in the same 0-through-9 order used by
+`ScenarioId`. Query selector `0x7c` returns the per-player word at
+`0x00482128 + player * 4`. When query `0x48` reports that the planning record's
+byte at +1 is nonzero, `0x00432da0` maps scenario and `0x7c` strategic mode to
+the family below. A dash means the switch performs no assignment and preserves
+the record's current family.
 
-**Interpretation:** The ten-way selector is likely the ten scenario/objective
-IDs and changes the preferred command family. `0x004abbe8` is also scenario-like
-in this routine, so it must not be assumed to be AI difficulty merely because
-it changes planning branches. The selector identities still require caller and
-save/global correlation.
+| Scenario | Mode 0 | Mode 1 | Mode 2 | Mode 3 | Mode 4 | Mode 5 | Mode 6 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Greed | 0 | 0 | 3 | 2 | 6 | - | 7 |
+| Power | 0 | 1 | 3 | 2 | 6 | 5 | 7 |
+| Acceptance | 0 | 0 | 5 | 2 | 6 | - | 7 |
+| Dominance | 0 | 0 | 5 | 2 | 6 | 3 | 7 |
+| Kill 'Em All | 0 | 1 | 3 | 2 | 6 | 5 | 7 |
+| Big 40 | 0 | 1 | 3 | 2 | 6 | 5 | 7 |
+| Eliminate | 0 | 13 | 14 | - | 6 | 5 | 7 |
+| Siege | 10 | 0 | 3 | 11 | 12 | - | 7 |
+| Big Man | 0 | 13 | 14 | 3 | - | - | - |
+| Armageddon | 0 | 1 | 3 | 2 | 6 | 3 | - |
 
-**Confidence:** Verified for branch shape, ranges, mapped values, and global
-comparisons; Medium for scenario interpretation.
+Every assigning mode-4 branch also copies the signed query-`0x5a` gang
+projection into the planning record's +12 word. Out-of-range modes likewise
+preserve the current family. `OriginalAiFamilyRules` implements this table and
+side-effect flag in isolation. The same function separately compares the
+scenario global with values 6, 7, and 8 after family dispatch.
 
-**Next validation:** correlate the query and global values against setup/save
-fields, then locate the distinct four-valued AI Mentality state.
+**Confidence:** Verified for selector storage, scenario identity/order, table
+values, preserve behavior, mode-4 copy, and global comparisons. The semantic
+names of strategic modes 0 through 6 remain unknown.
+
+**Next validation:** recover the outer planner transitions which write the
+`0x7c` strategic-mode word, then represent planning records in `MatchState`.
 
 ### BIN-AI-003 - outer AI planning pass and command history
 

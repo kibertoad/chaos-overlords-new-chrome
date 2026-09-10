@@ -101,8 +101,14 @@ replay-verified two-computer harness through 20 turns or objective completion.
    including class scoring/ties, research, local-cap, raw-Tech, affordability,
    strict-improvement, previous-Attack, and cooldown gates, is isolated in
    `OriginalAiEquipmentRules`; it is intentionally not applied to unrelated
-   families by the provisional scalar planner. Selector `0x3e` is identified as the
-   previous-turn action byte. Selectors 3 (player cash), 4 (sector
+   families by the provisional scalar planner. The exact ten-scenario by
+   seven-strategic-mode family table is isolated in `OriginalAiFamilyRules`,
+   including unmapped cells which preserve the current family and the mode-4
+   planning-record copy; live integration awaits representation of query
+   `0x7c`'s per-player strategic-mode word. Selector `0x3e` is identified as the
+   previous-turn action byte. Selectors 0 (scenario), `0x48` (planning-record
+   initialized flag), `0x5a` (mirrored gang projection), `0x7c` (per-player
+   strategic mode), 3 (player cash), 4 (sector
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
    (Heal), plus action bytes 3 (Chaos), 10 (Move), and 13 (Snitch), are now
