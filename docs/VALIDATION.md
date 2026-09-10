@@ -1,6 +1,6 @@
 # Recreation validation procedure
 
-Status: initial executable procedure
+Status: maintained canonical procedure
 Last updated: 2026-09-11
 
 ## Validation layers

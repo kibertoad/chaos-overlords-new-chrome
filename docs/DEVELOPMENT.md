@@ -56,4 +56,5 @@ for the explicit build-server cleanup option.
 - `Rechaos.Tests`: format, gameplay, persistence, extractor, and UI tests.
 
 Detailed architecture, validation, reverse-engineering, format, and parity notes
-live in the other files in this directory.
+live in the other files in this directory. Start a resumed development session
+with [HANDOVER.md](HANDOVER.md).

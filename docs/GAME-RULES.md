@@ -1,7 +1,7 @@
 # Game rules and evidence
 
 Status: partial, active research
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 
 This document separates intended rules stated by the original manual from
 behavior verified against the fingerprinted version 1.1 executable. A manual
@@ -563,6 +563,35 @@ claim about original-game behavior.
 - Next experiment: prepare saves around zero projected cash with controlled
   combinations of sectors, positive/negative sites, and gangs, then compare
   Finance/Event panels and post-Upkeep saves.
+
+## Turn timing
+
+### RULE-TIMER-001 — Optional human planning limit
+
+- Source: original Game Settings Help; `EXE-GOG-1.1` preference byte
+  `0x00487854`, new-match mapping at `0x0046e766`, start helper `0x0041b8bc`,
+  draw helper `0x0041b8fc`, and expiry helper `0x0041bdd5`.
+- Observed statement: setup offers no limit, 30 seconds, 2 minutes, or 5 minutes
+  to constrain planning turns, particularly in multiplayer games.
+- Interpretation: the selected limit applies only to human Command phases.
+  Expiry follows the ordinary Done path but bypasses the optional idle-gang
+  confirmation. A 60-pixel bar shows remaining time. General sound slot 7 is
+  requested below 10 seconds while more than 1 second remains, and slot 8 is
+  requested for the final second. The current recreation de-duplicates these
+  requests by remaining-second bucket pending an original runtime capture.
+- Current exclusions: exact bar rounding, sound cadence, behavior while modal
+  UI is open, and deactivation timing still need controlled reference capture.
+- Confidence: High for choices, durations, human-only start, expiry ordering,
+  bar scale and sound-slot boundaries; Medium for presentation cadence.
+- Implementation: `PlanningTimerPolicy`, `PlanningTimer`, and the presentation-
+  only integration in `ChaosGame.PlanningTimer.cs`. Timer expiry submits the
+  normal replay-recorded `FinishPlanningTurn` operation; wall-clock state is not
+  saved, hashed, or replayed.
+- Tests: `PlanningTimerPolicyTests`, `GamePreferencesStoreTests`, and
+  `UiNavigationTests` cover durations, boundaries, warning de-duplication,
+  expiry, persistence validation, and original coordinates.
+- Next experiment: record a 30-second original turn with and without an open
+  planning modal, correlating bar widths and warning clip starts to wall time.
 
 ## Objectives and match completion
 

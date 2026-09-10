@@ -1,7 +1,7 @@
 # Original executable internals research
 
 Status: active clean-room research log
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 Reference executable SHA-256:
 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`
 

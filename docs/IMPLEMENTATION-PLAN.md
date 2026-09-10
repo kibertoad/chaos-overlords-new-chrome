@@ -1,7 +1,7 @@
 # Complete implementation and migration plan
 
 Status: active roadmap
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 Target: a deterministic, cross-platform MonoGame recreation of the Windows 95
 release of *Chaos Overlords*, requiring a user-owned original asset pack.
 
@@ -55,15 +55,22 @@ The current game is a playable architectural slice, not evidence of rule parity.
 Any provisional gameplay formula must be replaced or validated before its
 workstream can be marked complete.
 
-### Handover checkpoint - 2026-09-10
+### Handover checkpoint - 2026-09-11
 
 - The current implementation baseline includes the recovered sector Combat +
   Defense advantage hostility pass, exact isolated scenario/strategy family
   dispatch, exact hire-offer ranking/rejection, the isolated modes 1-10 and
-  12-16 sector-selection kernels, live recovered hire-placement rules, and 981
+  12-16 sector-selection kernels, live recovered hire-placement rules, and 1,018
   passing tests. Native saves are
   v16, replay is v17, and the canonical hash is v19.
-- The latest completed setup checkpoint is commit `10a3a9d`: fixed Greed and
+- The latest playable checkpoints restore the modern Help viewer, independent
+  audio controls, idle-gang warning, and the optional original four-choice
+  planning timer. The timer uses the recovered setup rows, 60-by-3 main-panel
+  bar, warning slots 7/8, and the ordinary replay-recorded completion path.
+- The canonical operational resume notes and prioritized next batches are in
+  `HANDOVER.md`. Local verification now runs through the serialized,
+  two-worker `tools/Invoke-Validation.ps1` entry point.
+- The earlier setup checkpoint at `10a3a9d` fixed Greed and
   Armageddon city/HQ/RNG vectors now guard the statically recovered generator,
   stale frequency/class claims were removed, and exact uppercase `SMGFUNDAGE`
   now overrides ordinary or Armageddon starting cash with $1,500.
@@ -72,7 +79,7 @@ workstream can be marked complete.
   order before AI initialization and city generation. Every fresh local match
   therefore enters with six participants. Exact uppercase `SMGISLANDS` applies
   Chaos 100 only to sectors still neutral after all six HQs are owned.
-- The latest completed AI work implements exact fixed-six-player reaction and
+- The current AI baseline implements exact fixed-six-player reaction and
   directional-attitude initialization, non-Homicidal recovery, combat/Control
   attitude changes, hostility-filtered attack candidates, and all nine known
   consumers of the recovered 0/1/2 resolution band. The scalar outer planner

@@ -1,7 +1,7 @@
 # Original UI atlas
 
 Status: partial, active mapping
-Last updated: 2026-09-09
+Last updated: 2026-09-11
 
 This file assigns presentation resources from the verified extracted asset pack
 to visible workflows. Coordinates use the original 640 by 460 virtual canvas.
@@ -51,6 +51,11 @@ these rectangles:
   171, 206 and 241 with heights 30-31. Row-major order follows the ten
   `ScenarioId` values.
 - Durations: x 80, 136, 192 and 248 at y 282, heights 24 and widths 50-52.
+- AI Mentality: x 80 with width 108; row tops 330, 359, 388 and 417,
+  each 27 pixels high.
+- Planning time: x 192 with width 108; row tops 330, 359, 388 and 417,
+  each 27 pixels high, corresponding to None, 30 Seconds, 2 Minutes and
+  5 Minutes.
 - Add player: `(370,326,92,30)`.
 - Remove player: `(466,326,96,30)`.
 - Begin: `(370,374,92,50)`.
@@ -81,6 +86,9 @@ validated against the executable.
   or Homicidal Maniac; hover-only thematic tooltips explain the behavioral
   emphasis and avoid claiming hidden resources; static analysis confirms and
   the simulation implements mentality-dependent command-resolution calibration.
+- The optional human planning countdown uses the 60-by-3 aperture at
+  `(520,336)` on the main control panel. The recreation fills it green over a
+  black background and scales the visible width from 60 to zero.
 - City sectors use their fixed 54 by 52 cell from `PX10000` when neutral or
   `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
 - Active Crackdown sectors overlay the color-keyed patrol-car slice from
