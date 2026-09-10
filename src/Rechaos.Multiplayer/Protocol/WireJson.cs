@@ -1,5 +1,6 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace Rechaos.Multiplayer.Protocol;
@@ -38,15 +39,23 @@ public static class WireJson
         return options;
     }
 
-    /// <summary>Deserializes a body, turning an empty or malformed one into a protocol failure.</summary>
+    /// <summary>
+    /// Deserializes a body, turning an empty or malformed one into a protocol failure.
+    /// </summary>
+    /// <remarks>
+    /// The document goes through <see cref="WireOrder.TagFirst"/> first, because the reader accepts
+    /// a discriminated union only with its tag in front and the server has no reason to put it
+    /// there.
+    /// </remarks>
     public static T Read<T>(string body)
     {
         try
         {
-            return JsonSerializer.Deserialize<T>(body, Options)
+            var node = WireOrder.TagFirst(JsonNode.Parse(body));
+            return node.Deserialize<T>(Options)
                 ?? throw new MultiplayerProtocolException($"the server sent an empty {typeof(T).Name}");
         }
-        catch (JsonException exception)
+        catch (Exception exception) when (exception is JsonException or NotSupportedException)
         {
             throw new MultiplayerProtocolException(
                 $"the server sent a {typeof(T).Name} this client cannot read: {exception.Message}",

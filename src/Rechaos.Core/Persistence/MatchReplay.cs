@@ -19,7 +19,9 @@ public enum ReplayOperationKind : byte
     DismissNotification,
     PrepareHireOffers,
     PrepareAiPlanning,
-    PrepareAiHiring
+    PrepareAiHiring,
+    /// <summary>One ordered pass drawing every seat's offers, as a simultaneous turn needs.</summary>
+    PrepareSimultaneousHireOffers
 }
 
 public sealed record ReplayStep(
@@ -86,6 +88,14 @@ public sealed class MatchReplayRecorder
             GangDefinitionId: gangDefinitionId, SectorId: sectorId,
             Accepted: result.Accepted, ValidationCode: (int)result.Validation.Code));
         return result;
+    }
+
+    public IReadOnlyList<PlayerId> PrepareSimultaneousHireOffers()
+    {
+        EnsureSynchronized();
+        var drawn = State.PrepareSimultaneousHireOffers();
+        Add(new ReplayStep(ReplayOperationKind.PrepareSimultaneousHireOffers, CurrentHash()));
+        return drawn;
     }
 
     public IReadOnlyList<short> PrepareHireOffers(PlayerId player)
@@ -189,7 +199,9 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    public const int CurrentFormatVersion = 17;
+    // 18 added PrepareSimultaneousHireOffers, the ordered hire draw an online turn takes. The
+    // state hash did not change with it, so 17 and 18 verify against the same one.
+    public const int CurrentFormatVersion = 18;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -308,6 +320,9 @@ public static class MatchReplaySerializer
             case ReplayOperationKind.PrepareHireOffers:
                 state.PrepareHireOffers(Required(step.Player, index));
                 break;
+            case ReplayOperationKind.PrepareSimultaneousHireOffers:
+                state.PrepareSimultaneousHireOffers();
+                break;
             case ReplayOperationKind.PrepareAiPlanning:
                 state.PrepareAiPlanning(Required(step.Player, index));
                 break;
@@ -341,6 +356,7 @@ public static class MatchReplaySerializer
         string[] candidateHashes = replayVersion switch
         {
             >= 17 => [MatchStateHasher.ComputeSha256(state)],
+
             16 => [MatchStateHasher.ComputeVersionEighteenSha256(state)],
             15 => [MatchStateHasher.ComputeVersionSeventeenSha256(state)],
             14 => [MatchStateHasher.ComputeVersionSixteenSha256(state)],

@@ -62,30 +62,11 @@ public static class CommandPhase
         ?? throw new InvalidOperationException(
             $"{state.Coordinator.Phase} needs an active player and has none.");
 
-    /// <summary>
-    /// Refills the hire offers of every seat, in slot order.
-    /// </summary>
-    /// <remarks>
-    /// The condition is the game's own: a seat is refilled only when it has an empty slot, has
-    /// nothing already queued, and has not snubbed this turn. Applying it here rather than in the
-    /// interface is what makes it the same condition everywhere.
-    /// </remarks>
-    internal static void PrepareHireOffers(MatchReplayRecorder replay)
+    /// <summary>Draws every seat's hire offers, unless the match has already ended.</summary>
+    private static void PrepareHireOffers(MatchReplayRecorder replay)
     {
-        ArgumentNullException.ThrowIfNull(replay);
         var state = replay.State;
         if (state.Outcome is not null || state.Coordinator.Phase != TurnPhase.Command) return;
-        for (var slot = 0; slot < state.Setup.Players.Count; slot++)
-        {
-            var playerId = new PlayerId(slot);
-            var player = state.FindPlayer(playerId);
-            if (player is null) continue;
-            if (player.HireOfferSlots.Any(offer => !offer.GangDefinitionId.HasValue)
-                && player.PendingHires.Count == 0
-                && !player.HasSnubbedHireOfferThisTurn)
-            {
-                replay.PrepareHireOffers(playerId);
-            }
-        }
+        replay.PrepareSimultaneousHireOffers();
     }
 }
