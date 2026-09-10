@@ -27,6 +27,8 @@ OutputDir=..\..\artifacts
 OutputBaseFilename=ChaosOverlords-NewChrome-Setup-{#MyAppVersion}
 UninstallDisplayIcon={app}\Game\{#MyAppExeName}
 SetupLogging=yes
+InfoBeforeFile={#PackageRoot}\NOTICE
+LicenseFile={#PackageRoot}\LICENSE
 
 [Files]
 Source: "{#PackageRoot}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs

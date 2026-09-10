@@ -53,6 +53,8 @@ Remove-Item -LiteralPath $buildRoot -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'packaging/windows/Start Chaos Overlords - New Chrome.bat') -Destination $packageRoot
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'packaging/windows/Install Original Resources.bat') -Destination $packageRoot
 Copy-Item -LiteralPath (Join-Path $repositoryRoot 'README.md') -Destination $packageRoot
+Copy-Item -LiteralPath (Join-Path $repositoryRoot 'LICENSE') -Destination $packageRoot
+Copy-Item -LiteralPath (Join-Path $repositoryRoot 'NOTICE') -Destination $packageRoot
 
 if (Test-Path -LiteralPath (Join-Path $gameOutput 'Assets/manifest.json')) {
     throw 'The portable package contains extracted original assets.'

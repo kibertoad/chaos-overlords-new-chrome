@@ -39,6 +39,8 @@ Get-ChildItem -LiteralPath (Join-Path $portableRoot 'Game') |
 Get-ChildItem -LiteralPath (Join-Path $portableRoot 'Tools') |
     Copy-Item -Destination $toolsRoot -Recurse
 Copy-Item -LiteralPath (Join-Path $portableRoot 'README.md') -Destination $resourcesRoot
+Copy-Item -LiteralPath (Join-Path $portableRoot 'LICENSE') -Destination $resourcesRoot
+Copy-Item -LiteralPath (Join-Path $portableRoot 'NOTICE') -Destination $resourcesRoot
 
 @"
 <?xml version="1.0" encoding="UTF-8"?>

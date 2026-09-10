@@ -24,11 +24,14 @@ Build Linux x64 and macOS arm64/x64 installers on their native hosts:
 
 The Linux `.deb` installs launch and import commands. The macOS `.pkg` installs
 an application bundle containing the game, extractor, and asset-import helper.
-Linux and macOS packages are currently unsigned.
+All release installers are currently unsigned.
 
 The Windows installer scans GOG and Windows uninstall records plus common GOG
 paths, accepts a manually selected source, and imports the required assets. Its
 silent options are `/ORIGINAL="C:\path\to\Chaos Overlords"` and `/NOIMPORT=1`.
+Every portable package and installed application includes the filled-in project
+`NOTICE` and canonical GPLv3 `LICENSE`; the Windows Setup wizard displays both
+before installation.
 
 ## GitHub release workflow
 

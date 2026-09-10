@@ -7,8 +7,8 @@ a supported legal copy. The DRM-free
 is fully compatible with the new runtime as an asset source. The extractor
 validates its asset pack (the executable is neither required nor copied) and
 creates a local asset pack containing repaired graphics plus the original
-audio, music, video, help, and currently opaque resources. Compact gameplay tables
-are bundled in the open-source core; original art and media are not.
+audio, music, video, help, and currently opaque resources. Compact gameplay
+tables are bundled in the open-source core; original art and media are not.
 
 Original save import/export is not supported. Recreation-native saves and
 replays are development formats until 1.0.0 and may change incompatibly before
@@ -31,7 +31,7 @@ when importing them.
 
 | Area | Supported now | Not yet / current limitation |
 |---|---|---|
-| Installation and assets | Windows installer detects or prompts for the legal GOG installation, verifies it, repairs the original 16-bit graphics, and imports the required media. Linux and macOS packages can also import assets. | Installers do not contain original assets. Linux and macOS packages are currently unsigned. |
+| Installation and assets | Windows installer detects or prompts for the legal GOG installation, verifies it, repairs the original 16-bit graphics, and imports the required media. Linux and macOS packages can also import assets. | By design, original assets are never bundled and must be imported from a legal copy. All installers are currently unsigned. |
 | Game setup | All ten scenarios, four durations, the global AI Mentality setting, original portraits, and one-to-six explicitly configured human/computer players. Omitted slots become computer players, so every match has six participants. | Some setup-screen alignment and original hit regions still need parity work. |
 | Local play | Complete deterministic hot-seat turn flow across Upkeep, Command, Execution, Hire, and Elimination, with the original handoff screen between human players. | Network multiplayer is not supported. Legacy protocol compatibility is a permanent non-goal; modern networking is post-parity work. |
 | City and sector UI | Native 640x460 presentation with integer-friendly scaling, ownership-composited city art, selectable 8x8 city, detailed 3x3 sector view, gang/site information, finance, ranking, research, equipment, hire, combat summary, search, events, and endgame screens. Keyboard and mouse navigation are supported. | Remaining original hit maps, right-click/cancel behavior, configurable bindings, and golden-screen alignment are unfinished. |
@@ -43,15 +43,41 @@ when importing them.
 | Saves and replays | F5/F9 recreation-native save/load, end-turn autosaves, F6/F10 deterministic record/playback verification, bounded loading, and backup recovery. | These formats may change incompatibly before 1.0.0. Original 1996 save import/export is not supported. |
 | Audio, music, and video | Original audio, eight music tracks, and two videos are extracted; equipped-weapon attacks play their mapped original sound cues. | Music sequencing, video playback, and most UI/police/impact sound triggers are not wired yet. |
 
-Key controls: arrows/WASD or mouse select sectors; Enter acts; G cycles gangs;
-C opens commands; H opens Hire; I opens the detailed sector; F opens finances;
-R opens ranking; T opens research/equipment; B opens combat summary; X searches;
-Space finishes planning; Escape returns to the title screen.
+## Controls
+
+| Action | Keyboard | Mouse |
+|---|---|---|
+| Select a sector | Arrow keys or WASD | Click a sector |
+| Open or confirm | Enter | Double-click the selected sector or click a panel control |
+| Cycle gangs | G | Click a gang card |
+| Commands | C | Click the command control |
+| Hire | H | Click Hire; drag an offer onto a controlled sector |
+| Detailed sector | I | Double-click a sector |
+| Finances | F | Click Finance |
+| Ranking | R | Click Ranking |
+| Research and equipment | T | Click Research or Equipment |
+| Combat summary | B | Click Combat Summary |
+| Search | X | Click Search |
+| Finish planning | Space | Click the end-turn control |
+| Return to title | Escape | Use the on-screen back/cancel control where available |
 
 ## Acknowledgements
 
 Huge thanks to [wfr](https://github.com/wfr) for publishing the
 [*re-chaos* reverse-engineering notes](https://github.com/wfr/re-chaos). Their
 careful early format research gave this project a tremendously useful head
-start. No source code or copyrighted resources are copied from the original
-game.
+start.
+
+This project copies no source code and redistributes no copyrighted resources
+from the original game. Players are expected to buy and own a legal copy, such
+as the [GOG release](https://www.gog.com/en/game/chaos_overlords), and import
+its assets locally during installation.
+
+## License
+
+Copyright (C) 2026 kibertoad.
+
+The original code in this repository is licensed under the
+[GNU General Public License v3.0](LICENSE). The license does not cover or grant
+rights to the original *Chaos Overlords* assets, which are not distributed by
+this project.

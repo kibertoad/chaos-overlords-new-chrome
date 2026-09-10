@@ -4,6 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <!-- NuGet audit is still enabled, but an unreachable advisory service must
          not prevent an already-restored offline game from launching. -->
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900</WarningsNotAsErrors>
