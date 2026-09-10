@@ -435,9 +435,18 @@ one whose current sector or cached destination matches that sector, otherwise
 `-1`. The adjustment input now names these as visible-hostile-sector presence
 and family-6 coverage rather than retaining raw selector numbers.
 
+The remaining Greed-only byte read is also semantic. The scenario scorer at
+`0x0047712a` stores, for each active player, the count of players with a
+strictly greater scenario score at `0x004abc08 + player`; tied leaders therefore
+both hold zero. In schedule slot 9, only a player with a nonzero value (behind
+at least one higher-scoring player) is reset to slot 0 when fewer than ten
+turns remain or cash is below 100. `OriginalAiHireAdjustmentInputs` exposes
+that exact condition as `HasHigherScoringPlayer`.
+
 **Confidence:** Verified for scenario order, periods, every ranking-mode call,
 every hire-role write, shared scenario bodies, constants, retained factor, x87
-comparison direction, equality boundaries, and adjustment ordering.
+comparison direction, equality boundaries, adjustment ordering, and the
+Greed-only scenario-standing predicate.
 
 **Next validation:** represent per-gang family/destination planning records and
 the previous/current hire role in authoritative match state before live integration.

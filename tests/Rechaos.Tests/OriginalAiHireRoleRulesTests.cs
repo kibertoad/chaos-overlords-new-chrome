@@ -409,11 +409,11 @@ public sealed class OriginalAiHireRoleRulesTests
     }
 
     [Fact]
-    public void GreedRawPlayerFlagAppliesExtraSixMonthCashFloor()
+    public void GreedTrailingPlayerAppliesExtraSixMonthCashFloor()
     {
         var inputs = PowerInputs(
             cash: 75,
-            data4abc08IsSet: false,
+            hasHigherScoringPlayer: false,
             family2Count: 0,
             duration: GameDuration.SixMonths);
 
@@ -424,7 +424,7 @@ public sealed class OriginalAiHireRoleRulesTests
             new OriginalAiHireRoleSelection(0, 1),
             OriginalAiHireRoleRules.SelectGreedAdjusted(
                 turn: 9,
-                inputs with { Data4abc08IsSet = true }));
+                inputs with { HasHigherScoringPlayer = true }));
     }
 
     [Theory]
@@ -619,7 +619,7 @@ public sealed class OriginalAiHireRoleRulesTests
     private static OriginalAiHireAdjustmentInputs PowerInputs(
         int turnsRemaining = 52,
         int cash = 100,
-        bool data4abc08IsSet = false,
+        bool hasHigherScoringPlayer = false,
         bool hasVisibleHostileSector = false,
         bool hasFamily6CoveringFirstHostileSector = false,
         int family5Count = 1,
@@ -630,7 +630,7 @@ public sealed class OriginalAiHireRoleRulesTests
         int family6Or12Count = 0,
         int family0Or4Count = 5,
         GameDuration duration = GameDuration.OneYear) =>
-        new(turnsRemaining, cash, data4abc08IsSet, hasVisibleHostileSector,
+        new(turnsRemaining, cash, hasHigherScoringPlayer, hasVisibleHostileSector,
             hasFamily6CoveringFirstHostileSector,
             family5Count, family7Count, previousRole, family2Count,
             family3Count, family6Or12Count, family0Or4Count, duration);

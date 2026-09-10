@@ -119,6 +119,8 @@ replay-verified two-computer harness through 20 turns or objective completion.
    are isolated in `OriginalAiHireRules`. Its failed-hire rejection selector is
    also exact: Greed rejects slot zero while other scenarios minimize a
    Stealth-weighted positive-stat efficiency ratio with first-tie priority.
+   Greed's remaining schedule flag is now identified as whether at least one
+   player has a strictly greater scenario score; tied leaders do not set it.
    These rules are not yet used by the live planner because authoritative
    match state does not yet represent each gang's family/destination plan or
    the previous/current hire roles. Selector `0x3e` is

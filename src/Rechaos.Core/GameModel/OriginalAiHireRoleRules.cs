@@ -215,7 +215,7 @@ internal static class OriginalAiHireRoleRules
 
         var slot = turn % 10;
         if (inputs.TurnsRemaining < 10 && slot is 1 or 3 or 6 or 8) slot = 0;
-        if (slot == 9 && inputs.Data4abc08IsSet
+        if (slot == 9 && inputs.HasHigherScoringPlayer
             && (inputs.TurnsRemaining < 10 || inputs.Cash < 100)) slot = 0;
 
         var changesFive = !inputs.HasVisibleHostileSector
@@ -386,7 +386,7 @@ internal readonly record struct OriginalAiHireRoleSelection(int RankingMode, int
 internal readonly record struct OriginalAiHireAdjustmentInputs(
     int TurnsRemaining,
     int Cash,
-    bool Data4abc08IsSet,
+    bool HasHigherScoringPlayer,
     bool HasVisibleHostileSector,
     bool HasFamily6CoveringFirstHostileSector,
     int Family5Count,
