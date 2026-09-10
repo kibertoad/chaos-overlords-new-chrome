@@ -7,6 +7,11 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 public static class AiTurnPlanner
 {
+    private readonly record struct RecoveredFamilyChoice(
+        GangAction Action,
+        int? TargetId = null,
+        EquipmentSlot? EquipmentSlot = null);
+
     public sealed record HireChoice(short GangDefinitionId, int SectorId);
     public sealed record HirePreparation(
         HireChoice? Choice,
@@ -58,17 +63,19 @@ public static class AiTurnPlanner
     {
         if (state.AiPlanning.Family(player.Id, gangSlot) != 1) return null;
 
-        var desiredAction = DesiredRecoveredFamilyAction(
-            state, player, gang, gangSlot);
-        if (desiredAction == GangAction.None) return null;
+        var preparedAction = state.AiPlanning.PlannedAction(player.Id, gangSlot);
+        var choice = preparedAction == GangAction.None
+            ? DesiredRecoveredFamilyChoice(state, player, gang, gangSlot)
+            : new RecoveredFamilyChoice(
+                preparedAction,
+                preparedAction is GangAction.Move or GangAction.Equip
+                    ? state.AiPlanning.PlannedTarget(player.Id, gangSlot).First
+                    : null);
+        if (choice.Action == GangAction.None) return null;
 
-        var candidates = options.Where(command => command.Action == desiredAction);
-        if (desiredAction == GangAction.Move
-            && state.AiPlanning.PlannedAction(player.Id, gangSlot) == GangAction.Move)
-        {
-            var preparedSector = state.AiPlanning.PlannedTarget(player.Id, gangSlot).First;
-            candidates = candidates.Where(command => command.Target.Id == preparedSector);
-        }
+        var candidates = options.Where(command => command.Action == choice.Action);
+        if (choice.TargetId is { } targetId)
+            candidates = candidates.Where(command => command.Target.Id == targetId);
         return candidates
             // Prepared live turns use the recovered mode-5 target. Retain the
             // recreation's deterministic target ranking only when this pure
@@ -99,12 +106,26 @@ public static class AiTurnPlanner
         {
             if (!entry.gang.IsActive || state.AiPlanning.Family(playerId, entry.slot) != 1)
                 continue;
-            var desiredAction = DesiredRecoveredFamilyAction(
+            var choice = DesiredRecoveredFamilyChoice(
                 state, player, entry.gang, entry.slot);
-            if (desiredAction == GangAction.None) continue;
-            if (desiredAction != GangAction.Move)
+            if (choice.Action == GangAction.None) continue;
+            if (choice.Action == GangAction.Equip)
             {
-                state.AiPlanning.SetPlannedAction(playerId, entry.slot, desiredAction);
+                var itemId = checked((short)choice.TargetId!.Value);
+                state.AiPlanning.SetPlannedAction(
+                    playerId, entry.slot, GangAction.Equip,
+                    new AiActionTarget(checked((byte)itemId), 0));
+                state.AiPlanning.SetEquipmentCooldown(
+                    playerId,
+                    entry.slot,
+                    choice.EquipmentSlot!.Value,
+                    OriginalAiEquipmentRules.EquipmentReplacementCooldown(
+                        state.Definitions.Items[itemId].Cost));
+                continue;
+            }
+            if (choice.Action != GangAction.Move)
+            {
+                state.AiPlanning.SetPlannedAction(playerId, entry.slot, choice.Action);
                 continue;
             }
 
@@ -136,29 +157,54 @@ public static class AiTurnPlanner
         }
     }
 
-    private static GangAction DesiredRecoveredFamilyAction(
+    private static RecoveredFamilyChoice DesiredRecoveredFamilyChoice(
         MatchState state,
         MatchPlayerState player,
         MatchGangState gang,
         int gangSlot)
     {
         if (state.AiPlanning.Family(player.Id, gangSlot) != 1)
-            return GangAction.None;
+            return new RecoveredFamilyChoice(GangAction.None);
         var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
         return state.AiPlanning.PreviousAction(player.Id, gangSlot) switch
         {
             GangAction.None or GangAction.Chaos =>
-                OriginalAiFamilyOneRules.SelectNoActionOrChaosContinuation(
+                new RecoveredFamilyChoice(OriginalAiFamilyOneRules.SelectNoActionOrChaosContinuation(
                     gang.Force,
                     effectiveHeal,
                     state.Sectors[gang.SectorId].CrackdownActive,
-                    state.AiPlanning.OlderAction(player.Id, gangSlot)),
-            GangAction.Heal => OriginalAiFamilyOneRules.SelectHealContinuation(
+                    state.AiPlanning.OlderAction(player.Id, gangSlot))),
+            GangAction.Heal => new RecoveredFamilyChoice(OriginalAiFamilyOneRules.SelectHealContinuation(
                 gang.Force,
                 effectiveHeal,
-                CanSoloControl(state, player.Id, gang)),
-            _ => GangAction.None
+                CanSoloControl(state, player.Id, gang))),
+            GangAction.Control or GangAction.Equip or GangAction.Snitch =>
+                SelectPostEquipmentChoice(state, player, gang, gangSlot),
+            _ => new RecoveredFamilyChoice(GangAction.None)
         };
+    }
+
+    private static RecoveredFamilyChoice SelectPostEquipmentChoice(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        int gangSlot)
+    {
+        if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
+                state, player, gang, gangSlot) is { } upgrade)
+            return new RecoveredFamilyChoice(
+                GangAction.Equip, upgrade.ItemId, upgrade.Slot);
+
+        var sector = state.Sectors[gang.SectorId];
+        return new RecoveredFamilyChoice(
+            OriginalAiFamilyOneRules.SelectPostEquipmentContinuation(
+                player.Id,
+                sector.Owner?.Value ?? -1,
+                sector.Owner is { } owner
+                    && state.FindPlayer(owner)?.Setup.Controller == PlayerController.Human,
+                player.Cash,
+                state.Setup.AiMentality,
+                sector.Tolerance));
     }
 
     public static HireChoice? ChooseHire(MatchState state, PlayerId playerId)

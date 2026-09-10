@@ -26,8 +26,38 @@ public sealed class AiPlanningStateTests
                 Assert.Equal(AiActionTarget.None, planning.OlderTarget(playerId, gang));
                 Assert.Equal(AiActionTarget.None, planning.PreviousTarget(playerId, gang));
                 Assert.Equal(AiActionTarget.None, planning.PlannedTarget(playerId, gang));
+                Assert.Equal(0, planning.WeaponCooldown(playerId, gang));
+                Assert.Equal(0, planning.ArmorCooldown(playerId, gang));
             }
         }
+    }
+
+    [Fact]
+    public void PlanningStartRefreshesEquipmentCooldownsForAllOriginalSlots()
+    {
+        var planning = AiPlanningState.Initialize();
+        var player = new PlayerId(2);
+        MatchGangState[] gangs =
+        [
+            new(new GangId(20), player, 1, 0, 5, weaponItemId: 1, armorItemId: 25),
+            new(new GangId(21), player, 1, 0, 5),
+            new(new GangId(22), player, 1, 0, 0, weaponItemId: 1, armorItemId: 25)
+        ];
+        planning.SetEquipmentCooldown(player, 0, EquipmentSlot.Weapon, 10);
+        planning.SetEquipmentCooldown(player, 0, EquipmentSlot.Armor, 20);
+        planning.SetEquipmentCooldown(player, 2, EquipmentSlot.Weapon, 30);
+        planning.SetEquipmentCooldown(player, 2, EquipmentSlot.Armor, 40);
+
+        planning.RefreshEquipmentCooldowns(player, gangs);
+
+        Assert.Equal(9, planning.WeaponCooldown(player, 0));
+        Assert.Equal(19, planning.ArmorCooldown(player, 0));
+        Assert.Equal(0, planning.WeaponCooldown(player, 1));
+        Assert.Equal(0, planning.ArmorCooldown(player, 1));
+        Assert.Equal(0, planning.WeaponCooldown(player, 2));
+        Assert.Equal(0, planning.ArmorCooldown(player, 2));
+        Assert.Equal(0, planning.WeaponCooldown(player, 80));
+        Assert.Equal(0, planning.ArmorCooldown(player, 80));
     }
 
     [Fact]
@@ -115,6 +145,8 @@ public sealed class AiPlanningStateTests
         var planning = AiPlanningState.Initialize();
         var player = new PlayerId(2);
         planning.SetFamily(player, 3, 11);
+        planning.SetEquipmentCooldown(player, 3, EquipmentSlot.Weapon, 12);
+        planning.SetEquipmentCooldown(player, 3, EquipmentSlot.Armor, 15);
         planning.SetPlannedAction(player, 3, GangAction.Attack);
         planning.RollActiveGangActions(player,
         [
@@ -131,6 +163,8 @@ public sealed class AiPlanningStateTests
         Assert.Equal(GangAction.None, planning.OlderAction(player, 3));
         Assert.Equal(GangAction.None, planning.PreviousAction(player, 3));
         Assert.Equal(GangAction.None, planning.PlannedAction(player, 3));
+        Assert.Equal(0, planning.WeaponCooldown(player, 3));
+        Assert.Equal(0, planning.ArmorCooldown(player, 3));
     }
 
     [Fact]

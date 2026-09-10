@@ -840,18 +840,32 @@ differs from the active player, is strictly greater than zero, cash is at least
 player zero is deliberately excluded on this side. The crime branch writes
 Chaos at Tolerance at most 3 and Snitch from 4; every failed gate writes Move
 through mode 5. `OriginalAiFamilyOneRules.SelectPostEquipmentContinuation`
-preserves these comparisons as an isolated kernel.
+preserves these comparisons in the live planner.
 
-The preceding equipment decision is not yet safe to integrate. Selectors
-`0x39` and `0x3a` read the equipped weapon and armor. Selector `0x64` chooses a
-researched type-3 armor candidate whose Tech requirement is within the gang's
-raw Tech, whose relevant bonus at item-record offset `+0xc` strictly improves
-on the current armor, and whose cost is strictly less than cash. Selectors
-`0x65` and `0x66` read the two planning-record cooldown shorts at offsets
-`+12` and `+14`; selector `0x6c` supplies an additional 3-by-3 nearby danger
-and missing-equipment gate. Until those cooldown fields and selector `0x6c`
-are represented authoritatively, the post-equipment continuation remains out
-of live planning.
+The preceding equipment decision is also recovered and live. Selectors `0x39`
+and `0x3a` read the equipped weapon and armor. Selector `0x61` chooses the
+weapon candidate first. Selector `0x64` then chooses a researched type-3 armor
+candidate whose Tech requirement is within the gang's raw Tech, whose Defense
+at item-record offset `+0xc` strictly improves on the current armor, and whose
+cost is strictly less than cash. Selectors `0x65` and `0x66` read signed
+planning-record cooldown shorts at offsets `+12` and `+14`. A successful Equip
+writes raw item cost times three to the matching cooldown. At the start of each
+later planning pass, an equipped slot decrements its cooldown while an empty or
+inactive slot resets it to zero.
+
+Selector `0x6c` scans the acting gang's 3-by-3 neighborhood, clipping horizontal
+wrap but permitting linear index 64. In Greed, a nearby cell qualifies when its
+cached weight is 10 and its owner is the acting player. In other scenarios, a
+cell qualifies when it has any different nonnegative owner or its cached weight
+is 10. Such a cell opens the gate only while the gang lacks a weapon or armor.
+Independently, a current sector owned by the acting player with weight 10 opens
+the gate even when both equipment slots are filled. Weight 10 denotes a visible
+hostile human gang. Index 64 preserves the original array aliases: its owner
+reads player zero gang-slot-zero ownership storage, and its per-player weight
+reads the next player's sector-zero weight (zero for the final player). The
+recreation carries these comparisons, exact item target, cooldowns, and the
+fallback continuation through authoritative planning, command resolution,
+saves, canonical hashes, and replays.
 
 The previous-Heal case is also complete at the action level. It repeats Heal
 under the common Force-below-9/effective-Heal-at-least-`-3` gate. Otherwise it

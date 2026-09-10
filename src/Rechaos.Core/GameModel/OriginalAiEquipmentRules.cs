@@ -1,13 +1,39 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Equipment-choice rules recovered from selector 0x61 and family handler 11.
-/// Kept separate from the provisional scalar planner until gang-family dispatch
-/// and the original planning-record cooldowns are represented in MatchState.
+/// Equipment-choice rules recovered from selectors 0x61, 0x64, and 0x6c.
 /// </summary>
 internal static class OriginalAiEquipmentRules
 {
     private const int UnequippedWeaponBaselineItem = 24;
+    private const int UnequippedArmorBaselineItem = 0;
+
+    internal readonly record struct Upgrade(short ItemId, EquipmentSlot Slot);
+
+    public static Upgrade? SelectFamilyOneUpgrade(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        int gangSlot)
+    {
+        ValidateGang(state, player, gang);
+        if ((uint)gangSlot >= MatchLimits.GangsPerPlayer
+            || !ReferenceEquals(player.Gangs[gangSlot], gang))
+            throw new ArgumentException("Gang slot does not identify the supplied gang.", nameof(gangSlot));
+        if (!NeedsFamilyOneEquipment(state, player, gang)) return null;
+
+        var weapon = SelectFamily11WeaponUpgrade(state, player, gang, player.Cash);
+        if (state.AiPlanning.WeaponCooldown(player.Id, gangSlot) <= 0
+            && weapon is { } weaponId)
+            return new Upgrade(checked((short)weaponId), EquipmentSlot.Weapon);
+
+        var armor = SelectArmorUpgrade(state, player, gang, player.Cash);
+        if (state.AiPlanning.ArmorCooldown(player.Id, gangSlot) <= 0
+            && armor is { } armorId)
+            return new Upgrade(checked((short)armorId), EquipmentSlot.Armor);
+
+        return null;
+    }
 
     public static int? SelectFamily11WeaponUpgrade(
         MatchState state,
@@ -18,11 +44,7 @@ internal static class OriginalAiEquipmentRules
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(player);
         ArgumentNullException.ThrowIfNull(gang);
-        if (availableCash < 0) throw new ArgumentOutOfRangeException(nameof(availableCash));
-        if (gang.Owner != player.Id || !player.Gangs.Contains(gang))
-            throw new ArgumentException("Gang does not belong to the supplied player.", nameof(gang));
-        if (state.FindPlayer(player.Id) != player)
-            throw new ArgumentException("Player does not belong to the match.", nameof(player));
+        ValidateGang(state, player, gang);
         if (state.Definitions.Items.Count <= UnequippedWeaponBaselineItem)
             throw new InvalidOperationException("Original AI weapon selection requires the 64-item table.");
 
@@ -68,11 +90,85 @@ internal static class OriginalAiEquipmentRules
             : selected;
     }
 
-    public static int WeaponReplacementCooldown(int itemCost)
+    public static int? SelectArmorUpgrade(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        int availableCash)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(player);
+        ArgumentNullException.ThrowIfNull(gang);
+        ValidateGang(state, player, gang);
+        if (state.Definitions.Items.Count < 64)
+            throw new InvalidOperationException("Original AI armor selection requires the 64-item table.");
+
+        var selected = gang.ArmorItemId is { } equipped
+            ? checked((int)equipped)
+            : UnequippedArmorBaselineItem;
+        var gangTech = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).TechLevel;
+        for (var index = 0; index < 64; index++)
+        {
+            var item = state.Definitions.Items[index];
+            if (item.Type != 3
+                || !player.ResearchedItems.Contains(checked((short)index))
+                || item.TechLevel > gangTech
+                || item.Stats.Defense <= state.Definitions.Items[selected].Stats.Defense
+                || item.Cost >= availableCash) continue;
+            selected = index;
+        }
+
+        return selected == UnequippedArmorBaselineItem || selected == gang.ArmorItemId
+            ? null
+            : selected;
+    }
+
+    public static bool NeedsFamilyOneEquipment(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(player);
+        ArgumentNullException.ThrowIfNull(gang);
+        ValidateGang(state, player, gang);
+
+        var missingEquipment = gang.WeaponItemId is null || gang.ArmorItemId is null;
+        var sourceColumn = gang.SectorId % 8;
+        for (var vertical = -1; vertical <= 1; vertical++)
+        {
+            for (var horizontal = -1; horizontal <= 1; horizontal++)
+            {
+                if (sourceColumn == 0 && horizontal < 0
+                    || sourceColumn == 7 && horizontal > 0) continue;
+                var sectorId = gang.SectorId + vertical * 8 + horizontal;
+                if (sectorId is < 0 or > MatchLimits.SectorCount) continue;
+
+                var owner = sectorId == MatchLimits.SectorCount
+                    ? 0
+                    : state.Sectors[sectorId].Owner?.Value ?? -1;
+                var hasVisibleHostileHuman = sectorId == MatchLimits.SectorCount
+                    ? AliasedSectorWeightIsTen(state, player.Id)
+                    : SectorWeightIsTen(state, player.Id, sectorId);
+                var nearbyEquipmentNeed = state.Setup.Scenario == ScenarioId.Greed
+                    ? hasVisibleHostileHuman && owner == player.Id.Value
+                    : (owner >= 0 && owner != player.Id.Value) || hasVisibleHostileHuman;
+                if (missingEquipment && nearbyEquipmentNeed) return true;
+            }
+        }
+
+        return state.Sectors[gang.SectorId].Owner == player.Id
+            && SectorWeightIsTen(state, player.Id, gang.SectorId);
+    }
+
+    public static int EquipmentReplacementCooldown(int itemCost)
     {
         if (itemCost < 0) throw new ArgumentOutOfRangeException(nameof(itemCost));
         return checked(itemCost * 3);
     }
+
+    public static int WeaponReplacementCooldown(int itemCost) =>
+        EquipmentReplacementCooldown(itemCost);
 
     public static bool CanReplaceWeapon(int cooldown, GangAction previousAction) =>
         cooldown <= 0 && previousAction != GangAction.Attack;
@@ -95,5 +191,32 @@ internal static class OriginalAiEquipmentRules
 
         // Selector 0x6d initializes its result to item zero.
         return 0;
+    }
+
+    private static bool SectorWeightIsTen(
+        MatchState state,
+        PlayerId observer,
+        int sectorId) => state.Players.Any(player =>
+            player.Id != observer
+            && player.Status == PlayerStatus.Active
+            && player.Setup.Controller == PlayerController.Human
+            && state.AiStrategy.IsHostile(observer, player.Id)
+            && player.Gangs.Any(gang => gang.IsActive
+                && gang.SectorId == sectorId
+                && state.CanPlayerDetectGang(observer, gang.Id)));
+
+    private static bool AliasedSectorWeightIsTen(MatchState state, PlayerId player) =>
+        player.Value + 1 < MatchLimits.PlayerCount
+        && SectorWeightIsTen(state, new PlayerId(player.Value + 1), 0);
+
+    private static void ValidateGang(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang)
+    {
+        if (gang.Owner != player.Id || !player.Gangs.Contains(gang))
+            throw new ArgumentException("Gang does not belong to the supplied player.", nameof(gang));
+        if (state.FindPlayer(player.Id) != player)
+            throw new ArgumentException("Player does not belong to the match.", nameof(player));
     }
 }

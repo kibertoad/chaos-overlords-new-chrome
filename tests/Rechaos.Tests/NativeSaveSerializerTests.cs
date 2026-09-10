@@ -21,6 +21,8 @@ public sealed class NativeSaveSerializerTests
         match.AiPlanning.SetPlannedAction(
             new PlayerId(1), 0, GangAction.Attack, new AiActionTarget(0, 4));
         match.AiPlanning.RollActiveGangActions(new PlayerId(1), match.Players[1].Gangs);
+        match.AiPlanning.SetEquipmentCooldown(new PlayerId(1), 0, EquipmentSlot.Weapon, 12);
+        match.AiPlanning.SetEquipmentCooldown(new PlayerId(1), 0, EquipmentSlot.Armor, 15);
         match.FinishUpkeep();
         Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(0), GangAction.Hide, CommandTarget.None, Repeat: true)).Accepted);
@@ -51,7 +53,30 @@ public sealed class NativeSaveSerializerTests
         Assert.Equal(GangAction.Move, restored.AiPlanning.PlannedAction(new PlayerId(1), 0));
         Assert.Equal(new AiActionTarget(62, 0), restored.AiPlanning.PlannedTarget(new PlayerId(1), 0));
         Assert.True(restored.AiPlanning.HasPlanned(new PlayerId(1)));
+        Assert.Equal(12, restored.AiPlanning.WeaponCooldown(new PlayerId(1), 0));
+        Assert.Equal(15, restored.AiPlanning.ArmorCooldown(new PlayerId(1), 0));
         Assert.Equal(SaveBytes(match), SaveBytes(restored));
+    }
+
+    [Fact]
+    public void VersionThirteenSaveMigratesEmptyEquipmentCooldowns()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 13;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionSixteenSha256(match);
+        document["runtime"]!["aiPlanning"]!.AsObject().Remove("weaponCooldowns");
+        document["runtime"]!["aiPlanning"]!.AsObject().Remove("armorCooldowns");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.All(restored.AiPlanning.CaptureWeaponCooldowns(), value => Assert.Equal(0, value));
+        Assert.All(restored.AiPlanning.CaptureArmorCooldowns(), value => Assert.Equal(0, value));
+        Assert.Equal(MatchStateHasher.ComputeVersionSixteenSha256(match),
+            MatchStateHasher.ComputeVersionSixteenSha256(restored));
     }
 
     [Fact]

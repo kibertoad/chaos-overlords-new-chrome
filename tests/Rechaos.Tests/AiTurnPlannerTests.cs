@@ -233,6 +233,137 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void FamilyOnePostEquipmentContinuationRunsWhenSelectorSixCIsClear()
+    {
+        var match = CreateMatch(
+            scenario: ScenarioId.Greed,
+            ownsStartingSector: false,
+            cash: 50);
+        var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
+        match.AiPlanning.SetFamily(player, 0, 1);
+        match.AiPlanning.SetCurrentHireRole(player, 5);
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Control);
+        match.Sectors[0].Owner = new PlayerId(1);
+        match.FinishUpkeep();
+        match.Sectors[0].Tolerance = 3;
+
+        match.PrepareAiPlanning(player);
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+
+        Assert.Equal(1, match.AiPlanning.Family(player, 0));
+        Assert.Equal(GangAction.Control, match.AiPlanning.PreviousAction(player, 0));
+        Assert.Equal(GangAction.Chaos, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(GangAction.Chaos, command.Action);
+    }
+
+    [Fact]
+    public void FamilyOneEquipmentGatePlansExactWeaponAndStartsCooldown()
+    {
+        var data = BundledOriginalData.Load();
+        var researched = data.Items
+            .Select((item, index) => (item, index))
+            .Where(value => value.item.Type != 99)
+            .Select(value => checked((short)value.index))
+            .ToHashSet();
+        var match = CreateMatch(
+            definitionId: 56,
+            scenario: ScenarioId.Power,
+            ownsStartingSector: false,
+            data: data,
+            cash: 100,
+            researchedItems: researched);
+        var player = new PlayerId(0);
+        match.AiPlanning.BeginPlanning(player);
+        match.AiPlanning.SetCurrentHireRole(player, 1);
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Control);
+        match.Sectors[1].Owner = new PlayerId(1);
+        var recorder = new MatchReplayRecorder(match);
+        recorder.FinishUpkeep();
+
+        var expectedItem = Assert.IsType<int>(
+            OriginalAiEquipmentRules.SelectFamily11WeaponUpgrade(
+                match, match.Players[0], match.Players[0].Gangs[0], match.Players[0].Cash));
+        recorder.PrepareAiPlanning(player);
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+
+        Assert.Equal(GangAction.Equip, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(new AiActionTarget(checked((byte)expectedItem), 0),
+            match.AiPlanning.PlannedTarget(player, 0));
+        Assert.Equal(OriginalAiEquipmentRules.EquipmentReplacementCooldown(
+                data.Items[expectedItem].Cost),
+            match.AiPlanning.WeaponCooldown(player, 0));
+        Assert.Equal(GangAction.Equip, command.Action);
+        Assert.Equal(CommandTarget.Item(expectedItem), command.Target);
+
+        var cashBefore = match.Players[0].Cash;
+        Assert.True(recorder.Submit(command).Accepted);
+        recorder.FinishCommand(player);
+        recorder.FinishCommand(new PlayerId(1));
+        while (match.Coordinator.Phase == TurnPhase.Execution)
+            recorder.FinishExecutionPhase();
+
+        Assert.Equal(checked((short)expectedItem), match.Players[0].Gangs[0].WeaponItemId);
+        Assert.Equal(cashBefore - data.Items[expectedItem].Cost, match.Players[0].Cash);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(checked((short)expectedItem), restored.Players[0].Gangs[0].WeaponItemId);
+        Assert.Equal(match.AiPlanning.WeaponCooldown(player, 0),
+            restored.AiPlanning.WeaponCooldown(player, 0));
+    }
+
+    [Fact]
+    public void FamilyOneEquipmentGatePlansAndResolvesExactArmorUpgrade()
+    {
+        var data = BundledOriginalData.Load();
+        var researched = data.Items
+            .Select((item, index) => (item, index))
+            .Where(value => value.item.Type != 99)
+            .Select(value => checked((short)value.index))
+            .ToHashSet();
+        var match = CreateMatch(
+            definitionId: 56,
+            scenario: ScenarioId.Power,
+            ownsStartingSector: false,
+            data: data,
+            cash: 100,
+            researchedItems: researched);
+        var player = new PlayerId(0);
+        match.Players[0].Gangs[0].WeaponItemId = 23;
+        match.AiPlanning.BeginPlanning(player);
+        match.AiPlanning.SetCurrentHireRole(player, 1);
+        match.AiPlanning.SetPlannedAction(player, 0, GangAction.Control);
+        match.Sectors[1].Owner = new PlayerId(1);
+        var recorder = new MatchReplayRecorder(match);
+        recorder.FinishUpkeep();
+
+        var expectedItem = Assert.IsType<int>(OriginalAiEquipmentRules.SelectArmorUpgrade(
+            match, match.Players[0], match.Players[0].Gangs[0], match.Players[0].Cash));
+        recorder.PrepareAiPlanning(player);
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+
+        Assert.Equal(GangAction.Equip, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(new AiActionTarget(checked((byte)expectedItem), 0),
+            match.AiPlanning.PlannedTarget(player, 0));
+        Assert.Equal(OriginalAiEquipmentRules.EquipmentReplacementCooldown(
+                data.Items[expectedItem].Cost),
+            match.AiPlanning.ArmorCooldown(player, 0));
+        Assert.Equal(CommandTarget.Item(expectedItem), command.Target);
+
+        Assert.True(recorder.Submit(command).Accepted);
+        recorder.FinishCommand(player);
+        recorder.FinishCommand(new PlayerId(1));
+        while (match.Coordinator.Phase == TurnPhase.Execution)
+            recorder.FinishExecutionPhase();
+
+        Assert.Equal(checked((short)expectedItem), match.Players[0].Gangs[0].ArmorItemId);
+        Assert.Equal((short)23, match.Players[0].Gangs[0].WeaponItemId);
+    }
+
+    [Fact]
     public void FamilyOnePreparationUsesRecoveredModeFiveMoveDestination()
     {
         var data = BundledOriginalData.Load();
@@ -559,7 +690,8 @@ public sealed class AiTurnPlannerTests
         int cash = 20,
         IReadOnlyList<short>? hirePool = null,
         PlayerController rivalController = PlayerController.Human,
-        short rivalDefinitionId = 2)
+        short rivalDefinitionId = 2,
+        IReadOnlySet<short>? researchedItems = null)
     {
         data ??= BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -571,7 +703,8 @@ public sealed class AiTurnPlannerTests
         [
             new(setups[0], cash,
                 [new MatchGangState(new GangId(10), new PlayerId(0), definitionId, 0, force)],
-                hirePool),
+                hirePool,
+                researchedItems: researchedItems),
             new(setups[1], 20, [new MatchGangState(
                 new GangId(20), new PlayerId(1), rivalDefinitionId, 1, 10)])
         ];

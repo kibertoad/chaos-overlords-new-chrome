@@ -40,6 +40,41 @@ public sealed class OriginalAiEquipmentRulesTests
             match, match.Players[0], match.Players[0].Gangs[0], match.Players[0].Cash));
     }
 
+    [Fact]
+    public void ArmorUpgradeUsesStrictCashAndStrictDefenseBoundaries()
+    {
+        var exact = CreateMatch(gangDefinitionId: 56, cash: 40);
+        var above = CreateMatch(gangDefinitionId: 56, cash: 41);
+
+        Assert.Equal(35, OriginalAiEquipmentRules.SelectArmorUpgrade(
+            exact, exact.Players[0], exact.Players[0].Gangs[0], exact.Players[0].Cash));
+        Assert.Equal(37, OriginalAiEquipmentRules.SelectArmorUpgrade(
+            above, above.Players[0], above.Players[0].Gangs[0], above.Players[0].Cash));
+    }
+
+    [Fact]
+    public void FamilyOneEquipmentNeedChangesBetweenGreedAndOtherScenarios()
+    {
+        var greed = CreateEquipmentNeedMatch(ScenarioId.Greed, adjacentOwner: new PlayerId(1));
+        var power = CreateEquipmentNeedMatch(ScenarioId.Power, adjacentOwner: new PlayerId(1));
+
+        Assert.False(OriginalAiEquipmentRules.NeedsFamilyOneEquipment(
+            greed, greed.Players[0], greed.Players[0].Gangs[0]));
+        Assert.True(OriginalAiEquipmentRules.NeedsFamilyOneEquipment(
+            power, power.Players[0], power.Players[0].Gangs[0]));
+    }
+
+    [Fact]
+    public void FamilyOneEquipmentNeedPreservesBottomLeftSector64OwnerAlias()
+    {
+        var match = CreateEquipmentNeedMatch(ScenarioId.Power, adjacentOwner: null);
+
+        Assert.False(OriginalAiEquipmentRules.NeedsFamilyOneEquipment(
+            match, match.Players[0], match.Players[0].Gangs[0]));
+        Assert.True(OriginalAiEquipmentRules.NeedsFamilyOneEquipment(
+            match, match.Players[1], match.Players[1].Gangs[0]));
+    }
+
     [Theory]
     [InlineData(0, GangAction.None, true)]
     [InlineData(-1, GangAction.Move, true)]
@@ -80,5 +115,34 @@ public sealed class OriginalAiEquipmentRulesTests
             ], owner: id == 0 ? setupPlayer.Id : null))
             .ToArray();
         return new MatchState(data, setup, [player], sectors);
+    }
+
+    private static MatchState CreateEquipmentNeedMatch(
+        ScenarioId scenario,
+        PlayerId? adjacentOwner)
+    {
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "CPU ZERO", PlayerController.Computer),
+            new(new PlayerId(1), "CPU ONE", PlayerController.Computer)
+        ];
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 100,
+                [new MatchGangState(new GangId(10), setups[0].Id, 58, 56, 10)]),
+            new(setups[1], 100,
+                [new MatchGangState(new GangId(20), setups[1].Id, 58, 56, 10)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 4)
+            ], owner: id == 57 ? adjacentOwner : null))
+            .ToArray();
+        return new MatchState(data, new MatchSetup(
+            scenario, GameDuration.SixMonths, 1997, setups), players, sectors);
     }
 }

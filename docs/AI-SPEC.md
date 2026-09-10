@@ -46,14 +46,16 @@ It must not be cited as behavioral parity with the original AI.
   succeeds, and mode-5 Move otherwise. This action branch and complete mode-5
   destination are also live; the same unavailable-action fallback qualification
   applies.
-- Family 1's post-equipment continuation after prior Control, Equip, or Snitch
-  is recovered as an isolated rule kernel. A human-owned sector chooses crime
+- Family 1's branch after prior Control, Equip, or Snitch first checks its
+  recovered nearby-danger/equipment gate. It prefers a legal weapon upgrade,
+  then a legal armor upgrade, when the corresponding planning cooldown has
+  expired. Successful Equip planning starts a cooldown of three times the raw
+  item cost. If no equipment is selected, a human-owned sector chooses crime
   at cash 50 or more and Mentality Criminal or higher. A non-human-owned sector
   chooses crime only for a different raw owner strictly above player zero, cash
   50 or more, and exactly Goon Mentality. Crime is Chaos through Tolerance 3
-  and Snitch from 4; every failed gate chooses mode-5 Move. This branch is not
-  live yet because the preceding equipment cooldown and nearby-danger gates
-  are not fully represented.
+  and Snitch from 4; every failed gate chooses mode-5 Move. The complete branch,
+  including exact item and Move targets, is live and replay-recorded.
 - Selection is stable by score, action, target kind, target ID, and secondary ID.
 - A shared nonnegative spending budget prevents the planner from intentionally
   queuing more Bribe/Equip cost than the player currently holds while still
@@ -209,14 +211,15 @@ replay-verified two-computer harness through 20 turns or objective completion.
    guard family-1's cash 50/51, Force 8/9, effective-Heal -3/-4, Tolerance
    3/4, human-owner Mentality-at-least-Criminal, and non-human-owner exact-Goon
    boundaries, including the original raw-owner-greater-than-zero asymmetry.
-   The complete previous-None/Chaos and previous-Heal action
+   The complete previous-None/Chaos, previous-Heal, and post-equipment action
    branches are live, including selector `0x2a` as the current-sector
    active-Crackdown predicate, selector `0x2c` as strict solo Control, and
-   replay-recorded mode-5 destinations. The recovered post-equipment terminal
-   branch remains isolated until selectors `0x65`/`0x66` and the surrounding
-   selector-`0x6c` gate have authoritative state. Capture controlled original
-   turns that reach the remaining choices through their complete selector
-   context before replacing more recreation policy.
+   replay-recorded mode-5 destinations. The post-equipment path also carries
+   selector `0x6c`'s 3-by-3 danger test, selectors `0x61`/`0x64`'s exact weapon/
+   armor choices, and selectors `0x65`/`0x66`'s planning cooldowns into live
+   command submission and resolution. Capture controlled original turns that
+   reach the remaining family choices through their complete selector context
+   before replacing more recreation policy.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those
    fixtures.

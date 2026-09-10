@@ -10,6 +10,7 @@ internal static class AiPlanningPreparation
         var firstPlanningPass = state.AiPlanning.BeginPlanning(player);
         if (!firstPlanningPass)
             state.AiPlanning.RollActiveGangActions(player, gangs);
+        state.AiPlanning.RefreshEquipmentCooldowns(player, gangs);
         state.AiPlanning.CleanupDuplicatePreviousActions(player, gangs);
         for (var gangSlot = 0; gangSlot < gangs.Count; gangSlot++)
         {
