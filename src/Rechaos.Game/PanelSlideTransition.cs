@@ -2,8 +2,8 @@ namespace Rechaos.Game;
 
 public sealed class PanelSlideTransition
 {
-    public static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(180);
-    public const int StartOffset = 96;
+    public static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(250);
+    public const int StartOffset = 344;
     private ClientScreen? _screen;
     private TimeSpan _started;
 

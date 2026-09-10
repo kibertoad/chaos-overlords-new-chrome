@@ -237,6 +237,25 @@ modal route the recovered general-effect slots 0 and 1.
 **Next validation:** Capture the original modal wording, button order, and
 whether keyboard shortcuts choose a default response.
 
+#### Panel-slide geometry and speed calibration
+
+The panel-open function at `0x0041953e` and reverse close function at
+`0x004196f5` copy a 209-pixel-wide panel vertically from or toward the bottom
+edge. Their primary form travels 344 pixels; an alternate form travels 320.
+Both calculate a step from the startup blit benchmark at `0x00432954`. That
+benchmark counts identical copies for just over one second. The transition
+divides the count by four, divides its travel by that result, and clamps the
+step to at least 16 pixels. The intended uncapped duration is therefore about
+one quarter second, while the minimum step prevents excessive intermediate
+copies on faster hardware. Slide enabled plays general-effect slot 0 before
+opening and slot 1 before closing; disabled mode skips intermediate copies and
+still presents the final state.
+
+The recreation now uses a bounded 250 ms time-based vertical entrance over the
+primary 344-pixel travel. It intentionally avoids the original startup-speed
+dependency. Runtime capture must still classify which panels use the alternate
+320-pixel form and validate close timing/interruption behavior.
+
 #### Planning timer
 
 The same preference block also initializes byte `0x00487854`, corresponding to

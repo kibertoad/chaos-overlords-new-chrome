@@ -47,8 +47,9 @@ Last updated: 2026-09-11
   Combat on, Slide Panels on, and Warn If Idle Gangs on, and persists those
   choices alongside audio and the planning timer. Version-4 preferences migrate
   forward using the recovered defaults for the three choices that format lacked.
-  The legacy 16-bit color choice is explicitly always enabled by the modern
-  renderer.
+  Enabled panel entrances use the recovered vertical 344-pixel primary travel
+  and 250 ms benchmark target. The legacy 16-bit color choice is explicitly
+  always enabled by the modern renderer.
 - Combat Summary now replays the selected result through the detailed combat
   panel in either presentation mode. Escape or the panel Cancel control clears
   the queue immediately; cancellation and large-elapsed stress tests guard the
@@ -77,8 +78,9 @@ Last updated: 2026-09-11
 1. Capture the original planning countdown to settle wall-clock warning cadence,
    modal behavior, and deactivation timing; adjust presentation only
    where the capture contradicts the current bounded implementation.
-2. Capture the original panel/combat cadence, then adjust the bounded
-   presentation where the reference contradicts it.
+2. Capture the original panel/combat cadence, classify the alternate 320-pixel
+   panel form and close behavior, then adjust the bounded presentation where
+   the reference contradicts it.
 3. Investigate and explain the reported GOG/1.1 Detailed Combat freeze, then
    compare the bounded recreation cadence with a controlled original capture.
 4. Recover WinHelp links, inline formatting, and context IDs, then expand exact

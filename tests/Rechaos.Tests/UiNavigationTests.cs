@@ -213,8 +213,8 @@ public sealed class UiNavigationTests
         slide.Begin(ClientScreen.Gang, start);
 
         Assert.Equal(PanelSlideTransition.StartOffset, slide.Offset(ClientScreen.Gang, start));
-        Assert.InRange(slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration / 2),
-            1, PanelSlideTransition.StartOffset - 1);
+        Assert.Equal(172,
+            slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration / 2));
         Assert.Equal(0, slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration));
         Assert.Equal(0, slide.Offset(ClientScreen.City, start));
         slide.Begin(ClientScreen.City, start);
