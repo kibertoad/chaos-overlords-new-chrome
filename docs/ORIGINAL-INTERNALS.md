@@ -451,7 +451,18 @@ Greed-only scenario-standing predicate.
 The recreation's `AiPlanningState` now preserves the verified six current-role
 words, six previous-role words, and six-by-81 family slots in canonical hashes,
 native saves, and replays. Save/replay version 7 migrates earlier snapshots to
-role zero and family sentinel 99 without advancing the RNG.
+role zero and family sentinel 99 without advancing the RNG. `PrepareAiPlanning`
+now performs the verified role rollover and applies the scenario/role family
+table to each active gang before the existing hostility pass.
+
+The related 14-byte auxiliary records at `0x0048c0ba` remain deliberately
+unmodeled. Their second short is initialized to the current sector by every
+assigning hire-role-4/family-6 dispatch and is later updated by family-6 routing.
+The first short is written as `-1` by several Equip/Heal/routing paths but as a
+sector by Attack and other paths. Selector `0x5f` treats the second short as
+coverage only when the first equals `-1`; otherwise it tests the gang's live
+sector. This bounds the behavior but does not yet justify a single generic
+“destination” name for either field.
 
 **Next validation:** recover and represent the per-gang destination/command
 planning fields before live integration.

@@ -2,8 +2,8 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Scenario/hire-role dispatch recovered from the original planner at 0x00432da0.
-/// Live command integration remains pending the destination and command fields
-/// of the per-gang planning records.
+/// Match planning preparation applies this recovered family update. Live
+/// command dispatch remains pending the destination and command fields.
 /// </summary>
 internal static class OriginalAiFamilyRules
 {

@@ -102,10 +102,11 @@ replay-verified two-computer harness through 20 turns or objective completion.
    strict-improvement, previous-Attack, and cooldown gates, is isolated in
    `OriginalAiEquipmentRules`; it is intentionally not applied to unrelated
    families by the provisional scalar planner. The exact ten-scenario by
-   seven-hire-role family table is isolated in `OriginalAiFamilyRules`,
-   including unmapped cells which preserve the current family and the mode-4
-   planning-record copy; live integration awaits representation of query
-   `0x7c`'s per-player hire-role word. The original objective-specific base
+   seven-hire-role family table is implemented by `OriginalAiFamilyRules`,
+   including unmapped cells which preserve the current family. AI planning
+   preparation now rolls the current role into the previous role and updates
+   every active gang's authoritative family slot. The mode-4 auxiliary-sector
+   copy awaits representation of that separately stored field. The original objective-specific base
    turn schedules are isolated in `OriginalAiHireRoleRules`; Dominance alone
    uses an eleven-turn period, while the other nine objectives use ten. The
    objective-specific adjustments and hire-attempt gates are also
@@ -122,9 +123,9 @@ replay-verified two-computer harness through 20 turns or objective completion.
    Greed's remaining schedule flag is now identified as whether at least one
    player has a strictly greater scenario score; tied leaders do not set it.
    Authoritative state now preserves the fixed six current/previous hire roles
-   and six-by-81 family slots. These rules are not yet used by the live planner
-   because destination/command planning fields and their update pass are not
-   represented. Selector `0x3e` is
+   and six-by-81 family slots. The hire schedule and ranking rules are not yet
+   used by the live planner because destination/command planning fields and
+   the complete role update pass are not represented. Selector `0x3e` is
    identified as the previous-turn action byte. Selectors 0 (scenario), `0x48`
    (planning-record initialized flag), `0x5a` (mirrored gang projection),
    `0x7c` (per-player hire role), 3 (player cash), 4 (sector

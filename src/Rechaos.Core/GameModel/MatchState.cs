@@ -389,7 +389,6 @@ public sealed class MatchState
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         if (restore is not null) RestoreRuntime(restore);
     }
-
     internal MatchState(
         OriginalData definitions,
         MatchSetup setup,
@@ -494,6 +493,7 @@ public sealed class MatchState
             throw new InvalidOperationException("AI preparation requires that player's active Command phase.");
         if (FindPlayer(player)?.Setup.Controller != PlayerController.Computer)
             throw new ArgumentException("AI preparation requires a computer-controlled player.", nameof(player));
+        AiPlanningPreparation.ApplyFamilyAssignments(this, player);
         AiStrategy.ApplySectorCombatAdvantageHostility(this, player);
     }
 

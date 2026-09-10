@@ -146,6 +146,22 @@ public sealed class AiStrategicStateTests
         Assert.Equal(expectedHostile, match.AiStrategy.IsHostile(new PlayerId(0), new PlayerId(1)));
     }
 
+    [Fact]
+    public void PlanningPreparationRollsRoleAndAssignsOriginalFamily()
+    {
+        var match = CreateOnePlayerMatch();
+        var player = new PlayerId(0);
+        match.AiPlanning.SetCurrentHireRole(player, 4);
+        match.FinishUpkeep();
+
+        match.PrepareAiPlanning(player);
+
+        Assert.Equal(4, match.AiPlanning.PreviousHireRole(player));
+        Assert.Equal(4, match.AiPlanning.CurrentHireRole(player));
+        Assert.Equal(6, match.AiPlanning.Family(player, 0));
+        Assert.Equal(AiPlanningState.UnusedFamily, match.AiPlanning.Family(player, 1));
+    }
+
     private static MatchSetup Setup(AiDifficulty difficulty) => new(
         ScenarioId.Greed,
         GameDuration.SixMonths,
