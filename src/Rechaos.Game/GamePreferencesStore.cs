@@ -7,16 +7,22 @@ public sealed record GamePreferences(
     int MusicVolumeLevel,
     int SoundEffectVolumeLevel,
     bool WarnIfIdleGangs,
-    PlanningTimeLimit PlanningTimeLimit)
+    PlanningTimeLimit PlanningTimeLimit,
+    bool ShowBaseStatistics,
+    bool DetailedCombat,
+    bool SlidePanels)
 {
-    public const int CurrentFormatVersion = 4;
+    public const int CurrentFormatVersion = 5;
 
     public static GamePreferences Default { get; } =
         new(CurrentFormatVersion,
             OriginalSoundtrackPolicy.DefaultVolumeLevel,
             AudioRouting.DefaultEffectVolumeLevel,
             true,
-            PlanningTimeLimit.None);
+            PlanningTimeLimit.None,
+            false,
+            true,
+            true);
 }
 
 public static class GamePreferencesStore
@@ -35,8 +41,20 @@ public static class GamePreferencesStore
         {
             var file = new FileInfo(path);
             if (!file.Exists || file.Length > MaximumFileBytes) return GamePreferences.Default;
-            using var stream = file.OpenRead();
-            var preferences = JsonSerializer.Deserialize<GamePreferences>(stream, JsonOptions);
+            var bytes = File.ReadAllBytes(path);
+            using var document = JsonDocument.Parse(bytes);
+            if (!document.RootElement.TryGetProperty(nameof(GamePreferences.FormatVersion), out var version))
+                return GamePreferences.Default;
+            if (version.GetInt32() == 4)
+            {
+                var legacy = JsonSerializer.Deserialize<VersionFourPreferences>(bytes, JsonOptions);
+                return IsValid(legacy)
+                    ? new GamePreferences(GamePreferences.CurrentFormatVersion, legacy!.MusicVolumeLevel,
+                        legacy.SoundEffectVolumeLevel, legacy.WarnIfIdleGangs,
+                        legacy.PlanningTimeLimit, false, true, true)
+                    : GamePreferences.Default;
+            }
+            var preferences = JsonSerializer.Deserialize<GamePreferences>(bytes, JsonOptions);
             return IsValid(preferences) ? preferences! : GamePreferences.Default;
         }
         catch
@@ -87,4 +105,21 @@ public static class GamePreferencesStore
             SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
                 and <= AudioRouting.MaximumEffectVolumeLevel
         } && Enum.IsDefined(preferences.PlanningTimeLimit);
+
+    private static bool IsValid(VersionFourPreferences? preferences) =>
+        preferences is
+        {
+            FormatVersion: 4,
+            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
+                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
+            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
+                and <= AudioRouting.MaximumEffectVolumeLevel
+        } && Enum.IsDefined(preferences.PlanningTimeLimit);
+
+    private sealed record VersionFourPreferences(
+        int FormatVersion,
+        int MusicVolumeLevel,
+        int SoundEffectVolumeLevel,
+        bool WarnIfIdleGangs,
+        PlanningTimeLimit PlanningTimeLimit);
 }
