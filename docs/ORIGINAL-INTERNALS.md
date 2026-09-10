@@ -1061,9 +1061,7 @@ Force is below 10, and effective Heal is at least `-3`. The repeated previous-
 action query then rejects Attack, but that comparison is redundant after the
 exact-Control guard. The recreation applies this terminal override during
 replay-recorded preparation, including the family transition and normal Heal
-resolution. This establishes one on-objective family-14 continuation; the
-handlers' preceding equipment, Influence, and Research paths remain
-unintegrated.
+resolution.
 
 The shared owned-objective branch at family-13 lines `100..110` and family-14
 lines `103..114` is also bounded. Strategic refresh `0x0040a1a7` caches
@@ -1096,6 +1094,28 @@ gang ID, and submits the normal validated Attack command. This branch may
 attack a visible non-hostile sector owner, so recovered commands require
 visibility but do not inherit the provisional fallback planner's hostility
 filter.
+
+When the acting player already owns the objective and visible opponents are
+present, both handlers use the full ascending visible-opponent pool without the
+remaining-turn parity gate. The shared loop starts from zero rather than two,
+so this branch makes at most five bounded draws before applying the same Force,
+Heal, and Control result selection. It is live for both families with exact
+target replay.
+
+When the owned objective has no visible opponent and the Heal gate fails, both
+handlers try selector `0x61`'s weapon and selector 100 (`0x64`)'s armor in that
+order. Each requires a nonpositive matching cooldown, a different item, enough
+cash, and a previous action other than Attack; unlike family 1/11, a successful
+objective Equip writes the literal cooldown 2. Selector `0x75` then chooses a
+researched type-4 miscellaneous item within raw gang Tech whose Chaos bonus
+strictly improves on the current item (item zero is the empty-slot baseline).
+The caller applies the inclusive cash gate and no cooldown. If no affordable
+miscellaneous upgrade exists, the handler scans the three local sites in slot
+order, retaining the first strict maximum positive Support whose remaining
+Resistance is positive, and writes Influence with that exact slot; otherwise
+it writes None. These Equip/Influence targets now pass through normal validated
+commands and authoritative replay. No Research action appears anywhere in
+either complete handler.
 
 `0x00408553` sorts the 64 sector scores descending while retaining their sector
 indices. The caller chooses uniformly among every sector tied for the maximum;
@@ -1137,11 +1157,9 @@ predicates, family-11 anchor, dynamic call arguments, and late candidate
 filtering due to decompiler control-flow folding. Mode 10 and mode 16's
 remaining family-11 guards are not yet fully labeled.
 
-**Next validation:** map the remaining family-11 guards for modes 10 and 16 to
-public commands. Recover the remaining on-objective family-13/14 equipment,
-Influence, and Research branches, and reproduce the now-live objective routes,
-contested attacks, and mode-16 follower route as fixed original decisions
-before claiming runtime parity.
+**Next validation:** reproduce the now-live objective routes and attacks plus
+the mode-16 follower route as fixed original decisions, then continue bounding
+the remaining family handlers before claiming runtime parity.
 
 ### BIN-AI-006 - directional attitude and hostility matrix
 

@@ -148,8 +148,13 @@ replay-verified two-computer harness through 20 turns or objective completion.
    exact selected visible gang as an Attack at Force 5 or higher. A missing
    target or lower Force falls back to Heal at the same stat boundary, then
    Control; odd parity or no visible opponent selects Control directly. The
-   remaining on-objective equipment, Influence, and Research behavior remains
-   to be integrated.
+   owned-objective opponent path uses the full visible pool and up to five
+   draws without the turn-parity gate. With no visible opponent and no Heal,
+   both families try weapon, armor, and maximum-Chaos miscellaneous upgrades
+   in order, then Influence the unfinished local site with the highest positive
+   Support. Exact item/site targets and the objective handlers' fixed two-turn
+   weapon/armor cooldown are live and replay-safe. These observations complete
+   the family-13/14 command handlers; neither contains a Research assignment.
    The six-by-six directional
    attitude matrix, Homicidal human/computer initialization, non-Homicidal per-turn recovery,
    negative-hostility enumerators, `3..6` non-Homicidal reaction values, exact

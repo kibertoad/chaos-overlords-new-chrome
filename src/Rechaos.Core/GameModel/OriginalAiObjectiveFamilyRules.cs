@@ -8,6 +8,8 @@ internal static class OriginalAiObjectiveFamilyRules
 {
     public const int ContestedAttackMinimumForce = 5;
     public const int ContestedAttackAttempts = 3;
+    public const int OwnedObjectiveAttackAttempts = 5;
+    public const int ObjectiveEquipmentCooldown = 2;
     public const int FamilyFourteenHealForceLimit = 10;
 
     public static bool IsObjectiveSector(ScenarioId scenario, int sectorId)
@@ -94,5 +96,26 @@ internal static class OriginalAiObjectiveFamilyRules
             && effectiveHeal >= OriginalAiFamilyOneRules.MinimumEffectiveHeal
             ? GangAction.Heal
             : GangAction.Control;
+    }
+
+    public static int? SelectHighestSupportUnfinishedSite(
+        MatchState state,
+        int sectorId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if ((uint)sectorId >= MatchLimits.SectorCount)
+            throw new ArgumentOutOfRangeException(nameof(sectorId));
+
+        var bestSupport = 0;
+        int? bestSlot = null;
+        foreach (var site in state.Sectors[sectorId].Sites.OrderBy(site => site.Slot))
+        {
+            var support = state.Definitions.Sites
+                .Single(definition => definition.Id == site.DefinitionId).Support;
+            if (site.Resistance <= 0 || support <= bestSupport) continue;
+            bestSupport = support;
+            bestSlot = site.Slot;
+        }
+        return bestSlot;
     }
 }

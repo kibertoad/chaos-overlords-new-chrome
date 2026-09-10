@@ -1,12 +1,13 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Equipment-choice rules recovered from selectors 0x61, 0x64, and 0x6c.
+/// Equipment-choice rules recovered from selectors 0x61, 0x64, 0x6c, and 0x75.
 /// </summary>
 internal static class OriginalAiEquipmentRules
 {
     private const int UnequippedWeaponBaselineItem = 24;
     private const int UnequippedArmorBaselineItem = 0;
+    private const int UnequippedMiscellaneousBaselineItem = 0;
 
     internal readonly record struct Upgrade(short ItemId, EquipmentSlot Slot);
 
@@ -33,6 +34,37 @@ internal static class OriginalAiEquipmentRules
             return new Upgrade(checked((short)armorId), EquipmentSlot.Armor);
 
         return null;
+    }
+
+    public static Upgrade? SelectObjectiveFamilyUpgrade(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        int gangSlot)
+    {
+        ValidateGang(state, player, gang);
+        if ((uint)gangSlot >= MatchLimits.GangsPerPlayer
+            || !ReferenceEquals(player.Gangs[gangSlot], gang))
+            throw new ArgumentException("Gang slot does not identify the supplied gang.", nameof(gangSlot));
+
+        var previousAction = state.AiPlanning.PreviousAction(player.Id, gangSlot);
+        var weapon = SelectFamily11WeaponUpgrade(state, player, gang, player.Cash);
+        if (state.AiPlanning.WeaponCooldown(player.Id, gangSlot) <= 0
+            && previousAction != GangAction.Attack
+            && weapon is { } weaponId)
+            return new Upgrade(checked((short)weaponId), EquipmentSlot.Weapon);
+
+        var armor = SelectArmorUpgrade(state, player, gang, player.Cash);
+        if (state.AiPlanning.ArmorCooldown(player.Id, gangSlot) <= 0
+            && previousAction != GangAction.Attack
+            && armor is { } armorId)
+            return new Upgrade(checked((short)armorId), EquipmentSlot.Armor);
+
+        var miscellaneous = SelectMiscellaneousChaosUpgrade(state, player, gang);
+        return miscellaneous is { } miscellaneousId
+            && state.Definitions.Items[miscellaneousId].Cost <= player.Cash
+                ? new Upgrade(checked((short)miscellaneousId), EquipmentSlot.Miscellaneous)
+                : null;
     }
 
     public static int? SelectFamily11WeaponUpgrade(
@@ -121,6 +153,38 @@ internal static class OriginalAiEquipmentRules
         return selected == UnequippedArmorBaselineItem || selected == gang.ArmorItemId
             ? null
             : selected;
+    }
+
+    public static int? SelectMiscellaneousChaosUpgrade(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(player);
+        ArgumentNullException.ThrowIfNull(gang);
+        ValidateGang(state, player, gang);
+        if (state.Definitions.Items.Count < 64)
+            throw new InvalidOperationException("Original AI miscellaneous selection requires the 64-item table.");
+
+        var selected = gang.MiscellaneousItemId is { } equipped
+            ? checked((int)equipped)
+            : UnequippedMiscellaneousBaselineItem;
+        var gangTech = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).TechLevel;
+        for (var index = 0; index < 64; index++)
+        {
+            var item = state.Definitions.Items[index];
+            if (item.Type != 4
+                || !player.ResearchedItems.Contains(checked((short)index))
+                || item.TechLevel > gangTech
+                || item.Stats.Chaos <= state.Definitions.Items[selected].Stats.Chaos) continue;
+            selected = index;
+        }
+
+        return selected == UnequippedMiscellaneousBaselineItem
+            || selected == gang.MiscellaneousItemId
+                ? null
+                : selected;
     }
 
     public static bool NeedsFamilyOneEquipment(

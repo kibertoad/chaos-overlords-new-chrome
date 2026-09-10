@@ -53,6 +53,21 @@ public sealed class OriginalAiEquipmentRulesTests
     }
 
     [Fact]
+    public void MiscellaneousUpgradeMaximizesChaosAndRejectsCurrentMaximum()
+    {
+        var match = CreateMatch(gangDefinitionId: 5, cash: 500);
+        var player = match.Players[0];
+        var gang = player.Gangs[0];
+
+        Assert.Equal(40, OriginalAiEquipmentRules.SelectMiscellaneousChaosUpgrade(
+            match, player, gang));
+
+        gang.MiscellaneousItemId = 40;
+        Assert.Null(OriginalAiEquipmentRules.SelectMiscellaneousChaosUpgrade(
+            match, player, gang));
+    }
+
+    [Fact]
     public void FamilyOneEquipmentNeedChangesBetweenGreedAndOtherScenarios()
     {
         var greed = CreateEquipmentNeedMatch(ScenarioId.Greed, adjacentOwner: new PlayerId(1));
