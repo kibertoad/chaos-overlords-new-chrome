@@ -16,6 +16,46 @@ public sealed class SoundtrackCatalogTests
             SoundtrackCatalog.ExpectedFileNames);
     }
 
+    [Theory]
+    [InlineData(OriginalSoundtrackMode.Title, new[] { "track02.ogg" })]
+    [InlineData(OriginalSoundtrackMode.Gameplay, new[]
+    {
+        "track03.ogg", "track04.ogg", "track05.ogg",
+        "track06.ogg", "track07.ogg", "track08.ogg"
+    })]
+    [InlineData(OriginalSoundtrackMode.Endgame, new[] { "track09.ogg" })]
+    public void RecoveredModesUseExactInclusiveCdTrackRanges(
+        OriginalSoundtrackMode mode, string[] expected) =>
+        Assert.Equal(expected, OriginalSoundtrackPolicy.FileNamesFor(mode));
+
+    [Theory]
+    [InlineData(ClientScreen.Title, OriginalSoundtrackMode.Title)]
+    [InlineData(ClientScreen.Setup, OriginalSoundtrackMode.Title)]
+    [InlineData(ClientScreen.City, OriginalSoundtrackMode.Gameplay)]
+    [InlineData(ClientScreen.Handoff, OriginalSoundtrackMode.Gameplay)]
+    [InlineData(ClientScreen.Endgame, OriginalSoundtrackMode.Endgame)]
+    public void ClientScreensSelectRecoveredMusicContext(
+        ClientScreen screen, OriginalSoundtrackMode expected) =>
+        Assert.Equal(expected, OriginalSoundtrackPolicy.ModeFor(screen));
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(5, 32000)]
+    [InlineData(10, 64000)]
+    public void RecoveredVolumeLevelsMatchOriginalStereoChannelValues(
+        int level, int originalChannelValue) =>
+        Assert.Equal(originalChannelValue / (float)ushort.MaxValue,
+            OriginalSoundtrackPolicy.VolumeForLevel(level));
+
+    [Fact]
+    public void RecoveredVolumePolicyRejectsLevelsOutsideOptionsRange()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            OriginalSoundtrackPolicy.VolumeForLevel(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            OriginalSoundtrackPolicy.VolumeForLevel(11));
+    }
+
     [Fact]
     public void AvailableTracksSkipMissingFilesWithoutReordering()
     {

@@ -7,10 +7,14 @@ public sealed partial class ChaosGame
 {
     private static readonly TimeSpan SoundtrackStartTimeout = TimeSpan.FromSeconds(2);
 
-    private readonly List<Song> _soundtrack = [];
+    private readonly Dictionary<string, Song> _soundtrack =
+        new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<Song> _activeSoundtrack = [];
+    private OriginalSoundtrackMode? _soundtrackMode;
     private int _soundtrackIndex = -1;
     private bool _soundtrackEnabled;
     private bool _soundtrackAwaitingStart;
+    private bool _soundtrackPausedByDeactivation;
     private TimeSpan _soundtrackStartDeadline;
 
     private void LoadSoundtrack()
@@ -19,7 +23,7 @@ public sealed partial class ChaosGame
         {
             try
             {
-                _soundtrack.Add(Song.FromUri(
+                _soundtrack.Add(Path.GetFileName(path), Song.FromUri(
                     Path.GetFileNameWithoutExtension(path),
                     new Uri(Path.GetFullPath(path), UriKind.Absolute)));
             }
@@ -36,7 +40,9 @@ public sealed partial class ChaosGame
             _soundtrackEnabled = true;
             MediaPlayer.IsRepeating = false;
             MediaPlayer.IsShuffled = false;
-            StartNextSoundtrackTrack(TimeSpan.Zero);
+            MediaPlayer.Volume = OriginalSoundtrackPolicy.VolumeForLevel(
+                OriginalSoundtrackPolicy.DefaultVolumeLevel);
+            SelectSoundtrackMode(_screens.Current, TimeSpan.Zero);
         }
         catch
         {
@@ -49,6 +55,8 @@ public sealed partial class ChaosGame
         if (!_soundtrackEnabled) return;
         try
         {
+            SelectSoundtrackMode(_screens.Current, gameTime.TotalGameTime);
+            if (_activeSoundtrack.Count == 0) return;
             if (MediaPlayer.State == MediaState.Playing)
             {
                 _soundtrackAwaitingStart = false;
@@ -73,16 +81,67 @@ public sealed partial class ChaosGame
 
     private void StartNextSoundtrackTrack(TimeSpan now)
     {
-        if (!_soundtrackEnabled || _soundtrack.Count == 0) return;
+        if (!_soundtrackEnabled || _activeSoundtrack.Count == 0) return;
         try
         {
-            // Until the original CD selection policy is recovered, preserve the
-            // physical Track02..Track09 order and wrap after the last track.
             if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
-            _soundtrackIndex = (_soundtrackIndex + 1) % _soundtrack.Count;
-            MediaPlayer.Play(_soundtrack[_soundtrackIndex]);
+            _soundtrackIndex = (_soundtrackIndex + 1) % _activeSoundtrack.Count;
+            MediaPlayer.Play(_activeSoundtrack[_soundtrackIndex]);
             _soundtrackAwaitingStart = true;
             _soundtrackStartDeadline = now + SoundtrackStartTimeout;
+        }
+        catch
+        {
+            DisableSoundtrack();
+        }
+    }
+
+    private void SelectSoundtrackMode(ClientScreen screen, TimeSpan now)
+    {
+        var mode = OriginalSoundtrackPolicy.ModeFor(screen);
+        if (_soundtrackMode == mode) return;
+
+        if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
+        _soundtrackMode = mode;
+        _soundtrackIndex = -1;
+        _soundtrackAwaitingStart = false;
+        _soundtrackPausedByDeactivation = false;
+        _activeSoundtrack = OriginalSoundtrackPolicy.FileNamesFor(mode)
+            .Select(fileName => _soundtrack.GetValueOrDefault(fileName))
+            .Where(song => song is not null)
+            .Cast<Song>()
+            .ToArray();
+        StartNextSoundtrackTrack(now);
+    }
+
+    protected override void OnDeactivated(object sender, EventArgs args)
+    {
+        if (_soundtrackEnabled)
+        {
+            try
+            {
+                if (MediaPlayer.State == MediaState.Playing)
+                {
+                    MediaPlayer.Pause();
+                    _soundtrackPausedByDeactivation = true;
+                }
+            }
+            catch
+            {
+                DisableSoundtrack();
+            }
+        }
+        base.OnDeactivated(sender, args);
+    }
+
+    protected override void OnActivated(object sender, EventArgs args)
+    {
+        base.OnActivated(sender, args);
+        if (!_soundtrackEnabled || !_soundtrackPausedByDeactivation) return;
+        try
+        {
+            if (MediaPlayer.State == MediaState.Paused) MediaPlayer.Resume();
+            _soundtrackPausedByDeactivation = false;
         }
         catch
         {
@@ -94,6 +153,7 @@ public sealed partial class ChaosGame
     {
         _soundtrackEnabled = false;
         _soundtrackAwaitingStart = false;
+        _soundtrackPausedByDeactivation = false;
         try
         {
             if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
@@ -107,8 +167,10 @@ public sealed partial class ChaosGame
     private void DisposeSoundtrack()
     {
         DisableSoundtrack();
-        foreach (var song in _soundtrack) song.Dispose();
+        foreach (var song in _soundtrack.Values) song.Dispose();
         _soundtrack.Clear();
+        _activeSoundtrack = [];
+        _soundtrackMode = null;
         _soundtrackIndex = -1;
     }
 

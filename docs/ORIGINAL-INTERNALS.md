@@ -109,6 +109,48 @@ or sound; their presence does not prove simulation timing.
 **Next validation:** Cross-reference `data\snd00000`, `Data\mvIntro`,
 `Data\mvLogos`, and `A:\CHAOS\CDTrack` literals.
 
+### BIN-MUSIC-001 - CD track programs and lifecycle
+
+**Observation:** `mciSendCommandA` is referenced by seven bounded helpers at
+`0x00458b43` through `0x00458f3e`. The play helper at `0x00458b43` first asks
+for the length of its final track with `MCI_STATUS`, then issues an
+`MCI_PLAY` request with `FROM`, `TO`, and `NOTIFY`. The selector at
+`0x004642bd` maps mode 0 to the inclusive range 2-2, mode 1 to 9-9, and mode 2
+to 3-8. Mode 0 is selected by the application/menu flow at `0x00460ccf`, mode
+2 by fresh-game setup at `0x0046e766`, and mode 1 by the endgame/award screens
+at `0x0042b9e0` and `0x0042c3f5`. The main event pump at `0x00462579` invokes
+the current selector again when MCI reports that playback has stopped. Its
+deactivation and activation branches call pause `0x00458c10` and resume
+`0x00458c5f`; shutdown closes the MCI device through `0x00458f3e`.
+The Options-application helper at `0x004652a0` treats byte `0x00487868` as a
+0-10 music level. Zero clears the music-enabled flag and stops playback;
+nonzero levels call `0x00458e68`, which writes `level * 25 * 256` to both
+16-bit auxiliary-volume channels. The initialized level is 5, producing 32000
+of 65535 per channel; level 10 produces 64000 rather than the absolute 65535
+maximum.
+
+**Interpretation:** Track 2 is the title/setup program, Tracks 3-8 are the
+ordered gameplay program, and Track 9 is the endgame program. Each program is
+restarted after its final track, without shuffle. Losing application focus
+pauses music and regaining focus resumes it. The GOG-local `winmm.dll` adapts
+these original CD-audio calls to the supplied Ogg files; the executable itself
+still expresses the original physical-track policy.
+
+**Confidence:** High static evidence for track ranges, ordering, repeat and
+focus behavior. Medium for the precise menu-to-menu restart boundaries until a
+controlled runtime capture is available.
+
+**Recreation status:** `SoundtrackCatalog` encodes the three track programs and
+`ChaosGame.Media.cs` switches them for title/setup, gameplay and endgame
+screens, advances/repeats them, and pauses/resumes on focus changes. Playback
+uses the recovered level-5 default and exact normalized volume conversion.
+Playback failure remains presentation-only and cannot affect deterministic
+simulation.
+
+**Next validation:** Capture title/setup transitions and whether Options levels
+persist between launches, implement the Options control, then validate playback,
+focus changes, volume, and track transitions on each supported native platform.
+
 ### BIN-API-003 - files and persistence
 
 **Observation:** The executable imports `CreateFileA`, `ReadFile`, `WriteFile`,
