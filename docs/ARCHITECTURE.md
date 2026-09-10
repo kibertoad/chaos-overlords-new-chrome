@@ -458,6 +458,9 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
   candidates, Right Hands setup and deferred initial offers; omitted local slots
   are completed as Computers with the recovered pre-city portrait/name RNG, and
   original seed selection remains provisional.
+- Fresh Siege setup marks the six assigned starting HQ sectors as authoritative
+  objective landmarks without consuming RNG. The city projection draws the
+  manual-described pair of gray pylons over each landmark regardless of owner.
 - The client has a title/setup/city router and virtual-coordinate mouse input,
   original next-player privacy handoff, an event/notification viewer whose
   dismissal mutations are replay-recorded, plus a state-driven endgame summary

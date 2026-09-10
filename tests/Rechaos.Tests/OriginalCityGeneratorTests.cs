@@ -91,6 +91,45 @@ public sealed class OriginalCityGeneratorTests
     }
 
     [Fact]
+    public void SiegeFactoryMarksAllSixStartingControlledSectorsAsImportant()
+    {
+        var data = BundledOriginalData.Load();
+        var setup = new MatchSetup(
+            ScenarioId.Siege,
+            GameDuration.SixMonths,
+            1996,
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]);
+
+        var match = OriginalMatchFactory.Create(data, setup);
+        var important = match.Sectors.Where(sector => sector.IsImportant).ToArray();
+
+        Assert.Equal(MatchLimits.PlayerCount, important.Length);
+        Assert.Equal(OriginalCityGenerator.HeadquartersCandidates.Order(),
+            important.Select(sector => sector.Id).Order());
+        Assert.All(important, sector => Assert.NotNull(sector.Owner));
+        Assert.All(match.Players, player => Assert.Equal(1,
+            MatchOutcomeEvaluator.Project(match, player).ImportantSectorsControlled));
+        Assert.Null(MatchOutcomeEvaluator.Evaluate(match));
+    }
+
+    [Theory]
+    [InlineData(ScenarioId.Greed)]
+    [InlineData(ScenarioId.BigMan)]
+    [InlineData(ScenarioId.Armageddon)]
+    public void OtherScenariosDoNotReceiveSiegeLandmarks(ScenarioId scenario)
+    {
+        var match = OriginalMatchFactory.Create(
+            BundledOriginalData.Load(),
+            new MatchSetup(
+                scenario,
+                GameDuration.SixMonths,
+                1996,
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+
+        Assert.DoesNotContain(match.Sectors, sector => sector.IsImportant);
+    }
+
+    [Fact]
     public void FactoryCreatesRecoveredStartsAndPreservesConsumedRandomState()
     {
         var data = BundledOriginalData.Load();

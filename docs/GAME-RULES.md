@@ -630,6 +630,9 @@ claim about original-game behavior.
   point per turn to its controller and the first player to 40 wins. In
   Eliminate, losing the Right Hands removes that player: all remaining gangs
   vanish and formerly controlled sectors become neutral.
+- Observed statement: in Siege, each Overlord's starting controlled sector is
+  designated important and identified by two gray pylons; one Overlord must
+  control all six important sectors simultaneously.
 - Interpretation: after Player Elimination and before advancing the turn,
   project cash, support, controlled sectors, active opponents, opposing active
   Right Hands, explicitly designated important sectors, and Big Man points from the
@@ -644,10 +647,10 @@ claim about original-game behavior.
   pending hires, and the eliminated player's site influence.
 - Current exclusions: binary end-boundary timing, tie-break presentation,
   eliminated-player eligibility, objective-scenario ranking, the original
-  display order within a timed tie, Siege important-sector setup/appearance,
-  exact Eliminate cleanup timing, and award edge-case parity.
-- Confidence: High for thresholds, durations, score components and weights;
-  Low for timing, ties, Siege mapping and special objective edge cases.
+  display order within a timed tie, exact Siege pylon artwork, exact Eliminate
+  cleanup timing, and award edge-case parity.
+- Confidence: High for thresholds, durations, score components, weights, and
+  Siege setup mapping; Low for timing, ties, and special objective edge cases.
 - Implementation: `MatchOutcomeEvaluator`, scenario-specific elimination and
   Big Man accrual in `MatchState.FinishPlayerElimination`, `MatchState.Outcome`,
   and the canonical state hash.
@@ -656,7 +659,9 @@ claim about original-game behavior.
   boundary ties/standings, and outcome hashing; `EndgameRankingTests` covers
   descending scores, competition ties, and rejecting unsupported objective
   rankings; `ScenarioLifecycleTests` covers Big Man accrual/event order and
-  Eliminate cleanup/neutralization.
+  Eliminate cleanup/neutralization. `OriginalCityGeneratorTests` covers fresh
+  Siege landmark assignment and one-important-sector-per-player starting state;
+  `UiNavigationTests` bounds the paired pylon layout inside every city tile.
 - Next experiment: capture the last two turns of each timed scenario and
   simultaneous-threshold states for objective scenarios, then compare event,
   ranking, tie, and next-screen behavior.

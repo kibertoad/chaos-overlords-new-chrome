@@ -196,6 +196,20 @@ public static class CityMapLayout
     }
 }
 
+/// <summary>Manual-described pair of gray pylons inside each Siege objective sector.</summary>
+public static class SiegePylonLayout
+{
+    public static IReadOnlyList<Rectangle> ForSector(int sectorId)
+    {
+        var sector = CityMapLayout.Destination(sectorId);
+        return
+        [
+            new Rectangle(sector.X + 8, sector.Y + 12, 6, 14),
+            new Rectangle(sector.Right - 14, sector.Y + 12, 6, 14)
+        ];
+    }
+}
+
 public static class OriginalSpriteLayout
 {
     public static Rectangle PolicePatrolCar => new(116, 0, 48, 64);

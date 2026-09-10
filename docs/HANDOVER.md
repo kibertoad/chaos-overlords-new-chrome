@@ -9,7 +9,7 @@ Last updated: 2026-09-11
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`.
 - The latest pushed functional checkpoint is the tip of `main`.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,025 tests with no warnings.
+  isolated Release build passed all 1,030 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -51,6 +51,10 @@ Last updated: 2026-09-11
   promotion, retain the last valid primary as a backup, and do not poison a good
   backup when replacing a corrupt primary. F10 transparently verifies the
   replay backup when the primary is missing or invalid.
+- Fresh Siege matches now designate all six assigned starting HQ sectors as
+  important, matching the manual's setup rule, and the city renders two gray
+  pylons in each objective tile. This closes the unwinnable generated-Siege gap;
+  exact original pylon art remains a visual-capture task.
 
 ## Reference environment
 

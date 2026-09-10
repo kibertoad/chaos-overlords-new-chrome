@@ -126,6 +126,8 @@ public sealed partial class ChaosGame
                 batch.Draw(pixel, destination, sector.Owner is { } owner
                     ? PlayerColors[owner.Value] * .68f
                     : new Color(24, 37, 39));
+            if (state.Setup.Scenario == ScenarioId.Siege && sector.IsImportant)
+                DrawSiegePylons(batch, pixel, index);
             if (sector.CrackdownActive && _policeSprites is not null)
                 batch.Draw(
                     _policeSprites,
@@ -188,6 +190,17 @@ public sealed partial class ChaosGame
     {
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, GangStatusMarkerLayout.Destination(sectorId), source, Color.White);
+    }
+
+    private static void DrawSiegePylons(SpriteBatch batch, Texture2D pixel, int sectorId)
+    {
+        foreach (var pylon in SiegePylonLayout.ForSector(sectorId))
+        {
+            batch.Draw(pixel, new Rectangle(pylon.X - 1, pylon.Y, pylon.Width + 2, 2), Color.LightGray);
+            batch.Draw(pixel, pylon, Color.Gray);
+            batch.Draw(pixel, new Rectangle(
+                pylon.X + 1, pylon.Y + 2, pylon.Width - 2, pylon.Height - 3), Color.LightGray);
+        }
     }
 
     private void MoveCursor(int dx, int dy)

@@ -163,6 +163,25 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void SiegePylonsArePairedInsideEveryCitySector()
+    {
+        for (var sectorId = 0; sectorId < MatchLimits.SectorCount; sectorId++)
+        {
+            var sector = CityMapLayout.Destination(sectorId);
+            var pylons = SiegePylonLayout.ForSector(sectorId);
+
+            Assert.Equal(2, pylons.Count);
+            Assert.All(pylons, pylon => Assert.True(sector.Contains(pylon)));
+            Assert.False(pylons[0].Intersects(pylons[1]));
+        }
+
+        Assert.Equal(
+            [new Rectangle(10, 56, 6, 14), new Rectangle(42, 56, 6, 14)],
+            SiegePylonLayout.ForSector(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => SiegePylonLayout.ForSector(64));
+    }
+
+    [Fact]
     public void OptionsExposeBothOriginalAudioScalesAsDistinctHitTargets()
     {
         Assert.Equal(OriginalSoundtrackPolicy.MaximumVolumeLevel + 1,
