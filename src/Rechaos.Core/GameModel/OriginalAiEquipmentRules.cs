@@ -13,6 +13,29 @@ internal static class OriginalAiEquipmentRules
 
     internal readonly record struct Upgrade(short ItemId, EquipmentSlot Slot);
 
+    public static Upgrade? SelectFamilySixUpgrade(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        int gangSlot)
+    {
+        ValidateGang(state, player, gang);
+        if ((uint)gangSlot >= MatchLimits.GangsPerPlayer
+            || !ReferenceEquals(player.Gangs[gangSlot], gang))
+            throw new ArgumentException("Gang slot does not identify the supplied gang.", nameof(gangSlot));
+
+        var weapon = SelectFamily11WeaponUpgrade(state, player, gang, player.Cash);
+        if (state.AiPlanning.WeaponCooldown(player.Id, gangSlot) <= 0
+            && weapon is { } weaponId)
+            return new Upgrade(checked((short)weaponId), EquipmentSlot.Weapon);
+
+        var armor = SelectArmorUpgrade(state, player, gang, player.Cash);
+        return state.AiPlanning.ArmorCooldown(player.Id, gangSlot) <= 0
+            && armor is { } armorId
+                ? new Upgrade(checked((short)armorId), EquipmentSlot.Armor)
+                : null;
+    }
+
     public static Upgrade? SelectFamilyTwoUpgrade(
         MatchState state,
         MatchPlayerState player,

@@ -248,13 +248,22 @@ replay-verified two-computer harness through 20 turns or objective completion.
    outcome for that sparse multiplayer edge is not yet runtime-corroborated.
    Exact actions, targets, cooldowns, and RNG consumption are live and
    replay-recorded.
+   Family 6 is also live. An uncontested gang routes toward the first visible
+   hostile-human sector not covered by another active family-6 gang, falling
+   back to mode 2 when none exists. In combat it makes one preliminary bounded
+   target draw, tries weapon then armor equipment after a failed comparison,
+   and otherwise makes up to five more draws before attacking the final target.
+   Its recovered but stable-state-unreachable Heal and local Control/Move
+   branches remain explicit in the handler. Greed's final three turns overwrite
+   the result with Terminate.
    The exact ten-scenario by
    seven-hire-role family table is implemented by `OriginalAiFamilyRules`,
    including unmapped cells which preserve the current family. AI planning
    preparation now rolls the current role into the previous role and updates
-   every active gang's authoritative family slot. The mode-4 second auxiliary-
-   sector copy awaits representation; the first auxiliary short is the live
-   family-2/7 focus or family-11 formation value. The original objective-specific base
+   every active gang's authoritative family slot. Mode-4 family assignment
+   copies the gang's current sector into the second auxiliary short. The first
+   auxiliary short is the live family-2/7 focus or family-11 formation value;
+   family 6 uses both shorts for coverage selection. The original objective-specific base
    turn schedules are isolated in `OriginalAiHireRoleRules`; Dominance alone
    uses an eleven-turn period, while the other nine objectives use ten. The
    objective-specific adjustments and hire-attempt gates are also
@@ -277,8 +286,8 @@ replay-verified two-computer harness through 20 turns or objective completion.
    and six-by-81 family slots. The live planner applies the hire attempt gate,
    computes the post-command role from the exact schedule and adjustments, and
    uses its ranking mode for exact three-offer selection. For selector `0x5f`,
-   queued Move targets project the recovered family-6 coverage behavior; the
-   underlying second auxiliary short remains deliberately unmodeled. The hire
+   family-6 coverage uses the live gang sector while the first auxiliary short
+   is active, and the persisted second auxiliary sector otherwise. The hire
    model now preserves three fixed slots, same-slot tombstones, mutually
    exclusive actions, and next-planning-entry refill. Exact hire destination
    selection and its persisted anchor are statically recovered in

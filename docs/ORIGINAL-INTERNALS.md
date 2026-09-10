@@ -481,15 +481,13 @@ a formation sector. Family 7 writes a sector while attacking or establishing a
 research position, an item while researching, and `-1` after equipment or
 routing. The same six-by-81 storage is hashed, saved, and replayed; its existing
 `formationSectors` serialized name is retained as a pre-1.0 implementation
-detail. The record's second short remains deliberately unmodeled. It is
-initialized to the current sector by every assigning hire-role-4/family-6
-dispatch and later updated by family-6 routing. Selector `0x5f` treats that
-second short as coverage only when the first equals `-1`; otherwise it tests
-the gang's live sector.
-
-**Next validation:** recover and represent the second per-gang auxiliary short
-so family-6 coverage no longer relies on the current-sector/queued-Move
-semantic projection.
+detail. The record's second short is now represented independently as the
+family-6 coverage sector. Every assigning hire-role-4 dispatch initializes it
+to the gang's current sector. Family 6 writes a selected strategic destination
+before routing, then overwrites it with the actual one-step Move destination.
+Selector `0x5f` uses this persisted value only when the first short equals
+`-1`; otherwise it tests the gang's live sector. Both shorts are authoritative,
+hashed, saved, and replayed.
 
 ### BIN-AI-003A - strategic hire-offer ranking
 
@@ -1021,6 +1019,23 @@ No direct call carries literal mode 1, 4, or 11; any live use must therefore
 come through a computed argument. `tools/ghidra/ReportCallArguments.java`
 provides a repeatable bounded inventory of the three pushed arguments at each
 direct call.
+
+The complete family-6 handler is live. With cached current-sector weight below
+one it Moves: selector `0x60` enumerates weight-10 sectors in ascending order
+and chooses the first not covered according to selector `0x5f`, or falls back
+to mode 2. It clears the first auxiliary short and stores the routed one-step
+destination in the second. With positive weight it makes one preliminary
+target draw using the human-only pool for a hostile-owned weight-10 sector and
+the complete visible pool otherwise; selector `0x2b` applies the established
+quarter-strength comparison through the same ordinal in the complete visible
+list. A passing draw Attacks immediately. A failure tries weapon then armor,
+with nonpositive cooldowns and replacement cooldown `cost * 3`. It then retains
+literal Heal and local Control/Move branches which are unreachable while the
+cached positive weight remains unchanged, followed by up to five more target
+draws and an Attack of the final target after all comparison failures. Attack
+stores the current sector in the first auxiliary short; equipment and Move
+clear it. Greed with fewer than four turns remaining overwrites the result with
+Terminate.
 
 Both mode-6 calls belong to family 2. That handler writes public action byte 10
 (**Move**) with the selected mode-6 destination when its current/selected
