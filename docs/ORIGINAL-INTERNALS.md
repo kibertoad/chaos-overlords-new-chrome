@@ -405,8 +405,7 @@ Big 40 adjustment block: late turns remap slots 4 and 8; selector `0x9a`,
 selector `0x5f`, the prior role, and family-5/family-7 presence redirect slot 6;
 family counts cap slots 8, 6, 9, and 4 at respectively `factor * 4`,
 `factor * 4`, `factor * 3`, and `factor`; and fewer than four family-0-or-4
-gangs forces slot zero. Unidentified selector inputs retain their numeric names
-in the isolated input record rather than receiving speculative domain names.
+gangs forces slot zero.
 The same class now contains instruction-verified adjustments for every
 scenario. These preserve strict versus inclusive quota
 boundaries and original statement order: Siege's cash floor is strict and its
@@ -424,12 +423,24 @@ remaining turns. Kill 'Em All, Big 40, Eliminate, Siege, and Armageddon use only
 the inclusive gang limit. Big Man enters its schedule without that limit check.
 `OriginalAiHireRoleRules.ShouldAttemptHire` implements these boundaries.
 
+Selector `0x90` scans every other player's 81 gang slots for a gang whose
+mirrored sector byte equals the requested sector and whose per-observer
+visibility byte is set. It returns 10 when that gang's owner has state 0 or 3
+and the observer-to-owner attitude is negative, 1 for another visible opposing
+gang, and 0 when none exists. Selector `0x9a` returns the requested ordinal
+sector whose cached `0x90` value is 10, or sentinel 100. With ordinal 1 in the
+hire planner, it therefore identifies the first sector containing a visible
+hostile opposing gang. Selector `0x5f` scans active family-6 gangs and returns
+one whose current sector or cached destination matches that sector, otherwise
+`-1`. The adjustment input now names these as visible-hostile-sector presence
+and family-6 coverage rather than retaining raw selector numbers.
+
 **Confidence:** Verified for scenario order, periods, every ranking-mode call,
 every hire-role write, shared scenario bodies, constants, retained factor, x87
 comparison direction, equality boundaries, and adjustment ordering.
 
-**Next validation:** map the raw selector inputs into authoritative match state
-before live integration.
+**Next validation:** represent per-gang family/destination planning records and
+the previous/current hire role in authoritative match state before live integration.
 
 ### BIN-AI-003A - strategic hire-offer ranking
 

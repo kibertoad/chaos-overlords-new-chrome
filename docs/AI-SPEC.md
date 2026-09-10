@@ -119,8 +119,9 @@ replay-verified two-computer harness through 20 turns or objective completion.
    are isolated in `OriginalAiHireRules`. Its failed-hire rejection selector is
    also exact: Greed rejects slot zero while other scenarios minimize a
    Stealth-weighted positive-stat efficiency ratio with first-tie priority.
-   These rules are not yet used by the live planner because the schedule's
-   family-count adjustments are still being recovered. Selector `0x3e` is
+   These rules are not yet used by the live planner because authoritative
+   match state does not yet represent each gang's family/destination plan or
+   the previous/current hire roles. Selector `0x3e` is
    identified as the previous-turn action byte. Selectors 0 (scenario), `0x48`
    (planning-record initialized flag), `0x5a` (mirrored gang projection),
    `0x7c` (per-player hire role), 3 (player cash), 4 (sector

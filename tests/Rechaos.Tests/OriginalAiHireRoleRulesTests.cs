@@ -125,7 +125,6 @@ public sealed class OriginalAiHireRoleRulesTests
             ScenarioId.Power,
             turn: 6,
             PowerInputs(
-                selector9aResult: 100,
                 family7Count: family7Count,
                 family5Count: family5Count));
 
@@ -143,7 +142,7 @@ public sealed class OriginalAiHireRoleRulesTests
         int boundary)
     {
         var inputs = countedFamily == 6
-            ? PowerInputs(selector9aResult: 0, selector5fResult: -1)
+            ? PowerInputs(hasVisibleHostileSector: true)
             : PowerInputs();
         inputs = countedFamily switch
         {
@@ -319,8 +318,8 @@ public sealed class OriginalAiHireRoleRulesTests
             OriginalAiHireRoleRules.SelectArmageddonAdjusted(
                 turn: 0,
                 PowerInputs(
-                    selector9aResult: 0,
-                    selector5fResult: -1,
+                    hasVisibleHostileSector: true,
+                    hasFamily6CoveringFirstHostileSector: false,
                     family2Count: 1,
                     family3Count: 1,
                     family6Or12Count: 1)));
@@ -342,8 +341,8 @@ public sealed class OriginalAiHireRoleRulesTests
             3 => inputs with { Family3Count = boundary },
             6 => inputs with
             {
-                Selector9aResult = 0,
-                Selector5fResult = -1,
+                HasVisibleHostileSector = true,
+                HasFamily6CoveringFirstHostileSector = false,
                 Family6Or12Count = boundary
             },
             _ => throw new ArgumentOutOfRangeException(nameof(countedFamily))
@@ -403,8 +402,8 @@ public sealed class OriginalAiHireRoleRulesTests
             OriginalAiHireRoleRules.SelectGreedAdjusted(
                 turn: 0,
                 PowerInputs(
-                    selector9aResult: 0,
-                    selector5fResult: -1,
+                    hasVisibleHostileSector: true,
+                    hasFamily6CoveringFirstHostileSector: false,
                     family3Count: 1,
                     family6Or12Count: 1)));
     }
@@ -467,8 +466,8 @@ public sealed class OriginalAiHireRoleRulesTests
             OriginalAiHireRoleRules.SelectAcceptanceAdjusted(
                 turn: 0,
                 PowerInputs(
-                    selector9aResult: 0,
-                    selector5fResult: -1,
+                    hasVisibleHostileSector: true,
+                    hasFamily6CoveringFirstHostileSector: false,
                     family5Count: 1,
                     family6Or12Count: 1)));
     }
@@ -490,8 +489,8 @@ public sealed class OriginalAiHireRoleRulesTests
             5 => inputs with { Family5Count = boundary },
             6 => inputs with
             {
-                Selector9aResult = 0,
-                Selector5fResult = -1,
+                HasVisibleHostileSector = true,
+                HasFamily6CoveringFirstHostileSector = false,
                 Family6Or12Count = boundary
             },
             7 => inputs with { Family7Count = boundary },
@@ -548,8 +547,8 @@ public sealed class OriginalAiHireRoleRulesTests
             OriginalAiHireRoleRules.SelectDominanceAdjusted(
                 turn: 0,
                 PowerInputs(
-                    selector9aResult: 0,
-                    selector5fResult: -1,
+                    hasVisibleHostileSector: true,
+                    hasFamily6CoveringFirstHostileSector: false,
                     family3Count: 1)));
     }
 
@@ -566,8 +565,8 @@ public sealed class OriginalAiHireRoleRulesTests
     {
         var inputs = countedFamily == 6
             ? PowerInputs(
-                selector9aResult: 0,
-                selector5fResult: -1,
+                    hasVisibleHostileSector: true,
+                    hasFamily6CoveringFirstHostileSector: false,
                 family3Count: 1,
                 family6Or12Count: boundary)
             : PowerInputs();
@@ -621,8 +620,8 @@ public sealed class OriginalAiHireRoleRulesTests
         int turnsRemaining = 52,
         int cash = 100,
         bool data4abc08IsSet = false,
-        int selector9aResult = 100,
-        int selector5fResult = -1,
+        bool hasVisibleHostileSector = false,
+        bool hasFamily6CoveringFirstHostileSector = false,
         int family5Count = 1,
         int family7Count = 1,
         int previousRole = 0,
@@ -631,7 +630,8 @@ public sealed class OriginalAiHireRoleRulesTests
         int family6Or12Count = 0,
         int family0Or4Count = 5,
         GameDuration duration = GameDuration.OneYear) =>
-        new(turnsRemaining, cash, data4abc08IsSet, selector9aResult, selector5fResult,
+        new(turnsRemaining, cash, data4abc08IsSet, hasVisibleHostileSector,
+            hasFamily6CoveringFirstHostileSector,
             family5Count, family7Count, previousRole, family2Count,
             family3Count, family6Or12Count, family0Or4Count, duration);
 }

@@ -74,7 +74,6 @@ internal static class OriginalAiHireRoleRules
     /// <summary>
     /// Applies the instruction-verified adjustment block shared verbatim by
     /// Power, Kill 'Em All, and Big 40 before their final role switch.
-    /// Unidentified query results deliberately retain their binary selector names.
     /// </summary>
     public static OriginalAiHireRoleSelection SelectPowerAdjusted(
         ScenarioId scenario,
@@ -90,8 +89,8 @@ internal static class OriginalAiHireRoleRules
         if (inputs.TurnsRemaining < 10 && slot == 4) slot = 1;
         if (slot == 8 && (inputs.TurnsRemaining < 10 || inputs.Cash < 100)) slot = 1;
 
-        var changesSix = inputs.Selector9aResult == 100
-            || inputs.Selector5fResult != -1
+        var changesSix = !inputs.HasVisibleHostileSector
+            || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family5Count < 1
             || inputs.Family7Count < 1
             || inputs.PreviousRole == 6;
@@ -180,8 +179,8 @@ internal static class OriginalAiHireRoleRules
         if (turn < 0) throw new ArgumentOutOfRangeException(nameof(turn));
 
         var slot = turn % 10;
-        var changesFive = inputs.Selector9aResult == 100
-            || inputs.Selector5fResult != -1
+        var changesFive = !inputs.HasVisibleHostileSector
+            || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
             || inputs.PreviousRole == 5;
         if (!changesFive)
@@ -219,8 +218,8 @@ internal static class OriginalAiHireRoleRules
         if (slot == 9 && inputs.Data4abc08IsSet
             && (inputs.TurnsRemaining < 10 || inputs.Cash < 100)) slot = 0;
 
-        var changesFive = inputs.Selector9aResult == 100
-            || inputs.Selector5fResult != -1
+        var changesFive = !inputs.HasVisibleHostileSector
+            || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
             || inputs.Family7Count < 1
             || inputs.PreviousRole == 5;
@@ -260,8 +259,8 @@ internal static class OriginalAiHireRoleRules
         if (inputs.TurnsRemaining < 5 && slot is 1 or 4 or 6 or 8) slot = 0;
         if (slot == 5 && (inputs.TurnsRemaining < 10 || inputs.Cash < 100)) slot = 0;
 
-        var changesTwo = inputs.Selector9aResult == 100
-            || inputs.Selector5fResult != -1
+        var changesTwo = !inputs.HasVisibleHostileSector
+            || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family5Count < 1
             || inputs.Family7Count < 1
             || inputs.PreviousRole == 2;
@@ -300,8 +299,8 @@ internal static class OriginalAiHireRoleRules
         if (inputs.TurnsRemaining < 8 && slot is 2 or 3 or 4 or 6 or 8) slot = 0;
         if (slot == 5 && (inputs.TurnsRemaining < 10 || inputs.Cash < 100)) slot = 0;
 
-        var changesTen = inputs.Selector9aResult == 100
-            || inputs.Selector5fResult != -1
+        var changesTen = !inputs.HasVisibleHostileSector
+            || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
             || inputs.Family7Count < 1
             || inputs.PreviousRole == 10;
@@ -388,8 +387,8 @@ internal readonly record struct OriginalAiHireAdjustmentInputs(
     int TurnsRemaining,
     int Cash,
     bool Data4abc08IsSet,
-    int Selector9aResult,
-    int Selector5fResult,
+    bool HasVisibleHostileSector,
+    bool HasFamily6CoveringFirstHostileSector,
     int Family5Count,
     int Family7Count,
     int PreviousRole,
