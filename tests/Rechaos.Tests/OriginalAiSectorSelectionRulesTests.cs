@@ -70,6 +70,18 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
+    public void ModeEightSumsPositiveUnfinishedSiteCashInOwnedSectors()
+    {
+        var facts = new Facts(source: 27);
+        facts.Owners[28] = facts.Player.Value;
+        facts.Owners[26] = facts.Player.Value;
+        facts.SiteScores[28] = 7;
+        facts.SiteScores[26] = 6;
+
+        Assert.Equal(28, facts.Select(mode: 8, family: 3));
+    }
+
+    [Fact]
     public void HostileHumanMultiplierAppliesAfterBaseWeight()
     {
         var facts = new Facts(source: 27);
@@ -311,6 +323,11 @@ public sealed class OriginalAiSectorSelectionRulesTests
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 0, family: 2));
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 6, family: 2));
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 8));
+        Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
+            8, 27, new PlayerId(0), 3,
+            facts.Owners, facts.Disabled, facts.GangCounts,
+            _ => false, _ => false, _ => false, _ => false,
+            facts.PlayerOrder, facts.Random));
         Assert.Throws<ArgumentException>(() => OriginalAiSectorSelectionRules.Select(
             3, 27, new PlayerId(0), 2,
             facts.Owners[..^1], facts.Disabled, facts.GangCounts,
@@ -373,6 +390,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
         public HashSet<int> PriorChaos { get; } = [];
         public HashSet<int> HostileOwners { get; } = [];
         public HashSet<int> HumanOwners { get; } = [];
+        public int[] SiteScores { get; } = new int[MatchLimits.SectorCount];
         public DeterministicRandom Random { get; }
 
         public int Select(
@@ -391,6 +409,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
                 PlayerOrder,
                 Random,
                 hasHumanPlayers,
-                formationSectorId);
+                formationSectorId,
+                SiteScores.ElementAt);
     }
 }

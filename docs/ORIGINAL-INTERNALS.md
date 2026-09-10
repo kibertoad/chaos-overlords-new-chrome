@@ -1033,6 +1033,37 @@ sectors, and moves only when the chosen sector has the larger value. Selector
 local Stealth modifier before its Hide-or-Chaos decision. The dispatcher also
 contains a scenario-specific mode-9 Move for gang slot zero.
 
+Focused inspection of family 3 at `0x00435bd0` now bounds its cash-site
+continuations. Immediately previous actions None, Control, Equip, and Heal
+share one branch. It first writes Heal only below Force 8 with effective Heal
+at least `-3`. Otherwise, in a sector owned by the acting player, it scans the
+three sites in slot order and retains the first strict maximum positive Cash
+whose remaining Resistance is positive, writing Influence with that local site
+slot. With no qualifying site it writes Control when selector `0x2c` accepts
+the current sector, and otherwise Move through mode 8. Previous Snitch writes
+that mode-8 Move directly.
+
+Previous Influence first runs the same selector-`0x6c` equipment opportunity
+used by family 1, including weapon-before-armor selection and the cost-times-
+three cooldown. Without Equip it applies the same Force-8/Heal-`-3` gate. It
+then retains the previous Influence site while that site remains unfinished
+and the sector remains owned; otherwise it rescans for the first strict
+maximum positive-Cash unfinished site, or moves through mode 8 when none
+exists. The mode-8 selector block independently confirms that each owned
+candidate sector is scored by the sum of every positive Cash value among its
+unfinished sites, before the common nearest-square, maximum-tie RNG, and
+x-then-y routing logic.
+
+**Recreation status:** these family-3 branches, their exact local site targets,
+equipment cooldowns, and mode-8 Move targets are live and replay-recorded. The
+previous Attack/Hide/Move opponent branch, the terminal three-Move family
+transition, and the late Greed Terminate override remain deliberately on the
+provisional path until their complete selector context is bounded.
+
+**Confidence:** High for the listed switch cases, comparisons, action writes,
+site scan/tie behavior, mode-8 score sum, and call order from the fingerprinted
+version-1.1 executable; runtime corroboration remains pending.
+
 Families 13 and 14 both use the fixed objective sets as Move destinations:
 scenario value 8 selects modes 12/14 and is Big Man, while scenario value 6
 selects modes 13/15 and is Eliminate. Family 13 uses the variants that exclude

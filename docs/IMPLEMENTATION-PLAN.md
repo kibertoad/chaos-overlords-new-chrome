@@ -48,7 +48,7 @@ kind is not part of this implementation plan.
 | Extraction | Transactional/versioned full-pack SHA-256 validation; 215 repaired RGB555 PX16 images, 214 retained plus decoded PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files; generated 685-output factual catalog | Transparency/color-key validation, video strategy, semantic role/owner resolution |
 | Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, Upkeep, all 14 command resolvers, simultaneous gang/Crackdown combat, 3–5-turn police duration/extension and three-in-five control loss, hidden attack/visibility checks, and local influenced-site stats | Crackdown notification/timing fixtures, special buildings, original RNG seeding/order and exact parity formulas |
 | Client | Scaled 640x460 routed setup/handoff/city/sector/gang/finance/ranking/items/Give/combat-summary/search/commands/hire/events/endgame UI backed by authoritative `MatchState`; distinct whole-city and detailed-sector projections composite original ownership tiles, the latter as a clickable 3x3 neighborhood beside all three building portraits; normal planning turns auto-resolve internal phases while debug mode can step them; persistent original-art Hire dock supports portrait drag/drop from city or sector detail, split price/reject footers and `HIRED` stamping; `PX05010` automatically pages queued turn reports after handoff; `PX05012` presents paged combat results; recovered item-selected eight-frame attack/hit, retaliation, evasion and police animation playback; recovered setup; local controls; private handoff; Core-derived commands, projections, visibility, combat results, research/equipment transfer and notifications; mouse/keyboard, saves/replays | Full setup detail, remaining sprites/atlas and management panels/hit maps, remaining sound/music/video, accessibility |
-| Tests | 711 tests covering parsers/provenance, extraction, scenarios, deterministic command and phase resolution, difficulty bands, AI strategic/planning state and complete action tuples, family dispatch and live boundary branches, sector selection and hire placement, original city/setup vectors, hire schedules/limits/ranking/equipment, combat, saves, replays, installers, and repository policy | Original-reference fixtures, visual tests, larger-player AI stress, and native interactive installer/play tests |
+| Tests | 761 tests covering parsers/provenance, extraction, scenarios, deterministic command and phase resolution, difficulty bands, AI strategic/planning state and complete action tuples, family dispatch and live boundary branches, sector selection and hire placement, original city/setup vectors, hire schedules/limits/ranking/equipment, combat, saves, replays, installers, and repository policy | Original-reference fixtures, visual tests, larger-player AI stress, and native interactive installer/play tests |
 | Documentation | File/binary research, generated factual asset catalog, architecture, validation, parity matrix, roadmap and initial full-screen UI atlas/hit map | Complete sprite atlas, rules and remaining documents listed in section 4 |
 
 The current game is a playable architectural slice, not evidence of rule parity.
@@ -59,8 +59,9 @@ workstream can be marked complete.
 
 - The current implementation baseline includes the recovered sector Combat +
   Defense advantage hostility pass, exact isolated scenario/strategy family
-  dispatch, exact hire-offer ranking/rejection, the isolated modes 1-5 and
-  12-16 sector-selection kernels, live recovered hire-placement rules, and 745 passing tests. Native saves are
+  dispatch, exact hire-offer ranking/rejection, the isolated modes 1-5, 8, and
+  12-16 sector-selection kernels, live recovered hire-placement rules, and 761
+  passing tests. Native saves are
   v15, replay is v16, and the canonical hash is v18.
 - The latest completed setup checkpoint is commit `10a3a9d`: fixed Greed and
   Armageddon city/HQ/RNG vectors now guard the statically recovered generator,
@@ -82,6 +83,11 @@ workstream can be marked complete.
   Move paths, are live with authoritative per-gang formation-sector state.
   Mode 6 and the downstream Control use of `FUN_0040a1a7`'s pair flag are also
   bounded.
+- Family 3's cash-site core is live after previous None, Control, Equip, Heal,
+  Influence, and Snitch, including its Force-8 Heal boundary, strict local Cash
+  site tie order, previous-site retention, equipment opportunity, solo Control,
+  and summed-Cash mode-8 movement. Its opponent branch and terminal
+  family/Terminate overrides remain to be bounded and wired.
 - Static kernels guard family-1's cash 50/51, Force 8/9, effective-Heal -3/-4,
   Tolerance 3/4, and owner/Mentality terminal boundaries. The exact previous-
   None/Chaos Heal/Move/Chaos branch and previous-Heal Heal/Control/Move branch

@@ -5,7 +5,8 @@ namespace Rechaos.Core.GameModel;
 /// Match planning preparation applies this recovered family update. The three
 /// bounded family-1 continuations, their equipment gate, and their mode-5
 /// destinations are live, as are the complete family-13/14 handlers; remaining
-/// family command dispatch is still being recovered.
+/// family command dispatch is still being recovered. Family 3's cash-site
+/// continuations and mode-8 movement are also live for their bounded cases.
 /// </summary>
 internal static class OriginalAiFamilyRules
 {

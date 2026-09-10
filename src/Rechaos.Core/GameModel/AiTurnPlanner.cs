@@ -5,7 +5,7 @@ namespace Rechaos.Core.GameModel;
 /// The scoring is recreation-native and remains provisional until the original
 /// difficulty branches and evaluation weights are recovered.
 /// </summary>
-public static class AiTurnPlanner
+public static partial class AiTurnPlanner
 {
     private readonly record struct RecoveredFamilyChoice(
         GangAction Action,
@@ -70,7 +70,7 @@ public static class AiTurnPlanner
         IReadOnlyList<GameCommand> options)
     {
         var family = state.AiPlanning.Family(player.Id, gangSlot);
-        if (family is not (1 or 11 or 13 or 14)) return null;
+        if (family is not (1 or 3 or 11 or 13 or 14)) return null;
 
         var preparedAction = state.AiPlanning.PlannedAction(player.Id, gangSlot);
         var choice = family == 1 && preparedAction == GangAction.None
@@ -124,6 +124,10 @@ public static class AiTurnPlanner
         {
             if (!entry.gang.IsActive) continue;
             var family = state.AiPlanning.Family(playerId, entry.slot);
+            if (family == 3 && PrepareFamilyThreeCommand(
+                    state, playerId, entry.gang, entry.slot,
+                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
+                continue;
             if (family == 11)
             {
                 PrepareFamilyElevenCommand(
