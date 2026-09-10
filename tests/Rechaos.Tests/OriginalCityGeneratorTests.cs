@@ -105,6 +105,21 @@ public sealed class OriginalCityGeneratorTests
         var second = OriginalMatchFactory.Create(data, setup);
 
         Assert.Equal(MatchStateHasher.ComputeSha256(first), MatchStateHasher.ComputeSha256(second));
+        Assert.Equal(
+            "a8e7e25007d44c29af3272c8247fddcd814a2201944cc1845f25871da9a1e3a3:160916660:936",
+            $"{MatchStateHasher.ComputeSha256(first)}:{first.Random.State}:{first.Random.ConsumptionCount}");
+        Assert.Equal(MatchLimits.PlayerCount, first.Players.Count);
+        Assert.Equal(
+            ["ONE", "TWO", "GECKO", "KANSER", "VECTOR", "RAZOR"],
+            first.Setup.Players.Select(player => player.Name));
+        Assert.Equal(
+            [0, 0, 1, 9, 6, 2],
+            first.Setup.Players.Select(player => (int)player.PortraitId));
+        Assert.Equal(
+            [PlayerController.Human, PlayerController.Computer,
+                PlayerController.Computer, PlayerController.Computer,
+                PlayerController.Computer, PlayerController.Computer],
+            first.Setup.Players.Select(player => player.Controller));
         Assert.True(first.Random.ConsumptionCount > 0);
         Assert.Equal(first.Random.State, second.Random.State);
         Assert.All(first.Players, player =>
@@ -130,7 +145,8 @@ public sealed class OriginalCityGeneratorTests
 
         match.FinishUpkeep();
         match.PrepareHireOffers(player.Id);
-        match.FinishCommand(player.Id);
+        foreach (var configuredPlayer in match.Players)
+            match.FinishCommand(configuredPlayer.Id);
         while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
 
         Assert.Equal(TurnPhase.Hire, match.Coordinator.Phase);
@@ -138,6 +154,25 @@ public sealed class OriginalCityGeneratorTests
         Assert.Equal(match.Players[0].HirePool.Count, match.Players[0].HirePool.Distinct().Count());
         Assert.All(match.Players[0].HirePool, offer => Assert.InRange(offer, (short)1, (short)89));
         Assert.True(match.Random.ConsumptionCount >= before + 9);
+    }
+
+    [Fact]
+    public void FactoryAppliesExactSmgIslandsOnlyToNeutralSectorsAfterAllSixHeadquarters()
+    {
+        var data = BundledOriginalData.Load();
+        var enabled = OriginalMatchFactory.Create(data,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996,
+                [new MatchPlayerSetup(new PlayerId(0), "SMGISLANDS", PlayerController.Human)]));
+        var wrongCase = OriginalMatchFactory.Create(data,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996,
+                [new MatchPlayerSetup(new PlayerId(0), "smgislands", PlayerController.Human)]));
+
+        Assert.Equal(MatchLimits.PlayerCount, enabled.Sectors.Count(sector => sector.Owner is not null));
+        Assert.All(enabled.Sectors.Where(sector => sector.Owner is not null),
+            sector => Assert.Equal(0, sector.Chaos));
+        Assert.All(enabled.Sectors.Where(sector => sector.Owner is null),
+            sector => Assert.Equal(100, sector.Chaos));
+        Assert.All(wrongCase.Sectors, sector => Assert.Equal(0, sector.Chaos));
     }
 
     private static string Snapshot(MatchSectorState sector) =>

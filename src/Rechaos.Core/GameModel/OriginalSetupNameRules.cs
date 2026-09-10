@@ -4,6 +4,7 @@ namespace Rechaos.Core.GameModel;
 internal static class OriginalSetupNameRules
 {
     private const string MaximumStartingCashName = "SMGFUNDAGE";
+    private const string IslandsName = "SMGISLANDS";
 
     public const int MaximumStartingCash = 1_500;
 
@@ -13,5 +14,11 @@ internal static class OriginalSetupNameRules
         return StringComparer.Ordinal.Equals(playerName, MaximumStartingCashName)
             ? MaximumStartingCash
             : ordinaryStartingCash;
+    }
+
+    public static bool EnablesIslands(string playerName)
+    {
+        ArgumentNullException.ThrowIfNull(playerName);
+        return StringComparer.Ordinal.Equals(playerName, IslandsName);
     }
 }

@@ -161,6 +161,13 @@ public sealed partial class MatchPlayerState
     }
 
     internal void AddGang(MatchGangState gang) => _gangs.Add(gang);
+    internal void ReplaceGang(int gangSlot, MatchGangState gang)
+    {
+        ArgumentNullException.ThrowIfNull(gang);
+        if (gangSlot is < 0 || gangSlot >= _gangs.Count)
+            throw new ArgumentOutOfRangeException(nameof(gangSlot));
+        _gangs[gangSlot] = gang;
+    }
     internal void AddPendingHire(PendingHireState hire) => _pendingHires.Add(hire);
     internal void ClearPendingHires() => _pendingHires.Clear();
 
@@ -727,7 +734,7 @@ public sealed partial class MatchState
         var replaced = Commands.TryGet(command.Gang, out _);
         var queued = Commands.Set(command);
         FindGang(command.Gang)!.QueuedCommand = queued;
-        RecordAiPlannedAction(command.Player, command.Gang, command.Action);
+        RecordAiPlannedAction(command);
         var gameEvent = AppendEvent(replaced ? GameEventKind.CommandReplaced : GameEventKind.CommandQueued, command);
         return new CommandSubmissionResult(validation, gameEvent);
     }
@@ -742,7 +749,7 @@ public sealed partial class MatchState
             return new CommandSubmissionResult(CommandValidation.Reject(CommandValidationCode.CommandNotQueued), null);
 
         FindGang(gangId)!.QueuedCommand = null;
-        RecordAiPlannedAction(player, gangId, GangAction.None);
+        RecordAiPlannedAction(new GameCommand(player, gangId, GangAction.None, CommandTarget.None));
         return new CommandSubmissionResult(validation, AppendEvent(GameEventKind.CommandCancelled, command));
     }
 

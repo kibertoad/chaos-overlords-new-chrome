@@ -1,7 +1,7 @@
 # Original executable internals research
 
 Status: active clean-room research log
-Last updated: 2026-09-09
+Last updated: 2026-09-10
 Reference executable SHA-256:
 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`
 
@@ -571,10 +571,14 @@ then counts neutral cells whose Crackdown-duration byte is zero in its 3-by-3
 neighborhood in dy-major, dx-minor order. Its row-wrap check uses the literal linear bound
 `0 <= candidate < 65`. Index 64 is not a fixed sentinel: its owner and
 Crackdown-offset reads alias bytes at `0x004a11e8` and `0x004a11f7` in the
-following persisted 486-by-10-byte runtime block. Active records populate these
-bytes during Hire resolution; otherwise they can retain stale or save-loaded
-values. The recreation therefore exposes both index-64 facts as explicit
-kernel inputs and does not invent values for live planning.
+following 486-by-10-byte runtime block. Bounded decompilation of the resolver at
+`0x00472775` shows that byte zero of record zero is the mirrored owner for
+player-zero gang slot zero. The index-64 availability read aliases byte five of
+record one, a retaliation-damage accumulator for player-zero gang slot one.
+Fresh recreation matches initialize the owner alias to player zero, so the
+neutral-neighbor predicate never consults the availability alias at index 64.
+Arbitrary save-loaded alias values are irrelevant because original saves are
+unsupported.
 For ordinary scenarios selector `0x25` makes three deterministic ascending-
 sector passes over owned sectors with occupancy below six:
 
@@ -625,27 +629,37 @@ unencoded caller reaches that helper.
 mode-1 multiset order and RNG use, encoded direct mode, anchor initialization
 and persistence, selectors `0x24` through `0x26`, all direct call sites,
 scenario overrides, and the planner/resolver call path. The behavior is
-recovered but is not yet wired into the recreation's live AI planner.
+recovered and wired into the recreation's live AI planner.
 
 **Implementation:** the six encoded anchors are authoritative `AiPlanningState`
-members covered by canonical hashes, native saves, and replays. Configured
-recreation players initialize from gang slot zero; because the recreation does
-not create the original's unused player slots, those slots use the mechanically
-valid inactive-sector encoding 164. `OriginalAiHirePlacementModeRules` also
-isolates the exact transient role/scenario override, including the raw-100
-visible-hostile sentinel. The selector kernels remain unwired.
+members covered by canonical hashes, native saves, and replays. Fresh local
+matches create all six original player slots and initialize each anchor from
+gang slot zero. `OriginalAiHirePlacementModeRules` isolates the exact transient
+role/scenario override, including the raw-100 visible-hostile sentinel. Live AI
+preparation now preserves or refreshes the anchor, counts previous Chaos actions
+at the candidate sector, selects the first visible hostile regardless of its
+controller type, applies Big Man and Siege overrides, and feeds the encoded
+zero-RNG result to deferred Hire resolution.
 
 **Implementation:** `AiPlanningState` now persists and hashes the older,
 immediately previous, and newly planned action bytes for all six-by-81 slots.
 Active slots roll at AI planning entry; accepted computer commands update the
-planned byte, and cancellation clears it. The two target bytes in each
-generation, first-plan flags, duplicate cleanup, and reused-slot reset remain
-unmodeled.
+planned byte, and cancellation clears it. Hire resolution now reuses the first
+inactive roster slot and clears that slot's family and three action generations.
+The six first-plan flags are now authoritative, hashed, and persisted: first
+preparation resets all 81 records and skips rollover, while subsequent passes
+roll active records. The recovered duplicate cleanup is live: for each sector
+with more than one previous Chaos, selector `0x70(..., 1)` rewrites only the
+first ascending matching slot to None; it then does the same for previous
+Influence through selector `0x71`, rewriting the first match to Snitch. The two
+command-dependent target bytes now roll, reset, hash, save, and replay with
+their action generation. Accepted computer commands encode them using the
+resolver-confirmed meanings documented in `BIN-AI-004`.
 
-**Next validation:** use the authoritative previous-action bytes to wire the
-isolated hire-placement kernels after representing the two mutable index-64
-alias bytes. Preserve pass order, Big Man ordering, overrides, and the zero-RNG
-encoded path.
+**Next validation:** capture fixed original placement decisions across ordinary,
+Big Man, visible-hostile, and Siege paths while preserving pass order and the
+zero-RNG encoded path. Variation caused only by arbitrary original-save alias
+bytes is outside the supported scope.
 
 ### BIN-AI-004 - global AI Mentality byte and first consumers
 
@@ -738,6 +752,8 @@ The remaining selectors in those gates are now structurally identified:
 - `0x3c` reads the gang's Force byte;
 - `0x3d` reads its queued-action byte;
 - `0x51` reads its effective Heal statistic; and
+- `0x2a` tests the current sector's Crackdown record and returns nonzero while
+  police are active; and
 - `0x2c` is a strict single-gang Control feasibility predicate. It rejects
   disabled, unavailable, or already-owned sectors. For a neutral sector it
   tests whether gang Force + Control exceeds sector Income + Support. For an
@@ -784,16 +800,45 @@ are both serialized by save/load paths `0x0046381a` and `0x00463cc5`. Thus the
 history survives save/load independently of the command resolver and has an
 explicit first-planning lifecycle.
 
+Hire resolution in `0x00472775` scans gang records upward from slot zero while
+the mirrored sector byte is not 100, with a strict usable bound of 80. When it
+finds the first inactive slot it copies the complete new 32-byte gang record
+into that slot; a full first 80 slots takes the failure path. This establishes
+ascending inactive-slot reuse, not append-only roster growth. The planner's
+reused-record reset prevents the new gang from inheriting the prior occupant's
+family or action history.
+
 The branches above are therefore command-continuity decisions, including the
 case entered after a prior Snitch command.
 
 All four action-7 (**Heal**) assignments in this handler are now bounded.
 Every path first requires effective Heal at least `-3`; three require Force
 below 9, while the path following no prior action or prior Chaos requires Force
-below 8. No recovered family-1 path heals at Force 9. The recreation therefore
-uses the conservative common boundary—Force below 9 and Heal at least `-3`—for
-its provisional planner, while preserving the stricter history-specific gate
-as pending continuity work.
+below 8. No recovered family-1 path heals at Force 9. For that previous-None or
+previous-Chaos path, the complete terminal branch is recovered: below the
+strict Force/Heal boundary it writes Heal when selector `0x2a` reports no
+Crackdown and Move through mode 5 when police are active; outside that boundary
+an older Snitch writes Chaos and every other older action writes mode-5 Move.
+The recreation executes this action-level branch through
+`OriginalAiFamilyOneRules`. Its mode-5 destination ordering and its fallback to
+the scalar planner when the desired action has no legal recreation candidate
+remain provisional.
+
+The other family-1 paths use the common Force-below-9 Heal gate. The isolated
+rules also guard two distinct cash comparisons: the strict continuation changes
+from Move at cash 50 to Snitch at 51, while the crime branch admits cash 50 and
+changes from Chaos to Snitch as Tolerance moves from 3 to 4. Those terminal
+crime decisions remain isolated until their surrounding target enumerators are
+bounded.
+
+The previous-Heal case is also complete at the action level. It repeats Heal
+under the common Force-below-9/effective-Heal-at-least-`-3` gate. Otherwise it
+queries selector `0x2c` for the acting gang's current sector, writes Control
+when that strict solo-control predicate succeeds, and writes Move with a mode-5
+destination when it fails. `OriginalAiFamilyOneRules.SelectHealContinuation`
+and the live planner preserve this branch. Only the mode-5 target selection and
+the recreation fallback when the desired command is unavailable remain
+provisional.
 
 **Interpretation:** `0x00487850` is the original match-global, zero-based AI
 Mentality setting, seeded from a persisted preference and then carried through
@@ -810,11 +855,23 @@ persistence/setup flow, selector meanings, effective-stat labels, the complete
 three-generation action-history lifecycle and serialization, and the bounded
 decisions above; Low for the complete planner policy and its target enumeration.
 
-**Next validation:** represent the recovered action-history targets and
-first-plan flags authoritatively, then identify the sector/gang target
-enumerators and earlier guards feeding each command-continuity gate. Capture
-fixed-state command-selection fixtures for the cash 50/51, Force 8/9, and
-Tolerance 3/4 boundaries before changing recreation policy.
+The resolver at `0x00472775` establishes the complete public-command decoding
+of those two bytes. Attack uses target player and that player's roster slot.
+Equip and Research use an item ID in byte one. Influence uses the local site
+slot in byte one. Move uses the destination sector. Give uses an equipment-slot
+mask (`1` weapon, `2` armor, `4` miscellaneous) followed by the friendly target
+roster slot. Sell uses the same mask in byte one. Commands without an explicit
+target leave both bytes zero. Direct family-handler writes independently
+confirm the Move, Equip, Attack, Influence, and Research cases; resolver lines
+151-207, 346-352, 557-616, and 713-715 provide bounded decode evidence.
+
+**Next validation:** identify the remaining sector/gang target enumerators and
+earlier guards feeding each command-continuity gate. The disassembly-derived
+cash 50/51, Force 8/9, effective-Heal -3/-4, Crackdown on/off, and Tolerance 3/4
+vectors are executable regression tests. Capture controlled original-turn
+decisions for the still-isolated branches, corroborate the two live continuation
+branches, and validate mode-5 destinations before replacing more recreation
+policy.
 
 ### BIN-AI-005 - shared weighted sector selector
 
@@ -1232,10 +1289,9 @@ and `BLAKHART`. Portrait 15 is the empty-slot presentation image and is not a
 candidate returned by the helper.
 
 **Interpretation:** The original local setup count is the number of explicitly
-configured local players, not the final match participant count. The recreation
-currently passes only its selected slots into `OriginalMatchFactory`, so matches
-with fewer than six setup entries do not yet reproduce this behavior or the
-portrait-selection RNG consumed before city generation.
+configured local players, not the final match participant count. The recreation's
+`OriginalMatchFactory` now completes omitted slots in ascending order and consumes
+their portrait-selection RNG before AI state and city generation.
 
 **Confidence:** High static evidence for types, ascending fill order, portrait
 range, duplicate rejection, resource-name mapping, and placement before city
@@ -1252,9 +1308,8 @@ fresh setup/teardown and has no save/load references, while sector Chaos is
 ordinary persisted state.
 
 **Interpretation:** `SMGISLANDS` starts every neutral non-HQ sector at Chaos 100.
-It should be implemented only together with the six-participant local setup
-lifecycle; applying it to the recreation's current reduced-player city would
-incorrectly include unused HQ candidates.
+The recreation applies it after its six-participant local setup lifecycle, so all
+six HQ candidates are already owned and remain at their generated Chaos value.
 
 **Confidence:** High static evidence for the exact trigger, ordering, owner
 predicate, value, and transient lifetime; runtime corroboration remains pending.

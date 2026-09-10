@@ -239,7 +239,23 @@ internal static class HireResolver
             {
                 HiredThisTurn = true
             };
-            player.AddGang(gang);
+            var reusableGangSlot = player.Gangs
+                .Select((candidate, slot) => (candidate, slot))
+                .Where(entry => !entry.candidate.IsActive)
+                .Select(entry => entry.slot)
+                .FirstOrDefault(-1);
+            if (reusableGangSlot >= 0)
+            {
+                player.ReplaceGang(reusableGangSlot, gang);
+                state.AiPlanning.ResetGangSlot(player.Id, reusableGangSlot);
+            }
+            else
+            {
+                if (player.Gangs.Count >= AiPlanningState.GangSlotsPerPlayer)
+                    throw new InvalidOperationException(
+                        "No original gang/planning slot is available for the resolved hire.");
+                player.AddGang(gang);
+            }
             var offerSlot = pending.OfferSlot >= 0
                 ? pending.OfferSlot
                 : player.FindHireOfferSlot(pending.GangDefinitionId);

@@ -154,12 +154,25 @@ public static class OriginalCityGenerator
 public static class OriginalMatchFactory
 {
     public const int StandardStartingCash = 20;
+    public const int ActivePortraitCount = 15;
+
+    private static readonly string[] DefaultPlayerNames =
+    [
+        "ROCK", "GECKO", "RAZOR", "SOUL TEAR", "HEDIN VISE",
+        "REDD", "VECTOR", "ICE", "TORQ", "KANSER",
+        "ECLYPSE", "CRETIN", "SCREAMER", "PSYCHO", "BLAKHART"
+    ];
 
     public static MatchState Create(OriginalData definitions, MatchSetup setup)
     {
         ArgumentNullException.ThrowIfNull(definitions);
         ArgumentNullException.ThrowIfNull(setup);
         var random = new DeterministicRandom(setup.InitialSeed);
+
+        // Local Begin turns every unconfigured slot into a computer player.
+        // Its portrait rejection draws happen before every other fresh-game RNG
+        // consumer, and the default name is the Win32 string for that portrait.
+        setup = CompleteLocalPlayers(setup, random);
 
         // The original initializes AI reactions and attitudes immediately before
         // city generation. Homicidal games intentionally consume no reaction RNG.
@@ -171,7 +184,31 @@ public static class OriginalMatchFactory
             player.Id, headquarters[index], ManualRules.MaximumForce,
             StandardStartingCash, Array.Empty<short>())).ToArray();
         var bootstrapped = MatchBootstrap.Create(definitions, setup, sectors, starts);
+        if (setup.Players.Any(player => OriginalSetupNameRules.EnablesIslands(player.Name)))
+            foreach (var sector in bootstrapped.Sectors.Where(sector => sector.Owner is null))
+                sector.Chaos = 100;
         return new MatchState(
             definitions, setup, bootstrapped.Players, bootstrapped.Sectors, random, aiStrategy);
+    }
+
+    private static MatchSetup CompleteLocalPlayers(MatchSetup setup, DeterministicRandom random)
+    {
+        if (setup.Players.Count == MatchLimits.PlayerCount) return setup;
+
+        var players = setup.Players.ToList();
+        var usedPortraits = players.Select(player => (int)player.PortraitId).ToHashSet();
+        for (var slot = players.Count; slot < MatchLimits.PlayerCount; slot++)
+        {
+            int portrait;
+            do portrait = random.NextInt(ActivePortraitCount);
+            while (usedPortraits.Contains(portrait));
+            usedPortraits.Add(portrait);
+            players.Add(new MatchPlayerSetup(
+                new PlayerId(slot), DefaultPlayerNames[portrait], PlayerController.Computer,
+                checked((short)portrait)));
+        }
+
+        return new MatchSetup(
+            setup.Scenario, setup.Duration, setup.InitialSeed, players, setup.AiMentality);
     }
 }

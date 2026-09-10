@@ -127,17 +127,57 @@ public sealed class MatchReplayTests
         recorder.FinishCommand(new PlayerId(0));
         recorder.PrepareAiPlanning(new PlayerId(1));
         Assert.True(recorder.Submit(new GameCommand(
-            new PlayerId(1), new GangId(1), GangAction.Hide, CommandTarget.None)).Accepted);
+            new PlayerId(1), new GangId(1), GangAction.Move, CommandTarget.Sector(62))).Accepted);
 
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
 
-        Assert.Equal(GangAction.Hide,
+        Assert.Equal(GangAction.Move,
             restored.AiPlanning.PlannedAction(new PlayerId(1), 0));
+        Assert.Equal(new AiActionTarget(62, 0),
+            restored.AiPlanning.PlannedTarget(new PlayerId(1), 0));
+        Assert.True(restored.AiPlanning.HasPlanned(new PlayerId(1)));
         Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State),
             MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void EncodesOriginalCommandDependentAiTargetBytes()
+    {
+        var state = CreateMatch();
+        var computer = state.Players[1];
+        computer.AddGang(new MatchGangState(
+            new GangId(50), computer.Id, computer.Gangs[0].DefinitionId, 63, 5));
+        var weapon = state.Definitions.Items.First(item => item.Type is >= 0 and <= 2).Id;
+        var armor = state.Definitions.Items.First(item => item.Type == 3).Id;
+        var miscellaneous = state.Definitions.Items.First(item => item.Type == 4).Id;
+
+        Assert.Equal(new AiActionTarget(0, 0), OriginalAiActionTargetEncoding.Encode(state,
+            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Attack,
+                CommandTarget.Gang(state.Players[0].Gangs[0].Id))));
+        Assert.Equal(new AiActionTarget(62, 0), OriginalAiActionTargetEncoding.Encode(state,
+            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Move,
+                CommandTarget.Sector(62))));
+        Assert.Equal(new AiActionTarget(2, 0), OriginalAiActionTargetEncoding.Encode(state,
+            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Influence,
+                CommandTarget.Site(63 * MatchLimits.SitesPerSector + 2))));
+        Assert.Equal(new AiActionTarget(checked((byte)armor), 0),
+            OriginalAiActionTargetEncoding.Encode(state,
+                new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Research,
+                    CommandTarget.Item(armor))));
+        Assert.Equal(new AiActionTarget(1, 1), OriginalAiActionTargetEncoding.Encode(state,
+            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Give,
+                CommandTarget.Gang(new GangId(50)), SecondaryTarget: CommandTarget.Item(weapon))));
+        Assert.Equal(new AiActionTarget(2, 0), OriginalAiActionTargetEncoding.Encode(state,
+            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Sell,
+                CommandTarget.Item(armor))));
+        Assert.Equal(new AiActionTarget(4, 0), OriginalAiActionTargetEncoding.Encode(state,
+            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Sell,
+                CommandTarget.Item(miscellaneous))));
+        Assert.Equal(AiActionTarget.None, OriginalAiActionTargetEncoding.Encode(state,
+            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Hide, CommandTarget.None)));
     }
 
     [Fact]

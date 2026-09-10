@@ -1,6 +1,15 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
+/// The two command-dependent bytes stored beside each original AI action.
+/// Their meaning is defined by <see cref="OriginalAiActionTargetEncoding"/>.
+/// </summary>
+public readonly record struct AiActionTarget(byte First, byte Second)
+{
+    public static AiActionTarget None => default;
+}
+
+/// <summary>
 /// Original-compatible per-player hire roles and per-gang strategy families.
 /// The original executable reserves 81 planning records for each of its six
 /// player slots, independently of the recreation's active-gang limit.
@@ -21,6 +30,10 @@ public sealed class AiPlanningState
     private readonly GangAction[] _olderActions;
     private readonly GangAction[] _previousActions;
     private readonly GangAction[] _plannedActions;
+    private readonly AiActionTarget[] _olderTargets;
+    private readonly AiActionTarget[] _previousTargets;
+    private readonly AiActionTarget[] _plannedTargets;
+    private readonly bool[] _hasPlanned;
 
     private AiPlanningState(
         IReadOnlyList<int> currentHireRoles,
@@ -29,7 +42,11 @@ public sealed class AiPlanningState
         IReadOnlyList<int> sectorAnchors,
         IReadOnlyList<GangAction> olderActions,
         IReadOnlyList<GangAction> previousActions,
-        IReadOnlyList<GangAction> plannedActions)
+        IReadOnlyList<GangAction> plannedActions,
+        IReadOnlyList<AiActionTarget> olderTargets,
+        IReadOnlyList<AiActionTarget> previousTargets,
+        IReadOnlyList<AiActionTarget> plannedTargets,
+        IReadOnlyList<bool> hasPlanned)
     {
         ArgumentNullException.ThrowIfNull(currentHireRoles);
         ArgumentNullException.ThrowIfNull(previousHireRoles);
@@ -38,6 +55,10 @@ public sealed class AiPlanningState
         ArgumentNullException.ThrowIfNull(olderActions);
         ArgumentNullException.ThrowIfNull(previousActions);
         ArgumentNullException.ThrowIfNull(plannedActions);
+        ArgumentNullException.ThrowIfNull(olderTargets);
+        ArgumentNullException.ThrowIfNull(previousTargets);
+        ArgumentNullException.ThrowIfNull(plannedTargets);
+        ArgumentNullException.ThrowIfNull(hasPlanned);
         if (currentHireRoles.Count != MatchLimits.PlayerCount
             || previousHireRoles.Count != MatchLimits.PlayerCount)
             throw new ArgumentException("AI hire roles must contain all six original player slots.");
@@ -50,6 +71,12 @@ public sealed class AiPlanningState
             || previousActions.Count != actionSlotCount
             || plannedActions.Count != actionSlotCount)
             throw new ArgumentException("AI action histories must contain all six-by-81 original planning slots.");
+        if (olderTargets.Count != actionSlotCount
+            || previousTargets.Count != actionSlotCount
+            || plannedTargets.Count != actionSlotCount)
+            throw new ArgumentException("AI action targets must contain all six-by-81 original planning slots.");
+        if (hasPlanned.Count != MatchLimits.PlayerCount)
+            throw new ArgumentException("AI first-planning flags must contain all six original player slots.", nameof(hasPlanned));
         if (currentHireRoles.Any(role => role is < 0 or > MaximumHireRole))
             throw new ArgumentOutOfRangeException(nameof(currentHireRoles));
         if (previousHireRoles.Any(role => role is < 0 or > MaximumHireRole))
@@ -70,6 +97,10 @@ public sealed class AiPlanningState
         _olderActions = olderActions.ToArray();
         _previousActions = previousActions.ToArray();
         _plannedActions = plannedActions.ToArray();
+        _olderTargets = olderTargets.ToArray();
+        _previousTargets = previousTargets.ToArray();
+        _plannedTargets = plannedTargets.ToArray();
+        _hasPlanned = hasPlanned.ToArray();
     }
 
     public int CurrentHireRole(PlayerId player) => _currentHireRoles[PlayerIndex(player)];
@@ -79,6 +110,10 @@ public sealed class AiPlanningState
     public GangAction OlderAction(PlayerId player, int gangSlot) => _olderActions[GangSlotIndex(player, gangSlot)];
     public GangAction PreviousAction(PlayerId player, int gangSlot) => _previousActions[GangSlotIndex(player, gangSlot)];
     public GangAction PlannedAction(PlayerId player, int gangSlot) => _plannedActions[GangSlotIndex(player, gangSlot)];
+    public AiActionTarget OlderTarget(PlayerId player, int gangSlot) => _olderTargets[GangSlotIndex(player, gangSlot)];
+    public AiActionTarget PreviousTarget(PlayerId player, int gangSlot) => _previousTargets[GangSlotIndex(player, gangSlot)];
+    public AiActionTarget PlannedTarget(PlayerId player, int gangSlot) => _plannedTargets[GangSlotIndex(player, gangSlot)];
+    public bool HasPlanned(PlayerId player) => _hasPlanned[PlayerIndex(player)];
 
     internal IReadOnlyList<int> CaptureCurrentHireRoles() => _currentHireRoles.ToArray();
     internal IReadOnlyList<int> CapturePreviousHireRoles() => _previousHireRoles.ToArray();
@@ -87,11 +122,23 @@ public sealed class AiPlanningState
     internal IReadOnlyList<GangAction> CaptureOlderActions() => _olderActions.ToArray();
     internal IReadOnlyList<GangAction> CapturePreviousActions() => _previousActions.ToArray();
     internal IReadOnlyList<GangAction> CapturePlannedActions() => _plannedActions.ToArray();
+    internal IReadOnlyList<AiActionTarget> CaptureOlderTargets() => _olderTargets.ToArray();
+    internal IReadOnlyList<AiActionTarget> CapturePreviousTargets() => _previousTargets.ToArray();
+    internal IReadOnlyList<AiActionTarget> CapturePlannedTargets() => _plannedTargets.ToArray();
+    internal IReadOnlyList<bool> CaptureHasPlanned() => _hasPlanned.ToArray();
 
-    internal void BeginPlanning(PlayerId player)
+    internal bool BeginPlanning(PlayerId player)
     {
         var index = PlayerIndex(player);
         _previousHireRoles[index] = _currentHireRoles[index];
+        if (!_hasPlanned[index])
+        {
+            for (var gangSlot = 0; gangSlot < GangSlotsPerPlayer; gangSlot++)
+                ResetGangSlot(player, gangSlot);
+            _hasPlanned[index] = true;
+            return true;
+        }
+        return false;
     }
 
     internal void SetCurrentHireRole(PlayerId player, int role)
@@ -125,13 +172,67 @@ public sealed class AiPlanningState
             _olderActions[index] = _previousActions[index];
             _previousActions[index] = _plannedActions[index];
             _plannedActions[index] = GangAction.None;
+            _olderTargets[index] = _previousTargets[index];
+            _previousTargets[index] = _plannedTargets[index];
+            _plannedTargets[index] = AiActionTarget.None;
+        }
+    }
+
+    internal void CleanupDuplicatePreviousActions(
+        PlayerId player,
+        IReadOnlyList<MatchGangState> gangs)
+    {
+        ArgumentNullException.ThrowIfNull(gangs);
+        if (gangs.Count > GangSlotsPerPlayer)
+            throw new ArgumentException("Player gang list exceeds the original AI slot allocation.", nameof(gangs));
+        for (var sectorId = 0; sectorId < MatchLimits.SectorCount; sectorId++)
+        {
+            RewriteFirstDuplicate(player, gangs, sectorId, GangAction.Chaos, GangAction.None);
+            RewriteFirstDuplicate(player, gangs, sectorId, GangAction.Influence, GangAction.Snitch);
         }
     }
 
     internal void SetPlannedAction(PlayerId player, int gangSlot, GangAction action)
+        => SetPlannedAction(player, gangSlot, action, AiActionTarget.None);
+
+    internal void SetPlannedAction(
+        PlayerId player,
+        int gangSlot,
+        GangAction action,
+        AiActionTarget target)
     {
         if (!IsValidAction(action)) throw new ArgumentOutOfRangeException(nameof(action));
-        _plannedActions[GangSlotIndex(player, gangSlot)] = action;
+        var index = GangSlotIndex(player, gangSlot);
+        _plannedActions[index] = action;
+        _plannedTargets[index] = target;
+    }
+
+    internal void ResetGangSlot(PlayerId player, int gangSlot)
+    {
+        var index = GangSlotIndex(player, gangSlot);
+        _families[index] = UnusedFamily;
+        _olderActions[index] = GangAction.None;
+        _previousActions[index] = GangAction.None;
+        _plannedActions[index] = GangAction.None;
+        _olderTargets[index] = AiActionTarget.None;
+        _previousTargets[index] = AiActionTarget.None;
+        _plannedTargets[index] = AiActionTarget.None;
+    }
+
+    private void RewriteFirstDuplicate(
+        PlayerId player,
+        IReadOnlyList<MatchGangState> gangs,
+        int sectorId,
+        GangAction action,
+        GangAction replacement)
+    {
+        var matchingSlots = Enumerable.Range(0, gangs.Count)
+            .Where(slot => gangs[slot].IsActive
+                && gangs[slot].SectorId == sectorId
+                && PreviousAction(player, slot) == action)
+            .ToArray();
+        if (matchingSlots.Length > 1)
+            _previousActions[GangSlotIndex(player, matchingSlots[0])] = replacement;
     }
 
     internal static AiPlanningState Initialize() => new(
@@ -141,7 +242,11 @@ public sealed class AiPlanningState
         Enumerable.Repeat(InactiveSectorAnchor, MatchLimits.PlayerCount).ToArray(),
         new GangAction[MatchLimits.PlayerCount * GangSlotsPerPlayer],
         new GangAction[MatchLimits.PlayerCount * GangSlotsPerPlayer],
-        new GangAction[MatchLimits.PlayerCount * GangSlotsPerPlayer]);
+        new GangAction[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+        new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+        new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+        new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+        new bool[MatchLimits.PlayerCount]);
 
     internal static AiPlanningState Initialize(IReadOnlyList<MatchPlayerState> players)
     {
@@ -165,7 +270,11 @@ public sealed class AiPlanningState
             currentHireRoles, previousHireRoles, families, sectorAnchors,
             new GangAction[MatchLimits.PlayerCount * GangSlotsPerPlayer],
             new GangAction[MatchLimits.PlayerCount * GangSlotsPerPlayer],
-            new GangAction[MatchLimits.PlayerCount * GangSlotsPerPlayer]);
+            new GangAction[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            Enumerable.Repeat(true, MatchLimits.PlayerCount).ToArray());
 
     internal static AiPlanningState Restore(
         IReadOnlyList<int> currentHireRoles,
@@ -174,9 +283,45 @@ public sealed class AiPlanningState
         IReadOnlyList<int> sectorAnchors,
         IReadOnlyList<GangAction> olderActions,
         IReadOnlyList<GangAction> previousActions,
-        IReadOnlyList<GangAction> plannedActions) => new(
+        IReadOnlyList<GangAction> plannedActions) => Restore(
             currentHireRoles, previousHireRoles, families, sectorAnchors,
-            olderActions, previousActions, plannedActions);
+            olderActions, previousActions, plannedActions,
+            new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            Enumerable.Repeat(true, MatchLimits.PlayerCount).ToArray());
+
+    internal static AiPlanningState Restore(
+        IReadOnlyList<int> currentHireRoles,
+        IReadOnlyList<int> previousHireRoles,
+        IReadOnlyList<int> families,
+        IReadOnlyList<int> sectorAnchors,
+        IReadOnlyList<GangAction> olderActions,
+        IReadOnlyList<GangAction> previousActions,
+        IReadOnlyList<GangAction> plannedActions,
+        IReadOnlyList<bool> hasPlanned) => new(
+            currentHireRoles, previousHireRoles, families, sectorAnchors,
+            olderActions, previousActions, plannedActions,
+            new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            new AiActionTarget[MatchLimits.PlayerCount * GangSlotsPerPlayer],
+            hasPlanned);
+
+    internal static AiPlanningState Restore(
+        IReadOnlyList<int> currentHireRoles,
+        IReadOnlyList<int> previousHireRoles,
+        IReadOnlyList<int> families,
+        IReadOnlyList<int> sectorAnchors,
+        IReadOnlyList<GangAction> olderActions,
+        IReadOnlyList<GangAction> previousActions,
+        IReadOnlyList<GangAction> plannedActions,
+        IReadOnlyList<AiActionTarget> olderTargets,
+        IReadOnlyList<AiActionTarget> previousTargets,
+        IReadOnlyList<AiActionTarget> plannedTargets,
+        IReadOnlyList<bool> hasPlanned) => new(
+            currentHireRoles, previousHireRoles, families, sectorAnchors,
+            olderActions, previousActions, plannedActions,
+            olderTargets, previousTargets, plannedTargets, hasPlanned);
 
     private static bool IsValidFamily(int family) =>
         family == UnusedFamily || family is >= 0 and <= MaximumFamily and not 8;

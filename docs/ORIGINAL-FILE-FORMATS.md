@@ -221,15 +221,16 @@ the MonoGame client has no Smacker decoder yet.
 | `DATA.Z` | 7,676,546-byte opaque binary. It does not expose a recognized signature in its first bytes (`13 5D 65 8C ...`). Purpose and compression unknown. | **Low** |
 | `HELP/` | Original help resources copied and hash-inventoried; internal semantics remain unmapped. | **Medium** |
 
-## Save games (reference-derived, unverified locally)
+## Save games (historical reference only; unsupported)
 
 No save sample was present in the inspected installation. The `re-chaos` notes
 describe magic `0x57303453` with 45,305-byte saves and magic `0x5730344E` with
 45,329-byte saves. They outline six-player gang arrays, 64 sectors, cursor and
 portrait state, turn/objective/cash, hire pools, research, statistics,
-notifications, preferences, and a repeated trailing magic. This entire format
-is **Medium** confidence until this port obtains original saves and adds
-round-trip fixtures. It is intentionally not implemented yet.
+notifications, preferences, and a repeated trailing magic. This historical map
+is **Medium** confidence and may help interpret executable state, but original
+save import/export is an explicit non-goal and is not an implementation or
+release gate.
 
 ## Open questions / next experiments
 
@@ -239,7 +240,6 @@ round-trip fixtures. It is intentionally not implemented yet.
 3. Determine `CLT00002` entry layout and consumer.
 4. Identify/decompress `DATA.Z` and inventory its contents.
 5. Implement Smacker playback or a legal local transcode during extraction.
-6. Capture original saves for both magic values and verify every offset.
-7. Trace original economy, combat, AI, objective, and RNG behavior against the
+6. Trace original economy, combat, AI, objective, and RNG behavior against the
    parsed fields; present gameplay behavior is a deterministic playable slice,
    not yet a claim of simulation parity.

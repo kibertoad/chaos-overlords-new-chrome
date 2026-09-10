@@ -8,6 +8,10 @@ pack containing repaired graphics plus the original audio, music, video, help,
 and currently opaque resources. Compact gameplay tables
 are bundled in the open-source core; original art and media are not.
 
+Original save import/export is not supported. Recreation-native saves and
+replays are development formats until 1.0.0 and may change incompatibly before
+then; the versioned migration machinery is retained for post-1.0 compatibility.
+
 ## Quick start
 
 Requirements: .NET 10 SDK and a GOG installation of *Chaos Overlords*.
@@ -91,11 +95,13 @@ The port loads the original 16-bit artwork at native 640x460 resolution with
 integer-friendly point scaling, including ownership-composited `PX1000x` city
 layers. It parses all 22 sites, 90 gangs, and 64 items and provides title,
 new-game setup, and deterministic 8x8 hot-seat city screens.
-Setup supports scenario, duration, and one-to-six human/computer players using
-keyboard or mouse; click a player slot or press 1-6 to toggle its controller.
-The default two-player setup is Human vs Computer, newly added opponents default
-to Computer, and each player's original portrait can be cycled with its green
-arrows. The single global AI Mentality selector controls computer aggression;
+Setup supports scenario, duration, and one-to-six explicitly configured
+human/computer players using keyboard or mouse; click a visible player slot or
+press 1-6 to toggle its controller. On Begin, omitted slots become computer
+players with the original unique portrait/name draws, so every local match has
+six participants. The default visible setup is Human vs Computer, newly added
+opponents default to Computer, and each visible player's original portrait can
+be cycled with its green arrows. The single global AI Mentality selector controls computer aggression;
 its hover tooltips explain each level and the no-bonuses fair-play rule. In the
 city, use arrows/WASD
 or click to select, double-click a sector for its detailed view, Enter to act,
@@ -121,7 +127,7 @@ Resolved equipped-weapon attacks play their original extracted `SND005xx` cue.
 F5/F9 save/load and F6/F10
 save/verify replays. AI planning and post-command hiring preparation, including
 the recovered territorial Combat + Defense hostility check, are recorded in
-replay v13. Escape
+replay v14. Escape
 returns to the title screen before quitting.
 
 ## Projects

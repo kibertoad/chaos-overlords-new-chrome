@@ -7,8 +7,10 @@ internal static class AiPlanningPreparation
         ArgumentNullException.ThrowIfNull(state);
         var gangs = state.FindPlayer(player)?.Gangs
             ?? throw new ArgumentOutOfRangeException(nameof(player));
-        state.AiPlanning.BeginPlanning(player);
-        state.AiPlanning.RollActiveGangActions(player, gangs);
+        var firstPlanningPass = state.AiPlanning.BeginPlanning(player);
+        if (!firstPlanningPass)
+            state.AiPlanning.RollActiveGangActions(player, gangs);
+        state.AiPlanning.CleanupDuplicatePreviousActions(player, gangs);
         for (var gangSlot = 0; gangSlot < gangs.Count; gangSlot++)
         {
             if (!gangs[gangSlot].IsActive) continue;
@@ -39,7 +41,7 @@ internal static class AiPlanningPreparation
                 turnsRemaining, state.Setup.Duration))
             return null;
 
-        var firstHostileSector = FirstVisibleHostileHumanSector(state, player);
+        var firstHostileSector = FirstVisibleHostileSector(state, player);
         var inputs = new OriginalAiHireAdjustmentInputs(
             turnsRemaining,
             playerState.Cash,
@@ -69,11 +71,65 @@ internal static class AiPlanningPreparation
         .Count(entry => entry.gang.IsActive
             && families.Contains(state.AiPlanning.Family(player, entry.slot)));
 
-    private static int? FirstVisibleHostileHumanSector(MatchState state, PlayerId observer) =>
+    public static int PrepareHirePlacementMode(
+        MatchState state,
+        PlayerId player,
+        int adjustedRole)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var playerState = state.FindPlayer(player)
+            ?? throw new ArgumentOutOfRangeException(nameof(player));
+        var owners = state.Sectors.Select(sector => sector.Owner?.Value ?? -1)
+            // Sector index 64 aliases player 0 gang slot 0's owner byte. In a
+            // fresh game that byte is initialized to zero and remains stale at
+            // zero if the Right Hands slot later becomes inactive.
+            .Append(0)
+            .ToArray();
+        var availability = state.Sectors
+            .Select(sector => checked((byte)sector.CrackdownTurnsRemaining))
+            // The aliased retaliation byte is irrelevant while owner[64] != -1.
+            .Append((byte)0)
+            .ToArray();
+        var anchorSector = state.AiPlanning.SectorAnchor(player)
+            - AiPlanningState.SectorAnchorOffset;
+        var activeGangCount = (int sectorId) => playerState.Gangs.Count(gang =>
+            gang.IsActive && gang.SectorId == sectorId);
+        var priorChaosCount = (int sectorId) => playerState.Gangs
+            .Select((gang, slot) => (gang, slot))
+            .Count(entry => entry.gang.IsActive
+                && entry.gang.SectorId == sectorId
+                && state.AiPlanning.PreviousAction(player, entry.slot) == GangAction.Chaos);
+        var retainsAnchor = state.Setup.Scenario != ScenarioId.BigMan
+            && anchorSector is >= 0 and < MatchLimits.SectorCount
+            && owners[anchorSector] == player.Value
+            && activeGangCount(anchorSector) < MatchLimits.FriendlyGangsPerSector
+            && OriginalAiHireAnchorRules.CountAvailableNeutralNeighbors(
+                player, anchorSector, owners, availability) > 0;
+        if (!retainsAnchor)
+        {
+            anchorSector = OriginalAiHireAnchorRules.Select(
+                player, state.Setup.Scenario, anchorSector, owners, availability,
+                activeGangCount, priorChaosCount);
+            state.AiPlanning.SetSectorAnchor(
+                player, checked(anchorSector + AiPlanningState.SectorAnchorOffset));
+        }
+
+        var firstHostileSector = FirstVisibleHostileSector(state, player)
+            ?? OriginalAiHirePlacementRules.InactiveGangSector;
+        var gangSlotZeroSector = playerState.Gangs.Count > 0 && playerState.Gangs[0].IsActive
+            ? playerState.Gangs[0].SectorId
+            : OriginalAiHirePlacementRules.InactiveGangSector;
+        return OriginalAiHirePlacementModeRules.Select(
+            state.Setup.Scenario, adjustedRole,
+            state.AiPlanning.SectorAnchor(player), firstHostileSector,
+            gangSlotZeroSector);
+    }
+
+    private static int? FirstVisibleHostileSector(MatchState state, PlayerId observer) =>
         state.Sectors
             .Where(sector => state.Players.Any(owner =>
                 owner.Id != observer
-                && owner.Setup.Controller == PlayerController.Human
+                && owner.Status == PlayerStatus.Active
                 && state.AiStrategy.IsHostile(observer, owner.Id)
                 && owner.Gangs.Any(gang => gang.IsActive
                     && gang.SectorId == sector.Id

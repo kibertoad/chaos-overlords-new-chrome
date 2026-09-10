@@ -179,6 +179,60 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void FamilyOneNoActionBranchDrivesLiveHealCrackdownAndOlderSnitchChoices()
+    {
+        var data = BundledOriginalData.Load();
+        var capable = data.Gangs.First(candidate => candidate.Stats.Heal >= -3).Id;
+        var heal = CreateMatch(definitionId: capable, force: 7, data: data);
+        var crackdown = CreateMatch(definitionId: capable, force: 7, data: data);
+        var priorSnitch = CreateMatch(definitionId: capable, force: 8, data: data);
+        foreach (var match in new[] { heal, crackdown, priorSnitch })
+        {
+            match.FinishUpkeep();
+            match.AiPlanning.SetFamily(new PlayerId(0), 0, 1);
+        }
+        crackdown.Sectors[0].CrackdownActive = true;
+        priorSnitch.AiPlanning.SetPlannedAction(new PlayerId(0), 0, GangAction.Snitch);
+        priorSnitch.AiPlanning.RollActiveGangActions(
+            new PlayerId(0), priorSnitch.Players[0].Gangs);
+        priorSnitch.AiPlanning.SetPlannedAction(new PlayerId(0), 0, GangAction.None);
+        priorSnitch.AiPlanning.RollActiveGangActions(
+            new PlayerId(0), priorSnitch.Players[0].Gangs);
+
+        Assert.Equal(GangAction.Heal,
+            Assert.Single(AiTurnPlanner.Plan(heal, new PlayerId(0))).Action);
+        Assert.Equal(GangAction.Move,
+            Assert.Single(AiTurnPlanner.Plan(crackdown, new PlayerId(0))).Action);
+        Assert.Equal(GangAction.Chaos,
+            Assert.Single(AiTurnPlanner.Plan(priorSnitch, new PlayerId(0))).Action);
+    }
+
+    [Fact]
+    public void FamilyOneHealContinuationDrivesLiveRepeatControlAndMoveChoices()
+    {
+        var data = BundledOriginalData.Load();
+        var capable = data.Gangs.First(candidate => candidate.Stats.Heal >= -3).Id;
+        var repeatHeal = CreateMatch(definitionId: capable, force: 8, data: data);
+        var takeControl = CreateNeutralControlMatch(data, capable, force: 10);
+        var move = CreateMatch(definitionId: capable, force: 10, data: data);
+        foreach (var match in new[] { repeatHeal, takeControl, move })
+        {
+            match.FinishUpkeep();
+            match.AiPlanning.SetFamily(new PlayerId(0), 0, 1);
+            match.AiPlanning.SetPlannedAction(new PlayerId(0), 0, GangAction.Heal);
+            match.AiPlanning.RollActiveGangActions(
+                new PlayerId(0), match.Players[0].Gangs);
+        }
+
+        Assert.Equal(GangAction.Heal,
+            Assert.Single(AiTurnPlanner.Plan(repeatHeal, new PlayerId(0))).Action);
+        Assert.Equal(GangAction.Control,
+            Assert.Single(AiTurnPlanner.Plan(takeControl, new PlayerId(0))).Action);
+        Assert.Equal(GangAction.Move,
+            Assert.Single(AiTurnPlanner.Plan(move, new PlayerId(0))).Action);
+    }
+
+    [Fact]
     public void EliminateMovementPrefersRecoveredHeadquartersCandidateSet()
     {
         var match = CreateMatch();
@@ -303,6 +357,51 @@ public sealed class AiTurnPlannerTests
             new PlayerId(0), preparation.RejectedGangDefinitionId!.Value).Accepted);
     }
 
+    [Fact]
+    public void PreparedHireRefreshesAFullAnchorAndUsesRecoveredPlacementSector()
+    {
+        short[] offers = [1, 2, 3];
+        var match = CreateMatch(cash: 100, hirePool: offers);
+        var playerId = new PlayerId(0);
+        match.Sectors[10].Owner = playerId;
+        for (var index = 0; index < MatchLimits.FriendlyGangsPerSector - 1; index++)
+            match.Players[0].AddGang(new MatchGangState(
+                new GangId(30 + index), playerId, 1, sectorId: 0, force: 5));
+        match.FinishUpkeep();
+
+        var preparation = AiTurnPlanner.PrepareHire(
+            match, playerId, new OriginalAiHireRoleSelection(RankingMode: 0, Role: 0));
+
+        Assert.NotNull(preparation.Choice);
+        Assert.Equal(10, preparation.Choice.SectorId);
+        Assert.Equal(10 + AiPlanningState.SectorAnchorOffset,
+            match.AiPlanning.SectorAnchor(playerId));
+    }
+
+    [Fact]
+    public void RoleFourPlacementUsesFirstVisibleHostileSectorRegardlessOfController()
+    {
+        var data = BundledOriginalData.Load();
+        var observerDefinition = data.Gangs.MaxBy(gang => gang.Stats.Detect)!.Id;
+        var targetDefinition = data.Gangs.MinBy(gang => gang.Stats.Stealth)!.Id;
+        short[] offers = [1, 2, 3];
+        var match = CreateMatch(
+            data: data, definitionId: observerDefinition, rivalDefinitionId: targetDefinition,
+            cash: 100, hirePool: offers, rivalController: PlayerController.Computer);
+        var playerId = new PlayerId(0);
+        match.Sectors[1].Owner = playerId;
+        match.Players[0].AddGang(new MatchGangState(
+            new GangId(30), playerId, observerDefinition, sectorId: 1, force: 5));
+        match.AiStrategy.RecordCombat(new PlayerId(1), playerId, damage: 1);
+        match.FinishUpkeep();
+
+        var preparation = AiTurnPlanner.PrepareHire(
+            match, playerId, new OriginalAiHireRoleSelection(RankingMode: 0, Role: 4));
+
+        Assert.NotNull(preparation.Choice);
+        Assert.Equal(1, preparation.Choice.SectorId);
+    }
+
     [Theory]
     [InlineData(ScenarioId.Greed)]
     [InlineData(ScenarioId.Power)]
@@ -403,20 +502,23 @@ public sealed class AiTurnPlannerTests
         bool ownsStartingSector = true,
         OriginalData? data = null,
         int cash = 20,
-        IReadOnlyList<short>? hirePool = null)
+        IReadOnlyList<short>? hirePool = null,
+        PlayerController rivalController = PlayerController.Human,
+        short rivalDefinitionId = 2)
     {
         data ??= BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
         [
             new(new PlayerId(0), "CPU", controller),
-            new(new PlayerId(1), "RIVAL", PlayerController.Human)
+            new(new PlayerId(1), "RIVAL", rivalController)
         ];
         MatchPlayerState[] players =
         [
             new(setups[0], cash,
                 [new MatchGangState(new GangId(10), new PlayerId(0), definitionId, 0, force)],
                 hirePool),
-            new(setups[1], 20, [new MatchGangState(new GangId(20), new PlayerId(1), 2, 1, 10)])
+            new(setups[1], 20, [new MatchGangState(
+                new GangId(20), new PlayerId(1), rivalDefinitionId, 1, 10)])
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,

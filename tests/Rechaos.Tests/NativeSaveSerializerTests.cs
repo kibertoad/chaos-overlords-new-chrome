@@ -18,7 +18,8 @@ public sealed class NativeSaveSerializerTests
         match.AiPlanning.SetCurrentHireRole(new PlayerId(1), 2);
         match.AiPlanning.SetFamily(new PlayerId(1), 0, 6);
         match.AiPlanning.SetSectorAnchor(new PlayerId(1), 63);
-        match.AiPlanning.SetPlannedAction(new PlayerId(1), 0, GangAction.Attack);
+        match.AiPlanning.SetPlannedAction(
+            new PlayerId(1), 0, GangAction.Attack, new AiActionTarget(0, 4));
         match.AiPlanning.RollActiveGangActions(new PlayerId(1), match.Players[1].Gangs);
         match.FinishUpkeep();
         Assert.True(match.Submit(new GameCommand(
@@ -46,8 +47,32 @@ public sealed class NativeSaveSerializerTests
         Assert.Equal(6, restored.AiPlanning.Family(new PlayerId(1), 0));
         Assert.Equal(63, restored.AiPlanning.SectorAnchor(new PlayerId(1)));
         Assert.Equal(GangAction.Attack, restored.AiPlanning.PreviousAction(new PlayerId(1), 0));
+        Assert.Equal(new AiActionTarget(0, 4), restored.AiPlanning.PreviousTarget(new PlayerId(1), 0));
         Assert.Equal(GangAction.Move, restored.AiPlanning.PlannedAction(new PlayerId(1), 0));
+        Assert.Equal(new AiActionTarget(62, 0), restored.AiPlanning.PlannedTarget(new PlayerId(1), 0));
+        Assert.True(restored.AiPlanning.HasPlanned(new PlayerId(1)));
         Assert.Equal(SaveBytes(match), SaveBytes(restored));
+    }
+
+    [Fact]
+    public void VersionTwelveSaveInfersFirstPlanningFlagsFromPlanningRecords()
+    {
+        var match = CreateMatch();
+        match.AiPlanning.SetFamily(new PlayerId(1), 0, 6);
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 12;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionFifteenSha256(match);
+        document["runtime"]!["aiPlanning"]!.AsObject().Remove("hasPlanned");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.False(restored.AiPlanning.HasPlanned(new PlayerId(0)));
+        Assert.True(restored.AiPlanning.HasPlanned(new PlayerId(1)));
+        Assert.Equal(MatchStateHasher.ComputeVersionFifteenSha256(match),
+            MatchStateHasher.ComputeVersionFifteenSha256(restored));
     }
 
     [Fact]

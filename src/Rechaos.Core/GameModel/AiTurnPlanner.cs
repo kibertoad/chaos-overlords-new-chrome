@@ -23,11 +23,19 @@ public static class AiTurnPlanner
 
         var cashBudget = Math.Max(0, player.Cash);
         var commands = new List<GameCommand>();
-        foreach (var gang in player.Gangs.Where(gang => gang.IsActive).OrderBy(gang => gang.Id.Value))
+        foreach (var entry in player.Gangs
+                     .Select((gang, slot) => (gang, slot))
+                     .Where(entry => entry.gang.IsActive)
+                     .OrderBy(entry => entry.gang.Id.Value))
         {
-            var choice = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id)
+            var gang = entry.gang;
+            var options = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id)
                 .Where(command => IsObservable(state, playerId, command))
                 .Where(command => EstimatedCost(state, command) <= cashBudget)
+                .ToArray();
+            var choice = SelectRecoveredFamilyCommand(
+                    state, player, gang, entry.slot, options)
+                ?? options
                 .OrderByDescending(command => Score(state, player, gang, command))
                 .ThenBy(command => command.Action)
                 .ThenBy(command => command.Target.Kind)
@@ -39,6 +47,43 @@ public static class AiTurnPlanner
             cashBudget -= EstimatedCost(state, choice);
         }
         return commands;
+    }
+
+    private static GameCommand? SelectRecoveredFamilyCommand(
+        MatchState state,
+        MatchPlayerState player,
+        MatchGangState gang,
+        int gangSlot,
+        IReadOnlyList<GameCommand> options)
+    {
+        if (state.AiPlanning.Family(player.Id, gangSlot) != 1) return null;
+
+        var previousAction = state.AiPlanning.PreviousAction(player.Id, gangSlot);
+        var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
+        var desiredAction = previousAction switch
+        {
+            GangAction.None or GangAction.Chaos =>
+                OriginalAiFamilyOneRules.SelectNoActionOrChaosContinuation(
+                    gang.Force,
+                    effectiveHeal,
+                    state.Sectors[gang.SectorId].CrackdownActive,
+                    state.AiPlanning.OlderAction(player.Id, gangSlot)),
+            GangAction.Heal => OriginalAiFamilyOneRules.SelectHealContinuation(
+                gang.Force,
+                effectiveHeal,
+                CanSoloControl(state, player.Id, gang)),
+            _ => GangAction.None
+        };
+        if (desiredAction == GangAction.None) return null;
+
+        return options
+            .Where(command => command.Action == desiredAction)
+            // The original mode-5 Move target remains provisional. Retain the
+            // recreation's deterministic target ranking while honoring the
+            // recovered action branch itself.
+            .OrderByDescending(command => Score(state, player, gang, command))
+            .ThenBy(command => command.Target.Id)
+            .FirstOrDefault();
     }
 
     public static HireChoice? ChooseHire(MatchState state, PlayerId playerId)
@@ -76,17 +121,25 @@ public static class AiTurnPlanner
             return new HirePreparation(null, player.HirePool[rejectedIndex]);
         }
         var definitionId = player.HirePool[offerIndex];
+        var placementMode = AiPlanningPreparation.PrepareHirePlacementMode(
+            state, playerId, selection.Role);
+        var sectorOwners = state.Sectors
+            .Select(sector => sector.Owner?.Value ?? -1)
+            .ToArray();
+        var gangSectors = Enumerable.Repeat(
+            OriginalAiHirePlacementRules.InactiveGangSector,
+            OriginalAiHirePlacementRules.OriginalGangSlotCount).ToArray();
+        for (var slot = 0; slot < player.Gangs.Count; slot++)
+            if (player.Gangs[slot].IsActive) gangSectors[slot] = player.Gangs[slot].SectorId;
+        var placement = OriginalAiHirePlacementRules.Select(
+            playerId, placementMode, offerIndex, sectorOwners, gangSectors, state.Random);
+        if (!placement.WritesDestination) return new HirePreparation(null);
 
-        var choice = state.Sectors
-            .Where(sector => sector.Owner == playerId)
-            .Select(sector => new HireChoice(definitionId, sector.Id))
-            .Where(choice => HireRules.Validate(
-                state, playerId, choice.GangDefinitionId, choice.SectorId).IsValid)
-            // Placement remains recreation-native pending recovery of the
-            // original selected-offer destination path.
-            .OrderBy(choice => choice.SectorId)
-            .FirstOrDefault();
-        return new HirePreparation(choice);
+        var choice = new HireChoice(definitionId, placement.TargetSectorId);
+        return HireRules.Validate(
+            state, playerId, choice.GangDefinitionId, choice.SectorId).IsValid
+            ? new HirePreparation(choice)
+            : new HirePreparation(null);
     }
 
     private static int Score(
@@ -144,7 +197,8 @@ public static class AiTurnPlanner
     private static int HealValue(MatchState state, MatchGangState gang)
     {
         var heal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
-        return gang.Force < 9 && heal >= -3
+        return OriginalAiFamilyOneRules.CanHeal(
+                gang.Force, heal, OriginalAiFamilyOneRules.CommonHealForceLimit)
             ? 800 + ManualRules.MaximumForce - gang.Force
             : -1_000;
     }

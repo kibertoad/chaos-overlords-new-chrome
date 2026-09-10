@@ -31,6 +31,19 @@ It must not be cited as behavioral parity with the original AI.
 - Heal ranking follows the recovered continuation gates: effective Heal must
   be at least -3 and Force must be below 9. A gang at Force 9 can legally Heal,
   but the original planner does not select it in any recovered family-1 path.
+- Family 1 has one narrower live override when the immediately previous action
+  is None or Chaos. With Force below 8 and effective Heal at least -3 it chooses
+  Heal unless the current sector has an active Crackdown, in which case it
+  chooses Move. Otherwise an older Snitch chooses Chaos and every other older
+  action chooses Move. The action branch is recovered; the mode-5 Move
+  destination and fallback when the desired action is not legal remain
+  provisional recreation policy.
+- When family 1's immediately previous action is Heal, it repeats Heal while
+  Force is below 9 and effective Heal is at least -3. Outside that gate it
+  chooses Control when the strict selector-`0x2c` solo-control predicate
+  succeeds, and mode-5 Move otherwise. This action branch is also live; the
+  Move destination and unavailable-action fallback carry the same provisional
+  qualification.
 - Selection is stable by score, action, target kind, target ID, and secondary ID.
 - A shared nonnegative spending budget prevents the planner from intentionally
   queuing more Bribe/Equip cost than the player currently holds while still
@@ -71,9 +84,12 @@ separate persistent placement anchor, its neutral-neighbor acceptance rule,
 deterministic fallback passes, Big Man central-sector ordering, visible-hostile
 and Siege overrides, and the encoded no-RNG destination path. These placement
 rules are isolated in `OriginalAiHireAnchorRules`,
-`OriginalAiHirePlacementRules`, and `OriginalAiHirePlacementModeRules`, but are not yet wired: the live planner still
-chooses the lowest valid owned sector, and placement remains deferred to the
-internal Hire phase.
+`OriginalAiHirePlacementRules`, and `OriginalAiHirePlacementModeRules` and are
+now wired into live planning. The planner refreshes or preserves the encoded
+anchor using owned-sector occupancy, neutral-neighbor availability, and the
+previous Chaos-action count; then applies Big Man, first-visible-hostile, and
+Siege overrides. Encoded placement consumes no RNG. Actual placement remains
+deferred to the internal Hire phase.
 
 Movement scoring currently includes the recovered objective geography for
 both Big Man (sectors 27, 28, 35, and 36) and Eliminate (the six possible
@@ -144,13 +160,22 @@ replay-verified two-computer harness through 20 turns or objective completion.
    model now preserves three fixed slots, same-slot tombstones, mutually
    exclusive actions, and next-planning-entry refill. Exact hire destination
    selection and its persisted anchor are statically recovered in
-   `BIN-AI-003C` and covered by pure isolated kernels. The encoded anchors are
-   authoritative and persisted, but selection remains deliberately unwired.
+   `BIN-AI-003C`, covered by pure kernels, and wired into live planning. The
+   encoded anchors are authoritative and persisted.
    Static analysis now recovers the exact three-generation per-gang action
    tuples, active-slot rollover, duplicate cleanup, dispatch/anchor ordering,
-   reset/reuse behavior, first-plan flags, and original save/load coverage.
-   The three action-byte generations are authoritative and persisted; tuple
-   targets, duplicate cleanup, reused-slot reset, and first-plan flags remain.
+   reset/reuse behavior and first-plan flags.
+   All three complete action tuples are authoritative and persisted. Their two
+   target bytes retain the original command-dependent encodings: player/roster
+   slot for Attack, item for Equip/Research, local site slot for Influence,
+   sector for Move, equipment mask plus friendly roster slot for Give, and
+   equipment mask for Sell. The six first-planning flags are now
+   authoritative, hashed, and persisted: a player's first preparation resets
+   all 81 records and skips action rollover; later preparations roll active
+   records normally. Resolved hires reuse the first inactive slot and reset its
+   family and action history. After rollover, each sector with duplicate prior
+   Chaos rewrites only its first ascending matching slot to None; duplicate
+   Influence similarly rewrites only its first match to Snitch.
    A failed ranking now uses the recovered scenario-specific rejection selector
    and records the resulting snub. Selectors `0x3f`, `0x3e`, and `0x3d` read
    the older, immediately previous, and newly planned action bytes. Selectors 0 (scenario), `0x48`
@@ -165,9 +190,14 @@ replay-verified two-computer harness through 20 turns or objective completion.
    participate. Its pair flag permits Control—not Attack—when no defending
    owner gang is visible. The hostility pass counts only visible
    defenders, requires a strict integer ratio above 75 percent, and writes
-   `-10` in the observer-to-owner direction. Capture the resulting hostility,
-   cash 50/51, Force 8/9, and Tolerance 3/4 boundaries as fixed-state reference
-   fixtures before replacing recreation policy or its provisional destination
+   `-10` in the observer-to-owner direction. Static executable kernels now
+   guard family-1's cash 50/51, Force 8/9, effective-Heal -3/-4, and Tolerance
+   3/4 boundaries. The complete previous-None/Chaos and previous-Heal action
+   branches are live, including selector `0x2a` as the current-sector
+   active-Crackdown predicate and selector `0x2c` as strict solo Control; their
+   mode-5 destinations remain provisional. Capture controlled original turns
+   that reach the remaining terminal choices through their complete selector
+   context before replacing recreation policy or its provisional destination
    weights.
 2. Capture fixed-state decisions for every scenario and difficulty.
 3. Replace provisional weights and tie-breaking only when supported by those

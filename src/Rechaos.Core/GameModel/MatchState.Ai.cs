@@ -2,14 +2,20 @@ namespace Rechaos.Core.GameModel;
 
 public sealed partial class MatchState
 {
-    private void RecordAiPlannedAction(PlayerId playerId, GangId gangId, GangAction action)
+    private void RecordAiPlannedAction(GameCommand command)
     {
+        var playerId = command.Player;
+        var gangId = command.Gang;
         var player = FindPlayer(playerId)!;
         if (player.Setup.Controller != PlayerController.Computer) return;
         for (var gangSlot = 0; gangSlot < player.Gangs.Count; gangSlot++)
         {
             if (player.Gangs[gangSlot].Id != gangId) continue;
-            AiPlanning.SetPlannedAction(playerId, gangSlot, action);
+            AiPlanning.SetPlannedAction(
+                playerId,
+                gangSlot,
+                command.Action,
+                OriginalAiActionTargetEncoding.Encode(this, command));
             return;
         }
         throw new InvalidOperationException("Validated computer gang has no stable player-list slot.");

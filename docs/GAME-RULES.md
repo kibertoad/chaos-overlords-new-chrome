@@ -39,6 +39,10 @@ controlled reference observation confirms its execution timing and edge cases.
 - Exact name modifier: in a fresh local game, the exact uppercase player name
   `SMGMILK` makes every later successful hire start at Force 10 and skips the
   normal three-call Force RNG sequence. Case variants do not match.
+- Roster placement: successful resolution scans slots upward and reuses the
+  first inactive slot among the original 80 usable gang records. The new gang
+  receives a fresh stable match ID, and the reused AI family/action record is
+  reset so no prior occupant's planning history leaks into it.
 - Current exclusions: controlled runtime corroboration and behavior with
   modified or incomplete definition data remain pending.
 - Confidence: High for the range, static call sites, rejection behavior and RNG
@@ -49,8 +53,8 @@ controlled reference observation confirms its execution timing and edge cases.
 - Tests: `HireAndEliminationTests` covers fixed middle-slot selection and
   tombstones, next-planning-entry same-slot refill, removed-ID exclusion,
   replacement/toggle actions, deferred payment, the recovered sector/cash/Force/
-  global-capacity resolution order, initial Force bounds, `SMGMILK` Force/RNG
-  behavior, events, RNG consumption, and deterministic hashes. Save/replay tests
+  global-capacity resolution order, inactive-slot reuse/reset, initial Force
+  bounds, `SMGMILK` Force/RNG behavior, events, RNG consumption, and deterministic hashes. Save/replay tests
   cover slot/payment persistence and migration.
 - Next experiment: record repeated Hire panels and new-gang Force values from a
   fixed reference save, then correlate offer order and RNG consumption.
@@ -576,17 +580,16 @@ claim about original-game behavior.
   local Begin also completes all empty slots as Computers before city generation;
   each receives a unique portrait 0..14 and its resource-defined name. Exact
   uppercase `SMGISLANDS` subsequently sets neutral non-HQ sectors to Chaos 100.
-- Current exclusions: the six-player completion and `SMGISLANDS` effects are
-  statically recovered but not yet implemented. Initial seed selection, the
-  remaining setup call context, initial hire offers, and an original runtime
-  fixture also remain open.
+- Current exclusions: initial seed selection, the remaining setup call context,
+  initial hire offers, and an original runtime fixture remain open.
 - Confidence: High static evidence for ordinary/Armageddon cash, the name
   override, city/HQ generation and Right Hands Force; runtime correlation pending.
-- Implementation: `MatchBootstrap.Create`.
+- Implementation: `OriginalMatchFactory.Create` and `MatchBootstrap.Create`.
 - Tests: `MatchBootstrapTests` covers Armageddon resources, exact-case
   `SMGFUNDAGE` behavior in ordinary and Armageddon games, and verifies research
   state through the normal query API. `OriginalCityGeneratorTests` locks fixed
-  city, Armageddon-rejection, HQ-permutation, and RNG-continuation vectors.
+  city, Armageddon-rejection, HQ-permutation, empty-slot portrait/name ordering,
+  `SMGISLANDS`, and RNG-continuation vectors.
 
 ### RULE-OBJECTIVE-001 — End-of-turn objective evaluation
 

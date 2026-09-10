@@ -41,6 +41,12 @@ public sealed class GameplayTurnFlowTests
 
         GameplayTurnFlow.FinishPlanningTurn(replay, new PlayerId(1));
 
+        Assert.Equal(1, state.Coordinator.Turn);
+        Assert.Equal(TurnPhase.Command, state.Coordinator.Phase);
+        Assert.Equal(new PlayerId(2), state.Coordinator.ActivePlayer);
+        for (var player = 2; player < MatchLimits.PlayerCount; player++)
+            GameplayTurnFlow.FinishPlanningTurn(replay, new PlayerId(player));
+
         Assert.Equal(2, state.Coordinator.Turn);
         Assert.Equal(TurnPhase.Command, state.Coordinator.Phase);
         Assert.Equal(new PlayerId(0), state.Coordinator.ActivePlayer);

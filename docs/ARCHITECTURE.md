@@ -77,7 +77,9 @@ Target subdivisions:
 - `Events`: ordered facts emitted by resolution.
 - `Scenarios`: setup, scoring, objectives, and victory.
 - `Persistence`: native snapshots and authoritative-operation replays are
-  implemented; migration and original-save compatibility remain separate workstreams.
+  implemented. Pre-1.0 formats may change incompatibly; the migration framework
+  is retained for post-1.0 compatibility. Original-save compatibility is an
+  explicit non-goal.
 - `Determinism`: original-compatible PRNG and state hashing.
 - `MatchOutcome`: state projection and end-of-turn scenario completion.
 - `EndgameAwards`: deterministic award projection from player statistics.
@@ -275,11 +277,12 @@ cash, and active-gang upkeep so reference fixtures can locate the first differin
 component. Desertion and unverified special modifiers remain outside this slice.
 
 Hiring uses the same deferred boundary as the manual: during the player's
-planning turn, selecting one of three offers reserves the recruit, charges its
-initial price, and removes that offer, but does not create a gang. A player may
-also snub one offer during planning. `FinishHire` later places each recruit at a rolled 5–9 Force, assigns
-a stable match-wide gang ID, and deterministically fills hired and snubbed
-vacancies while preserving three distinct choices. Validation is an ordered set
+planning turn, selecting one of three offers reserves the recruit without
+charging or removing the offer. A player may also snub one offer during
+planning. `FinishHire` validates capacity and cash, then charges and places each
+recruit at a rolled 5–9 Force, assigns a stable match-wide gang ID, reuses the
+first inactive roster slot while resetting its AI planning record, and leaves a
+same-slot offer tombstone for next-turn refill. Validation is an ordered set
 of side-effect-free `IValidationRule` implementations. Each rule owns both its
 typed failure code and user-facing message so UI previews, AI queries, and
 authoritative submission cannot disagree about eligibility.
@@ -309,12 +312,11 @@ future editors. It verifies a distinct neutral Headquarters sector for every pla
 creates stable-ID Right Hands gangs there, transfers sector control, and leaves
 the caller's reusable layout untouched. Armageddon setup applies its manual-only
 $500 and all-items-researched overrides at this boundary. `OriginalMatchFactory`
-uses the recovered density/site algorithm, fixed HQ candidates, Force 10 Right
-Hands, $20 standard cash and deferred offer initialization. Original seed and
-the remaining pre-city call context remain provisional pending a reference
-fixture. Static analysis proves that original local Begin completes all omitted
-slots as Computers before this path; the current client has not yet adopted that
-six-participant completion and pre-city portrait RNG sequence.
+uses the recovered ascending empty-slot completion, unique portrait/name draws,
+density/site algorithm, fixed HQ candidates, Force 10 Right Hands, $20 standard
+cash, `SMGISLANDS` neutral-sector override and deferred offer initialization.
+Original seed and the remaining pre-city call context remain provisional pending
+a reference fixture.
 
 ## State ownership target
 
@@ -325,7 +327,8 @@ six-participant completion and pre-city portrait RNG sequence.
 - six player slots, status, cash, score, statistics and research;
 - 64 sector instances, three sites each, ownership, influence, tolerance,
   support, income, chaos, police and crackdown history;
-- at most 80 gang slots per player with stable IDs, force, position, equipment,
+- at most 80 active gang slots per player with ascending inactive-slot reuse,
+  stable IDs, force, position, equipment,
   queued/repeat action, targets, flags and effective stats;
 - three-entry hire pool, pending hire placement and per-turn snub state per player;
 - bounded notification queues;
@@ -387,9 +390,9 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
   All client mutations pass through `MatchReplayRecorder`; F6/F10 atomically
   save and verify/play the current
   replay. New matches now use the recovered density/site generator, fixed HQ
-  candidates, Right Hands setup and deferred initial offers; original seed
-  selection remains provisional, and the recovered empty-slot-to-Computer
-  setup transition is documented but not yet wired into the client.
+  candidates, Right Hands setup and deferred initial offers; omitted local slots
+  are completed as Computers with the recovered pre-city portrait/name RNG, and
+  original seed selection remains provisional.
 - The client has a title/setup/city router and virtual-coordinate mouse input,
   original next-player privacy handoff, an event/notification viewer whose
   dismissal mutations are replay-recorded, plus a state-driven endgame summary

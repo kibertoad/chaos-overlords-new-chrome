@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 12;
+    public const int CurrentFormatVersion = 13;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -107,7 +107,23 @@ public static class NativeSaveSerializer
                     document.FormatVersion >= 12
                         ? savedPlanning.PlannedActions
                             ?? throw new InvalidDataException("Native save planned AI actions are missing.")
-                        : EmptyAiActions())
+                        : EmptyAiActions(),
+                    document.FormatVersion >= 13
+                        ? savedPlanning.OlderTargets
+                            ?? throw new InvalidDataException("Native save older AI targets are missing.")
+                        : EmptyAiTargets(),
+                    document.FormatVersion >= 13
+                        ? savedPlanning.PreviousTargets
+                            ?? throw new InvalidDataException("Native save previous AI targets are missing.")
+                        : EmptyAiTargets(),
+                    document.FormatVersion >= 13
+                        ? savedPlanning.PlannedTargets
+                            ?? throw new InvalidDataException("Native save planned AI targets are missing.")
+                        : EmptyAiTargets(),
+                    document.FormatVersion >= 13
+                        ? savedPlanning.HasPlanned
+                            ?? throw new InvalidDataException("Native save AI first-planning flags are missing.")
+                        : InferLegacyHasPlanned(savedPlanning))
                 : throw new InvalidDataException("Native save AI planning state is missing.")
             : AiPlanningState.Initialize(players);
         var runtime = new MatchRuntimeRestore(
@@ -141,6 +157,7 @@ public static class NativeSaveSerializer
             9 => MatchStateHasher.ComputeVersionTwelveSha256(state),
             10 => MatchStateHasher.ComputeVersionThirteenSha256(state),
             11 => MatchStateHasher.ComputeVersionFourteenSha256(state),
+            12 => MatchStateHasher.ComputeVersionFifteenSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
         if (!CryptographicOperations.FixedTimeEquals(
@@ -190,10 +207,36 @@ public static class NativeSaveSerializer
                 state.AiPlanning.CaptureSectorAnchors(),
                 state.AiPlanning.CaptureOlderActions(),
                 state.AiPlanning.CapturePreviousActions(),
-                state.AiPlanning.CapturePlannedActions())));
+                state.AiPlanning.CapturePlannedActions(),
+                state.AiPlanning.CaptureOlderTargets(),
+                state.AiPlanning.CapturePreviousTargets(),
+                state.AiPlanning.CapturePlannedTargets(),
+                state.AiPlanning.CaptureHasPlanned())));
 
     private static IReadOnlyList<GangAction> EmptyAiActions() =>
         new GangAction[MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer];
+
+    private static IReadOnlyList<AiActionTarget> EmptyAiTargets() =>
+        new AiActionTarget[MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer];
+
+    private static IReadOnlyList<bool> InferLegacyHasPlanned(AiPlanningDocument planning)
+    {
+        var result = new bool[MatchLimits.PlayerCount];
+        for (var player = 0; player < MatchLimits.PlayerCount; player++)
+        {
+            var start = player * AiPlanningState.GangSlotsPerPlayer;
+            result[player] = planning.Families
+                .Skip(start).Take(AiPlanningState.GangSlotsPerPlayer)
+                .Any(family => family != AiPlanningState.UnusedFamily)
+                || (planning.OlderActions?.Skip(start).Take(AiPlanningState.GangSlotsPerPlayer)
+                    .Any(action => action != GangAction.None) ?? false)
+                || (planning.PreviousActions?.Skip(start).Take(AiPlanningState.GangSlotsPerPlayer)
+                    .Any(action => action != GangAction.None) ?? false)
+                || (planning.PlannedActions?.Skip(start).Take(AiPlanningState.GangSlotsPerPlayer)
+                    .Any(action => action != GangAction.None) ?? false);
+        }
+        return result;
+    }
 
     private static PlayerDocument CapturePlayer(MatchPlayerState player) => new(
         player.Id.Value,
@@ -508,7 +551,11 @@ internal sealed record AiPlanningDocument(
     IReadOnlyList<int>? SectorAnchors = null,
     IReadOnlyList<GangAction>? OlderActions = null,
     IReadOnlyList<GangAction>? PreviousActions = null,
-    IReadOnlyList<GangAction>? PlannedActions = null);
+    IReadOnlyList<GangAction>? PlannedActions = null,
+    IReadOnlyList<AiActionTarget>? OlderTargets = null,
+    IReadOnlyList<AiActionTarget>? PreviousTargets = null,
+    IReadOnlyList<AiActionTarget>? PlannedTargets = null,
+    IReadOnlyList<bool>? HasPlanned = null);
 
 internal sealed record PlayerNotificationsDocument(
     int Player,

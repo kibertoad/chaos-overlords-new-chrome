@@ -302,6 +302,33 @@ public sealed class HireAndEliminationTests
     }
 
     [Fact]
+    public void SuccessfulHireReusesFirstInactiveGangAndPlanningSlot()
+    {
+        var playerId = new PlayerId(0);
+        MatchGangState[] gangs =
+        [
+            new(new GangId(10), playerId, 1, 0, 5),
+            new(new GangId(11), playerId, 1, 0, 0),
+            new(new GangId(12), playerId, 1, 0, 0)
+        ];
+        var match = CreateMatch(gangs: gangs);
+        match.AiPlanning.SetFamily(playerId, 1, 11);
+        match.AiPlanning.SetPlannedAction(playerId, 1, GangAction.Attack);
+        AdvanceToHire(match);
+
+        Assert.True(match.QueueHire(playerId, 2, 0).Accepted);
+        match.FinishHire(playerId);
+
+        Assert.Single(match.LastHireResolutions);
+        Assert.Equal(3, match.Players[0].Gangs.Count);
+        Assert.Equal((short)2, match.Players[0].Gangs[1].DefinitionId);
+        Assert.True(match.Players[0].Gangs[1].IsActive);
+        Assert.Equal(new GangId(12), match.Players[0].Gangs[2].Id);
+        Assert.Equal(AiPlanningState.UnusedFamily, match.AiPlanning.Family(playerId, 1));
+        Assert.Equal(GangAction.None, match.AiPlanning.PlannedAction(playerId, 1));
+    }
+
+    [Fact]
     public void GlobalGangCapacityFailureConsumesForceRollButDoesNotPayOrTombstone()
     {
         var gangs = Enumerable.Range(0, MatchLimits.GangsPerPlayer)
