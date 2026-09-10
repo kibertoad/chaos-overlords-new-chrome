@@ -508,7 +508,9 @@ public sealed class MatchState
     public TurnTransition FinishCommand(PlayerId player)
     {
         var transition = Coordinator.FinishCommand(player);
-        if (transition.Phase == TurnPhase.Execution) AiStrategy.RecoverForResolution();
+        if (transition.Phase == TurnPhase.Execution
+            && Setup.AiMentality != AiDifficulty.HomicidalManiac)
+            AiStrategy.RecoverForResolution();
         return CaptureBoundary(transition);
     }
     public TurnTransition FinishExecutionPhase()

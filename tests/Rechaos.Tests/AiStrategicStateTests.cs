@@ -16,7 +16,7 @@ public sealed class AiStrategicStateTests
         Assert.Equal(18, random.ConsumptionCount);
         for (var player = 0; player < MatchLimits.PlayerCount; player++)
         {
-            Assert.InRange(strategy.Reaction(new PlayerId(player)), 2, 5);
+            Assert.InRange(strategy.Reaction(new PlayerId(player)), 3, 6);
             for (var other = 0; other < MatchLimits.PlayerCount; other++)
                 Assert.Equal(0, strategy.Attitude(new PlayerId(player), new PlayerId(other)));
         }
@@ -43,7 +43,7 @@ public sealed class AiStrategicStateTests
     [Fact]
     public void CombatAndControlReactionsAreDirectionalAndClampAtMinusTen()
     {
-        int[] reactions = [2, 5, 0, 0, 0, 0];
+        int[] reactions = [3, 5, 3, 3, 3, 3];
         var strategy = AiStrategicState.Restore(reactions, new int[36]);
 
         strategy.RecordCombat(new PlayerId(0), new PlayerId(1), 3);
@@ -66,6 +66,19 @@ public sealed class AiStrategicStateTests
 
         Assert.Equal(TurnPhase.Execution, match.Coordinator.Phase);
         Assert.Equal(1, match.AiStrategy.Attitude(new PlayerId(0), new PlayerId(1)));
+    }
+
+    [Fact]
+    public void HomicidalAttitudesDoNotRecoverAtResolutionBoundary()
+    {
+        var match = CreateOnePlayerMatch(
+            PlayerController.Human, AiDifficulty.HomicidalManiac);
+
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+
+        Assert.Equal(AiStrategicState.MinimumAttitude,
+            match.AiStrategy.Attitude(new PlayerId(0), new PlayerId(0)));
     }
 
     [Fact]
@@ -104,14 +117,17 @@ public sealed class AiStrategicStateTests
         ],
         difficulty);
 
-    private static MatchState CreateOnePlayerMatch()
+    private static MatchState CreateOnePlayerMatch(
+        PlayerController controller = PlayerController.Computer,
+        AiDifficulty difficulty = AiDifficulty.Criminal)
     {
         var definitions = BundledOriginalData.Load();
         var setup = new MatchSetup(
             ScenarioId.Greed,
             GameDuration.SixMonths,
             1996,
-            [new MatchPlayerSetup(new PlayerId(0), "CPU", PlayerController.Computer)]);
+            [new MatchPlayerSetup(new PlayerId(0), "PLAYER", controller)],
+            difficulty);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [

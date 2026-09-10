@@ -23,7 +23,9 @@ public sealed class ResearchResolutionTests
             EffectiveStatisticsCalculator.ForGang(match, gang).Research);
         Assert.Equal(expectedDice, resolution.Rolls.Count);
         Assert.All(resolution.Rolls, roll => Assert.InRange(roll, 1, 6));
-        Assert.Equal(ManualRules.CountSuccesses(resolution.Rolls), resolution.Successes);
+        Assert.Equal(
+            OriginalResolutionRules.CountSuccesses(resolution.Rolls, 6),
+            resolution.Successes);
         Assert.Equal(100, resolution.PreviousValue);
         Assert.Equal(
             ManualRules.ApplyResearchProgress(resolution.PreviousValue!.Value, resolution.Successes),
@@ -132,6 +134,31 @@ public sealed class ResearchResolutionTests
     }
 
     [Fact]
+    public void GoonComputerResearchLosesOneFifthOfItsDicePool()
+    {
+        var data = BundledOriginalData.Load();
+        var item = ResearchableItem(data);
+        var goon = CreateMatch(
+            researchProgress: new Dictionary<short, int> { [item] = 100 },
+            playerZeroController: PlayerController.Computer,
+            difficulty: AiDifficulty.Goon);
+        var standard = CreateMatch(
+            researchProgress: new Dictionary<short, int> { [item] = 100 },
+            playerZeroController: PlayerController.Computer,
+            difficulty: AiDifficulty.Criminal);
+        QueueAndEnterExecution(goon, item);
+        QueueAndEnterExecution(standard, item);
+
+        goon.FinishExecutionPhase();
+        standard.FinishExecutionPhase();
+
+        var standardPool = standard.Events[^1].Resolution!.Rolls.Count;
+        Assert.Equal(standardPool - standardPool / 5, goon.Events[^1].Resolution!.Rolls.Count);
+        Assert.Equal(OriginalResolutionRules.CountSuccesses(
+            goon.Events[^1].Resolution!.Rolls, 6), goon.Events[^1].Resolution!.Successes);
+    }
+
+    [Fact]
     public void MatchRejectsOverlappingActiveAndCompletedResearch()
     {
         var data = BundledOriginalData.Load();
@@ -159,15 +186,18 @@ public sealed class ResearchResolutionTests
         IReadOnlyDictionary<short, int>? researchProgress = null,
         IReadOnlySet<short>? researchedItems = null,
         short? gangDefinitionId = null,
-        short? specialSiteDefinition = null)
+        short? specialSiteDefinition = null,
+        PlayerController playerZeroController = PlayerController.Human,
+        AiDifficulty difficulty = AiDifficulty.Criminal)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
         [
-            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(0), "ONE", playerZeroController),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups);
+        var setup = new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups, difficulty);
         var researchGang = gangDefinitionId is { } definitionId
             ? data.Gangs.Single(gang => gang.Id == definitionId)
             : data.Gangs.OrderByDescending(gang => gang.Stats.Research).First();

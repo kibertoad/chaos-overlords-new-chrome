@@ -20,7 +20,8 @@ public sealed class AiStrategicState
             throw new ArgumentException("AI reactions must contain all six original player slots.", nameof(reactions));
         if (attitudes.Count != MatchLimits.PlayerCount * MatchLimits.PlayerCount)
             throw new ArgumentException("AI attitudes must contain the original six-by-six matrix.", nameof(attitudes));
-        if (reactions.Any(value => value is < 0 or > 5))
+        if (!reactions.All(value => value == 0)
+            && reactions.Any(value => value is < 3 or > 6))
             throw new ArgumentOutOfRangeException(nameof(reactions));
         if (attitudes.Any(value => value is < MinimumAttitude or > MaximumAttitude))
             throw new ArgumentOutOfRangeException(nameof(attitudes));
@@ -58,7 +59,7 @@ public sealed class AiStrategicState
         else
         {
             for (var player = 0; player < MatchLimits.PlayerCount; player++)
-                reactions[player] = random.NextInclusive(4) + 1;
+                reactions[player] = random.NextInclusive(4) + 2;
         }
         return new AiStrategicState(reactions, attitudes);
     }

@@ -82,12 +82,13 @@ replay-verified two-computer harness through 20 turns or objective completion.
    ties, and orthogonal next-step routing are now bounded. Modes 7 and 8 are
    confirmed as Support- and Cash-focused Influence routing, while mode 9 seeks
    influenced-site Stealth for a Hide/Chaos path. The six-by-six directional
-   attitude matrix, Homicidal human/computer initialization, per-turn recovery,
-   negative-hostility enumerators, `2..5` non-Homicidal reaction values, and
+   attitude matrix, Homicidal human/computer initialization, non-Homicidal per-turn recovery,
+   negative-hostility enumerators, `3..6` non-Homicidal reaction values, and
    exact combat/Control decrements are also identified and implemented with
-   their exact pre-city RNG order. A separate per-player resolution band is
+   their exact pre-city RNG order. The separate per-player resolution band is
    initialized to 0/1/2 for computer players at Goon/Criminal/higher settings;
-   its action-specific formulas remain unmapped. Selector `0x3e` is identified as the
+   all nine consumers now drive the recovered Heal, Influence, Research, Chaos,
+   Crackdown, hidden-detection, Attack, and retaliation formulas. Selector `0x3e` is identified as the
    previous-turn action byte. Selectors 3 (player cash), 4 (sector
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
@@ -103,9 +104,10 @@ replay-verified two-computer harness through 20 turns or objective completion.
    reference traces.
 
 The persisted simulation now carries the recovered directional attitude matrix
-and reaction values through hashing, saves, and replays. The current scalar
-Mentality ranking bonuses and the omitted 0/1/2 resolution band remain
-explicitly provisional and must not be described as exact original policy.
+and reaction values through hashing, saves, and replays, and command resolution
+uses the recovered 0/1/2 calibration. The current scalar Mentality ranking
+bonuses remain explicitly provisional and must not be described as exact
+original planning policy.
 
 The original manual and contemporary developer FAQ corroborate four global
 mentalities, increasing aggression, a player-denial emphasis at Homicidal

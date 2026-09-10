@@ -617,10 +617,11 @@ computer player are initialized to `+10`. At all lower mentalities every cell
 starts at zero. This changes preferences only; it grants no resources,
 statistics, rolls, or visibility.
 
-At the start of turn resolution, every entry below `+10` increases by one.
+At the start of turn resolution at Mentalities 0 through 2, every entry below
+`+10` increases by one. Homicidal Maniac skips the entire recovery loop.
 Later resolution paths subtract from one directed cell and clamp the result at
 `-10`. At non-Homicidal mentalities, initialization gives every player a fixed
-reaction value from one bounded RNG draw, `Next(4) + 2`, producing 2 through 5.
+reaction value from one bounded RNG draw, `Next(4) + 2`, producing 3 through 6.
 Homicidal Maniac assigns reaction zero and consumes no such draw. No later
 writer modifies these values. The combat path lowers the defender owner's
 attitude toward the attacker by `max(reaction, damage dealt)`. A sector-control
@@ -654,7 +655,7 @@ approximates part of the visible outcome but does not yet persist or resolve
 this matrix.
 
 **Confidence:** High for matrix dimensions and direction, `[-10,+10]` bounds,
-initial values, per-turn recovery, reaction range/immutability, combat and
+initial values, mentality-gated per-turn recovery, reaction range/immutability, combat and
 Control decrements, negative-hostility target gating, controller classification,
 and mode-10 target ownership. Medium for mode-16 group semantics. Low only for
 the original public/internal name of the reaction value.
@@ -681,19 +682,43 @@ change computer-controlled slots to 2. Human-controlled slots remain 1 at all
 four mentalities.
 
 The whole-turn resolver `0x00472775` reads this table repeatedly while resolving
-gang actions. Its attack block chooses different constants and bounded helper
-arguments for bands 0, 1, and 2, and further action blocks read the same table.
-This is therefore a resolution calibration, not merely a planning preference.
-The direction and exact public effect of every branch are not yet fully mapped,
-so the recreation does not implement the table yet.
+gang actions. Its helper `0x00475f70(pool, threshold)` rolls `pool` inclusive
+d6 values with `0x0045d227(6)` and counts results greater than or equal to the
+threshold. Every one of the nine band-table reads is now bounded:
 
-**Confidence:** High for initialization and controller/mentality mapping, and
-High that the table changes resolver formulas. Low for the complete mechanical
-meaning and whether the original UI described it as skill, luck, or difficulty.
+- Heal uses `Heal + 4` dice. Bands 0/1 succeed on 5+, while band 2 succeeds on
+  4+; successes add Force, capped at 10.
+- Influence uses `Force + Influence`. Band 0 removes `trunc(pool/5)` dice and
+  succeeds on 5+; band 1 uses the full pool at 5+; band 2 uses the full pool at
+  4+.
+- Research uses `Force + Research`. Band 0 removes `trunc(pool/5)` dice and
+  succeeds on 6; band 1 uses the full pool at 6; band 2 uses the full pool at
+  5+.
+- Each Chaos gang separately includes sector Income in
+  `Income + Force + Chaos`. Band 0 removes one fifth of the pool at 5+, band 1
+  uses the full pool at 5+, and band 2 uses the full pool at 4+. When the band-2
+  player owns that sector, only `successes - trunc(successes/4)` contributes to
+  the Crackdown comparison.
+- A hidden target evades when an inclusive d20 roll is below
+  `Stealth + 14 - Detect` for attacker bands 0/1 or
+  `Stealth + 10 - Detect` for band 2.
+- Main Attack reduces a band-0 defender's Defense by one quarter. It then rolls
+  `Force + CombatRating - adjusted Defense` at 6+/5+/4+ for attacker bands
+  0/1/2. Positive pools impose minimum damage `trunc(pool/4)`.
+- Retaliation rolls its corresponding pool at 5+ for defender bands 0/1 or 4+
+  for band 2, then halves successes using integer truncation.
 
-**Next validation:** enumerate each `0x004a2570` read by action-code branch,
-recover the helper semantics and constants, and compare fixed rolls at bands
-0, 1, and 2 before implementing it.
+The recreation implements these bands and formulas in
+`OriginalResolutionRules` and routes the corresponding resolution paths
+through them. This is a mechanical resolution calibration, not merely a
+planning preference.
+
+**Confidence:** High for initialization, controller/mentality mapping, helper
+semantics, all nine reads, formulas, thresholds, and integer truncation. Medium
+only for the remaining compound retaliation-eligibility operand labels.
+
+**Next validation:** finish labeling the retaliation eligibility operands and
+capture fixed original traces at bands 0, 1, and 2 for every affected action.
 
 ## New-game initialization
 

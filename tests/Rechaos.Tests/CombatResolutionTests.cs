@@ -27,9 +27,13 @@ public sealed class CombatResolutionTests
         var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
         Assert.Equal(attackDice, resolution.Rolls.Count);
         Assert.Equal(retaliationDice, resolution.RetaliationRolls!.Count);
-        Assert.Equal(ManualRules.CountSuccesses(resolution.Rolls), resolution.Damage);
         Assert.Equal(
-            ManualRules.RetaliationDamage(ManualRules.CountSuccesses(resolution.RetaliationRolls)),
+            OriginalResolutionRules.MainAttackDamage(
+                attackDice, OriginalResolutionRules.CountSuccesses(resolution.Rolls, 5)),
+            resolution.Damage);
+        Assert.Equal(
+            ManualRules.RetaliationDamage(
+                OriginalResolutionRules.CountSuccesses(resolution.RetaliationRolls, 5)),
             resolution.RetaliationDamage);
         Assert.Equal(Math.Max(0, targetForce - resolution.Damage), target.Force);
         Assert.Equal(Math.Max(0, attackerForce - resolution.RetaliationDamage), attacker.Force);

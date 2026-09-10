@@ -104,7 +104,7 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
-    public void FriendlyGangsPoolOneChaosRollAndControlledSectorPaysEverySuccess()
+    public void FriendlyGangsEachIncludeSectorIncomeAndControlledSectorPaysEverySuccess()
     {
         var match = CreateMatch(twoPlayerZeroGangs: true, owner: new PlayerId(0), tolerance: 40);
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
@@ -117,8 +117,8 @@ public sealed class ChaosResolutionTests
         var second = match.LastPhaseResolutions[1].Event!.Resolution!;
         var gangs = new[] { match.FindGang(new GangId(10))!, match.FindGang(new GangId(11))! };
         var sectorIncome = SectorIncome(match, 0);
-        var expectedDice = ManualRules.ChaosDiceCount(gangs.Select(gang =>
-            (gang.Force, EffectiveStatisticsCalculator.ForGang(match, gang).Chaos)), sectorIncome);
+        var expectedDice = gangs.Sum(gang => ManualRules.ChaosDiceCount(
+            [(gang.Force, EffectiveStatisticsCalculator.ForGang(match, gang).Chaos)], sectorIncome));
         Assert.Equal(expectedDice, first.Rolls.Count);
         Assert.Equal(first.Rolls, second.Rolls);
         Assert.Equal(first.Successes, first.CashDelta);

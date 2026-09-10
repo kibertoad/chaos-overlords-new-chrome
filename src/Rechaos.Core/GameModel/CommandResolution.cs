@@ -159,10 +159,13 @@ public static class CommandResolver
             int? detectionChance = null;
             if (target.Hidden)
             {
-                detectionChance = ManualRules.HiddenAttackHitPercent(
-                    attacker.Statistics.Detect, target.Statistics.Stealth);
-                detectionRoll = state.Random.NextInclusive(100);
-                if (detectionRoll > detectionChance)
+                var evasionThreshold = OriginalResolutionRules.HiddenEvasionThreshold(
+                    OriginalResolutionRules.Band(state, attacker.Owner),
+                    attacker.Statistics.Detect,
+                    target.Statistics.Stealth);
+                detectionChance = OriginalResolutionRules.HiddenHitPercent(evasionThreshold);
+                detectionRoll = state.Random.NextInclusive(20);
+                if (detectionRoll < evasionThreshold)
                 {
                     outcomes.Add(new CombatOutcome(queued, attacker, target, CommandResolutionCode.TargetEvaded,
                         [], 0, 0, [], 0, 0, detectionRoll, detectionChance));
@@ -173,9 +176,16 @@ public static class CommandResolver
             var attackDice = ManualRules.AttackDiceCount(
                 attacker.Force,
                 ManualRules.CombatRating(attacker.Statistics, attacker.WeaponType),
-                target.Statistics.Defense);
+                OriginalResolutionRules.AdjustDefense(
+                    OriginalResolutionRules.Band(state, target.Owner),
+                    target.Statistics.Defense));
             var attackRolls = DiceRoller.RollD6(state.Random, attackDice);
-            var attackSuccesses = ManualRules.CountSuccesses(attackRolls);
+            var attackSuccesses = OriginalResolutionRules.CountSuccesses(
+                attackRolls,
+                OriginalResolutionRules.SuccessThreshold(
+                    OriginalResolutionRules.Band(state, attacker.Owner), GangAction.Attack));
+            var attackDamage = OriginalResolutionRules.MainAttackDamage(
+                attackDice, attackSuccesses);
             var suppressesRetaliation = target.Hidden
                 || ManualRules.SuppressesRetaliation(attacker.Statistics, attacker.WeaponType)
                 && !ManualRules.SuppressesRetaliation(target.Statistics, target.WeaponType);
@@ -186,10 +196,13 @@ public static class CommandResolver
                     ManualRules.CombatRating(target.Statistics, target.WeaponType),
                     attacker.Statistics.Defense);
             var retaliationRolls = DiceRoller.RollD6(state.Random, retaliationDice);
-            var retaliationSuccesses = ManualRules.CountSuccesses(retaliationRolls);
+            var retaliationSuccesses = OriginalResolutionRules.CountSuccesses(
+                retaliationRolls,
+                OriginalResolutionRules.RetaliationThreshold(
+                    OriginalResolutionRules.Band(state, target.Owner)));
             outcomes.Add(new CombatOutcome(
                 queued, attacker, target, CommandResolutionCode.Resolved,
-                attackRolls, attackSuccesses, attackSuccesses,
+                attackRolls, attackSuccesses, attackDamage,
                 retaliationRolls, retaliationSuccesses,
                 ManualRules.RetaliationDamage(retaliationSuccesses),
                 detectionRoll, detectionChance));
@@ -485,15 +498,22 @@ public static class CommandResolver
             {
                 var participants = group.ToArray();
                 var sector = state.Sectors[group.Key.SectorId];
-                var dice = ManualRules.ChaosDiceCount(
-                    participants.Select(queued =>
-                    {
-                        var gang = state.FindGang(queued.Command.Gang)!;
-                        return (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Chaos);
-                    }),
-                    SectorIncome(state, sector));
-                var rolls = DiceRoller.RollD6(state.Random, dice);
-                return new ChaosGroup(participants, sector, rolls, ManualRules.CountSuccesses(rolls), dice);
+                var band = OriginalResolutionRules.Band(state, group.Key.Player);
+                var threshold = OriginalResolutionRules.SuccessThreshold(band, GangAction.Chaos);
+                var rolls = new List<int>();
+                var dice = 0;
+                foreach (var queued in participants)
+                {
+                    var gang = state.FindGang(queued.Command.Gang)!;
+                    var pool = checked(SectorIncome(state, sector) + gang.Force
+                        + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos);
+                    var gangDice = OriginalResolutionRules.ActionPool(band, GangAction.Chaos, pool);
+                    dice = checked(dice + gangDice);
+                    rolls.AddRange(DiceRoller.RollD6(state.Random, gangDice));
+                }
+                return new ChaosGroup(
+                    participants, sector, rolls,
+                    OriginalResolutionRules.CountSuccesses(rolls, threshold), dice, band);
             })
             .ToArray();
 
@@ -507,9 +527,17 @@ public static class CommandResolver
             var sector = state.Sectors[sectorId];
             sector.Chaos = checked(sector.Chaos + successes);
         }
+        var crackdownChaos = groups
+            .GroupBy(group => group.Sector.Id)
+            .ToDictionary(group => group.Key, group => group.Sum(value =>
+                OriginalResolutionRules.CrackdownContribution(
+                    value.Band,
+                    value.Sector.Owner == value.Participants[0].Command.Player,
+                    value.Successes)));
         foreach (var sector in state.Sectors.OrderBy(value => value.Id))
         {
-            if (!ManualRules.TriggersCrackdown(sector.Chaos, sector.Tolerance)) continue;
+            if (!ManualRules.TriggersCrackdown(
+                    crackdownChaos.GetValueOrDefault(sector.Id), sector.Tolerance)) continue;
             CrackdownResolver.Trigger(state, sector);
             triggered.Add(sector.Id);
         }
@@ -555,7 +583,8 @@ public static class CommandResolver
         MatchSectorState Sector,
         IReadOnlyList<int> Rolls,
         int Successes,
-        int DiceCount);
+        int DiceCount,
+        OriginalResolutionBand Band);
 
     private static IReadOnlyList<CommandResolutionResult> ResolveControlPhase(
         MatchState state,
@@ -691,8 +720,10 @@ public static class CommandResolver
     {
         var gang = state.FindGang(command.Gang)!;
         var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
+        var band = OriginalResolutionRules.Band(state, command.Player);
         var rolls = DiceRoller.RollD6(state.Random, ManualRules.HealDiceCount(statistics.Heal));
-        var successes = ManualRules.CountSuccesses(rolls);
+        var successes = OriginalResolutionRules.CountSuccesses(
+            rolls, OriginalResolutionRules.SuccessThreshold(band, GangAction.Heal));
         var before = gang.Force;
         gang.Force = ManualRules.RestoreForce(gang.Force, successes);
         return Complete(state, command, GameEventKind.CommandResolved,
@@ -721,8 +752,12 @@ public static class CommandResolver
             var gang = state.FindGang(queued.Command.Gang)!;
             return (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Influence);
         });
-        var rolls = DiceRoller.RollD6(state.Random, ManualRules.InfluenceDiceCount(dice));
-        var successes = ManualRules.CountSuccesses(rolls);
+        var band = OriginalResolutionRules.Band(state, first.Player);
+        var pool = OriginalResolutionRules.ActionPool(
+            band, GangAction.Influence, ManualRules.InfluenceDiceCount(dice));
+        var rolls = DiceRoller.RollD6(state.Random, pool);
+        var successes = OriginalResolutionRules.CountSuccesses(
+            rolls, OriginalResolutionRules.SuccessThreshold(band, GangAction.Influence));
         var before = site.Resistance;
         site.Resistance = ManualRules.ApplyInfluenceProgress(before, successes);
         if (site.Resistance == 0 && site.InfluencedBy is null)
@@ -769,10 +804,13 @@ public static class CommandResolver
         var player = state.FindPlayer(command.Player)!;
         var itemIndex = checked((short)command.Target.Id);
         var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
-        var rolls = DiceRoller.RollD6(
-            state.Random,
+        var band = OriginalResolutionRules.Band(state, command.Player);
+        var pool = OriginalResolutionRules.ActionPool(
+            band, GangAction.Research,
             ManualRules.ResearchDiceCount(gang.Force, statistics.Research));
-        var successes = ManualRules.CountSuccesses(rolls);
+        var rolls = DiceRoller.RollD6(state.Random, pool);
+        var successes = OriginalResolutionRules.CountSuccesses(
+            rolls, OriginalResolutionRules.SuccessThreshold(band, GangAction.Research));
         var before = player.RemainingResearch(state.Definitions, itemIndex);
         var after = player.ApplyResearch(state.Definitions, itemIndex, successes);
         return Complete(state, command, GameEventKind.CommandResolved,

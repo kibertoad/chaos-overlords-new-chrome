@@ -83,7 +83,9 @@ public sealed class CommandResolutionTests
         var resolution = match.Events[^1].Resolution!;
         Assert.Equal(11, resolution.Rolls.Count);
         Assert.All(resolution.Rolls, roll => Assert.InRange(roll, 1, 6));
-        Assert.Equal(ManualRules.CountSuccesses(resolution.Rolls), resolution.Successes);
+        Assert.Equal(
+            OriginalResolutionRules.CountSuccesses(resolution.Rolls, 5),
+            resolution.Successes);
         Assert.Equal(5, resolution.PreviousValue);
         Assert.Equal(Math.Min(ManualRules.MaximumForce, 5 + resolution.Successes), resolution.ResultValue);
         Assert.Equal(resolution.ResultValue, match.FindGang(new GangId(10))!.Force);
@@ -103,6 +105,33 @@ public sealed class CommandResolutionTests
 
         Assert.Equal(first.Events[^1].Resolution!.Rolls, second.Events[^1].Resolution!.Rolls);
         Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+    }
+
+    [Fact]
+    public void ExpertComputerHealUsesFourPlusInsteadOfStandardFivePlus()
+    {
+        var standard = CreateMatch(
+            cash: 10, healingGang: true,
+            playerZeroController: PlayerController.Computer,
+            difficulty: AiDifficulty.Criminal);
+        var expert = CreateMatch(
+            cash: 10, healingGang: true,
+            playerZeroController: PlayerController.Computer,
+            difficulty: AiDifficulty.CrimeLord);
+        QueueAndEnterExecution(standard, GangAction.Heal);
+        QueueAndEnterExecution(expert, GangAction.Heal);
+
+        standard.FinishExecutionPhase();
+        expert.FinishExecutionPhase();
+
+        var standardResolution = standard.Events[^1].Resolution!;
+        var expertResolution = expert.Events[^1].Resolution!;
+        Assert.Equal(standardResolution.Rolls, expertResolution.Rolls);
+        Assert.Equal(OriginalResolutionRules.CountSuccesses(standardResolution.Rolls, 5),
+            standardResolution.Successes);
+        Assert.Equal(OriginalResolutionRules.CountSuccesses(expertResolution.Rolls, 4),
+            expertResolution.Successes);
+        Assert.True(expertResolution.Successes >= standardResolution.Successes);
     }
 
     [Fact]
@@ -134,15 +163,20 @@ public sealed class CommandResolutionTests
         match.FinishCommand(new PlayerId(1));
     }
 
-    private static MatchState CreateMatch(int cash, bool healingGang = false)
+    private static MatchState CreateMatch(
+        int cash,
+        bool healingGang = false,
+        PlayerController playerZeroController = PlayerController.Human,
+        AiDifficulty difficulty = AiDifficulty.Criminal)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
         [
-            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(0), "ONE", playerZeroController),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
-        var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups);
+        var setup = new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups, difficulty);
         MatchPlayerState[] players =
         [
             new(setup.Players[0], cash,
