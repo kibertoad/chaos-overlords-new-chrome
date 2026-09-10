@@ -61,6 +61,10 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   aggregation and deterministic six-sided dice rolls.
 - `GameModel/Equipment.cs`: item-type slot mapping, replacement/unequip
   mutations, and manual half-price sale calculation.
+- `GameModel/AiTurnPlanner.Dispatch.cs`: recovered family dispatch and the
+  immutable sector/family snapshot shared across one ordered AI planning pass;
+  family-specific branch order remains in separate partial files, while
+  provisional command scoring remains isolated in `AiTurnPlanner.cs`.
 - `Persistence/NativeSaveSerializer.cs`: bounded, versioned deterministic
   snapshots with definition/state fingerprints and complete runtime restoration.
 - `Persistence/NativeSaveStore.cs`: atomic file promotion, previous-save backup,
