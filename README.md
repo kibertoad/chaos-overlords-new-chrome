@@ -63,10 +63,21 @@ when importing them.
 
 ## Acknowledgements
 
+First and foremost, thank you to John K. Morris and the entire original
+[*Chaos Overlords* team](https://www.mobygames.com/game/2455/chaos-overlords/credits/windows/)
+at Stick Man Games and New World Computing. Their wonderfully strange,
+uncompromising strategy game is the reason this recreation exists.
+
 Huge thanks to [wfr](https://github.com/wfr) for publishing the
 [*re-chaos* reverse-engineering notes](https://github.com/wfr/re-chaos). Their
 careful early format research gave this project a tremendously useful head
 start.
+
+Special thanks as well to Russell Webb, with contributors Drew Fudenberg,
+Tim Jordan, Adam K. Rixey, and George Ruof, for the remarkably thorough
+[*Chaos Overlords* FAQ](https://gamefaqs.gamespot.com/pc/196900-chaos-overlords/faqs/1684).
+It has been invaluable for clarifying game mechanics whose presentation in the
+original game and manual can otherwise be delightfully cryptic.
 
 This project copies no source code and redistributes no copyrighted resources
 from the original game. Players are expected to buy and own a legal copy, such
