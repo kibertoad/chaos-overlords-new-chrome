@@ -1,7 +1,7 @@
 # AI specification
 
 Status: provisional recreation baseline  
-Last updated: 2026-09-09
+Last updated: 2026-09-10
 
 The original executable's complete difficulty branches and evaluation weights
 have not yet been recovered. Static analysis has recovered the outer per-gang
@@ -52,10 +52,12 @@ Maniac adds the largest attack bias and particularly favors human-controlled
 targets. These weights are provisional recreation policy: the manual and
 contemporary FAQ support the behavioral direction, but not the numeric values.
 
-Every mentality uses the same authoritative information, validation, economy,
-combat formulas, and RNG as a human player. The AI receives no extra cash,
-statistics, rolls, visibility, or other difficulty bonus. Setup hover text makes
-that fair-play invariant explicit.
+Every mentality uses the same authoritative state, command validation, economy,
+and RNG stream as a human player. The AI receives no extra cash, statistics,
+visibility, or hidden resources. Its recovered per-player resolution band does
+intentionally calibrate the documented command dice pools and success thresholds
+for computer players; those rule differences are explicit simulation state, not
+secret planner information or an added resource bonus.
 
 Hiring ranks valid affordable offers by Force, Tech, Upkeep, and initial cost.
 It currently chooses at most one offer during its planning turn; placement is

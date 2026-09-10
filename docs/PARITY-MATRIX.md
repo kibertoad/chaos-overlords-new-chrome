@@ -29,8 +29,8 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Bribe | $5, tolerance +3, max 40 | Instant-phase resolver, cash statistic, ordered result and notification implemented | Manual formula table, High for formula; failure behavior Low | Binary timing and insufficient-cash edge cases |
 | Snitch/tolerance | Free, base tolerance -3/min 0; site modifiers may exceed base bounds; each turn moves one point toward income/site-modified normal | Instant resolver, immediate influence modifiers, base-cap separation, and deterministic Upkeep normalization implemented | Manual, High for formulas; exact normalization boundary Medium | Binary timing, influence-loss boundary and golden-save fixtures |
 | Heal | Base four dice plus effective Heal, success restores force to max 10 | Instant-phase resolver with deterministic rolls/results implemented; assignment at full Force is blocked and a repeating order clears at maximum | Manual formula Medium/High; recovered RNG algorithm High; seed/context Low | Reference fixture for dice pool, equipment/site scope, terminal repeat behavior and RNG order |
-| Hide/detect | Hidden state, individual attack evasion and cooperative sector visibility | Hide lifecycle, percentage attack check, no retaliation on hidden hit, detection-band aggregation and visibility query implemented | Manual formulas High/Medium; negative/timing edges Low | Binary probability distribution, reveal timing and police fixtures |
-| Combat | Force + class-modified Combat − Defense dice; simultaneous damage and halved retaliation; Martial Arts exception | Phase-wide snapshot resolver coalesces reciprocal orders into one opening attack and one retaliation; elimination, equipment loss, statistics, events and notifications implemented; detection/police excluded | Manual and contemporary FAQ, Medium/High; supplied reciprocal-combat observation Medium; binary ordering Low | Binary formula/RNG matrix, detection and police combat |
+| Hide/detect | Hidden state, individual attack evasion and cooperative sector visibility | Hide lifecycle, recovered d20 evasion threshold (`Stealth + 14 - Detect` for bands 0/1, `Stealth + 10 - Detect` for band 2), no retaliation on an evaded hit, detection-band aggregation and visibility query implemented | Static binary formulas High; reveal timing and police edges Low | Fixed band-boundary, reveal-timing and police fixtures |
+| Combat | Force + class-modified Combat − Defense dice; simultaneous damage and halved retaliation; Martial Arts exception | Phase-wide snapshot resolver coalesces reciprocal orders into one opening attack and one retaliation; recovered 0/1/2 bands drive defender Defense reduction, 6+/5+/4+ opening thresholds, positive-pool minimum damage, and 5+/5+/4+ halved retaliation; elimination, equipment loss, statistics, events and notifications implemented; police combat remains separate | Static binary formulas High; supplied reciprocal-combat observation Medium; remaining eligibility/order edges Low | Fixed formula/RNG matrix, exact retaliation gate and police combat |
 | Movement | Eight-neighbor (including diagonal) sector move with six-friendly-gang capacity | Ordered resolver, submission/runtime capacity checks, drag-to-neighbor planning, events and notifications implemented | Manual and supplied reference behavior, High for adjacency/capacity; collision ordering Low | Simultaneous swap/final-slot fixtures |
 | Equipment | One weapon/armor/misc; separate melee/ranged browsing; research/tech gates; purchase, transfer, replacement loss, half-price sale | Equip/Give/Sell Transaction resolvers, typed slots, cash/statistics, validation, events and notifications implemented; influenced local Factory applies 30% purchase discount | Manual formulas/discount value and decoded category/unlock data High; replacement/swap and Factory locality Medium; discount rounding Low | Reference Factory locality/rounding, multi-item UI, swap and acquisition fixtures |
 | Research | Force + Research dice, persistent progress/completion; seven zero-difficulty items initially complete; gang tech and base-5/Science-8/Lab-10 site caps | Instant-phase resolver with deterministic rolls, progress/completion state, initial unlocks, validation, gang/site cap enforcement, result notification and hashes implemented | Manual formula/caps and decoded initial set High; locality/equipment/repeat Medium; recovered RNG algorithm High; seed/context Low | Reference fixtures for cap locality/timing, unlock effects and RNG order; recover initializer code path |
@@ -67,11 +67,12 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 - Command replacement gets a new sequence number and resolution otherwise uses
   submission order inside a subphase; both are provisional recreation rules,
   not binary-validated behavior.
-- AI Mentality's global, query selector, and first threshold consumers are now
-  recovered, but their command outcomes and exact weights remain unlabeled;
-  combat, crackdown, research,
-  equipment, objective timing, original-save import, and audiovisual triggers
-  retain the specific parity gaps listed above.
+- AI Mentality's global, query selector, reaction/attitude state, and all nine
+  resolution-band consumers are recovered and integrated, but the pair-ratio
+  hostility pass, remaining command guards, exact planner outcomes, and scoring
+  weights remain incomplete. Retaliation eligibility, police edges, equipment,
+  objective timing, original-save import, and audiovisual triggers retain the
+  specific parity gaps listed above.
 
 These blockers prevent describing the current playable slice as a faithful
 gameplay recreation even though its decoded tables and asset pack are verified.
@@ -82,5 +83,6 @@ Initial PE/import/string classification and continuing address-level gameplay
 research are recorded in `ORIGINAL-INTERNALS.md`. Verified or high-confidence
 findings now cover platform boundaries, source resource paths, save/version
 strings, the original RNG step and bounded wrapper, city/site/HQ/hire setup,
-and the outer AI command dispatcher. Exact AI Mentality policy and the remaining
-resolver formulas retain their explicitly listed gaps.
+and the outer AI command dispatcher. Exact AI planner policy, remaining resolver
+eligibility/order edges, and reference-trace parity retain their explicitly
+listed gaps.

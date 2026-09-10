@@ -1,7 +1,7 @@
 # Complete implementation and migration plan
 
 Status: active roadmap
-Last updated: 2026-09-09
+Last updated: 2026-09-10
 Target: a deterministic, cross-platform MonoGame recreation of the Windows 95
 release of *Chaos Overlords*, requiring a user-owned original asset pack.
 
@@ -47,12 +47,41 @@ kind is not part of this implementation plan.
 | Extraction | Transactional/versioned full-pack SHA-256 validation; 215 repaired RGB555 PX16 images, 214 retained plus decoded PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files; generated 685-output factual catalog | Transparency/color-key validation, video strategy, semantic role/owner resolution |
 | Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, Upkeep, all 14 command resolvers, simultaneous gang/Crackdown combat, 3–5-turn police duration/extension and three-in-five control loss, hidden attack/visibility checks, and local influenced-site stats | Crackdown notification/timing fixtures, special buildings, original RNG seeding/order and exact parity formulas |
 | Client | Scaled 640x460 routed setup/handoff/city/sector/gang/finance/ranking/items/Give/combat-summary/search/commands/hire/events/endgame UI backed by authoritative `MatchState`; distinct whole-city and detailed-sector projections composite original ownership tiles, the latter as a clickable 3x3 neighborhood beside all three building portraits; normal planning turns auto-resolve internal phases while debug mode can step them; persistent original-art Hire dock supports portrait drag/drop from city or sector detail, split price/reject footers and `HIRED` stamping; `PX05010` automatically pages queued turn reports after handoff; `PX05012` presents paged combat results; recovered item-selected eight-frame attack/hit, retaliation, evasion and police animation playback; recovered setup; local controls; private handoff; Core-derived commands, projections, visibility, combat results, research/equipment transfer and notifications; mouse/keyboard, saves/replays | Full setup detail, remaining sprites/atlas and management panels/hit maps, remaining sound/music/video, accessibility |
-| Tests | Parser/header/provenance, asset verification, scenarios, manual rules, deterministic non-combat action resolution, command queue and phase coordinator | Reference fixtures, combat, AI snapshots, save compatibility, visual tests |
+| Tests | 354 tests covering parsers/provenance, extraction, scenarios, deterministic command and phase resolution, difficulty bands, AI strategic state, combat, saves, replays, installers, and repository policy | Original-reference fixtures, checked-in save migrations, visual tests, larger-player AI stress, and native interactive installer/play tests |
 | Documentation | File/binary research, generated factual asset catalog, architecture, validation, parity matrix, roadmap and initial full-screen UI atlas/hit map | Complete sprite atlas, rules, original save map and remaining documents listed in section 4 |
 
 The current game is a playable architectural slice, not evidence of rule parity.
 Any provisional gameplay formula must be replaced or validated before its
 workstream can be marked complete.
+
+### Handover checkpoint - 2026-09-10
+
+- Last known good implementation commit: `dc9fb64` (`Implement original
+  difficulty resolution bands`), pushed to `main` before this documentation
+  checkpoint. The baseline is 354 passing tests plus the repository policy
+  check, with native save v6, replay v5, and canonical hash v9.
+- The latest completed AI work implements exact fixed-six-player reaction and
+  directional-attitude initialization, non-Homicidal recovery, combat/Control
+  attitude changes, hostility-filtered attack candidates, and all nine known
+  consumers of the recovered 0/1/2 resolution band. The scalar outer planner
+  remains provisional and must not be presented as original-AI parity.
+- Resume static analysis at `FUN_0040a1a7`: map its two selector-`0x36` reads,
+  identify the two positive pair fields, recover the exact ratio-`>75` formula,
+  and establish the direction of the pair flag and force-to-10 attitude write.
+  Then map the remaining attitude-dependent mode-6 sector-selector branches,
+  modes 10-16 public-command guards, and the exact retaliation-eligibility
+  compound operands.
+- After those bounded traces, capture fixed original decisions at resolution
+  bands 0/1/2 and the cash 50/51, Force 8/9, and Tolerance 3/4 boundaries before
+  replacing any provisional planner weights. Follow with larger-player and
+  objective-completion AI stress traces.
+- Static-analysis conclusions, addresses, confidence, and rejected hypotheses
+  belong in `ORIGINAL-INTERNALS.md`; player-visible intended behavior belongs in
+  `AI-SPEC.md`; implementation status and the next proof gate belong in
+  `PARITY-MATRIX.md`. Never commit proprietary assets or decompiled original
+  source text.
+- Original networking remains a final, explicit non-goal. Do not analyze or
+  recreate its transports, protocols, interoperability, or production paths.
 
 ## 3. Engineering principles
 
@@ -721,30 +750,29 @@ not lines of code or asset counts.
 
 ## 9. Immediate next implementation sequence
 
-1. Finish M0 by capturing one reference observation with the fixture schema and
-   labeled state-diff tool; transactional installation and output verification
-   are complete.
-2. Enrich the generated `ASSET-CATALOG.md` by resolving semantic owners,
-   palette/transparency behavior and sprite rectangles.
-3. Continue the headless match schema through reference-derived command costs,
-   resolvers, and phase-boundary processing; notification queues, serializable
-   provisional RNG state, canonical hashes, typed validation results, and ordered
-   queue events are now in place.
-4. Obtain original save/reference fixtures and connect them to state diffs and
-   phase-boundary hashes.
-5. Capture an original new-game fixture to validate the implemented city,
-   HQ/Right Hands, initial-offer and RNG sequence, including seed/setup context.
-6. Continue the M1 UI shell from its implemented title/setup/city router: map
-   the first atlas slices, then add full player/difficulty setup and original hit maps.
-7. Replace remaining provisional control and economy formulas with observed rules.
-8. Implement each action vertically: validation, resolution, event, UI, media,
-   documentation and reference fixture before starting the next.
-9. Complete objectives/hot-seat, then AI, then audiovisual parity.
-10. Run the full section 4.4 accuracy audit across layouts, rules, animations,
-    AI, RNG, media, and persistence; resolve or explicitly classify every
-    in-scope discrepancy. Original networking remains excluded.
-11. Finish persistence, signing/notarization, native platform validation, and
-    optional modern features.
+1. Complete the bounded `FUN_0040a1a7` pair-ratio hostility trace described in
+   the handover checkpoint, then the remaining mode-6 and modes 10-16 planner
+   guards. Record facts and rejected hypotheses before changing planner code.
+2. Label the exact retaliation-eligibility compound operands and capture fixed
+   band 0/1/2 resolution fixtures, including cash 50/51, Force 8/9, and
+   Tolerance 3/4 boundaries.
+3. Replace provisional AI scoring only where handler-exact evidence or fixed
+   reference decisions support it; expand deterministic tournaments to larger
+   player counts and objective-completion stress cases.
+4. Capture an original new-game fixture to validate city generation,
+   HQ/Right Hands placement, hire offers, initial Force, seeding, and complete
+   setup RNG order.
+5. Close the remaining economy, police, special-building, objective, and
+   persistence parity gates with binary/reference fixtures and checked-in
+   migration samples.
+6. Complete setup alignment, remaining management hit maps, atlas semantics,
+   transparency/color keys, combat cadence, audio/music/video triggers, and
+   native-resolution golden screens.
+7. Run the full section 4.4 accuracy audit across layouts, rules, animations,
+   AI, RNG, media, and persistence; resolve or explicitly classify every
+   in-scope discrepancy. Original networking remains excluded.
+8. Finish signing/notarization, native interactive Windows/Linux/macOS
+   validation, accessibility/performance work, and the complete release gate.
 
 ## 10. Source hierarchy
 
