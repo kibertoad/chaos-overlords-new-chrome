@@ -45,6 +45,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string _replayPath;
     private readonly string _preferencesPath;
     private readonly bool _debugPhaseStepping;
+    private readonly RuntimeDiagnostics? _diagnostics;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
     private Texture2D? _titleBackground;
@@ -129,10 +130,21 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int? _siteDetailsSlot;
     private short? _itemDetailsId;
 
-    public ChaosGame(string assetRoot, bool debugPhaseStepping = false)
+    public ChaosGame(
+        string assetRoot,
+        bool debugPhaseStepping = false,
+        RuntimeDiagnostics? diagnostics = null)
     {
         _assetRoot = assetRoot;
         _debugPhaseStepping = debugPhaseStepping;
+        _diagnostics = diagnostics;
+        _screens.Changed += (previous, current) => _diagnostics?.Write(
+            "screen.changed",
+            new Dictionary<string, string?>
+            {
+                ["from"] = previous.ToString(),
+                ["to"] = current.ToString()
+            });
         var userDataRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords");
@@ -196,6 +208,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (sound is not null) _weaponSounds.Add(index, sound);
         }
         LoadSoundtrack();
+        _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
+        {
+            ["helpAvailable"] = (_helpDocument is not null).ToString(),
+            ["weaponSounds"] = _weaponSounds.Count.ToString(),
+            ["combatAnimations"] = _combatAnimationTextures.Count.ToString()
+        });
     }
 
     protected override void Update(GameTime gameTime)
@@ -321,6 +339,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         var pointerMapped = VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint);
         _hoverPoint = pointerMapped ? virtualPoint : null;
+        var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
+        if (pointerMapped && _screens.Current == ClientScreen.Help && wheelDelta != 0)
+            HandleHelpScroll(virtualPoint, wheelDelta);
         if (pointerMapped && mouse.LeftButton == ButtonState.Pressed)
         {
             _dragPoint = virtualPoint;

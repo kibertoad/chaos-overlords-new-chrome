@@ -13,10 +13,6 @@ public static class HelpLayout
     public static Rectangle Panel => new(18, 24, 604, 412);
     public static Rectangle TopicList => new(30, 64, 176, 318);
     public static Rectangle Text => new(218, 64, 392, 318);
-    public static Rectangle Previous => new(218, 394, 74, 28);
-    public static Rectangle Next => new(298, 394, 74, 28);
-    public static Rectangle TextUp => new(378, 394, 50, 28);
-    public static Rectangle TextDown => new(434, 394, 50, 28);
     public static Rectangle Done => new(536, 394, 74, 28);
     public static Rectangle TopicRow(int row)
     {
@@ -31,6 +27,19 @@ public static class HelpLayout
             throw new ArgumentOutOfRangeException(nameof(selectedTopic));
         return Math.Clamp(selectedTopic - VisibleTopicRows / 2,
             0, Math.Max(0, topicCount - VisibleTopicRows));
+    }
+
+    public static int ScrollTopicWindow(int topicCount, int currentStart, int wheelDelta)
+    {
+        var maximum = Math.Max(0, topicCount - VisibleTopicRows);
+        return Math.Clamp(currentStart - WheelSteps(wheelDelta), 0, maximum);
+    }
+
+    public static int WheelSteps(int wheelDelta)
+    {
+        if (wheelDelta == 0) return 0;
+        var notches = Math.Max(1, Math.Abs(wheelDelta) / 120);
+        return Math.Sign(wheelDelta) * notches;
     }
 }
 
@@ -68,6 +77,7 @@ public sealed partial class ChaosGame
     private ClientScreen _helpReturnScreen = ClientScreen.Title;
     private string _helpReturnMessage = string.Empty;
     private int _helpTopicIndex;
+    private int _helpTopicOffset;
     private int _helpLineOffset;
 
     private void OpenHelp()
@@ -75,6 +85,9 @@ public sealed partial class ChaosGame
         _helpReturnScreen = _screens.Current;
         _helpReturnMessage = _message;
         _helpTopicIndex = HelpTopicForScreen(_helpReturnScreen);
+        _helpTopicOffset = _helpDocument is null
+            ? 0
+            : HelpLayout.TopicWindowStart(_helpDocument.Topics.Count, _helpTopicIndex);
         _helpLineOffset = 0;
         _screens.Show(ClientScreen.Help);
         _message = _helpDocument is null ? "HELP CONTENT IS UNAVAILABLE" : "HELP";
@@ -136,6 +149,10 @@ public sealed partial class ChaosGame
     {
         if (_helpDocument is null || index < 0 || index >= _helpDocument.Topics.Count) return;
         _helpTopicIndex = index;
+        if (_helpTopicIndex < _helpTopicOffset)
+            _helpTopicOffset = _helpTopicIndex;
+        else if (_helpTopicIndex >= _helpTopicOffset + HelpLayout.VisibleTopicRows)
+            _helpTopicOffset = _helpTopicIndex - HelpLayout.VisibleTopicRows + 1;
         _helpLineOffset = 0;
     }
 
@@ -151,20 +168,26 @@ public sealed partial class ChaosGame
     private void HandleHelpClick(Point point)
     {
         if (HelpLayout.Done.Contains(point)) CloseHelp();
-        else if (HelpLayout.Previous.Contains(point)) ChangeHelpTopic(-1);
-        else if (HelpLayout.Next.Contains(point)) ChangeHelpTopic(1);
-        else if (HelpLayout.TextUp.Contains(point)) ScrollHelp(-HelpLayout.VisibleTextLines);
-        else if (HelpLayout.TextDown.Contains(point)) ScrollHelp(HelpLayout.VisibleTextLines);
         else if (_helpDocument is not null)
         {
-            var start = HelpLayout.TopicWindowStart(_helpDocument.Topics.Count, _helpTopicIndex);
             for (var row = 0; row < HelpLayout.VisibleTopicRows; row++)
-                if (start + row < _helpDocument.Topics.Count && HelpLayout.TopicRow(row).Contains(point))
+                if (_helpTopicOffset + row < _helpDocument.Topics.Count
+                    && HelpLayout.TopicRow(row).Contains(point))
                 {
-                    SelectHelpTopic(start + row);
+                    SelectHelpTopic(_helpTopicOffset + row);
                     break;
                 }
         }
+    }
+
+    private void HandleHelpScroll(Point point, int wheelDelta)
+    {
+        if (_helpDocument is null || wheelDelta == 0) return;
+        if (HelpLayout.TopicList.Contains(point))
+            _helpTopicOffset = HelpLayout.ScrollTopicWindow(
+                _helpDocument.Topics.Count, _helpTopicOffset, wheelDelta);
+        else if (HelpLayout.Text.Contains(point))
+            ScrollHelp(-HelpLayout.WheelSteps(wheelDelta) * 3);
     }
 
     private void DrawHelp(SpriteBatch batch, Texture2D pixel, PixelFont font)
@@ -194,10 +217,6 @@ public sealed partial class ChaosGame
             DrawHelpTopics(batch, pixel, font);
             DrawHelpText(batch, pixel, font);
         }
-        DrawButton(batch, pixel, font, HelpLayout.Previous, "PREV", false);
-        DrawButton(batch, pixel, font, HelpLayout.Next, "NEXT", false);
-        DrawButton(batch, pixel, font, HelpLayout.TextUp, "PGUP", false);
-        DrawButton(batch, pixel, font, HelpLayout.TextDown, "PGDN", false);
         DrawButton(batch, pixel, font, HelpLayout.Done, "DONE", true);
     }
 
@@ -206,10 +225,11 @@ public sealed partial class ChaosGame
         var topics = _helpDocument!.Topics;
         batch.Draw(pixel, HelpLayout.TopicList, new Color(18, 37, 38, 245));
         DrawBorder(batch, pixel, HelpLayout.TopicList, new Color(65, 105, 92), 1);
-        var start = HelpLayout.TopicWindowStart(topics.Count, _helpTopicIndex);
-        for (var row = 0; row < HelpLayout.VisibleTopicRows && start + row < topics.Count; row++)
+        for (var row = 0;
+             row < HelpLayout.VisibleTopicRows && _helpTopicOffset + row < topics.Count;
+             row++)
         {
-            var index = start + row;
+            var index = _helpTopicOffset + row;
             var rectangle = HelpLayout.TopicRow(row);
             if (index == _helpTopicIndex)
                 batch.Draw(pixel, rectangle, new Color(80, 58, 18, 245));
@@ -231,7 +251,7 @@ public sealed partial class ChaosGame
         var lines = HelpTextLayout.Wrap(topic.Text, HelpLayout.TextColumns);
         for (var row = 0; row < HelpLayout.VisibleTextLines && _helpLineOffset + row < lines.Count; row++)
             font.Draw(batch, lines[_helpLineOffset + row], new Vector2(226, 94 + row * 9),
-                Color.White, 1);
+                new Color(210, 220, 216), 1);
         font.Draw(batch,
             $"TOPIC {_helpTopicIndex + 1}/{_helpDocument.Topics.Count}  LINE {_helpLineOffset + 1}/{Math.Max(1, lines.Count)}",
             new Vector2(226, 370), new Color(155, 180, 172), 1);

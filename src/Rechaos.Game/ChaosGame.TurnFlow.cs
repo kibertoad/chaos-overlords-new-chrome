@@ -34,6 +34,13 @@ public sealed partial class ChaosGame
 
         var previousTurn = _state.Coordinator.Turn;
         GameplayTurnFlow.FinishPlanningTurn(_replay, playerId);
+        _diagnostics?.Write("planning.finished", new Dictionary<string, string?>
+        {
+            ["player"] = playerId.Value.ToString(),
+            ["turnBefore"] = previousTurn.ToString(),
+            ["turnAfter"] = _state.Coordinator.Turn.ToString(),
+            ["phase"] = _state.Coordinator.Phase.ToString()
+        });
         PrepareCurrentHireOffers();
         if (_state.Coordinator.Turn != previousTurn)
         {
@@ -117,8 +124,15 @@ public sealed partial class ChaosGame
             if (_state.Coordinator.Phase == TurnPhase.Command)
             {
                 _replay.PrepareAiPlanning(playerId);
-                foreach (var command in AiTurnPlanner.Plan(_state, playerId))
+                var commands = AiTurnPlanner.Plan(_state, playerId);
+                foreach (var command in commands)
                     _replay.Submit(command);
+                _diagnostics?.Write("ai.planned", new Dictionary<string, string?>
+                {
+                    ["player"] = playerId.Value.ToString(),
+                    ["turn"] = _state.Coordinator.Turn.ToString(),
+                    ["commands"] = commands.Count.ToString()
+                });
                 PrepareCurrentHireOffers();
                 var hiring = _replay.PrepareAiHiring(playerId);
                 if (hiring.Choice is { } planningHire)

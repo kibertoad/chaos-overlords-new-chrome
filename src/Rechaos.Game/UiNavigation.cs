@@ -56,13 +56,20 @@ public enum ClientScreen
 public sealed class ScreenRouter
 {
     public ClientScreen Current { get; private set; } = ClientScreen.Title;
+    public event Action<ClientScreen, ClientScreen>? Changed;
 
-    public void Show(ClientScreen screen) => Current = screen;
+    public void Show(ClientScreen screen)
+    {
+        if (screen == Current) return;
+        var previous = Current;
+        Current = screen;
+        Changed?.Invoke(previous, screen);
+    }
 
     public bool Back()
     {
         if (Current == ClientScreen.Title) return false;
-        Current = Current is ClientScreen.Events or ClientScreen.Commands or ClientScreen.Hire
+        var destination = Current is ClientScreen.Events or ClientScreen.Commands or ClientScreen.Hire
             or ClientScreen.Sector or ClientScreen.Gang or ClientScreen.Finance or ClientScreen.Ranking
             or ClientScreen.Site
             or ClientScreen.ItemInformation
@@ -71,6 +78,7 @@ public sealed class ScreenRouter
             or ClientScreen.Search
             ? Current == ClientScreen.Give ? ClientScreen.Items : ClientScreen.City
             : ClientScreen.Title;
+        Show(destination);
         return true;
     }
 }

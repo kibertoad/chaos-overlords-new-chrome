@@ -69,6 +69,15 @@ public sealed partial class ChaosGame
             .ToArray();
         var setup = new MatchSetup(
             _selectedScenario, _selectedDuration, Environment.TickCount, players, _selectedAiMentality);
+        _diagnostics?.Write("match.started", new Dictionary<string, string?>
+        {
+            ["scenario"] = _selectedScenario.ToString(),
+            ["duration"] = _selectedDuration.ToString(),
+            ["configuredPlayers"] = _selectedPlayerCount.ToString(),
+            ["computerPlayers"] = players.Count(player => player.Controller == PlayerController.Computer).ToString(),
+            ["mentality"] = _selectedAiMentality.ToString(),
+            ["seed"] = setup.InitialSeed.ToString()
+        });
         _state = OriginalMatchFactory.Create(_definitions, setup);
         _replay = new MatchReplayRecorder(_state);
         if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_replay);

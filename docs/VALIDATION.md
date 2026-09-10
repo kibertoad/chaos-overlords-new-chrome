@@ -41,6 +41,13 @@ explicit clean-room or synthetic fixture roots, and unreviewed files larger
 than 1 MiB. The Windows publisher invokes the same check before deleting or
 creating package output.
 
+Runtime-diagnostics tests open an isolated log directory, deserialize the
+JSON-lines lifecycle stream, verify stable event ordering, and check that
+unique crash reports link back to their session log. Manual crash validation
+should additionally confirm that `%LOCALAPPDATA%\ChaosOverlordsNewChrome\Logs`
+retains at most five session logs and ten crash reports and that an unwritable
+directory never prevents startup.
+
 The first complete hosted run of this matrix and installer path was GitHub
 Actions run `34400362789` on 2026-09-09; every platform and packaging job
 passed. Hosted runs remain the authority for runner-specific compatibility.

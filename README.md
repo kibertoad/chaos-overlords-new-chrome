@@ -60,9 +60,16 @@ when importing them.
 | Combat summary | B | Click Combat Summary |
 | Search | X | Click Search |
 | Music options | O | Click Options on the title screen, then click a volume level |
-| Help | F1 | Click Help on the title screen, or select topics and page controls in the viewer |
+| Help | F1 | Click Help on the title screen; point at the topic list or article and use the mouse wheel to scroll it |
 | Finish planning | Space | Click the end-turn control |
 | Return to title | Escape | Use the on-screen back/cancel control where available |
+
+## Crash reports
+
+The game keeps up to five small local session logs and ten crash reports in
+`%LOCALAPPDATA%\ChaosOverlordsNewChrome\Logs`. They contain technical lifecycle
+and match-flow details, but no player names, commands, save contents, or asset
+paths. Nothing is uploaded automatically.
 
 ## Acknowledgements
 

@@ -122,11 +122,12 @@ Target subdivisions:
 
 `Rechaos.Game` loads that optional topic document through a separate bounded
 validator. F1 opens a cross-platform two-pane viewer with contextual initial
-topics, complete topic reachability, keyboard paging, and mouse controls. Help
-is presentation-only: opening it pauses AI progression but never mutates
-authoritative match state, replay state, or deterministic hashes. Missing or
-invalid help data degrades to an import instruction instead of invoking the
-obsolete Windows WinHelp subsystem.
+topics and complete topic reachability. The mouse wheel scrolls the topic list
+or article according to pointer position; keyboard topic navigation and paging
+remain available. Help is presentation-only: opening it pauses AI progression
+but never mutates authoritative match state, replay state, or deterministic
+hashes. Missing or invalid help data degrades to an import instruction instead
+of invoking the obsolete Windows WinHelp subsystem.
 
 CLI modes:
 
@@ -416,6 +417,11 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
 
 ## Error and security model
 
+- `RuntimeDiagnostics` writes bounded JSON-lines session logs and separate
+  exception reports under the user's local application-data directory. It
+  retains five sessions and ten crashes, caps a session at 1 MiB, never uploads
+  data, and deliberately excludes player names, commands, saves, and asset
+  paths. Diagnostics are best-effort and disable themselves on I/O failure.
 - Binary readers reject truncated/partial records and invalid signatures.
 - Source validation uses exact known hashes before content is trusted.
 - Manifest paths are canonicalized and must remain below the selected root.

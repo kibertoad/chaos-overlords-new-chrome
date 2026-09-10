@@ -8,6 +8,13 @@ if (args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase))
 
 string? assetRoot = null;
 var platformSmokeTest = args.Contains("--platform-smoke-test", StringComparer.OrdinalIgnoreCase);
+using var diagnostics = RuntimeDiagnostics.OpenDefault();
+UnhandledExceptionEventHandler unhandledException = (_, eventArgs) =>
+{
+    if (eventArgs.ExceptionObject is Exception exception)
+        diagnostics.CaptureCrash(exception, "app-domain");
+};
+AppDomain.CurrentDomain.UnhandledException += unhandledException;
 try
 {
     var assetArgument = Array.FindIndex(args, value => value == "--assets");
@@ -17,7 +24,10 @@ try
             AppContext.BaseDirectory,
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
 
-    using var game = new ChaosGame(assetRoot, args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase));
+    using var game = new ChaosGame(
+        assetRoot,
+        args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase),
+        diagnostics);
     if (platformSmokeTest)
         return 0;
     game.Run();
@@ -30,6 +40,10 @@ catch (Exception exception)
         Console.Error.WriteLine(exception);
         return 1;
     }
-    StartupFailureReporter.Report(exception, assetRoot);
+    StartupFailureReporter.Report(exception, assetRoot, diagnostics);
     return 1;
+}
+finally
+{
+    AppDomain.CurrentDomain.UnhandledException -= unhandledException;
 }

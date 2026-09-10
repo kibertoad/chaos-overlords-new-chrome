@@ -23,9 +23,13 @@ public static class StartupFailureReporter
         return builder.ToString().TrimEnd();
     }
 
-    public static void Report(Exception exception, string? assetRoot)
+    public static void Report(
+        Exception exception,
+        string? assetRoot,
+        RuntimeDiagnostics? diagnostics = null)
     {
-        var logPath = TryWriteLog(exception, assetRoot);
+        var logPath = diagnostics?.CaptureCrash(exception, "main-loop")
+            ?? TryWriteLog(exception, assetRoot);
         var message = BuildUserMessage(exception, assetRoot, logPath);
         Console.Error.WriteLine(message);
         Console.Error.WriteLine(exception);
@@ -42,7 +46,8 @@ public static class StartupFailureReporter
                 AssetRootResolver.ApplicationDataDirectory,
                 "Logs");
             Directory.CreateDirectory(directory);
-            var path = Path.Combine(directory, "startup-error.log");
+            var path = Path.Combine(directory,
+                $"crash-{DateTimeOffset.UtcNow:yyyyMMddTHHmmssfffZ}-{Environment.ProcessId}.log");
             File.WriteAllText(path,
                 $"{DateTimeOffset.UtcNow:O}{Environment.NewLine}" +
                 $"Asset folder: {assetRoot ?? "(not resolved)"}{Environment.NewLine}" +

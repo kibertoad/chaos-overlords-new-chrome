@@ -55,6 +55,16 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         Assert.Throws<ArgumentOutOfRangeException>(() => HelpLayout.TopicWindowStart(80, 80));
     }
 
+    [Fact]
+    public void HelpTopicWheelScrollIsBoundedAndTracksWheelDirection()
+    {
+        Assert.Equal(9, HelpLayout.ScrollTopicWindow(80, 10, 120));
+        Assert.Equal(11, HelpLayout.ScrollTopicWindow(80, 10, -120));
+        Assert.Equal(0, HelpLayout.ScrollTopicWindow(80, 0, 120));
+        Assert.Equal(65, HelpLayout.ScrollTopicWindow(80, 65, -120));
+        Assert.Equal(-3, HelpLayout.WheelSteps(-360));
+    }
+
     public void Dispose() => _directory.Delete(recursive: true);
 
     private void Write(ExtractedHelpDocument document)

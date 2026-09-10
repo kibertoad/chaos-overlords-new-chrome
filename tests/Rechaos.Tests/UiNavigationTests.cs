@@ -115,6 +115,23 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void RouterReportsOnlyActualScreenChanges()
+    {
+        var router = new ScreenRouter();
+        var changes = new List<(ClientScreen From, ClientScreen To)>();
+        router.Changed += (from, to) => changes.Add((from, to));
+
+        router.Show(ClientScreen.Title);
+        router.Show(ClientScreen.Help);
+        router.Show(ClientScreen.Help);
+        router.Back();
+
+        Assert.Equal(
+            [(ClientScreen.Title, ClientScreen.Help), (ClientScreen.Help, ClientScreen.Title)],
+            changes);
+    }
+
+    [Fact]
     public void CityMapLayoutMapsEveryAtlasTileAndOwnershipLayer()
     {
         for (var sector = 0; sector < MatchLimits.SectorCount; sector++)
