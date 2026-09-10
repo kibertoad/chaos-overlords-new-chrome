@@ -61,10 +61,11 @@ public static class AiTurnPlanner
         int gangSlot,
         IReadOnlyList<GameCommand> options)
     {
-        if (state.AiPlanning.Family(player.Id, gangSlot) != 1) return null;
+        var family = state.AiPlanning.Family(player.Id, gangSlot);
+        if (family is not (1 or 13 or 14)) return null;
 
         var preparedAction = state.AiPlanning.PlannedAction(player.Id, gangSlot);
-        var choice = preparedAction == GangAction.None
+        var choice = family == 1 && preparedAction == GangAction.None
             ? DesiredRecoveredFamilyChoice(state, player, gang, gangSlot)
             : new RecoveredFamilyChoice(
                 preparedAction,
@@ -104,8 +105,16 @@ public static class AiTurnPlanner
 
         foreach (var entry in player.Gangs.Select((gang, slot) => (gang, slot)))
         {
-            if (!entry.gang.IsActive || state.AiPlanning.Family(playerId, entry.slot) != 1)
+            if (!entry.gang.IsActive) continue;
+            var family = state.AiPlanning.Family(playerId, entry.slot);
+            if (family is 13 or 14)
+            {
+                PrepareObjectiveFamilyMove(
+                    state, playerId, entry.gang, entry.slot, family,
+                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
                 continue;
+            }
+            if (family != 1) continue;
             var choice = DesiredRecoveredFamilyChoice(
                 state, player, entry.gang, entry.slot);
             if (choice.Action == GangAction.None) continue;
@@ -155,6 +164,41 @@ public static class AiTurnPlanner
                 playerId, entry.slot, GangAction.Move,
                 new AiActionTarget(checked((byte)target), 0));
         }
+    }
+
+    private static void PrepareObjectiveFamilyMove(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        int gangSlot,
+        int family,
+        IReadOnlyList<int> sectorOwners,
+        IReadOnlyList<bool> sectorDisabled,
+        IReadOnlyList<int> sectorGangCounts,
+        IReadOnlyList<int> playerOrder)
+    {
+        var plannedAction = state.AiPlanning.PlannedAction(playerId, gangSlot);
+        if (!OriginalAiObjectiveFamilyRules.ShouldOverrideWithMove(
+                state.Setup.Scenario, gang.SectorId, plannedAction)) return;
+
+        var target = OriginalAiSectorSelectionRules.Select(
+            OriginalAiObjectiveFamilyRules.SelectionMode(state.Setup.Scenario, family),
+            gang.SectorId,
+            playerId,
+            family,
+            sectorOwners,
+            sectorDisabled,
+            sectorGangCounts,
+            sectorId => CanSoloControl(state, playerId, gang, sectorId),
+            _ => false,
+            owner => state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
+            owner => state.FindPlayer(new PlayerId(owner))?.Setup.Controller
+                == PlayerController.Human,
+            playerOrder,
+            state.Random);
+        state.AiPlanning.SetPlannedAction(
+            playerId, gangSlot, GangAction.Move,
+            new AiActionTarget(checked((byte)target), 0));
     }
 
     private static RecoveredFamilyChoice DesiredRecoveredFamilyChoice(

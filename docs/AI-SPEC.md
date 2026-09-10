@@ -134,8 +134,11 @@ replay-verified two-computer harness through 20 turns or objective completion.
    implemented as exact shared-selector kernels for Big Man's four central
    sectors and Eliminate's six headquarters candidates, including ownership,
    six-gang capacity, nearest-ring, tie-RNG, step-routing, and compounded
-   hostile-human weighting. Their surrounding family-13/14 handlers remain to
-   be integrated. The six-by-six directional
+   hostile-human weighting. Their family-13/14 off-objective terminal handlers
+   are live: unless an Equip was already selected, they replace the action with
+   an exact objective Move. The upstream equipment blocks cannot run while the
+   gang is off-objective; on-objective handler behavior remains to be integrated.
+   The six-by-six directional
    attitude matrix, Homicidal human/computer initialization, non-Homicidal per-turn recovery,
    negative-hostility enumerators, `3..6` non-Homicidal reaction values, exact
    combat/Control decrements, and the mentality-gated sector Combat + Defense

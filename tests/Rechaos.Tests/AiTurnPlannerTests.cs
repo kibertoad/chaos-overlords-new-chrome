@@ -363,6 +363,50 @@ public sealed class AiTurnPlannerTests
         Assert.Equal((short)23, match.Players[0].Gangs[0].WeaponItemId);
     }
 
+    [Theory]
+    [InlineData(ScenarioId.BigMan, 1, 13, 0, 9)]
+    [InlineData(ScenarioId.Eliminate, 2, 14, 20, 12)]
+    public void ObjectiveFamilyTerminalMoveIsPreparedAndResolved(
+        ScenarioId scenario,
+        int hireRole,
+        int expectedFamily,
+        int startingSector,
+        int expectedDestination)
+    {
+        var match = CreateMatch(
+            scenario: scenario,
+            ownsStartingSector: false,
+            startingSector: startingSector);
+        var player = new PlayerId(0);
+        match.AiPlanning.SetCurrentHireRole(player, hireRole);
+        var recorder = new MatchReplayRecorder(match);
+        recorder.FinishUpkeep();
+
+        recorder.PrepareAiPlanning(player);
+        var command = Assert.Single(AiTurnPlanner.Plan(match, player));
+
+        Assert.Equal(expectedFamily, match.AiPlanning.Family(player, 0));
+        Assert.Equal(GangAction.Move, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(new AiActionTarget(checked((byte)expectedDestination), 0),
+            match.AiPlanning.PlannedTarget(player, 0));
+        Assert.Equal(GangAction.Move, command.Action);
+        Assert.Equal(CommandTarget.Sector(expectedDestination), command.Target);
+
+        Assert.True(recorder.Submit(command).Accepted);
+        recorder.FinishCommand(player);
+        recorder.FinishCommand(new PlayerId(1));
+        while (match.Coordinator.Phase == TurnPhase.Execution)
+            recorder.FinishExecutionPhase();
+
+        Assert.Equal(expectedDestination, match.Players[0].Gangs[0].SectorId);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, match.Definitions);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(expectedDestination, restored.Players[0].Gangs[0].SectorId);
+    }
+
     [Fact]
     public void FamilyOnePreparationUsesRecoveredModeFiveMoveDestination()
     {
@@ -691,7 +735,8 @@ public sealed class AiTurnPlannerTests
         IReadOnlyList<short>? hirePool = null,
         PlayerController rivalController = PlayerController.Human,
         short rivalDefinitionId = 2,
-        IReadOnlySet<short>? researchedItems = null)
+        IReadOnlySet<short>? researchedItems = null,
+        int startingSector = 0)
     {
         data ??= BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -702,7 +747,7 @@ public sealed class AiTurnPlannerTests
         MatchPlayerState[] players =
         [
             new(setups[0], cash,
-                [new MatchGangState(new GangId(10), new PlayerId(0), definitionId, 0, force)],
+                [new MatchGangState(new GangId(10), new PlayerId(0), definitionId, startingSector, force)],
                 hirePool,
                 researchedItems: researchedItems),
             new(setups[1], 20, [new MatchGangState(
@@ -714,7 +759,7 @@ public sealed class AiTurnPlannerTests
                 new MatchSiteState(0, 0, 5),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 5)
-            ], owner: ownsStartingSector && id == 0 ? new PlayerId(0) : null, income: 3))
+            ], owner: ownsStartingSector && id == startingSector ? new PlayerId(0) : null, income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
             scenario, GameDuration.SixMonths, 7, setups, difficulty), players, sectors);

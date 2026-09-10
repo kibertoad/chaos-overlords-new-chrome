@@ -1041,6 +1041,20 @@ establishes an original Eliminate movement bias toward every possible
 headquarters location, not merely an attack-score bonus against a currently
 visible Right Hands gang.
 
+Instruction-level inspection of the terminal blocks at
+`0x0040b87d..0x0040b9a6` and `0x004675c8..0x004676f1` establishes their exact
+outer guard. Selector `0x1f` returns one only when a Big Man gang is in sector
+27, 28, 35, or 36, or an Eliminate gang is in headquarters candidate 9, 12,
+30, 33, 51, or 54. When that selector is not one and the handler has not already
+written Equip, family 13 unconditionally replaces the planned command with Move
+through mode 12/13; family 14 does the same through mode 14/15. Both handlers'
+equipment blocks are themselves inside selector-`0x1f` branches, so an
+off-objective gang cannot have written Equip before reaching this override.
+The recreation therefore safely applies the complete off-objective terminal
+path during replay-recorded planning and submits its exact one-step destination
+through normal Move resolution. The more complex on-objective branches remain
+unintegrated.
+
 `0x00408553` sorts the 64 sector scores descending while retaining their sector
 indices. The caller chooses uniformly among every sector tied for the maximum;
 a unique maximum consumes no RNG, while a tie consumes one bounded call (three
@@ -1082,10 +1096,9 @@ filtering due to decompiler control-flow folding. Mode 10 and mode 16's
 remaining family-11 guards are not yet fully labeled.
 
 **Next validation:** map the remaining family-11 guards for modes 10 and 16 to
-public commands. Modes 12-15 now have exact pure kernels; recover and wire their
-remaining family-13/14 handler context, and reproduce those objective routes
-and the mode-16 follower route as fixed original decisions before claiming
-runtime parity.
+public commands. Recover the on-objective family-13/14 branches, and reproduce
+the now-live objective routes plus the mode-16 follower route as fixed original
+decisions before claiming runtime parity.
 
 ### BIN-AI-006 - directional attitude and hostility matrix
 
