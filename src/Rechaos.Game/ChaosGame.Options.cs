@@ -17,7 +17,7 @@ public static class OptionsLayout
 public sealed partial class ChaosGame
 {
     private ClientScreen _optionsReturnScreen = ClientScreen.Title;
-    private string _optionsReturnMessage = "SELECT NEW GAME";
+    private string _optionsReturnMessage = string.Empty;
 
     private void OpenOptions()
     {

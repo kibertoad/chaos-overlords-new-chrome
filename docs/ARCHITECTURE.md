@@ -1,7 +1,7 @@
 # Architecture
 
 Status: evolving implementation architecture
-Last updated: 2026-09-09
+Last updated: 2026-09-10
 
 ## Dependency direction
 
@@ -109,6 +109,9 @@ Target subdivisions:
 - Validates canonical original tables and the whole source fingerprint.
 - Repairs missing PX16 BMP header fields without modifying pixel bytes.
 - Copies media/opaque resources and generates a per-output hash manifest.
+- Decodes the supported user-owned WinHelp container and contents index into a
+  bounded, versioned local JSON topic document; neither the source nor decoded
+  copyrighted text is checked into or packaged with the project.
 - Records manifest format and extractor versions, original-relative source,
   output hash/size/media type, and conversion method/geometry per asset.
 - Stages and fully verifies a complete pack before rollback-safe directory
@@ -116,6 +119,14 @@ Target subdivisions:
 - Verifies installed packs and skips extraction when the full pack already
   matches.
 - Rejects malformed paths, missing assets, size changes, and hash changes.
+
+`Rechaos.Game` loads that optional topic document through a separate bounded
+validator. F1 opens a cross-platform two-pane viewer with contextual initial
+topics, complete topic reachability, keyboard paging, and mouse controls. Help
+is presentation-only: opening it pauses AI progression but never mutates
+authoritative match state, replay state, or deterministic hashes. Missing or
+invalid help data degrades to an import instruction instead of invoking the
+obsolete Windows WinHelp subsystem.
 
 CLI modes:
 

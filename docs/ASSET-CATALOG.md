@@ -1,10 +1,10 @@
 # Original asset catalog
 
 Status: generated inventory; semantic ownership remains incomplete
-Manifest format: 3
+Manifest format: 4
 Extractor version: 1.0.0.0
 Source fingerprint: `ad958a934a691318f31a27a87252f420dd89a0ad03759457d8feaf49914d29e3`
-Asset count: 685
+Asset count: 686
 
 This file is generated from a fully verified local manifest. Resource names and hashes are factual inventory metadata; no proprietary media bytes are stored here. `Unknown` fields must be resolved through atlas/media research rather than guessed.
 
@@ -38,8 +38,9 @@ This file is generated from a fully verified local manifest. Resource names and 
 | `audio/SND00516.wav` | `DATA/SND00516` | audio/wav | copy | Sound effect | Unknown action/UI trigger | N/A | `6e106a6bd5c6000a15809bebc8fb942db85f028631082c0bd0ca00843454db02` |
 | `audio/SND00517.wav` | `DATA/SND00517` | audio/wav | copy | Sound effect | Unknown action/UI trigger | N/A | `a8460cdbae8502e2c633715af5ecafd75b95e05e72a46505182d6a755cc43c27` |
 | `audio/SND00518.wav` | `DATA/SND00518` | audio/wav | copy | Sound effect | Unknown action/UI trigger | N/A | `9e6d2d894ee02221be922067d0a675ba5d0e72372514c1fb38fd62d8c93c4247` |
-| `help/CHAOS.CNT` | `HELP/CHAOS.CNT` | application/octet-stream | copy | Help-system resource | Help | Format-dependent | `8243a864ee73aa828408fa675c0f1dea9bb12cd77e4dfeb2a0b0dbdca8fbc343` |
-| `help/Chaos.hlp` | `HELP/Chaos.hlp` | application/octet-stream | copy | Help-system resource | Help | Format-dependent | `16bffe0ae29d3f87fc39569825b678e2820370bdd62610d2be2c91b6e538ddf4` |
+| `help/CHAOS.CNT` | `HELP/CHAOS.CNT` | application/octet-stream | copy | Original WinHelp resource | Local extraction input; not used at runtime | Format-dependent | `8243a864ee73aa828408fa675c0f1dea9bb12cd77e4dfeb2a0b0dbdca8fbc343` |
+| `help/Chaos.hlp` | `HELP/Chaos.hlp` | application/octet-stream | copy | Original WinHelp resource | Local extraction input; not used at runtime | Format-dependent | `16bffe0ae29d3f87fc39569825b678e2820370bdd62610d2be2c91b6e538ddf4` |
+| `help/contents.json` | `HELP/Chaos.hlp + HELP/CHAOS.CNT` | application/vnd.rechaos.help+json | winhelp-topic-decode | Decoded WinHelp topics and contents | Modern in-game help viewer | N/A | `5b1426c0f0705cf96b2b1539e12fbe693f728d03da33e13ea621082d18b5b153` |
 | `images/PX00100.bmp` | `DATA/PX16/PX00100` | image/bmp | bmp-header-repair; 640x460x16 (RGB555) | PX16 presentation image | Unknown | RGB555; color key unresolved | `a85ed663d8bfbae66015df6c57f9801bf31abdd0ba090f85f88cd4b5185279d2` |
 | `images/PX00128.bmp` | `DATA/PX16/PX00128` | image/bmp | bmp-header-repair; 640x460x16 (RGB555) | PX16 presentation image | Unknown | RGB555; color key unresolved | `79d5f85b30ed1cf3600a6d2e5518f7c5f3aa2dbda6dbf2ff462b78055bd1a376` |
 | `images/PX00129.bmp` | `DATA/PX16/PX00129` | image/bmp | bmp-header-repair; 512x646x16 (RGB555) | PX16 presentation image | Unknown | RGB555; color key unresolved | `5d1036eec4871044c628758b783b7d32b838b3383be9d0bd8f0c8cfbcdb024fe` |

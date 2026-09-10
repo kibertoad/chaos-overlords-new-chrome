@@ -120,9 +120,10 @@ is byte-level provenance, so platform newline conversion is not permitted.
   `bdb1072848df95111cd014faaa7297d016b7c6e55cd7f2658dda67a167a0089d`
 
 Individual gameplay table hashes are in `GameplayDataProvenance` and the format
-log. The current installed pack contains 685 manifest entries representing 471
+log. The current installed pack contains 686 manifest entries representing 471
 original source resources; 214 entries are decoded PX08 derivatives retained
-alongside their original inputs.
+alongside their original inputs, and one entry is the local modern help
+document decoded from the two original WinHelp resources.
 
 ## Original-binary oracle protocol
 

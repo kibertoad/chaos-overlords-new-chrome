@@ -55,9 +55,7 @@ public sealed partial class ChaosGame
         if (!_soundtrackEnabled) return;
         try
         {
-            SelectSoundtrackMode(
-                _screens.Current == ClientScreen.Options ? _optionsReturnScreen : _screens.Current,
-                gameTime.TotalGameTime);
+            SelectSoundtrackMode(SoundtrackContext(), gameTime.TotalGameTime);
             if (_activeSoundtrack.Count == 0) return;
             if (MediaPlayer.State == MediaState.Playing)
             {
@@ -175,9 +173,7 @@ public sealed partial class ChaosGame
             _soundtrackEnabled = true;
             if (!shouldStart) return;
             _soundtrackMode = null;
-            SelectSoundtrackMode(
-                _screens.Current == ClientScreen.Options ? _optionsReturnScreen : _screens.Current,
-                now);
+            SelectSoundtrackMode(SoundtrackContext(), now);
         }
         catch
         {
@@ -200,6 +196,13 @@ public sealed partial class ChaosGame
             // Music is optional presentation; backend failure must not stop play.
         }
     }
+
+    private ClientScreen SoundtrackContext() => _screens.Current switch
+    {
+        ClientScreen.Options => _optionsReturnScreen,
+        ClientScreen.Help => _helpReturnScreen,
+        _ => _screens.Current
+    };
 
     private void DisposeSoundtrack()
     {

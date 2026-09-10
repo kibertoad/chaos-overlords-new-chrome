@@ -7,15 +7,15 @@ namespace Rechaos.Extractor;
 public static class ExtractorProgram
 {
     public const int FormatVersion = AssetManifest.CurrentFormatVersion;
-    public const int ExpectedExtractedAssetCount = 685;
+    public const int ExpectedExtractedAssetCount = 686;
     private const string KnownSourceFingerprintSha256 = "ad958a934a691318f31a27a87252f420dd89a0ad03759457d8feaf49914d29e3";
     private static readonly IReadOnlyDictionary<string, string> KnownTableSha256 =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["SITES"] = GameplayDataProvenance.SitesSha256,
-        ["GANGS"] = GameplayDataProvenance.GangsSha256,
-        ["ITEMS"] = GameplayDataProvenance.ItemsSha256
-    };
+        {
+            ["SITES"] = GameplayDataProvenance.SitesSha256,
+            ["GANGS"] = GameplayDataProvenance.GangsSha256,
+            ["ITEMS"] = GameplayDataProvenance.ItemsSha256
+        };
 
     public static async Task<int> RunAsync(string[] args)
     {
@@ -196,12 +196,25 @@ public static class ExtractorProgram
         }
         Console.WriteLine("Importing help files...");
         if (Directory.Exists(source.HelpDirectory))
+        {
             foreach (var help in Directory.EnumerateFiles(source.HelpDirectory, "*", SearchOption.AllDirectories))
             {
                 var relative = Path.GetRelativePath(source.HelpDirectory, help).Replace('\\', '/');
                 files.Add(await CopyAsync(output, help, Path.Combine(output, "help", relative),
                     $"HELP/{relative}", MediaTypes.ForPath(help)));
             }
+            var legacyHelp = OriginalDataReader.FindCaseInsensitive(
+                Path.Combine(source.HelpDirectory, "Chaos.hlp"));
+            var legacyContents = OriginalDataReader.FindCaseInsensitive(
+                Path.Combine(source.HelpDirectory, "CHAOS.CNT"));
+            var modernHelp = WinHelpDecoder.Decode(legacyHelp, legacyContents);
+            var modernHelpPath = Path.Combine(output, "help", "contents.json");
+            await File.WriteAllTextAsync(modernHelpPath,
+                JsonSerializer.Serialize(modernHelp, jsonOptions));
+            files.Add(await DescribeAsync(output, modernHelpPath,
+                "HELP/Chaos.hlp + HELP/CHAOS.CNT", "application/vnd.rechaos.help+json",
+                new AssetConversion("winhelp-topic-decode")));
+        }
 
         Console.WriteLine("Writing and verifying the imported asset manifest...");
         var manifest = new AssetManifest(FormatVersion, "Chaos Overlords original asset pack", source.Fingerprint,
@@ -341,12 +354,18 @@ public static class PxDimensions
         size = name switch
         {
             "PX00100" or "PX00128" or "PX00130" or "PX00131" or "PX00143" or "PX00144" or "PX00145" or "PX00146" => new(640, 460),
-            "PX00129" => new(512, 646), "PX00132" => new(108, 164),
-            "PX00137" or "PX00139" => new(220, 72), "PX00138" => new(720, 48),
+            "PX00129" => new(512, 646),
+            "PX00132" => new(108, 164),
+            "PX00137" or "PX00139" => new(220, 72),
+            "PX00138" => new(720, 48),
             _ when bytes == 176_022 => new(312, 282),
             _ when bytes == 24_694 => new(220, 56),
-            "PX00200" => new(428, 410), "PX00201" => new(320, 240), "PX00202" or "PX00203" => new(312, 393),
-            "PX00300" => new(324, 64), "PX02000" => new(120, 1408), "PX03000" => new(640, 576),
+            "PX00200" => new(428, 410),
+            "PX00201" => new(320, 240),
+            "PX00202" or "PX00203" => new(312, 393),
+            "PX00300" => new(324, 64),
+            "PX02000" => new(120, 1408),
+            "PX03000" => new(640, 576),
             "PX04999" => new(20, 1280),
             _ when name.StartsWith("PX04", StringComparison.Ordinal) && bytes == 69_174 => new(720, 48),
             _ when name.StartsWith("PX05", StringComparison.Ordinal) && bytes == 143_846 => new(344, 209),

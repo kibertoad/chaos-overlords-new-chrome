@@ -199,7 +199,6 @@ public sealed partial class ChaosGame
         _gangPressPoint = point;
         _gangDragStarted = false;
         _dragPoint = point;
-        _message = "DRAG TO MOVE; DOUBLE-CLICK FOR DETAILS";
     }
 
     private void CompleteGangClick()
@@ -210,8 +209,6 @@ public sealed partial class ChaosGame
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang) return;
         if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
             OpenGangDetails(gang, ClientScreen.Sector);
-        else
-            _message = "DOUBLE-CLICK FOR DETAILS OR DRAG TO MOVE";
     }
 
     private void CompleteGangDrag(Point point)

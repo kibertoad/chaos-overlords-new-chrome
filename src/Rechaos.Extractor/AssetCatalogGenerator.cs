@@ -59,8 +59,10 @@ public static class AssetCatalogGenerator
             return ("Music track", "Unknown sequencing/loop owner", "N/A");
         if (asset.Path.StartsWith("video/", StringComparison.Ordinal))
             return ("Smacker video", asset.Path.Contains("INTRO", StringComparison.Ordinal) ? "Intro" : "Logo flow", "N/A");
+        if (asset.Path.Equals("help/contents.json", StringComparison.Ordinal))
+            return ("Decoded WinHelp topics and contents", "Modern in-game help viewer", "N/A");
         if (asset.Path.StartsWith("help/", StringComparison.Ordinal))
-            return ("Help-system resource", "Help", "Format-dependent");
+            return ("Original WinHelp resource", "Local extraction input; not used at runtime", "Format-dependent");
         return ("Opaque original data", "Unknown", "Unknown");
     }
 

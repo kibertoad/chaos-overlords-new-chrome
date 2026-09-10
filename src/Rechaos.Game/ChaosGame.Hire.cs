@@ -131,7 +131,6 @@ public sealed partial class ChaosGame
         _hirePressPoint = point;
         _hireDragStarted = false;
         _dragPoint = point;
-        _message = "DRAG TO HIRE; DOUBLE-CLICK FOR DETAILS";
     }
 
     private void CompleteHireClick()
@@ -144,8 +143,6 @@ public sealed partial class ChaosGame
         if (definitionId is null || slot is null) return;
         if (_hirePortraitClicks.Register(slot.Value, _inputTime))
             OpenGangDefinitionDetails(definitionId.Value, _screens.Current);
-        else
-            _message = "DOUBLE-CLICK FOR DETAILS OR DRAG TO HIRE";
     }
 
     private void CompleteHireDrag(Point point)

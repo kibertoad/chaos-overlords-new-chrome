@@ -114,7 +114,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private bool _gangDragStarted;
     private Point _dragPoint;
     private Point? _hoverPoint;
-    private string _message = "SELECT NEW GAME";
+    private string _message = string.Empty;
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
     private long _lastAudibleEventSequence = -1;
@@ -158,6 +158,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData([Color.White]);
         _definitions = BundledOriginalData.Load();
+        _helpDocument = ExtractedHelpStore.LoadOrNull(_assetRoot);
 
         _titleBackground = LoadTexture("PX00130.bmp");
         _setupBackground = LoadTexture("PX00143.bmp");
@@ -217,9 +218,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         {
             UpdateOptions(keyboard);
         }
+        else if (_screens.Current == ClientScreen.Help)
+        {
+            UpdateHelp(keyboard);
+        }
         else
         {
-            if (Pressed(keyboard, Keys.O)) OpenOptions();
+            if (Pressed(keyboard, Keys.F1)) OpenHelp();
+            else if (Pressed(keyboard, Keys.O)) OpenOptions();
             else if (Pressed(keyboard, Keys.Escape) && !_screens.Back()) Exit();
             switch (_screens.Current)
             {
@@ -370,6 +376,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Options:
                 DrawOptions(_batch, _pixel, _font);
                 break;
+            case ClientScreen.Help:
+                DrawHelp(_batch, _pixel, _font);
+                break;
             case ClientScreen.Setup:
                 DrawSetup(_batch, _pixel, _font);
                 break;
@@ -461,6 +470,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Options:
                 HandleOptionsClick(point);
+                break;
+            case ClientScreen.Help:
+                HandleHelpClick(point);
                 break;
             case ClientScreen.Setup:
                 var scenario = Array.FindIndex(SetupScenarios, rectangle => rectangle.Contains(point));

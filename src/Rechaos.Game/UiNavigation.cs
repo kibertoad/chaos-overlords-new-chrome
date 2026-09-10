@@ -33,6 +33,7 @@ public enum ClientScreen
 {
     Title,
     Options,
+    Help,
     Setup,
     City,
     Commands,

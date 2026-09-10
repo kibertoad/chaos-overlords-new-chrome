@@ -35,7 +35,7 @@ when importing them.
 | Game setup | All ten scenarios, four durations, the global AI Mentality setting, original portraits, and one-to-six explicitly configured human/computer players. Omitted slots become computer players, so every match has six participants. | Some setup-screen alignment and original hit regions still need parity work. |
 | Local play | Complete deterministic hot-seat turn flow across Upkeep, Command, Execution, Hire, and Elimination, with the original handoff screen between human players. | Legacy protocol compatibility is a permanent non-goal. |
 | Online play | A self-hostable or central coordination server (`multiplayer/`) that seals each simultaneous turn, relays the order set and verifies every client's state hash; see [`docs/MULTIPLAYER.md`](docs/MULTIPLAYER.md). | The game client is not wired to it yet. |
-| City and sector UI | Native 640x460 presentation with integer-friendly scaling, ownership-composited city art, selectable 8x8 city, detailed 3x3 sector view, gang/site information, finance, ranking, research, equipment, hire, combat summary, search, events, and endgame screens. Keyboard and mouse navigation are supported. | Remaining original hit maps, right-click/cancel behavior, configurable bindings, and golden-screen alignment are unfinished. |
+| City and sector UI | Native 640x460 presentation with integer-friendly scaling, ownership-composited city art, selectable 8x8 city, detailed 3x3 sector view, gang/site information, finance, ranking, research, equipment, hire, combat summary, search, events, endgame, and a modern viewer for the locally imported original help. Keyboard and mouse navigation are supported. | Remaining original hit maps, right-click/cancel behavior, configurable bindings, rich help formatting/links, and golden-screen alignment are unfinished. |
 | Gangs and commands | All 14 original command types are represented, validated, queued, repeated/cancelled, and resolved. Drag-to-move, drag-to-hire, Give, Sell, equipment replacement, research, Influence, Chaos, Control, Hide, Heal, Bribe, Snitch, and combat are playable. | Some resolver edge ordering, special-building boundaries, and exact message wording still need reference validation. |
 | Hiring and economy | Original three-offer hire dock, comparison panel, snubbing, Force generation, cash, income, upkeep, debt restrictions, equipment purchasing, and research progression. | A few locality, rounding, and failure-edge behaviors remain under reverse engineering. |
 | Combat and police | Simultaneous gang combat, retaliation, evasion, detection, casualties, equipment loss, Crackdowns, police attacks, original combat panels, decoded animations, and equipped-weapon sound cues. | Animation cadence/color-key details, bare-hand presentation, and several reveal/police ordering edges remain to validate. |
@@ -60,6 +60,7 @@ when importing them.
 | Combat summary | B | Click Combat Summary |
 | Search | X | Click Search |
 | Music options | O | Click Options on the title screen, then click a volume level |
+| Help | F1 | Select topics and page controls in the help viewer |
 | Finish planning | Space | Click the end-turn control |
 | Return to title | Escape | Use the on-screen back/cancel control where available |
 

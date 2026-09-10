@@ -107,7 +107,7 @@ public sealed partial class ChaosGame
     private void RunComputerTurns()
     {
         if (_state is null || _replay is null
-            || _screens.Current is ClientScreen.Title or ClientScreen.Options
+            || _screens.Current is ClientScreen.Title or ClientScreen.Options or ClientScreen.Help
                 or ClientScreen.Setup or ClientScreen.Endgame) return;
         var acted = false;
         while (_state.Coordinator.ActivePlayer is { } playerId)

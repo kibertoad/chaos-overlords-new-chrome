@@ -213,13 +213,39 @@ identity is **Verified**; field interpretation is **High**; playback/timing and
 audio tracks are **Low**. The extractor copies both videos byte-for-byte, but
 the MonoGame client has no Smacker decoder yet.
 
+## Help
+
+The supported `HELP/Chaos.hlp` is a 60,208-byte WinHelp container with magic
+`0x00035F3F`. Its `|SYSTEM` stream identifies minor version 33 and topic flags
+4. The directory B-tree exposes compressed `|TOPIC`, `|PhrIndex`, and
+`|PhrImage` streams. The companion 1,806-byte `CHAOS.CNT` contains 73 contents
+entries, 59 of which name topics. Bounded LZ77 and Hall phrase decoding recovers
+80 meaningful text topics; 21 are linked explanatory topics not listed in the
+contents file. No topic bitmap or table records occur in the supported file.
+
+The extractor converts those user-owned inputs into local
+`help/contents.json`, preserving normalized readable text, topic titles, the
+contents hierarchy, and which topics are listed. Before recreation-authored
+clarifications are applied, the decoded text totals 57,640 characters and has
+SHA-256 `c212f3909b177093863b8a59af1830d8e65359fa452f572ff581e48f01bc7609`
+after newline normalization. An independent parser produced the same character
+count and hash. Container structure, decompression, topic count, and source text
+are therefore **High** confidence. Inline formatting, link targets, and context
+IDs are not yet preserved and remain **Low** confidence.
+
+The generated Attack topic appends a clearly labeled New Chrome clarification:
+the effective roll is gang Combat plus current Force minus defender Defense,
+and simultaneous attacks use start-of-round Force even when a gang is eliminated
+during the round. This intentionally corrects the original manual's omitted
+Force term for players without altering the preserved source files.
+
 ## Other files
 
 | File | Finding | Confidence |
 |---|---|---|
 | `CLT00002` | 944-byte color-related lookup/table; begins repeated four-byte entries resembling B, G, R, flag/index. Not decoded. | **Low** |
 | `DATA.Z` | 7,676,546-byte opaque binary. It does not expose a recognized signature in its first bytes (`13 5D 65 8C ...`). Purpose and compression unknown. | **Low** |
-| `HELP/` | Original help resources copied and hash-inventoried; internal semantics remain unmapped. | **Medium** |
+| `HELP/` | Original WinHelp sources are copied for provenance and decoded locally into the modern topic document described above. | **High** for text/topics; **Low** for formatting/link metadata |
 
 ## Save games (historical reference only; unsupported)
 
