@@ -70,13 +70,13 @@ public static partial class AiTurnPlanner
         IReadOnlyList<GameCommand> options)
     {
         var family = state.AiPlanning.Family(player.Id, gangSlot);
-        if (family is not (1 or 3 or 5 or 10 or 11 or 13 or 14)) return null;
-
         var preparedAction = state.AiPlanning.PlannedAction(player.Id, gangSlot);
-        var choice = family == 1 && preparedAction == GangAction.None
-            ? DesiredRecoveredFamilyChoice(state, player, gang, gangSlot)
-            : new RecoveredFamilyChoice(preparedAction,
-                PreparedCommandTargetId(state, player.Id, gangSlot, preparedAction));
+        var choice = preparedAction != GangAction.None
+            ? new RecoveredFamilyChoice(preparedAction,
+                PreparedCommandTargetId(state, player.Id, gangSlot, preparedAction))
+            : family == 1
+                ? DesiredRecoveredFamilyChoice(state, player, gang, gangSlot)
+                : default;
         if (choice.Action == GangAction.None) return null;
 
         var candidates = options.Where(command => command.Action == choice.Action);
@@ -97,7 +97,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         int gangSlot) =>
         state.AiPlanning.HasPlanned(playerId)
-        && state.AiPlanning.Family(playerId, gangSlot) is 3 or 5 or 13 or 14
+        && state.AiPlanning.Family(playerId, gangSlot) is 3 or 5 or 12 or 13 or 14
         && state.AiPlanning.PlannedAction(playerId, gangSlot) == GangAction.None;
 
     internal static void PrepareRecoveredFamilyCommands(MatchState state, PlayerId playerId)
@@ -124,6 +124,10 @@ public static partial class AiTurnPlanner
         {
             if (!entry.gang.IsActive) continue;
             var family = state.AiPlanning.Family(playerId, entry.slot);
+            if (family == 2 && PrepareFamilyTwoCommand(
+                    state, playerId, entry.gang, entry.slot,
+                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
+                continue;
             if (family == 3 && PrepareFamilyThreeCommand(
                     state, playerId, entry.gang, entry.slot,
                     sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
@@ -132,7 +136,19 @@ public static partial class AiTurnPlanner
                     state, playerId, entry.gang, entry.slot,
                     sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
                 continue;
+            if (family == 7 && PrepareFamilySevenCommand(
+                    state, playerId, entry.gang, entry.slot,
+                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
+                continue;
+            if (family == 9 && PrepareFamilyNineCommand(
+                    state, playerId, entry.gang, entry.slot,
+                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
+                continue;
             if (family == 10 && PrepareFamilyTenCommand(
+                    state, playerId, entry.gang, entry.slot,
+                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
+                continue;
+            if (family == 12 && PrepareFamilyTwelveCommand(
                     state, playerId, entry.gang, entry.slot,
                     sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
                 continue;
@@ -402,7 +418,8 @@ public static partial class AiTurnPlanner
         GangAction action)
     {
         var target = state.AiPlanning.PlannedTarget(playerId, gangSlot);
-        if (action is GangAction.Move or GangAction.Equip) return target.First;
+        if (action is GangAction.Move or GangAction.Equip or GangAction.Research)
+            return target.First;
         if (action == GangAction.Influence)
         {
             var player = state.FindPlayer(playerId);

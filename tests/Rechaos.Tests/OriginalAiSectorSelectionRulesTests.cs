@@ -47,6 +47,39 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
+    public void ModeSixRoutesToUniqueLeaderAndUsesFourGangLimitWhenActorLeads()
+    {
+        var chasing = new Facts(source: 27);
+        chasing.Owners[28] = 1;
+        chasing.Standings = [1, 0, 2, 3, 4, 5];
+        Assert.Equal(28, chasing.Select(mode: 6, family: 2, hasHumanPlayers: false));
+
+        var leading = new Facts(source: 27);
+        leading.Owners[28] = 1;
+        leading.Owners[26] = 2;
+        leading.GangCounts[28] = 4;
+        leading.Standings = [0, 1, 2, 3, 4, 5];
+        Assert.Equal(26, leading.Select(mode: 6, family: 2, hasHumanPlayers: false));
+    }
+
+    [Fact]
+    public void ModeSixRoutesToEveryTiedLeaderAndAddsHostileHumanWeight()
+    {
+        var tied = new Facts(source: 27);
+        tied.Owners[28] = 1;
+        tied.Owners[26] = 2;
+        tied.Standings = [1, 0, 0, 3, 4, 5];
+        tied.HostileOwners.Add(2);
+        tied.HumanOwners.Add(2);
+
+        Assert.Equal(26, tied.Select(mode: 6, family: 2, hasHumanPlayers: true));
+        Assert.Equal(3, OriginalAiSectorSelectionRules.ModeSixBaseScore(
+            26, tied.Player.Value, 2, tied.GangCounts,
+            tied.HostileOwners.Contains, tied.HumanOwners.Contains,
+            hasHumanPlayers: true, tied.Standings));
+    }
+
+    [Fact]
     public void ModeTenSwitchesBetweenHumanAndAnyOpposingOwnership()
     {
         var withHumans = new Facts(source: 27);
@@ -342,13 +375,31 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
+    public void EncodedSourceSectorFallsThroughToOriginalZeroMaximumStep()
+    {
+        const int source = 20;
+        const int seed = 41;
+        var facts = new Facts(source, seed: seed);
+        var expected = ZeroMaximumStep(
+            source, facts.GangCounts, new DeterministicRandom(seed));
+
+        Assert.Equal(expected, facts.Select(mode: 0x40 + source, family: 12));
+        Assert.Equal(3, facts.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void MalformedShapesAndSelectorValuesAreRejected()
     {
         var facts = new Facts(source: 27);
         facts.Owners[28] = 1;
 
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 0, family: 2));
-        Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 6, family: 2));
+        Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
+            6, 27, new PlayerId(0), 2,
+            facts.Owners, facts.Disabled, facts.GangCounts,
+            _ => false, _ => false, _ => false, _ => false,
+            facts.PlayerOrder, facts.Random,
+            hasHumanPlayers: false));
         Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 3, family: 8));
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             8, 27, new PlayerId(0), 3,
@@ -415,6 +466,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
             Disabled = new bool[MatchLimits.SectorCount];
             GangCounts = new int[MatchLimits.SectorCount];
             PlayerOrder = [0, 1, 2, 3, 4, 5];
+            Standings = [0, 1, 2, 3, 4, 5];
             Random = new DeterministicRandom(seed);
         }
 
@@ -424,6 +476,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
         public bool[] Disabled { get; }
         public int[] GangCounts { get; }
         public int[] PlayerOrder { get; set; }
+        public int[] Standings { get; set; }
         public HashSet<int> SoloControl { get; } = [];
         public HashSet<int> PriorChaos { get; } = [];
         public HashSet<int> PriorInfluence { get; } = [];
@@ -449,8 +502,9 @@ public sealed class OriginalAiSectorSelectionRulesTests
                 Random,
                 hasHumanPlayers,
                 formationSectorId,
-                SiteScores.ElementAt,
-                PriorInfluence.Contains,
-                SiteScores.ElementAt);
+                scenarioStandings: mode == 6 ? Standings : null,
+                unfinishedSiteScore: SiteScores.ElementAt,
+                hasPriorInfluence: PriorInfluence.Contains,
+                completedSiteScore: SiteScores.ElementAt);
     }
 }

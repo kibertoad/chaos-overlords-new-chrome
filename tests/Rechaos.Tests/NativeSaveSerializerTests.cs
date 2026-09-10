@@ -23,7 +23,7 @@ public sealed class NativeSaveSerializerTests
         match.AiPlanning.RollActiveGangActions(new PlayerId(1), match.Players[1].Gangs);
         match.AiPlanning.SetEquipmentCooldown(new PlayerId(1), 0, EquipmentSlot.Weapon, 12);
         match.AiPlanning.SetEquipmentCooldown(new PlayerId(1), 0, EquipmentSlot.Armor, 15);
-        match.AiPlanning.SetFormationSector(new PlayerId(1), 0, 37);
+        match.AiPlanning.SetFocusValue(new PlayerId(1), 0, 37);
         match.FinishUpkeep();
         Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(0), GangAction.Hide, CommandTarget.None, Repeat: true)).Accepted);
@@ -57,6 +57,7 @@ public sealed class NativeSaveSerializerTests
         Assert.Equal(12, restored.AiPlanning.WeaponCooldown(new PlayerId(1), 0));
         Assert.Equal(15, restored.AiPlanning.ArmorCooldown(new PlayerId(1), 0));
         Assert.Equal(37, restored.AiPlanning.FormationSector(new PlayerId(1), 0));
+        Assert.Equal(37, restored.AiPlanning.FocusValue(new PlayerId(1), 0));
         Assert.Equal(SaveBytes(match), SaveBytes(restored));
     }
 

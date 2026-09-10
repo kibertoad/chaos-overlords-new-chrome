@@ -35,7 +35,7 @@ The top-level members are:
 | `setup` | Scenario, duration, initial seed, global AI mentality, and ordered player definitions including portrait IDs |
 | `players` | Cash/support/objective state, gangs, three fixed hire slots, pending action slot and legacy prepaid marker, persistent maximum-hire-Force modifier, research, inventory, statistics |
 | `sectors` | Ownership, explicit base income, tolerance, chaos/crackdown/importance, and three site instances |
-| `runtime` | Phase coordinator, RNG state/count, fixed-six-player AI reactions/directional attitudes, six current and previous AI hire roles, six-by-81 AI family records, three generations of action plus two command-dependent target bytes, weapon/armor planning cooldowns, family-11 formation sectors, six first-planning flags, six encoded hire-placement anchors, command queue/counter, event history/counter, notification queues/counters, phase hashes, and outcome |
+| `runtime` | Phase coordinator, RNG state/count, fixed-six-player AI reactions/directional attitudes, six current and previous AI hire roles, six-by-81 AI family records, three generations of action plus two command-dependent target bytes, weapon/armor planning cooldowns, polymorphic family-2/7 focus/family-11 formation values, six first-planning flags, six encoded hire-placement anchors, command queue/counter, event history/counter, notification queues/counters, phase hashes, and outcome |
 
 Gang command projections are reconstructed from the authoritative command queue
 on load. Transient `Last*Resolutions` views are intentionally not serialized;
@@ -72,8 +72,8 @@ to `None`. Version 12 and earlier initialize all newly authoritative action
 target bytes to zero and infer each first-planning flag from whether that
 player's family/action records contain initialized data. Version 13 and earlier
 initialize the weapon and armor cooldowns to zero. Version 14 and earlier infer
-formation sectors from active gangs; this is a development-format convenience,
-not a pre-1.0 compatibility promise.
+the polymorphic focus/formation values from active-gang sectors; this is a
+development-format convenience, not a pre-1.0 compatibility promise.
 The appropriate legacy canonical hash is verified before the
 migrated state is returned. Unknown
 versions remain rejected. Starting with 1.0.0, incompatible changes must
@@ -110,7 +110,8 @@ first-planning flags plus all three generations of command-dependent AI target
 bytes.
 Version 15 embeds native snapshot version 14 and fingerprints weapon and armor
 planning cooldowns. Version 16 embeds native snapshot version 15 and
-fingerprints all six-by-81 family-11 formation-sector values.
+fingerprints all six-by-81 polymorphic family-2/7 focus/family-11 formation
+values. The JSON member remains named `formationSectors` in schema version 15.
 
 Each ordered replay step stores its operation payload, the expected validation
 result where applicable, and the canonical state SHA-256 after the operation.

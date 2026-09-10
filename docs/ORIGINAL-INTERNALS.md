@@ -475,18 +475,21 @@ post-command `PrepareAiHiring` pass derives the verified gate and adjustment
 inputs, writes the next current role, and returns the prepared offer choice;
 replay version 8 records that mutation.
 
-The related 14-byte auxiliary records at `0x0048c0ba` remain deliberately
-unmodeled. Their second short is initialized to the current sector by every
-assigning hire-role-4/family-6 dispatch and is later updated by family-6 routing.
-The first short is written as `-1` by several Equip/Heal/routing paths but as a
-sector by Attack and other paths. Selector `0x5f` treats the second short as
-coverage only when the first equals `-1`; otherwise it tests the gang's live
-sector. This bounds the behavior but does not yet justify a single generic
-“destination” name for either field.
+The first short of the related 14-byte auxiliary record at `0x0048c0ba` is now
+represented as an authoritative polymorphic focus value. Family 11 uses it as
+a formation sector. Family 7 writes a sector while attacking or establishing a
+research position, an item while researching, and `-1` after equipment or
+routing. The same six-by-81 storage is hashed, saved, and replayed; its existing
+`formationSectors` serialized name is retained as a pre-1.0 implementation
+detail. The record's second short remains deliberately unmodeled. It is
+initialized to the current sector by every assigning hire-role-4/family-6
+dispatch and later updated by family-6 routing. Selector `0x5f` treats that
+second short as coverage only when the first equals `-1`; otherwise it tests
+the gang's live sector.
 
-**Next validation:** recover and represent the two per-gang auxiliary shorts so
-family-6 coverage no longer relies on the current-sector/queued-Move semantic
-projection.
+**Next validation:** recover and represent the second per-gang auxiliary short
+so family-6 coverage no longer relies on the current-sector/queued-Move
+semantic projection.
 
 ### BIN-AI-003A - strategic hire-offer ranking
 
@@ -944,6 +947,15 @@ players with a strictly greater score and inactive slots to `0xff`; selector
 `0x2e` therefore returns the unique current leader. Selector `0x5e` counts one
 player's nonempty gang records in a sector.
 
+The scorer uses cash for Greed; controlled-sector count for Power, Big 40, and
+Armageddon; accumulated current Support for Acceptance; and the duration-scaled
+Dominance numerator followed by signed integer division by ten. Kill 'Em All
+and Siege give every active player the same count of inactive player slots.
+Eliminate counts ownership of the six generated Headquarters sectors, while
+Big Man counts current ownership of sectors 27, 28, 35, and 36. These scores and
+the exact zero-based competition standings are now isolated in
+`OriginalAiScenarioStandingRules` and feed live mode-6 movement.
+
 Mode 6 is now bounded. If at least one human participates, a sector owned by a
 player whom the active AI views negatively receives `+2` only when that owner
 is human. It then adds one independent leader-routing point: with a unique
@@ -1021,6 +1033,32 @@ Control gate is restricted to a hostile human-owned sector with zero visible
 human gangs and rejects a previous-turn Control action. Thus the pair flag does
 not directly select an attack; it permits Control after the territorial
 Combat + Defense test has established overwhelming local advantage.
+
+Focused inspection of the complete family-2 handler at `0x0041fef0` establishes
+its exact action order. Selector `0x64`'s armor opportunity precedes selector
+`0x61`'s weapon opportunity. Each requires a nonpositive corresponding
+cooldown, a different affordable item, and an immediately previous action other
+than Attack; either Equip writes raw item cost times three to its cooldown and
+clears the first auxiliary short. Failed equipment Heals only below Force 8,
+at effective Heal at least `-3`, and with cached current-sector opponent weight
+strictly below 5. An owned current sector then Moves through mode 6.
+
+In a non-owned sector, positive cached opponent weight and at least one visible
+hostile gang enter a five-attempt Attack loop. Weight 10 draws the actual target
+from all visible human-controlled gangs; other weights draw from visible gangs
+whose owner is viewed negatively. Selector `0x2b` still resolves the same
+ordinal through the complete visible-opponent list for the quarter-strength
+comparison. A passing comparison stops early, but five failures still Attack
+the final actual target. The handler stores the current sector in the first
+auxiliary short for Attack and clears it for its other ordinary actions.
+
+Without that Attack path, previous Control, Armageddon, or failed strict solo
+Control writes mode-6 Move; otherwise the handler writes Control. The two late
+hostility gates described above can overwrite any earlier ordinary action with
+Control and clear the auxiliary short. Finally, Greed with fewer than four
+turns remaining overwrites the action with Terminate. The recreation now wires
+this complete branch order, mode-6 target, action target, cooldown, auxiliary
+write, and RNG consumption into replay-recorded planning.
 
 The surrounding action writes give the site modes public command semantics.
 Family 5 uses mode 7 after writing Move; when the selected Support-priority
@@ -1122,6 +1160,78 @@ Support scan/sum, target-pool asymmetry, terminal order, and RNG call order in
 the fingerprinted version-1.1 executable; runtime corroboration remains
 pending.
 
+Family 7 at `0x00436c70` is now completely bounded at the action level. It
+starts from the current sector's cached visible-opponent weight. Weight 10
+makes one bounded draw: a hostile-owned sector selects the actual target from
+visible human-controller gangs, while other sectors use every visible
+opponent. The comparison ordinal still resolves through the full visible list
+and uses the shared quarter-strength combat predicate. Attack is written only
+when that comparison succeeds and the actual selected owner is hostile; the
+first auxiliary short then stores the current sector. A failed comparison
+continues into the normal research sequence rather than ending at None.
+
+Without weight 10, family 7 applies selector `0x6c`'s equipment-need gate and
+the family-1 weapon-before-armor choice. Both slots require a nonpositive
+cooldown, a different affordable item, and write a raw-cost-times-three
+cooldown plus focus `-1`. A prepared Equip, Move, Attack, or Influence skips
+the remaining decision body. Otherwise an immediately previous Equip, Move,
+Attack, or Influence clears the first byte of its previous target, and Force
+below 8 with effective Heal at least `-3` writes terminal Heal.
+
+Selector `0x30` begins with the current sector and replaces it only with an
+owned sector having a strictly greater cached Research score. That cache is
+the signed sum of all three site definitions' Research modifiers; ties retain
+the earlier candidate and the current sector is not required to be owned. A
+changed best sector is encoded as `sector + 0x40` for one-step Move and clears
+the focus. At the selected local sector, the first slot-order site with
+positive Research and positive remaining Resistance receives Influence. With
+no such site, the focus becomes the current sector and item Research begins.
+
+Pending previous Research repeats the same item. A completed previous ranged,
+blade, or armor item next requests blade, armor, or the fixed miscellaneous
+priority `[44, 41, 42, 43, 46, 50, 49, 52]`; every other type next requests
+ranged. Type scans choose the first positive item ID whose type matches, whose
+Tech does not exceed selector `0x62`'s gang/local-site cap, and whose per-player
+research value remains positive. A failed continuation retries ranged, blade,
+melee, armor, then the fixed miscellaneous list. If every category is
+exhausted, the handler changes to family 0, moves through mode 5, and clears
+the focus. Greed's final three turns overwrite any result with Terminate.
+
+**Recreation status:** the complete family-7 equipment, Heal, Attack,
+Research-site selection, Influence, encoded Move, item continuation/fallback,
+family-0 exhaustion transition, focus state, and Greed override are live and
+replay-recorded.
+
+**Confidence:** High static evidence for branch order, score and site fields,
+item scan order, target-pool asymmetry, target/focus writes, and RNG order in
+the fingerprinted version-1.1 executable; runtime corroboration remains
+pending.
+
+Family 9 at `0x004605e0` is now completely bounded at the action level. It
+first tries selector `0x61`'s weapon and selector `0x64`'s armor. Each candidate
+must differ from the equipped item and be affordable. Unlike the equipment
+branches that query selectors `0x65` and `0x66`, family 9 does not inspect the
+existing weapon or armor cooldown before replacing the item; a successful
+Equip overwrites the matching cooldown with three times raw item cost.
+
+With neither upgrade available, a gang in its own sector always writes Move
+through shared sector mode 3, which seeks another player's owned territory.
+In a non-owned sector, cached visible-opponent weight 10 enters a five-draw
+target loop. Its hostile-human-owner pool choice, full-visible-list comparison
+ordinal, quarter-strength predicate, early success exit, and final Attack after
+five failed comparisons match family 12. When the weight is not 10, an
+immediately previous Control writes mode-3 Move; every other previous action
+writes Control. This handler has no Heal, miscellaneous equipment, or Greed
+terminal override.
+
+**Recreation status:** the complete family-9 weapon/armor, mode-3 Move,
+five-draw Attack, and Control sequence is live and replay-recorded, including
+the absence of an equipment-cooldown gate.
+
+**Confidence:** High static evidence for branch order, comparisons, action
+writes, selector arguments, target-pool order, and RNG call order in the
+fingerprinted version-1.1 executable; runtime corroboration remains pending.
+
 Family 10 at `0x0042a6e0` is now completely bounded at the action level. It
 first calls selector `0x72`, which scans researched type-3 armor within the
 gang's raw Tech and retains the first strict maximum Defense improvement. An
@@ -1155,6 +1265,51 @@ recreation's validator remains provisional.
 **Confidence:** High static evidence for comparisons, scan/tie order, action
 writes, and RNG order in the fingerprinted version-1.1 executable; runtime
 corroboration remains pending.
+
+Family 12 at `0x004353a0` is now completely bounded at the action level. It
+starts from cached selector `0xaf` for the current sector. When no opposing
+gang is visible, it tries selector `0x61`'s weapon, selector `0x64`'s armor,
+and selector `0x74`'s maximum-Chaos miscellaneous upgrade in that order. The
+weapon and armor must differ from the current item, their matching cooldown
+must be nonpositive, and raw cost must be at most current cash. Unlike families
+1, 3, 5, and 11, a successful weapon or armor Equip writes a cooldown equal to
+the raw item cost rather than three times that cost. Miscellaneous equipment
+uses the same inclusive cash gate and writes no cooldown.
+
+After failed equipment opportunities, Force below 10 and effective Heal at
+least `-3` writes Heal. Otherwise the handler passes `current sector + 0x40`
+to the shared sector selector and writes Move. The encoded mode adds one point
+to the current sector, but the common selector then clears the source-sector
+score. Its maximum is consequently zero: it draws among all 64 tied sectors
+and applies the normal x-then-y one-step capacity routing toward that draw.
+This apparently indirect random movement is the literal shared-selector path,
+not a direct encoded destination like the separate hire-placement selector.
+
+With a visible opponent, family 12 makes up to five bounded target draws. A
+hostile human-owned current sector with weight 10 draws the actual target from
+visible human-controller gangs; otherwise it uses every visible opponent. As
+in families 3 and 5, selector `0x2b` resolves the same ordinal through the full
+visible list for the quarter-strength combat comparison. A passing comparison
+stops the loop early. Five failed comparisons do not cancel the command: the
+final selected actual target is still written as Attack. Finally, Greed with
+fewer than four turns remaining overwrites any prepared action with Terminate.
+There is no three-consecutive-Move family transition in this handler.
+
+The recreation additionally guards the possible state in which the current
+sector has a hostile human owner but its only visible opposing gangs are
+computer-controlled. The filtered actual-target pool is then empty. Planning
+still consumes one bounded draw and preserves None instead of calling the
+recreation RNG with zero and aborting the turn. The reference executable's
+observable outcome for this sparse three-player edge remains uncorroborated.
+
+**Recreation status:** the complete family-12 equipment, Heal, encoded Move,
+five-draw Attack, target-ordinal asymmetry, and Greed override sequence is live
+and replay-recorded. Prepared commands still pass through the recreation's
+normal validator.
+
+**Confidence:** High static evidence for comparisons, action writes, selector
+arguments, target-pool order, and RNG call order in the fingerprinted
+version-1.1 executable; runtime corroboration remains pending.
 
 Families 13 and 14 both use the fixed objective sets as Move destinations:
 scenario value 8 selects modes 12/14 and is Big Man, while scenario value 6

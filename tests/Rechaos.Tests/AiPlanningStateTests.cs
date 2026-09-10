@@ -173,6 +173,30 @@ public sealed class AiPlanningStateTests
     }
 
     [Fact]
+    public void FocusAliasSharesAuxiliaryValueAndCanClearPreviousTargetFirstByte()
+    {
+        var planning = AiPlanningState.Initialize();
+        var player = new PlayerId(2);
+        planning.BeginPlanning(player);
+        planning.SetFocusValue(player, 3, 42);
+        planning.SetPlannedAction(
+            player, 3, GangAction.Attack, new AiActionTarget(5, 7));
+        planning.RollActiveGangActions(player,
+        [
+            new(new GangId(20), player, 1, 0, 0),
+            new(new GangId(21), player, 1, 0, 0),
+            new(new GangId(22), player, 1, 0, 0),
+            new(new GangId(23), player, 1, 0, 5)
+        ]);
+
+        planning.ClearPreviousTargetFirst(player, 3);
+
+        Assert.Equal(42, planning.FocusValue(player, 3));
+        Assert.Equal(42, planning.FormationSector(player, 3));
+        Assert.Equal(new AiActionTarget(0, 7), planning.PreviousTarget(player, 3));
+    }
+
+    [Fact]
     public void CleanupRewritesOnlyFirstDuplicateChaosAndInfluencePerSector()
     {
         var planning = AiPlanningState.Initialize();
