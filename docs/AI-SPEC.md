@@ -190,6 +190,14 @@ replay-verified two-computer harness through 20 turns or objective completion.
    another planning record already has previous Influence. Its equipment,
    opponent targeting/comparison, three-Move transition, Greed override, and
    intentional None cases are live at the same replay-recorded boundary.
+   Family 10's complete recovered handler prioritizes a strict-Defense armor
+   upgrade with a literal two-turn cooldown, then a special researched Smoke
+   Bombs Equip, then Heal below Force 10 only with no visible local opponent.
+   Otherwise it probes mode 9 for a strictly stronger sum of completed positive
+   site Stealth and calls mode 9 again for the Move destination; without an
+   improvement it chooses Chaos unless another gang in the sector has previous
+   Chaos, in which case it Hides. The intentional second selector call and its
+   independent tie RNG are replay-recorded.
    The exact ten-scenario by
    seven-hire-role family table is implemented by `OriginalAiFamilyRules`,
    including unmapped cells which preserve the current family. AI planning

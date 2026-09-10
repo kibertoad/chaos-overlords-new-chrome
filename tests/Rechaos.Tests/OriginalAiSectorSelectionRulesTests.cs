@@ -329,6 +329,19 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
+    public void ModeNineScoresCompletedStealthInOwnedSectors()
+    {
+        var facts = new Facts(source: 20);
+        facts.Owners[21] = facts.Player.Value;
+        facts.SiteScores[21] = 3;
+        facts.Owners[28] = facts.Player.Value;
+        facts.SiteScores[28] = 9;
+
+        Assert.Equal(28, facts.Select(mode: 9, family: 10));
+        Assert.Equal(0, facts.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void MalformedShapesAndSelectorValuesAreRejected()
     {
         var facts = new Facts(source: 27);
@@ -348,6 +361,11 @@ public sealed class OriginalAiSectorSelectionRulesTests
             _ => false, _ => false, _ => false, _ => false,
             facts.PlayerOrder, facts.Random,
             unfinishedSiteScore: facts.SiteScores.ElementAt));
+        Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
+            9, 27, new PlayerId(0), 10,
+            facts.Owners, facts.Disabled, facts.GangCounts,
+            _ => false, _ => false, _ => false, _ => false,
+            facts.PlayerOrder, facts.Random));
         Assert.Throws<ArgumentException>(() => OriginalAiSectorSelectionRules.Select(
             3, 27, new PlayerId(0), 2,
             facts.Owners[..^1], facts.Disabled, facts.GangCounts,
@@ -432,6 +450,7 @@ public sealed class OriginalAiSectorSelectionRulesTests
                 hasHumanPlayers,
                 formationSectorId,
                 SiteScores.ElementAt,
-                PriorInfluence.Contains);
+                PriorInfluence.Contains,
+                SiteScores.ElementAt);
     }
 }

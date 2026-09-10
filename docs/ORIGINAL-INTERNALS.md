@@ -1122,6 +1122,40 @@ Support scan/sum, target-pool asymmetry, terminal order, and RNG call order in
 the fingerprinted version-1.1 executable; runtime corroboration remains
 pending.
 
+Family 10 at `0x0042a6e0` is now completely bounded at the action level. It
+first calls selector `0x72`, which scans researched type-3 armor within the
+gang's raw Tech and retains the first strict maximum Defense improvement. An
+unequipped gang uses item 1 as its zero-Defense sentinel. The handler accepts
+the returned armor only when its offset-`+14` cooldown is at most zero and raw
+item cost is at most cash, then writes Equip and the literal cooldown 2. This
+differs from the cost-times-three cooldown used by families 1, 3, 5, and 11.
+
+If that opportunity fails, an empty miscellaneous slot plus a clear research
+flag for item 44 writes Equip for **Smoke Bombs**. This special branch performs
+no separate raw-Tech or cash comparison in the handler. Otherwise it writes
+Heal only below Force 10, with effective Heal at least `-3`, and with cached
+visible-opponent weight exactly zero in the current sector.
+
+The remaining path calls sector mode 9 and compares selector 8 for the returned
+sector against selector 8 for the current sector. Mode 9 scores only owned
+sectors and sums each strictly positive Stealth value whose site is already
+finished. If the returned sector's sum is strictly larger, the handler writes
+Move and calls mode 9 a second time for the actual destination. It does not
+reuse the probed destination, so a maximum tie can consume two bounded draws
+and choose a different tied sector on the second call. If the probe is not
+strictly better, selector `0x5b` counts same-sector records with previous
+Chaos; zero writes Chaos and any positive count writes Hide.
+
+**Recreation status:** the complete family-10 decision sequence, selector
+`0x72`, fixed Smoke Bombs branch, literal armor cooldown, mode-9 score, double
+selection, and Chaos/Hide fallback are live and replay-recorded. As with other
+recovered handlers, behavior after a prepared command is unavailable under the
+recreation's validator remains provisional.
+
+**Confidence:** High static evidence for comparisons, scan/tie order, action
+writes, and RNG order in the fingerprinted version-1.1 executable; runtime
+corroboration remains pending.
+
 Families 13 and 14 both use the fixed objective sets as Move destinations:
 scenario value 8 selects modes 12/14 and is Big Man, while scenario value 6
 selects modes 13/15 and is Eliminate. Family 13 uses the variants that exclude
