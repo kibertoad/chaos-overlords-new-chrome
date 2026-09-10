@@ -83,8 +83,10 @@ sectors. Only the unavailable-command fallback remains provisional.
   not binary-validated behavior.
 - AI Mentality's global, query selector, reaction/attitude state, sector Combat
   + Defense advantage hostility pass, and all nine resolution-band consumers
-  are recovered and integrated, but exact planner outcomes and scoring
-  weights remain incomplete. Combat ordering/reveal timing, police edges, equipment,
+  are recovered and integrated; family 1's post-equipment owner/cash/Mentality/
+  Tolerance continuation is recovered as an isolated kernel but awaits its
+  cooldown and nearby-danger gates. Exact planner outcomes and scoring weights
+  remain incomplete. Combat ordering/reveal timing, police edges, equipment,
   objective timing, and audiovisual triggers retain the
   specific parity gaps listed above.
 

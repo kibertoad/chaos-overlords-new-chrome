@@ -827,10 +827,31 @@ remains provisional.
 
 The other family-1 paths use the common Force-below-9 Heal gate. The isolated
 rules also guard two distinct cash comparisons: the strict continuation changes
-from Move at cash 50 to Snitch at 51, while the crime branch admits cash 50 and
-changes from Chaos to Snitch as Tolerance moves from 3 to 4. Those terminal
-crime decisions remain isolated until their surrounding target enumerators are
-bounded.
+from Move at cash 50 to Snitch at 51, while the post-equipment crime branch
+admits cash 50 and changes from Chaos to Snitch as Tolerance moves from 3 to 4.
+
+The post-equipment continuation at `0x004345d0..0x00434712`, reached after
+prior Control, Equip, or Snitch when no preceding equipment opportunity writes
+Equip, is now complete. Selector `0x35` splits on whether the current sector
+owner is human. A human owner takes the crime branch at cash at least 50 and
+Mentality at least Criminal. A non-human owner takes it only when the raw owner
+differs from the active player, is strictly greater than zero, cash is at least
+50, and Mentality is exactly Goon. The literal positive-owner comparison means
+player zero is deliberately excluded on this side. The crime branch writes
+Chaos at Tolerance at most 3 and Snitch from 4; every failed gate writes Move
+through mode 5. `OriginalAiFamilyOneRules.SelectPostEquipmentContinuation`
+preserves these comparisons as an isolated kernel.
+
+The preceding equipment decision is not yet safe to integrate. Selectors
+`0x39` and `0x3a` read the equipped weapon and armor. Selector `0x64` chooses a
+researched type-3 armor candidate whose Tech requirement is within the gang's
+raw Tech, whose relevant bonus at item-record offset `+0xc` strictly improves
+on the current armor, and whose cost is strictly less than cash. Selectors
+`0x65` and `0x66` read the two planning-record cooldown shorts at offsets
+`+12` and `+14`; selector `0x6c` supplies an additional 3-by-3 nearby danger
+and missing-equipment gate. Until those cooldown fields and selector `0x6c`
+are represented authoritatively, the post-equipment continuation remains out
+of live planning.
 
 The previous-Heal case is also complete at the action level. It repeats Heal
 under the common Force-below-9/effective-Heal-at-least-`-3` gate. Otherwise it

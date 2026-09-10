@@ -7,6 +7,7 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiFamilyOneRules
 {
+    private const int MinimumRawSectorOwner = -3;
     public const int StrictHealForceLimit = 8;
     public const int CommonHealForceLimit = 9;
     public const int MinimumEffectiveHeal = -3;
@@ -53,5 +54,30 @@ internal static class OriginalAiFamilyOneRules
         if (CanHeal(force, effectiveHeal, CommonHealForceLimit))
             return GangAction.Heal;
         return canSoloControl ? GangAction.Control : GangAction.Move;
+    }
+
+    public static GangAction SelectPostEquipmentContinuation(
+        PlayerId actingPlayer,
+        int sectorOwner,
+        bool sectorOwnerIsHuman,
+        int cash,
+        AiDifficulty mentality,
+        int tolerance)
+    {
+        if (sectorOwner is < MinimumRawSectorOwner or >= MatchLimits.PlayerCount)
+            throw new ArgumentOutOfRangeException(nameof(sectorOwner));
+        if (!Enum.IsDefined(mentality))
+            throw new ArgumentOutOfRangeException(nameof(mentality));
+
+        var choosesCrime = sectorOwnerIsHuman
+            ? cash >= CrimeCashThreshold && mentality >= AiDifficulty.Criminal
+            : sectorOwner != actingPlayer.Value
+                && sectorOwner > 0
+                && cash >= CrimeCashThreshold
+                && mentality == AiDifficulty.Goon;
+        if (!choosesCrime) return GangAction.Move;
+        return tolerance < ChaosToleranceThreshold
+            ? GangAction.Chaos
+            : GangAction.Snitch;
     }
 }

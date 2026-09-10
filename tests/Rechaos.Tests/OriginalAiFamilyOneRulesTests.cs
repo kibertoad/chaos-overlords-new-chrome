@@ -70,4 +70,49 @@ public sealed class OriginalAiFamilyOneRulesTests
             OriginalAiFamilyOneRules.SelectHealContinuation(
                 8, -4, canSoloControl: false));
     }
+
+    [Fact]
+    public void PostEquipmentBranchPreservesOwnerCashMentalityAndToleranceComparisons()
+    {
+        var player = new PlayerId(0);
+
+        Assert.Equal(GangAction.Move, Select(player, owner: 1, human: true,
+            cash: 49, AiDifficulty.Criminal, tolerance: 3));
+        Assert.Equal(GangAction.Move, Select(player, owner: 1, human: true,
+            cash: 50, AiDifficulty.Goon, tolerance: 3));
+        Assert.Equal(GangAction.Chaos, Select(player, owner: 1, human: true,
+            cash: 50, AiDifficulty.Criminal, tolerance: 3));
+        Assert.Equal(GangAction.Snitch, Select(player, owner: 1, human: true,
+            cash: 50, AiDifficulty.HomicidalManiac, tolerance: 4));
+
+        Assert.Equal(GangAction.Move, Select(player, owner: -1, human: false,
+            cash: 50, AiDifficulty.Goon, tolerance: 3));
+        Assert.Equal(GangAction.Move, Select(new PlayerId(1), owner: 0, human: false,
+            cash: 50, AiDifficulty.Goon, tolerance: 3));
+        Assert.Equal(GangAction.Move, Select(player, owner: 0, human: false,
+            cash: 50, AiDifficulty.Goon, tolerance: 3));
+        Assert.Equal(GangAction.Move, Select(player, owner: 1, human: false,
+            cash: 49, AiDifficulty.Goon, tolerance: 3));
+        Assert.Equal(GangAction.Chaos, Select(player, owner: 1, human: false,
+            cash: 50, AiDifficulty.Goon, tolerance: 3));
+        Assert.Equal(GangAction.Snitch, Select(player, owner: 1, human: false,
+            cash: 50, AiDifficulty.Goon, tolerance: 4));
+        Assert.Equal(GangAction.Move, Select(player, owner: 1, human: false,
+            cash: 50, AiDifficulty.Criminal, tolerance: 3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Select(
+            player, owner: MatchLimits.PlayerCount, human: false,
+            cash: 50, AiDifficulty.Goon, tolerance: 3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Select(
+            player, owner: 1, human: false,
+            cash: 50, (AiDifficulty)99, tolerance: 3));
+    }
+
+    private static GangAction Select(
+        PlayerId player,
+        int owner,
+        bool human,
+        int cash,
+        AiDifficulty mentality,
+        int tolerance) => OriginalAiFamilyOneRules.SelectPostEquipmentContinuation(
+            player, owner, human, cash, mentality, tolerance);
 }
