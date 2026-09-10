@@ -7,24 +7,34 @@ import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlit
  * seat-capacity check are plain SQL; `settings` stays the source clients read back. Every child
  * table cascades from `matches`, so retention is one delete of the rows a match owns.
  */
-export const matches = sqliteTable('matches', {
-  id: text('id').primaryKey(),
-  status: text('status').notNull(),
-  name: text('name').notNull(),
-  visibility: text('visibility').notNull(),
-  maxPlayers: integer('max_players').notNull(),
-  settings: text('settings', { mode: 'json' }).notNull(),
-  hostPlayerId: text('host_player_id').notNull(),
-  joinCode: text('join_code').notNull().unique(),
-  passwordHash: text('password_hash'),
-  seed: integer('seed'),
-  currentTurn: integer('current_turn').notNull().default(0),
-  seatCount: integer('seat_count').notNull().default(1),
-  /** Monotonic: seats ever claimed. Never decremented, so `join_order` stays a total order. */
-  joinCounter: integer('join_counter').notNull().default(1),
-  createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
-  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
-})
+export const matches = sqliteTable(
+  'matches',
+  {
+    id: text('id').primaryKey(),
+    status: text('status').notNull(),
+    name: text('name').notNull(),
+    visibility: text('visibility').notNull(),
+    maxPlayers: integer('max_players').notNull(),
+    settings: text('settings', { mode: 'json' }).notNull(),
+    hostPlayerId: text('host_player_id').notNull(),
+    joinCode: text('join_code').notNull().unique(),
+    passwordHash: text('password_hash'),
+    seed: integer('seed'),
+    currentTurn: integer('current_turn').notNull().default(0),
+    seatCount: integer('seat_count').notNull().default(1),
+    /** Monotonic: seats ever claimed. Never decremented, so `join_order` stays a total order. */
+    joinCounter: integer('join_counter').notNull().default(1),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [
+    // The sweep runs on a short interval and reads `matches` by status every tick: stalled seals of
+    // live matches, and inactive ones past their retention age. Without these it scans the whole
+    // table each time, which is the one cost that grows with every match ever played.
+    index('matches_status_updated_idx').on(table.status, table.updatedAt),
+    index('matches_lobby_idx').on(table.status, table.visibility, table.createdAt),
+  ],
+)
 
 export const players = sqliteTable(
   'players',

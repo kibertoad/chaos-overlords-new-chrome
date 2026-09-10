@@ -13,25 +13,40 @@ import {
 /** The Postgres dialect. Column-for-column the SQLite schema; see that file for the layout notes. */
 const stamp = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' })
 
-export const matches = pgTable('matches', {
-  id: text('id').primaryKey(),
-  status: text('status').notNull(),
-  name: text('name').notNull(),
-  visibility: text('visibility').notNull(),
-  maxPlayers: integer('max_players').notNull(),
-  settings: jsonb('settings').notNull(),
-  hostPlayerId: text('host_player_id').notNull(),
-  joinCode: text('join_code').notNull().unique(),
-  passwordHash: text('password_hash'),
-  /** A uint32; Postgres' `integer` is signed 32-bit, so it takes a bigint column. */
-  seed: bigint('seed', { mode: 'number' }),
-  currentTurn: integer('current_turn').notNull().default(0),
-  seatCount: integer('seat_count').notNull().default(1),
-  /** Monotonic: seats ever claimed. Never decremented, so `join_order` stays a total order. */
-  joinCounter: integer('join_counter').notNull().default(1),
-  createdAt: stamp('created_at').notNull(),
-  updatedAt: stamp('updated_at').notNull(),
-})
+export const matches = pgTable(
+  'matches',
+  {
+    id: text('id').primaryKey(),
+    status: text('status').notNull(),
+    name: text('name').notNull(),
+    visibility: text('visibility').notNull(),
+    maxPlayers: integer('max_players').notNull(),
+    settings: jsonb('settings').notNull(),
+    hostPlayerId: text('host_player_id').notNull(),
+    joinCode: text('join_code').notNull().unique(),
+    passwordHash: text('password_hash'),
+    /**
+     * The seed is a SIGNED 32-bit integer, because `MatchSetup.InitialSeed` in the game core is a
+     * C# `int`. It would fit Postgres' own signed `integer`; the column stays a `bigint` only so the
+     * one migration already applied to a deployment does not have to be rewritten, and a wider
+     * column costs nothing. The SQLite lineage shares the dialect-neutral `integer`.
+     */
+    seed: bigint('seed', { mode: 'number' }),
+    currentTurn: integer('current_turn').notNull().default(0),
+    seatCount: integer('seat_count').notNull().default(1),
+    /** Monotonic: seats ever claimed. Never decremented, so `join_order` stays a total order. */
+    joinCounter: integer('join_counter').notNull().default(1),
+    createdAt: stamp('created_at').notNull(),
+    updatedAt: stamp('updated_at').notNull(),
+  },
+  (table) => [
+    // The sweep runs on a short interval and reads `matches` by status every tick: stalled seals of
+    // live matches, and inactive ones past their retention age. Without these it scans the whole
+    // table each time, which is the one cost that grows with every match ever played.
+    index('matches_status_updated_idx').on(table.status, table.updatedAt),
+    index('matches_lobby_idx').on(table.status, table.visibility, table.createdAt),
+  ],
+)
 
 export const players = pgTable(
   'players',

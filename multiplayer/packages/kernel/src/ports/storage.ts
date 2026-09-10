@@ -57,7 +57,12 @@ export interface MatchRepository {
 }
 
 export interface PlayerRepository {
-  create(player: Player): Promise<void>
+  /**
+   * Insert the player only while their match is still in the lobby, in ONE statement. False when
+   * the match has started (or is gone), which is what keeps a seat claimed a moment before the
+   * host pressed start from becoming an unseated player in a running match.
+   */
+  create(player: Player): Promise<boolean>
   get(id: string): Promise<Player | null>
   /** Never matches a revoked membership, whose token hash is null. */
   getByTokenHash(tokenHash: string): Promise<Player | null>
@@ -66,6 +71,11 @@ export interface PlayerRepository {
   setStatus(playerId: string, status: Player['status']): Promise<void>
   /** Clears the token hash, so the player's bearer token stops authenticating immediately. */
   revokeToken(playerId: string): Promise<void>
+  /**
+   * Seat every player in ONE statement. A loop of updates could fail partway and leave a running
+   * match with some players still unseated, after the status change that made the roster final has
+   * already committed — and nothing downstream repairs seating.
+   */
   assignSlots(assignments: ReadonlyArray<{ playerId: string; slot: number }>): Promise<void>
   delete(playerId: string): Promise<void>
 }
@@ -114,9 +124,10 @@ export interface TurnRepository {
   /** Open turns whose deadline has passed, oldest first. */
   listExpiredOpen(now: Date, limit: number): Promise<Array<Pick<Turn, 'matchId' | 'number'>>>
   /**
-   * Current turns of live matches that are no longer open: a seal that died between marking the
-   * turn sealed and opening its successor, which leaves the match with nothing to play. The repair
-   * sweep finishes them.
+   * Live matches whose current turn is not open, so there is nothing for anyone to play: a seal
+   * that died between marking the turn sealed and opening its successor, or a start that died
+   * between running the match and opening turn 1 (no row at all). The repair sweep finishes both,
+   * which is why a missing turn counts as stalled rather than being skipped.
    */
   listStalledSeals(limit: number): Promise<Array<Pick<Turn, 'matchId' | 'number'>>>
 }
@@ -125,6 +136,12 @@ export interface SnapshotRepository {
   put(snapshot: Snapshot): Promise<void>
   get(matchId: string, turn: number): Promise<Snapshot | null>
   getLatest(matchId: string): Promise<Snapshot | null>
+  /**
+   * Keep only the `keep` newest turns' snapshots of a match, dropping the rest. Returns how many
+   * went. Retention collects whole terminated matches; this bounds what a single LIVE match holds,
+   * which is otherwise a megabyte per desynced turn with nothing to stop it.
+   */
+  prune(matchId: string, keep: number): Promise<number>
 }
 
 export interface EventRepository {

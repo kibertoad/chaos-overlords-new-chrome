@@ -8,7 +8,21 @@ import type {
   SnapshotRepository,
   TurnRepository,
 } from '@chaos-overlords/kernel'
-import { and, asc, desc, eq, exists, inArray, isNotNull, lt, lte, ne, sql } from 'drizzle-orm'
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  ne,
+  or,
+  sql,
+} from 'drizzle-orm'
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
 import { APPEND_ATTEMPTS, insertUnlessTaken, isUniqueViolation } from '../shared/constraints'
 import {
@@ -102,11 +116,15 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
         .where(and(eq(matches.id, matchId), sql`${matches.seatCount} > 0`))
     },
     async deleteInactive(statuses, before, limit) {
+      // `for update skip locked`: two sweeps (two server instances, or a cron overlapping itself)
+      // would otherwise pick overlapping batches and deadlock on each other's row locks. Skipping
+      // what a peer already holds means each pass simply collects a different batch.
       const collectable = db
         .select({ id: matches.id })
         .from(matches)
         .where(and(inArray(matches.status, [...statuses]), lt(matches.updatedAt, before)))
         .limit(limit)
+        .for('update', { skipLocked: true })
       // Children cascade from the match row, so one delete takes the whole match with it.
       const rows = await db
         .delete(matches)
@@ -126,10 +144,39 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
 }
 
 function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
-  const { players } = schema
+  const { matches, players } = schema
   return {
+    /**
+     * An insert fed by a select over the match row, so "the match is still in the lobby" is tested
+     * by the same statement that writes the player. The seat counter was claimed a moment earlier
+     * and the match may have started since; without this the player would land in a running match
+     * that had already seated its roster, holding a seat nobody can play.
+     *
+     * The select list is written out, which means it does NOT get Drizzle's column mapping: a
+     * column added to `players` later has to be added here too, in the storage form the column
+     * expects. The conformance suite compares a created player against its fixture field by field,
+     * so a dropped column fails there rather than going unnoticed.
+     */
     async create(player) {
-      await db.insert(players).values(player)
+      const rows = await db
+        .insert(players)
+        .select(
+          db
+            .select({
+              id: sql`${player.id}`.as('id'),
+              matchId: sql`${player.matchId}`.as('match_id'),
+              slot: sql`${player.slot}`.as('slot'),
+              joinOrder: sql`${player.joinOrder}`.as('join_order'),
+              displayName: sql`${player.displayName}`.as('display_name'),
+              tokenHash: sql`${player.tokenHash}`.as('token_hash'),
+              status: sql`${player.status}`.as('status'),
+              joinedAt: sql`${player.joinedAt}`.as('joined_at'),
+            })
+            .from(matches)
+            .where(and(eq(matches.id, player.matchId), eq(matches.status, 'lobby'))),
+        )
+        .returning({ id: players.id })
+      return rows.length === 1
     },
     async get(id) {
       return firstOrNull((await db.select().from(players).where(eq(players.id, id))).map(toPlayer))
@@ -154,9 +201,21 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
       await db.update(players).set({ tokenHash: null }).where(eq(players.id, playerId))
     },
     async assignSlots(assignments) {
-      for (const { playerId, slot } of assignments) {
-        await db.update(players).set({ slot }).where(eq(players.id, playerId))
-      }
+      if (assignments.length === 0) return
+      // One statement: a CASE that maps each id to its slot. A loop of updates could commit some
+      // seats and not others, and the transition that made the roster final has already landed.
+      const cases = assignments.map(
+        ({ playerId, slot }) => sql`when ${players.id} = ${playerId} then ${slot}`,
+      )
+      await db
+        .update(players)
+        .set({ slot: sql`case ${sql.join(cases, sql` `)} else ${players.slot} end` })
+        .where(
+          inArray(
+            players.id,
+            assignments.map(({ playerId }) => playerId),
+          ),
+        )
     },
     async delete(playerId) {
       await db.delete(players).where(eq(players.id, playerId))
@@ -293,19 +352,23 @@ function postgresTurnRepository(db: PostgresDatabase): TurnRepository {
         .orderBy(asc(turns.deadlineAt))
         .limit(limit)
     },
+    /**
+     * Driven from `matches`, not from `turns`: a match whose current turn has no row at all (a
+     * `start` that died before opening turn 1) is as stalled as one whose seal stopped halfway,
+     * and an inner join would never see it. The repair opens the successor in both cases.
+     */
     async listStalledSeals(limit) {
       return db
-        .select({ matchId: turns.matchId, number: turns.number })
-        .from(turns)
-        .innerJoin(matches, eq(matches.id, turns.matchId))
+        .select({ matchId: matches.id, number: matches.currentTurn })
+        .from(matches)
+        .leftJoin(turns, and(eq(turns.matchId, matches.id), eq(turns.number, matches.currentTurn)))
         .where(
           and(
             inArray(matches.status, ['running', 'desynced']),
-            eq(turns.number, matches.currentTurn),
-            ne(turns.status, 'open'),
+            or(isNull(turns.status), ne(turns.status, 'open')),
           ),
         )
-        .orderBy(asc(turns.matchId), asc(turns.number))
+        .orderBy(asc(matches.id))
         .limit(limit)
     },
   }
@@ -344,6 +407,22 @@ function postgresSnapshotRepository(db: PostgresDatabase): SnapshotRepository {
         .orderBy(desc(snapshots.turn))
         .limit(1)
       return firstOrNull(rows.map(toSnapshot))
+    },
+    async prune(matchId, keep) {
+      // The turns to keep are the newest `keep`; everything strictly below the oldest of them goes.
+      const kept = await db
+        .select({ turn: snapshots.turn })
+        .from(snapshots)
+        .where(eq(snapshots.matchId, matchId))
+        .orderBy(desc(snapshots.turn))
+        .limit(keep)
+      const oldestKept = kept.at(-1)?.turn
+      if (oldestKept === undefined || kept.length < keep) return 0
+      const rows = await db
+        .delete(snapshots)
+        .where(and(eq(snapshots.matchId, matchId), lt(snapshots.turn, oldestKept)))
+        .returning({ turn: snapshots.turn })
+      return rows.length
     },
   }
 }

@@ -13,7 +13,7 @@ import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
 import { MatchQueryService, toPlayerView } from './MatchQueryService'
-import type { TurnService } from './TurnService'
+import { FIRST_TURN, type TurnService } from './TurnService'
 
 const JOIN_CODE_LENGTH = LIMITS.joinCodeLength
 const MIN_PLAYERS_TO_START = LIMITS.minPlayers
@@ -72,7 +72,12 @@ export class LobbyService {
       status: 'active',
       joinedAt: now,
     }
-    await this.deps.storage.players.create(host)
+    // The match was inserted a statement ago and is in the lobby, so this cannot legitimately fail;
+    // treating it as a conflict rather than ignoring it keeps the host's token from being handed out
+    // for a row that does not exist.
+    if (!(await this.deps.storage.players.create(host))) {
+      throw new ConflictError('The match could not be opened; retry', { reason: 'match_not_open' })
+    }
     await this.publisher.publish(matchId, {
       type: 'lobby.playerJoined',
       payload: { player: toPlayerView(host, hostId) },
@@ -110,18 +115,27 @@ export class LobbyService {
       status: 'active',
       joinedAt: this.deps.clock.now(),
     }
+    // Everything after the seat is claimed has to give it back on failure, or capacity drifts and a
+    // phantom member keeps the turn barrier waiting for a player nobody can authenticate as. The
+    // insert is itself conditional on the match still being in the lobby: the host may have pressed
+    // start between the claim and here, and an unseated player in a running match would wedge it.
     try {
-      await this.deps.storage.players.create(player)
+      const seated = await this.deps.storage.players.create(player)
+      if (!seated) {
+        throw new ConflictError('The match started while you were joining', {
+          reason: 'match_not_joinable',
+        })
+      }
+      const membership = await this.membership(match, player, token)
+      await this.publisher.publish(match.id, {
+        type: 'lobby.playerJoined',
+        payload: { player: toPlayerView(player, match.hostPlayerId) },
+      })
+      return membership
     } catch (error) {
-      // The seat is claimed before the row exists; giving it back keeps capacity honest.
-      await this.deps.storage.matches.releaseSeat(match.id)
+      await this.rollbackJoin(match.id, player.id)
       throw error
     }
-    await this.publisher.publish(match.id, {
-      type: 'lobby.playerJoined',
-      payload: { player: toPlayerView(player, match.hostPlayerId) },
-    })
-    return this.membership(match, player, token)
   }
 
   async leave(principal: Principal): Promise<void> {
@@ -176,7 +190,7 @@ export class LobbyService {
         players: activePlayers(seated).map((player) => toPlayerView(player, match.hostPlayerId)),
       },
     })
-    await this.turns.openTurn({ ...match, status: 'running', seed }, 1)
+    await this.turns.openTurn({ ...match, status: 'running', seed }, FIRST_TURN)
   }
 
   private async remove(match: Match, target: Player, reason: 'left' | 'kicked'): Promise<void> {
@@ -221,6 +235,24 @@ export class LobbyService {
     }
     // A departure can complete readiness or a consensus that was waiting on the leaver.
     await this.turns.reevaluate(match.id)
+  }
+
+  /**
+   * Undo a join that could not be completed. The token was never returned, so the row is
+   * unreachable: leaving it would hold a seat and keep `allActiveReady` waiting forever on a player
+   * who does not exist. Deleting the row is safe precisely because nobody ever held its token.
+   */
+  private async rollbackJoin(matchId: string, playerId: string): Promise<void> {
+    try {
+      await this.deps.storage.players.delete(playerId)
+      await this.deps.storage.matches.releaseSeat(matchId)
+    } catch (error) {
+      this.deps.logger.error('could not roll back an incomplete join', {
+        matchId,
+        playerId,
+        error: String(error),
+      })
+    }
   }
 
   private async abandon(match: Match, now: Date): Promise<void> {

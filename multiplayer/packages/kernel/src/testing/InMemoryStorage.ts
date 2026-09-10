@@ -99,7 +99,10 @@ export class InMemoryStorage implements MultiplayerStorage {
       if (clash || this.playerRows.has(player.id)) {
         throw new Error(`player ${player.id} or its token already exists`)
       }
+      // Conditional on the lobby, like the conditional insert the real repositories use.
+      if (this.matchRows.get(player.matchId)?.status !== 'lobby') return false
       this.playerRows.set(player.id, { ...player })
+      return true
     },
     get: async (id) => clone(this.playerRows.get(id)),
     getByTokenHash: async (tokenHash) =>
@@ -203,16 +206,16 @@ export class InMemoryStorage implements MultiplayerStorage {
         .sort((a, b) => (a.deadlineAt?.getTime() ?? 0) - (b.deadlineAt?.getTime() ?? 0))
         .slice(0, limit)
         .map((turn) => ({ matchId: turn.matchId, number: turn.number })),
+    // Driven from the matches, so a current turn with no row at all counts as stalled too.
     listStalledSeals: async (limit) =>
-      [...this.turnRows.values()]
-        .filter((turn) => {
-          const match = this.matchRows.get(turn.matchId)
-          if (!match || (match.status !== 'running' && match.status !== 'desynced')) return false
-          return turn.number === match.currentTurn && turn.status !== 'open'
-        })
-        .sort((a, b) => a.matchId.localeCompare(b.matchId) || a.number - b.number)
+      [...this.matchRows.values()]
+        .filter((match) => match.status === 'running' || match.status === 'desynced')
+        .filter(
+          (match) => this.turnRows.get(turnKey(match.id, match.currentTurn))?.status !== 'open',
+        )
+        .sort((a, b) => a.id.localeCompare(b.id))
         .slice(0, limit)
-        .map((turn) => ({ matchId: turn.matchId, number: turn.number })),
+        .map((match) => ({ matchId: match.id, number: match.currentTurn })),
   }
 
   readonly snapshots: SnapshotRepository = {
@@ -220,6 +223,16 @@ export class InMemoryStorage implements MultiplayerStorage {
       this.snapshotRows.set(turnKey(snapshot.matchId, snapshot.turn), { ...snapshot })
     },
     get: async (matchId, turn) => clone(this.snapshotRows.get(turnKey(matchId, turn))),
+    prune: async (matchId, keep) => {
+      const turns = [...this.snapshotRows.values()]
+        .filter((snapshot) => snapshot.matchId === matchId)
+        .map((snapshot) => snapshot.turn)
+        .sort((a, b) => b - a)
+      if (turns.length <= keep) return 0
+      const dropped = turns.slice(keep)
+      for (const turn of dropped) this.snapshotRows.delete(turnKey(matchId, turn))
+      return dropped.length
+    },
     getLatest: async (matchId) =>
       clone(
         [...this.snapshotRows.values()]

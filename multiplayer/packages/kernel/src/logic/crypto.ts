@@ -58,9 +58,16 @@ export function generateJoinCode(length: number): string {
   return code
 }
 
-/** A 32-bit seed for the deterministic game core. */
+/**
+ * A seed for the deterministic game core, in the range the core can actually hold.
+ *
+ * `MatchSetup.InitialSeed` is a C# `int`, so the wire value has to be a SIGNED 32-bit integer:
+ * drawing 32 unsigned bits would put half of all seeds above `int.MaxValue`, where the client's
+ * deserializer refuses them and the match never starts. `Int32Array` reinterprets the same four
+ * random bytes as the signed value the core will read, which keeps the full 32 bits of entropy.
+ */
 export function generateSeed(): number {
-  const [value] = new Uint32Array(randomBytes(4).buffer)
+  const [value] = new Int32Array(randomBytes(4).buffer)
   return value ?? 0
 }
 
