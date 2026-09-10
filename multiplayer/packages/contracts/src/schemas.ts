@@ -1,11 +1,9 @@
 import { boolean, type InferOutput, optional, strictObject } from 'valibot'
-import { INT32_MAX, LIMITS } from './limits'
 import { orderDocumentSchema } from './orders'
 import {
   base64BodySchema,
   displayNameSchema,
   formatVersionSchema,
-  integerQueryParam,
   joinCodeInputSchema,
   passwordSchema,
   sha256HexSchema,

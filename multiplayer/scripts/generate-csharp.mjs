@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -19,11 +19,11 @@ import { fileURLToPath } from 'node:url'
  * ```
  *
  * The generator is fetched on demand rather than declared as a dependency: it is a maintenance
- * tool, and nothing about installing, building or testing this workspace should wait on it. Point
- * `VALIBOT_TO_CSHARP` at a sibling `game-infra` checkout's CLI to run an unpublished one:
+ * tool, and nothing about installing, building or testing this workspace should wait on it. Pass
+ * `--generator` to run an unpublished one out of a sibling `game-infra` checkout:
  *
  * ```sh
- * VALIBOT_TO_CSHARP="npx tsx ../game-infra/packages/valibot-to-csharp/src/cli.ts" pnpm codegen
+ * pnpm codegen --generator "npx tsx ../game-infra/packages/valibot-to-csharp/src/cli.ts"
  * ```
  */
 
@@ -134,7 +134,7 @@ function routeTemplates() {
 
 /** Runs the generator into a scratch directory and returns what it wrote. */
 function run(scratch) {
-  const cli = (process.env.VALIBOT_TO_CSHARP ?? DEFAULT_CLI).split(' ').filter(Boolean)
+  const cli = (generatorOverride() ?? DEFAULT_CLI).split(' ').filter(Boolean)
   const [command, ...leading] = cli
   const args = [
     ...leading,
@@ -165,12 +165,17 @@ function run(scratch) {
  * that Node's ESM loader will not resolve. Reading the source sidesteps that and needs no build.
  */
 function readRoutes() {
+  const contractsModule = JSON.stringify(
+    join(multiplayerRoot, 'packages', 'contracts', 'src', 'contracts.ts'),
+  )
   const script = [
     "import { mapApiContractToPath } from '@toad-contracts/core'",
-    `import { API_CONTRACTS } from ${JSON.stringify(join(multiplayerRoot, 'packages', 'contracts', 'src', 'contracts.ts'))}`,
-    'process.stdout.write(JSON.stringify(Object.entries(API_CONTRACTS).map(([name, contract]) =>',
-    '  [`${name[0].toUpperCase()}${name.slice(1)}`,',
-    '   `${contract.method.toUpperCase()} ${mapApiContractToPath(contract)}`])))',
+    `import { API_CONTRACTS } from ${contractsModule}`,
+    'const rows = Object.entries(API_CONTRACTS).map(([name, contract]) => [',
+    '  name[0].toUpperCase() + name.slice(1),',
+    "  contract.method.toUpperCase() + ' ' + mapApiContractToPath(contract),",
+    '])',
+    'process.stdout.write(JSON.stringify(rows))',
   ].join('\n')
   const result = spawnSync('npx', ['--yes', 'tsx', '--eval', script], {
     cwd: join(multiplayerRoot, 'packages', 'contracts'),
@@ -182,6 +187,12 @@ function readRoutes() {
     )
   }
   return JSON.parse(result.stdout)
+}
+
+/** The `--generator "<command>"` argument, when one was passed. */
+function generatorOverride() {
+  const index = process.argv.indexOf('--generator')
+  return index >= 0 ? process.argv[index + 1] : undefined
 }
 
 /** Line-ending-agnostic, so a checkout with CRLF does not read as drift. */

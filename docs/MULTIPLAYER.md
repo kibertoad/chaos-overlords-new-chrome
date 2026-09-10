@@ -1,6 +1,6 @@
 # Multiplayer
 
-Status: implemented server, client integration pending
+Status: implemented server, game client wired
 Last updated: 2026-09-10
 
 Online play for *Chaos Overlords: New Chrome* runs through a coordination server that any player
@@ -67,6 +67,13 @@ immutable`.
 
 All paths are under `/api/v1`. Bodies are JSON; the schemas are in
 `multiplayer/packages/contracts`. Authenticated calls send `Authorization: Bearer <token>`.
+
+Each endpoint is one `defineApiContract` in `packages/contracts/src/contracts.ts`, carrying its
+method, its path, the schema of every request target and the shape of every response. That is the
+only statement of it anywhere: the server mounts those contracts through `@toad-contracts/hono`, so
+a handler reads `c.req.valid(...)` rather than parsing again; the TypeScript client builds its URLs
+from the same `pathResolver` the route pattern is derived from; and the C# client's records are
+generated from the same valibot schemas (see "Two languages, one contract").
 
 ### Lobby
 
@@ -235,9 +242,37 @@ shows up as a desync. What the checks above buy is that the document reaching th
 *representable* move — an out-of-range id or an unknown op can never crash or diverge a peer, and a
 desync therefore means a genuine disagreement about the rules rather than malformed input.
 
+## Two languages, one contract
+
+The server is TypeScript and the game is .NET, so one of the two mirrors of every wire type has to
+be derived from the other rather than typed twice. `pnpm codegen` in `multiplayer/` is that
+derivation: [`@game-infra/valibot-to-csharp`](https://www.npmjs.com/package/@game-infra/valibot-to-csharp)
+walks the valibot schemas and emits `src/Rechaos.Multiplayer/Generated/WireContracts.cs`, whose
+records deserialize the same JSON; a second pass reads the endpoint contracts and emits
+`RouteTemplates.cs`, which `MultiplayerApiRouteTests` holds the C# client's paths to. Both files are
+committed, so building the game never needs Node, and `pnpm codegen:check` fails if either has
+drifted from the schemas.
+
+Three things the schemas say exist for that crossing:
+
+- **Every integer states its bounds.** A bound is what lets the generated C# hold a value in an
+  `int` instead of a `long` or a `double`; JavaScript integers run to 2^53, so an unbounded one has
+  no narrower type that could not refuse a legal value. The ceiling on turn numbers, sequence
+  numbers and format versions is `int.MaxValue`, which is the bound the client already had.
+- **No number is ever a float.** The order digest is taken over canonical JSON, and a float's
+  shortest round-trip spelling is not portable: JavaScript writes `1e+21` where .NET writes `1E+21`.
+- **`optional` and `nullable` are different.** The first says a key may be absent, the second that a
+  value may be `null`, and a request that writes `null` where only absence is accepted is refused.
+  The generated C# omits an optional field rather than writing a null for it.
+
+What the generator cannot mirror, `Rechaos.Multiplayer` writes by hand and pins with a test:
+canonical JSON. `packages/kernel/test/logic.spec.ts` and `MultiplayerCanonicalJsonTests` hold the
+same golden document, the same canonical text and the same digest, on both sides of the wire.
+
 ## Client integration contract
 
-What the C# client (`Rechaos.Game`) has to do; `multiplayer/packages/client` is the reference:
+What the C# client has to do. `multiplayer/packages/client` is the reference and
+`src/Rechaos.Multiplayer` is the implementation:
 
 1. Create or join, keep the token and the last event `seq`; open the stream with `Last-Event-ID`.
    Events are at least once: ignore one for a turn already applied, and treat the match view as the
@@ -261,6 +296,25 @@ What the C# client (`Rechaos.Game`) has to do; `multiplayer/packages/client` is 
    sealed turns from there, and resume the stream. A token that answers 401 means the membership was
    revoked — the player left or was kicked.
 
+### What a hot-seat core does not say
+
+Two things the list above leaves implicit, which a client written against a turn-by-turn core gets
+wrong by default. Both are settled in `src/Rechaos.Multiplayer/Session`.
+
+**The interface plans on a copy.** Applying a queued command to the authoritative state as the
+player queues it would put this client ahead of its peers, and the sealed set would then apply the
+same command a second time. The authoritative state advances only by applying a sealed turn;
+`SpeculativeTurn` is the copy the player plans on, and it is thrown away when the turn seals. The
+copy also advances the coordinator to the local seat, because the core refuses a command from
+anybody but the active player and in a simultaneous turn only one seat is ever that.
+
+**Hire offers are drawn once, for every seat, on entering Command.** The game draws them lazily when
+a player opens the dock, which is harmless with one state and not with six: drawing spends the
+shared PRNG, so a client whose player never opened the dock would diverge from one whose player did,
+and every later draw in the match with it. `MatchState.PrepareSimultaneousHireOffers` is the
+simultaneous form — one ordered pass every client takes at the same point — and it is what makes the
+dock a player plans against the dock the sealed turn grants.
+
 ## Limitations and next steps
 
 - **One server process.** The Node runtime fans events out in memory, so two instances behind a
@@ -272,6 +326,9 @@ What the C# client (`Rechaos.Game`) has to do; `multiplayer/packages/client` is 
   one path that does work under it, because it reads the log directly.
 - Late joining into a running match (taking over a computer slot) is not offered; the lobby is
   the only door.
+- **The lobby is polled, not streamed.** The game reads the match about once a second while the
+  lobby is on screen and opens the event stream when the match starts. The stream carries the lobby
+  facts too; opening it earlier would mean unwinding a session for every player who backs out.
 - No chat. A WebSocket lane for lobby chat would sit beside the stream without touching turns.
 - The turn timer is a whole-match setting; per-turn extensions are not offered beyond the restart
   that follows a desync pause.
