@@ -101,6 +101,10 @@ Rules that keep the two runtimes honest:
   conformance suite in the same change.
 - Anything the Node facade wires (a scheduler, a notifier) has a Worker twin, asserted by the HTTP
   conformance suite running on both.
+- **Run one process.** Events fan out in memory, so a second instance behind a load balancer would
+  wake only its own subscribers and a client could sit silent through everything the other instance
+  wrote — with no error to show for it. Postgres is for durability and familiar operations, not for
+  scaling out; see "Limitations and next steps" in `docs/MULTIPLAYER.md`.
 - No transactions: D1 has none. Every race is a single conditional statement whose row count says
   who won (see the port comments in `packages/kernel/src/ports/storage.ts`).
 - A write a unique index can refuse returns `false` instead of throwing. Driver error shapes are

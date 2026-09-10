@@ -93,13 +93,27 @@ All paths are under `/api/v1`. Bodies are JSON; the schemas are in
 | `GET /matches/:id/events?after=N` | member | The log, paged. |
 | `GET /matches/:id/stream` | member | The same log as SSE; `Last-Event-ID` or `?after=` resumes. |
 
-The order document is deliberately generic: `{ schemaVersion: 1, ops: [{ op, args }] }` where `args`
-is a flat map of scalars, bounded in count and size. It maps onto the authoritative operations the
-core's replay recorder already stores; the server never interprets an op. Legality is judged by the
-core on every client while applying the sealed set, exactly as a replay is verified, so an illegal
-op is rejected identically everywhere and cannot cause a desync.
+The order document is `{ schemaVersion: 1, ops: [...] }`, where each op is one of the five
+operations the core's replay recorder accepts as player intent, in the core's own vocabulary:
 
-Numeric arguments are **safe integers only**, and `-0` is refused. The order digest is SHA-256 over
+```jsonc
+{ "op": "submitCommand", "player": 0, "gang": 12, "action": 10,
+  "target": { "kind": "sector", "id": 27 }, "repeat": false, "secondaryTarget": null }
+{ "op": "cancelCommand", "player": 0, "gang": 12 }
+{ "op": "queueHire", "player": 0, "gangDefinitionId": 44, "sectorId": 27 }
+{ "op": "snubHireOffer", "player": 0, "gangDefinitionId": 44 }
+{ "op": "dismissNotification", "player": 0 }
+```
+
+These mirror `MatchReplayRecorder.Submit` / `Cancel` / `QueueHire` / `SnubHireOffer` /
+`TryDismissNotification`. The phase transitions (`FinishCommand` and the rest) and the `Prepare*`
+steps are driven by the turn structure on every client and are refused over the wire. Every id is
+bounded by the capacity it indexes and every op must name the submitter's own slot; unknown ops and
+unknown fields are refused. See "What the server does and does not defend against" for why this
+stops short of judging legality, which stays with the core on each client while it applies the
+sealed set, exactly as a replay is verified.
+
+Numbers are **safe integers only**, and `-0` is refused. The order digest is SHA-256 over
 canonical JSON, so a client in another language has to reproduce that text byte for byte, and a
 float's shortest round-trip spelling is not portable (`1e+21` from JavaScript, `1E+21` from .NET).
 Canonical JSON is: keys sorted by UTF-16 code unit (.NET's `StringComparer.Ordinal`), no whitespace,
@@ -170,17 +184,56 @@ desync pause is not abandonment.
   member is a cost too — order documents are a quarter of a megabyte and snapshots four times that.
   The windows are per process, which is what a self-hosted server needs; a public deployment puts its
   platform's rate limiting in front as the real gate.
-- **Bounded input everywhere**: body limits per route, a bounded op count and scalar sizes, an
-  opaque settings blob capped at 8 KiB, snapshots capped at 1 MiB base64. Enums persisted as text
-  are narrowed by the only writer, the service layer.
+- **Bounded input everywhere**: body limits per route, a bounded op count, an opaque settings blob
+  capped at 8 KiB and bounded in nesting depth as well as bytes, snapshots capped at 1 MiB of
+  base64 whose alphabet, padding and length are checked even though the server never decodes them.
+  Enums persisted as text are narrowed by the only writer, the service layer.
 - **Integrity of the sealed set**: `orderSetHash` is SHA-256 over `slot:ordersHash` lines and
   each `ordersHash` is SHA-256 over the canonical JSON of that player's document, so a client can
   verify what it fetched against the digest that was announced on the stream.
+- **Recovery cannot be dictated by one player.** A snapshot that repairs a desynced turn becomes
+  the hash every other client is told to converge on, so the host may only claim a hash that the
+  players themselves already reported in the greatest number. Without that, a host could desync
+  deliberately and upload a doctored state as the new truth. A genuine tie — above all the 1-1
+  split of a two-player match — leaves nothing to count and the host breaks it; three or more is
+  where this bites, and consistency is the goal, so converging on the majority is right even when
+  the host's own client happens to be the correct one.
 - **What lockstep does not protect**: every client holds the full game state, so a modified
   client can reveal hidden gangs or peek at fog it should not see. The hash consensus catches any
-  client that *changes* the outcome, not one that merely reads. Moving resolution server-side (a
-  WebAssembly build of `Rechaos.Core` behind a `TurnResolver` port) would close that gap and is
-  the one design change this layout leaves room for; the wire protocol would not change.
+  client that *changes* the outcome, not one that merely reads. Nor does it attribute blame: a
+  client that diverges deliberately can grief a match by desyncing it every turn, and the remedy is
+  social — `turn.desynced` names every player's hash and the candidates, so the host can see who is
+  the odd one out and kick them. Moving resolution server-side (a WebAssembly build of
+  `Rechaos.Core` behind a `TurnResolver` port) would close both gaps and is the one design change
+  this layout leaves room for; the wire protocol would not change.
+
+## What the server does and does not defend against
+
+The server does not simulate, so the line between what it can check and what it cannot is worth
+stating exactly. `packages/contracts/src/orders.ts` is the enforcement point.
+
+**Checked on every submission, by the one party all clients trust:**
+
+- **The op vocabulary is closed.** An order document may only contain the five operations the game
+  core records as player intent — `submitCommand`, `cancelCommand`, `queueHire`, `snubHireOffer`,
+  `dismissNotification`. Phase transitions and the `Prepare*` steps are driven by the turn structure
+  on every client and are refused over the wire; so is any op name the game does not have.
+- **Every field is present, typed, and in range.** A sector is 0..63, a site 0..191, an item 0..63,
+  a player 0..5, a gang action 0..14, a gang definition a signed 16-bit id — the capacities of
+  `MatchLimits` and the C# types of `Rechaos.Core`. Unknown fields are refused rather than ignored,
+  so nothing can be smuggled past a client that reads more of the document than it should.
+- **Ops must act for the submitter's own slot.** The sealed set attributes orders to the slot they
+  were submitted from; an op naming another player is refused, so the two attributions can never
+  disagree and a client that trusts the `player` field cannot be steered by a peer.
+- **Numbers must be portable.** Only safe integers, and never `-0`: the digest is taken over
+  canonical JSON, and a value with no portable text form is a digest no C# client could reproduce.
+
+**Not checked, because it is the rules and the rules are not here:** whether the player owns that
+gang, can afford that hire, or may reach that sector. Each client judges legality while applying the
+sealed set, through the same validator the replay reader uses, and a client that resolves differently
+shows up as a desync. What the checks above buy is that the document reaching that point is always a
+*representable* move — an out-of-range id or an unknown op can never crash or diverge a peer, and a
+desync therefore means a genuine disagreement about the rules rather than malformed input.
 
 ## Client integration contract
 
@@ -190,7 +243,9 @@ What the C# client (`Rechaos.Game`) has to do; `multiplayer/packages/client` is 
    Events are at least once: ignore one for a turn already applied, and treat the match view as the
    authority when the two disagree.
 2. On `match.started`, build the match through `OriginalMatchFactory` from `seed` and the seated
-   players (slot → human, the rest computer) using the stored `gameSettings`.
+   players (slot → human, the rest computer) using the stored `gameSettings`. The seed is a
+   **signed 32-bit integer**, drawn to fit `MatchSetup.InitialSeed`: it can be negative, and a
+   client that deserializes it into anything narrower than an `int` will reject half of all matches.
 3. During Command, record the player's authoritative operations as the order document; `PUT` it
    whenever it changes, with `ready: true` when the player presses Done.
 4. On `turn.sealed`, fetch the sealed set and verify the digest: SHA-256 over `slot:ordersHash`
@@ -208,6 +263,13 @@ What the C# client (`Rechaos.Game`) has to do; `multiplayer/packages/client` is 
 
 ## Limitations and next steps
 
+- **One server process.** The Node runtime fans events out in memory, so two instances behind a
+  load balancer would each wake only their own subscribers: a client on instance A would sit silent
+  through everything written on instance B, with no error to show for it. Rate-limit windows
+  fragment the same way. Postgres is offered for durability and operational familiarity, not as a
+  way to scale out; running more than one instance needs a shared fan-out (the Cloudflare runtime's
+  Durable Object is the worked example) before it is safe. The `GET /events?after=` fallback is the
+  one path that does work under it, because it reads the log directly.
 - Late joining into a running match (taking over a computer slot) is not offered; the lobby is
   the only door.
 - No chat. A WebSocket lane for lobby chat would sit beside the stream without touching turns.

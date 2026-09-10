@@ -13,9 +13,13 @@ export interface HttpConformanceHarness {
 
 const HASH_A = 'a'.repeat(64)
 const HASH_B = 'b'.repeat(64)
-const orders = (n: number): OrderDocument => ({
+/**
+ * A one-op document for the player seated in `slot`. Ops name their own slot because the server
+ * refuses any that do not, so the fixture has to know which seat it is submitting for.
+ */
+const orders = (slot: number, n: number): OrderDocument => ({
   schemaVersion: 1,
-  ops: [{ op: 'move', args: { gang: n } }],
+  ops: [{ op: 'cancelCommand', player: slot, gang: n }],
 })
 
 async function collect(
@@ -151,18 +155,18 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
         (events) => types(events).includes('turn.confirmed'),
       )
 
-      await host.api.submitOrders(1, { orders: orders(1), ready: true })
+      await host.api.submitOrders(1, { orders: orders(0, 1), ready: true })
       await expect(guest.api.sealedOrders(1)).rejects.toMatchObject({
         status: 409,
         reason: 'turn_open',
       })
       expect((await host.api.mySubmission(1)).ready).toBe(true)
-      await guest.api.submitOrders(1, { orders: orders(2), ready: true })
+      await guest.api.submitOrders(1, { orders: orders(1, 2), ready: true })
 
       const sealed = await guest.api.sealedOrders(1)
       expect(sealed.players.map((p) => [p.slot, p.orders])).toEqual([
-        [0, orders(1)],
-        [1, orders(2)],
+        [0, orders(0, 1)],
+        [1, orders(1, 2)],
       ])
       expect((await host.api.get()).match.currentTurn).toBe(2)
 
@@ -196,7 +200,7 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
         controller,
         (events) => events.length >= 2,
       )
-      await host.api.submitOrders(1, { orders: orders(1), ready: true })
+      await host.api.submitOrders(1, { orders: orders(0, 1), ready: true })
       const events = await pending
       expect(events.map((event) => event.seq)).toEqual([lastSeq, lastSeq + 1])
       expect(events[1]?.type).toBe('turn.readiness')
@@ -205,13 +209,13 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
     it('flags a desync, pauses the match, and recovers when reports match the host snapshot', async () => {
       const { matchId, host, guest } = await lobbyOfTwo()
       await host.api.start()
-      await host.api.submitOrders(1, { orders: orders(1), ready: true })
-      await guest.api.submitOrders(1, { orders: orders(2), ready: true })
+      await host.api.submitOrders(1, { orders: orders(0, 1), ready: true })
+      await guest.api.submitOrders(1, { orders: orders(1, 2), ready: true })
       await host.api.report(1, { stateHash: HASH_A, finished: false })
       await guest.api.report(1, { stateHash: HASH_B, finished: false })
       expect((await host.api.get()).match.status).toBe('desynced')
       await expect(
-        guest.api.submitOrders(2, { orders: orders(3), ready: true }),
+        guest.api.submitOrders(2, { orders: orders(1, 3), ready: true }),
       ).rejects.toMatchObject({ reason: 'match_desynced' })
       await expect(guest.api.latestSnapshot()).rejects.toMatchObject({
         status: 404,
@@ -238,14 +242,14 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       const third = await client().join({ joinCode: host.joinCode, displayName: 'Linus' })
       const thirdApi = client().withToken(third.token).match(host.match.id)
       await host.api.start()
-      await host.api.submitOrders(1, { orders: orders(1), ready: true })
-      await thirdApi.submitOrders(1, { orders: orders(3), ready: true })
+      await host.api.submitOrders(1, { orders: orders(0, 1), ready: true })
+      await thirdApi.submitOrders(1, { orders: orders(2, 3), ready: true })
       await host.api.kick(guest.player.id)
       expect((await host.api.get()).match.currentTurn).toBe(2)
       // The kick revokes the token, so the kicked player loses reads as well as writes: no orders,
       // no sealed sets of the turns that follow, no stream.
       await expect(
-        guest.api.submitOrders(2, { orders: orders(1), ready: true }),
+        guest.api.submitOrders(2, { orders: orders(1, 1), ready: true }),
       ).rejects.toMatchObject({ status: 401, reason: 'invalid_token' })
       await expect(guest.api.get()).rejects.toMatchObject({ status: 401 })
       await expect(guest.api.sealedOrders(1)).rejects.toMatchObject({ status: 401 })
@@ -259,7 +263,7 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       const { host, guest } = await lobbyOfTwo(60)
       await host.api.start()
       expect((await host.api.get()).match.turn?.deadlineAt).toEqual(expect.any(String))
-      await guest.api.submitOrders(1, { orders: orders(2), ready: false })
+      await guest.api.submitOrders(1, { orders: orders(1, 2), ready: false })
       await harness.expireDeadlines?.()
       const sealed = await host.api.sealedOrders(1)
       expect(sealed.players.map((p) => p.slot)).toEqual([1])

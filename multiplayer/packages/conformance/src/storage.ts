@@ -244,6 +244,49 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(await storage.players.get(b.id)).toBeNull()
     })
 
+    /**
+     * The seat counter is claimed a statement before the row is written, and the host may press
+     * start in between. An unseated player in a running match holds a seat, counts towards
+     * readiness, and has no slot to play, so the insert has to test the status itself.
+     */
+    it('writes a player only while the match is in the lobby', async () => {
+      const match = matchFixture({ status: 'lobby' })
+      await storage.matches.create(match)
+      expect(await storage.players.create(playerFixture(match))).toBe(true)
+      await storage.matches.transition(match.id, ['lobby'], {
+        status: 'running',
+        updatedAt: new Date(),
+      })
+      const late = playerFixture(match)
+      expect(await storage.players.create(late)).toBe(false)
+      expect(await storage.players.get(late.id)).toBeNull()
+      const orphan = playerFixture(match, { matchId: uid('missing') })
+      expect(await storage.players.create(orphan)).toBe(false)
+      expect(await storage.players.get(orphan.id)).toBeNull()
+    })
+
+    /**
+     * One statement, so a failure cannot leave a running match half-seated after the transition
+     * that made its roster final has already committed.
+     */
+    it('seats every player at once and leaves the rest alone', async () => {
+      const match = matchFixture()
+      await storage.matches.create(match)
+      const [a, b, unseated] = [playerFixture(match), playerFixture(match), playerFixture(match)]
+      for (const player of [a, b, unseated]) await storage.players.create(player)
+      await storage.players.assignSlots([
+        { playerId: a.id, slot: 1 },
+        { playerId: b.id, slot: 0 },
+      ])
+      const seated = await storage.players.listByMatch(match.id)
+      expect(seated.map((player) => [player.id, player.slot])).toEqual([
+        [unseated.id, -1],
+        [b.id, 0],
+        [a.id, 1],
+      ])
+      await expect(storage.players.assignSlots([])).resolves.toBeUndefined()
+    })
+
     it('revokes a token so it resolves to nobody, without touching the player', async () => {
       const match = matchFixture()
       await storage.matches.create(match)
@@ -277,7 +320,10 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
           .sort((x, y) => String(x[0]).localeCompare(String(y[0]))),
       )
       const submission = {
-        orders: { schemaVersion: 1 as const, ops: [{ op: 'hire', args: { offer: 2 } }] },
+        orders: {
+          schemaVersion: 1 as const,
+          ops: [{ op: 'queueHire' as const, player: 0, gangDefinitionId: 12, sectorId: 34 }],
+        },
         ordersHash: 'h'.repeat(64),
         ready: true,
         submittedAt: new Date('2026-03-01T11:30:00.000Z'),
@@ -404,6 +450,20 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(stalls.filter((t) => t.matchId === healthy.id || t.matchId === over.id)).toEqual([])
     })
 
+    /**
+     * The other way a match is left with nothing to play: `start` changed the status and died
+     * before turn 1 existed. Driving this from `matches` rather than from `turns` is what lets the
+     * repair see it at all; an inner join never would.
+     */
+    it('finds a live match whose current turn was never created', async () => {
+      const stranded = matchFixture({ status: 'running', currentTurn: 0 })
+      await storage.matches.create(stranded)
+      const stalls = await storage.turns.listStalledSeals(50)
+      expect(stalls.filter((t) => t.matchId === stranded.id)).toEqual([
+        { matchId: stranded.id, number: 0 },
+      ])
+    })
+
     it('stores snapshots per turn, replacing on re-upload, and serves the latest', async () => {
       const match = matchFixture()
       await storage.matches.create(match)
@@ -421,6 +481,37 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect((await storage.snapshots.getLatest(match.id))?.body).toBe('R0hJ')
       expect((await storage.snapshots.get(match.id, 1))?.body).toBe('QUJD')
       expect(await storage.snapshots.get(match.id, 9)).toBeNull()
+    })
+
+    /**
+     * Retention only collects matches that are over, so a live match that desyncs repeatedly is
+     * otherwise unbounded growth at a megabyte of base64 per turn.
+     */
+    it('keeps only the newest snapshots of a match and leaves other matches alone', async () => {
+      const match = matchFixture()
+      const other = matchFixture()
+      await storage.matches.create(match)
+      await storage.matches.create(other)
+      const base = {
+        formatVersion: 1,
+        stateHash: 'c'.repeat(64),
+        uploadedByPlayerId: 'h',
+        uploadedAt: new Date('2026-03-01T15:00:00.000Z'),
+        body: 'QUJD',
+      }
+      for (let turn = 1; turn <= 6; turn += 1) {
+        await storage.snapshots.put({ ...base, matchId: match.id, turn })
+      }
+      await storage.snapshots.put({ ...base, matchId: other.id, turn: 1 })
+
+      expect(await storage.snapshots.prune(match.id, 3)).toBe(3)
+      expect(await storage.snapshots.get(match.id, 3)).toBeNull()
+      expect(await storage.snapshots.get(match.id, 4)).not.toBeNull()
+      expect((await storage.snapshots.getLatest(match.id))?.turn).toBe(6)
+      // Below the threshold there is nothing to do, and a neighbour is never touched.
+      expect(await storage.snapshots.prune(match.id, 5)).toBe(0)
+      expect(await storage.snapshots.prune(other.id, 3)).toBe(0)
+      expect(await storage.snapshots.get(other.id, 1)).not.toBeNull()
     })
 
     it('numbers appended events gaplessly, even when they are written concurrently', async () => {

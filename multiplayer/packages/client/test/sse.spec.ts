@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseEventStream } from '../src'
+import { isFatalStreamError } from '../src/client'
 
 function bodyOf(chunks: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder()
@@ -59,5 +60,46 @@ describe('parseEventStream', () => {
     }
     // Releasing the lock alone would leave the connection open until a collector noticed.
     expect(cancelled).toBe(true)
+  })
+})
+
+describe('isFatalStreamError', () => {
+  /**
+   * The reconnect loop is itself what spends the rate limit budget, so treating 429 as fatal would
+   * have the recovery path destroy the stream it exists to recover.
+   */
+  it('retries refusals about the attempt and gives up on refusals about the membership', () => {
+    for (const status of [401, 403, 404, 409, 422]) {
+      expect(isFatalStreamError(status)).toBe(true)
+    }
+    for (const status of [408, 425, 429, 500, 502, 503]) {
+      expect(isFatalStreamError(status)).toBe(false)
+    }
+  })
+})
+
+describe('parseEventStream framing', () => {
+  const frame = (id: number, seq: number) =>
+    `id: ${id}\nevent: turn.opened\ndata: ${JSON.stringify({ seq, matchId: 'm', type: 'turn.opened', payload: {}, createdAt: 'now' })}\n\n`
+
+  const bodyOf = (text: string) =>
+    new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(text))
+        controller.close()
+      },
+    })
+
+  it('refuses a frame whose id disagrees with its payload', async () => {
+    const good = []
+    for await (const event of parseEventStream(bodyOf(frame(4, 4)))) good.push(event)
+    expect(good.map((event) => event.seq)).toEqual([4])
+
+    // Resuming from the wrong number would skip events in silence, so the frame is refused instead.
+    await expect(async () => {
+      for await (const _ of parseEventStream(bodyOf(frame(9, 4)))) {
+        // consume
+      }
+    }).rejects.toThrow(/disagrees/)
   })
 })

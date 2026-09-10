@@ -1,10 +1,13 @@
+import { type OrderDocument, orderDocumentSchema } from '@chaos-overlords/contracts'
 import { describe, expect, it } from 'vitest'
 import type { Player, TurnReport } from '../src'
 import {
   assignSlots,
+  authoritativeCandidates,
   canonicalJson,
   evaluateConsensus,
   generateJoinCode,
+  generateSeed,
   hashOrderDocument,
   hashOrderSet,
   hashPassword,
@@ -28,6 +31,9 @@ function report(playerId: string, stateHash: string, finished = false): TurnRepo
   return { matchId: 'm', turn: 1, playerId, stateHash, finished, reportedAt: new Date() }
 }
 
+const HASH_A = 'a'.repeat(64)
+const HASH_B = 'b'.repeat(64)
+
 describe('canonicalJson', () => {
   it('is independent of key order and nested', () => {
     expect(canonicalJson({ b: [{ z: 1, a: 2 }], a: null })).toBe('{"a":null,"b":[{"a":2,"z":1}]}')
@@ -46,21 +52,33 @@ describe('canonicalJson', () => {
   })
 
   /**
-   * A golden digest for the C# side to reproduce. Its canonical text is
-   * `{"ops":[{"args":{"force":true,"gangId":7,"to":"sector-12"},"op":"moveGang"},{"args":{"note":null,"offer":1200,"slot":0},"op":"hireGang"}],"schemaVersion":1}`
+   * A golden digest for the C# side to reproduce, over a document in the real op vocabulary. Its
+   * canonical text is
+   * `{"ops":[{"action":10,"gang":7,"op":"submitCommand","player":0,"repeat":false,"secondaryTarget":null,"target":{"id":27,"kind":"sector"}},{"gangDefinitionId":44,"op":"queueHire","player":0,"sectorId":27}],"schemaVersion":1}`
    * and the digest is SHA-256 of those UTF-8 bytes. If this value ever has to change, every client
    * changes with it.
    */
   it('pins the order digest of a known document', async () => {
-    expect(
-      await hashOrderDocument({
-        schemaVersion: 1,
-        ops: [
-          { op: 'moveGang', args: { gangId: 7, to: 'sector-12', force: true } },
-          { op: 'hireGang', args: { offer: 1200, slot: 0, note: null } },
-        ],
-      }),
-    ).toBe('5cf90723c9e0c7859710e444e6940eccbc8dc13a1db3b4f9b48a47af509df39f')
+    const document: OrderDocument = {
+      schemaVersion: 1,
+      ops: [
+        {
+          op: 'submitCommand',
+          player: 0,
+          gang: 7,
+          action: 10,
+          target: { kind: 'sector', id: 27 },
+          repeat: false,
+          secondaryTarget: null,
+        },
+        { op: 'queueHire', player: 0, gangDefinitionId: 44, sectorId: 27 },
+      ],
+    }
+    // The pin is only worth anything over a document the wire would actually carry.
+    expect(orderDocumentSchema.safeParse(document).success).toBe(true)
+    expect(await hashOrderDocument(document)).toBe(
+      '1e8d923be158821a974c60903be48d010f7499bdadc3510f6ea3714abadd6631',
+    )
   })
 
   it('hashes equal documents equally regardless of serializer ordering', async () => {
@@ -178,5 +196,57 @@ describe('credentials', () => {
     const head = ['A', 'B', 'C', 'D'].reduce((sum, glyph) => sum + (counts.get(glyph) ?? 0), 0) / 4
     expect(head).toBeGreaterThan(expected * 0.75)
     expect(head).toBeLessThan(expected * 1.25)
+  })
+})
+
+describe('authoritativeCandidates', () => {
+  /**
+   * This is what stops the host arbitrating a disagreement it is a party to: the hash a recovery
+   * snapshot may claim has to be one the players themselves computed in the greatest number.
+   */
+  it('names the hashes the most active players reported', () => {
+    const roster = [player('a', 0), player('b', 1), player('c', 2)]
+    const reports = [report('a', HASH_A), report('b', HASH_A), report('c', HASH_B)]
+    expect(authoritativeCandidates(roster, reports)).toEqual([HASH_A])
+  })
+
+  it('reports every hash of a tie, which the host is then free to break', () => {
+    const roster = [player('a', 0), player('b', 1)]
+    const tied = authoritativeCandidates(roster, [report('a', HASH_A), report('b', HASH_B)])
+    expect(tied).toEqual([HASH_A, HASH_B].sort())
+  })
+
+  it('ignores departed players, whose reports no longer count', () => {
+    const roster = [player('a', 0), player('b', 1), player('c', 2, 'kicked')]
+    const reports = [report('a', HASH_A), report('b', HASH_B), report('c', HASH_B)]
+    // Without the filter, the kicked player's report would carry the verdict.
+    expect(authoritativeCandidates(roster, reports)).toEqual([HASH_A, HASH_B].sort())
+  })
+
+  it('has nothing to say before anyone has reported', () => {
+    expect(authoritativeCandidates([player('a', 0)], [])).toEqual([])
+  })
+})
+
+describe('generateSeed', () => {
+  /**
+   * `MatchSetup.InitialSeed` is a C# `int`. An unsigned draw would put half of all seeds above
+   * `int.MaxValue`, where the client's deserializer refuses them and the match never starts.
+   */
+  it('draws a seed a C# int can hold', () => {
+    for (let i = 0; i < 500; i += 1) {
+      const seed = generateSeed()
+      expect(Number.isInteger(seed)).toBe(true)
+      expect(seed).toBeGreaterThanOrEqual(-2_147_483_648)
+      expect(seed).toBeLessThanOrEqual(2_147_483_647)
+    }
+  })
+
+  it('still spends the full 32 bits, so seeds do not collide', () => {
+    const drawn = new Set(Array.from({ length: 200 }, () => generateSeed()))
+    expect(drawn.size).toBe(200)
+    // Both signs must occur, or the range was silently halved.
+    expect([...drawn].some((seed) => seed < 0)).toBe(true)
+    expect([...drawn].some((seed) => seed > 0)).toBe(true)
   })
 })
