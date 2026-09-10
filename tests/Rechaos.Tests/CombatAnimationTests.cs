@@ -112,6 +112,36 @@ public sealed class CombatAnimationTests
         Assert.Null(player.Active);
     }
 
+    [Fact]
+    public void PlayerCanClearAQueuedDetailedPresentationWithoutAdvancingSimulation()
+    {
+        var player = new CombatAnimationPlayer();
+        player.Enqueue(new CombatAnimationClip(1, new GangId(10), new GangId(20), 3, 2, false));
+        player.Enqueue(new CombatAnimationClip(1, new GangId(20), new GangId(10), 4, 3, true));
+
+        player.Advance(TimeSpan.FromMilliseconds(500));
+        player.Clear();
+
+        Assert.False(player.IsPlaying);
+        Assert.Null(player.Active);
+        Assert.Equal(0, player.TimelineTick);
+        player.Advance(TimeSpan.FromDays(1));
+        Assert.False(player.IsPlaying);
+    }
+
+    [Fact]
+    public void LargeElapsedIntervalCompletesDetailedQueueWithoutHanging()
+    {
+        var player = new CombatAnimationPlayer();
+        for (var index = 0; index < 1_000; index++)
+            player.Enqueue(new CombatAnimationClip(index, new GangId(10), new GangId(20), 3, 2, false));
+
+        player.Advance(TimeSpan.FromDays(1));
+
+        Assert.False(player.IsPlaying);
+        Assert.Null(player.Active);
+    }
+
     private static GameEvent AttackEvent(CommandResolutionDetails resolution) => new(
         1, 1, TurnPhase.Execution, ExecutionPhase.Combat,
         resolution.Code == CommandResolutionCode.Resolved

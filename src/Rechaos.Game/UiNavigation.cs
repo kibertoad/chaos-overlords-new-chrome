@@ -520,6 +520,7 @@ public static class CombatResultsLayout
     public static Rectangle FriendlyPanel => new(208, 141, 96, 179);
     public static Rectangle EnemyPanel => new(352, 141, 94, 179);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
+    public static Rectangle Detail => EquipmentCommandLayout.Cancel;
     public static Rectangle Opponent(int slot)
     {
         if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));

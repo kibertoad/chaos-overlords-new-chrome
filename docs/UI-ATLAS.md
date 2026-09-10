@@ -246,7 +246,10 @@ mirrored lower-center cells for the recovered attack and hit animations.
 `PX05012` is the separate paged Combat Results panel behind the right-console
 Combat Summary control. It pages the viewer's combat notifications, identifies
 the affected sector, and presents both sides with gang/equipment art and Force
-tracks; police uses the recovered police art. Both identities are confirmed by
+tracks; police uses the recovered police art. Its Detail control replays the
+selected resolved event through `PX05014`, regardless of the automatic Detailed
+Combat preference. Escape or the panel's Cancel control clears the bounded
+presentation queue without touching match state. Both identities are confirmed by
 their template text, apertures, and the supplied original Combat capture.
 
 `PX05010` is the paged Last Turn Events panel. At the next human-player handoff,
