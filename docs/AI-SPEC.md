@@ -70,8 +70,8 @@ most one offer during its planning turn. Static analysis has now recovered the
 separate persistent placement anchor, its neutral-neighbor acceptance rule,
 deterministic fallback passes, Big Man central-sector ordering, visible-hostile
 and Siege overrides, and the encoded no-RNG destination path. These placement
-rules are isolated in `OriginalAiHireAnchorRules` and
-`OriginalAiHirePlacementRules`, but are not yet wired: the live planner still
+rules are isolated in `OriginalAiHireAnchorRules`,
+`OriginalAiHirePlacementRules`, and `OriginalAiHirePlacementModeRules`, but are not yet wired: the live planner still
 chooses the lowest valid owned sector, and placement remains deferred to the
 internal Hire phase.
 

@@ -619,7 +619,9 @@ recovered but is not yet wired into the recreation's live AI planner.
 members covered by canonical hashes, native saves, and replays. Configured
 recreation players initialize from gang slot zero; because the recreation does
 not create the original's unused player slots, those slots use the mechanically
-valid inactive-sector encoding 164. The selector kernels remain unwired.
+valid inactive-sector encoding 164. `OriginalAiHirePlacementModeRules` also
+isolates the exact transient role/scenario override, including the raw-100
+visible-hostile sentinel. The selector kernels remain unwired.
 
 **Next validation:** represent the prior-action bytes needed by selector
 `0x5b`, then connect the isolated kernels while preserving their tested pass
