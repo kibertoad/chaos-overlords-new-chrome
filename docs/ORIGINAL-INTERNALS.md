@@ -1156,6 +1156,44 @@ recreation's validator remains provisional.
 writes, and RNG order in the fingerprinted version-1.1 executable; runtime
 corroboration remains pending.
 
+Family 12 at `0x004353a0` is now completely bounded at the action level. It
+starts from cached selector `0xaf` for the current sector. When no opposing
+gang is visible, it tries selector `0x61`'s weapon, selector `0x64`'s armor,
+and selector `0x74`'s maximum-Chaos miscellaneous upgrade in that order. The
+weapon and armor must differ from the current item, their matching cooldown
+must be nonpositive, and raw cost must be at most current cash. Unlike families
+1, 3, 5, and 11, a successful weapon or armor Equip writes a cooldown equal to
+the raw item cost rather than three times that cost. Miscellaneous equipment
+uses the same inclusive cash gate and writes no cooldown.
+
+After failed equipment opportunities, Force below 10 and effective Heal at
+least `-3` writes Heal. Otherwise the handler passes `current sector + 0x40`
+to the shared sector selector and writes Move. The encoded mode adds one point
+to the current sector, but the common selector then clears the source-sector
+score. Its maximum is consequently zero: it draws among all 64 tied sectors
+and applies the normal x-then-y one-step capacity routing toward that draw.
+This apparently indirect random movement is the literal shared-selector path,
+not a direct encoded destination like the separate hire-placement selector.
+
+With a visible opponent, family 12 makes up to five bounded target draws. A
+hostile human-owned current sector with weight 10 draws the actual target from
+visible human-controller gangs; otherwise it uses every visible opponent. As
+in families 3 and 5, selector `0x2b` resolves the same ordinal through the full
+visible list for the quarter-strength combat comparison. A passing comparison
+stops the loop early. Five failed comparisons do not cancel the command: the
+final selected actual target is still written as Attack. Finally, Greed with
+fewer than four turns remaining overwrites any prepared action with Terminate.
+There is no three-consecutive-Move family transition in this handler.
+
+**Recreation status:** the complete family-12 equipment, Heal, encoded Move,
+five-draw Attack, target-ordinal asymmetry, and Greed override sequence is live
+and replay-recorded. Prepared commands still pass through the recreation's
+normal validator.
+
+**Confidence:** High static evidence for comparisons, action writes, selector
+arguments, target-pool order, and RNG call order in the fingerprinted
+version-1.1 executable; runtime corroboration remains pending.
+
 Families 13 and 14 both use the fixed objective sets as Move destinations:
 scenario value 8 selects modes 12/14 and is Big Man, while scenario value 6
 selects modes 13/15 and is Eliminate. Family 13 uses the variants that exclude

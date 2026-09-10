@@ -70,7 +70,7 @@ public static partial class AiTurnPlanner
         IReadOnlyList<GameCommand> options)
     {
         var family = state.AiPlanning.Family(player.Id, gangSlot);
-        if (family is not (1 or 3 or 5 or 10 or 11 or 13 or 14)) return null;
+        if (family is not (1 or 3 or 5 or 10 or 11 or 12 or 13 or 14)) return null;
 
         var preparedAction = state.AiPlanning.PlannedAction(player.Id, gangSlot);
         var choice = family == 1 && preparedAction == GangAction.None
@@ -133,6 +133,10 @@ public static partial class AiTurnPlanner
                     sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
                 continue;
             if (family == 10 && PrepareFamilyTenCommand(
+                    state, playerId, entry.gang, entry.slot,
+                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
+                continue;
+            if (family == 12 && PrepareFamilyTwelveCommand(
                     state, playerId, entry.gang, entry.slot,
                     sectorOwners, sectorDisabled, sectorGangCounts, playerOrder))
                 continue;

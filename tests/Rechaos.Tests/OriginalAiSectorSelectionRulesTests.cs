@@ -342,6 +342,19 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
+    public void EncodedSourceSectorFallsThroughToOriginalZeroMaximumStep()
+    {
+        const int source = 20;
+        const int seed = 41;
+        var facts = new Facts(source, seed: seed);
+        var expected = ZeroMaximumStep(
+            source, facts.GangCounts, new DeterministicRandom(seed));
+
+        Assert.Equal(expected, facts.Select(mode: 0x40 + source, family: 12));
+        Assert.Equal(3, facts.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void MalformedShapesAndSelectorValuesAreRejected()
     {
         var facts = new Facts(source: 27);

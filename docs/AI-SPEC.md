@@ -110,8 +110,11 @@ exact original modes 1-5 clipped-square search, late filters, stable maximum
 ties, RNG consumption, and x-then-y six-gang-capacity gate. Mode 5 is wired for
 the two recovered family-1 continuations during replay-recorded preparation;
 when late filtering leaves a zero maximum it draws uniformly among all 64 tied
-sectors and capacity-routes toward that draw. The other mode consumers remain
-unwired pending their complete outer guards.
+sectors and capacity-routes toward that draw. Modes 7-9 are live in families
+5, 3, and 10, objective modes 12-15 are live in families 13/14, and encoded
+`sector + 0x40` is live for family 12. Because family 12 encodes its current
+sector and the common selector later clears the source score, that path uses
+the original all-zero tie draw and one-step routing behavior.
 
 The test suite drives Greed, Power, Acceptance, and Dominance through complete
 two-computer six-month matches. Each scenario is run twice at a fixed seed and
@@ -198,6 +201,16 @@ replay-verified two-computer harness through 20 turns or objective completion.
    improvement it chooses Chaos unless another gang in the sector has previous
    Chaos, in which case it Hides. The intentional second selector call and its
    independent tie RNG are replay-recorded.
+   Family 12's complete handler branches first on current-sector visibility.
+   With no visible opponent it prefers weapon, armor, and maximum-Chaos
+   miscellaneous upgrades, using raw-cost weapon/armor cooldowns, then Heals
+   below Force 10 at effective Heal `-3` or better, and otherwise uses its
+   encoded-current-sector zero-maximum random Move. With visible opponents it
+   makes up to five bounded target draws, preserves the human-pool/full-pool
+   ordinal asymmetry, and attacks the final target even when every combat
+   comparison fails. Greed's final three turns overwrite the result with
+   Terminate. Exact actions, targets, cooldowns, and RNG consumption are live
+   and replay-recorded.
    The exact ten-scenario by
    seven-hire-role family table is implemented by `OriginalAiFamilyRules`,
    including unmapped cells which preserve the current family. AI planning

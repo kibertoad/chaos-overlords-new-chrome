@@ -2,7 +2,8 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Pure implementation of the original weighted sector selector at 0x00408642
-/// for its fully recovered modes 1 through 5, 7 through 10, and 12 through 16. Planner-specific
+/// for its fully recovered modes 1 through 5, 7 through 10, 12 through 16,
+/// and encoded fixed-sector modes 0x40 through 0x7f. Planner-specific
 /// queries remain explicit inputs so this kernel does not guess at unrecovered
 /// outer policy.
 /// </summary>
@@ -180,6 +181,7 @@ internal static class OriginalAiSectorSelectionRules
                 && sectorGangCounts[sectorId] < MatchLimits.FriendlyGangsPerSector =>
                 ObjectiveModeBaseScore(owner, isHostileOwner, isHumanOwner),
             16 when sectorId == formationSectorId => 1,
+            >= 0x40 and < 0x80 when sectorId == mode - 0x40 => 1,
             _ => 0
         };
 
@@ -232,7 +234,8 @@ internal static class OriginalAiSectorSelectionRules
         Func<int, bool>? hasPriorInfluence,
         Func<int, int>? completedSiteScore)
     {
-        if (mode is not (>= 1 and <= 5 or >= 7 and <= 10 or >= 12 and <= 16))
+        if (mode is not (>= 1 and <= 5 or >= 7 and <= 10 or >= 12 and <= 16
+                or >= 0x40 and < 0x80))
             throw new ArgumentOutOfRangeException(nameof(mode));
         if (sourceSectorId is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sourceSectorId));
