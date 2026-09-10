@@ -95,7 +95,9 @@ replay-verified two-computer harness through 20 turns or objective completion.
    exact pre-city RNG order. The separate per-player resolution band is
    initialized to 0/1/2 for computer players at Goon/Criminal/higher settings;
    all nine consumers now drive the recovered Heal, Influence, Research, Chaos,
-   Crackdown, hidden-detection, Attack, and retaliation formulas. Selector `0x3e` is identified as the
+   Crackdown, hidden-detection, Attack, and retaliation formulas. The family-11
+   local Attack gate and its blocks-of-six mode-10 formation anchors/mode-16
+   followers are also bounded. Selector `0x3e` is identified as the
    previous-turn action byte. Selectors 3 (player cash), 4 (sector
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`

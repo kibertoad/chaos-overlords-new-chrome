@@ -552,7 +552,10 @@ planning-record offset `+5` is 9 (**Influence**). Before dispatch, the outer
 planner also rewrites one prior-action byte when more than one gang retained
 Influence in the same sector, preventing duplicate continuity assignments.
 
-Mode 10 changes its owner test according to the human-player count. Mode 11
+Mode 10 changes its owner test according to the human-player count. With no
+human players it scores every non-neutral sector not owned by the active
+player `+1`; with at least one human player it scores every human-owned sector
+`+1`. This test does not consult the directional attitude table. Mode 11
 gives `+1` to the sector returned by selector `0x5a` for the active player.
 Modes 12 and 14 restrict selection to Big Man's central sectors 27, 28, 35,
 and 36; modes 13 and 15 restrict it to Eliminate's six headquarters candidates
@@ -681,13 +684,34 @@ for a visible human gang belonging to a negatively viewed player and weight 1
 for other visible gangs. Numerous AI handlers read the same `< 0` predicate
 directly, including shared sector-selector mode 6.
 
-Family 11 (`0x00420950`) supplies the clearest consumer. After its Equip and
-Heal opportunities, it attacks a resolved visible target when one exists.
-Otherwise it writes Move and uses mode 10 to seek opponent territory. If the
-match contains any human player, mode 10 admits only human-owned sectors; when
-there are no humans, it admits any enemy-owned sector. Selector `0x76` chooses
-between that search and mode 16, whose selector-`0x77` anchor keeps blocks of
-six family-11 gangs moving together.
+Family 11 (`0x00420950`) supplies the clearest consumer. Instruction-level
+inspection is required here because the decompiler drops the assignments after
+the entry calls: selector `0x5a` is saved at stack local `-0x4` and is the
+active gang's current sector; selector `0x61` is independently saved at `-0x8`.
+After the handler's Equip and Heal opportunities, it reads the owner of that
+current sector. In an active-player-owned sector it always writes **Move** and
+calls mode 10.
+
+In any other sector, selector `0xac(active player, current sector, 0)` scans
+other players in ascending slot order and their gangs in ascending slot order.
+It returns the first encoded `player * 81 + gang` whose sector equals the
+current sector, whose observer-specific visibility/status byte is nonzero, and
+whose raw gang-state byte at record offset `-1` from the sector field is zero.
+The handler writes **Attack** against that decoded player/gang whenever the
+result is nonnegative. If no such target exists, selector `0x76` determines
+formation leadership: considering only family-11 gangs in ascending gang-slot
+order, ordinals 0, 6, 12, and so on return 1. Those anchors write **Move** with
+mode 10 and replace their stored formation-sector short with the chosen
+destination. Other family-11 gangs write **Move** with mode 16 and retain their
+current-sector short. Selector `0x77` finds the corresponding block anchor and
+returns its stored formation-sector short, so mode 16 awards that sector `+1`
+and feeds it through the common ring/path selection.
+
+Thus mode 10 is not a generic hostile-target rule: with humans present it seeks
+human-owned territory regardless of attitude, and with no humans it seeks any
+other non-neutral owner's territory. Mode 16 is the follower path for five of
+each six family-11 gangs, while the first gang in each block establishes the
+formation destination.
 
 **Interpretation:** this is an attitude/hostility system, not a scalar combat
 bonus. Homicidal Maniac begins maximally hostile toward human players and
@@ -714,7 +738,7 @@ hashes, native saves, and replays.
 
 **Next validation:** capture fixed original traces proving the combat-advantage
 threshold, reaction, and recovery ordering through the first two complete
-turns, then finish the remaining family-11 mode-10/16 guards.
+turns, then identify selector `0x61` and the remaining family-11 Equip guard.
 
 ### BIN-AI-007 - per-player difficulty resolution band
 
