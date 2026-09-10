@@ -5,11 +5,11 @@ Last updated: 2026-09-11
 
 ## Repository state
 
-- Work continues on `main` at
+- Work continues on `codex/full-reimplementation` at
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`.
-- The latest pushed functional checkpoint is the tip of `main`.
+- The latest pushed functional checkpoint is the tip of that branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,030 tests with no warnings.
+  isolated Release build passed all 1,036 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -37,8 +37,11 @@ Last updated: 2026-09-11
 - Every recovered AI strategy family has a live handler and the earlier cleanup
   pass separates dispatch, immutable planning facts, recovered shared operations,
   and explicitly provisional fallback scoring. The next AI gate is evidence,
-  not another structural rewrite: fixed original-runtime traces plus larger-player
-  and objective-completion stress coverage.
+  not another structural rewrite: fixed original-runtime traces plus multi-seed
+  tournament coverage. Six-computer deterministic/replay fixtures now exercise
+  all objectives for a 208-turn horizon. Big Man completes at the guarded seed;
+  Kill 'Em All, Big 40, Eliminate, Siege, and Armageddon remain valid but
+  unfinished, so their completion policy is still an explicit M6 gap.
 - Options now persists base/current gang statistics, automatic Detailed/Simple
   combat presentation, bounded panel motion, and the existing audio, idle-warning,
   and planning-timer choices. Version-4 preferences migrate forward. The legacy

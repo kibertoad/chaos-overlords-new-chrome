@@ -119,11 +119,16 @@ sector and the common selector later clears the source score, that path uses
 the original all-zero tie draw and one-step routing behavior.
 
 The test suite drives Greed, Power, Acceptance, and Dominance through complete
-two-computer six-month matches. Each scenario is run twice at a fixed seed and
+six-computer six-month matches. Each scenario is run twice at a fixed seed and
 must produce the same final state hash; its complete mutation stream must also
 round-trip through the replay serializer to that hash. Kill 'Em All, Big 40,
 Eliminate, Siege, Big Man, and Armageddon each run the same deterministic,
-replay-verified two-computer harness through 20 turns or objective completion.
+replay-verified six-computer harness through 20 turns or objective completion.
+They also run through a full 208-turn horizon at a second fixed seed, repeat to
+the same final hash, and replay to that hash. Big Man completes naturally in
+that stress fixture. The other five objective scenarios remain valid through
+the horizon but do not yet complete, making their objective-aware policy an
+explicit M6 gap rather than an unmeasured reliability claim.
 
 ## Required parity work
 
