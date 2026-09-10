@@ -5,14 +5,16 @@ namespace Rechaos.Game;
 public sealed record GamePreferences(
     int FormatVersion,
     int MusicVolumeLevel,
-    int SoundEffectVolumeLevel)
+    int SoundEffectVolumeLevel,
+    bool WarnIfIdleGangs)
 {
-    public const int CurrentFormatVersion = 2;
+    public const int CurrentFormatVersion = 3;
 
     public static GamePreferences Default { get; } =
         new(CurrentFormatVersion,
             OriginalSoundtrackPolicy.DefaultVolumeLevel,
-            AudioRouting.DefaultEffectVolumeLevel);
+            AudioRouting.DefaultEffectVolumeLevel,
+            true);
 }
 
 public static class GamePreferencesStore

@@ -203,11 +203,12 @@ back into the simulation.
 encodes the recovered title/setup, gameplay, and endgame track programs, while
 `ChaosGame.Media.cs` owns their optional streaming, screen transition, repeat,
 focus pause/resume, and recovered 0-10 volume behavior. Effects use an
-independent recovered 0-10 scale with the same level-5 default and amplitude
+independent recovered 0-10 scale with a level-6 default and the same amplitude
 conversion. `GamePreferencesStore`
 loads and atomically replaces a bounded, recreation-versioned local preferences
 file; malformed, unsupported, or out-of-range data falls back to the recovered
-level-5 defaults. Playback and preference-write failures remain presentation-only;
+Music level-5, Effects level-6, and enabled idle-gang-warning defaults. Playback
+and preference-write failures remain presentation-only;
 media state never enters Core, saves, replays, commands, events, or deterministic
 hashes.
 

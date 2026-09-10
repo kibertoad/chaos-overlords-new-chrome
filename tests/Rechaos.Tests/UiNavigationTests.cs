@@ -166,6 +166,7 @@ public sealed class UiNavigationTests
         Assert.All(levels.SelectMany((left, index) =>
                 levels.Skip(index + 1).Select(right => (left, right))),
             pair => Assert.False(pair.left.Intersects(pair.right)));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.WarnIfIdleGangs));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
     }
 

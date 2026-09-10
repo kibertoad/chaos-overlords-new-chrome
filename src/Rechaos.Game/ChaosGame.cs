@@ -156,6 +156,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var preferences = GamePreferencesStore.LoadOrDefault(_preferencesPath);
         _musicVolumeLevel = preferences.MusicVolumeLevel;
         _soundEffectVolumeLevel = preferences.SoundEffectVolumeLevel;
+        _warnIfIdleGangs = preferences.WarnIfIdleGangs;
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -252,9 +253,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         else
         {
-            if (Pressed(keyboard, Keys.F1)) OpenHelp();
-            else if (Pressed(keyboard, Keys.O)) OpenOptions();
-            else if (Pressed(keyboard, Keys.Escape) && !_screens.Back()) Exit();
+            if (!_idleGangWarningOpen)
+            {
+                if (Pressed(keyboard, Keys.F1)) OpenHelp();
+                else if (Pressed(keyboard, Keys.O)) OpenOptions();
+                else if (Pressed(keyboard, Keys.Escape) && !_screens.Back()) Exit();
+            }
             switch (_screens.Current)
             {
                 case ClientScreen.Title:

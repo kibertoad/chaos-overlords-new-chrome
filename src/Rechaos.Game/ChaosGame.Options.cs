@@ -16,6 +16,7 @@ public static class OptionsLayout
         Enumerable.Range(0, AudioRouting.MaximumEffectVolumeLevel + 1)
             .Select(level => new Rectangle(140 + level * 33, 240, 28, 32))
             .ToArray();
+    public static Rectangle WarnIfIdleGangs => new(190, 282, 260, 28);
 }
 
 public sealed partial class ChaosGame
@@ -24,6 +25,7 @@ public sealed partial class ChaosGame
     private string _optionsReturnMessage = string.Empty;
     private int _optionsRow;
     private int _soundEffectVolumeLevel = AudioRouting.DefaultEffectVolumeLevel;
+    private bool _warnIfIdleGangs = true;
 
     private void OpenOptions()
     {
@@ -31,7 +33,7 @@ public sealed partial class ChaosGame
         _optionsReturnMessage = _message;
         _optionsRow = 0;
         _screens.Show(ClientScreen.Options);
-        _message = "UP/DOWN SELECTS AUDIO; LEFT/RIGHT ADJUSTS";
+        _message = "UP/DOWN SELECTS; LEFT/RIGHT ADJUSTS";
     }
 
     private void CloseOptions()
@@ -43,9 +45,10 @@ public sealed partial class ChaosGame
     private void UpdateOptions(KeyboardState keyboard)
     {
         if (Pressed(keyboard, Keys.Up)) _optionsRow = Math.Max(0, _optionsRow - 1);
-        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(1, _optionsRow + 1);
+        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(2, _optionsRow + 1);
         if (Pressed(keyboard, Keys.Left)) ChangeSelectedVolume(-1);
         if (Pressed(keyboard, Keys.Right)) ChangeSelectedVolume(1);
+        if (_optionsRow == 2 && Pressed(keyboard, Keys.Space)) ToggleIdleGangWarning();
         if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Back)
             || Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.O))
             CloseOptions();
@@ -68,16 +71,25 @@ public sealed partial class ChaosGame
             _optionsRow = 1;
             SetSoundEffectVolumeLevel(level);
         }
+        else if (OptionsLayout.WarnIfIdleGangs.Contains(point))
+        {
+            _optionsRow = 2;
+            ToggleIdleGangWarning();
+        }
         else if (OptionsLayout.Done.Contains(point)) CloseOptions();
     }
 
     private void ChangeSelectedVolume(int delta)
     {
-        if (_optionsRow == 0) ChangeMusicVolume(delta);
-        else SetSoundEffectVolumeLevel(Math.Clamp(
-            _soundEffectVolumeLevel + delta,
-            AudioRouting.MinimumEffectVolumeLevel,
-            AudioRouting.MaximumEffectVolumeLevel));
+        if (_optionsRow == 0)
+            ChangeMusicVolume(delta);
+        else if (_optionsRow == 1)
+            SetSoundEffectVolumeLevel(Math.Clamp(
+                _soundEffectVolumeLevel + delta,
+                AudioRouting.MinimumEffectVolumeLevel,
+                AudioRouting.MaximumEffectVolumeLevel));
+        else
+            ToggleIdleGangWarning();
     }
 
     private void ChangeMusicVolume(int delta) =>
@@ -109,13 +121,22 @@ public sealed partial class ChaosGame
         _message = level == 0 ? "SOUND EFFECTS OFF" : $"SOUND EFFECTS LEVEL {level}";
     }
 
+    private void ToggleIdleGangWarning()
+    {
+        _warnIfIdleGangs = !_warnIfIdleGangs;
+        SavePreferences();
+        PlayGeneralSound(3);
+        _message = $"IDLE GANG WARNING {(_warnIfIdleGangs ? "ON" : "OFF")}";
+    }
+
     private void SavePreferences() =>
         GamePreferencesStore.TrySave(
             _preferencesPath,
             new GamePreferences(
                 GamePreferences.CurrentFormatVersion,
                 _musicVolumeLevel,
-                _soundEffectVolumeLevel));
+                _soundEffectVolumeLevel,
+                _warnIfIdleGangs));
 
     private void DrawOptions(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
@@ -142,7 +163,16 @@ public sealed partial class ChaosGame
         DrawVolumeLevels(batch, pixel, font,
             OptionsLayout.SoundEffectLevels, _soundEffectVolumeLevel, _optionsRow == 1);
 
-        DrawCentered(font, batch, "UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS", 296,
+        batch.Draw(pixel, OptionsLayout.WarnIfIdleGangs,
+            _optionsRow == 2 ? new Color(72, 54, 18, 245) : new Color(22, 40, 38, 245));
+        DrawBorder(batch, pixel, OptionsLayout.WarnIfIdleGangs,
+            _optionsRow == 2 ? Color.Gold : new Color(70, 110, 95),
+            _optionsRow == 2 ? 2 : 1);
+        DrawCentered(font, batch,
+            $"WARN IF IDLE GANGS: {(_warnIfIdleGangs ? "ON" : "OFF")}", 292,
+            Color.White, 1);
+
+        DrawCentered(font, batch, "UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS", 316,
             new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
     }

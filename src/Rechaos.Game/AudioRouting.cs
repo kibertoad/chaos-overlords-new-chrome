@@ -6,7 +6,7 @@ public static class AudioRouting
 {
     public const int MinimumEffectVolumeLevel = 0;
     public const int MaximumEffectVolumeLevel = 10;
-    public const int DefaultEffectVolumeLevel = 5;
+    public const int DefaultEffectVolumeLevel = 6;
     private const int OriginalVolumeStep = 25 * 256;
     private static readonly IReadOnlyDictionary<int, int> GeneralSoundResources =
         new Dictionary<int, int>

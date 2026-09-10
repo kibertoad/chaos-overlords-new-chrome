@@ -13,7 +13,7 @@ public sealed partial class ChaosGame
     private void AdvanceTurn()
     {
         if (_debugPhaseStepping) AdvanceDebugPhase();
-        else FinishPlanningTurn();
+        else if (!TryOpenIdleGangWarning()) FinishPlanningTurn();
     }
 
     private void FinishPlanningTurn()

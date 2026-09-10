@@ -143,7 +143,7 @@ controlled runtime capture is available.
 **Recreation status:** `SoundtrackCatalog` encodes the three track programs and
 `ChaosGame.Media.cs` switches them for title/setup, gameplay and endgame
 screens, advances/repeats them, and pauses/resumes on focus changes. Playback
-uses the recovered level-5 default and exact normalized volume conversion. The
+uses the recovered level-5 Music default and exact normalized volume conversion. The
 title and in-game Options overlay exposes all 11 levels, with zero stopping music
 and a later nonzero selection restarting the active program. A bounded,
 versioned recreation-native preferences file remembers the selection safely;
@@ -169,26 +169,61 @@ The Options application helper at `0x004652a0` reads effect level byte
 `0x00487864`, enables effects when it is nonzero, and passes `level * 25` to
 `0x00458b05`. That helper shifts the value by eight and duplicates it into the
 two 16-bit `auxSetVolume` channels. Thus the independently adjustable effects
-scale is 0-10, level 5 produces 32,000 per channel, and level 10 produces
-64,000. The original Help describes the separate Sound Effects slider as
-Mute-to-Loud with a Medium default, independently of Music.
+scale is 0-10: level 5 produces 32,000 per channel and level 10 produces
+64,000. The initialized data block is more specific than the Help text:
+Effects byte `0x00487864` starts at level 6 (38,400 per channel), while Music
+byte `0x00487868` starts at level 5 (32,000 per channel). The original Help
+describes each independent slider as having a Medium default but does not assign
+that label a number.
 
 **Interpretation:** Slots 3 and 4 are the general accepted-selection and
 rejected-input cues. Music and effects share the same numeric conversion but
 have separate state and enable flags.
 
 **Confidence:** High static evidence for slot/resource mapping, setup/title cue
-roles, scale, enable boundary, and channel values; High manual evidence for the
-independent control and Medium default. Other slot semantics remain unknown.
+roles, scale, enable boundary, initialized levels, and channel values; High
+manual evidence for the independent controls. Other slot semantics remain
+partially classified.
 
 **Recreation status:** all nine general resources are loaded through the
 recovered slot table. Setup selector changes and bounded player-count rejection
 use slots 3 and 4, weapon effects and general effects share the independent
-recovered Effects level, and both audio levels persist in the recreation-native
-preferences file.
+recovered Effects level and its level-6 default, and both audio levels persist
+in the recreation-native preferences file.
 
-**Next validation:** Classify slots 0-2 and 6-9 at their bounded call sites,
+**Next validation:** Finish classifying slots 6 and 9 and validate slots 0-2
+(panel open, panel close, and held-button press) plus countdown-warning slots
+7-8 at runtime,
 then validate overlap/interruption and native amplitude behavior.
+
+### BIN-OPTIONS-001 - registry keys and idle-gang warning
+
+**Observation:** The preference-name table contains `prefsVidDeep`,
+`prefsSlide`, `prefsBaseStats`, `prefsCombat`, `prefsFreeGang`, `commType`,
+`prefsVolumeSFX`, `prefsVolumeCD`, `prefsDiff`, `prefsTimeLimit`,
+`prefsObjective`, and `prefsFullScreen`. The initialized byte at `0x00487860`,
+corresponding to `prefsFreeGang`, is 1. In the city handler at `0x0046fd80`, the
+Done path scans all 81 gang slots; an active slot whose action byte is zero is
+idle. When `prefsFreeGang` is enabled and such a slot belongs to the active
+player, the path invokes the two-choice modal at `0x00448718`. Its open and
+close paths use the panel-slide functions at `0x0041953e` and `0x004196f5`,
+which play general-effect slots 0 and 1. The original Help independently says
+Done warns about gangs without commands unless Warn If Idle Gangs is off.
+
+**Interpretation:** `prefsFreeGang` is the enabled-by-default Warn If Idle Gangs
+option. The warning is a confirmation boundary around finishing planning, not
+a simulation rule; continuing still permits unassigned gangs.
+
+**Confidence:** High from the initialized data, string table, bounded Done-path
+scan, dialog call graph, and matching Help description.
+
+**Recreation status:** Options persists an enabled-by-default warning toggle.
+Finishing planning checks only the active player's living gangs and offers a
+Continue/Go Back modal when any lacks a queued command. Opening and closing the
+modal route the recovered general-effect slots 0 and 1.
+
+**Next validation:** Capture the original modal wording, button order, and
+whether keyboard shortcuts choose a default response.
 
 ### BIN-API-003 - files and persistence
 

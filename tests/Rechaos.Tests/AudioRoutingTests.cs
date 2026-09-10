@@ -20,6 +20,7 @@ public sealed class AudioRoutingTests
     [Theory]
     [InlineData(0, 0)]
     [InlineData(5, 32000)]
+    [InlineData(6, 38400)]
     [InlineData(10, 64000)]
     public void RecoveredEffectVolumeMatchesOriginalStereoChannelValue(
         int level, int originalChannelValue) =>
