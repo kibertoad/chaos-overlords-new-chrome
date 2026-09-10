@@ -772,20 +772,32 @@ threshold. Every one of the nine band-table reads is now bounded:
 - Main Attack reduces a band-0 defender's Defense by one quarter. It then rolls
   `Force + CombatRating - adjusted Defense` at 6+/5+/4+ for attacker bands
   0/1/2. Positive pools impose minimum damage `trunc(pool/4)`.
-- Retaliation rolls its corresponding pool at 5+ for defender bands 0/1 or 4+
-  for band 2, then halves successes using integer truncation.
+- Retaliation first requires the target's action byte not to be 8 (**Hide**).
+  It is then allowed when the attacker has effective Martial Arts zero, when
+  the attacker has a weapon equipped, or when the defender has both positive
+  effective Martial Arts and no weapon equipped. Equivalently, a bare-handed
+  positive-Martial-Arts attacker suppresses retaliation unless the defender is
+  also a bare-handed positive-Martial-Arts gang. Eligible retaliation rolls
+  its corresponding pool at 5+ for defender bands 0/1 or 4+ for band 2, then
+  halves successes using integer truncation.
 
 The recreation implements these bands and formulas in
 `OriginalResolutionRules` and routes the corresponding resolution paths
 through them. This is a mechanical resolution calibration, not merely a
 planning preference.
 
-**Confidence:** High for initialization, controller/mentality mapping, helper
-semantics, all nine reads, formulas, thresholds, and integer truncation. Medium
-only for the remaining compound retaliation-eligibility operand labels.
+The compound operands are direct gang-record fields. Offset `+7` is the public
+action byte; selector `0x39` exposes offset `+4`, the equipped-weapon item or
+`-1`; and selector `0x58` exposes offset `+31`, the last of the fourteen
+effective statistics and therefore Martial Arts. The attack block uses those
+same offsets from both its copied attacker record and the targeted live record.
 
-**Next validation:** finish labeling the retaliation eligibility operands and
-capture fixed original traces at bands 0, 1, and 2 for every affected action.
+**Confidence:** High for initialization, controller/mentality mapping, helper
+semantics, all nine reads, formulas, thresholds, integer truncation, and the
+complete retaliation-eligibility predicate.
+
+**Next validation:** capture fixed original traces at bands 0, 1, and 2 for
+every affected action, including Hide and both Martial Arts branches.
 
 ## New-game initialization
 

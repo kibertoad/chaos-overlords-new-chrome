@@ -253,11 +253,16 @@ claim about original-game behavior.
 - Hidden target behavior: a target that became Hidden during Instant receives
   an individual Detect-versus-Stealth percentage roll. Evasion produces an
   ordered `TargetEvaded` result; a successful hit prevents retaliation.
+- Static binary confirmation: the original eligibility predicate requires the
+  target action not to be Hide and allows retaliation when the attacker has no
+  positive effective Martial Arts, has a weapon equipped, or faces a defender
+  who is also an unarmed positive-Martial-Arts gang.
 - Current exclusions: original overkill-stat attribution and police/gang
-  ordering, and binary confirmation of resolver/RNG order.
-- Confidence: High for weapon-skill associations and Martial Arts exception;
-  Medium/High for the Force-corrected formula and retaliation; Low for ordering,
-  overkill accounting, and hidden failure behavior.
+  ordering, reveal-state timing, and binary confirmation of resolver/RNG order.
+- Confidence: High for weapon-skill associations, the complete Martial Arts /
+  weapon / Hide retaliation gate, and its damage formula; Medium/High for the
+  Force-corrected opening formula; Low for ordering, overkill accounting, and
+  hidden-state timing.
 - Implementation: `ManualRules.CombatRating`, `ManualRules.AttackDiceCount`,
   `ManualRules.RetaliationDamage`, and `CommandResolver.ResolveCombatPhase`.
 - Tests: `CombatResolutionTests` covers effective attack/defense pools,

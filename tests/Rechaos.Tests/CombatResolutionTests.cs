@@ -74,8 +74,14 @@ public sealed class CombatResolutionTests
     public void BareHandedMartialArtistSuppressesNonMartialRetaliation()
     {
         var data = BundledOriginalData.Load();
-        var martial = data.Gangs.OrderByDescending(gang => gang.Stats.MartialArts).First().Id;
-        var nonMartial = data.Gangs.First(gang => gang.Stats.MartialArts <= 0).Id;
+        var martial = data.Gangs
+            .Where(gang => gang.Stats.MartialArts > 0)
+            .OrderBy(gang => gang.Stats.Defense)
+            .First().Id;
+        var nonMartial = data.Gangs
+            .Where(gang => gang.Stats.MartialArts <= 0)
+            .OrderByDescending(gang => gang.Stats.Combat + gang.Stats.Strength + gang.Stats.Fighting)
+            .First().Id;
         var match = CreateMatch(playerZeroDefinition: martial, playerOneDefinition: nonMartial);
         QueueAndEnterCombat(match, playerOneAction: null);
 
@@ -85,6 +91,49 @@ public sealed class CombatResolutionTests
         Assert.True(EffectiveStatisticsCalculator.ForGang(match, match.FindGang(new GangId(10))!).MartialArts > 0);
         Assert.Empty(resolution.RetaliationRolls!);
         Assert.Equal(0, resolution.RetaliationDamage);
+    }
+
+    [Fact]
+    public void BareHandedMartialArtistCanRetaliateAgainstBareHandedMartialArtist()
+    {
+        var data = BundledOriginalData.Load();
+        var martial = data.Gangs.OrderByDescending(gang => gang.Stats.MartialArts).First().Id;
+        var match = CreateMatch(playerZeroDefinition: martial, playerOneDefinition: martial);
+        QueueAndEnterCombat(match, playerOneAction: null);
+
+        match.FinishExecutionPhase();
+
+        var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.True(EffectiveStatisticsCalculator.ForGang(match, match.FindGang(new GangId(10))!).MartialArts > 0);
+        Assert.True(EffectiveStatisticsCalculator.ForGang(match, match.FindGang(new GangId(20))!).MartialArts > 0);
+        Assert.NotEmpty(resolution.RetaliationRolls!);
+    }
+
+    [Fact]
+    public void ArmedMartialArtistDoesNotSuppressRetaliation()
+    {
+        var data = BundledOriginalData.Load();
+        var martial = data.Gangs
+            .Where(gang => gang.Stats.MartialArts > 0)
+            .OrderBy(gang => gang.Stats.Defense)
+            .First().Id;
+        var nonMartial = data.Gangs
+            .Where(gang => gang.Stats.MartialArts <= 0)
+            .OrderByDescending(gang => gang.Stats.Combat + gang.Stats.Strength + gang.Stats.Fighting)
+            .First().Id;
+        var weapon = checked((short)data.Items
+            .Select((item, index) => (item, index))
+            .First(value => value.item.Type is >= 0 and <= 2).index);
+        var match = CreateMatch(
+            playerZeroDefinition: martial,
+            playerOneDefinition: nonMartial,
+            playerZeroWeapon: weapon);
+        QueueAndEnterCombat(match, playerOneAction: null);
+
+        match.FinishExecutionPhase();
+
+        var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.NotEmpty(resolution.RetaliationRolls!);
     }
 
     [Fact]

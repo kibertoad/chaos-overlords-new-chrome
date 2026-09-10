@@ -64,8 +64,8 @@ workstream can be marked complete.
   attitude changes, hostility-filtered attack candidates, and all nine known
   consumers of the recovered 0/1/2 resolution band. The scalar outer planner
   remains provisional and must not be presented as original-AI parity.
-- Resume static analysis at the family-11 Equip selector and the exact
-  retaliation-eligibility compound operands. Modes 10 and 16 are now bounded
+- Resume static analysis at the family-11 Equip selector. The exact
+  retaliation-eligibility compound operands and modes 10 and 16 are now bounded
   as the family-11 formation anchor/follower Move paths, including their local
   Attack gate; mode 6 and the downstream Control use of `FUN_0040a1a7`'s pair
   flag are also bounded.
@@ -621,7 +621,7 @@ unmarked guess.
 | M1 | Foundation started | Ten scenario definitions and durations; recovered 32x32 density-derived 8x8 city, balanced three-site rejection sampling, explicit sector income/tolerance, fixed-candidate HQ permutation, Right Hands Force 10, Armageddon exclusions/overrides; title/setup/city router with scenario/duration/local-player controls, original overlord portrait selection, global AI Mentality panel, virtual-coordinate mouse input, and mapped PX00130/PX00143/PX00128 frames | Original seed/setup-mode fixture, remaining setup atlas/hit maps and golden screens |
 | M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; common typed validation-rule pipeline; deferred hire purchase/placement, one-offer-per-turn snubbing, binary-derived 1–89 rejection refill and 5–9 initial Force; player elimination; declarative validation for all action target shapes; typed queue mutations and ordered events; bounded notification queues; recovered RNG; canonical phase hashes | Runtime offer/Force fixtures, within-phase ordering, and remaining reference-derived edge rules |
 | M3 | Foundation started | Ordered base Upkeep economy; all Instant and Transaction actions; Move/Terminate; grouped Influence and Control; per-turn Chaos; Crackdown lifecycle; influenced-site stats; Research caps; Factory discount; recovered 0/1/2 difficulty pools and thresholds for Heal, Influence, Research, Chaos, plus high-band owned-sector Crackdown reduction | Binary police/call-order fixtures, Control conflict edges, remaining special buildings, Factory acquisition/swap fixtures, and M2 gate |
-| M4 | Foundation started | Recovered raw RNG/range algorithms; serializable state; effective item/site stats; phase-wide Attack/retaliation and police snapshots; recovered difficulty-specific d20 hidden detection, band-0 Defense reduction, 6+/5+/4+ main rolls with quarter-pool damage floor, 5+/5+/4+ halved retaliation, elimination and recorded rolls | Label exact retaliation eligibility, reveal timing, reference combat/Crackdown fixtures, animation/audio mapping, and M2-M3 gates |
+| M4 | Foundation started | Recovered raw RNG/range algorithms; serializable state; effective item/site stats; phase-wide Attack/retaliation and police snapshots; recovered difficulty-specific d20 hidden detection, band-0 Defense reduction, 6+/5+/4+ main rolls with quarter-pool damage floor, exact Hide/weapon/Martial-Arts retaliation eligibility, 5+/5+/4+ halved retaliation, elimination and recorded rolls | Resolve reveal timing, reference combat/Crackdown fixtures, animation/audio mapping, and M2-M3 gates |
 | M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v6 snapshots with v1-v5 migration and v6 authoritative-operation replays plus client save/replay flows; equipment Give recipient workflow | Siege setup/visual mapping, objective ranking/tie fixtures, checked-in persistence fixtures, remaining management UI deliverable and M4 gate |
 | M6 | Foundation started | Deterministic objective-aware planner and replay driver; recovered outer planner, all family dispatch values, action history, selector inventory and strategic routing including mode-6 leader/hostility movement, pair-flag Control, and family-11 mode-10 anchor/mode-16 follower movement with its local Attack gate; exact pre-city six-player reactions, directional attitudes, non-Homicidal recovery, combat/Control and sector Combat + Defense advantage hostility, hostility-aware targets, hashes/saves/replays; exact 0/1/2 per-computer resolution calibration implemented for all nine consumers | Resolve remaining family-11 Equip guard; replace provisional scalar scoring with handler-exact policy; capture reference boundaries and larger-player/objective-completion stress cases; M5 gate |
 | M7 | Foundation started | Original city ownership layers and site/gang portraits are rendered; resolved equipped attacks route item-defined original weapon sounds | Complete atlas/event integration, animations, remaining audio/music/video, golden screens and M1-M6 dependencies |
@@ -750,8 +750,8 @@ not lines of code or asset counts.
 
 1. Identify selector `0x61` and complete the remaining family-11 Equip guard.
    Record facts and rejected hypotheses before changing planner code.
-2. Label the exact retaliation-eligibility compound operands and capture fixed
-   band 0/1/2 resolution fixtures, including cash 50/51, Force 8/9, and
+2. Capture fixed band 0/1/2 resolution fixtures, including retaliation Hide
+   and Martial Arts branches, cash 50/51, Force 8/9, and
    Tolerance 3/4 boundaries.
 3. Replace provisional AI scoring only where handler-exact evidence or fixed
    reference decisions support it; expand deterministic tournaments to larger
