@@ -163,13 +163,15 @@ replay-verified two-computer harness through 20 turns or objective completion.
    exact pre-city RNG order. The separate per-player resolution band is
    initialized to 0/1/2 for computer players at Goon/Criminal/higher settings;
    all nine consumers now drive the recovered Heal, Influence, Research, Chaos,
-   Crackdown, hidden-detection, Attack, and retaliation formulas. The family-11
-   local Attack gate and its blocks-of-six mode-10 formation anchors/mode-16
-   followers are also bounded. Its exact selector-`0x61` weapon upgrade rule,
-   including class scoring/ties, research, local-cap, raw-Tech, affordability,
-   strict-improvement, previous-Attack, and cooldown gates, is isolated in
-   `OriginalAiEquipmentRules`; it is intentionally not applied to unrelated
-   families by the provisional scalar planner. The exact ten-scenario by
+   Crackdown, hidden-detection, Attack, and retaliation formulas. Family 11's
+   exact weapon/armor/miscellaneous priority, replacement cooldowns, Heal gate,
+   and first-visible-local-opponent Attack are wired into live planning and
+   replay. Its weapon selector includes the recovered class scoring/ties,
+   research, local-cap, raw-Tech, affordability, strict-improvement,
+   previous-Attack, and cooldown gates. Its blocks-of-six mode-10 formation
+   anchors and mode-16 followers are bounded but await authoritative per-gang
+   formation-sector state, so those Move paths still use the provisional
+   fallback planner. The exact ten-scenario by
    seven-hire-role family table is implemented by `OriginalAiFamilyRules`,
    including unmapped cells which preserve the current family. AI planning
    preparation now rolls the current role into the previous role and updates

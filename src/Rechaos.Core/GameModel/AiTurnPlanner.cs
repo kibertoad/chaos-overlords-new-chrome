@@ -70,7 +70,7 @@ public static class AiTurnPlanner
         IReadOnlyList<GameCommand> options)
     {
         var family = state.AiPlanning.Family(player.Id, gangSlot);
-        if (family is not (1 or 13 or 14)) return null;
+        if (family is not (1 or 11 or 13 or 14)) return null;
 
         var preparedAction = state.AiPlanning.PlannedAction(player.Id, gangSlot);
         var choice = family == 1 && preparedAction == GangAction.None
@@ -121,6 +121,12 @@ public static class AiTurnPlanner
         {
             if (!entry.gang.IsActive) continue;
             var family = state.AiPlanning.Family(playerId, entry.slot);
+            if (family == 11)
+            {
+                PrepareFamilyElevenCommand(
+                    state, playerId, entry.gang, entry.slot);
+                continue;
+            }
             if (family is 13 or 14)
             {
                 PrepareObjectiveFamilyCommand(
@@ -178,6 +184,47 @@ public static class AiTurnPlanner
                 playerId, entry.slot, GangAction.Move,
                 new AiActionTarget(checked((byte)target), 0));
         }
+    }
+
+    private static void PrepareFamilyElevenCommand(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        int gangSlot)
+    {
+        var player = state.FindPlayer(playerId)!;
+        if (OriginalAiEquipmentRules.SelectFamilyElevenUpgrade(
+                state, player, gang, gangSlot) is { } upgrade)
+        {
+            state.AiPlanning.SetPlannedAction(
+                playerId, gangSlot, GangAction.Equip,
+                new AiActionTarget(checked((byte)upgrade.ItemId), 0));
+            if (upgrade.Slot is EquipmentSlot.Weapon or EquipmentSlot.Armor)
+                state.AiPlanning.SetEquipmentCooldown(
+                    playerId, gangSlot, upgrade.Slot,
+                    OriginalAiEquipmentRules.EquipmentReplacementCooldown(
+                        state.Definitions.Items[upgrade.ItemId].Cost));
+            return;
+        }
+
+        var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
+        if (OriginalAiFamilyElevenRules.ShouldHeal(
+                gang.Force, effectiveHeal,
+                state.AiPlanning.PreviousAction(playerId, gangSlot)))
+        {
+            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
+            return;
+        }
+
+        if (state.Sectors[gang.SectorId].Owner == playerId) return;
+        var target = VisibleOpponentsInSector(state, playerId, gang.SectorId)
+            .FirstOrDefault();
+        if (target.Gang is null) return;
+        state.AiPlanning.SetPlannedAction(
+            playerId, gangSlot, GangAction.Attack,
+            new AiActionTarget(
+                checked((byte)target.Gang.Owner.Value),
+                checked((byte)target.Slot)));
     }
 
     private static void PrepareObjectiveFamilyCommand(

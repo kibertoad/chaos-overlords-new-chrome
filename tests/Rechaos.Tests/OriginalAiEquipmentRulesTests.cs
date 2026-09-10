@@ -68,6 +68,15 @@ public sealed class OriginalAiEquipmentRulesTests
     }
 
     [Fact]
+    public void FamilyElevenMiscellaneousUpgradeMaximizesDetect()
+    {
+        var match = CreateMatch(gangDefinitionId: 0, cash: 500);
+
+        Assert.Equal(50, OriginalAiEquipmentRules.SelectMiscellaneousDetectUpgrade(
+            match, match.Players[0], match.Players[0].Gangs[0]));
+    }
+
+    [Fact]
     public void FamilyOneEquipmentNeedChangesBetweenGreedAndOtherScenarios()
     {
         var greed = CreateEquipmentNeedMatch(ScenarioId.Greed, adjacentOwner: new PlayerId(1));

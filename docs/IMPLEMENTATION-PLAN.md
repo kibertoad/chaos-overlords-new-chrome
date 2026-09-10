@@ -76,11 +76,12 @@ workstream can be marked complete.
   attitude changes, hostility-filtered attack candidates, and all nine known
   consumers of the recovered 0/1/2 resolution band. The scalar outer planner
   remains provisional and must not be presented as original-AI parity.
-- The family-11 Equip selector, exact retaliation-eligibility compound
-  operands, and modes 10 and 16 are now bounded. The latter are the family-11
-  formation anchor/follower Move paths and include a local Attack gate; mode 6
-  and the downstream Control use of `FUN_0040a1a7`'s pair flag are also
-  bounded.
+- Family 11's exact weapon/armor/miscellaneous Equip priority, replacement
+  cooldowns, Heal gate, and first-visible-local-opponent Attack are live and
+  replay-wired. Its modes 10 and 16 are bounded as the blocks-of-six formation
+  anchor/follower Move paths, but still await authoritative per-gang formation-
+  sector state. Mode 6 and the downstream Control use of `FUN_0040a1a7`'s pair
+  flag are also bounded.
 - Static kernels guard family-1's cash 50/51, Force 8/9, effective-Heal -3/-4,
   Tolerance 3/4, and owner/Mentality terminal boundaries. The exact previous-
   None/Chaos Heal/Move/Chaos branch and previous-Heal Heal/Control/Move branch

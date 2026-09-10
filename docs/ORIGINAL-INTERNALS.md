@@ -1245,6 +1245,11 @@ other non-neutral owner's territory. Mode 16 is the follower path for five of
 each six family-11 gangs, while the first gang in each block establishes the
 formation destination.
 
+**Recreation status:** the equipment priority/cooldowns, Heal gate, and exact
+first-visible local Attack target are live and replay-wired. Modes 10 and 16
+remain on the provisional movement fallback until the original per-gang stored
+formation-sector short is represented authoritatively and persisted.
+
 **Interpretation:** this is an attitude/hostility system, not a scalar combat
 bonus. Homicidal Maniac begins maximally hostile toward human players and
 maximally friendly toward computer players; ordinary interactions can create
