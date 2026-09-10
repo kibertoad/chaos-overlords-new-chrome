@@ -105,7 +105,12 @@ replay-verified two-computer harness through 20 turns or objective completion.
    seven-strategic-mode family table is isolated in `OriginalAiFamilyRules`,
    including unmapped cells which preserve the current family and the mode-4
    planning-record copy; live integration awaits representation of query
-   `0x7c`'s per-player strategic-mode word. Selector `0x3e` is identified as the
+   `0x7c`'s per-player strategic-mode word. The three-offer helper's six exact
+   role rankings, scenario-specific filters and tie directions, rich-player
+   mode override, post-ranking affordability check, and no-fallback behavior
+   are isolated in `OriginalAiHireRules`; they are not yet used by the live
+   planner because its scenario-specific role selector is still being
+   recovered. Selector `0x3e` is identified as the
    previous-turn action byte. Selectors 0 (scenario), `0x48` (planning-record
    initialized flag), `0x5a` (mirrored gang projection), `0x7c` (per-player
    strategic mode), 3 (player cash), 4 (sector

@@ -370,6 +370,40 @@ outer AI planner; Medium for command-history/countdown/strategy semantics.
 saved recurring and one-off command, then trace the four-valued global setup
 selection independently of the ten-way scenario selector.
 
+### BIN-AI-003A - strategic hire-offer ranking
+
+**Observation:** `0x00458fa0` calls `0x004078d9` after choosing a role for the
+next hire. The helper scans exactly three offer bytes at `0x004abbc0 +
+player * 3`, returns an offer-slot index, and only then compares that winner's
+raw Force (`gang +0x00`, selector `0x8d`) with player cash. An unaffordable
+winner returns `-1`; it does not fall back to another offer. If requested mode
+0 has cash strictly above 200 and the scenario is not Greed, the helper first
+substitutes mode 3.
+
+| Requested mode | Ranking and eligibility |
+|---:|---|
+| 0 | Lowest Upkeep at or below 3, with nonnegative Control; later ties win |
+| 1 | Highest Heal from a zero baseline; Greed also requires Upkeep <= 3; later ties win |
+| 2 | Highest Research from a zero baseline; Greed also requires Upkeep <= 3; later ties win |
+| 3 | Highest Combat plus only positive Blade, Range, Fighting, and Martial Arts; zero baseline; later ties win |
+| 4 | Highest Stealth + Strength. Greed requires Upkeep <= 4, Strength >= 0, and Stealth > 3 and gives later ties priority; other scenarios require Strength >= 0 and replace only on a strict improvement, so the first maximum wins |
+| 5 | Highest Detect at or above the initial baseline 10; later ties win |
+
+The field identities follow the decoded 156-byte gang record: Upkeep at +2,
+Combat through Martial Arts at +4 through +30, and raw Force at +0. Direct
+instruction inspection was required for modes 1, 2, and 4 because Ghidra's
+decompiler reused the player parameter as a local accumulator and emitted
+misleading pseudocode. `OriginalAiHireRules` implements the instruction-level
+behavior in isolation.
+
+**Confidence:** Verified for all comparisons, eligibility boundaries, tie
+directions, the cash-200 override, post-selection affordability, and no-fallback
+behavior.
+
+**Next validation:** recover the scenario-specific role selection in
+`0x00458fa0`, then use its chosen role to integrate this selector with live AI
+hiring.
+
 ### BIN-AI-004 - global AI Mentality byte and first consumers
 
 **Observation:** The Win32 string table in EXE-GOG-1.1 maps resource IDs 46,
