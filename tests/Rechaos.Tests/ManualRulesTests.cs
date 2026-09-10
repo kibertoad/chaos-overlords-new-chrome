@@ -108,6 +108,7 @@ public sealed class ManualRulesTests
 
     [Theory]
     [InlineData(10, 5, 3, 12)]
+    [InlineData(10, 5, 13, 2)]
     [InlineData(2, -1, 4, 0)]
     public void AttackPoolIncludesForceAndSubtractsDefense(
         int force, int combat, int defense, int expected) =>

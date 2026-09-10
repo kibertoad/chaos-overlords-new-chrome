@@ -213,8 +213,10 @@ public sealed class CombatResolutionTests
     public void CombatEliminationClearsEquipmentAndRecordsCasualty()
     {
         var data = BundledOriginalData.Load();
-        var attackerDefinition = data.Gangs.OrderByDescending(gang =>
-            gang.Stats.Combat + gang.Stats.Strength + gang.Stats.Blade).First().Id;
+        var attackerDefinition = data.Gangs
+            .OrderBy(gang => gang.Stats.Defense)
+            .ThenByDescending(gang => gang.Stats.Combat + gang.Stats.Strength + gang.Stats.Blade)
+            .First().Id;
         var weapon = data.Items
             .Select((item, index) => (item, index))
             .Where(value => value.item.Type == 1)
@@ -228,10 +230,18 @@ public sealed class CombatResolutionTests
             playerOneArmor: 24,
             playerOneMiscellaneous: 38);
         QueueAndEnterCombat(match, playerOneAction: null);
+        var attacker = match.FindGang(new GangId(10))!;
+        var target = match.FindGang(new GangId(20))!;
+        var attackerStats = EffectiveStatisticsCalculator.ForGang(match, attacker);
+        var targetStats = EffectiveStatisticsCalculator.ForGang(match, target);
+        var retaliationDice = ManualRules.AttackDiceCount(
+            target.Force,
+            ManualRules.CombatRating(targetStats, WeaponType(match, target)),
+            attackerStats.Defense);
+        Assert.True(retaliationDice > 0);
 
         match.FinishExecutionPhase();
 
-        var target = match.FindGang(new GangId(20))!;
         var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
         Assert.Equal((short)weapon, resolution.ItemId);
         Assert.Equal((short)0, resolution.RetaliationItemId);
@@ -239,6 +249,7 @@ public sealed class CombatResolutionTests
         Assert.Null(target.WeaponItemId);
         Assert.Null(target.ArmorItemId);
         Assert.Null(target.MiscellaneousItemId);
+        Assert.Equal(retaliationDice, resolution.RetaliationRolls!.Count);
         Assert.Equal(1, match.Players[1].Statistics.Casualties);
         Assert.Contains(match.NotificationsFor(new PlayerId(1)),
             notification => notification.Kind == GameNotificationKind.Elimination && notification.Gang == target.Id);

@@ -184,6 +184,10 @@ submit through that same recorder; its policy is not an original-parity claim.
 The audio router consumes newly appended attack-resolution events and maps an
 equipped item's original Sound field to `SND005xx`; it never feeds playback
 state or timing back into the simulation.
+`SoundtrackCatalog` discovers the extracted `Track02`-`Track09` Ogg files in a
+stable order, while `ChaosGame.Media.cs` owns their optional streaming lifecycle.
+Playback failure disables music only; media state never enters Core, saves,
+replays, commands, events, or deterministic hashes.
 
 Platform distribution scripts publish self-contained game and extractor
 payloads while forcing original assets out of every package. On Windows the

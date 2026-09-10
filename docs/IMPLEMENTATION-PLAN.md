@@ -47,8 +47,8 @@ kind is not part of this implementation plan.
 | Original data | Embedded 22 sites, 90 gangs, and 64 items with pinned provenance | Semantic/formula validation, versioned generation tool |
 | Extraction | Transactional/versioned full-pack SHA-256 validation; 215 repaired RGB555 PX16 images, 214 retained plus decoded PX08 resources, 28 WAVs, 8 Ogg tracks, 2 Smacker videos, help and opaque files; generated 685-output factual catalog | Transparency/color-key validation, video strategy, legacy WinHelp decoding/modern presentation, semantic role/owner resolution |
 | Simulation | Deterministic city seed, six players, stable gang IDs, typed command queue, headless phase coordinator, Upkeep, all 14 command resolvers, simultaneous gang/Crackdown combat, 3–5-turn police duration/extension and three-in-five control loss, hidden attack/visibility checks, and local influenced-site stats | Crackdown notification/timing fixtures, special buildings, original RNG seeding/order and exact parity formulas |
-| Client | Scaled 640x460 routed setup/handoff/city/sector/gang/finance/ranking/items/Give/combat-summary/search/commands/hire/events/endgame UI backed by authoritative `MatchState`; distinct whole-city and detailed-sector projections composite original ownership tiles, the latter as a clickable 3x3 neighborhood beside all three building portraits; normal planning turns auto-resolve internal phases while debug mode can step them; persistent original-art Hire dock supports portrait drag/drop from city or sector detail, split price/reject footers and `HIRED` stamping; `PX05010` automatically pages queued turn reports after handoff; `PX05012` presents paged combat results; recovered item-selected eight-frame attack/hit, retaliation, evasion and police animation playback; recovered setup; local controls; private handoff; Core-derived commands, projections, visibility, combat results, research/equipment transfer and notifications; mouse/keyboard, saves/replays | Full setup detail, remaining sprites/atlas and management panels/hit maps, remaining sound effects, original CD soundtrack playback, video, accessibility |
-| Tests | 950 tests covering parsers/provenance, extraction, scenarios, deterministic command and phase resolution, difficulty bands, AI strategic/planning state and complete action tuples, family dispatch and live boundary branches, sector selection and hire placement, original city/setup vectors, hire schedules/limits/ranking/equipment, combat, saves, replays, installers, and repository policy | Original-reference fixtures, visual tests, larger-player AI stress, and native interactive installer/play tests |
+| Client | Scaled 640x460 routed setup/handoff/city/sector/gang/finance/ranking/items/Give/combat-summary/search/commands/hire/events/endgame UI backed by authoritative `MatchState`; distinct whole-city and detailed-sector projections composite original ownership tiles, the latter as a clickable 3x3 neighborhood beside all three building portraits; normal planning turns auto-resolve internal phases while debug mode can step them; persistent original-art Hire dock supports portrait drag/drop from city or sector detail, split price/reject footers and `HIRED` stamping; `PX05010` automatically pages queued turn reports after handoff; `PX05012` presents paged combat results; recovered item-selected eight-frame attack/hit, retaliation, evasion and police animation playback; recovered setup; local controls; private handoff; Core-derived commands, projections, visibility, combat results, research/equipment transfer and notifications; mouse/keyboard, saves/replays; sequential streamed playback of the extracted original CD soundtrack | Full setup detail, remaining sprites/atlas and management panels/hit maps, remaining sound effects, exact original soundtrack selection/transitions/preferences, video, accessibility |
+| Tests | 953 tests covering parsers/provenance, extraction, scenarios, deterministic command and phase resolution, difficulty bands, AI strategic/planning state and complete action tuples, family dispatch and live boundary branches, sector selection and hire placement, original city/setup vectors, hire schedules/limits/ranking/equipment, combat, saves, replays, soundtrack discovery, installers, and repository policy | Original-reference fixtures, visual tests, larger-player AI stress, and native interactive installer/play tests |
 | Documentation | File/binary research, generated factual asset catalog, architecture, validation, parity matrix, roadmap and initial full-screen UI atlas/hit map | Complete sprite atlas, rules and remaining documents listed in section 4 |
 
 The current game is a playable architectural slice, not evidence of rule parity.
@@ -60,7 +60,7 @@ workstream can be marked complete.
 - The current implementation baseline includes the recovered sector Combat +
   Defense advantage hostility pass, exact isolated scenario/strategy family
   dispatch, exact hire-offer ranking/rejection, the isolated modes 1-10 and
-  12-16 sector-selection kernels, live recovered hire-placement rules, and 950
+  12-16 sector-selection kernels, live recovered hire-placement rules, and 953
   passing tests. Native saves are
   v16, replay is v17, and the canonical hash is v19.
 - The latest completed setup checkpoint is commit `10a3a9d`: fixed Greed and
@@ -248,10 +248,15 @@ the exact RNG consumption order.
 - Chaos uses total Force + Chaos, earns cash subject to sector income/control,
   increases chaos, and may trigger a crackdown. Exact cash and chaos increments
   require binary fixtures.
-- Attack is simultaneous. Attack dice derive from Combat plus the applicable
-  weapon skill; defense is Defense plus item defense. Each positive success
-  difference causes one damage, capped by weapon damage. Retaliation uses a
-  halved attack roll; Martial Arts exceptions must match the binary.
+- Attack is simultaneous. Contrary to the original manual's abbreviated
+  description, the attack pool is `current Force + CombatRating - Defense`,
+  where CombatRating includes the applicable weapon skill and Defense includes
+  item defense. This correction is corroborated by the
+  [1997 Russell Webb et al. FAQ](https://gamefaqs.gamespot.com/pc/196900-chaos-overlords/faqs/1684)
+  and the recovered executable formula. Both the opening attack and retaliation
+  use start-of-round Force snapshots, so a gang eliminated by the opening roll
+  still completes its already-calculated simultaneous retaliation. Retaliation
+  damage is halved; Martial Arts exceptions must match the binary.
 - Hiding compares the attackers' Detect against the defender's Stealth, with
   the manual's chance table. Multiple friendly gangs improve detection; the
   hidden gang's individual detect value is used for its own search.
@@ -633,8 +638,9 @@ screen/state.
 - Treat the GOG `MUSIC/Track02.ogg` through `Track09.ogg` files as the locally
   extracted representation of the original CD-audio soundtrack; the new runtime
   must never require an optical disc or a legacy CD-audio driver.
-- Implement streamed soundtrack playback and recover the original track-number
-  mapping, selection order, shuffle/repeat behavior, looping or end-of-track
+- Keep the implemented sequential streamed playback isolated from simulation
+  and recover the original track-number mapping, selection order,
+  shuffle/repeat behavior, looping or end-of-track
   advance, gameplay/menu transitions, pause/resume behavior, music preference,
   and independent music volume/mute controls. Missing or unreadable music must
   degrade silently to gameplay without music, never stall the turn loop.
@@ -718,10 +724,10 @@ unmarked guess.
 | M4 | Foundation started | Recovered raw RNG/range algorithms; serializable state; effective item/site stats; phase-wide Attack/retaliation and police snapshots; recovered difficulty-specific d20 hidden detection, band-0 Defense reduction, 6+/5+/4+ main rolls with quarter-pool damage floor, exact Hide/weapon/Martial-Arts retaliation eligibility, 5+/5+/4+ halved retaliation, elimination and recorded rolls | Resolve reveal timing, investigate the reported GOG/1.1 Detailed Combat freeze, add Simple-versus-Detailed state-equivalence and no-hang stress coverage, complete reference combat/Crackdown fixtures, animation/audio mapping, and M2-M3 gates |
 | M5 | Foundation started | Scenario predicates, timed scores/standings with ties, live end-of-turn evaluation, explicit Siege-important sector state, Big Man accrual, Eliminate cleanup, state-derived winners, all five award projections, outcome events/notifications and hashing; recreation-native v16 snapshots with reusable migration machinery and v17 authoritative-operation replays plus client save/replay flows; equipment Give recipient workflow | Siege setup/visual mapping, objective ranking/tie fixtures, current-format persistence safety, remaining management UI deliverable and M4 gate |
 | M6 | Foundation started | Deterministic objective-aware planner and replay driver; recovered outer planner, every family handler, exact ten-scenario by seven-hire-role dispatch table, exact base turn schedules and three-offer role rankings, complete three-generation action tuples, selector inventory and strategic routing including modes 2-3, 5-10, 12-16, and encoded family-6/7/12 movement, exact ten-scenario standing reconstruction, complete live family-0/4 general-purpose state machines, complete live family-2 aggressive territorial handler, complete live family-3/5 cash/Support Influence handlers, complete family-6 coverage/Move/equipment/Attack handler, complete family-7 Research handler, complete family-9 equipment/Move/Attack/Control handler, complete family-10 stealth/concealment handler, complete family-12 equipment/Heal/Move/Attack handler, complete live family-13/14 handlers with off-objective Move, owned-objective Heal/equipment/Influence, owned/contested exact Attack/Heal/Control, and family-14's prior-Control Heal/family-13 transition, mode-6 leader/hostility movement, pair-flag Control, family-1 equipment/cooldown and all three bounded continuations, and complete family-11 equipment/cooldown/Heal/local-Attack/mode-10 anchor/mode-16 follower paths; the family table, every objective-specific hire-role adjustment, computed gang limit, hire-attempt gate, live post-command role update, exact live hire selector and failure-path snub, fixed three-slot offer tombstones/refill, ascending inactive roster-slot reuse/reset, exact family-0/1/2/4/6/11 equipment choices, first-planning lifecycle, duplicate Chaos/Influence cleanup, and live persistent-anchor placement refresh with ordinary, Big Man, visible-hostile, and Siege paths are implemented; verified current/previous hire roles, first-plan flags, action/target tuples, equipment cooldowns, polymorphic focus/formation values, family-6 coverage sectors, and six-by-81 family slots persist in authoritative state, with exact role rollover and active-gang family assignment during planning preparation; exact pre-city six-player reactions, directional attitudes, non-Homicidal recovery, combat/Control and sector Combat + Defense advantage hostility, hostility-aware fallback targets, hashes/saves/replays; exact 0/1/2 per-computer resolution calibration implemented for all nine consumers; dedicated structure pass isolates dispatch, immutable planning facts, shared recovered operations, and provisional fallback scoring without changing traces | Capture fixed recovered-family reference boundaries and larger-player/objective-completion stress cases; M5 gate |
-| M7 | Foundation started | Original city ownership layers and site/gang portraits are rendered; resolved equipped attacks route item-defined original weapon sounds | Complete atlas/event integration, animations, modern viewer for locally extracted legacy help, remaining sound effects, streamed original CD soundtrack playback from extracted GOG tracks, video, golden screens and M1-M6 dependencies |
+| M7 | Foundation started | Original city ownership layers and site/gang portraits are rendered; resolved equipped attacks route item-defined original weapon sounds; available extracted `Track02`-`Track09` Ogg files stream sequentially and degrade safely when absent or unreadable | Complete atlas/event integration, animations, modern viewer for locally extracted legacy help, remaining sound effects, recover exact soundtrack selection/transitions/preferences and validate native playback, video, golden screens and M1-M6 dependencies |
 | M8 | Foundation started | Windows local launcher; legal-copy extraction; self-contained Windows package and GOG-aware Inno installer with an always-visible New Chrome destination page, separate original-asset source page, visible import stages, retryable source selection, nonzero failure exit and runtime error dialog; Linux amd64 `.deb`; macOS arm64/x64 application-bundle `.pkg`; manually dispatched validation and selectable Windows-only (default) or all-platform GitHub Release workflow; pull-request/manual zizmor gate; clean-room run `34403047147` passed Windows, Linux, both macOS architectures, and all installer jobs; zizmor run `34403047115` passed | Signing/notarization, native interactive tests, accuracy audit, compatibility and full release gate |
 
-Current automated baseline: the solution builds successfully, 950 tests
+Current automated baseline: the solution builds successfully, 953 tests
 pass, and the inspected legal-copy output contains 685 size/SHA-256-verified
 outputs from 471 original resources. This is implementation coverage, not
 original-game behavioral parity.
@@ -794,8 +800,11 @@ Deliver sprite/animation atlas, effects, music, video, original UI polish and
 native-resolution visual baselines.
 
 Current foundation: original city/site/gang imagery is routed, and resolved
-equipped-weapon attacks use item-defined `SND005xx` cues. Remaining trigger,
-animation, music, video, and exact visual behavior is still required.
+equipped-weapon attacks use item-defined `SND005xx` cues. The runtime streams
+available extracted soundtrack tracks in provisional CD order and safely
+disables music when playback cannot start. Remaining trigger and animation
+work, exact soundtrack policy and native validation, video, and exact visual
+behavior are still required.
 
 Depends on: M1-M6 event model, complete asset catalog.
 Gate: visual and media trigger comparisons pass across the entire game flow.
@@ -865,8 +874,9 @@ not lines of code or asset counts.
    state-equivalence plus no-hang stress tests.
 6. Complete setup alignment, remaining management hit maps, atlas semantics,
    transparency/color keys, modern locally extracted help viewer, combat cadence,
-   sound triggers, streamed original CD soundtrack playback from the eight GOG
-   Ogg tracks, video triggers, and native-resolution golden screens.
+   sound triggers, exact original soundtrack sequencing, transitions and
+   preferences plus native playback validation, video triggers, and
+   native-resolution golden screens.
 7. Run the full section 4.4 accuracy audit across layouts, rules, animations,
    AI, RNG, media, and persistence; resolve or explicitly classify every
    in-scope discrepancy. Original networking remains excluded.
