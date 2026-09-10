@@ -40,10 +40,9 @@ public static partial class AiTurnPlanner
             comparisonTarget.Force, targetStats.Combat, targetStats.Defense));
     }
 
-    private static void SetRecoveredAttack(
+    private static void SetRecoveredAttackAction(
         MatchState state,
         PlayerId playerId,
-        MatchGangState gang,
         int gangSlot,
         ObjectiveTarget selected)
     {
@@ -52,6 +51,16 @@ public static partial class AiTurnPlanner
             new AiActionTarget(
                 checked((byte)selected.Gang.Owner.Value),
                 checked((byte)selected.Slot)));
+    }
+
+    private static void SetRecoveredFocusedAttack(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        int gangSlot,
+        ObjectiveTarget selected)
+    {
+        SetRecoveredAttackAction(state, playerId, gangSlot, selected);
         state.AiPlanning.SetFocusValue(playerId, gangSlot, gang.SectorId);
     }
 }

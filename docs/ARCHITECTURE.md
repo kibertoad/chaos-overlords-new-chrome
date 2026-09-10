@@ -66,9 +66,11 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   family-specific branch order remains in separate partial files, while
   provisional command scoring remains isolated in `AiTurnPlanner.cs`.
 - `GameModel/AiTurnPlanner.RecoveredOperations.cs`: narrowly shared recovered
-  operations whose ordering is identical across handlers, beginning with the
-  human-weighted/full-pool target projection, asymmetric comparison ordinal,
-  and authoritative Attack tuple/focus write used by families 0, 4, and 6.
+  operations whose ordering is identical across handlers. The human-weighted/
+  full-pool projection remains shared by families 0, 4, and 6; the asymmetric
+  draw/comparison primitive and authoritative Attack tuple write are shared by
+  families 0, 2, 3, 4, 5, 6, 7, and 9. A separate focused-Attack operation makes
+  the subset of those families that also persist the current sector explicit.
 - `Persistence/NativeSaveSerializer.cs`: bounded, versioned deterministic
   snapshots with definition/state fingerprints and complete runtime restoration.
 - `Persistence/NativeSaveStore.cs`: atomic file promotion, previous-save backup,

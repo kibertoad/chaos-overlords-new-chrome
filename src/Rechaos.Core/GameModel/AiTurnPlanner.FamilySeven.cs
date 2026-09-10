@@ -69,23 +69,14 @@ public static partial class AiTurnPlanner
                         .Setup.Controller == PlayerController.Human)
                     .ToArray()
                 : visible;
-        var ordinal = state.Random.NextInclusive(targetPool.Count);
-        var selected = targetPool[ordinal - 1];
-        var comparisonTarget = visible[ordinal - 1].Gang;
-        var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
-        var targetStats = EffectiveStatisticsCalculator.ForGang(state, comparisonTarget);
-        if (!OriginalAiFamilySevenRules.CanAttackSelectedTarget(
-                gang.Force, attackerStats.Combat, attackerStats.Defense,
-                comparisonTarget.Force, targetStats.Combat, targetStats.Defense)
-            || !state.AiStrategy.IsHostile(playerId, selected.Gang.Owner))
+        var draw = DrawRecoveredAttackTarget(
+            state, gang, visible, targetPool,
+            OriginalAiFamilySevenRules.CanAttackSelectedTarget);
+        if (!draw.Accepted
+            || !state.AiStrategy.IsHostile(playerId, draw.Selected.Gang.Owner))
             return;
 
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Attack,
-            new AiActionTarget(
-                checked((byte)selected.Gang.Owner.Value),
-                checked((byte)selected.Slot)));
-        state.AiPlanning.SetFocusValue(playerId, gangSlot, gang.SectorId);
+        SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw.Selected);
     }
 
     private static void PrepareFamilySevenResearchContinuation(

@@ -94,22 +94,13 @@ public static partial class AiTurnPlanner
         ObjectiveTarget selected = default;
         for (var attempt = 0; attempt < OriginalAiFamilyTwoRules.AttackAttempts; attempt++)
         {
-            var ordinal = state.Random.NextInclusive(targetPool.Count);
-            selected = targetPool[ordinal - 1];
-            var comparisonTarget = visible[ordinal - 1].Gang;
-            var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
-            var targetStats = EffectiveStatisticsCalculator.ForGang(state, comparisonTarget);
-            if (OriginalAiFamilyTwoRules.CanAttackSelectedTarget(
-                    gang.Force, attackerStats.Combat, attackerStats.Defense,
-                    comparisonTarget.Force, targetStats.Combat, targetStats.Defense))
-                break;
+            var draw = DrawRecoveredAttackTarget(
+                state, gang, visible, targetPool,
+                OriginalAiFamilyTwoRules.CanAttackSelectedTarget);
+            selected = draw.Selected;
+            if (draw.Accepted) break;
         }
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Attack,
-            new AiActionTarget(
-                checked((byte)selected.Gang.Owner.Value),
-                checked((byte)selected.Slot)));
-        state.AiPlanning.SetFocusValue(playerId, gangSlot, gang.SectorId);
+        SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, selected);
     }
 
     private static void ApplyFamilyTwoControlOverride(

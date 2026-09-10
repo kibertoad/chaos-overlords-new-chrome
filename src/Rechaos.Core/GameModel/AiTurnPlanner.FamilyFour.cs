@@ -84,7 +84,7 @@ public static partial class AiTurnPlanner
             var draw = DrawFamilyFourTarget(
                 state, playerId, gang, visible, visibleWeight);
             if (draw.Accepted)
-                SetRecoveredAttack(state, playerId, gang, gangSlot, draw.Selected);
+                SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw.Selected);
             else
                 ClearFamilyFourActionAndAuxiliaries(state, playerId, gangSlot);
             return;
@@ -136,7 +136,7 @@ public static partial class AiTurnPlanner
                     state, playerId, gang, visible, visibleWeight);
                 if (draw.Accepted) break;
             }
-            SetRecoveredAttack(state, playerId, gang, gangSlot, draw.Selected);
+            SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw.Selected);
         }
 
         var player = state.FindPlayer(playerId)!;

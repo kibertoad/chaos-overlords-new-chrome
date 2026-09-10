@@ -116,21 +116,13 @@ public static partial class AiTurnPlanner
                             .Setup.Controller == PlayerController.Human)
                         .ToArray()
                     : visible;
-            var ordinal = state.Random.NextInclusive(targetPool.Count);
-            selected = targetPool[ordinal - 1];
-            var comparisonTarget = visible[ordinal - 1].Gang;
-            var attackerStats = EffectiveStatisticsCalculator.ForGang(state, gang);
-            var targetStats = EffectiveStatisticsCalculator.ForGang(state, comparisonTarget);
-            if (OriginalAiFamilyNineRules.CanAttackSelectedTarget(
-                    gang.Force, attackerStats.Combat, attackerStats.Defense,
-                    comparisonTarget.Force, targetStats.Combat, targetStats.Defense))
-                break;
+            var draw = DrawRecoveredAttackTarget(
+                state, gang, visible, targetPool,
+                OriginalAiFamilyNineRules.CanAttackSelectedTarget);
+            selected = draw.Selected;
+            if (draw.Accepted) break;
         }
 
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Attack,
-            new AiActionTarget(
-                checked((byte)selected.Gang.Owner.Value),
-                checked((byte)selected.Slot)));
+        SetRecoveredAttackAction(state, playerId, gangSlot, selected);
     }
 }

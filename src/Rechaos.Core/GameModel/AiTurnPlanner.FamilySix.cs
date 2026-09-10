@@ -53,7 +53,7 @@ public static partial class AiTurnPlanner
             OriginalAiFamilySixRules.CanAttackSelectedTarget);
         if (draw.Accepted)
         {
-            SetRecoveredAttack(state, playerId, gang, gangSlot, draw.Selected);
+            SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw.Selected);
             return;
         }
 
@@ -102,7 +102,7 @@ public static partial class AiTurnPlanner
                 OriginalAiFamilySixRules.CanAttackSelectedTarget);
             if (draw.Accepted) break;
         }
-        SetRecoveredAttack(state, playerId, gang, gangSlot, draw.Selected);
+        SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw.Selected);
     }
 
     private static void SetFamilySixEquipment(
