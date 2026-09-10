@@ -2,12 +2,17 @@ using System.Text.Json;
 
 namespace Rechaos.Game;
 
-public sealed record GamePreferences(int FormatVersion, int MusicVolumeLevel)
+public sealed record GamePreferences(
+    int FormatVersion,
+    int MusicVolumeLevel,
+    int SoundEffectVolumeLevel)
 {
-    public const int CurrentFormatVersion = 1;
+    public const int CurrentFormatVersion = 2;
 
     public static GamePreferences Default { get; } =
-        new(CurrentFormatVersion, OriginalSoundtrackPolicy.DefaultVolumeLevel);
+        new(CurrentFormatVersion,
+            OriginalSoundtrackPolicy.DefaultVolumeLevel,
+            AudioRouting.DefaultEffectVolumeLevel);
 }
 
 public static class GamePreferencesStore
@@ -70,6 +75,8 @@ public static class GamePreferencesStore
         {
             FormatVersion: GamePreferences.CurrentFormatVersion,
             MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
-                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel
+                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
+            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
+                and <= AudioRouting.MaximumEffectVolumeLevel
         };
 }

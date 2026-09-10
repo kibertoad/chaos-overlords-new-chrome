@@ -63,8 +63,26 @@ public sealed partial class ChaosGame
         {
             if (AudioRouting.WeaponSound(_state, gameEvent) is { } soundIndex
                 && _weaponSounds.TryGetValue(soundIndex, out var sound))
-                sound.Play();
+                TryPlaySound(sound);
             _lastAudibleEventSequence = gameEvent.Sequence;
+        }
+    }
+
+    private void PlayGeneralSound(int slot)
+    {
+        if (_generalSounds.TryGetValue(slot, out var sound)) TryPlaySound(sound);
+    }
+
+    private void TryPlaySound(SoundEffect sound)
+    {
+        if (_soundEffectVolumeLevel == 0) return;
+        try
+        {
+            sound.Play(AudioRouting.EffectVolumeForLevel(_soundEffectVolumeLevel), 0, 0);
+        }
+        catch
+        {
+            // Optional presentation audio must never interrupt gameplay.
         }
     }
 

@@ -42,7 +42,7 @@ when importing them.
 | Objectives and endgame | Live scenario scoring and completion, timed standings, tied winners, five awards, statistics, elimination cleanup, and an endgame summary. | Some objective timing/tie edges and final presentation details remain provisional. |
 | Computer players | Deterministic objective-aware AI with recovered mentality, attitudes, reactions, hiring, placement, difficulty calibration, and handlers for every original strategy family wired into gameplay. | Fixed original-reference boundaries and larger-player stress coverage are still incomplete; unsupported decision edges retain an isolated provisional fallback. |
 | Saves and replays | F5/F9 recreation-native save/load, end-turn autosaves, F6/F10 deterministic record/playback verification, bounded loading, and backup recovery. | These formats may change incompatibly before 1.0.0. Original 1996 save import/export is not supported. |
-| Audio, music, and video | Original audio, eight music tracks, and two videos are extracted; equipped-weapon attacks play their mapped original sound cues. The recovered soundtrack uses Track 2 for title/setup, Tracks 3-8 for gameplay, and Track 9 for endgame, with repeat and focus pause/resume. An Options panel exposes the recovered 0-10 music scale, starts at the original level 5, and remembers the selected level between launches. | Exact menu restart boundaries and native-platform playback still need validation. Video playback and most UI/police/impact sound triggers are not wired yet. |
+| Audio, music, and video | Original audio, eight music tracks, and two videos are extracted; equipped-weapon attacks and recovered setup selection/rejection cues play their mapped original sounds. The recovered soundtrack uses Track 2 for title/setup, Tracks 3-8 for gameplay, and Track 9 for endgame, with repeat and focus pause/resume. Options exposes independent original 0-10 Music and Sound Effects scales, both defaulting to level 5 and remembered between launches. | Exact menu restart boundaries and native-platform playback still need validation. Video playback and the remaining UI/police/impact sound triggers are not wired yet. |
 
 ## Controls
 
@@ -59,7 +59,7 @@ when importing them.
 | Research and equipment | T | Click Research or Equipment |
 | Combat summary | B | Click Combat Summary |
 | Search | X | Click Search |
-| Music options | O | Click Options on the title screen, then click a volume level |
+| Audio options | O | Click Options on the title screen, then choose separate Music and Sound Effects levels |
 | Help | F1 | Click Help on the title screen; point at the topic list or article and use the mouse wheel to scroll it |
 | Finish planning | Space | Click the end-turn control |
 | Return to title | Escape | Use the on-screen back/cancel control where available |

@@ -15,12 +15,13 @@ public sealed class GamePreferencesStoreTests : IDisposable
 
         Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
         Assert.Equal(OriginalSoundtrackPolicy.DefaultVolumeLevel, preferences.MusicVolumeLevel);
+        Assert.Equal(AudioRouting.DefaultEffectVolumeLevel, preferences.SoundEffectVolumeLevel);
     }
 
     [Fact]
     public void CurrentPreferencesRoundTrip()
     {
-        var expected = new GamePreferences(GamePreferences.CurrentFormatVersion, 8);
+        var expected = new GamePreferences(GamePreferences.CurrentFormatVersion, 8, 3);
 
         Assert.True(GamePreferencesStore.TrySave(Path(), expected));
 
@@ -29,8 +30,9 @@ public sealed class GamePreferencesStoreTests : IDisposable
 
     [Theory]
     [InlineData("not-json")]
-    [InlineData("{\"FormatVersion\":2,\"MusicVolumeLevel\":8}")]
-    [InlineData("{\"FormatVersion\":1,\"MusicVolumeLevel\":11}")]
+    [InlineData("{\"FormatVersion\":1,\"MusicVolumeLevel\":8}")]
+    [InlineData("{\"FormatVersion\":2,\"MusicVolumeLevel\":11,\"SoundEffectVolumeLevel\":5}")]
+    [InlineData("{\"FormatVersion\":2,\"MusicVolumeLevel\":5,\"SoundEffectVolumeLevel\":11}")]
     public void CorruptOrUnsupportedPreferencesUseDefault(string contents)
     {
         File.WriteAllText(Path(), contents);
@@ -42,7 +44,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
     public void InvalidPreferencesAreNotWritten()
     {
         Assert.False(GamePreferencesStore.TrySave(
-            Path(), new GamePreferences(GamePreferences.CurrentFormatVersion, -1)));
+            Path(), new GamePreferences(GamePreferences.CurrentFormatVersion, -1, 5)));
         Assert.False(File.Exists(Path()));
     }
 

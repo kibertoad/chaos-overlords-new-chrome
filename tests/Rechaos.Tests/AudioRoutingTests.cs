@@ -7,6 +7,25 @@ namespace Rechaos.Tests;
 
 public sealed class AudioRoutingTests
 {
+    [Fact]
+    public void GeneralSoundSlotsPreserveRecoveredLoaderTable()
+    {
+        Assert.Equal([0, 1, 2, 3, 4, 6, 7, 8, 9], AudioRouting.GeneralSoundSlots);
+        Assert.Equal("SND00200.wav", AudioRouting.GeneralSoundFile(0));
+        Assert.Equal("SND00204.wav", AudioRouting.GeneralSoundFile(4));
+        Assert.Equal("SND00208.wav", AudioRouting.GeneralSoundFile(9));
+        Assert.Throws<ArgumentOutOfRangeException>(() => AudioRouting.GeneralSoundFile(5));
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(5, 32000)]
+    [InlineData(10, 64000)]
+    public void RecoveredEffectVolumeMatchesOriginalStereoChannelValue(
+        int level, int originalChannelValue) =>
+        Assert.Equal(originalChannelValue / (float)ushort.MaxValue,
+            AudioRouting.EffectVolumeForLevel(level));
+
     [Theory]
     [InlineData((short)0, "SND00500.wav")]
     [InlineData((short)9, "SND00509.wav")]

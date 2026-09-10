@@ -71,6 +71,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _uiSprites;
     private PixelFont? _font;
     private readonly Dictionary<short, SoundEffect> _weaponSounds = [];
+    private readonly Dictionary<int, SoundEffect> _generalSounds = [];
     private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
     private MatchState? _state;
@@ -152,7 +153,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _autoSavePath = Path.Combine(userDataRoot, "autosave.rchsave");
         _replayPath = Path.Combine(userDataRoot, "last-match.rchreplay");
         _preferencesPath = Path.Combine(userDataRoot, "preferences.json");
-        _musicVolumeLevel = GamePreferencesStore.LoadOrDefault(_preferencesPath).MusicVolumeLevel;
+        var preferences = GamePreferencesStore.LoadOrDefault(_preferencesPath);
+        _musicVolumeLevel = preferences.MusicVolumeLevel;
+        _soundEffectVolumeLevel = preferences.SoundEffectVolumeLevel;
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -207,11 +210,17 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             var sound = LoadSound(AudioRouting.SoundFile(index));
             if (sound is not null) _weaponSounds.Add(index, sound);
         }
+        foreach (var slot in AudioRouting.GeneralSoundSlots)
+        {
+            var sound = LoadSound(AudioRouting.GeneralSoundFile(slot));
+            if (sound is not null) _generalSounds.Add(slot, sound);
+        }
         LoadSoundtrack();
         _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
         {
             ["helpAvailable"] = (_helpDocument is not null).ToString(),
             ["weaponSounds"] = _weaponSounds.Count.ToString(),
+            ["generalSounds"] = _generalSounds.Count.ToString(),
             ["combatAnimations"] = _combatAnimationTextures.Count.ToString()
         });
     }
@@ -506,8 +515,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     .FirstOrDefault(index => PlayerPortraitLayout.Previous(index).Contains(point), -1);
                 var nextPortrait = Enumerable.Range(0, _selectedPlayerCount)
                     .FirstOrDefault(index => PlayerPortraitLayout.Next(index).Contains(point), -1);
-                if (scenario >= 0) _selectedScenario = (ScenarioId)scenario;
-                else if (duration >= 0) _selectedDuration = Durations[duration];
+                if (scenario >= 0)
+                {
+                    if (_selectedScenario != (ScenarioId)scenario) PlayGeneralSound(3);
+                    _selectedScenario = (ScenarioId)scenario;
+                }
+                else if (duration >= 0)
+                {
+                    if (_selectedDuration != Durations[duration]) PlayGeneralSound(3);
+                    _selectedDuration = Durations[duration];
+                }
                 else if (previousPortrait >= 0) CyclePortrait(previousPortrait, -1);
                 else if (nextPortrait >= 0) CyclePortrait(nextPortrait, 1);
                 else

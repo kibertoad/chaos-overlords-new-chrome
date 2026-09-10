@@ -152,16 +152,19 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
-    public void OptionsExposeEveryOriginalMusicLevelAsDistinctHitTargets()
+    public void OptionsExposeBothOriginalAudioScalesAsDistinctHitTargets()
     {
         Assert.Equal(OriginalSoundtrackPolicy.MaximumVolumeLevel + 1,
             OptionsLayout.MusicLevels.Count);
-        Assert.Equal(new Rectangle(140, 210, 28, 32), OptionsLayout.MusicLevels[0]);
-        Assert.Equal(new Rectangle(470, 210, 28, 32), OptionsLayout.MusicLevels[^1]);
-        Assert.All(OptionsLayout.MusicLevels,
+        Assert.Equal(OptionsLayout.MusicLevels.Count, OptionsLayout.SoundEffectLevels.Count);
+        Assert.Equal(new Rectangle(140, 158, 28, 32), OptionsLayout.MusicLevels[0]);
+        Assert.Equal(new Rectangle(470, 158, 28, 32), OptionsLayout.MusicLevels[^1]);
+        Assert.Equal(new Rectangle(140, 240, 28, 32), OptionsLayout.SoundEffectLevels[0]);
+        Assert.All(OptionsLayout.MusicLevels.Concat(OptionsLayout.SoundEffectLevels),
             level => Assert.True(OptionsLayout.Panel.Contains(level)));
-        Assert.All(OptionsLayout.MusicLevels.SelectMany((left, index) =>
-                OptionsLayout.MusicLevels.Skip(index + 1).Select(right => (left, right))),
+        var levels = OptionsLayout.MusicLevels.Concat(OptionsLayout.SoundEffectLevels).ToArray();
+        Assert.All(levels.SelectMany((left, index) =>
+                levels.Skip(index + 1).Select(right => (left, right))),
             pair => Assert.False(pair.left.Intersects(pair.right)));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
     }
