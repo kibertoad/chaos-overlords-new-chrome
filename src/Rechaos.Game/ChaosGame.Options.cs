@@ -29,10 +29,10 @@ public sealed partial class ChaosGame
     private string _optionsReturnMessage = string.Empty;
     private int _optionsRow;
     private int _soundEffectVolumeLevel = AudioRouting.DefaultEffectVolumeLevel;
-    private bool _warnIfIdleGangs = true;
-    private bool _showBaseStatistics;
-    private bool _detailedCombat = true;
-    private bool _slidePanels = true;
+    private bool _warnIfIdleGangs = OriginalOptionsPolicy.WarnIfIdleGangsByDefault;
+    private bool _showBaseStatistics = OriginalOptionsPolicy.ShowBaseStatisticsByDefault;
+    private bool _detailedCombat = OriginalOptionsPolicy.DetailedCombatByDefault;
+    private bool _slidePanels = OriginalOptionsPolicy.SlidePanelsByDefault;
 
     private void OpenOptions()
     {

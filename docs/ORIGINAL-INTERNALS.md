@@ -196,32 +196,40 @@ in the recreation-native preferences file.
 at runtime,
 then validate overlap/interruption and native amplitude behavior.
 
-### BIN-OPTIONS-001 - registry keys and idle-gang warning
+### BIN-OPTIONS-001 - registry keys, initialized defaults, and idle-gang warning
 
 **Observation:** The preference-name table contains `prefsVidDeep`,
 `prefsSlide`, `prefsBaseStats`, `prefsCombat`, `prefsFreeGang`, `commType`,
 `prefsVolumeSFX`, `prefsVolumeCD`, `prefsDiff`, `prefsTimeLimit`,
-`prefsObjective`, and `prefsFullScreen`. The initialized byte at `0x00487860`,
-corresponding to `prefsFreeGang`, is 1. In the city handler at `0x0046fd80`, the
-Done path scans all 81 gang slots; an active slot whose action byte is zero is
-idle. When `prefsFreeGang` is enabled and such a slot belongs to the active
-player, the path invokes the two-choice modal at `0x00448718`. Its open and
-close paths use the panel-slide functions at `0x0041953e` and `0x004196f5`,
-which play general-effect slots 0 and 1. The original Help independently says
-Done warns about gangs without commands unless Warn If Idle Gangs is off.
+`prefsObjective`, and `prefsFullScreen`. The loader at `0x0046439a` maps
+`prefsSlide` to `0x00487840`, `prefsBaseStats` to `0x0048784c`, `prefsCombat`
+to `0x0048785c`, and `prefsFreeGang` to `0x00487860`. Their initialized bytes
+are respectively 1, 0, 1, and 1. Reads of the Slide byte occur directly in the
+panel-open and panel-close functions at `0x0041953e` and `0x004196f5`; the
+Base Stats byte is consumed by gang/statistics presentation paths; and the
+Combat byte is read by the Done/combat path at `0x0046fd80`. That same city
+handler scans all 81 gang slots on Done; an active slot whose action byte is
+zero is idle. When `prefsFreeGang` is enabled and such a slot belongs to the
+active player, the path invokes the two-choice modal at `0x00448718`. Its open
+and close paths use the panel-slide functions above, which play general-effect
+slots 0 and 1. The original Help independently says Done warns about gangs
+without commands unless Warn If Idle Gangs is off.
 
-**Interpretation:** `prefsFreeGang` is the enabled-by-default Warn If Idle Gangs
-option. The warning is a confirmation boundary around finishing planning, not
-a simulation rule; continuing still permits unassigned gangs.
+**Interpretation:** The original defaults are Slide Panels on, Current rather
+than Base gang statistics, Detailed Combat on, and Warn If Idle Gangs on.
+The warning is a confirmation boundary around finishing planning, not a
+simulation rule; continuing still permits unassigned gangs.
 
-**Confidence:** High from the initialized data, string table, bounded Done-path
-scan, dialog call graph, and matching Help description.
+**Confidence:** High from the initialized data, preference loader, direct
+consumer references, bounded Done-path scan, dialog call graph, and matching
+Help description.
 
-**Recreation status:** Options persists an enabled-by-default warning toggle,
-base/current gang-stat display, automatic Detailed Combat playback, and bounded
-panel motion. The legacy 16-bit color choice is displayed as always enabled by
-the modern renderer. Version-4 recreation preferences migrate into version 5
-without losing their audio, warning, or timer selections.
+**Recreation status:** Options uses the recovered defaults and persists its
+warning toggle, base/current gang-stat display, automatic Detailed Combat
+playback, and bounded panel motion. The legacy 16-bit color choice is displayed
+as always enabled by the modern renderer. Version-4 recreation preferences
+migrate into version 5 without losing their audio, warning, or timer selections
+and acquire the recovered defaults for the three toggles that format lacked.
 Finishing planning checks only the active player's living gangs and offers a
 Continue/Go Back modal when any lacks a queued command. Opening and closing the
 modal route the recovered general-effect slots 0 and 1.

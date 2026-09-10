@@ -16,11 +16,11 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
         Assert.Equal(OriginalSoundtrackPolicy.DefaultVolumeLevel, preferences.MusicVolumeLevel);
         Assert.Equal(AudioRouting.DefaultEffectVolumeLevel, preferences.SoundEffectVolumeLevel);
-        Assert.True(preferences.WarnIfIdleGangs);
+        Assert.Equal(OriginalOptionsPolicy.WarnIfIdleGangsByDefault, preferences.WarnIfIdleGangs);
         Assert.Equal(PlanningTimeLimit.None, preferences.PlanningTimeLimit);
-        Assert.False(preferences.ShowBaseStatistics);
-        Assert.True(preferences.DetailedCombat);
-        Assert.True(preferences.SlidePanels);
+        Assert.Equal(OriginalOptionsPolicy.ShowBaseStatisticsByDefault, preferences.ShowBaseStatistics);
+        Assert.Equal(OriginalOptionsPolicy.DetailedCombatByDefault, preferences.DetailedCombat);
+        Assert.Equal(OriginalOptionsPolicy.SlidePanelsByDefault, preferences.SlidePanels);
     }
 
     [Fact]
@@ -50,9 +50,9 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(3, preferences.SoundEffectVolumeLevel);
         Assert.False(preferences.WarnIfIdleGangs);
         Assert.Equal(PlanningTimeLimit.TwoMinutes, preferences.PlanningTimeLimit);
-        Assert.False(preferences.ShowBaseStatistics);
-        Assert.True(preferences.DetailedCombat);
-        Assert.True(preferences.SlidePanels);
+        Assert.Equal(OriginalOptionsPolicy.ShowBaseStatisticsByDefault, preferences.ShowBaseStatistics);
+        Assert.Equal(OriginalOptionsPolicy.DetailedCombatByDefault, preferences.DetailedCombat);
+        Assert.Equal(OriginalOptionsPolicy.SlidePanelsByDefault, preferences.SlidePanels);
     }
 
     [Theory]

@@ -2,6 +2,14 @@ using System.Text.Json;
 
 namespace Rechaos.Game;
 
+public static class OriginalOptionsPolicy
+{
+    public const bool WarnIfIdleGangsByDefault = true;
+    public const bool ShowBaseStatisticsByDefault = false;
+    public const bool DetailedCombatByDefault = true;
+    public const bool SlidePanelsByDefault = true;
+}
+
 public sealed record GamePreferences(
     int FormatVersion,
     int MusicVolumeLevel,
@@ -18,11 +26,11 @@ public sealed record GamePreferences(
         new(CurrentFormatVersion,
             OriginalSoundtrackPolicy.DefaultVolumeLevel,
             AudioRouting.DefaultEffectVolumeLevel,
-            true,
+            OriginalOptionsPolicy.WarnIfIdleGangsByDefault,
             PlanningTimeLimit.None,
-            false,
-            true,
-            true);
+            OriginalOptionsPolicy.ShowBaseStatisticsByDefault,
+            OriginalOptionsPolicy.DetailedCombatByDefault,
+            OriginalOptionsPolicy.SlidePanelsByDefault);
 }
 
 public static class GamePreferencesStore
@@ -51,7 +59,10 @@ public static class GamePreferencesStore
                 return IsValid(legacy)
                     ? new GamePreferences(GamePreferences.CurrentFormatVersion, legacy!.MusicVolumeLevel,
                         legacy.SoundEffectVolumeLevel, legacy.WarnIfIdleGangs,
-                        legacy.PlanningTimeLimit, false, true, true)
+                        legacy.PlanningTimeLimit,
+                        OriginalOptionsPolicy.ShowBaseStatisticsByDefault,
+                        OriginalOptionsPolicy.DetailedCombatByDefault,
+                        OriginalOptionsPolicy.SlidePanelsByDefault)
                     : GamePreferences.Default;
             }
             var preferences = JsonSerializer.Deserialize<GamePreferences>(bytes, JsonOptions);
