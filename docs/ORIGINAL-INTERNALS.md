@@ -423,6 +423,17 @@ remaining turns. Kill 'Em All, Big 40, Eliminate, Siege, and Armageddon use only
 the inclusive gang limit. Big Man enters its schedule without that limit check.
 `OriginalAiHireRoleRules.ShouldAttemptHire` implements these boundaries.
 
+The limit feeding those gates is now instruction-verified too. Selector
+`0x22` returns one when any sector is neutral and not under Crackdown; selector
+`0x23` counts sectors owned by the requested player. When no such neutral
+sector remains, cash above 300 yields the fixed limit 80, while cash at or
+below 300 yields `active gangs + owned sectors`. While a neutral sector does
+remain, Greed uses the integer truncation of `owned sectors * 1.5`, Power,
+Acceptance, and Dominance use `owned sectors * 2`, and scenarios 4 through 9
+use `owned sectors * 4`. Every result is capped at 80. The `1.5` is the decoded
+double at `0x00481010`; the emitted x87 conversion truncates the nonnegative
+count. `OriginalAiHireRoleRules.CalculateHireGangLimit` implements the block.
+
 Selector `0x90` scans every other player's 81 gang slots for a gang whose
 mirrored sector byte equals the requested sector and whose per-observer
 visibility byte is set. It returns 10 when that gang's owner has state 0 or 3
@@ -446,7 +457,8 @@ that exact condition as `HasHigherScoringPlayer`.
 **Confidence:** Verified for scenario order, periods, every ranking-mode call,
 every hire-role write, shared scenario bodies, constants, retained factor, x87
 comparison direction, equality boundaries, adjustment ordering, and the
-Greed-only scenario-standing predicate.
+Greed-only scenario-standing predicate, plus the complete hire-limit inputs,
+multipliers, cash boundary, and cap.
 
 The recreation's `AiPlanningState` now preserves the verified six current-role
 words, six previous-role words, and six-by-81 family slots in canonical hashes,

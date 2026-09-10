@@ -8,6 +8,32 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiHireRoleRules
 {
+    public static int CalculateHireGangLimit(
+        ScenarioId scenario,
+        int activeGangCount,
+        int ownedSectorCount,
+        int cash,
+        bool hasNeutralSector)
+    {
+        if (!Enum.IsDefined(scenario))
+            throw new ArgumentOutOfRangeException(nameof(scenario), scenario, null);
+        ArgumentOutOfRangeException.ThrowIfNegative(activeGangCount);
+        if (ownedSectorCount is < 0 or > MatchLimits.SectorCount)
+            throw new ArgumentOutOfRangeException(nameof(ownedSectorCount));
+
+        int limit;
+        if (!hasNeutralSector)
+            limit = cash > 300 ? MatchLimits.GangsPerPlayer : checked(activeGangCount + ownedSectorCount);
+        else if (scenario == ScenarioId.Greed)
+            limit = checked(ownedSectorCount * 3 / 2);
+        else if (scenario is ScenarioId.Power or ScenarioId.Acceptance or ScenarioId.Dominance)
+            limit = checked(ownedSectorCount * 2);
+        else
+            limit = checked(ownedSectorCount * 4);
+
+        return Math.Min(MatchLimits.GangsPerPlayer, limit);
+    }
+
     public static bool ShouldAttemptHire(
         ScenarioId scenario,
         int activeGangCount,

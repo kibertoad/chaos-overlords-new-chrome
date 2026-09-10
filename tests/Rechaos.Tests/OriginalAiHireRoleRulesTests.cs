@@ -5,6 +5,37 @@ namespace Rechaos.Tests;
 
 public sealed class OriginalAiHireRoleRulesTests
 {
+    [Theory]
+    [InlineData(ScenarioId.Greed, 3, 4)]
+    [InlineData(ScenarioId.Power, 3, 6)]
+    [InlineData(ScenarioId.Acceptance, 3, 6)]
+    [InlineData(ScenarioId.Dominance, 3, 6)]
+    [InlineData(ScenarioId.KillEmAll, 3, 12)]
+    [InlineData(ScenarioId.Big40, 3, 12)]
+    [InlineData(ScenarioId.Eliminate, 3, 12)]
+    [InlineData(ScenarioId.Siege, 3, 12)]
+    [InlineData(ScenarioId.BigMan, 3, 12)]
+    [InlineData(ScenarioId.Armageddon, 21, 80)]
+    public void NeutralSectorHireLimitUsesOriginalScenarioMultiplier(
+        ScenarioId scenario,
+        int ownedSectors,
+        int expected)
+    {
+        Assert.Equal(expected, OriginalAiHireRoleRules.CalculateHireGangLimit(
+            scenario, activeGangCount: 7, ownedSectorCount: ownedSectors,
+            cash: 0, hasNeutralSector: true));
+    }
+
+    [Theory]
+    [InlineData(300, 17)]
+    [InlineData(301, 80)]
+    public void NoNeutralSectorHireLimitUsesStrictRichPlayerBoundary(int cash, int expected)
+    {
+        Assert.Equal(expected, OriginalAiHireRoleRules.CalculateHireGangLimit(
+            ScenarioId.Greed, activeGangCount: 12, ownedSectorCount: 5,
+            cash: cash, hasNeutralSector: false));
+    }
+
     public static TheoryData<ScenarioId, (int RankingMode, int Role)[]> Schedules => new()
     {
         { ScenarioId.Greed, [(0, 1), (4, 6), (0, 1), (2, 2), (0, 1), (3, 4), (2, 2), (0, 1), (2, 2), (3, 3)] },

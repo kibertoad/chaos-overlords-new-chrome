@@ -114,7 +114,10 @@ replay-verified two-computer harness through 20 turns or objective completion.
    duration-scaled family quotas, and final mandatory-family overrides. Greed
    stops at the final duration eighth, Power/Acceptance/Dominance stop with two
    turns left, most other scenarios use only an inclusive gang limit, and Big
-   Man uniquely bypasses that normal limit gate. The three-offer helper's six exact
+   Man uniquely bypasses that normal limit gate. The limit itself is exact:
+   it branches on neutral non-Crackdown territory, the strict cash-above-300
+   boundary, owned-sector counts, active gangs, and scenario multipliers of
+   1.5, 2, or 4 before capping at 80. The three-offer helper's six exact
    role rankings, scenario-specific filters and tie directions, rich-player
    mode override, post-ranking affordability check, and no-fallback behavior
    are isolated in `OriginalAiHireRules`. Its failed-hire rejection selector is
