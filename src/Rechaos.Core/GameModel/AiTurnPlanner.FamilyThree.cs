@@ -144,13 +144,8 @@ public static partial class AiTurnPlanner
         if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
                 state, player, gang, gangSlot) is { } upgrade)
         {
-            state.AiPlanning.SetPlannedAction(
-                playerId, gangSlot, GangAction.Equip,
-                new AiActionTarget(checked((byte)upgrade.ItemId), 0));
-            state.AiPlanning.SetEquipmentCooldown(
-                playerId, gangSlot, upgrade.Slot,
-                OriginalAiEquipmentRules.EquipmentReplacementCooldown(
-                    state.Definitions.Items[upgrade.ItemId].Cost));
+            SetRecoveredReplacementEquipmentAction(
+                state, playerId, gangSlot, upgrade.ItemId, upgrade.Slot);
             return;
         }
 

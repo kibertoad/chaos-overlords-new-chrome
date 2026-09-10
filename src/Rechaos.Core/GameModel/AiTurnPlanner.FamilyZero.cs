@@ -158,7 +158,8 @@ public static partial class AiTurnPlanner
         if (state.AiPlanning.PlannedAction(playerId, gangSlot) != GangAction.Attack
             && OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
                 state, player, gang, gangSlot) is { } upgrade)
-            SetFamilyZeroEquipment(state, playerId, gangSlot, upgrade);
+            SetRecoveredFocusedReplacementEquipmentAction(
+                state, playerId, gangSlot, upgrade);
 
         if (state.AiPlanning.PlannedAction(playerId, gangSlot)
             is GangAction.Attack or GangAction.Equip)
@@ -246,23 +247,6 @@ public static partial class AiTurnPlanner
         return DrawRecoveredAttackTarget(
             state, gang, visible, targetPool,
             OriginalAiFamilyZeroRules.CanAttackSelectedTarget);
-    }
-
-    private static void SetFamilyZeroEquipment(
-        MatchState state,
-        PlayerId playerId,
-        int gangSlot,
-        OriginalAiEquipmentRules.Upgrade upgrade)
-    {
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Equip,
-            new AiActionTarget(checked((byte)upgrade.ItemId), 0));
-        state.AiPlanning.SetEquipmentCooldown(
-            playerId, gangSlot, upgrade.Slot,
-            OriginalAiEquipmentRules.EquipmentReplacementCooldown(
-                state.Definitions.Items[upgrade.ItemId].Cost));
-        state.AiPlanning.SetFocusValue(
-            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
     private static void SetFamilyZeroAction(

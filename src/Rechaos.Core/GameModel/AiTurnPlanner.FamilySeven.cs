@@ -22,7 +22,8 @@ public static partial class AiTurnPlanner
             TryPrepareFamilySevenAttack(state, playerId, gang, gangSlot, visible);
         else if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
                      state, player, gang, gangSlot) is { } upgrade)
-            SetFamilySevenEquipment(state, playerId, gangSlot, upgrade);
+            SetRecoveredFocusedReplacementEquipmentAction(
+                state, playerId, gangSlot, upgrade);
 
         var plannedAction = state.AiPlanning.PlannedAction(playerId, gangSlot);
         if (!OriginalAiFamilySevenRules.EndsAfterPreliminaryAction(plannedAction))
@@ -36,23 +37,6 @@ public static partial class AiTurnPlanner
                 state.Setup.Scenario, turnsRemaining))
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
         return true;
-    }
-
-    private static void SetFamilySevenEquipment(
-        MatchState state,
-        PlayerId playerId,
-        int gangSlot,
-        OriginalAiEquipmentRules.Upgrade upgrade)
-    {
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Equip,
-            new AiActionTarget(checked((byte)upgrade.ItemId), 0));
-        state.AiPlanning.SetEquipmentCooldown(
-            playerId, gangSlot, upgrade.Slot,
-            OriginalAiEquipmentRules.EquipmentReplacementCooldown(
-                state.Definitions.Items[upgrade.ItemId].Cost));
-        state.AiPlanning.SetFocusValue(
-            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
     private static void TryPrepareFamilySevenAttack(

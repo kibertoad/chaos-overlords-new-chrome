@@ -63,4 +63,32 @@ public static partial class AiTurnPlanner
         SetRecoveredAttackAction(state, playerId, gangSlot, selected);
         state.AiPlanning.SetFocusValue(playerId, gangSlot, gang.SectorId);
     }
+
+    private static void SetRecoveredReplacementEquipmentAction(
+        MatchState state,
+        PlayerId playerId,
+        int gangSlot,
+        short itemId,
+        EquipmentSlot slot)
+    {
+        state.AiPlanning.SetPlannedAction(
+            playerId, gangSlot, GangAction.Equip,
+            new AiActionTarget(checked((byte)itemId), 0));
+        state.AiPlanning.SetEquipmentCooldown(
+            playerId, gangSlot, slot,
+            OriginalAiEquipmentRules.EquipmentReplacementCooldown(
+                state.Definitions.Items[itemId].Cost));
+    }
+
+    private static void SetRecoveredFocusedReplacementEquipmentAction(
+        MatchState state,
+        PlayerId playerId,
+        int gangSlot,
+        OriginalAiEquipmentRules.Upgrade upgrade)
+    {
+        SetRecoveredReplacementEquipmentAction(
+            state, playerId, gangSlot, upgrade.ItemId, upgrade.Slot);
+        state.AiPlanning.SetFocusValue(
+            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
+    }
 }

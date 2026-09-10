@@ -816,10 +816,11 @@ not lines of code or asset counts.
    has a fixed decision-order/RNG trace. Recovered dispatch and its immutable
    planning snapshot are isolated. The identical asymmetric target draw is now
    shared across families 0/2/3/4/5/6/7/9, with separate authoritative Attack
-   operations for handlers that do and do not persist sector focus. Continue
-   extracting only proven-identical equipment/movement operations without
-   generalizing away original branch order, then isolate the provisional
-   fallback policy.
+   operations for handlers that do and do not persist sector focus. Identical
+   cost-based equipment application is shared across families 0/1/2/3/4/5/6/7,
+   again with focus-clearing and focus-preserving forms kept distinct. Continue
+   extracting only proven-identical movement operations without generalizing
+   away original branch order, then isolate the provisional fallback policy.
 2. Capture controlled original-turn fixtures for the now-guarded family-1 cash
    50/51, Force 8/9, effective-Heal -3/-4, and Tolerance 3/4 boundaries, plus
    fixed band 0/1/2 retaliation Hide and Martial Arts branches and family-0/4

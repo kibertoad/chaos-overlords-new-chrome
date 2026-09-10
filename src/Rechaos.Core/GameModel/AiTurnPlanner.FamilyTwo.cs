@@ -20,7 +20,8 @@ public static partial class AiTurnPlanner
 
         if (OriginalAiEquipmentRules.SelectFamilyTwoUpgrade(
                 state, player, gang, gangSlot) is { } upgrade)
-            SetFamilyTwoEquipment(state, playerId, gangSlot, upgrade);
+            SetRecoveredFocusedReplacementEquipmentAction(
+                state, playerId, gangSlot, upgrade);
         else if (OriginalAiFamilyTwoRules.ShouldHeal(
                      gang.Force,
                      EffectiveStatisticsCalculator.ForGang(state, gang).Heal,
@@ -125,22 +126,6 @@ public static partial class AiTurnPlanner
                 state.AiStrategy.HasSectorCombatAdvantageHostility(state, playerId, owner)))
             return;
         SetFamilyTwoAction(state, playerId, gangSlot, GangAction.Control);
-    }
-
-    private static void SetFamilyTwoEquipment(
-        MatchState state,
-        PlayerId playerId,
-        int gangSlot,
-        OriginalAiEquipmentRules.Upgrade upgrade)
-    {
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Equip,
-            new AiActionTarget(checked((byte)upgrade.ItemId), 0));
-        state.AiPlanning.SetEquipmentCooldown(
-            playerId, gangSlot, upgrade.Slot,
-            OriginalAiEquipmentRules.EquipmentReplacementCooldown(
-                state.Definitions.Items[upgrade.ItemId].Cost));
-        state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
     private static void PrepareFamilyTwoMove(

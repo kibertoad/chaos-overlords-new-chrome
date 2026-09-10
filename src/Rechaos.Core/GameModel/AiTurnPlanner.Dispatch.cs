@@ -139,15 +139,8 @@ public static partial class AiTurnPlanner
         if (choice.Action == GangAction.Equip)
         {
             var itemId = checked((short)choice.TargetId!.Value);
-            state.AiPlanning.SetPlannedAction(
-                player.Id, gangSlot, GangAction.Equip,
-                new AiActionTarget(checked((byte)itemId), 0));
-            state.AiPlanning.SetEquipmentCooldown(
-                player.Id,
-                gangSlot,
-                choice.EquipmentSlot!.Value,
-                OriginalAiEquipmentRules.EquipmentReplacementCooldown(
-                    state.Definitions.Items[itemId].Cost));
+            SetRecoveredReplacementEquipmentAction(
+                state, player.Id, gangSlot, itemId, choice.EquipmentSlot!.Value);
             return;
         }
         if (choice.Action != GangAction.Move)

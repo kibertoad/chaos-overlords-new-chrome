@@ -61,7 +61,8 @@ public static partial class AiTurnPlanner
         if (OriginalAiEquipmentRules.SelectFamilySixUpgrade(
                 state, player, gang, gangSlot) is { } upgrade)
         {
-            SetFamilySixEquipment(state, playerId, gangSlot, upgrade);
+            SetRecoveredFocusedReplacementEquipmentAction(
+                state, playerId, gangSlot, upgrade);
             return;
         }
 
@@ -103,23 +104,6 @@ public static partial class AiTurnPlanner
             if (draw.Accepted) break;
         }
         SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw.Selected);
-    }
-
-    private static void SetFamilySixEquipment(
-        MatchState state,
-        PlayerId playerId,
-        int gangSlot,
-        OriginalAiEquipmentRules.Upgrade upgrade)
-    {
-        state.AiPlanning.SetPlannedAction(
-            playerId, gangSlot, GangAction.Equip,
-            new AiActionTarget(checked((byte)upgrade.ItemId), 0));
-        state.AiPlanning.SetEquipmentCooldown(
-            playerId, gangSlot, upgrade.Slot,
-            OriginalAiEquipmentRules.EquipmentReplacementCooldown(
-                state.Definitions.Items[upgrade.ItemId].Cost));
-        state.AiPlanning.SetFocusValue(
-            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
     private static void PrepareFamilySixMove(
