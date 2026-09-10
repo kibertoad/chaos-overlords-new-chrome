@@ -1192,10 +1192,11 @@ and replaces site slot zero with definition 21. `0x0046dc10` then initializes
 gang definition zero in each player's assigned sector at Force 10.
 
 **Interpretation:** Those six fixed sectors are the only new-game HQ candidates;
-Right Hands is definition zero and always starts at maximum Force.
+Right Hands is definition zero and always starts at maximum Force. In a local
+new game all six slots are participants by the time this routine runs; setup
+slots omitted by the local players have already become computer players.
 
-**Confidence:** High static evidence; active-player-count presentation and a
-runtime reference fixture remain pending.
+**Confidence:** High static evidence; a runtime reference fixture remains pending.
 
 ### BIN-SETUP-001 - `SMGFUNDAGE` starting cash override
 
@@ -1212,6 +1213,51 @@ after fresh-game bootstrap.
 
 **Confidence:** High static evidence for the exact trigger, value, ordering, and
 transient lifetime; runtime corroboration remains pending.
+
+### BIN-SETUP-002 - local missing slots become computer players
+
+**Observation:** The local setup handler `0x0040e0a0` keeps six player-type
+dwords at `0x004ab638`. Type -1 is an empty setup slot, type 0 is a local human,
+and type 1 is a computer. When Begin is accepted it scans slots 0 through 5;
+every -1 slot is changed to type 1, receives a portrait from `0x00468c8e`, and
+receives the default name for that portrait through `0x0046d1f7`. The portrait
+helper repeatedly draws bounded `1..15`, subtracts one, and rejects any portrait
+already present in any of the six slots. Thus all six players are active before
+`0x0046dc10` generates the city, HQ permutation, and six Right Hands gangs.
+
+The Win32 string-table names at resource IDs 62 through 76, indexed by portrait
+0 through 14, are `ROCK`, `GECKO`, `RAZOR`, `SOUL TEAR`, `HEDIN VISE`, `REDD`,
+`VECTOR`, `ICE`, `TORQ`, `KANSER`, `ECLYPSE`, `CRETIN`, `SCREAMER`, `PSYCHO`,
+and `BLAKHART`. Portrait 15 is the empty-slot presentation image and is not a
+candidate returned by the helper.
+
+**Interpretation:** The original local setup count is the number of explicitly
+configured local players, not the final match participant count. The recreation
+currently passes only its selected slots into `OriginalMatchFactory`, so matches
+with fewer than six setup entries do not yet reproduce this behavior or the
+portrait-selection RNG consumed before city generation.
+
+**Confidence:** High static evidence for types, ascending fill order, portrait
+range, duplicate rejection, resource-name mapping, and placement before city
+generation. Initial RNG seeding and a runtime setup fixture remain pending.
+
+### BIN-SETUP-003 - `SMGISLANDS` neutral-sector Chaos override
+
+**Observation:** The same exact, case-sensitive fresh-name scan sets transient
+byte `0x004abc10` for `SMGISLANDS`. After city generation, assignment of all six
+HQ owners, and creation of all six Right Hands gangs, `0x0046dc10` scans sectors
+0 through 63 once for each flagged player. Every sector whose owner byte is -1
+receives Chaos byte 100; owned HQ sectors are unchanged. The flag is cleared at
+fresh setup/teardown and has no save/load references, while sector Chaos is
+ordinary persisted state.
+
+**Interpretation:** `SMGISLANDS` starts every neutral non-HQ sector at Chaos 100.
+It should be implemented only together with the six-participant local setup
+lifecycle; applying it to the recreation's current reduced-player city would
+incorrectly include unused HQ candidates.
+
+**Confidence:** High static evidence for the exact trigger, ordering, owner
+predicate, value, and transient lifetime; runtime corroboration remains pending.
 
 ### BIN-HIRE-001 - initial and replacement offers
 

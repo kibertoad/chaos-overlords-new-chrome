@@ -69,8 +69,13 @@ validated against the executable.
   not embedded in source or redistributed.
 - `PX00129` contains sixteen 32-by-32 overlord portraits across source row
   y=480. Setup renders these in the top strip and scales the selected portrait
-  into each active player slot; green left/right arrows cycle that player's
-  portrait. Newly added players default to Computer.
+  into each visible local-player slot; green left/right arrows cycle that
+  player's portrait. Static setup analysis now identifies portrait 15 as the
+  empty-slot marker, not an active Overlord portrait. On original local Begin,
+  every empty slot becomes a Computer and receives a unique bounded draw from
+  portraits 0 through 14 before city generation. The current client still
+  exposes a final participant-count/controller editor and must be aligned with
+  that recovered lifecycle.
 - AI difficulty is the setup screen's single global **AI Mentality** selection,
   not a per-player field. The four baked rows select Goon, Criminal, Crime Lord,
   or Homicidal Maniac; hover-only thematic tooltips explain the behavioral

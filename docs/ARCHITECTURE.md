@@ -311,7 +311,10 @@ the caller's reusable layout untouched. Armageddon setup applies its manual-only
 $500 and all-items-researched overrides at this boundary. `OriginalMatchFactory`
 uses the recovered density/site algorithm, fixed HQ candidates, Force 10 Right
 Hands, $20 standard cash and deferred offer initialization. Original seed and
-setup-mode selection remain provisional pending a reference fixture.
+the remaining pre-city call context remain provisional pending a reference
+fixture. Static analysis proves that original local Begin completes all omitted
+slots as Computers before this path; the current client has not yet adopted that
+six-participant completion and pre-city portrait RNG sequence.
 
 ## State ownership target
 
@@ -385,7 +388,8 @@ redistributed, invoked by the shipped recreation, or required by the extractor.
   save and verify/play the current
   replay. New matches now use the recovered density/site generator, fixed HQ
   candidates, Right Hands setup and deferred initial offers; original seed
-  selection and complete setup-mode context remain provisional.
+  selection remains provisional, and the recovered empty-slot-to-Computer
+  setup transition is documented but not yet wired into the client.
 - The client has a title/setup/city router and virtual-coordinate mouse input,
   original next-player privacy handoff, an event/notification viewer whose
   dismissal mutations are replay-recorded, plus a state-driven endgame summary

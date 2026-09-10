@@ -572,9 +572,14 @@ claim about original-game behavior.
   input with 500 and marks every real item-table entry (excluding type-99 padding)
   as researched before turn one. Ordinary starting cash is $20. The exact
   uppercase player name `SMGFUNDAGE` then overwrites either starting amount with
-  $1,500; the setup-only flag is transient and cash itself persists.
-- Current exclusions: initial seed selection, complete setup-mode call context,
-  active-player presentation, initial hire offers, and an original runtime fixture.
+  $1,500; the setup-only flag is transient and cash itself persists. Original
+  local Begin also completes all empty slots as Computers before city generation;
+  each receives a unique portrait 0..14 and its resource-defined name. Exact
+  uppercase `SMGISLANDS` subsequently sets neutral non-HQ sectors to Chaos 100.
+- Current exclusions: the six-player completion and `SMGISLANDS` effects are
+  statically recovered but not yet implemented. Initial seed selection, the
+  remaining setup call context, initial hire offers, and an original runtime
+  fixture also remain open.
 - Confidence: High static evidence for ordinary/Armageddon cash, the name
   override, city/HQ generation and Right Hands Force; runtime correlation pending.
 - Implementation: `MatchBootstrap.Create`.

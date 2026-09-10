@@ -61,6 +61,19 @@ workstream can be marked complete.
   dispatch, exact hire-offer ranking/rejection, the isolated modes 1-5 sector
   selection and hire-placement kernels, and 649 passing tests. Native saves are
   v12, replay is v13, and the canonical hash is v15.
+- The latest completed setup checkpoint is commit `10a3a9d`: fixed Greed and
+  Armageddon city/HQ/RNG vectors now guard the statically recovered generator,
+  stale frequency/class claims were removed, and exact uppercase `SMGFUNDAGE`
+  now overrides ordinary or Armageddon starting cash with $1,500.
+- Static follow-up established that original local Begin converts every empty
+  player slot to a computer, selecting a unique portrait 0..14 and its resource
+  name in ascending slot order before city generation. The original therefore
+  always enters a local match with six participants. The current client still
+  treats its selector as final participant count and is not parity-complete here.
+- `SMGISLANDS` is also bounded but deliberately not implemented yet: after all
+  six HQs are owned it sets Chaos 100 only on neutral sectors. First implement
+  the six-participant completion/RNG path, then apply this transient name rule;
+  otherwise unused HQ candidates would be modified incorrectly.
 - The latest completed AI work implements exact fixed-six-player reaction and
   directional-attitude initialization, non-Homicidal recovery, combat/Control
   attitude changes, hostility-filtered attack candidates, and all nine known
@@ -620,7 +633,7 @@ unmarked guess.
 | Milestone | Status | Implemented foundation | Work required before gate |
 |---|---|---|---|
 | M0 | In progress | Research templates; file/binary logs; architecture, validation and parity documents; source/output verification; rollback-safe staged installation; sanitized reference-fixture schema; labeled JSON state-diff tool; versioned 685-output manifest and generated factual asset catalog | One captured, fully documented reference observation |
-| M1 | Foundation started | Ten scenario definitions and durations; recovered 32x32 density-derived 8x8 city, balanced three-site rejection sampling, explicit sector income/tolerance, fixed-candidate HQ permutation, Right Hands Force 10, Armageddon exclusions/overrides; title/setup/city router with scenario/duration/local-player controls, original overlord portrait selection, global AI Mentality panel, virtual-coordinate mouse input, and mapped PX00130/PX00143/PX00128 frames | Original seed/setup-mode fixture, remaining setup atlas/hit maps and golden screens |
+| M1 | Foundation started | Ten scenario definitions and durations; recovered 32x32 density-derived 8x8 city, balanced three-site rejection sampling, explicit sector income/tolerance, fixed-candidate HQ permutation, Right Hands Force 10, Armageddon exclusions/overrides, exact `SMGFUNDAGE`; title/setup/city router with scenario/duration/local-player controls, original overlord portrait selection, global AI Mentality panel, virtual-coordinate mouse input, and mapped PX00130/PX00143/PX00128 frames | Implement recovered empty-slot-to-computer completion and its portrait/name RNG before `SMGISLANDS`; original seed/setup fixture; remaining setup atlas/hit maps and golden screens |
 | M2 | Foundation started | Centralized structural limits; explicit headless setup/player/sector/site/gang/research/inventory/hire/statistics schema; stable IDs; phase coordinator; common typed validation-rule pipeline; deferred hire purchase/placement, one-offer-per-turn snubbing, binary-derived 1–89 rejection refill and 5–9 initial Force; player elimination; declarative validation for all action target shapes; typed queue mutations and ordered events; bounded notification queues; recovered RNG; canonical phase hashes | Runtime offer/Force fixtures, within-phase ordering, and remaining reference-derived edge rules |
 | M3 | Foundation started | Ordered base Upkeep economy; all Instant and Transaction actions; Move/Terminate; grouped Influence and Control; per-turn Chaos; Crackdown lifecycle; influenced-site stats; Research caps; Factory discount; recovered 0/1/2 difficulty pools and thresholds for Heal, Influence, Research, Chaos, plus high-band owned-sector Crackdown reduction | Binary police/call-order fixtures, Control conflict edges, remaining special buildings, Factory acquisition/swap fixtures, and M2 gate |
 | M4 | Foundation started | Recovered raw RNG/range algorithms; serializable state; effective item/site stats; phase-wide Attack/retaliation and police snapshots; recovered difficulty-specific d20 hidden detection, band-0 Defense reduction, 6+/5+/4+ main rolls with quarter-pool damage floor, exact Hide/weapon/Martial-Arts retaliation eligibility, 5+/5+/4+ halved retaliation, elimination and recorded rolls | Resolve reveal timing, reference combat/Crackdown fixtures, animation/audio mapping, and M2-M3 gates |
@@ -758,19 +771,24 @@ not lines of code or asset counts.
 3. Replace provisional AI scoring only where handler-exact evidence or fixed
    reference decisions support it; expand deterministic tournaments to larger
    player counts and objective-completion stress cases.
-4. Capture an original new-game fixture to validate city generation,
+4. Align local setup with the recovered six-participant lifecycle: fill empty
+   slots as computers in ascending order using unique bounded portrait 0..14
+   draws and resource names, then implement `SMGISLANDS` after all six HQs are
+   owned. Preserve an explicit-layout bootstrap for tests/imports rather than
+   silently imposing local-UI semantics on every headless setup.
+5. Capture an original new-game fixture to validate city generation,
    HQ/Right Hands placement, hire offers, initial Force, seeding, and complete
    setup RNG order.
-5. Close the remaining economy, police, special-building, objective, and
+6. Close the remaining economy, police, special-building, objective, and
    persistence parity gates with binary/reference fixtures and checked-in
    migration samples.
-6. Complete setup alignment, remaining management hit maps, atlas semantics,
+7. Complete setup alignment, remaining management hit maps, atlas semantics,
    transparency/color keys, combat cadence, audio/music/video triggers, and
    native-resolution golden screens.
-7. Run the full section 4.4 accuracy audit across layouts, rules, animations,
+8. Run the full section 4.4 accuracy audit across layouts, rules, animations,
    AI, RNG, media, and persistence; resolve or explicitly classify every
    in-scope discrepancy. Original networking remains excluded.
-8. Finish signing/notarization, native interactive Windows/Linux/macOS
+9. Finish signing/notarization, native interactive Windows/Linux/macOS
    validation, accessibility/performance work, and the complete release gate.
 
 ## 10. Source hierarchy
