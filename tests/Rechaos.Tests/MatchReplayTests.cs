@@ -97,6 +97,30 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void ReplaysAiHiringRolePreparation()
+    {
+        var data = BundledOriginalData.Load();
+        var setupPlayer = new MatchPlayerSetup(
+            new PlayerId(0), "CPU", PlayerController.Computer);
+        var recorder = new MatchReplayRecorder(OriginalMatchFactory.Create(data,
+            new MatchSetup(ScenarioId.BigMan, GameDuration.SixMonths, 1996, [setupPlayer])));
+        recorder.FinishUpkeep();
+        recorder.PrepareAiPlanning(setupPlayer.Id);
+
+        recorder.PrepareAiHiring(setupPlayer.Id);
+
+        Assert.Equal(ReplayOperationKind.PrepareAiHiring, recorder.Steps[^1].Kind);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
+        Assert.Equal(recorder.State.AiPlanning.CurrentHireRole(setupPlayer.Id),
+            restored.AiPlanning.CurrentHireRole(setupPlayer.Id));
+        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State),
+            MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void RejectsReplayWhoseExpectedStepHashWasModified()
     {
         var recorder = new MatchReplayRecorder(CreateMatch());

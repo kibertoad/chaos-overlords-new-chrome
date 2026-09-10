@@ -210,6 +210,75 @@ public sealed class AiTurnPlannerTests
                 choice.GangDefinitionId, choice.SectorId).IsValid);
     }
 
+    [Fact]
+    public void HiringPreparationUsesZeroBasedOriginalTurnAndAdvancesCurrentRole()
+    {
+        var match = CreateMatch(scenario: ScenarioId.BigMan);
+        var player = new PlayerId(0);
+        match.AiPlanning.SetCurrentHireRole(player, 6);
+        match.FinishUpkeep();
+        match.PrepareAiPlanning(player);
+
+        match.PrepareAiHiring(player);
+
+        Assert.Equal(6, match.AiPlanning.PreviousHireRole(player));
+        Assert.Equal(0, match.AiPlanning.CurrentHireRole(player));
+    }
+
+    [Fact]
+    public void HiringPreparationLeavesRoleUnchangedWhenOriginalAttemptGateFails()
+    {
+        var match = CreateMatch(
+            scenario: ScenarioId.Greed,
+            ownsStartingSector: false);
+        var player = new PlayerId(0);
+        match.AiPlanning.SetCurrentHireRole(player, 6);
+        match.FinishUpkeep();
+        match.PrepareAiPlanning(player);
+
+        match.PrepareAiHiring(player);
+
+        Assert.Equal(6, match.AiPlanning.CurrentHireRole(player));
+    }
+
+    [Fact]
+    public void HirePlannerUsesOriginalRoleRankingInsteadOfRecreationScalar()
+    {
+        var data = BundledOriginalData.Load();
+        var affordable = data.Gangs.Where(gang => gang.Id != 0 && gang.Force <= 100).ToArray();
+        var offers = affordable
+            .SelectMany(first => affordable.Where(second => second.Id != first.Id)
+                .Select(second => (first, second)))
+            .SelectMany(pair => affordable.Where(third =>
+                    third.Id != pair.first.Id && third.Id != pair.second.Id)
+                .Select(third => new[] { pair.first, pair.second, third }))
+            .First(candidate =>
+            {
+                var original = OriginalAiHireRules.SelectOfferIndex(
+                    candidate, ScenarioId.Power, requestedMode: 0, availableCash: 100);
+                var recreationScalar = candidate
+                    .Select((gang, index) => (index,
+                        score: gang.Force * 20 + gang.TechLevel * 10
+                            - gang.Upkeep * 15 - HireRules.InitialCost(gang)))
+                    .OrderByDescending(entry => entry.score)
+                    .ThenBy(entry => candidate[entry.index].Id)
+                    .First().index;
+                return original.HasValue && original.Value != recreationScalar;
+            });
+        var match = CreateMatch(data: data, cash: 100,
+            hirePool: offers.Select(gang => gang.Id).ToArray());
+        match.FinishUpkeep();
+        match.PrepareAiPlanning(new PlayerId(0));
+        var expectedIndex = OriginalAiHireRules.SelectOfferIndex(
+            offers, ScenarioId.Power, requestedMode: 0,
+            availableCash: match.Players[0].Cash)!.Value;
+
+        var choice = match.PrepareAiHiring(new PlayerId(0));
+
+        Assert.NotNull(choice);
+        Assert.Equal(offers[expectedIndex].Id, choice.GangDefinitionId);
+    }
+
     [Theory]
     [InlineData(ScenarioId.Greed)]
     [InlineData(ScenarioId.Power)]
@@ -277,6 +346,9 @@ public sealed class AiTurnPlannerTests
                     recorder.PrepareAiPlanning(commandPlayer);
                     foreach (var command in AiTurnPlanner.Plan(state, commandPlayer))
                         Assert.True(recorder.Submit(command).Accepted);
+                    if (recorder.PrepareAiHiring(commandPlayer) is { } planningHire)
+                        Assert.True(recorder.QueueHire(commandPlayer,
+                            planningHire.GangDefinitionId, planningHire.SectorId).Accepted);
                     recorder.FinishCommand(commandPlayer);
                     break;
                 case TurnPhase.Execution:
@@ -284,9 +356,6 @@ public sealed class AiTurnPlannerTests
                     break;
                 case TurnPhase.Hire:
                     var hiringPlayer = state.Coordinator.ActivePlayer!.Value;
-                    if (AiTurnPlanner.ChooseHire(state, hiringPlayer) is { } hire)
-                        Assert.True(recorder.QueueHire(
-                            hiringPlayer, hire.GangDefinitionId, hire.SectorId).Accepted);
                     recorder.FinishHire(hiringPlayer);
                     break;
                 case TurnPhase.PlayerElimination:
@@ -302,9 +371,14 @@ public sealed class AiTurnPlannerTests
         PlayerController controller = PlayerController.Computer,
         AiDifficulty difficulty = AiDifficulty.Criminal,
         short definitionId = 1,
-        int force = 10)
+        int force = 10,
+        ScenarioId scenario = ScenarioId.Power,
+        bool ownsStartingSector = true,
+        OriginalData? data = null,
+        int cash = 20,
+        IReadOnlyList<short>? hirePool = null)
     {
-        var data = BundledOriginalData.Load();
+        data ??= BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
         [
             new(new PlayerId(0), "CPU", controller),
@@ -312,8 +386,9 @@ public sealed class AiTurnPlannerTests
         ];
         MatchPlayerState[] players =
         [
-            new(setups[0], 20,
-                [new MatchGangState(new GangId(10), new PlayerId(0), definitionId, 0, force)]),
+            new(setups[0], cash,
+                [new MatchGangState(new GangId(10), new PlayerId(0), definitionId, 0, force)],
+                hirePool),
             new(setups[1], 20, [new MatchGangState(new GangId(20), new PlayerId(1), 2, 1, 10)])
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
@@ -322,10 +397,10 @@ public sealed class AiTurnPlannerTests
                 new MatchSiteState(0, 0, 5),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 5)
-            ], owner: id == 0 ? new PlayerId(0) : null, income: 3))
+            ], owner: ownsStartingSector && id == 0 ? new PlayerId(0) : null, income: 3))
             .ToArray();
         return new MatchState(data, new MatchSetup(
-            ScenarioId.Power, GameDuration.SixMonths, 7, setups, difficulty), players, sectors);
+            scenario, GameDuration.SixMonths, 7, setups, difficulty), players, sectors);
     }
 
     private static MatchState CreateNeutralControlMatch(

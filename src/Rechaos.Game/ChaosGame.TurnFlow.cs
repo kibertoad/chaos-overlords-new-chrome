@@ -120,7 +120,7 @@ public sealed partial class ChaosGame
                 foreach (var command in AiTurnPlanner.Plan(_state, playerId))
                     _replay.Submit(command);
                 PrepareCurrentHireOffers();
-                if (AiTurnPlanner.ChooseHire(_state, playerId) is { } planningHire)
+                if (_replay.PrepareAiHiring(playerId) is { } planningHire)
                     _replay.QueueHire(playerId, planningHire.GangDefinitionId, planningHire.SectorId);
                 if (_debugPhaseStepping) _replay.FinishCommand(playerId);
                 else GameplayTurnFlow.FinishPlanningTurn(_replay, playerId);

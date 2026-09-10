@@ -434,6 +434,11 @@ use `owned sectors * 4`. Every result is capped at 80. The `1.5` is the decoded
 double at `0x00481010`; the emitted x87 conversion truncates the nonnegative
 count. `OriginalAiHireRoleRules.CalculateHireGangLimit` implements the block.
 
+Query `0x2f` is the zero-based elapsed-turn counter at `0x0049ca68`; query 2
+returns total scenario duration minus that counter. The counter initializes to
+zero and increments once after the outer planner loop, so recreation turn 1
+feeds schedule slot zero and the full duration as turns remaining.
+
 Selector `0x90` scans every other player's 81 gang slots for a gang whose
 mirrored sector byte equals the requested sector and whose per-observer
 visibility byte is set. It returns 10 when that gang's owner has state 0 or 3
@@ -465,7 +470,10 @@ words, six previous-role words, and six-by-81 family slots in canonical hashes,
 native saves, and replays. Save/replay version 7 migrates earlier snapshots to
 role zero and family sentinel 99 without advancing the RNG. `PrepareAiPlanning`
 now performs the verified role rollover and applies the scenario/role family
-table to each active gang before the existing hostility pass.
+table to each active gang before the existing hostility pass. The separate
+post-command `PrepareAiHiring` pass derives the verified gate and adjustment
+inputs, writes the next current role, and returns the prepared offer choice;
+replay version 8 records that mutation.
 
 The related 14-byte auxiliary records at `0x0048c0ba` remain deliberately
 unmodeled. Their second short is initialized to the current sector by every
@@ -476,8 +484,9 @@ coverage only when the first equals `-1`; otherwise it tests the gang's live
 sector. This bounds the behavior but does not yet justify a single generic
 “destination” name for either field.
 
-**Next validation:** recover and represent the per-gang destination/command
-planning fields before live integration.
+**Next validation:** recover and represent the two per-gang auxiliary shorts so
+family-6 coverage no longer relies on the current-sector/queued-Move semantic
+projection.
 
 ### BIN-AI-003A - strategic hire-offer ranking
 
@@ -503,7 +512,8 @@ Combat through Martial Arts at +4 through +30, and raw Force at +0. Direct
 instruction inspection was required for modes 1, 2, and 4 because Ghidra's
 decompiler reused the player parameter as a local accumulator and emitted
 misleading pseudocode. `OriginalAiHireRules` implements the instruction-level
-behavior in isolation.
+behavior, and the live AI planner uses the selected post-command role's ranking
+mode.
 
 When no offer survives ranking/affordability, selector `0x8e` chooses the slot
 passed to `0x004078b8`, which writes `0xfe` into that offer's per-player state.

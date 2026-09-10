@@ -2,9 +2,8 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Unadjusted turn schedule from the original outer AI planner at 0x00458fa0.
-/// The planner mutates the scheduled slot using gang-family quotas before applying
-/// this mapping; those adjustments remain separate until their x87 comparisons
-/// have been recovered at instruction level.
+/// The planner mutates the scheduled slot using the instruction-verified
+/// scenario adjustments below before applying this mapping.
 /// </summary>
 internal static class OriginalAiHireRoleRules
 {

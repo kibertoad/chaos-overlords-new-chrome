@@ -330,7 +330,7 @@ public sealed class MatchStatistics
 /// Authoritative headless state. It is initialized from explicit mechanical data;
 /// exact original city and player placement remain a separate M1 research task.
 /// </summary>
-public sealed class MatchState
+public sealed partial class MatchState
 {
     private readonly List<GameEvent> _events = [];
     private readonly Dictionary<PlayerId, NotificationQueue> _notifications;
@@ -486,16 +486,6 @@ public sealed class MatchState
         return detection >= EffectiveStatisticsCalculator.ForGang(this, target).Stealth;
     }
     public IReadOnlyList<GameNotification> NotificationsFor(PlayerId player) => GetNotificationQueue(player).Items;
-
-    public void PrepareAiPlanning(PlayerId player)
-    {
-        if (Coordinator.Phase != TurnPhase.Command || Coordinator.ActivePlayer != player)
-            throw new InvalidOperationException("AI preparation requires that player's active Command phase.");
-        if (FindPlayer(player)?.Setup.Controller != PlayerController.Computer)
-            throw new ArgumentException("AI preparation requires a computer-controlled player.", nameof(player));
-        AiPlanningPreparation.ApplyFamilyAssignments(this, player);
-        AiStrategy.ApplySectorCombatAdvantageHostility(this, player);
-    }
 
     public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>
         GetNotificationQueue(player).TryDequeue(out notification);

@@ -48,15 +48,36 @@ public static class AiTurnPlanner
         if (player.Setup.Controller != PlayerController.Computer)
             throw new ArgumentException("AI hiring requires a computer-controlled player.", nameof(playerId));
 
-        return player.HirePool
-            .SelectMany(definitionId => state.Sectors
-                .Where(sector => sector.Owner == playerId)
-                .Select(sector => new HireChoice(definitionId, sector.Id)))
+        if (AiPlanningPreparation.SelectHireRole(state, playerId) is not { } selection)
+            return null;
+        return ChooseHire(state, playerId, selection);
+    }
+
+    internal static HireChoice? ChooseHire(
+        MatchState state,
+        PlayerId playerId,
+        OriginalAiHireRoleSelection selection)
+    {
+        var player = state.FindPlayer(playerId)
+            ?? throw new ArgumentOutOfRangeException(nameof(playerId));
+        if (player.HirePool.Count != MatchLimits.HireOffersPerPlayer)
+            return null;
+        var offers = player.HirePool
+            .Select(definitionId => state.Definitions.Gangs.Single(gang => gang.Id == definitionId))
+            .ToArray();
+        if (OriginalAiHireRules.SelectOfferIndex(
+                offers, state.Setup.Scenario, selection.RankingMode, player.Cash) is not { } offerIndex)
+            return null;
+        var definitionId = player.HirePool[offerIndex];
+
+        return state.Sectors
+            .Where(sector => sector.Owner == playerId)
+            .Select(sector => new HireChoice(definitionId, sector.Id))
             .Where(choice => HireRules.Validate(
                 state, playerId, choice.GangDefinitionId, choice.SectorId).IsValid)
-            .OrderByDescending(choice => HireValue(state, choice.GangDefinitionId))
-            .ThenBy(choice => choice.GangDefinitionId)
-            .ThenBy(choice => choice.SectorId)
+            // Placement remains recreation-native pending recovery of the
+            // original selected-offer destination path.
+            .OrderBy(choice => choice.SectorId)
             .FirstOrDefault();
     }
 
@@ -229,9 +250,4 @@ public static class AiTurnPlanner
         && state.AiStrategy.IsHostile(player, target.Owner)
         && state.CanPlayerDetectGang(player, target.Id);
 
-    private static int HireValue(MatchState state, short definitionId)
-    {
-        var gang = state.Definitions.Gangs.Single(value => value.Id == definitionId);
-        return gang.Force * 20 + gang.TechLevel * 10 - gang.Upkeep * 15 - HireRules.InitialCost(gang);
-    }
 }

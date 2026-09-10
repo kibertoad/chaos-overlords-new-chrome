@@ -61,13 +61,16 @@ preserve deterministic continuation during migration.
 Original-save import/export remains a separate research task. Native snapshots
 must never be presented as converted original saves.
 
-## Replay format version 7
+## Replay format version 8
 
 `MatchReplayRecorder` captures an initial native snapshot, then requires every
 authoritative mutation to pass through its API. It covers command submission and
 cancellation, hire selection and snubbing, all phase transitions, and
 notification dismissal. Before recording or saving, it verifies that the match
 has not been mutated out of band.
+
+Version 8 adds the deterministic post-command AI hiring-preparation operation,
+which updates the authoritative current hire role before offer selection.
 
 Each ordered replay step stores its operation payload, the expected validation
 result where applicable, and the canonical state SHA-256 after the operation.
@@ -85,8 +88,9 @@ not become an out-of-band RNG mutation. Replay version 4 embeds the version 5
 snapshot and includes global AI mentality and player portraits in the canonical
 state. Replay version 5 embeds the version 6 snapshot and includes AI reactions
 and attitudes. Replay version 7 embeds the version 7 snapshot and includes AI
-hire roles and planning families; version 6 remains accepted through its
-version-9 hash path. Version 2 through 5 replay documents remain accepted
+hire roles and planning families. Replay version 8 retains that native snapshot
+and records post-command AI hiring preparation; version 6 remains accepted
+through its version-9 hash path. Version 2 through 5 replay documents remain accepted
 through their legacy hash paths. The current canonical state hash is version
 10. The initial snapshot
 remains required until original seed selection and the complete setup context

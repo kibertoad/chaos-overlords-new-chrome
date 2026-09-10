@@ -63,9 +63,12 @@ intentionally calibrate the documented command dice pools and success thresholds
 for computer players; those rule differences are explicit simulation state, not
 secret planner information or an added resource bonus.
 
-Hiring ranks valid affordable offers by Force, Tech, Upkeep, and initial cost.
-It currently chooses at most one offer during its planning turn; placement is
-deferred to the internal Hire phase.
+Hiring now applies the original scenario schedule, family-quota adjustments,
+attempt gate, and exact three-offer role ranking after command planning. An
+unaffordable ranked winner does not fall back to another offer. It chooses at
+most one offer during its planning turn; destination selection remains
+recreation-native (the lowest valid owned sector), and placement is deferred to
+the internal Hire phase.
 
 Movement scoring currently includes the recovered objective geography for
 both Big Man (sectors 27, 28, 35, and 36) and Eliminate (the six possible
@@ -126,9 +129,13 @@ replay-verified two-computer harness through 20 turns or objective completion.
    Greed's remaining schedule flag is now identified as whether at least one
    player has a strictly greater scenario score; tied leaders do not set it.
    Authoritative state now preserves the fixed six current/previous hire roles
-   and six-by-81 family slots. The hire schedule and ranking rules are not yet
-   used by the live planner because destination/command planning fields and
-   the complete role update pass are not represented. Selector `0x3e` is
+   and six-by-81 family slots. The live planner applies the hire attempt gate,
+   computes the post-command role from the exact schedule and adjustments, and
+   uses its ranking mode for exact three-offer selection. For selector `0x5f`,
+   queued Move targets project the recovered family-6 coverage behavior; the
+   underlying two auxiliary shorts remain deliberately unmodeled. Exact hire
+   destination selection, stable original offer-slot refill, and failed-attempt
+   offer snubbing remain pending. Selector `0x3e` is
    identified as the previous-turn action byte. Selectors 0 (scenario), `0x48`
    (planning-record initialized flag), `0x5a` (mirrored gang projection),
    `0x7c` (per-player hire role), 3 (player cash), 4 (sector
