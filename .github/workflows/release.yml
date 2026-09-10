@@ -77,10 +77,7 @@ jobs:
 
       - name: Verify legal boundary and tests
         shell: pwsh
-        run: |
-          ./tools/Verify-Repository.ps1
-          dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj `
-            --no-progress --minimum-expected-tests 354 -v minimal
+        run: ./tools/Invoke-Validation.ps1
 
   build-windows:
     name: Build Windows x64 installer

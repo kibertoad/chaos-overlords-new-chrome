@@ -1,7 +1,7 @@
 # Recreation validation procedure
 
 Status: initial executable procedure
-Last updated: 2026-09-07
+Last updated: 2026-09-11
 
 ## Validation layers
 
@@ -17,12 +17,30 @@ A pass at one layer does not imply a pass at the next.
 ## Local automated checks
 
 ```powershell
-./tools/Verify-Repository.ps1
-dotnet restore Rechaos.slnx
-dotnet build Rechaos.slnx --no-restore
-dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj --no-build `
-  --no-progress --minimum-expected-tests 354
+./tools/Invoke-Validation.ps1
 ```
+
+This is the canonical local validation entry point. It serializes runs for the
+checkout and caps MSBuild at two workers by default. Before building, it stops
+only a `Rechaos.Game` process whose executable lives inside this checkout; an
+installed copy and unrelated `dotnet` processes are left alone. The normal
+incremental outputs and MSBuild/Roslyn server reuse are retained because both
+materially speed repeated builds.
+
+A small, stable worker pool is expected. If a prior interrupted run left stale
+workers, perform validation and then stop all .NET build servers owned by the
+current user:
+
+```powershell
+./tools/Invoke-Validation.ps1 -ShutdownBuildServersAfterRun
+```
+
+That switch is intentionally not the default: it also stops build servers used
+by an open IDE, making its next build colder. It does not stop the game. Avoid
+running raw `dotnet build` and `dotnet test` commands concurrently in this
+checkout; use the serialized entry point. If a running development game must be
+preserved for a particular investigation, give that build its own explicit
+`--artifacts-path` and accept the cold-build cost.
 
 The manually dispatched continuous-integration workflow runs this verification
 on Windows x64, Linux x64, macOS arm64, and macOS x64. It also publishes with

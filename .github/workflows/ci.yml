@@ -34,23 +34,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Verify repository legal boundary
-        shell: pwsh
-        run: ./tools/Verify-Repository.ps1
-
       - name: Set up .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.400
 
-      - name: Restore
-        run: dotnet restore Rechaos.slnx
-
-      - name: Build without original assets
-        run: dotnet build Rechaos.slnx --no-restore -p:IncludeOriginalAssets=false -v minimal
-
-      - name: Test
-        run: dotnet test --project tests/Rechaos.Tests/Rechaos.Tests.csproj --no-restore --no-progress --minimum-expected-tests 354 -v minimal
+      - name: Verify, build, and test
+        shell: pwsh
+        run: ./tools/Invoke-Validation.ps1
 
       - name: Publish assetless game
         run: dotnet publish src/Rechaos.Game/Rechaos.Game.csproj --no-restore -c Release -p:IncludeOriginalAssets=false --output artifacts/assetless-game -v minimal
