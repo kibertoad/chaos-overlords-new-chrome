@@ -15,11 +15,13 @@ public sealed partial class ChaosGame
             return;
         }
         StartPlanningTimer(_inputTime);
-        if (LastTurnReports(_state, playerId).Count == 0)
+        var reports = LastTurnReports(_state, playerId);
+        if (reports.Count == 0)
         {
             _screens.Show(ClientScreen.City);
             return;
         }
+        PlayGeneralSound(GeneralSoundSlot.ReportAlert);
         _eventCursor = 0;
         _managementReturnScreen = ClientScreen.City;
         _screens.Show(ClientScreen.Events);

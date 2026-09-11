@@ -134,7 +134,8 @@ public sealed partial class ChaosGame
     private void SelectPlanningTimeLimit(PlanningTimeLimit limit)
     {
         if (!Enum.IsDefined(limit)) throw new ArgumentOutOfRangeException(nameof(limit));
-        if (_selectedPlanningTimeLimit != limit) PlayGeneralSound(3);
+        if (_selectedPlanningTimeLimit != limit)
+            PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _selectedPlanningTimeLimit = limit;
         SavePreferences();
         _message = $"TURN TIME LIMIT {PlanningTimerPolicy.Label(limit)}";
@@ -176,10 +177,10 @@ public sealed partial class ChaosGame
         switch (_planningTimer.Advance(now))
         {
             case PlanningTimerSignal.LongWarning:
-                PlayGeneralSound(7);
+                PlayGeneralSound(GeneralSoundSlot.CountdownWarning);
                 return false;
             case PlanningTimerSignal.FinalWarning:
-                PlayGeneralSound(8);
+                PlayGeneralSound(GeneralSoundSlot.FinalSecondWarning);
                 return false;
             case PlanningTimerSignal.None:
                 return false;

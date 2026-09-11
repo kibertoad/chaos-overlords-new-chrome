@@ -177,24 +177,29 @@ describes each independent slider as having a Medium default but does not assign
 that label a number.
 
 **Interpretation:** Slots 3 and 4 are the general accepted-selection and
-rejected-input cues. Music and effects share the same numeric conversion but
-have separate state and enable flags.
+rejected-input cues. Slot 6 is the new-report alert: the bounded report recorder
+at `0x0045d2f0` plays it when appending a report for the active player, and the
+city/planning entry paths at `0x00462579` and `0x0046fd80` play it when their
+pending-report flag is set. Slot 9 is loaded but has no call site through the
+only gated general-effect wrapper in this executable. Music and effects share
+the same numeric conversion but have separate state and enable flags.
 
-**Confidence:** High static evidence for slot/resource mapping, setup/title cue
-roles, scale, enable boundary, initialized levels, and channel values; High
-manual evidence for the independent controls. Other slot semantics remain
-partially classified.
+**Confidence:** High static evidence for slot/resource mapping, setup/title and
+report-alert roles, the lack of a slot-9 wrapper call site, scale, enable
+boundary, initialized levels, and channel values; High manual evidence for the
+independent controls. Other slot semantics remain partially classified.
 
 **Recreation status:** all nine general resources are loaded through the
-recovered slot table. Setup selector changes and bounded player-count rejection
-use slots 3 and 4, weapon effects and general effects share the independent
-recovered Effects level and its level-6 default, and both audio levels persist
-in the recreation-native preferences file.
+recovered slot table, whose known roles are named in code. Setup selector
+changes and bounded player-count rejection use slots 3 and 4. A human handoff
+with pending Last Turn Events plays slot 6 once before opening the report panel.
+Weapon effects and general effects share the independent recovered Effects
+level and its level-6 default, and both audio levels persist in the
+recreation-native preferences file.
 
-**Next validation:** Finish classifying slots 6 and 9 and validate slots 0-2
-(panel open, panel close, and held-button press) plus countdown-warning cadence
-at runtime,
-then validate overlap/interruption and native amplitude behavior.
+**Next validation:** Validate slots 0-2 (panel open, panel close, and held-button
+press), the slot-6 repeat/suppression boundary, and countdown-warning cadence at
+runtime, then validate overlap/interruption and native amplitude behavior.
 
 ### BIN-OPTIONS-001 - registry keys, initialized defaults, and idle-gang warning
 

@@ -127,7 +127,7 @@ public sealed partial class ChaosGame
     {
         _showBaseStatistics = !_showBaseStatistics;
         SavePreferences();
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"GANG STATISTICS: {(_showBaseStatistics ? "BASE" : "CURRENT")}";
     }
 
@@ -136,7 +136,7 @@ public sealed partial class ChaosGame
         _detailedCombat = !_detailedCombat;
         if (!_detailedCombat) _combatAnimationPlayer.Clear();
         SavePreferences();
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"DETAILED COMBAT {(_detailedCombat ? "ON" : "OFF")}";
     }
 
@@ -145,7 +145,7 @@ public sealed partial class ChaosGame
         _slidePanels = !_slidePanels;
         if (!_slidePanels) _panelSlideTransition.Clear();
         SavePreferences();
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"SLIDE PANELS {(_slidePanels ? "ON" : "OFF")}";
     }
 
@@ -160,7 +160,7 @@ public sealed partial class ChaosGame
         var changed = level != _musicVolumeLevel;
         ApplyMusicVolumeLevel(level, _inputTime);
         SavePreferences();
-        if (changed) PlayGeneralSound(3);
+        if (changed) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = _musicVolumeLevel == 0
             ? "MUSIC OFF"
             : $"MUSIC LEVEL {_musicVolumeLevel}";
@@ -174,7 +174,7 @@ public sealed partial class ChaosGame
         var changed = level != _soundEffectVolumeLevel;
         _soundEffectVolumeLevel = level;
         SavePreferences();
-        if (changed) PlayGeneralSound(3);
+        if (changed) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = level == 0 ? "SOUND EFFECTS OFF" : $"SOUND EFFECTS LEVEL {level}";
     }
 
@@ -182,7 +182,7 @@ public sealed partial class ChaosGame
     {
         _warnIfIdleGangs = !_warnIfIdleGangs;
         SavePreferences();
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"IDLE GANG WARNING {(_warnIfIdleGangs ? "ON" : "OFF")}";
     }
 

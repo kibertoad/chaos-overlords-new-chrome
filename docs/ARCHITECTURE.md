@@ -200,9 +200,12 @@ submit through that same recorder; its policy is not an original-parity claim.
 The audio router consumes newly appended attack-resolution events and maps an
 equipped item's original Sound field to `SND005xx`. It also owns the recovered
 nine-entry general-effect slot table (`SND00200`-`SND00208`, with no slot 5);
-the setup shell currently uses the statically identified slot 3 accepted-input
-and slot 4 rejected-input cues. Neither route feeds playback state or timing
-back into the simulation.
+named slot identities replace presentation magic numbers. Setup uses the
+statically identified slot 3 accepted-input and slot 4 rejected-input cues,
+panel confirmation uses slots 0/1, a handoff with pending Last Turn Events uses
+slot 6, and the planning countdown uses slots 7/8. Slot 9 is loaded by the
+original but has no gated-wrapper call site. None of these routes feeds playback
+state or timing back into the simulation.
 `SoundtrackCatalog` discovers the extracted `Track02`-`Track09` Ogg files and
 encodes the recovered title/setup, gameplay, and endgame track programs, while
 `ChaosGame.Media.cs` owns their optional streaming, screen transition, repeat,

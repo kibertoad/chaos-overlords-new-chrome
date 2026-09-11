@@ -567,12 +567,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     .FirstOrDefault(index => PlayerPortraitLayout.Next(index).Contains(point), -1);
                 if (scenario >= 0)
                 {
-                    if (_selectedScenario != (ScenarioId)scenario) PlayGeneralSound(3);
+                    if (_selectedScenario != (ScenarioId)scenario)
+                        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
                     _selectedScenario = (ScenarioId)scenario;
                 }
                 else if (duration >= 0)
                 {
-                    if (_selectedDuration != Durations[duration]) PlayGeneralSound(3);
+                    if (_selectedDuration != Durations[duration])
+                        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
                     _selectedDuration = Durations[duration];
                 }
                 else if (planningTimeLimit >= 0)

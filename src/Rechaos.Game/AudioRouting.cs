@@ -2,6 +2,19 @@ using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
+public static class GeneralSoundSlot
+{
+    public const int PanelOpen = 0;
+    public const int PanelClose = 1;
+    public const int HeldButton = 2;
+    public const int AcceptedSelection = 3;
+    public const int RejectedInput = 4;
+    public const int ReportAlert = 6;
+    public const int CountdownWarning = 7;
+    public const int FinalSecondWarning = 8;
+    public const int LoadedWithoutCallSite = 9;
+}
+
 public static class AudioRouting
 {
     public const int MinimumEffectVolumeLevel = 0;
@@ -11,15 +24,15 @@ public static class AudioRouting
     private static readonly IReadOnlyDictionary<int, int> GeneralSoundResources =
         new Dictionary<int, int>
         {
-            [0] = 200,
-            [1] = 201,
-            [2] = 202,
-            [3] = 203,
-            [4] = 204,
-            [6] = 205,
-            [7] = 206,
-            [8] = 207,
-            [9] = 208
+            [GeneralSoundSlot.PanelOpen] = 200,
+            [GeneralSoundSlot.PanelClose] = 201,
+            [GeneralSoundSlot.HeldButton] = 202,
+            [GeneralSoundSlot.AcceptedSelection] = 203,
+            [GeneralSoundSlot.RejectedInput] = 204,
+            [GeneralSoundSlot.ReportAlert] = 205,
+            [GeneralSoundSlot.CountdownWarning] = 206,
+            [GeneralSoundSlot.FinalSecondWarning] = 207,
+            [GeneralSoundSlot.LoadedWithoutCallSite] = 208
         };
 
     public static IReadOnlyList<int> GeneralSoundSlots { get; } =

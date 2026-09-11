@@ -11,20 +11,22 @@ public sealed partial class ChaosGame
     {
         var count = ScenarioCatalog.All.Count;
         _selectedScenario = ScenarioCatalog.All[Mod((int)_selectedScenario + delta, count)].Id;
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
     }
 
     private void ChangeDuration(int delta)
     {
         _selectedDuration = Durations[Mod(Array.IndexOf(Durations, _selectedDuration) + delta, Durations.Length)];
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
     }
 
     private void ChangePlayerCount(int delta)
     {
         var previous = _selectedPlayerCount;
         _selectedPlayerCount = Math.Clamp(_selectedPlayerCount + delta, 1, MatchLimits.PlayerCount);
-        PlayGeneralSound(previous == _selectedPlayerCount ? 4 : 3);
+        PlayGeneralSound(previous == _selectedPlayerCount
+            ? GeneralSoundSlot.RejectedInput
+            : GeneralSoundSlot.AcceptedSelection);
         for (var index = previous; index < _selectedPlayerCount; index++)
             _computerPlayers[index] = true;
     }
@@ -33,7 +35,7 @@ public sealed partial class ChaosGame
     {
         if (index < 0 || index >= _selectedPlayerCount) return;
         _computerPlayers[index] = !_computerPlayers[index];
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"PLAYER {index + 1} {(_computerPlayers[index] ? "COMPUTER" : "HUMAN")}";
     }
 
@@ -42,13 +44,14 @@ public sealed partial class ChaosGame
         var values = Enum.GetValues<AiDifficulty>();
         _selectedAiMentality = values[Mod(
             Array.IndexOf(values, _selectedAiMentality) + 1, values.Length)];
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"AI MENTALITY {DifficultyPresentation.Label(_selectedAiMentality)}";
     }
 
     private void SelectDifficulty(AiDifficulty difficulty)
     {
-        if (_selectedAiMentality != difficulty) PlayGeneralSound(3);
+        if (_selectedAiMentality != difficulty)
+            PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _selectedAiMentality = difficulty;
         _message = $"AI MENTALITY {DifficultyPresentation.Label(difficulty)}";
     }
@@ -58,7 +61,7 @@ public sealed partial class ChaosGame
         if (player < 0 || player >= _selectedPlayerCount) return;
         _playerPortraits[player] = checked((short)Mod(
             _playerPortraits[player] + delta, PlayerPortraitLayout.Count));
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"PLAYER {player + 1} PORTRAIT {_playerPortraits[player] + 1}";
     }
 

@@ -10,10 +10,24 @@ public sealed class AudioRoutingTests
     [Fact]
     public void GeneralSoundSlotsPreserveRecoveredLoaderTable()
     {
-        Assert.Equal([0, 1, 2, 3, 4, 6, 7, 8, 9], AudioRouting.GeneralSoundSlots);
-        Assert.Equal("SND00200.wav", AudioRouting.GeneralSoundFile(0));
-        Assert.Equal("SND00204.wav", AudioRouting.GeneralSoundFile(4));
-        Assert.Equal("SND00208.wav", AudioRouting.GeneralSoundFile(9));
+        Assert.Equal(
+            [
+                GeneralSoundSlot.PanelOpen,
+                GeneralSoundSlot.PanelClose,
+                GeneralSoundSlot.HeldButton,
+                GeneralSoundSlot.AcceptedSelection,
+                GeneralSoundSlot.RejectedInput,
+                GeneralSoundSlot.ReportAlert,
+                GeneralSoundSlot.CountdownWarning,
+                GeneralSoundSlot.FinalSecondWarning,
+                GeneralSoundSlot.LoadedWithoutCallSite
+            ],
+            AudioRouting.GeneralSoundSlots);
+        Assert.Equal("SND00200.wav", AudioRouting.GeneralSoundFile(GeneralSoundSlot.PanelOpen));
+        Assert.Equal("SND00204.wav", AudioRouting.GeneralSoundFile(GeneralSoundSlot.RejectedInput));
+        Assert.Equal("SND00205.wav", AudioRouting.GeneralSoundFile(GeneralSoundSlot.ReportAlert));
+        Assert.Equal("SND00208.wav",
+            AudioRouting.GeneralSoundFile(GeneralSoundSlot.LoadedWithoutCallSite));
         Assert.Throws<ArgumentOutOfRangeException>(() => AudioRouting.GeneralSoundFile(5));
     }
 
