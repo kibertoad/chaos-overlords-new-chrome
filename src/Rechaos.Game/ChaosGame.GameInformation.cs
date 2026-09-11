@@ -58,7 +58,7 @@ public sealed partial class ChaosGame
         {
             var y = GameInformationLayout.PlayerY(player);
             batch.Draw(pixel, new Rectangle(GameInformationLayout.PlayerNameLeft, y, 90, 7), Color.Black);
-            batch.Draw(pixel, new Rectangle(348, y, 36, 7), Color.Black);
+            batch.Draw(pixel, new Rectangle(348, y, 36, OriginalFontLayout.GlyphHeight), Color.Black);
         }
     }
 }

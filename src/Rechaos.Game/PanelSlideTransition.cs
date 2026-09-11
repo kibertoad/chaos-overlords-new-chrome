@@ -14,6 +14,13 @@ public sealed class PanelSlideTransition
         _started = now;
     }
 
+    public void Begin(ClientScreen previous, ClientScreen current, TimeSpan now)
+    {
+        if (now < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(now));
+        _screen = ShouldAnimate(previous, current) ? current : null;
+        _started = now;
+    }
+
     public int Offset(ClientScreen screen, TimeSpan now)
     {
         if (_screen != screen || now < _started) return 0;
@@ -27,6 +34,17 @@ public sealed class PanelSlideTransition
     }
 
     public void Clear() => _screen = null;
+
+    public static bool ShouldAnimate(ClientScreen previous, ClientScreen current)
+    {
+        if (!IsPanel(current) || current == ClientScreen.Commands) return false;
+
+        // Sector is a full underlying view. Animate only its forward entrance
+        // from the city; returning from a nested detail panel must leave it fixed.
+        if (current == ClientScreen.Sector) return previous == ClientScreen.City;
+
+        return true;
+    }
 
     public static bool IsPanel(ClientScreen screen) => screen is
         ClientScreen.Options or ClientScreen.Help or ClientScreen.GameInfo or ClientScreen.Commands

@@ -260,6 +260,25 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void PanelSlideOnlyRunsForForwardDetailTransitions()
+    {
+        Assert.True(PanelSlideTransition.ShouldAnimate(ClientScreen.Sector, ClientScreen.Gang));
+        Assert.True(PanelSlideTransition.ShouldAnimate(ClientScreen.City, ClientScreen.Sector));
+        Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.Gang, ClientScreen.Sector));
+        Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.Site, ClientScreen.Sector));
+        Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.City, ClientScreen.Commands));
+        Assert.False(PanelSlideTransition.ShouldAnimate(ClientScreen.Sector, ClientScreen.Commands));
+
+        var slide = new PanelSlideTransition();
+        var start = TimeSpan.FromSeconds(4);
+        slide.Begin(ClientScreen.Gang, ClientScreen.Sector, start);
+        Assert.Equal(0, slide.Offset(ClientScreen.Sector, start));
+        slide.Begin(ClientScreen.Sector, ClientScreen.Gang, start);
+        Assert.Equal(PanelSlideTransition.StartOffset,
+            slide.Offset(ClientScreen.Gang, start));
+    }
+
+    [Fact]
     public void CitySectorDoubleClickRequiresSameSectorInsideBoundedWindow()
     {
         var clicks = new CitySectorClickTracker();

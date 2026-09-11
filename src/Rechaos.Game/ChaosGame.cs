@@ -188,7 +188,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             });
         _screens.Changed += (previous, current) =>
         {
-            if (_slidePanels) _panelSlideTransition.Begin(current, _inputTime);
+            if (_slidePanels) _panelSlideTransition.Begin(previous, current, _inputTime);
             foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
                 PlayGeneralSound(slot);
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
@@ -591,6 +591,27 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var slideOffset = _slidePanels
             ? _panelSlideTransition.Offset(_screens.Current, gameTime.TotalGameTime)
             : 0;
+        if (_screens.Current == ClientScreen.Gang && _state is not null)
+        {
+            var fixedTransform = VirtualInput.Transform(viewport);
+            _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: fixedTransform);
+            _batch.Draw(_pixel, new Rectangle(0, 0, 640, 460), new Color(8, 10, 12));
+            DrawGangDetailsBackdrop(_batch, _pixel, _font, _state);
+            _batch.End();
+
+            var panelTransform = Matrix.CreateTranslation(slideOffset, 0, 0) * fixedTransform;
+            _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: panelTransform);
+            DrawGangDetailsPanel(_batch, _pixel, _font, _state);
+            _batch.End();
+
+            _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: fixedTransform);
+            if (_combatAnimationPlayer.IsPlaying)
+                DrawCombatPanel(_batch, _pixel, _font, _state);
+            DrawPlanningTimer(_batch, _pixel);
+            _batch.End();
+            base.Draw(gameTime);
+            return;
+        }
         var transform = Matrix.CreateTranslation(slideOffset, 0, 0)
             * VirtualInput.Transform(viewport);
         _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);

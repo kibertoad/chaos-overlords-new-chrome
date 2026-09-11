@@ -24,6 +24,18 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Gang Information now slides independently over a stationary City or Sector
+  backdrop. Opening the command picker no longer applies a panel entrance, and
+  closing nested details back to Sector no longer replays the Sector entrance.
+  The provisional `PLAN YOUR TURN` and `SECTOR n DETAIL` status hints were
+  removed.
+- Scenario Information fields now follow the exact placeholder baselines and
+  nine-pixel player-row pitch embedded in `PX05021`, preventing the settings
+  and six-player roster from colliding with its labels and lower divider.
+- Every objective predicate now requires an active Overlord. An eliminated
+  player can no longer win from retained Big Man points or other stale objective
+  projections; exact-threshold, nearest-incomplete, eliminated-player, and
+  simultaneous-active-winner fixtures cover all six objective scenarios.
 - Handoff now auto-presents combat from the immediately completed turn. When
   both report types exist, Last Turn Events opens first and then chains into
   Combat Results; Detailed animation capture waits until private handoff/event

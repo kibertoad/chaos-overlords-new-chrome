@@ -12,9 +12,14 @@ public sealed class GameInformationUiTests
     {
         Assert.Equal(new Rectangle(104, 125, 344, 209), GameInformationLayout.Panel);
         Assert.Equal(new Rectangle(136, 294, 49, 24), GameInformationLayout.Ok);
-        Assert.Equal(new Rectangle(199, 219, 6, 7), GameInformationLayout.PlayerColor(0));
-        Assert.Equal(new Rectangle(199, 269, 6, 7), GameInformationLayout.PlayerColor(5));
-        Assert.Equal([219, 229, 239, 249, 259, 269],
+        Assert.Equal(204, GameInformationLayout.ValueLeft);
+        Assert.Equal(216, GameInformationLayout.PlayerNameLeft);
+        Assert.Equal([152, 170, 188],
+            [GameInformationLayout.ObjectiveY, GameInformationLayout.AiMentalityY,
+                GameInformationLayout.TurnTimeLimitY]);
+        Assert.Equal(new Rectangle(204, 215, 5, 7), GameInformationLayout.PlayerColor(0));
+        Assert.Equal(new Rectangle(204, 260, 5, 7), GameInformationLayout.PlayerColor(5));
+        Assert.Equal([215, 224, 233, 242, 251, 260],
             Enumerable.Range(0, MatchLimits.PlayerCount).Select(GameInformationLayout.PlayerY));
         Assert.Throws<ArgumentOutOfRangeException>(() => GameInformationLayout.PlayerY(6));
     }

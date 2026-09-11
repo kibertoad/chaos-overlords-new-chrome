@@ -79,7 +79,7 @@ public sealed partial class ChaosGame
             if (_citySectorClicks.Register(selected, _inputTime))
             {
                 _screens.Show(ClientScreen.Sector);
-                _message = $"SECTOR {_cursor + 1} DETAIL";
+                _message = string.Empty;
             }
         }
         else
