@@ -17,8 +17,8 @@ public sealed record EconomyForecast(
 }
 
 /// <summary>
-/// Shipped-executable Upkeep calculation. Manual-stated component names are
-/// retained even where the executable's arithmetic differs.
+/// Shipped-executable Upkeep calculation, projected through separate sector-tax
+/// and influenced-site components rather than the original combined sector byte.
 /// </summary>
 public static class EconomyResolver
 {
@@ -54,9 +54,8 @@ public static class EconomyResolver
         if (state.FindPlayer(player.Id) != player)
             throw new ArgumentException("Player does not belong to the match.", nameof(player));
         var previousCash = player.Cash;
-        var sectorIncome = state.Sectors
-            .Where(sector => sector.Owner == player.Id)
-            .Sum(sector => sector.Income);
+        var sectorIncome = state.Sectors.Count(sector => sector.Owner == player.Id)
+            * ManualRules.ControlledSectorTax;
         var siteIncome = state.Sectors.SelectMany(sector => sector.Sites)
             .Where(site => site.InfluencedBy == player.Id)
             .Sum(site => state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);

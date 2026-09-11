@@ -614,24 +614,24 @@ claim about original-game behavior.
 ### RULE-UPKEEP-001 — Base income, upkeep, and debt
 
 - Source: `MANUAL-GOG-1`; Upkeep, Finance, Sector Tax, and Gang Upkeep
-  descriptions; `EXE-GOG-1.1` cash updater `0x0046e766`, especially
-  `0x0046f070`-`0x0046f089` and `0x0046f158`-`0x0046f17d`.
-- Observed statement: the manual says each controlled sector grants $1;
-  influenced sites apply their listed cash values; active gangs charge their
-  listed upkeep. The executable instead adds each controlled sector's generated
-  Income byte (3–7). Cash may become negative. The manual says equipment,
-  Bribe, and Snitch are restricted, while the executable's Snitch resolver
-  contains no debt gate.
-- Interpretation: for each active player in stable ID order, add controlled
-  sector Income and influenced-site cash, then subtract active-gang upkeep, with
+  descriptions; `EXE-GOG-1.1` cash updater `0x0046e766`, sector recomputation
+  helper `0x004782c5`, and write-back call `0x0046f246`.
+- Observed statement: each controlled sector grants $1; influenced sites apply
+  their listed cash values; active gangs charge their listed upkeep. The
+  executable combines the first two components into a sector byte recomputed as
+  `1 + completed-site Cash`, then adds that byte once for its owner. Cash may
+  become negative. The manual says equipment, Bribe, and Snitch are restricted,
+  while the executable's Snitch resolver contains no debt gate.
+- Interpretation: for each active player in stable ID order, add flat
+  controlled-sector tax and influenced-site cash, then subtract active-gang upkeep, with
   checked integer arithmetic. Runtime affordability rejects equipment and
   Bribe; Snitch remains free and executable in debt. Hiring permits a zero-cost
   gang even while the balance is negative.
 - Current exclusions: cash adjustment, special gang/item/site modifiers,
   integer overflow behavior, and the exact statistics accounting boundary.
-- Confidence: High static evidence for generated-Income sector tax, gang upkeep,
-  scan order, and negative-cash restrictions; Medium for the complete component
-  boundary; Low for excluded edge cases.
+- Confidence: High static evidence for flat sector tax, influenced-site Cash,
+  gang upkeep, scan/recomputation order, and negative-cash restrictions; Medium
+  for the complete statistics boundary; Low for excluded edge cases.
 - Implementation: `EconomyResolver.ResolveUpkeep` and
   `MatchState.FinishUpkeep`; `FinanceProjection` previews the same component
   classes and mirrors the recovered last-slot payout overwrite for multi-item

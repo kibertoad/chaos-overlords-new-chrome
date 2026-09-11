@@ -30,8 +30,8 @@ public sealed class FinanceUiTests
         var baseline = FinanceProjection.Project(state, player, null);
 
         Assert.Equal(before, MatchStateHasher.ComputeSha256(state));
-        Assert.Equal(state.Sectors.Where(sector => sector.Owner == player.Id)
-            .Sum(sector => sector.Income), baseline.SectorTax);
+        Assert.Equal(state.Sectors.Count(sector => sector.Owner == player.Id)
+            * ManualRules.ControlledSectorTax, baseline.SectorTax);
         Assert.Equal(player.Gangs.Count(candidate => candidate.IsActive), baseline.ProjectedGangCount);
         Assert.Equal(baseline.GangUpkeep + baseline.NewContracts + baseline.Equipment
             + baseline.CityOfficials + baseline.SectorTax + baseline.SiteProtection
@@ -68,7 +68,8 @@ public sealed class FinanceUiTests
             ? 0
             : ManualRules.ChaosIncome(pool / 3, sector.Owner == player.Id);
         Assert.Equal(expected, local.ChaosEstimate);
-        Assert.Equal(sector.Owner == player.Id ? sector.Income : 0, local.SectorTax);
+        Assert.Equal(sector.Owner == player.Id ? ManualRules.ControlledSectorTax : 0,
+            local.SectorTax);
         Assert.Equal(1, local.ProjectedGangCount);
 
         var otherSector = Enumerable.Range(0, MatchLimits.SectorCount)

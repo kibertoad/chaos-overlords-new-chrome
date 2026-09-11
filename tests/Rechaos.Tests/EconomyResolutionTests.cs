@@ -16,13 +16,13 @@ public sealed class EconomyResolutionTests
         var first = match.LastUpkeepResolutions[0];
         Assert.Equal(new PlayerId(0), first.Player);
         Assert.Equal(20, first.Details.PreviousCash);
-        Assert.Equal(11, first.Details.SectorIncome);
+        Assert.Equal(2, first.Details.SectorIncome);
         Assert.Equal(5, first.Details.SiteIncome);
         Assert.Equal(3, first.Details.GangUpkeep);
-        Assert.Equal(33, first.Details.ResultCash);
-        Assert.Equal(13, first.Details.NetChange);
+        Assert.Equal(24, first.Details.ResultCash);
+        Assert.Equal(4, first.Details.NetChange);
         Assert.False(first.Details.IsInDebt);
-        Assert.Equal(33, match.Players[0].Cash);
+        Assert.Equal(24, match.Players[0].Cash);
 
         Assert.Equal(2, match.LastUpkeepResolutions.Count);
         Assert.Equal([0L, 1L], match.Events.Select(item => item.Sequence));
@@ -40,7 +40,7 @@ public sealed class EconomyResolutionTests
         match.FinishUpkeep();
 
         var details = match.LastUpkeepResolutions[0].Details;
-        Assert.Equal(13, details.ResultCash);
+        Assert.Equal(4, details.ResultCash);
         Assert.False(details.IsInDebt);
 
         var noIncomeMatch = CreateMatch(playerZeroCash: 1, playerZeroOwnsSectors: false, playerZeroInfluencesSite: false);
@@ -87,7 +87,7 @@ public sealed class EconomyResolutionTests
         var forecast = EconomyResolver.Project(match, player);
 
         Assert.Equal(before, MatchStateHasher.ComputeSha256(match));
-        Assert.Equal(new EconomyForecast(20, 11, 5, 3, 33), forecast);
+        Assert.Equal(new EconomyForecast(20, 2, 5, 3, 24), forecast);
 
         match.FinishUpkeep();
         var resolved = match.LastUpkeepResolutions[0].Details;

@@ -81,8 +81,6 @@ public sealed class EndgameNoticePresentationTests
         var state = OriginalMatchFactory.Create(BundledOriginalData.Load(),
             new MatchSetup(scenario, GameDuration.SixMonths, 404, setups,
                 allowSparsePlayerIds: humanCount < MatchLimits.PlayerCount));
-        if (scenario == ScenarioId.Greed)
-            state.Players[0].Cash = 10_000;
         while (state.Outcome is null)
         {
             state.FinishUpkeep();

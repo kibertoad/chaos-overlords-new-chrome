@@ -2541,24 +2541,28 @@ Income and influenced Support but naturally has no defending-gang contribution.
 **Confidence:** High static evidence within the whole-turn resolver; moving and
 terminating last-gang recreation fixtures guard the negative behavior.
 
-### BIN-UPKEEP-001 - generated sector Income is the shipped sector tax
+### BIN-UPKEEP-001 - flat sector tax and influenced-site Cash share one byte
 
 **Observation:** Cash updater `0x0046e766` scans players 0 through 5. Its active
 gang-record loop at decompiled lines 194–215 subtracts each gang definition's
-Upkeep from player cash. The immediately following sector loop at lines 216–232
-compares the sector owner byte at `+0` with that player and adds the signed byte
-at sector offset `+3` to cash. City generator `0x00475fe1` writes that same
-offset as the density-derived sector Income value 3 through 7. The loop also
-classifies positive values as earned cash and negative values as spent cash.
+Upkeep. The following sector loop at lines 216–232 adds signed sector byte `+3`
+once when owner byte `+0` matches the player. This is not the generator's
+density-derived 3–7 value during playable turns. The enclosing loop initializes
+`local_8` to one, skips cash collection on its first iteration, and calls
+`0x004782c5` for every sector before the first planning phase. That helper sets
+byte `+3` to one, adds site-table Cash offset `+8` for each completed site, and
+the `0x0046f246` call site copies the full 36-byte result back. Later iterations
+collect cash before recomputing the sector records again.
 
-**Interpretation:** Despite the Help text's flat $1 Sector Tax claim, the shipped
-economy credits the full generated Income of every controlled sector. Both the
-authoritative Upkeep mutation and City/Sector Finance projection must sum those
-bytes; `1` remains documentation of the printed rule, not compatibility
-arithmetic.
+**Interpretation:** The shipped cash result is the Help-described flat $1 per
+controlled sector plus Cash from its influenced sites. The executable stores
+those components combined as `1 + completed-site Cash`; the recreation exposes
+them separately in events and Finance projections. Generated city density must
+not be substituted for sector tax.
 
-**Confidence:** High static evidence for arrays, offsets, player/gang/sector scan
-order, and arithmetic; controlled runtime corroboration remains pending.
+**Confidence:** High static evidence for arrays, offsets, initial skip,
+recomputation/write-back, player/gang/sector scan order, and arithmetic;
+controlled runtime corroboration remains pending.
 
 ## New-game initialization
 
