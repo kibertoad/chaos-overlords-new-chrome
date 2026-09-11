@@ -7,14 +7,33 @@ namespace Rechaos.Game;
 public static class SectorGangsLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(132, 135, 60, 62);
+    public static Rectangle Portrait => new(134, 135, 55, 65);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
     public const int ValueRight = 432;
 
     public static int ValueY(int row)
     {
         if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
-        return 151 + row * 9;
+        return row switch
+        {
+            0 => 173,
+            1 => 182,
+            2 => 192,
+            3 => 201,
+            4 => 210,
+            5 => 219,
+            6 => 229,
+            7 => 238,
+            8 => 247,
+            9 => 256,
+            10 => 265,
+            11 => 275,
+            12 => 284,
+            13 => 293,
+            14 => 302,
+            15 => 311,
+            _ => throw new ArgumentOutOfRangeException(nameof(row))
+        };
     }
 }
 

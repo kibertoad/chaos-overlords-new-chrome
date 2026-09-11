@@ -152,13 +152,13 @@ public sealed partial class ChaosGame
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var messages = state.ComlinkFor(playerId).Messages;
         batch.Draw(pixel, ComlinkViewLayout.Page, Color.Black);
-        batch.Draw(pixel, new Rectangle(196, 143, 240, 9), Color.Black);
+        batch.Draw(pixel, ComlinkViewLayout.Date, Color.Black);
         batch.Draw(pixel, ComlinkViewLayout.SenderPortrait, Color.Black);
-        batch.Draw(pixel, new Rectangle(270, 173, 166, 9), Color.Black);
+        batch.Draw(pixel, ComlinkViewLayout.SenderName, Color.Black);
         batch.Draw(pixel, ComlinkViewLayout.Message, Color.Black);
         if (messages.Count == 0)
         {
-            font.Draw(batch, "NO INCOMING MESSAGES", new Vector2(196, 251), Color.Lime, 1);
+            font.Draw(batch, "NO INCOMING MESSAGES", ComlinkViewLayout.Message.Location.ToVector2(), Color.Lime, 1);
             return;
         }
 
@@ -166,10 +166,10 @@ public sealed partial class ChaosGame
         var message = messages[_comlinkCursor];
         var sender = state.FindPlayer(message.Sender);
         font.Draw(batch, $"{_comlinkCursor + 1:00} OF {messages.Count:00}",
-            new Vector2(132, 136), Color.Lime, 1);
-        font.Draw(batch, MatchDate(message.Turn), new Vector2(196, 143), Color.Lime, 1);
+            ComlinkViewLayout.Page.Location.ToVector2(), Color.Lime, 1);
+        font.Draw(batch, MatchDate(message.Turn), ComlinkViewLayout.Date.Location.ToVector2(), Color.Lime, 1);
         font.Draw(batch, sender?.Setup.Name ?? $"PLAYER {message.Sender.Value + 1}",
-            new Vector2(270, 173), Color.White, 1);
+            ComlinkViewLayout.SenderName.Location.ToVector2(), Color.White, 1);
         if (sender is not null && _uiSprites is not null)
             batch.Draw(_uiSprites, ComlinkViewLayout.SenderPortrait,
                 OriginalSpriteLayout.OverlordPortrait(sender.Setup.PortraitId), Color.White);

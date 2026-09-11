@@ -78,6 +78,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
     private Texture2D? _itemPortraits;
+    private readonly Texture2D?[] _itemRotationTextures = new Texture2D?[53];
     private Texture2D? _policeSprites;
     private Texture2D? _uiSprites;
     private PixelFont? _font;
@@ -197,7 +198,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             });
         _screens.Changed += (previous, current) =>
         {
-            if (_slidePanels) _panelSlideTransition.Begin(current, _inputTime);
+            if (_slidePanels) _panelSlideTransition.Begin(previous, current, _inputTime);
             foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
                 PlayGeneralSound(slot);
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
@@ -286,6 +287,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
         _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);
+        for (var itemId = 0; itemId < _itemRotationTextures.Length; itemId++)
+            _itemRotationTextures[itemId] = LoadTexture($"PX04{itemId:000}.bmp", transparentBlack: true);
         _policeSprites = LoadTexture("PX00300.bmp", transparentBlack: true);
         _uiSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
         _font = _uiSprites is null
@@ -611,9 +614,29 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         GraphicsDevice.Clear(new Color(8, 10, 12));
         if (_batch is null || _pixel is null || _font is null) return;
         var viewport = GraphicsDevice.Viewport;
-        var slideOffset = _slidePanels
-            ? _panelSlideTransition.Offset(_screens.Current, gameTime.TotalGameTime)
-            : 0;
+        var slideOffset = _panelSlideTransition.Offset(
+            _screens.Current, gameTime.TotalGameTime, _slidePanels);
+        if (_screens.Current == ClientScreen.Gang && _state is not null)
+        {
+            var fixedTransform = VirtualInput.Transform(viewport);
+            _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: fixedTransform);
+            _batch.Draw(_pixel, new Rectangle(0, 0, 640, 460), new Color(8, 10, 12));
+            DrawGangDetailsBackdrop(_batch, _pixel, _font, _state);
+            _batch.End();
+
+            var panelTransform = Matrix.CreateTranslation(slideOffset, 0, 0) * fixedTransform;
+            _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: panelTransform);
+            DrawGangDetailsPanel(_batch, _pixel, _font, _state);
+            _batch.End();
+
+            _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: fixedTransform);
+            if (_combatAnimationPlayer.IsPlaying)
+                DrawCombatPanel(_batch, _pixel, _font, _state);
+            DrawPlanningTimer(_batch, _pixel);
+            _batch.End();
+            base.Draw(gameTime);
+            return;
+        }
         var transform = Matrix.CreateTranslation(slideOffset, 0, 0)
             * VirtualInput.Transform(viewport);
         _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);

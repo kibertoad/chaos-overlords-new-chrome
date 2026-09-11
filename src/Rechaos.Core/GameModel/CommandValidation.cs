@@ -28,7 +28,8 @@ public enum CommandValidationCode
     ResearchTechLevelUnavailable,
     SectorInCrackdown,
     SectorAlreadyControlled,
-    GangAtFullForce
+    GangAtFullForce,
+    ActionCannotRepeat
 }
 
 public readonly record struct CommandValidation(CommandValidationCode Code, string Message)
@@ -71,6 +72,18 @@ public sealed record CommandRule(
 /// </summary>
 public static class CommandRules
 {
+    private static readonly IReadOnlySet<GangAction> RepeatableActions = new HashSet<GangAction>
+    {
+        GangAction.Bribe,
+        GangAction.Chaos,
+        GangAction.Control,
+        GangAction.Heal,
+        GangAction.Hide,
+        GangAction.Influence,
+        GangAction.Research,
+        GangAction.Snitch
+    };
+
     public static readonly IReadOnlyDictionary<GangAction, CommandRule> ByAction = new CommandRule[]
     {
         new(GangAction.Attack, CommandTargetKind.Gang, GangRelationship: GangTargetRelationship.Enemy,
@@ -90,6 +103,8 @@ public static class CommandRules
         new(GangAction.Snitch, CommandTargetKind.None),
         new(GangAction.Terminate, CommandTargetKind.None)
     }.ToDictionary(rule => rule.Action);
+
+    public static bool CanRepeat(GangAction action) => RepeatableActions.Contains(action);
 }
 
 public static class CommandValidator
@@ -102,6 +117,8 @@ public static class CommandValidator
         if (!actorValidation.IsValid) return actorValidation;
         if (!CommandRules.ByAction.TryGetValue(command.Action, out var rule))
             return CommandValidation.Reject(CommandValidationCode.InvalidTargetKind);
+        if (command.Repeat && !CommandRules.CanRepeat(command.Action))
+            return CommandValidation.Reject(CommandValidationCode.ActionCannotRepeat);
         if (!HasValidTargetShape(command, rule))
             return CommandValidation.Reject(CommandValidationCode.InvalidTargetKind);
 
@@ -360,7 +377,8 @@ internal static class CommandValidationMessages
             [CommandValidationCode.CommandNotQueued] = "The gang has no queued command.",
             [CommandValidationCode.SectorInCrackdown] = "A sector cannot be controlled while police are present.",
             [CommandValidationCode.SectorAlreadyControlled] = "The player already controls this sector.",
-            [CommandValidationCode.GangAtFullForce] = "A gang at full Force does not need healing."
+            [CommandValidationCode.GangAtFullForce] = "A gang at full Force does not need healing.",
+            [CommandValidationCode.ActionCannotRepeat] = "This action cannot be assigned as recurring."
         };
 
     public static string For(CommandValidationCode code) => Messages.GetValueOrDefault(code, string.Empty);

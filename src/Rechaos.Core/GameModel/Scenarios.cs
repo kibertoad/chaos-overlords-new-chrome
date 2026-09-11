@@ -85,11 +85,12 @@ public static class ScenarioCatalog
     public static bool HasObjectiveVictory(ScenarioId scenario, PlayerScoreState state) => scenario switch
     {
         ScenarioId.KillEmAll => state.IsAlive && state.OpponentsAlive == 0,
-        ScenarioId.Big40 => state.ControlledSectors >= 40,
-        ScenarioId.Eliminate => state.OpposingRightHandsAlive == 0,
-        ScenarioId.Siege => state.ImportantSectorsControlled >= 6,
-        ScenarioId.BigMan => state.BigManPoints >= 40,
-        ScenarioId.Armageddon => state.ControlledSectors >= MatchLimits.SectorCount,
+        ScenarioId.Big40 => state.IsAlive && state.ControlledSectors >= 40,
+        ScenarioId.Eliminate => state.IsAlive && state.OpposingRightHandsAlive == 0,
+        ScenarioId.Siege => state.IsAlive && state.ImportantSectorsControlled >= 6,
+        ScenarioId.BigMan => state.IsAlive && state.BigManPoints >= 40,
+        ScenarioId.Armageddon => state.IsAlive
+            && state.ControlledSectors >= MatchLimits.SectorCount,
         _ => false
     };
 

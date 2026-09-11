@@ -219,7 +219,7 @@ public sealed partial class ChaosGame
         if (!_debugPhaseStepping) PrepareCurrentHireOffers();
         _cursor = _state.Players[0].Gangs[0].SectorId;
         _selectedGangIndex = 0;
-        _message = _debugPhaseStepping ? "ADVANCE UPKEEP TO BEGIN" : "PLAN YOUR TURN";
+        _message = _debugPhaseStepping ? "ADVANCE UPKEEP TO BEGIN" : string.Empty;
         _combatPresentationProgress.Clear();
         _combatAnimationPlayer.Clear();
         _managementReturnScreen = ClientScreen.City;

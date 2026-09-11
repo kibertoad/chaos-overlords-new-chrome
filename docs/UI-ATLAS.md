@@ -339,6 +339,9 @@ one report at a time. Its `(198,133,242,158)` aperture uses the dedicated
 `PX06001`-`PX06009` report illustrations (`PX06002` is sector control attained),
 not stretched city tiles or gang portraits; the two footer lines report
 date/object and status.
+Completed Research uses the resolved item's dedicated 15-frame, 48-by-48
+`PX04xxx` rotation strip in the `PX06005` monitor; `PX04999` is only the compact
+20-by-20 inventory icon sheet.
 Routine implementation notifications such as upkeep/economy, movement,
 equipment transactions and ordinary command completion do not create reports;
 captured/lost control, newly influenced sites, completed research, crackdowns,

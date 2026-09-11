@@ -8,6 +8,8 @@ public static class OptionsLayout
 {
     public static Rectangle Panel => new(80, 24, 480, 412);
     public static Rectangle Done => new(264, 392, 112, 28);
+    public static Rectangle Music => new(120, 52, 400, 58);
+    public static Rectangle SoundEffects => new(120, 114, 400, 58);
     public static IReadOnlyList<Rectangle> MusicLevels { get; } =
         Enumerable.Range(0, OriginalSoundtrackPolicy.MaximumVolumeLevel + 1)
             .Select(level => new Rectangle(132 + level * 34, 78, 28, 28))
@@ -21,6 +23,49 @@ public static class OptionsLayout
     public static Rectangle SlidePanels => new(150, 260, 340, 28);
     public static Rectangle WarnIfIdleGangs => new(150, 298, 340, 28);
     public static Rectangle ColorDepth => new(150, 336, 340, 28);
+}
+
+public static class OptionsTooltip
+{
+    public static IReadOnlyList<string> At(Point point)
+    {
+        if (OptionsLayout.Music.Contains(point))
+            return ["MUSIC VOLUME", "SETS THE SOUNDTRACK LEVEL. OFF MUTES MUSIC."];
+        if (OptionsLayout.SoundEffects.Contains(point))
+            return ["SOUND EFFECTS", "SETS UI AND COMBAT SOUND LEVEL. OFF MUTES THEM."];
+        if (OptionsLayout.BaseStatistics.Contains(point))
+            return ["GANG STATISTICS", "BASE SHOWS PRINTED STATS; CURRENT INCLUDES MODIFIERS."];
+        if (OptionsLayout.DetailedCombat.Contains(point))
+            return ["DETAILED COMBAT", "ON PLAYS AUTOMATIC COMBAT ANIMATIONS."];
+        if (OptionsLayout.SlidePanels.Contains(point))
+            return ["SLIDE PANELS", "OFF MAKES SECTORS AND DETAILS APPEAR IMMEDIATELY."];
+        if (OptionsLayout.WarnIfIdleGangs.Contains(point))
+            return ["WARN IF IDLE GANGS", "ASKS BEFORE ENDING WITH UNASSIGNED ACTIVE GANGS."];
+        if (OptionsLayout.ColorDepth.Contains(point))
+            return [
+                "THOUSANDS OF COLORS",
+                "LEGACY COLOR DEPTH; THE MODERN RENDERER IS ALWAYS ABOVE 16-BIT.",
+                "NO CHANGEABLE RETRO COLOR MODE IS CURRENTLY PLANNED."
+            ];
+        if (OptionsLayout.Done.Contains(point))
+            return ["DONE", "RETURNS TO THE GAME; CHANGES ARE SAVED IMMEDIATELY."];
+        return [];
+    }
+
+    public static Rectangle Bounds(Point point, IReadOnlyList<string> lines)
+    {
+        ArgumentNullException.ThrowIfNull(lines);
+        if (lines.Count == 0) return Rectangle.Empty;
+        var width = Math.Min(OptionsLayout.Panel.Width - 16,
+            lines.Max(line => line.Length) * OriginalFontLayout.CellWidth + 16);
+        var height = lines.Count * OriginalFontLayout.LineHeight + 16;
+        var x = Math.Clamp(point.X + 10, 4, VirtualInput.Width - width - 4);
+        var below = point.Y + 12;
+        var y = below + height <= VirtualInput.Height - 4
+            ? below
+            : Math.Max(4, point.Y - height - 8);
+        return new Rectangle(x, y, width, height);
+    }
 }
 
 public sealed partial class ChaosGame
@@ -255,6 +300,26 @@ public sealed partial class ChaosGame
         DrawCentered(font, batch, "F11 DISPLAY  UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS", 374,
             new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
+        if (_hoverPoint is { } hover)
+            DrawOptionsTooltip(batch, pixel, font, hover);
+    }
+
+    private static void DrawOptionsTooltip(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        Point point)
+    {
+        var lines = OptionsTooltip.At(point);
+        if (lines.Count == 0) return;
+        var panel = OptionsTooltip.Bounds(point, lines);
+        batch.Draw(pixel, panel, new Color(8, 18, 16, 252));
+        DrawBorder(batch, pixel, panel, Color.Lime, 2);
+        for (var row = 0; row < lines.Count; row++)
+            font.Draw(batch, lines[row],
+                new Vector2(panel.X + 8,
+                    panel.Y + 8 + row * OriginalFontLayout.LineHeight),
+                row == 0 ? Color.Gold : Color.White, 1);
     }
 
     private void DrawOptionToggle(SpriteBatch batch, Texture2D pixel, PixelFont font,

@@ -46,6 +46,34 @@ public sealed class MatchOutcomeTests
     }
 
     [Fact]
+    public void EliminatedObjectiveLeaderCannotReplaceSoleSurvivor()
+    {
+        var match = CreateMatch(
+            ScenarioId.Big40,
+            playerZeroControlledSectors: 40,
+            playerOneControlledSectors: 1);
+        match.Players[0].Status = PlayerStatus.Eliminated;
+
+        var outcome = Assert.IsType<MatchOutcome>(MatchOutcomeEvaluator.Evaluate(match));
+
+        Assert.Equal(MatchEndReason.PlayerEliminated, outcome.Reason);
+        Assert.Equal([new PlayerId(1)], outcome.Winners);
+    }
+
+    [Fact]
+    public void ObjectiveEvaluationPreservesSimultaneousActiveWinners()
+    {
+        var match = CreateMatch(ScenarioId.BigMan);
+        match.Players[0].BigManPoints = 40;
+        match.Players[1].BigManPoints = 40;
+
+        var outcome = Assert.IsType<MatchOutcome>(MatchOutcomeEvaluator.Evaluate(match));
+
+        Assert.Equal(MatchEndReason.ObjectiveCompleted, outcome.Reason);
+        Assert.Equal([new PlayerId(0), new PlayerId(1)], outcome.Winners);
+    }
+
+    [Fact]
     public void EliminateScenarioEndsWhenOpposingRightHandsIsGone()
     {
         var match = CreateMatch(ScenarioId.Eliminate, playerOneHasRightHands: false);

@@ -150,6 +150,11 @@ public sealed partial class ChaosGame
         };
         if (artworkIndex > 0 && _lastTurnEventArtwork[artworkIndex] is { } artwork)
             batch.Draw(artwork, LastTurnEventsLayout.Artwork, Color.White);
+        if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId
+            && itemId >= 0 && itemId < _itemRotationTextures.Length
+            && _itemRotationTextures[itemId] is { } rotation)
+            batch.Draw(rotation, LastTurnEventsLayout.ResearchItem,
+                LastTurnEventPresentation.RotationFrame(_inputTime), Color.White);
     }
 
     private static string EventObject(MatchState state, GameNotification notification)
@@ -158,6 +163,8 @@ public sealed partial class ChaosGame
         if (related?.Elimination is { } elimination)
             return state.FindPlayer(elimination.EliminatedPlayer)?.Setup.Name.ToUpperInvariant()
                 ?? $"PLAYER {elimination.EliminatedPlayer.Value + 1}";
+        if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId)
+            return state.Definitions.Items[itemId].Name;
         if (notification.Gang is { } gangId && state.FindGang(gangId) is { } gang)
             return state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Name;
         if (notification.SectorId is { } sectorId) return SectorCode(sectorId);
@@ -199,5 +206,29 @@ public static class EventReviewProgress
         ArgumentNullException.ThrowIfNull(viewedPages);
         if (pageCount < 0) throw new ArgumentOutOfRangeException(nameof(pageCount));
         return pageCount == 0 || Enumerable.Range(0, pageCount).All(viewedPages.Contains);
+    }
+}
+
+public static class LastTurnEventPresentation
+{
+    public const int RotationFrameCount = 15;
+    private static readonly TimeSpan RotationFrameDuration = TimeSpan.FromMilliseconds(80);
+
+    public static int? ResearchItemId(GameNotification notification, GameEvent? relatedEvent)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+        return notification.Kind == GameNotificationKind.Research
+            && relatedEvent?.Action == GangAction.Research
+            && relatedEvent.Target.Kind == CommandTargetKind.Item
+                ? relatedEvent.Target.Id
+                : null;
+    }
+
+    public static Rectangle RotationFrame(TimeSpan elapsed)
+    {
+        if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
+        var frame = (int)(elapsed.TotalMilliseconds / RotationFrameDuration.TotalMilliseconds)
+            % RotationFrameCount;
+        return new Rectangle(frame * 48, 0, 48, 48);
     }
 }

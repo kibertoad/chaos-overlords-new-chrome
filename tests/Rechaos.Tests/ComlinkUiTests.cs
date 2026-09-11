@@ -12,7 +12,8 @@ public sealed class ComlinkUiTests
     {
         Assert.Equal(new Rectangle(104, 125, 344, 209), ComlinkViewLayout.Panel);
         Assert.Equal(ComlinkViewLayout.Panel, ComlinkSendLayout.Panel);
-        Assert.Equal(new Rectangle(196, 251, 240, 36), ComlinkViewLayout.Message);
+        Assert.Equal(new Rectangle(215, 171, 64, 64), ComlinkViewLayout.SenderPortrait);
+        Assert.Equal(new Rectangle(198, 248, 238, 34), ComlinkViewLayout.Message);
         Assert.Equal(new Rectangle(196, 258, 240, 36), ComlinkSendLayout.Message);
         Assert.Equal(new Rectangle(196, 143, 56, 32), ComlinkSendLayout.Recipient(0));
         Assert.Equal(new Rectangle(324, 209, 56, 32), ComlinkSendLayout.Recipient(5));

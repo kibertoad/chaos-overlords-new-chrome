@@ -62,4 +62,44 @@ public sealed class ScenarioCatalogTests
             OpposingRightHandsAlive: opponentsAlive, important, bigManPoints);
         Assert.Equal(expected, ScenarioCatalog.HasObjectiveVictory(scenario, state));
     }
+
+    [Theory]
+    [InlineData(ScenarioId.KillEmAll, 0, 0, 0, 0)]
+    [InlineData(ScenarioId.Big40, 40, 0, 0, 1)]
+    [InlineData(ScenarioId.Eliminate, 0, 0, 0, 0)]
+    [InlineData(ScenarioId.Siege, 0, 6, 0, 1)]
+    [InlineData(ScenarioId.BigMan, 0, 0, 40, 1)]
+    [InlineData(ScenarioId.Armageddon, 64, 0, 0, 1)]
+    public void EliminatedPlayerCannotCompleteObjectiveFromRetainedProgress(
+        ScenarioId scenario,
+        int sectors,
+        int important,
+        int bigManPoints,
+        int opponentsAlive)
+    {
+        var state = new PlayerScoreState(0, 0, sectors, false, opponentsAlive,
+            OpposingRightHandsAlive: opponentsAlive, important, bigManPoints);
+
+        Assert.False(ScenarioCatalog.HasObjectiveVictory(scenario, state));
+    }
+
+    [Theory]
+    [InlineData(ScenarioId.KillEmAll, 0, 0, 0, 1)]
+    [InlineData(ScenarioId.Big40, 39, 0, 0, 1)]
+    [InlineData(ScenarioId.Eliminate, 0, 0, 0, 1)]
+    [InlineData(ScenarioId.Siege, 0, 5, 0, 1)]
+    [InlineData(ScenarioId.BigMan, 0, 0, 39, 1)]
+    [InlineData(ScenarioId.Armageddon, 63, 0, 0, 1)]
+    public void ObjectiveThresholdsRejectNearestIncompleteState(
+        ScenarioId scenario,
+        int sectors,
+        int important,
+        int bigManPoints,
+        int opponentsAlive)
+    {
+        var state = new PlayerScoreState(0, 0, sectors, true, opponentsAlive,
+            OpposingRightHandsAlive: opponentsAlive, important, bigManPoints);
+
+        Assert.False(ScenarioCatalog.HasObjectiveVictory(scenario, state));
+    }
 }

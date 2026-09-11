@@ -65,8 +65,28 @@ public sealed partial class ChaosGame
 
     private void DrawGangDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_gangDetailsReturnScreen == ClientScreen.Sector) DrawSectorDetails(batch, pixel, font, state);
-        else DrawBoard(batch, pixel, font, state);
+        DrawGangDetailsBackdrop(batch, pixel, font, state);
+        DrawGangDetailsPanel(batch, pixel, font, state);
+    }
+
+    private void DrawGangDetailsBackdrop(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        MatchState state)
+    {
+        if (_gangDetailsReturnScreen == ClientScreen.Sector)
+            DrawSectorDetails(batch, pixel, font, state);
+        else
+            DrawBoard(batch, pixel, font, state);
+    }
+
+    private void DrawGangDetailsPanel(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        MatchState state)
+    {
         var panel = GangInformationLayout.Panel;
         var background = _gangDetailsInstanceId is null
             ? _gangDefinitionInfoBackground

@@ -445,6 +445,10 @@ public static class CommandOverlayLayout
     public static bool OpensTargetPicker(GangAction action) => action is
         GangAction.Attack or GangAction.Equip or GangAction.Give or GangAction.Influence
         or GangAction.Move or GangAction.Research or GangAction.Sell;
+
+    public static IReadOnlyList<GangAction> ActionsFor(bool recurring) => recurring
+        ? Actions.Where(action => action == GangAction.None || CommandRules.CanRepeat(action)).ToArray()
+        : Actions;
 }
 
 public static class EquipmentCommandLayout
@@ -454,6 +458,20 @@ public static class EquipmentCommandLayout
     public static Rectangle Portrait => new(130, 143, 64, 64);
     public static Rectangle Cancel => new(136, 262, 49, 24);
     public static Rectangle Ok => new(136, 294, 49, 24);
+
+    public static bool CanConfirm(int selectedIndex, IReadOnlyCollection<int> visibleCategoryIndices)
+    {
+        ArgumentNullException.ThrowIfNull(visibleCategoryIndices);
+        return visibleCategoryIndices.Contains(selectedIndex);
+    }
+
+    public static string ResearchProgress(int difficulty, int remaining)
+    {
+        if (difficulty <= 0) throw new ArgumentOutOfRangeException(nameof(difficulty));
+        if (remaining is < 0 || remaining > difficulty)
+            throw new ArgumentOutOfRangeException(nameof(remaining));
+        return $"{difficulty - remaining}/{difficulty}";
+    }
     public static Rectangle Category(int category)
     {
         if (category is < 0 or >= CategoryCount) throw new ArgumentOutOfRangeException(nameof(category));
@@ -612,17 +630,20 @@ public static class LastTurnEventsLayout
     public static Rectangle Previous => new(135, 151, 25, 21);
     public static Rectangle Next => new(163, 151, 25, 21);
     public static Rectangle Artwork => new(198, 133, 242, 158);
+    public static Rectangle ResearchItem => new(274, 181, 48, 48);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 }
 
 public static class ComlinkViewLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Page => new(132, 135, 60, 13);
+    public static Rectangle Page => new(133, 134, 59, 13);
     public static Rectangle Previous => new(134, 158, 26, 22);
     public static Rectangle Next => new(162, 158, 26, 22);
-    public static Rectangle SenderPortrait => new(204, 173, 64, 64);
-    public static Rectangle Message => new(196, 251, 240, 36);
+    public static Rectangle Date => new(198, 145, 238, 7);
+    public static Rectangle SenderPortrait => new(215, 171, 64, 64);
+    public static Rectangle SenderName => new(285, 171, 151, 7);
+    public static Rectangle Message => new(198, 248, 238, 34);
     public static Rectangle Ok => new(134, 294, 56, 22);
 }
 
