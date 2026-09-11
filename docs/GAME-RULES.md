@@ -478,18 +478,20 @@ claim about original-game behavior.
   presence. Each Combat phase in which police are present consumes one remaining
   turn after their attacks, producing exactly three to five attack opportunities;
   the sector detail panel exposes the authoritative count. Each sector retains
-  its latest two occurrence turns;
-  a third occurrence no more than four turns after the oldest neutralizes the
-  sector and resets its influenced sites, Support, Tolerance modifiers, and
-  resistance just like an overthrow. The displaced owner receives a distinct
+  two fixed occurrence slots and expires a slot only when it is strictly older
+  than `current turn - 5`. A third occurrence therefore counts an oldest trigger
+  exactly five turns earlier, neutralizes the sector, resets its influenced
+  sites, Support, Tolerance modifiers, and resistance just like an overthrow,
+  then writes the current turn into both slots. Reacquired control can be lost
+  again on another recent trigger. The displaced owner receives a distinct
   `ControlLost` notification in addition to the global Crackdown notification.
+  History mutation and ownership cleanup precede the duration-extension draw.
 - Current exclusions: original timing within Combat, whether 0%/100% checks
-  consume RNG, weapon/damage-cap treatment, exact duration RNG call/order,
-  exact original message wording, and
+  consume RNG, weapon/damage-cap treatment, exact original message wording, and
   exact binary RNG/event order.
 - Confidence: High for the detection percentage table, hidden Detect 12 branch,
-  Combat 20, and defense subtraction; Low for phase/RNG ordering and the listed
-  exclusions.
+  Combat 20, defense subtraction, occurrence window/reset, and duration RNG
+  order; Low for phase/event ordering and the listed exclusions.
 - Implementation: `CommandResolver.ResolveCombatPhase`, exposed through
   `MatchState.LastPoliceAttackResolutions` and `PoliceAttackResolved` events;
   `CommandValidator` and `CommandResolver.ResolveControl` enforce the Control

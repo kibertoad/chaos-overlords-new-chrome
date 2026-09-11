@@ -212,8 +212,8 @@ public sealed class MatchSectorState
             throw new ArgumentException("Inactive police cannot have turns remaining.", nameof(crackdownTurnsRemaining));
         if (crackdownHistory is { Count: > 2 }
             || crackdownHistory?.Any(turn => turn < 1) == true
-            || crackdownHistory?.Zip(crackdownHistory.Skip(1), (left, right) => left >= right).Any(invalid => invalid) == true)
-            throw new ArgumentException("Crackdown history must contain at most two increasing positive turns.", nameof(crackdownHistory));
+            || crackdownHistory?.Zip(crackdownHistory.Skip(1), (left, right) => left > right).Any(invalid => invalid) == true)
+            throw new ArgumentException("Crackdown history must contain at most two nondecreasing positive turns.", nameof(crackdownHistory));
         Id = id;
         Sites = sites.OrderBy(site => site.Slot).ToArray();
         Owner = owner;
@@ -249,10 +249,14 @@ public sealed class MatchSectorState
         if (turn < 1) throw new ArgumentOutOfRangeException(nameof(turn));
         if (_crackdownHistory.Count > 0 && turn <= _crackdownHistory[^1])
             throw new InvalidOperationException("A sector can record at most one Crackdown per turn.");
-        _crackdownHistory.RemoveAll(previous => previous < turn - 4);
+        _crackdownHistory.RemoveAll(previous => previous < turn - 5);
         var losesControl = _crackdownHistory.Count >= 2;
+        if (losesControl)
+        {
+            _crackdownHistory.Clear();
+            _crackdownHistory.Add(turn);
+        }
         _crackdownHistory.Add(turn);
-        while (_crackdownHistory.Count > 2) _crackdownHistory.RemoveAt(0);
         return losesControl;
     }
 }

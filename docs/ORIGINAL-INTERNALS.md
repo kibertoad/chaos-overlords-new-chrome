@@ -1972,6 +1972,33 @@ complete retaliation-eligibility predicate.
 **Next validation:** capture fixed original traces at bands 0, 1, and 2 for
 every affected action, including Hide and both Martial Arts branches.
 
+### BIN-POLICE-001 - occurrence window, neutralization, and duration order
+
+**Observation:** In `0x00472775`, each sector's two signed Crackdown occurrence
+shorts live at `0x004abcc0` and `0x004abcc2`. Before evaluating a new trigger,
+lines 268-276 replace a non--100 slot with -100 only when it is strictly less
+than `current turn - 5`. Lines 303-312 fill the first empty slot and then the
+second. If neither is empty, lines 313-321 notify the owner, set the sector
+owner to -1, clear its three influence-derived totals, and write the current
+turn into both occurrence slots.
+
+Only after that history/neutralization block, the bounded call at `0x0047419b`
+requests 1 through 3, adds 2, and adds the resulting 3 through 5 to the sector's
+existing police-duration byte. The earlier lines 291-301 have already zeroed
+the triggering sector's per-gang Chaos results and emitted notifications for
+participating players.
+
+**Interpretation:** The occurrence window is inclusive: a trigger exactly five
+turns before the current one still counts. A third retained trigger resets both
+fixed history slots to the current turn, so another trigger while those slots
+remain recent can neutralize reacquired control again. Duration extends rather
+than replaces existing police presence, and its one bounded draw occurs after
+history mutation and any ownership cleanup.
+
+**Confidence:** High static evidence for sentinels, strict expiration comparison,
+slot-fill/reset order, cleanup fields, duration range/addition, and RNG call
+order. Runtime corroboration of notification presentation remains pending.
+
 ### BIN-EQUIP-001 - Factory price division and rounding
 
 **Observation:** In EXE-GOG-1.1, the Equip resolver inside `0x00472775` loads

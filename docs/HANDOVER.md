@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,139 tests with no warnings.
+  isolated Release build passed all 1,141 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -174,6 +174,11 @@ Last updated: 2026-09-11
   only for the third-Crackdown neutralization and a successful Control winner.
   Moving or terminating the last friendly gang therefore leaves sector ownership
   intact; dedicated fixtures now prevent accidental auto-abandonment.
+- Crackdown history now matches the original two shorts exactly: entries expire
+  only below `current turn - 5`, the third retained trigger writes the current
+  turn to both slots after neutralizing control, and only then does the resolver
+  draw and add 3-5 police turns. Inclusive-boundary, reacquisition, cleanup, and
+  duplicate-slot save round-trip fixtures cover the recovered behavior.
 - Control and Chaos regression fixtures now make density-derived sector Income
   differ from summed site Cash, guarding the recovered distinction. Chaos adds
   sector Income separately to every participating gang's pool before grouping.

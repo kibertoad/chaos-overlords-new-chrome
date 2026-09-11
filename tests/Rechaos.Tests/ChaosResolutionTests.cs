@@ -81,7 +81,7 @@ public sealed class ChaosResolutionTests
         Assert.Equal(definition.Resistance, site.Resistance);
         Assert.Equal(0, match.Players[0].Support);
         Assert.Equal(20, sector.Tolerance);
-        Assert.Equal([3, 5], sector.CrackdownHistory);
+        Assert.Equal([5, 5], sector.CrackdownHistory);
         Assert.Contains(match.NotificationsFor(new PlayerId(0)), notification =>
             notification.Kind == GameNotificationKind.ControlLost && notification.SectorId == sector.Id);
     }
@@ -100,7 +100,44 @@ public sealed class ChaosResolutionTests
 
         Assert.False(result.ControlLost);
         Assert.Equal(new PlayerId(0), sector.Owner);
-        Assert.Equal([7], sector.CrackdownHistory);
+        Assert.Equal([2, 7], sector.CrackdownHistory);
+    }
+
+    [Fact]
+    public void ThirdCrackdownCountsOldestAtInclusiveFiveTurnBoundary()
+    {
+        var match = CreateMatch(owner: new PlayerId(0));
+        var sector = match.Sectors[0];
+        CrackdownResolver.Trigger(match, sector);
+        AdvanceCoordinatorTurn(match);
+        CrackdownResolver.Trigger(match, sector);
+        for (var index = 0; index < 4; index++) AdvanceCoordinatorTurn(match);
+
+        var result = CrackdownResolver.Trigger(match, sector);
+
+        Assert.True(result.ControlLost);
+        Assert.Null(sector.Owner);
+        Assert.Equal([6, 6], sector.CrackdownHistory);
+    }
+
+    [Fact]
+    public void RecentCrackdownAfterThirdTriggerCanNeutralizeReacquiredControl()
+    {
+        var match = CreateMatch(owner: new PlayerId(0));
+        var sector = match.Sectors[0];
+        CrackdownResolver.Trigger(match, sector);
+        AdvanceCoordinatorTurn(match);
+        CrackdownResolver.Trigger(match, sector);
+        AdvanceCoordinatorTurn(match);
+        CrackdownResolver.Trigger(match, sector);
+        sector.Owner = new PlayerId(0);
+        AdvanceCoordinatorTurn(match);
+
+        var result = CrackdownResolver.Trigger(match, sector);
+
+        Assert.True(result.ControlLost);
+        Assert.Null(sector.Owner);
+        Assert.Equal([4, 4], sector.CrackdownHistory);
     }
 
     [Fact]
