@@ -64,7 +64,7 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 23;
+    private const int FormatVersion = 24;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
@@ -196,6 +196,16 @@ public static class MatchStateHasher
             includeComlink: true, includeTertiaryTargets: true,
             includeQuaternaryTargets: true);
 
+    internal static string ComputeVersionTwentyThreeSha256(MatchState state) =>
+        ComputeSha256(state, 23, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
+            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
+            includeAiFormationSectors: true, includeAiCoverageSectors: true,
+            includeComlink: true, includeTertiaryTargets: true,
+            includeQuaternaryTargets: true, includeEventHistory: true);
+
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
@@ -204,7 +214,8 @@ public static class MatchStateHasher
             includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
             includeAiFormationSectors: true, includeAiCoverageSectors: true,
             includeComlink: true, includeTertiaryTargets: true,
-            includeQuaternaryTargets: true, includeEventHistory: true);
+            includeQuaternaryTargets: true, includeEventHistory: true,
+            includePhaseHistory: true);
 
     private static string ComputeSha256(
         MatchState state,
@@ -228,7 +239,8 @@ public static class MatchStateHasher
         bool includeComlink = false,
         bool includeTertiaryTargets = false,
         bool includeQuaternaryTargets = false,
-        bool includeEventHistory = false)
+        bool includeEventHistory = false,
+        bool includePhaseHistory = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -295,6 +307,18 @@ public static class MatchStateHasher
             writer.Write(state.NextEventSequence);
             if (includeEventHistory)
                 state.WriteCanonicalEventHistory(writer);
+            if (includePhaseHistory)
+            {
+                writer.Write(state.PhaseHashes.Count);
+                foreach (var boundary in state.PhaseHashes)
+                {
+                    writer.Write(boundary.Turn);
+                    writer.Write((byte)boundary.Phase);
+                    WriteNullableByte(writer, boundary.ExecutionPhase is { } boundaryPhase
+                        ? (byte)boundaryPhase : null);
+                    WriteString(writer, boundary.Sha256);
+                }
+            }
             writer.Write(state.Outcome is not null);
             if (state.Outcome is { } outcome)
             {

@@ -9,6 +9,44 @@ namespace Rechaos.Tests;
 public sealed partial class NativeSaveSerializerTests
 {
     [Fact]
+    public void CurrentSaveRejectsModifiedPhaseHashHistory()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["phaseHashes"]![0]!["sha256"] = new string('0', 64);
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(modified, match.Definitions));
+
+        Assert.Contains("fingerprint does not match", exception.Message);
+    }
+
+    [Fact]
+    public void VersionTwentySaveRetainsVersionTwentyThreeHashCompatibility()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 20;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionTwentyThreeSha256(match);
+        using var legacy = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.Equal(
+            MatchStateHasher.ComputeVersionTwentyThreeSha256(match),
+            MatchStateHasher.ComputeVersionTwentyThreeSha256(restored));
+    }
+
+    [Fact]
     public void CurrentSaveRejectsNoncontiguousEventHistory()
     {
         var match = CreateMatch();

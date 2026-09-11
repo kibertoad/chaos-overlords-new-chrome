@@ -125,7 +125,9 @@ public sealed class EndgameAwardTests
             Assert.Equal(expected.Recipients, actual.Recipients);
         }
         Assert.NotEmpty(outcome.Awards);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), match.PhaseHashes[^1].Sha256);
+        Assert.Equal(
+            MatchStateHasher.ComputeVersionTwentyThreeSha256(match),
+            match.PhaseHashes[^1].Sha256);
     }
 
     private static void AssertAward(

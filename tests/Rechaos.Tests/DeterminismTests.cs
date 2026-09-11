@@ -133,7 +133,10 @@ public sealed class DeterminismTests
         Assert.Equal(transition.Turn, boundary.Turn);
         Assert.Equal(transition.Phase, boundary.Phase);
         Assert.Equal(transition.ExecutionPhase, boundary.ExecutionPhase);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), boundary.Sha256);
+        Assert.Equal(MatchStateHasher.ComputeVersionTwentyThreeSha256(match), boundary.Sha256);
+        var boundaries = Assert.IsAssignableFrom<IList<PhaseBoundaryHash>>(match.PhaseHashes);
+        Assert.True(boundaries.IsReadOnly);
+        Assert.Throws<NotSupportedException>(() => boundaries[0] = boundary with { Turn = 2 });
     }
 
     private static GameNotification Notification(long sequence) =>

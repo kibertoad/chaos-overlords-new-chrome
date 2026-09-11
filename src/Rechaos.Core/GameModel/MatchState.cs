@@ -324,6 +324,7 @@ public sealed partial class MatchState
     private readonly Dictionary<PlayerId, long> _nextNotificationSequences;
     private readonly Dictionary<PlayerId, ComlinkInbox> _comlinkInboxes;
     private readonly List<PhaseBoundaryHash> _phaseHashes = [];
+    private readonly IReadOnlyList<PhaseBoundaryHash> _phaseHashView;
     private long _nextEventSequence;
     public MatchState(
         OriginalData definitions,
@@ -363,6 +364,7 @@ public sealed partial class MatchState
         ValidateDefinitionsAndCapacities(definitions, players, sectors);
 
         _eventView = _events.AsReadOnly();
+        _phaseHashView = _phaseHashes.AsReadOnly();
         Players = players.ToArray();
         Sectors = sectors.ToArray();
         Coordinator = restore is null
@@ -413,7 +415,7 @@ public sealed partial class MatchState
     public AiStrategicState AiStrategy { get; }
     public AiPlanningState AiPlanning { get; }
     public IReadOnlyList<GameEvent> Events => _eventView;
-    public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashes;
+    public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashView;
     public IReadOnlyList<CommandResolutionResult> LastPhaseResolutions { get; private set; } = [];
     public IReadOnlyList<PoliceAttackResolutionResult> LastPoliceAttackResolutions { get; private set; } = [];
     public IReadOnlyList<UpkeepResolutionResult> LastUpkeepResolutions { get; private set; } = [];
@@ -464,6 +466,13 @@ public sealed partial class MatchState
             _comlinkInboxes[player.Id] = ComlinkInbox.Restore(
                 inbox.Messages, inbox.NextSequence, inbox.ReadThroughSequence);
         }
+        if (restore.PhaseHashes.Any(boundary =>
+                boundary.Turn < 1
+                || !Enum.IsDefined(boundary.Phase)
+                || boundary.ExecutionPhase is { } phase && !Enum.IsDefined(phase)
+                || (boundary.Phase == TurnPhase.Execution) != boundary.ExecutionPhase.HasValue
+                || !IsSha256(boundary.Sha256)))
+            throw new ArgumentException("Restored phase hash history is invalid.", nameof(restore));
         _phaseHashes.AddRange(restore.PhaseHashes);
         Outcome = restore.Outcome;
     }
@@ -976,7 +985,11 @@ public sealed partial class MatchState
             Coordinator.Turn,
             Coordinator.Phase,
             Coordinator.ExecutionPhase,
-            MatchStateHasher.ComputeSha256(this)));
+            MatchStateHasher.ComputeVersionTwentyThreeSha256(this)));
         return transition;
     }
+
+    private static bool IsSha256(string value) =>
+        value?.Length == 64 && value.All(character =>
+            character is >= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F');
 }

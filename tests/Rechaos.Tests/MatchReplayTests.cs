@@ -154,7 +154,7 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
-    public void VersionTwentyTwoReplaysSimultaneousHireOfferGeneration()
+    public void VersionTwentyThreeReplaysSimultaneousHireOfferGeneration()
     {
         var recorder = new MatchReplayRecorder(CreateMatch());
         recorder.FinishUpkeep();
@@ -168,7 +168,7 @@ public sealed class MatchReplayTests
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
         var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        Assert.Equal(22, document["formatVersion"]!.GetValue<int>());
+        Assert.Equal(23, document["formatVersion"]!.GetValue<int>());
         replay.Position = 0;
 
         var restored = MatchReplaySerializer.LoadAndReplay(
@@ -177,6 +177,31 @@ public sealed class MatchReplayTests
         Assert.Equal(
             MatchStateHasher.ComputeSha256(recorder.State),
             MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void VersionTwentyTwoReplayRetainsVersionTwentyThreeHashCompatibility()
+    {
+        var initial = CreateMatch();
+        var legacyInitialHash = MatchStateHasher.ComputeVersionTwentyThreeSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
+        recorder.FinishUpkeep();
+        var legacyResultHash = MatchStateHasher.ComputeVersionTwentyThreeSha256(recorder.State);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = 22;
+        document["initialStateSha256"] = legacyInitialHash;
+        document["steps"]![0]!["resultingStateSha256"] = legacyResultHash;
+        using var legacy = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var restored = MatchReplaySerializer.LoadAndReplay(
+            legacy, recorder.State.Definitions);
+
+        Assert.Equal(
+            MatchStateHasher.ComputeVersionTwentyThreeSha256(recorder.State),
+            MatchStateHasher.ComputeVersionTwentyThreeSha256(restored));
     }
 
     [Fact]

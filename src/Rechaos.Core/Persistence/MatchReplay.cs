@@ -227,8 +227,8 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    // 22 embeds native save 20 and canonical hash 23, which authenticates event history.
-    public const int CurrentFormatVersion = 22;
+    // 23 embeds native save 21 and canonical hash 24, which authenticates phase history.
+    public const int CurrentFormatVersion = 23;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -427,7 +427,8 @@ public static class MatchReplaySerializer
         }
         string[] candidateHashes = replayVersion switch
         {
-            >= 22 => [MatchStateHasher.ComputeSha256(state)],
+            >= 23 => [MatchStateHasher.ComputeSha256(state)],
+            22 => [MatchStateHasher.ComputeVersionTwentyThreeSha256(state)],
             20 or 21 => [MatchStateHasher.ComputeVersionTwentyTwoSha256(state)],
             19 => [MatchStateHasher.ComputeVersionTwentyOneSha256(state)],
             18 => [MatchStateHasher.ComputeVersionTwentySha256(state)],
