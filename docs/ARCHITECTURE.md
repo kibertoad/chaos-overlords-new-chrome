@@ -197,8 +197,9 @@ Equip, Give, and Sell through the replay recorder and authoritative Core
 validator; Give expands only legal same-sector recipients for the equipped item.
 Computer Command/Hire turns use the deterministic baseline in `AI-SPEC.md` and
 submit through that same recorder; its policy is not an original-parity claim.
-The audio router consumes newly appended attack-resolution events and maps an
-equipped item's original Sound field to `SND005xx`. It also owns the recovered
+The audio router consumes newly appended combat-resolution events and maps
+equipped items, unarmed attacks, and detected police attacks to their original
+`SND005xx` cues while leaving evasion silent. It also owns the recovered
 nine-entry general-effect slot table (`SND00200`-`SND00208`, with no slot 5);
 named slot identities replace presentation magic numbers. Setup uses the
 statically identified slot 3 accepted-input and slot 4 rejected-input cues,

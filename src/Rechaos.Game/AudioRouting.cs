@@ -20,6 +20,9 @@ public static class AudioRouting
     public const int MinimumEffectVolumeLevel = 0;
     public const int MaximumEffectVolumeLevel = 10;
     public const int DefaultEffectVolumeLevel = 6;
+    public const short UnarmedSound = 0;
+    public const short MartialArtsSound = 1;
+    public const short PoliceSound = 18;
     private const int OriginalVolumeStep = 25 * 256;
     private static readonly IReadOnlyDictionary<int, int> GeneralSoundResources =
         new Dictionary<int, int>
@@ -38,15 +41,21 @@ public static class AudioRouting
     public static IReadOnlyList<int> GeneralSoundSlots { get; } =
         GeneralSoundResources.Keys.Order().ToArray();
 
-    public static short? WeaponSound(MatchState state, GameEvent gameEvent)
+    public static short? CombatSound(MatchState state, GameEvent gameEvent)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gameEvent);
+        if (gameEvent.Kind == GameEventKind.PoliceAttackResolved)
+            return gameEvent.PoliceAttack?.Detected == true ? PoliceSound : null;
         if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution?.Code != CommandResolutionCode.Resolved
             || gameEvent.Gang is not { } gangId)
             return null;
         var itemId = gameEvent.Resolution.ItemId ?? state.FindGang(gangId)?.WeaponItemId;
-        return itemId is { } weapon ? state.Definitions.Items[weapon].Sound : null;
+        if (itemId is { } weapon) return state.Definitions.Items[weapon].Sound;
+        var gang = state.FindGang(gangId)
+            ?? throw new ArgumentOutOfRangeException(nameof(gameEvent));
+        var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
+        return definition.Stats.MartialArts > 0 ? MartialArtsSound : UnarmedSound;
     }
 
     public static string SoundFile(short index)

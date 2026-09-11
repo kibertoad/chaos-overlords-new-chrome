@@ -61,7 +61,7 @@ public sealed partial class ChaosGame
         foreach (var gameEvent in _state.Events.Where(value => value.Sequence > _lastAudibleEventSequence)
                      .OrderBy(value => value.Sequence))
         {
-            if (AudioRouting.WeaponSound(_state, gameEvent) is { } soundIndex
+            if (AudioRouting.CombatSound(_state, gameEvent) is { } soundIndex
                 && _weaponSounds.TryGetValue(soundIndex, out var sound))
                 TryPlaySound(sound);
             _lastAudibleEventSequence = gameEvent.Sequence;

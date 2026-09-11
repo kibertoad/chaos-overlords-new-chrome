@@ -9,7 +9,7 @@ Last updated: 2026-09-11
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`.
 - The latest pushed functional checkpoint is the tip of that branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,043 tests with no warnings.
+  isolated Release build passed all 1,045 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -27,8 +27,9 @@ Last updated: 2026-09-11
   the topic-list/content pane under the pointer. The Attack topic carries the
   corrected Force-inclusive simultaneous-combat explanation.
 - Music and sound effects have independent recovered 0-10 controls and persisted
-  defaults. Setup selection/rejection, panel confirmation, weapon attacks, idle
-  planning confirmation, pending Last Turn Events, and planning-countdown
+  defaults. Setup selection/rejection, panel confirmation, equipped and unarmed
+  gang attacks, detected police attacks, idle planning confirmation, pending
+  Last Turn Events, and planning-countdown
   warnings use mapped sounds. General slot 9 is loaded by the original but has
   no call through its gated effect wrapper.
 - Setup now offers the original None, 30 Seconds, 2 Minutes, and 5 Minutes

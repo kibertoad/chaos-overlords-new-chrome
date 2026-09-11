@@ -83,11 +83,66 @@ public sealed class AudioRoutingTests
 
         gang.WeaponItemId = null;
 
-        Assert.Equal(weapon.Sound, AudioRouting.WeaponSound(state, gameEvent));
-        Assert.Null(AudioRouting.WeaponSound(state,
+        Assert.Equal(weapon.Sound, AudioRouting.CombatSound(state, gameEvent));
+        Assert.Null(AudioRouting.CombatSound(state,
             gameEvent with
             {
                 Resolution = new CommandResolutionDetails(CommandResolutionCode.TargetEvaded, [], 0)
             }));
+    }
+
+    [Fact]
+    public void UnarmedCombatUsesMartialArtsPresenceToSelectOriginalSound()
+    {
+        var data = BundledOriginalData.Load();
+        var ordinary = data.Gangs.First(value => value.Stats.MartialArts == 0);
+        var martialArtist = data.Gangs.First(value => value.Stats.MartialArts > 0);
+
+        Assert.Equal(AudioRouting.UnarmedSound,
+            AudioRouting.CombatSound(StateForGang(data, ordinary.Id),
+                UnarmedAttackEvent()));
+        Assert.Equal(AudioRouting.MartialArtsSound,
+            AudioRouting.CombatSound(StateForGang(data, martialArtist.Id),
+                UnarmedAttackEvent()));
+    }
+
+    [Fact]
+    public void DetectedPoliceUseFixedOriginalSoundAndEvasionIsSilent()
+    {
+        var state = StateForGang(BundledOriginalData.Load(), 0);
+        var detected = PoliceEvent(detected: true);
+
+        Assert.Equal(AudioRouting.PoliceSound, AudioRouting.CombatSound(state, detected));
+        Assert.Null(AudioRouting.CombatSound(state, PoliceEvent(detected: false)));
+    }
+
+    private static GameEvent UnarmedAttackEvent() => new(
+        1, 1, TurnPhase.Execution, ExecutionPhase.Combat,
+        GameEventKind.CommandResolved, new PlayerId(0), new GangId(10), GangAction.Attack,
+        CommandTarget.Gang(new GangId(20)),
+        Resolution: new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0));
+
+    private static GameEvent PoliceEvent(bool detected) => new(
+        1, 1, TurnPhase.Execution, ExecutionPhase.Combat,
+        GameEventKind.PoliceAttackResolved, new PlayerId(0), new GangId(10),
+        GangAction.None, CommandTarget.Sector(0),
+        PoliceAttack: new PoliceAttackResolutionDetails(
+            0, 100, 1, detected, 20, 0, [4], detected ? 1 : 0, detected ? 1 : 0, 10, 9));
+
+    private static MatchState StateForGang(OriginalData data, short definitionId)
+    {
+        var setupPlayer = new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human);
+        var gang = new MatchGangState(new GangId(10), setupPlayer.Id, definitionId, 0, 10);
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 5),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 5)
+            ]))
+            .ToArray();
+        return new MatchState(data,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1, [setupPlayer]),
+            [new MatchPlayerState(setupPlayer, 20, [gang])], sectors);
     }
 }

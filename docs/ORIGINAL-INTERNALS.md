@@ -176,6 +176,15 @@ byte `0x00487868` starts at level 5 (32,000 per channel). The original Help
 describes each independent slider as having a Medium default but does not assign
 that label a number.
 
+Detailed Combat at `0x0042e040` temporarily reuses otherwise-empty slot 5 for
+each combatant. An equipped attack loads resource `500 + Item.Sound`. An
+unarmed attack loads `SND00500`, or `SND00501` when the attacking gang's base
+Martial Arts value is positive. A detected police attack loads `SND00518`;
+undetected police attacks have no presentation. The evasion sentinel does not
+load a valid attack sound. The timeline at `0x00430c23` calls the gated slot-5
+wrapper immediately before advancing frames, and the presenter unloads slot 5
+after that combatant's sequence.
+
 **Interpretation:** Slots 3 and 4 are the general accepted-selection and
 rejected-input cues. Slot 6 is the new-report alert: the bounded report recorder
 at `0x0045d2f0` plays it when appending a report for the active player, and the
@@ -193,9 +202,11 @@ independent controls. Other slot semantics remain partially classified.
 recovered slot table, whose known roles are named in code. Setup selector
 changes and bounded player-count rejection use slots 3 and 4. A human handoff
 with pending Last Turn Events plays slot 6 once before opening the report panel.
-Weapon effects and general effects share the independent recovered Effects
-level and its level-6 default, and both audio levels persist in the
-recreation-native preferences file.
+Equipped, unarmed, and detected-police combat events route their recovered
+sounds, while evasion remains silent. Combat and general effects share the
+independent recovered Effects level and its level-6 default, and both audio
+levels persist in the recreation-native preferences file. Retaliation is
+resolved authoritatively but its second-clip sound timing is not yet sequenced.
 
 **Next validation:** Validate slots 0-2 (panel open, panel close, and held-button
 press), the slot-6 repeat/suppression boundary, and countdown-warning cadence at
