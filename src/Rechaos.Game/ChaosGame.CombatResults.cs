@@ -68,7 +68,12 @@ public sealed partial class ChaosGame
     {
         if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
         var count = VisibleCombatResults(_state, viewer).Count;
-        if (count > 0) _combatSummaryCursor = Mod(_combatSummaryCursor + delta, count);
+        if (count > 0)
+        {
+            var next = BoundedPageNavigation.Move(_combatSummaryCursor, count, delta);
+            PlayGeneralSound(AudioRouting.PageNavigationSound(next != _combatSummaryCursor));
+            _combatSummaryCursor = next;
+        }
     }
 
     private void DrawCombatResultsPanel(

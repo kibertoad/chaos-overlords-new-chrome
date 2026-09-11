@@ -213,6 +213,14 @@ paired slot-3 call in the Attack/Equip/Influence/Move/Research/Give/Sell
 handlers. Slot 3 remains the accepted selector cue used by setup and a smaller
 set of selection handlers.
 
+The Last Turn Events handler `0x0044f2fc`, Combat Results handler `0x00451f80`,
+and incoming-Comlink handler `0x0045d61a` each implement the same bounded page
+rule for keyboard and pointer input. Previous on page zero and Next on the last
+page leave the index unchanged and play slot 4. A legal step invokes the
+screen-specific arrow helper (`0x00451602`, `0x004543ee`, or `0x0045e7ce`),
+which plays slot 3 before drawing the pressed arrow and changing the page.
+There is no first-to-last or last-to-first wrap.
+
 Detailed Combat at `0x0042e040` temporarily reuses otherwise-empty slot 5 for
 each combatant. An equipped attack loads resource `500 + Item.Sound`. An
 unarmed attack loads `SND00500`, or `SND00501` when the attacking gang's base
@@ -247,6 +255,9 @@ for an unavailable action, selects no required item/target, submits a rejected
 command or transaction, or opens an empty Events, Combat Results, or Gangs in
 Sector view. Successful command submission remains silent, matching the lack
 of slot-3 calls in those original handlers. The
+Last Turn Events, Combat Results, and incoming-Comlink pagers now stop at both
+ends, use slot 3 for a legal page step, and use slot 4 for a rejected boundary
+step. The
 four setup controls defer their action until release inside the originally
 pressed rectangle and cancel a release outside. Their held-inside state uses
 the exact four source rectangles from `PX00140`, while leaving the rectangle
@@ -264,7 +275,7 @@ clip carries its event-time cue; the player emits it on the recovered first
 animation tick, so retaliation waits for its reversed second clip instead of
 playing with the opening attack. Simple Combat does not enter this presenter.
 
-**Next validation:** Classify the remaining slot-2/slot-3 UI calls, validate the
+**Next validation:** Classify the remaining non-paging slot-2/slot-3 UI calls, validate the
 slot-6 repeat/suppression boundary and countdown-warning cadence at runtime,
 then validate overlap/interruption and native amplitude behavior.
 

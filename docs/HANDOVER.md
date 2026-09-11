@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   the local `codex/full-reimplementation` branch additionally contains the
   styled-text and internal-hotspot batch and remains the development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,271 tests with no warnings.
+  isolated Release build passed all 1,277 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -161,7 +161,9 @@ Last updated: 2026-09-11
   planning-countdown warnings use mapped sounds. Rejected command, equipment,
   Hire, Comlink, Events, Combat Results, and Gangs-in-Sector operations now use
   the original slot-4 cue; successful submissions remain silent where the
-  corresponding original handler has no slot-3 call. General slot 9 is loaded
+  corresponding original handler has no slot-3 call. Events, Combat Results,
+  and incoming-Comlink paging is bounded rather than wrapping, with slot 3 on
+  a legal step and slot 4 at the first/last-page boundary. General slot 9 is loaded
   by the original but has no call through its gated effect wrapper. Detailed Combat cues start with
   their corresponding animation clips rather than at resolution time.
 - The four original Add/Remove/Begin/Cancel setup hit rectangles now defer their
@@ -311,7 +313,7 @@ Last updated: 2026-09-11
    the reference contradicts it.
 3. Investigate and explain the reported GOG/1.1 Detailed Combat freeze, then
    compare the bounded recreation cadence with a controlled original capture.
-4. Classify the remaining slot-2/slot-3 UI calls and complete native audio/music validation.
+4. Classify the remaining non-paging slot-2/slot-3 UI calls and complete native audio/music validation.
 5. Decide and implement Smacker playback or extractor-side transcoding; capture
    native WinHelp typography/paragraph geometry only where pixel-viewer fidelity
    materially benefits from it.

@@ -8,6 +8,24 @@ namespace Rechaos.Tests;
 
 public sealed class UiNavigationTests
 {
+    [Theory]
+    [InlineData(0, 3, -1, 0)]
+    [InlineData(0, 3, 1, 1)]
+    [InlineData(1, 3, -1, 0)]
+    [InlineData(1, 3, 1, 2)]
+    [InlineData(2, 3, 1, 2)]
+    public void RecoveredPageNavigationStopsAtFirstAndLastPage(
+        int current, int count, int delta, int expected) =>
+        Assert.Equal(expected, BoundedPageNavigation.Move(current, count, delta));
+
+    [Fact]
+    public void PageNavigationRejectsEmptyOrInvalidState()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => BoundedPageNavigation.Move(0, 0, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => BoundedPageNavigation.Move(-1, 2, 1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => BoundedPageNavigation.Move(2, 2, -1));
+    }
+
     [Fact]
     public void PointerButtonEdgeFiresOnlyOnReleasedToPressedTransition()
     {

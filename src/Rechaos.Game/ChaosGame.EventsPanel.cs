@@ -65,8 +65,13 @@ public sealed partial class ChaosGame
         var count = LastTurnReports(_state, playerId).Count;
         if (count > 0)
         {
-            _eventCursor = Mod(_eventCursor + delta, count);
-            _eventViewedPages.Add(_eventCursor);
+            var next = BoundedPageNavigation.Move(_eventCursor, count, delta);
+            PlayGeneralSound(AudioRouting.PageNavigationSound(next != _eventCursor));
+            if (next != _eventCursor)
+            {
+                _eventCursor = next;
+                _eventViewedPages.Add(_eventCursor);
+            }
         }
     }
 

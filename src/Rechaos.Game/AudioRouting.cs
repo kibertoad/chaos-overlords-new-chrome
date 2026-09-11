@@ -54,6 +54,9 @@ public static class AudioRouting
     public static int? InputResultSound(bool accepted) =>
         accepted ? null : GeneralSoundSlot.RejectedInput;
 
+    public static int PageNavigationSound(bool moved) =>
+        moved ? GeneralSoundSlot.AcceptedSelection : GeneralSoundSlot.RejectedInput;
+
     public static short? CombatSound(MatchState state, GameEvent gameEvent)
     {
         ArgumentNullException.ThrowIfNull(state);

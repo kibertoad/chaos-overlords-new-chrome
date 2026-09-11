@@ -118,7 +118,12 @@ public sealed partial class ChaosGame
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
         var count = _state.ComlinkFor(playerId).Count;
-        if (count > 0) _comlinkCursor = Mod(_comlinkCursor + delta, count);
+        if (count > 0)
+        {
+            var next = BoundedPageNavigation.Move(_comlinkCursor, count, delta);
+            PlayGeneralSound(AudioRouting.PageNavigationSound(next != _comlinkCursor));
+            _comlinkCursor = next;
+        }
     }
 
     private void SendComlink()

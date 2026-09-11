@@ -44,6 +44,10 @@ public sealed class AudioRoutingTests
         Assert.Null(AudioRouting.InputResultSound(accepted: true));
         Assert.Equal(GeneralSoundSlot.RejectedInput,
             AudioRouting.InputResultSound(accepted: false));
+        Assert.Equal(GeneralSoundSlot.AcceptedSelection,
+            AudioRouting.PageNavigationSound(moved: true));
+        Assert.Equal(GeneralSoundSlot.RejectedInput,
+            AudioRouting.PageNavigationSound(moved: false));
     }
 
     [Fact]

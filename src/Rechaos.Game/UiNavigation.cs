@@ -5,6 +5,16 @@ using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
+public static class BoundedPageNavigation
+{
+    public static int Move(int current, int count, int delta)
+    {
+        if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
+        if (current < 0 || current >= count) throw new ArgumentOutOfRangeException(nameof(current));
+        return Math.Clamp(current + delta, 0, count - 1);
+    }
+}
+
 public static class PointerButtonEdges
 {
     public static bool Pressed(ButtonState current, ButtonState previous) =>
