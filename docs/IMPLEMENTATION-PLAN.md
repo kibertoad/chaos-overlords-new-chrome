@@ -849,10 +849,11 @@ explicitly always on. The timer uses its
 original setup controls, main-panel bar, expiry path, and warning slots 7/8.
 Panel entrances use the recovered horizontal 344-pixel primary travel and
 quarter-second benchmark target. Rejected command and management operations
-use the original slot-4 cue without adding an unsupported success cue. Remaining
-Events, Combat Results, and incoming-Comlink paging stops at both ends and uses
-the recovered slot-3/slot-4 success/boundary feedback. Remaining non-paging
-slot-2/slot-3 trigger and animation work, Options
+use the original slot-4 cue, while successful submissions and standard panel
+confirmation/cancellation controls use the shared-helper slot-3 cue. The Events,
+Combat Results, and incoming-Comlink pagers stop at both ends and use the
+recovered slot-3/slot-4 success/boundary feedback. Remaining specialized
+slot-2/Combat-selection trigger and animation work, Options
 close/adjacent-buffer/combat cadence and preference/menu
 restart boundaries, native validation, video, and exact visual behavior are
 still required.

@@ -56,7 +56,11 @@ public sealed partial class ChaosGame
     {
         if (LastTurnEventsLayout.Previous.Contains(point)) MoveEventCursor(-1);
         else if (LastTurnEventsLayout.Next.Contains(point)) MoveEventCursor(1);
-        else if (LastTurnEventsLayout.Ok.Contains(point)) CloseEvents();
+        else if (LastTurnEventsLayout.Ok.Contains(point))
+        {
+            AcceptInput();
+            CloseEvents();
+        }
     }
 
     private void MoveEventCursor(int delta)

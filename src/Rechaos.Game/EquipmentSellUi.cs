@@ -80,7 +80,11 @@ public sealed partial class ChaosGame
 
     private void HandleSellClick(Point point)
     {
-        if (EquipmentSellLayout.Cancel.Contains(point)) CloseSellEquipment();
+        if (EquipmentSellLayout.Cancel.Contains(point))
+        {
+            AcceptInput();
+            CloseSellEquipment();
+        }
         else if (EquipmentSellLayout.Ok.Contains(point)) QueueSelectedSale();
         else
         {

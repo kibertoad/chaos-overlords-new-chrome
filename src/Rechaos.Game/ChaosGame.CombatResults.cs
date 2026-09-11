@@ -23,6 +23,7 @@ public sealed partial class ChaosGame
     {
         if (CombatResultsLayout.Ok.Contains(point))
         {
+            AcceptInput();
             _screens.Show(_managementReturnScreen);
             return;
         }

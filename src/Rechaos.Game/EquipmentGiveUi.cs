@@ -80,7 +80,11 @@ public sealed partial class ChaosGame
 
     private void HandleGiveEquipmentClick(Point point)
     {
-        if (EquipmentGiveLayout.Cancel.Contains(point)) CloseGiveEquipment();
+        if (EquipmentGiveLayout.Cancel.Contains(point))
+        {
+            AcceptInput();
+            CloseGiveEquipment();
+        }
         else if (EquipmentGiveLayout.Ok.Contains(point)) OpenGiveTargets();
         else
         {

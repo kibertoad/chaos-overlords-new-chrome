@@ -208,10 +208,12 @@ Events, Player Ranking, Combat Results and Detailed Combat
 (`PX05010`-`PX05014`), Give (`PX05015`), incoming/outgoing Comlink
 (`PX05017`, `PX05018`, and `PX05023`), Gangs in Sector (`PX05022`), and Search:
 Sites (`PX05024`). These are conditional failure branches inside the panel
-handlers, not panel-open sounds; successful command submission does not have a
-paired slot-3 call in the Attack/Equip/Influence/Move/Research/Give/Sell
-handlers. Slot 3 remains the accepted selector cue used by setup and a smaller
-set of selection handlers.
+handlers, not panel-open sounds. Valid confirmation/cancellation paths instead
+enter shared keyboard helper `0x00418ccc` or pointer helper `0x00418821`; both
+play slot 3 before animating the accepted control. Invalid command and boundary
+branches can bypass those helpers and call slot 4 directly. This indirect call
+relationship explains why the command handlers have no paired direct slot-3
+call while their successful submissions still make the accepted-control cue.
 
 The Last Turn Events handler `0x0044f2fc`, Combat Results handler `0x00451f80`,
 and incoming-Comlink handler `0x0045d61a` each implement the same bounded page
@@ -243,8 +245,9 @@ the same numeric conversion but have separate state and enable flags.
 **Confidence:** High static evidence for slot/resource mapping, panel entry/exit gating, push-button,
 full/compact setup selection, rejected-input panel coverage, and Comlink-alert roles, the lack of a
 slot-9 wrapper call site, scale, enable boundary, initialized levels, and channel values; High manual
-evidence for the independent controls. The exact conditional meaning of each
-remaining slot-2/slot-3 call site is still partially classified.
+evidence for the independent controls. The exact conditional meaning of the
+remaining specialized slot-2 calls and Combat Results selection call is still
+partially classified.
 
 **Recreation status:** all nine general resources are loaded through the
 recovered slot table, whose known roles are named in code. The four recovered
@@ -253,12 +256,11 @@ use slot 3, and a rejected player-count boundary additionally uses slot 4. The
 mapped management and command workflows now play slot 4 when the player asks
 for an unavailable action, selects no required item/target, submits a rejected
 command or transaction, or opens an empty Events, Combat Results, or Gangs in
-Sector view. Successful command submission remains silent, matching the lack
-of slot-3 calls in those original handlers. The
-Last Turn Events, Combat Results, and incoming-Comlink pagers now stop at both
+Sector view. Successful submissions, standard panel confirmations/cancellations,
+and the Search All/None controls use slot 3 through their matching accepted
+input paths. The Last Turn Events, Combat Results, and incoming-Comlink pagers now stop at both
 ends, use slot 3 for a legal page step, and use slot 4 for a rejected boundary
-step. The
-four setup controls defer their action until release inside the originally
+step. The four setup controls defer their action until release inside the originally
 pressed rectangle and cancel a release outside. Their held-inside state uses
 the exact four source rectangles from `PX00140`, while leaving the rectangle
 restores the baked `PX00143` control. A human handoff into an unread Comlink
@@ -275,7 +277,8 @@ clip carries its event-time cue; the player emits it on the recovered first
 animation tick, so retaliation waits for its reversed second clip instead of
 playing with the opening attack. Simple Combat does not enter this presenter.
 
-**Next validation:** Classify the remaining non-paging slot-2/slot-3 UI calls, validate the
+**Next validation:** Classify the remaining specialized slot-2 calls and Combat
+Results selection cue, validate the
 slot-6 repeat/suppression boundary and countdown-warning cadence at runtime,
 then validate overlap/interruption and native amplitude behavior.
 

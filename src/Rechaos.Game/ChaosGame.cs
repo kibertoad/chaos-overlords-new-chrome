@@ -417,8 +417,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 case ClientScreen.Events:
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveEventCursor(-1);
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveEventCursor(1);
-                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)) CloseEvents();
-                    if (Pressed(keyboard, Keys.Back)) CloseEvents();
+                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)
+                        || Pressed(keyboard, Keys.Back))
+                        AcceptAndInvoke(CloseEvents);
                     break;
                 case ClientScreen.ComlinkView:
                     UpdateComlinkView(keyboard);
@@ -437,14 +438,18 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
                     }
                     if (Pressed(keyboard, Keys.Enter)) ActivateCommandSelection();
-                    if (Pressed(keyboard, Keys.Back)) BackFromCommands();
+                    if (Pressed(keyboard, Keys.Back))
+                    {
+                        AcceptInput();
+                        BackFromCommands();
+                    }
                     break;
                 case ClientScreen.Hire:
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveHireCursor(-1);
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveHireCursor(1);
                     if (Pressed(keyboard, Keys.S)) SnubSelectedHireOffer();
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        _screens.Show(_managementReturnScreen);
+                        AcceptAndShow(_managementReturnScreen);
                     break;
                 case ClientScreen.Sector:
                     UpdateSector(keyboard);
@@ -455,7 +460,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down))
                         MoveSectorGangCursor(1);
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        CloseSectorGangs();
+                        AcceptAndInvoke(CloseSectorGangs);
                     break;
                 case ClientScreen.Gang:
                     if (_gangDetailsInstanceId is not null)
@@ -464,29 +469,29 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) CycleGangDetails(1);
                     }
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        CloseGangDetails();
+                        AcceptAndInvoke(CloseGangDetails);
                     break;
                 case ClientScreen.Site:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        CloseSiteDetails();
+                        AcceptAndInvoke(CloseSiteDetails);
                     break;
                 case ClientScreen.ItemInformation:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        CloseItemDetails();
+                        AcceptAndInvoke(CloseItemDetails);
                     break;
                 case ClientScreen.GameInfo:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        _screens.Show(_managementReturnScreen);
+                        AcceptAndShow(_managementReturnScreen);
                     break;
                 case ClientScreen.Finance:
                     if (Pressed(keyboard, Keys.Left)) _financeScope = FinanceScope.City;
                     if (Pressed(keyboard, Keys.Right)) _financeScope = FinanceScope.Sector;
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        _screens.Show(_managementReturnScreen);
+                        AcceptAndShow(_managementReturnScreen);
                     break;
                 case ClientScreen.Ranking:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        _screens.Show(_managementReturnScreen);
+                        AcceptAndShow(_managementReturnScreen);
                     break;
                 case ClientScreen.Items:
                     if (Pressed(keyboard, Keys.Up)) MoveItemCursor(-1);
@@ -504,7 +509,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.D2)) ToggleGiveSelection(1);
                     if (Pressed(keyboard, Keys.D3)) ToggleGiveSelection(2);
                     if (Pressed(keyboard, Keys.Enter)) OpenGiveTargets();
-                    if (Pressed(keyboard, Keys.Back)) CloseGiveEquipment();
+                    if (Pressed(keyboard, Keys.Back))
+                        AcceptAndInvoke(CloseGiveEquipment);
                     break;
                 case ClientScreen.GiveTarget:
                     if (Pressed(keyboard, Keys.Up)) MoveGiveCursor(-1);
@@ -517,14 +523,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.D2)) ToggleSellSelection(1);
                     if (Pressed(keyboard, Keys.D3)) ToggleSellSelection(2);
                     if (Pressed(keyboard, Keys.Enter)) QueueSelectedSale();
-                    if (Pressed(keyboard, Keys.Back)) CloseSellEquipment();
+                    if (Pressed(keyboard, Keys.Back))
+                        AcceptAndInvoke(CloseSellEquipment);
                     break;
                 case ClientScreen.CombatSummary:
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveCombatSummary(-1);
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveCombatSummary(1);
                     if (Pressed(keyboard, Keys.D)) ReplaySelectedCombatDetail();
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        _screens.Show(_managementReturnScreen);
+                        AcceptAndShow(_managementReturnScreen);
                     break;
                 case ClientScreen.Search:
                     if (Pressed(keyboard, Keys.Left))
@@ -858,30 +865,34 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleSectorClick(point);
                 break;
             case ClientScreen.SectorGangs:
-                if (SectorGangsLayout.Ok.Contains(point)) CloseSectorGangs();
+                if (SectorGangsLayout.Ok.Contains(point))
+                    AcceptAndInvoke(CloseSectorGangs);
                 break;
             case ClientScreen.Gang:
-                if (EquipmentCommandLayout.Ok.Contains(point)) CloseGangDetails();
+                if (EquipmentCommandLayout.Ok.Contains(point))
+                    AcceptAndInvoke(CloseGangDetails);
                 break;
             case ClientScreen.Site:
-                if (SiteInformationLayout.Ok.Contains(point)) CloseSiteDetails();
+                if (SiteInformationLayout.Ok.Contains(point))
+                    AcceptAndInvoke(CloseSiteDetails);
                 break;
             case ClientScreen.ItemInformation:
-                if (ItemInformationLayout.Ok.Contains(point)) CloseItemDetails();
+                if (ItemInformationLayout.Ok.Contains(point))
+                    AcceptAndInvoke(CloseItemDetails);
                 break;
             case ClientScreen.GameInfo:
                 if (GameInformationLayout.Ok.Contains(point))
-                    _screens.Show(_managementReturnScreen);
+                    AcceptAndShow(_managementReturnScreen);
                 break;
             case ClientScreen.Finance:
                 if (CityFinanceCity.Contains(point)) _financeScope = FinanceScope.City;
                 else if (CityFinanceSector.Contains(point)) _financeScope = FinanceScope.Sector;
                 else if (FinanceLayout.Ok.Contains(point))
-                    _screens.Show(_managementReturnScreen);
+                    AcceptAndShow(_managementReturnScreen);
                 break;
             case ClientScreen.Ranking:
                 if (PlayerRankingLayout.Ok.Contains(point))
-                    _screens.Show(_managementReturnScreen);
+                    AcceptAndShow(_managementReturnScreen);
                 break;
             case ClientScreen.Search:
                 HandleSiteSearchClick(point);

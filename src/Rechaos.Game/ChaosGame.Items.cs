@@ -78,6 +78,7 @@ public sealed partial class ChaosGame
             RejectInput("NO LEGAL RECIPIENT FOR EQUIPPED ITEM");
             return;
         }
+        AcceptInput();
         _screens.Show(ClientScreen.GiveTarget);
     }
 

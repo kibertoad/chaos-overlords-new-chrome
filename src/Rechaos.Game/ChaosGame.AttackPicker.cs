@@ -10,6 +10,7 @@ public sealed partial class ChaosGame
     {
         if (AttackCommandLayout.Cancel.Contains(point))
         {
+            AcceptInput();
             BackFromCommands();
             return;
         }

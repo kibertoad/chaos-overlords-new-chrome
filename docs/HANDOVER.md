@@ -160,8 +160,9 @@ Last updated: 2026-09-11
   attacks, idle planning confirmation, unread Comlink handoff entry, and
   planning-countdown warnings use mapped sounds. Rejected command, equipment,
   Hire, Comlink, Events, Combat Results, and Gangs-in-Sector operations now use
-  the original slot-4 cue; successful submissions remain silent where the
-  corresponding original handler has no slot-3 call. Events, Combat Results,
+  the original slot-4 cue; accepted submissions and standard panel
+  confirmation/cancellation controls use slot 3 through the original shared
+  helpers. Events, Combat Results,
   and incoming-Comlink paging is bounded rather than wrapping, with slot 3 on
   a legal step and slot 4 at the first/last-page boundary. General slot 9 is loaded
   by the original but has no call through its gated effect wrapper. Detailed Combat cues start with
@@ -313,7 +314,8 @@ Last updated: 2026-09-11
    the reference contradicts it.
 3. Investigate and explain the reported GOG/1.1 Detailed Combat freeze, then
    compare the bounded recreation cadence with a controlled original capture.
-4. Classify the remaining non-paging slot-2/slot-3 UI calls and complete native audio/music validation.
+4. Classify the remaining specialized slot-2 and Combat-selection slot-3 calls,
+   then complete native audio/music validation.
 5. Decide and implement Smacker playback or extractor-side transcoding; capture
    native WinHelp typography/paragraph geometry only where pixel-viewer fidelity
    materially benefits from it.

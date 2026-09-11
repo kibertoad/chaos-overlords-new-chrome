@@ -73,6 +73,7 @@ public sealed partial class ChaosGame
             {
                 if (InfluenceCommandLayout.Cancel.Contains(point))
                 {
+                    AcceptInput();
                     BackFromCommands();
                     return;
                 }
@@ -106,6 +107,7 @@ public sealed partial class ChaosGame
             {
                 if (EquipmentCommandLayout.Cancel.Contains(point))
                 {
+                    AcceptInput();
                     BackFromCommands();
                     return;
                 }

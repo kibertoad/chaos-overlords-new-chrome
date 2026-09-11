@@ -113,15 +113,21 @@ public sealed partial class ChaosGame
     private void SelectAllSiteSearch()
     {
         if (_definitions is null) return;
+        AcceptInput();
         _siteSearchSelection.Clear();
         _siteSearchSelection.UnionWith(_definitions.Sites
             .OrderBy(site => site.Id).Take(SiteSearchLayout.MaximumSites).Select(site => site.Id));
     }
 
-    private void ClearSiteSearch() => _siteSearchSelection.Clear();
+    private void ClearSiteSearch()
+    {
+        AcceptInput();
+        _siteSearchSelection.Clear();
+    }
 
     private void ApplySiteSearch()
     {
+        AcceptInput();
         _siteSearchApplied.Clear();
         _siteSearchApplied.UnionWith(_siteSearchSelection);
         _message = string.Empty;

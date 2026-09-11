@@ -53,6 +53,7 @@ public sealed partial class ChaosGame
     {
         if (MovementLayout.Cancel.Contains(point))
         {
+            AcceptInput();
             BackFromCommands();
             return;
         }

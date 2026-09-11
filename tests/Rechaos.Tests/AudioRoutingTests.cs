@@ -41,7 +41,8 @@ public sealed class AudioRoutingTests
         Assert.Null(AudioRouting.PlayerCountResultSound(changed: true, pointerButton: true));
         Assert.Equal(GeneralSoundSlot.RejectedInput,
             AudioRouting.PlayerCountResultSound(changed: false, pointerButton: true));
-        Assert.Null(AudioRouting.InputResultSound(accepted: true));
+        Assert.Equal(GeneralSoundSlot.AcceptedSelection,
+            AudioRouting.InputResultSound(accepted: true));
         Assert.Equal(GeneralSoundSlot.RejectedInput,
             AudioRouting.InputResultSound(accepted: false));
         Assert.Equal(GeneralSoundSlot.AcceptedSelection,

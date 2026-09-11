@@ -197,7 +197,11 @@ public sealed partial class ChaosGame
 
     private void HandleHireClick(Point point)
     {
-        if (HireComparisonLayout.Ok.Contains(point)) _screens.Show(_managementReturnScreen);
+        if (HireComparisonLayout.Ok.Contains(point))
+        {
+            AcceptInput();
+            _screens.Show(_managementReturnScreen);
+        }
     }
 
     private void QueueSelectedHireOffer()

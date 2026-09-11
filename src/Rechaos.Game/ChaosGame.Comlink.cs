@@ -49,13 +49,18 @@ public sealed partial class ChaosGame
     {
         if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveComlinkCursor(-1);
         if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveComlinkCursor(1);
-        if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Back)) CloseComlink();
+        if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Back))
+        {
+            AcceptInput();
+            CloseComlink();
+        }
     }
 
     private void UpdateComlinkSend(KeyboardState keyboard)
     {
         if (Pressed(keyboard, Keys.Escape))
         {
+            AcceptInput();
             CloseComlink();
             return;
         }
@@ -87,7 +92,11 @@ public sealed partial class ChaosGame
     {
         if (ComlinkViewLayout.Previous.Contains(point)) MoveComlinkCursor(-1);
         else if (ComlinkViewLayout.Next.Contains(point)) MoveComlinkCursor(1);
-        else if (ComlinkViewLayout.Ok.Contains(point)) CloseComlink();
+        else if (ComlinkViewLayout.Ok.Contains(point))
+        {
+            AcceptInput();
+            CloseComlink();
+        }
     }
 
     private void HandleComlinkSendClick(Point point)
@@ -102,7 +111,11 @@ public sealed partial class ChaosGame
                 _comlinkStatus = string.Empty;
             }
         }
-        else if (ComlinkSendLayout.Cancel.Contains(point)) CloseComlink();
+        else if (ComlinkSendLayout.Cancel.Contains(point))
+        {
+            AcceptInput();
+            CloseComlink();
+        }
         else if (ComlinkSendLayout.Ok.Contains(point)) SendComlink();
     }
 
@@ -140,7 +153,6 @@ public sealed partial class ChaosGame
             _comlinkStatus = _message;
             return;
         }
-        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         CloseComlink();
     }
 

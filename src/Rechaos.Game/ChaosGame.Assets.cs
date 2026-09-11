@@ -68,10 +68,24 @@ public sealed partial class ChaosGame
     private void ReportInputResult(bool accepted, string rejectionMessage)
     {
         _message = accepted ? string.Empty : rejectionMessage.ToUpperInvariant();
-        if (AudioRouting.InputResultSound(accepted) is { } slot) PlayGeneralSound(slot);
+        PlayGeneralSound(AudioRouting.InputResultSound(accepted));
     }
 
     private void RejectInput(string message) => ReportInputResult(false, message);
+
+    private void AcceptInput() => PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+
+    private void AcceptAndInvoke(Action action)
+    {
+        AcceptInput();
+        action();
+    }
+
+    private void AcceptAndShow(ClientScreen screen)
+    {
+        AcceptInput();
+        _screens.Show(screen);
+    }
 
     private void TryPlaySound(SoundEffect sound)
     {
