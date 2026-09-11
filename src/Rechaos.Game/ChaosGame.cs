@@ -50,6 +50,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _cityBackground;
     private readonly Texture2D?[] _cityOwnershipLayers = new Texture2D?[MatchLimits.PlayerCount + 1];
     private Texture2D? _gameInfoBackground;
+    private Texture2D? _idleGangWarningBackground;
     private Texture2D? _gangInfoBackground;
     private Texture2D? _siteInfoBackground;
     private Texture2D? _itemInfoBackground;
@@ -206,6 +207,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
         _endgameBackground = LoadTexture("PX00200.bmp");
         _gameInfoBackground = LoadTexture("PX05021.bmp");
+        _idleGangWarningBackground = LoadTexture("PX05020.bmp");
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
         _siteInfoBackground = LoadTexture("PX05002.bmp");

@@ -23,6 +23,9 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Ending planning with an unassigned active gang now displays the original
+  `PX05020` System Warning panel. Its baked Cancel control returns to planning;
+  OK confirms the same authoritative end-turn flow as before.
 - The main console's original Game Info button now opens the `PX05021`
   Scenario Information panel over either City or Sector. It lists the scenario,
   AI mentality, planning limit, and all six color-coded players with the
