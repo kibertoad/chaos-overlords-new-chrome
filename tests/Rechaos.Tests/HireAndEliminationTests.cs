@@ -43,7 +43,7 @@ public sealed class HireAndEliminationTests
     [Fact]
     public void FinishingHireLeavesSameSlotVacantUntilNextPlanningEntry()
     {
-        var match = CreateMatch();
+        var match = CreateMatch(keepOpponentActive: true);
         AdvanceToHire(match);
         var cashBefore = match.Players[0].Cash;
         Assert.True(match.QueueHire(new PlayerId(0), 2, 0).Accepted);
@@ -154,7 +154,7 @@ public sealed class HireAndEliminationTests
     [Fact]
     public void SnubLeavesSameSlotVacantUntilNextPlanningEntry()
     {
-        var match = CreateMatch();
+        var match = CreateMatch(keepOpponentActive: true);
         Assert.Equal(HireValidationCode.InvalidPhase,
             match.SnubHireOffer(new PlayerId(0), 2).Validation.Code);
         AdvanceToHire(match);
@@ -479,7 +479,8 @@ public sealed class HireAndEliminationTests
     private static MatchState CreateMatch(
         int initialCash = 10,
         IReadOnlyList<MatchGangState>? gangs = null,
-        string playerName = "ONE")
+        string playerName = "ONE",
+        bool keepOpponentActive = false)
     {
         var definitions = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -494,7 +495,11 @@ public sealed class HireAndEliminationTests
                 gangs ?? [new MatchGangState(new GangId(10), new PlayerId(0), 1, 0, 5)],
                 hirePool: [1, 2, 3],
                 usesMaximumHireForce: OriginalHireCheatRules.DetectMaximumHireForce(playerName)),
-            new(setups[1], 10, hirePool: [4, 5, 6])
+            new(setups[1], 10,
+                keepOpponentActive
+                    ? [new MatchGangState(new GangId(11), new PlayerId(1), 1, 1, 5)]
+                    : [],
+                hirePool: [4, 5, 6])
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
@@ -502,7 +507,11 @@ public sealed class HireAndEliminationTests
                 new MatchSiteState(0, 0, 7),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ], owner: id == 0 ? new PlayerId(0) : null))
+            ], owner: id == 0
+                ? new PlayerId(0)
+                : keepOpponentActive && id == 1
+                    ? new PlayerId(1)
+                    : null))
             .ToArray();
         return new MatchState(definitions, setup, players, sectors);
     }

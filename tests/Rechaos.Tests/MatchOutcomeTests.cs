@@ -70,7 +70,7 @@ public sealed class MatchOutcomeTests
     }
 
     [Fact]
-    public void HotSeatMatchContinuesAfterOneHumanIsEliminated()
+    public void HotSeatMatchEndsWhenOneSurvivingOverlordRemains()
     {
         var match = CreateMatch(ScenarioId.Big40,
             playerZeroForce: 0,
@@ -79,7 +79,23 @@ public sealed class MatchOutcomeTests
         FinishTurn(match);
 
         Assert.Equal(PlayerStatus.Eliminated, match.Players[0].Status);
-        Assert.Null(match.Outcome);
+        Assert.Equal(MatchEndReason.PlayerEliminated, match.Outcome!.Reason);
+        Assert.Equal([new PlayerId(1)], match.Outcome.Winners);
+    }
+
+    [Theory]
+    [InlineData(ScenarioId.Greed)]
+    [InlineData(ScenarioId.Big40)]
+    public void SoleSurvivingOverlordEndsEveryScenarioEarly(ScenarioId scenario)
+    {
+        var match = CreateMatch(scenario, playerOneForce: 0);
+
+        FinishTurn(match);
+
+        Assert.Equal(MatchEndReason.PlayerEliminated, match.Outcome!.Reason);
+        Assert.Equal(1, match.Outcome.Turn);
+        Assert.Equal([new PlayerId(0)], match.Outcome.Winners);
+        Assert.Equal(PlayerStatus.Eliminated, match.Players[1].Status);
     }
 
     [Fact]
@@ -144,6 +160,7 @@ public sealed class MatchOutcomeTests
         bool playerOneHasRightHands = true,
         int[]? importantSectorOwners = null,
         short playerZeroForce = 10,
+        short playerOneForce = 10,
         PlayerController playerOneController = PlayerController.Computer)
     {
         var data = BundledOriginalData.Load();
@@ -158,7 +175,7 @@ public sealed class MatchOutcomeTests
             new(setups[0], 500,
                 [new MatchGangState(new GangId(10), new PlayerId(0), 0, 0, playerZeroForce)]),
             new(setups[1], 500,
-                [new MatchGangState(new GangId(20), new PlayerId(1), playerOneHasRightHands ? (short)0 : (short)1, 1, 10)])
+                [new MatchGangState(new GangId(20), new PlayerId(1), playerOneHasRightHands ? (short)0 : (short)1, 1, playerOneForce)])
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id =>

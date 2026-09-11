@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,152 tests with no warnings.
+  isolated Release build passed all 1,154 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -37,7 +37,8 @@ Last updated: 2026-09-11
 - Single-player objective games now end at the Player Elimination boundary when
   their sole human Overlord is eliminated, recording the distinct
   `PlayerEliminated` outcome. The elimination splash returns to the title as the
-  Help specifies; hot-seat games continue after one human is eliminated.
+  Help specifies; hot-seat games continue after one human is eliminated only
+  while at least two Overlords remain active.
 - A completed single-player match now shows the original `PX00202` victory or
   `PX00203` elimination splash, including the configured human Overlord portrait,
   before advancing to the awards/statistics screen when victorious. That screen now uses the
@@ -177,6 +178,8 @@ Last updated: 2026-09-11
 - Research now honors the resolver's per-item completion guard inside the fixed
   player/roster scan: once an earlier gang completes an item, later queued gangs
   emit no roll and consume no RNG for it in that Instant phase.
+- End-turn evaluation now applies the binary's scenario-independent survivor
+  rule: exactly one active Overlord ends any timed or objective match early.
 - Player Ranking and persisted endgame standings now share the executable's
   all-scenario score table. Objective scores no longer substitute victory
   progress, Dominance applies its final integer division by ten, competition

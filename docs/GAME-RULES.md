@@ -704,7 +704,9 @@ claim about original-game behavior.
   Right Hands, explicitly designated important sectors, and Big Man points from the
   authoritative match. Timed games end on turns 26/52/104/208 and preserve all
   players tied for the highest score. Objective games preserve all qualifying
-  players in player-ID order. Emit one `MatchEnded` event and one Objective
+  players in player-ID order. Before those scenario checks, exactly one active
+  Overlord ends any match immediately as the sole survivor. Emit one
+  `MatchEnded` event and one Objective
   notification per player; include the outcome in canonical state hashes and
   prevent the following Upkeep phase from resolving. Timed outcomes include
   score-descending standings for every scenario; equal scores share a
@@ -718,8 +720,8 @@ claim about original-game behavior.
   at this boundary before its victory check. Eliminate cleanup also clears equipment,
   pending hires, and the eliminated player's site influence. After elimination
   resolution, a one-human match records `PlayerEliminated` immediately when that
-  human is no longer active; a hot-seat match continues while its objective is
-  unfinished.
+  human is no longer active; a hot-seat match continues after an elimination
+  only while at least two Overlords remain active.
 - Current exclusions: tie-break presentation beyond stable slot order,
   exact Siege pylon artwork, exact Eliminate
   cleanup timing, and award edge-case parity.

@@ -44,6 +44,20 @@ public static class MatchOutcomeEvaluator
                     EndgameRankingEvaluator.Evaluate(state),
                     EndgameAwardEvaluator.Evaluate(state));
         }
+        var activePlayers = state.Players
+            .Where(player => player.Status == PlayerStatus.Active)
+            .ToArray();
+        if (activePlayers.Length == 1)
+        {
+            return new MatchOutcome(
+                state.Setup.Scenario,
+                MatchEndReason.PlayerEliminated,
+                state.Coordinator.Turn,
+                [activePlayers[0].Id],
+                EndgameRankingEvaluator.Evaluate(state),
+                EndgameAwardEvaluator.Evaluate(state));
+        }
+
         var definition = ScenarioCatalog.Get(state.Setup.Scenario);
         if (definition.IsTimed)
         {

@@ -1253,7 +1253,9 @@ the exact zero-based competition standings are now isolated in
 
 The same table is not AI-private. End-turn evaluator `0x00476857` calls
 `0x0047712a` before testing the active-player count and every scenario-specific
-completion condition. The `PX05011` Player Ranking path at `0x004518d9` reads
+completion condition. It sets the end flag immediately when exactly one of the
+six active-state bytes is nonzero, before entering the scenario switch. The
+`PX05011` Player Ranking path at `0x004518d9` reads
 the score and standing arrays directly. Endgame awards/statistics path
 `0x0042ce61` iterates standing values 0 through 5 in order, visiting player
 slots 0 through 5 within each tied standing, then appends inactive (`0xff`)
