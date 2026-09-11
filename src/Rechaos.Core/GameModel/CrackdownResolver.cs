@@ -23,7 +23,10 @@ public static class CrackdownResolver
                 sector.CrackdownTurnsRemaining--;
     }
 
-    public static CrackdownTriggerResult Trigger(MatchState state, MatchSectorState sector)
+    public static CrackdownTriggerResult Trigger(
+        MatchState state,
+        MatchSectorState sector,
+        ExecutionPhase? notificationPhase = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sector);
@@ -38,7 +41,8 @@ public static class CrackdownResolver
             state.QueueNotification(
                 previousOwner!.Value,
                 GameNotificationKind.ControlLost,
-                sectorId: sector.Id);
+                sectorId: sector.Id,
+                executionPhase: notificationPhase);
         }
         var duration = state.Random.NextInclusive(
             ManualRules.MaximumCrackdownTurns - ManualRules.MinimumCrackdownTurns + 1)

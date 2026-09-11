@@ -2355,11 +2355,21 @@ the stored per-gang successes. When the player does not own that sector, lines
 668-670 divide the completed aggregate by two once; line 672 then adds it to
 cash. The division is not performed per gang.
 
+The passes between those two halves are not Chaos work: action-1 Combat begins
+at lines 329-346, the police scan follows, and actions 5, 6, and 12 are handled
+by the Transaction pass beginning around lines 557, 587, and 605. After the
+Chaos payout, the resolver runs Terminate and Move at lines 678-725, followed by
+Control from line 733 onward. The physical native order is therefore Instant;
+Chaos rolls/Crackdown creation; Combat; Transactions; Chaos payout; Terminate;
+Move; Control.
+
 **Interpretation:** Chaos RNG order is fixed player slot, then persistent roster
 slot, regardless of submission order or intervening sectors. Same-player gangs
 in one sector still share the final success result and payout. Uncontrolled
 income is `trunc(total successes / 2)`, preserving an odd success contributed
-across multiple gangs rather than rounding each gang independently.
+across multiple gangs rather than rounding each gang independently. A new
+Crackdown exists before the same turn's police scan, while its income remains
+suppressed and all surviving Chaos income waits until after Transactions.
 
 **Confidence:** High static evidence for scan order, per-gang rolls/storage,
 player-sector aggregation, Crackdown suppression, ownership comparison, and
@@ -2381,12 +2391,18 @@ existing police-duration byte. The earlier lines 291-301 have already zeroed
 the triggering sector's per-gang Chaos results and emitted notifications for
 participating players.
 
+The new duration is visible to the later police read at `0x0047415e`. Near the
+end of the whole-turn resolver, `0x00475e74` decrements every positive duration
+below the permanent sentinel 100, after the same turn's police attacks.
+
 **Interpretation:** The occurrence window is inclusive: a trigger exactly five
 turns before the current one still counts. A third retained trigger resets both
 fixed history slots to the current turn, so another trigger while those slots
 remain recent can neutralize reacquired control again. Duration extends rather
 than replaces existing police presence, and its one bounded draw occurs after
-history mutation and any ownership cleanup.
+history mutation and any ownership cleanup. A newly triggered Crackdown attacks
+in that turn, then the shared final decrement leaves two through four future
+police Combat phases from the initially drawn three through five.
 
 **Confidence:** High static evidence for sentinels, strict expiration comparison,
 slot-fill/reset order, cleanup fields, duration range/addition, and RNG call

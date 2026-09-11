@@ -441,6 +441,26 @@ public static partial class CommandResolver
         MatchState state,
         IReadOnlyList<QueuedCommand> commands)
     {
+        var results = PreparedChaosResults(state, commands);
+        if (results.Count == 0 && commands.Count > 0)
+            results = PrepareChaosPhase(state, commands);
+        foreach (var result in results)
+        {
+            var payout = result.Event!.Resolution!.CashDelta;
+            if (payout == 0) continue;
+            var player = state.FindPlayer(result.Command.Player)!;
+            player.Cash = checked(player.Cash + payout);
+            player.Statistics.CashEarned += payout;
+        }
+        return results;
+    }
+
+    internal static IReadOnlyList<CommandResolutionResult> PrepareChaosPhase(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> commands)
+    {
+        var prepared = PreparedChaosResults(state, commands);
+        if (prepared.Count > 0 || commands.Count == 0) return prepared;
         var ordered = commands
             .OrderBy(queued => queued.Command.Player.Value)
             .ThenBy(queued => GangSlot(state, queued.Command))
@@ -492,7 +512,7 @@ public static partial class CommandResolver
         {
             if (!ManualRules.TriggersCrackdown(
                     crackdownChaos.GetValueOrDefault(sector.Id), sector.Tolerance)) continue;
-            CrackdownResolver.Trigger(state, sector);
+            CrackdownResolver.Trigger(state, sector, ExecutionPhase.Chaos);
             triggered.Add(sector.Id);
         }
 
@@ -506,8 +526,6 @@ public static partial class CommandResolver
             var payout = group.Sector.CrackdownActive
                 ? 0
                 : ManualRules.ChaosIncome(group.Successes, group.Sector.Owner == player.Id);
-            player.Cash = checked(player.Cash + payout);
-            player.Statistics.CashEarned += payout;
             payouts[(player.Id, group.Sector.Id)] = payout;
         }
 
@@ -524,7 +542,8 @@ public static partial class CommandResolver
                     sectorBefore[group.Sector.Id], group.Sector.Chaos,
                     CashDelta: paidGroups.Add(key) ? payouts[key] : 0,
                     AttackValue: group.DiceCount, DefenseValue: group.Sector.Tolerance),
-                GameNotificationKind.Chaos);
+                GameNotificationKind.Chaos,
+                ExecutionPhase.Chaos);
             results.Add(result);
             firstEventBySector.TryAdd(group.Sector.Id, result.Event!.Sequence);
         }
@@ -535,9 +554,37 @@ public static partial class CommandResolver
                 state.QueueNotification(
                     player.Id, GameNotificationKind.Crackdown,
                     sectorId: sectorId,
-                    relatedEventSequence: firstEventBySector.TryGetValue(sectorId, out var sequence) ? sequence : null);
+                    relatedEventSequence: firstEventBySector.TryGetValue(sectorId, out var sequence) ? sequence : null,
+                    executionPhase: ExecutionPhase.Chaos);
         }
         return results;
+    }
+
+    private static IReadOnlyList<CommandResolutionResult> PreparedChaosResults(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> commands)
+    {
+        var events = state.Events.Where(gameEvent =>
+                gameEvent.Turn == state.Coordinator.Turn
+                && gameEvent.Phase == TurnPhase.Execution
+                && gameEvent.ExecutionPhase == ExecutionPhase.Chaos
+                && gameEvent.Action == GangAction.Chaos
+                && gameEvent.Kind is GameEventKind.CommandResolved or GameEventKind.CommandFailed)
+            .ToDictionary(gameEvent => gameEvent.Gang!.Value);
+        if (events.Count == 0) return [];
+        if (events.Count != commands.Count
+            || commands.Any(command => !events.ContainsKey(command.Command.Gang)))
+            throw new InvalidOperationException("The prepared Chaos pass does not match the command queue.");
+        return commands
+            .OrderBy(queued => queued.Command.Player.Value)
+            .ThenBy(queued => GangSlot(state, queued.Command))
+            .Select(queued =>
+            {
+                var gameEvent = events[queued.Command.Gang];
+                return new CommandResolutionResult(
+                    queued.Command, gameEvent.Resolution!.Code, gameEvent);
+            })
+            .ToArray();
     }
 
     private sealed record ChaosRoll(
@@ -852,15 +899,18 @@ public static partial class CommandResolver
         GameCommand command,
         GameEventKind eventKind,
         CommandResolutionDetails resolution,
-        GameNotificationKind notificationKind = GameNotificationKind.CommandResult)
+        GameNotificationKind notificationKind = GameNotificationKind.CommandResult,
+        ExecutionPhase? eventExecutionPhase = null)
     {
-        var gameEvent = state.AppendResolutionEvent(eventKind, command, resolution);
+        var gameEvent = state.AppendResolutionEvent(
+            eventKind, command, resolution, eventExecutionPhase);
         state.QueueNotification(
             command.Player,
             notificationKind,
             command.Gang,
             state.FindGang(command.Gang)!.SectorId,
-            gameEvent.Sequence);
+            gameEvent.Sequence,
+            eventExecutionPhase);
         return new CommandResolutionResult(command, resolution.Code, gameEvent);
     }
 }

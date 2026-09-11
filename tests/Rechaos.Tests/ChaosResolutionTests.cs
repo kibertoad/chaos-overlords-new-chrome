@@ -1,5 +1,6 @@
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -17,7 +18,7 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
-    public void CrackdownDurationIsThreeToFivePoliceCombatPhases()
+    public void NewCrackdownRetainsTwoToFourFuturePoliceCombatPhasesAfterImmediateCombat()
     {
         var match = CreateMatch(tolerance: 0);
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
@@ -25,7 +26,9 @@ public sealed class ChaosResolutionTests
         match.FinishExecutionPhase();
 
         var duration = match.Sectors[0].CrackdownTurnsRemaining;
-        Assert.InRange(duration, ManualRules.MinimumCrackdownTurns, ManualRules.MaximumCrackdownTurns);
+        Assert.InRange(duration,
+            ManualRules.MinimumCrackdownTurns - 1,
+            ManualRules.MaximumCrackdownTurns - 1);
         CrackdownResolver.ResolveUpkeep(match);
         Assert.Equal(duration, match.Sectors[0].CrackdownTurnsRemaining);
         CrackdownResolver.FinishCombat(match);
@@ -37,18 +40,16 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
-    public void AnotherCrackdownExtendsExistingPolicePresence()
+    public void AnotherCrackdownExtendsExistingPolicePresenceBeforeSameTurnDurationTick()
     {
         var match = CreateMatch(tolerance: 0, crackdownActive: true);
-        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
         var remainingBeforeChaos = match.Sectors[0].CrackdownTurnsRemaining;
-
-        match.FinishExecutionPhase();
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
 
         Assert.InRange(
             match.Sectors[0].CrackdownTurnsRemaining - remainingBeforeChaos,
-            ManualRules.MinimumCrackdownTurns,
-            ManualRules.MaximumCrackdownTurns);
+            ManualRules.MinimumCrackdownTurns - 1,
+            ManualRules.MaximumCrackdownTurns - 1);
         Assert.Contains(match.NotificationsFor(new PlayerId(0)),
             notification => notification.Kind == GameNotificationKind.Crackdown);
     }
@@ -181,7 +182,6 @@ public sealed class ChaosResolutionTests
         Assert.True(match.Submit(Chaos(0, 10)).Accepted);
         match.FinishCommand(new PlayerId(0));
         match.FinishCommand(new PlayerId(1));
-        for (var index = 0; index < 3; index++) match.FinishExecutionPhase();
         var expectedRandom = new DeterministicRandom(
             match.Random.State, match.Random.ConsumptionCount);
         var band = OriginalResolutionRules.Band(match, new PlayerId(0));
@@ -195,6 +195,7 @@ public sealed class ChaosResolutionTests
             expectedRolls.AddRange(DiceRoller.RollD6(expectedRandom, dice));
         }
 
+        for (var index = 0; index < 3; index++) match.FinishExecutionPhase();
         match.FinishExecutionPhase();
 
         Assert.Equal([new GangId(10), new GangId(11)],
@@ -203,6 +204,99 @@ public sealed class ChaosResolutionTests
             Assert.Equal(expectedRolls, result.Event!.Resolution!.Rolls));
         Assert.Equal(expectedRandom.State, match.Random.State);
         Assert.Equal(expectedRandom.ConsumptionCount, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
+    public void ChaosRollsBeforeCombatButIncomeWaitsUntilAfterTransactions()
+    {
+        var match = CreateMatch(owner: new PlayerId(0), tolerance: 40);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Chaos(0, 10)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        var cashBefore = match.Players[0].Cash;
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(ExecutionPhase.Combat, match.Coordinator.ExecutionPhase);
+        var chaosEvent = Assert.Single(match.Events, gameEvent =>
+            gameEvent.Turn == 1 && gameEvent.ExecutionPhase == ExecutionPhase.Chaos);
+        Assert.True(chaosEvent.Resolution!.Successes > 0);
+        Assert.Equal(chaosEvent.Resolution.Successes, match.Sectors[0].Chaos);
+        Assert.Equal(cashBefore, match.Players[0].Cash);
+        Assert.All(match.NotificationsFor(new PlayerId(0)).Where(notification =>
+                notification.Kind == GameNotificationKind.Chaos),
+            notification => Assert.Equal(ExecutionPhase.Chaos, notification.ExecutionPhase));
+
+        match.FinishExecutionPhase();
+        Assert.Equal(ExecutionPhase.Transaction, match.Coordinator.ExecutionPhase);
+        Assert.Equal(cashBefore, match.Players[0].Cash);
+        match.FinishExecutionPhase();
+        Assert.Equal(ExecutionPhase.Chaos, match.Coordinator.ExecutionPhase);
+        Assert.Equal(cashBefore, match.Players[0].Cash);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(cashBefore + chaosEvent.Resolution.CashDelta, match.Players[0].Cash);
+        Assert.Equal(chaosEvent.Resolution.CashDelta, match.Players[0].Statistics.CashEarned);
+    }
+
+    [Fact]
+    public void NewlyTriggeredCrackdownParticipatesInSameTurnCombatAndDurationTick()
+    {
+        var match = CreateMatch(tolerance: 0);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Chaos(0, 10)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(ExecutionPhase.Combat, match.Coordinator.ExecutionPhase);
+        Assert.True(match.Sectors[0].CrackdownActive);
+        var durationBeforeCombat = match.Sectors[0].CrackdownTurnsRemaining;
+        Assert.InRange(durationBeforeCombat,
+            ManualRules.MinimumCrackdownTurns,
+            ManualRules.MaximumCrackdownTurns);
+
+        match.FinishExecutionPhase();
+
+        Assert.NotEmpty(match.LastPoliceAttackResolutions);
+        Assert.Equal(durationBeforeCombat - 1, match.Sectors[0].CrackdownTurnsRemaining);
+    }
+
+    [Fact]
+    public void PreparedChaosPassSurvivesSaveBeforeDelayedIncome()
+    {
+        var original = CreateMatch(owner: new PlayerId(0), tolerance: 40);
+        original.FinishUpkeep();
+        Assert.True(original.Submit(Chaos(0, 10)).Accepted);
+        original.FinishCommand(new PlayerId(0));
+        original.FinishCommand(new PlayerId(1));
+        var cashBefore = original.Players[0].Cash;
+        original.FinishExecutionPhase();
+        Assert.Equal(ExecutionPhase.Combat, original.Coordinator.ExecutionPhase);
+
+        using var save = new MemoryStream();
+        NativeSaveSerializer.Save(save, original);
+        save.Position = 0;
+        var restored = NativeSaveSerializer.Load(save, original.Definitions);
+
+        Assert.Equal(cashBefore, restored.Players[0].Cash);
+        Assert.Contains(restored.Events, gameEvent =>
+            gameEvent.ExecutionPhase == ExecutionPhase.Chaos);
+        for (var index = 0; index < 3; index++)
+        {
+            original.FinishExecutionPhase();
+            restored.FinishExecutionPhase();
+        }
+
+        Assert.True(original.Players[0].Cash > cashBefore);
+        Assert.Equal(original.Players[0].Cash, restored.Players[0].Cash);
+        Assert.Equal(original.Players[0].Statistics.CashEarned,
+            restored.Players[0].Statistics.CashEarned);
+        Assert.Equal(MatchStateHasher.ComputeSha256(original),
+            MatchStateHasher.ComputeSha256(restored));
     }
 
     [Fact]

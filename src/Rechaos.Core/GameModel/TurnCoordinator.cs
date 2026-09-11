@@ -11,7 +11,8 @@ public sealed record TurnTransition(
 
 /// <summary>
 /// Headless phase state machine based on the manual-documented phase order.
-/// Player order and within-phase tie breaking remain provisional pending binary validation.
+/// The original whole-turn resolver's physical passes are recovered; command/hire player
+/// handoff and any still-undocumented action-level tie breaking remain provisional.
 /// </summary>
 public sealed class TurnCoordinator
 {

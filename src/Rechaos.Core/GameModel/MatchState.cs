@@ -539,6 +539,10 @@ public sealed partial class MatchState
         {
             LastPhaseResolutions = CommandResolver.ResolvePhase(this, commands);
         }
+        // The native resolver rolls Chaos and creates Crackdowns here so the resulting police
+        // participate in Combat; its stored successes are paid at the later Chaos boundary.
+        if (phase == ExecutionPhase.Instant)
+            _ = CommandResolver.PrepareChaosPhase(this, Commands.ForPhase(ExecutionPhase.Chaos));
         foreach (var result in LastPhaseResolutions.Where(result =>
                      result.Command.Repeat && RepeatingObjectiveComplete(result)))
         {
@@ -756,7 +760,8 @@ public sealed partial class MatchState
     internal GameEvent AppendResolutionEvent(
         GameEventKind kind,
         GameCommand command,
-        CommandResolutionDetails resolution)
+        CommandResolutionDetails resolution,
+        ExecutionPhase? executionPhase = null)
     {
         if (kind is not (GameEventKind.CommandResolved or GameEventKind.CommandFailed))
             throw new ArgumentOutOfRangeException(nameof(kind));
@@ -764,7 +769,7 @@ public sealed partial class MatchState
             _nextEventSequence++,
             Coordinator.Turn,
             Coordinator.Phase,
-            Coordinator.ExecutionPhase,
+            executionPhase ?? Coordinator.ExecutionPhase,
             kind,
             command.Player,
             command.Gang,
@@ -960,13 +965,14 @@ public sealed partial class MatchState
         GameNotificationKind kind,
         GangId? gang = null,
         int? sectorId = null,
-        long? relatedEventSequence = null)
+        long? relatedEventSequence = null,
+        ExecutionPhase? executionPhase = null)
     {
         if (sectorId is < 0 or >= MatchLimits.SectorCount) throw new ArgumentOutOfRangeException(nameof(sectorId));
         var queue = GetNotificationQueue(player);
         var notification = new GameNotification(
             _nextNotificationSequences[player]++, Coordinator.Turn, Coordinator.Phase,
-            Coordinator.ExecutionPhase, kind, gang, sectorId, relatedEventSequence);
+            executionPhase ?? Coordinator.ExecutionPhase, kind, gang, sectorId, relatedEventSequence);
         queue.Enqueue(notification);
         return notification;
     }

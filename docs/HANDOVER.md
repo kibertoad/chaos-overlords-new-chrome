@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,370 tests; its offline restore emitted
+  isolated Release build passed all 1,373 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -25,6 +25,11 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Execution now mirrors the original resolver's split Chaos scheduling. Chaos
+  rolls and Crackdown creation occur immediately after Instant so newly arrived
+  police attack in the same turn; Transactions still precede the delayed Chaos
+  cash/statistic payout. Prepared outcomes survive a save between those passes,
+  and the common police-duration tick leaves two to four future Combat phases.
 - Asset verification now rejects every unmanifested output even in quick mode.
   An obsolete file therefore prevents the already-complete shortcut and the
   existing rollback-safe whole-directory promotion removes it; incomplete or

@@ -453,9 +453,14 @@ claim about original-game behavior.
   threshold during this phase, pays no group; otherwise controlled groups earn
   all successes and uncontrolled groups earn `floor(group successes / 2)` after
   all same-player gangs in that sector have been aggregated. A newly
-  triggered crackdown notifies every active player.
-- Current exclusions: exact binary notification/event order and controlled
-  runtime corroboration.
+  triggered crackdown notifies every active player. The executable physically
+  rolls Chaos and creates Crackdowns immediately after the Instant pass, before
+  Combat, then resolves Combat and Transactions before paying the stored Chaos
+  successes. The recreation preserves the public six-boundary interface while
+  performing that preparation after Instant and delaying cash/statistic changes
+  until the Chaos boundary.
+- Current exclusions: exact original message wording and controlled runtime
+  corroboration.
 - Confidence: High for the per-gang pool, generated-Income distinction, control
   multiplier, roster RNG order, grouped half payout, and suppression rule;
   Medium for notification presentation.
@@ -512,6 +517,9 @@ claim about original-game behavior.
   again on another recent trigger. The displaced owner receives a distinct
   `ControlLost` notification in addition to the global Crackdown notification.
   History mutation and ownership cleanup precede the duration-extension draw.
+  A newly created Crackdown therefore attacks in the same turn's following
+  police pass; the common end-of-Combat decrement immediately consumes one of
+  its drawn turns, leaving two to four future Combat phases.
 - Current exclusions: exact original message wording and notification timing.
 - Confidence: High for the executable detection curves, Hide reduction,
   Force 5 + Combat 20 pool, 5+ threshold, effective Defense subtraction,

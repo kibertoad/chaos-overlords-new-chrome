@@ -10,7 +10,10 @@ public enum TurnPhase
     PlayerElimination
 }
 
-/// <summary>The fixed execution ordering shared by all players.</summary>
+/// <summary>
+/// The client-visible execution boundaries shared by all players. The original resolver
+/// prepares Chaos after Instant, before Combat, but delays its payout until this Chaos boundary.
+/// </summary>
 public enum ExecutionPhase
 {
     Instant,
