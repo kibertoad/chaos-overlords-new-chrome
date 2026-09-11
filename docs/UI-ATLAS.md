@@ -36,6 +36,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00202`, `PX00203` | Victory and elimination panels | High from visible text |
 | `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; patrol-car cell `(116,0,48,64)` | High for sheet contents, Medium for patrol-car crop |
 | `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
+| `PX05011` | Player Rankings panel with six player-color vertical rails and movable Overlord portraits | High from visible structure and original WinHelp Ranking description |
 | `PX05020` | System Warning panel for confirming an end turn while at least one active gang is idle | High from visible text and client trigger semantics |
 | `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
 | `PX05022` | Gang Information variant without live-instance equipment cells, used for hire-offer definition inspection | High from comparison with `PX05000` and Hire/Gang help topics |
@@ -118,6 +119,10 @@ cursor feedback remain to be validated.
   projection of current/pending upkeep, contracts and headcount, equipment,
   bribes, tax, influenced-site cash, estimated Chaos and the resulting cash
   adjustment. Costs are red and income is green as specified by the manual.
+- Ranking opens `PX05011` at `(104,125,344,209)`. Each active player's
+  32-by-32 portrait is centered on its fixed color rail; canonical timed scores
+  or objective progress determine a zero-based competition standing and tied
+  players share a height. Eliminated players are omitted.
 - City sectors use their fixed 54 by 52 cell from `PX10000` when neutral or
   `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
 - Active Crackdown sectors overlay the color-keyed patrol-car slice from

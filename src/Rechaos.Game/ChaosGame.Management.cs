@@ -91,40 +91,22 @@ public sealed partial class ChaosGame
 
     private void DrawRanking(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        DrawManagementPanel(batch, pixel);
-        var scenario = ScenarioCatalog.Get(state.Setup.Scenario);
-        font.Draw(batch, "RANKING", new Vector2(18, 60), Color.Gold, 2);
-        font.Draw(batch, scenario.Name, new Vector2(18, 86), Color.White, 1);
-        font.Draw(batch, scenario.Objective.ToUpperInvariant(), new Vector2(18, 104), new Color(180, 230, 170), 1);
-
-        if (scenario.IsTimed)
-        {
-            var standings = EndgameRankingEvaluator.EvaluateTimed(state);
-            foreach (var entry in standings.Select((standing, index) => (standing, index)))
-            {
-                var player = state.FindPlayer(entry.standing.Player)!;
-                var y = 142 + entry.index * 38;
-                font.Draw(batch, $"{entry.standing.Place}. {player.Setup.Name}", new Vector2(18, y),
-                    PlayerColors[player.Id.Value], 1);
-                font.Draw(batch, $"SCORE {entry.standing.Score}", new Vector2(234, y), Color.White, 1);
-            }
-            var turns = ScenarioCatalog.Turns(state.Setup.Duration);
-            font.Draw(batch, $"TURN {state.Coordinator.Turn} OF {turns}", new Vector2(18, 382), Color.White, 1);
-        }
+        if (_managementReturnScreen == ClientScreen.Sector)
+            DrawSectorDetails(batch, pixel, font, state);
         else
+            DrawBoard(batch, pixel, font, state);
+        if (_rankingBackground is not null)
+            batch.Draw(_rankingBackground, PlayerRankingLayout.Panel, Color.White);
+        else
+            batch.Draw(pixel, PlayerRankingLayout.Panel, new Color(0, 0, 0, 245));
+        if (_uiSprites is null) return;
+        foreach (var entry in PlayerRankingPresentation.Project(state))
         {
-            foreach (var entry in state.Players.OrderBy(player => player.Id.Value)
-                         .Select((player, index) => (player, index)))
-            {
-                var score = MatchOutcomeEvaluator.Project(state, entry.player);
-                var y = 142 + entry.index * 38;
-                font.Draw(batch, entry.player.Setup.Name, new Vector2(18, y),
-                    PlayerColors[entry.player.Id.Value], 1);
-                font.Draw(batch, ObjectiveProgress(state.Setup.Scenario, score),
-                    new Vector2(170, y), Color.White, 1);
-            }
+            var player = state.FindPlayer(entry.Player)!;
+            batch.Draw(_uiSprites,
+                PlayerRankingLayout.Portrait(entry.Player.Value, entry.Standing),
+                OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         }
-        DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
     }
 
     private void DrawManagementPanel(SpriteBatch batch, Texture2D pixel)
@@ -134,14 +116,4 @@ public sealed partial class ChaosGame
         batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
     }
 
-    private static string ObjectiveProgress(ScenarioId scenario, PlayerScoreState score) => scenario switch
-    {
-        ScenarioId.KillEmAll => score.IsAlive ? $"ALIVE  FOES {score.OpponentsAlive}" : "ELIMINATED",
-        ScenarioId.Big40 => $"SECTORS {score.ControlledSectors}/40",
-        ScenarioId.Eliminate => $"ENEMY RIGHT HANDS {score.OpposingRightHandsAlive}",
-        ScenarioId.Siege => $"IMPORTANT {score.ImportantSectorsControlled}/6",
-        ScenarioId.BigMan => $"POINTS {score.BigManPoints}/40",
-        ScenarioId.Armageddon => $"SECTORS {score.ControlledSectors}/{MatchLimits.SectorCount}",
-        _ => ""
-    };
 }

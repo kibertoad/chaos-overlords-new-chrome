@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,073 tests with no warnings.
+  isolated Release build passed all 1,076 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -23,6 +23,9 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Player Ranking now uses `PX05011` and positions every active Overlord portrait
+  on its original color rail by canonical timed score or objective progress.
+  Competition ties share a height and eliminated players disappear.
 - Gangs/Sector now opens only the active player's gangs in the selected sector,
   rejects an empty sector, and cycles within that local roster. Live Gang
   Information uses `PX05000` and renders the three equipped-item cells; hire

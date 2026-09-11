@@ -53,6 +53,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _idleGangWarningBackground;
     private Texture2D? _cityFinanceBackground;
     private Texture2D? _sectorFinanceBackground;
+    private Texture2D? _rankingBackground;
     private Texture2D? _gangInfoBackground;
     private Texture2D? _gangDefinitionInfoBackground;
     private Texture2D? _siteInfoBackground;
@@ -215,6 +216,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _idleGangWarningBackground = LoadTexture("PX05020.bmp");
         _cityFinanceBackground = LoadTexture("PX05008.bmp");
         _sectorFinanceBackground = LoadTexture("PX05019.bmp");
+        _rankingBackground = LoadTexture("PX05011.bmp");
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
         _gangDefinitionInfoBackground = LoadTexture("PX05022.bmp");
@@ -715,6 +717,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     _screens.Show(_managementReturnScreen);
                 break;
             case ClientScreen.Ranking:
+                if (PlayerRankingLayout.Ok.Contains(point))
+                    _screens.Show(_managementReturnScreen);
+                break;
             case ClientScreen.Search:
                 if (ManagementBack.Contains(point)) _screens.Show(_managementReturnScreen);
                 break;
