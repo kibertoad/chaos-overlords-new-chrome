@@ -33,6 +33,8 @@ Last updated: 2026-09-11
   warnings use mapped sounds. General slot 9 is loaded by the original but has
   no call through its gated effect wrapper. Detailed Combat cues start with
   their corresponding animation clips rather than at resolution time.
+- The four original Add/Remove/Begin/Cancel setup hit rectangles now defer their
+  action until release inside the same pressed control and cancel release outside.
 - Setup now offers the original None, 30 Seconds, 2 Minutes, and 5 Minutes
   planning limits. Human planning displays the recovered 60-by-3 bar, continues
   through planning panels, uses the original percent-first width quantization,

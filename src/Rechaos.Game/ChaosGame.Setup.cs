@@ -24,11 +24,42 @@ public sealed partial class ChaosGame
     {
         var previous = _selectedPlayerCount;
         _selectedPlayerCount = Math.Clamp(_selectedPlayerCount + delta, 1, MatchLimits.PlayerCount);
-        foreach (var slot in AudioRouting.PlayerCountChangeSounds(
-                     previous != _selectedPlayerCount, pointerButton))
+        if (AudioRouting.PlayerCountResultSound(
+                previous != _selectedPlayerCount, pointerButton) is { } slot)
             PlayGeneralSound(slot);
         for (var index = previous; index < _selectedPlayerCount; index++)
             _computerPlayers[index] = true;
+    }
+
+    private void BeginSetupButton(SetupPushButton button)
+    {
+        _pressedSetupButton = button;
+        PlayGeneralSound(GeneralSoundSlot.ButtonPress);
+    }
+
+    private void CompleteSetupButton(Point point)
+    {
+        var pressed = _pressedSetupButton;
+        _pressedSetupButton = null;
+        if (_screens.Current != ClientScreen.Setup
+            || pressed is null
+            || SetupButtonLayout.HitTest(point) != pressed)
+            return;
+        switch (pressed)
+        {
+            case SetupPushButton.AddPlayer:
+                ChangePlayerCount(1, pointerButton: true);
+                break;
+            case SetupPushButton.RemovePlayer:
+                ChangePlayerCount(-1, pointerButton: true);
+                break;
+            case SetupPushButton.Start:
+                StartMatch();
+                break;
+            case SetupPushButton.Back:
+                _screens.Show(ClientScreen.Title);
+                break;
+        }
     }
 
     private void ToggleController(int index)

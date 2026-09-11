@@ -206,7 +206,9 @@ nine-entry general-effect slot table (`SND00200`-`SND00208`, with no slot 5);
 named slot identities replace presentation magic numbers. Setup uses the
 statically identified slot 3 accepted-input and slot 4 rejected-input cues,
 while title and setup push buttons use slot 2; an invalid pointer-driven player
-count change follows its press cue with slot 4. Panel confirmation uses slots
+count change follows its press cue with slot 4. The four setup push controls
+retain the pressed identity and act only on release inside that same recovered
+rectangle. Panel confirmation uses slots
 0/1, a handoff with pending Last Turn Events uses
 slot 6, and the planning countdown uses slots 7/8. Slot 9 is loaded by the
 original but has no gated-wrapper call site. None of these routes feeds playback

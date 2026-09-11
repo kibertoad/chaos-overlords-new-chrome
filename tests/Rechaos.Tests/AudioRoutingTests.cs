@@ -30,14 +30,13 @@ public sealed class AudioRoutingTests
         Assert.Equal("SND00208.wav",
             AudioRouting.GeneralSoundFile(GeneralSoundSlot.LoadedWithoutCallSite));
         Assert.Throws<ArgumentOutOfRangeException>(() => AudioRouting.GeneralSoundFile(5));
-        Assert.Equal([GeneralSoundSlot.AcceptedSelection],
-            AudioRouting.PlayerCountChangeSounds(changed: true, pointerButton: false));
-        Assert.Equal([GeneralSoundSlot.RejectedInput],
-            AudioRouting.PlayerCountChangeSounds(changed: false, pointerButton: false));
-        Assert.Equal([GeneralSoundSlot.ButtonPress],
-            AudioRouting.PlayerCountChangeSounds(changed: true, pointerButton: true));
-        Assert.Equal([GeneralSoundSlot.ButtonPress, GeneralSoundSlot.RejectedInput],
-            AudioRouting.PlayerCountChangeSounds(changed: false, pointerButton: true));
+        Assert.Equal(GeneralSoundSlot.AcceptedSelection,
+            AudioRouting.PlayerCountResultSound(changed: true, pointerButton: false));
+        Assert.Equal(GeneralSoundSlot.RejectedInput,
+            AudioRouting.PlayerCountResultSound(changed: false, pointerButton: false));
+        Assert.Null(AudioRouting.PlayerCountResultSound(changed: true, pointerButton: true));
+        Assert.Equal(GeneralSoundSlot.RejectedInput,
+            AudioRouting.PlayerCountResultSound(changed: false, pointerButton: true));
     }
 
     [Theory]

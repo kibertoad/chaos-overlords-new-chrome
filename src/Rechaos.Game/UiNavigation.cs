@@ -35,6 +35,22 @@ public static class SetupButtonLayout
     public static Rectangle RemovePlayer => new(468, 328, 92, 24);
     public static Rectangle Start => new(370, 375, 92, 45);
     public static Rectangle Back => new(468, 375, 92, 45);
+
+    public static SetupPushButton? HitTest(Point point)
+    {
+        if (AddPlayer.Contains(point)) return SetupPushButton.AddPlayer;
+        if (RemovePlayer.Contains(point)) return SetupPushButton.RemovePlayer;
+        if (Start.Contains(point)) return SetupPushButton.Start;
+        return Back.Contains(point) ? SetupPushButton.Back : null;
+    }
+}
+
+public enum SetupPushButton
+{
+    AddPlayer,
+    RemovePlayer,
+    Start,
+    Back
 }
 
 public enum ClientScreen

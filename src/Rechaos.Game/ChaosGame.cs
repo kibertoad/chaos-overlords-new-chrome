@@ -106,6 +106,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
     private int? _draggedHireSlot;
+    private SetupPushButton? _pressedSetupButton;
     private short? _draggedHireDefinitionId;
     private Point _hirePressPoint;
     private bool _hireDragStarted;
@@ -407,7 +408,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             }
         }
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
-            && _draggedHireDefinitionId is not null)
+            && _pressedSetupButton is not null)
+        {
+            if (pointerMapped) CompleteSetupButton(virtualPoint);
+            else _pressedSetupButton = null;
+        }
+        else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
+                 && _draggedHireDefinitionId is not null)
         {
             if (pointerMapped && _hireDragStarted) CompleteHireDrag(virtualPoint);
             else if (pointerMapped) CompleteHireClick();
@@ -580,20 +587,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     var mentality = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(point));
                     if (mentality >= 0) SelectDifficulty((AiDifficulty)mentality);
                     else if (playerSlot >= 0) ToggleController(playerSlot);
-                    else if (SetupButtonLayout.AddPlayer.Contains(point))
-                        ChangePlayerCount(1, pointerButton: true);
-                    else if (SetupButtonLayout.RemovePlayer.Contains(point))
-                        ChangePlayerCount(-1, pointerButton: true);
-                    else if (SetupButtonLayout.Start.Contains(point))
-                    {
-                        PlayGeneralSound(GeneralSoundSlot.ButtonPress);
-                        StartMatch();
-                    }
-                    else if (SetupButtonLayout.Back.Contains(point))
-                    {
-                        PlayGeneralSound(GeneralSoundSlot.ButtonPress);
-                        _screens.Show(ClientScreen.Title);
-                    }
+                    else if (SetupButtonLayout.HitTest(point) is { } button)
+                        BeginSetupButton(button);
                 }
                 break;
             case ClientScreen.City:

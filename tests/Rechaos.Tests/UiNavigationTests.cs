@@ -64,6 +64,10 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(468, 328, 92, 24), SetupButtonLayout.RemovePlayer);
         Assert.Equal(new Rectangle(370, 375, 92, 45), SetupButtonLayout.Start);
         Assert.Equal(new Rectangle(468, 375, 92, 45), SetupButtonLayout.Back);
+        Assert.Equal(SetupPushButton.AddPlayer, SetupButtonLayout.HitTest(new Point(370, 328)));
+        Assert.Equal(SetupPushButton.Back, SetupButtonLayout.HitTest(new Point(559, 419)));
+        Assert.Null(SetupButtonLayout.HitTest(new Point(560, 419)));
+        Assert.Null(SetupButtonLayout.HitTest(new Point(559, 420)));
     }
 
     [Fact]

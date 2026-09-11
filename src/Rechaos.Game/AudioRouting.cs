@@ -41,14 +41,12 @@ public static class AudioRouting
     public static IReadOnlyList<int> GeneralSoundSlots { get; } =
         GeneralSoundResources.Keys.Order().ToArray();
 
-    public static IReadOnlyList<int> PlayerCountChangeSounds(bool changed, bool pointerButton)
-    {
-        if (!pointerButton)
-            return [changed ? GeneralSoundSlot.AcceptedSelection : GeneralSoundSlot.RejectedInput];
-        return changed
-            ? [GeneralSoundSlot.ButtonPress]
-            : [GeneralSoundSlot.ButtonPress, GeneralSoundSlot.RejectedInput];
-    }
+    public static int? PlayerCountResultSound(bool changed, bool pointerButton) =>
+        pointerButton && changed
+            ? null
+            : changed
+                ? GeneralSoundSlot.AcceptedSelection
+                : GeneralSoundSlot.RejectedInput;
 
     public static short? CombatSound(MatchState state, GameEvent gameEvent)
     {
