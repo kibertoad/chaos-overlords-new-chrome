@@ -9,6 +9,29 @@ namespace Rechaos.Tests;
 public sealed class GameplayTurnFlowTests
 {
     [Fact]
+    public void NormalFlowSkipsEliminatedPlayersAtPlanningBoundaries()
+    {
+        var definitions = BundledOriginalData.Load();
+        MatchPlayerSetup[] players =
+        [
+            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(1), "TWO", PlayerController.Human)
+        ];
+        var state = OriginalMatchFactory.Create(definitions,
+            new MatchSetup(ScenarioId.Siege, GameDuration.SixMonths, 1996, players));
+        state.Players[0].Status = PlayerStatus.Eliminated;
+        var replay = new MatchReplayRecorder(state);
+
+        GameplayTurnFlow.AdvanceToPlanning(replay);
+
+        Assert.Equal(TurnPhase.Command, state.Coordinator.Phase);
+        Assert.Equal(new PlayerId(1), state.Coordinator.ActivePlayer);
+        Assert.Contains(replay.Steps, operation =>
+            operation.Kind == ReplayOperationKind.FinishCommand
+            && operation.Player == new PlayerId(0));
+    }
+
+    [Fact]
     public void NormalFlowStopsOnlyForPlayerPlanningAndResolvesInternalPhases()
     {
         var definitions = BundledOriginalData.Load();

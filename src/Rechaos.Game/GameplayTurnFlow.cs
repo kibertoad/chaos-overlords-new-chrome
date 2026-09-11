@@ -12,8 +12,19 @@ public static class GameplayTurnFlow
     public static void AdvanceToPlanning(MatchReplayRecorder replay)
     {
         ArgumentNullException.ThrowIfNull(replay);
-        while (replay.State.Outcome is null && replay.State.Coordinator.Phase != TurnPhase.Command)
-            AdvanceAutomaticPhase(replay);
+        while (replay.State.Outcome is null)
+        {
+            var state = replay.State;
+            if (state.Coordinator.Phase != TurnPhase.Command)
+            {
+                AdvanceAutomaticPhase(replay);
+                continue;
+            }
+
+            var player = state.Coordinator.ActivePlayer!.Value;
+            if (state.FindPlayer(player)?.Status == PlayerStatus.Active) return;
+            replay.FinishCommand(player);
+        }
     }
 
     public static void FinishPlanningTurn(MatchReplayRecorder replay, PlayerId player)

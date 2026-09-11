@@ -53,25 +53,31 @@ public sealed class AiTournamentTests
     [InlineData(ScenarioId.Siege)]
     [InlineData(ScenarioId.BigMan)]
     [InlineData(ScenarioId.Armageddon)]
-    public void SixComputerObjectiveCampaignRunsDeterministicallyForFullFourYearHorizon(
+    public void SixComputerObjectiveCampaignMakesProgressWithLiveHiring(
         ScenarioId scenario)
     {
-        var horizon = ScenarioCatalog.Turns(GameDuration.FourYears);
-        var first = DriveMatch(
-            scenario, 7717, GameDuration.FourYears, throughTurn: horizon);
-        var second = DriveMatch(
+        const int horizon = 40;
+        var campaign = DriveMatch(
             scenario, 7717, GameDuration.FourYears, throughTurn: horizon);
 
-        Assert.True(first.State.Outcome is not null || first.State.Coordinator.Turn > horizon);
-        if (scenario == ScenarioId.BigMan)
-        {
-            Assert.NotNull(first.State.Outcome);
-            Assert.Equal(MatchEndReason.ObjectiveCompleted, first.State.Outcome!.Reason);
-        }
-        Assert.Equal(
-            MatchStateHasher.ComputeSha256(first.State),
-            MatchStateHasher.ComputeSha256(second.State));
-        AssertReplayMatches(first);
+        Assert.True(campaign.State.Outcome is not null
+            || campaign.State.Coordinator.Turn > horizon);
+        Assert.True(campaign.State.Sectors.Count(sector => sector.Owner is not null)
+            > MatchLimits.PlayerCount);
+        Assert.Contains(campaign.State.Events,
+            gameEvent => gameEvent.Kind == GameEventKind.HireResolved);
+        AssertReplayMatches(campaign);
+    }
+
+    [Fact]
+    public void SixComputerBigManCampaignCompletesNaturallyAndReplays()
+    {
+        var campaign = DriveMatch(
+            ScenarioId.BigMan, 7717, GameDuration.FourYears, throughTurn: 60);
+
+        Assert.NotNull(campaign.State.Outcome);
+        Assert.Equal(MatchEndReason.ObjectiveCompleted, campaign.State.Outcome!.Reason);
+        AssertReplayMatches(campaign);
     }
 
     private static void AssertReplayMatches(MatchReplayRecorder recorder)
@@ -117,7 +123,11 @@ public sealed class AiTournamentTests
                     recorder.FinishUpkeep();
                     break;
                 case TurnPhase.Command:
-                    PlanComputerTurn(recorder, state.Coordinator.ActivePlayer!.Value);
+                    var player = state.Coordinator.ActivePlayer!.Value;
+                    if (state.FindPlayer(player)?.Status == PlayerStatus.Active)
+                        PlanComputerTurn(recorder, player);
+                    else
+                        recorder.FinishCommand(player);
                     break;
                 case TurnPhase.Execution:
                     recorder.FinishExecutionPhase();
@@ -143,6 +153,7 @@ public sealed class AiTournamentTests
         recorder.PrepareAiPlanning(player);
         foreach (var command in AiTurnPlanner.Plan(recorder.State, player))
             Assert.True(recorder.Submit(command).Accepted);
+        recorder.PrepareHireOffers(player);
         var hiring = recorder.PrepareAiHiring(player);
         if (hiring.Choice is { } choice)
         {

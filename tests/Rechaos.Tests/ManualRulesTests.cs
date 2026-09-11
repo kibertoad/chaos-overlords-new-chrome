@@ -36,6 +36,7 @@ public sealed class ManualRulesTests
         Assert.Equal(after, ManualRules.ApplySnitch(before));
 
     [Theory]
+    [InlineData(-10, 100)]
     [InlineData(0, 100)]
     [InlineData(5, 100)]
     [InlineData(6, 95)]

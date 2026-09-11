@@ -124,11 +124,13 @@ must produce the same final state hash; its complete mutation stream must also
 round-trip through the replay serializer to that hash. Kill 'Em All, Big 40,
 Eliminate, Siege, Big Man, and Armageddon each run the same deterministic,
 replay-verified six-computer harness through 20 turns or objective completion.
-They also run through a full 208-turn horizon at a second fixed seed, repeat to
-the same final hash, and replay to that hash. Big Man completes naturally in
-that stress fixture. The other five objective scenarios remain valid through
-the horizon but do not yet complete, making their objective-aware policy an
-explicit M6 gap rather than an unmeasured reliability claim.
+At a second fixed seed, every objective now runs a live-equivalent 40-turn
+campaign which refills the three-offer market before each AI hiring decision.
+Each campaign must resolve at least one hire, expand beyond the six starting
+sectors, and replay to the same final hash. Big Man additionally completes
+naturally by turn 60 at that seed. Reliable completion policy for the other
+five objective scenarios remains an explicit M6 gap rather than an unmeasured
+claim.
 
 ## Required parity work
 

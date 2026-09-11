@@ -112,9 +112,13 @@ Last updated: 2026-09-11
   and explicitly provisional fallback scoring. The next AI gate is evidence,
   not another structural rewrite: fixed original-runtime traces plus multi-seed
   tournament coverage. Six-computer deterministic/replay fixtures now exercise
-  all objectives for a 208-turn horizon. Big Man completes at the guarded seed;
-  Kill 'Em All, Big 40, Eliminate, Siege, and Armageddon remain valid but
-  unfinished, so their completion policy is still an explicit M6 gap.
+  all objectives through live-equivalent 40-turn campaigns with offer refills,
+  resolved hires, territorial expansion, and replay verification. Big Man
+  completes by turn 60 at the guarded seed; Kill 'Em All, Big 40, Eliminate,
+  Siege, and Armageddon still need evidence-led completion policy, so that
+  remains an explicit M6 gap. Eliminated planning slots are skipped through
+  replay-recorded transitions, and negative effective Stealth is safely bounded
+  to 100% police detection.
 - Options now uses the recovered defaults: Current gang statistics, Detailed
   Combat on, Slide Panels on, and Warn If Idle Gangs on, and persists those
   choices alongside audio and the planning timer. Version-4 preferences migrate

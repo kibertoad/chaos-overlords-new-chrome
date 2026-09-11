@@ -49,11 +49,8 @@ public static class ManualRules
     }
 
     /// <summary>Manual-stated chance that police detect a gang during crackdown.</summary>
-    public static int PoliceDetectionPercent(int stealth)
-    {
-        if (stealth < 0) throw new ArgumentOutOfRangeException(nameof(stealth));
-        return Math.Clamp(100 - Math.Max(0, stealth - 5) * 5, 0, 100);
-    }
+    public static int PoliceDetectionPercent(int stealth) =>
+        (int)Math.Clamp(100L - Math.Max(0L, (long)stealth - 5) * 5, 0, 100);
 
     public static int PoliceDetectionPercent(int stealth, bool hidden) => hidden
         ? HiddenAttackHitPercent(PoliceDetect, stealth)
