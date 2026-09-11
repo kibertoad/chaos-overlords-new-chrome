@@ -256,7 +256,9 @@ public sealed class HireAndEliminationTests
     [Fact]
     public void UnaffordableHireFailsAtResolutionWithoutRngPaymentOrTombstone()
     {
-        var match = CreateMatch(initialCash: -1);
+        // The fixture owns an Income-3 sector, so begin below -3 to remain
+        // unable to afford this cost-1 offer after Upkeep.
+        var match = CreateMatch(initialCash: -4);
         AdvanceToHire(match);
         var player = match.Players[0];
         var cashBefore = player.Cash;

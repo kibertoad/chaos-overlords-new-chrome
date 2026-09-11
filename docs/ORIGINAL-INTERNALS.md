@@ -2541,6 +2541,25 @@ Income and influenced Support but naturally has no defending-gang contribution.
 **Confidence:** High static evidence within the whole-turn resolver; moving and
 terminating last-gang recreation fixtures guard the negative behavior.
 
+### BIN-UPKEEP-001 - generated sector Income is the shipped sector tax
+
+**Observation:** Cash updater `0x0046e766` scans players 0 through 5. Its active
+gang-record loop at decompiled lines 194–215 subtracts each gang definition's
+Upkeep from player cash. The immediately following sector loop at lines 216–232
+compares the sector owner byte at `+0` with that player and adds the signed byte
+at sector offset `+3` to cash. City generator `0x00475fe1` writes that same
+offset as the density-derived sector Income value 3 through 7. The loop also
+classifies positive values as earned cash and negative values as spent cash.
+
+**Interpretation:** Despite the Help text's flat $1 Sector Tax claim, the shipped
+economy credits the full generated Income of every controlled sector. Both the
+authoritative Upkeep mutation and City/Sector Finance projection must sum those
+bytes; `1` remains documentation of the printed rule, not compatibility
+arithmetic.
+
+**Confidence:** High static evidence for arrays, offsets, player/gang/sector scan
+order, and arithmetic; controlled runtime corroboration remains pending.
+
 ## New-game initialization
 
 ### BIN-CITY-001 - density-derived sector income and tolerance

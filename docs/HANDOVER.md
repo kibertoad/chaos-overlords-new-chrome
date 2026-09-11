@@ -1,7 +1,7 @@
 # Development handover
 
 Status: active at a validated local checkpoint
-Last updated: 2026-09-11
+Last updated: 2026-09-12
 
 ## Repository state
 
@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,385 tests; its offline restore emitted
+  isolated Release build passed all 1,385 tests in 17m34s; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -25,6 +25,9 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Upkeep and both Finance panels now use the executable's actual sector-tax
+  arithmetic: each controlled sector contributes its generated Income byte
+  (3–7), rather than the Help manual's contradicted flat $1 claim.
 - Fresh local setup now implements every recovered rule-changing exact name.
   `SMGSPANK` adds five Force-10 Right Hands; `SMGKICKASS` adds five Force-10
   GROUND ZERO gangs with the recovered top-tier weapon, armor, and miscellaneous

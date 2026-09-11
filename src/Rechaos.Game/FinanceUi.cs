@@ -73,8 +73,9 @@ public sealed record FinanceProjection(
         var cityOfficials = -commands.Count(command => command.Action == GangAction.Bribe)
             * ManualRules.OriginalBribeCost;
         var sectors = state.Sectors.Where(sector => Includes(sector.Id)).ToArray();
-        var sectorTax = sectors.Count(sector => sector.Owner == player.Id)
-            * ManualRules.ControlledSectorTax;
+        var sectorTax = sectors
+            .Where(sector => sector.Owner == player.Id)
+            .Sum(sector => sector.Income);
         var siteProtection = sectors.SelectMany(sector => sector.Sites)
             .Where(site => site.InfluencedBy == player.Id)
             .Sum(site => state.Definitions.Sites.Single(

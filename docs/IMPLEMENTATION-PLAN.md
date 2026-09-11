@@ -87,6 +87,9 @@ validated before its workstream can be marked complete.
   adds five Force-10 Right Hands, `SMGKICKASS` adds five equipped Force-10
   GROUND ZERO gangs, and `SMGHUBBLE` grants global opposing-gang visibility.
   All six rule-changing names, including `SMGMILK`, are refused online.
+- Executable-derived Upkeep and both Finance scopes now sum each controlled
+  sector's generated Income (3–7), preserving the shipped arithmetic where it
+  contradicts the Help manual's flat $1 Sector Tax description.
 - The current AI baseline implements exact fixed-six-player reaction and
   directional-attitude initialization, non-Homicidal recovery, combat/Control
   attitude changes, hostility-filtered attack candidates, and all nine known
@@ -289,9 +292,10 @@ the exact RNG consumption order.
   hands and suppresses retaliation unless the opponent also qualifies.
 - A gang may equip one weapon, one armor, and one miscellaneous item; gang tech
   level must meet item tech level and never increases.
-- Each controlled sector grants $1 sector tax. Influenced-site cash, site
-  protection, city-official chaos estimates, and projected cash adjustment must
-  be reproduced.
+- The manual says each controlled sector grants $1 sector tax, but the shipped
+  updater credits that sector's generated Income byte (3–7). Compatibility uses
+  the executable value. Influenced-site cash, site protection, city-official
+  chaos estimates, and projected cash adjustment must be reproduced.
 
 #### Manual-defined scenario and endgame behavior
 

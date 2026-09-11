@@ -405,9 +405,10 @@ The binary owner-write inventory also makes ownership independent of garrison:
 moving or terminating the last friendly gang does not neutralize the sector.
 
 `MatchState.FinishUpkeep` resolves every active player in stable player-ID order
-before entering Command. Each result separates sector tax, influenced-site
-cash, and active-gang upkeep so reference fixtures can locate the first differing
-component. Desertion and unverified special modifiers remain outside this slice.
+before entering Command. Each result separates the shipped generated-Income
+sector tax, influenced-site cash, and active-gang upkeep so reference fixtures
+can locate the first differing component. Unverified special modifiers remain
+outside this slice.
 
 Hiring uses the same deferred boundary as the manual: during the player's
 planning turn, selecting one of three offers reserves the recruit without
