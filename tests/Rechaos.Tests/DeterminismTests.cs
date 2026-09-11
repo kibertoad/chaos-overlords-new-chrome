@@ -84,21 +84,42 @@ public sealed class DeterminismTests
     }
 
     [Fact]
-    public void EventHistoryContributesToCurrentCanonicalHash()
+    public void EventHistoryIsReadOnlyAndCachedEncodingRemainsCanonical()
     {
-        var first = CreateMatch();
-        var second = CreateMatch();
-        first.FinishUpkeep();
-        second.FinishUpkeep();
-        var events = Assert.IsType<List<GameEvent>>(second.Events);
-        events[0] = events[0] with { Turn = events[0].Turn + 1 };
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase();
+        match.FinishExecutionPhase();
+        var events = Assert.IsAssignableFrom<IList<GameEvent>>(match.Events);
 
-        Assert.Equal(
-            MatchStateHasher.ComputeVersionTwentyTwoSha256(first),
-            MatchStateHasher.ComputeVersionTwentyTwoSha256(second));
-        Assert.NotEqual(
-            MatchStateHasher.ComputeSha256(first),
-            MatchStateHasher.ComputeSha256(second));
+        Assert.True(events.IsReadOnly);
+        Assert.Throws<NotSupportedException>(() => events[0] = events[0] with
+        {
+            Turn = events[0].Turn + 1
+        });
+        var rolls = Assert.IsAssignableFrom<IList<int>>(
+            Assert.Single(match.Events, gameEvent =>
+                gameEvent.Kind == GameEventKind.CommandResolved).Resolution!.Rolls);
+        Assert.True(rolls.IsReadOnly);
+        Assert.Throws<NotSupportedException>(() => rolls[0]++);
+
+        using var expected = new MemoryStream();
+        using (var writer = new BinaryWriter(expected, System.Text.Encoding.UTF8, leaveOpen: true))
+        {
+            writer.Write(match.Events.Count);
+            foreach (var gameEvent in match.Events)
+                CanonicalEventWriter.Write(writer, gameEvent);
+        }
+        using var actual = new MemoryStream();
+        using (var writer = new BinaryWriter(actual, System.Text.Encoding.UTF8, leaveOpen: true))
+            match.WriteCanonicalEventHistory(writer);
+
+        Assert.Equal(expected.ToArray(), actual.ToArray());
     }
 
     [Fact]

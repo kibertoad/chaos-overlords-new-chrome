@@ -294,11 +294,7 @@ public static class MatchStateHasher
             }
             writer.Write(state.NextEventSequence);
             if (includeEventHistory)
-            {
-                writer.Write(state.Events.Count);
-                foreach (var gameEvent in state.Events)
-                    CanonicalEventWriter.Write(writer, gameEvent);
-            }
+                state.WriteCanonicalEventHistory(writer);
             writer.Write(state.Outcome is not null);
             if (state.Outcome is { } outcome)
             {

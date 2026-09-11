@@ -2,6 +2,37 @@ namespace Rechaos.Core.GameModel;
 
 internal static class CanonicalEventWriter
 {
+    public static GameEvent Freeze(GameEvent value) => value with
+    {
+        Resolution = value.Resolution is null ? null : value.Resolution with
+        {
+            Rolls = Freeze(value.Resolution.Rolls),
+            RetaliationRolls = FreezeNullable(value.Resolution.RetaliationRolls),
+            ItemIds = FreezeNullable(value.Resolution.ItemIds),
+            ReplacedItemIds = FreezeNullable(value.Resolution.ReplacedItemIds)
+        },
+        PoliceAttack = value.PoliceAttack is null ? null : value.PoliceAttack with
+        {
+            Rolls = Freeze(value.PoliceAttack.Rolls)
+        },
+        MatchOutcome = value.MatchOutcome is null ? null : value.MatchOutcome with
+        {
+            Winners = Freeze(value.MatchOutcome.Winners),
+            Standings = Freeze(value.MatchOutcome.Standings),
+            Awards = Freeze(value.MatchOutcome.Awards.Select(award => award with
+            {
+                Recipients = Freeze(award.Recipients)
+            }))
+        }
+    };
+
+    public static void Append(Stream stream, GameEvent value)
+    {
+        using var writer = new BinaryWriter(
+            stream, System.Text.Encoding.UTF8, leaveOpen: true);
+        Write(writer, value);
+    }
+
     public static void Write(BinaryWriter writer, GameEvent value)
     {
         writer.Write(value.Sequence);
@@ -193,4 +224,10 @@ internal static class CanonicalEventWriter
         writer.Write(value.HasValue);
         if (value.HasValue) writer.Write(value.Value);
     }
+
+    private static IReadOnlyList<T> Freeze<T>(IEnumerable<T> values) =>
+        Array.AsReadOnly(values.ToArray());
+
+    private static IReadOnlyList<T>? FreezeNullable<T>(IEnumerable<T>? values) =>
+        values is null ? null : Freeze(values);
 }

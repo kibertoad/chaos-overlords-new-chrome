@@ -318,6 +318,8 @@ public sealed class MatchStatistics
 public sealed partial class MatchState
 {
     private readonly List<GameEvent> _events = [];
+    private readonly IReadOnlyList<GameEvent> _eventView;
+    private readonly MemoryStream _canonicalEventBytes = new();
     private readonly Dictionary<PlayerId, NotificationQueue> _notifications;
     private readonly Dictionary<PlayerId, long> _nextNotificationSequences;
     private readonly Dictionary<PlayerId, ComlinkInbox> _comlinkInboxes;
@@ -360,6 +362,7 @@ public sealed partial class MatchState
 
         ValidateDefinitionsAndCapacities(definitions, players, sectors);
 
+        _eventView = _events.AsReadOnly();
         Players = players.ToArray();
         Sectors = sectors.ToArray();
         Coordinator = restore is null
@@ -409,7 +412,7 @@ public sealed partial class MatchState
     public TurnCommandQueue Commands { get; }
     public AiStrategicState AiStrategy { get; }
     public AiPlanningState AiPlanning { get; }
-    public IReadOnlyList<GameEvent> Events => _events;
+    public IReadOnlyList<GameEvent> Events => _eventView;
     public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashes;
     public IReadOnlyList<CommandResolutionResult> LastPhaseResolutions { get; private set; } = [];
     public IReadOnlyList<PoliceAttackResolutionResult> LastPoliceAttackResolutions { get; private set; } = [];
@@ -441,7 +444,8 @@ public sealed partial class MatchState
                 .SequenceEqual(Players.Select(player => player.Id)))
             throw new ArgumentException("Restored notification players do not match the match setup.", nameof(restore));
 
-        _events.AddRange(restore.Events.OrderBy(gameEvent => gameEvent.Sequence));
+        foreach (var gameEvent in restore.Events.OrderBy(gameEvent => gameEvent.Sequence))
+            StoreEvent(gameEvent);
         _nextEventSequence = restore.NextEventSequence;
         foreach (var gang in Players.SelectMany(player => player.Gangs))
             gang.QueuedCommand = Commands.TryGet(gang.Id, out var queued) ? queued : null;
@@ -739,8 +743,7 @@ public sealed partial class MatchState
             command.SecondaryTarget,
             command.TertiaryTarget,
             command.QuaternaryTarget);
-        _events.Add(gameEvent);
-        return gameEvent;
+        return StoreEvent(gameEvent);
     }
 
     internal GameEvent AppendResolutionEvent(
@@ -764,8 +767,7 @@ public sealed partial class MatchState
             command.TertiaryTarget,
             command.QuaternaryTarget,
             resolution);
-        _events.Add(gameEvent);
-        return gameEvent;
+        return StoreEvent(gameEvent);
     }
 
     internal GameEvent AppendUpkeepEvent(PlayerId player, EconomyResolutionDetails economy)
@@ -781,8 +783,7 @@ public sealed partial class MatchState
             GangAction.None,
             CommandTarget.None,
             Economy: economy);
-        _events.Add(gameEvent);
-        return gameEvent;
+        return StoreEvent(gameEvent);
     }
 
     internal GangId NextGangId() => new(
@@ -796,8 +797,7 @@ public sealed partial class MatchState
             _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
             Coordinator.ExecutionPhase, kind, player, hire.Gang,
             GangAction.None, CommandTarget.Sector(hire.SectorId), Hire: hire);
-        _events.Add(gameEvent);
-        return gameEvent;
+        return StoreEvent(gameEvent);
     }
 
     internal GameEvent AppendHireOfferEvent(
@@ -811,8 +811,7 @@ public sealed partial class MatchState
             _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
             Coordinator.ExecutionPhase, kind, player, null,
             GangAction.None, CommandTarget.None, HireOffer: hireOffer);
-        _events.Add(gameEvent);
-        return gameEvent;
+        return StoreEvent(gameEvent);
     }
 
     internal GameEvent AppendPoliceAttackEvent(
@@ -825,8 +824,7 @@ public sealed partial class MatchState
             Coordinator.ExecutionPhase, GameEventKind.PoliceAttackResolved, player,
             gang, GangAction.None, CommandTarget.Sector(policeAttack.SectorId),
             PoliceAttack: policeAttack);
-        _events.Add(gameEvent);
-        return gameEvent;
+        return StoreEvent(gameEvent);
     }
 
     private void ResolvePlayerEliminations()
@@ -905,8 +903,7 @@ public sealed partial class MatchState
             _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
             Coordinator.ExecutionPhase, GameEventKind.PlayerEliminated, player,
             null, GangAction.None, CommandTarget.None, Elimination: elimination);
-        _events.Add(gameEvent);
-        return gameEvent;
+        return StoreEvent(gameEvent);
     }
 
     private GameEvent AppendBigManPointsEvent(PlayerId player, BigManPointDetails bigManPoints)
@@ -915,8 +912,7 @@ public sealed partial class MatchState
             _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
             Coordinator.ExecutionPhase, GameEventKind.BigManPointsAwarded, player,
             null, GangAction.None, CommandTarget.None, BigManPoints: bigManPoints);
-        _events.Add(gameEvent);
-        return gameEvent;
+        return StoreEvent(gameEvent);
     }
 
     private GameEvent AppendMatchEndedEvent(MatchOutcome outcome)
@@ -929,11 +925,27 @@ public sealed partial class MatchState
             Coordinator.ExecutionPhase, GameEventKind.MatchEnded,
             outcome.Winners[0], null, GangAction.None, CommandTarget.None,
             MatchOutcome: details);
-        _events.Add(gameEvent);
+        gameEvent = StoreEvent(gameEvent);
         foreach (var player in Players)
             QueueNotification(player.Id, GameNotificationKind.Objective,
                 relatedEventSequence: gameEvent.Sequence);
         return gameEvent;
+    }
+
+    internal void WriteCanonicalEventHistory(BinaryWriter writer)
+    {
+        writer.Write(_events.Count);
+        writer.Write(
+            _canonicalEventBytes.GetBuffer(), 0,
+            checked((int)_canonicalEventBytes.Length));
+    }
+
+    private GameEvent StoreEvent(GameEvent gameEvent)
+    {
+        var frozen = CanonicalEventWriter.Freeze(gameEvent);
+        _events.Add(frozen);
+        CanonicalEventWriter.Append(_canonicalEventBytes, frozen);
+        return frozen;
     }
 
     internal GameNotification QueueNotification(

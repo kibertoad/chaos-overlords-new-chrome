@@ -115,7 +115,15 @@ public sealed class EndgameAwardTests
         FinishTurn(match);
 
         var outcome = Assert.IsType<MatchOutcome>(match.Outcome);
-        Assert.Equal(outcome.Awards, match.Events.Single(value => value.Kind == GameEventKind.MatchEnded).MatchOutcome!.Awards);
+        var eventAwards = match.Events.Single(value =>
+            value.Kind == GameEventKind.MatchEnded).MatchOutcome!.Awards;
+        Assert.Equal(outcome.Awards.Count, eventAwards.Count);
+        foreach (var (expected, actual) in outcome.Awards.Zip(eventAwards))
+        {
+            Assert.Equal(expected.Award, actual.Award);
+            Assert.Equal(expected.Value, actual.Value);
+            Assert.Equal(expected.Recipients, actual.Recipients);
+        }
         Assert.NotEmpty(outcome.Awards);
         Assert.Equal(MatchStateHasher.ComputeSha256(match), match.PhaseHashes[^1].Sha256);
     }

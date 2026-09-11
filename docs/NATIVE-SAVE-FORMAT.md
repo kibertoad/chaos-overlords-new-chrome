@@ -86,7 +86,10 @@ that populates a queued-command or event target introduced by a later schema is
 rejected before reconstruction and legacy-hash verification.
 Version 20 advances the canonical hash to version 23 and authenticates every
 ordered event body and nested resolution fact; version 19 remains readable
-through its preserved version-22 hash projection.
+through its preserved version-22 hash projection. In memory, appended events
+and their nested collections are exposed read-only and retain an append-only
+cache of those exact canonical bytes; this is an implementation optimization,
+not a schema or digest-format change.
 The appropriate legacy canonical hash is verified before the
 migrated state is returned. Unknown
 versions remain rejected. Starting with 1.0.0, incompatible changes must

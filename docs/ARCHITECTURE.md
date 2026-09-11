@@ -476,7 +476,9 @@ hire state, persistent research progress/completion, inventory, equipment,
 statistics, four-target command projections, ordered events, notifications and
 Comlink state, AI strategy/planning state, deterministic PRNG state,
 phase-boundary hashes, and match outcome. Public collection projections are
-read-only; renderer/view models must not receive mutation paths.
+read-only; renderer/view models must not receive mutation paths. Event records
+also freeze their nested roll, item, winner, standing, award, and recipient
+collections when appended, so callers cannot invalidate authenticated history.
 
 ## Determinism boundary
 
@@ -494,7 +496,9 @@ encoding after transitions made through `MatchState`. The encoding includes
 definitions, setup, phase/RNG state, players, sectors, four-target commands,
 events, notifications, Comlink inboxes, AI state, and match outcome. Replays
 store an initial native snapshot, ordered authoritative operations and expected
-state hashes.
+state hashes. Match state append-caches the exact canonical event bytes, keeping
+the version-23 encoding unchanged while avoiding repeated serialization of the
+entire prior event log at every boundary.
 
 ## Proprietary-content boundary
 

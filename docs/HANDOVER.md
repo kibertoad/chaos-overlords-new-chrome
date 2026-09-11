@@ -374,6 +374,9 @@ Last updated: 2026-09-11
 - Canonical hash v23 authenticates the complete ordered event history, including
   nested command, economy, hire, police, objective, and outcome facts. Native
   save v20 and replay v22 retain explicit v19/v21 compatibility projections.
+  Event records and their nested collections are frozen on append, while their
+  exact canonical bytes are append-cached so repeated boundary hashes do not
+  re-encode the complete prior history.
 - Move now uses the original `PX05006` Movement panel. Its destination aperture
   is an exact 3-by-3 composition of the city map's native 54-by-52 ownership
   tiles around the acting gang, with mouse and directional-key selection limited
