@@ -273,7 +273,11 @@ continues to identify the influencing player's color.
 Hire console button overlays it on the live city, with three 32-by-32 gang
 portraits and their sixteen comparison values. Hiring itself remains the
 original drag-from-dock interaction; the comparison panel's OK control closes
-the overlay.
+the overlay. The panel uses the shared `(104,125)` management-panel destination;
+its portrait cells begin at source `(164,14)` with a 40-pixel pitch, and its
+right-aligned value columns end at source x 185, 225, and 265. The sixteen rows
+follow the baked irregular 9/10-pixel label baselines rather than a uniform
+pitch.
 
 `PX05017` is the original 344-by-209 `COMLINK: INCOMING MESSAGES` viewer. It
 contains the bounded page counter and previous/next controls, a 64-by-64 sender

@@ -956,33 +956,3 @@ public static class HireDockLayout
         if (slot is < 0 or >= SlotCount) throw new ArgumentOutOfRangeException(nameof(slot));
     }
 }
-
-public static class HireComparisonLayout
-{
-    public static Rectangle Panel => new(0, 0, 344, 209);
-    public static Rectangle Ok => new(32, 168, 50, 24);
-
-    public static Rectangle Portrait(int slot)
-    {
-        if (slot is < 0 or >= HireDockLayout.SlotCount)
-            throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(164 + slot * 41, 10, 32, 32);
-    }
-
-    public static Vector2 StatPosition(int slot, int row)
-    {
-        if (slot is < 0 or >= HireDockLayout.SlotCount)
-            throw new ArgumentOutOfRangeException(nameof(slot));
-        if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
-        return new Vector2(166 + slot * 41, 49 + row * 9);
-    }
-
-    public static bool IsBestValue(int row, short value, IEnumerable<short> comparison)
-    {
-        ArgumentNullException.ThrowIfNull(comparison);
-        if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
-        var values = comparison.ToArray();
-        if (values.Length == 0) throw new ArgumentException("At least one value is required.", nameof(comparison));
-        return row == 1 ? value == values.Min() : value == values.Max();
-    }
-}

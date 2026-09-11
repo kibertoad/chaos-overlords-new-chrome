@@ -50,6 +50,9 @@ Last updated: 2026-09-11
   active OK state for a valid item and shows accumulated/required progress.
   Completed-research reports name the resolved item and play its dedicated
   15-frame `PX04xxx` rotation in the monitor.
+- The `PX05016` Gangs for Hire comparison now opens at the shared management
+  panel destination instead of screen origin. Its three portraits, right-aligned
+  values, and irregular sixteen-row baselines follow the template pixels.
 - Handoff now auto-presents combat from the immediately completed turn. When
   both report types exist, Last Turn Events opens first and then chains into
   Combat Results; Detailed animation capture waits until private handoff/event

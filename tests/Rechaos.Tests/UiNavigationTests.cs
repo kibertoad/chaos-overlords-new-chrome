@@ -653,10 +653,14 @@ public sealed class UiNavigationTests
     [Fact]
     public void HireComparisonMatchesOriginalThreeColumnPanel()
     {
-        Assert.Equal(new Rectangle(0, 0, 344, 209), HireComparisonLayout.Panel);
-        Assert.Equal(new Rectangle(32, 168, 50, 24), HireComparisonLayout.Ok);
-        Assert.Equal(new Rectangle(246, 10, 32, 32), HireComparisonLayout.Portrait(2));
-        Assert.Equal(new Vector2(248, 184), HireComparisonLayout.StatPosition(2, 15));
+        Assert.Equal(new Rectangle(104, 125, 344, 209), HireComparisonLayout.Panel);
+        Assert.Equal(EquipmentCommandLayout.Ok, HireComparisonLayout.Ok);
+        Assert.Equal(new Rectangle(348, 139, 32, 32), HireComparisonLayout.Portrait(2));
+        Assert.Equal(369, HireComparisonLayout.StatRight(2));
+        Assert.Equal(311, HireComparisonLayout.StatY(15));
+        Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.Portrait(3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.StatRight(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.StatY(16));
         Assert.True(HireComparisonLayout.IsBestValue(0, 10, [10, 5, 10]));
         Assert.False(HireComparisonLayout.IsBestValue(0, 5, [10, 5, 10]));
         Assert.True(HireComparisonLayout.IsBestValue(1, 2, [2, 4, 7]));
