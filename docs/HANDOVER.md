@@ -145,6 +145,10 @@ Last updated: 2026-09-11
   exposing Cash Earned, Cash Spent, Damage Inflicted, Casualties, and Overthrows.
   Hot-seat matches still go directly to shared standings until the original
   private sequencing is captured.
+- Endgame awards now use the native builder's priority and inclusive activity
+  thresholds: Fist 5 Overthrows, Skull 50 direct Damage, and Chicken 10 Hides,
+  followed by most/least Cash Spent. All six player slots and ties participate;
+  outcome data keeps every award while each visible row shows the first three.
 - Search now uses the original `PX05024` Search: Sites panel instead of the
   earlier incorrect detected-gang list. Its two-column aperture contains all 22
   site types with ALL/NONE and individual toggles; OK applies a presentation-only

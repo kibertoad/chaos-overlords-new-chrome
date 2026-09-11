@@ -14,9 +14,15 @@ public sealed record EndgameAwardResult(
     long Value,
     IReadOnlyList<PlayerId> Recipients);
 
-/// <summary>Manual-defined endgame superlatives with provisional tie handling.</summary>
+/// <summary>Native endgame superlatives in their recovered award-table priority.</summary>
 public static class EndgameAwardEvaluator
 {
+    public const long FistThreshold = 5;
+    public const long SkullThreshold = 50;
+    public const long ChickenThreshold = 10;
+    public const long DollarThreshold = 0;
+    public const long SafeCeiling = 999_999;
+
     public static IReadOnlyList<EndgameAwardResult> Evaluate(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -24,27 +30,32 @@ public static class EndgameAwardEvaluator
         if (players.Length == 0) return [];
 
         var results = new List<EndgameAwardResult>(5);
-        AddMaximum(EndgameAward.Skull, player => player.Statistics.DamageInflicted, requireActivity: true);
-        AddMaximum(EndgameAward.Fist, player => player.Statistics.Overthrows);
-        AddMaximum(EndgameAward.DollarSign, player => player.Statistics.CashSpent);
-        AddMinimum(EndgameAward.Safe, player => player.Statistics.CashSpent);
-        AddMaximum(EndgameAward.BigFatChicken, player => player.Statistics.TimesHidden, requireActivity: true);
+        AddMaximum(EndgameAward.Fist, player => player.Statistics.Overthrows, FistThreshold);
+        AddMaximum(EndgameAward.Skull, player => player.Statistics.DamageInflicted, SkullThreshold);
+        AddMaximum(EndgameAward.BigFatChicken,
+            player => player.Statistics.TimesHidden, ChickenThreshold);
+        AddMaximum(EndgameAward.DollarSign, player => player.Statistics.CashSpent, DollarThreshold);
+        AddMinimum(EndgameAward.Safe, player => player.Statistics.CashSpent, SafeCeiling);
         return results;
 
         void AddMaximum(
             EndgameAward award,
             Func<MatchPlayerState, long> selector,
-            bool requireActivity = false)
+            long threshold)
         {
             var value = players.Max(selector);
-            if (requireActivity && value == 0) return;
+            if (value < threshold) return;
             results.Add(new EndgameAwardResult(
                 award, value, players.Where(player => selector(player) == value).Select(player => player.Id).ToArray()));
         }
 
-        void AddMinimum(EndgameAward award, Func<MatchPlayerState, long> selector)
+        void AddMinimum(
+            EndgameAward award,
+            Func<MatchPlayerState, long> selector,
+            long ceiling)
         {
             var value = players.Min(selector);
+            if (value > ceiling) return;
             results.Add(new EndgameAwardResult(
                 award, value, players.Where(player => selector(player) == value).Select(player => player.Id).ToArray()));
         }

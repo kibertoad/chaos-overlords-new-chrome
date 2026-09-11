@@ -1362,6 +1362,23 @@ ranked active players. The six fixed inactive score sentinels remain `-32000`
 while standings are counted, so an extreme active score below that value can
 retain an unusually low numeric place even though inactive rows render last.
 
+### BIN-AWARDS-001 - thresholds, priority, ties, and visible slots
+
+Award builder `0x0042b9e0` scans all six fixed player slots for each category,
+without consulting active-state bytes. It processes the award table in visible
+priority Fist, Skull, Big Fat Chicken, Dollar Sign, Safe. The first three use
+initial maxima 5 Overthrows (`0x004a27a8`), 50 direct Damage
+(`0x004a5ed8`), and 10 Hide resolutions (`0x004a25d0`); values below those
+baselines receive no award. Dollar uses Cash Spent (`0x0049ca78`) from a zero
+maximum, while Safe uses the same array from an initial minimum of 999,999.
+Second-pass equality writes preserve every tied player in ascending slot order.
+
+The per-player award table can retain all five assignments, but renderer
+`0x0042ce61` reads only its first three entries for each displayed player row.
+Thus result state may retain every superlative while presentation must cap icons
+at three in the builder's priority order. These observations replace the former
+manual-derived zero-activity and five-visible-icon assumptions.
+
 Mode 6 is now bounded. If at least one human participates, a sector owned by a
 player whom the active AI views negatively receives `+2` only when that owner
 is human. It then adds one independent leader-routing point: with a unique

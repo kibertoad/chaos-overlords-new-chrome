@@ -68,8 +68,8 @@ public sealed partial class ChaosGame
         PlayerId player,
         int row)
     {
-        var awards = outcome.Awards.Where(award => award.Recipients.Contains(player)).ToArray();
-        for (var index = 0; index < awards.Length; index++)
+        var awards = EndgamePresentation.AwardsForPlayer(outcome, player);
+        for (var index = 0; index < awards.Count; index++)
         {
             var destination = EndgameLayout.Award(row, index);
             if (_endgameSprites is not null)
@@ -172,6 +172,8 @@ public sealed record EndgamePlayerRow(PlayerId Player, string Label);
 
 public static class EndgamePresentation
 {
+    public const int VisibleAwardsPerPlayer = 3;
+
     public static IReadOnlyList<EndgamePlayerRow> Rows(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -200,6 +202,15 @@ public static class EndgamePresentation
         EndgameAward.BigFatChicken => "CHICKEN",
         _ => throw new ArgumentOutOfRangeException(nameof(award))
     };
+
+    public static IReadOnlyList<EndgameAwardResult> AwardsForPlayer(
+        MatchOutcome outcome,
+        PlayerId player)
+    {
+        ArgumentNullException.ThrowIfNull(outcome);
+        return outcome.Awards.Where(award => award.Recipients.Contains(player))
+            .Take(VisibleAwardsPerPlayer).ToArray();
+    }
 }
 
 public static class EndgameLayout
@@ -226,7 +237,8 @@ public static class EndgameLayout
     public static Rectangle Award(int row, int index)
     {
         ValidateRow(row);
-        if (index is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(index));
+        if (index is < 0 or >= EndgamePresentation.VisibleAwardsPerPlayer)
+            throw new ArgumentOutOfRangeException(nameof(index));
         return new Rectangle(158 + index * 31, 69 + row * 66, 29, 28);
     }
 

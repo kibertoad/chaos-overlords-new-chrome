@@ -1,5 +1,6 @@
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using Rechaos.Game;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -7,28 +8,31 @@ namespace Rechaos.Tests;
 public sealed class EndgameAwardTests
 {
     [Fact]
-    public void AwardsUseManualStatisticsAndPreserveTies()
+    public void AwardsUseNativeThresholdsPriorityAndPreserveTies()
     {
         MatchStatistics[] statistics =
         [
-            new(cashSpent: 10, damageInflicted: 12, overthrows: 1, timesHidden: 4),
-            new(cashSpent: 5, damageInflicted: 12, overthrows: 2),
-            new(cashSpent: 5, overthrows: 2, timesHidden: 4)
+            new(cashSpent: 10, damageInflicted: 60, overthrows: 5, timesHidden: 10),
+            new(cashSpent: 5, damageInflicted: 60, overthrows: 6),
+            new(cashSpent: 5, overthrows: 6, timesHidden: 10)
         ];
         var match = CreateMatch(statistics);
 
         var awards = EndgameAwardEvaluator.Evaluate(match);
 
-        Assert.Equal(Enum.GetValues<EndgameAward>(), awards.Select(result => result.Award));
-        AssertAward(awards, EndgameAward.Skull, 12, 0, 1);
-        AssertAward(awards, EndgameAward.Fist, 2, 1, 2);
+        Assert.Equal(
+            [EndgameAward.Fist, EndgameAward.Skull, EndgameAward.BigFatChicken,
+                EndgameAward.DollarSign, EndgameAward.Safe],
+            awards.Select(result => result.Award));
+        AssertAward(awards, EndgameAward.Fist, 6, 1, 2);
+        AssertAward(awards, EndgameAward.Skull, 60, 0, 1);
+        AssertAward(awards, EndgameAward.BigFatChicken, 10, 0, 2);
         AssertAward(awards, EndgameAward.DollarSign, 10, 0);
         AssertAward(awards, EndgameAward.Safe, 5, 1, 2);
-        AssertAward(awards, EndgameAward.BigFatChicken, 4, 0, 2);
     }
 
     [Fact]
-    public void ZeroCombatAndHidingOmitOnlyThoseActivityAwards()
+    public void ValuesBelowNativeActivityThresholdsOmitThreeAwards()
     {
         var match = CreateMatch(new MatchStatistics(), new MatchStatistics());
 
@@ -36,9 +40,68 @@ public sealed class EndgameAwardTests
 
         Assert.DoesNotContain(awards, result => result.Award == EndgameAward.Skull);
         Assert.DoesNotContain(awards, result => result.Award == EndgameAward.BigFatChicken);
-        AssertAward(awards, EndgameAward.Fist, 0, 0, 1);
+        Assert.DoesNotContain(awards, result => result.Award == EndgameAward.Fist);
         AssertAward(awards, EndgameAward.DollarSign, 0, 0, 1);
         AssertAward(awards, EndgameAward.Safe, 0, 0, 1);
+    }
+
+    [Fact]
+    public void NativeActivityThresholdsAreInclusive()
+    {
+        var match = CreateMatch(
+            new MatchStatistics(damageInflicted: 50, overthrows: 5, timesHidden: 10),
+            new MatchStatistics(damageInflicted: 49, overthrows: 4, timesHidden: 9));
+
+        var awards = EndgameAwardEvaluator.Evaluate(match);
+
+        AssertAward(awards, EndgameAward.Fist, 5, 0);
+        AssertAward(awards, EndgameAward.Skull, 50, 0);
+        AssertAward(awards, EndgameAward.BigFatChicken, 10, 0);
+    }
+
+    [Fact]
+    public void EliminatedPlayersRemainEligibleForNativeAwards()
+    {
+        var match = CreateMatch(
+            [new MatchStatistics(), new MatchStatistics(overthrows: 8)],
+            playerZeroControlsForty: false,
+            eliminatedPlayers: new HashSet<int> { 1 });
+
+        AssertAward(EndgameAwardEvaluator.Evaluate(match), EndgameAward.Fist, 8, 1);
+    }
+
+    [Fact]
+    public void SafeUsesTheNativeInitialCeiling()
+    {
+        var atCeiling = CreateMatch(
+            new MatchStatistics(cashSpent: 999_999),
+            new MatchStatistics(cashSpent: 1_000_000));
+        var aboveCeiling = CreateMatch(
+            new MatchStatistics(cashSpent: 1_000_000),
+            new MatchStatistics(cashSpent: 1_000_001));
+
+        AssertAward(EndgameAwardEvaluator.Evaluate(atCeiling),
+            EndgameAward.Safe, 999_999, 0);
+        Assert.DoesNotContain(EndgameAwardEvaluator.Evaluate(aboveCeiling),
+            award => award.Award == EndgameAward.Safe);
+    }
+
+    [Fact]
+    public void PresentationKeepsOnlyFirstThreeNativePriorityAwardsPerPlayer()
+    {
+        var match = CreateMatch(
+            new MatchStatistics(cashSpent: 10, damageInflicted: 50,
+                overthrows: 5, timesHidden: 10),
+            new MatchStatistics(cashSpent: 1));
+        var awards = EndgameAwardEvaluator.Evaluate(match);
+        var outcome = new MatchOutcome(ScenarioId.Big40, MatchEndReason.ObjectiveCompleted,
+            1, [new PlayerId(0)], [], awards);
+
+        Assert.Equal(
+            [EndgameAward.Fist, EndgameAward.Skull, EndgameAward.BigFatChicken],
+            EndgamePresentation.AwardsForPlayer(outcome, new PlayerId(0))
+                .Select(result => result.Award));
+        Assert.Throws<ArgumentOutOfRangeException>(() => EndgameLayout.Award(0, 3));
     }
 
     [Fact]
@@ -73,16 +136,21 @@ public sealed class EndgameAwardTests
 
     private static MatchState CreateMatch(
         MatchStatistics[] statistics,
-        bool playerZeroControlsForty)
+        bool playerZeroControlsForty,
+        IReadOnlySet<int>? eliminatedPlayers = null)
     {
         var data = BundledOriginalData.Load();
         var setups = statistics.Select((_, id) =>
             new MatchPlayerSetup(new PlayerId(id), $"PLAYER {id + 1}", PlayerController.Human)).ToArray();
         var setup = new MatchSetup(ScenarioId.Big40, GameDuration.SixMonths, 1996, setups);
         var players = setups.Select((player, id) =>
-            new MatchPlayerState(player, 500,
-                [new MatchGangState(new GangId(id), player.Id, 0, id, 10)],
-                statistics: statistics[id])).ToArray();
+        {
+            var eliminated = eliminatedPlayers?.Contains(id) == true;
+            return new MatchPlayerState(player, 500,
+                [new MatchGangState(new GangId(id), player.Id, 0, id, eliminated ? 0 : 10)],
+                status: eliminated ? PlayerStatus.Eliminated : PlayerStatus.Active,
+                statistics: statistics[id]);
+        }).ToArray();
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [

@@ -757,22 +757,27 @@ claim about original-game behavior.
   Fat Chicken to most hiding. Awards do not affect victory. Retaliatory damage
   is excluded from Damage Inflicted. The manual says no combat/hiding category
   award is given when that activity is not significant.
-- Interpretation: calculate all five superlatives from authoritative player
-  statistics at match completion. Preserve every tied recipient in player-ID
-  order. Treat zero direct damage and zero Hide resolutions as not significant,
-  omitting Skull and Big Fat Chicken respectively. Other zero-valued categories
-  are retained because the manual states no equivalent exclusion for them.
-- Current exclusions: the original significance threshold, tie presentation,
-  eliminated-player eligibility, and whether a repeated Hide while already
-  hidden increments the counter.
-- Confidence: High for award/statistic mapping and retaliation exclusion;
-  Medium for zero-activity omission; Low for ties and repeated Hide behavior.
+- Static binary confirmation: builder `0x0042b9e0` processes Fist, Skull, Big
+  Fat Chicken, Dollar Sign, then Safe. Their inclusive baselines are respectively
+  5 Overthrows, 50 direct Damage, 10 Hide resolutions, 0 Cash Spent, and a
+  999,999 initial least-spent ceiling. It scans all six player slots, including
+  inactive ones, and preserves every player tied at the selected value.
+- Interpretation: calculate the five superlatives in native priority order from
+  authoritative player statistics. Omit Fist, Skull, or Chicken below its
+  recovered activity threshold. Retain zero-valued Dollar/Safe ties. Outcome
+  data retains every award, while the native row presenter shows only the first
+  three awards assigned to a player.
+- Current exclusions: whether a repeated Hide while already hidden increments
+  the counter.
+- Confidence: High for award/statistic mapping, thresholds, scan/order, ties,
+  inactive-player eligibility, three-icon presentation cap, and retaliation
+  exclusion; Low for repeated Hide behavior.
 - Implementation: `EndgameAwardEvaluator`, `MatchStatistics.TimesHidden`,
   direct-damage accounting in `CommandResolver`, and award snapshots in
   `MatchOutcome`, `MatchEnded` events, and canonical hashes.
-- Tests: `EndgameAwardTests` covers every category, ties, zero combat/hiding,
-  outcome/event integration and hashes; `CombatResolutionTests` verifies that
+- Tests: `EndgameAwardTests` covers every category, exact inclusive thresholds,
+  priority, ties, three-icon presentation, outcome/event integration and hashes;
+  `CombatResolutionTests` verifies that
   retaliation is not credited; `InstantResolutionTests` verifies Hide counts.
-- Next experiment: finish controlled games with tied and zero values for every
-  statistic and repeat Hide commands across turns, then compare which icons and
-  recipients the original Endgame Screen displays.
+- Next experiment: repeat Hide commands across turns and compare the native
+  counter after already-hidden actions.
