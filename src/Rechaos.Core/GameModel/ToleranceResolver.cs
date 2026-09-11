@@ -31,8 +31,9 @@ public static class ToleranceResolver
 
     public static int ApplyBribe(MatchState state, MatchSectorState sector)
     {
-        var adjustment = SiteAdjustment(state, sector);
-        return checked(ManualRules.ApplyBribe(sector.Tolerance - adjustment) + adjustment);
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(sector);
+        return checked(sector.Tolerance + ManualRules.BribeToleranceIncrease);
     }
 
     public static int ApplySnitch(MatchState state, MatchSectorState sector)

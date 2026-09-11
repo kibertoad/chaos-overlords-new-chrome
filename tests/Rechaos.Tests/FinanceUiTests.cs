@@ -43,7 +43,7 @@ public sealed class FinanceUiTests
 
         var projected = FinanceProjection.Project(state, player, null);
         var recruit = state.Definitions.Gangs.Single(definition => definition.Id == offer);
-        Assert.Equal(-ManualRules.BribeCost, projected.CityOfficials);
+        Assert.Equal(-ManualRules.OriginalBribeCost, projected.CityOfficials);
         Assert.Equal(-HireRules.InitialCost(recruit), projected.NewContracts);
         Assert.Equal(baseline.ProjectedGangCount + 1, projected.ProjectedGangCount);
         Assert.Equal(baseline.GangUpkeep - recruit.Upkeep, projected.GangUpkeep);

@@ -177,24 +177,26 @@ controlled reference observation confirms its execution timing and edge cases.
 
 ### RULE-BRIBE-001 — Bribe tolerance adjustment
 
-- Source: `MANUAL-GOG-1`; command formula summary. Exact scan page location
-  still needs transcription into the evidence log.
-- Observed statement: Bribe costs $5 and raises the acting gang's sector
-  tolerance by 3, with a maximum unmodified tolerance of 40. Influenced-site
-  modifiers remain applied and may take the effective value outside 0–40.
-- Interpretation: during the Instant execution subphase, deduct $5 from the
-  commanding player, record it as cash spent, remove the current site modifier,
-  cap the adjusted base at 40, then restore the site modifier.
-- Current insufficient-cash behavior: the recreation emits an ordered failed
-  result and does not change cash or tolerance. This edge case is provisional.
-- Confidence: High for cost/delta/cap; Low for execution-time affordability and
-  failure notification behavior.
-- Implementation: `ManualRules.ApplyBribe`, `CommandResolver.ResolveBribe`.
-- Tests: `ManualRulesTests.BribeAddsThreeAndCapsAtForty`,
-  `CommandResolutionTests.BribeSpendsFiveAndAddsThreeTolerance`, and
+- Source: `MANUAL-GOG-1`; command formula summary, plus `BIN-BRIBE-001` for
+  shipped behavior. Exact scan page location still needs transcription.
+- Observed statement: the manual prints a $5 cost and maximum unmodified
+  tolerance of 40. The executable instead checks and deducts $3, records $3
+  spent, and directly adds 3 to effective tolerance without a 40-point clamp.
+- Interpretation: compatibility resolution follows the executable. During
+  Instant, cash below $3 emits an ordered failed result without mutation;
+  otherwise deduct and record $3, then add 3 directly to sector tolerance.
+- Confidence: High static evidence for execution-time affordability, cost,
+  cash-spent accounting, direct tolerance delta, and failure branch; Low for
+  exact failure notification wording.
+- Implementation: `CommandResolver.ResolveBribe` and
+  `ToleranceResolver.ApplyBribe`; `ManualRules.ApplyBribe` preserves only the
+  printed capped formula for comparison.
+- Tests: `ManualRulesTests` keeps the printed rule distinct;
+  `CommandResolutionTests.BribeSpendsThreeAndAddsThreeTolerance`, the exact-$3
+  boundary, and
   `CommandResolutionTests.BribeFailureIsOrderedAndDoesNotMutateCashOrTolerance`.
-- Next experiment: queue Bribe with $0–$5 in identical reference saves and
-  compare command retention, cash, tolerance, and event ordering.
+- Next experiment: capture the original failure message and compare command
+  retention after an insufficient-cash Bribe.
 
 ### RULE-SNITCH-001 — Snitch tolerance adjustment
 

@@ -7,7 +7,7 @@ namespace Rechaos.Tests;
 public sealed class CommandResolutionTests
 {
     [Fact]
-    public void BribeSpendsFiveAndAddsThreeTolerance()
+    public void BribeSpendsThreeAndAddsThreeTolerance()
     {
         var match = CreateMatch(cash: 10);
         QueueAndEnterExecution(match, GangAction.Bribe);
@@ -15,8 +15,8 @@ public sealed class CommandResolutionTests
 
         match.FinishExecutionPhase();
 
-        Assert.Equal(5, match.Players[0].Cash);
-        Assert.Equal(5, match.Players[0].Statistics.CashSpent);
+        Assert.Equal(7, match.Players[0].Cash);
+        Assert.Equal(3, match.Players[0].Statistics.CashSpent);
         Assert.Equal(toleranceBefore + 3, match.Sectors[0].Tolerance);
         Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
         Assert.Equal(GameEventKind.CommandResolved, match.Events[^1].Kind);
@@ -42,6 +42,21 @@ public sealed class CommandResolutionTests
         Assert.Equal(CommandResolutionCode.InsufficientCash, Assert.Single(match.LastPhaseResolutions).Code);
         Assert.Equal(GameEventKind.CommandFailed, match.Events[^1].Kind);
         Assert.Equal(CommandResolutionCode.InsufficientCash, match.Events[^1].Resolution!.Code);
+    }
+
+    [Fact]
+    public void BribeSucceedsAtExactThreeDollarBoundary()
+    {
+        var match = CreateMatch(cash: 3);
+        QueueAndEnterExecution(match, GangAction.Bribe);
+        var toleranceBefore = match.Sectors[0].Tolerance;
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(0, match.Players[0].Cash);
+        Assert.Equal(3, match.Players[0].Statistics.CashSpent);
+        Assert.Equal(toleranceBefore + 3, match.Sectors[0].Tolerance);
+        Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
     }
 
     [Fact]

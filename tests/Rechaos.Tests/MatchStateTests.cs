@@ -16,7 +16,7 @@ public sealed class MatchStateTests
 
     [Fact]
     public void BribeCostIsPartOfTheCommandDescriptor() =>
-        Assert.Equal(ManualRules.BribeCost, CommandRules.ByAction[GangAction.Bribe].CashCost);
+        Assert.Equal(ManualRules.OriginalBribeCost, CommandRules.ByAction[GangAction.Bribe].CashCost);
 
     [Fact]
     public void MatchRequiresExplicitCompleteBoard()

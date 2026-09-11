@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,146 tests with no warnings.
+  isolated Release build passed all 1,148 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -167,6 +167,10 @@ Last updated: 2026-09-11
   The binary's fixed player/roster-slot scan is reproduced, so friendly gangs
   roll and apply Influence separately and a later gang consumes no RNG after an
   earlier roster slot completes the site.
+- Bribe now follows the executable rather than the contradictory printed rule:
+  it requires and spends $3, records $3 spent, and adds 3 directly to effective
+  tolerance without the recreation's former 40-point base clamp. Finance and AI
+  affordability use the same shipped cost; the $5/cap helper is manual-only.
 - Control conflicts now use one phase-opening owner and defense snapshot for all
   player groups in a sector. The binary-recovered candidate list chooses equal
   positive leaders randomly in ascending player-slot order; at zero margin it

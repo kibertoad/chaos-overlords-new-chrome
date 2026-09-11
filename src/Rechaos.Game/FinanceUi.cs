@@ -71,7 +71,7 @@ public sealed record FinanceProjection(
             .ToArray();
         var equipment = commands.Sum(command => EquipmentAdjustment(state, command));
         var cityOfficials = -commands.Count(command => command.Action == GangAction.Bribe)
-            * ManualRules.BribeCost;
+            * ManualRules.OriginalBribeCost;
         var sectors = state.Sectors.Where(sector => Includes(sector.Id)).ToArray();
         var sectorTax = sectors.Count(sector => sector.Owner == player.Id)
             * ManualRules.ControlledSectorTax;

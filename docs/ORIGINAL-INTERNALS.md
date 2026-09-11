@@ -2011,6 +2011,25 @@ gang acts. A gang encountered after completion consumes no Influence RNG.
 per-gang Influence pools, immediate progress mutation, clamping, and the
 completion guard. Runtime seed correlation remains pending.
 
+### BIN-BRIBE-001 - shipped three-dollar cost and direct tolerance delta
+
+**Observation:** Case 2 in the Instant switch at `0x00472775`, lines 114-127,
+compares the player's cash with 3. Below 3 it calls the failure-report helper
+without mutation. Otherwise it subtracts 3 from cash, directly adds 3 to the
+sector tolerance byte, and adds 3 to the player's spending statistic. The
+block contains no 40-point clamp. This contradicts the manual's printed $5
+cost and capped description.
+
+**Interpretation:** Compatibility play uses the shipped $3 threshold and cost.
+Successful Bribe adds 3 directly to effective sector tolerance, including
+values above 40; insufficient cash produces the existing ordered failure and
+no mutation. The printed $5/cap helper remains isolated as manual evidence and
+is not used by authoritative resolution, finance projection, or AI budgeting.
+
+**Confidence:** High static evidence for threshold, cash/statistic deltas,
+tolerance delta, and failure branch. Exact original message wording remains
+unverified.
+
 ### BIN-CHAOS-001 - roster-order rolls and grouped uncontrolled payout
 
 **Observation:** The action-3 (**Chaos**) pass in `0x00472775` scans player

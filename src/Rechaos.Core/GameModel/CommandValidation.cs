@@ -75,7 +75,7 @@ public static class CommandRules
     {
         new(GangAction.Attack, CommandTargetKind.Gang, GangRelationship: GangTargetRelationship.Enemy,
             SpatialConstraint: SpatialConstraint.SameSector),
-        new(GangAction.Bribe, CommandTargetKind.None, CashCost: ManualRules.BribeCost),
+        new(GangAction.Bribe, CommandTargetKind.None, CashCost: ManualRules.OriginalBribeCost),
         new(GangAction.Chaos, CommandTargetKind.None),
         new(GangAction.Control, CommandTargetKind.None),
         new(GangAction.Equip, CommandTargetKind.Item),
