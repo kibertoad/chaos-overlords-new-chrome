@@ -46,6 +46,8 @@ public sealed class WinHelpDecoderTests
         Assert.Equal("Synthetic", topic.Title);
         Assert.Equal("Hello\nworld", topic.Text);
         Assert.True(topic.ListedInContents);
+        Assert.Equal(0, topic.TopicOffset);
+        Assert.Equal(topic.Text, string.Concat(topic.Runs!.Select(run => run.Text)));
         Assert.Collection(document.Contexts!,
             context =>
             {
@@ -66,6 +68,26 @@ public sealed class WinHelpDecoderTests
         Assert.Equal("Synthetic", entry.Label);
         Assert.Equal(topic.Id, entry.TopicId);
         Assert.Equal("SYNTH", entry.ContextName);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void DecoderPreservesLegacyFontStylesAndInternalTopicLinks(bool popup)
+    {
+        var document = WinHelpDecoder.Decode(
+            BuildHelpFile(styledLink: true, popupLink: popup),
+            Encoding.ASCII.GetBytes(":Title Synthetic Help\r\n1 Synthetic=SYNTH\r\n"));
+
+        var topic = Assert.Single(document.Topics);
+        Assert.Equal("Plain Bold City", topic.Text);
+        Assert.Contains(topic.Runs!, run => run.Text.Contains("Bold", StringComparison.Ordinal)
+                                           && run.Bold && run.Italic);
+        var link = Assert.Single(topic.Runs!, run => run.LinkHash is not null);
+        Assert.Equal("City", link.Text);
+        Assert.Equal(WinHelpDecoder.CalculateContextHash("CITYVIEW"), link.LinkHash);
+        Assert.Equal(popup, link.Popup);
+        Assert.Equal(20, link.HalfPoints);
     }
 
     [Theory]
@@ -111,7 +133,10 @@ public sealed class WinHelpDecoderTests
             StringComparison.Ordinal);
     }
 
-    private static byte[] BuildHelpFile(string topicName = "Synthetic")
+    private static byte[] BuildHelpFile(
+        string topicName = "Synthetic",
+        bool styledLink = false,
+        bool popupLink = false)
     {
         var system = new byte[12];
         WriteUInt16(system, 2, 33);
@@ -122,12 +147,12 @@ public sealed class WinHelpDecoderTests
         var topicHeaderLength = 21 + topicHeaderData.Length + topicTitle.Length;
         var topicHeader = BuildTopicLink(0x02, topicHeaderData, topicTitle,
             checked((uint)(12 + topicHeaderLength)));
-        byte[] paragraphCommands =
-        [
-            0, 0x80, 22, 0, 0, 0, 0, 0, 0,
-            0x81, 0xff
-        ];
-        var topicText = Encoding.ASCII.GetBytes("Hello\0world\0");
+        var paragraphCommands = styledLink
+            ? StyledParagraphCommands(popupLink)
+            : new byte[] { 0, 0x80, 22, 0, 0, 0, 0, 0, 0, 0x81, 0xff };
+        var topicText = Encoding.ASCII.GetBytes(styledLink
+            ? "Plain \0Bold \0City\0"
+            : "Hello\0world\0");
         var display = BuildTopicLink(0x20, paragraphCommands, topicText, uint.MaxValue);
         var uncompressedTopic = topicHeader.Concat(display).ToArray();
         var compressedTopic = LiteralCompress(uncompressedTopic);
@@ -137,8 +162,11 @@ public sealed class WinHelpDecoderTests
 
         var streams = new Dictionary<string, byte[]>
         {
-            ["|CONTEXT"] = BuildContextTree("SYNTH", 0),
+            ["|CONTEXT"] = styledLink
+                ? BuildContextTree(("SYNTH", 0), ("CITYVIEW", 0))
+                : BuildContextTree(("SYNTH", 0)),
             ["|CTXOMAP"] = BuildContextIdMap(7001, 0),
+            ["|FONT"] = BuildFontTable(),
             ["|PhrImage"] = [],
             ["|PhrIndex"] = phraseIndex,
             ["|SYSTEM"] = system,
@@ -192,7 +220,36 @@ public sealed class WinHelpDecoderTests
         return result;
     }
 
-    private static byte[] BuildContextTree(string name, int topicOffset)
+    private static byte[] StyledParagraphCommands(bool popup)
+    {
+        var result = new byte[20];
+        result[0] = 0;
+        result[1] = 0x80;
+        result[2] = 30;
+        result[9] = 0x80;
+        WriteInt16(result, 10, 1);
+        result[12] = popup ? (byte)0xe2 : (byte)0xe3;
+        WriteUInt32(result, 13, WinHelpDecoder.CalculateContextHash("CITYVIEW"));
+        result[17] = 0x89;
+        result[18] = 0xff;
+        return result;
+    }
+
+    private static byte[] BuildFontTable()
+    {
+        var result = new byte[30 + 22];
+        WriteUInt16(result, 0, 1);
+        WriteUInt16(result, 2, 2);
+        WriteUInt16(result, 4, 8);
+        WriteUInt16(result, 6, 30);
+        Encoding.ASCII.GetBytes("Times New Roman").CopyTo(result, 8);
+        result[30 + 1] = 20;
+        result[41] = 0x03;
+        result[41 + 1] = 20;
+        return result;
+    }
+
+    private static byte[] BuildContextTree(params (string Name, int TopicOffset)[] entries)
     {
         var tree = new byte[38 + 1024];
         WriteUInt16(tree, 0, 0x293b);
@@ -201,12 +258,16 @@ public sealed class WinHelpDecoderTests
         WriteInt16(tree, 28, -1);
         WriteInt16(tree, 30, 1);
         WriteInt16(tree, 32, 1);
-        WriteInt32(tree, 34, 1);
-        WriteInt16(tree, 38 + 2, 1);
+        WriteInt32(tree, 34, entries.Length);
+        WriteInt16(tree, 38 + 2, checked((short)entries.Length));
         WriteInt16(tree, 38 + 4, -1);
         WriteInt16(tree, 38 + 6, -1);
-        WriteUInt32(tree, 38 + 8, WinHelpDecoder.CalculateContextHash(name));
-        WriteInt32(tree, 38 + 12, topicOffset);
+        for (var index = 0; index < entries.Length; index++)
+        {
+            WriteUInt32(tree, 38 + 8 + index * 8,
+                WinHelpDecoder.CalculateContextHash(entries[index].Name));
+            WriteInt32(tree, 38 + 12 + index * 8, entries[index].TopicOffset);
+        }
         return tree;
     }
 

@@ -225,13 +225,19 @@ contents file. No topic bitmap or table records occur in the supported file.
 
 The extractor converts those user-owned inputs into local
 `help/contents.json`, preserving normalized readable text, topic titles, the
-contents hierarchy, and which topics are listed. Before recreation-authored
+contents hierarchy, topic logical offsets, styled runs, internal hotspots, and
+which topics are listed. Before recreation-authored
 clarifications are applied, the decoded text totals 57,640 characters and has
 SHA-256 `c212f3909b177093863b8a59af1830d8e65359fa452f572ff581e48f01bc7609`
 after newline normalization. An independent parser produced the same character
 count and hash. Container structure, decompression, topic count, and source text
-are therefore **High** confidence. Inline formatting, link targets, and context
-IDs are not yet preserved and remain **Low** confidence.
+are therefore **High** confidence. The supported file has nine 11-byte legacy
+font descriptors and produces 779 normalized styled runs. It uses 93 internal
+context-hash hotspots (67 topic jumps and 26 popups), all of which resolve
+through the native 80-entry context map; it has no topic images, external-file
+links, or macro hotspots. Bold, italic, underline, double-underline, strikeout,
+small-caps, half-point size, link hash, and popup intent are retained. Exact
+native WinHelp font metrics and paragraph geometry remain **Low** confidence.
 
 The generated Attack topic appends a clearly labeled New Chrome clarification:
 the effective roll is gang Combat plus current Force minus defender Defense,
@@ -245,7 +251,7 @@ Force term for players without altering the preserved source files.
 |---|---|---|
 | `CLT00002` | 944-byte color-related lookup/table; begins repeated four-byte entries resembling B, G, R, flag/index. Not decoded. | **Low** |
 | `DATA.Z` | 7,676,546-byte opaque binary. It does not expose a recognized signature in its first bytes (`13 5D 65 8C ...`). Purpose and compression unknown. | **Low** |
-| `HELP/` | Original WinHelp sources are copied for provenance and decoded locally into the modern topic document described above. | **High** for text/topics; **Low** for formatting/link metadata |
+| `HELP/` | Original WinHelp sources are copied for provenance and decoded locally into the modern topic document described above. | **High** for text, topics, font-style metadata, and internal links; **Low** for native typography/paragraph geometry |
 
 ## Save games (historical reference only; unsupported)
 

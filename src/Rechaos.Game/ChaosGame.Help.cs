@@ -69,7 +69,90 @@ public static class HelpTextLayout
         }
         return lines;
     }
+
+    public static IReadOnlyList<HelpTextLine> Wrap(
+        ExtractedHelpTopic topic,
+        int columns)
+    {
+        ArgumentNullException.ThrowIfNull(topic);
+        if (columns <= 0) throw new ArgumentOutOfRangeException(nameof(columns));
+        var source = topic.Runs is { Count: > 0 }
+            ? topic.Runs
+            : [new ExtractedHelpTextRun(topic.Text)];
+        var paragraphs = new List<List<HelpStyledCharacter>> { new() };
+        foreach (var run in source)
+        foreach (var character in run.Text)
+        {
+            if (character == '\r') continue;
+            if (character == '\n') paragraphs.Add([]);
+            else paragraphs[^1].Add(new HelpStyledCharacter(character, run));
+        }
+
+        var lines = new List<HelpTextLine>();
+        foreach (var paragraph in paragraphs)
+        {
+            if (paragraph.Count == 0)
+            {
+                lines.Add(new HelpTextLine([]));
+                continue;
+            }
+            var start = 0;
+            while (paragraph.Count - start > columns)
+            {
+                var split = -1;
+                for (var index = Math.Min(start + columns, paragraph.Count - 1);
+                     index > start;
+                     index--)
+                    if (paragraph[index].Value == ' ')
+                    {
+                        split = index;
+                        break;
+                    }
+                if (split < 0) split = start + columns;
+                lines.Add(BuildLine(paragraph, start, split));
+                start = split;
+                while (start < paragraph.Count && paragraph[start].Value == ' ') start++;
+            }
+            lines.Add(BuildLine(paragraph, start, paragraph.Count));
+        }
+        return lines;
+    }
+
+    private static HelpTextLine BuildLine(
+        IReadOnlyList<HelpStyledCharacter> paragraph,
+        int start,
+        int end)
+    {
+        while (end > start && paragraph[end - 1].Value == ' ') end--;
+        var runs = new List<ExtractedHelpTextRun>();
+        for (var index = start; index < end; index++)
+        {
+            var character = paragraph[index];
+            var next = character.Style with { Text = character.Value.ToString() };
+            if (runs.LastOrDefault() is { } previous && SameStyle(previous, next))
+                runs[^1] = previous with { Text = previous.Text + next.Text };
+            else
+                runs.Add(next);
+        }
+        return new HelpTextLine(runs);
+    }
+
+    private static bool SameStyle(ExtractedHelpTextRun left, ExtractedHelpTextRun right) =>
+        left.Bold == right.Bold && left.Italic == right.Italic
+        && left.Underline == right.Underline && left.Strikethrough == right.Strikethrough
+        && left.DoubleUnderline == right.DoubleUnderline && left.SmallCaps == right.SmallCaps
+        && left.HalfPoints == right.HalfPoints && left.LinkHash == right.LinkHash
+        && left.Popup == right.Popup;
+
+    private readonly record struct HelpStyledCharacter(char Value, ExtractedHelpTextRun Style);
 }
+
+public sealed record HelpTextLine(IReadOnlyList<ExtractedHelpTextRun> Runs)
+{
+    public string Text => string.Concat(Runs.Select(run => run.Text));
+}
+
+public readonly record struct HelpLinkTarget(int TopicIndex, bool Popup);
 
 public static class HelpNavigation
 {
@@ -118,6 +201,29 @@ public static class HelpNavigation
         for (var index = 0; index < topicOrder.Count; index++)
             if (topicOrder[index] == topicId) return index;
         return -1;
+    }
+
+    public static HelpLinkTarget? ResolveLink(
+        ExtractedHelpDocument document,
+        ExtractedHelpTextRun run)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(run);
+        if (run.LinkHash is not { } hash || document.Contexts is null) return null;
+        var context = document.Contexts.FirstOrDefault(entry => entry.Hash == hash);
+        if (context is null) return null;
+        var topicIndex = -1;
+        var greatestOffset = -1;
+        for (var index = 0; index < document.Topics.Count; index++)
+        {
+            var offset = document.Topics[index].TopicOffset;
+            if (offset <= context.TargetOffset && offset > greatestOffset)
+            {
+                topicIndex = index;
+                greatestOffset = offset;
+            }
+        }
+        return topicIndex < 0 ? null : new HelpLinkTarget(topicIndex, run.Popup);
     }
 
     public static string ContextTitle(ClientScreen screen) => screen switch
@@ -178,6 +284,7 @@ public sealed partial class ChaosGame
     private int _helpTopicIndex;
     private int _helpTopicOffset;
     private int _helpLineOffset;
+    private int? _helpPopupTopicIndex;
     private IReadOnlyList<int> _helpTopicOrder = [];
 
     private void OpenHelp()
@@ -198,6 +305,7 @@ public sealed partial class ChaosGame
             ? 0
             : HelpLayout.TopicWindowStart(_helpTopicOrder.Count, topicPosition);
         _helpLineOffset = 0;
+        _helpPopupTopicIndex = null;
         _screens.Show(ClientScreen.Help);
         _message = _helpDocument is null ? "HELP CONTENT IS UNAVAILABLE" : string.Empty;
     }
@@ -213,9 +321,15 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.F1) || Pressed(keyboard, Keys.Escape)
             || Pressed(keyboard, Keys.Back))
         {
+            if (_helpPopupTopicIndex is not null)
+            {
+                _helpPopupTopicIndex = null;
+                return;
+            }
             CloseHelp();
             return;
         }
+        if (_helpPopupTopicIndex is not null) return;
         if (Pressed(keyboard, Keys.Up)) ChangeHelpTopic(-1);
         if (Pressed(keyboard, Keys.Down)) ChangeHelpTopic(1);
         if (Pressed(keyboard, Keys.Home)) SelectHelpTopicPosition(0);
@@ -248,13 +362,19 @@ public sealed partial class ChaosGame
     {
         if (_helpDocument is null) return;
         var lines = HelpTextLayout.Wrap(
-            _helpDocument.Topics[_helpTopicIndex].Text, HelpLayout.TextColumns);
+            _helpDocument.Topics[_helpTopicIndex], HelpLayout.TextColumns);
         _helpLineOffset = Math.Clamp(_helpLineOffset + delta,
             0, Math.Max(0, lines.Count - HelpLayout.VisibleTextLines));
     }
 
     private void HandleHelpClick(Point point)
     {
+        if (_helpPopupTopicIndex is not null)
+        {
+            _helpPopupTopicIndex = null;
+            return;
+        }
+        if (TryFollowHelpLink(point)) return;
         if (HelpLayout.Done.Contains(point)) CloseHelp();
         else if (_helpDocument is not null)
         {
@@ -268,9 +388,45 @@ public sealed partial class ChaosGame
         }
     }
 
+    private bool TryFollowHelpLink(Point point)
+    {
+        if (_helpDocument is null || point.X < 226 || point.Y < 94
+            || !HelpLayout.Text.Contains(point))
+            return false;
+        var lines = HelpTextLayout.Wrap(
+            _helpDocument.Topics[_helpTopicIndex], HelpLayout.TextColumns);
+        var row = (point.Y - 94) / OriginalFontLayout.LineHeight;
+        if (row < 0 || row >= HelpLayout.VisibleTextLines
+            || _helpLineOffset + row >= lines.Count)
+            return false;
+        var column = (point.X - 226) / OriginalFontLayout.CellWidth;
+        var cursor = 0;
+        foreach (var run in lines[_helpLineOffset + row].Runs)
+        {
+            if (column >= cursor && column < cursor + run.Text.Length
+                && HelpNavigation.ResolveLink(_helpDocument, run) is { } target)
+            {
+                if (target.Popup)
+                    _helpPopupTopicIndex = target.TopicIndex;
+                else
+                {
+                    _helpTopicIndex = target.TopicIndex;
+                    var position = HelpNavigation.PositionOf(_helpTopicOrder, target.TopicIndex);
+                    if (position >= 0)
+                        _helpTopicOffset = HelpLayout.TopicWindowStart(
+                            _helpTopicOrder.Count, position);
+                    _helpLineOffset = 0;
+                }
+                return true;
+            }
+            cursor += run.Text.Length;
+        }
+        return false;
+    }
+
     private void HandleHelpScroll(Point point, int wheelDelta)
     {
-        if (_helpDocument is null || wheelDelta == 0) return;
+        if (_helpDocument is null || _helpPopupTopicIndex is not null || wheelDelta == 0) return;
         if (HelpLayout.TopicList.Contains(point))
             _helpTopicOffset = HelpLayout.ScrollTopicWindow(
                 _helpTopicOrder.Count, _helpTopicOffset, wheelDelta);
@@ -304,6 +460,7 @@ public sealed partial class ChaosGame
         {
             DrawHelpTopics(batch, pixel, font);
             DrawHelpText(batch, pixel, font);
+            if (_helpPopupTopicIndex is not null) DrawHelpPopup(batch, pixel, font);
         }
         DrawButton(batch, pixel, font, HelpLayout.Done, "DONE", true);
     }
@@ -337,12 +494,62 @@ public sealed partial class ChaosGame
         var title = topic.Title.ToUpperInvariant();
         if (title.Length > HelpLayout.TextColumns) title = title[..HelpLayout.TextColumns];
         font.Draw(batch, title, new Vector2(226, 74), Color.Gold, 1);
-        var lines = HelpTextLayout.Wrap(topic.Text, HelpLayout.TextColumns);
+        var lines = HelpTextLayout.Wrap(topic, HelpLayout.TextColumns);
         for (var row = 0; row < HelpLayout.VisibleTextLines && _helpLineOffset + row < lines.Count; row++)
-            font.Draw(batch, lines[_helpLineOffset + row], new Vector2(226, 94 + row * 9),
-                new Color(210, 220, 216), 1);
+            DrawHelpLine(batch, pixel, font, lines[_helpLineOffset + row], 226, 94 + row * 9);
+        var position = HelpNavigation.PositionOf(_helpTopicOrder, _helpTopicIndex);
+        var topicPosition = position < 0 ? "LINKED" : $"{position + 1}/{_helpTopicOrder.Count}";
         font.Draw(batch,
-            $"TOPIC {HelpNavigation.PositionOf(_helpTopicOrder, _helpTopicIndex) + 1}/{_helpTopicOrder.Count}  LINE {_helpLineOffset + 1}/{Math.Max(1, lines.Count)}",
+            $"TOPIC {topicPosition}  LINE {_helpLineOffset + 1}/{Math.Max(1, lines.Count)}",
             new Vector2(226, 370), new Color(155, 180, 172), 1);
+    }
+
+    private static void DrawHelpLine(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        HelpTextLine line,
+        int x,
+        int y)
+    {
+        foreach (var run in line.Runs)
+        {
+            var color = run.LinkHash is not null
+                ? new Color(90, 220, 205)
+                : run.HalfPoints >= 24 || run.Bold
+                    ? Color.White
+                    : run.Italic ? new Color(180, 205, 170) : new Color(210, 220, 216);
+            font.Draw(batch, run.Text, new Vector2(x, y), color, 1);
+            var width = run.Text.Length * OriginalFontLayout.CellWidth;
+            if (run.Bold) font.Draw(batch, run.Text, new Vector2(x + 1, y), color, 1);
+            if (run.Underline || run.LinkHash is not null)
+                batch.Draw(pixel, new Rectangle(x, y + 7, width, 1), color);
+            if (run.DoubleUnderline)
+                batch.Draw(pixel, new Rectangle(x, y + 5, width, 1), color);
+            if (run.Strikethrough)
+                batch.Draw(pixel, new Rectangle(x, y + 3, width, 1), color);
+            x += width;
+        }
+    }
+
+    private void DrawHelpPopup(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        var topic = _helpDocument!.Topics[_helpPopupTopicIndex!.Value];
+        var panel = new Rectangle(260, 116, 326, 210);
+        batch.Draw(pixel, panel, new Color(8, 18, 20, 252));
+        DrawBorder(batch, pixel, panel, new Color(90, 220, 205), 2);
+        var hasAuthoredTitle = !topic.Title.StartsWith(
+            "Additional topic ", StringComparison.Ordinal);
+        if (hasAuthoredTitle)
+        {
+            var title = topic.Title.ToUpperInvariant();
+            if (title.Length > 48) title = title[..48];
+            font.Draw(batch, title, new Vector2(panel.X + 10, panel.Y + 10), Color.Gold, 1);
+        }
+        var lines = HelpTextLayout.Wrap(topic, 48);
+        var firstLineY = panel.Y + (hasAuthoredTitle ? 28 : 10);
+        var visibleLines = hasAuthoredTitle ? 18 : 20;
+        for (var row = 0; row < visibleLines && row < lines.Count; row++)
+            DrawHelpLine(batch, pixel, font, lines[row], panel.X + 10, firstLineY + row * 9);
     }
 }

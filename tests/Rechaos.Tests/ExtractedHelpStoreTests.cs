@@ -19,8 +19,15 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             ExtractedHelpStore.LoadOrNull(_directory.FullName));
         Assert.Equal(expected.FormatVersion, actual.FormatVersion);
         Assert.Equal(expected.Title, actual.Title);
-        Assert.Equal(expected.Topics, actual.Topics);
+        Assert.Equal(expected.Topics.Count, actual.Topics.Count);
+        for (var index = 0; index < expected.Topics.Count; index++)
+        {
+            Assert.Equal(expected.Topics[index] with { Runs = null },
+                actual.Topics[index] with { Runs = null });
+            Assert.Equal(expected.Topics[index].Runs!, actual.Topics[index].Runs!);
+        }
         Assert.Equal(expected.Contents, actual.Contents);
+        Assert.Equal(expected.Contexts, actual.Contexts);
     }
 
     [Fact]
@@ -42,6 +49,12 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             Contexts = [new ExtractedHelpContext(null, null, null, 0)]
         });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
+        Write(Document() with
+        {
+            Topics = [new ExtractedHelpTopic(0, "Topic", "Mismatch", true, 0,
+                [new ExtractedHelpTextRun("Different")])]
+        });
+        Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
     }
 
     [Fact]
@@ -49,6 +62,24 @@ public sealed class ExtractedHelpStoreTests : IDisposable
     {
         Assert.Equal(["ONE TWO", "THREE", "", "ABCDEFG", "HI"],
             HelpTextLayout.Wrap("ONE TWO THREE\n\nABCDEFGHI", 7));
+    }
+
+    [Fact]
+    public void StyledHelpWrapPreservesFormattingAndLinksAcrossLineBreaks()
+    {
+        const uint target = 0x86ee9810;
+        var topic = new ExtractedHelpTopic(0, "Topic", "ONE TWO THREE", true, 0,
+        [
+            new ExtractedHelpTextRun("ONE ", Bold: true),
+            new ExtractedHelpTextRun("TWO THREE", Underline: true, LinkHash: target)
+        ]);
+
+        var lines = HelpTextLayout.Wrap(topic, 7);
+
+        Assert.Equal(["ONE TWO", "THREE"], lines.Select(line => line.Text));
+        Assert.True(lines[0].Runs[0].Bold);
+        Assert.Equal(target, lines[0].Runs[^1].LinkHash);
+        Assert.Equal(target, lines[1].Runs[0].LinkHash);
     }
 
     [Fact]
@@ -77,9 +108,9 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             ExtractedHelpDocument.CurrentFormatVersion,
             "Help",
             [
-                new ExtractedHelpTopic(10, "First", "A", true),
-                new ExtractedHelpTopic(20, "Additional topic", "B", false),
-                new ExtractedHelpTopic(30, "Last", "C", true)
+                Topic(10, "First", "A", true),
+                Topic(20, "Additional topic", "B", false),
+                Topic(30, "Last", "C", true)
             ],
             [
                 new ExtractedHelpContentsEntry(1, "Last", 30),
@@ -114,8 +145,8 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             ExtractedHelpDocument.CurrentFormatVersion,
             "Help",
             [
-                new ExtractedHelpTopic(10, "Sites", "Control overview", true),
-                new ExtractedHelpTopic(20, "Sites", "Site reference", true)
+                Topic(10, "Sites", "Control overview", true),
+                Topic(20, "Sites", "Site reference", true)
             ],
             [
                 new ExtractedHelpContentsEntry(1, "Sites", 10, "SITE"),
@@ -127,6 +158,27 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             document, HelpNavigation.TopicOrder(document), ClientScreen.Site));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void HelpLinksResolveContextAnchorsInsideListedOrUnlistedTopics(bool popup)
+    {
+        const uint hash = 0x12345678;
+        var document = new ExtractedHelpDocument(
+            ExtractedHelpDocument.CurrentFormatVersion,
+            "Help",
+            [
+                Topic(1, "First", "A", true, 0),
+                Topic(2, "Definition", "B", false, 100),
+                Topic(3, "Last", "C", true, 200)
+            ],
+            [],
+            [new ExtractedHelpContext(null, hash, null, 150)]);
+
+        Assert.Equal(new HelpLinkTarget(1, popup), HelpNavigation.ResolveLink(
+            document, new ExtractedHelpTextRun("LINK", LinkHash: hash, Popup: popup)));
+    }
+
     [Fact]
     public void HelpContextLookupIgnoresLegacyEllipsisStyling()
     {
@@ -134,8 +186,8 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             ExtractedHelpDocument.CurrentFormatVersion,
             "Help",
             [
-                new ExtractedHelpTopic(2, "Introduction", "A", true),
-                new ExtractedHelpTopic(7, "Give…", "B", true)
+                Topic(2, "Introduction", "A", true),
+                Topic(7, "Give…", "B", true)
             ],
             [
                 new ExtractedHelpContentsEntry(1, "Introduction", 2),
@@ -161,7 +213,15 @@ public sealed class ExtractedHelpStoreTests : IDisposable
     private static ExtractedHelpDocument Document() => new(
         ExtractedHelpDocument.CurrentFormatVersion,
         "Synthetic Help",
-        [new ExtractedHelpTopic(0, "Topic", "Readable text", true)],
+        [Topic(0, "Topic", "Readable text", true)],
         [new ExtractedHelpContentsEntry(0, "Topic", 0)],
         []);
+
+    private static ExtractedHelpTopic Topic(
+        int id,
+        string title,
+        string text,
+        bool listed,
+        int offset = 0) =>
+        new(id, title, text, listed, offset, [new ExtractedHelpTextRun(text)]);
 }

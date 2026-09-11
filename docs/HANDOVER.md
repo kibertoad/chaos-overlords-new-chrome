@@ -1,24 +1,24 @@
 # Development handover
 
-Status: paused at a validated, published checkpoint
+Status: active at a validated local checkpoint
 Last updated: 2026-09-11
 
 ## Repository state
 
 - The canonical repository is
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`. All functional
-  checkpoints through the sole-survivor/endgame-ranking parity batches are
-  published on `main`; the local `codex/full-reimplementation` branch contains
-  the same history and remains the development branch for a future session.
+  checkpoints through native WinHelp context recovery are published on `main`;
+  the local `codex/full-reimplementation` branch additionally contains the
+  styled-text and internal-hotspot batch and remains the development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,266 tests with no warnings.
+  isolated Release build passed all 1,271 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
 - Native saves are format v19, replays are v21, canonical hashes are v22, asset
-  manifests are v4, extracted help is v1, and client preferences are v6. Save
+  manifests are v6, extracted help is v3, and client preferences are v6. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
 
@@ -142,11 +142,17 @@ Last updated: 2026-09-11
   player-facing entries in the original contents order and omits 21 unlisted
   internal fragments; documents without a contents table safely fall back to
   all decoded topics. Mouse-wheel scrolling follows the topic-list/content pane
-  under the pointer. Asset-pack format 5 preserves all 80 native `|CONTEXT`
+  under the pointer. Asset-pack format 6 preserves all 80 native `|CONTEXT`
   hash/target pairs, verifies every one of the 59 `CHAOS.CNT` context names, and
   records that this file's `|CTXOMAP` contains no numeric IDs. Contextual F1
   routing now uses those exact symbols rather than ambiguous topic-title
-  matching; title matching remains only as a bounded fallback. The Attack topic
+  matching; title matching remains only as a bounded fallback. Extracted-help
+  format 3 also preserves 779 normalized authored runs from nine legacy font
+  descriptors and all 93 internal hotspots: 67 topic jumps navigate in place
+  and 26 popup links expose the unlisted definition fragments modally. Bold,
+  italic, underline, double-underline, strikeout, small-caps, and source size
+  metadata are retained; the pixel viewer renders emphasis, link underlines,
+  and popup modality without executing macro or external-file commands. The Attack topic
   carries the corrected Force-inclusive simultaneous-combat explanation.
 - Music and sound effects have independent recovered 0-10 controls and persisted
   defaults. Full local-setup push buttons, setup selection/rejection, panel
@@ -302,10 +308,10 @@ Last updated: 2026-09-11
    the reference contradicts it.
 3. Investigate and explain the reported GOG/1.1 Detailed Combat freeze, then
    compare the bounded recreation cadence with a controlled original capture.
-4. Recover WinHelp inline links and formatting now that native context
-   names/hashes and the absence of numeric map IDs are recorded.
-5. Complete remaining sound triggers, native audio/music validation, and the
-   Smacker video playback/transcode decision.
+4. Complete remaining sound triggers and native audio/music validation.
+5. Decide and implement Smacker playback or extractor-side transcoding; capture
+   native WinHelp typography/paragraph geometry only where pixel-viewer fidelity
+   materially benefits from it.
 
 For authoritative scope and parity status, continue with
 [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) and

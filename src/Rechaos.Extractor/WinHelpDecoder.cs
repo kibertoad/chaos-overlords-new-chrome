@@ -4,7 +4,7 @@ using Rechaos.Core.Assets;
 
 namespace Rechaos.Extractor;
 
-public static class WinHelpDecoder
+public static partial class WinHelpDecoder
 {
     public const int MaximumHelpBytes = 4 * 1024 * 1024;
     public const int MaximumContentsBytes = 64 * 1024;
@@ -45,13 +45,21 @@ public static class WinHelpDecoder
                 $"Unsupported WinHelp topic encoding (minor {minorVersion}, flags {flags}).");
 
         var phrases = ReadHallPhrases(container);
-        var topics = ReadTopics(container.ReadStream("|TOPIC"), flags, phrases);
+        var fonts = container.TryReadStream("|FONT", out var fontStream)
+            ? ReadFonts(fontStream.Span)
+            : [];
+        var topics = ReadTopics(container.ReadStream("|TOPIC"), flags, phrases, fonts);
         var contexts = container.TryReadStream("|CONTEXT", out var contextStream)
             ? ReadContextMap(contextStream.Span)
             : new Dictionary<uint, int>();
         var contextIds = container.TryReadStream("|CTXOMAP", out var contextIdStream)
             ? ReadContextIds(contextIdStream.Span)
             : new Dictionary<uint, int>();
+        var missingLink = topics.SelectMany(topic => topic.Runs ?? [])
+            .FirstOrDefault(run => run.LinkHash is { } hash && !contexts.ContainsKey(hash));
+        if (missingLink?.LinkHash is { } missingHash)
+            throw new InvalidDataException(
+                $"WinHelp topic link {missingHash:X8} is missing from the context map.");
         var parsedContents = ParseContents(contents.Span);
         var listedTopics = parsedContents.Count(entry => entry.Reference is not null);
         if (listedTopics > topics.Count)
@@ -137,7 +145,10 @@ public static class WinHelpDecoder
             "Attack Roll = gang Combat + current Force - defender Defense. " +
             "Combat is simultaneous, so a gang eliminated during the round still attacks " +
             "using the Force it had at the start of the round.";
-        return topic with { Text = $"{topic.Text.TrimEnd()}\n\n{clarification}" };
+        var text = $"{topic.Text.TrimEnd()}\n\n{clarification}";
+        var runs = (topic.Runs ?? []).ToList();
+        runs.Add(new ExtractedHelpTextRun($"\n\n{clarification}", Bold: true));
+        return topic with { Text = text, Runs = runs };
     }
 
     public static byte[] DecompressLz77(ReadOnlySpan<byte> input, int maximumOutputBytes)
@@ -246,7 +257,8 @@ public static class WinHelpDecoder
     private static List<ExtractedHelpTopic> ReadTopics(
         ReadOnlyMemory<byte> topicStream,
         ushort flags,
-        IReadOnlyList<byte[]> phrases)
+        IReadOnlyList<byte[]> phrases,
+        IReadOnlyList<HelpFont> fonts)
     {
         var physicalBlockSize = flags == 8 ? 2048 : 4096;
         var blockCount = (topicStream.Length + physicalBlockSize - 1) / physicalBlockSize;
@@ -283,17 +295,27 @@ public static class WinHelpDecoder
                     parseData = [.. block, .. nextBlock.AsSpan(0, continuation)];
                 }
             }
-            ReadTopicLinks(parseData, topicPosition, firstLinkOffset, phrases, topics);
+            ReadTopicLinks(parseData, topicPosition, firstLinkOffset,
+                blockIndex * 0x8000, phrases, fonts, topics);
         }
 
         return topics.Where(topic => !string.IsNullOrWhiteSpace(topic.Title)
-                                     || !string.IsNullOrWhiteSpace(topic.Text.ToString()))
+                                     || topic.Runs.Any(run =>
+                                         !string.IsNullOrWhiteSpace(run.Text.ToString())))
             .Take(MaximumTopics)
-            .Select((topic, index) => new ExtractedHelpTopic(
-                index,
-                string.IsNullOrWhiteSpace(topic.Title) ? $"Additional topic {index + 1}" : topic.Title,
-                NormalizeText(topic.Text.ToString()),
-                false))
+            .Select((topic, index) =>
+            {
+                var runs = NormalizeRuns(topic.Runs);
+                return new ExtractedHelpTopic(
+                    index,
+                    string.IsNullOrWhiteSpace(topic.Title)
+                        ? $"Additional topic {index + 1}"
+                        : topic.Title,
+                    string.Concat(runs.Select(run => run.Text)),
+                    false,
+                    topic.TopicOffset,
+                    runs);
+            })
             .ToList();
     }
 
@@ -301,10 +323,13 @@ public static class WinHelpDecoder
         ReadOnlySpan<byte> data,
         int topicPosition,
         int firstLinkOffset,
+        int initialTopicOffset,
         IReadOnlyList<byte[]> phrases,
+        IReadOnlyList<HelpFont> fonts,
         List<MutableTopic> topics)
     {
         var offset = firstLinkOffset;
+        var topicOffset = initialTopicOffset;
         while (offset + TopicLinkSize <= data.Length)
         {
             var rawBlockSize = ReadUInt32(data, offset);
@@ -331,14 +356,15 @@ public static class WinHelpDecoder
             {
                 var titleEnd = data2.AsSpan().IndexOf((byte)0);
                 var title = DecodeWindows1252(titleEnd < 0 ? data2 : data2.AsSpan(0, titleEnd));
-                topics.Add(new MutableTopic(title));
+                topics.Add(new MutableTopic(title, topicOffset));
                 if (topics.Count > MaximumTopics)
                     throw new InvalidDataException("WinHelp topic count exceeds the supported bound.");
             }
             else if (recordType == 0x20 && topics.Count > 0)
             {
-                AppendDisplayText(topics[^1].Text, data1, data2);
-                if (topics[^1].Text.Length > MaximumTopicTextBytes)
+                topicOffset = checked(topicOffset + ParagraphTopicLength(data1));
+                AppendDisplayText(topics[^1], data1, data2, fonts);
+                if (topics[^1].Runs.Sum(run => run.Text.Length) > MaximumTopicTextBytes)
                     throw new InvalidDataException("WinHelp topic text exceeds the supported bound.");
             }
 
@@ -350,26 +376,83 @@ public static class WinHelpDecoder
     }
 
     private static void AppendDisplayText(
-        StringBuilder output,
+        MutableTopic topic,
         ReadOnlySpan<byte> data1,
-        ReadOnlySpan<byte> data2)
+        ReadOnlySpan<byte> data2,
+        IReadOnlyList<HelpFont> fonts)
     {
         var commandOffset = ParagraphCommandsOffset(data1);
         var textOffset = 0;
+        var fontIndex = -1;
+        uint? linkHash = null;
+        var popup = false;
         var iterations = 0;
         while (iterations++ < data1.Length + data2.Length + 16)
         {
             var terminator = data2[textOffset..].IndexOf((byte)0);
             var length = terminator < 0 ? data2.Length - textOffset : terminator;
-            output.Append(DecodeWindows1252(data2.Slice(textOffset, length)));
+            AddRun(topic.Runs, DecodeWindows1252(data2.Slice(textOffset, length)),
+                FontAt(fonts, fontIndex), linkHash, popup);
             textOffset += length + (terminator < 0 ? 0 : 1);
             if (commandOffset >= data1.Length) break;
             var command = data1[commandOffset];
             if (command == 0xff) break;
-            commandOffset = SkipFormattingCommand(data1, commandOffset, output);
+            switch (command)
+            {
+                case 0x80:
+                    Require(data1, commandOffset + 1, 2);
+                    fontIndex = ReadInt16(data1, commandOffset + 1);
+                    commandOffset += 3;
+                    break;
+                case 0x81:
+                    AddRun(topic.Runs, "\n", FontAt(fonts, fontIndex), linkHash, popup);
+                    commandOffset++;
+                    break;
+                case 0x82:
+                    AddRun(topic.Runs, "\n\n", FontAt(fonts, fontIndex), linkHash, popup);
+                    commandOffset++;
+                    break;
+                case 0x83:
+                case 0x8b:
+                    AddRun(topic.Runs, " ", FontAt(fonts, fontIndex), linkHash, popup);
+                    commandOffset++;
+                    break;
+                case 0x8c:
+                    AddRun(topic.Runs, "-", FontAt(fonts, fontIndex), linkHash, popup);
+                    commandOffset++;
+                    break;
+                case 0x89:
+                    linkHash = null;
+                    popup = false;
+                    commandOffset++;
+                    break;
+                case 0xe0:
+                case 0xe1:
+                    throw new InvalidDataException(
+                        "WinHelp 3.0 topic-number links are unsupported in an HC31 document.");
+                case 0xe2:
+                case 0xe3:
+                case 0xe6:
+                case 0xe7:
+                    Require(data1, commandOffset + 1, 4);
+                    linkHash = ReadUInt32(data1, commandOffset + 1);
+                    popup = command is 0xe2 or 0xe6;
+                    commandOffset += 5;
+                    break;
+                default:
+                    commandOffset = SkipFormattingCommand(data1, commandOffset);
+                    break;
+            }
             if (terminator < 0 && textOffset >= data2.Length) break;
         }
-        output.AppendLine().AppendLine();
+        AddRun(topic.Runs, "\n\n", FontAt(fonts, fontIndex), null, false);
+    }
+
+    private static int ParagraphTopicLength(ReadOnlySpan<byte> data)
+    {
+        var offset = 0;
+        _ = ReadCompressedLong(data, ref offset);
+        return ReadCompressedWord(data, ref offset);
     }
 
     private static int ParagraphCommandsOffset(ReadOnlySpan<byte> data)
@@ -402,28 +485,11 @@ public static class WinHelpDecoder
         return offset;
     }
 
-    private static int SkipFormattingCommand(ReadOnlySpan<byte> data, int offset, StringBuilder output)
+    private static int SkipFormattingCommand(ReadOnlySpan<byte> data, int offset)
     {
         var command = data[offset];
         switch (command)
         {
-            case 0x80:
-                return Advance(data, offset, 3);
-            case 0x81:
-                output.AppendLine();
-                return offset + 1;
-            case 0x82:
-                output.AppendLine().AppendLine();
-                return offset + 1;
-            case 0x83:
-                output.Append(' ');
-                return offset + 1;
-            case 0x8b:
-                output.Append(' ');
-                return offset + 1;
-            case 0x8c:
-                output.Append('-');
-                return offset + 1;
             case 0x86:
             case 0x87:
             case 0x88:
@@ -615,22 +681,6 @@ public static class WinHelpDecoder
         return null;
     }
 
-    private static string NormalizeText(string text)
-    {
-        var lines = text.Replace("\r", "", StringComparison.Ordinal).Split('\n');
-        var result = new List<string>(lines.Length);
-        var previousBlank = true;
-        foreach (var sourceLine in lines)
-        {
-            var line = string.Join(' ', sourceLine.Split(
-                [' ', '\t'], StringSplitOptions.RemoveEmptyEntries));
-            var blank = line.Length == 0;
-            if (!blank || !previousBlank) result.Add(line);
-            previousBlank = blank;
-        }
-        return string.Join('\n', result).Trim();
-    }
-
     private static string DecodeWindows1252(ReadOnlySpan<byte> bytes)
     {
         const string controls = "€\u0081‚ƒ„…†‡ˆ‰Š‹Œ\u008dŽ\u008f\u0090‘’“”•–—˜™š›œ\u009džŸ";
@@ -732,11 +782,21 @@ public static class WinHelpDecoder
 
     private sealed record ContentsEntry(int Level, string Label, string? Reference);
 
-    private sealed class MutableTopic(string title)
+    private sealed class MutableTopic(string title, int topicOffset)
     {
         public string Title { get; } = title;
-        public StringBuilder Text { get; } = new();
+        public int TopicOffset { get; } = topicOffset;
+        public List<MutableRun> Runs { get; } = [];
     }
+
+    private sealed class MutableRun(string text, HelpFont font, uint? linkHash, bool popup)
+    {
+        public StringBuilder Text { get; } = new(text);
+        public HelpFont Font { get; } = font;
+        public uint? LinkHash { get; } = linkHash;
+        public bool Popup { get; } = popup;
+    }
+
 
     private ref struct DwordBitReader(ReadOnlySpan<byte> source)
     {

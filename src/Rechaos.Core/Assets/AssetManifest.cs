@@ -8,7 +8,7 @@ public sealed record AssetManifest(
     IReadOnlyList<ExtractedAsset> Files,
     string ExtractorVersion = "unknown")
 {
-    public const int CurrentFormatVersion = 5;
+    public const int CurrentFormatVersion = 6;
 }
 
 public sealed record ExtractedAsset(

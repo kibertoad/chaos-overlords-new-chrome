@@ -496,6 +496,25 @@ numeric-context routing is inapplicable to this help file.
 recomputes every contents hash, and reproduced 80 contexts, 59 named contexts,
 zero numeric IDs, 80 topics, and 73 contents rows from the legal GOG files.
 
+### BIN-ASSET-003 - WinHelp styled text and internal hotspots
+
+**Observation:** The supported `Help\Chaos.hlp` contains nine legacy 11-byte
+font descriptors. Interleaving its `LinkData1` commands with phrase-decoded
+`LinkData2` text yields 779 normalized runs and 93 internal context-hash
+hotspots: 67 topic jumps and 26 popup jumps. Every hotspot hash occurs in the
+80-entry `|CONTEXT` tree. The file contains no display-table, embedded-picture,
+external-file-link, or macro-hotspot use.
+
+**Interpretation:** Internal link arguments are context hashes, not direct
+topic indices. Their context offsets may point inside a topic, so resolution
+selects the last topic-header logical offset at or before the target. This maps
+all 26 popups to the otherwise-unlisted definition fragments and all 67 normal
+jumps to authored topics without relying on titles.
+
+**Confidence:** High. The bounded clean-room decoder reproduced the same 93
+hotspots and 26/67 split as an independent parser, retained all supported font
+attributes, and resolved every target in a fresh 686-asset legal extraction.
+
 ## Timing and RNG candidates
 
 ### BIN-RNG-001 - imported clocks

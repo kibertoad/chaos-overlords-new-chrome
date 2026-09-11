@@ -117,10 +117,11 @@ Target subdivisions:
 - Validates canonical original tables and the whole source fingerprint.
 - Repairs missing PX16 BMP header fields without modifying pixel bytes.
 - Copies media/opaque resources and generates a per-output hash manifest.
-- Decodes the supported user-owned WinHelp container, native context B+ tree,
-  numeric context map, and contents index into a bounded, versioned local JSON
+- Decodes the supported user-owned WinHelp container, legacy font descriptors,
+  interleaved styled text and internal jump/popup hotspots, native context B+
+  tree, numeric context map, and contents index into a bounded, versioned local JSON
   topic document; neither the source nor decoded copyrighted text is checked
-  into or packaged with the project. Asset-pack format 5 forces existing packs
+  into or packaged with the project. Asset-pack format 6 forces existing packs
   to regenerate the expanded help schema.
 - Records manifest format and extractor versions, original-relative source,
   output hash/size/media type, and conversion method/geometry per asset.
@@ -137,7 +138,10 @@ and falls back to every decoded topic only when no contents entries exist.
 Contextual entry maps each implemented screen to its most specific available
 original topic and normalizes legacy ellipsis styling. The mouse wheel scrolls
 the topic list or article according to pointer position; keyboard topic
-navigation and paging remain available. Help is presentation-only: opening it
+navigation and paging remain available. Authored internal jumps navigate to
+their resolved topics, while popup hotspots display the otherwise-unlisted
+definition fragments modally; links never execute external files or macros.
+Help is presentation-only: opening it
 pauses AI progression but never mutates authoritative match state, replay state,
 or deterministic hashes. Missing or invalid help data degrades to an import
 instruction instead of invoking the obsolete Windows WinHelp subsystem.
