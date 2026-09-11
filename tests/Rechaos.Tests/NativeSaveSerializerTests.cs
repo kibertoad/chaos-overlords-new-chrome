@@ -787,6 +787,23 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void RejectsSiteInfluenceThatDoesNotMatchSectorControl()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["sectors"]![0]!["sites"]![0]!["influencedBy"] = 1;
+
+        using var changed = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var error = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(changed, match.Definitions));
+
+        var cause = Assert.IsType<ArgumentException>(error.InnerException);
+        Assert.Contains("controlling its sector", cause.Message);
+    }
+
+    [Fact]
     public void RejectsInputOverExplicitSizeLimit()
     {
         using var oversized = new MemoryStream(new byte[NativeSaveSerializer.MaximumSaveBytes + 1]);

@@ -29,6 +29,35 @@ public sealed class MatchStateTests
     }
 
     [Fact]
+    public void MatchRejectsInfluencedSiteInNeutralSector()
+    {
+        var data = BundledOriginalData.Load();
+        var setup = Setup();
+        var sectors = Sectors();
+        sectors[0] = SectorWithInfluence(owner: null, influencedBy: new PlayerId(0));
+
+        var error = Assert.Throws<ArgumentException>(() =>
+            new MatchState(data, setup, Players(setup), sectors));
+
+        Assert.Contains("player controlling its sector", error.Message);
+    }
+
+    [Fact]
+    public void MatchRejectsSiteInfluencedByNonControllingPlayer()
+    {
+        var data = BundledOriginalData.Load();
+        var setup = Setup();
+        var sectors = Sectors();
+        sectors[0] = SectorWithInfluence(
+            owner: new PlayerId(0), influencedBy: new PlayerId(1));
+
+        var error = Assert.Throws<ArgumentException>(() =>
+            new MatchState(data, setup, Players(setup), sectors));
+
+        Assert.Contains("player controlling its sector", error.Message);
+    }
+
+    [Fact]
     public void RejectedCommandDoesNotMutateQueueOrEventLog()
     {
         var match = CreateMatch();
@@ -189,4 +218,12 @@ public sealed class MatchStateTests
             new MatchSiteState(2, 2, 4)
         ]))
         .ToArray();
+
+    private static MatchSectorState SectorWithInfluence(PlayerId? owner, PlayerId influencedBy) =>
+        new(0,
+        [
+            new MatchSiteState(0, 0, 0, influencedBy),
+            new MatchSiteState(1, 1, 5),
+            new MatchSiteState(2, 2, 4)
+        ], owner);
 }

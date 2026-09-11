@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,127 tests with no warnings.
+  isolated Release build passed all 1,130 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -154,7 +154,9 @@ Last updated: 2026-09-11
 - Factory integration now has a combined acquisition/replacement fixture:
   Influence completed during Instant makes the local Factory available to a
   same-turn Transaction Equip, which replaces the old slot item and charges the
-  floored 70% price. Original-runtime locality and rounding capture remains open.
+  floored 70% price. Manual-backed match validation now rejects influenced sites
+  in neutral sectors or sites influenced by anyone other than the sector owner;
+  original-runtime discount rounding capture remains open.
 - Instant resolution now snapshots acting gangs' effective statistics before
   applying any command. Same-phase Influence can still acquire a site, but its
   modifiers cannot leak into concurrent Heal, Research, or grouped Influence

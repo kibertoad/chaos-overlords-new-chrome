@@ -42,8 +42,8 @@ public readonly record struct EffectiveStatistics(
 }
 
 /// <summary>
-/// Calculates definition plus equipped-item modifiers. Influenced-site and
-/// other contextual modifiers remain excluded until their ownership rules are verified.
+/// Calculates definition, equipped-item modifiers, and local influenced-site
+/// modifiers for the influencing player's gangs.
 /// </summary>
 public static class EffectiveStatisticsCalculator
 {

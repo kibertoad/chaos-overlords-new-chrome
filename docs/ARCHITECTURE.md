@@ -103,8 +103,9 @@ Target subdivisions:
 - `MatchOutcome`: state projection and end-of-turn scenario completion.
 - `EndgameAwards`: deterministic award projection from player statistics.
 - `EndgameRanking`: timed-scenario score ordering and tied placements.
-- `SpecialSiteRules`: gang/local-site research Tech ceilings and Factory-priced
-  equipment purchases without duplicating those rules in UI or AI.
+- `SpecialSiteRules`: controlled/local influenced-site research Tech ceilings
+  and Factory-priced equipment purchases without duplicating those rules in UI
+  or AI. Match validation enforces that every site influencer owns its sector.
 
 ### `Rechaos.Extractor`
 

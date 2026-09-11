@@ -142,7 +142,8 @@ public sealed class PoliceCombatResolutionTests
                     id == 0 && stealthBoostingSite ? new PlayerId(0) : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ], crackdownActive: id == 0))
+            ], owner: id == 0 && stealthBoostingSite ? new PlayerId(0) : null,
+                crackdownActive: id == 0))
             .ToArray();
         return new MatchState(data, setup, [player], sectors);
     }

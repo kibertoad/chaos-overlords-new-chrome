@@ -67,7 +67,8 @@ public sealed class ToleranceResolverTests
                 new MatchSiteState(1, id == 0 ? (short)3 : (short)1, 0,
                     id == 0 && influenceFirstTwoSites ? playerId : null),
                 new MatchSiteState(2, id == 0 ? (short)21 : (short)2, 0)
-            ], tolerance: id == 0 ? tolerance : 14, income: id == 0 ? income : 3))
+            ], owner: id == 0 && influenceFirstTwoSites ? playerId : null,
+                tolerance: id == 0 ? tolerance : 14, income: id == 0 ? income : 3))
             .ToArray();
         return new MatchState(data, setup, [player], sectors);
     }

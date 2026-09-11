@@ -67,7 +67,7 @@ public sealed class InstantResolutionTests
     [Fact]
     public void AlreadyInfluencedSiteRejectsAnotherInfluenceCommand()
     {
-        var match = CreateMatch(siteResistance: 0, influencedBy: new PlayerId(1));
+        var match = CreateMatch(siteResistance: 0, influencedBy: new PlayerId(0));
         EnterCommand(match);
 
         var result = match.Submit(new GameCommand(

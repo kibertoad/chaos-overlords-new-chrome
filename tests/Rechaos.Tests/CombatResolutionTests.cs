@@ -339,7 +339,9 @@ public sealed class CombatResolutionTests
                     id == 0 && influencedSiteDefinition is not null ? new PlayerId(0) : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ]))
+            ], owner: id == 0 && influencedSiteDefinition is not null
+                ? new PlayerId(0)
+                : null))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }

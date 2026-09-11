@@ -150,8 +150,9 @@ controlled reference observation confirms its execution timing and edge cases.
   A repeating Research order clears on completion.
 - Tech restrictions: a gang cannot research above its own Tech. Without a local
   influenced special research site the ceiling is Tech 5; an influenced Science
-  Center raises it to 8 and a Research Lab to 10. The recreation requires the
-  player to control that sector. Locality and ownership timing remain provisional.
+  Center raises it to 8 and a Research Lab to 10. A sector must be controlled
+  before its sites can be influenced, and authoritative match state rejects an
+  influencer who is not the current sector owner.
 - Current exclusions: the exact behavior of zero-difficulty items and binary
   confirmation of special-site timing.
 - Confidence: High for the manual formula and completion threshold; Medium for
@@ -317,7 +318,9 @@ claim about original-game behavior.
   complete statistic vector to the owner's gangs located in that sector, after
   definition and equipment statistics. Enemy gangs receive no benefit.
 - Special Science Center/Research Lab research caps and the Factory purchase
-  discount are implemented as local, controlled, influenced-site effects.
+  discount follow the same controlled-sector and influenced-site ownership
+  rule. Match construction/load rejects neutral-sector influence or an
+  influencer different from the sector owner.
   Protection/upkeep behavior and exact negative-stat clamping remain excluded.
 - Confidence: High for ownership and local scope; Medium for aggregation order.
 - Tests: `CombatResolutionTests.InfluencedSiteStatisticsApplyOnlyToOwnersGangsInThatSector`
@@ -346,9 +349,8 @@ claim about original-game behavior.
 - Factory rule: an influenced Factory in the acting gang's controlled sector
   reduces purchase price by 30%; the recreation floors `Cost * 70 / 100`.
 - Confidence: High for cost, categories, research, tech gates, the decoded
-  zero-difficulty set, and the 30% value;
-  Medium for same-slot replacement and Factory locality; Low for discount
-  rounding and repeat commands.
+  zero-difficulty set, the 30% value, and controlled/influenced locality; Medium
+  for same-slot replacement; Low for discount rounding and repeat commands.
 - Implementation: `EquipmentRules`, `SpecialSiteRules.EquipmentCost`,
   transaction validation, and `CommandResolver.ResolveEquip`.
 - Tests: `TransactionResolutionTests` covers purchase, replacement, cash and
