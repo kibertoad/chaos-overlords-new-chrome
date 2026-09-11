@@ -89,7 +89,7 @@ public sealed class TransactionResolutionTests
     }
 
     [Fact]
-    public void FactoryAcquiredDuringInstantPhaseDiscountsSameTurnReplacement()
+    public void FactoryAcquiredDuringInstantPhaseDoesNotDiscountSameTurnReplacement()
     {
         var data = BundledOriginalData.Load();
         var item = data.Items.Single(value => value.Name == "KATANA").Id;
@@ -112,16 +112,15 @@ public sealed class TransactionResolutionTests
 
         match.FinishExecutionPhase();
 
-        Assert.Equal(new PlayerId(0), match.FindSite(0)!.InfluencedBy);
+        Assert.Null(match.FindSite(0)!.InfluencedBy);
         match.FinishExecutionPhase();
         Assert.Equal(ExecutionPhase.Transaction, match.Coordinator.ExecutionPhase);
         var cashBefore = match.Players[0].Cash;
 
         match.FinishExecutionPhase();
 
-        var expectedCost = data.Items[item].Cost
-            - data.Items[item].Cost / SpecialSiteRules.FactoryDiscountDivisor;
-        Assert.Equal(8, expectedCost);
+        var expectedCost = data.Items[item].Cost;
+        Assert.Equal(11, expectedCost);
         Assert.Equal(cashBefore - expectedCost, match.Players[0].Cash);
         Assert.Equal(item, match.FindGang(new GangId(11))!.WeaponItemId);
         var equip = match.LastPhaseResolutions.Single(result =>
@@ -508,7 +507,7 @@ public sealed class TransactionResolutionTests
             .Select(id => new MatchSectorState(id,
             [
                 new MatchSiteState(0, id == 0 && (influencedFactory || availableFactory) ? (short)15 : (short)0,
-                    id == 0 && availableFactory ? 0 : 7,
+                    id == 0 && availableFactory ? 1 : 7,
                     id == 0 && influencedFactory ? new PlayerId(0) : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)

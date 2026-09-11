@@ -823,7 +823,7 @@ public static partial class CommandResolver
     {
         var site = state.FindSite(command.Target.Id)!;
         var before = site.Resistance;
-        if (before == 0 && site.InfluencedBy is not null)
+        if (before == 0)
             return Complete(state, command, GameEventKind.CommandResolved,
                 new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, 0, 0),
                 GameNotificationKind.Influence);
@@ -838,15 +838,6 @@ public static partial class CommandResolver
         var successes = OriginalResolutionRules.CountSuccesses(
             rolls, OriginalResolutionRules.SuccessThreshold(band, GangAction.Influence));
         site.Resistance = ManualRules.ApplyInfluenceProgress(before, successes);
-        if (site.Resistance == 0 && site.InfluencedBy is null)
-        {
-            site.InfluencedBy = command.Player;
-            var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
-            state.FindPlayer(command.Player)!.Support = checked(
-                state.FindPlayer(command.Player)!.Support + definition.Support);
-            var sector = state.Sectors[command.Target.Id / MatchLimits.SitesPerSector];
-            sector.Tolerance = checked(sector.Tolerance + definition.Tolerance);
-        }
 
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(

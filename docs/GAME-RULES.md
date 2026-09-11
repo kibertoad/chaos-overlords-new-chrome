@@ -100,15 +100,16 @@ controlled reference observation confirms its execution timing and edge cases.
 - Interpretation: scan player slots and persistent gang slots in ascending
   order. Each participating gang separately rolls
   `max(0, Force + effective Influence)` dice and immediately persists its
-  successes against the remaining resistance. At zero, assign the player and
-  add the site's Support value; later queued Influence commands skip their roll.
+  successes against the remaining resistance. At zero, later queued Influence
+  commands skip their roll, but ownership and benefits activate only in the
+  next pre-planning sector rebuild.
 - Current exclusions: cross-player simultaneous contests, already-influenced
-  takeovers, cash/tolerance/stat benefit timing, site special behavior, and
+  takeovers, site special behavior, and
   influenced-site modifiers in the dice pool. The recreation currently rejects
   commands against an already-influenced site until takeover rules are verified.
 - Confidence: High for the base pool, success threshold, resistance reduction,
-  Support value, per-gang scheduling, and completion guard; Low for takeover and
-  benefit timing.
+  Support value, per-gang scheduling, completion guard, and delayed benefit
+  boundary; Low for takeover behavior.
 - Implementation: `CommandResolver.ResolvePhase`,
   `CommandResolver.ResolveInfluence`, `ManualRules.InfluenceDiceCount`, and
   `ManualRules.ApplyInfluenceProgress`; validation requires player ownership of
@@ -230,17 +231,17 @@ controlled reference observation confirms its execution timing and edge cases.
   tolerance changes move one point toward normal each turn.
 - Interpretation: normal effective tolerance is
   `17 - density-derived base Income + sum(Tolerance)` for currently influenced
-  sites. Site adjustments apply immediately when influence is gained or lost, may move the
-  effective value outside 0–40, and remain outside Bribe/Snitch's base caps.
+  sites. Newly completed sites apply their adjustment at the next pre-planning
+  rebuild; losing influence removes it with control loss. The result may move
+  outside 0–40 and remains outside Bribe/Snitch's base caps.
   During Upkeep, every sector's current value moves exactly one point toward
   its normal effective value. The post-Instant global floor then raises every
   value below 1 to 1 before Combat and Chaos.
-- Confidence: High for the formula and one-point adjustment; Medium for the
-  exact turn boundary and whether an influence change applies immediately.
+- Confidence: High for the formula, one-point adjustment, and activation boundary.
 - Implementation: `ToleranceResolver`, invoked by `MatchState.FinishUpkeep`.
 - Tests: `ToleranceResolverTests` covers movement from both directions, stable
   values, direct action deltas and the post-Instant floor; influence tests cover
-  the immediate modifier, and `ChaosResolutionTests` covers the pre-Chaos clamp.
+  delayed activation, and `ChaosResolutionTests` covers the pre-Chaos clamp.
 - Next experiment: compare saves before and after Upkeep around a Bribe or
   Snitch, then repeat while gaining or losing influence over modifier sites.
 
@@ -374,8 +375,8 @@ claim about original-game behavior.
   transaction validation, and `CommandResolver.ResolveEquip`.
 - Tests: `TransactionResolutionTests` covers purchase, replacement, cash and
   statistics, research/tech validation, insufficient funds, replay hashes, and
-  a Factory acquired during Instant discounting a same-turn Transaction-phase
-  replacement; all decoded item costs exercise the recovered division formula.
+  a Factory completed during Instant not discounting a same-turn
+  Transaction-phase replacement; all decoded item costs exercise the recovered division formula.
 
 ### RULE-GIVE-001 — Transfer equipped item
 

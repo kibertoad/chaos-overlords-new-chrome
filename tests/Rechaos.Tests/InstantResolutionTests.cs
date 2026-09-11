@@ -105,7 +105,7 @@ public sealed class InstantResolutionTests
     }
 
     [Fact]
-    public void InfluenceCompletionClaimsSiteAndAppliesSupport()
+    public void InfluenceCompletionActivatesSiteBenefitsAtNextPlanningBoundary()
     {
         var match = CreateMatch(siteResistance: 1, siteDefinitionId: 6);
         var siteDefinition = match.Definitions.Sites.Single(value => value.Id == match.FindSite(0)!.DefinitionId);
@@ -115,9 +115,17 @@ public sealed class InstantResolutionTests
         match.FinishExecutionPhase();
 
         Assert.Equal(0, match.FindSite(0)!.Resistance);
+        Assert.Null(match.FindSite(0)!.InfluencedBy);
+        Assert.Equal(0, match.Players[0].Support);
+        Assert.Equal(toleranceBefore, match.Sectors[0].Tolerance);
+        var preActivationNormal = ToleranceResolver.NormalTolerance(match, match.Sectors[0]);
+
+        AdvanceToNextPlanning(match);
+
         Assert.Equal(new PlayerId(0), match.FindSite(0)!.InfluencedBy);
         Assert.Equal(siteDefinition.Support, match.Players[0].Support);
-        Assert.Equal(toleranceBefore + siteDefinition.Tolerance, match.Sectors[0].Tolerance);
+        Assert.Equal(ToleranceResolver.MoveOnePointToward(toleranceBefore, preActivationNormal)
+            + siteDefinition.Tolerance, match.Sectors[0].Tolerance);
     }
 
     [Fact]
@@ -143,6 +151,14 @@ public sealed class InstantResolutionTests
         Assert.Equal(0, second.Successes);
         Assert.Equal(0, second.PreviousValue);
         Assert.Equal(0, second.ResultValue);
+    }
+
+    private static void AdvanceToNextPlanning(MatchState match)
+    {
+        while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
+        foreach (var player in match.Players) match.FinishHire(player.Id);
+        match.FinishPlayerElimination();
+        match.FinishUpkeep();
     }
 
     [Fact]

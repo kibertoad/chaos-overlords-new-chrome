@@ -340,6 +340,9 @@ than being silently consumed.
 Instant commands resolve in fixed player/roster-slot order. Each Influence gang
 rolls Force plus effective Influence separately and immediately reduces the
 site's remaining resistance; later commands skip their rolls after completion.
+`SectorBenefitResolver` activates that pending site only at the next Upkeep-to-
+Command boundary, after cash and tolerance maintenance, so it cannot alter the
+same turn's Research, Combat, Transactions, Chaos, or Control.
 Chaos and Control are grouped resolvers. Control commands from one player in the
 same sector pool Force and effective Control into one non-dice comparison. Each
 Control group emits one ordered result per participating command.

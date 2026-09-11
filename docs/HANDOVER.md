@@ -339,11 +339,11 @@ Last updated: 2026-09-12
   one command. The binary clears every selected slot but overwrites one payout
   local in weapon/armor/miscellaneous order, so compatibility resolution credits
   only the highest selected slot's half raw price, rounded down, without Factory.
-- Factory integration now has a combined acquisition/replacement fixture:
-  Influence completed during Instant makes the local Factory available to a
-  same-turn Transaction Equip, which replaces the old slot item and charges the
-  recovered `Cost - trunc(Cost / 3)` price. The odd-priced $11 Katana fixture
-  therefore costs $8 rather than the previous provisional $7. Manual-backed
+- Factory integration now distinguishes activation from completion. An already
+  active local Factory charges the recovered `Cost - trunc(Cost / 3)` price,
+  while one completed during Instant does not discount a same-turn Transaction
+  Equip and activates at the next planning boundary. The odd-priced $11 Katana
+  therefore costs $8 only with a previously active Factory. Manual-backed
   match validation rejects influenced sites
   in neutral sectors or sites influenced by anyone other than the sector owner;
   binary addresses and operation order are recorded in `ORIGINAL-INTERNALS.md`.
@@ -400,6 +400,9 @@ Last updated: 2026-09-12
   gangs in fixed player/roster-slot order, then groups successes by player and sector.
   Uncontrolled half income is divided once after that aggregation; reversed
   submission and RNG-state fixtures guard the recovered ordering.
+- Completed Influence remains pending through the rest of its execution turn.
+  The next pre-planning rebuild activates ownership, Support, Tolerance, Cash,
+  special-building, and local gang-stat benefits in sector/site order.
 - Give now uses the original `PX05015` Equipment to Give panel before its
   compatible same-sector recipient list. One command can carry any combination
   of the source gang's exact three equipped items. Transactions now scan fixed

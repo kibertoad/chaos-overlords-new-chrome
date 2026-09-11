@@ -2301,9 +2301,19 @@ not submission order. Friendly Influence is cumulative rather than pooled:
 each gang consumes its own roll stream and mutates the site before the next
 gang acts. A gang encountered after completion consumes no Influence RNG.
 
+The site Tolerance definition field at `0x004ab684` has only two code
+references: AI selector evaluation in `0x00402d70` and sector recomputation
+helper `0x004782c5`. It is not consumed by the Influence action block. The same
+helper rebuilds Support, Cash, local stat modifiers, and special-site flags, and
+its normal match-loop call occurs before planning rather than inside the
+whole-turn resolver. A site completed during Instant therefore remains pending
+through that turn's later Combat, Transaction, Chaos, and Control passes; its
+benefits become active at the following pre-planning rebuild.
+
 **Confidence:** High static evidence for action dispatch, scan order,
-per-gang Influence pools, immediate progress mutation, clamping, and the
-completion guard. Runtime seed correlation remains pending.
+per-gang Influence pools, immediate progress mutation, clamping, completion
+guard, definition-field reference inventory, and delayed benefit boundary.
+Runtime seed correlation remains pending.
 
 ### BIN-RESEARCH-001 - same-phase completion suppresses later rolls
 

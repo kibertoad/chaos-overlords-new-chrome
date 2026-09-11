@@ -165,14 +165,22 @@ public sealed class ResearchResolutionTests
 
         match.FinishExecutionPhase();
 
-        Assert.Equal(new PlayerId(0), match.FindSite(1)!.InfluencedBy);
-        Assert.Equal(statisticsBefore.Research + 2,
+        Assert.Null(match.FindSite(1)!.InfluencedBy);
+        Assert.Equal(statisticsBefore.Research,
             EffectiveStatisticsCalculator.ForGang(match, researchGang).Research);
         var research = match.LastPhaseResolutions.Single(result =>
             result.Command.Action == GangAction.Research).Event!.Resolution!;
         Assert.Equal(
             ManualRules.ResearchDiceCount(researchGang.Force, statisticsBefore.Research),
             research.Rolls.Count);
+
+        while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
+        foreach (var player in match.Players) match.FinishHire(player.Id);
+        match.FinishPlayerElimination();
+        match.FinishUpkeep();
+        Assert.Equal(new PlayerId(0), match.FindSite(1)!.InfluencedBy);
+        Assert.Equal(statisticsBefore.Research + 2,
+            EffectiveStatisticsCalculator.ForGang(match, researchGang).Research);
     }
 
     [Fact]
@@ -292,7 +300,7 @@ public sealed class ResearchResolutionTests
             [
                 new MatchSiteState(0, 0, 7),
                 new MatchSiteState(1, specialSiteDefinition ?? 1,
-                    id == 0 && specialSiteDefinition.HasValue && !specialSiteInfluenced ? 0 : 5,
+                    id == 0 && specialSiteDefinition.HasValue && !specialSiteInfluenced ? 1 : 5,
                     id == 0 && specialSiteDefinition.HasValue && specialSiteInfluenced
                         ? new PlayerId(0) : null),
                 new MatchSiteState(2, 2, 4)
