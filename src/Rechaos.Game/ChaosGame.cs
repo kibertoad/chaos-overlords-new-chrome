@@ -212,11 +212,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _showBaseStatistics = preferences.ShowBaseStatistics;
         _detailedCombat = preferences.DetailedCombat;
         _slidePanels = preferences.SlidePanels;
+        _fullscreen = preferences.Fullscreen;
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
             PreferredBackBufferHeight = 920,
-            SynchronizeWithVerticalRetrace = true
+            SynchronizeWithVerticalRetrace = true,
+            HardwareModeSwitch = false,
+            IsFullScreen = _fullscreen
         };
         IsMouseVisible = true;
         Window.Title = "Chaos Overlords: New Chrome";
@@ -303,6 +306,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         UpdateSoundtrack(gameTime);
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
+        if (Pressed(keyboard, Keys.F11)) ToggleFullscreen();
         if (UpdatePlanningTimer(gameTime.TotalGameTime))
         {
             _previousKeyboard = keyboard;

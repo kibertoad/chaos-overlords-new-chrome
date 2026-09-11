@@ -326,9 +326,11 @@ Help description.
 **Recreation status:** Options uses the recovered defaults and persists its
 warning toggle, base/current gang-stat display, automatic Detailed Combat
 playback, and bounded panel motion. The legacy 16-bit color choice is displayed
-as always enabled by the modern renderer. Version-4 recreation preferences
-migrate into version 5 without losing their audio, warning, or timer selections
-and acquire the recovered defaults for the three toggles that format lacked.
+as always enabled by the modern renderer. Recreation-native global F11 switching
+between windowed and borderless-fullscreen display is persisted in preference
+version 6 without changing compatibility coordinates. Version-4 and version-5
+preferences migrate without losing their earlier selections and safely default
+the new display choice to windowed mode.
 Finishing planning checks only the active player's living gangs and offers a
 Continue/Go Back modal when any lacks a queued command. Opening and closing the
 modal route the recovered general-effect slots 0 and 1.

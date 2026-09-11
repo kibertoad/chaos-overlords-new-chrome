@@ -10,14 +10,14 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,111 tests with no warnings.
+  isolated Release build passed all 1,122 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
 - Native saves are format v19, replays are v20, canonical hashes are v22, asset
-  manifests are v4, extracted help is v1, and client preferences are v5. Save
+  manifests are v4, extracted help is v1, and client preferences are v6. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
 
@@ -125,8 +125,10 @@ Last updated: 2026-09-11
   to 100% police detection.
 - Options now uses the recovered defaults: Current gang statistics, Detailed
   Combat on, Slide Panels on, and Warn If Idle Gangs on, and persists those
-  choices alongside audio and the planning timer. Version-4 preferences migrate
-  forward using the recovered defaults for the three choices that format lacked.
+  choices alongside audio, the planning timer, and a recreation-native
+  windowed/borderless-fullscreen mode. F11 switches display mode from any screen
+  and the choice survives relaunch; version-4 and version-5 preferences migrate
+  forward with a safe windowed default.
   Enabled panel entrances use the recovered horizontal 344-pixel primary travel
   and 250 ms benchmark target. The legacy 16-bit color choice is explicitly
   always enabled by the modern renderer.

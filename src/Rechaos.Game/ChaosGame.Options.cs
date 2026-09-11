@@ -33,6 +33,7 @@ public sealed partial class ChaosGame
     private bool _showBaseStatistics = OriginalOptionsPolicy.ShowBaseStatisticsByDefault;
     private bool _detailedCombat = OriginalOptionsPolicy.DetailedCombatByDefault;
     private bool _slidePanels = OriginalOptionsPolicy.SlidePanelsByDefault;
+    private bool _fullscreen = OriginalOptionsPolicy.FullscreenByDefault;
 
     private void OpenOptions()
     {
@@ -197,7 +198,23 @@ public sealed partial class ChaosGame
                 _selectedPlanningTimeLimit,
                 _showBaseStatistics,
                 _detailedCombat,
-                _slidePanels));
+                _slidePanels,
+                _fullscreen));
+
+    private void ToggleFullscreen()
+    {
+        try
+        {
+            _graphics.ToggleFullScreen();
+            _fullscreen = _graphics.IsFullScreen;
+            SavePreferences();
+            _message = _fullscreen ? "BORDERLESS FULLSCREEN" : "WINDOWED DISPLAY";
+        }
+        catch
+        {
+            _message = "DISPLAY MODE CHANGE FAILED";
+        }
+    }
 
     private void DrawOptions(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
@@ -235,7 +252,7 @@ public sealed partial class ChaosGame
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ColorDepth,
             "THOUSANDS OF COLORS: ALWAYS ON", -1);
 
-        DrawCentered(font, batch, "UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS", 374,
+        DrawCentered(font, batch, "F11 DISPLAY  UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS", 374,
             new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
     }
