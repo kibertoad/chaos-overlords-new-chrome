@@ -48,15 +48,13 @@ public sealed class ComlinkInbox
             || nextSequence < 0
             || readThroughSequence < -1
             || readThroughSequence >= nextSequence
-            || messages.Any(message => message.Sequence < 0
-                || message.Sequence >= nextSequence
+            || messages.Where((message, index) =>
+                message.Sequence != nextSequence - messages.Count + index
                 || message.Turn < 1
                 || message.Sender.Value is < 0 or >= MatchLimits.PlayerCount
                 || string.IsNullOrWhiteSpace(message.Text)
-                || message.Text.Length > MatchLimits.ComlinkMessageCharacters)
-            || messages.Select(message => message.Sequence).Distinct().Count() != messages.Count
-            || !messages.Select(message => message.Sequence).SequenceEqual(
-                messages.Select(message => message.Sequence).Order()))
+                || message.Text.Length > MatchLimits.ComlinkMessageCharacters).Any()
+            || messages.Count != Math.Min(nextSequence, MatchLimits.ComlinkMessagesPerPlayer))
             throw new ArgumentException("Restored Comlink inbox is invalid.", nameof(messages));
 
         var inbox = new ComlinkInbox

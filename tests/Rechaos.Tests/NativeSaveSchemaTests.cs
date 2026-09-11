@@ -9,6 +9,46 @@ namespace Rechaos.Tests;
 public sealed partial class NativeSaveSerializerTests
 {
     [Fact]
+    public void CurrentSaveRejectsInvalidNotificationShape()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["notifications"]![0]!["items"]![0]!["executionPhase"] = 0;
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(modified, match.Definitions));
+
+        Assert.Contains("notification history is invalid", exception.InnerException!.Message);
+    }
+
+    [Fact]
+    public void CurrentSaveRejectsComlinkSequenceHoles()
+    {
+        var match = CreateMatch(secondPlayerHuman: true);
+        match.FinishUpkeep();
+        Assert.True(match.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "FIRST").Accepted);
+        Assert.True(match.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "SECOND").Accepted);
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["comlink"]![1]!["items"]!.AsArray().RemoveAt(0);
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(modified, match.Definitions));
+
+        Assert.Contains("Comlink inbox is invalid", exception.InnerException!.Message);
+    }
+
+    [Fact]
     public void CurrentSaveRejectsModifiedPhaseHashHistory()
     {
         var match = CreateMatch();

@@ -31,6 +31,31 @@ public sealed record GameNotification(
     int? SectorId = null,
     long? RelatedEventSequence = null);
 
+internal static class GameNotificationValidator
+{
+    public static bool IsValidHistory(
+        IReadOnlyList<GameNotification> values,
+        long nextSequence,
+        long nextEventSequence)
+    {
+        if (values.Count > MatchLimits.NotificationsPerPlayer || nextSequence < 0)
+            return false;
+        if (values.Count > 0 && values.Where((value, index) =>
+                value.Sequence != nextSequence - values.Count + index).Any())
+            return false;
+        return values.All(value =>
+            value.Turn >= 1
+            && Enum.IsDefined(value.Phase)
+            && Enum.IsDefined(value.Kind)
+            && (value.Phase == TurnPhase.Execution) == value.ExecutionPhase.HasValue
+            && (value.ExecutionPhase is null || Enum.IsDefined(value.ExecutionPhase.Value))
+            && value.SectorId is null or >= 0 and < MatchLimits.SectorCount
+            && (value.RelatedEventSequence is null
+                || value.RelatedEventSequence >= 0
+                && value.RelatedEventSequence < nextEventSequence));
+    }
+}
+
 public sealed class NotificationQueue
 {
     private readonly Queue<GameNotification> _items = [];

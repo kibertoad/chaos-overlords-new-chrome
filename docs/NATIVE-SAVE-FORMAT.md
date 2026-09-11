@@ -45,7 +45,10 @@ their durable facts already exist in events and the authoritative state.
 
 Collections whose order is mechanically meaningful retain it. Sets and maps
 are emitted in key order, making a load/save cycle byte-stable for an unchanged
-snapshot.
+snapshot. Restored notifications must be a contiguous suffix of their sequence
+counter and carry valid phase, sector, and event references. Comlink inboxes
+must contain the exact bounded suffix implied by their counter, with valid
+human senders and turn numbers.
 
 ## Compatibility policy
 

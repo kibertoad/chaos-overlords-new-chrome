@@ -453,16 +453,15 @@ public sealed partial class MatchState
         {
             var next = restore.NextNotificationSequences[player.Id];
             var notifications = restore.Notifications[player.Id];
-            if (notifications.Count > MatchLimits.NotificationsPerPlayer
-                || next < 0
-                || notifications.Any(notification => notification.Sequence < 0 || notification.Sequence >= next)
-                || notifications.Select(notification => notification.Sequence).Distinct().Count() != notifications.Count
-                || !notifications.Select(notification => notification.Sequence).SequenceEqual(
-                    notifications.Select(notification => notification.Sequence).Order()))
-                throw new ArgumentException("Restored notification sequences are invalid.", nameof(restore));
+            if (!GameNotificationValidator.IsValidHistory(
+                    notifications, next, restore.NextEventSequence))
+                throw new ArgumentException("Restored notification history is invalid.", nameof(restore));
             foreach (var notification in notifications) _notifications[player.Id].Enqueue(notification);
             _nextNotificationSequences[player.Id] = next;
             var inbox = restore.ComlinkInboxes[player.Id];
+            if (inbox.Messages.Any(message => message.Turn > restore.Turn
+                    || FindPlayer(message.Sender)?.Setup.Controller != PlayerController.Human))
+                throw new ArgumentException("Restored Comlink senders are invalid.", nameof(restore));
             _comlinkInboxes[player.Id] = ComlinkInbox.Restore(
                 inbox.Messages, inbox.NextSequence, inbox.ReadThroughSequence);
         }
