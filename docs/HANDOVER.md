@@ -18,7 +18,7 @@ Last updated: 2026-09-11
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v21, replays are v23, canonical hashes are v24, asset
+- Native saves are format v22, replays are v24, canonical hashes are v25, asset
   manifests are v6, extracted help is v3, and client preferences are v6. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
@@ -220,8 +220,9 @@ Last updated: 2026-09-11
   `PX05017` incoming-message viewer and `PX05018` sender. Human players can page
   the newest 16 messages, see unread-state blinking, select multiple human
   recipients, enter the recovered four 40-character rows, and send through the
-  authoritative replay-recorded operation. Viewing clears unread state through
-  that same authoritative path.
+  authoritative replay-recorded operation. Opening the viewer and paging mark
+  only the displayed record read through that same authoritative path; unread
+  state remains until every retained unread record has actually been viewed.
 - The title and in-game Help commands open a cross-platform viewer backed by
   the locally extracted original WinHelp content. Navigation follows the 59
   player-facing entries in the original contents order and omits 21 unlisted

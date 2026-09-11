@@ -81,7 +81,10 @@ public sealed class MatchReplayTests
         recorder.FinishUpkeep();
         Assert.True(recorder.SendComlinkMessage(
             new PlayerId(0), [new PlayerId(1)], "TRUCE?").Accepted);
-        Assert.True(recorder.MarkComlinkRead(new PlayerId(1)));
+        Assert.True(recorder.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "ANSWER ME").Accepted);
+        var inbox = recorder.State.ComlinkFor(new PlayerId(1));
+        Assert.True(recorder.MarkComlinkRead(new PlayerId(1), inbox.Messages[1].Sequence));
 
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
@@ -90,11 +93,83 @@ public sealed class MatchReplayTests
 
         Assert.Equal(recorder.State.ComlinkFor(new PlayerId(1)).Messages,
             restored.ComlinkFor(new PlayerId(1)).Messages);
-        Assert.False(restored.ComlinkFor(new PlayerId(1)).HasUnread);
+        Assert.True(restored.ComlinkFor(new PlayerId(1)).HasUnread);
+        Assert.Equal([inbox.Messages[1].Sequence],
+            restored.ComlinkFor(new PlayerId(1)).ReadSequences);
         Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
         var recipients = Assert.IsAssignableFrom<IList<PlayerId>>(
-            recorder.Steps.Single(step => step.Kind == ReplayOperationKind.SendComlinkMessage).Recipients!);
+            recorder.Steps.First(step => step.Kind == ReplayOperationKind.SendComlinkMessage).Recipients!);
         Assert.True(recipients.IsReadOnly);
+    }
+
+    [Fact]
+    public void CurrentReplayRequiresComlinkSequenceForReadOperation()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch(secondPlayerHuman: true));
+        recorder.FinishUpkeep();
+        Assert.True(recorder.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "TRUCE?").Accepted);
+        var sequence = recorder.State.ComlinkFor(new PlayerId(1)).Messages[0].Sequence;
+        Assert.True(recorder.MarkComlinkRead(new PlayerId(1), sequence));
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["steps"]![2]!.AsObject().Remove("comlinkSequence");
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            MatchReplaySerializer.LoadAndReplay(modified, recorder.State.Definitions));
+
+        Assert.Contains("invalid payload", exception.Message);
+    }
+
+    [Fact]
+    public void VersionTwentyThreeReplayRetainsMarkAllReadMeaning()
+    {
+        var initial = CreateMatch(secondPlayerHuman: true);
+        var initialHash = MatchStateHasher.ComputeVersionTwentyFourSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
+        recorder.FinishUpkeep();
+        Assert.True(recorder.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "FIRST").Accepted);
+        Assert.True(recorder.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "SECOND").Accepted);
+        var newest = recorder.State.ComlinkFor(new PlayerId(1)).Messages[1].Sequence;
+        Assert.True(recorder.MarkComlinkRead(new PlayerId(1), newest));
+
+        var legacyState = CreateMatch(secondPlayerHuman: true);
+        legacyState.FinishUpkeep();
+        var hashes = new List<string>
+        {
+            MatchStateHasher.ComputeVersionTwentyFourSha256(legacyState)
+        };
+        legacyState.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], "FIRST");
+        hashes.Add(MatchStateHasher.ComputeVersionTwentyFourSha256(legacyState));
+        legacyState.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], "SECOND");
+        hashes.Add(MatchStateHasher.ComputeVersionTwentyFourSha256(legacyState));
+        Assert.True(legacyState.MarkAllComlinkReadLegacy(new PlayerId(1)));
+        hashes.Add(MatchStateHasher.ComputeVersionTwentyFourSha256(legacyState));
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = 23;
+        document["initialStateSha256"] = initialHash;
+        var steps = document["steps"]!.AsArray();
+        for (var index = 0; index < hashes.Count; index++)
+            steps[index]!["resultingStateSha256"] = hashes[index];
+        steps[3]!.AsObject().Remove("comlinkSequence");
+        using var legacy = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var restored = MatchReplaySerializer.LoadAndReplay(
+            legacy, recorder.State.Definitions);
+
+        Assert.False(restored.ComlinkFor(new PlayerId(1)).HasUnread);
+        Assert.Equal(
+            legacyState.ComlinkFor(new PlayerId(1)).ReadSequences,
+            restored.ComlinkFor(new PlayerId(1)).ReadSequences);
     }
 
     [Fact]
@@ -175,7 +250,7 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
-    public void VersionTwentyThreeReplaysSimultaneousHireOfferGeneration()
+    public void VersionTwentyFourReplaysSimultaneousHireOfferGeneration()
     {
         var recorder = new MatchReplayRecorder(CreateMatch());
         recorder.FinishUpkeep();
@@ -189,7 +264,7 @@ public sealed class MatchReplayTests
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
         var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        Assert.Equal(23, document["formatVersion"]!.GetValue<int>());
+        Assert.Equal(24, document["formatVersion"]!.GetValue<int>());
         replay.Position = 0;
 
         var restored = MatchReplaySerializer.LoadAndReplay(

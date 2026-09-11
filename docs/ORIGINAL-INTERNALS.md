@@ -324,10 +324,9 @@ While an inbox remains unread, a presentation-only cadence repeats slot 6 every
 four seconds on match screens. Handoff defers the first alert until Ready, and
 opening an unread save/replay directly into planning also starts the cadence.
 The cadence clears when authoritative unread state clears and never enters the
-canonical match hash. The current recreation still marks the entire inbox read
-when Comlink View opens; the original's per-record acknowledgement scope remains
-to be migrated before this suppression boundary is exact for multiple unread
-messages.
+canonical match hash. Opening Comlink View and paging now mark only the displayed
+record read through the authoritative path, matching the recovered per-record
+behavior and keeping the alert active while any retained record remains unread.
 Every routed panel transition plays the recovered slot-0/slot-1 entry and exit
 cues while Slide Panels is enabled; nested panel transitions close the old
 panel and open the new one. The idle-gang confirmation follows the same

@@ -30,7 +30,7 @@ public sealed partial class ChaosGame
         _managementReturnScreen = returnScreen;
         var inbox = _state.ComlinkFor(playerId);
         _comlinkCursor = Math.Max(0, inbox.Count - 1);
-        if (inbox.HasUnread) _actions?.MarkComlinkRead(playerId);
+        MarkDisplayedComlinkRead(playerId, inbox);
         _screens.Show(ClientScreen.ComlinkView);
     }
 
@@ -136,7 +136,15 @@ public sealed partial class ChaosGame
             var next = BoundedPageNavigation.Move(_comlinkCursor, count, delta);
             PlayGeneralSound(AudioRouting.PageNavigationSound(next != _comlinkCursor));
             _comlinkCursor = next;
+            MarkDisplayedComlinkRead(playerId, _state.ComlinkFor(playerId));
         }
+    }
+
+    private void MarkDisplayedComlinkRead(PlayerId playerId, ComlinkInbox inbox)
+    {
+        if (_comlinkCursor >= inbox.Count) return;
+        var sequence = inbox.Messages[_comlinkCursor].Sequence;
+        if (!inbox.IsRead(sequence)) _actions?.MarkComlinkRead(playerId, sequence);
     }
 
     private void SendComlink()

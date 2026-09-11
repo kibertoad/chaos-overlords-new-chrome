@@ -37,7 +37,8 @@ public sealed record ReplayStep(
     bool? Accepted = null,
     int? ValidationCode = null,
     IReadOnlyList<PlayerId>? Recipients = null,
-    string? Text = null);
+    string? Text = null,
+    long? ComlinkSequence = null);
 
 /// <summary>
 /// Records every public match mutation together with its resulting canonical hash.
@@ -179,13 +180,13 @@ public sealed class MatchReplayRecorder
         return result;
     }
 
-    public bool MarkComlinkRead(PlayerId player)
+    public bool MarkComlinkRead(PlayerId player, long sequence)
     {
         EnsureSynchronized();
-        var changed = State.MarkComlinkRead(player);
+        var changed = State.MarkComlinkRead(player, sequence);
         Add(new ReplayStep(
             ReplayOperationKind.MarkComlinkRead, CurrentHash(), Player: player,
-            Accepted: changed));
+            Accepted: changed, ComlinkSequence: sequence));
         return changed;
     }
 
@@ -229,8 +230,8 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    // 23 embeds native save 21 and canonical hash 24, which authenticates phase history.
-    public const int CurrentFormatVersion = 23;
+    // 24 embeds native save 22 and canonical hash 25, which preserves per-message Comlink reads.
+    public const int CurrentFormatVersion = 24;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -299,7 +300,7 @@ public static class MatchReplaySerializer
         if (replayVersion < minimumVersion)
             throw new InvalidDataException(
                 $"Replay step {index} uses an operation introduced in replay format {minimumVersion}.");
-        ValidateStepPayload(step, index);
+        ValidateStepPayload(step, index, replayVersion);
 
         switch (step.Kind)
         {
@@ -379,7 +380,13 @@ public static class MatchReplaySerializer
             }
             case ReplayOperationKind.MarkComlinkRead:
             {
-                var changed = state.MarkComlinkRead(Required(step.Player, index));
+                var changed = replayVersion >= 24
+                    ? state.MarkComlinkRead(
+                        Required(step.Player, index),
+                        step.ComlinkSequence
+                            ?? throw new InvalidDataException(
+                                $"Replay step {index} has no Comlink sequence."))
+                    : state.MarkAllComlinkReadLegacy(Required(step.Player, index));
                 if (step.Accepted != changed)
                     throw new InvalidDataException($"Replay step {index} produced a different Comlink read result.");
                 break;
@@ -388,7 +395,7 @@ public static class MatchReplaySerializer
         }
     }
 
-    private static void ValidateStepPayload(ReplayStep step, int index)
+    private static void ValidateStepPayload(ReplayStep step, int index, int replayVersion)
     {
         var actual = ReplayStepFields.None;
         if (step.Command is not null) actual |= ReplayStepFields.Command;
@@ -400,6 +407,7 @@ public static class MatchReplaySerializer
         if (step.ValidationCode is not null) actual |= ReplayStepFields.Validation;
         if (step.Recipients is not null) actual |= ReplayStepFields.Recipients;
         if (step.Text is not null) actual |= ReplayStepFields.Text;
+        if (step.ComlinkSequence is not null) actual |= ReplayStepFields.ComlinkSequence;
 
         var result = ReplayStepFields.Accepted | ReplayStepFields.Validation;
         var expected = step.Kind switch
@@ -415,8 +423,11 @@ public static class MatchReplaySerializer
                 or ReplayOperationKind.PrepareHireOffers
                 or ReplayOperationKind.PrepareAiPlanning
                 or ReplayOperationKind.PrepareAiHiring => ReplayStepFields.Player,
-            ReplayOperationKind.DismissNotification or ReplayOperationKind.MarkComlinkRead =>
+            ReplayOperationKind.DismissNotification =>
                 ReplayStepFields.Player | ReplayStepFields.Accepted,
+            ReplayOperationKind.MarkComlinkRead => ReplayStepFields.Player
+                | ReplayStepFields.Accepted
+                | (replayVersion >= 24 ? ReplayStepFields.ComlinkSequence : ReplayStepFields.None),
             ReplayOperationKind.SendComlinkMessage => ReplayStepFields.Player | result
                 | ReplayStepFields.Recipients | ReplayStepFields.Text,
             ReplayOperationKind.FinishUpkeep
@@ -472,7 +483,8 @@ public static class MatchReplaySerializer
         }
         string[] candidateHashes = replayVersion switch
         {
-            >= 23 => [MatchStateHasher.ComputeSha256(state)],
+            >= 24 => [MatchStateHasher.ComputeSha256(state)],
+            23 => [MatchStateHasher.ComputeVersionTwentyFourSha256(state)],
             22 => [MatchStateHasher.ComputeVersionTwentyThreeSha256(state)],
             20 or 21 => [MatchStateHasher.ComputeVersionTwentyTwoSha256(state)],
             19 => [MatchStateHasher.ComputeVersionTwentyOneSha256(state)],
@@ -533,7 +545,8 @@ public static class MatchReplaySerializer
         Accepted = 1 << 5,
         Validation = 1 << 6,
         Recipients = 1 << 7,
-        Text = 1 << 8
+        Text = 1 << 8,
+        ComlinkSequence = 1 << 9
     }
 }
 

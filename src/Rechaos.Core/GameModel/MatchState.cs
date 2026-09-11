@@ -399,7 +399,7 @@ public sealed partial class MatchState
                 _ => (IReadOnlyList<GameNotification>)Array.Empty<GameNotification>()),
             players.ToDictionary(player => player.Id, _ => 0L),
             players.ToDictionary(player => player.Id,
-                _ => new ComlinkInboxRestore([], 0, -1)),
+                _ => new ComlinkInboxRestore([], 0, [])),
             [], null, aiStrategy, AiPlanningState.Initialize(players)))
     {
         ArgumentNullException.ThrowIfNull(initialRandom);
@@ -463,7 +463,8 @@ public sealed partial class MatchState
                     || FindPlayer(message.Sender)?.Setup.Controller != PlayerController.Human))
                 throw new ArgumentException("Restored Comlink senders are invalid.", nameof(restore));
             _comlinkInboxes[player.Id] = ComlinkInbox.Restore(
-                inbox.Messages, inbox.NextSequence, inbox.ReadThroughSequence);
+                inbox.Messages, inbox.NextSequence, inbox.ReadSequences,
+                inbox.LegacyReadThroughSequence);
         }
         if (restore.PhaseHashes.Any(boundary =>
                 boundary.Turn < 1

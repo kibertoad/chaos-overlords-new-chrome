@@ -17,13 +17,11 @@ public sealed partial class MatchState
         return validation;
     }
 
-    public bool MarkComlinkRead(PlayerId player)
-    {
-        var inbox = GetComlinkInbox(player);
-        var changed = inbox.HasUnread;
-        inbox.MarkAllRead();
-        return changed;
-    }
+    public bool MarkComlinkRead(PlayerId player, long sequence) =>
+        GetComlinkInbox(player).MarkRead(sequence);
+
+    internal bool MarkAllComlinkReadLegacy(PlayerId player) =>
+        GetComlinkInbox(player).MarkAllRead();
 
     private ComlinkSendResult ValidateComlinkMessage(
         PlayerId sender,

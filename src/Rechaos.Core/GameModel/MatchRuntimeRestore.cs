@@ -22,4 +22,5 @@ internal sealed record MatchRuntimeRestore(
 internal sealed record ComlinkInboxRestore(
     IReadOnlyList<ComlinkMessage> Messages,
     long NextSequence,
-    long ReadThroughSequence);
+    IReadOnlyList<long> ReadSequences,
+    long? LegacyReadThroughSequence = null);

@@ -114,16 +114,16 @@ internal sealed class MatchActions
                 "Comlink is not carried by an online turn yet.");
 
     /// <summary>
-    /// Marks a player's Comlink inbox read, in a hot-seat match.
+    /// Marks one displayed Comlink message read, in a hot-seat match.
     /// </summary>
     /// <remarks>
     /// Online it does nothing, for the same reason: the read mark is hashed, so one client clearing
     /// its own badge would put it on a different state from every other. Nothing online can fill an
     /// inbox yet, so there is nothing to mark.
     /// </remarks>
-    internal void MarkComlinkRead(PlayerId player)
+    internal void MarkComlinkRead(PlayerId player, long sequence)
     {
-        if (_turn is null) _replay.MarkComlinkRead(player);
+        if (_turn is null) _replay.MarkComlinkRead(player, sequence);
     }
 
     /// <summary>

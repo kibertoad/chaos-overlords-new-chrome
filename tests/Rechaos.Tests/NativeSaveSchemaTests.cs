@@ -76,6 +76,43 @@ public sealed partial class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void CurrentSaveRejectsReadSequenceOutsideComlinkInbox()
+    {
+        var match = CreateMatch(secondPlayerHuman: true);
+        match.FinishUpkeep();
+        Assert.True(match.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "FIRST").Accepted);
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["comlink"]![1]!["readSequences"]!.AsArray().Add(99);
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(modified, match.Definitions));
+
+        Assert.Contains("Comlink inbox is invalid", exception.InnerException!.Message);
+    }
+
+    [Fact]
+    public void CurrentSaveRequiresPerRecordComlinkReadState()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["comlink"]![0]!.AsObject().Remove("readSequences");
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(modified, match.Definitions));
+
+        Assert.Contains("Comlink read flags are missing", exception.Message);
+    }
+
+    [Fact]
     public void CurrentSaveRejectsModifiedPhaseHashHistory()
     {
         var match = CreateMatch();

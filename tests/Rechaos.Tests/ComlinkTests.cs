@@ -51,15 +51,24 @@ public sealed class ComlinkTests
 
         var accepted = match.SendComlinkMessage(
             new PlayerId(0), [new PlayerId(1)], "WATCH YOUR BACK");
+        var second = match.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "THE LATEST WORD");
         var rejected = match.SendComlinkMessage(
             new PlayerId(0), [new PlayerId(2)], "COMPUTERS CANNOT READ THIS");
 
         Assert.True(accepted.Accepted);
+        Assert.True(second.Accepted);
         Assert.Equal(ComlinkValidationCode.RecipientNotHuman, rejected.Code);
         Assert.Equal("WATCH YOUR BACK", match.ComlinkFor(new PlayerId(1)).Messages[0].Text);
         Assert.True(match.ComlinkFor(new PlayerId(1)).HasUnread);
         Assert.NotEqual(before, MatchStateHasher.ComputeSha256(match));
-        Assert.True(match.MarkComlinkRead(new PlayerId(1)));
+        var inbox = match.ComlinkFor(new PlayerId(1));
+        Assert.True(match.MarkComlinkRead(new PlayerId(1), inbox.Messages[1].Sequence));
+        Assert.True(inbox.HasUnread);
+        Assert.True(inbox.IsRead(inbox.Messages[1].Sequence));
+        Assert.False(inbox.IsRead(inbox.Messages[0].Sequence));
+        Assert.False(match.MarkComlinkRead(new PlayerId(1), inbox.Messages[1].Sequence));
+        Assert.True(match.MarkComlinkRead(new PlayerId(1), inbox.Messages[0].Sequence));
         Assert.False(match.ComlinkFor(new PlayerId(1)).HasUnread);
     }
 }

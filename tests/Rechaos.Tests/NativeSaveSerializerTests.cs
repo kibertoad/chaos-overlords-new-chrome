@@ -126,15 +126,80 @@ public sealed partial class NativeSaveSerializerTests
         match.FinishUpkeep();
         Assert.True(match.SendComlinkMessage(
             new PlayerId(0), [new PlayerId(1)], "MEET ME DOWNTOWN").Accepted);
-        match.MarkComlinkRead(new PlayerId(1));
+        Assert.True(match.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "COME ALONE").Accepted);
+        var inbox = match.ComlinkFor(new PlayerId(1));
+        match.MarkComlinkRead(new PlayerId(1), inbox.Messages[1].Sequence);
 
         var restored = RoundTrip(match);
 
         Assert.Equal(match.ComlinkFor(new PlayerId(1)).Messages,
             restored.ComlinkFor(new PlayerId(1)).Messages);
-        Assert.Equal(match.ComlinkFor(new PlayerId(1)).ReadThroughSequence,
-            restored.ComlinkFor(new PlayerId(1)).ReadThroughSequence);
+        Assert.Equal(match.ComlinkFor(new PlayerId(1)).ReadSequences,
+            restored.ComlinkFor(new PlayerId(1)).ReadSequences);
+        Assert.True(restored.ComlinkFor(new PlayerId(1)).HasUnread);
         Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void VersionTwentyOneSaveMigratesReadThroughPosition()
+    {
+        var match = CreateMatch(secondPlayerHuman: true);
+        match.FinishUpkeep();
+        Assert.True(match.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "FIRST").Accepted);
+        Assert.True(match.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "SECOND").Accepted);
+        var inbox = match.ComlinkFor(new PlayerId(1));
+        Assert.True(match.MarkComlinkRead(new PlayerId(1), inbox.Messages[0].Sequence));
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 21;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionTwentyFourSha256(match);
+        foreach (var playerInbox in document["runtime"]!["comlink"]!.AsArray())
+            playerInbox!.AsObject().Remove("readSequences");
+
+        using var legacy = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.Equal([inbox.Messages[0].Sequence],
+            restored.ComlinkFor(new PlayerId(1)).ReadSequences);
+        Assert.True(restored.ComlinkFor(new PlayerId(1)).HasUnread);
+    }
+
+    [Fact]
+    public void VersionTwentyOneSavePreservesReadCursorBehindRetainedWindow()
+    {
+        var match = CreateMatch(secondPlayerHuman: true);
+        match.FinishUpkeep();
+        Assert.True(match.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "MESSAGE 0").Accepted);
+        var inbox = match.ComlinkFor(new PlayerId(1));
+        Assert.True(match.MarkComlinkRead(new PlayerId(1), inbox.Messages[0].Sequence));
+        for (var index = 1; index <= MatchLimits.ComlinkMessagesPerPlayer; index++)
+            Assert.True(match.SendComlinkMessage(
+                new PlayerId(0), [new PlayerId(1)], $"MESSAGE {index}").Accepted);
+        Assert.Empty(inbox.ReadSequences);
+        Assert.Equal(0, inbox.LegacyReadThroughSequence);
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 21;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionTwentyFourSha256(match);
+        foreach (var playerInbox in document["runtime"]!["comlink"]!.AsArray())
+            playerInbox!.AsObject().Remove("readSequences");
+        using var legacy = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.Empty(restored.ComlinkFor(new PlayerId(1)).ReadSequences);
+        Assert.True(restored.ComlinkFor(new PlayerId(1)).HasUnread);
+        Assert.Equal(
+            MatchStateHasher.ComputeVersionTwentyFourSha256(match),
+            MatchStateHasher.ComputeVersionTwentyFourSha256(restored));
     }
 
     [Fact]
