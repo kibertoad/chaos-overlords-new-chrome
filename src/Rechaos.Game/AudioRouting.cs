@@ -95,4 +95,16 @@ public static class AudioRouting
             throw new ArgumentOutOfRangeException(nameof(slot));
         return $"SND00{resource:000}.wav";
     }
+
+    public static IReadOnlyList<int> PanelTransitionSounds(
+        ClientScreen previous,
+        ClientScreen current,
+        bool slidePanels)
+    {
+        if (!slidePanels) return [];
+        var sounds = new List<int>(2);
+        if (PanelSlideTransition.IsPanel(previous)) sounds.Add(GeneralSoundSlot.PanelClose);
+        if (PanelSlideTransition.IsPanel(current)) sounds.Add(GeneralSoundSlot.PanelOpen);
+        return sounds;
+    }
 }

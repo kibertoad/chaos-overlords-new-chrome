@@ -34,7 +34,7 @@ public sealed partial class ChaosGame
 
         _idleGangWarningOpen = true;
         _message = "SOME GANGS HAVE NO COMMANDS";
-        PlayGeneralSound(GeneralSoundSlot.PanelOpen);
+        if (_slidePanels) PlayGeneralSound(GeneralSoundSlot.PanelOpen);
         return true;
     }
 
@@ -56,14 +56,14 @@ public sealed partial class ChaosGame
     private void ConfirmIdleGangWarning()
     {
         _idleGangWarningOpen = false;
-        PlayGeneralSound(GeneralSoundSlot.PanelClose);
+        if (_slidePanels) PlayGeneralSound(GeneralSoundSlot.PanelClose);
         FinishPlanningTurn();
     }
 
     private void CancelIdleGangWarning()
     {
         _idleGangWarningOpen = false;
-        PlayGeneralSound(GeneralSoundSlot.PanelClose);
+        if (_slidePanels) PlayGeneralSound(GeneralSoundSlot.PanelClose);
         _message = "PLANNING CONTINUES";
     }
 

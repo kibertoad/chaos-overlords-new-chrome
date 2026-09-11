@@ -144,9 +144,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 ["from"] = previous.ToString(),
                 ["to"] = current.ToString()
             });
-        _screens.Changed += (_, current) =>
+        _screens.Changed += (previous, current) =>
         {
             if (_slidePanels) _panelSlideTransition.Begin(current, _inputTime);
+            foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
+                PlayGeneralSound(slot);
         };
         var userDataRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

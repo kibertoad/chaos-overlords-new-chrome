@@ -39,6 +39,19 @@ public sealed class AudioRoutingTests
             AudioRouting.PlayerCountResultSound(changed: false, pointerButton: true));
     }
 
+    [Fact]
+    public void PanelSoundsFollowSlidePreferenceAndScreenTransitions()
+    {
+        Assert.Equal([GeneralSoundSlot.PanelOpen],
+            AudioRouting.PanelTransitionSounds(ClientScreen.City, ClientScreen.Gang, true));
+        Assert.Equal([GeneralSoundSlot.PanelClose],
+            AudioRouting.PanelTransitionSounds(ClientScreen.Gang, ClientScreen.City, true));
+        Assert.Equal([GeneralSoundSlot.PanelClose, GeneralSoundSlot.PanelOpen],
+            AudioRouting.PanelTransitionSounds(ClientScreen.Commands, ClientScreen.Site, true));
+        Assert.Empty(AudioRouting.PanelTransitionSounds(ClientScreen.City, ClientScreen.Sector, false));
+        Assert.Empty(AudioRouting.PanelTransitionSounds(ClientScreen.City, ClientScreen.Handoff, true));
+    }
+
     [Theory]
     [InlineData(0, 0)]
     [InlineData(5, 32000)]

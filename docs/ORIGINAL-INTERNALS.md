@@ -190,6 +190,14 @@ byte `0x00487868` starts at level 5 (32,000 per channel). The original Help
 describes each independent slider as having a Medium default but does not assign
 that label a number.
 
+The panel-entry helper at `0x0041953e` is called by 23 original panel handlers.
+It plays slot 0 immediately before its right-to-left copy loop, but only while
+the Slide Panels preference byte at `0x00487840` is enabled. The matching exit
+helper at `0x004196f5` has the same 23 callers and plays slot 1 before its
+left-to-right copy loop under the same preference gate. Disabling Slide Panels
+therefore suppresses both the motion and its paired cue; these are not generic
+ungated dialog sounds.
+
 Detailed Combat at `0x0042e040` temporarily reuses otherwise-empty slot 5 for
 each combatant. An equipped attack loads resource `500 + Item.Sound`. An
 unarmed attack loads `SND00500`, or `SND00501` when the attacking gang's base
@@ -199,7 +207,8 @@ load a valid attack sound. The timeline at `0x00430c23` calls the gated slot-5
 wrapper immediately before advancing frames, and the presenter unloads slot 5
 after that combatant's sequence.
 
-**Interpretation:** Slot 2 is the general push-button press cue; slots 3 and 4
+**Interpretation:** Slots 0 and 1 are the Slide Panels entry and exit cues.
+Slot 2 is the general push-button press cue; slots 3 and 4
 are the accepted-selection and rejected-input cues. Slot 6 is the new-report
 alert: the bounded report recorder
 at `0x0045d2f0` plays it when appending a report for the active player, and the
@@ -208,7 +217,7 @@ pending-report flag is set. Slot 9 is loaded but has no call site through the
 only gated general-effect wrapper in this executable. Music and effects share
 the same numeric conversion but have separate state and enable flags.
 
-**Confidence:** High static evidence for slot/resource mapping, push-button,
+**Confidence:** High static evidence for slot/resource mapping, panel entry/exit gating, push-button,
 full/compact setup selection, and report-alert roles, the lack of a slot-9 wrapper call site, scale, enable
 boundary, initialized levels, and channel values; High manual evidence for the
 independent controls. Other slot semantics remain partially classified.
@@ -222,6 +231,10 @@ pressed rectangle and cancel a release outside. Their held-inside state uses
 the exact four source rectangles from `PX00140`, while leaving the rectangle
 restores the baked `PX00143` control. A human handoff
 with pending Last Turn Events plays slot 6 once before opening the report panel.
+Every routed panel transition plays the recovered slot-0/slot-1 entry and exit
+cues while Slide Panels is enabled; nested panel transitions close the old
+panel and open the new one. The idle-gang confirmation follows the same
+preference gate.
 Equipped, unarmed, and detected-police combat events route their recovered
 sounds, while evasion remains silent. Combat and general effects share the
 independent recovered Effects level and its level-6 default, and both audio
@@ -230,8 +243,8 @@ clip carries its event-time cue; the player emits it on the recovered first
 animation tick, so retaliation waits for its reversed second clip instead of
 playing with the opening attack. Simple Combat does not enter this presenter.
 
-**Next validation:** Validate slot-0/1 panel motion cues, the slot-6
-repeat/suppression boundary, and countdown-warning cadence at
+**Next validation:** Validate the slot-6 repeat/suppression boundary and
+countdown-warning cadence at
 runtime, then validate overlap/interruption and native amplitude behavior.
 
 ### BIN-REPORT-001 - per-player report queue capacity and overflow
@@ -244,6 +257,15 @@ current index. At capacity, the routine sets the index to 15, copies records
 and increments the count back to 16. It also decrements the player's visible
 report cursor at `0x004981c8 + player * 4` when positive, otherwise retaining
 zero.
+
+All four direct callers have now been classified. Two calls in the legacy
+transport dispatcher at `0x0046ba84` handle packet type 10 and pass either
+message ID 0 or the received dynamic ID. The other two calls in the report
+screen handler at `0x0045eab1` pass `-1`, which copies the already-formatted
+global report buffer, and broadcast it to each enabled player. The recorder
+itself sends packet type 10 for remote recipients. Consequently, report-kind
+selection happens upstream while formatting that shared record, not in the
+capacity/overflow routine.
 
 **Interpretation:** Each player retains the newest 16 Last Turn Events reports;
 overflow deterministically drops exactly the oldest report and preserves the
@@ -258,8 +280,9 @@ in original drop-oldest order. The recreation-internal notification queue also
 carries non-report command, economy, movement, and combat facts, so its safety
 bound remains separate and does not incorrectly consume original report slots.
 
-**Next validation:** Map report-kind filtering and the cursor/page transition
-between the recorder, handoff, and `PX05010` presenter.
+**Next validation:** Trace writes to the formatted report buffer to map report
+kinds, then validate the cursor/page transition between the recorder, handoff,
+and `PX05010` presenter.
 
 ### BIN-OPTIONS-001 - registry keys, initialized defaults, and idle-gang warning
 
