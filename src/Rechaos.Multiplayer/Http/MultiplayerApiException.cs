@@ -53,18 +53,25 @@ public sealed class MultiplayerApiException : Exception
         {
             // Read tolerantly. The reason is what a caller branches on and what a player is shown,
             // so an envelope carrying a field this build does not know about must not cost us both.
-            var envelope = WireJson.Read<ErrorEnvelope>(body);
-            return new MultiplayerApiException(
-                response.StatusCode,
-                envelope.Error.Code,
-                envelope.Error.Message,
-                envelope.Error.Details?.Reason,
-                envelope.Error.RequestId);
+            // The null check is not paranoia: any JSON object parses as this record with `error`
+            // left unset, so a proxy that answers `{}` — or any JSON at all that is not the envelope
+            // — arrives here as a shape that is syntactically fine and has nothing in it. Reaching
+            // into it would raise a NullReferenceException from inside the code whose whole job is
+            // to turn a failure into something a caller can read.
+            if (WireJson.Read<ErrorEnvelope>(body) is { Error: { } error })
+            {
+                return new MultiplayerApiException(
+                    response.StatusCode,
+                    error.Code,
+                    error.Message,
+                    error.Details?.Reason,
+                    error.RequestId);
+            }
         }
         catch (MultiplayerProtocolException)
         {
-            // Not the envelope. A proxy's HTML page and an empty 502 both land here; fall through
-            // to the status-only error below.
+            // Not JSON at all. A proxy's HTML page and an empty 502 both land here; fall through to
+            // the status-only error below.
         }
         return new MultiplayerApiException(
             response.StatusCode,

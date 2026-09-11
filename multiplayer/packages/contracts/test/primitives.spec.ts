@@ -1,11 +1,14 @@
 import { safeParse } from 'valibot'
 import { describe, expect, it } from 'vitest'
 import {
+  displayNameInputSchema,
+  displayNameSchema,
   eventSeqSchema,
   formatVersionSchema,
   INT32_MAX,
   INT32_MIN,
   isoTimestampSchema,
+  RESERVED_DISPLAY_NAMES,
   resourceIdSchema,
   seedSchema,
   turnNumberSchema,
@@ -63,5 +66,27 @@ describe('isoTimestampSchema', () => {
     for (const value of ['2026-09-10T12:00:00+02:00', '2026-09-10 12:00:00Z', '2026-09-10']) {
       expect(safeParse(isoTimestampSchema, value).success).toBe(false)
     }
+  })
+})
+
+describe('displayNameInputSchema', () => {
+  it.each(RESERVED_DISPLAY_NAMES)('refuses %s, whatever case it is typed in', (reserved) => {
+    for (const spelling of [reserved, reserved.toLowerCase(), ` ${reserved} `]) {
+      expect(safeParse(displayNameInputSchema, spelling).success).toBe(false)
+    }
+  })
+
+  it('still relays a reserved name already on a roster', () => {
+    // Reading is not choosing. A name stored before the rule existed has to stay readable, or the
+    // match it belongs to stops being describable at all.
+    for (const reserved of RESERVED_DISPLAY_NAMES) {
+      expect(safeParse(displayNameSchema, reserved).success).toBe(true)
+    }
+  })
+
+  it('allows a name that merely contains one', () => {
+    // The rules match the whole name, so only the whole name is a cheat; refusing a substring would
+    // rule out names that do nothing.
+    expect(safeParse(displayNameInputSchema, 'SMGFUNDAGE THE THIRD').success).toBe(true)
   })
 })

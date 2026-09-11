@@ -18,12 +18,16 @@ import { fileURLToPath } from 'node:url'
  * pnpm codegen:check  # fail if the committed file no longer matches the schemas
  * ```
  *
- * The generator is fetched on demand rather than declared as a dependency: it is a maintenance
- * tool, and nothing about installing, building or testing this workspace should wait on it. Pass
- * `--generator` to run an unpublished one out of a sibling `game-infra` checkout:
+ * The generator is a pinned devDependency of this workspace rather than something fetched when the
+ * script runs. `codegen:check` is a CI step, and CI verifying committed files must not depend on the
+ * registry being reachable: a fetch on every run turns an npm hiccup into a red build on whatever
+ * unrelated pull request happened to be open. Being in the lockfile also means the version that
+ * checks the output is provably the version that wrote it.
+ *
+ * Pass `--generator` to run an unpublished one out of a sibling `game-infra` checkout:
  *
  * ```sh
- * pnpm codegen --generator "npx tsx ../game-infra/packages/valibot-to-csharp/src/cli.ts"
+ * pnpm codegen --generator "node_modules/.bin/tsx ../game-infra/packages/valibot-to-csharp/src/cli.ts"
  * ```
  */
 
@@ -38,20 +42,30 @@ const ROUTES_PATH = join(GENERATED_DIR, 'RouteTemplates.cs')
 const NAMESPACE = 'Rechaos.Multiplayer.Generated'
 
 /**
- * The generator, pinned exactly rather than to a range.
+ * The generator, pinned exactly in `package.json` rather than to a range.
  *
  * The output is committed and this script also checks it, so the version that wrote the file has to
  * be the version that reads it: under a range, a generator release would turn CI red on whatever
  * unrelated pull request happened to be open that day. Adopting a new one is a deliberate commit —
- * bump this line, run `pnpm codegen`, and the diff says what changed.
+ * bump the dependency, run `pnpm codegen`, and the diff says what changed.
  *
  * 0.2.0 is the first release the output of this workspace compiles under: `strictObject`, non-string
  * literals, integer bounds, spread field groups, the nullable context and a round-trippable
  * discriminated union all landed in it.
  */
-const GENERATOR = 'https://registry.npmjs.org/@game-infra/valibot-to-csharp'
-const GENERATOR_SPEC = '@game-infra/valibot-to-csharp@0.2.0'
-const DEFAULT_CLI = `npx --yes -p ${GENERATOR_SPEC} valibot-to-csharp`
+const GENERATOR_SPEC = '@game-infra/valibot-to-csharp'
+const DEFAULT_CLI = localBin('valibot-to-csharp')
+
+/**
+ * A workspace binary, by absolute path.
+ *
+ * Resolved rather than shelled through `npx`, which would reach for the registry when the local copy
+ * is missing — quietly turning a stale install into a download, and a check of committed files into
+ * something that can fail offline.
+ */
+function localBin(name) {
+  return join(multiplayerRoot, 'node_modules', '.bin', name)
+}
 
 /**
  * The schema files, not the barrel.
@@ -141,7 +155,9 @@ function routeTemplates() {
 
 /** Runs the generator into a scratch directory and returns what it wrote. */
 function run(scratch) {
-  const cli = (generatorOverride() ?? DEFAULT_CLI).split(' ').filter(Boolean)
+  // Split on whitespace so `--generator "tsx path/to/cli.ts"` works as one argument. The default is
+  // a single resolved path, which has nothing to split.
+  const cli = (generatorOverride() ?? DEFAULT_CLI).split(/\s+/).filter(Boolean)
   const [command, ...leading] = cli
   const args = [
     ...leading,
@@ -158,7 +174,8 @@ function run(scratch) {
     throw new Error(
       `${command} failed (${result.error?.message ?? `exit ${result.status}`}).\n` +
         `${result.stderr ?? ''}\n` +
-        `This needs ${GENERATOR_SPEC} (${GENERATOR}), or VALIBOT_TO_CSHARP pointing at a checkout.`,
+        `This needs ${GENERATOR_SPEC} installed: run \`pnpm install\` in multiplayer/, or pass ` +
+        '--generator pointing at a checkout.',
     )
   }
   return readFileSync(join(scratch, OUTPUT_NAME), 'utf8')
@@ -184,7 +201,7 @@ function readRoutes() {
     '])',
     'process.stdout.write(JSON.stringify(rows))',
   ].join('\n')
-  const result = spawnSync('npx', ['--yes', 'tsx', '--eval', script], {
+  const result = spawnSync(localBin('tsx'), ['--eval', script], {
     cwd: join(multiplayerRoot, 'packages', 'contracts'),
     encoding: 'utf8',
   })

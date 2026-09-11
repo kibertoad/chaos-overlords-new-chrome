@@ -159,11 +159,50 @@ export const matchNameSchema = pipe(
   maxLength(LIMITS.matchNameLength),
 )
 
+/**
+ * A player's name as the server stores and relays it.
+ *
+ * Used for reading a roster as well as writing one, so it says nothing about which names a player may
+ * choose — a name already on a roster has to stay readable whatever the rules have since become.
+ *
+ * @see displayNameInputSchema for the form a request is held to.
+ */
 export const displayNameSchema = pipe(
   string(),
   trim(),
   minLength(1),
   maxLength(LIMITS.displayNameLength),
+)
+
+/**
+ * The names the original game reads as cheat codes rather than as names.
+ *
+ * Mirrors `ReservedPlayerNames` in `src/Rechaos.Core/GameModel/ReservedPlayerNames.cs`, which is the
+ * source of truth: the rules that read them are recovered game rules and live with the game. Adding
+ * one there means adding it here, and the C# side neutralises any that reach it anyway, so a server
+ * that predates a new name still plays a fair match.
+ *
+ * They matter because of how the rules read them. Starting cash is granted by name, so one player
+ * taking the bonus is a bonus every other client agrees they earned; and the islands name is read
+ * across the whole roster, so one player changes the generated city for everybody. Neither is a
+ * desync — nothing about it is inconsistent — which is exactly why neither can be left to surface on
+ * its own.
+ */
+export const RESERVED_DISPLAY_NAMES = ['SMGFUNDAGE', 'SMGISLANDS'] as const
+
+/**
+ * A display name as a request may set it.
+ *
+ * Compared case-insensitively, which is wider than the game rules themselves — they match exactly, so
+ * a lowercase spelling does nothing today. Wider is deliberate: refusing a name that only looks like
+ * a cheat costs one player one retype, and letting one through costs everybody the match.
+ */
+export const displayNameInputSchema = pipe(
+  displayNameSchema,
+  check(
+    (name) => !RESERVED_DISPLAY_NAMES.some((reserved) => name.toUpperCase() === reserved),
+    'that display name is a cheat code in the original game, not a name',
+  ),
 )
 
 export const passwordSchema = pipe(

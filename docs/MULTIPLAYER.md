@@ -26,9 +26,16 @@ was ordered**:
 4. On a desync the host uploads a native snapshot; the server judges further reports against it,
    so every client converges on one state before the next turn can seal.
 
-Empty slots and departed players are computer players, planned by the deterministic AI on every
-client identically, so their orders never cross the wire. The match seed and the slot assignment
-come from the server at start, so every client bootstraps the same city.
+Every seat no human took at the start is a computer player, planned by the deterministic AI on every
+client identically, so its orders never cross the wire. The match seed and the slot assignment come
+from the server at start, so every client bootstraps the same city.
+
+A player who *leaves* a running match is a different case, and a narrower one: the server stops
+waiting on their readiness, so the turns that follow seal without them, and their gangs hold
+position. The computer does not take the seat over. Who controls a seat is part of the state every
+client hashes and it is read by the AI's own targeting, so changing it mid-match is a mutation every
+client would have to make at the same point in the log — a recorded core operation and a replay
+format bump, not a local decision. See "Limitations and next steps".
 
 This is the classic deterministic-lockstep model of turn-based strategy games. Its cost is
 stated in the security section: a modified client can read hidden state. Its benefits are that the
@@ -84,7 +91,7 @@ generated from the same valibot schemas (see "Two languages, one contract").
 | `POST /matches/join` | anyone | Joins by code (and password). Returns that player's token. Capacity is a single atomic seat claim. |
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
-| `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: the slot becomes a computer player from the next turn; a leaving host hands the role to the lowest active slot. The token is revoked, so a departed player keeps no read access either. |
+| `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: the turns that follow seal without waiting on that seat, which then orders nothing; a leaving host hands the role to the lowest active slot. The token is revoked, so a departed player keeps no read access either. |
 | `POST /matches/:id/players/:pid/kick` | host | Same as the target leaving. |
 
 ### Turn barrier
@@ -138,8 +145,9 @@ open ──(all ready | deadline)──> sealed ──(unanimous reports)──>
 Sealing opens the next turn immediately, so players plan turn n+1 while reports for turn n arrive.
 The seal also **freezes its participant set** on the turn row, beside the digest taken over it. The
 set a client fetches is therefore always the set the digest was computed from: a player who left
-after submitting but before the seal is absent from both (their slot becomes a computer player),
-and one who leaves after the seal stays in both.
+after submitting but before the seal is absent from both, and one who leaves after the seal stays in
+both. A slot absent from the set orders nothing for that turn, which is the same thing a slot whose
+player ran out of clock orders.
 
 A desync pauses the match (`match.status = desynced`): the open turn stays open but cannot seal
 until every unsettled turn is confirmed. The host uploads the snapshot of the disputed turn;
@@ -242,6 +250,19 @@ shows up as a desync. What the checks above buy is that the document reaching th
 *representable* move — an out-of-range id or an unknown op can never crash or diverge a peer, and a
 desync therefore means a genuine disagreement about the rules rather than malformed input.
 
+**Checked because a name is not only a name.** The original game reads two player names as cheat
+codes: `SMGFUNDAGE` grants the maximum starting cash, and `SMGISLANDS` changes how the city is
+generated. In a hot-seat match they are harmless — the player typing one is the only player affected,
+and they chose to. Online they are neither. A name arrives from the server's roster, every client
+reads the same one, and the rules fire on all of them: one player takes the cash bonus with every
+opponent's client agreeing they earned it, and the islands name is read with `Any` over the whole
+roster, so one player rewrites the map for everybody. Neither shows up as a desync, because nothing
+about either is inconsistent — which is exactly why neither can be left to surface on its own. The
+lobby refuses both (`displayNameInputSchema`), and the client's bootstrap substitutes the seat's
+derived name for any that reach it, deterministically, so a server that let one through still plays a
+fair match. `ReservedPlayerNames` in `Rechaos.Core` is the list; the TypeScript copy names it as the
+source of truth.
+
 ## Two languages, one contract
 
 The server is TypeScript and the game is .NET, so one of the two mirrors of every wire type has to
@@ -253,7 +274,7 @@ records deserialize the same JSON; a second pass reads the endpoint contracts an
 committed, so building the game never needs Node, and CI runs `pnpm codegen:check` to fail if either
 has drifted from the schemas.
 
-Three things the schemas say exist for that crossing:
+Four things the schemas say exist for that crossing:
 
 - **Every integer states its bounds.** A bound is what lets the generated C# hold a value in an
   `int` instead of a `long` or a `double`; JavaScript integers run to 2^53, so an unbounded one has
@@ -264,6 +285,11 @@ Three things the schemas say exist for that crossing:
 - **`optional` and `nullable` are different.** The first says a key may be absent, the second that a
   value may be `null`, and a request that writes `null` where only absence is accepted is refused.
   The generated C# omits an optional field rather than writing a null for it.
+- **A display name may be relayed that a request may not set.** `displayNameSchema` is what a roster
+  is read through and `displayNameInputSchema` is what a request is held to; the second refuses the
+  names the original game reads as cheat codes. The distinction matters because reading is not
+  choosing: a name already on a roster has to stay readable whatever the rules have since become.
+  See "What the server does and does not defend against".
 
 What the generator cannot mirror, `Rechaos.Multiplayer` writes by hand and pins with a test:
 canonical JSON. `packages/kernel/test/logic.spec.ts` and `MultiplayerCanonicalJsonTests` hold the
@@ -278,23 +304,47 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    Events are at least once: ignore one for a turn already applied, and treat the match view as the
    authority when the two disagree.
 2. On `match.started`, build the match through `OriginalMatchFactory` from `seed` and the seated
-   players (slot → human, the rest computer) using the stored `gameSettings`. The seed is a
-   **signed 32-bit integer**, drawn to fit `MatchSetup.InitialSeed`: it can be negative, and a
-   client that deserializes it into anything narrower than an `int` will reject half of all matches.
+   players using the stored `gameSettings`. The seed is a **signed 32-bit integer**, drawn to fit
+   `MatchSetup.InitialSeed`: it can be negative, and a client that deserializes it into anything
+   narrower than an `int` will reject half of all matches. Seat by *whether a slot was assigned*, not
+   by a player's current status: a slot is handed out once and never reassigned, so "has a slot" says
+   the same thing whenever it is asked, while status changes over the life of a match. Reading status
+   here makes the generated city depend on when the client bootstrapped it, and because the rules read
+   player names, two clients that bootstrapped either side of a departure disagree from the first
+   upkeep.
 3. During Command, record the player's authoritative operations as the order document; `PUT` it
-   whenever it changes, with `ready: true` when the player presses Done.
+   whenever it changes, with `ready: true` when the player presses Done. Sending it periodically with
+   `ready: false` costs one small request and is worth it: the document is a whole-document replace,
+   so a turn the clock seals then seals with what the player had planned rather than with nothing.
 4. On `turn.sealed`, fetch the sealed set and verify the digest: SHA-256 over `slot:ordersHash`
    lines joined by `\n` in slot order, each `ordersHash` being SHA-256 of that player's canonical
    document. Apply every player's ops **attributed to the slot they arrived under** through the same
-   validator the replay reader uses, plan every other slot (empty, departed, or computer) with the
-   deterministic AI, run Execution, Hire, Elimination and Upkeep, then `POST` the state hash.
+   validator the replay reader uses; plan every slot that *the match state says the computer controls*
+   and has no document with the deterministic AI; leave a human-controlled slot with no document
+   idle; run Execution, Hire, Elimination and Upkeep, then `POST` the state hash. Read the controller
+   out of the state rather than a roster fetched beside it — the state is the one answer every client
+   is already guaranteed to agree on, and a slot the AI plans on one client and not another is a
+   desync on the turn *after* the one that caused it.
 5. On `turn.desynced`, the host uploads the native snapshot for that turn (the same bytes as a
-   quick-save); every other client loads it, recomputes the hash and re-reports.
+   quick-save), declaring the **native save** format version — the replay format's says nothing about
+   those bytes. Every other client refuses a version newer than it reads, and otherwise loads it,
+   recomputes the hash and re-reports.
 6. On `turn.deadlineExtended`, replace the countdown for that turn: the match resumed after a
    desync pause and the turn's clock restarted.
 7. On reconnect, fetch the match, load the latest snapshot if the local state is behind, replay
    sealed turns from there, and resume the stream. A token that answers 401 means the membership was
    revoked — the player left or was kicked.
+8. Retry, rather than ending the match. Every call a received fact leads to is idempotent — the reads
+   plainly so, and the two writes by definition, since a report restates a hash the server already
+   holds and an order document replaces what was held — so a server having a bad moment costs latency
+   and nothing else. Only a refusal that will keep being refused (a revoked token, a body the server
+   will never accept) or a payload that cannot be made sense of ends a session.
+9. Read responses tolerantly and requests strictly. The server is deployed separately, self-hosted
+   ones especially, so a client must skip a response field it has never heard of and one the server
+   left out, or a single additive release locks out every client built before it. The exception is a
+   payload whose digest the client recomputes — the order documents inside a sealed set, which have
+   to round-trip byte for byte — where an unknown or missing field is refused by name instead of
+   reported much later as a hash that would not match.
 
 ### What a hot-seat core does not say
 
@@ -326,6 +376,13 @@ dock a player plans against the dock the sealed turn grants.
   one path that does work under it, because it reads the log directly.
 - Late joining into a running match (taking over a computer slot) is not offered; the lobby is
   the only door.
+- **A seat whose player has left goes quiet rather than to the computer.** The turns that follow seal
+  without waiting on it, so the match keeps moving, but the gangs hold position for the rest of it.
+  Handing the seat over properly means changing who controls it, and that is hashed state the AI's own
+  targeting reads — so it needs a recorded core operation every client applies at the same point in
+  the event log (which the log's ordering does guarantee), plus a replay format bump. It is a
+  self-contained change and deliberately not bundled with the client wiring: a mid-match mutation of
+  the setup deserves its own tests and its own determinism run, not a footnote in a larger branch.
 - **The lobby is polled, not streamed.** The game reads the match about once a second while the
   lobby is on screen and opens the event stream when the match starts. The stream carries the lobby
   facts too; opening it earlier would mean unwinding a session for every player who backs out.

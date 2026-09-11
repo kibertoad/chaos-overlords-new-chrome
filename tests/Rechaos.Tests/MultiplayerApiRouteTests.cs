@@ -63,6 +63,35 @@ public sealed class MultiplayerApiRouteTests
         Assert.Equal("/matches/m1/turns/1234567/orders", ApiRoutes.Orders(MatchId, 1_234_567));
     }
 
+    /// <summary>
+    /// A server published under a path keeps it.
+    /// </summary>
+    /// <remarks>
+    /// A reverse proxy that mounts the server at <c>/game/</c> is the ordinary self-hosting shape, and
+    /// an absolute reference (<c>/api/v1/...</c>) resolves from the host root — so the prefix has to be
+    /// joined as a relative one against a base that ends in a slash. A player typing the address has no
+    /// reason to add the slash, which is why the client adds it rather than requiring it.
+    /// </remarks>
+    [Theory]
+    [InlineData("http://host", "/api/v1/matches/m1/start")]
+    [InlineData("http://host/", "/api/v1/matches/m1/start")]
+    [InlineData("http://host/game", "/game/api/v1/matches/m1/start")]
+    [InlineData("http://host/game/", "/game/api/v1/matches/m1/start")]
+    [InlineData("http://host/deep/path/", "/deep/path/api/v1/matches/m1/start")]
+    public async Task BuildsRequestsUnderThePathTheServerIsPublishedAt(string origin, string expected)
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        var match = new MultiplayerClient(http, new MultiplayerClientOptions(new Uri(origin)))
+            .WithToken("cop_test")
+            .Match(MatchId);
+        server.Answer(HttpMethod.Post, "/start", null, System.Net.HttpStatusCode.NoContent);
+
+        await match.StartAsync(CancellationToken.None);
+
+        Assert.Equal(expected, Assert.Single(server.Requests).Path);
+    }
+
     private static string AsTemplate(string built) => built
         .Replace($"/{MatchId}", "/:matchId", StringComparison.Ordinal)
         .Replace($"/{PlayerId}/", "/:playerId/", StringComparison.Ordinal)

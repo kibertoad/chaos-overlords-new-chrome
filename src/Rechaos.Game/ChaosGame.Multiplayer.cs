@@ -297,12 +297,24 @@ public sealed partial class ChaosGame
     private void ConcludeOnlineMatch(MatchState final)
     {
         _state = final;
-        _actions = null;
         _online.Stage = MultiplayerStage.Finished;
         _online.DeadlineAt = null;
+        CloseOnlinePlanning();
         _message = "MATCH COMPLETE";
         _screens.Show(ClientScreen.Endgame);
     }
+
+    /// <summary>
+    /// Takes away the player's handle on the turn in front of them.
+    /// </summary>
+    /// <remarks>
+    /// The lock that stops a command queued after the turn has gone from looking ordered. Every call
+    /// site that mutates a match already refuses a null handle, which is what makes this a lock the
+    /// interface cannot forget to take — rather than a stage check each of a dozen places has to
+    /// remember. <see cref="MultiplayerUiState.PlanningIsOpen"/> is the same fact for the paths that
+    /// want to say why.
+    /// </remarks>
+    private void CloseOnlinePlanning() => _actions = null;
 
     /// <summary>Sends what the player planned and marks them ready; the turn seals on the last one.</summary>
     private void SubmitOnlineTurn()
@@ -312,11 +324,7 @@ public sealed partial class ChaosGame
         _session.QueueOrders(_online.PlanningTurn, turn.Build(), ready: true);
         _online.SentOpCount = turn.Orders.Count;
         _online.Stage = MultiplayerStage.WaitingForSeal;
-        // The document the server now holds is the turn, so the player's handle on it goes away with
-        // it. Every call site that mutates a match already refuses a null one, which is what makes
-        // this a lock the interface cannot forget to take: a command queued from here on would show
-        // on screen, never be sent, and leave the player believing they had ordered it.
-        _actions = null;
+        CloseOnlinePlanning();
         _message = "WAITING FOR THE OTHER PLAYERS";
     }
 
@@ -372,9 +380,6 @@ public sealed partial class ChaosGame
                 _online.Match = updated.Match;
                 if (_session is null && updated.Match.Status == MatchStatus.Running)
                     StartOnlineMatch(updated.Match);
-                return;
-            case LobbyNotice.Left:
-                EndOnlineMatch("LEFT THE MATCH");
                 return;
             case LobbyNotice.Failed failed:
                 if (_online.Stage == MultiplayerStage.Busy) _online.Stage = MultiplayerStage.Connect;
@@ -442,6 +447,7 @@ public sealed partial class ChaosGame
                 if (_online.Stage != MultiplayerStage.Finished)
                 {
                     _online.Stage = MultiplayerStage.Finished;
+                    CloseOnlinePlanning();
                     _message = "MATCH COMPLETE";
                     if (_state?.Outcome is not null) _screens.Show(ClientScreen.Endgame);
                 }
@@ -463,19 +469,18 @@ public sealed partial class ChaosGame
         }
     }
 
-    /// <summary>Leaves the match and forgets the token; the seat stops being waited on.</summary>
+    /// <summary>
+    /// Leaves the match and forgets the token; the seat stops being waited on.
+    /// </summary>
     /// <remarks>
-    /// The answer comes back as <see cref="LobbyNotice.Left"/>, which is what tears the session down,
-    /// so this returns at once even if the server never answers.
+    /// The player is out as soon as they ask. Telling the server is started here and finished behind
+    /// them, because a network that is already failing is the likeliest reason somebody is leaving and
+    /// holding them in the lobby until it answers would be the wrong way round.
     /// </remarks>
     private void LeaveOnlineMatch()
     {
-        if (_lobby is null)
-        {
-            EndOnlineMatch("LEFT THE MATCH");
-            return;
-        }
-        _lobby.Leave();
+        Forget(_lobby?.LeaveAsync(), "multiplayer.leave.failed");
+        EndOnlineMatch("LEFT THE MATCH");
     }
 
     /// <summary>
@@ -488,12 +493,17 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void EndOnlineMatch(string status)
     {
+        // Only an online match's state is this method's to throw away. Opening the online screen from
+        // a hot-seat match in progress and backing out of it again must leave that match alone.
+        if (_session is not null)
+        {
+            CloseOnlinePlanning();
+            _state = null;
+        }
         Forget(_session?.StopAsync(), "multiplayer.session.stop.failed");
         Forget(_lobby?.StopAsync(), "multiplayer.lobby.stop.failed");
         _session = null;
         _lobby = null;
-        _actions = null;
-        _state = null;
         _online.Reset();
         _online.Status = status;
         _screens.Show(ClientScreen.Title);

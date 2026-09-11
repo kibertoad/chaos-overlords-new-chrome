@@ -2,7 +2,7 @@ import { boolean, type InferOutput, optional, strictObject } from 'valibot'
 import { orderDocumentSchema } from './orders'
 import {
   base64BodySchema,
-  displayNameSchema,
+  displayNameInputSchema,
   formatVersionSchema,
   joinCodeInputSchema,
   passwordSchema,
@@ -28,13 +28,13 @@ import { matchSettingsSchema } from './settings'
 
 export const createMatchRequestSchema = strictObject({
   settings: matchSettingsSchema,
-  hostDisplayName: displayNameSchema,
+  hostDisplayName: displayNameInputSchema,
   password: optional(passwordSchema),
 })
 
 export const joinMatchRequestSchema = strictObject({
   joinCode: joinCodeInputSchema,
-  displayName: displayNameSchema,
+  displayName: displayNameInputSchema,
   password: optional(passwordSchema),
 })
 

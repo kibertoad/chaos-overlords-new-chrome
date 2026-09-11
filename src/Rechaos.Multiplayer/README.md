@@ -14,8 +14,8 @@ for them.
 |---|---|
 | `Generated/` | The wire types and route templates, generated from `multiplayer/packages/contracts`. Not edited by hand; see below. |
 | `Protocol/` | Canonical JSON, the order digests, and the serializer settings every payload goes through. |
-| `Http/` | The REST client, the typed refusal, and a resumable server-sent event stream. |
-| `Session/` | Bootstrapping a match from the server's seed, applying a sealed turn, and the session that drives the barrier. |
+| `Http/` | The REST client, the typed refusal, a resumable server-sent event stream, and one definition of which failures are worth another attempt. |
+| `Session/` | Bootstrapping a match from the server's seed, applying a sealed turn, and the two sessions that drive the lobby and the barrier. |
 
 ## The parts worth reading first
 
@@ -27,11 +27,22 @@ than hashing something no peer could reproduce. `MultiplayerCanonicalJsonTests` 
 document, canonical text and digest the server's own suite pins.
 
 **`Session/SealedTurnApplier.cs`** is the whole of the lockstep contract: every player's ops in slot
-order under the slot the seal attributed them to, every unseated slot planned by the deterministic
-AI, then Execution, Hire, Elimination and Upkeep. The hash it returns is what gets reported.
+order under the slot the seal attributed them to, every computer-controlled slot with no document
+planned by the deterministic AI, then Execution, Hire, Elimination and Upkeep. The hash it returns is
+what gets reported. Which slots those are is read out of the match being applied, never passed in — it
+is hashed state, so it is the one answer every client is already guaranteed to agree on.
 
 **`Session/SpeculativeTurn.cs`** is why the interface can show a queued command before the turn
 seals without putting this client ahead of its peers.
+
+**`Http/RetryPolicy.cs`** is where "worth another attempt" is decided, once, for both the event
+stream and the calls a received event leads to. Before it was shared, a single dropped connection
+while fetching a sealed set ended the match; every call it covers is idempotent, which is what makes
+asking again the right answer rather than a risk.
+
+**`Session/MultiplayerMatchSession.cs`** is the barrier: two background tasks, one reading the log and
+one sending this player's document, both answering through a queue the game thread drains. Nothing
+here blocks a caller, and nothing ends a match because the network hiccuped.
 
 ## Regenerating the wire types
 
@@ -51,6 +62,9 @@ Nothing else: the HTTP client and JSON reader are the framework's.
 
 ## Consumers
 
-`Rechaos.Game`, which owns the lobby screens and routes a player's mutations through `MatchActions`.
+`Rechaos.Game`, which owns the lobby screens and routes a player's mutations through `MatchActions` —
+whose `HotSeatRecorder` refuses to hand out a recorder in an online match, because a call site that
+got one would apply a command locally and never record it as an order, and the two look identical at
+the point of the call.
 `tools/OnlineSmoke` plays a short match against a running server with two clients in one process,
 which is the end-to-end check the .NET test suite cannot make on its own.

@@ -1,4 +1,6 @@
+using System.Net;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Protocol;
 using Xunit;
 
@@ -91,5 +93,36 @@ public sealed class MultiplayerErrorEnvelopeTests
              "players":[{"playerId":"p1","slot":0,"ordersHash":"bbbb",
                          "orders":{"version":1,"ops":[],"smuggled":true}}]}
             """));
+    }
+
+    /// <summary>
+    /// A failure that is not the envelope still answers a typed error, not an exception of its own.
+    /// </summary>
+    /// <remarks>
+    /// Any JSON object at all parses as the envelope record with <c>error</c> left unset, so a proxy
+    /// that answers <c>{}</c> used to raise a NullReferenceException from inside the code whose whole
+    /// job is to turn a failure into something a caller can read — and it reached the player as "the
+    /// connection was lost" with the status it was actually told thrown away.
+    /// </remarks>
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("""{"error":null}""")]
+    [InlineData("<html>502 Bad Gateway</html>")]
+    [InlineData("")]
+    public async Task AnswersATypedErrorForABodyThatIsNotTheEnvelope(string body)
+    {
+        using var response = new HttpResponseMessage(HttpStatusCode.BadGateway)
+        {
+            Content = new StringContent(body),
+        };
+
+        var failure = await MultiplayerApiException
+            .FromResponseAsync(response, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.BadGateway, failure.Status);
+        Assert.Null(failure.Reason);
+        // And still retryable, which is the decision that matters: a gateway having a bad moment is
+        // not a reason to end a match.
+        Assert.False(failure.EndsTheStream);
     }
 }

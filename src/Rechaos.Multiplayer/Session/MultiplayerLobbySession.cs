@@ -23,9 +23,6 @@ public abstract record LobbyNotice
     /// <summary>The lobby as the server now describes it.</summary>
     public sealed record Updated(MatchView Match) : LobbyNotice;
 
-    /// <summary>The seat was given up, successfully or not; either way it is gone.</summary>
-    public sealed record Left : LobbyNotice;
-
     /// <summary>A call was refused, with text a player can act on.</summary>
     public sealed record Failed(string Reason) : LobbyNotice;
 }
@@ -111,25 +108,29 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     });
 
     /// <summary>
-    /// Gives up the seat.
+    /// Gives up the seat, and answers a task that completes when the server has been told.
     /// </summary>
     /// <remarks>
-    /// Best effort, and the notice says the seat is gone either way: the server stops waiting on this
-    /// player whether or not the call lands, and a player who has decided to go should not be held in
-    /// a lobby by a network error.
+    /// <para>
+    /// Deliberately outside the one-call-at-a-time rule that governs everything else here, and
+    /// outside this session's cancellation. Leaving is the one call a player can make that must not be
+    /// dropped because a poll happened to be in flight, and the caller's next act is to tear the
+    /// session down — so a request bound to the session's own token would be cancelled before it
+    /// reached the server, and the match would keep waiting on a seat nobody is in.
+    /// </para>
+    /// <para>
+    /// Best effort all the same: the caller should not wait on it. The seat is gone from the player's
+    /// point of view the moment they ask, and the server's turn timer is what moves a match on past a
+    /// client that vanished without saying so.
+    /// </para>
     /// </remarks>
-    public void Leave() => Run(async token =>
+    public Task LeaveAsync()
     {
-        try
-        {
-            if (_handle is not null) await _handle.LeaveAsync(token).ConfigureAwait(false);
-        }
-        finally
-        {
-            _handle = null;
-            _notices.Enqueue(new LobbyNotice.Left());
-        }
-    });
+        var handle = _handle;
+        _handle = null;
+        // The client's own request deadline bounds this; the session's token deliberately does not.
+        return handle is null ? Task.CompletedTask : handle.LeaveAsync(CancellationToken.None);
+    }
 
     /// <summary>
     /// Stops accepting calls and answers a task that completes when the last one has finished.
@@ -218,8 +219,9 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         MultiplayerApiException { Reason: "host_only" } => "ONLY THE HOST CAN DO THAT",
         MultiplayerApiException { Reason: "invalid_password" } => "WRONG PASSWORD",
         MultiplayerApiException { Reason: "match_started" } => "THAT MATCH HAS ALREADY STARTED",
-        MultiplayerApiException { Reason: "reserved_display_name" } =>
-            "THAT NAME IS A CHEAT CODE  PICK ANOTHER",
+        // A reserved display name is not in this list because it never reaches the server from this
+        // client: the name is refused before a request is built, which is the only way to say which
+        // field is wrong. The server refuses it too, as a contract violation like any other.
         MultiplayerApiException api => api.Message.ToUpperInvariant(),
         MultiplayerTimeoutException => "THE SERVER DID NOT ANSWER",
         MultiplayerProtocolException protocol => protocol.Message.ToUpperInvariant(),

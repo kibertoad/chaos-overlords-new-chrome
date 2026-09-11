@@ -6,6 +6,7 @@ using Rechaos.Core.Persistence;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Protocol;
+using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
 
 namespace Rechaos.Multiplayer.Session;
 
@@ -55,7 +56,6 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     private readonly ConcurrentQueue<MultiplayerNotice> _notices = new();
     private readonly CancellationTokenSource _stopping = new();
     private readonly Dictionary<string, int> _slotsByPlayerId;
-    private readonly int _activeSeats;
 
     /// <summary>Guards <see cref="_pending"/>, which the game thread writes and the outbox reads.</summary>
     private readonly object _outboxGate = new();
@@ -72,6 +72,17 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     private Task? _outbox;
     private int _resumeAfterSeq;
     private int _readinessTurn = -1;
+
+    /// <summary>
+    /// How many seats the server is still waiting on before readiness alone seals a turn.
+    /// </summary>
+    /// <remarks>
+    /// Every seat at the start, less the players who have since left: the server stops waiting on a
+    /// departed seat, so a tally that kept counting it would sit at one short of a total the match
+    /// will never reach. Kept from the match view, which the pump refreshes whenever the roster
+    /// changes, and only ever read for the line on screen — nothing about the turn depends on it.
+    /// </remarks>
+    private int _awaitedSeats;
 
     /// <summary>
     /// 1 while the server is answering, 0 while it is not.
@@ -92,7 +103,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         _definitions = options.Definitions;
         _replay = replay;
         _slotsByPlayerId = slotsByPlayerId;
-        _activeSeats = slotsByPlayerId.Count;
+        _awaitedSeats = slotsByPlayerId.Count;
         _resumeAfterSeq = options.ResumeAfterSeq;
         PlayerId = self.Id;
         Slot = self.Slot;
@@ -491,6 +502,13 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     {
         var detail = await CallAsync(
             token => _match.GetAsync(token), cancellationToken).ConfigureAwait(false);
+        _awaitedSeats = detail.Match.Players.Count(
+            player => player.Slot >= 0 && player.Status == WirePlayerStatus.Active);
+        // A seat that has gone quiet is also no longer one the turn is waiting on, so drop any
+        // readiness it had left behind rather than counting it towards a total it is not part of.
+        _readyPlayerIds.RemoveWhere(
+            ready => !detail.Match.Players.Any(
+                player => player.Id == ready && player.Status == WirePlayerStatus.Active));
         _notices.Enqueue(new MultiplayerNotice.MatchUpdated(detail.Match));
     }
 
@@ -545,7 +563,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         if (ready) _readyPlayerIds.Add(playerId);
         else _readyPlayerIds.Remove(playerId);
         _notices.Enqueue(new MultiplayerNotice.ReadinessChanged(
-            turn, _readyPlayerIds.Count, _activeSeats));
+            turn, _readyPlayerIds.Count, _awaitedSeats));
     }
 
     /// <summary>
