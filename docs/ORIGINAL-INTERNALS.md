@@ -2662,6 +2662,35 @@ six HQ candidates are already owned and remain at their generated Chaos value.
 **Confidence:** High static evidence for the exact trigger, ordering, owner
 predicate, value, and transient lifetime; runtime corroboration remains pending.
 
+### BIN-SETUP-004 - extra-gang and global-visibility name modifiers
+
+**Observation:** Fresh-game initializer `0x0046dc10` compares every Pascal player
+name case-sensitively with three additional uppercase strings. `SMGSPANK` sets
+byte `0x004abbd8`; after the normal slot-zero Right Hands is created, slots 1
+through 5 receive identical definition-zero, Force-10, unequipped Right Hands in
+that player's HQ sector. `SMGKICKASS` sets byte `0x004a2788`; its slots 1 through
+5 instead receive gang definition 59 (GROUND ZERO), Force 10, weapon item 23
+(PLASMA GENERATOR), armor item 37 (BATTLE SUIT), and miscellaneous item 52
+(EMPATHIC ENHANCER), again in the HQ. The flags are transient and the resulting
+gang records are ordinary persisted state.
+
+`SMGHUBBLE` sets per-player byte `0x004ab588`. Visibility rebuild routine
+`0x0046fa11` normally initializes each of that viewer's 64 sector-detection
+entries to -32000, but initializes all of them to 1000 when the byte is set. It
+then folds in the viewer's active-gang Detect values and marks every opposing
+active gang visible when its Stealth is no greater than the sector value. The
+six-byte modifier array is transferred by save writer/reader references
+`0x00463b5b` and `0x00464060`.
+
+**Interpretation:** Exact `SMGSPANK` and `SMGKICKASS` give mutually exclusive
+six-gang openings without RNG draws. Exact `SMGHUBBLE` grants its player global
+opponent visibility; the recreation derives this persistent behavior from the
+persisted exact player name rather than adding a redundant flag.
+
+**Confidence:** High static evidence for exact triggers, gang slots, definitions,
+Force, loadouts, sector placement, visibility baseline, and persistence; runtime
+corroboration remains pending.
+
 ### BIN-HIRE-001 - initial and replacement offers
 
 **Observation:** `0x0046e766` initializes each player's three fixed offer bytes

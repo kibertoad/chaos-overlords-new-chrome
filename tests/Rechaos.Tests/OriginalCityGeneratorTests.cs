@@ -253,6 +253,84 @@ public sealed class OriginalCityGeneratorTests
         Assert.All(wrongCase.Sectors, sector => Assert.Equal(0, sector.Chaos));
     }
 
+    [Fact]
+    public void FactoryAppliesExactSmgSpankAsFiveExtraRightHandsWithoutConsumingRandomness()
+    {
+        var data = BundledOriginalData.Load();
+        var enabled = OriginalMatchFactory.Create(data, SetupWithName("SMGSPANK"));
+        var ordinary = OriginalMatchFactory.Create(data, SetupWithName("smgspank"));
+
+        var gangs = enabled.Players[0].Gangs;
+        Assert.Equal(6, gangs.Count);
+        Assert.All(gangs, gang =>
+        {
+            Assert.Equal(MatchBootstrap.RightHandsDefinitionId, gang.DefinitionId);
+            Assert.Equal(ManualRules.MaximumForce, gang.Force);
+            Assert.Equal(gangs[0].SectorId, gang.SectorId);
+            Assert.Null(gang.WeaponItemId);
+            Assert.Null(gang.ArmorItemId);
+            Assert.Null(gang.MiscellaneousItemId);
+        });
+        Assert.Single(ordinary.Players[0].Gangs);
+        Assert.Equal(ordinary.Random.State, enabled.Random.State);
+        Assert.Equal(ordinary.Random.ConsumptionCount, enabled.Random.ConsumptionCount);
+    }
+
+    [Fact]
+    public void FactoryAppliesExactSmgKickassAsFiveEquippedGroundZeroGangs()
+    {
+        var enabled = OriginalMatchFactory.Create(
+            BundledOriginalData.Load(), SetupWithName("SMGKICKASS"));
+
+        var gangs = enabled.Players[0].Gangs;
+        Assert.Equal(6, gangs.Count);
+        Assert.Equal(MatchBootstrap.RightHandsDefinitionId, gangs[0].DefinitionId);
+        Assert.All(gangs.Skip(1), gang =>
+        {
+            Assert.Equal(OriginalSetupNameRules.AssaultGangDefinitionId, gang.DefinitionId);
+            Assert.Equal(ManualRules.MaximumForce, gang.Force);
+            Assert.Equal(gangs[0].SectorId, gang.SectorId);
+            Assert.Equal(OriginalSetupNameRules.AssaultWeaponItemId, gang.WeaponItemId);
+            Assert.Equal(OriginalSetupNameRules.AssaultArmorItemId, gang.ArmorItemId);
+            Assert.Equal(OriginalSetupNameRules.AssaultMiscellaneousItemId, gang.MiscellaneousItemId);
+        });
+    }
+
+    [Fact]
+    public void ExactSmgHubbleDetectsEveryEnemyGangWithoutLocalObservers()
+    {
+        var enabled = OriginalMatchFactory.Create(
+            BundledOriginalData.Load(), SetupWithName("SMGHUBBLE"));
+        var wrongCase = OriginalMatchFactory.Create(
+            BundledOriginalData.Load(), SetupWithName("smghubble"));
+        var remote = enabled.Players[1].Gangs[0];
+        var wrongCaseRemote = wrongCase.Players[1].Gangs[0];
+
+        Assert.DoesNotContain(enabled.Players[0].Gangs,
+            gang => gang.SectorId == remote.SectorId);
+        Assert.True(enabled.CanPlayerDetectGang(new PlayerId(0), remote.Id));
+        Assert.False(wrongCase.CanPlayerDetectGang(new PlayerId(0), wrongCaseRemote.Id));
+    }
+
+    [Theory]
+    [InlineData("SMGSPANK")]
+    [InlineData("SMGHUBBLE")]
+    [InlineData("SMGMILK")]
+    [InlineData("SMGKICKASS")]
+    [InlineData("SMGISLANDS")]
+    [InlineData("SMGFUNDAGE")]
+    public void OnlinePlayReservesEveryRecoveredRuleChangingName(string name)
+    {
+        Assert.Contains(name, ReservedPlayerNames.All);
+        Assert.True(ReservedPlayerNames.IsReserved($"  {name.ToLowerInvariant()}  "));
+    }
+
+    private static MatchSetup SetupWithName(string name) => new(
+        ScenarioId.Greed,
+        GameDuration.SixMonths,
+        1996,
+        [new MatchPlayerSetup(new PlayerId(0), name, PlayerController.Human)]);
+
     private static string Snapshot(MatchSectorState sector) =>
         $"{sector.Id}:{sector.Income}:{sector.Tolerance}:{string.Join(',', sector.Sites.Select(site => site.DefinitionId))}";
 

@@ -481,6 +481,7 @@ public sealed partial class MatchState
         var player = FindPlayer(observer) ?? throw new ArgumentOutOfRangeException(nameof(observer));
         var target = FindGang(targetGang) ?? throw new ArgumentOutOfRangeException(nameof(targetGang));
         if (target.Owner == observer) return true;
+        if (OriginalSetupNameRules.EnablesOmniscience(player.Setup.Name)) return true;
         var observers = player.Gangs.Where(gang => gang.IsActive && gang.SectorId == target.SectorId).ToArray();
         if (observers.Length == 0) return false;
         var detection = ManualRules.SectorDetectionStrength(

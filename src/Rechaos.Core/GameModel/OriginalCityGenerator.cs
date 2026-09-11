@@ -223,11 +223,40 @@ public static class OriginalMatchFactory
             player.Id, headquarters[index], ManualRules.MaximumForce,
             StandardStartingCash, Array.Empty<short>())).ToArray();
         var bootstrapped = MatchBootstrap.Create(definitions, setup, sectors, starts);
+        AddNameModifierStartingGangs(bootstrapped);
         if (setup.Players.Any(player => OriginalSetupNameRules.EnablesIslands(player.Name)))
             foreach (var sector in bootstrapped.Sectors.Where(sector => sector.Owner is null))
                 sector.Chaos = 100;
         return new MatchState(
             definitions, setup, bootstrapped.Players, bootstrapped.Sectors, random, aiStrategy);
+    }
+
+    private static void AddNameModifierStartingGangs(MatchState state)
+    {
+        var nextGangId = state.Players.SelectMany(player => player.Gangs)
+            .Max(gang => gang.Id.Value) + 1;
+        foreach (var player in state.Players)
+        {
+            var extraRightHands = OriginalSetupNameRules.EnablesExtraRightHands(player.Setup.Name);
+            var assaultTeam = OriginalSetupNameRules.EnablesAssaultTeam(player.Setup.Name);
+            if (!extraRightHands && !assaultTeam) continue;
+
+            var headquarters = player.Gangs[0].SectorId;
+            for (var index = 0; index < OriginalSetupNameRules.ExtraStartingGangCount; index++)
+            {
+                player.AddGang(new MatchGangState(
+                    new GangId(nextGangId++),
+                    player.Id,
+                    assaultTeam
+                        ? OriginalSetupNameRules.AssaultGangDefinitionId
+                        : MatchBootstrap.RightHandsDefinitionId,
+                    headquarters,
+                    ManualRules.MaximumForce,
+                    assaultTeam ? OriginalSetupNameRules.AssaultWeaponItemId : null,
+                    assaultTeam ? OriginalSetupNameRules.AssaultArmorItemId : null,
+                    assaultTeam ? OriginalSetupNameRules.AssaultMiscellaneousItemId : null));
+            }
+        }
     }
 
     private static MatchSetup CompleteLocalPlayers(MatchSetup setup, DeterministicRandom random)

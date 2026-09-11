@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,376 tests; its offline restore emitted
+  isolated Release build passed all 1,385 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -25,6 +25,11 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Fresh local setup now implements every recovered rule-changing exact name.
+  `SMGSPANK` adds five Force-10 Right Hands; `SMGKICKASS` adds five Force-10
+  GROUND ZERO gangs with the recovered top-tier weapon, armor, and miscellaneous
+  loadout; and `SMGHUBBLE` gives its player global opposing-gang visibility.
+  These add no setup RNG calls, and all six magic names are neutralized online.
 - `Rechaos.Extractor --verify-output --json` now emits a stable schema-v1
   automation report with quick/full mode, expected/actual format and file
   counts, verified count, and categorized code/message/path/expected/actual

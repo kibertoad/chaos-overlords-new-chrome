@@ -5,17 +5,16 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 /// <remarks>
 /// <para>
-/// In the original, naming your overlord <c>SMGFUNDAGE</c> granted the maximum starting cash and
-/// <c>SMGISLANDS</c> changed how the city was generated. Both are faithfully recovered in
-/// <c>OriginalSetupNameRules</c>, and both are harmless in a hot-seat match: the player typing the
-/// name is the only one affected by it, and they chose to.
+/// In the original, six exact player names alter setup, visibility, or hiring. They are faithfully
+/// recovered in <c>OriginalSetupNameRules</c> and <c>OriginalHireCheatRules</c>. A local player who
+/// types one has deliberately opted into the original modifier.
 /// </para>
 /// <para>
 /// Online they are neither harmless nor a cheat the player is entitled to. A name arrives from the
 /// server's roster, every client reads the same one, and the rules fire on all of them — so one
-/// player can take the cash bonus with every opponent's client agreeing that they earned it, and
-/// the islands name is read with <c>Any</c> over the whole roster, which means one player rewrites
-/// the map for everybody. Neither shows up as a desync, because nothing about it is inconsistent.
+/// player can gain extra resources, visibility, or stronger hires with every opponent's client
+/// agreeing that they earned them; the islands name can rewrite the map for everybody. None of
+/// this shows up as a desync, because nothing about it is inconsistent.
 /// </para>
 /// <para>
 /// This exists so the code that turns a roster into a match can say "that is not a name". It is the
@@ -28,7 +27,14 @@ public static class ReservedPlayerNames
 {
     /// <summary>Every name the setup rules read as an instruction.</summary>
     public static IReadOnlyList<string> All { get; } =
-        [OriginalSetupNameRules.MaximumStartingCashName, OriginalSetupNameRules.IslandsName];
+    [
+        OriginalSetupNameRules.ExtraRightHandsName,
+        OriginalSetupNameRules.OmniscienceName,
+        OriginalHireCheatRules.MaximumForceName,
+        OriginalSetupNameRules.AssaultTeamName,
+        OriginalSetupNameRules.IslandsName,
+        OriginalSetupNameRules.MaximumStartingCashName
+    ];
 
     /// <summary>
     /// Whether <paramref name="name"/> would be read as a cheat rather than as a name.

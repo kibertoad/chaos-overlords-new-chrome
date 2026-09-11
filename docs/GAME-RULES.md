@@ -689,6 +689,11 @@ claim about original-game behavior.
   local Begin also completes all empty slots as Computers before city generation;
   each receives a unique portrait 0..14 and its resource-defined name. Exact
   uppercase `SMGISLANDS` subsequently sets neutral non-HQ sectors to Chaos 100.
+  Three other exact uppercase names alter the player's opening state:
+  `SMGSPANK` adds five more Force-10 Right Hands in the HQ; `SMGKICKASS` adds
+  five Force-10 GROUND ZERO gangs equipped with PLASMA GENERATOR, BATTLE SUIT,
+  and EMPATHIC ENHANCER; and `SMGHUBBLE` makes every opposing gang detectable
+  in every sector. None of these setup modifiers consumes RNG.
 - Local setup starts with one human. Add/Remove changes the human count from one
   through six, and Begin fills every remaining slot with a Computer. Human names
   use the Help-specified 10-character name field; portrait 15 is the empty
@@ -699,16 +704,18 @@ claim about original-game behavior.
   slot. A face dropped on another human exchanges their colors. The resulting
   sparse human slots are preserved as player IDs, then every missing slot is
   filled in ascending order before AI initialization and city generation.
-- Current exclusions: initial seed selection, the remaining setup call context,
-  initial hire offers, and an original runtime fixture remain open.
+- Current exclusions: the remaining setup call context, initial hire offers, and
+  an original runtime fixture remain open.
 - Confidence: High static evidence for ordinary/Armageddon cash, the name
   override, city/HQ generation and Right Hands Force; runtime correlation pending.
-- Implementation: `OriginalMatchFactory.Create` and `MatchBootstrap.Create`.
+- Implementation: `OriginalMatchFactory.Create`, `MatchBootstrap.Create`, and
+  `MatchState.CanPlayerDetectGang`.
 - Tests: `MatchBootstrapTests` covers Armageddon resources, exact-case
   `SMGFUNDAGE` behavior in ordinary and Armageddon games, and verifies research
   state through the normal query API. `OriginalCityGeneratorTests` locks fixed
   city, Armageddon-rejection, HQ-permutation, empty-slot portrait/name ordering,
-  `SMGISLANDS`, and RNG-continuation vectors.
+  `SMGISLANDS`, all three additional exact-name setup/visibility modifiers,
+  online name reservation, and RNG-continuation vectors.
 
 ### RULE-OBJECTIVE-001 — End-of-turn objective evaluation
 
