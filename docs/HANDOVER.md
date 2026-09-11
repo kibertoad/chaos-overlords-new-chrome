@@ -15,7 +15,7 @@ Last updated: 2026-09-11
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v16, replays are v17, canonical hashes are v19, asset
+- Native saves are format v17, replays are v18, canonical hashes are v20, asset
   manifests are v4, extracted help is v1, and client preferences are v5. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.

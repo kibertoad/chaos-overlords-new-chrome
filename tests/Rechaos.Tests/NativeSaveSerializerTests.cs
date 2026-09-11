@@ -64,6 +64,43 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void RoundTripPreservesComlinkMessagesAndReadState()
+    {
+        var match = CreateMatch(secondPlayerHuman: true);
+        match.FinishUpkeep();
+        Assert.True(match.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "MEET ME DOWNTOWN").Accepted);
+        match.MarkComlinkRead(new PlayerId(1));
+
+        var restored = RoundTrip(match);
+
+        Assert.Equal(match.ComlinkFor(new PlayerId(1)).Messages,
+            restored.ComlinkFor(new PlayerId(1)).Messages);
+        Assert.Equal(match.ComlinkFor(new PlayerId(1)).ReadThroughSequence,
+            restored.ComlinkFor(new PlayerId(1)).ReadThroughSequence);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void VersionSixteenSaveMigratesEmptyComlinkInboxes()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 16;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionNineteenSha256(match);
+        document["runtime"]!.AsObject().Remove("comlink");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.All(restored.Players, player => Assert.Empty(restored.ComlinkFor(player.Id).Messages));
+        Assert.Equal(MatchStateHasher.ComputeVersionNineteenSha256(match),
+            MatchStateHasher.ComputeVersionNineteenSha256(restored));
+    }
+
+    [Fact]
     public void VersionThirteenSaveMigratesEmptyEquipmentCooldowns()
     {
         var match = CreateMatch();
@@ -783,13 +820,17 @@ public sealed class NativeSaveSerializerTests
         while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
     }
 
-    private static MatchState CreateMatch(string firstPlayerName = "ONE")
+    private static MatchState CreateMatch(
+        string firstPlayerName = "ONE",
+        bool secondPlayerHuman = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
         [
             new(new PlayerId(0), firstPlayerName, PlayerController.Human),
-            new(new PlayerId(1), "TWO", PlayerController.Computer, PortraitId: 7)
+            new(new PlayerId(1), "TWO",
+                secondPlayerHuman ? PlayerController.Human : PlayerController.Computer,
+                PortraitId: 7)
         ];
         var setup = new MatchSetup(
             ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups, AiDifficulty.CrimeLord);

@@ -282,13 +282,15 @@ apply to the separate Last Turn Events panel.
 **Confidence:** High static evidence from the complete bounded recorder,
 literal capacity, record stride, copy bounds, count update, and cursor branch.
 
-**Recreation status:** Comlink View/Send is not yet implemented. The recreation's
-bounded mechanical notification stream and `PX05010` Last Turn Events
-projection are separate and do not claim this Comlink capacity.
+**Recreation status:** Authoritative local-human delivery now validates the
+active command-phase sender and human recipients, supports deterministic
+multi-recipient delivery, retains the newest 16 messages, and tracks unread
+state. Version-17 saves, version-18 replays, and canonical hash version 20
+include every inbox. The View/Send panels are not yet routed in the client.
 
-**Next validation:** Implement local-human Comlink composition, recipient
-selection, 16-message drop-oldest storage, unread indication, and handoff-safe
-viewing; legacy transport interoperability remains out of scope.
+**Next validation:** Implement `PX05018` local-human composition, recipient
+selection, unread indication, and handoff-safe viewing; legacy transport
+interoperability remains out of scope.
 
 ### BIN-OPTIONS-001 - registry keys, initialized defaults, and idle-gang warning
 

@@ -145,7 +145,7 @@ public sealed class OriginalCityGeneratorTests
 
         Assert.Equal(MatchStateHasher.ComputeSha256(first), MatchStateHasher.ComputeSha256(second));
         Assert.Equal(
-            "c6accaa1e5e5e09f7c7791f5eab52d27ef376ee56e18f48ecf1f98d584a7f818:160916660:936",
+            "f1d207219a31d81f00b9d9e969ad48f9601cf21b861cf28a2db21071b71cc2ca:160916660:936",
             $"{MatchStateHasher.ComputeSha256(first)}:{first.Random.State}:{first.Random.ConsumptionCount}");
         Assert.Equal(MatchLimits.PlayerCount, first.Players.Count);
         Assert.Equal(

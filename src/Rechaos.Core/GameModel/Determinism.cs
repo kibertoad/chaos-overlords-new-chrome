@@ -64,7 +64,7 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 19;
+    private const int FormatVersion = 20;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
@@ -160,13 +160,22 @@ public static class MatchStateHasher
             includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
             includeAiFormationSectors: true);
 
+    internal static string ComputeVersionNineteenSha256(MatchState state) =>
+        ComputeSha256(state, 19, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
+            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
+            includeAiFormationSectors: true, includeAiCoverageSectors: true);
+
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
             includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
             includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
             includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true);
+            includeAiFormationSectors: true, includeAiCoverageSectors: true,
+            includeComlink: true);
 
     private static string ComputeSha256(
         MatchState state,
@@ -186,7 +195,8 @@ public static class MatchStateHasher
         bool includeAiTargets = false,
         bool includeAiCooldowns = false,
         bool includeAiFormationSectors = false,
-        bool includeAiCoverageSectors = false)
+        bool includeAiCoverageSectors = false,
+        bool includeComlink = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -299,6 +309,23 @@ public static class MatchStateHasher
                 writer.Write(state.NextNotificationSequence(player.Id));
                 writer.Write(notifications.Count);
                 foreach (var notification in notifications) WriteNotification(writer, notification);
+            }
+            if (includeComlink)
+            {
+                foreach (var player in state.Players.OrderBy(item => item.Id.Value))
+                {
+                    var inbox = state.ComlinkFor(player.Id);
+                    writer.Write(inbox.NextSequence);
+                    writer.Write(inbox.ReadThroughSequence);
+                    writer.Write(inbox.Count);
+                    foreach (var message in inbox.Messages)
+                    {
+                        writer.Write(message.Sequence);
+                        writer.Write(message.Turn);
+                        writer.Write(message.Sender.Value);
+                        WriteString(writer, message.Text);
+                    }
+                }
             }
         }
 

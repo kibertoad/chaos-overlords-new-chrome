@@ -60,9 +60,9 @@ workstream can be marked complete.
 - The current implementation baseline includes the recovered sector Combat +
   Defense advantage hostility pass, exact isolated scenario/strategy family
   dispatch, exact hire-offer ranking/rejection, the isolated modes 1-10 and
-  12-16 sector-selection kernels, live recovered hire-placement rules, and 1,046
+  12-16 sector-selection kernels, live recovered hire-placement rules, and 1,052
   passing tests. Native saves are
-  v16, replay is v17, and the canonical hash is v19.
+  v17, replay is v18, and the canonical hash is v20.
 - The latest playable checkpoints restore the modern Help viewer, independent
   audio controls, idle-gang warning, and the optional original four-choice
   planning timer. The timer uses the recovered setup rows, 60-by-3 main-panel

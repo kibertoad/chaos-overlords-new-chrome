@@ -358,9 +358,9 @@ public sealed partial class MatchState
     private readonly List<GameEvent> _events = [];
     private readonly Dictionary<PlayerId, NotificationQueue> _notifications;
     private readonly Dictionary<PlayerId, long> _nextNotificationSequences;
+    private readonly Dictionary<PlayerId, ComlinkInbox> _comlinkInboxes;
     private readonly List<PhaseBoundaryHash> _phaseHashes = [];
     private long _nextEventSequence;
-
     public MatchState(
         OriginalData definitions,
         MatchSetup setup,
@@ -410,6 +410,7 @@ public sealed partial class MatchState
         AiPlanning = restore?.AiPlanning ?? AiPlanningState.Initialize(Players);
         _notifications = Players.ToDictionary(player => player.Id, _ => new NotificationQueue());
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
+        _comlinkInboxes = Players.ToDictionary(player => player.Id, _ => new ComlinkInbox());
         if (restore is not null) RestoreRuntime(restore);
     }
     internal MatchState(
@@ -426,6 +427,8 @@ public sealed partial class MatchState
             players.ToDictionary(player => player.Id,
                 _ => (IReadOnlyList<GameNotification>)Array.Empty<GameNotification>()),
             players.ToDictionary(player => player.Id, _ => 0L),
+            players.ToDictionary(player => player.Id,
+                _ => new ComlinkInboxRestore([], 0, -1)),
             [], null, aiStrategy, AiPlanningState.Initialize(players)))
     {
         ArgumentNullException.ThrowIfNull(initialRandom);
@@ -467,6 +470,8 @@ public sealed partial class MatchState
         if (!restore.Notifications.Keys.OrderBy(player => player.Value)
                 .SequenceEqual(Players.Select(player => player.Id))
             || !restore.NextNotificationSequences.Keys.OrderBy(player => player.Value)
+                .SequenceEqual(Players.Select(player => player.Id))
+            || !restore.ComlinkInboxes.Keys.OrderBy(player => player.Value)
                 .SequenceEqual(Players.Select(player => player.Id)))
             throw new ArgumentException("Restored notification players do not match the match setup.", nameof(restore));
 
@@ -487,16 +492,13 @@ public sealed partial class MatchState
                 throw new ArgumentException("Restored notification sequences are invalid.", nameof(restore));
             foreach (var notification in notifications) _notifications[player.Id].Enqueue(notification);
             _nextNotificationSequences[player.Id] = next;
+            var inbox = restore.ComlinkInboxes[player.Id];
+            _comlinkInboxes[player.Id] = ComlinkInbox.Restore(
+                inbox.Messages, inbox.NextSequence, inbox.ReadThroughSequence);
         }
         _phaseHashes.AddRange(restore.PhaseHashes);
         Outcome = restore.Outcome;
     }
-
-    public MatchPlayerState? FindPlayer(PlayerId id) => Players.SingleOrDefault(player => player.Id == id);
-    public MatchGangState? FindGang(GangId id) => Players.SelectMany(player => player.Gangs).SingleOrDefault(gang => gang.Id == id);
-    public MatchSiteState? FindSite(int id) => id is >= 0 and < MatchLimits.SiteCount
-        ? Sectors[id / MatchLimits.SitesPerSector].Sites[id % MatchLimits.SitesPerSector]
-        : null;
     public bool CanPlayerDetectGang(PlayerId observer, GangId targetGang)
     {
         var player = FindPlayer(observer) ?? throw new ArgumentOutOfRangeException(nameof(observer));
@@ -509,7 +511,6 @@ public sealed partial class MatchState
         return detection >= EffectiveStatisticsCalculator.ForGang(this, target).Stealth;
     }
     public IReadOnlyList<GameNotification> NotificationsFor(PlayerId player) => GetNotificationQueue(player).Items;
-
     public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>
         GetNotificationQueue(player).TryDequeue(out notification);
 
@@ -981,12 +982,10 @@ public sealed partial class MatchState
         _nextNotificationSequences.TryGetValue(player, out var sequence)
             ? sequence
             : throw new ArgumentOutOfRangeException(nameof(player));
-
     private NotificationQueue GetNotificationQueue(PlayerId player) =>
         _notifications.TryGetValue(player, out var queue)
             ? queue
             : throw new ArgumentOutOfRangeException(nameof(player));
-
     private TurnTransition CaptureBoundary(TurnTransition transition)
     {
         _phaseHashes.Add(new PhaseBoundaryHash(
@@ -996,5 +995,4 @@ public sealed partial class MatchState
             MatchStateHasher.ComputeSha256(this)));
         return transition;
     }
-
 }

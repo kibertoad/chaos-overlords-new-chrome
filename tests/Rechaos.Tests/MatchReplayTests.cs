@@ -41,6 +41,26 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void ReplaysComlinkDeliveryAndReadState()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch(secondPlayerHuman: true));
+        recorder.FinishUpkeep();
+        Assert.True(recorder.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "TRUCE?").Accepted);
+        Assert.True(recorder.MarkComlinkRead(new PlayerId(1)));
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
+
+        Assert.Equal(recorder.State.ComlinkFor(new PlayerId(1)).Messages,
+            restored.ComlinkFor(new PlayerId(1)).Messages);
+        Assert.False(restored.ComlinkFor(new PlayerId(1)).HasUnread);
+        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void ReplaysCrackdownTriggerCountdownAndFollowingPoliceCombat()
     {
         var recorder = new MatchReplayRecorder(CreateMatch(negativeTolerance: true));
@@ -575,13 +595,15 @@ public sealed class MatchReplayTests
 
     private static MatchState CreateMatch(
         bool negativeTolerance = false,
-        string firstPlayerName = "ONE")
+        string firstPlayerName = "ONE",
+        bool secondPlayerHuman = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
         [
             new(new PlayerId(0), firstPlayerName, PlayerController.Human),
-            new(new PlayerId(1), "TWO", PlayerController.Computer)
+            new(new PlayerId(1), "TWO",
+                secondPlayerHuman ? PlayerController.Human : PlayerController.Computer)
         ];
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)

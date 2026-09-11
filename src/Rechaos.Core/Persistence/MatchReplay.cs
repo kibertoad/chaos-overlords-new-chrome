@@ -19,7 +19,9 @@ public enum ReplayOperationKind : byte
     DismissNotification,
     PrepareHireOffers,
     PrepareAiPlanning,
-    PrepareAiHiring
+    PrepareAiHiring,
+    SendComlinkMessage,
+    MarkComlinkRead
 }
 
 public sealed record ReplayStep(
@@ -31,7 +33,9 @@ public sealed record ReplayStep(
     short? GangDefinitionId = null,
     int? SectorId = null,
     bool? Accepted = null,
-    int? ValidationCode = null);
+    int? ValidationCode = null,
+    IReadOnlyList<PlayerId>? Recipients = null,
+    string? Text = null);
 
 /// <summary>
 /// Records every public match mutation together with its resulting canonical hash.
@@ -151,6 +155,30 @@ public sealed class MatchReplayRecorder
         return removed;
     }
 
+    public ComlinkSendResult SendComlinkMessage(
+        PlayerId sender,
+        IReadOnlyList<PlayerId> recipients,
+        string message)
+    {
+        EnsureSynchronized();
+        var result = State.SendComlinkMessage(sender, recipients, message);
+        Add(new ReplayStep(
+            ReplayOperationKind.SendComlinkMessage, CurrentHash(), Player: sender,
+            Accepted: result.Accepted, ValidationCode: (int)result.Code,
+            Recipients: recipients.ToArray(), Text: message));
+        return result;
+    }
+
+    public bool MarkComlinkRead(PlayerId player)
+    {
+        EnsureSynchronized();
+        var changed = State.MarkComlinkRead(player);
+        Add(new ReplayStep(
+            ReplayOperationKind.MarkComlinkRead, CurrentHash(), Player: player,
+            Accepted: changed));
+        return changed;
+    }
+
     internal ReplayDocument Capture()
     {
         EnsureSynchronized();
@@ -189,7 +217,7 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    public const int CurrentFormatVersion = 17;
+    public const int CurrentFormatVersion = 18;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -314,6 +342,24 @@ public static class MatchReplaySerializer
             case ReplayOperationKind.PrepareAiHiring:
                 state.PrepareAiHiring(Required(step.Player, index));
                 break;
+            case ReplayOperationKind.SendComlinkMessage:
+            {
+                var result = state.SendComlinkMessage(
+                    Required(step.Player, index),
+                    step.Recipients
+                        ?? throw new InvalidDataException($"Replay step {index} has no Comlink recipients."),
+                    step.Text
+                        ?? throw new InvalidDataException($"Replay step {index} has no Comlink text."));
+                VerifyResult(step, result.Accepted, (int)result.Code, index);
+                break;
+            }
+            case ReplayOperationKind.MarkComlinkRead:
+            {
+                var changed = state.MarkComlinkRead(Required(step.Player, index));
+                if (step.Accepted != changed)
+                    throw new InvalidDataException($"Replay step {index} produced a different Comlink read result.");
+                break;
+            }
             default: throw new InvalidDataException($"Replay step {index} has an unknown operation kind.");
         }
     }
@@ -340,7 +386,8 @@ public static class MatchReplaySerializer
         }
         string[] candidateHashes = replayVersion switch
         {
-            >= 17 => [MatchStateHasher.ComputeSha256(state)],
+            >= 18 => [MatchStateHasher.ComputeSha256(state)],
+            17 => [MatchStateHasher.ComputeVersionNineteenSha256(state)],
             16 => [MatchStateHasher.ComputeVersionEighteenSha256(state)],
             15 => [MatchStateHasher.ComputeVersionSeventeenSha256(state)],
             14 => [MatchStateHasher.ComputeVersionSixteenSha256(state)],

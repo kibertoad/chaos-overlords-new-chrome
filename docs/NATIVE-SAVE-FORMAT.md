@@ -1,6 +1,6 @@
 # Recreation-native save format
 
-Status: implemented format version 16
+Status: implemented format version 17
 Last updated: 2026-09-11
 
 This format belongs to the recreation. It is deliberately separate from the
@@ -9,7 +9,7 @@ claim of binary compatibility with either of them.
 
 ## Container and limits
 
-- UTF-8 JSON with camel-case property names and `formatVersion: 16`.
+- UTF-8 JSON with camel-case property names and `formatVersion: 17`.
 - Maximum accepted size: 16 MiB.
 - Unknown properties, missing constructor fields, invalid identifiers, invalid
   enum/phase combinations, and inconsistent sequence counters are rejected.
@@ -25,19 +25,19 @@ serializer, then atomically promotes it. A valid previous primary becomes
 good backup. Recovery loads the backup only when the primary is missing,
 unreadable, or invalid.
 
-## Version 16 document
+## Version 17 document
 
 The top-level members are:
 
 | Member | Contents |
 |---|---|
-| `formatVersion` | Schema discriminator; currently `16` |
+| `formatVersion` | Schema discriminator; currently `17` |
 | `definitionsSha256` | Gameplay-definition compatibility fingerprint |
 | `stateSha256` | Canonical authoritative-state fingerprint |
 | `setup` | Scenario, duration, initial seed, global AI mentality, and ordered player definitions including portrait IDs |
 | `players` | Cash/support/objective state, gangs, three fixed hire slots, pending action slot and legacy prepaid marker, persistent maximum-hire-Force modifier, research, inventory, statistics |
 | `sectors` | Ownership, explicit base income, tolerance, chaos/crackdown/importance, and three site instances |
-| `runtime` | Phase coordinator, RNG state/count, fixed-six-player AI reactions/directional attitudes, six current and previous AI hire roles, six-by-81 AI family records, three generations of action plus two command-dependent target bytes, weapon/armor planning cooldowns, polymorphic family-2/7 focus/family-11 formation values, family-6 coverage sectors, six first-planning flags, six encoded hire-placement anchors, command queue/counter, event history/counter, notification queues/counters, phase hashes, and outcome |
+| `runtime` | Phase coordinator, RNG state/count, fixed-six-player AI reactions/directional attitudes, six current and previous AI hire roles, six-by-81 AI family records, three generations of action plus two command-dependent target bytes, weapon/armor planning cooldowns, polymorphic family-2/7 focus/family-11 formation values, family-6 coverage sectors, six first-planning flags, six encoded hire-placement anchors, command queue/counter, event history/counter, notification queues/counters, per-player Comlink inbox messages/sequences/read cursors, phase hashes, and outcome |
 
 Gang command projections are reconstructed from the authoritative command queue
 on load. Transient `Last*Resolutions` views are intentionally not serialized;
@@ -49,7 +49,7 @@ snapshot.
 
 ## Compatibility policy
 
-Readers currently accept versions 1 through 16. This pre-1.0 compatibility is
+Readers currently accept versions 1 through 17. This pre-1.0 compatibility is
 useful test coverage, not a product guarantee: readers and fixtures for old
 development schemas may be removed or replaced when the authoritative model
 changes. Older documents currently migrate formerly implicit
@@ -77,7 +77,7 @@ initialize the weapon and armor cooldowns to zero. Version 14 and earlier infer
 the polymorphic focus/formation values from active-gang sectors; this is a
 development-format convenience, not a pre-1.0 compatibility promise. Version
 15 and earlier initialize the newly authoritative family-6 coverage sectors to
-`-1`.
+`-1`. Version 16 and earlier initialize empty Comlink inboxes.
 The appropriate legacy canonical hash is verified before the
 migrated state is returned. Unknown
 versions remain rejected. Starting with 1.0.0, incompatible changes must
@@ -89,12 +89,12 @@ post-1.0 policy.
 Original-save import/export is an explicit non-goal. Native snapshots must never
 be presented as converted original saves.
 
-## Replay format version 17
+## Replay format version 18
 
 `MatchReplayRecorder` captures an initial native snapshot, then requires every
 authoritative mutation to pass through its API. It covers command submission and
 cancellation, hire selection and snubbing, all phase transitions, and
-notification dismissal. Before recording or saving, it verifies that the match
+notification dismissal, Comlink delivery, and Comlink read-state changes. Before recording or saving, it verifies that the match
 has not been mutated out of band.
 
 Version 8 added the deterministic post-command AI hiring-preparation operation,
@@ -117,7 +117,8 @@ planning cooldowns. Version 16 embeds native snapshot version 15 and
 fingerprints all six-by-81 polymorphic family-2/7 focus/family-11 formation
 values. The JSON member remains named `formationSectors` in schema version 15.
 Version 17 embeds native snapshot version 16 and fingerprints all six-by-81
-family-6 coverage sectors.
+family-6 coverage sectors. Version 18 embeds native snapshot version 17,
+fingerprints every bounded Comlink inbox, and records send/read operations.
 
 Each ordered replay step stores its operation payload, the expected validation
 result where applicable, and the canonical state SHA-256 after the operation.
@@ -143,14 +144,15 @@ uses deferred payment while replay version 9 retains immediate payment and its
 single-action validation. Replay version 11 embeds native version 10, version
 12 embeds native version 11, version 13 embeds native version 12, version 14
 embeds native version 13, version 15 embeds native version 14, version 16
-embeds native version 15, and version 17 embeds native version 16.
+embeds native version 15, version 17 embeds native version 16, and version 18
+embeds native version 17.
 Version 12 uses the version-14 hash and initializes action histories to `None`;
 version 11 uses the version-13 hash and
 derives placement anchors; version 10 uses the version-12 hash and migrates the
 new modifier to false; version 9 uses its version-11 hash, versions 7 and 8
 use version 10, and version 6 uses version 9. Version 2 through 5 replay
 documents remain accepted through their legacy hash paths. The current
-canonical state hash is version 19. Initial-state migration is covered for
+canonical state hash is version 20. Initial-state migration is covered for
 replay version 8, and version 9 operation semantics are covered. Additional
 pre-1.0 legacy fixtures are not a release gate. The initial snapshot remains
 required until original seed selection and the complete setup context are
