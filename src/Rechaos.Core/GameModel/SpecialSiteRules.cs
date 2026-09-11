@@ -10,7 +10,7 @@ public static class SpecialSiteRules
     public const int BaseResearchTechLimit = 5;
     public const int ScienceCenterTechLimit = 8;
     public const int ResearchLabTechLimit = 10;
-    public const int FactoryPricePercent = 70;
+    public const int FactoryDiscountDivisor = 3;
 
     public static int ResearchTechLimit(MatchState state, MatchGangState gang)
     {
@@ -41,7 +41,7 @@ public static class SpecialSiteRules
         ArgumentNullException.ThrowIfNull(item);
         if (item.Cost < 0) throw new ArgumentOutOfRangeException(nameof(item));
         var hasFactory = InfluencedLocalSpecials(state, gang).Any(site => site.Special == Factory);
-        return hasFactory ? item.Cost * FactoryPricePercent / 100 : item.Cost;
+        return hasFactory ? item.Cost - item.Cost / FactoryDiscountDivisor : item.Cost;
     }
 
     private static IEnumerable<SiteDefinition> InfluencedLocalSpecials(

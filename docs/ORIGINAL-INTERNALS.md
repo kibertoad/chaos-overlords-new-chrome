@@ -1972,6 +1972,27 @@ complete retaliation-eligibility predicate.
 **Next validation:** capture fixed original traces at bands 0, 1, and 2 for
 every affected action, including Hide and both Martial Arts branches.
 
+### BIN-EQUIP-001 - Factory price division and rounding
+
+**Observation:** In EXE-GOG-1.1, the Equip resolver inside `0x00472775` loads
+the selected item's signed raw Cost at `0x00474998`. When sector flag
+`+0x0e` is set and the sector owner at `+0x00` matches the purchasing player,
+`0x004749e1..0x004749f3` performs signed integer division by three and subtracts
+that quotient from the raw Cost. The same sector flag has only four direct read
+sites: `0x0043f36d`, `0x0044d498`, `0x0044dc36`, and this resolver read at
+`0x004749b2`; the equipment-selection path at `0x0044d1bb` independently shows
+the same `cost - cost / 3` operation. The manual identifies Factory as the
+controlled/influenced site that lowers item purchase prices.
+
+**Interpretation:** Factory pricing is `Cost - trunc(Cost / 3)`. It is not a
+30-percent discount and is not `floor(Cost * 70 / 100)`. All item costs are
+nonnegative, so C# integer division reproduces the original truncation. Thus a
+$11 Katana costs $8, while a $12 item costs $8.
+
+**Confidence:** High static evidence for the branch, divisor, operation order,
+owner check, and rounding. A runtime capture remains useful corroboration but is
+not required to choose between the former provisional formulas.
+
 ## New-game initialization
 
 ### BIN-CITY-001 - density-derived sector income and tolerance

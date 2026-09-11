@@ -55,7 +55,7 @@ public sealed class TransactionResolutionTests
     }
 
     [Fact]
-    public void InfluencedLocalFactoryDiscountsEquipmentThirtyPercent()
+    public void InfluencedLocalFactorySubtractsOneThirdOfEquipmentCost()
     {
         var data = BundledOriginalData.Load();
         var item = ResearchedWeapon(data);
@@ -66,10 +66,26 @@ public sealed class TransactionResolutionTests
 
         match.FinishExecutionPhase();
 
-        var expectedCost = data.Items[item].Cost * SpecialSiteRules.FactoryPricePercent / 100;
+        var expectedCost = data.Items[item].Cost
+            - data.Items[item].Cost / SpecialSiteRules.FactoryDiscountDivisor;
         Assert.Equal(cashBefore - expectedCost, match.Players[0].Cash);
         Assert.Equal(-expectedCost, Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.CashDelta);
         Assert.Equal(expectedCost, match.Players[0].Statistics.CashSpent);
+    }
+
+    [Fact]
+    public void FactoryDiscountSubtractsOneTruncatedThirdForEveryItemCost()
+    {
+        var data = BundledOriginalData.Load();
+        var match = CreateMatch(cash: 100, influencedFactory: true);
+        var gang = match.FindGang(new GangId(10))!;
+
+        foreach (var item in data.Items.Where(item => item.Type != 99))
+        {
+            Assert.Equal(
+                item.Cost - item.Cost / SpecialSiteRules.FactoryDiscountDivisor,
+                SpecialSiteRules.EquipmentCost(match, gang, item));
+        }
     }
 
     [Fact]
@@ -103,8 +119,9 @@ public sealed class TransactionResolutionTests
 
         match.FinishExecutionPhase();
 
-        var expectedCost = data.Items[item].Cost * SpecialSiteRules.FactoryPricePercent / 100;
-        Assert.Equal(7, expectedCost);
+        var expectedCost = data.Items[item].Cost
+            - data.Items[item].Cost / SpecialSiteRules.FactoryDiscountDivisor;
+        Assert.Equal(8, expectedCost);
         Assert.Equal(cashBefore - expectedCost, match.Players[0].Cash);
         Assert.Equal(item, match.FindGang(new GangId(11))!.WeaponItemId);
         var equip = match.LastPhaseResolutions.Single(result =>

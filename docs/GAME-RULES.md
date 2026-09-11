@@ -347,16 +347,17 @@ claim about original-game behavior.
   so the pistol does not appear beside the two initial melee choices. Armageddon
   continues to unlock every real item.
 - Factory rule: an influenced Factory in the acting gang's controlled sector
-  reduces purchase price by 30%; the recreation floors `Cost * 70 / 100`.
+  reduces purchase price to `Cost - trunc(Cost / 3)`. This is a one-third
+  discount rounded toward the full price; for example, an $11 Katana costs $8.
 - Confidence: High for cost, categories, research, tech gates, the decoded
-  zero-difficulty set, the 30% value, and controlled/influenced locality; Medium
-  for same-slot replacement; Low for discount rounding and repeat commands.
+  zero-difficulty set, Factory division/rounding, and controlled/influenced
+  locality; Medium for same-slot replacement and repeat commands.
 - Implementation: `EquipmentRules`, `SpecialSiteRules.EquipmentCost`,
   transaction validation, and `CommandResolver.ResolveEquip`.
 - Tests: `TransactionResolutionTests` covers purchase, replacement, cash and
   statistics, research/tech validation, insufficient funds, replay hashes, and
   a Factory acquired during Instant discounting a same-turn Transaction-phase
-  replacement with the recreation's floored price.
+  replacement; all decoded item costs exercise the recovered division formula.
 
 ### RULE-GIVE-001 — Transfer equipped item
 

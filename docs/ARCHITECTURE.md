@@ -104,8 +104,9 @@ Target subdivisions:
 - `EndgameAwards`: deterministic award projection from player statistics.
 - `EndgameRanking`: timed-scenario score ordering and tied placements.
 - `SpecialSiteRules`: controlled/local influenced-site research Tech ceilings
-  and Factory-priced equipment purchases without duplicating those rules in UI
-  or AI. Match validation enforces that every site influencer owns its sector.
+  and binary-recovered Factory pricing (`Cost - trunc(Cost / 3)`) without
+  duplicating those rules in UI or AI. Match validation enforces that every
+  site influencer owns its sector.
 - `MatchSectorState.Income`: density-derived sector difficulty used by Control,
   Chaos, Tolerance, AI, and city presentation. It is deliberately distinct from
   influenced sites' Cash benefits, which belong to Upkeep/site protection.
