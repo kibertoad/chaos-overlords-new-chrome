@@ -48,6 +48,20 @@ public sealed class PlayerRankingUiTests
         ], PlayerRankingPresentation.Project(state));
     }
 
+    [Fact]
+    public void BigManRankingUsesCurrentCenterControlRatherThanAccumulatedVictoryPoints()
+    {
+        var state = CreateMatch(ScenarioId.BigMan, [0, 0]);
+        state.Players[0].BigManPoints = 39;
+        state.Sectors[27].Owner = new PlayerId(1);
+
+        Assert.Equal(
+        [
+            new PlayerRankingEntry(new PlayerId(0), 1, 0),
+            new PlayerRankingEntry(new PlayerId(1), 0, 1)
+        ], PlayerRankingPresentation.Project(state));
+    }
+
     private static MatchState CreateMatch(
         ScenarioId scenario,
         int[] cash,

@@ -32,6 +32,11 @@ public sealed class MatchOutcomeTests
         Assert.Equal(MatchEndReason.ObjectiveCompleted, outcome.Reason);
         Assert.Equal(1, outcome.Turn);
         Assert.Equal([new PlayerId(0)], outcome.Winners);
+        Assert.Equal(
+        [
+            new MatchStanding(new PlayerId(0), 1, 40),
+            new MatchStanding(new PlayerId(1), 2, 0)
+        ], outcome.Standings);
         var gameEvent = Assert.Single(match.Events, value => value.Kind == GameEventKind.MatchEnded);
         Assert.Equal(outcome.Winners, gameEvent.MatchOutcome!.Winners);
         Assert.All(match.Players, player => Assert.Contains(

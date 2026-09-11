@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,149 tests with no warnings.
+  isolated Release build passed all 1,152 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -52,7 +52,7 @@ Last updated: 2026-09-11
   directly visible in the asset, while the post-confirmation outline remains
   provisional pending an original runtime capture.
 - Player Ranking now uses `PX05011` and positions every active Overlord portrait
-  on its original color rail by canonical timed score or objective progress.
+  on its original color rail by the recovered scenario score table.
   Competition ties share a height and eliminated players disappear.
 - Gangs/Sector now uses the original `PX05009` stat browser, opens only the
   active player's gangs in the selected sector, rejects an empty sector, and
@@ -177,6 +177,10 @@ Last updated: 2026-09-11
 - Research now honors the resolver's per-item completion guard inside the fixed
   player/roster scan: once an earlier gang completes an item, later queued gangs
   emit no roll and consume no RNG for it in that Instant phase.
+- Player Ranking and persisted endgame standings now share the executable's
+  all-scenario score table. Objective scores no longer substitute victory
+  progress, Dominance applies its final integer division by ten, competition
+  ties retain player-slot order, and eliminated players trail unranked.
 - Control conflicts now use one phase-opening owner and defense snapshot for all
   player groups in a sector. The binary-recovered candidate list chooses equal
   positive leaders randomly in ascending player-slot order; at zero margin it

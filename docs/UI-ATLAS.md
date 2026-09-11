@@ -125,9 +125,9 @@ cursor feedback remain to be validated.
   bribes, tax, influenced-site cash, estimated Chaos and the resulting cash
   adjustment. Costs are red and income is green as specified by the manual.
 - Ranking opens `PX05011` at `(104,125,344,209)`. Each active player's
-  32-by-32 portrait is centered on its fixed color rail; canonical timed scores
-  or objective progress determine a zero-based competition standing and tied
-  players share a height. Eliminated players are omitted.
+  32-by-32 portrait is centered on its fixed color rail; the recovered
+  all-scenario score table determines a zero-based competition standing and
+  tied players share a height. Eliminated players are omitted.
 - City sectors use their fixed 54 by 52 cell from `PX10000` when neutral or
   `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
 - Active Crackdown sectors overlay the color-keyed patrol-car slice from

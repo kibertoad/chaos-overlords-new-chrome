@@ -39,18 +39,5 @@ public static class PlayerRankingPresentation
     }
 
     private static long Score(MatchState state, MatchPlayerState player)
-    {
-        var progress = MatchOutcomeEvaluator.Project(state, player);
-        if (ScenarioCatalog.Get(state.Setup.Scenario).IsTimed)
-            return ScenarioCatalog.TimedScore(state.Setup.Scenario, state.Setup.Duration, progress);
-        return state.Setup.Scenario switch
-        {
-            ScenarioId.KillEmAll => -progress.OpponentsAlive,
-            ScenarioId.Big40 or ScenarioId.Armageddon => progress.ControlledSectors,
-            ScenarioId.Eliminate => -progress.OpposingRightHandsAlive,
-            ScenarioId.Siege => progress.ImportantSectorsControlled,
-            ScenarioId.BigMan => progress.BigManPoints,
-            _ => throw new ArgumentOutOfRangeException()
-        };
-    }
+        => EndgameRankingEvaluator.Score(state, player);
 }

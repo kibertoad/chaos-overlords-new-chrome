@@ -23,13 +23,51 @@ public sealed class EndgameRankingTests
     }
 
     [Fact]
-    public void ObjectiveScenarioRejectsInventedRankingScore()
+    public void ObjectiveScenarioUsesRecoveredScoreAndCompetitionOrder()
     {
         var match = CreateMatch(ScenarioId.Big40, 100, 200);
+        match.Sectors[0].Owner = new PlayerId(0);
+        match.Sectors[1].Owner = new PlayerId(0);
+        match.Sectors[2].Owner = new PlayerId(1);
 
-        var error = Assert.Throws<ArgumentException>(() => EndgameRankingEvaluator.EvaluateTimed(match));
+        var standings = EndgameRankingEvaluator.Evaluate(match);
 
-        Assert.Contains("timed", error.Message);
+        Assert.Equal(
+        [
+            new MatchStanding(new PlayerId(0), 1, 2),
+            new MatchStanding(new PlayerId(1), 2, 1)
+        ], standings);
+    }
+
+    [Fact]
+    public void EliminatedPlayersFollowActiveStandingsWithoutAPlace()
+    {
+        var match = CreateMatch(ScenarioId.Greed, 100, 300, 200);
+        match.Players[1].Status = PlayerStatus.Eliminated;
+
+        var standings = EndgameRankingEvaluator.Evaluate(match);
+
+        Assert.Equal(
+        [
+            new MatchStanding(new PlayerId(2), 1, 200),
+            new MatchStanding(new PlayerId(0), 2, 100),
+            new MatchStanding(new PlayerId(1), 0, -32_000)
+        ], standings);
+    }
+
+    [Fact]
+    public void OriginalInactiveSentinelStillContributesToActiveCompetitionPlace()
+    {
+        var match = CreateMatch(ScenarioId.Greed, -40_000, 0);
+        match.Players[1].Status = PlayerStatus.Eliminated;
+
+        var standings = EndgameRankingEvaluator.Evaluate(match);
+
+        Assert.Equal(
+        [
+            new MatchStanding(new PlayerId(0), 6, -40_000),
+            new MatchStanding(new PlayerId(1), 0, -32_000)
+        ], standings);
     }
 
     private static MatchState CreateMatch(ScenarioId scenario, params int[] cash)

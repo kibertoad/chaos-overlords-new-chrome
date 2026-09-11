@@ -96,9 +96,9 @@ public static class ScenarioCatalog
     private static long DominanceScore(GameDuration duration, PlayerScoreState state)
     {
         var weights = Weights(duration);
-        return (long)state.Cash * weights.Cash
+        return ((long)state.Cash * weights.Cash
             + (long)state.Support * weights.Support
-            + (long)state.ControlledSectors * weights.ControlledSector;
+            + (long)state.ControlledSectors * weights.ControlledSector) / 10;
     }
 }
 

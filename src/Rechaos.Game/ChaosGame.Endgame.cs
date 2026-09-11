@@ -165,7 +165,9 @@ public static class EndgamePresentation
         var outcome = state.Outcome ?? throw new ArgumentException("Match has not ended.", nameof(state));
         return outcome.Standings.Count > 0
             ? outcome.Standings.Select(standing => new EndgamePlayerRow(
-                standing.Player, $"{standing.Place}. {state.FindPlayer(standing.Player)!.Setup.Name}"))
+                standing.Player, standing.Place > 0
+                    ? $"{standing.Place}. {state.FindPlayer(standing.Player)!.Setup.Name}"
+                    : state.FindPlayer(standing.Player)!.Setup.Name))
                 .ToArray()
             : state.Players.OrderByDescending(player => outcome.Winners.Contains(player.Id))
                 .ThenBy(player => player.Id.Value)

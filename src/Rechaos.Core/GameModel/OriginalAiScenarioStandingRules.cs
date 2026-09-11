@@ -7,7 +7,7 @@ namespace Rechaos.Core.GameModel;
 internal static class OriginalAiScenarioStandingRules
 {
     public const int InactiveStanding = byte.MaxValue;
-    private const int InactiveScore = -32_000;
+    internal const int InactiveScore = -32_000;
 
     public static IReadOnlyList<int> Build(MatchState state)
     {
@@ -26,6 +26,27 @@ internal static class OriginalAiScenarioStandingRules
             }
             standings[player] = scores.Count(candidate => candidate > scores[player]);
         }
+        return standings;
+    }
+
+    internal static IReadOnlyList<MatchStanding> Rank(MatchState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var originalStandings = Build(state);
+        var ranked = state.Players
+            .Where(player => player.Status == PlayerStatus.Active)
+            .Select(player => new MatchStanding(
+                player.Id,
+                checked(originalStandings[player.Id.Value] + 1),
+                Score(state, player)))
+            .OrderBy(standing => standing.Place)
+            .ThenBy(standing => standing.Player.Value)
+            .ToArray();
+        var standings = new List<MatchStanding>(ranked);
+        standings.AddRange(state.Players
+            .Where(player => player.Status != PlayerStatus.Active)
+            .OrderBy(player => player.Id.Value)
+            .Select(player => new MatchStanding(player.Id, 0, InactiveScore)));
         return standings;
     }
 

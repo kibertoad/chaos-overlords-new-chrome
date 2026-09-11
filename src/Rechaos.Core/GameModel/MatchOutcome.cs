@@ -41,24 +41,21 @@ public static class MatchOutcomeEvaluator
                     MatchEndReason.PlayerEliminated,
                     state.Coordinator.Turn,
                     survivingOpponents,
-                    [],
+                    EndgameRankingEvaluator.Evaluate(state),
                     EndgameAwardEvaluator.Evaluate(state));
         }
         var definition = ScenarioCatalog.Get(state.Setup.Scenario);
         if (definition.IsTimed)
         {
             if (state.Coordinator.Turn < ScenarioCatalog.Turns(state.Setup.Duration)) return null;
-            var scores = state.Players
-                .Select(player => (player.Id, Score: ScenarioCatalog.TimedScore(
-                    state.Setup.Scenario, state.Setup.Duration, Project(state, player))))
-                .ToArray();
-            var best = scores.Max(value => value.Score);
+            var standings = EndgameRankingEvaluator.Evaluate(state);
             return new MatchOutcome(
                 state.Setup.Scenario,
                 MatchEndReason.TimeLimit,
                 state.Coordinator.Turn,
-                scores.Where(value => value.Score == best).Select(value => value.Id).ToArray(),
-                EndgameRankingEvaluator.EvaluateTimed(state),
+                standings.Where(standing => standing.Place == 1)
+                    .Select(standing => standing.Player).ToArray(),
+                standings,
                 EndgameAwardEvaluator.Evaluate(state));
         }
 
@@ -75,7 +72,7 @@ public static class MatchOutcomeEvaluator
                 MatchEndReason.ObjectiveCompleted,
                 state.Coordinator.Turn,
                 winners,
-                [],
+                EndgameRankingEvaluator.Evaluate(state),
                 EndgameAwardEvaluator.Evaluate(state));
     }
 
