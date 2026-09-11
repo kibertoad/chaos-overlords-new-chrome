@@ -409,28 +409,31 @@ claim about original-game behavior.
 
 - Source: `MANUAL-GOG-1`; Chaos and Crackdown descriptions, including the
   Math of the Game section.
-- Observed statement: each player rolls the total Force plus Chaos skill of all
-  their participating gangs, plus sector Income. Each success earns $1 in a
+- Observed statement: each player rolls the Force plus Chaos skill of their
+  participating gangs with sector Income. Each success earns $1 in a
   controlled sector and counts toward crackdown; activity outside a controlled
   sector earns half as much. When total Chaos exceeds Tolerance, a crackdown
   prevents all Chaos income in that sector.
 - Interpretation: reset the prior turn's sector Chaos during Upkeep, then group
-  one player's Chaos commands by sector, add sector Income
-  once per group, and roll each group in earliest queue order. Accumulate every
+  one player's Chaos commands by sector. Each participating gang contributes
+  `sector Income + Force + Chaos` dice before the group is pooled and rolled in
+  earliest queue order. Generated sector Income is independent of the three
+  sites' Cash benefits. Accumulate every
   player's successes into `MatchSectorState.Chaos` before paying anybody. A
   sector already in crackdown, or crossing the strict `Chaos > Tolerance`
   threshold during this phase, pays no group; otherwise controlled groups earn
   all successes and uncontrolled groups earn `floor(successes / 2)`. A newly
   triggered crackdown notifies every active player.
-- Current exclusions: crackdown duration, police detection and combat, special
-  site modifiers, exact half-dollar rounding, and binary within-phase RNG/event
-  order.
-- Confidence: High for the base pool, control multiplier, and suppression rule;
-  Medium for friendly pooling; Low for accumulation, rounding, and ordering.
+- Current exclusions: exact half-dollar rounding and binary within-phase
+  RNG/event order.
+- Confidence: High for the per-gang pool, generated-Income distinction, control
+  multiplier, and suppression rule; Medium for friendly pooling; Low for
+  accumulation, rounding, and ordering.
 - Implementation: `CommandResolver.ResolveChaosPhase`,
   `ManualRules.ChaosDiceCount`, `ManualRules.ChaosIncome`, and
   `ManualRules.TriggersCrackdown`.
-- Tests: `ChaosResolutionTests` covers turn-start reset, pooling, income,
+- Tests: `ChaosResolutionTests` covers turn-start reset, pooling, generated
+  sector Income versus site Cash, payout,
   statistics, sector-wide
   cross-player aggregation, existing/new crackdown behavior, notifications,
   RNG consumption, and phase hashes; `ManualRulesTests` covers arithmetic and
@@ -534,14 +537,16 @@ claim about original-game behavior.
   terminal repeat targets (completed Move/transactions, eliminated Attack
   target, maximum Heal, zero-tolerance Snitch) are removed while ongoing
   behaviors such as Hide and Chaos remain repeatable across turns.
-- Current exclusions: exact equal-highest tie behavior, precise definition of
-  sector income, original crackdown ordering, abandoned-sector rules, and
+- Current exclusions: exact equal-highest tie behavior, original crackdown
+  ordering, abandoned-sector rules, and
   negative-total edge behavior.
-- Confidence: High for equation components, influence loss, the zero-margin 50%
-  rule, and unique-highest neutral conflicts; Low for unresolved tie ordering.
+- Confidence: High for equation components, density-derived sector Income,
+  influence loss, the zero-margin 50% rule, and unique-highest neutral conflicts;
+  Low for unresolved tie ordering.
 - Implementation: `ManualRules.ControlStrength`, `ManualRules.ControlMargin`,
   grouped `CommandResolver.ResolveControl`, and site-reset handling.
-- Tests: `BoardResolutionTests` covers neutral capture, pooled strength, defended
+- Tests: `BoardResolutionTests` covers neutral capture, pooled strength,
+  generated sector Income versus site Cash, defended
   failure, recorded deterministic zero-margin chance, unique-highest neutral
   conflicts, a single phase-opening defense for several owned-sector challengers,
   execution-time Crackdown rejection, overthrow/statistics, influence reset,

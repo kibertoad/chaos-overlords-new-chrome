@@ -95,6 +95,28 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
+    public void ControlUsesGeneratedSectorIncomeInsteadOfSiteCashBenefits()
+    {
+        var data = BundledOriginalData.Load();
+        var controller = data.Gangs.OrderByDescending(gang => gang.Stats.Control).First().Id;
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 10, controller)],
+            [Gang(20, 1, 3, 5)],
+            income: 7);
+        var siteCash = match.Sectors[0].Sites.Sum(site =>
+            match.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
+        Assert.NotEqual(siteCash, match.Sectors[0].Income);
+        Queue(match, Control(0, 10));
+        EnterControl(match);
+
+        match.FinishExecutionPhase();
+
+        var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.Equal(match.Sectors[0].Income, resolution.DefenseValue);
+        Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
+    }
+
+    [Fact]
     public void EnemyDefenseCanPreventControl()
     {
         var data = BundledOriginalData.Load();
@@ -290,9 +312,7 @@ public sealed class BoardResolutionTests
 
         Assert.True(match.FindGang(new GangId(20))!.Hidden);
         Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
-        var sectorIncome = match.Sectors[0].Sites.Sum(site =>
-            match.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
-        Assert.Equal(sectorIncome,
+        Assert.Equal(match.Sectors[0].Income,
             Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.DefenseValue);
     }
 
@@ -458,7 +478,8 @@ public sealed class BoardResolutionTests
         PlayerId? influencedBy = null,
         int playerOneSupport = 0,
         bool filledHirePool = false,
-        bool crackdownActive = false)
+        bool crackdownActive = false,
+        int income = 2)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -481,7 +502,8 @@ public sealed class BoardResolutionTests
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
             ], id == 0 ? owner : null,
-                crackdownActive: id == 0 && crackdownActive, income: 2))
+                crackdownActive: id == 0 && crackdownActive,
+                income: id == 0 ? income : 2))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }

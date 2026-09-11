@@ -150,6 +150,31 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
+    public void ChaosUsesGeneratedSectorIncomeInsteadOfSiteCashBenefits()
+    {
+        var match = CreateMatch(tolerance: 40, income: 7);
+        var gang = match.FindGang(new GangId(10))!;
+        var sector = match.Sectors[0];
+        var siteCash = sector.Sites.Sum(site => match.Definitions.Sites.Single(
+            definition => definition.Id == site.DefinitionId).Cash);
+        Assert.NotEqual(siteCash, sector.Income);
+        QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
+
+        match.FinishExecutionPhase();
+
+        var band = OriginalResolutionRules.Band(match, new PlayerId(0));
+        var statistics = EffectiveStatisticsCalculator.ForGang(match, gang);
+        var expectedDice = OriginalResolutionRules.ActionPool(
+            band, GangAction.Chaos, sector.Income + gang.Force + statistics.Chaos);
+        var siteDerivedDice = OriginalResolutionRules.ActionPool(
+            band, GangAction.Chaos, siteCash + gang.Force + statistics.Chaos);
+        var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.NotEqual(siteDerivedDice, expectedDice);
+        Assert.Equal(expectedDice, resolution.AttackValue);
+        Assert.Equal(expectedDice, resolution.Rolls.Count);
+    }
+
+    [Fact]
     public void AllPlayersContributeBeforeCrackdownSuppressesSectorPayouts()
     {
         var match = CreateMatch(secondPlayerSector: 0, tolerance: 0);
@@ -241,8 +266,7 @@ public sealed class ChaosResolutionTests
         new(new PlayerId(player), new GangId(gang), GangAction.Chaos, CommandTarget.None);
 
     private static int SectorIncome(MatchState match, int sectorId) =>
-        match.Sectors[sectorId].Sites.Sum(site =>
-            match.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
+        match.Sectors[sectorId].Income;
 
     private static void AdvanceCoordinatorTurn(MatchState match)
     {
@@ -268,7 +292,8 @@ public sealed class ChaosResolutionTests
         PlayerId? owner = null,
         int tolerance = 20,
         bool crackdownActive = false,
-        int initialChaos = 0)
+        int initialChaos = 0,
+        int income = 2)
     {
         var data = BundledOriginalData.Load();
         var chaosGang = data.Gangs.OrderByDescending(gang => gang.Stats.Chaos).First().Id;
@@ -298,7 +323,8 @@ public sealed class ChaosResolutionTests
                 new MatchSiteState(2, 2, 4)
             ], id == 0 ? owner : null, id == 0 ? tolerance : 20,
                 chaos: id == 0 ? initialChaos : 0,
-                crackdownActive: id == 0 && crackdownActive, income: 2))
+                crackdownActive: id == 0 && crackdownActive,
+                income: id == 0 ? income : 2))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }

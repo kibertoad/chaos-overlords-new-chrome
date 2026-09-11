@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,130 tests with no warnings.
+  isolated Release build passed all 1,132 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -165,6 +165,9 @@ Last updated: 2026-09-11
   player groups in a sector. A controlled sector can be overthrown only once by
   the unique best qualifying challenger, and an execution-time Crackdown rejects
   every competing group instead of bypassing the lockout.
+- Control and Chaos regression fixtures now make density-derived sector Income
+  differ from summed site Cash, guarding the recovered distinction. Chaos adds
+  sector Income separately to every participating gang's pool before grouping.
 - Give now uses the original `PX05015` Equipment to Give panel before its
   compatible same-sector recipient list. One command can carry any combination
   of the source gang's exact three equipped items; grouped transaction resolution
