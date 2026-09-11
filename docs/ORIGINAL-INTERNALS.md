@@ -1972,6 +1972,24 @@ complete retaliation-eligibility predicate.
 **Next validation:** capture fixed original traces at bands 0, 1, and 2 for
 every affected action, including Hide and both Martial Arts branches.
 
+### BIN-COMBAT-ORDER-001 - player/roster attack and police rolls
+
+**Observation:** The action-1 (**Attack**) block in `0x00472775` is nested in
+the player 0-through-5 and roster 0-through-80 scan beginning at lines 337-338;
+the action test occurs at line 346 and the attack/retaliation calculation stays
+inside that iteration. After the gang-combat pass, lines 448-470 run another
+player/roster scan for active gangs in Crackdown sectors and perform each
+police detection and damage roll there.
+
+**Interpretation:** Attack RNG and result order are fixed player slot then
+persistent roster slot, independent of command submission order. Reciprocal
+orders still form one encounter, with the first gang reached by that scan as
+the opening attacker. Police likewise visit gangs in player/roster order, not
+sector or gang-ID order.
+
+**Confidence:** High static evidence for both scan bounds, action dispatch,
+and placement of their RNG consumers. Runtime seed correlation remains pending.
+
 ### BIN-INSTANT-001 - roster-order actions and cumulative Influence
 
 **Observation:** The Instant-action switch in `0x00472775` executes while the

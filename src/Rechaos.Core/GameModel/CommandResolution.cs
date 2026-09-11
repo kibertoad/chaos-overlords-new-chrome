@@ -152,12 +152,16 @@ public static partial class CommandResolver
         if (commands.Any(command => command.ExecutionPhase != ExecutionPhase.Combat))
             throw new ArgumentException("Every command must belong to Combat.", nameof(commands));
 
+        var orderedCommands = commands
+            .OrderBy(queued => queued.Command.Player.Value)
+            .ThenBy(queued => GangSlot(state, queued.Command))
+            .ToArray();
         var snapshots = state.Players.SelectMany(player => player.Gangs)
             .ToDictionary(gang => gang.Id, gang => CombatSnapshot.For(state, gang));
-        var outcomes = new List<CombatOutcome>(commands.Count);
-        var commandsByGang = commands.ToDictionary(queued => queued.Command.Gang);
+        var outcomes = new List<CombatOutcome>(orderedCommands.Length);
+        var commandsByGang = orderedCommands.ToDictionary(queued => queued.Command.Gang);
         var resolvedReciprocalEncounters = new HashSet<(int First, int Second)>();
-        foreach (var queued in commands)
+        foreach (var queued in orderedCommands)
         {
             var attacker = snapshots[queued.Command.Gang];
             var targetId = new GangId(queued.Command.Target.Id);
@@ -225,8 +229,8 @@ public static partial class CommandResolver
 
         var policeOutcomes = snapshots.Values
             .Where(snapshot => snapshot.Force > 0 && state.Sectors[snapshot.SectorId].CrackdownActive)
-            .OrderBy(snapshot => snapshot.SectorId)
-            .ThenBy(snapshot => snapshot.Id.Value)
+            .OrderBy(snapshot => snapshot.Owner.Value)
+            .ThenBy(snapshot => GangSlot(state, snapshot.Owner, snapshot.Id))
             .Select(snapshot => RollPoliceAttack(state, snapshot))
             .ToArray();
 

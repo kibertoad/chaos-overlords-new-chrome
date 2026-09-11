@@ -7,7 +7,7 @@ namespace Rechaos.Tests;
 public sealed class PoliceCombatResolutionTests
 {
     [Fact]
-    public void CrackdownAttacksEveryActiveGangInSectorInStableOrder()
+    public void CrackdownAttacksEveryActiveGangInPlayerRosterOrder()
     {
         var match = CreateMatch(
             new MatchGangState(new GangId(12), new PlayerId(0), 1, 0, 10),
@@ -17,15 +17,18 @@ public sealed class PoliceCombatResolutionTests
 
         EnterAndResolveCombat(match);
 
-        Assert.Equal([new GangId(10), new GangId(12)],
+        Assert.Equal([new GangId(12), new GangId(10)],
             match.LastPoliceAttackResolutions.Select(result => result.Gang));
         Assert.All(match.LastPoliceAttackResolutions, result =>
         {
             var gang = match.FindGang(result.Gang)!;
             Assert.Equal(ManualRules.PoliceDetectionPercent(
                 EffectiveStatisticsCalculator.ForGang(match, gang).Stealth), result.Details.DetectionChance);
-            Assert.Equal(Math.Max(0, ManualRules.PoliceCombat
-                - EffectiveStatisticsCalculator.ForGang(match, gang).Defense), result.Details.AttackValue);
+            Assert.Equal(result.Details.Detected
+                    ? Math.Max(0, ManualRules.PoliceCombat
+                        - EffectiveStatisticsCalculator.ForGang(match, gang).Defense)
+                    : 0,
+                result.Details.AttackValue);
             Assert.Equal(ManualRules.CountSuccesses(result.Details.Rolls), result.Details.Successes);
             Assert.Equal(Math.Max(0, result.Details.PreviousForce - result.Details.Damage), result.Details.ResultForce);
             Assert.Equal(GameEventKind.PoliceAttackResolved, result.Event.Kind);

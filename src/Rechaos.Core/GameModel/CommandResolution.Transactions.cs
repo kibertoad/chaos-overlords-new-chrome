@@ -92,12 +92,15 @@ public static partial class CommandResolver
             details, GameNotificationKind.Equipment);
 
     private static int GangSlot(MatchState state, GameCommand command)
+        => GangSlot(state, command.Player, command.Gang);
+
+    private static int GangSlot(MatchState state, PlayerId player, GangId gangId)
     {
-        var gangs = state.FindPlayer(command.Player)!.Gangs;
+        var gangs = state.FindPlayer(player)!.Gangs;
         for (var index = 0; index < gangs.Count; index++)
-            if (gangs[index].Id == command.Gang) return index;
+            if (gangs[index].Id == gangId) return index;
         throw new InvalidOperationException(
-            $"Gang {command.Gang} is not in player {command.Player}'s roster.");
+            $"Gang {gangId} is not in player {player}'s roster.");
     }
 
     private static PreparedGive PrepareGive(MatchState state, GameCommand command)

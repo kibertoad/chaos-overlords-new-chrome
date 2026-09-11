@@ -344,13 +344,14 @@ player-sector success total once.
 
 Combat also uses a phase-wide barrier. It snapshots Force, effective statistics,
 equipment class, and Hidden state for every gang; calculates all attacks and
-eligible retaliation in queue order; then commits aggregate damage. This keeps
+eligible retaliation in binary player/roster-slot order; then commits aggregate
+damage. This keeps
 an eliminated gang's simultaneous response independent of event emission order.
 Hidden attacks use an individual Detect-versus-Stealth roll and suppress
 retaliation on a hit. Cooperative sector visibility is a separate deterministic
 query shared by the Sector portrait strip and Search screen because Hide does
-not affect whether a gang is displayed. Original police/gang ordering and
-overkill attribution remain explicit binary-parity gaps.
+not affect whether a gang is displayed. The subsequent police roll pass also
+uses player/roster-slot order; overkill attribution remains a binary-parity gap.
 
 All action resolvers consume the same effective-stat projection. It adds gang
 definition, three equipment slots, and every same-sector site influenced by the

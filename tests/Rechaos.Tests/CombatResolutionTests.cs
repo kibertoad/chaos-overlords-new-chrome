@@ -73,6 +73,28 @@ public sealed class CombatResolutionTests
     }
 
     [Fact]
+    public void AttacksRollAndEmitEventsInRosterOrderRatherThanSubmissionOrder()
+    {
+        var match = CreateMatch(secondPlayerZeroGang: true);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(11), GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase();
+        Assert.Equal(ExecutionPhase.Combat, match.Coordinator.ExecutionPhase);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal([new GangId(10), new GangId(11)],
+            match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
+    }
+
+    [Fact]
     public void BareHandedMartialArtistSuppressesNonMartialRetaliation()
     {
         var data = BundledOriginalData.Load();
@@ -314,7 +336,8 @@ public sealed class CombatResolutionTests
         short? playerOneWeapon = null,
         short? playerOneArmor = null,
         short? playerOneMiscellaneous = null,
-        short? influencedSiteDefinition = null)
+        short? influencedSiteDefinition = null,
+        bool secondPlayerZeroGang = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -323,11 +346,17 @@ public sealed class CombatResolutionTests
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var playerZeroGangs = new List<MatchGangState>
+        {
+            new(new GangId(10), new PlayerId(0), playerZeroDefinition, 0,
+                playerZeroForce, weaponItemId: playerZeroWeapon)
+        };
+        if (secondPlayerZeroGang)
+            playerZeroGangs.Add(new MatchGangState(
+                new GangId(11), new PlayerId(0), playerZeroDefinition, 0, playerZeroForce));
         MatchPlayerState[] players =
         [
-            new(setups[0], 500,
-                [new MatchGangState(new GangId(10), new PlayerId(0), playerZeroDefinition, 0,
-                    playerZeroForce, weaponItemId: playerZeroWeapon)]),
+            new(setups[0], 500, playerZeroGangs),
             new(setups[1], 500,
                 [new MatchGangState(new GangId(20), new PlayerId(1), playerOneDefinition, 0,
                     playerOneForce, playerOneWeapon, playerOneArmor, playerOneMiscellaneous)])

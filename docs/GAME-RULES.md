@@ -252,7 +252,8 @@ claim about original-game behavior.
 - Source: `MANUAL-GOG-1`, numbered pages 50–51; the
   [1997 unofficial FAQ 0.7.1](https://gamefaqs.gamespot.com/pc/196900-chaos-overlords/faqs/1684)
   records a developer-informed correction that the printed Attack Roll omitted
-  current Force.
+  current Force. `BIN-COMBAT-ORDER-001` supplies the static attack and police
+  scan order.
 - Observed statement: attack dice equal current Force plus modified Combat minus
   defender Defense, floored at zero. Rolls of 4–6 each cause one Force damage.
   Strength adds for bare hands, melee, and blade weapons; Blade adds for blade
@@ -261,11 +262,12 @@ claim about original-game behavior.
   damage, rounded down. A bare-handed Martial Artist prevents retaliation unless
   the opponent is also a bare-handed Martial Artist.
 - Interpretation: snapshot every gang at the Combat boundary, roll queued
-  attacks and eligible retaliation in stable queue order, then apply all damage
-  together. Reciprocal orders between the same two gangs form one encounter:
-  the first stable queued order supplies the opening attack and the reverse
-  order is represented by that encounter's single retaliation, rather than
-  creating a second attack/retaliation pair. Consequently, a gang eliminated by one result still completes
+  attacks and eligible retaliation in player/roster-slot order, then apply all
+  damage together. Reciprocal orders between the same two gangs form one
+  encounter: the first gang reached in the fixed scan supplies the opening
+  attack and the reverse order is represented by that encounter's single
+  retaliation, rather than creating a second attack/retaliation pair.
+  Consequently, a gang eliminated by one result still completes
   attacks and retaliation calculated from its phase-start Force. Force is
   floored at zero; elimination clears equipment and Hidden state. Actual damage
   credit is allocated in stable result order when attacks overkill one target;
@@ -277,17 +279,17 @@ claim about original-game behavior.
   target action not to be Hide and allows retaliation when the attacker has no
   positive effective Martial Arts, has a weapon equipped, or faces a defender
   who is also an unarmed positive-Martial-Arts gang.
-- Current exclusions: original overkill-stat attribution and police/gang
-  ordering, reveal-state timing, and binary confirmation of resolver/RNG order.
+- Current exclusions: original overkill-stat attribution and reveal-state timing.
 - Confidence: High for weapon-skill associations, the complete Martial Arts /
-  weapon / Hide retaliation gate, and its damage formula; Medium/High for the
-  Force-corrected opening formula; Low for ordering, overkill accounting, and
-  hidden-state timing.
+  weapon / Hide retaliation gate, its damage formula, and player/roster roll
+  ordering; Medium/High for the Force-corrected opening formula; Low for
+  overkill accounting and hidden-state timing.
 - Implementation: `ManualRules.CombatRating`, `ManualRules.AttackDiceCount`,
   `ManualRules.RetaliationDamage`, and `CommandResolver.ResolveCombatPhase`.
 - Tests: `CombatResolutionTests` covers effective attack/defense pools,
   retaliation, phase-start simultaneity, Martial Arts, hidden targets,
-  reciprocal-order coalescing, elimination/equipment loss, statistics, RNG consumption, notifications, and
+  reciprocal-order coalescing, reversed-submission roster order,
+  elimination/equipment loss, statistics, RNG consumption, notifications, and
   hashes; `ManualRulesTests` covers the formulas.
 - Next experiment: reproduce a fixed unarmed matchup from the FAQ, then repeat
   with melee/blade/ranged weapons, Martial Arts, two attackers, and a target
@@ -461,7 +463,8 @@ claim about original-game behavior.
 
 ### RULE-POLICE-001 — Crackdown detection and combat
 
-- Source: `MANUAL-GOG-1`; Crackdown and Math of the Game descriptions.
+- Source: `MANUAL-GOG-1`; Crackdown and Math of the Game descriptions, plus
+  `BIN-COMBAT-ORDER-001`.
 - Observed statement: during a crackdown, police attack every gang in the
   sector with Combat 20. Police detection is certain through Stealth 5 and
   drops five percentage points per additional Stealth point, reaching zero at
@@ -471,8 +474,9 @@ claim about original-game behavior.
   Crackdown while they are present makes them stay longer. Three Crackdowns in
   a five-turn period make the controlling Overlord lose the sector.
 - Interpretation: at the Combat phase boundary, snapshot every active gang in
-  a crackdown sector in sector/gang-ID order. Roll one percentile detection
-  check per gang. On detection, roll `max(0, 20 - effective Defense)` dice and
+  a crackdown sector in ascending player/roster-slot order. Roll one percentile
+  detection check per gang. On detection, roll
+  `max(0, 20 - effective Defense)` dice and
   apply one damage per success. Police attacks do not retaliate or credit a
   player's damage statistic. Gang-command and police damage are accumulated
   against the same phase-start snapshots before casualties and equipment loss
@@ -495,18 +499,17 @@ claim about original-game behavior.
   again on another recent trigger. The displaced owner receives a distinct
   `ControlLost` notification in addition to the global Crackdown notification.
   History mutation and ownership cleanup precede the duration-extension draw.
-- Current exclusions: original timing within Combat, whether 0%/100% checks
-  consume RNG, weapon/damage-cap treatment, exact original message wording, and
-  exact binary RNG/event order.
+- Current exclusions: whether 0%/100% checks consume RNG,
+  weapon/damage-cap treatment, and exact original message wording.
 - Confidence: High for the detection percentage table, hidden Detect 12 branch,
-  Combat 20, defense subtraction, occurrence window/reset, and duration RNG
-  order; Low for phase/event ordering and the listed exclusions.
+  Combat 20, defense subtraction, player/roster attack order, occurrence
+  window/reset, and duration RNG order; Low for the listed exclusions.
 - Implementation: `CommandResolver.ResolveCombatPhase`, exposed through
   `MatchState.LastPoliceAttackResolutions` and `PoliceAttackResolved` events;
   `CommandValidator` and `CommandResolver.ResolveControl` enforce the Control
   lockout at both relevant boundaries; `CrackdownResolver` owns duration and
   extension plus the two-turn history represented in the original save layout.
-- Tests: `PoliceCombatResolutionTests` covers stable sector/gang ordering,
+- Tests: `PoliceCombatResolutionTests` covers player/roster ordering,
   normal and hidden detection, effective Stealth/Defense, undetectability at
   Stealth 25, deterministic RNG consumption/hashes, notifications, casualties,
   and equipment loss. `ChaosResolutionTests` covers duration, extension,
