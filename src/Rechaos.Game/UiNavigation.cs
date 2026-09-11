@@ -84,6 +84,7 @@ public enum ClientScreen
     ComlinkView,
     ComlinkSend,
     Sector,
+    SectorGangs,
     Gang,
     Site,
     ItemInformation,
@@ -117,7 +118,8 @@ public sealed class ScreenRouter
         if (Current == ClientScreen.Title) return false;
         var destination = Current is ClientScreen.GameInfo or ClientScreen.Events or ClientScreen.ComlinkView
             or ClientScreen.ComlinkSend or ClientScreen.Commands or ClientScreen.Hire
-            or ClientScreen.Sector or ClientScreen.Gang or ClientScreen.Finance or ClientScreen.Ranking
+            or ClientScreen.Sector or ClientScreen.SectorGangs or ClientScreen.Gang
+            or ClientScreen.Finance or ClientScreen.Ranking
             or ClientScreen.Site
             or ClientScreen.ItemInformation
             or ClientScreen.Items or ClientScreen.Give or ClientScreen.GiveTarget or ClientScreen.Sell

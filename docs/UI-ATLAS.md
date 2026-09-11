@@ -36,6 +36,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00202`, `PX00203` | Victory and elimination panels | High from visible text |
 | `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; patrol-car cell `(116,0,48,64)` | High for sheet contents, Medium for patrol-car crop |
 | `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
+| `PX05009` | Gangs in Sector browser with one gang portrait and Tech Level, Upkeep, and fourteen stat rows | High from visible labels and main-console workflow |
 | `PX05013` | Equipment to Sell panel with acting-gang portrait, three independently selectable equipment rows, original-price half-value proceeds, Cancel and OK | High from visible labels and original manual Sell workflow |
 | `PX05015` | Equipment to Give panel with acting-gang portrait and three independently selectable item apertures | High from visible label and original manual Give workflow |
 | `PX05006` | Movement destination panel with acting-gang portrait and native-tile 3x3 sector neighborhood | High from visible label, exact geometry and original manual Move workflow |
@@ -135,11 +136,13 @@ cursor feedback remain to be validated.
 - Sector detail also shows up to ten friendly or detected enemy portraits from
   `PX03000` in owner colors. Friendly portraits are mouse-selectable and open
   that gang's information panel; enemy portraits remain read-only.
-- The main control panel's Gangs/Sector half selects only active friendly gangs
-  in the current sector, refuses an empty roster, and keeps arrow navigation
-  within that stable ID-ordered roster. Live gang details use `PX05000` and fill
-  its three right-side weapon/armor/miscellaneous cells from `PX04999`; a hire
-  offer has no instance equipment and therefore uses the clean `PX05022` form.
+- The main control panel's Gangs/Sector half uses `PX05009`, selects only active
+  friendly gangs in the current sector, refuses an empty roster, and keeps arrow
+  navigation within that stable ID-ordered roster. It reports Tech Level,
+  Upkeep, and all fourteen current/base-option statistics. Direct live gang
+  details use `PX05000` and fill its three right-side
+  weapon/armor/miscellaneous cells from `PX04999`; a hire offer has no instance
+  equipment and therefore uses the clean `PX05022` form.
 - Search results reuse the same sheet and visibility projection for seven
   portrait-led rows, with owner-colored borders and overflow count.
 - The Equipment panel shows the selected gang from `PX03000` at `(558,58)` in

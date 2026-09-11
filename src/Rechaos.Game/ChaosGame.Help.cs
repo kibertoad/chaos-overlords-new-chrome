@@ -109,6 +109,7 @@ public sealed partial class ChaosGame
             ClientScreen.Commands => "Commands",
             ClientScreen.Hire => "Hire",
             ClientScreen.Sector => "Sector View",
+            ClientScreen.SectorGangs => "Gang Information",
             ClientScreen.Gang => "Gang Information",
             ClientScreen.Site => "Sites",
             ClientScreen.ItemInformation or ClientScreen.Items or ClientScreen.Give

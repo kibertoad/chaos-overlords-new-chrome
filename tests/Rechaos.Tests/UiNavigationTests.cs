@@ -120,6 +120,9 @@ public sealed class UiNavigationTests
         router.Show(ClientScreen.Sector);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.City, router.Current);
+        router.Show(ClientScreen.SectorGangs);
+        Assert.True(router.Back());
+        Assert.Equal(ClientScreen.City, router.Current);
         router.Show(ClientScreen.Gang);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.City, router.Current);

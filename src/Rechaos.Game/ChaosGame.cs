@@ -55,6 +55,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _sectorFinanceBackground;
     private Texture2D? _rankingBackground;
     private Texture2D? _gangInfoBackground;
+    private Texture2D? _sectorGangsBackground;
     private Texture2D? _gangDefinitionInfoBackground;
     private Texture2D? _siteInfoBackground;
     private Texture2D? _itemInfoBackground;
@@ -126,6 +127,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private string _comlinkStatus = string.Empty;
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
+    private IReadOnlyList<GangId> _sectorGangRoster = [];
+    private int _sectorGangCursor;
+    private ClientScreen _sectorGangReturnScreen = ClientScreen.City;
     private readonly bool[] _giveSelections = new bool[3];
     private GangId? _giveGang;
     private ClientScreen _giveReturnScreen = ClientScreen.Items;
@@ -230,6 +234,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _rankingBackground = LoadTexture("PX05011.bmp");
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
+        _sectorGangsBackground = LoadTexture("PX05009.bmp");
         _gangDefinitionInfoBackground = LoadTexture("PX05022.bmp");
         _siteInfoBackground = LoadTexture("PX05002.bmp");
         _itemInfoBackground = LoadTexture("PX05001.bmp");
@@ -392,6 +397,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     break;
                 case ClientScreen.Sector:
                     UpdateSector(keyboard);
+                    break;
+                case ClientScreen.SectorGangs:
+                    if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up))
+                        MoveSectorGangCursor(-1);
+                    if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down))
+                        MoveSectorGangCursor(1);
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        CloseSectorGangs();
                     break;
                 case ClientScreen.Gang:
                     if (_gangDetailsInstanceId is not null)
@@ -592,6 +605,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Sector when _state is not null:
                 DrawSectorDetails(_batch, _pixel, _font, _state);
                 break;
+            case ClientScreen.SectorGangs when _state is not null:
+                DrawSectorGangs(_batch, _pixel, _font, _state);
+                break;
             case ClientScreen.Gang when _state is not null:
                 DrawGangDetails(_batch, _pixel, _font, _state);
                 break;
@@ -740,6 +756,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Sector:
                 HandleSectorClick(point);
+                break;
+            case ClientScreen.SectorGangs:
+                if (SectorGangsLayout.Ok.Contains(point)) CloseSectorGangs();
                 break;
             case ClientScreen.Gang:
                 if (EquipmentCommandLayout.Ok.Contains(point)) CloseGangDetails();

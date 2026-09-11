@@ -6,18 +6,8 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private void OpenSectorGangDetails(ClientScreen returnScreen)
-    {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
-        var gangs = GangInformationRoster.ForSector(
-            _state.FindPlayer(playerId)!.Gangs, _cursor);
-        if (gangs.Count == 0)
-        {
-            _message = "NO GANGS IN SELECTED SECTOR";
-            return;
-        }
-        OpenGangDetails(gangs[0], returnScreen, _cursor);
-    }
+    private void OpenSectorGangDetails(ClientScreen returnScreen) =>
+        OpenSectorGangs(returnScreen);
 
     private void OpenGangDetails(
         MatchGangState gang,

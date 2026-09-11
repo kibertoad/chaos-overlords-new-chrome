@@ -10,13 +10,13 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,076 tests with no warnings.
+  isolated Release build passed all 1,093 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v17, replays are v18, canonical hashes are v20, asset
+- Native saves are format v19, replays are v20, canonical hashes are v22, asset
   manifests are v4, extracted help is v1, and client preferences are v5. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
@@ -26,10 +26,11 @@ Last updated: 2026-09-11
 - Player Ranking now uses `PX05011` and positions every active Overlord portrait
   on its original color rail by canonical timed score or objective progress.
   Competition ties share a height and eliminated players disappear.
-- Gangs/Sector now opens only the active player's gangs in the selected sector,
-  rejects an empty sector, and cycles within that local roster. Live Gang
-  Information uses `PX05000` and renders the three equipped-item cells; hire
-  offer inspection uses the equipment-free `PX05022` definition template.
+- Gangs/Sector now uses the original `PX05009` stat browser, opens only the
+  active player's gangs in the selected sector, rejects an empty sector, and
+  cycles within that stable local roster. Direct live Gang Information uses
+  `PX05000` and renders three equipped-item cells; hire offer inspection uses
+  the equipment-free `PX05022` definition template.
 - Finance now uses the original paired `PX05008` City Financial and `PX05019`
   Sector Financial panels selected by the split main-console control. The
   non-mutating projection covers active and pending upkeep, recruit cost and
