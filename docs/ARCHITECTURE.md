@@ -312,7 +312,11 @@ aimed at the same site pool Force and effective Influence into one deterministic
 roll stream. Control commands from one player in the same sector pool Force and
 effective Control into one non-dice comparison. Each group resolves at its
 earliest queue position and emits one ordered result per participating command.
-Cross-player conflicts remain an explicit parity gap.
+Cross-player groups in one sector evaluate against the same phase-opening owner,
+visible defenders, influenced Support, and income. Only a unique best
+nonnegative margin may capture, so an owned sector can be overthrown at most once
+per phase; an execution-time Crackdown rejects every group. Equal-best ordering
+remains an explicit parity gap.
 
 Instant resolution snapshots every acting gang's effective statistics before
 any command mutates site influence. Heal, Research, and grouped Influence rolls

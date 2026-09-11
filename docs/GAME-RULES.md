@@ -523,6 +523,8 @@ claim about original-game behavior.
   recording the roll and range in the resolution event. When multiple players
   target the same neutral sector, evaluate every group from the phase-start
   owner snapshot and permit only the unique highest margin to attempt capture.
+  The same phase-opening owner/defense comparison applies when several players
+  challenge an already controlled sector, permitting at most one overthrow.
   On an overthrow, increment the attacker's statistic, remove the former
   owner's site Support, clear influence, and restore table resistance. A
   repeating Control order clears once its player owns the sector; repeating
@@ -530,16 +532,18 @@ claim about original-game behavior.
   terminal repeat targets (completed Move/transactions, eliminated Attack
   target, maximum Heal, zero-tolerance Snitch) are removed while ongoing
   behaviors such as Hide and Chaos remain repeatable across turns.
-- Current exclusions: equal-highest neutral ties, simultaneous challenges to an
-  already controlled sector, precise definition of sector income, crackdown
-  restrictions, abandoned-sector rules, and negative-total edge behavior.
+- Current exclusions: exact equal-highest tie behavior, precise definition of
+  sector income, original crackdown ordering, abandoned-sector rules, and
+  negative-total edge behavior.
 - Confidence: High for equation components, influence loss, the zero-margin 50%
   rule, and unique-highest neutral conflicts; Low for unresolved tie ordering.
 - Implementation: `ManualRules.ControlStrength`, `ManualRules.ControlMargin`,
   grouped `CommandResolver.ResolveControl`, and site-reset handling.
 - Tests: `BoardResolutionTests` covers neutral capture, pooled strength, defended
   failure, recorded deterministic zero-margin chance, unique-highest neutral
-  conflicts, overthrow/statistics, influence reset, deterministic hashes, and Hide expiration;
+  conflicts, a single phase-opening defense for several owned-sector challengers,
+  execution-time Crackdown rejection, overthrow/statistics, influence reset,
+  deterministic hashes, and Hide expiration;
   `ManualRulesTests` covers equation arithmetic.
 
 ## Upkeep economy

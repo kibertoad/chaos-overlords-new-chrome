@@ -692,19 +692,44 @@ public static class CommandResolver
                 .OrderBy(group => group[0].Sequence)
                 .ToArray();
             var sector = state.Sectors[sectorCommands.Key];
-            if (sector.Owner is null && groups.Length > 1)
-                results.AddRange(ResolveNeutralControlConflict(state, sector, groups));
+            if (groups.Length > 1)
+                results.AddRange(ResolveControlConflict(state, sector, groups));
             else
                 foreach (var group in groups) results.AddRange(ResolveControl(state, group));
         }
         return results;
     }
 
-    private static IReadOnlyList<CommandResolutionResult> ResolveNeutralControlConflict(
+    private static IReadOnlyList<CommandResolutionResult> ResolveControlConflict(
         MatchState state,
         MatchSectorState sector,
         IReadOnlyList<QueuedCommand[]> groups)
     {
+        if (sector.CrackdownActive)
+        {
+            return groups.SelectMany(group => group).Select(participant => Complete(
+                state, participant.Command, GameEventKind.CommandFailed,
+                new CommandResolutionDetails(
+                    CommandResolutionCode.SectorInCrackdown, [], 0,
+                    PreviousValue: sector.Owner?.Value, ResultValue: sector.Owner?.Value),
+                GameNotificationKind.Control)).ToArray();
+        }
+
+        var previousOwner = sector.Owner;
+        var sectorIncome = SectorIncome(state, sector);
+        var defense = 0;
+        var support = 0;
+        if (previousOwner is { } owner)
+        {
+            defense = ManualRules.ControlStrength(state.FindPlayer(owner)!.Gangs
+                .Where(gang => gang.IsActive && !gang.Hidden && gang.SectorId == sector.Id)
+                .Select(gang => (gang.Force,
+                    EffectiveStatisticsCalculator.ForGang(state, gang).Control)));
+            support = sector.Sites.Where(site => site.InfluencedBy == owner).Sum(site =>
+                state.Definitions.Sites.Single(
+                    definition => definition.Id == site.DefinitionId).Support);
+        }
+        var totalDefense = checked(sectorIncome + defense + support);
         var attempts = groups.Select(participants =>
         {
             var attack = ManualRules.ControlStrength(participants.Select(queued =>
@@ -713,7 +738,8 @@ public static class CommandResolver
                 return (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Control);
             }));
             return (Participants: participants, Attack: attack,
-                Margin: ManualRules.ControlMargin(attack, SectorIncome(state, sector)));
+                Margin: ManualRules.ControlMargin(
+                    attack, sectorIncome, defense, support));
         }).ToArray();
         var bestMargin = attempts.Max(attempt => attempt.Margin);
         var leaders = attempts.Where(attempt => attempt.Margin == bestMargin).ToArray();
@@ -721,7 +747,17 @@ public static class CommandResolver
         int? chanceRoll = null;
         var captured = winner.Participants is not null && (bestMargin > 0
             || (chanceRoll = state.Random.NextInclusive(2)) == 1);
-        if (captured) sector.Owner = winner.Participants![0].Command.Player;
+        if (captured)
+        {
+            var newOwner = winner.Participants![0].Command.Player;
+            if (previousOwner is { } oldOwner)
+            {
+                state.FindPlayer(newOwner)!.Statistics.Overthrows++;
+                state.AiStrategy.RecordControl(oldOwner, newOwner);
+                SectorControlResolver.ResetInfluencedSites(state, sector, oldOwner);
+            }
+            sector.Owner = newOwner;
+        }
 
         var results = new List<CommandResolutionResult>(groups.Sum(group => group.Length));
         foreach (var attempt in attempts)
@@ -731,8 +767,8 @@ public static class CommandResolver
             results.Add(Complete(state, participant.Command, GameEventKind.CommandResolved,
                 new CommandResolutionDetails(
                     CommandResolutionCode.Resolved, [], won ? 1 : 0,
-                    PreviousValue: null, ResultValue: sector.Owner?.Value,
-                    AttackValue: attempt.Attack, DefenseValue: SectorIncome(state, sector),
+                    PreviousValue: previousOwner?.Value, ResultValue: sector.Owner?.Value,
+                    AttackValue: attempt.Attack, DefenseValue: totalDefense,
                     ChanceRoll: ReferenceEquals(attempt.Participants, winner.Participants) ? chanceRoll : null,
                     ChanceSides: ReferenceEquals(attempt.Participants, winner.Participants) && chanceRoll is not null ? 2 : null),
                 GameNotificationKind.Control));
