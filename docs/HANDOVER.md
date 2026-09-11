@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,374 tests; its offline restore emitted
+  isolated Release build passed all 1,375 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -28,7 +28,8 @@ Last updated: 2026-09-11
 - Local-game RNG startup now matches the executable's unique seed path: capture
   the process-uptime millisecond clock at game construction and zero-extend only
   its low 16 bits. Explicit deterministic replay, test, and multiplayer seeds
-  remain full-width by design.
+  remain full-width by design. The inclusive native wrapper also clamps bounds
+  below one to one while still consuming all three raw draws.
 - Execution now mirrors the original resolver's split Chaos scheduling. Chaos
   rolls and Crackdown creation occur immediately after Instant so newly arrived
   police attack in the same turn; Transactions still precede the delayed Chaos

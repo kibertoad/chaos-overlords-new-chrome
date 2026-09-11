@@ -43,6 +43,16 @@ public sealed class DeterminismTests
     }
 
     [Fact]
+    public void OriginalInclusiveWrapperClampsNonpositiveBoundsAndStillConsumesThreeRawValues()
+    {
+        var random = new DeterministicRandom(1);
+
+        Assert.Equal(1, random.NextInclusive(0));
+        Assert.Equal(1, random.NextInclusive(-17));
+        Assert.Equal(6, random.ConsumptionCount);
+    }
+
+    [Fact]
     public void RawStepMatchesRecoveredVisualCppSequence()
     {
         var random = new DeterministicRandom(1);

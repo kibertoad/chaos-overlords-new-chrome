@@ -707,7 +707,9 @@ unknown.
 these address-level facts. `DeterministicRandom.SeedFromTimerMilliseconds`
 reproduces the original seed narrowing for local games; `MatchSetup.InitialSeed`
 also remains an explicit modern deterministic input for tests, replays, and
-multiplayer.
+multiplayer. `NextInclusive` also preserves the native below-one clamp and its
+three raw draws; the recreation-only zero-based `NextInt` API retains strict
+positive-bound validation.
 
 **Next validation:** Classify all callers of `0x0045d227`; correlate a controlled
 dice sequence with predicted outputs.

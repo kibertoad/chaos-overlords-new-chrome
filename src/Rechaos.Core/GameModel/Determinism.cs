@@ -52,7 +52,7 @@ public sealed class DeterministicRandom
 
     public int NextInclusive(int maximum)
     {
-        if (maximum <= 0) throw new ArgumentOutOfRangeException(nameof(maximum));
+        if (maximum < 1) maximum = 1;
         var first = NextRaw();
         var second = NextRaw();
         var selector = NextRaw();
