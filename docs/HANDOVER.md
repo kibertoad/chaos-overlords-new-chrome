@@ -36,8 +36,8 @@ Last updated: 2026-09-11
 - Music and sound effects have independent recovered 0-10 controls and persisted
   defaults. Full local-setup push buttons, setup selection/rejection, panel
   confirmation, equipped and unarmed gang attacks, retaliation, detected police
-  attacks, idle planning confirmation, pending Last Turn Events, and planning-countdown
-  warnings use mapped sounds. General slot 9 is loaded by the original but has
+  attacks, idle planning confirmation, unread Comlink handoff entry, and
+  planning-countdown warnings use mapped sounds. General slot 9 is loaded by the original but has
   no call through its gated effect wrapper. Detailed Combat cues start with
   their corresponding animation clips rather than at resolution time.
 - The four original Add/Remove/Begin/Cancel setup hit rectangles now defer their

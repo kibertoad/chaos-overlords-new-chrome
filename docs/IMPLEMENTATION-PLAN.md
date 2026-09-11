@@ -829,7 +829,7 @@ Current foundation: original city/site/gang imagery is routed, resolved
 equipped-weapon attacks use item-defined `SND005xx` cues, and all nine recovered
 general-effect slots load with proven full local-setup push-button, setup
 selection/rejection, panel,
-pending-report, and countdown triggers. The runtime streams
+incoming-Comlink, and countdown triggers. The runtime streams
 the recovered Track 2 title/setup, Tracks 3-8 gameplay, and Track 9 endgame
 programs with repeat and focus pause/resume, and safely disables music when
 playback cannot start. Its title/in-game Options overlay exposes the recovered

@@ -209,16 +209,16 @@ after that combatant's sequence.
 
 **Interpretation:** Slots 0 and 1 are the Slide Panels entry and exit cues.
 Slot 2 is the general push-button press cue; slots 3 and 4
-are the accepted-selection and rejected-input cues. Slot 6 is the new-report
-alert: the bounded report recorder
-at `0x0045d2f0` plays it when appending a report for the active player, and the
-city/planning entry paths at `0x00462579` and `0x0046fd80` play it when their
-pending-report flag is set. Slot 9 is loaded but has no call site through the
+are the accepted-selection and rejected-input cues. Slot 6 is the incoming
+Comlink alert: the bounded Comlink recorder at `0x0045d2f0` plays it when
+appending a message for the active player, and the city/planning entry paths at
+`0x00462579` and `0x0046fd80` play it when their pending-message flag is set.
+Slot 9 is loaded but has no call site through the
 only gated general-effect wrapper in this executable. Music and effects share
 the same numeric conversion but have separate state and enable flags.
 
 **Confidence:** High static evidence for slot/resource mapping, panel entry/exit gating, push-button,
-full/compact setup selection, and report-alert roles, the lack of a slot-9 wrapper call site, scale, enable
+full/compact setup selection, and Comlink-alert roles, the lack of a slot-9 wrapper call site, scale, enable
 boundary, initialized levels, and channel values; High manual evidence for the
 independent controls. Other slot semantics remain partially classified.
 
@@ -229,8 +229,8 @@ use slot 3, and a rejected player-count boundary additionally uses slot 4. The
 four setup controls defer their action until release inside the originally
 pressed rectangle and cancel a release outside. Their held-inside state uses
 the exact four source rectangles from `PX00140`, while leaving the rectangle
-restores the baked `PX00143` control. A human handoff
-with pending Last Turn Events plays slot 6 once before opening the report panel.
+restores the baked `PX00143` control. A human handoff into an unread Comlink
+inbox plays slot 6 once before entering the planning UI.
 Every routed panel transition plays the recovered slot-0/slot-1 entry and exit
 cues while Slide Panels is enabled; nested panel transitions close the old
 panel and open the new one. The idle-gang confirmation follows the same

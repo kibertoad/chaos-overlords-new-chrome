@@ -209,9 +209,8 @@ statically identified slot 3 accepted-input and slot 4 rejected-input cues,
 while full local-setup push buttons use slot 2; an invalid pointer-driven player
 count change follows its press cue with slot 4. The four setup push controls
 retain the pressed identity and act only on release inside that same recovered
-rectangle. Panel confirmation uses slots
-0/1, a handoff with pending Last Turn Events uses
-slot 6, and the planning countdown uses slots 7/8. Slot 9 is loaded by the
+rectangle. Panel confirmation uses slots 0/1, a handoff into an unread Comlink
+inbox uses slot 6, and the planning countdown uses slots 7/8. Slot 9 is loaded by the
 original but has no gated-wrapper call site. None of these routes feeds playback
 state or timing back into the simulation.
 `SoundtrackCatalog` discovers the extracted `Track02`-`Track09` Ogg files and

@@ -9,7 +9,7 @@ public static class GeneralSoundSlot
     public const int ButtonPress = 2;
     public const int AcceptedSelection = 3;
     public const int RejectedInput = 4;
-    public const int ReportAlert = 6;
+    public const int IncomingMessageAlert = 6;
     public const int CountdownWarning = 7;
     public const int FinalSecondWarning = 8;
     public const int LoadedWithoutCallSite = 9;
@@ -32,7 +32,7 @@ public static class AudioRouting
             [GeneralSoundSlot.ButtonPress] = 202,
             [GeneralSoundSlot.AcceptedSelection] = 203,
             [GeneralSoundSlot.RejectedInput] = 204,
-            [GeneralSoundSlot.ReportAlert] = 205,
+            [GeneralSoundSlot.IncomingMessageAlert] = 205,
             [GeneralSoundSlot.CountdownWarning] = 206,
             [GeneralSoundSlot.FinalSecondWarning] = 207,
             [GeneralSoundSlot.LoadedWithoutCallSite] = 208
@@ -47,6 +47,9 @@ public static class AudioRouting
             : changed
                 ? GeneralSoundSlot.AcceptedSelection
                 : GeneralSoundSlot.RejectedInput;
+
+    public static int? IncomingMessageSound(bool hasUnread) =>
+        hasUnread ? GeneralSoundSlot.IncomingMessageAlert : null;
 
     public static short? CombatSound(MatchState state, GameEvent gameEvent)
     {
