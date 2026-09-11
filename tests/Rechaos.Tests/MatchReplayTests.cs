@@ -46,6 +46,11 @@ public sealed class MatchReplayTests
     {
         var recorder = new MatchReplayRecorder(CreateMatch());
         recorder.FinishUpkeep();
+        FinishCommands(recorder);
+        while (recorder.State.Coordinator.Phase == TurnPhase.Execution)
+            recorder.FinishExecutionPhase();
+        FinishHireAndElimination(recorder);
+        recorder.FinishUpkeep();
         Assert.True(recorder.TryDismissNotification(new PlayerId(0), out var notification));
         Assert.Equal(GameNotificationKind.Economy, notification!.Kind);
         Assert.True(recorder.Submit(new GameCommand(
@@ -71,7 +76,7 @@ public sealed class MatchReplayTests
             JsonSerializer.Serialize(recorder.State.Events),
             JsonSerializer.Serialize(restored.Events));
         Assert.Equal(recorder.State.PhaseHashes, restored.PhaseHashes);
-        Assert.Equal(16, recorder.Steps.Count);
+        Assert.Equal(28, recorder.Steps.Count);
     }
 
     [Fact]

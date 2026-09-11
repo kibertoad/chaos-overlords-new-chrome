@@ -404,8 +404,9 @@ Overthrow statistics so phase hashes cannot observe a partially captured sector.
 The binary owner-write inventory also makes ownership independent of garrison:
 moving or terminating the last friendly gang does not neutralize the sector.
 
-`MatchState.FinishUpkeep` resolves every active player in stable player-ID order
-before entering Command. Each result separates flat sector tax, influenced-site
+`MatchState.FinishUpkeep` preserves setup cash on turn one, matching the
+executable's guarded first outer-loop pass. On later turns it resolves every
+active player in stable player-ID order before entering Command. Each result separates flat sector tax, influenced-site
 cash, and active-gang upkeep so reference fixtures can locate the first differing
 component. The original combines tax and site Cash into one recomputed sector
 byte; `SectorIncomeResolver` derives that same operational Income for Upkeep,

@@ -503,7 +503,7 @@ public sealed partial class MatchState
         }
         CrackdownResolver.ResolveUpkeep(this);
         ToleranceResolver.ResolveUpkeep(this);
-        LastUpkeepResolutions = EconomyResolver.ResolveUpkeep(this);
+        LastUpkeepResolutions = Coordinator.Turn == 1 ? [] : EconomyResolver.ResolveUpkeep(this);
         return CaptureBoundary(Coordinator.FinishUpkeep());
     }
     public TurnTransition FinishCommand(PlayerId player)

@@ -625,7 +625,8 @@ claim about original-game behavior.
   while the executable's Snitch resolver contains no debt gate.
 - Interpretation: for each active player in stable ID order, add flat
   controlled-sector tax and influenced-site cash, then subtract active-gang upkeep, with
-  checked integer arithmetic. Runtime affordability rejects equipment and
+  checked integer arithmetic on turns after the initial planning turn. The
+  first outer-loop pass skips collection entirely. Runtime affordability rejects equipment and
   Bribe; Snitch remains free and executable in debt. Hiring permits a zero-cost
   gang even while the balance is negative.
   The same recomputed byte is the sector Income shown in the city UI and used
@@ -640,8 +641,8 @@ claim about original-game behavior.
   `MatchState.FinishUpkeep`; `FinanceProjection` previews the same component
   classes and mirrors the recovered last-slot payout overwrite for multi-item
   Sell.
-- Tests: `EconomyResolutionTests` covers component accounting, persistent debt,
-  eliminated players, ordered events/notifications, and deterministic phase
+- Tests: `EconomyResolutionTests` covers the initial skip, component accounting,
+  persistent debt, eliminated players, ordered events/notifications, and deterministic phase
   hashes. Command, transaction, and hire tests cover debt restrictions.
 - Next experiment: prepare saves around zero projected cash with controlled
   combinations of sectors, positive/negative sites, and gangs, then compare

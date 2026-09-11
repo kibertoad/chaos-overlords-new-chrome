@@ -2564,7 +2564,9 @@ AI selector case 6 in `0x00402d70` returns that same byte, and the whole-turn
 resolver consumes sector Income in both Chaos and Control. Consequently the
 generated 3-7 value is not the playable Control/Chaos value after the first
 pre-planning recomputation; it establishes the sector's base Tolerance before
-the operational byte is replaced.
+the operational byte is replaced. Because the first pass skips the entire cash
+collection branch, players enter their initial planning turn with setup cash
+unchanged; recurring Upkeep begins on the next outer-loop iteration.
 
 **Confidence:** High static evidence for arrays, offsets, initial skip,
 recomputation/write-back, UI and AI consumers, player/gang/sector scan order,

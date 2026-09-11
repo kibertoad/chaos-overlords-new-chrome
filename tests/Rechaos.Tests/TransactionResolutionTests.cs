@@ -48,7 +48,7 @@ public sealed class TransactionResolutionTests
         match.FinishExecutionPhase();
 
         Assert.Null(match.FindGang(new GangId(10))!.WeaponItemId);
-        Assert.True(cashBefore < 0);
+        Assert.True(cashBefore < data.Items[item].Cost);
         Assert.Equal(cashBefore, match.Players[0].Cash);
         Assert.Equal(CommandResolutionCode.InsufficientCash, Assert.Single(match.LastPhaseResolutions).Code);
         Assert.Equal(GameEventKind.CommandFailed, match.LastPhaseResolutions[0].Event!.Kind);

@@ -39,7 +39,7 @@ public sealed partial class NativeSaveSerializerTests
     public void CurrentSaveRejectsInvalidNotificationShape()
     {
         var match = CreateMatch();
-        match.FinishUpkeep();
+        ResolveSecondUpkeep(match);
         using var current = new MemoryStream();
         NativeSaveSerializer.Save(current, match);
         var document = JsonNode.Parse(current.ToArray())!.AsObject();
@@ -154,7 +154,7 @@ public sealed partial class NativeSaveSerializerTests
     public void CurrentSaveRejectsNoncontiguousEventHistory()
     {
         var match = CreateMatch();
-        match.FinishUpkeep();
+        ResolveSecondUpkeep(match);
         using var current = new MemoryStream();
         NativeSaveSerializer.Save(current, match);
         var document = JsonNode.Parse(current.ToArray())!.AsObject();
@@ -173,7 +173,7 @@ public sealed partial class NativeSaveSerializerTests
     public void LegacySaveRejectsEventKindWithMismatchedDetails()
     {
         var match = CreateMatch();
-        match.FinishUpkeep();
+        ResolveSecondUpkeep(match);
         using var current = new MemoryStream();
         NativeSaveSerializer.Save(current, match);
         var document = JsonNode.Parse(current.ToArray())!.AsObject();
@@ -195,7 +195,7 @@ public sealed partial class NativeSaveSerializerTests
     public void CurrentSaveRejectsModifiedEventHistory(bool nestedResolution)
     {
         var match = CreateMatch();
-        match.FinishUpkeep();
+        ResolveSecondUpkeep(match);
         using var current = new MemoryStream();
         NativeSaveSerializer.Save(current, match);
         var document = JsonNode.Parse(current.ToArray())!.AsObject();
@@ -232,6 +232,16 @@ public sealed partial class NativeSaveSerializerTests
         Assert.Equal(
             MatchStateHasher.ComputeVersionTwentyTwoSha256(match),
             MatchStateHasher.ComputeVersionTwentyTwoSha256(restored));
+    }
+
+    private static void ResolveSecondUpkeep(MatchState match)
+    {
+        match.FinishUpkeep();
+        foreach (var player in match.Players) match.FinishCommand(player.Id);
+        while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
+        foreach (var player in match.Players) match.FinishHire(player.Id);
+        match.FinishPlayerElimination();
+        match.FinishUpkeep();
     }
 
     [Theory]

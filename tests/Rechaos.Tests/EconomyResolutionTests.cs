@@ -7,9 +7,24 @@ namespace Rechaos.Tests;
 public sealed class EconomyResolutionTests
 {
     [Fact]
+    public void FirstTurnSkipsEconomyBeforeInitialPlanning()
+    {
+        var match = CreateMatch(playerZeroCash: 20);
+
+        match.FinishUpkeep();
+
+        Assert.Equal(20, match.Players[0].Cash);
+        Assert.Empty(match.LastUpkeepResolutions);
+        Assert.Empty(match.Events);
+        Assert.Equal(TurnPhase.Command, match.Coordinator.Phase);
+        Assert.Single(match.PhaseHashes);
+    }
+
+    [Fact]
     public void UpkeepCombinesSectorSiteAndGangEconomyForEveryPlayer()
     {
         var match = CreateMatch(playerZeroCash: 20);
+        AdvanceToSecondUpkeep(match);
 
         match.FinishUpkeep();
 
@@ -29,13 +44,14 @@ public sealed class EconomyResolutionTests
         Assert.All(match.Events, item => Assert.Equal(GameEventKind.UpkeepResolved, item.Kind));
         Assert.Equal(2, match.NotificationsFor(new PlayerId(0)).Count + match.NotificationsFor(new PlayerId(1)).Count);
         Assert.Equal(TurnPhase.Command, match.Coordinator.Phase);
-        Assert.Single(match.PhaseHashes);
+        Assert.Equal(2, match.PhaseHashes.Count);
     }
 
     [Fact]
     public void NegativeProjectedCashPersistsAndRecordsDebt()
     {
         var match = CreateMatch(playerZeroCash: 0);
+        AdvanceToSecondUpkeep(match);
 
         match.FinishUpkeep();
 
@@ -44,6 +60,7 @@ public sealed class EconomyResolutionTests
         Assert.False(details.IsInDebt);
 
         var noIncomeMatch = CreateMatch(playerZeroCash: 1, playerZeroOwnsSectors: false, playerZeroInfluencesSite: false);
+        AdvanceToSecondUpkeep(noIncomeMatch);
         noIncomeMatch.FinishUpkeep();
         var debt = noIncomeMatch.LastUpkeepResolutions[0].Details;
         Assert.Equal(-2, debt.ResultCash);
@@ -56,6 +73,7 @@ public sealed class EconomyResolutionTests
     {
         var match = CreateMatch(playerZeroCash: 20, eliminatePlayerOne: true);
         var before = match.Players[1].Cash;
+        AdvanceToSecondUpkeep(match);
 
         match.FinishUpkeep();
 
@@ -69,6 +87,8 @@ public sealed class EconomyResolutionTests
     {
         var first = CreateMatch(20);
         var second = CreateMatch(20);
+        AdvanceToSecondUpkeep(first);
+        AdvanceToSecondUpkeep(second);
 
         first.FinishUpkeep();
         second.FinishUpkeep();
@@ -89,6 +109,7 @@ public sealed class EconomyResolutionTests
         Assert.Equal(before, MatchStateHasher.ComputeSha256(match));
         Assert.Equal(new EconomyForecast(20, 2, 5, 3, 24), forecast);
 
+        AdvanceToSecondUpkeep(match);
         match.FinishUpkeep();
         var resolved = match.LastUpkeepResolutions[0].Details;
         Assert.Equal(forecast.CurrentCash, resolved.PreviousCash);
@@ -107,6 +128,15 @@ public sealed class EconomyResolutionTests
         Assert.Equal(6, SectorIncomeResolver.OperationalIncome(match, match.Sectors[0]));
         Assert.Equal(7, match.Sectors[1].Income);
         Assert.Equal(1, SectorIncomeResolver.OperationalIncome(match, match.Sectors[1]));
+    }
+
+    private static void AdvanceToSecondUpkeep(MatchState match)
+    {
+        match.FinishUpkeep();
+        foreach (var player in match.Players) match.Coordinator.FinishCommand(player.Id);
+        foreach (var _ in TurnStructure.ExecutionOrder) match.Coordinator.FinishExecutionPhase();
+        foreach (var player in match.Players) match.Coordinator.FinishHire(player.Id);
+        match.Coordinator.FinishPlayerElimination();
     }
 
     private static MatchState CreateMatch(
