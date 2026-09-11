@@ -12,6 +12,8 @@ public static class MatchLimits
     public const int FriendlyGangsPerSector = 6;
     public const int ItemSlots = 64;
     public const int HireOffersPerPlayer = 3;
+    public const int ComlinkMessagesPerPlayer = 16;
+    public const int ComlinkMessageCharacters = 160;
     // Recreation-internal mechanical queue. The original's separate Comlink
     // message queue retained 16 entries; it did not cap Last Turn Events.
     public const int NotificationsPerPlayer = 64;
