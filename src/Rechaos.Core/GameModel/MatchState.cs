@@ -424,12 +424,10 @@ public sealed partial class MatchState
     private void RestoreRuntime(MatchRuntimeRestore restore)
     {
         ArgumentNullException.ThrowIfNull(restore);
-        if (restore.NextEventSequence < 0
-            || restore.Events.Any(gameEvent => gameEvent.Sequence < 0 || gameEvent.Sequence >= restore.NextEventSequence)
-            || restore.Events.Select(gameEvent => gameEvent.Sequence).Distinct().Count() != restore.Events.Count
-            || !restore.Events.Select(gameEvent => gameEvent.Sequence).SequenceEqual(
-                restore.Events.Select(gameEvent => gameEvent.Sequence).Order()))
-            throw new ArgumentException("Restored event sequences are invalid.", nameof(restore));
+        if (restore.NextEventSequence != restore.Events.Count
+            || restore.Events.Where((gameEvent, index) => gameEvent.Sequence != index).Any()
+            || restore.Events.Any(gameEvent => !GameEventValidator.IsStructurallyValid(gameEvent)))
+            throw new ArgumentException("Restored event history is invalid.", nameof(restore));
         foreach (var queued in restore.Commands)
         {
             var gang = FindGang(queued.Command.Gang);

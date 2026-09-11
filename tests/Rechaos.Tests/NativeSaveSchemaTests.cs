@@ -8,6 +8,45 @@ namespace Rechaos.Tests;
 
 public sealed partial class NativeSaveSerializerTests
 {
+    [Fact]
+    public void CurrentSaveRejectsNoncontiguousEventHistory()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["events"]![1]!["sequence"] = 2;
+        document["runtime"]!["nextEventSequence"] = 3;
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(modified, match.Definitions));
+
+        Assert.Contains("event history is invalid", exception.InnerException!.Message);
+    }
+
+    [Fact]
+    public void LegacySaveRejectsEventKindWithMismatchedDetails()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 19;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionTwentyTwoSha256(match);
+        document["runtime"]!["events"]![0]!["kind"] = (int)GameEventKind.CommandQueued;
+        using var legacy = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(legacy, match.Definitions));
+
+        Assert.Contains("event history is invalid", exception.InnerException!.Message);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

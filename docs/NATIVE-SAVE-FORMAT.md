@@ -89,7 +89,9 @@ ordered event body and nested resolution fact; version 19 remains readable
 through its preserved version-22 hash projection. In memory, appended events
 and their nested collections are exposed read-only and retain an append-only
 cache of those exact canonical bytes; this is an implementation optimization,
-not a schema or digest-format change.
+not a schema or digest-format change. Since the event log is never pruned,
+restore also requires sequences `0..nextEventSequence-1` with no gaps and a
+single kind-appropriate detail payload (or none for queue/cancel facts).
 The appropriate legacy canonical hash is verified before the
 migrated state is returned. Unknown
 versions remain rejected. Starting with 1.0.0, incompatible changes must

@@ -112,3 +112,76 @@ public sealed record GameEvent(
     PoliceAttackResolutionDetails? PoliceAttack = null,
     BigManPointDetails? BigManPoints = null,
     MatchOutcomeDetails? MatchOutcome = null);
+
+internal static class GameEventValidator
+{
+    public static bool IsStructurallyValid(GameEvent value)
+    {
+        if (value.Turn < 1
+            || !Enum.IsDefined(value.Phase)
+            || !Enum.IsDefined(value.Kind)
+            || !Enum.IsDefined(value.Action)
+            || value.ExecutionPhase is { } executionPhase && !Enum.IsDefined(executionPhase)
+            || (value.Phase == TurnPhase.Execution) != value.ExecutionPhase.HasValue
+            || !IsValidTarget(value.Target)
+            || !IsValidTarget(value.SecondaryTarget)
+            || !IsValidTarget(value.TertiaryTarget)
+            || !IsValidTarget(value.QuaternaryTarget)
+            || value.Resolution is { } resolution && !Enum.IsDefined(resolution.Code))
+            return false;
+
+        var detailCount = Convert.ToInt32(value.Resolution is not null)
+            + Convert.ToInt32(value.Economy is not null)
+            + Convert.ToInt32(value.Hire is not null)
+            + Convert.ToInt32(value.HireOffer is not null)
+            + Convert.ToInt32(value.Elimination is not null)
+            + Convert.ToInt32(value.PoliceAttack is not null)
+            + Convert.ToInt32(value.BigManPoints is not null)
+            + Convert.ToInt32(value.MatchOutcome is not null);
+        return value.Kind switch
+        {
+            GameEventKind.CommandQueued or GameEventKind.CommandReplaced =>
+                detailCount == 0 && value.Action != GangAction.None,
+            GameEventKind.CommandCancelled =>
+                detailCount == 0 && value.Action == GangAction.None,
+            GameEventKind.CommandResolved or GameEventKind.CommandFailed =>
+                detailCount == 1 && value.Resolution is not null
+                    && value.Action != GangAction.None,
+            GameEventKind.UpkeepResolved =>
+                detailCount == 1 && value.Economy is not null
+                    && value.Action == GangAction.None,
+            GameEventKind.HireQueued or GameEventKind.HireResolved =>
+                detailCount == 1 && value.Hire is not null
+                    && value.Action == GangAction.None,
+            GameEventKind.HireOfferSnubbed or GameEventKind.HireOfferRefilled =>
+                detailCount == 1 && value.HireOffer is not null
+                    && value.Action == GangAction.None,
+            GameEventKind.PlayerEliminated =>
+                detailCount == 1 && value.Elimination is not null
+                    && value.Action == GangAction.None,
+            GameEventKind.PoliceAttackResolved =>
+                detailCount == 1 && value.PoliceAttack is not null
+                    && value.Action == GangAction.None,
+            GameEventKind.BigManPointsAwarded =>
+                detailCount == 1 && value.BigManPoints is not null
+                    && value.Action == GangAction.None,
+            GameEventKind.MatchEnded =>
+                detailCount == 1 && value.MatchOutcome is { Winners.Count: > 0 }
+                    && value.Action == GangAction.None,
+            _ => false
+        };
+    }
+
+    private static bool IsValidTarget(CommandTarget? value) =>
+        value is null || IsValidTarget(value.Value);
+
+    private static bool IsValidTarget(CommandTarget value) => value.Kind switch
+    {
+        CommandTargetKind.None => value.Id == -1,
+        CommandTargetKind.Gang => value.Id >= 0,
+        CommandTargetKind.Sector => value.Id is >= 0 and < MatchLimits.SectorCount,
+        CommandTargetKind.Site => value.Id is >= 0 and < MatchLimits.SiteCount,
+        CommandTargetKind.Item => value.Id is >= 0 and < MatchLimits.ItemSlots,
+        _ => false
+    };
+}

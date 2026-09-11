@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,343 tests; its offline restore emitted
+  isolated Release build passed all 1,345 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -376,7 +376,9 @@ Last updated: 2026-09-11
   save v20 and replay v22 retain explicit v19/v21 compatibility projections.
   Event records and their nested collections are frozen on append, while their
   exact canonical bytes are append-cached so repeated boundary hashes do not
-  re-encode the complete prior history.
+  re-encode the complete prior history. Restore requires the unpruned log's
+  exact contiguous sequence and rejects event kinds whose attached detail
+  payload does not match, including under legacy pre-event-body hashes.
 - Move now uses the original `PX05006` Movement panel. Its destination aperture
   is an exact 3-by-3 composition of the city map's native 54-by-52 ownership
   tiles around the acting gang, with mouse and directional-key selection limited
