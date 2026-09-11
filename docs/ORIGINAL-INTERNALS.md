@@ -2011,6 +2011,22 @@ gang acts. A gang encountered after completion consumes no Influence RNG.
 per-gang Influence pools, immediate progress mutation, clamping, and the
 completion guard. Runtime seed correlation remains pending.
 
+### BIN-RESEARCH-001 - same-phase completion suppresses later rolls
+
+**Observation:** Case 11 in the Instant switch at `0x00472775`, lines 186-208,
+reads the player's remaining value for the selected item and enters the dice
+calculation only while that value is nonzero. A successful gang subtracts its
+successes immediately and clamps the value at zero before the fixed roster scan
+continues.
+
+**Interpretation:** Multiple gangs may queue Research for the same item, but an
+earlier player/roster-slot completion suppresses every later roll for that item
+in the same Instant phase. Submission order cannot change which gang consumes
+the final research roll or the following RNG state.
+
+**Confidence:** High static evidence for the remaining-value guard, immediate
+mutation, zero clamp, and its placement within the player/roster scan.
+
 ### BIN-BRIBE-001 - shipped three-dollar cost and direct tolerance delta
 
 **Observation:** Case 2 in the Instant switch at `0x00472775`, lines 114-127,

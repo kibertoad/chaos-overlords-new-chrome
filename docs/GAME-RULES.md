@@ -157,20 +157,21 @@ controlled reference observation confirms its execution timing and edge cases.
   Center raises it to 8 and a Research Lab to 10. A sector must be controlled
   before its sites can be influenced, and authoritative match state rejects an
   influencer who is not the current sector owner.
-- Current exclusions: the exact behavior of zero-difficulty items and binary
+- Current exclusions: the exact behavior of zero-difficulty items and runtime
   confirmation of special-site timing.
-- Confidence: High for the manual formula and completion threshold; Medium for
-  equipment aggregation and repeat-command rejection; High for the recovered
-  RNG step/range wrapper; Low for initial seed and complete RNG call order.
+- Confidence: High for the formula, completion threshold, fixed roster order,
+  and suppression of later rolls after same-phase completion; Medium for
+  equipment aggregation and repeat-command rejection; Low for initial seed and
+  complete RNG call order.
 - Implementation: `MatchPlayerState.RemainingResearch`,
   `MatchPlayerState.ApplyResearch`, `ManualRules.ResearchDiceCount`, and
   `CommandResolver.ResolveResearch`; `SpecialSiteRules.ResearchTechLimit`
   enforces the gang/site ceiling during validation. Instant resolution snapshots
   effective statistics before any same-phase Influence acquisition.
 - Tests: `ResearchResolutionTests` covers effective dice count, recorded rolls,
-  progress, completion, repeat rejection, state invariants, RNG consumption,
-  notifications, deterministic phase hashes, and a newly influenced Science
-  Center not changing a concurrent Research pool.
+  progress, completion, later-roster roll suppression, repeat rejection, state
+  invariants, RNG consumption, notifications, deterministic phase hashes, and a
+  newly influenced Science Center not changing a concurrent Research pool.
 - Next experiment: execute Research from identical saves across gang/item/site
   modifiers, tech-level boundaries, and near-completion values, then compare
   rolls, unlock state, repeat behavior, and save deltas.

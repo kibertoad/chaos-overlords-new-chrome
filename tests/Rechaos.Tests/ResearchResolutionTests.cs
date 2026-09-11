@@ -58,6 +58,39 @@ public sealed class ResearchResolutionTests
     }
 
     [Fact]
+    public void LaterResearchSkipsRollAfterEarlierRosterSlotCompletesItem()
+    {
+        var data = BundledOriginalData.Load();
+        var item = ResearchableItem(data);
+        var match = CreateMatch(
+            researchProgress: new Dictionary<short, int> { [item] = 1 },
+            includeSecondResearchGang: true);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(11), GangAction.Research,
+            CommandTarget.Item(item))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Research,
+            CommandTarget.Item(item))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal([new GangId(10), new GangId(11)],
+            match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
+        var first = match.LastPhaseResolutions[0].Event!.Resolution!;
+        var second = match.LastPhaseResolutions[1].Event!.Resolution!;
+        Assert.True(first.Successes > 0);
+        Assert.NotEmpty(first.Rolls);
+        Assert.Empty(second.Rolls);
+        Assert.Equal(0, second.Successes);
+        Assert.Equal(0, second.PreviousValue);
+        Assert.Equal(0, second.ResultValue);
+        Assert.Equal(first.Rolls.Count * 3, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void CompletedItemCannotBeQueuedForResearchAgain()
     {
         var data = BundledOriginalData.Load();

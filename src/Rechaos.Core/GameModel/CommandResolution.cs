@@ -833,6 +833,14 @@ public static partial class CommandResolver
         var gang = state.FindGang(command.Gang)!;
         var player = state.FindPlayer(command.Player)!;
         var itemIndex = checked((short)command.Target.Id);
+        var before = player.RemainingResearch(state.Definitions, itemIndex);
+        if (before == 0)
+        {
+            return Complete(state, command, GameEventKind.CommandResolved,
+                new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, 0, 0),
+                GameNotificationKind.Research);
+        }
+
         var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var pool = OriginalResolutionRules.ActionPool(
@@ -841,7 +849,6 @@ public static partial class CommandResolver
         var rolls = DiceRoller.RollD6(state.Random, pool);
         var successes = OriginalResolutionRules.CountSuccesses(
             rolls, OriginalResolutionRules.SuccessThreshold(band, GangAction.Research));
-        var before = player.RemainingResearch(state.Definitions, itemIndex);
         var after = player.ApplyResearch(state.Definitions, itemIndex, successes);
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, rolls, successes, before, after),

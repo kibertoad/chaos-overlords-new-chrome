@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,148 tests with no warnings.
+  isolated Release build passed all 1,149 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -174,6 +174,9 @@ Last updated: 2026-09-11
 - Snitch likewise follows the resolver: it subtracts 3 even in debt, then one
   global post-Instant pass floors every sector at tolerance 1. This replaces the
   provisional per-command zero floor and negative-tolerance automatic Crackdown.
+- Research now honors the resolver's per-item completion guard inside the fixed
+  player/roster scan: once an earlier gang completes an item, later queued gangs
+  emit no roll and consume no RNG for it in that Instant phase.
 - Control conflicts now use one phase-opening owner and defense snapshot for all
   player groups in a sector. The binary-recovered candidate list chooses equal
   positive leaders randomly in ascending player-slot order; at zero margin it
