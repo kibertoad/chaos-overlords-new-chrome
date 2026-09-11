@@ -99,6 +99,17 @@ internal sealed class MultiplayerUiState
     /// <summary>The last thing that went wrong, for the player to read.</summary>
     internal string Status { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Whether building this match from the server's description failed.
+    /// </summary>
+    /// <remarks>
+    /// Sticky, because the lobby keeps being re-read while it is on screen and the answer will not
+    /// change: a seed, roster or settings blob this build cannot make a city from is the same one a
+    /// second later. Without it the player watches the same refusal reappear every second with no way
+    /// to tell whether anything is being attempted.
+    /// </remarks>
+    internal bool BootstrapFailed { get; set; }
+
     /// <summary>Forgets everything a finished match leaves behind, so nothing outlives it.</summary>
     internal void Reset()
     {
@@ -113,6 +124,7 @@ internal sealed class MultiplayerUiState
         IsConnected = true;
         SentOpCount = 0;
         DraftDue = TimeSpan.Zero;
+        BootstrapFailed = false;
         Password.Set(string.Empty);
         JoinCode.Set(string.Empty);
     }

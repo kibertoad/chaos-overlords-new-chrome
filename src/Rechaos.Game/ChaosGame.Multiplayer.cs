@@ -217,9 +217,10 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void StartOnlineMatch(MatchView view)
     {
-        if (_session is not null || _lobby?.Handle is null) return;
+        if (_session is not null || _online.BootstrapFailed || _lobby?.Handle is null) return;
         if (_definitions is null)
         {
+            _online.BootstrapFailed = true;
             _online.Status = "THE GAME'S DATA FILES ARE NOT LOADED";
             return;
         }
@@ -231,7 +232,15 @@ public sealed partial class ChaosGame
         catch (Exception exception) when (exception is MultiplayerProtocolException
             or ArgumentOutOfRangeException or InvalidOperationException)
         {
+            // Terminal for this client, and said once. The lobby is re-read every second while it is
+            // on screen, and a seed or settings blob this build cannot build a city from will be the
+            // same one a second later; all retrying would do is overwrite the explanation with itself.
+            _online.BootstrapFailed = true;
             _online.Status = $"COULD NOT START THE MATCH  {exception.Message.ToUpperInvariant()}";
+            _diagnostics?.Write("multiplayer.bootstrap.failed", new Dictionary<string, string?>
+            {
+                ["error"] = exception.ToString(),
+            });
             return;
         }
         _online.Match = view;
