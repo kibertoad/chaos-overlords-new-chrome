@@ -10,6 +10,11 @@ public sealed partial class ChaosGame
 {
     private void UpdateSector(KeyboardState keyboard)
     {
+        if (_idleGangWarningOpen)
+        {
+            UpdateIdleGangWarning(keyboard);
+            return;
+        }
         var column = _cursor % 8;
         var row = _cursor / 8;
         if (Pressed(keyboard, Keys.Left) && column > 0) _cursor--;
@@ -22,6 +27,11 @@ public sealed partial class ChaosGame
 
     private void HandleSectorClick(Point point)
     {
+        if (_idleGangWarningOpen)
+        {
+            HandleIdleGangWarningClick(point);
+            return;
+        }
         if (SectorDetailLayout.Back.Contains(point) || ManagementBack.Contains(point))
         {
             _screens.Show(ClientScreen.City);
@@ -98,11 +108,13 @@ public sealed partial class ChaosGame
         {
             var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
             var portrait = SectorDetailLayout.SitePortrait(site.Slot);
+            var controlOwner = SectorDetailLayout.SiteControlOwner(
+                site.InfluencedBy, sector.Owner, site.Resistance);
             if (_sitePortraits is not null)
                 batch.Draw(_sitePortraits, portrait,
                     OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
             DrawBorder(batch, pixel, portrait,
-                site.InfluencedBy is { } influencedBy ? PlayerColors[influencedBy.Value] : Color.Gray, 1);
+                controlOwner is { } influencedBy ? PlayerColors[influencedBy.Value] : Color.Gray, 1);
             var control = SectorDetailLayout.SiteControlBar(site.Slot);
             batch.Draw(pixel, control, Color.Red);
             var controlled = definition.Resistance == 0
@@ -112,7 +124,7 @@ public sealed partial class ChaosGame
                     / (double)definition.Resistance);
             if (controlled > 0)
                 batch.Draw(pixel, new Rectangle(control.X, control.Y, controlled, control.Height),
-                    SectorDetailLayout.SiteControlColor(site.InfluencedBy, viewer));
+                    SectorDetailLayout.SiteControlColor(controlOwner, viewer));
         }
         var visibleGangs = SectorGangView.Visible(state, viewer, sector.Id)
             .OrderBy(gang => gang.Owner == viewer ? 0 : 1)
@@ -127,6 +139,7 @@ public sealed partial class ChaosGame
         DrawQueuedCommandTargetHighlight(batch, pixel, visibleGangs);
         DrawGangMoveDrag(batch, pixel, state);
         DrawSectorHireDrag(batch, pixel, state);
+        if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
     }
 
     private void DrawQueuedCommandTargetHighlight(

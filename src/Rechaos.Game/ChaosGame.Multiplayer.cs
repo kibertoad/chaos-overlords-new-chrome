@@ -10,13 +10,6 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private static readonly Rectangle OnlineServerField = new(120, 116, 400, 22);
-    private static readonly Rectangle OnlineNameField = new(120, 150, 400, 22);
-    private static readonly Rectangle OnlineJoinCodeField = new(120, 184, 400, 22);
-    private static readonly Rectangle OnlinePasswordField = new(120, 218, 400, 22);
-    private static readonly Rectangle OnlineHost = new(120, 252, 124, 30);
-    private static readonly Rectangle OnlineJoin = new(258, 252, 124, 30);
-    private static readonly Rectangle OnlineBack = new(396, 252, 124, 30);
     private static readonly Rectangle LobbyStart = new(160, 372, 148, 32);
     private static readonly Rectangle LobbyLeave = new(332, 372, 148, 32);
 
@@ -46,7 +39,7 @@ public sealed partial class ChaosGame
     {
         if (_session is not null) return;
         _online.Stage = MultiplayerStage.Connect;
-        _online.Status = "HOST A MATCH OR JOIN ONE BY CODE";
+        _online.Status = string.Empty;
         _online.Server.IsFocused = true;
         _screens.Show(ClientScreen.Online);
     }
@@ -88,10 +81,10 @@ public sealed partial class ChaosGame
     {
         (Rectangle Bounds, TextField Field)[] hits =
         [
-            (OnlineServerField, _online.Server),
-            (OnlineNameField, _online.DisplayName),
-            (OnlineJoinCodeField, _online.JoinCode),
-            (OnlinePasswordField, _online.Password),
+            (OnlineConnectLayout.Server, _online.Server),
+            (OnlineConnectLayout.Name, _online.DisplayName),
+            (OnlineConnectLayout.JoinCode, _online.JoinCode),
+            (OnlineConnectLayout.Password, _online.Password),
         ];
         if (!Array.Exists(hits, hit => hit.Bounds.Contains(point))) return;
         foreach (var (bounds, field) in hits) field.IsFocused = bounds.Contains(point);
@@ -566,9 +559,9 @@ public sealed partial class ChaosGame
     {
         FocusOnlineField(point);
         if (_online.Stage == MultiplayerStage.Busy) return;
-        if (OnlineHost.Contains(point)) BeginHost();
-        else if (OnlineJoin.Contains(point)) BeginJoin();
-        else if (OnlineBack.Contains(point)) EndOnlineMatch("HOST A MATCH OR JOIN ONE BY CODE");
+        if (OnlineConnectLayout.Host.Contains(point)) BeginHost();
+        else if (OnlineConnectLayout.Join.Contains(point)) BeginJoin();
+        else if (OnlineConnectLayout.Back.Contains(point)) EndOnlineMatch(string.Empty);
     }
 
     private void HandleLobbyClick(Point point)

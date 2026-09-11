@@ -160,6 +160,11 @@ public sealed partial class ChaosGame
             DrawSectorDetails(batch, pixel, font, state);
         else
             DrawBoard(batch, pixel, font, state);
+        DrawRankingPanel(batch, pixel, font, state);
+    }
+
+    private void DrawRankingPanel(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
         if (_rankingBackground is not null)
             batch.Draw(_rankingBackground, PlayerRankingLayout.Panel, Color.White);
         else

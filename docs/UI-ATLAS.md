@@ -289,7 +289,10 @@ Each detailed-sector building has a red control track filled green in proportion
 to reduced resistance; the starting Headquarters is fully green while neutral
 buildings begin red. A building already influenced by an opponent uses purple
 instead of green for its completed control track, while its portrait border
-continues to identify the influencing player's color.
+continues to identify the influencing player's color. This purple fill is a
+deliberate recreation readability improvement, not an original rendering claim.
+Because the starting Headquarters has zero resistance but no explicit site
+influencer, its display inherits the sector owner before choosing the fill.
 
 `PX05016` is the original 344-by-209 `GANGS FOR HIRE` comparison panel. The
 Hire console button overlays it on the live city, with three 32-by-32 gang
@@ -350,15 +353,24 @@ by mouse or directional keys before OK confirms the command.
 `PX05014` is the dedicated live Combat comparison panel rather than a flat
 target list. It identifies the sector, places attacker and defender owner/gang
 art side by side, shows equipment and green/red Force tracks, and reserves the
-mirrored lower-center cells for the recovered attack and hit animations.
+mirrored lower-center cells for the recovered attack and hit animations. The
+map art occupies only the fitted 52-pixel-high part of its sector aperture, with
+the code below it, and its single baked Cancel cell is the active hit target.
 `PX05012` is the separate paged Combat Results panel behind the right-console
-Combat Summary control. It pages the viewer's combat notifications, identifies
-the affected sector, and presents both sides with gang/equipment art and Force
-tracks; police uses the recovered police art. Its Detail control replays the
-selected resolved event through `PX05014`, regardless of the automatic Detailed
-Combat preference. Escape or the panel's Cancel control clears the bounded
-presentation queue without touching match state. At handoff, only visible combat
-from the immediately completed turn is eligible. Last Turn Events opens first
+Combat Summary control. It pages affected sectors in board order rather than
+individual notifications. Each side is a two-by-three force grid backed by the
+original six-entry player/sector result row, while the center column preserves
+all five other players in player-ID order and dims those without a result in the
+current sector. Renderer `0x00453a8d` establishes force-grid local x origins
+103 and 246 at global y 173, with 44-pixel columns and 52-pixel rows; the fixed
+opponent strip begins at local x 202. The sector aperture uses a fitted
+52-pixel map tile with its code beneath. A viewer also sees fights between other players when one of the
+viewer's active gangs occupies that sector. Police uses the recovered police
+art. Its Detail control replays the selected resolved event through `PX05014`,
+regardless of the automatic Detailed Combat preference. Escape or the panel's
+Cancel control clears the bounded presentation queue without touching match
+state. At handoff, only visible combat from the immediately completed turn is
+eligible. Last Turn Events opens first
 when both exist, and Detailed animation capture waits until the handoff/event
 privacy panels have closed. Each hot-seat player has an independent presentation
 cursor, while load/replay initialization suppresses historical autoplay for all
@@ -376,7 +388,8 @@ Completed Research uses the resolved item's dedicated 15-frame, 48-by-48
 `PX04xxx` rotation strip in the `PX06005` monitor. The green monitor frame is
 local `(97,53)` and its exact black 48-by-48 interior is local `(98,54)`, or
 screen `(296,187)` after composition; `PX04999` is only the compact 20-by-20
-inventory icon sheet.
+inventory icon sheet. The original copies the full 48-by-48 frame without
+re-centering its opaque pixels, so item-specific asymmetry is preserved.
 The recreation-only navigation, drag instruction, cancellation and successful
 `... QUEUED` status strings are suppressed. The status line remains available
 for rejections and genuine failures that explain why an operation could not be

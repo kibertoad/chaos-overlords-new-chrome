@@ -38,6 +38,11 @@ public sealed partial class ChaosGame
     private void DrawHire(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         DrawBoard(batch, pixel, font, state);
+        DrawHirePanel(batch, pixel, font, state);
+    }
+
+    private void DrawHirePanel(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
+    {
         if (_hireComparisonBackground is not null)
             batch.Draw(_hireComparisonBackground, HireComparisonLayout.Panel, Color.White);
         else

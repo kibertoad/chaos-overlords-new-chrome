@@ -130,6 +130,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _hireCursor;
     private int _itemCursor;
     private int _combatSummaryCursor;
+    private long _combatSummaryEventSequence = -1;
+    private PlayerId? _combatSummaryOpponent;
     private bool _openCombatAfterEvents;
     private int _eventCursor;
     private readonly HashSet<int> _eventViewedPages = [];
@@ -327,7 +329,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         SendOnlineDraft(gameTime);
         var rightClicked = PointerButtonEdges.Pressed(
             mouse.RightButton, _previousMouse.RightButton);
-        if (Pressed(keyboard, Keys.F11)) ToggleFullscreen();
+        var altEnter = Pressed(keyboard, Keys.Enter)
+            && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
+        if (Pressed(keyboard, Keys.F11) || altEnter) ToggleFullscreen();
+        if (altEnter)
+        {
+            _previousKeyboard = keyboard;
+            _previousMouse = mouse;
+            base.Update(gameTime);
+            return;
+        }
         if (UpdatePlanningTimer(gameTime.TotalGameTime))
         {
             _previousKeyboard = keyboard;
@@ -641,6 +652,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 DrawCombatPanel(_batch, _pixel, _font, _state);
             DrawPlanningTimer(_batch, _pixel);
             _batch.End();
+            base.Draw(gameTime);
+            return;
+        }
+        if (DrawSeparatedSlidingPanel(viewport, slideOffset))
+        {
             base.Draw(gameTime);
             return;
         }

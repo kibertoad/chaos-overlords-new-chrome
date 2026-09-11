@@ -408,14 +408,26 @@ public static class SectorDetailLayout
         influencedBy is { } owner && owner != viewer
             ? new Color(190, 0, 220)
             : Color.Lime;
+
+    public static PlayerId? SiteControlOwner(
+        PlayerId? influencedBy,
+        PlayerId? sectorOwner,
+        int resistance)
+    {
+        if (resistance < 0) throw new ArgumentOutOfRangeException(nameof(resistance));
+        return influencedBy ?? (resistance == 0 ? sectorOwner : null);
+    }
 }
 
 public static class SectorGangCardLayout
 {
-    public const int VisibleCards = 2;
+    public const int Columns = 2;
+    public const int Rows = 3;
+    public const int VisibleCards = Columns * Rows;
     public const int Left = 251;
     public const int Top = 80;
-    public const int Stride = 74;
+    public const int ColumnStride = 74;
+    public const int RowStride = 110;
 
     public static Rectangle Frame(int slot) => At(slot, 0, 0, 70, 110);
     public static Rectangle ForceBar(int slot) => At(slot, 3, 2, 64, 3);
@@ -432,7 +444,11 @@ public static class SectorGangCardLayout
     private static Rectangle At(int slot, int x, int y, int width, int height)
     {
         if (slot is < 0 or >= VisibleCards) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(Left + slot * Stride + x, Top + y, width, height);
+        return new Rectangle(
+            Left + slot % Columns * ColumnStride + x,
+            Top + slot / Columns * RowStride + y,
+            width,
+            height);
     }
 }
 
@@ -451,7 +467,7 @@ public static class CommandOverlayLayout
     public static Rectangle ActionRow(int index)
     {
         if (index < 0 || index >= Actions.Count) throw new ArgumentOutOfRangeException(nameof(index));
-        return new Rectangle(256, 61 + index * 24, 158, 22);
+        return new Rectangle(256, 70 + index * 24, 158, 22);
     }
 
     public static Rectangle TargetRow(int index)
@@ -595,51 +611,6 @@ public static class ItemInformationLayout
         4 => "MISC",
         _ => throw new ArgumentOutOfRangeException(nameof(itemType))
     };
-}
-
-public static class CombatPanelLayout
-{
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Sector => new(132, 136, 56, 64);
-    public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
-    public static Rectangle LeftHeader => new(201, 136, 119, 37);
-    public static Rectangle RightHeader => new(324, 136, 119, 37);
-    public static Rectangle LeftWeapon => new(202, 173, 50, 81);
-    public static Rectangle LeftGang => new(253, 173, 67, 81);
-    public static Rectangle LeftEquipment => new(202, 255, 50, 64);
-    public static Rectangle LeftAction => new(253, 255, 67, 64);
-    public static Rectangle RightGang => new(324, 173, 67, 81);
-    public static Rectangle RightWeapon => new(392, 173, 50, 81);
-    public static Rectangle RightAction => new(324, 255, 67, 64);
-    public static Rectangle RightEquipment => new(392, 255, 50, 64);
-
-    public static Rectangle HeaderColor(bool right) => right
-        ? new Rectangle(327, 139, 12, 28)
-        : new Rectangle(204, 139, 12, 28);
-    public static Rectangle HeaderPortrait(bool right) => right
-        ? new Rectangle(342, 139, 32, 32)
-        : new Rectangle(219, 139, 32, 32);
-    public static Rectangle ForceBar(bool right) => right
-        ? new Rectangle(326, 249, 63, 3)
-        : new Rectangle(255, 249, 63, 3);
-}
-
-public static class CombatResultsLayout
-{
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Page => new(133, 136, 58, 12);
-    public static Rectangle Previous => new(135, 152, 25, 20);
-    public static Rectangle Next => new(163, 152, 25, 20);
-    public static Rectangle Sector => new(132, 174, 56, 64);
-    public static Rectangle FriendlyPanel => new(208, 141, 96, 179);
-    public static Rectangle EnemyPanel => new(352, 141, 94, 179);
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static Rectangle Detail => EquipmentCommandLayout.Cancel;
-    public static Rectangle Opponent(int slot)
-    {
-        if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(313, 141 + slot * 37, 32, 32);
-    }
 }
 
 public static class LastTurnEventsLayout

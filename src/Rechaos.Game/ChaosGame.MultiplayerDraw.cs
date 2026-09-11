@@ -11,21 +11,15 @@ public sealed partial class ChaosGame
     private void DrawOnline(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         DrawOnlinePanel(batch, pixel, font, "ONLINE PLAY");
-        DrawField(batch, pixel, font, OnlineServerField, _online.Server);
-        DrawField(batch, pixel, font, OnlineNameField, _online.DisplayName);
-        DrawField(batch, pixel, font, OnlineJoinCodeField, _online.JoinCode);
-        DrawField(batch, pixel, font, OnlinePasswordField, _online.Password);
+        DrawField(batch, pixel, font, OnlineConnectLayout.Server, _online.Server);
+        DrawField(batch, pixel, font, OnlineConnectLayout.Name, _online.DisplayName);
+        DrawField(batch, pixel, font, OnlineConnectLayout.JoinCode, _online.JoinCode);
+        DrawField(batch, pixel, font, OnlineConnectLayout.Password, _online.Password);
         var busy = _online.Stage == MultiplayerStage.Busy;
-        DrawButton(batch, pixel, font, OnlineHost, "HOST", !busy);
-        DrawButton(batch, pixel, font, OnlineJoin, "JOIN", !busy);
-        DrawButton(batch, pixel, font, OnlineBack, "BACK", !busy);
-        var hint = new Color(150, 165, 165);
-        font.Draw(batch, "LEAVE THE CODE EMPTY TO HOST A NEW MATCH", new Vector2(120, 296), hint, 1);
-        font.Draw(batch, "A PASSWORD GATES THE LOBBY  LEAVE IT BLANK FOR NONE", new Vector2(120, 310),
-            hint, 1);
-        font.Draw(batch, "THE SETUP SCREEN'S SCENARIO AND MENTALITY ARE USED", new Vector2(120, 324),
-            hint, 1);
-        DrawCentered(font, batch, _online.Status, 348, Color.Gold, 1);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.Host, "HOST", !busy);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.Join, "JOIN", !busy);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.Back, "BACK", !busy);
+        DrawCentered(font, batch, _online.Status, OnlineConnectLayout.StatusY, Color.Gold, 1);
     }
 
     private void DrawLobby(SpriteBatch batch, Texture2D pixel, PixelFont font)

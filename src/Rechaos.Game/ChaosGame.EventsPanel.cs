@@ -14,6 +14,7 @@ public sealed partial class ChaosGame
             StartPlanningTimer(_inputTime);
             return;
         }
+        PrepareCurrentHireOffers();
         StartPlanningTimer(_inputTime);
         if (AudioRouting.IncomingMessageSound(_state.ComlinkFor(playerId).HasUnread) is { } alert)
             PlayGeneralSound(alert);

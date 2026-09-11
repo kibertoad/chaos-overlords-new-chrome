@@ -223,6 +223,31 @@ screen-specific arrow helper (`0x00451602`, `0x004543ee`, or `0x0045e7ce`),
 which plays slot 3 before drawing the pressed arrow and changing the page.
 There is no first-to-last or last-to-first wrap.
 
+Combat Results is sector-paged rather than event-paged. Handler `0x00451f80`
+scans sector IDs `0..63` and appends qualifying sectors in that order. Its
+table at `0x004a8888` has a `0x96`-byte sector stride and a `0x18`-byte player
+stride: each player row holds six four-byte combat-result pairs. The combat
+resolver at `0x00472775` clears those six entries to `-1`, packs resolved gang
+records into them, and maintains the per-player police flag at `0x004a8918`.
+A sector qualifies when the viewer has a result there or currently occupies it,
+and at least one player has a result. Renderer `0x00453a8d` walks all six row
+entries and lays them out as the two-by-three `YOUR FORCES`/`ENEMY FORCES`
+grids. Its callers at `0x0045351e` and `0x00453a78` pass origins `(0x67,0xad)`
+and `(0xf6,0xad)`; the renderer adds 44 by entry parity and 52 by entry pair,
+confirming local x origins 103/246 and global y origin 173. The center column
+always represents the other five players in player-ID
+order; it draws an alternate dim portrait for a player without a result in the
+sector, defaults to the first available opponent, and accepts only populated
+slots. Changing that opponent calls the gated sound wrapper with slot 3 before
+redrawing, while clicking the already selected or an unavailable portrait does
+not.
+
+The completed-Research branch in event compositor `0x0044fd6c` loads `PX06005`,
+loads the selected `PX04xxx` strip as a 48-by-720 surface, and copies an exact
+48-by-48 frame into its exact 48-by-48 monitor destination. It performs no
+opaque-pixel bounding or per-item centering, so asymmetrical objects such as the
+Whip intentionally look off-center within their correctly aligned frame.
+
 Detailed Combat at `0x0042e040` temporarily reuses otherwise-empty slot 5 for
 each combatant. An equipped attack loads resource `500 + Item.Sound`. An
 unarmed attack loads `SND00500`, or `SND00501` when the attacking gang's base
@@ -246,8 +271,7 @@ the same numeric conversion but have separate state and enable flags.
 full/compact setup selection, rejected-input panel coverage, and Comlink-alert roles, the lack of a
 slot-9 wrapper call site, scale, enable boundary, initialized levels, and channel values; High manual
 evidence for the independent controls. The exact conditional meaning of the
-remaining specialized slot-2 calls and Combat Results selection call is still
-partially classified.
+remaining specialized slot-2 calls is still partially classified.
 
 **Recreation status:** all nine general resources are loaded through the
 recovered slot table, whose known roles are named in code. The four recovered

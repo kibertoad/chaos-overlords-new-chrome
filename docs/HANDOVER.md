@@ -6,12 +6,12 @@ Last updated: 2026-09-11
 ## Repository state
 
 - The canonical repository is
-  `https://github.com/kibertoad/chaos-overlords-new-chrome.git`. All functional
-  checkpoints through native WinHelp context recovery are published on `main`;
-  the local `codex/full-reimplementation` branch additionally contains the
-  styled-text and internal-hotspot batch and remains the development branch.
+  `https://github.com/kibertoad/chaos-overlords-new-chrome.git`. `main` contains
+  every accepted checkpoint through the sector-indexed Combat Results and
+  interaction-layout batch; `codex/full-reimplementation` remains the
+  development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,277 tests with no warnings.
+  isolated Release build passed all 1,283 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -24,6 +24,37 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Combat Results now follows the original sector-indexed table instead of
+  paging individual events. Sectors appear in board order, occupied sectors
+  reveal other players' fights, both force apertures use the recovered
+  two-by-three gang grid, all five opposing-player slots retain their fixed
+  order and inactive dimming, and selecting a populated opponent uses the
+  recovered slot-3 cue before Detail replays that selected result.
+- Combat Results and live Combat fit their required sector image into the
+  original map aperture and leave the sector code below it. `PX05012` force
+  grids and opponent portraits use the recovered renderer origins; `PX05014`
+  retains one baked, functional Cancel control instead of painting a duplicate.
+- Hire, Ranking, and Combat Results entrances slide only their foreground panel
+  over a stationary city/sector backdrop. Sector-detail End Turn now displays
+  and routes the idle-gang warning modally instead of hiding it beneath the
+  sector view, and Ranking cannot be opened through that warning.
+- Detailed sectors display up to six gangs in the available two-column,
+  three-row card grid. Handoff prepares replacement hire offers before any
+  automatic reports, so every new dock portrait is visible without a first
+  click. The one-off command list starts below its heading rather than under it.
+- Enemy-controlled site progress uses the recreation's intentional purple fill.
+  A zero-resistance Headquarters with no explicit site influencer inherits its
+  sector owner for this presentation, fixing the otherwise-green enemy HQ edge.
+- Alt+Enter now toggles fullscreen alongside F11 and consumes Enter so it cannot
+  activate the current screen as a side effect.
+- Online Play fields now leave a clear gap between each preceding border and
+  the next label. Its remaining recreation-only hosting/password/setup guidance
+  and initial instruction status were removed; validation and connection
+  failures still use the status line.
+- The 432-by-416 ownership atlases are confirmed as exact 8-by-8 arrays of
+  54-by-52 cells at city destination `(2,44)`; their grid and colour boundaries
+  already coincide with the 640-by-460 city background, so no corrective
+  presentation offset is applied.
 - Setup selection outlines now use the inset `PX00143` button faces instead of
   the broader hit rectangles that overlap section labels. The city/sector top
   bar uses the original portrait aperture and plays the twelve-frame
@@ -31,7 +62,9 @@ Last updated: 2026-09-11
   navigation, drag, cancellation and success hints are suppressed while
   rejection reasons and genuine failures remain visible.
 - Completed-Research artwork now occupies the exact 48-by-48 black monitor
-  interior in `PX06005` instead of extending above and left of it. City and
+  interior in `PX06005` instead of extending above and left of it. Static
+  analysis confirms that the original does not re-center opaque item pixels,
+  so visibly asymmetric frames such as Whip remain faithful. City and
   Sector Financial panels now fill their full 64-by-64 portrait aperture.
 - Item Information now fills the exact 48-by-48 monitor aperture with the
   selected item's 15-frame `PX04xxx` rotation, using the compact inventory icon
