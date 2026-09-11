@@ -11,7 +11,7 @@ public sealed partial class ChaosGame
         if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
         if (VisibleCombatResults(_state, viewer).Count == 0)
         {
-            _message = "NO COMBAT RESULTS";
+            RejectInput("NO COMBAT RESULTS");
             return;
         }
         _combatSummaryCursor = 0;
@@ -41,7 +41,7 @@ public sealed partial class ChaosGame
         var events = VisibleCombatResults(_state, viewer);
         if (events.Count == 0)
         {
-            _message = "NO COMBAT DETAIL AVAILABLE";
+            RejectInput("NO COMBAT DETAIL AVAILABLE");
             return;
         }
         _combatSummaryCursor = Math.Clamp(_combatSummaryCursor, 0, events.Count - 1);
@@ -56,7 +56,7 @@ public sealed partial class ChaosGame
         }
         if (_combatAnimationTextures.Count == 0 || clips.Count == 0)
         {
-            _message = "COMBAT DETAIL UNAVAILABLE";
+            RejectInput("COMBAT DETAIL UNAVAILABLE");
             return;
         }
         _combatAnimationPlayer.Clear();

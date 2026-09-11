@@ -198,6 +198,21 @@ left-to-right copy loop under the same preference gate. Disabling Slide Panels
 therefore suppresses both the motion and its paired cue; these are not generic
 ungated dialog sounds.
 
+A bounded inventory of all 110 direct calls to the gated wrapper confirms that
+the executable passes only slots 0 through 8; no direct call passes slot 9.
+Pairing those callers with the image-loader wrapper identifies rejected-input
+slot 4 in the handlers for Hire (`PX05000`/`PX05016`), Item and Site Information
+(`PX05001`/`PX05002`), Attack, Equip, Influence, Move, and Research
+(`PX05003`-`PX05007`), City/Sector Financial (`PX05008`/`PX05019`), Last Turn
+Events, Player Ranking, Combat Results and Detailed Combat
+(`PX05010`-`PX05014`), Give (`PX05015`), incoming/outgoing Comlink
+(`PX05017`, `PX05018`, and `PX05023`), Gangs in Sector (`PX05022`), and Search:
+Sites (`PX05024`). These are conditional failure branches inside the panel
+handlers, not panel-open sounds; successful command submission does not have a
+paired slot-3 call in the Attack/Equip/Influence/Move/Research/Give/Sell
+handlers. Slot 3 remains the accepted selector cue used by setup and a smaller
+set of selection handlers.
+
 Detailed Combat at `0x0042e040` temporarily reuses otherwise-empty slot 5 for
 each combatant. An equipped attack loads resource `500 + Item.Sound`. An
 unarmed attack loads `SND00500`, or `SND00501` when the attacking gang's base
@@ -218,14 +233,20 @@ only gated general-effect wrapper in this executable. Music and effects share
 the same numeric conversion but have separate state and enable flags.
 
 **Confidence:** High static evidence for slot/resource mapping, panel entry/exit gating, push-button,
-full/compact setup selection, and Comlink-alert roles, the lack of a slot-9 wrapper call site, scale, enable
-boundary, initialized levels, and channel values; High manual evidence for the
-independent controls. Other slot semantics remain partially classified.
+full/compact setup selection, rejected-input panel coverage, and Comlink-alert roles, the lack of a
+slot-9 wrapper call site, scale, enable boundary, initialized levels, and channel values; High manual
+evidence for the independent controls. The exact conditional meaning of each
+remaining slot-2/slot-3 call site is still partially classified.
 
 **Recreation status:** all nine general resources are loaded through the
 recovered slot table, whose known roles are named in code. The four recovered
 full local-setup push controls use slot 2; setup selector changes
 use slot 3, and a rejected player-count boundary additionally uses slot 4. The
+mapped management and command workflows now play slot 4 when the player asks
+for an unavailable action, selects no required item/target, submits a rejected
+command or transaction, or opens an empty Events, Combat Results, or Gangs in
+Sector view. Successful command submission remains silent, matching the lack
+of slot-3 calls in those original handlers. The
 four setup controls defer their action until release inside the originally
 pressed rectangle and cancel a release outside. Their held-inside state uses
 the exact four source rectangles from `PX00140`, while leaving the rectangle
@@ -243,9 +264,9 @@ clip carries its event-time cue; the player emits it on the recovered first
 animation tick, so retaliation waits for its reversed second clip instead of
 playing with the opening attack. Simple Combat does not enter this presenter.
 
-**Next validation:** Validate the slot-6 repeat/suppression boundary and
-countdown-warning cadence at
-runtime, then validate overlap/interruption and native amplitude behavior.
+**Next validation:** Classify the remaining slot-2/slot-3 UI calls, validate the
+slot-6 repeat/suppression boundary and countdown-warning cadence at runtime,
+then validate overlap/interruption and native amplitude behavior.
 
 ### BIN-COMLINK-001 - per-player message queue capacity and overflow
 

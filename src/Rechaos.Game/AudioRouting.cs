@@ -51,6 +51,9 @@ public static class AudioRouting
     public static int? IncomingMessageSound(bool hasUnread) =>
         hasUnread ? GeneralSoundSlot.IncomingMessageAlert : null;
 
+    public static int? InputResultSound(bool accepted) =>
+        accepted ? null : GeneralSoundSlot.RejectedInput;
+
     public static short? CombatSound(MatchState state, GameEvent gameEvent)
     {
         ArgumentNullException.ThrowIfNull(state);

@@ -263,26 +263,26 @@ public sealed partial class ChaosGame
     {
         if (_actions is null)
         {
-            _message = OnlinePlanningClosed;
+            RejectInput(OnlinePlanningClosed);
             return;
         }
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
-            _message = "BOARD COMMANDS REQUIRE THE COMMAND PHASE";
+            RejectInput("BOARD COMMANDS REQUIRE THE COMMAND PHASE");
             return;
         }
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         if (gang is null)
         {
-            _message = "NO ACTIVE GANG";
+            RejectInput("NO ACTIVE GANG");
             return;
         }
         var command = gang.SectorId == _cursor
             ? new GameCommand(playerId, gang.Id, GangAction.Control, CommandTarget.None)
             : new GameCommand(playerId, gang.Id, GangAction.Move, CommandTarget.Sector(_cursor));
         var result = _actions.Submit(command);
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Validation.Message);
     }
 
     private static int SectorIncome(MatchSectorState sector) => sector.Income;

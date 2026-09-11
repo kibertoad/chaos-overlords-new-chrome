@@ -52,13 +52,13 @@ public sealed partial class ChaosGame
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
-            _message = "SELL REQUIRES THE COMMAND PHASE";
+            RejectInput("SELL REQUIRES THE COMMAND PHASE");
             return;
         }
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         if (gang is null || EquippedItems(gang).All(item => item is null))
         {
-            _message = "GANG HAS NO EQUIPMENT TO SELL";
+            RejectInput("GANG HAS NO EQUIPMENT TO SELL");
             return;
         }
 
@@ -106,13 +106,13 @@ public sealed partial class ChaosGame
             .ToArray();
         if (selected.Length == 0)
         {
-            _message = "NO EQUIPMENT SELECTED";
+            RejectInput("NO EQUIPMENT SELECTED");
             return;
         }
 
         var result = _actions.Submit(EquipmentSellSelection.CreateCommand(
             playerId, gangId, selected, _sellRepeats));
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Validation.Message);
         if (result.Accepted) _screens.Show(_sellReturnScreen);
     }
 

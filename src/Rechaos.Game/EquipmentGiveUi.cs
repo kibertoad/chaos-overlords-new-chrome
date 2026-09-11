@@ -52,13 +52,13 @@ public sealed partial class ChaosGame
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
-            _message = "GIVE REQUIRES THE COMMAND PHASE";
+            RejectInput("GIVE REQUIRES THE COMMAND PHASE");
             return;
         }
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         if (gang is null || GiveEquippedItems(gang).All(item => item is null))
         {
-            _message = "GANG HAS NO EQUIPMENT TO GIVE";
+            RejectInput("GANG HAS NO EQUIPMENT TO GIVE");
             return;
         }
 

@@ -60,7 +60,7 @@ public sealed partial class ChaosGame
             .ToArray();
         if (selected.Length == 0)
         {
-            _message = "NO EQUIPMENT SELECTED";
+            RejectInput("NO EQUIPMENT SELECTED");
             return;
         }
 
@@ -75,7 +75,7 @@ public sealed partial class ChaosGame
         _giveCursor = 0;
         if (_giveOptions.Count == 0)
         {
-            _message = "NO LEGAL RECIPIENT FOR EQUIPPED ITEM";
+            RejectInput("NO LEGAL RECIPIENT FOR EQUIPPED ITEM");
             return;
         }
         _screens.Show(ClientScreen.GiveTarget);
@@ -102,7 +102,7 @@ public sealed partial class ChaosGame
         if (_giveOptions.Count == 0 || _actions is null) return;
         var command = _giveOptions[_giveCursor];
         var result = _actions.Submit(command);
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Validation.Message);
         if (result.Accepted) _screens.Show(_giveReturnScreen);
     }
 
@@ -114,12 +114,12 @@ public sealed partial class ChaosGame
         var items = RealItems(_state);
         if (gang is null || items.Length == 0)
         {
-            _message = "NO ACTIVE GANG OR ITEM";
+            RejectInput("NO ACTIVE GANG OR ITEM");
             return;
         }
         var command = new GameCommand(playerId, gang.Id, action, CommandTarget.Item(items[_itemCursor].Id));
         var result = _actions.Submit(command);
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Validation.Message);
         if (result.Accepted) _screens.Show(ClientScreen.City);
     }
 

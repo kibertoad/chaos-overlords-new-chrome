@@ -65,6 +65,14 @@ public sealed partial class ChaosGame
         if (_generalSounds.TryGetValue(slot, out var sound)) TryPlaySound(sound);
     }
 
+    private void ReportInputResult(bool accepted, string rejectionMessage)
+    {
+        _message = accepted ? string.Empty : rejectionMessage.ToUpperInvariant();
+        if (AudioRouting.InputResultSound(accepted) is { } slot) PlayGeneralSound(slot);
+    }
+
+    private void RejectInput(string message) => ReportInputResult(false, message);
+
     private void TryPlaySound(SoundEffect sound)
     {
         if (_soundEffectVolumeLevel == 0) return;

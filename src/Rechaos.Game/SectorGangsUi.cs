@@ -45,7 +45,7 @@ public sealed partial class ChaosGame
         var gangs = GangInformationRoster.ForSector(_state.FindPlayer(playerId)!.Gangs, _cursor);
         if (gangs.Count == 0)
         {
-            _message = "NO GANGS IN SELECTED SECTOR";
+            RejectInput("NO GANGS IN SELECTED SECTOR");
             return;
         }
         _sectorGangRoster = gangs.Select(gang => gang.Id).ToArray();

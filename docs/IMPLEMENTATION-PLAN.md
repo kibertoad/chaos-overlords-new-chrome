@@ -848,7 +848,9 @@ Detailed-on, Slide-on, and idle-warning-on defaults. Legacy color depth is
 explicitly always on. The timer uses its
 original setup controls, main-panel bar, expiry path, and warning slots 7/8.
 Panel entrances use the recovered horizontal 344-pixel primary travel and
-quarter-second benchmark target. Remaining trigger and animation work, Options
+quarter-second benchmark target. Rejected command and management operations
+use the original slot-4 cue without adding an unsupported success cue. Remaining
+slot-2/slot-3 trigger and animation work, Options
 close/adjacent-buffer/combat cadence and preference/menu
 restart boundaries, native validation, video, and exact visual behavior are
 still required.

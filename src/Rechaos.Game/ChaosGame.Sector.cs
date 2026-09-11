@@ -227,13 +227,11 @@ public sealed partial class ChaosGame
                     && command.Target == target);
             if (influence is null)
             {
-                _message = "BUILDING CANNOT BE INFLUENCED";
+                RejectInput("BUILDING CANNOT BE INFLUENCED");
                 return;
             }
             var influenceResult = _actions.Submit(influence with { Repeat = true });
-            _message = influenceResult.Accepted
-                ? string.Empty
-                : influenceResult.Validation.Message.ToUpperInvariant();
+            ReportInputResult(influenceResult.Accepted, influenceResult.Validation.Message);
             return;
         }
         if (!SectorDetailLayout.TrySectorAt(point, _cursor, out var sectorId))
@@ -246,11 +244,11 @@ public sealed partial class ChaosGame
                 && command.Target == CommandTarget.Sector(sectorId));
         if (legal is null)
         {
-            _message = "MOVE REQUIRES A NEIGHBORING SECTOR";
+            RejectInput("MOVE REQUIRES A NEIGHBORING SECTOR");
             return;
         }
         var result = _actions.Submit(legal with { Repeat = false });
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Validation.Message);
     }
 
     private void CancelGangDrag()

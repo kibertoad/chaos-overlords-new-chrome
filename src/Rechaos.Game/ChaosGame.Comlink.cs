@@ -19,7 +19,7 @@ public sealed partial class ChaosGame
     private bool ComlinkAvailable()
     {
         if (_actions?.IsOnline != true) return true;
-        _message = "COMLINK IS NOT CARRIED BY AN ONLINE TURN YET";
+        RejectInput("COMLINK IS NOT CARRIED BY AN ONLINE TURN YET");
         return false;
     }
 
@@ -129,7 +129,7 @@ public sealed partial class ChaosGame
             .Select(index => new PlayerId(index))
             .ToArray();
         var result = _actions.SendComlinkMessage(sender, recipients, _comlinkEditor.Text);
-        _message = result.Accepted ? string.Empty : result.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Message);
         if (!result.Accepted)
         {
             _comlinkStatus = _message;

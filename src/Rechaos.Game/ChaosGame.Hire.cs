@@ -84,7 +84,7 @@ public sealed partial class ChaosGame
             || _state.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
-            _message = "HIRING REQUIRES A PLANNING TURN";
+            RejectInput("HIRING REQUIRES A PLANNING TURN");
             return;
         }
         var player = _state.FindPlayer(playerId)!;
@@ -92,7 +92,7 @@ public sealed partial class ChaosGame
         _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, -1, 1);
         if (_hireCursor < 0)
         {
-            _message = "NO HIRE OFFER AVAILABLE";
+            RejectInput("NO HIRE OFFER AVAILABLE");
             return;
         }
         _managementReturnScreen = returnScreen;
@@ -117,14 +117,14 @@ public sealed partial class ChaosGame
         if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null
             || _state.Coordinator.Phase != TurnPhase.Command)
         {
-            _message = "HIRING REQUIRES A PLANNING TURN";
+            RejectInput("HIRING REQUIRES A PLANNING TURN");
             return;
         }
         PrepareCurrentHireOffers();
         var entry = CurrentHireDock(_state.FindPlayer(playerId)!)[slot];
         if (entry is null)
         {
-            _message = "NO HIRE OFFER IN THIS SLOT";
+            RejectInput("NO HIRE OFFER IN THIS SLOT");
             return;
         }
         _draggedHireSlot = slot;
@@ -177,7 +177,7 @@ public sealed partial class ChaosGame
             return;
         }
         var result = _actions.QueueHire(playerId, definitionId.Value, sectorId);
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Validation.Message);
     }
 
     private void CancelHireDrag()
@@ -208,7 +208,7 @@ public sealed partial class ChaosGame
         if (_hireCursor < 0) return;
         var offer = player.HireOfferSlots[_hireCursor].GangDefinitionId!.Value;
         var result = _actions.QueueHire(playerId, offer, _cursor);
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Validation.Message);
         if (result.Accepted)
         {
             _screens.Show(ClientScreen.City);
@@ -223,7 +223,7 @@ public sealed partial class ChaosGame
         if (_hireCursor < 0) return;
         var offer = player.HireOfferSlots[_hireCursor].GangDefinitionId!.Value;
         var result = _actions.SnubHireOffer(playerId, offer);
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Validation.Message);
         _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
     }
 
@@ -234,10 +234,10 @@ public sealed partial class ChaosGame
         var entry = CurrentHireDock(_state.FindPlayer(playerId)!)[slot];
         if (entry is null)
         {
-            _message = "NO HIRE OFFER IN THIS SLOT";
+            RejectInput("NO HIRE OFFER IN THIS SLOT");
             return;
         }
         var result = _actions.SnubHireOffer(playerId, entry.GangDefinitionId);
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Validation.Message);
     }
 }

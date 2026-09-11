@@ -158,8 +158,11 @@ Last updated: 2026-09-11
   defaults. Full local-setup push buttons, setup selection/rejection, panel
   confirmation, equipped and unarmed gang attacks, retaliation, detected police
   attacks, idle planning confirmation, unread Comlink handoff entry, and
-  planning-countdown warnings use mapped sounds. General slot 9 is loaded by the original but has
-  no call through its gated effect wrapper. Detailed Combat cues start with
+  planning-countdown warnings use mapped sounds. Rejected command, equipment,
+  Hire, Comlink, Events, Combat Results, and Gangs-in-Sector operations now use
+  the original slot-4 cue; successful submissions remain silent where the
+  corresponding original handler has no slot-3 call. General slot 9 is loaded
+  by the original but has no call through its gated effect wrapper. Detailed Combat cues start with
   their corresponding animation clips rather than at resolution time.
 - The four original Add/Remove/Begin/Cancel setup hit rectangles now defer their
   action until release inside the same pressed control, cancel release outside,
@@ -308,7 +311,7 @@ Last updated: 2026-09-11
    the reference contradicts it.
 3. Investigate and explain the reported GOG/1.1 Detailed Combat freeze, then
    compare the bounded recreation cadence with a controlled original capture.
-4. Complete remaining sound triggers and native audio/music validation.
+4. Classify the remaining slot-2/slot-3 UI calls and complete native audio/music validation.
 5. Decide and implement Smacker playback or extractor-side transcoding; capture
    native WinHelp typography/paragraph geometry only where pixel-viewer fidelity
    materially benefits from it.

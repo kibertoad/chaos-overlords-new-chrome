@@ -11,13 +11,13 @@ public sealed partial class ChaosGame
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
-            _message = "COMMAND PICKER REQUIRES THE COMMAND PHASE";
+            RejectInput("COMMAND PICKER REQUIRES THE COMMAND PHASE");
             return;
         }
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         if (gang is null)
         {
-            _message = "NO ACTIVE GANG";
+            RejectInput("NO ACTIVE GANG");
             return;
         }
         _commandOptions = CommandOptionCatalog.LegalCommands(_state, playerId, gang.Id)
@@ -168,7 +168,7 @@ public sealed partial class ChaosGame
                 || !EquipmentCommandLayout.CanConfirm(
                     _commandTargetCursor, EquipmentCommandIndices(_state))))
             {
-                _message = "NO ITEMS IN THIS CATEGORY";
+                RejectInput("NO ITEMS IN THIS CATEGORY");
             }
             else if (_commandTargetOptions.Count > 0)
                 SubmitCommand(_commandTargetOptions[_commandTargetCursor]);
@@ -184,7 +184,7 @@ public sealed partial class ChaosGame
         var options = _commandOptions.Where(command => command.Action == action).ToArray();
         if (options.Length == 0)
         {
-            _message = $"{action.ToString().ToUpperInvariant()} IS NOT AVAILABLE";
+            RejectInput($"{action.ToString().ToUpperInvariant()} IS NOT AVAILABLE");
             return;
         }
         if (CommandOverlayLayout.OpensTargetPicker(action))
@@ -217,7 +217,7 @@ public sealed partial class ChaosGame
         if (_actions is null) return;
         var command = selection with { Repeat = _commandRepeats };
         var result = _actions.Submit(command);
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Validation.Message);
         if (result.Accepted) _screens.Show(_commandReturnScreen);
     }
 
@@ -227,7 +227,7 @@ public sealed partial class ChaosGame
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         if (gang is null) return;
         var result = _actions.Cancel(playerId, gang.Id);
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        ReportInputResult(result.Accepted, result.Validation.Message);
         if (result.Accepted) _screens.Show(_commandReturnScreen);
     }
 

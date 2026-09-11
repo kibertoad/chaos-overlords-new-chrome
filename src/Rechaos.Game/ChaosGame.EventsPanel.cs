@@ -37,7 +37,7 @@ public sealed partial class ChaosGame
         var count = LastTurnReports(_state, playerId).Count;
         if (count == 0)
         {
-            _message = "NO EVENTS TO REPORT";
+            RejectInput("NO EVENTS TO REPORT");
             return;
         }
         _managementReturnScreen = returnScreen;
