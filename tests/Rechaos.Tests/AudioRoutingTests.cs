@@ -14,7 +14,7 @@ public sealed class AudioRoutingTests
             [
                 GeneralSoundSlot.PanelOpen,
                 GeneralSoundSlot.PanelClose,
-                GeneralSoundSlot.HeldButton,
+                GeneralSoundSlot.ButtonPress,
                 GeneralSoundSlot.AcceptedSelection,
                 GeneralSoundSlot.RejectedInput,
                 GeneralSoundSlot.ReportAlert,
@@ -24,11 +24,20 @@ public sealed class AudioRoutingTests
             ],
             AudioRouting.GeneralSoundSlots);
         Assert.Equal("SND00200.wav", AudioRouting.GeneralSoundFile(GeneralSoundSlot.PanelOpen));
+        Assert.Equal("SND00202.wav", AudioRouting.GeneralSoundFile(GeneralSoundSlot.ButtonPress));
         Assert.Equal("SND00204.wav", AudioRouting.GeneralSoundFile(GeneralSoundSlot.RejectedInput));
         Assert.Equal("SND00205.wav", AudioRouting.GeneralSoundFile(GeneralSoundSlot.ReportAlert));
         Assert.Equal("SND00208.wav",
             AudioRouting.GeneralSoundFile(GeneralSoundSlot.LoadedWithoutCallSite));
         Assert.Throws<ArgumentOutOfRangeException>(() => AudioRouting.GeneralSoundFile(5));
+        Assert.Equal([GeneralSoundSlot.AcceptedSelection],
+            AudioRouting.PlayerCountChangeSounds(changed: true, pointerButton: false));
+        Assert.Equal([GeneralSoundSlot.RejectedInput],
+            AudioRouting.PlayerCountChangeSounds(changed: false, pointerButton: false));
+        Assert.Equal([GeneralSoundSlot.ButtonPress],
+            AudioRouting.PlayerCountChangeSounds(changed: true, pointerButton: true));
+        Assert.Equal([GeneralSoundSlot.ButtonPress, GeneralSoundSlot.RejectedInput],
+            AudioRouting.PlayerCountChangeSounds(changed: false, pointerButton: true));
     }
 
     [Theory]

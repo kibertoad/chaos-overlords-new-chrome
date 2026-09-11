@@ -6,7 +6,7 @@ public static class GeneralSoundSlot
 {
     public const int PanelOpen = 0;
     public const int PanelClose = 1;
-    public const int HeldButton = 2;
+    public const int ButtonPress = 2;
     public const int AcceptedSelection = 3;
     public const int RejectedInput = 4;
     public const int ReportAlert = 6;
@@ -29,7 +29,7 @@ public static class AudioRouting
         {
             [GeneralSoundSlot.PanelOpen] = 200,
             [GeneralSoundSlot.PanelClose] = 201,
-            [GeneralSoundSlot.HeldButton] = 202,
+            [GeneralSoundSlot.ButtonPress] = 202,
             [GeneralSoundSlot.AcceptedSelection] = 203,
             [GeneralSoundSlot.RejectedInput] = 204,
             [GeneralSoundSlot.ReportAlert] = 205,
@@ -40,6 +40,15 @@ public static class AudioRouting
 
     public static IReadOnlyList<int> GeneralSoundSlots { get; } =
         GeneralSoundResources.Keys.Order().ToArray();
+
+    public static IReadOnlyList<int> PlayerCountChangeSounds(bool changed, bool pointerButton)
+    {
+        if (!pointerButton)
+            return [changed ? GeneralSoundSlot.AcceptedSelection : GeneralSoundSlot.RejectedInput];
+        return changed
+            ? [GeneralSoundSlot.ButtonPress]
+            : [GeneralSoundSlot.ButtonPress, GeneralSoundSlot.RejectedInput];
+    }
 
     public static short? CombatSound(MatchState state, GameEvent gameEvent)
     {

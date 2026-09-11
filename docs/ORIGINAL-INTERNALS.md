@@ -165,6 +165,15 @@ only while byte `0x0048783c` enables effects. In both the title handler at
 `0x0040b9c0` and setup handler at `0x0040e0a0`, accepted selector-arrow input
 plays slot 3 while rejected input plays slot 4.
 
+The four-case title helper at `0x0040cba5` and setup helper at `0x0040eb5f`
+draw a depressed push-button image, call slot 2 once, track whether the pointer
+remains inside while the left button is held, restore the released image when
+it leaves, and return whether release occurred inside. The setup destinations
+match Add Player `(370,328)-(462,352)`, Remove Player `(468,328)-(560,352)`,
+Start `(370,375)-(462,420)`, and Back `(468,375)-(560,420)`. If Add or Remove
+cannot change the player count, the caller additionally plays rejected-input
+slot 4 after the slot-2 press cue.
+
 The Options application helper at `0x004652a0` reads effect level byte
 `0x00487864`, enables effects when it is nonzero, and passes `level * 25` to
 `0x00458b05`. That helper shifts the value by eight and duplicates it into the
@@ -185,22 +194,24 @@ load a valid attack sound. The timeline at `0x00430c23` calls the gated slot-5
 wrapper immediately before advancing frames, and the presenter unloads slot 5
 after that combatant's sequence.
 
-**Interpretation:** Slots 3 and 4 are the general accepted-selection and
-rejected-input cues. Slot 6 is the new-report alert: the bounded report recorder
+**Interpretation:** Slot 2 is the general push-button press cue; slots 3 and 4
+are the accepted-selection and rejected-input cues. Slot 6 is the new-report
+alert: the bounded report recorder
 at `0x0045d2f0` plays it when appending a report for the active player, and the
 city/planning entry paths at `0x00462579` and `0x0046fd80` play it when their
 pending-report flag is set. Slot 9 is loaded but has no call site through the
 only gated general-effect wrapper in this executable. Music and effects share
 the same numeric conversion but have separate state and enable flags.
 
-**Confidence:** High static evidence for slot/resource mapping, setup/title and
-report-alert roles, the lack of a slot-9 wrapper call site, scale, enable
+**Confidence:** High static evidence for slot/resource mapping, push-button,
+setup/title selection, and report-alert roles, the lack of a slot-9 wrapper call site, scale, enable
 boundary, initialized levels, and channel values; High manual evidence for the
 independent controls. Other slot semantics remain partially classified.
 
 **Recreation status:** all nine general resources are loaded through the
-recovered slot table, whose known roles are named in code. Setup selector
-changes and bounded player-count rejection use slots 3 and 4. A human handoff
+recovered slot table, whose known roles are named in code. Title push buttons
+and the four recovered setup push controls use slot 2; setup selector changes
+use slot 3, and a rejected player-count boundary additionally uses slot 4. A human handoff
 with pending Last Turn Events plays slot 6 once before opening the report panel.
 Equipped, unarmed, and detected-police combat events route their recovered
 sounds, while evasion remains silent. Combat and general effects share the
@@ -210,8 +221,8 @@ clip carries its event-time cue; the player emits it on the recovered first
 animation tick, so retaliation waits for its reversed second clip instead of
 playing with the opening attack. Simple Combat does not enter this presenter.
 
-**Next validation:** Validate slots 0-2 (panel open, panel close, and held-button
-press), the slot-6 repeat/suppression boundary, and countdown-warning cadence at
+**Next validation:** Validate slot-0/1 panel motion cues, the slot-6
+repeat/suppression boundary, and countdown-warning cadence at
 runtime, then validate overlap/interruption and native amplitude behavior.
 
 ### BIN-OPTIONS-001 - registry keys, initialized defaults, and idle-gang warning

@@ -539,11 +539,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         switch (_screens.Current)
         {
             case ClientScreen.Title:
-                if (TitleNewGame.Contains(point)) _screens.Show(ClientScreen.Setup);
-                else if (TitleLoadGame.Contains(point)) LoadQuickGame();
-                else if (TitleOptions.Contains(point)) OpenOptions();
-                else if (TitleHelp.Contains(point)) OpenHelp();
-                else if (TitleQuit.Contains(point)) Exit();
+                if (TitleNewGame.Contains(point)) PressTitleButton(() => _screens.Show(ClientScreen.Setup));
+                else if (TitleLoadGame.Contains(point)) PressTitleButton(LoadQuickGame);
+                else if (TitleOptions.Contains(point)) PressTitleButton(OpenOptions);
+                else if (TitleHelp.Contains(point)) PressTitleButton(OpenHelp);
+                else if (TitleQuit.Contains(point)) PressTitleButton(Exit);
                 break;
             case ClientScreen.Options:
                 HandleOptionsClick(point);
@@ -584,10 +584,18 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     var mentality = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(point));
                     if (mentality >= 0) SelectDifficulty((AiDifficulty)mentality);
                     else if (playerSlot >= 0) ToggleController(playerSlot);
-                    else if (SetupPlayersAdd.Contains(point)) ChangePlayerCount(1);
-                    else if (SetupPlayersRemove.Contains(point)) ChangePlayerCount(-1);
-                    else if (SetupStart.Contains(point)) StartMatch();
-                    else if (SetupBack.Contains(point)) _screens.Show(ClientScreen.Title);
+                    else if (SetupPlayersAdd.Contains(point)) ChangePlayerCount(1, pointerButton: true);
+                    else if (SetupPlayersRemove.Contains(point)) ChangePlayerCount(-1, pointerButton: true);
+                    else if (SetupStart.Contains(point))
+                    {
+                        PlayGeneralSound(GeneralSoundSlot.ButtonPress);
+                        StartMatch();
+                    }
+                    else if (SetupBack.Contains(point))
+                    {
+                        PlayGeneralSound(GeneralSoundSlot.ButtonPress);
+                        _screens.Show(ClientScreen.Title);
+                    }
                 }
                 break;
             case ClientScreen.City:
@@ -635,6 +643,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleGiveClick(point);
                 break;
         }
+    }
+
+    private void PressTitleButton(Action action)
+    {
+        PlayGeneralSound(GeneralSoundSlot.ButtonPress);
+        action();
     }
 
     private void CycleGang(int delta)

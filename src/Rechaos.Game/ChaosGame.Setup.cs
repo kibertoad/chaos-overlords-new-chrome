@@ -20,13 +20,13 @@ public sealed partial class ChaosGame
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
     }
 
-    private void ChangePlayerCount(int delta)
+    private void ChangePlayerCount(int delta, bool pointerButton = false)
     {
         var previous = _selectedPlayerCount;
         _selectedPlayerCount = Math.Clamp(_selectedPlayerCount + delta, 1, MatchLimits.PlayerCount);
-        PlayGeneralSound(previous == _selectedPlayerCount
-            ? GeneralSoundSlot.RejectedInput
-            : GeneralSoundSlot.AcceptedSelection);
+        foreach (var slot in AudioRouting.PlayerCountChangeSounds(
+                     previous != _selectedPlayerCount, pointerButton))
+            PlayGeneralSound(slot);
         for (var index = previous; index < _selectedPlayerCount; index++)
             _computerPlayers[index] = true;
     }
