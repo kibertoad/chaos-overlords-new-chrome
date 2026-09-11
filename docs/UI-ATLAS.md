@@ -52,7 +52,7 @@ original-game capture confirms the screen and interaction state.
 | `PX05000`-`PX05024` | Gang-information panel family | Medium from visible template fields |
 | `PX10000`-`PX10006` | Neutral plus six player-colored 8x8 city layers; each sector is a 54x52 source cell | High from dimensions, grid, and color inspection |
 
-## `PX00143` provisional hit map
+## `PX00143` hit map
 
 The recreation currently overlays selection borders and routes clicks through
 these rectangles:
@@ -71,9 +71,17 @@ these rectangles:
 - Begin: `(370,375,92,45)`.
 - Cancel: `(468,375,92,45)`.
 
+The six top-strip portrait apertures are 32 by 32 at `(360 + 36n,38)`.
+The editable player cards form two columns at x 397 and 480 and three rows at
+y 89, 163 and 237. Each face is 64 by 64; its portrait arrows use 12-by-18 hit
+areas at face-relative `(2,20)` and `(50,20)`, and its 64-by-8 name field begins
+immediately below the face. These coordinates follow the black apertures in
+`PX00143` and the arrow/name construction mask at `(220,138)` in `PX00140`.
+
 The four push-button rectangles are verified against the destination rectangles
-in original helper `0x0040eb5f`; the other coordinates were measured from the
-extracted bitmap. The helper uses half-open rectangle containment, restores the
+in original helper `0x0040eb5f`; the scenario, duration, mentality, planning,
+and player-card coordinates were measured from the extracted bitmaps. The helper
+uses half-open rectangle containment, restores the
 released image when the pointer leaves, and accepts only release inside. The
 recreation now uses its exact hit rectangles, defers each action until release
 inside the same control, and cancels a release outside. While held inside, it
@@ -91,15 +99,18 @@ cursor feedback remain to be validated.
   not embedded in source or redistributed.
 - `PX00129` contains sixteen 32-by-32 overlord portraits across source row
   y=480. Setup renders these in the top strip and scales the selected portrait
-  into each visible local-player slot; green left/right arrows cycle that
+  into the exact 64-by-64 aperture in each visible local-player card; green
+  left/right arrows overlay the face and cycle that
   player's portrait. Static setup analysis now identifies portrait 15 as the
   empty-slot marker, not an active Overlord portrait. On original local Begin,
   every empty slot becomes a Computer and receives a unique bounded draw from
   portraits 0 through 14 before city generation. The client now treats its
   visible count as explicitly configured local humans, starts with one, and
   completes omitted slots at Begin through the original-compatible fresh-match
-  factory. Add/Remove changes that human count. Clicking the bounded name field
-  below a visible face opens the original 10-character uppercase editor; empty
+  factory. Add/Remove changes that human count: there is no separate per-slot
+  Human/AI switch, because every omitted color slot becomes an AI at Begin.
+  Clicking the bounded name field below a visible face opens the original
+  10-character uppercase editor; empty
   confirmation restores `PLAYER#n`. Dragging a face to an empty cell changes its
   color slot; dropping on another human exchanges their name/portrait identities.
   Portrait 15 remains display-only.

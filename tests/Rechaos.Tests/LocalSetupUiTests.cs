@@ -38,8 +38,8 @@ public sealed class LocalSetupUiTests
     [Fact]
     public void NameHitRegionsFollowEachRecoveredPortraitCell()
     {
-        Assert.Equal(new Rectangle(379, 149, 64, 12), PlayerPortraitLayout.Name(0));
-        Assert.Equal(new Rectangle(485, 333, 64, 12), PlayerPortraitLayout.Name(5));
+        Assert.Equal(new Rectangle(397, 153, 64, 8), PlayerPortraitLayout.Name(0));
+        Assert.Equal(new Rectangle(480, 301, 64, 8), PlayerPortraitLayout.Name(5));
         Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.Name(6));
     }
 

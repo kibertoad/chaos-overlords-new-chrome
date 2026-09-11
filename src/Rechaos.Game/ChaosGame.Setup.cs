@@ -271,14 +271,12 @@ public sealed partial class ChaosGame
                             ? _playerPortraits[index]
                             : PlayerPortraitLayout.Count - 1),
                     Color.White);
-        font.Draw(batch, $"PLAYERS {_localSetupRoster.Count}", new Vector2(376, 306), Color.White, 1);
         foreach (var index in _localSetupRoster.HumanSlots)
         {
             var portrait = PlayerPortraitLayout.SetupLarge(index);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, portrait,
                     OriginalSpriteLayout.OverlordPortrait(_playerPortraits[index]), Color.White);
-            DrawBorder(batch, pixel, portrait, PlayerColors[index], 1);
             DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Previous(index), left: true, Color.Lime);
             DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Next(index), left: false, Color.Lime);
             var label = _editingPlayerName == index

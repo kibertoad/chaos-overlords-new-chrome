@@ -799,7 +799,7 @@ public static class PlayerPortraitLayout
     public static Rectangle SetupTop(int player)
     {
         Validate(player);
-        return new Rectangle(360 + player * 36, 32, 32, 32);
+        return new Rectangle(360 + player * 36, 38, 32, 32);
     }
 
     public static Rectangle CityTop(int player)
@@ -807,10 +807,10 @@ public static class PlayerPortraitLayout
         Validate(player);
         return new Rectangle(8 + player * 72, 4, 32, 32);
     }
-    public static Rectangle SetupLarge(int player) => Player(player, 379, 83, 106, 64, 64, rowStride: 92);
-    public static Rectangle Previous(int player) => Player(player, 363, 106, 106, 12, 18, rowStride: 92);
-    public static Rectangle Next(int player) => Player(player, 447, 106, 106, 12, 18, rowStride: 92);
-    public static Rectangle Name(int player) => Player(player, 379, 149, 106, 64, 12, rowStride: 92);
+    public static Rectangle SetupLarge(int player) => Player(player, 397, 89, 83, 64, 64, rowStride: 74);
+    public static Rectangle Previous(int player) => Player(player, 399, 109, 83, 12, 18, rowStride: 74);
+    public static Rectangle Next(int player) => Player(player, 447, 109, 83, 12, 18, rowStride: 74);
+    public static Rectangle Name(int player) => Player(player, 397, 153, 83, 64, 8, rowStride: 74);
 
     private static Rectangle Player(
         int player,

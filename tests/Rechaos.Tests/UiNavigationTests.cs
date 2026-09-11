@@ -511,11 +511,15 @@ public sealed class UiNavigationTests
     [Fact]
     public void PlayerPortraitLayoutUsesOriginalTopStripsAndSelectionSlots()
     {
-        Assert.Equal(new Rectangle(360, 32, 32, 32), PlayerPortraitLayout.SetupTop(0));
-        Assert.Equal(new Rectangle(540, 32, 32, 32), PlayerPortraitLayout.SetupTop(5));
+        Assert.Equal(new Rectangle(360, 38, 32, 32), PlayerPortraitLayout.SetupTop(0));
+        Assert.Equal(new Rectangle(540, 38, 32, 32), PlayerPortraitLayout.SetupTop(5));
         Assert.Equal(new Rectangle(8, 4, 32, 32), PlayerPortraitLayout.CityTop(0));
         Assert.Equal(new Rectangle(368, 4, 32, 32), PlayerPortraitLayout.CityTop(5));
-        Assert.Equal(new Rectangle(485, 175, 64, 64), PlayerPortraitLayout.SetupLarge(3));
+        Assert.Equal(new Rectangle(397, 89, 64, 64), PlayerPortraitLayout.SetupLarge(0));
+        Assert.Equal(new Rectangle(480, 163, 64, 64), PlayerPortraitLayout.SetupLarge(3));
+        Assert.Equal(new Rectangle(399, 257, 12, 18), PlayerPortraitLayout.Previous(4));
+        Assert.Equal(new Rectangle(530, 257, 12, 18), PlayerPortraitLayout.Next(5));
+        Assert.Equal(new Rectangle(480, 301, 64, 8), PlayerPortraitLayout.Name(5));
         Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.SetupTop(6));
     }
 

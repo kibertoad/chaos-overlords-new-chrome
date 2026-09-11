@@ -109,6 +109,11 @@ Last updated: 2026-09-11
   Computers. Clicking a visible player's name edits the original bounded
   10-character field, enabling ordinary custom names and the recovered
   exact-name modifiers; portrait 15 is no longer selectable as a human face.
+  There is no separate Human/AI toggle: Add/Remove determines how many local
+  humans are configured, while every omitted color slot becomes a Computer at
+  Begin. The top-strip faces and two-by-three editable cards now use the measured
+  `PX00143` apertures plus the `PX00140` arrow/name construction offsets, without
+  the recreation-only player-count label or portrait border.
   Dragging a human face to an empty color moves that identity into the sparse
   slot; dropping onto another human exchanges their colors. Begin then fills
   missing color slots in ascending order before AI and city RNG consumption.
