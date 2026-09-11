@@ -73,6 +73,47 @@ public sealed class TransactionResolutionTests
     }
 
     [Fact]
+    public void FactoryAcquiredDuringInstantPhaseDiscountsSameTurnReplacement()
+    {
+        var data = BundledOriginalData.Load();
+        var item = data.Items.Single(value => value.Name == "KATANA").Id;
+        var replaced = data.Items.Single(value => value.Name == "METAL PIPE").Id;
+        var match = CreateMatch(
+            cash: 100,
+            targetWeapon: replaced,
+            researchedItems: new HashSet<short> { item },
+            availableFactory: true);
+        EnterCommand(match);
+
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Influence,
+            CommandTarget.Site(0))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(11), GangAction.Equip,
+            CommandTarget.Item(item))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(new PlayerId(0), match.FindSite(0)!.InfluencedBy);
+        match.FinishExecutionPhase();
+        Assert.Equal(ExecutionPhase.Transaction, match.Coordinator.ExecutionPhase);
+        var cashBefore = match.Players[0].Cash;
+
+        match.FinishExecutionPhase();
+
+        var expectedCost = data.Items[item].Cost * SpecialSiteRules.FactoryPricePercent / 100;
+        Assert.Equal(7, expectedCost);
+        Assert.Equal(cashBefore - expectedCost, match.Players[0].Cash);
+        Assert.Equal(item, match.FindGang(new GangId(11))!.WeaponItemId);
+        var equip = match.LastPhaseResolutions.Single(result =>
+            result.Event!.Action == GangAction.Equip).Event!.Resolution!;
+        Assert.Equal(replaced, equip.ReplacedItemId);
+        Assert.Equal(-expectedCost, equip.CashDelta);
+    }
+
+    [Fact]
     public void GiveTransfersItemAndDestroysRecipientsReplacement()
     {
         var data = BundledOriginalData.Load();
@@ -351,7 +392,8 @@ public sealed class TransactionResolutionTests
         IReadOnlySet<short>? researchedItems = null,
         bool useLowTechGangs = false,
         IReadOnlyDictionary<short, int>? inventory = null,
-        bool influencedFactory = false)
+        bool influencedFactory = false,
+        bool availableFactory = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -391,11 +433,13 @@ public sealed class TransactionResolutionTests
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
-                new MatchSiteState(0, influencedFactory ? (short)15 : (short)0, 7,
+                new MatchSiteState(0, id == 0 && (influencedFactory || availableFactory) ? (short)15 : (short)0,
+                    id == 0 && availableFactory ? 0 : 7,
                     id == 0 && influencedFactory ? new PlayerId(0) : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ], owner: id == 0 && influencedFactory ? new PlayerId(0) : null))
+            ], owner: id == 0 && (influencedFactory || availableFactory)
+                ? new PlayerId(0) : null))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }

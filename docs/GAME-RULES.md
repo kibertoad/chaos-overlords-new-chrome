@@ -350,7 +350,9 @@ claim about original-game behavior.
 - Implementation: `EquipmentRules`, `SpecialSiteRules.EquipmentCost`,
   transaction validation, and `CommandResolver.ResolveEquip`.
 - Tests: `TransactionResolutionTests` covers purchase, replacement, cash and
-  statistics, research/tech validation, insufficient funds, and replay hashes.
+  statistics, research/tech validation, insufficient funds, replay hashes, and
+  a Factory acquired during Instant discounting a same-turn Transaction-phase
+  replacement with the recreation's floored price.
 
 ### RULE-GIVE-001 — Transfer equipped item
 
