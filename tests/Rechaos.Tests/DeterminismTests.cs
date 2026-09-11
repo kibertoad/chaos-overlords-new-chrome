@@ -43,7 +43,7 @@ public sealed class DeterminismTests
     }
 
     [Fact]
-    public void NotificationQueueDropsOldestAtExplicitAndOriginalBounds()
+    public void NotificationQueueDropsOldestAtItsExplicitBound()
     {
         var queue = new NotificationQueue(capacity: 2);
         queue.Enqueue(Notification(0));
@@ -54,13 +54,6 @@ public sealed class DeterminismTests
         Assert.True(queue.TryDequeue(out var first));
         Assert.Equal(1, first!.Sequence);
 
-        var originalBound = new NotificationQueue();
-        foreach (var sequence in Enumerable.Range(0, MatchLimits.NotificationsPerPlayer + 1))
-            originalBound.Enqueue(Notification(sequence));
-
-        Assert.Equal(16, originalBound.Capacity);
-        Assert.Equal(Enumerable.Range(1, 16).Select(value => (long)value),
-            originalBound.Items.Select(item => item.Sequence));
     }
 
     [Fact]

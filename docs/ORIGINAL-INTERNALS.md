@@ -252,10 +252,11 @@ viewer's logical position relative to the shifted entries.
 **Confidence:** High static evidence from the complete bounded recorder,
 literal capacity, record stride, copy bounds, count update, and cursor branch.
 
-**Recreation status:** The authoritative per-player notification queue now uses
-the recovered capacity 16 and already matches the original drop-oldest order.
-Recreation-native pre-1.0 snapshots that relied on the former provisional
-64-entry bound are intentionally outside the compatibility guarantee.
+**Recreation status:** The `PX05010` projection filters the broader mechanical
+notification stream into report-worthy entries and then retains the newest 16
+in original drop-oldest order. The recreation-internal notification queue also
+carries non-report command, economy, movement, and combat facts, so its safety
+bound remains separate and does not incorrectly consume original report slots.
 
 **Next validation:** Map report-kind filtering and the cursor/page transition
 between the recorder, handoff, and `PX05010` presenter.

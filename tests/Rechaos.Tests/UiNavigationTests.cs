@@ -456,6 +456,12 @@ public sealed class UiNavigationTests
         Assert.False(NotificationPresentation.IsLastTurnReport(notification, gangLoss));
         Assert.True(NotificationPresentation.IsLastTurnReport(notification, playerLoss));
         Assert.Equal("PLAYER ELIMINATED.", NotificationPresentation.LastTurnStatus(notification));
+        var reports = Enumerable.Range(0, MatchLimits.LastTurnReportsPerPlayer + 1)
+            .Select(sequence => notification with { Sequence = sequence })
+            .ToArray();
+        Assert.Equal(Enumerable.Range(1, 16).Select(value => (long)value),
+            NotificationPresentation.RetainNewestLastTurnReports(reports)
+                .Select(item => item.Sequence));
     }
 
     [Fact]

@@ -135,7 +135,7 @@ public sealed partial class ChaosGame
                 continue;
             reports.Add(notification);
         }
-        return reports;
+        return NotificationPresentation.RetainNewestLastTurnReports(reports);
     }
 
     private static GameEvent? RelatedEvent(MatchState state, GameNotification notification) =>

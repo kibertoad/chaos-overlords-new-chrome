@@ -4,6 +4,15 @@ namespace Rechaos.Game;
 
 public static class NotificationPresentation
 {
+    public static IReadOnlyList<GameNotification> RetainNewestLastTurnReports(
+        IReadOnlyList<GameNotification> reports)
+    {
+        ArgumentNullException.ThrowIfNull(reports);
+        return reports.Count <= MatchLimits.LastTurnReportsPerPlayer
+            ? reports
+            : reports.Skip(reports.Count - MatchLimits.LastTurnReportsPerPlayer).ToArray();
+    }
+
     public static bool IsLastTurnReport(GameNotification notification, GameEvent? relatedEvent)
     {
         ArgumentNullException.ThrowIfNull(notification);

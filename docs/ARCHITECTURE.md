@@ -53,9 +53,9 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   gang upkeep, persistent negative balances, events, and notifications.
 - `GameModel/ToleranceResolver.cs`: income/site-derived normal tolerance and
   one-point Upkeep restoration of temporary Bribe/Snitch changes.
-- `GameModel/Notifications.cs`: recovered 16-entry per-player mechanical
-  notification queues with drop-oldest overflow and presentation-independent
-  payloads.
+- `GameModel/Notifications.cs`: bounded presentation-independent mechanical
+  notification queues. The client filters those richer payloads into Last Turn
+  Events and applies the original 16-report drop-oldest bound to that projection.
 - `GameModel/Determinism.cs`: serializable recovered Visual C++ random step and
   three-sample range wrapper plus canonical little-endian SHA-256 encoding.
 - `GameModel/EffectiveStatistics.cs`: definition/equipment/influenced-site stat
