@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,109 tests with no warnings.
+  isolated Release build passed all 1,111 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -26,8 +26,10 @@ Last updated: 2026-09-11
 - Handoff now auto-presents combat from the immediately completed turn. When
   both report types exist, Last Turn Events opens first and then chains into
   Combat Results; Detailed animation capture waits until private handoff/event
-  panels have closed. Manual Combat Summary also refuses an empty result set and
-  no longer accumulates historical combats from every prior turn.
+  panels have closed. Its event cursor is per player, so one hot-seat viewer
+  cannot consume another's Detailed playback; loading initializes every cursor
+  past historical events. Manual Combat Summary also refuses an empty result set
+  and no longer accumulates historical combats from every prior turn.
 - Last Turn Events now tracks which report pages were actually visited. Closing
   before viewing every page preserves the report queue and blinks the Events
   control; viewing all pages clears it through replay-recorded dismissals. The

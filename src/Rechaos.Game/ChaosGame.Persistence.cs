@@ -32,7 +32,9 @@ public sealed partial class ChaosGame
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _selectedGangIndex = 0;
             _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
-            _lastAnimatedEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
+            _combatPresentationProgress.ResetTo(
+                _state.Players.Select(player => player.Id),
+                _state.Events.LastOrDefault()?.Sequence ?? -1);
             _combatAnimationPlayer.Clear();
             _managementReturnScreen = ClientScreen.City;
             _screens.Show(_state.Outcome is null ? ClientScreen.GameInfo : ClientScreen.Endgame);
@@ -73,7 +75,9 @@ public sealed partial class ChaosGame
             _message = result.RecoveredFromBackup
                 ? "BACKUP REPLAY VERIFIED"
                 : "REPLAY VERIFIED";
-            _lastAnimatedEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
+            _combatPresentationProgress.ResetTo(
+                _state.Players.Select(player => player.Id),
+                _state.Events.LastOrDefault()?.Sequence ?? -1);
             _combatAnimationPlayer.Clear();
             StartPlanningTimer(_inputTime);
         }

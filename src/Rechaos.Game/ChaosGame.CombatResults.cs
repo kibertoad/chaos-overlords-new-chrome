@@ -218,3 +218,27 @@ public static class CombatResultProjection
         return eventTurn == currentTurn - 1;
     }
 }
+
+public sealed class CombatPresentationProgress
+{
+    private readonly Dictionary<PlayerId, long> _lastSeen = [];
+
+    public long LastSeen(PlayerId player) => _lastSeen.GetValueOrDefault(player, -1);
+
+    public void MarkSeen(PlayerId player, long sequence)
+    {
+        if (sequence < -1 || sequence < LastSeen(player))
+            throw new ArgumentOutOfRangeException(nameof(sequence));
+        _lastSeen[player] = sequence;
+    }
+
+    public void ResetTo(IEnumerable<PlayerId> players, long sequence)
+    {
+        ArgumentNullException.ThrowIfNull(players);
+        if (sequence < -1) throw new ArgumentOutOfRangeException(nameof(sequence));
+        _lastSeen.Clear();
+        foreach (var player in players) _lastSeen[player] = sequence;
+    }
+
+    public void Clear() => _lastSeen.Clear();
+}

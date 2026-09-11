@@ -83,8 +83,9 @@ public sealed partial class ChaosGame
         if (_state is null) return;
         if (_screens.Current is not (ClientScreen.City or ClientScreen.CombatSummary)) return;
         var viewer = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var lastSeen = _combatPresentationProgress.LastSeen(viewer);
         foreach (var gameEvent in _state.Events
-                     .Where(value => value.Sequence > _lastAnimatedEventSequence)
+                     .Where(value => value.Sequence > lastSeen)
                      .OrderBy(value => value.Sequence))
         {
             if (_detailedCombat && _combatAnimationTextures.Count > 0
@@ -93,7 +94,7 @@ public sealed partial class ChaosGame
                 && IsVisibleCombatEvent(_state, viewer, gameEvent))
                 foreach (var clip in CombatAnimationRouting.ForEvent(_state, gameEvent))
                     _combatAnimationPlayer.Enqueue(clip);
-            _lastAnimatedEventSequence = gameEvent.Sequence;
+            _combatPresentationProgress.MarkSeen(viewer, gameEvent.Sequence);
         }
     }
 

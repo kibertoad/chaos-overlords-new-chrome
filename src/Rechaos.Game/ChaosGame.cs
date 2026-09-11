@@ -160,7 +160,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private string _message = string.Empty;
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
-    private long _lastAnimatedEventSequence = -1;
+    private readonly CombatPresentationProgress _combatPresentationProgress = new();
     private TimeSpan _inputTime;
     private ClientScreen _gangDetailsReturnScreen = ClientScreen.City;
     private GangId? _gangDetailsInstanceId;

@@ -327,7 +327,9 @@ Combat preference. Escape or the panel's Cancel control clears the bounded
 presentation queue without touching match state. At handoff, only visible combat
 from the immediately completed turn is eligible. Last Turn Events opens first
 when both exist, and Detailed animation capture waits until the handoff/event
-privacy panels have closed. Both identities are confirmed by
+privacy panels have closed. Each hot-seat player has an independent presentation
+cursor, while load/replay initialization suppresses historical autoplay for all
+viewers. Both identities are confirmed by
 their template text, apertures, and the supplied original Combat capture.
 
 `PX05010` is the paged Last Turn Events panel. At the next human-player handoff,
