@@ -742,11 +742,26 @@ public static class CommandResolver
                     attack, sectorIncome, defense, support));
         }).ToArray();
         var bestMargin = attempts.Max(attempt => attempt.Margin);
-        var leaders = attempts.Where(attempt => attempt.Margin == bestMargin).ToArray();
-        var winner = leaders.Length == 1 && bestMargin >= 0 ? leaders[0] : default;
+        var leaders = attempts
+            .Where(attempt => attempt.Margin == bestMargin)
+            .OrderBy(attempt => attempt.Participants[0].Command.Player.Value)
+            .ToArray();
+        var winner = bestMargin >= 0 && leaders.Length == 1 ? leaders[0] : default;
         int? chanceRoll = null;
-        var captured = winner.Participants is not null && (bestMargin > 0
-            || (chanceRoll = state.Random.NextInclusive(2)) == 1);
+        int? chanceSides = null;
+        if (bestMargin == 0)
+        {
+            chanceSides = leaders.Length + 1;
+            chanceRoll = state.Random.NextInclusive(chanceSides.Value);
+            winner = chanceRoll == 1 ? default : leaders[chanceRoll.Value - 2];
+        }
+        else if (bestMargin > 0 && leaders.Length > 1)
+        {
+            chanceSides = leaders.Length;
+            chanceRoll = state.Random.NextInclusive(chanceSides.Value);
+            winner = leaders[chanceRoll.Value - 1];
+        }
+        var captured = winner.Participants is not null;
         if (captured)
         {
             var newOwner = winner.Participants![0].Command.Player;
@@ -764,13 +779,15 @@ public static class CommandResolver
         foreach (var participant in attempt.Participants)
         {
             var won = captured && ReferenceEquals(attempt.Participants, winner.Participants);
+            var sharedTieBreak = chanceRoll is not null &&
+                leaders.Any(leader => ReferenceEquals(leader.Participants, attempt.Participants));
             results.Add(Complete(state, participant.Command, GameEventKind.CommandResolved,
                 new CommandResolutionDetails(
                     CommandResolutionCode.Resolved, [], won ? 1 : 0,
                     PreviousValue: previousOwner?.Value, ResultValue: sector.Owner?.Value,
                     AttackValue: attempt.Attack, DefenseValue: totalDefense,
-                    ChanceRoll: ReferenceEquals(attempt.Participants, winner.Participants) ? chanceRoll : null,
-                    ChanceSides: ReferenceEquals(attempt.Participants, winner.Participants) && chanceRoll is not null ? 2 : null),
+                    ChanceRoll: sharedTieBreak ? chanceRoll : null,
+                    ChanceSides: sharedTieBreak ? chanceSides : null),
                 GameNotificationKind.Control));
         }
         return results;
@@ -815,7 +832,7 @@ public static class CommandResolver
         int? chanceRoll = null;
         if (previousOwner != first.Player && margin == 0)
             chanceRoll = state.Random.NextInclusive(2);
-        var captured = previousOwner != first.Player && (margin > 0 || chanceRoll == 1);
+        var captured = previousOwner != first.Player && (margin > 0 || chanceRoll == 2);
         if (captured)
         {
             if (previousOwner is { } oldOwner)

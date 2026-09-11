@@ -1993,6 +1993,34 @@ $11 Katana costs $8, while a $12 item costs $8.
 owner check, and rounding. A runtime capture remains useful corroboration but is
 not required to choose between the former provisional formulas.
 
+### BIN-CONTROL-001 - cross-player winner and zero-margin neutral candidate
+
+**Observation:** The Control block in the whole-turn resolver `0x00472775`
+initializes its best margin to zero, winner to -1, and the first candidate to
+-1. It then scans player slots 0 through 5, subtracting the phase sector Income,
+defending-gang strength, and influenced-site Support from each player's pooled
+Control strength. A strictly larger margin replaces the candidate list; an
+equal margin appends that player. When more than one candidate exists, the call
+at `0x004756d9` passes the candidate count to the recovered one-based bounded
+RNG wrapper. The selected value indexes through a four-byte slot immediately
+before the player-candidate array, so value 1 selects candidate zero. Capture
+proceeds only when the selected candidate is not -1.
+
+**Interpretation:** Negative margins cannot capture. A unique positive leader
+captures without a random draw. Equal positive leaders are chosen uniformly in
+ascending player-slot order. At best margin zero, the original neutral -1 entry
+remains ahead of every tied player: the one-based result 1 means no capture and
+results 2 onward select the tied players in ascending slot order. Thus one
+zero-margin challenger has the manual's 50-percent chance, while `n` tied
+zero-margin challengers each have probability `1 / (n + 1)` and the remaining
+outcome leaves ownership unchanged. Every random selection consumes the usual
+three raw RNG values.
+
+**Confidence:** High static evidence for initialization, six-slot scan,
+comparison behavior, candidate order, one-based RNG call, neutral sentinel, and
+capture predicate. The manual independently corroborates the single-player
+zero-margin probability; multi-player runtime capture remains useful.
+
 ## New-game initialization
 
 ### BIN-CITY-001 - density-derived sector income and tolerance

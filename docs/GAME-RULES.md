@@ -524,13 +524,15 @@ claim about original-game behavior.
   Support. Losing a sector loses all influenced sites, which return to full
   resistance; taking ownership directly from another player is an Overthrow.
 - Interpretation: group same-player Control commands by sector, calculate the
-  signed margin without dice, and capture when it is positive. At exactly zero,
-  draw a deterministic two-outcome random value and capture on one outcome,
-  recording the roll and range in the resolution event. When multiple players
-  target the same neutral sector, evaluate every group from the phase-start
-  owner snapshot and permit only the unique highest margin to attempt capture.
-  The same phase-opening owner/defense comparison applies when several players
-  challenge an already controlled sector, permitting at most one overthrow.
+  signed margin without dice, and capture when it is positive. A unique positive
+  leader captures directly; equal positive leaders are selected by one bounded
+  random draw in ascending player-slot order. At best margin zero, select among
+  a leading neutral candidate and every tied player, again in slot order. This
+  gives one challenger the manual's 50-percent chance and gives each of `n`
+  tied challengers a `1 / (n + 1)` chance. Record the one-based roll and full
+  candidate count in each tied group's resolution event. Evaluate every group
+  from the phase-start owner snapshot, whether the sector is neutral or already
+  controlled, and permit at most one capture or overthrow.
   On an overthrow, increment the attacker's statistic, remove the former
   owner's site Support, clear influence, and restore table resistance. A
   repeating Control order clears once its player owns the sector; repeating
@@ -538,18 +540,18 @@ claim about original-game behavior.
   terminal repeat targets (completed Move/transactions, eliminated Attack
   target, maximum Heal, zero-tolerance Snitch) are removed while ongoing
   behaviors such as Hide and Chaos remain repeatable across turns.
-- Current exclusions: exact equal-highest tie behavior, original crackdown
-  ordering, abandoned-sector rules, and
+- Current exclusions: original crackdown ordering, abandoned-sector rules, and
   negative-total edge behavior.
 - Confidence: High for equation components, density-derived sector Income,
-  influence loss, the zero-margin 50% rule, and unique-highest neutral conflicts;
-  Low for unresolved tie ordering.
+  influence loss, zero-margin neutral selection, and cross-player winner/order
+  behavior.
 - Implementation: `ManualRules.ControlStrength`, `ManualRules.ControlMargin`,
   grouped `CommandResolver.ResolveControl`, and site-reset handling.
 - Tests: `BoardResolutionTests` covers neutral capture, pooled strength,
   generated sector Income versus site Cash, defended
-  failure, recorded deterministic zero-margin chance, unique-highest neutral
-  conflicts, a single phase-opening defense for several owned-sector challengers,
+  failure, recorded deterministic zero-margin chance, positive and zero-margin
+  cross-player ties, unique-highest neutral conflicts, a single phase-opening
+  defense for several owned-sector challengers,
   execution-time Crackdown rejection, overthrow/statistics, influence reset,
   deterministic hashes, and Hide expiration;
   `ManualRulesTests` covers equation arithmetic.

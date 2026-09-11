@@ -177,7 +177,7 @@ public sealed class BoardResolutionTests
         Assert.Equal(resolution.AttackValue, resolution.DefenseValue);
         Assert.InRange(resolution.ChanceRoll!.Value, 1, 2);
         Assert.Equal(2, resolution.ChanceSides);
-        Assert.Equal(resolution.ChanceRoll == 1, first.Sectors[0].Owner == new PlayerId(0));
+        Assert.Equal(resolution.ChanceRoll == 2, first.Sectors[0].Owner == new PlayerId(0));
         Assert.Equal(firstConsumptionBefore + 3, first.Random.ConsumptionCount);
         Assert.Equal(secondConsumptionBefore + 3, second.Random.ConsumptionCount);
         Assert.Equal(resolution.ChanceRoll,
@@ -206,6 +206,69 @@ public sealed class BoardResolutionTests
             result => result.Command.Player == new PlayerId(0)).Event!.Resolution!.Successes);
         Assert.Equal(1, match.LastPhaseResolutions.Single(
             result => result.Command.Player == new PlayerId(1)).Event!.Resolution!.Successes);
+    }
+
+    [Fact]
+    public void EqualPositiveControlMarginsRandomlyChooseAPlayerInSlotOrder()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 5)],
+            [Gang(20, 1, 0, 5)]);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Control(0, 10)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(Control(1, 20)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        EnterControlFromExecution(match);
+        var expectedRandom = new DeterministicRandom(
+            match.Random.State, match.Random.ConsumptionCount);
+        var expectedRoll = expectedRandom.NextInclusive(2);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(new PlayerId(expectedRoll - 1), match.Sectors[0].Owner);
+        Assert.Equal(expectedRandom.ConsumptionCount, match.Random.ConsumptionCount);
+        Assert.All(match.LastPhaseResolutions, result =>
+        {
+            var resolution = result.Event!.Resolution!;
+            Assert.True(resolution.AttackValue > resolution.DefenseValue);
+            Assert.Equal(expectedRoll, resolution.ChanceRoll);
+            Assert.Equal(2, resolution.ChanceSides);
+        });
+        Assert.Single(match.LastPhaseResolutions, result =>
+            result.Event!.Resolution!.Successes == 1);
+    }
+
+    [Fact]
+    public void EqualZeroControlMarginsIncludeNeutralBeforePlayers()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 3)],
+            [Gang(20, 1, 0, 3)]);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Control(0, 10)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(Control(1, 20)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        EnterControlFromExecution(match);
+        var expectedRandom = new DeterministicRandom(
+            match.Random.State, match.Random.ConsumptionCount);
+        var expectedRoll = expectedRandom.NextInclusive(3);
+
+        match.FinishExecutionPhase();
+
+        var expectedOwner = expectedRoll == 1 ? (PlayerId?)null : new PlayerId(expectedRoll - 2);
+        Assert.Equal(expectedOwner, match.Sectors[0].Owner);
+        Assert.Equal(expectedRandom.ConsumptionCount, match.Random.ConsumptionCount);
+        Assert.All(match.LastPhaseResolutions, result =>
+        {
+            var resolution = result.Event!.Resolution!;
+            Assert.Equal(resolution.AttackValue, resolution.DefenseValue);
+            Assert.Equal(expectedRoll, resolution.ChanceRoll);
+            Assert.Equal(3, resolution.ChanceSides);
+        });
+        Assert.Equal(expectedOwner is null ? 0 : 1,
+            match.LastPhaseResolutions.Count(result => result.Event!.Resolution!.Successes == 1));
     }
 
     [Fact]
