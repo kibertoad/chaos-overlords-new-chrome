@@ -6,6 +6,30 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private void HandleEndgameClick(Point point)
+    {
+        if (_showEndgameNotice && EndgameNoticeLayout.Panel.Contains(point))
+        {
+            PlayGeneralSound(AudioRouting.PointerPushSound());
+            AdvanceEndgamePresentation();
+        }
+        else if (!_showEndgameNotice && EndgameLayout.Awards.Contains(point))
+        {
+            PlayGeneralSound(AudioRouting.PointerPushSound());
+            _showEndgameStats = false;
+        }
+        else if (!_showEndgameNotice && EndgameLayout.Stats.Contains(point))
+        {
+            PlayGeneralSound(AudioRouting.PointerPushSound());
+            _showEndgameStats = true;
+        }
+        else if (!_showEndgameNotice && EndgameDone.Contains(point))
+        {
+            PlayGeneralSound(AudioRouting.PointerPushSound());
+            LeaveEndgame();
+        }
+    }
+
     private static readonly Rectangle EndgameDone = EndgameLayout.Done;
     private Texture2D? _endgameBackground;
     private Texture2D? _endgameSprites;

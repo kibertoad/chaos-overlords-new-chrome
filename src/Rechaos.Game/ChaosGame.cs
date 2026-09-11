@@ -855,17 +855,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleCityClick(point);
                 break;
             case ClientScreen.Endgame:
-                if (_showEndgameNotice && EndgameNoticeLayout.Panel.Contains(point))
-                    AdvanceEndgamePresentation();
-                else if (!_showEndgameNotice && EndgameLayout.Awards.Contains(point))
-                    _showEndgameStats = false;
-                else if (!_showEndgameNotice && EndgameLayout.Stats.Contains(point))
-                    _showEndgameStats = true;
-                else if (!_showEndgameNotice && EndgameDone.Contains(point))
-                    LeaveEndgame();
+                HandleEndgameClick(point);
                 break;
             case ClientScreen.Handoff:
-                if (HandoffReady.Contains(point)) FinishHandoff();
+                HandleHandoffClick(point);
                 break;
             case ClientScreen.Events:
                 HandleEventsClick(point);

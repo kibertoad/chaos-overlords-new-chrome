@@ -858,10 +858,12 @@ use the original slot-4 cue, while successful submissions and standard panel
 confirmation/cancellation controls use the shared-helper slot-3 cue. The Events,
 Combat Results, and incoming-Comlink pagers stop at both ends and use the
 recovered slot-3/slot-4 success/boundary feedback. Combat Results now pages
-sector IDs in board order, projects the original six-entry force rows into
+sector IDs in board order, while slot 2 follows the complete supported
+pointer-push inventory: setup buttons, all main-console control families, Hire
+Reject without an extra success cue, handoff Ready, and endgame controls.
+Combat Results projects the original six-entry force rows into
 two-by-three grids, retains all five opponent slots with inactive dimming, and
-plays slot 3 for a changed populated-opponent selection. Remaining specialized
-slot-2 trigger work, Options
+plays slot 3 for a changed populated-opponent selection. Options
 close/adjacent-buffer/combat cadence and preference/menu
 restart boundaries, native validation, video, and exact visual behavior are
 still required.

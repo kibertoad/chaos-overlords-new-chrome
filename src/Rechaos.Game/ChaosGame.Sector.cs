@@ -45,7 +45,7 @@ public sealed partial class ChaosGame
             .FirstOrDefault(slot => HireDockLayout.Portrait(slot).Contains(point), -1);
         if (rejectSlot >= 0)
         {
-            SnubHireDockOffer(rejectSlot);
+            SnubHireDockOffer(rejectSlot, pointerButton: true);
             return;
         }
         if (hireSlot >= 0)

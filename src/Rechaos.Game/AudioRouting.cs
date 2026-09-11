@@ -48,6 +48,11 @@ public static class AudioRouting
                 ? GeneralSoundSlot.AcceptedSelection
                 : GeneralSoundSlot.RejectedInput;
 
+    public static int PointerPushSound() => GeneralSoundSlot.ButtonPress;
+
+    public static int? PointerPushResultSound(bool accepted) =>
+        accepted ? null : GeneralSoundSlot.RejectedInput;
+
     public static int? IncomingMessageSound(bool hasUnread) =>
         hasUnread ? GeneralSoundSlot.IncomingMessageAlert : null;
 

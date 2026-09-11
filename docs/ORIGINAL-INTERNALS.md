@@ -179,6 +179,23 @@ Start `(370,375)-(462,420)`, and Back `(468,375)-(560,420)`. If Add or Remove
 cannot change the player count, the caller additionally plays rejected-input
 slot 4 after the slot-2 press cue.
 
+A complete slot-2 caller classification shows that this is the original's
+general **pointer push** cue rather than a setup-only sound. Main-console helper
+`0x00419022` plays it for each of its eight pressed-control cases; dispatcher
+`0x004718ee` uses those cases for the Events, Comlink, Combat Results/Detailed,
+gang/item, finance, ranking, Done, and Options routes, including paired
+subcontrols inside several console tiles. Shared pointer helper `0x00418821`
+normally plays slot 3, but its case 2 instead plays slot 2; its only case-2
+callers are the two Hire rejection paths in `0x00416c75`, and a successful
+rejection selection receives no subsequent slot-3 cue. The `PX00132` handoff
+handler calls slot-2 helper `0x00439f7a` for Ready. Endgame/awards screens call
+slot-2 helper `0x0042cb95` for their three visible controls. The remaining
+direct sites belong to the compact/full setup helpers and unsupported legacy
+`PX00144`/`PX00146` setup flows (`0x00438da5`, `0x00468e12`, and
+`0x00457eed`). Thus all nine genuine direct slot-2 wrapper calls are assigned
+to a pressed pointer-control family; a nearby Combat Results call at
+`0x0045286c` is slot 3 and was only a scalar-window false positive.
+
 The Options application helper at `0x004652a0` reads effect level byte
 `0x00487864`, enables effects when it is nonzero, and passes `level * 25` to
 `0x00458b05`. That helper shifts the value by eight and duplicates it into the
@@ -267,16 +284,19 @@ Slot 9 is loaded but has no call site through the
 only gated general-effect wrapper in this executable. Music and effects share
 the same numeric conversion but have separate state and enable flags.
 
-**Confidence:** High static evidence for slot/resource mapping, panel entry/exit gating, push-button,
-full/compact setup selection, rejected-input panel coverage, and Comlink-alert roles, the lack of a
+**Confidence:** High static evidence for slot/resource mapping, panel entry/exit gating, pointer-push,
+full/compact setup selection, main-console, Hire rejection, handoff, endgame,
+rejected-input panel coverage, and Comlink-alert roles, the lack of a
 slot-9 wrapper call site, scale, enable boundary, initialized levels, and channel values; High manual
-evidence for the independent controls. The exact conditional meaning of the
-remaining specialized slot-2 calls is still partially classified.
+evidence for the independent controls.
 
 **Recreation status:** all nine general resources are loaded through the
 recovered slot table, whose known roles are named in code. The four recovered
 full local-setup push controls use slot 2; setup selector changes
 use slot 3, and a rejected player-count boundary additionally uses slot 4. The
+main-console controls, Hire Reject controls, handoff Ready control, and endgame
+Awards/Stats/Done controls use slot 2 on pointer press. A successful pointer
+Hire rejection does not add slot 3; a rejected operation may still add slot 4.
 mapped management and command workflows now play slot 4 when the player asks
 for an unavailable action, selects no required item/target, submits a rejected
 command or transaction, or opens an empty Events, Combat Results, or Gangs in
@@ -301,9 +321,8 @@ clip carries its event-time cue; the player emits it on the recovered first
 animation tick, so retaliation waits for its reversed second clip instead of
 playing with the opening attack. Simple Combat does not enter this presenter.
 
-**Next validation:** Classify the remaining specialized slot-2 calls and Combat
-Results selection cue, validate the
-slot-6 repeat/suppression boundary and countdown-warning cadence at runtime,
+**Next validation:** Validate the slot-6 repeat/suppression boundary and
+countdown-warning cadence at runtime,
 then validate overlap/interruption and native amplitude behavior.
 
 ### BIN-COMLINK-001 - per-player message queue capacity and overflow

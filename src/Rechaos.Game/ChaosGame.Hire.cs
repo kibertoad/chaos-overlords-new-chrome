@@ -241,9 +241,10 @@ public sealed partial class ChaosGame
         _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
     }
 
-    private void SnubHireDockOffer(int slot)
+    private void SnubHireDockOffer(int slot, bool pointerButton = false)
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
+        if (pointerButton) PlayGeneralSound(AudioRouting.PointerPushSound());
         PrepareCurrentHireOffers();
         var entry = CurrentHireDock(_state.FindPlayer(playerId)!)[slot];
         if (entry is null)
@@ -252,6 +253,13 @@ public sealed partial class ChaosGame
             return;
         }
         var result = _actions.SnubHireOffer(playerId, entry.GangDefinitionId);
-        ReportInputResult(result.Accepted, result.Validation.Message);
+        if (!pointerButton)
+        {
+            ReportInputResult(result.Accepted, result.Validation.Message);
+            return;
+        }
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        if (AudioRouting.PointerPushResultSound(result.Accepted) is { } sound)
+            PlayGeneralSound(sound);
     }
 }

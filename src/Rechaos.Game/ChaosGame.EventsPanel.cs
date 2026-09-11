@@ -6,6 +6,13 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private void HandleHandoffClick(Point point)
+    {
+        if (!HandoffReady.Contains(point)) return;
+        PlayGeneralSound(AudioRouting.PointerPushSound());
+        FinishHandoff();
+    }
+
     private void FinishHandoff()
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId)

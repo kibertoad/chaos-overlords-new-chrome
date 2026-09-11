@@ -78,7 +78,7 @@ public sealed partial class ChaosGame
             .FirstOrDefault(slot => HireDockLayout.Portrait(slot).Contains(point), -1);
         if (rejectSlot >= 0)
         {
-            SnubHireDockOffer(rejectSlot);
+            SnubHireDockOffer(rejectSlot, pointerButton: true);
         }
         else if (hireSlot >= 0)
         {
@@ -103,6 +103,8 @@ public sealed partial class ChaosGame
 
     private bool HandleCityConsoleClick(Point point, ClientScreen returnScreen)
     {
+        if (!IsCityConsoleControl(point)) return false;
+        PlayGeneralSound(AudioRouting.PointerPushSound());
         if (CityGameInfo.Contains(point)) OpenManagement(ClientScreen.GameInfo, returnScreen);
         else if (CityDone.Contains(point)) AdvanceTurn();
         else if (CityEvents.Contains(point)) OpenEvents(returnScreen);
@@ -116,9 +118,23 @@ public sealed partial class ChaosGame
         else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
         else if (CityRanking.Contains(point)) OpenManagement(ClientScreen.Ranking, returnScreen);
         else if (CitySearch.Contains(point)) OpenSiteSearch(returnScreen);
-        else return false;
         return true;
     }
+
+    private static bool IsCityConsoleControl(Point point) =>
+        CityGameInfo.Contains(point)
+        || CityDone.Contains(point)
+        || CityEvents.Contains(point)
+        || CityComlinkView.Contains(point)
+        || CityComlinkSend.Contains(point)
+        || CityCombatSummary.Contains(point)
+        || CityFinanceCity.Contains(point)
+        || CityFinanceSector.Contains(point)
+        || CityGangs.Contains(point)
+        || CityHire.Contains(point)
+        || CitySector.Contains(point)
+        || CityRanking.Contains(point)
+        || CitySearch.Contains(point);
 
     private void OpenManagement(ClientScreen screen, ClientScreen returnScreen)
     {
