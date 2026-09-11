@@ -33,7 +33,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00150` | Two-state small command/equipment icon sheet | Medium |
 | `PX00200` | Endgame awards/statistics frame | High from visible labels |
 | `PX00201` | Endgame award/statistics symbols and controls | High from visible labels |
-| `PX00202`, `PX00203` | Victory and elimination panels | High from visible text |
+| `PX00202`, `PX00203` | Single-player victory and elimination splashes with one Overlord portrait aperture | High from visible text and geometry; hot-seat sequencing unresolved |
 | `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; patrol-car cell `(116,0,48,64)` | High for sheet contents, Medium for patrol-car crop |
 | `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
 | `PX05009` | Gangs in Sector browser with one gang portrait and Tech Level, Upkeep, and fourteen stat rows | High from visible labels and main-console workflow |

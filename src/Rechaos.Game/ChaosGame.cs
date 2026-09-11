@@ -189,6 +189,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (_slidePanels) _panelSlideTransition.Begin(current, _inputTime);
             foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
                 PlayGeneralSound(slot);
+            if (current == ClientScreen.Endgame && _state?.Outcome is not null)
+                _showEndgameNotice = EndgameNoticePresentation.For(_state) is not null;
         };
         var userDataRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -231,6 +233,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         for (var index = 0; index < _cityOwnershipLayers.Length; index++)
             _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
         _endgameBackground = LoadTexture("PX00200.bmp");
+        _victoryBackground = LoadTexture("PX00202.bmp");
+        _eliminationBackground = LoadTexture("PX00203.bmp");
         _gameInfoBackground = LoadTexture("PX05021.bmp");
         _idleGangWarningBackground = LoadTexture("PX05020.bmp");
         _cityFinanceBackground = LoadTexture("PX05008.bmp");
@@ -362,7 +366,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     UpdateCity(keyboard);
                     break;
                 case ClientScreen.Endgame:
-                    if (Pressed(keyboard, Keys.Enter)) _screens.Show(ClientScreen.Title);
+                    if (Pressed(keyboard, Keys.Enter)) AdvanceEndgamePresentation();
                     break;
                 case ClientScreen.Handoff:
                     if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))
@@ -748,7 +752,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleCityClick(point);
                 break;
             case ClientScreen.Endgame:
-                if (EndgameDone.Contains(point)) _screens.Show(ClientScreen.Title);
+                if (_showEndgameNotice && EndgameNoticeLayout.Panel.Contains(point))
+                    _showEndgameNotice = false;
+                else if (!_showEndgameNotice && EndgameDone.Contains(point))
+                    _screens.Show(ClientScreen.Title);
                 break;
             case ClientScreen.Handoff:
                 if (HandoffReady.Contains(point)) FinishHandoff();

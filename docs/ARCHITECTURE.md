@@ -172,7 +172,8 @@ isolate media loading, setup, and snapshot/replay I/O. The testable
 `ChaosGame.PlanningTimer.cs`; expiry uses the ordinary replay-recorded planning
 completion path and never enters deterministic Core state. `ChaosGame.TurnFlow.cs`
 owns planning handoff, its presentation, and computer-turn orchestration;
-`ChaosGame.Endgame.cs` owns completed-match presentation; `ChaosGame.Hire.cs` owns
+`ChaosGame.Endgame.cs` owns the single-player victory/elimination splash and
+completed-match awards presentation; `ChaosGame.Hire.cs` owns
 the hire dock, comparison screen, and hire interactions. `ChaosGame.City.cs`
 owns city navigation, control-panel routing, board rendering, status projection,
 and direct map-command assignment. `ChaosGame.Sector.cs` owns the detailed-sector
