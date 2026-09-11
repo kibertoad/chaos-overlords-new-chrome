@@ -90,6 +90,36 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void RoundTripPreservesThreeItemGiveCommand()
+    {
+        var match = CreateMatch();
+        var source = match.FindGang(new GangId(0))!;
+        var recipient = new MatchGangState(
+            new GangId(50), new PlayerId(0), source.DefinitionId, source.SectorId, 5);
+        match.Players[0].AddGang(recipient);
+        var weapon = match.Definitions.Items.First(item => item.Type is >= 0 and <= 2).Id;
+        var armor = match.Definitions.Items.First(item => item.Type == 3).Id;
+        var miscellaneous = match.Definitions.Items.First(item => item.Type == 4).Id;
+        source.WeaponItemId = weapon;
+        source.ArmorItemId = armor;
+        source.MiscellaneousItemId = miscellaneous;
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), source.Id, GangAction.Give, CommandTarget.Gang(recipient.Id),
+            SecondaryTarget: CommandTarget.Item(weapon),
+            TertiaryTarget: CommandTarget.Item(armor),
+            QuaternaryTarget: CommandTarget.Item(miscellaneous))).Accepted);
+
+        var restored = RoundTrip(match);
+        var command = restored.FindGang(source.Id)!.QueuedCommand!.Command;
+
+        Assert.Equal(CommandTarget.Item(weapon), command.SecondaryTarget);
+        Assert.Equal(CommandTarget.Item(armor), command.TertiaryTarget);
+        Assert.Equal(CommandTarget.Item(miscellaneous), command.QuaternaryTarget);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void RoundTripPreservesComlinkMessagesAndReadState()
     {
         var match = CreateMatch(secondPlayerHuman: true);

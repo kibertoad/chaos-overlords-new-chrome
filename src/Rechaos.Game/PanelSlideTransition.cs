@@ -34,5 +34,6 @@ public sealed class PanelSlideTransition
         or ClientScreen.ComlinkSend or ClientScreen.Sector
         or ClientScreen.Gang or ClientScreen.Site or ClientScreen.ItemInformation
         or ClientScreen.Finance or ClientScreen.Ranking or ClientScreen.Items
-        or ClientScreen.Give or ClientScreen.Sell or ClientScreen.CombatSummary or ClientScreen.Search;
+        or ClientScreen.Give or ClientScreen.GiveTarget or ClientScreen.Sell
+        or ClientScreen.CombatSummary or ClientScreen.Search;
 }

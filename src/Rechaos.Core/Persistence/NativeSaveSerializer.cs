@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 18;
+    public const int CurrentFormatVersion = 19;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -190,6 +190,7 @@ public static class NativeSaveSerializer
             15 => MatchStateHasher.ComputeVersionEighteenSha256(state),
             16 => MatchStateHasher.ComputeVersionNineteenSha256(state),
             17 => MatchStateHasher.ComputeVersionTwentySha256(state),
+            18 => MatchStateHasher.ComputeVersionTwentyOneSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
         if (!CryptographicOperations.FixedTimeEquals(

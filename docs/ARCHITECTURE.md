@@ -195,7 +195,10 @@ requires the explicit `DisableSourceFileLineLimit=true` MSBuild property.
 It reads original media only from the extracted asset directory.
 The item workflow projects research/equipment state and submits Research,
 Equip, Give, and Sell through the replay recorder and authoritative Core
-validator; Give expands only legal same-sector recipients for the equipped item.
+validator. Give first uses the original three-slot equipment selection panel,
+then expands only recipients in the same sector who can accept every selected
+item. The transaction resolver reserves all outgoing Give items before applying
+transfers, preserving the manual's supported two-gang swap behavior.
 Computer Command/Hire turns use the deterministic baseline in `AI-SPEC.md` and
 submit through that same recorder; its policy is not an original-parity claim.
 The audio router consumes newly appended combat-resolution events and maps

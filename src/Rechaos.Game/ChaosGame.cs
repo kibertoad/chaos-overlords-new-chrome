@@ -70,6 +70,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _equipmentPurchaseBackground;
     private Texture2D? _equipmentResearchBackground;
     private Texture2D? _equipmentSellBackground;
+    private Texture2D? _equipmentGiveBackground;
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
     private Texture2D? _itemPortraits;
@@ -124,6 +125,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private string _comlinkStatus = string.Empty;
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
+    private readonly bool[] _giveSelections = new bool[3];
+    private GangId? _giveGang;
+    private ClientScreen _giveReturnScreen = ClientScreen.Items;
+    private bool _giveRepeats;
     private readonly bool[] _sellSelections = new bool[3];
     private GangId? _sellGang;
     private ClientScreen _sellReturnScreen = ClientScreen.Items;
@@ -240,6 +245,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _equipmentPurchaseBackground = LoadTexture("PX05004.bmp");
         _equipmentResearchBackground = LoadTexture("PX05007.bmp");
         _equipmentSellBackground = LoadTexture("PX05013.bmp");
+        _equipmentGiveBackground = LoadTexture("PX05015.bmp");
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
         _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);
@@ -413,15 +419,22 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Right)) CycleGang(1);
                     if (Pressed(keyboard, Keys.R)) QueueItemCommand(GangAction.Research);
                     if (Pressed(keyboard, Keys.E)) QueueItemCommand(GangAction.Equip);
-                    if (Pressed(keyboard, Keys.V)) OpenGiveTargets();
+                    if (Pressed(keyboard, Keys.V)) OpenGiveEquipment(ClientScreen.Items);
                     if (Pressed(keyboard, Keys.S)) OpenSellEquipment(ClientScreen.Items);
                     if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
                     break;
                 case ClientScreen.Give:
+                    if (Pressed(keyboard, Keys.D1)) ToggleGiveSelection(0);
+                    if (Pressed(keyboard, Keys.D2)) ToggleGiveSelection(1);
+                    if (Pressed(keyboard, Keys.D3)) ToggleGiveSelection(2);
+                    if (Pressed(keyboard, Keys.Enter)) OpenGiveTargets();
+                    if (Pressed(keyboard, Keys.Back)) CloseGiveEquipment();
+                    break;
+                case ClientScreen.GiveTarget:
                     if (Pressed(keyboard, Keys.Up)) MoveGiveCursor(-1);
                     if (Pressed(keyboard, Keys.Down)) MoveGiveCursor(1);
                     if (Pressed(keyboard, Keys.Enter)) QueueSelectedGive();
-                    if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.Items);
+                    if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.Give);
                     break;
                 case ClientScreen.Sell:
                     if (Pressed(keyboard, Keys.D1)) ToggleSellSelection(0);
@@ -586,6 +599,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 DrawItems(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.Give when _state is not null:
+                DrawGiveEquipment(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.GiveTarget when _state is not null:
                 DrawGiveTargets(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.Sell when _state is not null:
@@ -746,6 +762,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleItemsClick(point);
                 break;
             case ClientScreen.Give:
+                HandleGiveEquipmentClick(point);
+                break;
+            case ClientScreen.GiveTarget:
                 HandleGiveClick(point);
                 break;
             case ClientScreen.Sell:

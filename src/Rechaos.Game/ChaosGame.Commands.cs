@@ -179,6 +179,11 @@ public sealed partial class ChaosGame
         }
         if (CommandOverlayLayout.OpensTargetPicker(action))
         {
+            if (action == GangAction.Give)
+            {
+                OpenGiveEquipment(_commandReturnScreen, _commandRepeats);
+                return;
+            }
             if (action == GangAction.Sell)
             {
                 OpenSellEquipment(_commandReturnScreen, _commandRepeats);

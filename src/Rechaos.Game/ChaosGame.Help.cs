@@ -111,7 +111,8 @@ public sealed partial class ChaosGame
             ClientScreen.Sector => "Sector View",
             ClientScreen.Gang => "Gang Information",
             ClientScreen.Site => "Sites",
-            ClientScreen.ItemInformation or ClientScreen.Items or ClientScreen.Give or ClientScreen.Sell => "Item Information",
+            ClientScreen.ItemInformation or ClientScreen.Items or ClientScreen.Give
+                or ClientScreen.GiveTarget or ClientScreen.Sell => "Item Information",
             ClientScreen.Finance => "The Inner Sanctum",
             ClientScreen.Ranking or ClientScreen.Endgame => "Endgame Screen",
             _ => "Introduction"

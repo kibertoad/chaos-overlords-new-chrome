@@ -54,6 +54,7 @@ public static class CommandResolver
         if (phase == ExecutionPhase.Combat) return ResolveCombatPhase(state, commands).Commands;
         if (phase == ExecutionPhase.Chaos) return ResolveChaosPhase(state, commands);
         if (phase == ExecutionPhase.Control) return ResolveControlPhase(state, commands);
+        if (phase == ExecutionPhase.Transaction) return ResolveTransactionPhase(state, commands);
         var results = new List<CommandResolutionResult>(commands.Count);
         var resolvedSequences = new HashSet<long>();
         foreach (var queued in commands)
@@ -414,24 +415,88 @@ public static class CommandResolver
     private static CommandResolutionResult ResolveGive(MatchState state, GameCommand command)
     {
         var source = state.FindGang(command.Gang)!;
-        var target = state.FindGang(new GangId(command.Target.Id))!;
-        var itemIndex = checked((short)command.SecondaryTarget!.Value.Id);
-        var slot = EquipmentRules.SlotFor(state.Definitions.Items[itemIndex]);
-        if (EquipmentRules.EquippedItem(source, slot) != itemIndex)
+        var items = command.GiveTargets().Select(target => checked((short)target.Id)).ToArray();
+        var unavailable = items.FirstOrDefault(itemIndex =>
+            EquipmentRules.EquippedItem(source,
+                EquipmentRules.SlotFor(state.Definitions.Items[itemIndex])) != itemIndex, (short)-1);
+        if (unavailable >= 0)
             return Complete(state, command, GameEventKind.CommandFailed,
                 new CommandResolutionDetails(
-                    CommandResolutionCode.ItemUnavailable, [], 0, ItemId: itemIndex),
+                    CommandResolutionCode.ItemUnavailable, [], 0, ItemId: unavailable),
                 GameNotificationKind.Equipment);
 
-        EquipmentRules.Unequip(source, slot);
-        var replaced = EquipmentRules.Equip(target, slot, itemIndex);
+        foreach (var itemIndex in items)
+            EquipmentRules.Unequip(source, EquipmentRules.SlotFor(state.Definitions.Items[itemIndex]));
+        return CompleteGive(state, command, items);
+    }
+
+    private static IReadOnlyList<CommandResolutionResult> ResolveTransactionPhase(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> commands)
+    {
+        var prepared = commands.Where(queued => queued.Command.Action == GangAction.Give)
+            .ToDictionary(queued => queued.Sequence, queued => PrepareGive(state, queued.Command));
+        foreach (var give in prepared.Values.Where(give => give.Available))
+        foreach (var itemIndex in give.Items)
+            EquipmentRules.Unequip(state.FindGang(give.Command.Gang)!,
+                EquipmentRules.SlotFor(state.Definitions.Items[itemIndex]));
+
+        var results = new List<CommandResolutionResult>(commands.Count);
+        foreach (var queued in commands)
+        {
+            if (queued.Command.Action != GangAction.Give)
+            {
+                results.Add(Resolve(state, queued));
+                continue;
+            }
+            var give = prepared[queued.Sequence];
+            results.Add(give.Available
+                ? CompleteGive(state, give.Command, give.Items)
+                : Complete(state, give.Command, GameEventKind.CommandFailed,
+                    new CommandResolutionDetails(
+                        CommandResolutionCode.ItemUnavailable, [], 0, ItemId: give.UnavailableItem),
+                    GameNotificationKind.Equipment));
+        }
+        return results;
+    }
+
+    private static PreparedGive PrepareGive(MatchState state, GameCommand command)
+    {
+        var source = state.FindGang(command.Gang)!;
+        var items = command.GiveTargets().Select(target => checked((short)target.Id)).ToArray();
+        var unavailable = items.FirstOrDefault(itemIndex =>
+            EquipmentRules.EquippedItem(source,
+                EquipmentRules.SlotFor(state.Definitions.Items[itemIndex])) != itemIndex, (short)-1);
+        return new PreparedGive(command, items, unavailable < 0, unavailable < 0 ? null : unavailable);
+    }
+
+    private static CommandResolutionResult CompleteGive(
+        MatchState state,
+        GameCommand command,
+        IReadOnlyList<short> items)
+    {
+        var target = state.FindGang(new GangId(command.Target.Id))!;
+        var replaced = new List<short>();
+        foreach (var itemIndex in items)
+        {
+            var slot = EquipmentRules.SlotFor(state.Definitions.Items[itemIndex]);
+            if (EquipmentRules.Equip(target, slot, itemIndex) is { } replacedItem)
+                replaced.Add(replacedItem);
+        }
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(
                 CommandResolutionCode.Resolved, [], 0,
-                PreviousValue: itemIndex, ResultValue: itemIndex,
-                ItemId: itemIndex, ReplacedItemId: replaced),
+                PreviousValue: items[0], ResultValue: items[0],
+                ItemId: items[0], ReplacedItemId: replaced.Count > 0 ? replaced[0] : null,
+                ItemIds: items, ReplacedItemIds: replaced),
             GameNotificationKind.Equipment);
     }
+
+    private sealed record PreparedGive(
+        GameCommand Command,
+        IReadOnlyList<short> Items,
+        bool Available,
+        short? UnavailableItem);
 
     private static CommandResolutionResult ResolveSell(MatchState state, GameCommand command)
     {
@@ -457,7 +522,9 @@ public static class CommandResolver
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(
                 CommandResolutionCode.Resolved, [], 0,
-                PreviousValue: selected[0].ItemIndex, CashDelta: proceeds, ItemId: selected[0].ItemIndex),
+                PreviousValue: selected[0].ItemIndex, CashDelta: proceeds,
+                ItemId: selected[0].ItemIndex,
+                ItemIds: selected.Select(entry => entry.ItemIndex).ToArray()),
             GameNotificationKind.Equipment);
     }
 

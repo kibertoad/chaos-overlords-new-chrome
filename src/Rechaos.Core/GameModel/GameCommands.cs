@@ -66,7 +66,8 @@ public sealed record GameCommand(
     CommandTarget Target,
     bool Repeat = false,
     CommandTarget? SecondaryTarget = null,
-    CommandTarget? TertiaryTarget = null)
+    CommandTarget? TertiaryTarget = null,
+    CommandTarget? QuaternaryTarget = null)
 {
     /// <summary>The one-to-three exact items selected by the sell panel.</summary>
     public IEnumerable<CommandTarget> SellTargets()
@@ -74,6 +75,14 @@ public sealed record GameCommand(
         yield return Target;
         if (SecondaryTarget is { } secondary) yield return secondary;
         if (TertiaryTarget is { } tertiary) yield return tertiary;
+    }
+
+    /// <summary>The one-to-three exact items selected by the give panel.</summary>
+    public IEnumerable<CommandTarget> GiveTargets()
+    {
+        if (SecondaryTarget is { } secondary) yield return secondary;
+        if (TertiaryTarget is { } tertiary) yield return tertiary;
+        if (QuaternaryTarget is { } quaternary) yield return quaternary;
     }
 }
 

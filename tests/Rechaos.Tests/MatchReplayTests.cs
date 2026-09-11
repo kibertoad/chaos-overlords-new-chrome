@@ -190,12 +190,21 @@ public sealed class MatchReplayTests
         Assert.Equal(new AiActionTarget(1, 1), OriginalAiActionTargetEncoding.Encode(state,
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Give,
                 CommandTarget.Gang(new GangId(50)), SecondaryTarget: CommandTarget.Item(weapon))));
+        Assert.Equal(new AiActionTarget(7, 1), OriginalAiActionTargetEncoding.Encode(state,
+            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Give,
+                CommandTarget.Gang(new GangId(50)), SecondaryTarget: CommandTarget.Item(weapon),
+                TertiaryTarget: CommandTarget.Item(armor),
+                QuaternaryTarget: CommandTarget.Item(miscellaneous))));
         Assert.Equal(new AiActionTarget(2, 0), OriginalAiActionTargetEncoding.Encode(state,
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Sell,
                 CommandTarget.Item(armor))));
         Assert.Equal(new AiActionTarget(4, 0), OriginalAiActionTargetEncoding.Encode(state,
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Sell,
                 CommandTarget.Item(miscellaneous))));
+        Assert.Equal(new AiActionTarget(7, 0), OriginalAiActionTargetEncoding.Encode(state,
+            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Sell,
+                CommandTarget.Item(weapon), SecondaryTarget: CommandTarget.Item(armor),
+                TertiaryTarget: CommandTarget.Item(miscellaneous))));
         Assert.Equal(AiActionTarget.None, OriginalAiActionTargetEncoding.Encode(state,
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Hide, CommandTarget.None)));
     }

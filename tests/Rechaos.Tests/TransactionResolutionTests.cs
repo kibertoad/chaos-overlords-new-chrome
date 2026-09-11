@@ -96,6 +96,62 @@ public sealed class TransactionResolutionTests
     }
 
     [Fact]
+    public void GiveTransfersAllThreeSelectedItemsToOneRecipient()
+    {
+        var data = BundledOriginalData.Load();
+        var weapon = data.Items.First(item => item.Type is >= 0 and <= 2).Id;
+        var armor = data.Items.First(item => item.Type == 3).Id;
+        var miscellaneous = data.Items.First(item => item.Type == 4).Id;
+        var match = CreateMatch(cash: 100, actorWeapon: weapon);
+        var source = match.FindGang(new GangId(10))!;
+        var target = match.FindGang(new GangId(11))!;
+        source.ArmorItemId = armor;
+        source.MiscellaneousItemId = miscellaneous;
+        EnterCommand(match);
+
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), source.Id, GangAction.Give, CommandTarget.Gang(target.Id),
+            SecondaryTarget: CommandTarget.Item(weapon),
+            TertiaryTarget: CommandTarget.Item(armor),
+            QuaternaryTarget: CommandTarget.Item(miscellaneous))).Accepted);
+        EnterTransaction(match);
+        match.FinishExecutionPhase();
+
+        Assert.Null(source.WeaponItemId);
+        Assert.Null(source.ArmorItemId);
+        Assert.Null(source.MiscellaneousItemId);
+        Assert.Equal(weapon, target.WeaponItemId);
+        Assert.Equal(armor, target.ArmorItemId);
+        Assert.Equal(miscellaneous, target.MiscellaneousItemId);
+        Assert.Equal([weapon, armor, miscellaneous],
+            Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.ItemIds);
+    }
+
+    [Fact]
+    public void GivePhaseAllowsTwoGangsToSwapSameSlotEquipment()
+    {
+        var data = BundledOriginalData.Load();
+        var weapons = data.Items.Where(item => item.Type is >= 0 and <= 2).Take(2).Select(item => item.Id).ToArray();
+        var match = CreateMatch(cash: 100, actorWeapon: weapons[0], targetWeapon: weapons[1]);
+        var first = match.FindGang(new GangId(10))!;
+        var second = match.FindGang(new GangId(11))!;
+        EnterCommand(match);
+
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), first.Id, GangAction.Give, CommandTarget.Gang(second.Id),
+            SecondaryTarget: CommandTarget.Item(weapons[0]))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), second.Id, GangAction.Give, CommandTarget.Gang(first.Id),
+            SecondaryTarget: CommandTarget.Item(weapons[1]))).Accepted);
+        EnterTransaction(match);
+        match.FinishExecutionPhase();
+
+        Assert.Equal(weapons[1], first.WeaponItemId);
+        Assert.Equal(weapons[0], second.WeaponItemId);
+        Assert.All(match.LastPhaseResolutions, result => Assert.True(result.Succeeded));
+    }
+
+    [Fact]
     public void SellRemovesItemAndPaysHalfRoundedDown()
     {
         var data = BundledOriginalData.Load();

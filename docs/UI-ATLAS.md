@@ -37,6 +37,8 @@ original-game capture confirms the screen and interaction state.
 | `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; patrol-car cell `(116,0,48,64)` | High for sheet contents, Medium for patrol-car crop |
 | `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
 | `PX05013` | Equipment to Sell panel with acting-gang portrait, three independently selectable equipment rows, original-price half-value proceeds, Cancel and OK | High from visible labels and original manual Sell workflow |
+| `PX05015` | Equipment to Give panel with acting-gang portrait and three independently selectable item apertures | High from visible label and original manual Give workflow |
+| `PX05006` | Movement destination panel with source-sector aperture and destination map aperture | High from visible label and geometry; behavior mapping remains incomplete |
 | `PX05011` | Player Rankings panel with six player-color vertical rails and movable Overlord portraits | High from visible structure and original WinHelp Ranking description |
 | `PX05020` | System Warning panel for confirming an end turn while at least one active gang is idle | High from visible text and client trigger semantics |
 | `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
@@ -189,9 +191,13 @@ cursor feedback remain to be validated.
   white segment twice before the bar settles to green remaining force and red
   missing force; the recovered timer state machine also retains the result for
   five final ticks.
-- The recreation Give target panel reuses `PX03000` portraits and lists only
-  validator-approved friendly recipients in the acting gang's sector. Its
-  layout remains provisional pending identification of the original panel.
+- `PX05015` is the original Equipment to Give panel. Its three item apertures
+  correspond to weapon, armor and miscellaneous slots and independently toggle
+  the exact items included in one Give command. OK advances to the recreation's
+  recipient list, which reuses `PX03000` portraits and contains only friendly
+  same-sector gangs able to accept every selected item's tech level. The
+  recipient-list layout remains provisional pending identification of its
+  original presentation.
 - `PX05004` and `PX05007` are the original Equipment to Purchase and Equipment
   to Research overlays. Equip and Research route legal item choices through
   these panels over the live detailed-sector view. Both open on the first of
@@ -292,6 +298,10 @@ to the acting gang's weapon, armor and miscellaneous slots. Clicking a populated
 row toggles its highlight; OK submits every highlighted exact item as one
 authoritative transaction, credits half of each raw item price rounded down, and
 ignores Factory purchase discounts. Cancel leaves the existing command intact.
+
+`PX05006` is visibly labeled `MOVEMENT`; its small upper-left source aperture
+and large destination-map aperture establish it as the original Move picker.
+The recreation does not yet route Move through this artwork.
 
 `PX05014` is the dedicated live Combat comparison panel rather than a flat
 target list. It identifies the sector, places attacker and defender owner/gang

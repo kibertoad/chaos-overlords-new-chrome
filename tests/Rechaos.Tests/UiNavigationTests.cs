@@ -134,6 +134,9 @@ public sealed class UiNavigationTests
         Assert.Equal(ClientScreen.City, router.Current);
         router.Show(ClientScreen.Items);
         router.Show(ClientScreen.Give);
+        router.Show(ClientScreen.GiveTarget);
+        Assert.True(router.Back());
+        Assert.Equal(ClientScreen.Give, router.Current);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.Items, router.Current);
         router.Show(ClientScreen.Sell);

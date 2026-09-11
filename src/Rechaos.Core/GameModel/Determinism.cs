@@ -64,7 +64,7 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 21;
+    private const int FormatVersion = 22;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
@@ -177,6 +177,15 @@ public static class MatchStateHasher
             includeAiFormationSectors: true, includeAiCoverageSectors: true,
             includeComlink: true);
 
+    internal static string ComputeVersionTwentyOneSha256(MatchState state) =>
+        ComputeSha256(state, 21, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
+            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
+            includeAiFormationSectors: true, includeAiCoverageSectors: true,
+            includeComlink: true, includeTertiaryTargets: true);
+
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
@@ -184,7 +193,8 @@ public static class MatchStateHasher
             includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
             includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
             includeAiFormationSectors: true, includeAiCoverageSectors: true,
-            includeComlink: true, includeTertiaryTargets: true);
+            includeComlink: true, includeTertiaryTargets: true,
+            includeQuaternaryTargets: true);
 
     private static string ComputeSha256(
         MatchState state,
@@ -206,7 +216,8 @@ public static class MatchStateHasher
         bool includeAiFormationSectors = false,
         bool includeAiCoverageSectors = false,
         bool includeComlink = false,
-        bool includeTertiaryTargets = false)
+        bool includeTertiaryTargets = false,
+        bool includeQuaternaryTargets = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -310,7 +321,7 @@ public static class MatchStateHasher
             foreach (var command in commands)
             {
                 writer.Write(command.Sequence);
-                WriteCommand(writer, command.Command, includeTertiaryTargets);
+                WriteCommand(writer, command.Command, includeTertiaryTargets, includeQuaternaryTargets);
             }
 
             foreach (var player in state.Players.OrderBy(item => item.Id.Value))
@@ -444,7 +455,11 @@ public static class MatchStateHasher
         }
     }
 
-    private static void WriteCommand(BinaryWriter writer, GameCommand command, bool includeTertiaryTarget)
+    private static void WriteCommand(
+        BinaryWriter writer,
+        GameCommand command,
+        bool includeTertiaryTarget,
+        bool includeQuaternaryTarget)
     {
         writer.Write(command.Player.Value); writer.Write(command.Gang.Value); writer.Write((byte)command.Action);
         WriteTarget(writer, command.Target); writer.Write(command.Repeat);
@@ -453,6 +468,11 @@ public static class MatchStateHasher
         {
             writer.Write(command.TertiaryTarget.HasValue);
             if (command.TertiaryTarget is { } tertiary) WriteTarget(writer, tertiary);
+        }
+        if (includeQuaternaryTarget)
+        {
+            writer.Write(command.QuaternaryTarget.HasValue);
+            if (command.QuaternaryTarget is { } quaternary) WriteTarget(writer, quaternary);
         }
     }
 

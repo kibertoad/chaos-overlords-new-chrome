@@ -16,12 +16,12 @@ internal static class OriginalAiActionTargetEncoding
             GangAction.Equip or GangAction.Research =>
                 new(checked((byte)command.Target.Id), 0),
             GangAction.Give => new(
-                EquipmentMask(state, command.SecondaryTarget!.Value.Id),
+                EquipmentMask(state, command.GiveTargets()),
                 GangSlot(state, command.Player, command.Target.Id)),
             GangAction.Influence => new(
                 checked((byte)(command.Target.Id % MatchLimits.SitesPerSector)), 0),
             GangAction.Move => new(checked((byte)command.Target.Id), 0),
-            GangAction.Sell => new(EquipmentMask(state, command.Target.Id), 0),
+            GangAction.Sell => new(EquipmentMask(state, command.SellTargets()), 0),
             _ => AiActionTarget.None
         };
     }
@@ -49,4 +49,8 @@ internal static class OriginalAiActionTargetEncoding
         var slot = EquipmentRules.SlotFor(state.Definitions.Items[itemId]);
         return checked((byte)(1 << (int)slot));
     }
+
+    private static byte EquipmentMask(MatchState state, IEnumerable<CommandTarget> targets) =>
+        targets.Aggregate((byte)0,
+            (mask, target) => checked((byte)(mask | EquipmentMask(state, target.Id))));
 }

@@ -358,14 +358,17 @@ claim about original-game behavior.
 - Observed statement: a gang may give one or all equipped items to one friendly
   gang; the recipient must meet item tech level, and an existing similar item is
   lost.
-- Interpretation: one Give command transfers its selected equipped item to the
-  friendly same-sector target, clears the source slot, and replaces the target's
-  same slot without a cash change.
+- Interpretation: one Give command transfers one, two, or all three selected
+  equipped items to one friendly same-sector target, clears every selected
+  source slot, and replaces the target's corresponding slots without a cash
+  change. All outgoing Give items are reserved before transfers are applied so
+  two gangs can exchange same-slot equipment as the manual explicitly allows.
 - Confidence: High for transfer, tech gate, and replacement loss; Medium for
   within-phase swap ordering.
-- Implementation: transaction validation and `CommandResolver.ResolveGive`.
-- Tests: transfer, replacement loss, possession validation, and tech validation
-  in `TransactionResolutionTests`.
+- Implementation: transaction validation, grouped transaction-phase Give
+  preparation, and `CommandResolver.ResolveGive`.
+- Tests: transfer, three-item batching, same-slot swaps, replacement loss,
+  possession validation, and tech validation in `TransactionResolutionTests`.
 
 ### RULE-SELL-001 — Half-price sale
 
