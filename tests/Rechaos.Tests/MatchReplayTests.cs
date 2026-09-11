@@ -154,7 +154,7 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
-    public void VersionTwentyOneReplaysSimultaneousHireOfferGeneration()
+    public void VersionTwentyTwoReplaysSimultaneousHireOfferGeneration()
     {
         var recorder = new MatchReplayRecorder(CreateMatch());
         recorder.FinishUpkeep();
@@ -168,7 +168,7 @@ public sealed class MatchReplayTests
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
         var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        Assert.Equal(21, document["formatVersion"]!.GetValue<int>());
+        Assert.Equal(22, document["formatVersion"]!.GetValue<int>());
         replay.Position = 0;
 
         var restored = MatchReplaySerializer.LoadAndReplay(
@@ -182,13 +182,19 @@ public sealed class MatchReplayTests
     [Fact]
     public void VersionTwentyRejectsSimultaneousHireOfferOperation()
     {
-        var recorder = new MatchReplayRecorder(CreateMatch());
+        var initial = CreateMatch();
+        var legacyInitialHash = MatchStateHasher.ComputeVersionTwentyTwoSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
         recorder.FinishUpkeep();
+        var legacyAfterUpkeepHash =
+            MatchStateHasher.ComputeVersionTwentyTwoSha256(recorder.State);
         recorder.PrepareSimultaneousHireOffers();
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
         var document = JsonNode.Parse(replay.ToArray())!.AsObject();
         document["formatVersion"] = 20;
+        document["initialStateSha256"] = legacyInitialHash;
+        document["steps"]![0]!["resultingStateSha256"] = legacyAfterUpkeepHash;
         using var mislabeled = new MemoryStream(
             Encoding.UTF8.GetBytes(document.ToJsonString()));
 
@@ -197,6 +203,31 @@ public sealed class MatchReplayTests
                 mislabeled, recorder.State.Definitions));
 
         Assert.Contains("introduced in replay format 21", exception.Message);
+    }
+
+    [Fact]
+    public void VersionTwentyOneReplayRetainsVersionTwentyTwoHashCompatibility()
+    {
+        var initial = CreateMatch();
+        var legacyInitialHash = MatchStateHasher.ComputeVersionTwentyTwoSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
+        recorder.FinishUpkeep();
+        var legacyResultHash = MatchStateHasher.ComputeVersionTwentyTwoSha256(recorder.State);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = 21;
+        document["initialStateSha256"] = legacyInitialHash;
+        document["steps"]![0]!["resultingStateSha256"] = legacyResultHash;
+        using var legacy = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var restored = MatchReplaySerializer.LoadAndReplay(
+            legacy, recorder.State.Definitions);
+
+        Assert.Equal(
+            MatchStateHasher.ComputeVersionTwentyTwoSha256(recorder.State),
+            MatchStateHasher.ComputeVersionTwentyTwoSha256(restored));
     }
 
     [Theory]

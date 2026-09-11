@@ -227,9 +227,8 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    // 21 added PrepareSimultaneousHireOffers, the ordered hire draw an online turn takes. The
-    // state hash did not change with it, so 20 and 21 verify against the same one.
-    public const int CurrentFormatVersion = 21;
+    // 22 embeds native save 20 and canonical hash 23, which authenticates event history.
+    public const int CurrentFormatVersion = 22;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -428,7 +427,8 @@ public static class MatchReplaySerializer
         }
         string[] candidateHashes = replayVersion switch
         {
-            >= 20 => [MatchStateHasher.ComputeSha256(state)],
+            >= 22 => [MatchStateHasher.ComputeSha256(state)],
+            20 or 21 => [MatchStateHasher.ComputeVersionTwentyTwoSha256(state)],
             19 => [MatchStateHasher.ComputeVersionTwentyOneSha256(state)],
             18 => [MatchStateHasher.ComputeVersionTwentySha256(state)],
             17 => [MatchStateHasher.ComputeVersionNineteenSha256(state)],

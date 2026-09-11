@@ -1,0 +1,196 @@
+namespace Rechaos.Core.GameModel;
+
+internal static class CanonicalEventWriter
+{
+    public static void Write(BinaryWriter writer, GameEvent value)
+    {
+        writer.Write(value.Sequence);
+        writer.Write(value.Turn);
+        writer.Write((byte)value.Phase);
+        WriteNullableByte(writer, value.ExecutionPhase is { } phase ? (byte)phase : null);
+        writer.Write((byte)value.Kind);
+        writer.Write(value.Player.Value);
+        WriteNullableInt(writer, value.Gang?.Value);
+        writer.Write((byte)value.Action);
+        WriteTarget(writer, value.Target);
+        WriteNullableTarget(writer, value.SecondaryTarget);
+        WriteNullableTarget(writer, value.TertiaryTarget);
+        WriteNullableTarget(writer, value.QuaternaryTarget);
+        WriteResolution(writer, value.Resolution);
+        WriteEconomy(writer, value.Economy);
+        WriteHire(writer, value.Hire);
+        WriteHireOffer(writer, value.HireOffer);
+        WriteElimination(writer, value.Elimination);
+        WritePoliceAttack(writer, value.PoliceAttack);
+        WriteBigManPoints(writer, value.BigManPoints);
+        WriteOutcome(writer, value.MatchOutcome);
+    }
+
+    private static void WriteResolution(BinaryWriter writer, CommandResolutionDetails? value)
+    {
+        writer.Write(value is not null);
+        if (value is null) return;
+        writer.Write((byte)value.Code);
+        WriteInts(writer, value.Rolls);
+        writer.Write(value.Successes);
+        WriteNullableInt(writer, value.PreviousValue);
+        WriteNullableInt(writer, value.ResultValue);
+        writer.Write(value.CashDelta);
+        WriteNullableShort(writer, value.ItemId);
+        WriteNullableShort(writer, value.ReplacedItemId);
+        WriteNullableInt(writer, value.AttackValue);
+        WriteNullableInt(writer, value.DefenseValue);
+        WriteNullableInts(writer, value.RetaliationRolls);
+        writer.Write(value.RetaliationSuccesses);
+        writer.Write(value.Damage);
+        writer.Write(value.RetaliationDamage);
+        WriteNullableInt(writer, value.DetectionRoll);
+        WriteNullableInt(writer, value.DetectionChance);
+        WriteNullableInt(writer, value.ChanceRoll);
+        WriteNullableInt(writer, value.ChanceSides);
+        WriteNullableShort(writer, value.RetaliationItemId);
+        WriteNullableShorts(writer, value.ItemIds);
+        WriteNullableShorts(writer, value.ReplacedItemIds);
+    }
+
+    private static void WriteEconomy(BinaryWriter writer, EconomyResolutionDetails? value)
+    {
+        writer.Write(value is not null);
+        if (value is null) return;
+        writer.Write(value.PreviousCash);
+        writer.Write(value.SectorIncome);
+        writer.Write(value.SiteIncome);
+        writer.Write(value.GangUpkeep);
+        writer.Write(value.ResultCash);
+    }
+
+    private static void WriteHire(BinaryWriter writer, HireResolutionDetails? value)
+    {
+        writer.Write(value is not null);
+        if (value is null) return;
+        writer.Write(value.GangDefinitionId);
+        writer.Write(value.SectorId);
+        writer.Write(value.Cost);
+        WriteNullableInt(writer, value.Gang?.Value);
+        WriteNullableShort(writer, value.ReplacementOffer);
+        WriteNullableInt(writer, value.InitialForce);
+    }
+
+    private static void WriteHireOffer(BinaryWriter writer, HireOfferDetails? value)
+    {
+        writer.Write(value is not null);
+        if (value is null) return;
+        WriteNullableShort(writer, value.RemovedOffer);
+        WriteNullableShort(writer, value.AddedOffer);
+    }
+
+    private static void WriteElimination(BinaryWriter writer, EliminationDetails? value)
+    {
+        writer.Write(value is not null);
+        if (value is null) return;
+        writer.Write(value.EliminatedPlayer.Value);
+        writer.Write(value.RemainingPlayers);
+    }
+
+    private static void WritePoliceAttack(BinaryWriter writer, PoliceAttackResolutionDetails? value)
+    {
+        writer.Write(value is not null);
+        if (value is null) return;
+        writer.Write(value.SectorId);
+        writer.Write(value.DetectionChance);
+        writer.Write(value.DetectionRoll);
+        writer.Write(value.Detected);
+        writer.Write(value.AttackValue);
+        writer.Write(value.DefenseValue);
+        WriteInts(writer, value.Rolls);
+        writer.Write(value.Successes);
+        writer.Write(value.Damage);
+        writer.Write(value.PreviousForce);
+        writer.Write(value.ResultForce);
+    }
+
+    private static void WriteBigManPoints(BinaryWriter writer, BigManPointDetails? value)
+    {
+        writer.Write(value is not null);
+        if (value is null) return;
+        writer.Write(value.PreviousPoints);
+        writer.Write(value.ControlledCentralSectors);
+        writer.Write(value.ResultPoints);
+    }
+
+    private static void WriteOutcome(BinaryWriter writer, MatchOutcomeDetails? value)
+    {
+        writer.Write(value is not null);
+        if (value is null) return;
+        writer.Write((byte)value.Scenario);
+        writer.Write((byte)value.Reason);
+        writer.Write(value.CompletedTurn);
+        writer.Write(value.Winners.Count);
+        foreach (var winner in value.Winners) writer.Write(winner.Value);
+        writer.Write(value.Standings.Count);
+        foreach (var standing in value.Standings)
+        {
+            writer.Write(standing.Player.Value);
+            writer.Write(standing.Place);
+            writer.Write(standing.Score);
+        }
+        writer.Write(value.Awards.Count);
+        foreach (var award in value.Awards)
+        {
+            writer.Write((byte)award.Award);
+            writer.Write(award.Value);
+            writer.Write(award.Recipients.Count);
+            foreach (var recipient in award.Recipients) writer.Write(recipient.Value);
+        }
+    }
+
+    private static void WriteInts(BinaryWriter writer, IReadOnlyList<int> values)
+    {
+        writer.Write(values.Count);
+        foreach (var value in values) writer.Write(value);
+    }
+
+    private static void WriteNullableInts(BinaryWriter writer, IReadOnlyList<int>? values)
+    {
+        writer.Write(values is not null);
+        if (values is not null) WriteInts(writer, values);
+    }
+
+    private static void WriteNullableShorts(BinaryWriter writer, IReadOnlyList<short>? values)
+    {
+        writer.Write(values is not null);
+        if (values is null) return;
+        writer.Write(values.Count);
+        foreach (var value in values) writer.Write(value);
+    }
+
+    private static void WriteNullableTarget(BinaryWriter writer, CommandTarget? value)
+    {
+        writer.Write(value.HasValue);
+        if (value is { } target) WriteTarget(writer, target);
+    }
+
+    private static void WriteTarget(BinaryWriter writer, CommandTarget value)
+    {
+        writer.Write((byte)value.Kind);
+        writer.Write(value.Id);
+    }
+
+    private static void WriteNullableInt(BinaryWriter writer, int? value)
+    {
+        writer.Write(value.HasValue);
+        if (value.HasValue) writer.Write(value.Value);
+    }
+
+    private static void WriteNullableShort(BinaryWriter writer, short? value)
+    {
+        writer.Write(value.HasValue);
+        if (value.HasValue) writer.Write(value.Value);
+    }
+
+    private static void WriteNullableByte(BinaryWriter writer, byte? value)
+    {
+        writer.Write(value.HasValue);
+        if (value.HasValue) writer.Write(value.Value);
+    }
+}

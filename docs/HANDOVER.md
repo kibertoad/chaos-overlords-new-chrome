@@ -11,14 +11,14 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,338 tests; its offline restore emitted
+  isolated Release build passed all 1,343 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v19, replays are v21, canonical hashes are v22, asset
+- Native saves are format v20, replays are v22, canonical hashes are v23, asset
   manifests are v6, extracted help is v3, and client preferences are v6. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
@@ -368,9 +368,12 @@ Last updated: 2026-09-11
   of the source gang's exact three equipped items. Transactions now scan fixed
   player and roster slots, reserve outgoing items, and apply incoming gifts only
   after recipient transactions, allowing swaps and overwriting same-turn buys
-  exactly as the resolver does. Native saves are v19, replays are v21 and canonical hashes
-  are v22; the immediately previous formats
+  exactly as the resolver does. Native saves are v20, replays are v22 and canonical hashes
+  are v23; the immediately previous formats
   remain readable through their preserved fingerprint projections.
+- Canonical hash v23 authenticates the complete ordered event history, including
+  nested command, economy, hire, police, objective, and outcome facts. Native
+  save v20 and replay v22 retain explicit v19/v21 compatibility projections.
 - Move now uses the original `PX05006` Movement panel. Its destination aperture
   is an exact 3-by-3 composition of the city map's native 54-by-52 ownership
   tiles around the acting gang, with mouse and directional-key selection limited

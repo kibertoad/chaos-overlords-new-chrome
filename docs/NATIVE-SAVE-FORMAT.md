@@ -1,6 +1,6 @@
 # Recreation-native save format
 
-Status: implemented format version 19
+Status: implemented format version 20
 Last updated: 2026-09-11
 
 This format belongs to the recreation. It is deliberately separate from the
@@ -9,7 +9,7 @@ claim of binary compatibility with either of them.
 
 ## Container and limits
 
-- UTF-8 JSON with camel-case property names and `formatVersion: 19`.
+- UTF-8 JSON with camel-case property names and `formatVersion: 20`.
 - Maximum accepted size: 16 MiB.
 - Unknown properties, missing constructor fields, invalid identifiers, invalid
   enum/phase combinations, and inconsistent sequence counters are rejected.
@@ -25,13 +25,13 @@ serializer, then atomically promotes it. A valid previous primary becomes
 good backup. Recovery loads the backup only when the primary is missing,
 unreadable, or invalid.
 
-## Version 19 document
+## Version 20 document
 
 The top-level members are:
 
 | Member | Contents |
 |---|---|
-| `formatVersion` | Schema discriminator; currently `19` |
+| `formatVersion` | Schema discriminator; currently `20` |
 | `definitionsSha256` | Gameplay-definition compatibility fingerprint |
 | `stateSha256` | Canonical authoritative-state fingerprint |
 | `setup` | Scenario, duration, initial seed, global AI mentality, and ordered player definitions including portrait IDs |
@@ -49,7 +49,7 @@ snapshot.
 
 ## Compatibility policy
 
-Readers currently accept versions 1 through 19. This pre-1.0 compatibility is
+Readers currently accept versions 1 through 20. This pre-1.0 compatibility is
 useful test coverage, not a product guarantee: readers and fixtures for old
 development schemas may be removed or replaced when the authoritative model
 changes. Older documents currently migrate formerly implicit
@@ -84,6 +84,9 @@ multi-item Give carries a recipient plus all three equipment slots. Older
 documents naturally restore the absent targets as null; a legacy-labeled save
 that populates a queued-command or event target introduced by a later schema is
 rejected before reconstruction and legacy-hash verification.
+Version 20 advances the canonical hash to version 23 and authenticates every
+ordered event body and nested resolution fact; version 19 remains readable
+through its preserved version-22 hash projection.
 The appropriate legacy canonical hash is verified before the
 migrated state is returned. Unknown
 versions remain rejected. Starting with 1.0.0, incompatible changes must
@@ -95,7 +98,7 @@ post-1.0 policy.
 Original-save import/export is an explicit non-goal. Native snapshots must never
 be presented as converted original saves.
 
-## Replay format version 21
+## Replay format version 22
 
 `MatchReplayRecorder` captures an initial native snapshot, then requires every
 authoritative mutation to pass through its API. It covers command submission and
@@ -132,7 +135,8 @@ multi-item Give. Version 21 retains native snapshot version 19 and hash version
 22, and adds the ordered `PrepareSimultaneousHireOffers` operation required by
 simultaneous online turns. The operation is rejected when it is mislabeled as
 version 20 or earlier instead of being retroactively accepted by an older
-schema.
+schema. Version 22 embeds native snapshot version 20 and canonical hash version
+23, authenticating the event history after every recorded mutation.
 
 Playback enforces the introduction boundary of every operation added after the
 base v2 schema: `PrepareHireOffers` requires v3, `PrepareAiPlanning` v6,
@@ -167,7 +171,8 @@ single-action validation. Replay version 11 embeds native version 10, version
 embeds native version 13, version 15 embeds native version 14, version 16
 embeds native version 15, version 17 embeds native version 16, version 18
 embeds native version 17, version 19 embeds native version 18, and version 20
-embeds native version 19. Version 21 retains native version 19.
+embeds native version 19. Version 21 retains native version 19, and version 22
+embeds native version 20.
 Version 12 uses the version-14 hash and initializes action histories to `None`;
 version 11 uses the version-13 hash and
 derives placement anchors; version 10 uses the version-12 hash and migrates the
@@ -175,7 +180,8 @@ new modifier to false; version 9 uses its version-11 hash, versions 7 and 8
 use version 10, and version 6 uses version 9. Version 2 through 5 replay
 documents remain accepted through their legacy hash paths. Replay versions 18
 and 19 retain their version-20 and version-21 hash projections respectively;
-replay versions 20 and 21 use the current canonical state hash version 22.
+replay versions 20 and 21 use the preserved canonical state hash version 22.
+Replay version 22 uses canonical state hash version 23.
 Initial-state migration is covered for
 replay version 8, and version 9 operation semantics are covered. Additional
 pre-1.0 legacy fixtures are not a release gate. The initial snapshot remains

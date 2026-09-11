@@ -84,6 +84,24 @@ public sealed class DeterminismTests
     }
 
     [Fact]
+    public void EventHistoryContributesToCurrentCanonicalHash()
+    {
+        var first = CreateMatch();
+        var second = CreateMatch();
+        first.FinishUpkeep();
+        second.FinishUpkeep();
+        var events = Assert.IsType<List<GameEvent>>(second.Events);
+        events[0] = events[0] with { Turn = events[0].Turn + 1 };
+
+        Assert.Equal(
+            MatchStateHasher.ComputeVersionTwentyTwoSha256(first),
+            MatchStateHasher.ComputeVersionTwentyTwoSha256(second));
+        Assert.NotEqual(
+            MatchStateHasher.ComputeSha256(first),
+            MatchStateHasher.ComputeSha256(second));
+    }
+
+    [Fact]
     public void MatchTransitionCapturesResultingPhaseHash()
     {
         var match = CreateMatch();

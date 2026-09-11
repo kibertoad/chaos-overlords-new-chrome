@@ -344,7 +344,7 @@ literal capacity, record stride, copy bounds, count update, and cursor branch.
 **Recreation status:** Authoritative local-human delivery now validates the
 active command-phase sender and human recipients, supports deterministic
 multi-recipient delivery, retains the newest 16 messages, and tracks unread
-state. Version-19 saves, version-20 replays, and canonical hash version 22
+state. Version-20 saves, version-22 replays, and canonical hash version 23
 include every inbox. The client routes the original `PX05017` View and
 `PX05018` Send panels, including newest-first entry, paging, read-state clearing,
 six recipient cells, the four recovered 40-character rows, and the main-console
