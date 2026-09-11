@@ -199,6 +199,9 @@ validator. Give first uses the original three-slot equipment selection panel,
 then expands only recipients in the same sector who can accept every selected
 item. The transaction resolver reserves all outgoing Give items before applying
 transfers, preserving the manual's supported two-gang swap behavior.
+Move uses `PX05006` and projects its 3-by-3 neighborhood directly from the same
+native ownership tiles as the city map; command validation remains the authority
+for edge, adjacency, and friendly-capacity availability.
 Computer Command/Hire turns use the deterministic baseline in `AI-SPEC.md` and
 submit through that same recorder; its policy is not an original-parity claim.
 The audio router consumes newly appended combat-resolution events and maps

@@ -56,6 +56,11 @@ public sealed partial class ChaosGame
     {
         if (_choosingCommandTarget)
         {
+            if (IsMovementCommandPicker())
+            {
+                HandleMovementCommandClick(point);
+                return;
+            }
             if (IsAttackCommandPicker())
             {
                 HandleAttackCommandClick(point);
@@ -280,6 +285,11 @@ public sealed partial class ChaosGame
             DrawEquipmentCommandTargets(batch, pixel, font, state);
             return;
         }
+        if (IsMovementCommandPicker())
+        {
+            DrawMovementCommandTargets(batch, pixel, state);
+            return;
+        }
         if (IsInfluenceCommandPicker())
         {
             DrawInfluenceCommandTargets(batch, pixel, state);
@@ -320,6 +330,10 @@ public sealed partial class ChaosGame
 
     private bool IsAttackCommandPicker() => _commandTargetOptions.Count > 0
         && _commandTargetOptions[0].Action == GangAction.Attack;
+
+    private bool IsMovementCommandPicker() => _choosingCommandTarget
+        && _commandTargetOptions.Count > 0
+        && _commandTargetOptions[0].Action == GangAction.Move;
 
     private void DrawInfluenceCommandTargets(
         SpriteBatch batch,

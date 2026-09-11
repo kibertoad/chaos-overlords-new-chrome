@@ -38,7 +38,7 @@ original-game capture confirms the screen and interaction state.
 | `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
 | `PX05013` | Equipment to Sell panel with acting-gang portrait, three independently selectable equipment rows, original-price half-value proceeds, Cancel and OK | High from visible labels and original manual Sell workflow |
 | `PX05015` | Equipment to Give panel with acting-gang portrait and three independently selectable item apertures | High from visible label and original manual Give workflow |
-| `PX05006` | Movement destination panel with source-sector aperture and destination map aperture | High from visible label and geometry; behavior mapping remains incomplete |
+| `PX05006` | Movement destination panel with acting-gang portrait and native-tile 3x3 sector neighborhood | High from visible label, exact geometry and original manual Move workflow |
 | `PX05011` | Player Rankings panel with six player-color vertical rails and movable Overlord portraits | High from visible structure and original WinHelp Ranking description |
 | `PX05020` | System Warning panel for confirming an end turn while at least one active gang is idle | High from visible text and client trigger semantics |
 | `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
@@ -299,9 +299,12 @@ row toggles its highlight; OK submits every highlighted exact item as one
 authoritative transaction, credits half of each raw item price rounded down, and
 ignores Factory purchase discounts. Cancel leaves the existing command intact.
 
-`PX05006` is visibly labeled `MOVEMENT`; its small upper-left source aperture
-and large destination-map aperture establish it as the original Move picker.
-The recreation does not yet route Move through this artwork.
+`PX05006` is visibly labeled `MOVEMENT`; its small upper-left aperture holds the
+acting gang and its large destination-map aperture is exactly three native
+54-by-52 sector tiles wide by three tiles tall. The recreation composites the
+gang's live neighborhood from the same ownership layers as the city, marks the
+center source sector, and accepts only validator-approved adjacent destinations
+by mouse or directional keys before OK confirms the command.
 
 `PX05014` is the dedicated live Combat comparison panel rather than a flat
 target list. It identifies the sector, places attacker and defender owner/gang

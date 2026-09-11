@@ -71,6 +71,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _equipmentResearchBackground;
     private Texture2D? _equipmentSellBackground;
     private Texture2D? _equipmentGiveBackground;
+    private Texture2D? _movementBackground;
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
     private Texture2D? _itemPortraits;
@@ -246,6 +247,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _equipmentResearchBackground = LoadTexture("PX05007.bmp");
         _equipmentSellBackground = LoadTexture("PX05013.bmp");
         _equipmentGiveBackground = LoadTexture("PX05015.bmp");
+        _movementBackground = LoadTexture("PX05006.bmp");
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
         _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);
@@ -366,8 +368,18 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     UpdateComlinkView(keyboard);
                     break;
                 case ClientScreen.Commands:
-                    if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
-                    if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
+                    if (IsMovementCommandPicker())
+                    {
+                        if (Pressed(keyboard, Keys.Left)) MoveMovementTarget(-1, 0);
+                        if (Pressed(keyboard, Keys.Right)) MoveMovementTarget(1, 0);
+                        if (Pressed(keyboard, Keys.Up)) MoveMovementTarget(0, -1);
+                        if (Pressed(keyboard, Keys.Down)) MoveMovementTarget(0, 1);
+                    }
+                    else
+                    {
+                        if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
+                        if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
+                    }
                     if (Pressed(keyboard, Keys.Enter)) ActivateCommandSelection();
                     if (Pressed(keyboard, Keys.Back)) BackFromCommands();
                     break;

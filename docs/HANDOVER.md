@@ -114,6 +114,10 @@ Last updated: 2026-09-11
   same-slot swaps. Native saves are v19, replays are v20 and canonical hashes
   are v22; the immediately previous formats
   remain readable through their preserved fingerprint projections.
+- Move now uses the original `PX05006` Movement panel. Its destination aperture
+  is an exact 3-by-3 composition of the city map's native 54-by-52 ownership
+  tiles around the acting gang, with mouse and directional-key selection limited
+  to the authoritative adjacent-sector command options.
 - Fresh Siege matches now designate all six assigned starting HQ sectors as
   important, matching the manual's setup rule, and the city renders two gray
   pylons in each objective tile. This closes the unwinnable generated-Siege gap;
