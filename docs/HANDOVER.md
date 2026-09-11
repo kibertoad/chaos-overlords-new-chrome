@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,332 tests; its offline restore emitted
+  isolated Release build passed all 1,338 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -295,6 +295,9 @@ Last updated: 2026-09-11
 - Replay loading now enforces the recorded introduction version for every
   post-v2 authoritative operation. A relabeled legacy replay cannot execute
   later hire-offer, AI-planning, Comlink, or simultaneous-turn mutations.
+- Native saves and replays now also reject tertiary or quaternary queued-command
+  targets, submitted-command targets, and event targets under schema versions
+  that predate those fields, closing a legacy-hash projection bypass.
 - Sell now uses the original `PX05013` Equipment to Sell panel. Any combination
   of the acting gang's three equipped slots can be highlighted and confirmed in
   one command. The binary clears every selected slot but overwrites one payout

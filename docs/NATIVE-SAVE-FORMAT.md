@@ -81,7 +81,9 @@ development-format convenience, not a pre-1.0 compatibility promise. Version
 and fingerprints the optional tertiary command target used by multi-item Sell;
 version 19 adds and fingerprints the optional quaternary target needed when
 multi-item Give carries a recipient plus all three equipment slots. Older
-documents naturally restore the absent targets as null.
+documents naturally restore the absent targets as null; a legacy-labeled save
+that populates a queued-command or event target introduced by a later schema is
+rejected before reconstruction and legacy-hash verification.
 The appropriate legacy canonical hash is verified before the
 migrated state is returned. Unknown
 versions remain rejected. Starting with 1.0.0, incompatible changes must
@@ -135,7 +137,9 @@ schema.
 Playback enforces the introduction boundary of every operation added after the
 base v2 schema: `PrepareHireOffers` requires v3, `PrepareAiPlanning` v6,
 `PrepareAiHiring` v8, Comlink send/read v18, and simultaneous hire preparation
-v21. Relabeling a document cannot opt an older schema into newer mutations.
+v21. Submitted-command payloads likewise require v19 for tertiary targets and
+v20 for quaternary targets. Relabeling a document cannot opt an older schema
+into newer mutations or target shapes.
 
 Each ordered replay step stores its operation payload, the expected validation
 result where applicable, and the canonical state SHA-256 after the operation.

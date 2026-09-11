@@ -303,8 +303,10 @@ public static class MatchReplaySerializer
         {
             case ReplayOperationKind.SubmitCommand:
             {
-                var result = state.Submit(step.Command
-                    ?? throw new InvalidDataException($"Replay step {index} has no command."));
+                var command = step.Command
+                    ?? throw new InvalidDataException($"Replay step {index} has no command.");
+                ValidateCommandVersion(command, replayVersion, index);
+                var result = state.Submit(command);
                 VerifyResult(step, result.Accepted, (int)result.Validation.Code, index);
                 break;
             }
@@ -393,6 +395,16 @@ public static class MatchReplaySerializer
         ReplayOperationKind.PrepareSimultaneousHireOffers => 21,
         _ => 2
     };
+
+    private static void ValidateCommandVersion(GameCommand command, int replayVersion, int index)
+    {
+        if (replayVersion < 19 && command.TertiaryTarget is not null)
+            throw new InvalidDataException(
+                $"Replay step {index} uses a command target introduced in replay format 19.");
+        if (replayVersion < 20 && command.QuaternaryTarget is not null)
+            throw new InvalidDataException(
+                $"Replay step {index} uses a command target introduced in replay format 20.");
+    }
 
     private static void VerifyResult(ReplayStep step, bool accepted, int validationCode, int index)
     {

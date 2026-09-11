@@ -58,6 +58,7 @@ public static class NativeSaveSerializer
     {
         if (document.FormatVersion is < 1 or > CurrentFormatVersion)
             throw new InvalidDataException($"Unsupported native save format {document.FormatVersion}.");
+        ValidateVersionedTargets(document);
         if (!CryptographicOperations.FixedTimeEquals(
                 DecodeSha256(document.DefinitionsSha256, "definition fingerprint"),
                 DecodeSha256(DefinitionFingerprint(definitions), "current definition fingerprint")))
@@ -198,6 +199,34 @@ public static class NativeSaveSerializer
                 DecodeSha256(restoredHash, "restored state fingerprint")))
             throw new InvalidDataException("Native save state fingerprint does not match its contents.");
         return state;
+    }
+
+    private static void ValidateVersionedTargets(NativeSaveDocument document)
+    {
+        foreach (var queued in document.Runtime.Commands)
+            ValidateVersionedTargets(queued.Command, document.FormatVersion, "queued command");
+        foreach (var gameEvent in document.Runtime.Events)
+        {
+            if (document.FormatVersion < 18 && gameEvent.TertiaryTarget is not null)
+                throw new InvalidDataException(
+                    "Native save event uses a target introduced in format 18.");
+            if (document.FormatVersion < 19 && gameEvent.QuaternaryTarget is not null)
+                throw new InvalidDataException(
+                    "Native save event uses a target introduced in format 19.");
+        }
+    }
+
+    private static void ValidateVersionedTargets(
+        GameCommand command,
+        int formatVersion,
+        string owner)
+    {
+        if (formatVersion < 18 && command.TertiaryTarget is not null)
+            throw new InvalidDataException(
+                $"Native save {owner} uses a target introduced in format 18.");
+        if (formatVersion < 19 && command.QuaternaryTarget is not null)
+            throw new InvalidDataException(
+                $"Native save {owner} uses a target introduced in format 19.");
     }
 
     private static NativeSaveDocument Capture(MatchState state) => new(

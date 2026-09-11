@@ -239,6 +239,45 @@ public sealed class MatchReplayTests
             exception.Message);
     }
 
+    [Theory]
+    [InlineData(18, "tertiaryTarget", 19)]
+    [InlineData(19, "quaternaryTarget", 20)]
+    public void OlderReplayVersionsRejectCommandTargetsAddedByLaterSchemas(
+        int labeledVersion,
+        string property,
+        int introducedVersion)
+    {
+        var initial = CreateMatch();
+        var legacyInitialHash = labeledVersion == 18
+            ? MatchStateHasher.ComputeVersionTwentySha256(initial)
+            : MatchStateHasher.ComputeVersionTwentyOneSha256(initial);
+        var recorder = new MatchReplayRecorder(initial);
+        recorder.FinishUpkeep();
+        var legacyAfterUpkeepHash = labeledVersion == 18
+            ? MatchStateHasher.ComputeVersionTwentySha256(recorder.State)
+            : MatchStateHasher.ComputeVersionTwentyOneSha256(recorder.State);
+        Assert.True(recorder.Submit(new GameCommand(
+            new PlayerId(0), new GangId(0), GangAction.Hide, CommandTarget.None)).Accepted);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = labeledVersion;
+        document["initialStateSha256"] = legacyInitialHash;
+        document["steps"]![0]!["resultingStateSha256"] = legacyAfterUpkeepHash;
+        document["steps"]![1]!["command"]![property] =
+            JsonNode.Parse("{\"kind\":4,\"id\":0}");
+        using var legacy = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            MatchReplaySerializer.LoadAndReplay(
+                legacy, recorder.State.Definitions));
+
+        Assert.Contains(
+            $"introduced in replay format {introducedVersion}",
+            exception.Message);
+    }
+
     [Fact]
     public void ReplaysAiHiringRolePreparation()
     {
