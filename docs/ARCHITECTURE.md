@@ -479,6 +479,8 @@ phase-boundary hashes, and match outcome. Public collection projections are
 read-only; renderer/view models must not receive mutation paths. Event records
 also freeze their nested roll, item, winner, standing, award, and recipient
 collections when appended, so callers cannot invalidate authenticated history.
+Completed match outcomes use the same deep-freeze boundary and must agree with
+their single durable `MatchEnded` event when restored.
 
 ## Determinism boundary
 

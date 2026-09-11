@@ -115,6 +115,8 @@ public sealed class EndgameAwardTests
         FinishTurn(match);
 
         var outcome = Assert.IsType<MatchOutcome>(match.Outcome);
+        Assert.True(Assert.IsAssignableFrom<IList<PlayerId>>(outcome.Winners).IsReadOnly);
+        Assert.True(Assert.IsAssignableFrom<IList<EndgameAwardResult>>(outcome.Awards).IsReadOnly);
         var eventAwards = match.Events.Single(value =>
             value.Kind == GameEventKind.MatchEnded).MatchOutcome!.Awards;
         Assert.Equal(outcome.Awards.Count, eventAwards.Count);

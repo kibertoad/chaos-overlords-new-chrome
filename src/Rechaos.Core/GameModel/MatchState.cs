@@ -473,7 +473,7 @@ public sealed partial class MatchState
                 || !IsSha256(boundary.Sha256)))
             throw new ArgumentException("Restored phase hash history is invalid.", nameof(restore));
         _phaseHashes.AddRange(restore.PhaseHashes);
-        Outcome = restore.Outcome;
+        RestoreOutcome(restore);
     }
     public bool CanPlayerDetectGang(PlayerId observer, GangId targetGang)
     {
@@ -590,8 +590,8 @@ public sealed partial class MatchState
         AwardBigManPoints();
         if (Outcome is null && MatchOutcomeEvaluator.Evaluate(this) is { } outcome)
         {
-            Outcome = outcome;
-            AppendMatchEndedEvent(outcome);
+            Outcome = MatchOutcomeValidator.Freeze(outcome);
+            AppendMatchEndedEvent(Outcome);
         }
         return CaptureBoundary(Coordinator.FinishPlayerElimination());
     }
@@ -988,7 +988,4 @@ public sealed partial class MatchState
         return transition;
     }
 
-    private static bool IsSha256(string value) =>
-        value?.Length == 64 && value.All(character =>
-            character is >= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F');
 }

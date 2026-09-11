@@ -48,7 +48,9 @@ are emitted in key order, making a load/save cycle byte-stable for an unchanged
 snapshot. Restored notifications must be a contiguous suffix of their sequence
 counter and carry valid phase, sector, and event references. Comlink inboxes
 must contain the exact bounded suffix implied by their counter, with valid
-human senders and turn numbers.
+human senders and turn numbers. A completed outcome is accepted only with valid
+participants, standings and awards and exactly one matching `MatchEnded` event;
+its nested collections are frozen after construction.
 
 ## Compatibility policy
 

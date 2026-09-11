@@ -15,6 +15,54 @@ public sealed record MatchOutcome(
     IReadOnlyList<MatchStanding> Standings,
     IReadOnlyList<EndgameAwardResult> Awards);
 
+internal static class MatchOutcomeValidator
+{
+    public static MatchOutcome Freeze(MatchOutcome value) => value with
+    {
+        Winners = Array.AsReadOnly(value.Winners.ToArray()),
+        Standings = Array.AsReadOnly(value.Standings.ToArray()),
+        Awards = Array.AsReadOnly(value.Awards.Select(award => award with
+        {
+            Recipients = Array.AsReadOnly(award.Recipients.ToArray())
+        }).ToArray())
+    };
+
+    public static bool IsValid(
+        MatchOutcome value,
+        MatchSetup setup,
+        int currentTurn)
+    {
+        var players = setup.Players.Select(player => player.Id).ToHashSet();
+        return value.Scenario == setup.Scenario
+            && Enum.IsDefined(value.Reason)
+            && value.Turn is >= 1 && value.Turn <= currentTurn
+            && value.Winners.Count > 0
+            && value.Winners.Count == value.Winners.Distinct().Count()
+            && value.Winners.All(players.Contains)
+            && value.Standings.Count == players.Count
+            && value.Standings.Select(standing => standing.Player).ToHashSet().SetEquals(players)
+            && value.Standings.All(standing => standing.Place is >= 1
+                && standing.Place <= players.Count)
+            && value.Awards.Select(award => award.Award).Distinct().Count() == value.Awards.Count
+            && value.Awards.All(award => Enum.IsDefined(award.Award)
+                && award.Recipients.Count > 0
+                && award.Recipients.Count == award.Recipients.Distinct().Count()
+                && award.Recipients.All(players.Contains));
+    }
+
+    public static bool Matches(MatchOutcome outcome, MatchOutcomeDetails details) =>
+        outcome.Scenario == details.Scenario
+        && outcome.Reason == details.Reason
+        && outcome.Turn == details.CompletedTurn
+        && outcome.Winners.SequenceEqual(details.Winners)
+        && outcome.Standings.SequenceEqual(details.Standings)
+        && outcome.Awards.Count == details.Awards.Count
+        && outcome.Awards.Zip(details.Awards).All(pair =>
+            pair.First.Award == pair.Second.Award
+            && pair.First.Value == pair.Second.Value
+            && pair.First.Recipients.SequenceEqual(pair.Second.Recipients));
+}
+
 /// <summary>
 /// Projects authoritative match state into the manual-defined scenario rules.
 /// End-boundary timing and simultaneous winner treatment remain provisional.

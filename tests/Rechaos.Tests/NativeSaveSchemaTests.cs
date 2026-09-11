@@ -9,6 +9,33 @@ namespace Rechaos.Tests;
 public sealed partial class NativeSaveSerializerTests
 {
     [Fact]
+    public void CurrentSaveRejectsOutcomeThatDisagreesWithEndedEvent()
+    {
+        var match = CreateMatch();
+        match.Players[1].Status = PlayerStatus.Eliminated;
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        while (match.Coordinator.Phase == TurnPhase.Execution)
+            match.FinishExecutionPhase();
+        match.FinishHire(new PlayerId(0));
+        match.FinishHire(new PlayerId(1));
+        match.FinishPlayerElimination();
+        Assert.NotNull(match.Outcome);
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["outcome"]!["turn"] = 2;
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(modified, match.Definitions));
+
+        Assert.Contains("match outcome is invalid", exception.InnerException!.Message);
+    }
+
+    [Fact]
     public void CurrentSaveRejectsInvalidNotificationShape()
     {
         var match = CreateMatch();
