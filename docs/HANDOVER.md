@@ -34,7 +34,8 @@ Last updated: 2026-09-11
   no call through its gated effect wrapper. Detailed Combat cues start with
   their corresponding animation clips rather than at resolution time.
 - The four original Add/Remove/Begin/Cancel setup hit rectangles now defer their
-  action until release inside the same pressed control and cancel release outside.
+  action until release inside the same pressed control, cancel release outside,
+  and show their exact `PX00140` held-inside tiles.
 - Setup now offers the original None, 30 Seconds, 2 Minutes, and 5 Minutes
   planning limits. Human planning displays the recovered 60-by-3 bar, continues
   through planning panels, uses the original percent-first width quantization,

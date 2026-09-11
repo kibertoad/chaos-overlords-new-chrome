@@ -213,7 +213,9 @@ recovered slot table, whose known roles are named in code. Title push buttons
 and the four recovered setup push controls use slot 2; setup selector changes
 use slot 3, and a rejected player-count boundary additionally uses slot 4. The
 four setup controls defer their action until release inside the originally
-pressed rectangle and cancel a release outside. A human handoff
+pressed rectangle and cancel a release outside. Their held-inside state uses
+the exact four source rectangles from `PX00140`, while leaving the rectangle
+restores the baked `PX00143` control. A human handoff
 with pending Last Turn Events plays slot 6 once before opening the report panel.
 Equipped, unarmed, and detected-police combat events route their recovered
 sounds, while evasion remains silent. Combat and general effects share the

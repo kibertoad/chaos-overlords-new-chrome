@@ -36,12 +36,29 @@ public static class SetupButtonLayout
     public static Rectangle Start => new(370, 375, 92, 45);
     public static Rectangle Back => new(468, 375, 92, 45);
 
+    public static Rectangle PressedSource(SetupPushButton button) => button switch
+    {
+        SetupPushButton.AddPlayer => new Rectangle(220, 0, 92, 24),
+        SetupPushButton.RemovePlayer => new Rectangle(220, 24, 92, 24),
+        SetupPushButton.Start => new Rectangle(220, 48, 92, 45),
+        SetupPushButton.Back => new Rectangle(220, 93, 92, 45),
+        _ => throw new ArgumentOutOfRangeException(nameof(button))
+    };
+
+    public static Rectangle Destination(SetupPushButton button) => button switch
+    {
+        SetupPushButton.AddPlayer => AddPlayer,
+        SetupPushButton.RemovePlayer => RemovePlayer,
+        SetupPushButton.Start => Start,
+        SetupPushButton.Back => Back,
+        _ => throw new ArgumentOutOfRangeException(nameof(button))
+    };
+
     public static SetupPushButton? HitTest(Point point)
     {
-        if (AddPlayer.Contains(point)) return SetupPushButton.AddPlayer;
-        if (RemovePlayer.Contains(point)) return SetupPushButton.RemovePlayer;
-        if (Start.Contains(point)) return SetupPushButton.Start;
-        return Back.Contains(point) ? SetupPushButton.Back : null;
+        foreach (var button in Enum.GetValues<SetupPushButton>())
+            if (Destination(button).Contains(point)) return button;
+        return null;
     }
 }
 

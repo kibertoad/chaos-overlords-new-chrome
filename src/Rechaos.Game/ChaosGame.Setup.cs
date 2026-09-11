@@ -158,6 +158,12 @@ public sealed partial class ChaosGame
             batch.Draw(_setupBackground, new Rectangle(0, 0, 640, 460), Color.White);
         else
             batch.Draw(pixel, new Rectangle(70, 52, 500, 384), new Color(0, 0, 0, 220));
+        if (_setupControls is not null
+            && _pressedSetupButton is { } pressed
+            && _hoverPoint is { } buttonHover
+            && SetupButtonLayout.HitTest(buttonHover) == pressed)
+            batch.Draw(_setupControls, SetupButtonLayout.Destination(pressed),
+                SetupButtonLayout.PressedSource(pressed), Color.White);
         DrawBorder(batch, pixel, SetupScenarios[(int)_selectedScenario], Color.Gold, 2);
         DrawBorder(batch, pixel, SetupDurations[Array.IndexOf(Durations, _selectedDuration)], Color.Gold, 2);
         for (var index = 0; index < MatchLimits.PlayerCount; index++)

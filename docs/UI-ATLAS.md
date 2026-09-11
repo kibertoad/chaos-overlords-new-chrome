@@ -66,8 +66,11 @@ in original helper `0x0040eb5f`; the other coordinates were measured from the
 extracted bitmap. The helper uses half-open rectangle containment, restores the
 released image when the pointer leaves, and accepts only release inside. The
 recreation now uses its exact hit rectangles, defers each action until release
-inside the same control, and cancels a release outside. Depressed/disabled
-rendering and original cursor feedback remain to be validated.
+inside the same control, and cancels a release outside. While held inside, it
+draws the helper's exact `PX00140` source tiles: Add `(220,0,92,24)`, Remove
+`(220,24,92,24)`, Begin `(220,48,92,45)`, and Cancel `(220,93,92,45)`; moving
+outside restores the baked `PX00143` control. Disabled rendering and original
+cursor feedback remain to be validated.
 
 ## Rendering rules recovered so far
 
