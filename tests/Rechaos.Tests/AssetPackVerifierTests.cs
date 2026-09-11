@@ -27,6 +27,11 @@ public sealed class AssetPackVerifierTests : IDisposable
         var corrupt = await AssetPackVerifier.VerifyAsync(_root, ExtractorProgram.FormatVersion);
         Assert.False(corrupt.IsValid);
         Assert.Contains(corrupt.Errors, error => error.Contains("hash mismatch", StringComparison.OrdinalIgnoreCase));
+        var diagnostic = Assert.Single(corrupt.Diagnostics,
+            value => value.Code == "asset_hash_mismatch");
+        Assert.Equal("images/test.bin", diagnostic.Path);
+        Assert.Equal(hash, diagnostic.Expected);
+        Assert.Equal(Convert.ToHexStringLower(SHA256.HashData([1, 2, 3, 5])), diagnostic.Actual);
     }
 
     [Fact]
@@ -85,6 +90,33 @@ public sealed class AssetPackVerifierTests : IDisposable
         Assert.Equal(1, result.VerifiedFiles);
         Assert.Contains(result.Errors, error => error.Contains(
             Path.Combine("obsolete", "old.bin"), StringComparison.OrdinalIgnoreCase));
+        var diagnostic = Assert.Single(result.Diagnostics,
+            value => value.Code == "unexpected_asset");
+        Assert.Equal(Path.Combine("obsolete", "old.bin"), diagnostic.Path);
+    }
+
+    [Fact]
+    public async Task JsonReportHasStableSchemaModeCountsAndDiagnosticCodes()
+    {
+        var result = await AssetPackVerifier.VerifyAsync(
+            _root, ExtractorProgram.FormatVersion, verifyHashes: false,
+            ExtractorProgram.ExpectedExtractedAssetCount);
+
+        using var document = JsonDocument.Parse(
+            ExtractorProgram.SerializeVerificationReport(result, _root, quick: true));
+        var root = document.RootElement;
+        Assert.Equal(1, root.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(Path.GetFullPath(_root), root.GetProperty("assetRoot").GetString());
+        Assert.Equal("quick", root.GetProperty("verificationMode").GetString());
+        Assert.False(root.GetProperty("isValid").GetBoolean());
+        Assert.Equal(ExtractorProgram.FormatVersion,
+            root.GetProperty("expectedFormatVersion").GetInt32());
+        Assert.Equal(ExtractorProgram.ExpectedExtractedAssetCount,
+            root.GetProperty("expectedFiles").GetInt32());
+        Assert.Equal(0, root.GetProperty("verifiedFiles").GetInt32());
+        var diagnostic = Assert.Single(root.GetProperty("diagnostics").EnumerateArray());
+        Assert.Equal("manifest_missing", diagnostic.GetProperty("code").GetString());
+        Assert.Equal("manifest.json", diagnostic.GetProperty("path").GetString());
     }
 
     [Fact]

@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,375 tests; its offline restore emitted
+  isolated Release build passed all 1,376 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -25,6 +25,11 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- `Rechaos.Extractor --verify-output --json` now emits a stable schema-v1
+  automation report with quick/full mode, expected/actual format and file
+  counts, verified count, and categorized code/message/path/expected/actual
+  diagnostics. The
+  human output and exit-code contract remain unchanged.
 - Local-game RNG startup now matches the executable's unique seed path: capture
   the process-uptime millisecond clock at game construction and zero-extend only
   its low 16 bits. Explicit deterministic replay, test, and multiplayer seeds

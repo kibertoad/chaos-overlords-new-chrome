@@ -26,7 +26,7 @@ public static class ExtractorProgram
             {
                 var verification = await AssetPackVerifier.VerifyAsync(options.Output, FormatVersion,
                     !options.Quick, ExpectedExtractedAssetCount);
-                PrintVerification(verification, options.Output);
+                PrintVerification(verification, options.Output, options.Quick, options.Json);
                 return verification.IsValid ? 0 : 1;
             }
             if (options.Mode == ExtractorMode.GenerateCatalog)
@@ -227,12 +227,13 @@ public static class ExtractorProgram
     private static ExtractorOptions ParseArguments(string[] args)
     {
         if (args.Length == 0 || args.Contains("--help"))
-            throw new ArgumentException("Usage:\n  Rechaos.Extractor --source <original install> [--output <assets>] [--force]\n  Rechaos.Extractor --verify-source --source <original install>\n  Rechaos.Extractor --verify-output [--output <assets>] [--quick]\n  Rechaos.Extractor --catalog [--output <assets>] [--catalog-output <markdown>]\n  Rechaos.Extractor --analyze-px [--output <assets>]");
+            throw new ArgumentException("Usage:\n  Rechaos.Extractor --source <original install> [--output <assets>] [--force]\n  Rechaos.Extractor --verify-source --source <original install>\n  Rechaos.Extractor --verify-output [--output <assets>] [--quick] [--json]\n  Rechaos.Extractor --catalog [--output <assets>] [--catalog-output <markdown>]\n  Rechaos.Extractor --analyze-px [--output <assets>]");
         string? source = null;
         var output = Path.Combine("src", "Rechaos.Game", "Assets");
         var mode = ExtractorMode.Extract;
         var quick = false;
         var force = false;
+        var json = false;
         string? catalogOutput = null;
         for (var i = 0; i < args.Length; i++)
         {
@@ -241,6 +242,7 @@ public static class ExtractorProgram
             else if (args[i] == "--verify-source") mode = ExtractorMode.VerifySource;
             else if (args[i] == "--verify-output") mode = ExtractorMode.VerifyOutput;
             else if (args[i] == "--quick") quick = true;
+            else if (args[i] == "--json") json = true;
             else if (args[i] == "--force") force = true;
             else if (args[i] == "--catalog") mode = ExtractorMode.GenerateCatalog;
             else if (args[i] == "--analyze-px") mode = ExtractorMode.AnalyzePxColor;
@@ -249,19 +251,54 @@ public static class ExtractorProgram
         }
         if (quick && mode != ExtractorMode.VerifyOutput)
             throw new ArgumentException("--quick is valid only with --verify-output.");
+        if (json && mode != ExtractorMode.VerifyOutput)
+            throw new ArgumentException("--json is valid only with --verify-output.");
         if (force && mode != ExtractorMode.Extract)
             throw new ArgumentException("--force is valid only when extracting.");
         if (catalogOutput is not null && mode != ExtractorMode.GenerateCatalog)
             throw new ArgumentException("--catalog-output is valid only with --catalog.");
-        return new ExtractorOptions(mode, source, output, quick, force, catalogOutput);
+        return new ExtractorOptions(mode, source, output, quick, force, json, catalogOutput);
     }
 
-    private static void PrintVerification(AssetPackVerification result, string output)
+    private static void PrintVerification(
+        AssetPackVerification result,
+        string output,
+        bool quick,
+        bool json)
     {
+        if (json)
+        {
+            Console.WriteLine(SerializeVerificationReport(result, output, quick));
+            return;
+        }
         if (result.IsValid)
             Console.WriteLine($"Asset pack is valid: {result.VerifiedFiles} files at {Path.GetFullPath(output)}");
         else
             foreach (var error in result.Errors) Console.Error.WriteLine(error);
+    }
+
+    public static string SerializeVerificationReport(
+        AssetPackVerification result,
+        string output,
+        bool quick)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        var report = new AssetPackVerificationReport(
+            SchemaVersion: 1,
+            AssetRoot: Path.GetFullPath(output),
+            VerificationMode: quick ? "quick" : "full",
+            result.IsValid,
+            ExpectedFormatVersion: FormatVersion,
+            ManifestFormatVersion: result.Manifest?.FormatVersion,
+            ExpectedFiles: ExpectedExtractedAssetCount,
+            ManifestFiles: result.Manifest?.Files?.Count,
+            result.VerifiedFiles,
+            result.Diagnostics);
+        return JsonSerializer.Serialize(report, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true
+        });
     }
 
     private static async Task<ExtractedAsset> CopyAsync(
@@ -300,7 +337,24 @@ public static class ExtractorProgram
 
 public enum ExtractorMode { Extract, VerifySource, VerifyOutput, GenerateCatalog, AnalyzePxColor }
 public sealed record ExtractorOptions(
-    ExtractorMode Mode, string? Source, string Output, bool Quick, bool Force, string? CatalogOutput);
+    ExtractorMode Mode,
+    string? Source,
+    string Output,
+    bool Quick,
+    bool Force,
+    bool Json,
+    string? CatalogOutput);
+public sealed record AssetPackVerificationReport(
+    int SchemaVersion,
+    string AssetRoot,
+    string VerificationMode,
+    bool IsValid,
+    int ExpectedFormatVersion,
+    int? ManifestFormatVersion,
+    int ExpectedFiles,
+    int? ManifestFiles,
+    int VerifiedFiles,
+    IReadOnlyList<AssetPackDiagnostic> Diagnostics);
 public sealed record OriginalAssetPack(
     string Root, string DataDirectory, string MusicDirectory, string HelpDirectory, string Fingerprint);
 

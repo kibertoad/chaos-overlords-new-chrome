@@ -22,6 +22,7 @@ Verify source or installed assets without rewriting them:
 ```powershell
 dotnet run --project src/Rechaos.Extractor -- --verify-source --source "C:\GOG Games\Chaos Overlords"
 dotnet run --project src/Rechaos.Extractor -- --verify-output
+dotnet run --project src/Rechaos.Extractor -- --verify-output --json
 ```
 
 Regenerate the checked-in factual asset inventory from a fully verified pack:

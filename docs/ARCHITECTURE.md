@@ -165,13 +165,14 @@ CLI modes:
 --verify-source --source <install>           validate original source only
 --verify-output [--output <assets>]          validate every output hash
 --verify-output [--output <assets>] --quick  validate paths and sizes only
+--verify-output [--output <assets>] --json   emit schema-v1 diagnostics
 --catalog [--output <assets>]                generate docs/ASSET-CATALOG.md
 --analyze-px [--output <assets>]             compare PX08/PX16 color encodings
 ```
 
 Target additions are semantic catalog ownership, stale-staging cleanup, additional
 supported source fingerprints, transparency validation, video conversion or playback,
-and machine-readable diagnostics.
+and richer source-version diagnostics.
 
 ### `Rechaos.Tools`
 
