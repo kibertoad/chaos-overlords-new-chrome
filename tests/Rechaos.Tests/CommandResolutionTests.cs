@@ -7,7 +7,7 @@ namespace Rechaos.Tests;
 public sealed class CommandResolutionTests
 {
     [Fact]
-    public void BribeSpendsFiveAndAddsThreeTolerance()
+    public void BribeSpendsThreeAndAddsThreeTolerance()
     {
         var match = CreateMatch(cash: 10);
         QueueAndEnterExecution(match, GangAction.Bribe);
@@ -15,8 +15,8 @@ public sealed class CommandResolutionTests
 
         match.FinishExecutionPhase();
 
-        Assert.Equal(5, match.Players[0].Cash);
-        Assert.Equal(5, match.Players[0].Statistics.CashSpent);
+        Assert.Equal(7, match.Players[0].Cash);
+        Assert.Equal(3, match.Players[0].Statistics.CashSpent);
         Assert.Equal(toleranceBefore + 3, match.Sectors[0].Tolerance);
         Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
         Assert.Equal(GameEventKind.CommandResolved, match.Events[^1].Kind);
@@ -45,7 +45,22 @@ public sealed class CommandResolutionTests
     }
 
     [Fact]
-    public void SnitchFloorsToleranceAtZeroWithoutCost()
+    public void BribeSucceedsAtExactThreeDollarBoundary()
+    {
+        var match = CreateMatch(cash: 3);
+        QueueAndEnterExecution(match, GangAction.Bribe);
+        var toleranceBefore = match.Sectors[0].Tolerance;
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(0, match.Players[0].Cash);
+        Assert.Equal(3, match.Players[0].Statistics.CashSpent);
+        Assert.Equal(toleranceBefore + 3, match.Sectors[0].Tolerance);
+        Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
+    }
+
+    [Fact]
+    public void SnitchSubtractsThreeThenInstantPhaseClampsAtOne()
     {
         var match = CreateMatch(cash: 10);
         QueueAndEnterExecution(match, GangAction.Snitch);
@@ -53,12 +68,12 @@ public sealed class CommandResolutionTests
         match.FinishExecutionPhase();
 
         Assert.Equal(10, match.Players[0].Cash);
-        Assert.Equal(0, match.Sectors[0].Tolerance);
+        Assert.Equal(1, match.Sectors[0].Tolerance);
         Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
     }
 
     [Fact]
-    public void SnitchFailsWithoutChangingToleranceWhilePlayerIsInDebt()
+    public void SnitchStillResolvesWhilePlayerIsInDebt()
     {
         var match = CreateMatch(cash: -1);
         QueueAndEnterExecution(match, GangAction.Snitch);
@@ -68,8 +83,8 @@ public sealed class CommandResolutionTests
 
         Assert.Equal(-1, match.Players[0].Cash);
         Assert.Equal(toleranceBefore, match.Sectors[0].Tolerance);
-        Assert.Equal(CommandResolutionCode.InsufficientCash, Assert.Single(match.LastPhaseResolutions).Code);
-        Assert.Equal(GameEventKind.CommandFailed, match.Events[^1].Kind);
+        Assert.Equal(CommandResolutionCode.Resolved, Assert.Single(match.LastPhaseResolutions).Code);
+        Assert.Equal(GameEventKind.CommandResolved, match.Events[^1].Kind);
     }
 
     [Fact]

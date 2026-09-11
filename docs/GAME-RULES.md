@@ -88,27 +88,31 @@ controlled reference observation confirms its execution timing and edge cases.
 ### RULE-INFLUENCE-001 — Cooperative site influence
 
 - Source: `MANUAL-GOG-1`; Influence command, dice, site resistance, and site
-  benefit descriptions, plus `BIN-RNG-002` and `BIN-RNG-003`.
+  benefit descriptions, plus `BIN-RNG-002`, `BIN-RNG-003`, and
+  `BIN-INSTANT-001`.
 - Observed statement: participating gangs contribute total Force plus Influence;
   successes reduce site resistance; reaching zero influences the site and grants
   its listed benefits.
-- Interpretation: pool same-player gangs targeting the same site, roll
-  `max(0, sum(Force + effective Influence))` dice once, persist reduced
-  resistance, and at zero assign the player and add the site's Support value.
+- Interpretation: scan player slots and persistent gang slots in ascending
+  order. Each participating gang separately rolls
+  `max(0, Force + effective Influence)` dice and immediately persists its
+  successes against the remaining resistance. At zero, assign the player and
+  add the site's Support value; later queued Influence commands skip their roll.
 - Current exclusions: cross-player simultaneous contests, already-influenced
   takeovers, cash/tolerance/stat benefit timing, site special behavior, and
   influenced-site modifiers in the dice pool. The recreation currently rejects
   commands against an already-influenced site until takeover rules are verified.
 - Confidence: High for the base pool, success threshold, resistance reduction,
-  and Support value; Medium for friendly pooling; Low for conflict ordering and
+  Support value, per-gang scheduling, and completion guard; Low for takeover and
   benefit timing.
 - Implementation: `CommandResolver.ResolvePhase`,
   `CommandResolver.ResolveInfluence`, `ManualRules.InfluenceDiceCount`, and
   `ManualRules.ApplyInfluenceProgress`; validation requires player ownership of
   the target sector.
-- Tests: `InstantResolutionTests` covers friendly pooling, single RNG
-  consumption, partial progress, completion/Support, target rejection,
-  notifications, deterministic replay, and phase hashes.
+- Tests: `InstantResolutionTests` covers separate roster-ordered rolls,
+  cumulative partial progress, post-completion RNG suppression,
+  completion/Support, target rejection, notifications, deterministic replay,
+  and phase hashes.
 - Next experiment: queue one and multiple gangs for the same site, then opposing
   players for the same site, and diff resistance, ownership, Support, RNG, and
   event ordering.
@@ -150,61 +154,69 @@ controlled reference observation confirms its execution timing and edge cases.
   A repeating Research order clears on completion.
 - Tech restrictions: a gang cannot research above its own Tech. Without a local
   influenced special research site the ceiling is Tech 5; an influenced Science
-  Center raises it to 8 and a Research Lab to 10. The recreation requires the
-  player to control that sector. Locality and ownership timing remain provisional.
-- Current exclusions: the exact behavior of zero-difficulty items and binary
+  Center raises it to 8 and a Research Lab to 10. A sector must be controlled
+  before its sites can be influenced, and authoritative match state rejects an
+  influencer who is not the current sector owner.
+- Current exclusions: the exact behavior of zero-difficulty items and runtime
   confirmation of special-site timing.
-- Confidence: High for the manual formula and completion threshold; Medium for
-  equipment aggregation and repeat-command rejection; High for the recovered
-  RNG step/range wrapper; Low for initial seed and complete RNG call order.
+- Confidence: High for the formula, completion threshold, fixed roster order,
+  and suppression of later rolls after same-phase completion; Medium for
+  equipment aggregation and repeat-command rejection; Low for initial seed and
+  complete RNG call order.
 - Implementation: `MatchPlayerState.RemainingResearch`,
   `MatchPlayerState.ApplyResearch`, `ManualRules.ResearchDiceCount`, and
   `CommandResolver.ResolveResearch`; `SpecialSiteRules.ResearchTechLimit`
-  enforces the gang/site ceiling during validation.
+  enforces the gang/site ceiling during validation. Instant resolution snapshots
+  effective statistics before any same-phase Influence acquisition.
 - Tests: `ResearchResolutionTests` covers effective dice count, recorded rolls,
-  progress, completion, repeat rejection, state invariants, RNG consumption,
-  notifications, and deterministic phase hashes.
+  progress, completion, later-roster roll suppression, repeat rejection, state
+  invariants, RNG consumption, notifications, deterministic phase hashes, and a
+  newly influenced Science Center not changing a concurrent Research pool.
 - Next experiment: execute Research from identical saves across gang/item/site
   modifiers, tech-level boundaries, and near-completion values, then compare
   rolls, unlock state, repeat behavior, and save deltas.
 
 ### RULE-BRIBE-001 — Bribe tolerance adjustment
 
-- Source: `MANUAL-GOG-1`; command formula summary. Exact scan page location
-  still needs transcription into the evidence log.
-- Observed statement: Bribe costs $5 and raises the acting gang's sector
-  tolerance by 3, with a maximum unmodified tolerance of 40. Influenced-site
-  modifiers remain applied and may take the effective value outside 0–40.
-- Interpretation: during the Instant execution subphase, deduct $5 from the
-  commanding player, record it as cash spent, remove the current site modifier,
-  cap the adjusted base at 40, then restore the site modifier.
-- Current insufficient-cash behavior: the recreation emits an ordered failed
-  result and does not change cash or tolerance. This edge case is provisional.
-- Confidence: High for cost/delta/cap; Low for execution-time affordability and
-  failure notification behavior.
-- Implementation: `ManualRules.ApplyBribe`, `CommandResolver.ResolveBribe`.
-- Tests: `ManualRulesTests.BribeAddsThreeAndCapsAtForty`,
-  `CommandResolutionTests.BribeSpendsFiveAndAddsThreeTolerance`, and
+- Source: `MANUAL-GOG-1`; command formula summary, plus `BIN-BRIBE-001` for
+  shipped behavior. Exact scan page location still needs transcription.
+- Observed statement: the manual prints a $5 cost and maximum unmodified
+  tolerance of 40. The executable instead checks and deducts $3, records $3
+  spent, and directly adds 3 to effective tolerance without a 40-point clamp.
+- Interpretation: compatibility resolution follows the executable. During
+  Instant, cash below $3 emits an ordered failed result without mutation;
+  otherwise deduct and record $3, then add 3 directly to sector tolerance.
+- Confidence: High static evidence for execution-time affordability, cost,
+  cash-spent accounting, direct tolerance delta, and failure branch; Low for
+  exact failure notification wording.
+- Implementation: `CommandResolver.ResolveBribe` and
+  `ToleranceResolver.ApplyBribe`; `ManualRules.ApplyBribe` preserves only the
+  printed capped formula for comparison.
+- Tests: `ManualRulesTests` keeps the printed rule distinct;
+  `CommandResolutionTests.BribeSpendsThreeAndAddsThreeTolerance`, the exact-$3
+  boundary, and
   `CommandResolutionTests.BribeFailureIsOrderedAndDoesNotMutateCashOrTolerance`.
-- Next experiment: queue Bribe with $0–$5 in identical reference saves and
-  compare command retention, cash, tolerance, and event ordering.
+- Next experiment: capture the original failure message and compare command
+  retention after an insufficient-cash Bribe.
 
 ### RULE-SNITCH-001 — Snitch tolerance adjustment
 
-- Source: `MANUAL-GOG-1`; Snitch command description. Exact scan page location
-  still needs transcription into the evidence log.
+- Source: `MANUAL-GOG-1`; Snitch command description, plus `BIN-SNITCH-001`.
+  Exact scan page location still needs transcription into the evidence log.
 - Observed statement: Snitch is free and lowers the acting gang's sector
   tolerance by 3, with a minimum unmodified tolerance of zero.
-- Interpretation: during the Instant execution subphase, remove the current
-  site modifier, floor the adjusted base at zero, then restore the modifier,
-  without changing cash.
-- Confidence: High for cost/delta/floor; Medium for execution timing; Low for
-  automatic tolerance interactions in sectors without influenced sites.
-- Implementation: `ManualRules.ApplySnitch`, `CommandResolver.ResolveSnitch`.
-- Tests: `ManualRulesTests.SnitchSubtractsThreeAndFloorsAtZero` and
-  `CommandResolutionTests.SnitchFloorsToleranceAtZeroWithoutCost`.
-- Next experiment: execute Snitch at tolerance 0–4 with and without influenced
-  sites and compare immediate plus next-turn save deltas.
+- Interpretation: during Instant, subtract 3 directly from effective sector
+  tolerance regardless of player cash. After all Instant commands, clamp every
+  sector below 1 to 1. The printed base-zero helper remains manual-only.
+- Confidence: High static evidence for the direct delta, debt independence,
+  post-Instant global floor, and timing.
+- Implementation: `ToleranceResolver.ApplySnitch`,
+  `ToleranceResolver.ClampAfterInstant`, and `CommandResolver.ResolveSnitch`.
+- Tests: `ManualRulesTests` preserves the printed zero-floor formula;
+  `CommandResolutionTests` covers phase-floor and debt behavior, while
+  `ChaosResolutionTests` covers clamping before commandless Chaos evaluation.
+- Next experiment: confirm the visible Snitch report when the intermediate
+  result is below 1.
 
 ### RULE-TOLERANCE-001 — Return toward normal tolerance
 
@@ -217,16 +229,14 @@ controlled reference observation confirms its execution timing and edge cases.
   adjustments apply immediately when influence is gained or lost, may move the
   effective value outside 0–40, and remain outside Bribe/Snitch's base caps.
   During Upkeep, every sector's current value moves exactly one point toward
-  its normal effective value. During the Chaos phase, `Chaos > Tolerance`
-  triggers a crackdown even when no gang submitted a Chaos command; therefore
-  any negative effective tolerance automatically triggers one.
+  its normal effective value. The post-Instant global floor then raises every
+  value below 1 to 1 before Combat and Chaos.
 - Confidence: High for the formula and one-point adjustment; Medium for the
   exact turn boundary and whether an influence change applies immediately.
 - Implementation: `ToleranceResolver`, invoked by `MatchState.FinishUpkeep`.
 - Tests: `ToleranceResolverTests` covers movement from both directions, stable
-  values, site adjustments and base-cap separation; influence tests cover the
-  immediate modifier, and `ChaosResolutionTests` covers commandless negative-
-  tolerance crackdown.
+  values, direct action deltas and the post-Instant floor; influence tests cover
+  the immediate modifier, and `ChaosResolutionTests` covers the pre-Chaos clamp.
 - Next experiment: compare saves before and after Upkeep around a Bribe or
   Snitch, then repeat while gaining or losing influence over modifier sites.
 
@@ -245,7 +255,8 @@ claim about original-game behavior.
 - Source: `MANUAL-GOG-1`, numbered pages 50–51; the
   [1997 unofficial FAQ 0.7.1](https://gamefaqs.gamespot.com/pc/196900-chaos-overlords/faqs/1684)
   records a developer-informed correction that the printed Attack Roll omitted
-  current Force.
+  current Force. `BIN-COMBAT-ORDER-001` supplies the static attack and police
+  scan order.
 - Observed statement: attack dice equal current Force plus modified Combat minus
   defender Defense, floored at zero. Rolls of 4–6 each cause one Force damage.
   Strength adds for bare hands, melee, and blade weapons; Blade adds for blade
@@ -254,11 +265,12 @@ claim about original-game behavior.
   damage, rounded down. A bare-handed Martial Artist prevents retaliation unless
   the opponent is also a bare-handed Martial Artist.
 - Interpretation: snapshot every gang at the Combat boundary, roll queued
-  attacks and eligible retaliation in stable queue order, then apply all damage
-  together. Reciprocal orders between the same two gangs form one encounter:
-  the first stable queued order supplies the opening attack and the reverse
-  order is represented by that encounter's single retaliation, rather than
-  creating a second attack/retaliation pair. Consequently, a gang eliminated by one result still completes
+  attacks and eligible retaliation in player/roster-slot order, then apply all
+  damage together. Reciprocal orders between the same two gangs form one
+  encounter: the first gang reached in the fixed scan supplies the opening
+  attack and the reverse order is represented by that encounter's single
+  retaliation, rather than creating a second attack/retaliation pair.
+  Consequently, a gang eliminated by one result still completes
   attacks and retaliation calculated from its phase-start Force. Force is
   floored at zero; elimination clears equipment and Hidden state. Actual damage
   credit is allocated in stable result order when attacks overkill one target;
@@ -270,17 +282,17 @@ claim about original-game behavior.
   target action not to be Hide and allows retaliation when the attacker has no
   positive effective Martial Arts, has a weapon equipped, or faces a defender
   who is also an unarmed positive-Martial-Arts gang.
-- Current exclusions: original overkill-stat attribution and police/gang
-  ordering, reveal-state timing, and binary confirmation of resolver/RNG order.
+- Current exclusions: original overkill-stat attribution and reveal-state timing.
 - Confidence: High for weapon-skill associations, the complete Martial Arts /
-  weapon / Hide retaliation gate, and its damage formula; Medium/High for the
-  Force-corrected opening formula; Low for ordering, overkill accounting, and
-  hidden-state timing.
+  weapon / Hide retaliation gate, its damage formula, and player/roster roll
+  ordering; Medium/High for the Force-corrected opening formula; Low for
+  overkill accounting and hidden-state timing.
 - Implementation: `ManualRules.CombatRating`, `ManualRules.AttackDiceCount`,
   `ManualRules.RetaliationDamage`, and `CommandResolver.ResolveCombatPhase`.
 - Tests: `CombatResolutionTests` covers effective attack/defense pools,
   retaliation, phase-start simultaneity, Martial Arts, hidden targets,
-  reciprocal-order coalescing, elimination/equipment loss, statistics, RNG consumption, notifications, and
+  reciprocal-order coalescing, reversed-submission roster order,
+  elimination/equipment loss, statistics, RNG consumption, notifications, and
   hashes; `ManualRulesTests` covers the formulas.
 - Next experiment: reproduce a fixed unarmed matchup from the FAQ, then repeat
   with melee/blade/ranged weapons, Martial Arts, two attackers, and a target
@@ -315,7 +327,9 @@ claim about original-game behavior.
   complete statistic vector to the owner's gangs located in that sector, after
   definition and equipment statistics. Enemy gangs receive no benefit.
 - Special Science Center/Research Lab research caps and the Factory purchase
-  discount are implemented as local, controlled, influenced-site effects.
+  discount follow the same controlled-sector and influenced-site ownership
+  rule. Match construction/load rejects neutral-sector influence or an
+  influencer different from the sector owner.
   Protection/upkeep behavior and exact negative-stat clamping remain excluded.
 - Confidence: High for ownership and local scope; Medium for aggregation order.
 - Tests: `CombatResolutionTests.InfluencedSiteStatisticsApplyOnlyToOwnersGangsInThatSector`
@@ -342,15 +356,18 @@ claim about original-game behavior.
   so the pistol does not appear beside the two initial melee choices. Armageddon
   continues to unlock every real item.
 - Factory rule: an influenced Factory in the acting gang's controlled sector
-  reduces purchase price by 30%; the recreation floors `Cost * 70 / 100`.
+  reduces purchase price to `Cost - trunc(Cost / 3)`. This is a one-third
+  discount rounded toward the full price; for example, an $11 Katana costs $8.
 - Confidence: High for cost, categories, research, tech gates, the decoded
-  zero-difficulty set, and the 30% value;
-  Medium for same-slot replacement and Factory locality; Low for discount
-  rounding and repeat commands.
+  zero-difficulty set, Factory division/rounding, controlled/influenced locality,
+  fixed player/roster-slot resolution order, and same-slot replacement; Medium
+  for repeat commands.
 - Implementation: `EquipmentRules`, `SpecialSiteRules.EquipmentCost`,
   transaction validation, and `CommandResolver.ResolveEquip`.
 - Tests: `TransactionResolutionTests` covers purchase, replacement, cash and
-  statistics, research/tech validation, insufficient funds, and replay hashes.
+  statistics, research/tech validation, insufficient funds, replay hashes, and
+  a Factory acquired during Instant discounting a same-turn Transaction-phase
+  replacement; all decoded item costs exercise the recovered division formula.
 
 ### RULE-GIVE-001 — Transfer equipped item
 
@@ -358,41 +375,53 @@ claim about original-game behavior.
 - Observed statement: a gang may give one or all equipped items to one friendly
   gang; the recipient must meet item tech level, and an existing similar item is
   lost.
-- Interpretation: one Give command transfers its selected equipped item to the
-  friendly same-sector target, clears the source slot, and replaces the target's
-  same slot without a cash change.
-- Confidence: High for transfer, tech gate, and replacement loss; Medium for
-  within-phase swap ordering.
-- Implementation: transaction validation and `CommandResolver.ResolveGive`.
-- Tests: transfer, replacement loss, possession validation, and tech validation
-  in `TransactionResolutionTests`.
+- Interpretation: one Give command transfers one, two, or all three selected
+  equipped items to one friendly same-sector target, clears every selected
+  source slot, and replaces the target's corresponding slots without a cash
+  change. The binary defers incoming items until every gang in that player's
+  roster has completed its transaction, preserving same-slot swaps and making
+  a gift overwrite the recipient's same-turn purchase. Later roster-slot gifts
+  win when several target the same recipient slot.
+- Confidence: High for transfer, tech gate, replacement loss, fixed scan order,
+  and deferred application.
+- Implementation: transaction validation, grouped transaction-phase Give
+  preparation, and `CommandResolver.ResolveGive`.
+- Tests: transfer, three-item batching, same-slot swaps, replacement loss,
+  possession validation, and tech validation in `TransactionResolutionTests`.
 
 ### RULE-SELL-001 — Half-price sale
 
 - Source: `MANUAL-GOG-1`; Sell description on numbered page 44.
 - Observed statement: selling returns half the original listed price, excluding
   factory discounts, rounded down.
-- Interpretation: remove the selected equipped item, add `floor(Cost / 2)` to
-  player cash, and record the proceeds as cash earned.
-- Confidence: High for the formula; Medium for statistics timing and multi-item
-  UI batching.
+- Interpretation: remove every selected equipped item. A single-slot sale adds
+  `floor(Cost / 2)` to player cash. The original's fixed weapon/armor/miscellaneous
+  branches overwrite one payout local instead of accumulating it, so a multi-slot
+  sale pays only the highest selected slot's half-price (miscellaneous, else
+  armor, else weapon). Preserve this binary quirk and record that one payout as
+  cash earned.
+- Confidence: High for clearing, fixed slot order, payout overwrite, formula,
+  and statistics update.
 - Implementation: `EquipmentRules.SaleValue` and `CommandResolver.ResolveSell`.
-- Tests: odd-price rounding, equipment removal, cash/statistics accounting, and
-  runtime possession failure in `TransactionResolutionTests` and
+- Tests: odd-price rounding, multi-slot payout overwrite, equipment removal,
+  cash/statistics accounting, and runtime possession failure in `TransactionResolutionTests` and
   `ManualRulesTests`.
 
 ### RULE-TERMINATE-001 — Remove gang and equipment
 
-- Source: `MANUAL-GOG-1`; Terminate description and command sequence on numbered
+- Source: `MANUAL-GOG-1` and `BIN-MOVEMENT-001`; Terminate description
+  and command sequence on numbered
   pages 44–45.
 - Observed statement: Terminate removes the gang from play and all items it
   possesses; it executes during Movement.
 - Interpretation: set Force to zero, clear Hidden and all three equipment slots,
-  and emit an elimination notification.
-- Confidence: High for gang/item removal and phase; Low for statistics,
-  notification presentation, and effects on simultaneous Movement.
+  and emit an elimination notification. Resolve the complete player/roster
+  Terminate pass before any Move.
+- Confidence: High for gang/item removal, phase, and scheduling; Low for
+  statistics and notification presentation.
 - Implementation: `CommandResolver.ResolveTerminate`.
-- Tests: `TransactionResolutionTests.TerminateRemovesGangAndAllEquipmentDuringMovement`.
+- Tests: `TransactionResolutionTests.TerminateRemovesGangAndAllEquipmentDuringMovement`
+  and `BoardResolutionTests.TerminatePassPrecedesMovePassRegardlessOfSubmissionOrder`.
 
 ## Movement and sector control
 
@@ -400,28 +429,33 @@ claim about original-game behavior.
 
 - Source: `MANUAL-GOG-1`; Chaos and Crackdown descriptions, including the
   Math of the Game section.
-- Observed statement: each player rolls the total Force plus Chaos skill of all
-  their participating gangs, plus sector Income. Each success earns $1 in a
+- Observed statement: each player rolls the Force plus Chaos skill of their
+  participating gangs with sector Income. Each success earns $1 in a
   controlled sector and counts toward crackdown; activity outside a controlled
   sector earns half as much. When total Chaos exceeds Tolerance, a crackdown
   prevents all Chaos income in that sector.
 - Interpretation: reset the prior turn's sector Chaos during Upkeep, then group
-  one player's Chaos commands by sector, add sector Income
-  once per group, and roll each group in earliest queue order. Accumulate every
+  one player's Chaos commands by sector. Each participating gang contributes
+  `sector Income + Force + Chaos` dice and rolls in fixed player-slot then
+  persistent roster-slot order, independent of submission order or intervening
+  sectors. Generated sector Income is independent of the three
+  sites' Cash benefits. Accumulate every
   player's successes into `MatchSectorState.Chaos` before paying anybody. A
   sector already in crackdown, or crossing the strict `Chaos > Tolerance`
   threshold during this phase, pays no group; otherwise controlled groups earn
-  all successes and uncontrolled groups earn `floor(successes / 2)`. A newly
+  all successes and uncontrolled groups earn `floor(group successes / 2)` after
+  all same-player gangs in that sector have been aggregated. A newly
   triggered crackdown notifies every active player.
-- Current exclusions: crackdown duration, police detection and combat, special
-  site modifiers, exact half-dollar rounding, and binary within-phase RNG/event
-  order.
-- Confidence: High for the base pool, control multiplier, and suppression rule;
-  Medium for friendly pooling; Low for accumulation, rounding, and ordering.
+- Current exclusions: exact binary notification/event order and controlled
+  runtime corroboration.
+- Confidence: High for the per-gang pool, generated-Income distinction, control
+  multiplier, roster RNG order, grouped half payout, and suppression rule;
+  Medium for notification presentation.
 - Implementation: `CommandResolver.ResolveChaosPhase`,
   `ManualRules.ChaosDiceCount`, `ManualRules.ChaosIncome`, and
   `ManualRules.TriggersCrackdown`.
-- Tests: `ChaosResolutionTests` covers turn-start reset, pooling, income,
+- Tests: `ChaosResolutionTests` covers turn-start reset, pooling, generated
+  sector Income versus site Cash, fixed player/roster RNG order, grouped payout,
   statistics, sector-wide
   cross-player aggregation, existing/new crackdown behavior, notifications,
   RNG consumption, and phase hashes; `ManualRulesTests` covers arithmetic and
@@ -432,7 +466,8 @@ claim about original-game behavior.
 
 ### RULE-POLICE-001 — Crackdown detection and combat
 
-- Source: `MANUAL-GOG-1`; Crackdown and Math of the Game descriptions.
+- Source: `MANUAL-GOG-1`; Crackdown and Math of the Game descriptions, plus
+  `BIN-COMBAT-ORDER-001`.
 - Observed statement: during a crackdown, police attack every gang in the
   sector with Combat 20. Police detection is certain through Stealth 5 and
   drops five percentage points per additional Stealth point, reaching zero at
@@ -442,8 +477,9 @@ claim about original-game behavior.
   Crackdown while they are present makes them stay longer. Three Crackdowns in
   a five-turn period make the controlling Overlord lose the sector.
 - Interpretation: at the Combat phase boundary, snapshot every active gang in
-  a crackdown sector in sector/gang-ID order. Roll one percentile detection
-  check per gang. On detection, roll `max(0, 20 - effective Defense)` dice and
+  a crackdown sector in ascending player/roster-slot order. Roll one percentile
+  detection check per gang. On detection, roll
+  `max(0, 20 - effective Defense)` dice and
   apply one damage per success. Police attacks do not retaliate or credit a
   player's damage statistic. Gang-command and police damage are accumulated
   against the same phase-start snapshots before casualties and equipment loss
@@ -458,24 +494,25 @@ claim about original-game behavior.
   presence. Each Combat phase in which police are present consumes one remaining
   turn after their attacks, producing exactly three to five attack opportunities;
   the sector detail panel exposes the authoritative count. Each sector retains
-  its latest two occurrence turns;
-  a third occurrence no more than four turns after the oldest neutralizes the
-  sector and resets its influenced sites, Support, Tolerance modifiers, and
-  resistance just like an overthrow. The displaced owner receives a distinct
+  two fixed occurrence slots and expires a slot only when it is strictly older
+  than `current turn - 5`. A third occurrence therefore counts an oldest trigger
+  exactly five turns earlier, neutralizes the sector, resets its influenced
+  sites, Support, Tolerance modifiers, and resistance just like an overthrow,
+  then writes the current turn into both slots. Reacquired control can be lost
+  again on another recent trigger. The displaced owner receives a distinct
   `ControlLost` notification in addition to the global Crackdown notification.
-- Current exclusions: original timing within Combat, whether 0%/100% checks
-  consume RNG, weapon/damage-cap treatment, exact duration RNG call/order,
-  exact original message wording, and
-  exact binary RNG/event order.
+  History mutation and ownership cleanup precede the duration-extension draw.
+- Current exclusions: whether 0%/100% checks consume RNG,
+  weapon/damage-cap treatment, and exact original message wording.
 - Confidence: High for the detection percentage table, hidden Detect 12 branch,
-  Combat 20, and defense subtraction; Low for phase/RNG ordering and the listed
-  exclusions.
+  Combat 20, defense subtraction, player/roster attack order, occurrence
+  window/reset, and duration RNG order; Low for the listed exclusions.
 - Implementation: `CommandResolver.ResolveCombatPhase`, exposed through
   `MatchState.LastPoliceAttackResolutions` and `PoliceAttackResolved` events;
   `CommandValidator` and `CommandResolver.ResolveControl` enforce the Control
   lockout at both relevant boundaries; `CrackdownResolver` owns duration and
   extension plus the two-turn history represented in the original save layout.
-- Tests: `PoliceCombatResolutionTests` covers stable sector/gang ordering,
+- Tests: `PoliceCombatResolutionTests` covers player/roster ordering,
   normal and hidden detection, effective Stealth/Defense, undetectability at
   Stealth 25, deterministic RNG consumption/hashes, notifications, casualties,
   and equipment loss. `ChaosResolutionTests` covers duration, extension,
@@ -488,18 +525,20 @@ claim about original-game behavior.
 
 ### RULE-MOVE-001 — Adjacent movement and friendly capacity
 
-- Source: `MANUAL-GOG-1`; Move command and command sequence descriptions.
+- Source: `MANUAL-GOG-1`; Move command and command sequence descriptions, plus
+  `BIN-MOVEMENT-001`.
 - Observed statement: Move relocates a gang to an adjacent sector during the
   Movement phase. The structural limit is six friendly gangs per sector.
 - Interpretation: move to any of the eight neighboring sectors, including a
   diagonal neighbor, rejecting a target already at friendly capacity; commands
   that compete for the final slot resolve
-  in stable queue order and later commands fail without moving.
-- Confidence: High for adjacency/capacity; Low for original simultaneous
-  collision and final-slot ordering.
+  in ascending player/roster-slot order and later commands fail without moving.
+- Confidence: High for adjacency, capacity, phase precedence, and final-slot
+  ordering.
 - Implementation: movement validation and `CommandResolver.ResolveMove`.
 - Tests: `BoardResolutionTests` covers movement events, capacity at submission,
-  runtime contention, stable result order, and notifications.
+  reversed-submission runtime contention, roster result order, Terminate
+  precedence, and notifications.
 
 ### RULE-CONTROL-001 — Cooperative sector control comparison
 
@@ -510,12 +549,18 @@ claim about original-game behavior.
   non-hiding defending gang's `Force + Control` and total influenced-site
   Support. Losing a sector loses all influenced sites, which return to full
   resistance; taking ownership directly from another player is an Overthrow.
-- Interpretation: group same-player Control commands by sector, calculate the
-  signed margin without dice, and capture when it is positive. At exactly zero,
-  draw a deterministic two-outcome random value and capture on one outcome,
-  recording the roll and range in the resolution event. When multiple players
-  target the same neutral sector, evaluate every group from the phase-start
-  owner snapshot and permit only the unique highest margin to attempt capture.
+- Interpretation: aggregate gangs by player/roster slot, then resolve sectors
+  in ascending board order so tie-break RNG is submission-order independent.
+  Group same-player Control commands by sector, calculate the signed margin
+  without dice, and capture when it is positive. A unique positive
+  leader captures directly; equal positive leaders are selected by one bounded
+  random draw in ascending player-slot order. At best margin zero, select among
+  a leading neutral candidate and every tied player, again in slot order. This
+  gives one challenger the manual's 50-percent chance and gives each of `n`
+  tied challengers a `1 / (n + 1)` chance. Record the one-based roll and full
+  candidate count in each tied group's resolution event. Evaluate every group
+  from the phase-start owner snapshot, whether the sector is neutral or already
+  controlled, and permit at most one capture or overthrow.
   On an overthrow, increment the attacker's statistic, remove the former
   owner's site Support, clear influence, and restore table resistance. A
   repeating Control order clears once its player owns the sector; repeating
@@ -523,16 +568,23 @@ claim about original-game behavior.
   terminal repeat targets (completed Move/transactions, eliminated Attack
   target, maximum Heal, zero-tolerance Snitch) are removed while ongoing
   behaviors such as Hide and Chaos remain repeatable across turns.
-- Current exclusions: equal-highest neutral ties, simultaneous challenges to an
-  already controlled sector, precise definition of sector income, crackdown
-  restrictions, abandoned-sector rules, and negative-total edge behavior.
-- Confidence: High for equation components, influence loss, the zero-margin 50%
-  rule, and unique-highest neutral conflicts; Low for unresolved tie ordering.
+- Moving or terminating the last friendly gang does not abandon the sector;
+  ownership changes only through a separate ownership-changing rule.
+- Current exclusions: original crackdown ordering and negative-total edge
+  behavior.
+- Confidence: High for equation components, density-derived sector Income,
+  influence loss, zero-margin neutral selection, and cross-player winner/order
+  behavior.
 - Implementation: `ManualRules.ControlStrength`, `ManualRules.ControlMargin`,
   grouped `CommandResolver.ResolveControl`, and site-reset handling.
-- Tests: `BoardResolutionTests` covers neutral capture, pooled strength, defended
-  failure, recorded deterministic zero-margin chance, unique-highest neutral
-  conflicts, overthrow/statistics, influence reset, deterministic hashes, and Hide expiration;
+- Tests: `BoardResolutionTests` covers neutral capture, board/roster ordering,
+  pooled strength, generated sector Income versus site Cash, defended
+  failure, recorded deterministic zero-margin chance, positive and zero-margin
+  cross-player ties, unique-highest neutral conflicts, retained empty-sector
+  ownership after Move/Terminate, a single phase-opening
+  defense for several owned-sector challengers,
+  execution-time Crackdown rejection, overthrow/statistics, influence reset,
+  deterministic hashes, and Hide expiration;
   `ManualRulesTests` covers equation arithmetic.
 
 ## Upkeep economy
@@ -543,12 +595,12 @@ claim about original-game behavior.
   descriptions. Exact scan page locations still need transcription.
 - Observed statement: each controlled sector grants $1; influenced sites apply
   their listed cash values; active gangs charge their listed upkeep. Cash may
-  become negative. While it is negative, equipment cannot be bought, Bribe and
-  Snitch cannot execute, and only gangs with zero initial cost can be hired.
+  become negative. The manual says equipment, Bribe, and Snitch are restricted,
+  while the executable's Snitch resolver contains no debt gate.
 - Interpretation: for each active player in stable ID order, calculate
   `cash + controlled sectors + influenced-site cash - active-gang upkeep` with
-  checked integer arithmetic. Runtime affordability rejects equipment, Bribe,
-  and Snitch without changing cash or the target; hiring permits a zero-cost
+  checked integer arithmetic. Runtime affordability rejects equipment and
+  Bribe; Snitch remains free and executable in debt. Hiring permits a zero-cost
   gang even while the balance is negative.
 - Current exclusions: insufficient-funds desertion, site protection, cash
   adjustment, special gang/item/site modifiers, integer overflow behavior, and
@@ -570,19 +622,23 @@ claim about original-game behavior.
 
 - Source: original Game Settings Help; `EXE-GOG-1.1` preference byte
   `0x00487854`, new-match mapping at `0x0046e766`, start helper `0x0041b8bc`,
-  draw helper `0x0041b8fc`, and expiry helper `0x0041bdd5`.
+  draw helper `0x0041b8fc`, input-pump divider at `0x00462f07`, sound wrapper
+  `0x00464290`, and expiry helper `0x0041bdd5`.
 - Observed statement: setup offers no limit, 30 seconds, 2 minutes, or 5 minutes
   to constrain planning turns, particularly in multiplayer games.
 - Interpretation: the selected limit applies only to human Command phases.
   Expiry follows the ordinary Done path but bypasses the optional idle-gang
   confirmation. A 60-pixel bar shows remaining time. General sound slot 7 is
   requested below 10 seconds while more than 1 second remains, and slot 8 is
-  requested for the final second. The current recreation de-duplicates these
-  requests by remaining-second bucket pending an original runtime capture.
-- Current exclusions: exact bar rounding, sound cadence, behavior while modal
-  UI is open, and deactivation timing still need controlled reference capture.
+  requested for the final second. The bar truncates elapsed percent before
+  converting that percentage to its 60-pixel width. Drawing and warning checks
+  recur every sixth eligible input-pump call; the recreation mirrors that with
+  every sixth fixed update.
+- Current exclusions: exact wall-clock sound cadence, behavior while modal UI
+  is open, and deactivation timing still need controlled reference capture.
 - Confidence: High for choices, durations, human-only start, expiry ordering,
-  bar scale and sound-slot boundaries; Medium for presentation cadence.
+  bar scale/quantization, sound-slot boundaries, and update divider; Medium for
+  wall-clock presentation cadence.
 - Implementation: `PlanningTimerPolicy`, `PlanningTimer`, and the presentation-
   only integration in `ChaosGame.PlanningTimer.cs`. Timer expiry submits the
   normal replay-recorded `FinishPlanningTurn` operation; wall-clock state is not
@@ -609,6 +665,14 @@ claim about original-game behavior.
   local Begin also completes all empty slots as Computers before city generation;
   each receives a unique portrait 0..14 and its resource-defined name. Exact
   uppercase `SMGISLANDS` subsequently sets neutral non-HQ sectors to Chaos 100.
+- Local setup starts with one human. Add/Remove changes the human count from one
+  through six, and Begin fills every remaining slot with a Computer. Human names
+  use the Help-specified 10-character name field; portrait 15 is the empty
+  marker and cannot be selected as a human face.
+- A face dragged to an empty color moves that local-human identity to the target
+  slot. A face dropped on another human exchanges their colors. The resulting
+  sparse human slots are preserved as player IDs, then every missing slot is
+  filled in ascending order before AI initialization and city generation.
 - Current exclusions: initial seed selection, the remaining setup call context,
   initial hire offers, and an original runtime fixture remain open.
 - Confidence: High static evidence for ordinary/Armageddon cash, the name
@@ -625,38 +689,57 @@ claim about original-game behavior.
 - Source: `MANUAL-GOG-1`; scenario descriptions and scoring tables.
 - Observed statement: Greed, Power, Acceptance, and Dominance end at their
   selected time limit; the other six scenarios end when their stated objective
-  is achieved. Dominance uses the duration-specific weights recorded in
+  is achieved. A single-player game also ends when its human Overlord is
+  eliminated; the elimination splash returns to the title instead of showing
+  the Endgame Awards/Stats screen. Dominance uses the duration-specific weights recorded in
   `ScenarioCatalog`. In Big Man, each of the four center sectors grants one
   point per turn to its controller and the first player to 40 wins. In
   Eliminate, losing the Right Hands removes that player: all remaining gangs
   vanish and formerly controlled sectors become neutral.
+- Observed statement: in Siege, each Overlord's starting controlled sector is
+  designated important and identified by two gray pylons; one Overlord must
+  control all six important sectors simultaneously.
 - Interpretation: after Player Elimination and before advancing the turn,
   project cash, support, controlled sectors, active opponents, opposing active
   Right Hands, explicitly designated important sectors, and Big Man points from the
   authoritative match. Timed games end on turns 26/52/104/208 and preserve all
   players tied for the highest score. Objective games preserve all qualifying
-  players in player-ID order. Emit one `MatchEnded` event and one Objective
+  players in player-ID order. Before those scenario checks, exactly one active
+  Overlord ends any match immediately as the sole survivor. Emit one
+  `MatchEnded` event and one Objective
   notification per player; include the outcome in canonical state hashes and
   prevent the following Upkeep phase from resolving. Timed outcomes include
-  score-descending standings; equal scores share a competition rank, with the
-  next place skipped. Big Man points are awarded in player-ID order at this
-  boundary before its victory check. Eliminate cleanup also clears equipment,
-  pending hires, and the eliminated player's site influence.
-- Current exclusions: binary end-boundary timing, tie-break presentation,
-  eliminated-player eligibility, objective-scenario ranking, the original
-  display order within a timed tie, Siege important-sector setup/appearance,
-  exact Eliminate cleanup timing, and award edge-case parity.
-- Confidence: High for thresholds, durations, score components and weights;
-  Low for timing, ties, Siege mapping and special objective edge cases.
+  score-descending standings for every scenario; equal scores share a
+  competition rank, with the next place skipped, and eliminated players follow
+  the active ranking unranked in player-slot order. Fixed inactive slots retain
+  the executable's -32,000 score sentinel during rank counting. Objective
+  ranking uses the executable's scenario table: sectors for Big 40/Armageddon,
+  owned HQ sectors for Eliminate, current center-sector control for Big Man, and the common
+  inactive-player count for Kill 'Em All/Siege. Dominance divides its weighted
+  numerator by ten before ranking. Big Man points are awarded in player-ID order
+  at this boundary before its victory check. Eliminate cleanup also clears equipment,
+  pending hires, and the eliminated player's site influence. After elimination
+  resolution, a one-human match records `PlayerEliminated` immediately when that
+  human is no longer active; a hot-seat match continues after an elimination
+  only while at least two Overlords remain active.
+- Current exclusions: tie-break presentation beyond stable slot order,
+  exact Siege pylon artwork, exact Eliminate
+  cleanup timing, and award edge-case parity.
+- Confidence: High static evidence for end-boundary timing, thresholds,
+  all-scenario scores, competition standings, active/inactive display order,
+  durations, weights, and Siege setup mapping; Low for special objective edges.
 - Implementation: `MatchOutcomeEvaluator`, scenario-specific elimination and
   Big Man accrual in `MatchState.FinishPlayerElimination`, `MatchState.Outcome`,
   and the canonical state hash.
 - Tests: `MatchOutcomeTests` covers authoritative projection, objective event
-  and notification emission, Eliminate's Right Hands distinction, exact timed
-  boundary ties/standings, and outcome hashing; `EndgameRankingTests` covers
-  descending scores, competition ties, and rejecting unsupported objective
-  rankings; `ScenarioLifecycleTests` covers Big Man accrual/event order and
-  Eliminate cleanup/neutralization.
+  and notification emission, immediate single-player defeat versus continuing
+  hot-seat play, Eliminate's Right Hands distinction, exact timed
+  boundary ties/standings, objective standings, and outcome hashing;
+  `EndgameRankingTests` covers recovered all-scenario scores, competition ties,
+  and inactive ordering; `ScenarioLifecycleTests` covers Big Man accrual/event order and
+  Eliminate cleanup/neutralization. `OriginalCityGeneratorTests` covers fresh
+  Siege landmark assignment and one-important-sector-per-player starting state;
+  `UiNavigationTests` bounds the paired pylon layout inside every city tile.
 - Next experiment: capture the last two turns of each timed scenario and
   simultaneous-threshold states for objective scenarios, then compare event,
   ranking, tie, and next-screen behavior.

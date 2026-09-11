@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
 using Xunit;
@@ -7,6 +8,15 @@ namespace Rechaos.Tests;
 
 public sealed class UiNavigationTests
 {
+    [Fact]
+    public void PointerButtonEdgeFiresOnlyOnReleasedToPressedTransition()
+    {
+        Assert.True(PointerButtonEdges.Pressed(ButtonState.Pressed, ButtonState.Released));
+        Assert.False(PointerButtonEdges.Pressed(ButtonState.Pressed, ButtonState.Pressed));
+        Assert.False(PointerButtonEdges.Pressed(ButtonState.Released, ButtonState.Pressed));
+        Assert.False(PointerButtonEdges.Pressed(ButtonState.Released, ButtonState.Released));
+    }
+
     [Fact]
     public void AttackTargetPanelUsesAcquisitionGridApertures()
     {
@@ -58,6 +68,25 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void SetupPushButtonsUseRecoveredReleaseHitRectangles()
+    {
+        Assert.Equal(new Rectangle(370, 328, 92, 24), SetupButtonLayout.AddPlayer);
+        Assert.Equal(new Rectangle(468, 328, 92, 24), SetupButtonLayout.RemovePlayer);
+        Assert.Equal(new Rectangle(370, 375, 92, 45), SetupButtonLayout.Start);
+        Assert.Equal(new Rectangle(468, 375, 92, 45), SetupButtonLayout.Back);
+        Assert.Equal(new Rectangle(220, 0, 92, 24),
+            SetupButtonLayout.PressedSource(SetupPushButton.AddPlayer));
+        Assert.Equal(new Rectangle(220, 93, 92, 45),
+            SetupButtonLayout.PressedSource(SetupPushButton.Back));
+        Assert.Equal(SetupButtonLayout.Start,
+            SetupButtonLayout.Destination(SetupPushButton.Start));
+        Assert.Equal(SetupPushButton.AddPlayer, SetupButtonLayout.HitTest(new Point(370, 328)));
+        Assert.Equal(SetupPushButton.Back, SetupButtonLayout.HitTest(new Point(559, 419)));
+        Assert.Null(SetupButtonLayout.HitTest(new Point(560, 419)));
+        Assert.Null(SetupButtonLayout.HitTest(new Point(559, 420)));
+    }
+
+    [Fact]
     public void HirePriceSitsBesideRejectControl()
     {
         Assert.Equal(new Rectangle(438, 436, 33, 24), HireDockLayout.PriceCell(0));
@@ -101,6 +130,9 @@ public sealed class UiNavigationTests
         router.Show(ClientScreen.Sector);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.City, router.Current);
+        router.Show(ClientScreen.SectorGangs);
+        Assert.True(router.Back());
+        Assert.Equal(ClientScreen.City, router.Current);
         router.Show(ClientScreen.Gang);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.City, router.Current);
@@ -115,6 +147,12 @@ public sealed class UiNavigationTests
         Assert.Equal(ClientScreen.City, router.Current);
         router.Show(ClientScreen.Items);
         router.Show(ClientScreen.Give);
+        router.Show(ClientScreen.GiveTarget);
+        Assert.True(router.Back());
+        Assert.Equal(ClientScreen.Give, router.Current);
+        Assert.True(router.Back());
+        Assert.Equal(ClientScreen.Items, router.Current);
+        router.Show(ClientScreen.Sell);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.Items, router.Current);
         router.Show(ClientScreen.CombatSummary);
@@ -163,6 +201,25 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void SiegePylonsArePairedInsideEveryCitySector()
+    {
+        for (var sectorId = 0; sectorId < MatchLimits.SectorCount; sectorId++)
+        {
+            var sector = CityMapLayout.Destination(sectorId);
+            var pylons = SiegePylonLayout.ForSector(sectorId);
+
+            Assert.Equal(2, pylons.Count);
+            Assert.All(pylons, pylon => Assert.True(sector.Contains(pylon)));
+            Assert.False(pylons[0].Intersects(pylons[1]));
+        }
+
+        Assert.Equal(
+            [new Rectangle(10, 56, 6, 14), new Rectangle(42, 56, 6, 14)],
+            SiegePylonLayout.ForSector(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => SiegePylonLayout.ForSector(64));
+    }
+
+    [Fact]
     public void OptionsExposeBothOriginalAudioScalesAsDistinctHitTargets()
     {
         Assert.Equal(OriginalSoundtrackPolicy.MaximumVolumeLevel + 1,
@@ -194,8 +251,8 @@ public sealed class UiNavigationTests
         slide.Begin(ClientScreen.Gang, start);
 
         Assert.Equal(PanelSlideTransition.StartOffset, slide.Offset(ClientScreen.Gang, start));
-        Assert.InRange(slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration / 2),
-            1, PanelSlideTransition.StartOffset - 1);
+        Assert.Equal(172,
+            slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration / 2));
         Assert.Equal(0, slide.Offset(ClientScreen.Gang, start + PanelSlideTransition.Duration));
         Assert.Equal(0, slide.Offset(ClientScreen.City, start));
         slide.Begin(ClientScreen.City, start);
@@ -442,14 +499,24 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(378, 370, 36, 36), portraits[^1]);
         Assert.All(portraits.SelectMany((left, index) => portraits.Skip(index + 1)
             .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
-        Assert.Equal(new Rectangle(18, 107, 36, 36), SectorGangView.SearchPortrait(0));
-        Assert.Equal(new Rectangle(18, 347, 36, 36),
-            SectorGangView.SearchPortrait(SectorGangView.MaximumSearchRows - 1));
         Assert.Equal(new Rectangle(67, 90, 64, 64), GangArtLayout.DetailPortrait);
         Assert.Equal(new Rectangle(558, 58, 56, 56), GangArtLayout.SelectedEquipmentPortrait);
         Assert.Equal(new Rectangle(18, 108, 20, 20), GangArtLayout.CombatPortrait(0, false));
         Assert.Equal(new Rectangle(42, 372, 20, 20), GangArtLayout.CombatPortrait(11, true));
         Assert.Throws<ArgumentOutOfRangeException>(() => GangArtLayout.CombatPortrait(12, false));
+    }
+
+    [Fact]
+    public void SiteSearchPanelFitsAllTwentyTwoSiteTypesInTwoColumns()
+    {
+        var rows = Enumerable.Range(0, SiteSearchLayout.MaximumSites)
+            .Select(SiteSearchLayout.Site).ToArray();
+
+        Assert.Equal(new Rectangle(200, 143, 115, 14), rows[0]);
+        Assert.Equal(new Rectangle(319, 303, 115, 14), rows[^1]);
+        Assert.All(rows.SelectMany((left, index) => rows.Skip(index + 1)
+            .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => SiteSearchLayout.Site(22));
     }
 
     [Fact]

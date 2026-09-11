@@ -32,7 +32,7 @@ public sealed class ToleranceResolverTests
     }
 
     [Fact]
-    public void SiteAdjustmentRemainsOutsideBribeAndSnitchBaseCaps()
+    public void BinaryBribeAndSnitchApplyDirectDeltasBeforePhaseClamp()
     {
         var match = CreateMatch(tolerance: -6, income: 7, influenceFirstTwoSites: true);
         var sector = match.Sectors[0];
@@ -41,10 +41,10 @@ public sealed class ToleranceResolverTests
         sector.Tolerance = -1;
         Assert.Equal(-1, ToleranceResolver.SiteAdjustment(match, sector));
         Assert.Equal(2, ToleranceResolver.ApplyBribe(match, sector));
-        Assert.Equal(-1, ToleranceResolver.ApplySnitch(match, sector));
+        Assert.Equal(-4, ToleranceResolver.ApplySnitch(match, sector));
 
-        sector.Tolerance = 39; // base 40 plus the -1 site adjustment
-        Assert.Equal(39, ToleranceResolver.ApplyBribe(match, sector));
+        sector.Tolerance = 39;
+        Assert.Equal(42, ToleranceResolver.ApplyBribe(match, sector));
     }
 
     private static MatchState CreateMatch(
@@ -67,7 +67,8 @@ public sealed class ToleranceResolverTests
                 new MatchSiteState(1, id == 0 ? (short)3 : (short)1, 0,
                     id == 0 && influenceFirstTwoSites ? playerId : null),
                 new MatchSiteState(2, id == 0 ? (short)21 : (short)2, 0)
-            ], tolerance: id == 0 ? tolerance : 14, income: id == 0 ? income : 3))
+            ], owner: id == 0 && influenceFirstTwoSites ? playerId : null,
+                tolerance: id == 0 ? tolerance : 14, income: id == 0 ? income : 3))
             .ToArray();
         return new MatchState(data, setup, [player], sectors);
     }

@@ -217,9 +217,9 @@ public sealed partial class ChaosGame
     protected override void UnloadContent()
     {
         DisposeSoundtrack();
-        foreach (var sound in _weaponSounds.Values) sound.Dispose();
+        foreach (var sound in _combatSounds.Values) sound.Dispose();
         foreach (var sound in _generalSounds.Values) sound.Dispose();
-        _weaponSounds.Clear();
+        _combatSounds.Clear();
         _generalSounds.Clear();
         // Closing the window while an online match is running should tell the server so, and let go
         // of the sockets either way.

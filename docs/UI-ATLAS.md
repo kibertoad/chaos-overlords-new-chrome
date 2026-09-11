@@ -16,10 +16,10 @@ original-game capture confirms the screen and interaction state.
 | `PX00128` | Main city view and right control-panel frame | High from visible labels | City screen background |
 | `PX00130` | Chaos Overlords title/logo | High from visible title | Title screen background |
 | `PX00131` | Limited/demo-version promotion | High from visible text | Not used for full version |
-| `PX00143` | Six-slot new-game objective/player setup | High from visible labels | Setup screen background |
-| `PX00144` | Setup variant with reduced/changed player area | Low | Unmapped |
-| `PX00145` | Compact player setup frame | Low | Unmapped |
-| `PX00146` | Minimal two-slot setup frame | Low | Unmapped |
+| `PX00143` | Full local objective/player setup | High from visible labels and load at `0x0040e150` | Setup screen background |
+| `PX00144` | Alternate full objective/player setup flow | Medium from visible layout and isolated load at `0x00467b06` | Unsupported legacy setup flow |
+| `PX00145` | Compact player Add/Remove/Begin/Cancel setup flow | Medium-High from visible layout and isolated load at `0x0040bc2e` | Unsupported legacy setup flow |
+| `PX00146` | Minimal player-strip Begin/Cancel setup flow | Medium from visible layout and isolated load at `0x00457295` | Unsupported legacy setup flow |
 
 ## Composite sheets and panels
 
@@ -32,9 +32,19 @@ original-game capture confirms the screen and interaction state.
 | `PX00140` | Compact setup-control sheet matching `PX00143` labels | High |
 | `PX00150` | Two-state small command/equipment icon sheet | Medium |
 | `PX00200` | Endgame awards/statistics frame | High from visible labels |
-| `PX00201` | Endgame award/statistics symbols and controls | High from visible labels |
-| `PX00202`, `PX00203` | Victory and elimination panels | High from visible text |
+| `PX00201` | Endgame award icons (fist, skull, chicken, dollar, safe), colored player-number rows, statistics labels, and pressed Awards/Stats/Done controls | High from visible content and the original Help Endgame topic |
+| `PX00202`, `PX00203` | Single-player victory and elimination splashes with one Overlord portrait aperture | High from visible text and geometry; hot-seat sequencing unresolved |
 | `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; patrol-car cell `(116,0,48,64)` | High for sheet contents, Medium for patrol-car crop |
+| `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
+| `PX05009` | Gangs in Sector browser with one gang portrait and Tech Level, Upkeep, and fourteen stat rows | High from visible labels and main-console workflow |
+| `PX05013` | Equipment to Sell panel with acting-gang portrait, three independently selectable equipment rows, original-price half-value proceeds, Cancel and OK | High from visible labels and original manual Sell workflow |
+| `PX05015` | Equipment to Give panel with acting-gang portrait and three independently selectable item apertures | High from visible label and original manual Give workflow |
+| `PX05006` | Movement destination panel with acting-gang portrait and native-tile 3x3 sector neighborhood | High from visible label, exact geometry and original manual Move workflow |
+| `PX05011` | Player Rankings panel with six player-color vertical rails and movable Overlord portraits | High from visible structure and original WinHelp Ranking description |
+| `PX05020` | System Warning panel for confirming an end turn while at least one active gang is idle | High from visible text and client trigger semantics |
+| `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
+| `PX05022` | Gang Information variant without live-instance equipment cells, used for hire-offer definition inspection | High from comparison with `PX05000` and Hire/Gang help topics |
+| `PX05024` | Search: Sites panel with ALL, NONE, and OK controls plus a two-column aperture sized for all 22 site types | High for visible identity and geometry; Low for the post-confirmation city-map presentation |
 | `PX02000` | 22 vertically stacked site portraits, 120x64 each | High from dimensions and definition coverage |
 | `PX03000` | 10x9 gang portrait grid, 64x64 each, covering all 90 definitions | High from dimensions and definition coverage |
 | `PX07000`-`PX07027`, `PX07200`-`PX07228` | Eight-frame 64x64 attacker overlays facing opposite directions; index 27 is target-evasion/question art and right-facing index 28 is the police car | High from frame inspection and item-table indices |
@@ -56,14 +66,21 @@ these rectangles:
 - Planning time: x 192 with width 108; row tops 330, 359, 388 and 417,
   each 27 pixels high, corresponding to None, 30 Seconds, 2 Minutes and
   5 Minutes.
-- Add player: `(370,326,92,30)`.
-- Remove player: `(466,326,96,30)`.
-- Begin: `(370,374,92,50)`.
-- Cancel: `(466,374,96,50)`.
+- Add player: `(370,328,92,24)`.
+- Remove player: `(468,328,92,24)`.
+- Begin: `(370,375,92,45)`.
+- Cancel: `(468,375,92,45)`.
 
-These coordinates were measured from the extracted bitmap. Exact inclusive
-edges, pressed states, disabled states and original cursor feedback remain to be
-validated against the executable.
+The four push-button rectangles are verified against the destination rectangles
+in original helper `0x0040eb5f`; the other coordinates were measured from the
+extracted bitmap. The helper uses half-open rectangle containment, restores the
+released image when the pointer leaves, and accepts only release inside. The
+recreation now uses its exact hit rectangles, defers each action until release
+inside the same control, and cancels a release outside. While held inside, it
+draws the helper's exact `PX00140` source tiles: Add `(220,0,92,24)`, Remove
+`(220,24,92,24)`, Begin `(220,48,92,45)`, and Cancel `(220,93,92,45)`; moving
+outside restores the baked `PX00143` control. Disabled rendering and original
+cursor feedback remain to be validated.
 
 ## Rendering rules recovered so far
 
@@ -79,8 +96,13 @@ validated against the executable.
   empty-slot marker, not an active Overlord portrait. On original local Begin,
   every empty slot becomes a Computer and receives a unique bounded draw from
   portraits 0 through 14 before city generation. The client now treats its
-  visible count as explicitly configured slots and completes omitted slots at
-  Begin through the original-compatible fresh-match factory.
+  visible count as explicitly configured local humans, starts with one, and
+  completes omitted slots at Begin through the original-compatible fresh-match
+  factory. Add/Remove changes that human count. Clicking the bounded name field
+  below a visible face opens the original 10-character uppercase editor; empty
+  confirmation restores `PLAYER#n`. Dragging a face to an empty cell changes its
+  color slot; dropping on another human exchanges their name/portrait identities.
+  Portrait 15 remains display-only.
 - AI difficulty is the setup screen's single global **AI Mentality** selection,
   not a per-player field. The four baked rows select Goon, Criminal, Crime Lord,
   or Homicidal Maniac; hover-only thematic tooltips explain the behavioral
@@ -89,6 +111,23 @@ validated against the executable.
 - The optional human planning countdown uses the 60-by-3 aperture at
   `(520,336)` on the main control panel. The recreation fills it green over a
   black background and scales the visible width from 60 to zero.
+- The `PX00128` Game Info button at `(588,40,30,54)` opens `PX05021` at
+  `(104,125,344,209)`. Dynamic fields report the scenario, global AI mentality,
+  selected planning limit, and all six names with the manual-defined `HUMAN` or
+  `AI` intelligence label. The panel opens automatically for a new game with
+  multiple local humans and after loading a live saved game.
+- The idle-gang end-turn check now uses the baked `PX05020` System Warning at
+  `(104,125,344,209)`. Its original Cancel control returns to planning and its
+  OK control confirms the ordinary end-turn path.
+- The split Financial City/Sector control selects `PX05008` or `PX05019` at
+  `(104,125,344,209)`. Both render the active Overlord portrait and a read-only
+  projection of current/pending upkeep, contracts and headcount, equipment,
+  bribes, tax, influenced-site cash, estimated Chaos and the resulting cash
+  adjustment. Costs are red and income is green as specified by the manual.
+- Ranking opens `PX05011` at `(104,125,344,209)`. Each active player's
+  32-by-32 portrait is centered on its fixed color rail; the recovered
+  all-scenario score table determines a zero-based competition standing and
+  tied players share a height. Eliminated players are omitted.
 - City sectors use their fixed 54 by 52 cell from `PX10000` when neutral or
   `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
 - Active Crackdown sectors overlay the color-keyed patrol-car slice from
@@ -98,8 +137,19 @@ validated against the executable.
 - Sector detail also shows up to ten friendly or detected enemy portraits from
   `PX03000` in owner colors. Friendly portraits are mouse-selectable and open
   that gang's information panel; enemy portraits remain read-only.
-- Search results reuse the same sheet and visibility projection for seven
-  portrait-led rows, with owner-colored borders and overflow count.
+- The main control panel's Gangs/Sector half uses `PX05009`, selects only active
+  friendly gangs in the current sector, refuses an empty roster, and keeps arrow
+  navigation within that stable ID-ordered roster. It reports Tech Level,
+  Upkeep, and all fourteen current/base-option statistics. Direct live gang
+  details use `PX05000` and fill its three right-side
+  weapon/armor/miscellaneous cells from `PX04999`; a hire offer has no instance
+  equipment and therefore uses the clean `PX05022` form.
+- Search uses `PX05024` and presents all 22 site definitions in two columns.
+  ALL, NONE, individual mouse/keyboard toggles, and OK are implemented. The
+  resulting non-authoritative cyan city-sector outline is provisional pending
+  an original runtime capture of the post-confirmation presentation. The prior
+  detected-gang list was removed: it duplicated Sector View and contradicted
+  the original panel's explicit `SEARCH: SITES` label.
 - The Equipment panel shows the selected gang from `PX03000` at `(558,58)` in
   a 56-by-56 owner-colored frame, keeping the item list and statistics visible.
 - Gang Information places its 64-by-64 portrait at `(67,90)`, aligned to the
@@ -149,9 +199,13 @@ validated against the executable.
   white segment twice before the bar settles to green remaining force and red
   missing force; the recovered timer state machine also retains the result for
   five final ticks.
-- The recreation Give target panel reuses `PX03000` portraits and lists only
-  validator-approved friendly recipients in the acting gang's sector. Its
-  layout remains provisional pending identification of the original panel.
+- `PX05015` is the original Equipment to Give panel. Its three item apertures
+  correspond to weapon, armor and miscellaneous slots and independently toggle
+  the exact items included in one Give command. OK advances to the recreation's
+  recipient list, which reuses `PX03000` portraits and contains only friendly
+  same-sector gangs able to accept every selected item's tech level. The
+  recipient-list layout remains provisional pending identification of its
+  original presentation.
 - `PX05004` and `PX05007` are the original Equipment to Purchase and Equipment
   to Research overlays. Equip and Research route legal item choices through
   these panels over the live detailed-sector view. Both open on the first of
@@ -221,6 +275,14 @@ portraits and their sixteen comparison values. Hiring itself remains the
 original drag-from-dock interaction; the comparison panel's OK control closes
 the overlay.
 
+`PX05017` is the original 344-by-209 `COMLINK: INCOMING MESSAGES` viewer. It
+contains the bounded page counter and previous/next controls, a 64-by-64 sender
+portrait, date and sender fields, and the message aperture. `PX05018` is the
+matching `COMLINK: SEND MESSAGE` panel: six recipient cells in two columns by
+three rows and four fixed 40-character composition rows. The recreation routes
+both halves of the main-console Comlink control, blinks View while the active
+human has unread mail, and uses authoritative inbox/read/send operations.
+
 `PX05001` is the shared Item Information panel opened from the Equip and
 Research item lists. `PX05003` is the `TARGET ACQUISITION` Attack picker: it
 shows the acting gang, an opponent-player portrait column, and the selected
@@ -239,6 +301,19 @@ lower block reports all fourteen site modifiers. A stationary double-click
 opens it from either a detailed-sector building or a `PX05005` Influence target,
 then returns to the originating screen without discarding target selection.
 
+`PX05013` is the original `EQUIPMENT TO SELL` panel. Its three fixed rows map
+to the acting gang's weapon, armor and miscellaneous slots. Clicking a populated
+row toggles its highlight; OK submits every highlighted exact item as one
+authoritative transaction, credits half of each raw item price rounded down, and
+ignores Factory purchase discounts. Cancel leaves the existing command intact.
+
+`PX05006` is visibly labeled `MOVEMENT`; its small upper-left aperture holds the
+acting gang and its large destination-map aperture is exactly three native
+54-by-52 sector tiles wide by three tiles tall. The recreation composites the
+gang's live neighborhood from the same ownership layers as the city, marks the
+center source sector, and accepts only validator-approved adjacent destinations
+by mouse or directional keys before OK confirms the command.
+
 `PX05014` is the dedicated live Combat comparison panel rather than a flat
 target list. It identifies the sector, places attacker and defender owner/gang
 art side by side, shows equipment and green/red Force tracks, and reserves the
@@ -249,7 +324,12 @@ the affected sector, and presents both sides with gang/equipment art and Force
 tracks; police uses the recovered police art. Its Detail control replays the
 selected resolved event through `PX05014`, regardless of the automatic Detailed
 Combat preference. Escape or the panel's Cancel control clears the bounded
-presentation queue without touching match state. Both identities are confirmed by
+presentation queue without touching match state. At handoff, only visible combat
+from the immediately completed turn is eligible. Last Turn Events opens first
+when both exist, and Detailed animation capture waits until the handoff/event
+privacy panels have closed. Each hot-seat player has an independent presentation
+cursor, while load/replay initialization suppresses historical autoplay for all
+viewers. Both identities are confirmed by
 their template text, apertures, and the supplied original Combat capture.
 
 `PX05010` is the paged Last Turn Events panel. At the next human-player handoff,
@@ -263,14 +343,16 @@ Routine implementation notifications such as upkeep/economy, movement,
 equipment transactions and ordinary command completion do not create reports;
 captured/lost control, newly influenced sites, completed research, crackdowns,
 eliminations and objective changes do. Closing the panel consumes the queued
-notifications that were present when it opened.
+notifications only after every report page was visited. Closing early retains
+the queue and blinks the Events control, matching the original Help; trying to
+open the panel without reportable events leaves the current screen unchanged.
 
 ## Next mapping work
 
 1. Identify the main-city content layers placed inside the black viewport of
    `PX00128` and validate/complete its provisional right-panel button rectangles.
-2. Correlate `PX00143` through `PX00146` with local player counts; legacy
-   network setup variants are explicitly out of scope.
+2. Finish classifying the separate `PX00144` through `PX00146` setup flows;
+   implementing legacy network/setup protocols remains explicitly out of scope.
 3. Map remaining cursor frames, selection/pressed-state sprites and transparency.
 4. Capture reference screenshots for title, every setup configuration and the
    initial city, then add masked native-resolution golden comparisons.

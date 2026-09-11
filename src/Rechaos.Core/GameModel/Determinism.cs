@@ -64,7 +64,7 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 19;
+    private const int FormatVersion = 22;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
@@ -160,13 +160,41 @@ public static class MatchStateHasher
             includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
             includeAiFormationSectors: true);
 
+    internal static string ComputeVersionNineteenSha256(MatchState state) =>
+        ComputeSha256(state, 19, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
+            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
+            includeAiFormationSectors: true, includeAiCoverageSectors: true);
+
+    internal static string ComputeVersionTwentySha256(MatchState state) =>
+        ComputeSha256(state, 20, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
+            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
+            includeAiFormationSectors: true, includeAiCoverageSectors: true,
+            includeComlink: true);
+
+    internal static string ComputeVersionTwentyOneSha256(MatchState state) =>
+        ComputeSha256(state, 21, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
+            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
+            includeAiFormationSectors: true, includeAiCoverageSectors: true,
+            includeComlink: true, includeTertiaryTargets: true);
+
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
             includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
             includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
             includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true);
+            includeAiFormationSectors: true, includeAiCoverageSectors: true,
+            includeComlink: true, includeTertiaryTargets: true,
+            includeQuaternaryTargets: true);
 
     private static string ComputeSha256(
         MatchState state,
@@ -186,7 +214,10 @@ public static class MatchStateHasher
         bool includeAiTargets = false,
         bool includeAiCooldowns = false,
         bool includeAiFormationSectors = false,
-        bool includeAiCoverageSectors = false)
+        bool includeAiCoverageSectors = false,
+        bool includeComlink = false,
+        bool includeTertiaryTargets = false,
+        bool includeQuaternaryTargets = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -290,7 +321,7 @@ public static class MatchStateHasher
             foreach (var command in commands)
             {
                 writer.Write(command.Sequence);
-                WriteCommand(writer, command.Command);
+                WriteCommand(writer, command.Command, includeTertiaryTargets, includeQuaternaryTargets);
             }
 
             foreach (var player in state.Players.OrderBy(item => item.Id.Value))
@@ -299,6 +330,23 @@ public static class MatchStateHasher
                 writer.Write(state.NextNotificationSequence(player.Id));
                 writer.Write(notifications.Count);
                 foreach (var notification in notifications) WriteNotification(writer, notification);
+            }
+            if (includeComlink)
+            {
+                foreach (var player in state.Players.OrderBy(item => item.Id.Value))
+                {
+                    var inbox = state.ComlinkFor(player.Id);
+                    writer.Write(inbox.NextSequence);
+                    writer.Write(inbox.ReadThroughSequence);
+                    writer.Write(inbox.Count);
+                    foreach (var message in inbox.Messages)
+                    {
+                        writer.Write(message.Sequence);
+                        writer.Write(message.Turn);
+                        writer.Write(message.Sender.Value);
+                        WriteString(writer, message.Text);
+                    }
+                }
             }
         }
 
@@ -407,11 +455,25 @@ public static class MatchStateHasher
         }
     }
 
-    private static void WriteCommand(BinaryWriter writer, GameCommand command)
+    private static void WriteCommand(
+        BinaryWriter writer,
+        GameCommand command,
+        bool includeTertiaryTarget,
+        bool includeQuaternaryTarget)
     {
         writer.Write(command.Player.Value); writer.Write(command.Gang.Value); writer.Write((byte)command.Action);
         WriteTarget(writer, command.Target); writer.Write(command.Repeat);
         writer.Write(command.SecondaryTarget.HasValue); if (command.SecondaryTarget is { } target) WriteTarget(writer, target);
+        if (includeTertiaryTarget)
+        {
+            writer.Write(command.TertiaryTarget.HasValue);
+            if (command.TertiaryTarget is { } tertiary) WriteTarget(writer, tertiary);
+        }
+        if (includeQuaternaryTarget)
+        {
+            writer.Write(command.QuaternaryTarget.HasValue);
+            if (command.QuaternaryTarget is { } quaternary) WriteTarget(writer, quaternary);
+        }
     }
 
     private static void WriteTarget(BinaryWriter writer, CommandTarget target) { writer.Write((byte)target.Kind); writer.Write(target.Id); }

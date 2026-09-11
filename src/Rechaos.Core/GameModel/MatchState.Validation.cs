@@ -86,6 +86,11 @@ public sealed partial class MatchState
         if (sectors.SelectMany(sector => sector.Sites)
             .Any(site => site.InfluencedBy is { } owner && !playerIds.Contains(owner)))
             throw new ArgumentException("A site influencer is not part of the match.", nameof(sectors));
+        if (sectors.Any(sector => sector.Sites.Any(site =>
+                site.InfluencedBy is { } influencer && sector.Owner != influencer)))
+            throw new ArgumentException(
+                "An influenced site must belong to the player controlling its sector.",
+                nameof(sectors));
     }
 
     private static IEnumerable<short> EquippedItemIds(MatchGangState gang)

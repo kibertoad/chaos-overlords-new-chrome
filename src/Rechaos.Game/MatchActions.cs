@@ -19,7 +19,7 @@ namespace Rechaos.Game;
 /// the player played and nobody else saw. That is not a rule anybody can be asked to remember, so
 /// there is no recorder to reach for: the turn structure still needs one, and
 /// <see cref="HotSeatRecorder"/> is it, which refuses to hand one over in an online match. A call
-/// site that wants to mutate a player's match has the five methods below and nothing else.
+/// site that wants to mutate a player's match has the methods below and nothing else.
 /// </para>
 /// </remarks>
 internal sealed class MatchActions
@@ -90,6 +90,41 @@ internal sealed class MatchActions
         _turn is null
             ? _replay.TryDismissNotification(player, out _)
             : _turn.DismissNotification();
+
+    /// <summary>
+    /// Sends a Comlink message, in a hot-seat match.
+    /// </summary>
+    /// <remarks>
+    /// Online it is refused. A message lands in another player's inbox, and an inbox is hashed
+    /// state, so a send every client did not apply at the same point in the sealed log is a desync
+    /// rather than a lost message. Carrying one needs an order kind on the wire the server relays
+    /// with the rest of the turn; until there is one, the door stays shut where it cannot be
+    /// honoured.
+    /// </remarks>
+    internal ComlinkSendResult SendComlinkMessage(
+        PlayerId sender,
+        IReadOnlyList<PlayerId> recipients,
+        string message) =>
+        _turn is null
+            ? _replay.SendComlinkMessage(sender, recipients, message)
+            : new ComlinkSendResult(
+                false,
+                ComlinkValidationCode.WrongPhase,
+                [],
+                "Comlink is not carried by an online turn yet.");
+
+    /// <summary>
+    /// Marks a player's Comlink inbox read, in a hot-seat match.
+    /// </summary>
+    /// <remarks>
+    /// Online it does nothing, for the same reason: the read mark is hashed, so one client clearing
+    /// its own badge would put it on a different state from every other. Nothing online can fill an
+    /// inbox yet, so there is nothing to mark.
+    /// </remarks>
+    internal void MarkComlinkRead(PlayerId player)
+    {
+        if (_turn is null) _replay.MarkComlinkRead(player);
+    }
 
     /// <summary>
     /// Refills the dock, in a hot-seat match.

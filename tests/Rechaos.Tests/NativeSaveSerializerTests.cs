@@ -64,6 +64,99 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void RoundTripPreservesThreeItemSellCommand()
+    {
+        var match = CreateMatch();
+        var gang = match.FindGang(new GangId(0))!;
+        var weapon = match.Definitions.Items.First(item => item.Type is >= 0 and <= 2).Id;
+        var armor = match.Definitions.Items.First(item => item.Type == 3).Id;
+        var miscellaneous = match.Definitions.Items.First(item => item.Type == 4).Id;
+        gang.WeaponItemId = weapon;
+        gang.ArmorItemId = armor;
+        gang.MiscellaneousItemId = miscellaneous;
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), gang.Id, GangAction.Sell, CommandTarget.Item(weapon),
+            SecondaryTarget: CommandTarget.Item(armor),
+            TertiaryTarget: CommandTarget.Item(miscellaneous))).Accepted);
+
+        var restored = RoundTrip(match);
+        var command = restored.FindGang(gang.Id)!.QueuedCommand!.Command;
+
+        Assert.Equal(CommandTarget.Item(weapon), command.Target);
+        Assert.Equal(CommandTarget.Item(armor), command.SecondaryTarget);
+        Assert.Equal(CommandTarget.Item(miscellaneous), command.TertiaryTarget);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void RoundTripPreservesThreeItemGiveCommand()
+    {
+        var match = CreateMatch();
+        var source = match.FindGang(new GangId(0))!;
+        var recipient = new MatchGangState(
+            new GangId(50), new PlayerId(0), source.DefinitionId, source.SectorId, 5);
+        match.Players[0].AddGang(recipient);
+        var weapon = match.Definitions.Items.First(item => item.Type is >= 0 and <= 2).Id;
+        var armor = match.Definitions.Items.First(item => item.Type == 3).Id;
+        var miscellaneous = match.Definitions.Items.First(item => item.Type == 4).Id;
+        source.WeaponItemId = weapon;
+        source.ArmorItemId = armor;
+        source.MiscellaneousItemId = miscellaneous;
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), source.Id, GangAction.Give, CommandTarget.Gang(recipient.Id),
+            SecondaryTarget: CommandTarget.Item(weapon),
+            TertiaryTarget: CommandTarget.Item(armor),
+            QuaternaryTarget: CommandTarget.Item(miscellaneous))).Accepted);
+
+        var restored = RoundTrip(match);
+        var command = restored.FindGang(source.Id)!.QueuedCommand!.Command;
+
+        Assert.Equal(CommandTarget.Item(weapon), command.SecondaryTarget);
+        Assert.Equal(CommandTarget.Item(armor), command.TertiaryTarget);
+        Assert.Equal(CommandTarget.Item(miscellaneous), command.QuaternaryTarget);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void RoundTripPreservesComlinkMessagesAndReadState()
+    {
+        var match = CreateMatch(secondPlayerHuman: true);
+        match.FinishUpkeep();
+        Assert.True(match.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "MEET ME DOWNTOWN").Accepted);
+        match.MarkComlinkRead(new PlayerId(1));
+
+        var restored = RoundTrip(match);
+
+        Assert.Equal(match.ComlinkFor(new PlayerId(1)).Messages,
+            restored.ComlinkFor(new PlayerId(1)).Messages);
+        Assert.Equal(match.ComlinkFor(new PlayerId(1)).ReadThroughSequence,
+            restored.ComlinkFor(new PlayerId(1)).ReadThroughSequence);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void VersionSixteenSaveMigratesEmptyComlinkInboxes()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["formatVersion"] = 16;
+        document["stateSha256"] = MatchStateHasher.ComputeVersionNineteenSha256(match);
+        document["runtime"]!.AsObject().Remove("comlink");
+
+        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
+
+        Assert.All(restored.Players, player => Assert.Empty(restored.ComlinkFor(player.Id).Messages));
+        Assert.Equal(MatchStateHasher.ComputeVersionNineteenSha256(match),
+            MatchStateHasher.ComputeVersionNineteenSha256(restored));
+    }
+
+    [Fact]
     public void VersionThirteenSaveMigratesEmptyEquipmentCooldowns()
     {
         var match = CreateMatch();
@@ -148,19 +241,20 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
-    public void RoundTripPreservesCrackdownDuration()
+    public void RoundTripPreservesCrackdownDurationAndDuplicateResetSlots()
     {
         var match = CreateMatch();
         match.Sectors[0].CrackdownActive = true;
         match.Sectors[0].CrackdownTurnsRemaining = 5;
         match.Sectors[0].RecordCrackdown(1);
         match.Sectors[0].RecordCrackdown(3);
+        match.Sectors[0].RecordCrackdown(5);
 
         var restored = RoundTrip(match);
 
         Assert.True(restored.Sectors[0].CrackdownActive);
         Assert.Equal(5, restored.Sectors[0].CrackdownTurnsRemaining);
-        Assert.Equal([1, 3], restored.Sectors[0].CrackdownHistory);
+        Assert.Equal([5, 5], restored.Sectors[0].CrackdownHistory);
         Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
     }
 
@@ -694,6 +788,23 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void RejectsSiteInfluenceThatDoesNotMatchSectorControl()
+    {
+        var match = CreateMatch();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["sectors"]![0]!["sites"]![0]!["influencedBy"] = 1;
+
+        using var changed = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
+        var error = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(changed, match.Definitions));
+
+        var cause = Assert.IsType<ArgumentException>(error.InnerException);
+        Assert.Contains("controlling its sector", cause.Message);
+    }
+
+    [Fact]
     public void RejectsInputOverExplicitSizeLimit()
     {
         using var oversized = new MemoryStream(new byte[NativeSaveSerializer.MaximumSaveBytes + 1]);
@@ -731,6 +842,36 @@ public sealed class NativeSaveSerializerTests
         }
     }
 
+    [Fact]
+    public void AtomicStoreDoesNotOverwriteGoodBackupWithCorruptCurrentSave()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-save-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, "match.rchsave");
+        try
+        {
+            var match = CreateMatch();
+            NativeSaveStore.SaveAtomic(path, match);
+            match.FinishUpkeep();
+            NativeSaveStore.SaveAtomic(path, match);
+            var backupHash = MatchStateHasher.ComputeSha256(
+                NativeSaveStore.Load(path + NativeSaveStore.BackupSuffix, match.Definitions));
+            File.WriteAllText(path, "corrupt");
+
+            match.FinishCommand(new PlayerId(0));
+            NativeSaveStore.SaveAtomic(path, match);
+
+            Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(
+                NativeSaveStore.Load(path, match.Definitions)));
+            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(
+                NativeSaveStore.Load(path + NativeSaveStore.BackupSuffix, match.Definitions)));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static MatchState RoundTrip(MatchState match)
     {
         using var stream = new MemoryStream(SaveBytes(match));
@@ -753,13 +894,17 @@ public sealed class NativeSaveSerializerTests
         while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
     }
 
-    private static MatchState CreateMatch(string firstPlayerName = "ONE")
+    private static MatchState CreateMatch(
+        string firstPlayerName = "ONE",
+        bool secondPlayerHuman = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
         [
             new(new PlayerId(0), firstPlayerName, PlayerController.Human),
-            new(new PlayerId(1), "TWO", PlayerController.Computer, PortraitId: 7)
+            new(new PlayerId(1), "TWO",
+                secondPlayerHuman ? PlayerController.Human : PlayerController.Computer,
+                PortraitId: 7)
         ];
         var setup = new MatchSetup(
             ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups, AiDifficulty.CrimeLord);

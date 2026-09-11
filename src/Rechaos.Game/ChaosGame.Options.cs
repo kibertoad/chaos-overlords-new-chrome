@@ -29,10 +29,11 @@ public sealed partial class ChaosGame
     private string _optionsReturnMessage = string.Empty;
     private int _optionsRow;
     private int _soundEffectVolumeLevel = AudioRouting.DefaultEffectVolumeLevel;
-    private bool _warnIfIdleGangs = true;
-    private bool _showBaseStatistics;
-    private bool _detailedCombat = true;
-    private bool _slidePanels = true;
+    private bool _warnIfIdleGangs = OriginalOptionsPolicy.WarnIfIdleGangsByDefault;
+    private bool _showBaseStatistics = OriginalOptionsPolicy.ShowBaseStatisticsByDefault;
+    private bool _detailedCombat = OriginalOptionsPolicy.DetailedCombatByDefault;
+    private bool _slidePanels = OriginalOptionsPolicy.SlidePanelsByDefault;
+    private bool _fullscreen = OriginalOptionsPolicy.FullscreenByDefault;
 
     private void OpenOptions()
     {
@@ -127,7 +128,7 @@ public sealed partial class ChaosGame
     {
         _showBaseStatistics = !_showBaseStatistics;
         SavePreferences();
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"GANG STATISTICS: {(_showBaseStatistics ? "BASE" : "CURRENT")}";
     }
 
@@ -136,7 +137,7 @@ public sealed partial class ChaosGame
         _detailedCombat = !_detailedCombat;
         if (!_detailedCombat) _combatAnimationPlayer.Clear();
         SavePreferences();
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"DETAILED COMBAT {(_detailedCombat ? "ON" : "OFF")}";
     }
 
@@ -145,7 +146,7 @@ public sealed partial class ChaosGame
         _slidePanels = !_slidePanels;
         if (!_slidePanels) _panelSlideTransition.Clear();
         SavePreferences();
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"SLIDE PANELS {(_slidePanels ? "ON" : "OFF")}";
     }
 
@@ -160,7 +161,7 @@ public sealed partial class ChaosGame
         var changed = level != _musicVolumeLevel;
         ApplyMusicVolumeLevel(level, _inputTime);
         SavePreferences();
-        if (changed) PlayGeneralSound(3);
+        if (changed) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = _musicVolumeLevel == 0
             ? "MUSIC OFF"
             : $"MUSIC LEVEL {_musicVolumeLevel}";
@@ -174,7 +175,7 @@ public sealed partial class ChaosGame
         var changed = level != _soundEffectVolumeLevel;
         _soundEffectVolumeLevel = level;
         SavePreferences();
-        if (changed) PlayGeneralSound(3);
+        if (changed) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = level == 0 ? "SOUND EFFECTS OFF" : $"SOUND EFFECTS LEVEL {level}";
     }
 
@@ -182,7 +183,7 @@ public sealed partial class ChaosGame
     {
         _warnIfIdleGangs = !_warnIfIdleGangs;
         SavePreferences();
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"IDLE GANG WARNING {(_warnIfIdleGangs ? "ON" : "OFF")}";
     }
 
@@ -197,7 +198,23 @@ public sealed partial class ChaosGame
                 _selectedPlanningTimeLimit,
                 _showBaseStatistics,
                 _detailedCombat,
-                _slidePanels));
+                _slidePanels,
+                _fullscreen));
+
+    private void ToggleFullscreen()
+    {
+        try
+        {
+            _graphics.ToggleFullScreen();
+            _fullscreen = _graphics.IsFullScreen;
+            SavePreferences();
+            _message = _fullscreen ? "BORDERLESS FULLSCREEN" : "WINDOWED DISPLAY";
+        }
+        catch
+        {
+            _message = "DISPLAY MODE CHANGE FAILED";
+        }
+    }
 
     private void DrawOptions(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
@@ -235,7 +252,7 @@ public sealed partial class ChaosGame
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ColorDepth,
             "THOUSANDS OF COLORS: ALWAYS ON", -1);
 
-        DrawCentered(font, batch, "UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS", 374,
+        DrawCentered(font, batch, "F11 DISPLAY  UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS", 374,
             new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
     }

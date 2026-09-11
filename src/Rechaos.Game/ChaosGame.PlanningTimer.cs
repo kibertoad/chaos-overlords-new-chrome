@@ -15,6 +15,7 @@ public enum PlanningTimeLimit
 public static class PlanningTimerPolicy
 {
     public const int BarWidth = 60;
+    public const int RefreshCountdown = 6;
 
     public static IReadOnlyList<PlanningTimeLimit> Choices { get; } =
         Enum.GetValues<PlanningTimeLimit>();
@@ -40,8 +41,13 @@ public static class PlanningTimerPolicy
     public static int VisibleBarWidth(TimeSpan duration, TimeSpan remaining)
     {
         if (duration <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(duration));
-        var ratio = Math.Clamp(remaining.TotalMilliseconds / duration.TotalMilliseconds, 0, 1);
-        return (int)Math.Floor(BarWidth * ratio);
+        if (remaining >= duration) return BarWidth;
+        if (remaining <= TimeSpan.Zero) return 0;
+
+        var durationMilliseconds = duration.Ticks / TimeSpan.TicksPerMillisecond;
+        var elapsedMilliseconds = (duration - remaining).Ticks / TimeSpan.TicksPerMillisecond;
+        var elapsedPercent = elapsedMilliseconds * 100 / durationMilliseconds;
+        return checked(BarWidth - (int)(elapsedPercent * BarWidth / 100));
     }
 
     public static int? WarningSoundSlot(TimeSpan remaining)
@@ -51,8 +57,6 @@ public static class PlanningTimerPolicy
         return remaining < TimeSpan.FromSeconds(10) ? 7 : null;
     }
 
-    public static int WarningBucket(TimeSpan remaining) =>
-        Math.Max(0, (int)Math.Ceiling(remaining.TotalSeconds));
 }
 
 public static class PlanningTimerLayout
@@ -77,7 +81,7 @@ public sealed class PlanningTimer
 {
     private TimeSpan _duration;
     private TimeSpan _deadline;
-    private int _lastPlanningWarningBucket = int.MaxValue;
+    private int _refreshCountdown;
 
     public bool IsActive { get; private set; }
 
@@ -95,7 +99,7 @@ public sealed class PlanningTimer
         IsActive = false;
         _duration = TimeSpan.Zero;
         _deadline = TimeSpan.Zero;
-        _lastPlanningWarningBucket = int.MaxValue;
+        _refreshCountdown = 0;
     }
 
     public PlanningTimerSignal Advance(TimeSpan now)
@@ -108,11 +112,12 @@ public sealed class PlanningTimer
             return PlanningTimerSignal.Expired;
         }
 
+        if (_refreshCountdown > 0) _refreshCountdown--;
+        if (_refreshCountdown != 0) return PlanningTimerSignal.None;
+        _refreshCountdown = PlanningTimerPolicy.RefreshCountdown;
+
         if (PlanningTimerPolicy.WarningSoundSlot(remaining) is not { } slot)
             return PlanningTimerSignal.None;
-        var bucket = PlanningTimerPolicy.WarningBucket(remaining);
-        if (bucket == _lastPlanningWarningBucket) return PlanningTimerSignal.None;
-        _lastPlanningWarningBucket = bucket;
         return slot == 7 ? PlanningTimerSignal.LongWarning : PlanningTimerSignal.FinalWarning;
     }
 
@@ -129,7 +134,8 @@ public sealed partial class ChaosGame
     private void SelectPlanningTimeLimit(PlanningTimeLimit limit)
     {
         if (!Enum.IsDefined(limit)) throw new ArgumentOutOfRangeException(nameof(limit));
-        if (_selectedPlanningTimeLimit != limit) PlayGeneralSound(3);
+        if (_selectedPlanningTimeLimit != limit)
+            PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _selectedPlanningTimeLimit = limit;
         SavePreferences();
         _message = $"TURN TIME LIMIT {PlanningTimerPolicy.Label(limit)}";
@@ -181,10 +187,10 @@ public sealed partial class ChaosGame
         switch (_planningTimer.Advance(now))
         {
             case PlanningTimerSignal.LongWarning:
-                PlayGeneralSound(7);
+                PlayGeneralSound(GeneralSoundSlot.CountdownWarning);
                 return false;
             case PlanningTimerSignal.FinalWarning:
-                PlayGeneralSound(8);
+                PlayGeneralSound(GeneralSoundSlot.FinalSecondWarning);
                 return false;
             case PlanningTimerSignal.None:
                 return false;

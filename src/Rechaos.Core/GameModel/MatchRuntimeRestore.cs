@@ -13,7 +13,13 @@ internal sealed record MatchRuntimeRestore(
     long NextEventSequence,
     IReadOnlyDictionary<PlayerId, IReadOnlyList<GameNotification>> Notifications,
     IReadOnlyDictionary<PlayerId, long> NextNotificationSequences,
+    IReadOnlyDictionary<PlayerId, ComlinkInboxRestore> ComlinkInboxes,
     IReadOnlyList<PhaseBoundaryHash> PhaseHashes,
     MatchOutcome? Outcome,
     AiStrategicState AiStrategy,
     AiPlanningState AiPlanning);
+
+internal sealed record ComlinkInboxRestore(
+    IReadOnlyList<ComlinkMessage> Messages,
+    long NextSequence,
+    long ReadThroughSequence);

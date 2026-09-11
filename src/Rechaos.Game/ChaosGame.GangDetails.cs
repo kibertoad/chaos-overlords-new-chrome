@@ -6,18 +6,18 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private void OpenSelectedGangDetails(ClientScreen returnScreen)
-    {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
-        var gang = SelectedGang(_state.FindPlayer(playerId)!);
-        if (gang is not null) OpenGangDetails(gang, returnScreen);
-    }
+    private void OpenSectorGangDetails(ClientScreen returnScreen) =>
+        OpenSectorGangs(returnScreen);
 
-    private void OpenGangDetails(MatchGangState gang, ClientScreen returnScreen)
+    private void OpenGangDetails(
+        MatchGangState gang,
+        ClientScreen returnScreen,
+        int? sectorFilter = null)
     {
         _gangDetailsInstanceId = gang.Id;
         _gangDetailsDefinitionId = gang.DefinitionId;
         _gangDetailsReturnScreen = returnScreen;
+        _gangDetailsSectorFilter = sectorFilter;
         _screens.Show(ClientScreen.Gang);
     }
 
@@ -26,6 +26,7 @@ public sealed partial class ChaosGame
         _gangDetailsInstanceId = null;
         _gangDetailsDefinitionId = definitionId;
         _gangDetailsReturnScreen = returnScreen;
+        _gangDetailsSectorFilter = null;
         _screens.Show(ClientScreen.Gang);
     }
 
@@ -34,7 +35,32 @@ public sealed partial class ChaosGame
         var returnScreen = _gangDetailsReturnScreen;
         _gangDetailsInstanceId = null;
         _gangDetailsDefinitionId = null;
+        _gangDetailsSectorFilter = null;
         _screens.Show(returnScreen);
+    }
+
+    private void CycleGangDetails(int delta)
+    {
+        if (_gangDetailsSectorFilter is not { } sectorId
+            || _state?.Coordinator.ActivePlayer is not { } playerId)
+        {
+            CycleGang(delta);
+            return;
+        }
+        var gangs = GangInformationRoster.ForSector(
+            _state.FindPlayer(playerId)!.Gangs, sectorId);
+        if (gangs.Count == 0) return;
+        var current = _gangDetailsInstanceId is { } id
+            ? Enumerable.Range(0, gangs.Count).FirstOrDefault(index => gangs[index].Id == id, -1)
+            : -1;
+        var gang = gangs[Mod(current + delta, gangs.Count)];
+        _gangDetailsInstanceId = gang.Id;
+        _gangDetailsDefinitionId = gang.DefinitionId;
+        _selectedGangIndex = _state.FindPlayer(playerId)!.Gangs
+            .Where(candidate => candidate.IsActive)
+            .Select((candidate, index) => (candidate, index))
+            .First(entry => entry.candidate.Id == gang.Id).index;
+        _message = $"GANG {gang.Id.Value}";
     }
 
     private void DrawGangDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
@@ -42,8 +68,11 @@ public sealed partial class ChaosGame
         if (_gangDetailsReturnScreen == ClientScreen.Sector) DrawSectorDetails(batch, pixel, font, state);
         else DrawBoard(batch, pixel, font, state);
         var panel = GangInformationLayout.Panel;
-        if (_gangInfoBackground is not null)
-            batch.Draw(_gangInfoBackground, panel, Color.White);
+        var background = _gangDetailsInstanceId is null
+            ? _gangDefinitionInfoBackground
+            : _gangInfoBackground;
+        if (background is not null)
+            batch.Draw(background, panel, Color.White);
         else
             batch.Draw(pixel, panel, new Color(0, 0, 0, 245));
         var gang = _gangDetailsInstanceId is { } instanceId ? state.FindGang(instanceId) : null;
@@ -62,6 +91,15 @@ public sealed partial class ChaosGame
             if (_gangPortraits is not null)
                 batch.Draw(_gangPortraits, GangInformationLayout.Portrait,
                     OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
+            if (gang is not null && _itemPortraits is not null)
+            {
+                short?[] equipment =
+                    [gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId];
+                for (var slot = 0; slot < equipment.Length; slot++)
+                    if (equipment[slot] is { } itemId)
+                        batch.Draw(_itemPortraits, GangInformationLayout.Equipment(slot),
+                            OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
+            }
             font.Draw(batch, definition.Name, new Vector2(202, 153), Color.Lime, 1);
             foreach (var entry in WrapPanelText(definition.Description, 27).Take(3).Select((text, row) => (text, row)))
                 font.Draw(batch, entry.text, new Vector2(202, 170 + entry.row * 10), Color.Lime, 1);
@@ -122,6 +160,10 @@ public sealed partial class ChaosGame
 
     private static void DrawPanelValue(PixelFont font, SpriteBatch batch, string text, int right, int y)
     {
-        font.Draw(batch, text, new Vector2(right - text.Length * 6, y), Color.Lime, 1);
+        DrawPanelValue(font, batch, text, right, y, Color.Lime);
     }
+
+    private static void DrawPanelValue(
+        PixelFont font, SpriteBatch batch, string text, int right, int y, Color color) =>
+        font.Draw(batch, text, new Vector2(right - text.Length * 6, y), color, 1);
 }

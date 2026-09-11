@@ -387,6 +387,13 @@ dock a player plans against the dock the sealed turn grants.
   lobby is on screen and opens the event stream when the match starts. The stream carries the lobby
   facts too; opening it earlier would mean unwinding a session for every player who backs out.
 - No chat. A WebSocket lane for lobby chat would sit beside the stream without touching turns.
+- **Comlink is closed in an online match.** The original's player-to-player messaging writes hashed
+  state on both sides: a message lands in a recipient's inbox, and merely opening the view clears
+  that inbox's read mark. Either done on one client alone is a desync rather than a lost message, so
+  the door refuses with a reason instead. Carrying it needs an order kind on the wire that the server
+  relays with the rest of the sealed turn and every client applies at the same point — the same shape
+  as the departed-seat handover above, and the same reason for keeping it out of the client wiring:
+  it is a wire-contract change that wants its own determinism run.
 - The turn timer is a whole-match setting; per-turn extensions are not offered beyond the restart
   that follows a desync pause.
 - **Desync recovery trusts the host.** The snapshot the host uploads becomes the state every other

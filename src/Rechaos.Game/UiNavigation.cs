@@ -1,8 +1,15 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
+
+public static class PointerButtonEdges
+{
+    public static bool Pressed(ButtonState current, ButtonState previous) =>
+        current == ButtonState.Pressed && previous == ButtonState.Released;
+}
 
 public static class OriginalFontLayout
 {
@@ -29,6 +36,47 @@ public static class OriginalFontLayout
     }
 }
 
+public static class SetupButtonLayout
+{
+    public static Rectangle AddPlayer => new(370, 328, 92, 24);
+    public static Rectangle RemovePlayer => new(468, 328, 92, 24);
+    public static Rectangle Start => new(370, 375, 92, 45);
+    public static Rectangle Back => new(468, 375, 92, 45);
+
+    public static Rectangle PressedSource(SetupPushButton button) => button switch
+    {
+        SetupPushButton.AddPlayer => new Rectangle(220, 0, 92, 24),
+        SetupPushButton.RemovePlayer => new Rectangle(220, 24, 92, 24),
+        SetupPushButton.Start => new Rectangle(220, 48, 92, 45),
+        SetupPushButton.Back => new Rectangle(220, 93, 92, 45),
+        _ => throw new ArgumentOutOfRangeException(nameof(button))
+    };
+
+    public static Rectangle Destination(SetupPushButton button) => button switch
+    {
+        SetupPushButton.AddPlayer => AddPlayer,
+        SetupPushButton.RemovePlayer => RemovePlayer,
+        SetupPushButton.Start => Start,
+        SetupPushButton.Back => Back,
+        _ => throw new ArgumentOutOfRangeException(nameof(button))
+    };
+
+    public static SetupPushButton? HitTest(Point point)
+    {
+        foreach (var button in Enum.GetValues<SetupPushButton>())
+            if (Destination(button).Contains(point)) return button;
+        return null;
+    }
+}
+
+public enum SetupPushButton
+{
+    AddPlayer,
+    RemovePlayer,
+    Start,
+    Back
+}
+
 public enum ClientScreen
 {
     Title,
@@ -38,10 +86,14 @@ public enum ClientScreen
     Online,
     Lobby,
     City,
+    GameInfo,
     Commands,
     Hire,
     Events,
+    ComlinkView,
+    ComlinkSend,
     Sector,
+    SectorGangs,
     Gang,
     Site,
     ItemInformation,
@@ -49,6 +101,8 @@ public enum ClientScreen
     Ranking,
     Items,
     Give,
+    GiveTarget,
+    Sell,
     CombatSummary,
     Search,
     Handoff,
@@ -71,14 +125,17 @@ public sealed class ScreenRouter
     public bool Back()
     {
         if (Current == ClientScreen.Title) return false;
-        var destination = Current is ClientScreen.Events or ClientScreen.Commands or ClientScreen.Hire
-            or ClientScreen.Sector or ClientScreen.Gang or ClientScreen.Finance or ClientScreen.Ranking
+        var destination = Current is ClientScreen.GameInfo or ClientScreen.Events or ClientScreen.ComlinkView
+            or ClientScreen.ComlinkSend or ClientScreen.Commands or ClientScreen.Hire
+            or ClientScreen.Sector or ClientScreen.SectorGangs or ClientScreen.Gang
+            or ClientScreen.Finance or ClientScreen.Ranking
             or ClientScreen.Site
             or ClientScreen.ItemInformation
-            or ClientScreen.Items or ClientScreen.Give
+            or ClientScreen.Items or ClientScreen.Give or ClientScreen.GiveTarget or ClientScreen.Sell
             or ClientScreen.CombatSummary
             or ClientScreen.Search
-            ? Current == ClientScreen.Give ? ClientScreen.Items : ClientScreen.City
+            ? Current is ClientScreen.Give or ClientScreen.Sell ? ClientScreen.Items
+                : Current == ClientScreen.GiveTarget ? ClientScreen.Give : ClientScreen.City
             : ClientScreen.Title;
         Show(destination);
         return true;
@@ -195,6 +252,20 @@ public static class CityMapLayout
     {
         if (sectorId is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sectorId));
+    }
+}
+
+/// <summary>Manual-described pair of gray pylons inside each Siege objective sector.</summary>
+public static class SiegePylonLayout
+{
+    public static IReadOnlyList<Rectangle> ForSector(int sectorId)
+    {
+        var sector = CityMapLayout.Destination(sectorId);
+        return
+        [
+            new Rectangle(sector.X + 8, sector.Y + 12, 6, 14),
+            new Rectangle(sector.Right - 14, sector.Y + 12, 6, 14)
+        ];
     }
 }
 
@@ -413,6 +484,12 @@ public static class GangInformationLayout
     public const int LeftValueRight = 287;
     public const int RightValueRight = 383;
 
+    public static Rectangle Equipment(int slot)
+    {
+        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(394, 146 + slot * 64, 40, 40);
+    }
+
     public static int StatisticY(int row) => row switch
     {
         0 => 244,
@@ -536,6 +613,40 @@ public static class LastTurnEventsLayout
     public static Rectangle Next => new(163, 151, 25, 21);
     public static Rectangle Artwork => new(198, 133, 242, 158);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
+}
+
+public static class ComlinkViewLayout
+{
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Page => new(132, 135, 60, 13);
+    public static Rectangle Previous => new(134, 158, 26, 22);
+    public static Rectangle Next => new(162, 158, 26, 22);
+    public static Rectangle SenderPortrait => new(204, 173, 64, 64);
+    public static Rectangle Message => new(196, 251, 240, 36);
+    public static Rectangle Ok => new(134, 294, 56, 22);
+}
+
+public static class ComlinkSendLayout
+{
+    public const int MessageColumns = 40;
+    public const int MessageRows = 4;
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Message => new(196, 258, 240, 36);
+    public static Rectangle Cancel => new(134, 263, 56, 22);
+    public static Rectangle Ok => new(134, 296, 56, 22);
+
+    public static Rectangle Recipient(int slot)
+    {
+        if (slot is < 0 or >= MatchLimits.PlayerCount)
+            throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(196 + slot / 3 * 128, 143 + slot % 3 * 33, 56, 32);
+    }
+
+    public static Rectangle RecipientPortrait(int slot)
+    {
+        var cell = Recipient(slot);
+        return new Rectangle(cell.X + 8, cell.Y, 32, 32);
+    }
 }
 
 public static class InfluenceCommandLayout
@@ -664,6 +775,7 @@ public static class DifficultyPresentation
 public static class PlayerPortraitLayout
 {
     public const int Count = 16;
+    public const int SelectableCount = 15;
 
     public static Rectangle SetupTop(int player)
     {
@@ -679,6 +791,7 @@ public static class PlayerPortraitLayout
     public static Rectangle SetupLarge(int player) => Player(player, 379, 83, 106, 64, 64, rowStride: 92);
     public static Rectangle Previous(int player) => Player(player, 363, 106, 106, 12, 18, rowStride: 92);
     public static Rectangle Next(int player) => Player(player, 447, 106, 106, 12, 18, rowStride: 92);
+    public static Rectangle Name(int player) => Player(player, 379, 149, 106, 64, 12, rowStride: 92);
 
     private static Rectangle Player(
         int player,
@@ -702,7 +815,6 @@ public static class PlayerPortraitLayout
 public static class SectorGangView
 {
     public const int MaximumPortraits = 10;
-    public const int MaximumSearchRows = 7;
 
     public static IReadOnlyList<MatchGangState> Visible(
         MatchState state,
@@ -727,11 +839,6 @@ public static class SectorGangView
         return new Rectangle(18 + index * 40, 370, 36, 36);
     }
 
-    public static Rectangle SearchPortrait(int index)
-    {
-        if (index is < 0 or >= MaximumSearchRows) throw new ArgumentOutOfRangeException(nameof(index));
-        return new Rectangle(18, 107 + index * 40, 36, 36);
-    }
 }
 
 public static class GangArtLayout

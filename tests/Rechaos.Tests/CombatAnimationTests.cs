@@ -22,9 +22,11 @@ public sealed class CombatAnimationTests
         Assert.Equal(2, clips.Count);
         Assert.Equal((short)3, clips[0].AttackAnimation);
         Assert.Equal((short)2, clips[0].HitAnimation);
+        Assert.Equal(state.Definitions.Items[0].Sound, clips[0].Sound);
         Assert.False(clips[0].Reversed);
         Assert.Equal((short)4, clips[1].AttackAnimation);
         Assert.Equal((short)3, clips[1].HitAnimation);
+        Assert.Equal(state.Definitions.Items[1].Sound, clips[1].Sound);
         Assert.True(clips[1].Reversed);
     }
 
@@ -36,6 +38,7 @@ public sealed class CombatAnimationTests
             AttackEvent(new CommandResolutionDetails(CommandResolutionCode.TargetEvaded, [], 0))));
         Assert.Equal(CombatAnimationRouting.EvadedAnimation, evaded.AttackAnimation);
         Assert.Null(evaded.HitAnimation);
+        Assert.Null(evaded.Sound);
 
         var policeEvent = new GameEvent(
             2, 1, TurnPhase.Execution, ExecutionPhase.Combat,
@@ -47,6 +50,7 @@ public sealed class CombatAnimationTests
         Assert.Equal((short)20, police.HitAnimation);
         Assert.True(police.Reversed);
         Assert.True(police.Police);
+        Assert.Equal(AudioRouting.PoliceSound, police.Sound);
     }
 
     [Theory]
@@ -82,13 +86,21 @@ public sealed class CombatAnimationTests
     public void PlayerRunsRecoveredAnimationBlinkAndHoldTimelineInQueuedOrder()
     {
         var player = new CombatAnimationPlayer();
-        var first = new CombatAnimationClip(1, new GangId(10), new GangId(20), 3, 2, false);
-        var second = new CombatAnimationClip(1, new GangId(20), new GangId(10), 4, 3, true);
+        var first = new CombatAnimationClip(
+            1, new GangId(10), new GangId(20), 3, 2, false, Sound: 5);
+        var second = new CombatAnimationClip(
+            1, new GangId(20), new GangId(10), 4, 3, true, Sound: 8);
         player.Enqueue(first);
         player.Enqueue(second);
 
+        Assert.Empty(player.Advance(TimeSpan.FromMilliseconds(
+            (CombatAnimationRouting.FirstAnimationTick - 1)
+            * CombatAnimationRouting.FrameMilliseconds)));
+        var firstStarted = player.Advance(TimeSpan.FromMilliseconds(
+            CombatAnimationRouting.FrameMilliseconds));
+        Assert.Equal([first], firstStarted);
         player.Advance(TimeSpan.FromMilliseconds(
-            (CombatAnimationRouting.FirstAnimationTick + 7) * CombatAnimationRouting.FrameMilliseconds));
+            7 * CombatAnimationRouting.FrameMilliseconds));
         Assert.Equal(first, player.Active);
         Assert.Equal(7, player.Frame);
         Assert.True(player.ShowsPreDamageForce);
@@ -106,8 +118,15 @@ public sealed class CombatAnimationTests
         Assert.Equal(second, player.Active);
         Assert.Equal(0, player.Frame);
         Assert.Equal(0, player.TimelineTick);
+        Assert.Empty(player.Advance(TimeSpan.FromMilliseconds(
+            (CombatAnimationRouting.FirstAnimationTick - 1)
+            * CombatAnimationRouting.FrameMilliseconds)));
+        var secondStarted = player.Advance(TimeSpan.FromMilliseconds(
+            CombatAnimationRouting.FrameMilliseconds));
+        Assert.Equal([second], secondStarted);
         player.Advance(TimeSpan.FromMilliseconds(
-            CombatAnimationRouting.CompletionTick * CombatAnimationRouting.FrameMilliseconds));
+            (CombatAnimationRouting.CompletionTick - CombatAnimationRouting.FirstAnimationTick)
+            * CombatAnimationRouting.FrameMilliseconds));
         Assert.False(player.IsPlaying);
         Assert.Null(player.Active);
     }

@@ -42,33 +42,35 @@ public sealed partial class ChaosGame
         }
         else if (ItemsResearch.Contains(point)) QueueItemCommand(GangAction.Research);
         else if (ItemsEquip.Contains(point)) QueueItemCommand(GangAction.Equip);
-        else if (ItemsGive.Contains(point)) OpenGiveTargets();
-        else if (ItemsSell.Contains(point)) QueueItemCommand(GangAction.Sell);
+        else if (ItemsGive.Contains(point)) OpenGiveEquipment(ClientScreen.Items);
+        else if (ItemsSell.Contains(point)) OpenSellEquipment(ClientScreen.Items);
         else if (ItemsBack.Contains(point)) _screens.Show(ClientScreen.City);
     }
 
     private void OpenGiveTargets()
     {
-        if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
-            || _state.Coordinator.ActivePlayer is not { } playerId)
-        {
-            _message = "GIVE REQUIRES THE COMMAND PHASE";
-            return;
-        }
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _giveGang is not { } gangId) return;
         var player = _state.FindPlayer(playerId)!;
-        var gang = SelectedGang(player);
-        var items = RealItems(_state);
-        if (gang is null || items.Length == 0)
+        var gang = _state.FindGang(gangId);
+        if (gang is null) return;
+        var equipped = GiveEquippedItems(gang);
+        var selected = Enumerable.Range(0, 3)
+            .Where(slot => _giveSelections[slot] && equipped[slot].HasValue)
+            .Select(slot => equipped[slot]!.Value)
+            .ToArray();
+        if (selected.Length == 0)
         {
-            _message = "NO ACTIVE GANG OR ITEM";
+            _message = "SELECT EQUIPMENT TO GIVE";
             return;
         }
 
-        var itemId = items[_itemCursor].Id;
-        _giveOptions = CommandOptionCatalog.LegalCommands(_state, playerId, gang.Id)
-            .Where(command => command.Action == GangAction.Give
-                && command.SecondaryTarget == CommandTarget.Item(itemId))
-            .OrderBy(command => command.Target.Id)
+        _giveOptions = player.Gangs
+            .Where(candidate => candidate.IsActive && candidate.Id != gang.Id
+                && candidate.SectorId == gang.SectorId)
+            .OrderBy(candidate => candidate.Id.Value)
+            .Select(candidate => EquipmentGiveSelection.CreateCommand(
+                playerId, gang.Id, candidate.Id, selected, _giveRepeats))
+            .Where(command => CommandValidator.Validate(_state, command).IsValid)
             .ToArray();
         _giveCursor = 0;
         if (_giveOptions.Count == 0)
@@ -76,7 +78,7 @@ public sealed partial class ChaosGame
             _message = "NO LEGAL RECIPIENT FOR EQUIPPED ITEM";
             return;
         }
-        _screens.Show(ClientScreen.Give);
+        _screens.Show(ClientScreen.GiveTarget);
     }
 
     private void MoveGiveCursor(int delta)
@@ -92,7 +94,7 @@ public sealed partial class ChaosGame
             if (index < _giveOptions.Count) _giveCursor = index;
         }
         else if (GiveQueue.Contains(point)) QueueSelectedGive();
-        else if (GiveBack.Contains(point)) _screens.Show(ClientScreen.Items);
+        else if (GiveBack.Contains(point)) _screens.Show(ClientScreen.Give);
     }
 
     private void QueueSelectedGive()
@@ -103,7 +105,7 @@ public sealed partial class ChaosGame
         _message = result.Accepted
             ? "GIVE QUEUED"
             : result.Validation.Message.ToUpperInvariant();
-        if (result.Accepted) _screens.Show(ClientScreen.City);
+        if (result.Accepted) _screens.Show(_giveReturnScreen);
     }
 
     private void QueueItemCommand(GangAction action)
@@ -208,9 +210,10 @@ public sealed partial class ChaosGame
         {
             var selected = _giveOptions[Math.Clamp(_giveCursor, 0, _giveOptions.Count - 1)];
             var actor = state.FindGang(selected.Gang)!;
-            var item = state.Definitions.Items[selected.SecondaryTarget!.Value.Id];
+            var items = selected.GiveTargets().Select(target => state.Definitions.Items[target.Id]).ToArray();
             var actorName = state.Definitions.Gangs.Single(value => value.Id == actor.DefinitionId).Name;
-            font.Draw(batch, $"{actorName} GIVES {item.Name}", new Vector2(18, 86), Color.White, 1);
+            font.Draw(batch, $"{actorName} GIVES {items.Length} ITEM{(items.Length == 1 ? string.Empty : "S")}",
+                new Vector2(18, 86), Color.White, 1);
             foreach (var entry in _giveOptions.Take(5).Select((command, index) => (command, index)))
             {
                 var recipient = state.FindGang(new GangId(entry.command.Target.Id))!;

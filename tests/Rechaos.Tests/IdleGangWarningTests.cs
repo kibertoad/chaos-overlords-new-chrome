@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
 using Xunit;
@@ -40,8 +41,9 @@ public sealed class IdleGangWarningTests
     [Fact]
     public void WarningButtonsAreDistinctAndInsideTheModal()
     {
-        Assert.True(IdleGangWarningLayout.Panel.Contains(IdleGangWarningLayout.Continue));
-        Assert.True(IdleGangWarningLayout.Panel.Contains(IdleGangWarningLayout.GoBack));
-        Assert.False(IdleGangWarningLayout.Continue.Intersects(IdleGangWarningLayout.GoBack));
+        Assert.Equal(new Rectangle(104, 125, 344, 209), IdleGangWarningLayout.Panel);
+        Assert.Equal(new Rectangle(136, 262, 49, 24), IdleGangWarningLayout.Cancel);
+        Assert.Equal(new Rectangle(136, 294, 49, 24), IdleGangWarningLayout.Ok);
+        Assert.False(IdleGangWarningLayout.Cancel.Intersects(IdleGangWarningLayout.Ok));
     }
 }

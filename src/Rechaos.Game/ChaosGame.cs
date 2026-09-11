@@ -29,15 +29,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     ];
     private static readonly Rectangle[] SetupDurations =
     [new(80, 282, 50, 24), new(136, 282, 50, 24), new(192, 282, 50, 24), new(248, 282, 52, 24)];
-    private static readonly Rectangle SetupPlayersAdd = new(370, 326, 92, 30);
-    private static readonly Rectangle SetupPlayersRemove = new(466, 326, 96, 30);
     private static readonly Rectangle[] SetupAiMentalities =
     [
         new(80, 330, 108, 27), new(80, 359, 108, 27),
         new(80, 388, 108, 27), new(80, 417, 108, 27)
     ];
-    private static readonly Rectangle SetupStart = new(370, 374, 92, 50);
-    private static readonly Rectangle SetupBack = new(466, 374, 96, 50);
     private static readonly Rectangle ManagementBack = new(322, 414, 96, 28);
     private readonly GraphicsDeviceManager _graphics;
     private readonly string _assetRoot;
@@ -51,27 +47,41 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _pixel;
     private Texture2D? _titleBackground;
     private Texture2D? _setupBackground;
+    private Texture2D? _setupControls;
     private Texture2D? _cityBackground;
     private readonly Texture2D?[] _cityOwnershipLayers = new Texture2D?[MatchLimits.PlayerCount + 1];
+    private Texture2D? _gameInfoBackground;
+    private Texture2D? _idleGangWarningBackground;
+    private Texture2D? _cityFinanceBackground;
+    private Texture2D? _sectorFinanceBackground;
+    private Texture2D? _rankingBackground;
     private Texture2D? _gangInfoBackground;
+    private Texture2D? _sectorGangsBackground;
+    private Texture2D? _gangDefinitionInfoBackground;
     private Texture2D? _siteInfoBackground;
     private Texture2D? _itemInfoBackground;
     private Texture2D? _combatBackground;
     private Texture2D? _combatResultsBackground;
     private Texture2D? _lastTurnEventsBackground;
+    private Texture2D? _comlinkViewBackground;
+    private Texture2D? _comlinkSendBackground;
     private readonly Texture2D?[] _lastTurnEventArtwork = new Texture2D?[10];
     private Texture2D? _hireComparisonBackground;
     private Texture2D? _influenceBackground;
     private Texture2D? _targetAcquisitionBackground;
     private Texture2D? _equipmentPurchaseBackground;
     private Texture2D? _equipmentResearchBackground;
+    private Texture2D? _equipmentSellBackground;
+    private Texture2D? _equipmentGiveBackground;
+    private Texture2D? _movementBackground;
+    private Texture2D? _siteSearchBackground;
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
     private Texture2D? _itemPortraits;
     private Texture2D? _policeSprites;
     private Texture2D? _uiSprites;
     private PixelFont? _font;
-    private readonly Dictionary<short, SoundEffect> _weaponSounds = [];
+    private readonly Dictionary<short, SoundEffect> _combatSounds = [];
     private readonly Dictionary<int, SoundEffect> _generalSounds = [];
     private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
@@ -94,13 +104,17 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _hirePortraitClicks = new();
-    private readonly bool[] _computerPlayers = new bool[MatchLimits.PlayerCount];
     private readonly short[] _playerPortraits = Enumerable.Range(0, MatchLimits.PlayerCount)
         .Select(index => checked((short)index)).ToArray();
+    private readonly string[] _playerNames = Enumerable.Range(0, MatchLimits.PlayerCount)
+        .Select(LocalSetupPolicy.DefaultPlayerName).ToArray();
+    private readonly SetupPlayerNameEditor _setupNameEditor = new();
+    private readonly LocalSetupRoster _localSetupRoster = new();
+    private int? _editingPlayerName;
+    private string _setupOriginalName = string.Empty;
     private AiDifficulty _selectedAiMentality = AiDifficulty.Criminal;
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.SixMonths;
-    private int _selectedPlayerCount = 2;
     private int _cursor;
     private int _selectedGangIndex;
     private IReadOnlyList<GameCommand> _commandOptions = [];
@@ -115,13 +129,38 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _hireCursor;
     private int _itemCursor;
     private int _combatSummaryCursor;
+    private bool _openCombatAfterEvents;
     private int _eventCursor;
+    private readonly HashSet<int> _eventViewedPages = [];
+    private int _siteSearchCursor;
+    private readonly HashSet<short> _siteSearchSelection = [];
+    private readonly HashSet<short> _siteSearchApplied = [];
+    private FinanceScope _financeScope = FinanceScope.City;
+    private int _comlinkCursor;
+    private readonly bool[] _comlinkRecipients = new bool[MatchLimits.PlayerCount];
+    private readonly ComlinkTextEditor _comlinkEditor = new();
+    private string _comlinkStatus = string.Empty;
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
+    private IReadOnlyList<GangId> _sectorGangRoster = [];
+    private int _sectorGangCursor;
+    private ClientScreen _sectorGangReturnScreen = ClientScreen.City;
+    private readonly bool[] _giveSelections = new bool[3];
+    private GangId? _giveGang;
+    private ClientScreen _giveReturnScreen = ClientScreen.Items;
+    private bool _giveRepeats;
+    private readonly bool[] _sellSelections = new bool[3];
+    private GangId? _sellGang;
+    private ClientScreen _sellReturnScreen = ClientScreen.Items;
+    private bool _sellRepeats;
     private int? _draggedHireSlot;
+    private int? _draggedSetupPlayerSlot;
+    private SetupPushButton? _pressedSetupButton;
     private short? _draggedHireDefinitionId;
     private Point _hirePressPoint;
+    private Point _setupPlayerPressPoint;
     private bool _hireDragStarted;
+    private bool _setupPlayerDragStarted;
     private GangId? _draggedGangId;
     private Point _gangPressPoint;
     private bool _gangDragStarted;
@@ -130,12 +169,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private string _message = string.Empty;
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
-    private long _lastAudibleEventSequence = -1;
-    private long _lastAnimatedEventSequence = -1;
+    private readonly CombatPresentationProgress _combatPresentationProgress = new();
     private TimeSpan _inputTime;
     private ClientScreen _gangDetailsReturnScreen = ClientScreen.City;
     private GangId? _gangDetailsInstanceId;
     private short? _gangDetailsDefinitionId;
+    private int? _gangDetailsSectorFilter;
     private ClientScreen _siteDetailsReturnScreen = ClientScreen.Sector;
     private int? _siteDetailsSectorId;
     private int? _siteDetailsSlot;
@@ -156,9 +195,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 ["from"] = previous.ToString(),
                 ["to"] = current.ToString()
             });
-        _screens.Changed += (_, current) =>
+        _screens.Changed += (previous, current) =>
         {
             if (_slidePanels) _panelSlideTransition.Begin(current, _inputTime);
+            foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
+                PlayGeneralSound(slot);
+            if (current == ClientScreen.Endgame && _state?.Outcome is not null)
+            {
+                _showEndgameNotice = EndgameNoticePresentation.For(_state) is not null;
+                _showEndgameStats = false;
+            }
         };
         var userDataRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -175,18 +221,20 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _showBaseStatistics = preferences.ShowBaseStatistics;
         _detailedCombat = preferences.DetailedCombat;
         _slidePanels = preferences.SlidePanels;
+        _fullscreen = preferences.Fullscreen;
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
             PreferredBackBufferHeight = 920,
-            SynchronizeWithVerticalRetrace = true
+            SynchronizeWithVerticalRetrace = true,
+            HardwareModeSwitch = false,
+            IsFullScreen = _fullscreen
         };
         IsMouseVisible = true;
         Window.Title = "Chaos Overlords: New Chrome";
         // The only text the game takes: a server address, a name and a join code. The platform has
         // already decoded the keystroke, so a non-US layout types what it should.
         Window.TextInput += (_, args) => HandleTextInput(args.Character);
-        _computerPlayers[1] = true;
     }
 
     protected override void LoadContent()
@@ -200,17 +248,30 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
         _titleBackground = LoadTexture("PX00130.bmp");
         _setupBackground = LoadTexture("PX00143.bmp");
+        _setupControls = LoadTexture("PX00140.bmp");
         _cityBackground = LoadTexture("PX00128.bmp");
         for (var index = 0; index < _cityOwnershipLayers.Length; index++)
             _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
         _endgameBackground = LoadTexture("PX00200.bmp");
+        _endgameSprites = LoadTexture("PX00201.bmp", transparentBlack: true);
+        _victoryBackground = LoadTexture("PX00202.bmp");
+        _eliminationBackground = LoadTexture("PX00203.bmp");
+        _gameInfoBackground = LoadTexture("PX05021.bmp");
+        _idleGangWarningBackground = LoadTexture("PX05020.bmp");
+        _cityFinanceBackground = LoadTexture("PX05008.bmp");
+        _sectorFinanceBackground = LoadTexture("PX05019.bmp");
+        _rankingBackground = LoadTexture("PX05011.bmp");
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
+        _sectorGangsBackground = LoadTexture("PX05009.bmp");
+        _gangDefinitionInfoBackground = LoadTexture("PX05022.bmp");
         _siteInfoBackground = LoadTexture("PX05002.bmp");
         _itemInfoBackground = LoadTexture("PX05001.bmp");
         _combatBackground = LoadTexture("PX05014.bmp");
         _combatResultsBackground = LoadTexture("PX05012.bmp");
         _lastTurnEventsBackground = LoadTexture("PX05010.bmp");
+        _comlinkViewBackground = LoadTexture("PX05017.bmp");
+        _comlinkSendBackground = LoadTexture("PX05018.bmp");
         for (var eventArt = 1; eventArt <= 9; eventArt++)
             _lastTurnEventArtwork[eventArt] = LoadTexture($"PX060{eventArt:00}.bmp");
         _hireComparisonBackground = LoadTexture("PX05016.bmp");
@@ -218,6 +279,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _targetAcquisitionBackground = LoadTexture("PX05003.bmp");
         _equipmentPurchaseBackground = LoadTexture("PX05004.bmp");
         _equipmentResearchBackground = LoadTexture("PX05007.bmp");
+        _equipmentSellBackground = LoadTexture("PX05013.bmp");
+        _equipmentGiveBackground = LoadTexture("PX05015.bmp");
+        _movementBackground = LoadTexture("PX05006.bmp");
+        _siteSearchBackground = LoadTexture("PX05024.bmp");
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
         _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);
@@ -230,7 +295,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         for (short index = 0; index <= 18; index++)
         {
             var sound = LoadSound(AudioRouting.SoundFile(index));
-            if (sound is not null) _weaponSounds.Add(index, sound);
+            if (sound is not null) _combatSounds.Add(index, sound);
         }
         foreach (var slot in AudioRouting.GeneralSoundSlots)
         {
@@ -241,7 +306,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
         {
             ["helpAvailable"] = (_helpDocument is not null).ToString(),
-            ["weaponSounds"] = _weaponSounds.Count.ToString(),
+            ["combatSounds"] = _combatSounds.Count.ToString(),
             ["generalSounds"] = _generalSounds.Count.ToString(),
             ["combatAnimations"] = _combatAnimationTextures.Count.ToString()
         });
@@ -257,6 +322,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // frame the local clock would otherwise have taken over the loop.
         PumpOnlineNotices();
         SendOnlineDraft(gameTime);
+        var rightClicked = PointerButtonEdges.Pressed(
+            mouse.RightButton, _previousMouse.RightButton);
+        if (Pressed(keyboard, Keys.F11)) ToggleFullscreen();
         if (UpdatePlanningTimer(gameTime.TotalGameTime))
         {
             _previousKeyboard = keyboard;
@@ -266,7 +334,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         RunComputerTurns();
         CaptureNewCombatAnimations();
-        _combatAnimationPlayer.Advance(gameTime.ElapsedGameTime);
+        foreach (var clip in _combatAnimationPlayer.Advance(gameTime.ElapsedGameTime))
+            if (clip.Sound is { } soundIndex) PlayCombatSound(soundIndex);
         if (_combatAnimationPlayer.IsPlaying)
         {
             var cancelPointMapped = VirtualInput.TryMap(
@@ -276,20 +345,21 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 && _previousMouse.LeftButton == ButtonState.Released
                 && CombatPanelLayout.Cancel.Contains(cancelPoint);
             if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Back)
-                || cancelClicked)
+                || cancelClicked || rightClicked)
             {
                 _combatAnimationPlayer.Clear();
                 _message = "COMBAT DETAIL SKIPPED";
+                rightClicked = false;
             }
             else
             {
-                PlayNewCombatSounds();
                 _previousKeyboard = keyboard;
                 _previousMouse = mouse;
                 base.Update(gameTime);
                 return;
             }
         }
+        if (rightClicked) CancelCurrentInteraction();
         if (_screens.Current == ClientScreen.Options)
         {
             UpdateOptions(keyboard);
@@ -297,6 +367,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         else if (_screens.Current == ClientScreen.Help)
         {
             UpdateHelp(keyboard);
+        }
+        else if (_screens.Current == ClientScreen.ComlinkSend)
+        {
+            UpdateComlinkSend(keyboard);
+        }
+        else if (_screens.Current == ClientScreen.Setup && _editingPlayerName is not null)
+        {
+            UpdateSetupName(keyboard);
         }
         else
         {
@@ -325,13 +403,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     UpdateCity(keyboard);
                     break;
                 case ClientScreen.Endgame:
-                    // An online match is over in its own right, but the session that drove it is
-                    // still holding a token and a connection until somebody says so.
-                    if (Pressed(keyboard, Keys.Enter))
-                    {
-                        if (_session is not null) EndOnlineMatch("THE MATCH IS OVER");
-                        else _screens.Show(ClientScreen.Title);
-                    }
+                    if (!_showEndgameNotice && Pressed(keyboard, Keys.A)) _showEndgameStats = false;
+                    if (!_showEndgameNotice && Pressed(keyboard, Keys.S)) _showEndgameStats = true;
+                    if (Pressed(keyboard, Keys.Enter)) AdvanceEndgamePresentation();
                     break;
                 case ClientScreen.Handoff:
                     if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))
@@ -343,9 +417,22 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)) CloseEvents();
                     if (Pressed(keyboard, Keys.Back)) CloseEvents();
                     break;
+                case ClientScreen.ComlinkView:
+                    UpdateComlinkView(keyboard);
+                    break;
                 case ClientScreen.Commands:
-                    if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
-                    if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
+                    if (IsMovementCommandPicker())
+                    {
+                        if (Pressed(keyboard, Keys.Left)) MoveMovementTarget(-1, 0);
+                        if (Pressed(keyboard, Keys.Right)) MoveMovementTarget(1, 0);
+                        if (Pressed(keyboard, Keys.Up)) MoveMovementTarget(0, -1);
+                        if (Pressed(keyboard, Keys.Down)) MoveMovementTarget(0, 1);
+                    }
+                    else
+                    {
+                        if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
+                        if (Pressed(keyboard, Keys.Down)) MoveCommandCursor(1);
+                    }
                     if (Pressed(keyboard, Keys.Enter)) ActivateCommandSelection();
                     if (Pressed(keyboard, Keys.Back)) BackFromCommands();
                     break;
@@ -359,11 +446,19 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 case ClientScreen.Sector:
                     UpdateSector(keyboard);
                     break;
+                case ClientScreen.SectorGangs:
+                    if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up))
+                        MoveSectorGangCursor(-1);
+                    if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down))
+                        MoveSectorGangCursor(1);
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        CloseSectorGangs();
+                    break;
                 case ClientScreen.Gang:
                     if (_gangDetailsInstanceId is not null)
                     {
-                        if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) CycleGang(-1);
-                        if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) CycleGang(1);
+                        if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) CycleGangDetails(-1);
+                        if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) CycleGangDetails(1);
                     }
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                         CloseGangDetails();
@@ -376,7 +471,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                         CloseItemDetails();
                     break;
+                case ClientScreen.GameInfo:
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        _screens.Show(_managementReturnScreen);
+                    break;
                 case ClientScreen.Finance:
+                    if (Pressed(keyboard, Keys.Left)) _financeScope = FinanceScope.City;
+                    if (Pressed(keyboard, Keys.Right)) _financeScope = FinanceScope.Sector;
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        _screens.Show(_managementReturnScreen);
+                    break;
                 case ClientScreen.Ranking:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                         _screens.Show(_managementReturnScreen);
@@ -388,15 +492,29 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Right)) CycleGang(1);
                     if (Pressed(keyboard, Keys.R)) QueueItemCommand(GangAction.Research);
                     if (Pressed(keyboard, Keys.E)) QueueItemCommand(GangAction.Equip);
-                    if (Pressed(keyboard, Keys.V)) OpenGiveTargets();
-                    if (Pressed(keyboard, Keys.S)) QueueItemCommand(GangAction.Sell);
+                    if (Pressed(keyboard, Keys.V)) OpenGiveEquipment(ClientScreen.Items);
+                    if (Pressed(keyboard, Keys.S)) OpenSellEquipment(ClientScreen.Items);
                     if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
                     break;
                 case ClientScreen.Give:
+                    if (Pressed(keyboard, Keys.D1)) ToggleGiveSelection(0);
+                    if (Pressed(keyboard, Keys.D2)) ToggleGiveSelection(1);
+                    if (Pressed(keyboard, Keys.D3)) ToggleGiveSelection(2);
+                    if (Pressed(keyboard, Keys.Enter)) OpenGiveTargets();
+                    if (Pressed(keyboard, Keys.Back)) CloseGiveEquipment();
+                    break;
+                case ClientScreen.GiveTarget:
                     if (Pressed(keyboard, Keys.Up)) MoveGiveCursor(-1);
                     if (Pressed(keyboard, Keys.Down)) MoveGiveCursor(1);
                     if (Pressed(keyboard, Keys.Enter)) QueueSelectedGive();
-                    if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.Items);
+                    if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.Give);
+                    break;
+                case ClientScreen.Sell:
+                    if (Pressed(keyboard, Keys.D1)) ToggleSellSelection(0);
+                    if (Pressed(keyboard, Keys.D2)) ToggleSellSelection(1);
+                    if (Pressed(keyboard, Keys.D3)) ToggleSellSelection(2);
+                    if (Pressed(keyboard, Keys.Enter)) QueueSelectedSale();
+                    if (Pressed(keyboard, Keys.Back)) CloseSellEquipment();
                     break;
                 case ClientScreen.CombatSummary:
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveCombatSummary(-1);
@@ -406,8 +524,17 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         _screens.Show(_managementReturnScreen);
                     break;
                 case ClientScreen.Search:
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        _screens.Show(_managementReturnScreen);
+                    if (Pressed(keyboard, Keys.Left))
+                        MoveSiteSearchCursor(-SiteSearchLayout.RowsPerColumn);
+                    if (Pressed(keyboard, Keys.Right))
+                        MoveSiteSearchCursor(SiteSearchLayout.RowsPerColumn);
+                    if (Pressed(keyboard, Keys.Up)) MoveSiteSearchCursor(-1);
+                    if (Pressed(keyboard, Keys.Down)) MoveSiteSearchCursor(1);
+                    if (Pressed(keyboard, Keys.Space)) ToggleSiteSearchSelection();
+                    if (Pressed(keyboard, Keys.A)) SelectAllSiteSearch();
+                    if (Pressed(keyboard, Keys.N)) ClearSiteSearch();
+                    if (Pressed(keyboard, Keys.Enter)) ApplySiteSearch();
+                    if (Pressed(keyboard, Keys.Back)) CancelSiteSearch();
                     break;
             }
         }
@@ -425,6 +552,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         {
             _dragPoint = virtualPoint;
             if (_previousMouse.LeftButton == ButtonState.Released) HandleClick(virtualPoint);
+            else if (_draggedSetupPlayerSlot is not null && !_setupPlayerDragStarted
+                     && (Math.Abs(virtualPoint.X - _setupPlayerPressPoint.X) >= 4
+                         || Math.Abs(virtualPoint.Y - _setupPlayerPressPoint.Y) >= 4))
+            {
+                _setupPlayerDragStarted = true;
+                _message = "DROP ON ANOTHER PLAYER COLOR";
+            }
             else if (_draggedHireDefinitionId is not null && !_hireDragStarted
                      && (Math.Abs(virtualPoint.X - _hirePressPoint.X) >= 4
                          || Math.Abs(virtualPoint.Y - _hirePressPoint.Y) >= 4))
@@ -441,7 +575,19 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             }
         }
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
-            && _draggedHireDefinitionId is not null)
+            && _pressedSetupButton is not null)
+        {
+            if (pointerMapped) CompleteSetupButton(virtualPoint);
+            else _pressedSetupButton = null;
+        }
+        else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
+                 && _draggedSetupPlayerSlot is not null)
+        {
+            if (pointerMapped && _setupPlayerDragStarted) CompleteSetupPlayerDrag(virtualPoint);
+            else CancelSetupPlayerDrag();
+        }
+        else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
+                 && _draggedHireDefinitionId is not null)
         {
             if (pointerMapped && _hireDragStarted) CompleteHireDrag(virtualPoint);
             else if (pointerMapped) CompleteHireClick();
@@ -454,7 +600,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             else if (pointerMapped) CompleteGangClick();
             else CancelGangDrag();
         }
-        PlayNewCombatSounds();
         CaptureNewCombatAnimations();
         _previousKeyboard = keyboard;
         _previousMouse = mouse;
@@ -496,6 +641,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.City when _state is not null:
                 DrawBoard(_batch, _pixel, _font, _state);
                 break;
+            case ClientScreen.GameInfo when _state is not null:
+                DrawGameInformation(_batch, _pixel, _font, _state);
+                break;
             case ClientScreen.Endgame when _state?.Outcome is not null:
                 DrawEndgame(_batch, _pixel, _font, _state);
                 break;
@@ -505,6 +653,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Events when _state is not null:
                 DrawLastTurnEventsPanel(_batch, _pixel, _font, _state);
                 break;
+            case ClientScreen.ComlinkView when _state is not null:
+                DrawComlinkView(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.ComlinkSend when _state is not null:
+                DrawComlinkSend(_batch, _pixel, _font, _state);
+                break;
             case ClientScreen.Commands when _state is not null:
                 DrawCommands(_batch, _pixel, _font, _state);
                 break;
@@ -513,6 +667,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Sector when _state is not null:
                 DrawSectorDetails(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.SectorGangs when _state is not null:
+                DrawSectorGangs(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.Gang when _state is not null:
                 DrawGangDetails(_batch, _pixel, _font, _state);
@@ -533,7 +690,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 DrawItems(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.Give when _state is not null:
+                DrawGiveEquipment(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.GiveTarget when _state is not null:
                 DrawGiveTargets(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.Sell when _state is not null:
+                DrawSellEquipment(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.CombatSummary when _state is not null:
                 DrawCombatResultsPanel(_batch, _pixel, _font, _state);
@@ -563,9 +726,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.Down)) ChangeDuration(-1);
         if (Pressed(keyboard, Keys.OemMinus)) ChangePlayerCount(-1);
         if (Pressed(keyboard, Keys.OemPlus)) ChangePlayerCount(1);
-        Keys[] controllerKeys = [Keys.D1, Keys.D2, Keys.D3, Keys.D4, Keys.D5, Keys.D6];
-        for (var index = 0; index < _selectedPlayerCount; index++)
-            if (Pressed(keyboard, controllerKeys[index])) ToggleController(index);
         if (Pressed(keyboard, Keys.M)) CycleDifficulty();
         if (Pressed(keyboard, Keys.L)) CyclePlanningTimeLimit();
         if (Pressed(keyboard, Keys.Enter)) StartMatch();
@@ -601,48 +761,69 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 var planningTimeLimit = Array.FindIndex(
                     PlanningTimerLayout.SetupChoices.ToArray(),
                     rectangle => rectangle.Contains(point));
-                var playerSlot = Enumerable.Range(0, _selectedPlayerCount)
-                    .FirstOrDefault(index => SetupPlayerSlot(index).Contains(point), -1);
-                var previousPortrait = Enumerable.Range(0, _selectedPlayerCount)
+                var setupButton = SetupButtonLayout.HitTest(point);
+                var playerName = _localSetupRoster.HumanSlots
+                    .FirstOrDefault(index => PlayerPortraitLayout.Name(index).Contains(point), -1);
+                var previousPortrait = _localSetupRoster.HumanSlots
                     .FirstOrDefault(index => PlayerPortraitLayout.Previous(index).Contains(point), -1);
-                var nextPortrait = Enumerable.Range(0, _selectedPlayerCount)
+                var nextPortrait = _localSetupRoster.HumanSlots
                     .FirstOrDefault(index => PlayerPortraitLayout.Next(index).Contains(point), -1);
-                if (scenario >= 0)
+                var draggedPlayer = _localSetupRoster.HumanSlots
+                    .FirstOrDefault(index => PlayerPortraitLayout.SetupLarge(index).Contains(point), -1);
+                if (_editingPlayerName is not null
+                    && (setupButton is not null || playerName != _editingPlayerName))
+                    FinishSetupNameEdit(cancel: false);
+                if (setupButton is { } button)
+                    BeginSetupButton(button);
+                else if (playerName >= 0)
+                    BeginSetupNameEdit(playerName);
+                else if (scenario >= 0)
                 {
-                    if (_selectedScenario != (ScenarioId)scenario) PlayGeneralSound(3);
+                    if (_selectedScenario != (ScenarioId)scenario)
+                        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
                     _selectedScenario = (ScenarioId)scenario;
                 }
                 else if (duration >= 0)
                 {
-                    if (_selectedDuration != Durations[duration]) PlayGeneralSound(3);
+                    if (_selectedDuration != Durations[duration])
+                        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
                     _selectedDuration = Durations[duration];
                 }
                 else if (planningTimeLimit >= 0)
                     SelectPlanningTimeLimit((PlanningTimeLimit)planningTimeLimit);
                 else if (previousPortrait >= 0) CyclePortrait(previousPortrait, -1);
                 else if (nextPortrait >= 0) CyclePortrait(nextPortrait, 1);
+                else if (draggedPlayer >= 0) BeginSetupPlayerDrag(draggedPlayer, point);
                 else
                 {
                     var mentality = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(point));
                     if (mentality >= 0) SelectDifficulty((AiDifficulty)mentality);
-                    else if (playerSlot >= 0) ToggleController(playerSlot);
-                    else if (SetupPlayersAdd.Contains(point)) ChangePlayerCount(1);
-                    else if (SetupPlayersRemove.Contains(point)) ChangePlayerCount(-1);
-                    else if (SetupStart.Contains(point)) StartMatch();
-                    else if (SetupBack.Contains(point)) _screens.Show(ClientScreen.Title);
                 }
                 break;
             case ClientScreen.City:
                 HandleCityClick(point);
                 break;
             case ClientScreen.Endgame:
-                if (EndgameDone.Contains(point)) _screens.Show(ClientScreen.Title);
+                if (_showEndgameNotice && EndgameNoticeLayout.Panel.Contains(point))
+                    AdvanceEndgamePresentation();
+                else if (!_showEndgameNotice && EndgameLayout.Awards.Contains(point))
+                    _showEndgameStats = false;
+                else if (!_showEndgameNotice && EndgameLayout.Stats.Contains(point))
+                    _showEndgameStats = true;
+                else if (!_showEndgameNotice && EndgameDone.Contains(point))
+                    LeaveEndgame();
                 break;
             case ClientScreen.Handoff:
                 if (HandoffReady.Contains(point)) FinishHandoff();
                 break;
             case ClientScreen.Events:
                 HandleEventsClick(point);
+                break;
+            case ClientScreen.ComlinkView:
+                HandleComlinkViewClick(point);
+                break;
+            case ClientScreen.ComlinkSend:
+                HandleComlinkSendClick(point);
                 break;
             case ClientScreen.Commands:
                 HandleCommandsClick(point);
@@ -653,6 +834,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Sector:
                 HandleSectorClick(point);
                 break;
+            case ClientScreen.SectorGangs:
+                if (SectorGangsLayout.Ok.Contains(point)) CloseSectorGangs();
+                break;
             case ClientScreen.Gang:
                 if (EquipmentCommandLayout.Ok.Contains(point)) CloseGangDetails();
                 break;
@@ -662,10 +846,22 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.ItemInformation:
                 if (ItemInformationLayout.Ok.Contains(point)) CloseItemDetails();
                 break;
+            case ClientScreen.GameInfo:
+                if (GameInformationLayout.Ok.Contains(point))
+                    _screens.Show(_managementReturnScreen);
+                break;
             case ClientScreen.Finance:
+                if (CityFinanceCity.Contains(point)) _financeScope = FinanceScope.City;
+                else if (CityFinanceSector.Contains(point)) _financeScope = FinanceScope.Sector;
+                else if (FinanceLayout.Ok.Contains(point))
+                    _screens.Show(_managementReturnScreen);
+                break;
             case ClientScreen.Ranking:
+                if (PlayerRankingLayout.Ok.Contains(point))
+                    _screens.Show(_managementReturnScreen);
+                break;
             case ClientScreen.Search:
-                if (ManagementBack.Contains(point)) _screens.Show(_managementReturnScreen);
+                HandleSiteSearchClick(point);
                 break;
             case ClientScreen.CombatSummary:
                 HandleCombatSummaryClick(point);
@@ -674,7 +870,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleItemsClick(point);
                 break;
             case ClientScreen.Give:
+                HandleGiveEquipmentClick(point);
+                break;
+            case ClientScreen.GiveTarget:
                 HandleGiveClick(point);
+                break;
+            case ClientScreen.Sell:
+                HandleSellClick(point);
                 break;
         }
     }

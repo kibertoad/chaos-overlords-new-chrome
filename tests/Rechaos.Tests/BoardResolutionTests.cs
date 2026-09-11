@@ -23,6 +23,38 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
+    public void MovingLastGangOutDoesNotAbandonControlledSector()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 5)], [Gang(20, 1, 3, 5)], owner: new PlayerId(0));
+        Queue(match, new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Move, CommandTarget.Sector(1)));
+        EnterMovement(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(1, match.FindGang(new GangId(10))!.SectorId);
+        Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
+        Assert.DoesNotContain(match.Players[0].Gangs,
+            gang => gang.IsActive && gang.SectorId == 0);
+    }
+
+    [Fact]
+    public void TerminatingLastGangDoesNotImmediatelyAbandonControlledSector()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 5)], [Gang(20, 1, 3, 5)], owner: new PlayerId(0));
+        Queue(match, new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Terminate, CommandTarget.None));
+        EnterMovement(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.False(match.FindGang(new GangId(10))!.IsActive);
+        Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
+    }
+
+    [Fact]
     public void MoveRejectsDestinationAlreadyAtFriendlyCapacity()
     {
         var gangs = new List<MatchGangState> { Gang(10, 0, 0, 5) };
@@ -39,7 +71,7 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
-    public void SimultaneousFriendlyMovesRespectCapacityInQueueOrder()
+    public void SimultaneousFriendlyMovesRespectCapacityInRosterOrder()
     {
         var gangs = new List<MatchGangState>
         {
@@ -51,9 +83,9 @@ public sealed class BoardResolutionTests
         var match = CreateMatch(gangs, [Gang(20, 1, 3, 5)]);
         match.FinishUpkeep();
         Assert.True(match.Submit(new GameCommand(
-            new PlayerId(0), new GangId(10), GangAction.Move, CommandTarget.Sector(1))).Accepted);
-        Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(11), GangAction.Move, CommandTarget.Sector(1))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Move, CommandTarget.Sector(1))).Accepted);
         FinishCommands(match);
         EnterMovementFromExecution(match);
 
@@ -64,6 +96,28 @@ public sealed class BoardResolutionTests
         Assert.Equal(
             [CommandResolutionCode.Resolved, CommandResolutionCode.DestinationFull],
             match.LastPhaseResolutions.Select(result => result.Code));
+    }
+
+    [Fact]
+    public void TerminatePassPrecedesMovePassRegardlessOfSubmissionOrder()
+    {
+        var match = CreateMatch([Gang(10, 0, 0, 5)], [Gang(20, 1, 3, 5)]);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Move, CommandTarget.Sector(1))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(1), new GangId(20), GangAction.Terminate, CommandTarget.None)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        EnterMovementFromExecution(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(
+            [GangAction.Terminate, GangAction.Move],
+            match.LastPhaseResolutions.Select(result => result.Command.Action).ToArray());
+        Assert.False(match.FindGang(new GangId(20))!.IsActive);
+        Assert.Equal(1, match.FindGang(new GangId(10))!.SectorId);
     }
 
     [Fact]
@@ -92,6 +146,28 @@ public sealed class BoardResolutionTests
             Assert.Equal(expectedAttack, result.Event!.Resolution!.AttackValue);
             Assert.Equal(1, result.Event.Resolution.Successes);
         });
+    }
+
+    [Fact]
+    public void ControlUsesGeneratedSectorIncomeInsteadOfSiteCashBenefits()
+    {
+        var data = BundledOriginalData.Load();
+        var controller = data.Gangs.OrderByDescending(gang => gang.Stats.Control).First().Id;
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 10, controller)],
+            [Gang(20, 1, 3, 5)],
+            income: 7);
+        var siteCash = match.Sectors[0].Sites.Sum(site =>
+            match.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
+        Assert.NotEqual(siteCash, match.Sectors[0].Income);
+        Queue(match, Control(0, 10));
+        EnterControl(match);
+
+        match.FinishExecutionPhase();
+
+        var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.Equal(match.Sectors[0].Income, resolution.DefenseValue);
+        Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
     }
 
     [Fact]
@@ -155,12 +231,36 @@ public sealed class BoardResolutionTests
         Assert.Equal(resolution.AttackValue, resolution.DefenseValue);
         Assert.InRange(resolution.ChanceRoll!.Value, 1, 2);
         Assert.Equal(2, resolution.ChanceSides);
-        Assert.Equal(resolution.ChanceRoll == 1, first.Sectors[0].Owner == new PlayerId(0));
+        Assert.Equal(resolution.ChanceRoll == 2, first.Sectors[0].Owner == new PlayerId(0));
         Assert.Equal(firstConsumptionBefore + 3, first.Random.ConsumptionCount);
         Assert.Equal(secondConsumptionBefore + 3, second.Random.ConsumptionCount);
         Assert.Equal(resolution.ChanceRoll,
             Assert.Single(second.LastPhaseResolutions).Event!.Resolution!.ChanceRoll);
         Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+    }
+
+    [Fact]
+    public void ControlSectorsAndResultsFollowBoardThenRosterOrder()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 3), Gang(11, 0, 1, 3)],
+            [Gang(20, 1, 3, 5)]);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Control(0, 11)).Accepted);
+        Assert.True(match.Submit(Control(0, 10)).Accepted);
+        FinishCommands(match);
+        EnterControlFromExecution(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal([new GangId(10), new GangId(11)],
+            match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
+        Assert.All(match.LastPhaseResolutions, result =>
+        {
+            Assert.Equal(result.Event!.Resolution!.AttackValue,
+                result.Event.Resolution.DefenseValue);
+            Assert.Equal(2, result.Event.Resolution.ChanceSides);
+        });
     }
 
     [Fact]
@@ -184,6 +284,120 @@ public sealed class BoardResolutionTests
             result => result.Command.Player == new PlayerId(0)).Event!.Resolution!.Successes);
         Assert.Equal(1, match.LastPhaseResolutions.Single(
             result => result.Command.Player == new PlayerId(1)).Event!.Resolution!.Successes);
+    }
+
+    [Fact]
+    public void EqualPositiveControlMarginsRandomlyChooseAPlayerInSlotOrder()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 5)],
+            [Gang(20, 1, 0, 5)]);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Control(0, 10)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(Control(1, 20)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        EnterControlFromExecution(match);
+        var expectedRandom = new DeterministicRandom(
+            match.Random.State, match.Random.ConsumptionCount);
+        var expectedRoll = expectedRandom.NextInclusive(2);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(new PlayerId(expectedRoll - 1), match.Sectors[0].Owner);
+        Assert.Equal(expectedRandom.ConsumptionCount, match.Random.ConsumptionCount);
+        Assert.All(match.LastPhaseResolutions, result =>
+        {
+            var resolution = result.Event!.Resolution!;
+            Assert.True(resolution.AttackValue > resolution.DefenseValue);
+            Assert.Equal(expectedRoll, resolution.ChanceRoll);
+            Assert.Equal(2, resolution.ChanceSides);
+        });
+        Assert.Single(match.LastPhaseResolutions, result =>
+            result.Event!.Resolution!.Successes == 1);
+    }
+
+    [Fact]
+    public void EqualZeroControlMarginsIncludeNeutralBeforePlayers()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 3)],
+            [Gang(20, 1, 0, 3)]);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Control(0, 10)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(Control(1, 20)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        EnterControlFromExecution(match);
+        var expectedRandom = new DeterministicRandom(
+            match.Random.State, match.Random.ConsumptionCount);
+        var expectedRoll = expectedRandom.NextInclusive(3);
+
+        match.FinishExecutionPhase();
+
+        var expectedOwner = expectedRoll == 1 ? (PlayerId?)null : new PlayerId(expectedRoll - 2);
+        Assert.Equal(expectedOwner, match.Sectors[0].Owner);
+        Assert.Equal(expectedRandom.ConsumptionCount, match.Random.ConsumptionCount);
+        Assert.All(match.LastPhaseResolutions, result =>
+        {
+            var resolution = result.Event!.Resolution!;
+            Assert.Equal(resolution.AttackValue, resolution.DefenseValue);
+            Assert.Equal(expectedRoll, resolution.ChanceRoll);
+            Assert.Equal(3, resolution.ChanceSides);
+        });
+        Assert.Equal(expectedOwner is null ? 0 : 1,
+            match.LastPhaseResolutions.Count(result => result.Event!.Resolution!.Successes == 1));
+    }
+
+    [Fact]
+    public void NeutralControlConflictHonorsCrackdownStartedAfterSubmission()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 10)],
+            [Gang(20, 1, 0, 10)]);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Control(0, 10)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(Control(1, 20)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        EnterControlFromExecution(match);
+        match.Sectors[0].CrackdownActive = true;
+
+        match.FinishExecutionPhase();
+
+        Assert.Null(match.Sectors[0].Owner);
+        Assert.All(match.LastPhaseResolutions, result =>
+        {
+            Assert.Equal(CommandResolutionCode.SectorInCrackdown, result.Code);
+            Assert.Equal(GameEventKind.CommandFailed, result.Event!.Kind);
+        });
+    }
+
+    [Fact]
+    public void ControlledSectorConflictUsesOnePhaseOpeningOwnerAndDefense()
+    {
+        var match = CreateThreePlayerControlConflict();
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(Control(1, 10)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        Assert.True(match.Submit(Control(2, 20)).Accepted);
+        match.FinishCommand(new PlayerId(2));
+        EnterControlFromExecution(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(new PlayerId(2), match.Sectors[0].Owner);
+        Assert.Equal(0, match.Players[1].Statistics.Overthrows);
+        Assert.Equal(1, match.Players[2].Statistics.Overthrows);
+        Assert.All(match.LastPhaseResolutions, result =>
+            Assert.Equal(0, result.Event!.Resolution!.PreviousValue));
+        Assert.Equal(0, match.LastPhaseResolutions.Single(result =>
+            result.Command.Player == new PlayerId(1)).Event!.Resolution!.Successes);
+        Assert.Equal(1, match.LastPhaseResolutions.Single(result =>
+            result.Command.Player == new PlayerId(2)).Event!.Resolution!.Successes);
+        Assert.Single(match.LastPhaseResolutions.Select(result =>
+            result.Event!.Resolution!.DefenseValue).Distinct());
     }
 
     [Fact]
@@ -239,9 +453,7 @@ public sealed class BoardResolutionTests
 
         Assert.True(match.FindGang(new GangId(20))!.Hidden);
         Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
-        var sectorIncome = match.Sectors[0].Sites.Sum(site =>
-            match.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
-        Assert.Equal(sectorIncome,
+        Assert.Equal(match.Sectors[0].Income,
             Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.DefenseValue);
     }
 
@@ -370,6 +582,36 @@ public sealed class BoardResolutionTests
     private static MatchGangState Gang(int id, int owner, int sector, int force, short definition = 1) =>
         new(new GangId(id), new PlayerId(owner), definition, sector, force);
 
+    private static MatchState CreateThreePlayerControlConflict()
+    {
+        var data = BundledOriginalData.Load();
+        var weak = data.Gangs.OrderBy(gang => gang.Stats.Control).First().Id;
+        var strong = data.Gangs.OrderByDescending(gang => gang.Stats.Control).First().Id;
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "OWNER", PlayerController.Computer),
+            new(new PlayerId(1), "FIRST", PlayerController.Computer),
+            new(new PlayerId(2), "SECOND", PlayerController.Computer)
+        ];
+        var setup = new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 500, [Gang(30, 0, 0, 1, weak)]),
+            new(setups[1], 500, [Gang(10, 1, 0, 5, strong)]),
+            new(setups[2], 500, [Gang(20, 2, 0, 10, strong)])
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 4)
+            ], owner: id == 0 ? new PlayerId(0) : null, income: 2))
+            .ToArray();
+        return new MatchState(data, setup, players, sectors);
+    }
+
     private static MatchState CreateMatch(
         IReadOnlyList<MatchGangState> playerZeroGangs,
         IReadOnlyList<MatchGangState> playerOneGangs,
@@ -377,7 +619,8 @@ public sealed class BoardResolutionTests
         PlayerId? influencedBy = null,
         int playerOneSupport = 0,
         bool filledHirePool = false,
-        bool crackdownActive = false)
+        bool crackdownActive = false,
+        int income = 2)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -400,7 +643,8 @@ public sealed class BoardResolutionTests
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
             ], id == 0 ? owner : null,
-                crackdownActive: id == 0 && crackdownActive, income: 2))
+                crackdownActive: id == 0 && crackdownActive,
+                income: id == 0 ? income : 2))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }

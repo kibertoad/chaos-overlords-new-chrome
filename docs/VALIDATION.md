@@ -27,6 +27,10 @@ installed copy and unrelated `dotnet` processes are left alone. The normal
 incremental outputs and MSBuild/Roslyn server reuse are retained because both
 materially speed repeated builds.
 
+At the current published checkpoint, the isolated Release build completes with
+zero warnings and all 1,154 tests pass. This count is a regression baseline,
+not a measure of parity completeness.
+
 A small, stable worker pool is expected. If a prior interrupted run left stale
 workers, perform validation and then stop all .NET build servers owned by the
 current user:
@@ -67,8 +71,10 @@ retains at most five session logs and ten crash reports and that an unwritable
 directory never prevents startup.
 
 The first complete hosted run of this matrix and installer path was GitHub
-Actions run `34400362789` on 2026-09-09; every platform and packaging job
-passed. Hosted runs remain the authority for runner-specific compatibility.
+Actions run `34400362789` on 2026-09-09. The latest recorded clean-room matrix
+and installer run is `34403047147`, with zizmor run `34403047115`; every
+selected platform, packaging, and audit job passed. Hosted runs remain the
+authority for runner-specific compatibility.
 
 Linux and macOS installer builders run only on matching native hosted runners.
 The Linux gate opens the generated `.deb` and smoke-runs its installed-layout

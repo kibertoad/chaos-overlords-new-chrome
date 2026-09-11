@@ -20,6 +20,8 @@ public enum ReplayOperationKind : byte
     PrepareHireOffers,
     PrepareAiPlanning,
     PrepareAiHiring,
+    SendComlinkMessage,
+    MarkComlinkRead,
     /// <summary>One ordered pass drawing every seat's offers, as a simultaneous turn needs.</summary>
     PrepareSimultaneousHireOffers
 }
@@ -33,7 +35,9 @@ public sealed record ReplayStep(
     short? GangDefinitionId = null,
     int? SectorId = null,
     bool? Accepted = null,
-    int? ValidationCode = null);
+    int? ValidationCode = null,
+    IReadOnlyList<PlayerId>? Recipients = null,
+    string? Text = null);
 
 /// <summary>
 /// Records every public match mutation together with its resulting canonical hash.
@@ -161,6 +165,30 @@ public sealed class MatchReplayRecorder
         return removed;
     }
 
+    public ComlinkSendResult SendComlinkMessage(
+        PlayerId sender,
+        IReadOnlyList<PlayerId> recipients,
+        string message)
+    {
+        EnsureSynchronized();
+        var result = State.SendComlinkMessage(sender, recipients, message);
+        Add(new ReplayStep(
+            ReplayOperationKind.SendComlinkMessage, CurrentHash(), Player: sender,
+            Accepted: result.Accepted, ValidationCode: (int)result.Code,
+            Recipients: recipients.ToArray(), Text: message));
+        return result;
+    }
+
+    public bool MarkComlinkRead(PlayerId player)
+    {
+        EnsureSynchronized();
+        var changed = State.MarkComlinkRead(player);
+        Add(new ReplayStep(
+            ReplayOperationKind.MarkComlinkRead, CurrentHash(), Player: player,
+            Accepted: changed));
+        return changed;
+    }
+
     internal ReplayDocument Capture()
     {
         EnsureSynchronized();
@@ -199,9 +227,9 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    // 18 added PrepareSimultaneousHireOffers, the ordered hire draw an online turn takes. The
-    // state hash did not change with it, so 17 and 18 verify against the same one.
-    public const int CurrentFormatVersion = 18;
+    // 21 added PrepareSimultaneousHireOffers, the ordered hire draw an online turn takes. The
+    // state hash did not change with it, so 20 and 21 verify against the same one.
+    public const int CurrentFormatVersion = 21;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -329,6 +357,24 @@ public static class MatchReplaySerializer
             case ReplayOperationKind.PrepareAiHiring:
                 state.PrepareAiHiring(Required(step.Player, index));
                 break;
+            case ReplayOperationKind.SendComlinkMessage:
+            {
+                var result = state.SendComlinkMessage(
+                    Required(step.Player, index),
+                    step.Recipients
+                        ?? throw new InvalidDataException($"Replay step {index} has no Comlink recipients."),
+                    step.Text
+                        ?? throw new InvalidDataException($"Replay step {index} has no Comlink text."));
+                VerifyResult(step, result.Accepted, (int)result.Code, index);
+                break;
+            }
+            case ReplayOperationKind.MarkComlinkRead:
+            {
+                var changed = state.MarkComlinkRead(Required(step.Player, index));
+                if (step.Accepted != changed)
+                    throw new InvalidDataException($"Replay step {index} produced a different Comlink read result.");
+                break;
+            }
             default: throw new InvalidDataException($"Replay step {index} has an unknown operation kind.");
         }
     }
@@ -355,7 +401,10 @@ public static class MatchReplaySerializer
         }
         string[] candidateHashes = replayVersion switch
         {
-            >= 17 => [MatchStateHasher.ComputeSha256(state)],
+            >= 20 => [MatchStateHasher.ComputeSha256(state)],
+            19 => [MatchStateHasher.ComputeVersionTwentyOneSha256(state)],
+            18 => [MatchStateHasher.ComputeVersionTwentySha256(state)],
+            17 => [MatchStateHasher.ComputeVersionNineteenSha256(state)],
             16 => [MatchStateHasher.ComputeVersionEighteenSha256(state)],
             15 => [MatchStateHasher.ComputeVersionSeventeenSha256(state)],
             14 => [MatchStateHasher.ComputeVersionSixteenSha256(state)],
@@ -406,8 +455,12 @@ internal sealed record ReplayDocument(
     byte[] InitialSnapshot,
     IReadOnlyList<ReplayStep> Steps);
 
+public sealed record MatchReplayLoadResult(MatchState State, bool RecoveredFromBackup);
+
 public static class MatchReplayStore
 {
+    public const string BackupSuffix = ".bak";
+
     public static void SaveAtomic(string path, MatchReplayRecorder recorder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -427,7 +480,22 @@ public static class MatchReplayStore
                 MatchReplaySerializer.Save(stream, recorder);
                 stream.Flush(flushToDisk: true);
             }
-            File.Move(temporaryPath, fullPath, overwrite: true);
+
+            // Replays are long-lived verification artifacts. Read back the new
+            // file before promotion and preserve the last valid generation.
+            _ = LoadAndReplay(temporaryPath, recorder.State.Definitions);
+            if (!File.Exists(fullPath))
+            {
+                File.Move(temporaryPath, fullPath);
+            }
+            else if (IsValid(fullPath, recorder.State.Definitions))
+            {
+                File.Replace(temporaryPath, fullPath, fullPath + BackupSuffix);
+            }
+            else
+            {
+                File.Move(temporaryPath, fullPath, overwrite: true);
+            }
         }
         finally
         {
@@ -441,5 +509,36 @@ public static class MatchReplayStore
         using var stream = new FileStream(
             Path.GetFullPath(path), FileMode.Open, FileAccess.Read, FileShare.Read);
         return MatchReplaySerializer.LoadAndReplay(stream, definitions);
+    }
+
+    public static MatchReplayLoadResult LoadAndReplayRecoveringBackup(
+        string path,
+        OriginalData definitions)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(definitions);
+        try
+        {
+            return new MatchReplayLoadResult(LoadAndReplay(path, definitions), false);
+        }
+        catch (Exception primaryFailure) when (primaryFailure is IOException or InvalidDataException)
+        {
+            var backupPath = Path.GetFullPath(path) + BackupSuffix;
+            if (!File.Exists(backupPath)) throw;
+            return new MatchReplayLoadResult(LoadAndReplay(backupPath, definitions), true);
+        }
+    }
+
+    private static bool IsValid(string path, OriginalData definitions)
+    {
+        try
+        {
+            _ = LoadAndReplay(path, definitions);
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException)
+        {
+            return false;
+        }
     }
 }

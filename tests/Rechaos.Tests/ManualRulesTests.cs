@@ -27,6 +27,13 @@ public sealed class ManualRulesTests
     public void BribeAddsThreeAndCapsAtForty(int before, int after) =>
         Assert.Equal(after, ManualRules.ApplyBribe(before));
 
+    [Fact]
+    public void PrintedAndExecutableBribeCostsRemainDistinct()
+    {
+        Assert.Equal(5, ManualRules.PrintedBribeCost);
+        Assert.Equal(3, ManualRules.OriginalBribeCost);
+    }
+
     [Theory]
     [InlineData(0, 0)]
     [InlineData(2, 0)]
@@ -36,6 +43,7 @@ public sealed class ManualRulesTests
         Assert.Equal(after, ManualRules.ApplySnitch(before));
 
     [Theory]
+    [InlineData(-10, 100)]
     [InlineData(0, 100)]
     [InlineData(5, 100)]
     [InlineData(6, 95)]

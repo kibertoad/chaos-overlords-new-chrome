@@ -65,6 +65,55 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         Assert.Equal(-3, HelpLayout.WheelSteps(-360));
     }
 
+    [Fact]
+    public void HelpNavigationUsesContentsOrderAndOmitsUnlistedFragments()
+    {
+        var document = new ExtractedHelpDocument(
+            ExtractedHelpDocument.CurrentFormatVersion,
+            "Help",
+            [
+                new ExtractedHelpTopic(10, "First", "A", true),
+                new ExtractedHelpTopic(20, "Additional topic", "B", false),
+                new ExtractedHelpTopic(30, "Last", "C", true)
+            ],
+            [
+                new ExtractedHelpContentsEntry(1, "Last", 30),
+                new ExtractedHelpContentsEntry(1, "First", 10)
+            ]);
+
+        Assert.Equal([2, 0], HelpNavigation.TopicOrder(document));
+        Assert.Equal([0, 1, 2], HelpNavigation.TopicOrder(document with { Contents = [] }));
+    }
+
+    [Theory]
+    [InlineData(ClientScreen.GameInfo, "Game Info Screen")]
+    [InlineData(ClientScreen.Give, "Give")]
+    [InlineData(ClientScreen.Sell, "Sell")]
+    [InlineData(ClientScreen.ComlinkView, "Comm Menu")]
+    [InlineData(ClientScreen.Events, "Main Control Panel")]
+    public void HelpContextUsesSpecificOriginalTopics(ClientScreen screen, string title) =>
+        Assert.Equal(title, HelpNavigation.ContextTitle(screen));
+
+    [Fact]
+    public void HelpContextLookupIgnoresLegacyEllipsisStyling()
+    {
+        var document = new ExtractedHelpDocument(
+            ExtractedHelpDocument.CurrentFormatVersion,
+            "Help",
+            [
+                new ExtractedHelpTopic(2, "Introduction", "A", true),
+                new ExtractedHelpTopic(7, "Give…", "B", true)
+            ],
+            [
+                new ExtractedHelpContentsEntry(1, "Introduction", 2),
+                new ExtractedHelpContentsEntry(1, "Give...", 7)
+            ]);
+        var order = HelpNavigation.TopicOrder(document);
+
+        Assert.Equal(1, HelpNavigation.FindTopicPosition(
+            document, order, ClientScreen.GiveTarget));
+    }
+
     public void Dispose() => _directory.Delete(recursive: true);
 
     private void Write(ExtractedHelpDocument document)

@@ -1,7 +1,7 @@
 # AI specification
 
 Status: provisional recreation baseline  
-Last updated: 2026-09-10
+Last updated: 2026-09-11
 
 The original executable's complete difficulty branches and evaluation weights
 have not yet been recovered. Static analysis has recovered the outer per-gang
@@ -119,11 +119,18 @@ sector and the common selector later clears the source score, that path uses
 the original all-zero tie draw and one-step routing behavior.
 
 The test suite drives Greed, Power, Acceptance, and Dominance through complete
-two-computer six-month matches. Each scenario is run twice at a fixed seed and
+six-computer six-month matches. Each scenario is run twice at a fixed seed and
 must produce the same final state hash; its complete mutation stream must also
 round-trip through the replay serializer to that hash. Kill 'Em All, Big 40,
 Eliminate, Siege, Big Man, and Armageddon each run the same deterministic,
-replay-verified two-computer harness through 20 turns or objective completion.
+replay-verified six-computer harness through 20 turns or objective completion.
+At a second fixed seed, every objective now runs a live-equivalent 40-turn
+campaign which refills the three-offer market before each AI hiring decision.
+Each campaign must resolve at least one hire, expand beyond the six starting
+sectors, and replay to the same final hash. Big Man additionally completes
+naturally by turn 60 at that seed. Reliable completion policy for the other
+five objective scenarios remains an explicit M6 gap rather than an unmeasured
+claim.
 
 ## Required parity work
 

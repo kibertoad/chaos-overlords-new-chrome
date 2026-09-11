@@ -53,6 +53,7 @@ public sealed class DeterminismTests
         Assert.Equal([1L, 2L], queue.Items.Select(item => item.Sequence));
         Assert.True(queue.TryDequeue(out var first));
         Assert.Equal(1, first!.Sequence);
+
     }
 
     [Fact]

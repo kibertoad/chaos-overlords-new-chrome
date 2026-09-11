@@ -139,7 +139,7 @@ public sealed partial class ChaosGame
         _lobby!.Host(new CreateMatchRequest(
             new MatchSettings(
                 $"{name}'S CITY",
-                Math.Max(MinimumOnlinePlayers, _selectedPlayerCount),
+                Math.Max(MinimumOnlinePlayers, _localSetupRoster.Count),
                 OnlineTurnTimerSeconds,
                 MatchVisibility.Private,
                 settings.ToWire()),

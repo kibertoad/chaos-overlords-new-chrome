@@ -11,7 +11,8 @@ public sealed record CombatAnimationClip(
     short AttackAnimation,
     short? HitAnimation,
     bool Reversed,
-    bool Police = false);
+    bool Police = false,
+    short? Sound = null);
 
 public static class CombatAnimationRouting
 {
@@ -39,7 +40,8 @@ public static class CombatAnimationRouting
         {
             return police.Detected
                 ? [new CombatAnimationClip(gameEvent.Sequence, null, policeTarget,
-                    PoliceAttackAnimation, PoliceHitAnimation, Reversed: true, Police: true)]
+                    PoliceAttackAnimation, PoliceHitAnimation, Reversed: true, Police: true,
+                    Sound: AudioRouting.PoliceSound)]
                 : [new CombatAnimationClip(gameEvent.Sequence, null, policeTarget,
                     EvadedAnimation, null, Reversed: true, Police: true)];
         }
@@ -58,14 +60,18 @@ public static class CombatAnimationRouting
         var attack = AnimationPair(state, attacker, resolution.ItemId);
         var clips = new List<CombatAnimationClip>(2)
         {
-            new(gameEvent.Sequence, attacker, defender, attack.Attack, attack.Hit, Reversed: false)
+            new(gameEvent.Sequence, attacker, defender, attack.Attack, attack.Hit,
+                Reversed: false,
+                Sound: AudioRouting.GangAttackSound(state, attacker, resolution.ItemId))
         };
         if (resolution.RetaliationRolls is { Count: > 0 })
         {
             var retaliation = AnimationPair(state, defender, resolution.RetaliationItemId);
             clips.Add(new CombatAnimationClip(
                 gameEvent.Sequence, defender, attacker,
-                retaliation.Attack, retaliation.Hit, Reversed: true));
+                retaliation.Attack, retaliation.Hit, Reversed: true,
+                Sound: AudioRouting.GangAttackSound(
+                    state, defender, resolution.RetaliationItemId)));
         }
         return clips;
     }
@@ -162,20 +168,24 @@ public sealed class CombatAnimationPlayer
         }
     }
 
-    public void Advance(TimeSpan elapsed)
+    public IReadOnlyList<CombatAnimationClip> Advance(TimeSpan elapsed)
     {
         if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
-        if (Active is null) return;
+        if (Active is null) return [];
+        List<CombatAnimationClip>? started = null;
         _elapsedMilliseconds += elapsed.TotalMilliseconds;
         while (Active is not null && _elapsedMilliseconds >= CombatAnimationRouting.FrameMilliseconds)
         {
             _elapsedMilliseconds -= CombatAnimationRouting.FrameMilliseconds;
             TimelineTick++;
+            if (TimelineTick == CombatAnimationRouting.FirstAnimationTick)
+                (started ??= []).Add(Active);
             if (TimelineTick < CombatAnimationRouting.CompletionTick) continue;
             Active = _queue.Count > 0 ? _queue.Dequeue() : null;
             TimelineTick = 0;
             if (Active is null) _elapsedMilliseconds = 0;
         }
+        return started ?? [];
     }
 
     public void Clear()

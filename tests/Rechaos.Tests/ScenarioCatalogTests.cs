@@ -40,7 +40,7 @@ public sealed class ScenarioCatalogTests
         Assert.Equal(123, ScenarioCatalog.TimedScore(ScenarioId.Greed, GameDuration.SixMonths, state));
         Assert.Equal(6, ScenarioCatalog.TimedScore(ScenarioId.Power, GameDuration.SixMonths, state));
         Assert.Equal(45, ScenarioCatalog.TimedScore(ScenarioId.Acceptance, GameDuration.SixMonths, state));
-        Assert.Equal(753, ScenarioCatalog.TimedScore(ScenarioId.Dominance, GameDuration.SixMonths, state));
+        Assert.Equal(75, ScenarioCatalog.TimedScore(ScenarioId.Dominance, GameDuration.SixMonths, state));
     }
 
     [Theory]

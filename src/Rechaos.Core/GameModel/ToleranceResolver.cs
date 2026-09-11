@@ -31,14 +31,23 @@ public static class ToleranceResolver
 
     public static int ApplyBribe(MatchState state, MatchSectorState sector)
     {
-        var adjustment = SiteAdjustment(state, sector);
-        return checked(ManualRules.ApplyBribe(sector.Tolerance - adjustment) + adjustment);
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(sector);
+        return checked(sector.Tolerance + ManualRules.BribeToleranceIncrease);
     }
 
     public static int ApplySnitch(MatchState state, MatchSectorState sector)
     {
-        var adjustment = SiteAdjustment(state, sector);
-        return checked(ManualRules.ApplySnitch(sector.Tolerance - adjustment) + adjustment);
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(sector);
+        return checked(sector.Tolerance - ManualRules.SnitchToleranceDecrease);
+    }
+
+    internal static void ClampAfterInstant(MatchState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        foreach (var sector in state.Sectors)
+            if (sector.Tolerance < 1) sector.Tolerance = 1;
     }
 
     public static int MoveOnePointToward(int current, int target)

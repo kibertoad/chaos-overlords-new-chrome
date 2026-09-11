@@ -577,7 +577,7 @@ public static partial class AiTurnPlanner
 
     private static int EstimatedCost(MatchState state, GameCommand command) => command.Action switch
     {
-        GangAction.Bribe => ManualRules.BribeCost,
+        GangAction.Bribe => ManualRules.OriginalBribeCost,
         GangAction.Equip => SpecialSiteRules.EquipmentCost(
             state, state.FindGang(command.Gang)!, state.Definitions.Items[command.Target.Id]),
         _ => 0

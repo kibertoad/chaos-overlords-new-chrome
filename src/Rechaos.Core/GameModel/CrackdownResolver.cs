@@ -30,10 +30,6 @@ public static class CrackdownResolver
         if (state.Sectors.Count <= sector.Id || state.Sectors[sector.Id] != sector)
             throw new ArgumentException("Sector does not belong to the match.", nameof(sector));
 
-        var duration = state.Random.NextInclusive(
-            ManualRules.MaximumCrackdownTurns - ManualRules.MinimumCrackdownTurns + 1)
-            + ManualRules.MinimumCrackdownTurns - 1;
-        sector.CrackdownTurnsRemaining = checked(sector.CrackdownTurnsRemaining + duration);
         var previousOwner = sector.Owner;
         var controlLost = sector.RecordCrackdown(state.Coordinator.Turn) && previousOwner is not null;
         if (controlLost)
@@ -44,6 +40,10 @@ public static class CrackdownResolver
                 GameNotificationKind.ControlLost,
                 sectorId: sector.Id);
         }
+        var duration = state.Random.NextInclusive(
+            ManualRules.MaximumCrackdownTurns - ManualRules.MinimumCrackdownTurns + 1)
+            + ManualRules.MinimumCrackdownTurns - 1;
+        sector.CrackdownTurnsRemaining = checked(sector.CrackdownTurnsRemaining + duration);
         return new CrackdownTriggerResult(duration, previousOwner, controlLost);
     }
 }

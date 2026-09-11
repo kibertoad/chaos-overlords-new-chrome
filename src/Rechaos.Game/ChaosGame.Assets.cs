@@ -55,17 +55,9 @@ public sealed partial class ChaosGame
         return SoundEffect.FromStream(stream);
     }
 
-    private void PlayNewCombatSounds()
+    private void PlayCombatSound(short soundIndex)
     {
-        if (_state is null) return;
-        foreach (var gameEvent in _state.Events.Where(value => value.Sequence > _lastAudibleEventSequence)
-                     .OrderBy(value => value.Sequence))
-        {
-            if (AudioRouting.WeaponSound(_state, gameEvent) is { } soundIndex
-                && _weaponSounds.TryGetValue(soundIndex, out var sound))
-                TryPlaySound(sound);
-            _lastAudibleEventSequence = gameEvent.Sequence;
-        }
+        if (_combatSounds.TryGetValue(soundIndex, out var sound)) TryPlaySound(sound);
     }
 
     private void PlayGeneralSound(int slot)
@@ -89,16 +81,20 @@ public sealed partial class ChaosGame
     private void CaptureNewCombatAnimations()
     {
         if (_state is null) return;
+        if (_screens.Current is not (ClientScreen.City or ClientScreen.CombatSummary)) return;
         var viewer = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var lastSeen = _combatPresentationProgress.LastSeen(viewer);
         foreach (var gameEvent in _state.Events
-                     .Where(value => value.Sequence > _lastAnimatedEventSequence)
+                     .Where(value => value.Sequence > lastSeen)
                      .OrderBy(value => value.Sequence))
         {
             if (_detailedCombat && _combatAnimationTextures.Count > 0
+                && CombatResultProjection.IsFromLastCompletedTurn(
+                    gameEvent.Turn, _state.Coordinator.Turn)
                 && IsVisibleCombatEvent(_state, viewer, gameEvent))
                 foreach (var clip in CombatAnimationRouting.ForEvent(_state, gameEvent))
                     _combatAnimationPlayer.Enqueue(clip);
-            _lastAnimatedEventSequence = gameEvent.Sequence;
+            _combatPresentationProgress.MarkSeen(viewer, gameEvent.Sequence);
         }
     }
 

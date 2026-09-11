@@ -3,7 +3,8 @@ namespace Rechaos.Core.GameModel;
 public enum MatchEndReason : byte
 {
     TimeLimit,
-    ObjectiveCompleted
+    ObjectiveCompleted,
+    PlayerEliminated
 }
 
 public sealed record MatchOutcome(
@@ -25,21 +26,50 @@ public static class MatchOutcomeEvaluator
     public static MatchOutcome? Evaluate(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
+        var humans = state.Players
+            .Where(player => player.Setup.Controller == PlayerController.Human).ToArray();
+        if (humans is [{ Status: PlayerStatus.Eliminated }])
+        {
+            var survivingOpponents = state.Players
+                .Where(player => player.Id != humans[0].Id && player.Status == PlayerStatus.Active)
+                .Select(player => player.Id)
+                .OrderBy(player => player.Value)
+                .ToArray();
+            if (survivingOpponents.Length > 0)
+                return new MatchOutcome(
+                    state.Setup.Scenario,
+                    MatchEndReason.PlayerEliminated,
+                    state.Coordinator.Turn,
+                    survivingOpponents,
+                    EndgameRankingEvaluator.Evaluate(state),
+                    EndgameAwardEvaluator.Evaluate(state));
+        }
+        var activePlayers = state.Players
+            .Where(player => player.Status == PlayerStatus.Active)
+            .ToArray();
+        if (activePlayers.Length == 1)
+        {
+            return new MatchOutcome(
+                state.Setup.Scenario,
+                MatchEndReason.PlayerEliminated,
+                state.Coordinator.Turn,
+                [activePlayers[0].Id],
+                EndgameRankingEvaluator.Evaluate(state),
+                EndgameAwardEvaluator.Evaluate(state));
+        }
+
         var definition = ScenarioCatalog.Get(state.Setup.Scenario);
         if (definition.IsTimed)
         {
             if (state.Coordinator.Turn < ScenarioCatalog.Turns(state.Setup.Duration)) return null;
-            var scores = state.Players
-                .Select(player => (player.Id, Score: ScenarioCatalog.TimedScore(
-                    state.Setup.Scenario, state.Setup.Duration, Project(state, player))))
-                .ToArray();
-            var best = scores.Max(value => value.Score);
+            var standings = EndgameRankingEvaluator.Evaluate(state);
             return new MatchOutcome(
                 state.Setup.Scenario,
                 MatchEndReason.TimeLimit,
                 state.Coordinator.Turn,
-                scores.Where(value => value.Score == best).Select(value => value.Id).ToArray(),
-                EndgameRankingEvaluator.EvaluateTimed(state),
+                standings.Where(standing => standing.Place == 1)
+                    .Select(standing => standing.Player).ToArray(),
+                standings,
                 EndgameAwardEvaluator.Evaluate(state));
         }
 
@@ -56,7 +86,7 @@ public static class MatchOutcomeEvaluator
                 MatchEndReason.ObjectiveCompleted,
                 state.Coordinator.Turn,
                 winners,
-                [],
+                EndgameRankingEvaluator.Evaluate(state),
                 EndgameAwardEvaluator.Evaluate(state));
     }
 

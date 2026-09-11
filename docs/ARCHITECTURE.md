@@ -53,8 +53,9 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   gang upkeep, persistent negative balances, events, and notifications.
 - `GameModel/ToleranceResolver.cs`: income/site-derived normal tolerance and
   one-point Upkeep restoration of temporary Bribe/Snitch changes.
-- `GameModel/Notifications.cs`: bounded per-player mechanical notification queues
-  with presentation-independent payloads.
+- `GameModel/Notifications.cs`: bounded presentation-independent mechanical
+  notification queues. The client filters those richer payloads into Last Turn
+  Events; the separately recovered 16-entry bound belongs to Comlink messages.
 - `GameModel/Determinism.cs`: serializable recovered Visual C++ random step and
   three-sample range wrapper plus canonical little-endian SHA-256 encoding.
 - `GameModel/EffectiveStatistics.cs`: definition/equipment/influenced-site stat
@@ -80,10 +81,11 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   originating handler.
 - `Persistence/NativeSaveSerializer.cs`: bounded, versioned deterministic
   snapshots with definition/state fingerprints and complete runtime restoration.
-- `Persistence/NativeSaveStore.cs`: atomic file promotion, previous-save backup,
-  and corruption recovery.
+- `Persistence/NativeSaveStore.cs`: verified atomic file promotion,
+  last-valid-generation backup, and corruption recovery.
 - `Persistence/MatchReplay.cs`: mutation recorder plus bounded deterministic
-  replay reader that checks validation results and state hashes after every step.
+  replay reader that checks validation results and state hashes after every
+  step, with the same verified promotion and backup recovery policy.
 
 Target subdivisions:
 
@@ -100,9 +102,15 @@ Target subdivisions:
 - `Determinism`: original-compatible PRNG and state hashing.
 - `MatchOutcome`: state projection and end-of-turn scenario completion.
 - `EndgameAwards`: deterministic award projection from player statistics.
-- `EndgameRanking`: timed-scenario score ordering and tied placements.
-- `SpecialSiteRules`: gang/local-site research Tech ceilings and Factory-priced
-  equipment purchases without duplicating those rules in UI or AI.
+- `EndgameRanking`: exact all-scenario score projection, competition standings,
+  player-slot tie order, and trailing inactive players.
+- `SpecialSiteRules`: controlled/local influenced-site research Tech ceilings
+  and binary-recovered Factory pricing (`Cost - trunc(Cost / 3)`) without
+  duplicating those rules in UI or AI. Match validation enforces that every
+  site influencer owns its sector.
+- `MatchSectorState.Income`: density-derived sector difficulty used by Control,
+  Chaos, Tolerance, AI, and city presentation. It is deliberately distinct from
+  influenced sites' Cash benefits, which belong to Upkeep/site protection.
 
 ### `Rechaos.Extractor`
 
@@ -121,13 +129,16 @@ Target subdivisions:
 - Rejects malformed paths, missing assets, size changes, and hash changes.
 
 `Rechaos.Game` loads that optional topic document through a separate bounded
-validator. F1 opens a cross-platform two-pane viewer with contextual initial
-topics and complete topic reachability. The mouse wheel scrolls the topic list
-or article according to pointer position; keyboard topic navigation and paging
-remain available. Help is presentation-only: opening it pauses AI progression
-but never mutates authoritative match state, replay state, or deterministic
-hashes. Missing or invalid help data degrades to an import instruction instead
-of invoking the obsolete Windows WinHelp subsystem.
+validator. F1 opens a cross-platform two-pane viewer whose navigation follows
+the contents-listed topics in original order, omits unlisted internal fragments,
+and falls back to every decoded topic only when no contents entries exist.
+Contextual entry maps each implemented screen to its most specific available
+original topic and normalizes legacy ellipsis styling. The mouse wheel scrolls
+the topic list or article according to pointer position; keyboard topic
+navigation and paging remain available. Help is presentation-only: opening it
+pauses AI progression but never mutates authoritative match state, replay state,
+or deterministic hashes. Missing or invalid help data degrades to an import
+instruction instead of invoking the obsolete Windows WinHelp subsystem.
 
 CLI modes:
 
@@ -157,9 +168,10 @@ and machine-readable diagnostics.
 ### `Rechaos.Game`
 
 The current client owns the MonoGame loop, point-scaled virtual canvas, asset
-loading, title/setup/hot-seat-handoff/city/sector/gang/finance/ranking/items/Give/combat-summary/search/commands/hire/events/endgame routing,
-keyboard and inverse-mapped mouse input,
-prototype board renderer, and an atlas-backed renderer for the original
+loading, title/setup/hot-seat-handoff/city/sector/sector-gangs/gang/finance/ranking/items/Give/Sell/combat-summary/search/commands/hire/events/endgame/help routing,
+keyboard and inverse-mapped mouse input, including edge-triggered right-click
+cancellation that delegates to each interaction's existing close/back operation,
+an ownership-composited city/sector renderer, and an atlas-backed renderer for the original
 `PX00129` pixel font. `UI-ATLAS.md` records the
 first full-screen resource and hit-region mappings.
 The client shell is a partial class split by responsibility. `ChaosGame.cs`
@@ -170,19 +182,23 @@ isolate media loading, setup, and snapshot/replay I/O. The testable
 `ChaosGame.PlanningTimer.cs`; expiry uses the ordinary replay-recorded planning
 completion path and never enters deterministic Core state. `ChaosGame.TurnFlow.cs`
 owns planning handoff, its presentation, and computer-turn orchestration;
-`ChaosGame.Endgame.cs` owns completed-match presentation; `ChaosGame.Hire.cs` owns
+`ChaosGame.Endgame.cs` owns the single-player victory/elimination splash and
+completed-match awards presentation; `ChaosGame.Hire.cs` owns
 the hire dock, comparison screen, and hire interactions. `ChaosGame.City.cs`
 owns city navigation, control-panel routing, board rendering, status projection,
 and direct map-command assignment. `ChaosGame.Sector.cs` owns the detailed-sector
 projection, gang/site interaction, drag/drop command assignment, and hover
-target feedback. `ChaosGame.Management.cs` owns the
-Finance, Search, and Ranking projections and their shared panel shell. Gang,
+target feedback. `ChaosGame.Management.cs` owns the Finance, site-search, and
+Ranking presentations. `SiteSearchUi.cs` keeps the presentation-only site
+filter and matching-sector projection outside authoritative state. Gang,
 site, and item information modal navigation lives with its corresponding renderer in
 `ChaosGame.GangDetails.cs`, `ChaosGame.SiteDetails.cs`, and
 `ChaosGame.ItemDetails.cs`. `ChaosGame.Items.cs` owns the research/equipment
 browser and Give workflow. `ChaosGame.Commands.cs` owns command-picker state
 transitions and input handling, while the specialized attack picker remains in
-`ChaosGame.AttackPicker.cs`. Combat presentation, results, and turn events
+`ChaosGame.AttackPicker.cs`. `ChaosGame.Input.cs` centralizes right-click
+cancellation priority across transient edits/drags and nested panels. Combat
+presentation, results, and turn events
 likewise remain in their focused partials. Further screen groups should follow
 these boundaries instead of growing the shell again.
 `Directory.Build.targets` enforces a 1,000-line ceiling for every compiled C#
@@ -193,15 +209,33 @@ requires the explicit `DisableSourceFileLineLimit=true` MSBuild property.
 It reads original media only from the extracted asset directory.
 The item workflow projects research/equipment state and submits Research,
 Equip, Give, and Sell through the replay recorder and authoritative Core
-validator; Give expands only legal same-sector recipients for the equipped item.
+validator. Give first uses the original three-slot equipment selection panel,
+then expands only recipients in the same sector who can accept every selected
+item. The transaction resolver uses the binary's player/roster-slot scan,
+reserves outgoing Give items, processes recipient transactions, and applies
+incoming gifts afterward. This preserves two-gang swaps and the original rule
+that an incoming gift overwrites a recipient's same-turn purchase. Multi-slot
+Sell likewise preserves the original payout-local overwrite quirk.
+Move uses `PX05006` and projects its 3-by-3 neighborhood directly from the same
+native ownership tiles as the city map; command validation remains the authority
+for edge, adjacency, and friendly-capacity availability.
 Computer Command/Hire turns use the deterministic baseline in `AI-SPEC.md` and
 submit through that same recorder; its policy is not an original-parity claim.
-The audio router consumes newly appended attack-resolution events and maps an
-equipped item's original Sound field to `SND005xx`. It also owns the recovered
+The audio router consumes newly appended combat-resolution events and maps
+equipped items, unarmed attacks, and detected police attacks to their original
+`SND005xx` cues while leaving evasion silent. Each cue travels with its Detailed
+Combat clip and plays at that clip's first animation tick, including the
+separately queued retaliation clip. It also owns the recovered
 nine-entry general-effect slot table (`SND00200`-`SND00208`, with no slot 5);
-the setup shell currently uses the statically identified slot 3 accepted-input
-and slot 4 rejected-input cues. Neither route feeds playback state or timing
-back into the simulation.
+named slot identities replace presentation magic numbers. Setup uses the
+statically identified slot 3 accepted-input and slot 4 rejected-input cues,
+while full local-setup push buttons use slot 2; an invalid pointer-driven player
+count change follows its press cue with slot 4. The four setup push controls
+retain the pressed identity and act only on release inside that same recovered
+rectangle. Panel confirmation uses slots 0/1, a handoff into an unread Comlink
+inbox uses slot 6, and the planning countdown uses slots 7/8. Slot 9 is loaded by the
+original but has no gated-wrapper call site. None of these routes feeds playback
+state or timing back into the simulation.
 `SoundtrackCatalog` discovers the extracted `Track02`-`Track09` Ogg files and
 encodes the recovered title/setup, gameplay, and endgame track programs, while
 `ChaosGame.Media.cs` owns their optional streaming, screen transition, repeat,
@@ -213,8 +247,10 @@ file; malformed, unsupported, or out-of-range data falls back to the recovered
 Music level-5, Effects level-6, enabled idle-gang-warning, and disabled planning
 timer defaults. Version 5 also persists base/current gang-stat projection,
 automatic Detailed Combat playback, and bounded panel motion while migrating
-version-4 audio/warning/timer choices. Legacy color depth is always enabled by
-the modern renderer. Playback and preference-write failures remain presentation-only;
+version-4 audio/warning/timer choices. Version 6 adds a persistent
+windowed/borderless-fullscreen presentation choice, defaulting older preferences
+to windowed mode without disturbing the 640x460 virtual coordinate system.
+Legacy color depth is always enabled by the modern renderer. Playback and preference-write failures remain presentation-only;
 media state never enters Core, saves, replays, commands, events, or deterministic
 hashes.
 
@@ -275,34 +311,52 @@ lag behind resolved state but cannot change it.
 One turn contains Upkeep, Command, Execution, Hire, and Player Elimination.
 Execution resolves all players in Instant, Combat, Transaction, Chaos, Movement,
 and Control order. `TurnStructure` is the current executable specification of
-that ordering. Within-subphase ordering and tie-breaking remain unverified.
+that ordering. The implemented resolvers use the recovered fixed player/roster
+scans, phase-opening snapshots, and board ordering described below; only the
+specific reveal, overkill, police-notification, and remaining edge cases listed
+in the parity matrix remain unverified.
 Before an execution subphase mutates state, every queued action in that subphase
 must have a supported resolver. Unsupported actions block advancement rather
 than being silently consumed.
 
-Influence, Chaos, and Control are grouped resolvers. Influence commands from one player
-aimed at the same site pool Force and effective Influence into one deterministic
-roll stream. Control commands from one player in the same sector pool Force and
-effective Control into one non-dice comparison. Each group resolves at its
-earliest queue position and emits one ordered result per participating command.
-Cross-player conflicts remain an explicit parity gap.
+Instant commands resolve in fixed player/roster-slot order. Each Influence gang
+rolls Force plus effective Influence separately and immediately reduces the
+site's remaining resistance; later commands skip their rolls after completion.
+Chaos and Control are grouped resolvers. Control commands from one player in the
+same sector pool Force and effective Control into one non-dice comparison. Each
+Control group emits one ordered result per participating command.
+Cross-player groups in one sector evaluate against the same phase-opening owner,
+visible defenders, influenced Support, and income. A unique positive leader
+captures directly; equal positive leaders use one bounded draw in ascending
+player-slot order. At best margin zero, neutral/no-capture is the first candidate
+before every tied player. An owned sector can therefore be overthrown at most
+once per phase, and an execution-time Crackdown rejects every group. Sectors
+resolve in ascending board order, fixing the order of independent tie-break draws.
 
-Chaos is resolved across the entire subphase: one player's same-sector gangs
-share a roll, every group in a sector contributes before its crackdown state and
-payouts commit, and a new crackdown suppresses all groups in that sector. This
-phase-wide barrier is deterministic and prevents queue order from letting an
-earlier player escape suppression; accumulation/reset and original ordering are
-still provisional pending binary fixtures.
+Instant resolution snapshots every acting gang's effective statistics before
+any command mutates site influence. Heal, Research, and per-gang Influence rolls
+therefore share the phase-opening view of equipment and local sites; acquiring a
+Science Center or Research Lab cannot retroactively improve a concurrent roll.
+Mutation and event emission follow the binary player/roster-slot scan.
+
+Chaos is resolved across the entire subphase: gangs roll individually in binary
+player/roster-slot order, one player's same-sector gangs share the aggregate
+result, and every group in a sector contributes before its crackdown state and
+payouts commit. A new crackdown suppresses all groups in that sector. This
+phase-wide barrier prevents queue order from changing RNG or letting an earlier
+player escape suppression; uncontrolled payout divides the completed
+player-sector success total once.
 
 Combat also uses a phase-wide barrier. It snapshots Force, effective statistics,
 equipment class, and Hidden state for every gang; calculates all attacks and
-eligible retaliation in queue order; then commits aggregate damage. This keeps
+eligible retaliation in binary player/roster-slot order; then commits aggregate
+damage. This keeps
 an eliminated gang's simultaneous response independent of event emission order.
 Hidden attacks use an individual Detect-versus-Stealth roll and suppress
 retaliation on a hit. Cooperative sector visibility is a separate deterministic
 query shared by the Sector portrait strip and Search screen because Hide does
-not affect whether a gang is displayed. Original police/gang ordering and
-overkill attribution remain explicit binary-parity gaps.
+not affect whether a gang is displayed. The subsequent police roll pass also
+uses player/roster-slot order; overkill attribution remains a binary-parity gap.
 
 All action resolvers consume the same effective-stat projection. It adds gang
 definition, three equipment slots, and every same-sector site influenced by the
@@ -316,10 +370,13 @@ validated state reserved for future acquisition workflows; it is not silently
 used as a shop or overflow stash. Terminate clears all gang-owned equipment in
 the Movement phase.
 
-Move commits in stable queue order and enforces the six-friendly-gang capacity
-both during submission and again during resolution. Control ownership changes
-are atomic with former-owner influenced-site cleanup, Support adjustment, and
+Movement resolution runs a complete player/roster-ordered Terminate pass before
+a separate player/roster-ordered Move pass. Move enforces the six-friendly-gang
+capacity both during submission and again during resolution. Control ownership
+changes are atomic with former-owner influenced-site cleanup, Support adjustment, and
 Overthrow statistics so phase hashes cannot observe a partially captured sector.
+The binary owner-write inventory also makes ownership independent of garrison:
+moving or terminating the last friendly gang does not neutralize the sector.
 
 `MatchState.FinishUpkeep` resolves every active player in stable player-ID order
 before entering Command. Each result separates sector tax, influenced-site
@@ -365,6 +422,10 @@ $500 and all-items-researched overrides at this boundary. `OriginalMatchFactory`
 uses the recovered ascending empty-slot completion, unique portrait/name draws,
 density/site algorithm, fixed HQ candidates, Force 10 Right Hands, $20 standard
 cash, `SMGISLANDS` neutral-sector override and deferred offer initialization.
+The setup client supplies a transient ordered sparse `MatchSetup` when a human
+has moved to a non-contiguous color slot; the factory fills missing IDs in
+ascending order and returns the ordinary contiguous six-player setup before any
+authoritative state is constructed.
 Original seed and the remaining pre-city call context remain provisional pending
 a reference fixture.
 
@@ -381,16 +442,18 @@ a reference fixture.
   stable IDs, force, position, equipment,
   queued/repeat action, targets, flags and effective stats;
 - three-entry hire pool, pending hire placement and per-turn snub state per player;
-- bounded notification queues;
+- bounded notification queues and per-player 16-entry Comlink inboxes;
+- fixed-six-player AI strategy/planning state, including action/target history,
+  cooldowns, placement/formation/focus/coverage fields, and first-plan flags;
+- ordered events, phase hashes, scenario outcome, and all-scenario standings;
 - deterministic PRNG state and consumption counter.
 
-The initial schema covers setup identity, phases, players, sectors/sites, gangs,
+The current schema covers setup identity, phases, players, sectors/sites, gangs,
 hire state, persistent research progress/completion, inventory, equipment,
-statistics, command projections,
-ordered events, bounded notification queues, deterministic PRNG state, and
-phase-boundary hashes. Reference-derived resolvers remain to be added. Public
-collection projections are read-only; renderer/view models must not receive
-mutation paths.
+statistics, four-target command projections, ordered events, notifications and
+Comlink state, AI strategy/planning state, deterministic PRNG state,
+phase-boundary hashes, and match outcome. Public collection projections are
+read-only; renderer/view models must not receive mutation paths.
 
 ## Determinism boundary
 
@@ -405,9 +468,10 @@ a separate cosmetic stream.
 
 State hashes are computed from a versioned canonical little-endian binary
 encoding after transitions made through `MatchState`. The encoding includes
-definitions, setup, phase/RNG state, players, sectors, commands, and pending
-notifications. Replays store an initial native snapshot, ordered authoritative
-operations and expected state hashes.
+definitions, setup, phase/RNG state, players, sectors, four-target commands,
+events, notifications, Comlink inboxes, AI state, and match outcome. Replays
+store an initial native snapshot, ordered authoritative operations and expected
+state hashes.
 
 ## Proprietary-content boundary
 
@@ -445,30 +509,40 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
 
 ## Known architectural debt
 
-- The client now consumes authoritative `MatchState`, advances its real phase
-  coordinator, submits validated Move/Control commands, and uses deferred Hire
-  placement. F5/F9 expose atomic native quick-save/load with backup recovery in
+- The client consumes authoritative `MatchState`, advances its real phase
+  coordinator, submits every original command through Core validation, and uses
+  deferred Hire placement. F5/F9 expose atomic native quick-save/load with backup recovery in
   the user's local application-data directory; the same store writes an
   automatic recovery checkpoint after Player Elimination completes each turn.
-  All client mutations pass through `MatchReplayRecorder`; F6/F10 atomically
-  save and verify/play the current
-  replay. New matches now use the recovered density/site generator, fixed HQ
+  All client mutations pass through `MatchActions`, which applies them to the match in
+  hot-seat play and to a speculative copy plus the turn's order document online; F6/F10 atomically
+  save and verify/play the current replay, recovering the previous verified
+  generation when the primary is missing or corrupt. New matches now use the
+  recovered density/site generator, fixed HQ
   candidates, Right Hands setup and deferred initial offers; omitted local slots
   are completed as Computers with the recovered pre-city portrait/name RNG, and
-  original seed selection remains provisional.
+  original seed selection remains provisional. Local setup begins with one
+  human and supports Add/Remove, 10-character names, portrait selection, and
+  face-drag movement/exchange between the six color slots.
+- Fresh Siege setup marks the six assigned starting HQ sectors as authoritative
+  objective landmarks without consuming RNG. The city projection draws the
+  manual-described pair of gray pylons over each landmark regardless of owner.
 - The client has a title/setup/city router and virtual-coordinate mouse input,
   original next-player privacy handoff, an event/notification viewer whose
   dismissal mutations are replay-recorded, plus a state-driven endgame summary
-  on the mapped original frame, but still
-  lacks the original setup detail, AI turn driver, notification presentation
-  detail, animations and most original panels. Its command picker projects all
+  on the mapped original frame. Exact setup hit alignment and golden-screen
+  comparison remain open. Its command picker projects all
   currently legal commands from Core rather than maintaining parallel UI rules;
   its Hire panel exposes all three offers, selected-sector placement and snubbing,
   while sector/gang views project authoritative sites, influence, effective stats,
   equipment and queued commands.
-- Exact control edges and within-subphase command ordering remain provisional.
+- Remaining resolver debt is narrowly tracked in the parity matrix: original
+  seeding/call context, combat reveal and overkill attribution, police
+  notification edges, and a small set of economy/special-building boundaries.
 - Runtime manifest checking validates version only.
-- Media resources are extracted but not presented.
+- Music and mapped combat/general sound effects are presented; Smacker video
+  playback, remaining effect triggers, exact cadence/color keys, and native
+  playback validation remain open.
 
 Each item must move to the parity matrix before replacement so behavior changes
 remain traceable.

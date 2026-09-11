@@ -65,7 +65,26 @@ public sealed record GameCommand(
     GangAction Action,
     CommandTarget Target,
     bool Repeat = false,
-    CommandTarget? SecondaryTarget = null);
+    CommandTarget? SecondaryTarget = null,
+    CommandTarget? TertiaryTarget = null,
+    CommandTarget? QuaternaryTarget = null)
+{
+    /// <summary>The one-to-three exact items selected by the sell panel.</summary>
+    public IEnumerable<CommandTarget> SellTargets()
+    {
+        yield return Target;
+        if (SecondaryTarget is { } secondary) yield return secondary;
+        if (TertiaryTarget is { } tertiary) yield return tertiary;
+    }
+
+    /// <summary>The one-to-three exact items selected by the give panel.</summary>
+    public IEnumerable<CommandTarget> GiveTargets()
+    {
+        if (SecondaryTarget is { } secondary) yield return secondary;
+        if (TertiaryTarget is { } tertiary) yield return tertiary;
+        if (QuaternaryTarget is { } quaternary) yield return quaternary;
+    }
+}
 
 public sealed record QueuedCommand(long Sequence, GameCommand Command)
 {
@@ -74,7 +93,8 @@ public sealed record QueuedCommand(long Sequence, GameCommand Command)
 
 /// <summary>
 /// Deterministic command storage for a turn. Replacement receives a new sequence
-/// number, making the provisional within-phase order explicit and replayable.
+/// number for replay and for phases whose exact scheduler is not yet recovered;
+/// recovered phase resolvers may instead apply binary action/player/roster order.
 /// </summary>
 public sealed class TurnCommandQueue
 {

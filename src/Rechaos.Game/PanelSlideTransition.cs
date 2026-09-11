@@ -2,8 +2,8 @@ namespace Rechaos.Game;
 
 public sealed class PanelSlideTransition
 {
-    public static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(180);
-    public const int StartOffset = 96;
+    public static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(250);
+    public const int StartOffset = 344;
     private ClientScreen? _screen;
     private TimeSpan _started;
 
@@ -29,9 +29,11 @@ public sealed class PanelSlideTransition
     public void Clear() => _screen = null;
 
     public static bool IsPanel(ClientScreen screen) => screen is
-        ClientScreen.Options or ClientScreen.Help or ClientScreen.Commands
-        or ClientScreen.Hire or ClientScreen.Events or ClientScreen.Sector
+        ClientScreen.Options or ClientScreen.Help or ClientScreen.GameInfo or ClientScreen.Commands
+        or ClientScreen.Hire or ClientScreen.Events or ClientScreen.ComlinkView
+        or ClientScreen.ComlinkSend or ClientScreen.Sector or ClientScreen.SectorGangs
         or ClientScreen.Gang or ClientScreen.Site or ClientScreen.ItemInformation
         or ClientScreen.Finance or ClientScreen.Ranking or ClientScreen.Items
-        or ClientScreen.Give or ClientScreen.CombatSummary or ClientScreen.Search;
+        or ClientScreen.Give or ClientScreen.GiveTarget or ClientScreen.Sell
+        or ClientScreen.CombatSummary or ClientScreen.Search;
 }

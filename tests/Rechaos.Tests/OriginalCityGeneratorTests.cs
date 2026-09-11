@@ -91,6 +91,45 @@ public sealed class OriginalCityGeneratorTests
     }
 
     [Fact]
+    public void SiegeFactoryMarksAllSixStartingControlledSectorsAsImportant()
+    {
+        var data = BundledOriginalData.Load();
+        var setup = new MatchSetup(
+            ScenarioId.Siege,
+            GameDuration.SixMonths,
+            1996,
+            [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]);
+
+        var match = OriginalMatchFactory.Create(data, setup);
+        var important = match.Sectors.Where(sector => sector.IsImportant).ToArray();
+
+        Assert.Equal(MatchLimits.PlayerCount, important.Length);
+        Assert.Equal(OriginalCityGenerator.HeadquartersCandidates.Order(),
+            important.Select(sector => sector.Id).Order());
+        Assert.All(important, sector => Assert.NotNull(sector.Owner));
+        Assert.All(match.Players, player => Assert.Equal(1,
+            MatchOutcomeEvaluator.Project(match, player).ImportantSectorsControlled));
+        Assert.Null(MatchOutcomeEvaluator.Evaluate(match));
+    }
+
+    [Theory]
+    [InlineData(ScenarioId.Greed)]
+    [InlineData(ScenarioId.BigMan)]
+    [InlineData(ScenarioId.Armageddon)]
+    public void OtherScenariosDoNotReceiveSiegeLandmarks(ScenarioId scenario)
+    {
+        var match = OriginalMatchFactory.Create(
+            BundledOriginalData.Load(),
+            new MatchSetup(
+                scenario,
+                GameDuration.SixMonths,
+                1996,
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+
+        Assert.DoesNotContain(match.Sectors, sector => sector.IsImportant);
+    }
+
+    [Fact]
     public void FactoryCreatesRecoveredStartsAndPreservesConsumedRandomState()
     {
         var data = BundledOriginalData.Load();
@@ -106,7 +145,7 @@ public sealed class OriginalCityGeneratorTests
 
         Assert.Equal(MatchStateHasher.ComputeSha256(first), MatchStateHasher.ComputeSha256(second));
         Assert.Equal(
-            "c6accaa1e5e5e09f7c7791f5eab52d27ef376ee56e18f48ecf1f98d584a7f818:160916660:936",
+            "6a48db0c13f1edc0d9a5db3c392482c512dfde13a2f5653f79606249e0ac5f0c:160916660:936",
             $"{MatchStateHasher.ComputeSha256(first)}:{first.Random.State}:{first.Random.ConsumptionCount}");
         Assert.Equal(MatchLimits.PlayerCount, first.Players.Count);
         Assert.Equal(
@@ -132,6 +171,45 @@ public sealed class OriginalCityGeneratorTests
             Assert.Contains(rightHands.SectorId, OriginalCityGenerator.HeadquartersCandidates);
             Assert.Equal(player.Id, first.Sectors[rightHands.SectorId].Owner);
         });
+    }
+
+    [Fact]
+    public void FactoryFillsSparseHumanColorSlotsInAscendingOrder()
+    {
+        var setup = new MatchSetup(
+            ScenarioId.Greed,
+            GameDuration.SixMonths,
+            1996,
+            [new MatchPlayerSetup(new PlayerId(4), "FIVE", PlayerController.Human, 4)],
+            allowSparsePlayerIds: true);
+
+        var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), setup);
+
+        Assert.Equal(Enumerable.Range(0, MatchLimits.PlayerCount),
+            match.Setup.Players.Select(player => player.Id.Value));
+        Assert.Equal("FIVE", match.Setup.Players[4].Name);
+        Assert.Equal(PlayerController.Human, match.Setup.Players[4].Controller);
+        Assert.All(match.Setup.Players.Where(player => player.Id.Value != 4),
+            player => Assert.Equal(PlayerController.Computer, player.Controller));
+        Assert.Equal(MatchLimits.PlayerCount,
+            match.Setup.Players.Select(player => player.PortraitId).Distinct().Count());
+        Assert.False(match.Setup.AllowsSparsePlayerIds);
+    }
+
+    [Fact]
+    public void SparseSetupRequiresExplicitTransientOptIn()
+    {
+        MatchPlayerSetup[] player =
+            [new(new PlayerId(2), "THREE", PlayerController.Human, 2)];
+
+        Assert.Throws<ArgumentException>(() => new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1, player));
+        var sparse = new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1, player,
+            allowSparsePlayerIds: true);
+        Assert.True(sparse.AllowsSparsePlayerIds);
+        Assert.Throws<ArgumentException>(() => new MatchState(
+            BundledOriginalData.Load(), sparse, [], []));
     }
 
     [Fact]

@@ -32,10 +32,12 @@ public sealed partial class ChaosGame
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _selectedGangIndex = 0;
             _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
-            _lastAudibleEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
-            _lastAnimatedEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
+            _combatPresentationProgress.ResetTo(
+                _state.Players.Select(player => player.Id),
+                _state.Events.LastOrDefault()?.Sequence ?? -1);
             _combatAnimationPlayer.Clear();
-            _screens.Show(_state.Outcome is null ? ClientScreen.City : ClientScreen.Endgame);
+            _managementReturnScreen = ClientScreen.City;
+            _screens.Show(_state.Outcome is null ? ClientScreen.GameInfo : ClientScreen.Endgame);
             if (_state.Outcome is null) StartPlanningTimer(_inputTime);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
@@ -63,14 +65,19 @@ public sealed partial class ChaosGame
         if (_state is null) return;
         try
         {
-            _state = MatchReplayStore.LoadAndReplay(_replayPath, _state.Definitions);
+            var result = MatchReplayStore.LoadAndReplayRecoveringBackup(
+                _replayPath, _state.Definitions);
+            _state = result.State;
             _actions = new MatchActions(new MatchReplayRecorder(_state));
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
-            _message = "REPLAY VERIFIED";
-            _lastAudibleEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
-            _lastAnimatedEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
+            _message = result.RecoveredFromBackup
+                ? "BACKUP REPLAY VERIFIED"
+                : "REPLAY VERIFIED";
+            _combatPresentationProgress.ResetTo(
+                _state.Players.Select(player => player.Id),
+                _state.Events.LastOrDefault()?.Sequence ?? -1);
             _combatAnimationPlayer.Clear();
             StartPlanningTimer(_inputTime);
         }

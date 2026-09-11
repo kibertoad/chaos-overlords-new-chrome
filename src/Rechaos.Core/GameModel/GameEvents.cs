@@ -37,7 +37,9 @@ public sealed record CommandResolutionDetails(
     int? DetectionChance = null,
     int? ChanceRoll = null,
     int? ChanceSides = null,
-    short? RetaliationItemId = null);
+    short? RetaliationItemId = null,
+    IReadOnlyList<short>? ItemIds = null,
+    IReadOnlyList<short>? ReplacedItemIds = null);
 
 public sealed record EconomyResolutionDetails(
     int PreviousCash,
@@ -100,6 +102,8 @@ public sealed record GameEvent(
     GangAction Action,
     CommandTarget Target,
     CommandTarget? SecondaryTarget = null,
+    CommandTarget? TertiaryTarget = null,
+    CommandTarget? QuaternaryTarget = null,
     CommandResolutionDetails? Resolution = null,
     EconomyResolutionDetails? Economy = null,
     HireResolutionDetails? Hire = null,

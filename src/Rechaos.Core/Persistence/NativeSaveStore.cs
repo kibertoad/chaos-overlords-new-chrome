@@ -30,9 +30,21 @@ public static class NativeSaveStore
                 stream.Flush(flushToDisk: true);
             }
 
-            if (File.Exists(fullPath))
-                File.Copy(fullPath, fullPath + BackupSuffix, overwrite: true);
-            File.Move(temporaryPath, fullPath, overwrite: true);
+            // Do not promote bytes that cannot be read back, and never replace a
+            // known-good backup with a corrupt current file.
+            _ = Load(temporaryPath, state.Definitions);
+            if (!File.Exists(fullPath))
+            {
+                File.Move(temporaryPath, fullPath);
+            }
+            else if (IsValid(fullPath, state.Definitions))
+            {
+                File.Replace(temporaryPath, fullPath, fullPath + BackupSuffix);
+            }
+            else
+            {
+                File.Move(temporaryPath, fullPath, overwrite: true);
+            }
         }
         finally
         {
@@ -61,6 +73,19 @@ public static class NativeSaveStore
             var backupPath = Path.GetFullPath(path) + BackupSuffix;
             if (!File.Exists(backupPath)) throw;
             return new NativeSaveLoadResult(Load(backupPath, definitions), true);
+        }
+    }
+
+    private static bool IsValid(string path, OriginalData definitions)
+    {
+        try
+        {
+            _ = Load(path, definitions);
+            return true;
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException)
+        {
+            return false;
         }
     }
 }

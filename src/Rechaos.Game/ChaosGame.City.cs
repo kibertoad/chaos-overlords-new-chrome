@@ -8,10 +8,14 @@ namespace Rechaos.Game;
 public sealed partial class ChaosGame
 {
     private static readonly Rectangle CityDone = new(492, 278, 106, 54);
+    private static readonly Rectangle CityGameInfo = new(588, 40, 30, 54);
     private static readonly Rectangle CityEvents = new(492, 124, 50, 51);
+    private static readonly Rectangle CityComlinkView = new(548, 124, 50, 25);
+    private static readonly Rectangle CityComlinkSend = new(548, 150, 50, 25);
     private static readonly Rectangle CityCombatSummary = new(492, 176, 50, 49);
-    private static readonly Rectangle CityFinance = new(548, 176, 50, 49);
-    private static readonly Rectangle CityGangs = new(492, 226, 50, 17);
+    private static readonly Rectangle CityFinanceCity = new(548, 176, 50, 32);
+    private static readonly Rectangle CityFinanceSector = new(548, 208, 50, 17);
+    private static readonly Rectangle CityGangs = new(492, 226, 50, 34);
     private static readonly Rectangle CityHire = new(492, 260, 50, 17);
     private static readonly Rectangle CitySector = new(548, 226, 50, 17);
     private static readonly Rectangle CityRanking = new(548, 243, 50, 17);
@@ -33,12 +37,15 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.C)) OpenCommands();
         if (Pressed(keyboard, Keys.G)) CycleGang(1);
         if (Pressed(keyboard, Keys.I)) _screens.Show(ClientScreen.Sector);
-        if (Pressed(keyboard, Keys.F)) _screens.Show(ClientScreen.Finance);
+        if (Pressed(keyboard, Keys.F)) OpenFinance(FinanceScope.City, ClientScreen.City);
         if (Pressed(keyboard, Keys.R)) _screens.Show(ClientScreen.Ranking);
         if (Pressed(keyboard, Keys.T)) OpenItems();
-        if (Pressed(keyboard, Keys.B)) _screens.Show(ClientScreen.CombatSummary);
-        if (Pressed(keyboard, Keys.X)) _screens.Show(ClientScreen.Search);
+        if (Pressed(keyboard, Keys.B)) OpenCombatResults(ClientScreen.City);
+        if (Pressed(keyboard, Keys.X)) OpenSiteSearch(ClientScreen.City);
         if (Pressed(keyboard, Keys.H)) OpenHire();
+        if (Pressed(keyboard, Keys.M)) OpenComlinkView(ClientScreen.City);
+        if (Pressed(keyboard, Keys.N)) OpenComlinkSend(ClientScreen.City);
+        if (Pressed(keyboard, Keys.J)) OpenManagement(ClientScreen.GameInfo, ClientScreen.City);
         if (Pressed(keyboard, Keys.Space)) AdvanceTurn();
         // Saving and loading belong to a match this client owns. Online the authoritative state is
         // the sealed one, so loading would put the interface on a match nobody else is playing while
@@ -96,15 +103,19 @@ public sealed partial class ChaosGame
 
     private bool HandleCityConsoleClick(Point point, ClientScreen returnScreen)
     {
-        if (CityDone.Contains(point)) AdvanceTurn();
-        else if (CityEvents.Contains(point)) OpenManagement(ClientScreen.Events, returnScreen);
-        else if (CityCombatSummary.Contains(point)) OpenManagement(ClientScreen.CombatSummary, returnScreen);
-        else if (CityFinance.Contains(point)) OpenManagement(ClientScreen.Finance, returnScreen);
-        else if (CityGangs.Contains(point)) OpenSelectedGangDetails(returnScreen);
+        if (CityGameInfo.Contains(point)) OpenManagement(ClientScreen.GameInfo, returnScreen);
+        else if (CityDone.Contains(point)) AdvanceTurn();
+        else if (CityEvents.Contains(point)) OpenEvents(returnScreen);
+        else if (CityComlinkView.Contains(point)) OpenComlinkView(returnScreen);
+        else if (CityComlinkSend.Contains(point)) OpenComlinkSend(returnScreen);
+        else if (CityCombatSummary.Contains(point)) OpenCombatResults(returnScreen);
+        else if (CityFinanceCity.Contains(point)) OpenFinance(FinanceScope.City, returnScreen);
+        else if (CityFinanceSector.Contains(point)) OpenFinance(FinanceScope.Sector, returnScreen);
+        else if (CityGangs.Contains(point)) OpenSectorGangDetails(returnScreen);
         else if (CityHire.Contains(point)) OpenHire(returnScreen);
         else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
         else if (CityRanking.Contains(point)) OpenManagement(ClientScreen.Ranking, returnScreen);
-        else if (CitySearch.Contains(point)) OpenManagement(ClientScreen.Search, returnScreen);
+        else if (CitySearch.Contains(point)) OpenSiteSearch(returnScreen);
         else return false;
         return true;
     }
@@ -112,9 +123,13 @@ public sealed partial class ChaosGame
     private void OpenManagement(ClientScreen screen, ClientScreen returnScreen)
     {
         _managementReturnScreen = returnScreen;
-        if (screen == ClientScreen.CombatSummary) _combatSummaryCursor = 0;
-        if (screen == ClientScreen.Events) _eventCursor = 0;
         _screens.Show(screen);
+    }
+
+    private void OpenFinance(FinanceScope scope, ClientScreen returnScreen)
+    {
+        _financeScope = scope;
+        OpenManagement(ClientScreen.Finance, returnScreen);
     }
 
     private void DrawBoard(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
@@ -138,14 +153,18 @@ public sealed partial class ChaosGame
                 batch.Draw(pixel, destination, sector.Owner is { } owner
                     ? PlayerColors[owner.Value] * .68f
                     : new Color(24, 37, 39));
+            if (state.Setup.Scenario == ScenarioId.Siege && sector.IsImportant)
+                DrawSiegePylons(batch, pixel, index);
             if (sector.CrackdownActive && _policeSprites is not null)
                 batch.Draw(
                     _policeSprites,
                     new Rectangle(destination.X + 14, destination.Y + 10, 27, 32),
                     OriginalSpriteLayout.PolicePatrolCar,
                     Color.White);
-            if (index == _cursor) DrawBorder(batch, pixel, destination, Color.Gold, 2);
         }
+        foreach (var sectorId in SiteSearchProjection.MatchingSectors(state, _siteSearchApplied))
+            DrawBorder(batch, pixel, CityMapLayout.Destination(sectorId), Color.Cyan, 1);
+        DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
         foreach (var gangs in player.Gangs.Where(gang => gang.IsActive).GroupBy(gang => gang.SectorId))
             DrawGangStatusMarker(batch, gangs.Key,
                 gangs.Any(gang => gang.QueuedCommand is not null)
@@ -174,7 +193,7 @@ public sealed partial class ChaosGame
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.CashY);
         DrawPanelValue(font, batch, SectorCode(_cursor),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(0));
-        DrawPanelValue(font, batch, $"${SectorSiteIncome(state, selectedSector)}",
+        DrawPanelValue(font, batch, $"${SectorIncome(selectedSector)}",
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(1));
         DrawPanelValue(font, batch, selectedSector.Tolerance,
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(2));
@@ -184,6 +203,14 @@ public sealed partial class ChaosGame
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(4));
         font.Draw(batch, _message.Length <= 32 ? _message : _message[..32],
             new Vector2(438, 354), Color.Gold, 1);
+        if (state.Coordinator.ActivePlayer is { } reportPlayer
+            && LastTurnReports(state, reportPlayer).Count > 0
+            && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)
+            DrawBorder(batch, pixel, CityEvents, Color.Yellow, 2);
+        if (state.Coordinator.ActivePlayer is { } activePlayer
+            && state.ComlinkFor(activePlayer).HasUnread
+            && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)
+            DrawBorder(batch, pixel, CityComlinkView, Color.Yellow, 2);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
         {
@@ -205,6 +232,17 @@ public sealed partial class ChaosGame
     {
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, GangStatusMarkerLayout.Destination(sectorId), source, Color.White);
+    }
+
+    private static void DrawSiegePylons(SpriteBatch batch, Texture2D pixel, int sectorId)
+    {
+        foreach (var pylon in SiegePylonLayout.ForSector(sectorId))
+        {
+            batch.Draw(pixel, new Rectangle(pylon.X - 1, pylon.Y, pylon.Width + 2, 2), Color.LightGray);
+            batch.Draw(pixel, pylon, Color.Gray);
+            batch.Draw(pixel, new Rectangle(
+                pylon.X + 1, pylon.Y + 2, pylon.Width - 2, pylon.Height - 3), Color.LightGray);
+        }
     }
 
     private void MoveCursor(int dx, int dy)
@@ -243,7 +281,7 @@ public sealed partial class ChaosGame
             : result.Validation.Message.ToUpperInvariant();
     }
 
-    private static int SectorSiteIncome(MatchState state, MatchSectorState sector) => sector.Income;
+    private static int SectorIncome(MatchSectorState sector) => sector.Income;
 
     private static string SectorCode(int sectorId) =>
         $"{(char)('A' + sectorId % MatchLimits.BoardWidth)}{sectorId / MatchLimits.BoardWidth + 1}";

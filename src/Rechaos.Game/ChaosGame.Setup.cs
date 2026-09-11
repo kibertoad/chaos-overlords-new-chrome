@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 
@@ -11,30 +12,113 @@ public sealed partial class ChaosGame
     {
         var count = ScenarioCatalog.All.Count;
         _selectedScenario = ScenarioCatalog.All[Mod((int)_selectedScenario + delta, count)].Id;
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
     }
 
     private void ChangeDuration(int delta)
     {
         _selectedDuration = Durations[Mod(Array.IndexOf(Durations, _selectedDuration) + delta, Durations.Length)];
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
     }
 
-    private void ChangePlayerCount(int delta)
+    private void ChangePlayerCount(int delta, bool pointerButton = false)
     {
-        var previous = _selectedPlayerCount;
-        _selectedPlayerCount = Math.Clamp(_selectedPlayerCount + delta, 1, MatchLimits.PlayerCount);
-        PlayGeneralSound(previous == _selectedPlayerCount ? 4 : 3);
-        for (var index = previous; index < _selectedPlayerCount; index++)
-            _computerPlayers[index] = true;
+        var changed = delta switch
+        {
+            > 0 => _localSetupRoster.AddHuman() is not null,
+            < 0 => RemoveSetupHuman(),
+            _ => false
+        };
+        if (AudioRouting.PlayerCountResultSound(
+                changed, pointerButton) is { } slot)
+            PlayGeneralSound(slot);
     }
 
-    private void ToggleController(int index)
+    private bool RemoveSetupHuman()
     {
-        if (index < 0 || index >= _selectedPlayerCount) return;
-        _computerPlayers[index] = !_computerPlayers[index];
-        PlayGeneralSound(3);
-        _message = $"PLAYER {index + 1} {(_computerPlayers[index] ? "COMPUTER" : "HUMAN")}";
+        if (_localSetupRoster.RemoveLastHuman() is not { } removed) return false;
+        if (_editingPlayerName == removed) FinishSetupNameEdit(cancel: true);
+        return true;
+    }
+
+    private void BeginSetupButton(SetupPushButton button)
+    {
+        _pressedSetupButton = button;
+        PlayGeneralSound(GeneralSoundSlot.ButtonPress);
+    }
+
+    private void CompleteSetupButton(Point point)
+    {
+        var pressed = _pressedSetupButton;
+        _pressedSetupButton = null;
+        if (_screens.Current != ClientScreen.Setup
+            || pressed is null
+            || SetupButtonLayout.HitTest(point) != pressed)
+            return;
+        switch (pressed)
+        {
+            case SetupPushButton.AddPlayer:
+                ChangePlayerCount(1, pointerButton: true);
+                break;
+            case SetupPushButton.RemovePlayer:
+                ChangePlayerCount(-1, pointerButton: true);
+                break;
+            case SetupPushButton.Start:
+                StartMatch();
+                break;
+            case SetupPushButton.Back:
+                _screens.Show(ClientScreen.Title);
+                break;
+        }
+    }
+
+    private void BeginSetupNameEdit(int index)
+    {
+        if (!_localSetupRoster.IsHuman(index)) return;
+        if (_editingPlayerName is not null) FinishSetupNameEdit(cancel: false);
+        _editingPlayerName = index;
+        _setupOriginalName = _playerNames[index];
+        _setupNameEditor.Begin(_playerNames[index]);
+        _message = "TYPE NAME  ENTER ACCEPTS  ESC CANCELS";
+    }
+
+    private void UpdateSetupName(KeyboardState keyboard)
+    {
+        if (_editingPlayerName is null) return;
+        if (Pressed(keyboard, Keys.Escape))
+        {
+            FinishSetupNameEdit(cancel: true);
+            return;
+        }
+        if (Pressed(keyboard, Keys.Enter))
+        {
+            FinishSetupNameEdit(cancel: false);
+            return;
+        }
+        if (Pressed(keyboard, Keys.Back))
+        {
+            _setupNameEditor.Backspace();
+            return;
+        }
+
+        var shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
+        foreach (var key in keyboard.GetPressedKeys())
+        {
+            if (_previousKeyboard.IsKeyDown(key)) continue;
+            if (OriginalTextInput.TryCharacter(key, shift, out var character))
+                _setupNameEditor.TryAppend(character);
+        }
+    }
+
+    private void FinishSetupNameEdit(bool cancel)
+    {
+        if (_editingPlayerName is not { } index) return;
+        var entered = _setupNameEditor.Text.Trim();
+        _playerNames[index] = cancel
+            ? _setupOriginalName
+            : entered.Length == 0 ? LocalSetupPolicy.DefaultPlayerName(index) : entered;
+        _editingPlayerName = null;
+        _message = cancel ? "NAME CHANGE CANCELLED" : $"PLAYER {index + 1} NAME SET";
     }
 
     private void CycleDifficulty()
@@ -42,46 +126,90 @@ public sealed partial class ChaosGame
         var values = Enum.GetValues<AiDifficulty>();
         _selectedAiMentality = values[Mod(
             Array.IndexOf(values, _selectedAiMentality) + 1, values.Length)];
-        PlayGeneralSound(3);
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"AI MENTALITY {DifficultyPresentation.Label(_selectedAiMentality)}";
     }
 
     private void SelectDifficulty(AiDifficulty difficulty)
     {
-        if (_selectedAiMentality != difficulty) PlayGeneralSound(3);
+        if (_selectedAiMentality != difficulty)
+            PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _selectedAiMentality = difficulty;
         _message = $"AI MENTALITY {DifficultyPresentation.Label(difficulty)}";
     }
 
     private void CyclePortrait(int player, int delta)
     {
-        if (player < 0 || player >= _selectedPlayerCount) return;
+        if (!_localSetupRoster.IsHuman(player)) return;
         _playerPortraits[player] = checked((short)Mod(
-            _playerPortraits[player] + delta, PlayerPortraitLayout.Count));
-        PlayGeneralSound(3);
+            _playerPortraits[player] + delta, PlayerPortraitLayout.SelectableCount));
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"PLAYER {player + 1} PORTRAIT {_playerPortraits[player] + 1}";
     }
 
-    private static Rectangle SetupPlayerSlot(int index) =>
-        new(368 + index % 2 * 96, 120 + index / 2 * 64, 94, 54);
+    private void BeginSetupPlayerDrag(int player, Point point)
+    {
+        if (!_localSetupRoster.IsHuman(player)) return;
+        _draggedSetupPlayerSlot = player;
+        _setupPlayerPressPoint = point;
+        _dragPoint = point;
+        _setupPlayerDragStarted = false;
+    }
+
+    private void CompleteSetupPlayerDrag(Point point)
+    {
+        if (_draggedSetupPlayerSlot is not { } source)
+        {
+            CancelSetupPlayerDrag();
+            return;
+        }
+        var target = Enumerable.Range(0, MatchLimits.PlayerCount)
+            .FirstOrDefault(index => PlayerPortraitLayout.SetupLarge(index).Contains(point), -1);
+        var result = _localSetupRoster.MoveHuman(source, target);
+        if (result is LocalSetupMoveResult.MovedToEmptyColor
+            or LocalSetupMoveResult.ExchangedHumanColors)
+        {
+            (_playerNames[source], _playerNames[target]) =
+                (_playerNames[target], _playerNames[source]);
+            (_playerPortraits[source], _playerPortraits[target]) =
+                (_playerPortraits[target], _playerPortraits[source]);
+            PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+            _message = result == LocalSetupMoveResult.ExchangedHumanColors
+                ? "PLAYER COLORS EXCHANGED"
+                : $"PLAYER MOVED TO COLOR {target + 1}";
+        }
+        else if (result == LocalSetupMoveResult.Invalid)
+        {
+            PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+            _message = "DROP ON A PLAYER COLOR";
+        }
+        CancelSetupPlayerDrag();
+    }
+
+    private void CancelSetupPlayerDrag()
+    {
+        _draggedSetupPlayerSlot = null;
+        _setupPlayerDragStarted = false;
+    }
 
     private void StartMatch()
     {
         if (_definitions is null) return;
-        var players = Enumerable.Range(0, _selectedPlayerCount)
-            .Select(index => new MatchPlayerSetup(
-                new PlayerId(index), $"PLAYER {index + 1}",
-                _computerPlayers[index] ? PlayerController.Computer : PlayerController.Human,
-                _playerPortraits[index]))
+        var players = _localSetupRoster.HumanSlots.Order()
+            .Select(slot => new MatchPlayerSetup(
+                new PlayerId(slot), _playerNames[slot],
+                PlayerController.Human,
+                _playerPortraits[slot]))
             .ToArray();
         var setup = new MatchSetup(
-            _selectedScenario, _selectedDuration, Environment.TickCount, players, _selectedAiMentality);
+            _selectedScenario, _selectedDuration, Environment.TickCount, players,
+            _selectedAiMentality, allowSparsePlayerIds: true);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>
         {
             ["scenario"] = _selectedScenario.ToString(),
             ["duration"] = _selectedDuration.ToString(),
-            ["configuredPlayers"] = _selectedPlayerCount.ToString(),
-            ["computerPlayers"] = players.Count(player => player.Controller == PlayerController.Computer).ToString(),
+            ["configuredPlayers"] = _localSetupRoster.Count.ToString(),
+            ["computerPlayers"] = "0",
             ["mentality"] = _selectedAiMentality.ToString(),
             ["seed"] = setup.InitialSeed.ToString()
         });
@@ -92,10 +220,12 @@ public sealed partial class ChaosGame
         _cursor = _state.Players[0].Gangs[0].SectorId;
         _selectedGangIndex = 0;
         _message = _debugPhaseStepping ? "ADVANCE UPKEEP TO BEGIN" : "PLAN YOUR TURN";
-        _lastAudibleEventSequence = -1;
-        _lastAnimatedEventSequence = -1;
+        _combatPresentationProgress.Clear();
         _combatAnimationPlayer.Clear();
-        _screens.Show(ClientScreen.City);
+        _managementReturnScreen = ClientScreen.City;
+        _screens.Show(GameInformationPresentation.OpensAtNewGame(_state.Setup)
+            ? ClientScreen.GameInfo
+            : ClientScreen.City);
         StartPlanningTimer(_inputTime);
     }
 
@@ -126,16 +256,24 @@ public sealed partial class ChaosGame
             batch.Draw(_setupBackground, new Rectangle(0, 0, 640, 460), Color.White);
         else
             batch.Draw(pixel, new Rectangle(70, 52, 500, 384), new Color(0, 0, 0, 220));
+        if (_setupControls is not null
+            && _pressedSetupButton is { } pressed
+            && _hoverPoint is { } buttonHover
+            && SetupButtonLayout.HitTest(buttonHover) == pressed)
+            batch.Draw(_setupControls, SetupButtonLayout.Destination(pressed),
+                SetupButtonLayout.PressedSource(pressed), Color.White);
         DrawBorder(batch, pixel, SetupScenarios[(int)_selectedScenario], Color.Gold, 2);
         DrawBorder(batch, pixel, SetupDurations[Array.IndexOf(Durations, _selectedDuration)], Color.Gold, 2);
         for (var index = 0; index < MatchLimits.PlayerCount; index++)
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
                     OriginalSpriteLayout.OverlordPortrait(
-                        index < _selectedPlayerCount ? _playerPortraits[index] : PlayerPortraitLayout.Count - 1),
+                        _localSetupRoster.IsHuman(index)
+                            ? _playerPortraits[index]
+                            : PlayerPortraitLayout.Count - 1),
                     Color.White);
-        font.Draw(batch, $"PLAYERS {_selectedPlayerCount}", new Vector2(376, 306), Color.White, 1);
-        for (var index = 0; index < _selectedPlayerCount; index++)
+        font.Draw(batch, $"PLAYERS {_localSetupRoster.Count}", new Vector2(376, 306), Color.White, 1);
+        foreach (var index in _localSetupRoster.HumanSlots)
         {
             var portrait = PlayerPortraitLayout.SetupLarge(index);
             if (_uiSprites is not null)
@@ -144,8 +282,22 @@ public sealed partial class ChaosGame
             DrawBorder(batch, pixel, portrait, PlayerColors[index], 1);
             DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Previous(index), left: true, Color.Lime);
             DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Next(index), left: false, Color.Lime);
-            var label = $"P{index + 1} {(_computerPlayers[index] ? "CPU" : "HUMAN")}";
-            font.Draw(batch, label, new Vector2(portrait.X, portrait.Bottom + 2), PlayerColors[index], 1);
+            var label = _editingPlayerName == index
+                ? _setupNameEditor.Text + ((int)(_inputTime.TotalMilliseconds / 350) % 2 == 0 ? "_" : "")
+                : _playerNames[index];
+            var name = PlayerPortraitLayout.Name(index);
+            font.Draw(batch, label, new Vector2(name.X, name.Y), PlayerColors[index], 1);
+        }
+        if (_setupPlayerDragStarted && _draggedSetupPlayerSlot is { } dragged
+            && _uiSprites is not null)
+        {
+            var token = new Rectangle(_dragPoint.X - 24, _dragPoint.Y - 24, 48, 48);
+            batch.Draw(_uiSprites, token,
+                OriginalSpriteLayout.OverlordPortrait(_playerPortraits[dragged]), Color.White);
+            if (Enumerable.Range(0, MatchLimits.PlayerCount).FirstOrDefault(
+                    index => PlayerPortraitLayout.SetupLarge(index).Contains(_dragPoint), -1) is { } target
+                && target >= 0)
+                DrawBorder(batch, pixel, PlayerPortraitLayout.SetupLarge(target), Color.Lime, 2);
         }
         DrawBorder(batch, pixel, SetupAiMentalities[(int)_selectedAiMentality], Color.Gold, 2);
         DrawBorder(batch, pixel,

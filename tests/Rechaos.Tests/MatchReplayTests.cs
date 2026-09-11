@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
@@ -9,6 +10,37 @@ namespace Rechaos.Tests;
 
 public sealed class MatchReplayTests
 {
+    /// <summary>
+    /// The operation kind is serialized as its number, so a stored replay reads whatever member
+    /// happens to sit at that ordinal today. Adding one is safe; moving one silently reinterprets
+    /// every replay already on disk, which is why the whole order is pinned rather than the count.
+    /// </summary>
+    [Fact]
+    public void OperationKindOrdinalsAreStableOnTheWire()
+    {
+        Assert.Equal(
+            new[]
+            {
+                (ReplayOperationKind.SubmitCommand, 0),
+                (ReplayOperationKind.CancelCommand, 1),
+                (ReplayOperationKind.QueueHire, 2),
+                (ReplayOperationKind.SnubHireOffer, 3),
+                (ReplayOperationKind.FinishUpkeep, 4),
+                (ReplayOperationKind.FinishCommand, 5),
+                (ReplayOperationKind.FinishExecutionPhase, 6),
+                (ReplayOperationKind.FinishHire, 7),
+                (ReplayOperationKind.FinishPlayerElimination, 8),
+                (ReplayOperationKind.DismissNotification, 9),
+                (ReplayOperationKind.PrepareHireOffers, 10),
+                (ReplayOperationKind.PrepareAiPlanning, 11),
+                (ReplayOperationKind.PrepareAiHiring, 12),
+                (ReplayOperationKind.SendComlinkMessage, 13),
+                (ReplayOperationKind.MarkComlinkRead, 14),
+                (ReplayOperationKind.PrepareSimultaneousHireOffers, 15)
+            },
+            Enum.GetValues<ReplayOperationKind>().Select(kind => (kind, (int)kind)));
+    }
+
     [Fact]
     public void ReplaysAcceptedRejectedAndPhaseOperationsToIdenticalState()
     {
@@ -35,16 +67,40 @@ public sealed class MatchReplayTests
         var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
 
         Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
-        Assert.Equal(recorder.State.Events, restored.Events);
+        Assert.Equal(
+            JsonSerializer.Serialize(recorder.State.Events),
+            JsonSerializer.Serialize(restored.Events));
         Assert.Equal(recorder.State.PhaseHashes, restored.PhaseHashes);
         Assert.Equal(16, recorder.Steps.Count);
     }
 
     [Fact]
+    public void ReplaysComlinkDeliveryAndReadState()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch(secondPlayerHuman: true));
+        recorder.FinishUpkeep();
+        Assert.True(recorder.SendComlinkMessage(
+            new PlayerId(0), [new PlayerId(1)], "TRUCE?").Accepted);
+        Assert.True(recorder.MarkComlinkRead(new PlayerId(1)));
+
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
+
+        Assert.Equal(recorder.State.ComlinkFor(new PlayerId(1)).Messages,
+            restored.ComlinkFor(new PlayerId(1)).Messages);
+        Assert.False(restored.ComlinkFor(new PlayerId(1)).HasUnread);
+        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void ReplaysCrackdownTriggerCountdownAndFollowingPoliceCombat()
     {
-        var recorder = new MatchReplayRecorder(CreateMatch(negativeTolerance: true));
+        var recorder = new MatchReplayRecorder(CreateMatch());
         recorder.FinishUpkeep();
+        Assert.True(recorder.Submit(new GameCommand(
+            new PlayerId(0), new GangId(0), GangAction.Chaos, CommandTarget.None)).Accepted);
         FinishCommands(recorder);
         while (recorder.State.Coordinator.Phase == TurnPhase.Execution)
             recorder.FinishExecutionPhase();
@@ -71,7 +127,9 @@ public sealed class MatchReplayTests
         Assert.Equal(recorder.State.Sectors[0].CrackdownTurnsRemaining,
             restored.Sectors[0].CrackdownTurnsRemaining);
         Assert.Equal(recorder.State.Sectors[0].CrackdownHistory, restored.Sectors[0].CrackdownHistory);
-        Assert.Equal(recorder.State.Events, restored.Events);
+        Assert.Equal(
+            JsonSerializer.Serialize(recorder.State.Events),
+            JsonSerializer.Serialize(restored.Events));
     }
 
     [Fact]
@@ -170,12 +228,21 @@ public sealed class MatchReplayTests
         Assert.Equal(new AiActionTarget(1, 1), OriginalAiActionTargetEncoding.Encode(state,
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Give,
                 CommandTarget.Gang(new GangId(50)), SecondaryTarget: CommandTarget.Item(weapon))));
+        Assert.Equal(new AiActionTarget(7, 1), OriginalAiActionTargetEncoding.Encode(state,
+            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Give,
+                CommandTarget.Gang(new GangId(50)), SecondaryTarget: CommandTarget.Item(weapon),
+                TertiaryTarget: CommandTarget.Item(armor),
+                QuaternaryTarget: CommandTarget.Item(miscellaneous))));
         Assert.Equal(new AiActionTarget(2, 0), OriginalAiActionTargetEncoding.Encode(state,
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Sell,
                 CommandTarget.Item(armor))));
         Assert.Equal(new AiActionTarget(4, 0), OriginalAiActionTargetEncoding.Encode(state,
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Sell,
                 CommandTarget.Item(miscellaneous))));
+        Assert.Equal(new AiActionTarget(7, 0), OriginalAiActionTargetEncoding.Encode(state,
+            new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Sell,
+                CommandTarget.Item(weapon), SecondaryTarget: CommandTarget.Item(armor),
+                TertiaryTarget: CommandTarget.Item(miscellaneous))));
         Assert.Equal(AiActionTarget.None, OriginalAiActionTargetEncoding.Encode(state,
             new GameCommand(computer.Id, computer.Gangs[0].Id, GangAction.Hide, CommandTarget.None)));
     }
@@ -495,6 +562,64 @@ public sealed class MatchReplayTests
         }
     }
 
+    [Fact]
+    public void AtomicReplayStoreRecoversPreviousValidGeneration()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-replay-tests", Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(directory, "match.rchreplay");
+        try
+        {
+            var recorder = new MatchReplayRecorder(CreateMatch());
+            recorder.FinishUpkeep();
+            MatchReplayStore.SaveAtomic(path, recorder);
+            var previousHash = MatchStateHasher.ComputeSha256(recorder.State);
+            recorder.FinishCommand(new PlayerId(0));
+            MatchReplayStore.SaveAtomic(path, recorder);
+            File.WriteAllText(path, "corrupt");
+
+            var recovered = MatchReplayStore.LoadAndReplayRecoveringBackup(
+                path, recorder.State.Definitions);
+
+            Assert.True(recovered.RecoveredFromBackup);
+            Assert.Equal(previousHash, MatchStateHasher.ComputeSha256(recovered.State));
+            Assert.Empty(Directory.EnumerateFiles(directory, "*.tmp"));
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void AtomicReplayStorePreservesGoodBackupWhenCurrentReplayIsCorrupt()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "rechaos-replay-tests", Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(directory, "match.rchreplay");
+        try
+        {
+            var recorder = new MatchReplayRecorder(CreateMatch());
+            recorder.FinishUpkeep();
+            MatchReplayStore.SaveAtomic(path, recorder);
+            recorder.FinishCommand(new PlayerId(0));
+            MatchReplayStore.SaveAtomic(path, recorder);
+            var backupHash = MatchStateHasher.ComputeSha256(MatchReplayStore.LoadAndReplay(
+                path + MatchReplayStore.BackupSuffix, recorder.State.Definitions));
+            File.WriteAllText(path, "corrupt");
+
+            recorder.FinishCommand(new PlayerId(1));
+            MatchReplayStore.SaveAtomic(path, recorder);
+
+            Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(
+                MatchReplayStore.LoadAndReplay(path, recorder.State.Definitions)));
+            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(MatchReplayStore.LoadAndReplay(
+                path + MatchReplayStore.BackupSuffix, recorder.State.Definitions)));
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static void AdvanceToHire(MatchState state)
     {
         state.FinishUpkeep();
@@ -516,14 +641,15 @@ public sealed class MatchReplayTests
     }
 
     private static MatchState CreateMatch(
-        bool negativeTolerance = false,
-        string firstPlayerName = "ONE")
+        string firstPlayerName = "ONE",
+        bool secondPlayerHuman = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
         [
             new(new PlayerId(0), firstPlayerName, PlayerController.Human),
-            new(new PlayerId(1), "TWO", PlayerController.Computer)
+            new(new PlayerId(1), "TWO",
+                secondPlayerHuman ? PlayerController.Human : PlayerController.Computer)
         ];
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, playerSetups);
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
@@ -533,7 +659,7 @@ public sealed class MatchReplayTests
                     id is 0 or 63 ? 0 : 7),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ], tolerance: id == 0 && negativeTolerance ? -2 : ManualRules.MinimumTolerance))
+            ], tolerance: ManualRules.MinimumTolerance))
             .ToArray();
         return MatchBootstrap.Create(data, setup, sectors,
         [

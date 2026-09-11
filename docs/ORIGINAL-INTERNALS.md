@@ -161,9 +161,23 @@ transitions on each supported native platform.
 five-digit sound resource ID. Title initialization at `0x00460ccf` loads slots
 0-4 from `SND00200`-`SND00204`, skips slot 5, and loads slots 6-9 from
 `SND00205`-`SND00208`. The gated wrapper at `0x00464290` plays a loaded slot
-only while byte `0x0048783c` enables effects. In both the title handler at
-`0x0040b9c0` and setup handler at `0x0040e0a0`, accepted selector-arrow input
-plays slot 3 while rejected input plays slot 4.
+only while byte `0x0048783c` enables effects. In both compact player-setup
+handler `0x0040b9c0` and full local-setup handler `0x0040e0a0`, accepted
+selector-arrow input plays slot 3 while rejected input plays slot 4. The image
+loader wrapper at `0x00464108` independently identifies these screens: their
+calls at `0x0040bc2e` and `0x0040e150` load `PX00145` and `PX00143`
+respectively. Separate handlers `0x004677f0` and `0x00456f80` load `PX00144`
+and `PX00146`; the four resources are distinct flows, not local-player-count
+variants selected by one presenter.
+
+The four-case compact-setup helper at `0x0040cba5` and full-setup helper at `0x0040eb5f`
+draw a depressed push-button image, call slot 2 once, track whether the pointer
+remains inside while the left button is held, restore the released image when
+it leaves, and return whether release occurred inside. The setup destinations
+match Add Player `(370,328)-(462,352)`, Remove Player `(468,328)-(560,352)`,
+Start `(370,375)-(462,420)`, and Back `(468,375)-(560,420)`. If Add or Remove
+cannot change the player count, the caller additionally plays rejected-input
+slot 4 after the slot-2 press cue.
 
 The Options application helper at `0x004652a0` reads effect level byte
 `0x00487864`, enables effects when it is nonzero, and passes `level * 25` to
@@ -176,58 +190,178 @@ byte `0x00487868` starts at level 5 (32,000 per channel). The original Help
 describes each independent slider as having a Medium default but does not assign
 that label a number.
 
-**Interpretation:** Slots 3 and 4 are the general accepted-selection and
-rejected-input cues. Music and effects share the same numeric conversion but
-have separate state and enable flags.
+The panel-entry helper at `0x0041953e` is called by 23 original panel handlers.
+It plays slot 0 immediately before its right-to-left copy loop, but only while
+the Slide Panels preference byte at `0x00487840` is enabled. The matching exit
+helper at `0x004196f5` has the same 23 callers and plays slot 1 before its
+left-to-right copy loop under the same preference gate. Disabling Slide Panels
+therefore suppresses both the motion and its paired cue; these are not generic
+ungated dialog sounds.
 
-**Confidence:** High static evidence for slot/resource mapping, setup/title cue
-roles, scale, enable boundary, initialized levels, and channel values; High
-manual evidence for the independent controls. Other slot semantics remain
-partially classified.
+Detailed Combat at `0x0042e040` temporarily reuses otherwise-empty slot 5 for
+each combatant. An equipped attack loads resource `500 + Item.Sound`. An
+unarmed attack loads `SND00500`, or `SND00501` when the attacking gang's base
+Martial Arts value is positive. A detected police attack loads `SND00518`;
+undetected police attacks have no presentation. The evasion sentinel does not
+load a valid attack sound. The timeline at `0x00430c23` calls the gated slot-5
+wrapper immediately before advancing frames, and the presenter unloads slot 5
+after that combatant's sequence.
+
+**Interpretation:** Slots 0 and 1 are the Slide Panels entry and exit cues.
+Slot 2 is the general push-button press cue; slots 3 and 4
+are the accepted-selection and rejected-input cues. Slot 6 is the incoming
+Comlink alert: the bounded Comlink recorder at `0x0045d2f0` plays it when
+appending a message for the active player, and the city/planning entry paths at
+`0x00462579` and `0x0046fd80` play it when their pending-message flag is set.
+Slot 9 is loaded but has no call site through the
+only gated general-effect wrapper in this executable. Music and effects share
+the same numeric conversion but have separate state and enable flags.
+
+**Confidence:** High static evidence for slot/resource mapping, panel entry/exit gating, push-button,
+full/compact setup selection, and Comlink-alert roles, the lack of a slot-9 wrapper call site, scale, enable
+boundary, initialized levels, and channel values; High manual evidence for the
+independent controls. Other slot semantics remain partially classified.
 
 **Recreation status:** all nine general resources are loaded through the
-recovered slot table. Setup selector changes and bounded player-count rejection
-use slots 3 and 4, weapon effects and general effects share the independent
-recovered Effects level and its level-6 default, and both audio levels persist
-in the recreation-native preferences file.
+recovered slot table, whose known roles are named in code. The four recovered
+full local-setup push controls use slot 2; setup selector changes
+use slot 3, and a rejected player-count boundary additionally uses slot 4. The
+four setup controls defer their action until release inside the originally
+pressed rectangle and cancel a release outside. Their held-inside state uses
+the exact four source rectangles from `PX00140`, while leaving the rectangle
+restores the baked `PX00143` control. A human handoff into an unread Comlink
+inbox plays slot 6 once before entering the planning UI.
+Every routed panel transition plays the recovered slot-0/slot-1 entry and exit
+cues while Slide Panels is enabled; nested panel transitions close the old
+panel and open the new one. The idle-gang confirmation follows the same
+preference gate.
+Equipped, unarmed, and detected-police combat events route their recovered
+sounds, while evasion remains silent. Combat and general effects share the
+independent recovered Effects level and its level-6 default, and both audio
+levels persist in the recreation-native preferences file. Each Detailed Combat
+clip carries its event-time cue; the player emits it on the recovered first
+animation tick, so retaliation waits for its reversed second clip instead of
+playing with the opening attack. Simple Combat does not enter this presenter.
 
-**Next validation:** Finish classifying slots 6 and 9 and validate slots 0-2
-(panel open, panel close, and held-button press) plus countdown-warning cadence
-at runtime,
-then validate overlap/interruption and native amplitude behavior.
+**Next validation:** Validate the slot-6 repeat/suppression boundary and
+countdown-warning cadence at
+runtime, then validate overlap/interruption and native amplitude behavior.
 
-### BIN-OPTIONS-001 - registry keys and idle-gang warning
+### BIN-COMLINK-001 - per-player message queue capacity and overflow
+
+**Observation:** The Comlink recorder at `0x0045d2f0` stores one 166-byte record
+in a player-strided table at `0x0049ca90`. The per-player count at
+`0x004981e0 + player * 4` is compared with `0x10`. Counts below 16 append at the
+current index. At capacity, the routine sets the index to 15, copies records
+1 through 15 down into slots 0 through 14, writes the new record to slot 15,
+and increments the count back to 16. It also decrements the player's visible
+message cursor at `0x004981c8 + player * 4` when positive, otherwise retaining
+zero.
+
+All four direct callers have now been classified. Two calls in the legacy
+transport dispatcher at `0x0046ba84` handle packet type 10 and pass either
+message ID 0 or the received dynamic ID. The other two calls in the report
+composition handler at `0x0045eab1` pass `-1`, which copies the already-formatted
+global message buffer, and broadcast it to each enabled recipient. The recorder
+itself sends packet type 10 for remote recipients. Consequently, Last Turn
+Events filtering is unrelated to this capacity/overflow routine.
+
+The composition handler loads `PX05018` (or alternate resource 5023), whose
+template is labeled `COMLINK: SEND MESSAGE` and contains six recipient cells
+plus four 40-character message rows. Its helper at `0x0045fdf1` renders six
+recipient selectors and those four rows from offsets within the same 166-byte
+buffer. The original Help independently states that Comlink View stores the 16
+most recent messages sent by other human Overlords and that Send can target
+multiple human recipients.
+
+**Interpretation:** Each human player retains the newest 16 Comlink messages;
+overflow deterministically drops exactly the oldest message and preserves the
+viewer's logical position relative to the shifted entries. This bound does not
+apply to the separate Last Turn Events panel.
+
+**Confidence:** High static evidence from the complete bounded recorder,
+literal capacity, record stride, copy bounds, count update, and cursor branch.
+
+**Recreation status:** Authoritative local-human delivery now validates the
+active command-phase sender and human recipients, supports deterministic
+multi-recipient delivery, retains the newest 16 messages, and tracks unread
+state. Version-19 saves, version-20 replays, and canonical hash version 22
+include every inbox. The client routes the original `PX05017` View and
+`PX05018` Send panels, including newest-first entry, paging, read-state clearing,
+six recipient cells, the four recovered 40-character rows, and the main-console
+unread blink.
+
+**Next validation:** Compare the routed panels against a native golden-screen
+capture and recover the remaining legacy record fields; network transport
+interoperability remains out of scope.
+
+### BIN-OPTIONS-001 - registry keys, initialized defaults, and idle-gang warning
 
 **Observation:** The preference-name table contains `prefsVidDeep`,
 `prefsSlide`, `prefsBaseStats`, `prefsCombat`, `prefsFreeGang`, `commType`,
 `prefsVolumeSFX`, `prefsVolumeCD`, `prefsDiff`, `prefsTimeLimit`,
-`prefsObjective`, and `prefsFullScreen`. The initialized byte at `0x00487860`,
-corresponding to `prefsFreeGang`, is 1. In the city handler at `0x0046fd80`, the
-Done path scans all 81 gang slots; an active slot whose action byte is zero is
-idle. When `prefsFreeGang` is enabled and such a slot belongs to the active
-player, the path invokes the two-choice modal at `0x00448718`. Its open and
-close paths use the panel-slide functions at `0x0041953e` and `0x004196f5`,
-which play general-effect slots 0 and 1. The original Help independently says
-Done warns about gangs without commands unless Warn If Idle Gangs is off.
+`prefsObjective`, and `prefsFullScreen`. The loader at `0x0046439a` maps
+`prefsSlide` to `0x00487840`, `prefsBaseStats` to `0x0048784c`, `prefsCombat`
+to `0x0048785c`, and `prefsFreeGang` to `0x00487860`. Their initialized bytes
+are respectively 1, 0, 1, and 1. Reads of the Slide byte occur directly in the
+panel-open and panel-close functions at `0x0041953e` and `0x004196f5`; the
+Base Stats byte is consumed by gang/statistics presentation paths; and the
+Combat byte is read by the Done/combat path at `0x0046fd80`. That same city
+handler scans all 81 gang slots on Done; an active slot whose action byte is
+zero is idle. When `prefsFreeGang` is enabled and such a slot belongs to the
+active player, the path invokes the two-choice modal at `0x00448718`. Its open
+and close paths use the panel-slide functions above, which play general-effect
+slots 0 and 1. The original Help independently says Done warns about gangs
+without commands unless Warn If Idle Gangs is off.
 
-**Interpretation:** `prefsFreeGang` is the enabled-by-default Warn If Idle Gangs
-option. The warning is a confirmation boundary around finishing planning, not
-a simulation rule; continuing still permits unassigned gangs.
+**Interpretation:** The original defaults are Slide Panels on, Current rather
+than Base gang statistics, Detailed Combat on, and Warn If Idle Gangs on.
+The warning is a confirmation boundary around finishing planning, not a
+simulation rule; continuing still permits unassigned gangs.
 
-**Confidence:** High from the initialized data, string table, bounded Done-path
-scan, dialog call graph, and matching Help description.
+**Confidence:** High from the initialized data, preference loader, direct
+consumer references, bounded Done-path scan, dialog call graph, and matching
+Help description.
 
-**Recreation status:** Options persists an enabled-by-default warning toggle,
-base/current gang-stat display, automatic Detailed Combat playback, and bounded
-panel motion. The legacy 16-bit color choice is displayed as always enabled by
-the modern renderer. Version-4 recreation preferences migrate into version 5
-without losing their audio, warning, or timer selections.
+**Recreation status:** Options uses the recovered defaults and persists its
+warning toggle, base/current gang-stat display, automatic Detailed Combat
+playback, and bounded panel motion. The legacy 16-bit color choice is displayed
+as always enabled by the modern renderer. Recreation-native global F11 switching
+between windowed and borderless-fullscreen display is persisted in preference
+version 6 without changing compatibility coordinates. Version-4 and version-5
+preferences migrate without losing their earlier selections and safely default
+the new display choice to windowed mode.
 Finishing planning checks only the active player's living gangs and offers a
 Continue/Go Back modal when any lacks a queued command. Opening and closing the
 modal route the recovered general-effect slots 0 and 1.
 
 **Next validation:** Capture the original modal wording, button order, and
 whether keyboard shortcuts choose a default response.
+
+#### Panel-slide geometry and speed calibration
+
+The panel-open function at `0x0041953e` and reverse close function at
+`0x004196f5` copy a 344-by-209 panel horizontally from or toward the right
+edge. The rectangle helper at `0x00425edf` packs its arguments as
+`(top, left, bottom, right)`, confirmed by the `BitBlt` coordinate extraction
+at `0x0042773e`; this also matches the decoded `PX050xx` dimensions. Their
+primary form travels 344 pixels from source-buffer x=0 into screen x=104..448.
+An alternate form reads a 320-pixel source region beginning at buffer x=344
+and moves it toward the same right-edge destination.
+Both calculate a step from the startup blit benchmark at `0x00432954`. That
+benchmark counts identical copies for just over one second. The transition
+divides the count by four, divides its travel by that result, and clamps the
+step to at least 16 pixels. The intended uncapped duration is therefore about
+one quarter second, while the minimum step prevents excessive intermediate
+copies on faster hardware. Slide enabled plays general-effect slot 0 before
+opening and slot 1 before closing; disabled mode skips intermediate copies and
+still presents the final state.
+
+The recreation now uses a bounded 250 ms time-based horizontal entrance over
+the primary 344-pixel travel. It intentionally avoids the original startup-speed
+dependency. Runtime capture must still identify the visible role of the four
+callers that use the adjacent-buffer 320-pixel form and validate close
+timing/interruption behavior.
 
 #### Planning timer
 
@@ -244,24 +378,32 @@ which records `timeGetTime`; computer planning skips it. The expiry helper at
 `0x0041bdd5` returns true once elapsed milliseconds exceed the selected limit,
 and the human loop then exits as if Done had been accepted. This check occurs
 after the user-triggered idle-gang confirmation path, so timer expiry does not
-open that confirmation. The drawing helper at `0x0041b8fc` scales a 60-pixel
-bar by elapsed/limit. It calls general slot 7 while remaining time is strictly
-between 1 and 10 seconds and slot 8 from 1 second through zero. The input pump
-refreshes this helper every seventh eligible pump call; exact wall-clock sound
-cadence therefore still needs a controlled capture. In the supported asset
-pack, those two PCM clips last approximately 0.117 and 1.189 seconds.
+open that confirmation. The drawing helper at `0x0041b8fc` first computes
+integer elapsed percent as `(elapsedMilliseconds * 100) / limitMilliseconds`,
+then computes visible width as `60 - (elapsedPercent * 60) / 100`; both
+divisions truncate. This percent-first quantization differs from scaling the
+remaining duration directly. It calls general slot 7 while remaining time is
+strictly between 1 and 10 seconds and slot 8 while remaining time is greater
+than zero and at most 1 second. In the input pump at `0x00462579`, counter
+`0x00487898` is decremented before comparison; a zero calls the helper and
+resets the counter to 6. Timer drawing and warning checks therefore recur every
+sixth eligible pump call. The sound wrapper at `0x00464290` forwards every call
+to the low-level player at `0x0045851a`; it has no timer-specific suppression.
+Exact wall-clock cadence still depends on the original pump rate and needs a
+controlled capture. In the supported asset pack, those two PCM clips last
+approximately 0.117 and 1.189 seconds.
 
 **Recreation status:** Setup exposes the four original choices at the original
 hit regions and safely persists the selection, defaulting to None. A bounded
 presentation-only timer starts when a human accepts the private handoff, remains
-active through planning panels, renders the original 60-by-3 aperture, and
-routes the recovered warning slots once per remaining-second bucket. Expiry
+active through planning panels, renders the original percent-quantized 60-by-3
+aperture, and checks the recovered warning slots every sixth fixed update. Expiry
 submits the normal replay-recorded finish-planning operation and deliberately
 bypasses the idle-gang confirmation. The timer itself is absent from Core state,
 state hashes, snapshots, and replay payloads; only its resulting ordinary
 operation is authoritative.
 
-**Next validation:** Capture the original bar rounding, warning cadence,
+**Next validation:** Capture the original wall-clock warning cadence,
 deactivation behavior, and whether modal dialogs perceptibly pause the timer.
 
 ### BIN-API-003 - files and persistence
@@ -1109,6 +1251,20 @@ Big Man counts current ownership of sectors 27, 28, 35, and 36. These scores and
 the exact zero-based competition standings are now isolated in
 `OriginalAiScenarioStandingRules` and feed live mode-6 movement.
 
+The same table is not AI-private. End-turn evaluator `0x00476857` calls
+`0x0047712a` before testing the active-player count and every scenario-specific
+completion condition. It sets the end flag immediately when exactly one of the
+six active-state bytes is nonzero, before entering the scenario switch. The
+`PX05011` Player Ranking path at `0x004518d9` reads
+the score and standing arrays directly. Endgame awards/statistics path
+`0x0042ce61` iterates standing values 0 through 5 in order, visiting player
+slots 0 through 5 within each tied standing, then appends inactive (`0xff`)
+players in slot order. Thus objective games use the same scenario score table,
+ties use competition standings, and eliminated players are displayed after the
+ranked active players. The six fixed inactive score sentinels remain `-32000`
+while standings are counted, so an extreme active score below that value can
+retain an unusually low numeric place even though inactive rows render last.
+
 Mode 6 is now bounded. If at least one human participates, a sector owned by a
 player whom the active AI views negatively receives `+2` only when that owner
 is human. It then adds one independent leader-routing point: with a unique
@@ -1748,9 +1904,10 @@ family records and are included in authoritative hashes, saves, and replays.
 bonus. Homicidal Maniac begins maximally hostile toward human players and
 maximally friendly toward computer players; ordinary interactions can create
 directed hostility at other mentalities, and hostility decays toward
-friendliness by one point per turn. The recreation's current attack score
-approximates part of the visible outcome but does not yet persist or resolve
-this matrix.
+friendliness by one point per turn. The earlier scalar attack score only
+approximated part of that outcome; the current recreation persists and resolves
+the matrix, applies the recovered recovery and combat/Control mutations, and
+uses negative hostility in attack targeting.
 
 **Confidence:** High for matrix dimensions and direction, `[-10,+10]` bounds,
 initial values, mentality-gated per-turn recovery, reaction range/immutability, combat and
@@ -1829,6 +1986,265 @@ complete retaliation-eligibility predicate.
 
 **Next validation:** capture fixed original traces at bands 0, 1, and 2 for
 every affected action, including Hide and both Martial Arts branches.
+
+### BIN-COMBAT-ORDER-001 - player/roster attack and police rolls
+
+**Observation:** The action-1 (**Attack**) block in `0x00472775` is nested in
+the player 0-through-5 and roster 0-through-80 scan beginning at lines 337-338;
+the action test occurs at line 346 and the attack/retaliation calculation stays
+inside that iteration. After the gang-combat pass, lines 448-470 run another
+player/roster scan for active gangs in Crackdown sectors and perform each
+police detection and damage roll there.
+
+**Interpretation:** Attack RNG and result order are fixed player slot then
+persistent roster slot, independent of command submission order. Reciprocal
+orders still form one encounter, with the first gang reached by that scan as
+the opening attacker. Police likewise visit gangs in player/roster order, not
+sector or gang-ID order.
+
+**Confidence:** High static evidence for both scan bounds, action dispatch,
+and placement of their RNG consumers. Runtime seed correlation remains pending.
+
+### BIN-INSTANT-001 - roster-order actions and cumulative Influence
+
+**Observation:** The Instant-action switch in `0x00472775` executes while the
+resolver scans player slots 0 through 5 and each player's 81 gang slots in
+ascending order. Cases 2, 7, 8, 9, 11, and 13 dispatch Bribe, Heal, Hide,
+Influence, Research, and Snitch respectively. In the Influence block at lines
+151-185, the resolver compares the site's current progress with its base
+resistance, then rolls only the current gang's `Force + effective Influence`.
+It immediately adds that gang's successes, clamps progress to the base value,
+and records completion before the roster scan continues. Once progress equals
+the base resistance, a later Influence command skips its roll.
+
+**Interpretation:** Instant actions resolve in fixed player/roster-slot order,
+not submission order. Friendly Influence is cumulative rather than pooled:
+each gang consumes its own roll stream and mutates the site before the next
+gang acts. A gang encountered after completion consumes no Influence RNG.
+
+**Confidence:** High static evidence for action dispatch, scan order,
+per-gang Influence pools, immediate progress mutation, clamping, and the
+completion guard. Runtime seed correlation remains pending.
+
+### BIN-RESEARCH-001 - same-phase completion suppresses later rolls
+
+**Observation:** Case 11 in the Instant switch at `0x00472775`, lines 186-208,
+reads the player's remaining value for the selected item and enters the dice
+calculation only while that value is nonzero. A successful gang subtracts its
+successes immediately and clamps the value at zero before the fixed roster scan
+continues.
+
+**Interpretation:** Multiple gangs may queue Research for the same item, but an
+earlier player/roster-slot completion suppresses every later roll for that item
+in the same Instant phase. Submission order cannot change which gang consumes
+the final research roll or the following RNG state.
+
+**Confidence:** High static evidence for the remaining-value guard, immediate
+mutation, zero clamp, and its placement within the player/roster scan.
+
+### BIN-BRIBE-001 - shipped three-dollar cost and direct tolerance delta
+
+**Observation:** Case 2 in the Instant switch at `0x00472775`, lines 114-127,
+compares the player's cash with 3. Below 3 it calls the failure-report helper
+without mutation. Otherwise it subtracts 3 from cash, directly adds 3 to the
+sector tolerance byte, and adds 3 to the player's spending statistic. The
+block contains no 40-point clamp. This contradicts the manual's printed $5
+cost and capped description.
+
+**Interpretation:** Compatibility play uses the shipped $3 threshold and cost.
+Successful Bribe adds 3 directly to effective sector tolerance, including
+values above 40; insufficient cash produces the existing ordered failure and
+no mutation. The printed $5/cap helper remains isolated as manual evidence and
+is not used by authoritative resolution, finance projection, or AI budgeting.
+
+**Confidence:** High static evidence for threshold, cash/statistic deltas,
+tolerance delta, and failure branch. Exact original message wording remains
+unverified.
+
+### BIN-SNITCH-001 - debt-independent delta and post-Instant floor
+
+**Observation:** Case 13 in `0x00472775`, lines 210-212, subtracts 3 directly
+from the sector tolerance byte and marks the sector changed. It contains no
+cash read or failure branch. After the complete Instant player/roster scan,
+the sector loop at lines 224-226 raises every tolerance below 1 to exactly 1.
+
+**Interpretation:** Snitch executes even while its player is in debt and first
+applies a direct -3 delta. The single global post-Instant floor, rather than a
+per-command base-zero clamp, then prevents any sector from entering later
+phases below tolerance 1. This also prevents commandless negative-tolerance
+Chaos triggers in the shipped turn path.
+
+**Confidence:** High static evidence for the direct delta, absence of a cash
+gate, global clamp value, and clamp placement after all Instant actions.
+
+### BIN-CHAOS-001 - roster-order rolls and grouped uncontrolled payout
+
+**Observation:** The action-3 (**Chaos**) pass in `0x00472775` scans player
+slots 0 through 5 and each player's 81 gang slots in ascending order. Lines
+245-265 calculate and roll each participating gang separately, store its
+success count by gang slot, and add that count to a player-by-sector aggregate.
+After all rolls, the sector pass at lines 268-327 evaluates Crackdown totals and
+zeroes participating gang results when the sector triggers.
+
+The later payout pass at lines 645-672 rebuilds player-by-sector totals from
+the stored per-gang successes. When the player does not own that sector, lines
+668-670 divide the completed aggregate by two once; line 672 then adds it to
+cash. The division is not performed per gang.
+
+**Interpretation:** Chaos RNG order is fixed player slot, then persistent roster
+slot, regardless of submission order or intervening sectors. Same-player gangs
+in one sector still share the final success result and payout. Uncontrolled
+income is `trunc(total successes / 2)`, preserving an odd success contributed
+across multiple gangs rather than rounding each gang independently.
+
+**Confidence:** High static evidence for scan order, per-gang rolls/storage,
+player-sector aggregation, Crackdown suppression, ownership comparison, and
+single post-aggregation division. Runtime seed correlation remains pending.
+
+### BIN-POLICE-001 - occurrence window, neutralization, and duration order
+
+**Observation:** In `0x00472775`, each sector's two signed Crackdown occurrence
+shorts live at `0x004abcc0` and `0x004abcc2`. Before evaluating a new trigger,
+lines 268-276 replace a non--100 slot with -100 only when it is strictly less
+than `current turn - 5`. Lines 303-312 fill the first empty slot and then the
+second. If neither is empty, lines 313-321 notify the owner, set the sector
+owner to -1, clear its three influence-derived totals, and write the current
+turn into both occurrence slots.
+
+Only after that history/neutralization block, the bounded call at `0x0047419b`
+requests 1 through 3, adds 2, and adds the resulting 3 through 5 to the sector's
+existing police-duration byte. The earlier lines 291-301 have already zeroed
+the triggering sector's per-gang Chaos results and emitted notifications for
+participating players.
+
+**Interpretation:** The occurrence window is inclusive: a trigger exactly five
+turns before the current one still counts. A third retained trigger resets both
+fixed history slots to the current turn, so another trigger while those slots
+remain recent can neutralize reacquired control again. Duration extends rather
+than replaces existing police presence, and its one bounded draw occurs after
+history mutation and any ownership cleanup.
+
+**Confidence:** High static evidence for sentinels, strict expiration comparison,
+slot-fill/reset order, cleanup fields, duration range/addition, and RNG call
+order. Runtime corroboration of notification presentation remains pending.
+
+### BIN-EQUIP-001 - Factory price division and rounding
+
+**Observation:** In EXE-GOG-1.1, the Equip resolver inside `0x00472775` loads
+the selected item's signed raw Cost at `0x00474998`. When sector flag
+`+0x0e` is set and the sector owner at `+0x00` matches the purchasing player,
+`0x004749e1..0x004749f3` performs signed integer division by three and subtracts
+that quotient from the raw Cost. The same sector flag has only four direct read
+sites: `0x0043f36d`, `0x0044d498`, `0x0044dc36`, and this resolver read at
+`0x004749b2`; the equipment-selection path at `0x0044d1bb` independently shows
+the same `cost - cost / 3` operation. The manual identifies Factory as the
+controlled/influenced site that lowers item purchase prices.
+
+**Interpretation:** Factory pricing is `Cost - trunc(Cost / 3)`. It is not a
+30-percent discount and is not `floor(Cost * 70 / 100)`. All item costs are
+nonnegative, so C# integer division reproduces the original truncation. Thus a
+$11 Katana costs $8, while a $12 item costs $8.
+
+**Confidence:** High static evidence for the branch, divisor, operation order,
+owner check, and rounding. A runtime capture remains useful corroboration but is
+not required to choose between the former provisional formulas.
+
+### BIN-EQUIP-002 - fixed transaction scan, deferred gifts, and Sell overwrite
+
+**Observation:** The transaction pass in `0x00472775` loops player slots 0
+through 5 and, inside each player, all 81 gang-record slots in ascending order.
+It initializes three 81-entry pending arrays to -1 before the gang scan. For
+action 5 (**Equip**) it immediately checks and subtracts cash, then replaces the
+copied gang record's weapon, armor, or miscellaneous byte. For action 6
+(**Give**) it writes selected item bytes into those pending arrays at the
+recipient slot and clears the giver's copied item bytes. Only after every gang
+for that player has been processed does the resolver copy non--1 pending values
+into recipients at decompiled lines 633-643.
+
+Action 12 (**Sell**) tests the fixed selection-mask bits in weapon, armor, then
+miscellaneous order. Each selected branch clears that copied item byte and
+assigns `Cost / 2` to the same local value at decompiled lines 605-617; the cash
+and earned-cash updates at lines 618-621 occur once after all three branches.
+The branches do not accumulate their values.
+
+**Interpretation:** Transactions resolve by player slot and persistent roster
+slot, independent of command submission order. Incoming gifts are applied only
+after the recipient's own transaction, so they overwrite a same-turn purchase
+or surviving same-slot item; later roster-slot givers overwrite earlier pending
+gifts to the same target slot. A multi-slot Sell destroys every selected item
+but pays only half the raw Cost of the highest selected fixed slot
+(miscellaneous, else armor, else weapon). This last behavior is retained as an
+original compatibility quirk rather than corrected to the manual's apparent
+combined-value intent.
+
+**Confidence:** High static evidence for loop bounds/order, action dispatch,
+pending-array lifecycle/application, selection-mask order, item clearing, and
+single Sell credit. Runtime corroboration remains useful.
+
+### BIN-MOVEMENT-001 - Terminate pass before roster-ordered Move
+
+**Observation:** The whole-turn resolver `0x00472775` has two distinct movement
+passes. Lines 678-701 scan player slots 0 through 5 and each player's 81 roster
+slots, resolving action 14 (**Terminate**). Only after that pass finishes do
+lines 702-725 repeat the same player/roster scan and resolve action 10
+(**Move**) from its stored destination sector.
+
+**Interpretation:** Every Terminate resolves before any Move, regardless of
+command submission order. Within each pass, results follow ascending player
+slot and persistent roster slot. Competing Moves therefore fill a destination's
+last friendly capacity slot in roster order.
+
+**Confidence:** High static evidence for pass precedence, action identities,
+loop bounds, player/roster ordering, and Move target decoding. Runtime
+corroboration remains useful.
+
+### BIN-CONTROL-001 - cross-player winner and zero-margin neutral candidate
+
+**Observation:** The Control block in the whole-turn resolver `0x00472775`
+first accumulates action-4 strength in the player/81-slot scan at lines 733-744,
+then resolves sectors in ascending board order in the loop beginning at line
+751. Within each sector, it initializes its best margin to zero, winner to -1,
+and the first candidate to -1. It then scans player slots 0 through 5,
+subtracting the phase sector Income, defending-gang strength, and
+influenced-site Support from each player's pooled Control strength. A strictly
+larger margin replaces the candidate list; an
+equal margin appends that player. When more than one candidate exists, the call
+at `0x004756d9` passes the candidate count to the recovered one-based bounded
+RNG wrapper. The selected value indexes through a four-byte slot immediately
+before the player-candidate array, so value 1 selects candidate zero. Capture
+proceeds only when the selected candidate is not -1.
+
+**Interpretation:** Control tie-break RNG is consumed in ascending sector order,
+independent of command submission order. Participants aggregate by ascending
+player and persistent roster slot. Negative margins cannot capture. A unique
+positive leader captures without a random draw. Equal positive leaders are chosen uniformly in
+ascending player-slot order. At best margin zero, the original neutral -1 entry
+remains ahead of every tied player: the one-based result 1 means no capture and
+results 2 onward select the tied players in ascending slot order. Thus one
+zero-margin challenger has the manual's 50-percent chance, while `n` tied
+zero-margin challengers each have probability `1 / (n + 1)` and the remaining
+outcome leaves ownership unchanged. Every random selection consumes the usual
+three raw RNG values.
+
+**Confidence:** High static evidence for board/player/roster scan order,
+initialization, comparison behavior, candidate order, one-based RNG call,
+neutral sentinel, and capture predicate. The manual independently corroborates
+the single-player zero-margin probability; multi-player runtime capture remains useful.
+
+The same focused owner-field audit establishes retained control of an empty
+sector. Within the complete whole-turn resolver, the owner byte at
+`0x004a08e8 + sector * 0x24` is written only at decompiled lines 313-318, where
+the third qualifying Crackdown sets it to -1 and clears influence totals, and at
+lines 801-815, where a non--1 Control winner replaces the prior owner and clears
+those totals. The Movement and Terminate passes contain no owner write.
+
+**Interpretation:** Moving or terminating the last friendly gang in a sector
+does not itself abandon control. Ownership persists until another explicit
+ownership-changing rule runs. A later Control attempt still includes sector
+Income and influenced Support but naturally has no defending-gang contribution.
+
+**Confidence:** High static evidence within the whole-turn resolver; moving and
+terminating last-gang recreation fixtures guard the negative behavior.
 
 ## New-game initialization
 
@@ -1921,6 +2337,18 @@ their portrait-selection RNG before AI state and city generation.
 **Confidence:** High static evidence for types, ascending fill order, portrait
 range, duplicate rejection, resource-name mapping, and placement before city
 generation. Initial RNG seeding and a runtime setup fixture remain pending.
+
+The original Help further specifies the interactive local-player side of this
+state machine: setup begins with one local human; Add introduces another local
+human and Remove reverts the last one; clicking the name under a face edits at
+most 10 characters. The resource-name helper at `0x0046d1f7` also passes an
+exact length of 10 to `0x00466673` when filling an omitted computer's 12-byte
+name record. The client now starts with one configured human, adds/removes
+humans rather than synthetic CPU toggles, restricts selectable portraits to 0
+through 14, and exposes the bounded name field. Face dragging now moves a human
+identity into an empty color or exchanges two human colors; the transient sparse
+setup is normalized into ascending slots before recovered empty-slot completion.
+Exact name/drop-field coordinates still require native capture.
 
 ### BIN-SETUP-003 - `SMGISLANDS` neutral-sector Chaos override
 

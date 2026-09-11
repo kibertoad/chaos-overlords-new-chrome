@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 16;
+    public const int CurrentFormatVersion = 19;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -81,6 +81,16 @@ public static class NativeSaveSerializer
             entry => (IReadOnlyList<GameNotification>)entry.Items);
         var notificationSequences = document.Runtime.Notifications.ToDictionary(
             entry => new PlayerId(entry.Player), entry => entry.NextSequence);
+        var comlinkInboxes = document.FormatVersion >= 17
+            ? (document.Runtime.Comlink
+                ?? throw new InvalidDataException("Native save Comlink state is missing."))
+                .ToDictionary(
+                    entry => new PlayerId(entry.Player),
+                    entry => new ComlinkInboxRestore(
+                        entry.Items, entry.NextSequence, entry.ReadThroughSequence))
+            : setup.Players.ToDictionary(
+                player => player.Id,
+                _ => new ComlinkInboxRestore([], 0, -1));
         var aiStrategy = document.FormatVersion >= 6
             ? document.Runtime.AiStrategy is { } savedStrategy
                 ? AiStrategicState.Restore(savedStrategy.Reactions, savedStrategy.Attitudes)
@@ -155,6 +165,7 @@ public static class NativeSaveSerializer
             document.Runtime.NextEventSequence,
             notifications,
             notificationSequences,
+            comlinkInboxes,
             document.Runtime.PhaseHashes,
             document.Runtime.Outcome,
             aiStrategy,
@@ -177,6 +188,9 @@ public static class NativeSaveSerializer
             13 => MatchStateHasher.ComputeVersionSixteenSha256(state),
             14 => MatchStateHasher.ComputeVersionSeventeenSha256(state),
             15 => MatchStateHasher.ComputeVersionEighteenSha256(state),
+            16 => MatchStateHasher.ComputeVersionNineteenSha256(state),
+            17 => MatchStateHasher.ComputeVersionTwentySha256(state),
+            18 => MatchStateHasher.ComputeVersionTwentyOneSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
         if (!CryptographicOperations.FixedTimeEquals(
@@ -234,7 +248,12 @@ public static class NativeSaveSerializer
                 state.AiPlanning.CaptureWeaponCooldowns(),
                 state.AiPlanning.CaptureArmorCooldowns(),
                 state.AiPlanning.CaptureFormationSectors(),
-                state.AiPlanning.CaptureCoverageSectors())));
+                state.AiPlanning.CaptureCoverageSectors()),
+            state.Players.Select(player => new PlayerComlinkDocument(
+                player.Id.Value,
+                state.ComlinkFor(player.Id).NextSequence,
+                state.ComlinkFor(player.Id).ReadThroughSequence,
+                state.ComlinkFor(player.Id).Messages)).ToArray()));
 
     private static IReadOnlyList<GangAction> EmptyAiActions() =>
         new GangAction[MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer];
@@ -589,7 +608,8 @@ internal sealed record RuntimeDocument(
     IReadOnlyList<PhaseBoundaryHash> PhaseHashes,
     MatchOutcome? Outcome,
     AiStrategyDocument? AiStrategy = null,
-    AiPlanningDocument? AiPlanning = null);
+    AiPlanningDocument? AiPlanning = null,
+    IReadOnlyList<PlayerComlinkDocument>? Comlink = null);
 
 internal sealed record AiStrategyDocument(
     IReadOnlyList<int> Reactions,
@@ -616,6 +636,12 @@ internal sealed record PlayerNotificationsDocument(
     int Player,
     long NextSequence,
     IReadOnlyList<GameNotification> Items);
+
+internal sealed record PlayerComlinkDocument(
+    int Player,
+    long NextSequence,
+    long ReadThroughSequence,
+    IReadOnlyList<ComlinkMessage> Items);
 
 internal sealed class PlayerIdJsonConverter : JsonConverter<PlayerId>
 {

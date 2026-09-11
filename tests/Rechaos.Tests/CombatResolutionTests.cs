@@ -1,5 +1,7 @@
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
+using Rechaos.Game;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -68,6 +70,28 @@ public sealed class CombatResolutionTests
             match.FindGang(new GangId(20))!.Force);
         Assert.NotEmpty(encounter.Rolls);
         Assert.NotEmpty(encounter.RetaliationRolls!);
+    }
+
+    [Fact]
+    public void AttacksRollAndEmitEventsInRosterOrderRatherThanSubmissionOrder()
+    {
+        var match = CreateMatch(secondPlayerZeroGang: true);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(11), GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase();
+        Assert.Equal(ExecutionPhase.Combat, match.Coordinator.ExecutionPhase);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal([new GangId(10), new GangId(11)],
+            match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
     }
 
     [Fact]
@@ -256,23 +280,30 @@ public sealed class CombatResolutionTests
     }
 
     [Fact]
-    public void EquivalentCombatRunsProduceIdenticalOutcomesAndHash()
+    public void SimpleAndDetailedPresentationProduceIdenticalOutcomesAndHash()
     {
-        var first = CreateMatch();
-        var second = CreateMatch();
-        QueueAndEnterCombat(first, playerOneAction: null);
-        QueueAndEnterCombat(second, playerOneAction: null);
+        var simple = CreateMatch();
+        var detailed = CreateMatch();
+        QueueAndEnterCombat(simple, playerOneAction: null);
+        QueueAndEnterCombat(detailed, playerOneAction: null);
 
-        first.FinishExecutionPhase();
-        second.FinishExecutionPhase();
+        simple.FinishExecutionPhase();
+        detailed.FinishExecutionPhase();
+        var player = new CombatAnimationPlayer();
+        var detailedEvent = Assert.Single(detailed.LastPhaseResolutions).Event!;
+        foreach (var clip in CombatAnimationRouting.ForEvent(detailed, detailedEvent))
+            player.Enqueue(clip);
+        player.Advance(TimeSpan.FromDays(1));
 
-        Assert.Equal(first.FindGang(new GangId(10))!.Force, second.FindGang(new GangId(10))!.Force);
-        Assert.Equal(first.FindGang(new GangId(20))!.Force, second.FindGang(new GangId(20))!.Force);
-        Assert.Equal(first.LastPhaseResolutions[0].Event!.Resolution!.Rolls,
-            second.LastPhaseResolutions[0].Event!.Resolution!.Rolls);
-        Assert.Equal(first.LastPhaseResolutions[0].Event!.Resolution!.RetaliationRolls,
-            second.LastPhaseResolutions[0].Event!.Resolution!.RetaliationRolls);
-        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+        Assert.False(player.IsPlaying);
+        Assert.Equal(simple.FindGang(new GangId(10))!.Force, detailed.FindGang(new GangId(10))!.Force);
+        Assert.Equal(simple.FindGang(new GangId(20))!.Force, detailed.FindGang(new GangId(20))!.Force);
+        Assert.Equal(simple.LastPhaseResolutions[0].Event!.Resolution!.Rolls,
+            detailed.LastPhaseResolutions[0].Event!.Resolution!.Rolls);
+        Assert.Equal(simple.LastPhaseResolutions[0].Event!.Resolution!.RetaliationRolls,
+            detailed.LastPhaseResolutions[0].Event!.Resolution!.RetaliationRolls);
+        Assert.Equal(simple.PhaseHashes[^1].Sha256, detailed.PhaseHashes[^1].Sha256);
+        Assert.Equal(MatchStateHasher.ComputeSha256(simple), MatchStateHasher.ComputeSha256(detailed));
     }
 
     private static short? WeaponType(MatchState match, MatchGangState gang) =>
@@ -305,7 +336,8 @@ public sealed class CombatResolutionTests
         short? playerOneWeapon = null,
         short? playerOneArmor = null,
         short? playerOneMiscellaneous = null,
-        short? influencedSiteDefinition = null)
+        short? influencedSiteDefinition = null,
+        bool secondPlayerZeroGang = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -314,11 +346,17 @@ public sealed class CombatResolutionTests
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
+        var playerZeroGangs = new List<MatchGangState>
+        {
+            new(new GangId(10), new PlayerId(0), playerZeroDefinition, 0,
+                playerZeroForce, weaponItemId: playerZeroWeapon)
+        };
+        if (secondPlayerZeroGang)
+            playerZeroGangs.Add(new MatchGangState(
+                new GangId(11), new PlayerId(0), playerZeroDefinition, 0, playerZeroForce));
         MatchPlayerState[] players =
         [
-            new(setups[0], 500,
-                [new MatchGangState(new GangId(10), new PlayerId(0), playerZeroDefinition, 0,
-                    playerZeroForce, weaponItemId: playerZeroWeapon)]),
+            new(setups[0], 500, playerZeroGangs),
             new(setups[1], 500,
                 [new MatchGangState(new GangId(20), new PlayerId(1), playerOneDefinition, 0,
                     playerOneForce, playerOneWeapon, playerOneArmor, playerOneMiscellaneous)])
@@ -330,7 +368,9 @@ public sealed class CombatResolutionTests
                     id == 0 && influencedSiteDefinition is not null ? new PlayerId(0) : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ]))
+            ], owner: id == 0 && influencedSiteDefinition is not null
+                ? new PlayerId(0)
+                : null))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }

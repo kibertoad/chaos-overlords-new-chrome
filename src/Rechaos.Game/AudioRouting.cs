@@ -2,38 +2,81 @@ using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
+public static class GeneralSoundSlot
+{
+    public const int PanelOpen = 0;
+    public const int PanelClose = 1;
+    public const int ButtonPress = 2;
+    public const int AcceptedSelection = 3;
+    public const int RejectedInput = 4;
+    public const int IncomingMessageAlert = 6;
+    public const int CountdownWarning = 7;
+    public const int FinalSecondWarning = 8;
+    public const int LoadedWithoutCallSite = 9;
+}
+
 public static class AudioRouting
 {
     public const int MinimumEffectVolumeLevel = 0;
     public const int MaximumEffectVolumeLevel = 10;
     public const int DefaultEffectVolumeLevel = 6;
+    public const short UnarmedSound = 0;
+    public const short MartialArtsSound = 1;
+    public const short PoliceSound = 18;
     private const int OriginalVolumeStep = 25 * 256;
     private static readonly IReadOnlyDictionary<int, int> GeneralSoundResources =
         new Dictionary<int, int>
         {
-            [0] = 200,
-            [1] = 201,
-            [2] = 202,
-            [3] = 203,
-            [4] = 204,
-            [6] = 205,
-            [7] = 206,
-            [8] = 207,
-            [9] = 208
+            [GeneralSoundSlot.PanelOpen] = 200,
+            [GeneralSoundSlot.PanelClose] = 201,
+            [GeneralSoundSlot.ButtonPress] = 202,
+            [GeneralSoundSlot.AcceptedSelection] = 203,
+            [GeneralSoundSlot.RejectedInput] = 204,
+            [GeneralSoundSlot.IncomingMessageAlert] = 205,
+            [GeneralSoundSlot.CountdownWarning] = 206,
+            [GeneralSoundSlot.FinalSecondWarning] = 207,
+            [GeneralSoundSlot.LoadedWithoutCallSite] = 208
         };
 
     public static IReadOnlyList<int> GeneralSoundSlots { get; } =
         GeneralSoundResources.Keys.Order().ToArray();
 
-    public static short? WeaponSound(MatchState state, GameEvent gameEvent)
+    public static int? PlayerCountResultSound(bool changed, bool pointerButton) =>
+        pointerButton && changed
+            ? null
+            : changed
+                ? GeneralSoundSlot.AcceptedSelection
+                : GeneralSoundSlot.RejectedInput;
+
+    public static int? IncomingMessageSound(bool hasUnread) =>
+        hasUnread ? GeneralSoundSlot.IncomingMessageAlert : null;
+
+    public static short? CombatSound(MatchState state, GameEvent gameEvent)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(gameEvent);
+        if (gameEvent.Kind == GameEventKind.PoliceAttackResolved)
+            return gameEvent.PoliceAttack?.Detected == true ? PoliceSound : null;
         if (gameEvent.Action != GangAction.Attack || gameEvent.Resolution?.Code != CommandResolutionCode.Resolved
             || gameEvent.Gang is not { } gangId)
             return null;
         var itemId = gameEvent.Resolution.ItemId ?? state.FindGang(gangId)?.WeaponItemId;
-        return itemId is { } weapon ? state.Definitions.Items[weapon].Sound : null;
+        return GangAttackSound(state, gangId, itemId);
+    }
+
+    public static short GangAttackSound(MatchState state, GangId gangId, short? itemId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if (itemId is { } weapon)
+        {
+            if (weapon < 0 || weapon >= state.Definitions.Items.Count)
+                throw new ArgumentOutOfRangeException(nameof(itemId));
+            return state.Definitions.Items[weapon].Sound;
+        }
+        var gang = state.FindGang(gangId)
+            ?? throw new ArgumentOutOfRangeException(nameof(gangId));
+        var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
+        return definition.Stats.MartialArts > 0 ? MartialArtsSound : UnarmedSound;
     }
 
     public static string SoundFile(short index)
@@ -54,5 +97,17 @@ public static class AudioRouting
         if (!GeneralSoundResources.TryGetValue(slot, out var resource))
             throw new ArgumentOutOfRangeException(nameof(slot));
         return $"SND00{resource:000}.wav";
+    }
+
+    public static IReadOnlyList<int> PanelTransitionSounds(
+        ClientScreen previous,
+        ClientScreen current,
+        bool slidePanels)
+    {
+        if (!slidePanels) return [];
+        var sounds = new List<int>(2);
+        if (PanelSlideTransition.IsPanel(previous)) sounds.Add(GeneralSoundSlot.PanelClose);
+        if (PanelSlideTransition.IsPanel(current)) sounds.Add(GeneralSoundSlot.PanelOpen);
+        return sounds;
     }
 }

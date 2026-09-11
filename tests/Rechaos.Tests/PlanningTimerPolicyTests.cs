@@ -40,23 +40,40 @@ public sealed class PlanningTimerPolicyTests
         Assert.Equal(width, PlanningTimerPolicy.VisibleBarWidth(
             TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(remainingSeconds)));
 
+    [Theory]
+    [InlineData(30.000, 60)]
+    [InlineData(29.701, 60)]
+    [InlineData(29.700, 60)]
+    [InlineData(29.400, 59)]
+    [InlineData(0.300, 1)]
+    [InlineData(0.001, 1)]
+    [InlineData(0.000, 0)]
+    public void VisibleBarQuantizesElapsedPercentBeforeSixtyPixelScale(
+        double remainingSeconds,
+        int expectedWidth) =>
+        Assert.Equal(expectedWidth, PlanningTimerPolicy.VisibleBarWidth(
+            TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(remainingSeconds)));
+
     [Fact]
     public void PlanningTimerBarUsesOriginalMainPanelAperture() =>
         Assert.Equal(new Microsoft.Xna.Framework.Rectangle(520, 336, 60, 3),
             PlanningTimerLayout.Bar);
 
     [Fact]
-    public void TimerEmitsEachWarningBucketOnceAndThenExpires()
+    public void TimerChecksWarningWindowOnRecoveredSixUpdateCadenceAndThenExpires()
     {
         var timer = new PlanningTimer();
         timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
 
         Assert.Equal(PlanningTimerSignal.None, timer.Advance(TimeSpan.FromSeconds(20)));
-        Assert.Equal(PlanningTimerSignal.LongWarning, timer.Advance(TimeSpan.FromSeconds(20.001)));
-        Assert.Equal(PlanningTimerSignal.None, timer.Advance(TimeSpan.FromSeconds(20.1)));
-        Assert.Equal(PlanningTimerSignal.LongWarning, timer.Advance(TimeSpan.FromSeconds(21.001)));
-        Assert.Equal(PlanningTimerSignal.FinalWarning, timer.Advance(TimeSpan.FromSeconds(29.001)));
-        Assert.Equal(PlanningTimerSignal.None, timer.Advance(TimeSpan.FromSeconds(29.1)));
+        for (var update = 0; update < PlanningTimerPolicy.RefreshCountdown - 1; update++)
+            Assert.Equal(PlanningTimerSignal.None,
+                timer.Advance(TimeSpan.FromSeconds(20.01 + update * 0.01)));
+        Assert.Equal(PlanningTimerSignal.LongWarning, timer.Advance(TimeSpan.FromSeconds(20.06)));
+        for (var update = 0; update < PlanningTimerPolicy.RefreshCountdown - 1; update++)
+            Assert.Equal(PlanningTimerSignal.None,
+                timer.Advance(TimeSpan.FromSeconds(29 + update * 0.01)));
+        Assert.Equal(PlanningTimerSignal.FinalWarning, timer.Advance(TimeSpan.FromSeconds(29.05)));
         Assert.Equal(PlanningTimerSignal.Expired, timer.Advance(TimeSpan.FromSeconds(30)));
         Assert.False(timer.IsActive);
     }

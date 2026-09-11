@@ -110,6 +110,44 @@ public static class OriginalCityGenerator
         return assigned;
     }
 
+    /// <summary>
+    /// Applies scenario landmarks whose identity is established by fresh-game
+    /// placement. Siege designates all six starting controlled sectors.
+    /// </summary>
+    public static void ApplyScenarioLandmarks(
+        MatchSectorState[] sectors,
+        ScenarioId scenario,
+        IReadOnlyList<int> headquarters)
+    {
+        ArgumentNullException.ThrowIfNull(sectors);
+        ArgumentNullException.ThrowIfNull(headquarters);
+        if (sectors.Length != MatchLimits.SectorCount
+            || !sectors.Select(sector => sector.Id).SequenceEqual(Enumerable.Range(0, MatchLimits.SectorCount)))
+            throw new ArgumentException("The city must contain sectors ordered from 0 through 63.", nameof(sectors));
+        if (headquarters.Count != MatchLimits.PlayerCount
+            || headquarters.Distinct().Count() != MatchLimits.PlayerCount
+            || headquarters.Any(sectorId => sectorId is < 0 or >= MatchLimits.SectorCount))
+            throw new ArgumentException("All six distinct headquarters sectors are required.", nameof(headquarters));
+        if (scenario != ScenarioId.Siege) return;
+
+        foreach (var sectorId in headquarters)
+        {
+            var sector = sectors[sectorId];
+            sectors[sectorId] = new MatchSectorState(
+                sector.Id,
+                sector.Sites.Select(site => new MatchSiteState(
+                    site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy)).ToArray(),
+                sector.Owner,
+                sector.Tolerance,
+                sector.Chaos,
+                sector.CrackdownActive,
+                isImportant: true,
+                sector.Income,
+                sector.CrackdownTurnsRemaining,
+                sector.CrackdownHistory);
+        }
+    }
+
     private static SiteDefinition DrawSite(
         OriginalData definitions,
         ScenarioId scenario,
@@ -180,6 +218,7 @@ public static class OriginalMatchFactory
 
         var sectors = OriginalCityGenerator.Generate(definitions, setup.Scenario, random);
         var headquarters = OriginalCityGenerator.AssignHeadquarters(sectors, random);
+        OriginalCityGenerator.ApplyScenarioLandmarks(sectors, setup.Scenario, headquarters);
         var starts = setup.Players.Select((player, index) => new MatchPlayerStart(
             player.Id, headquarters[index], ManualRules.MaximumForce,
             StandardStartingCash, Array.Empty<short>())).ToArray();
@@ -193,22 +232,23 @@ public static class OriginalMatchFactory
 
     private static MatchSetup CompleteLocalPlayers(MatchSetup setup, DeterministicRandom random)
     {
-        if (setup.Players.Count == MatchLimits.PlayerCount) return setup;
-
-        var players = setup.Players.ToList();
-        var usedPortraits = players.Select(player => (int)player.PortraitId).ToHashSet();
-        for (var slot = players.Count; slot < MatchLimits.PlayerCount; slot++)
+        var playersById = setup.Players.ToDictionary(player => player.Id.Value);
+        var usedPortraits = setup.Players.Select(player => (int)player.PortraitId).ToHashSet();
+        for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
         {
+            if (playersById.ContainsKey(slot)) continue;
             int portrait;
             do portrait = random.NextInt(ActivePortraitCount);
             while (usedPortraits.Contains(portrait));
             usedPortraits.Add(portrait);
-            players.Add(new MatchPlayerSetup(
+            playersById.Add(slot, new MatchPlayerSetup(
                 new PlayerId(slot), DefaultPlayerNames[portrait], PlayerController.Computer,
                 checked((short)portrait)));
         }
 
         return new MatchSetup(
-            setup.Scenario, setup.Duration, setup.InitialSeed, players, setup.AiMentality);
+            setup.Scenario, setup.Duration, setup.InitialSeed,
+            playersById.OrderBy(entry => entry.Key).Select(entry => entry.Value).ToArray(),
+            setup.AiMentality);
     }
 }

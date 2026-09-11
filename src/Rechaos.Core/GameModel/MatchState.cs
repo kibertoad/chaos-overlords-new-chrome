@@ -22,48 +22,6 @@ public enum PlayerStatus : byte
     Eliminated
 }
 
-public sealed record MatchPlayerSetup(
-    PlayerId Id,
-    string Name,
-    PlayerController Controller,
-    short PortraitId = 0);
-
-public sealed class MatchSetup
-{
-    public MatchSetup(
-        ScenarioId scenario,
-        GameDuration duration,
-        int initialSeed,
-        IReadOnlyList<MatchPlayerSetup> players,
-        AiDifficulty aiMentality = AiDifficulty.Criminal)
-    {
-        ArgumentNullException.ThrowIfNull(players);
-        if (players.Count is < 1 or > MatchLimits.PlayerCount)
-            throw new ArgumentOutOfRangeException(nameof(players));
-        if (!players.Select(player => player.Id.Value).SequenceEqual(Enumerable.Range(0, players.Count)))
-            throw new ArgumentException("Player identifiers must be ordered and contiguous from zero.", nameof(players));
-        if (players.Any(player => string.IsNullOrWhiteSpace(player.Name)))
-            throw new ArgumentException("Player names cannot be blank.", nameof(players));
-        if (players.Any(player => !Enum.IsDefined(player.Controller)))
-            throw new ArgumentException("Player controller is invalid.", nameof(players));
-        if (players.Any(player => player.PortraitId is < 0 or >= 16))
-            throw new ArgumentException("Player portrait is outside the original 16-entry atlas.", nameof(players));
-        if (!Enum.IsDefined(aiMentality)) throw new ArgumentOutOfRangeException(nameof(aiMentality));
-
-        Scenario = scenario;
-        Duration = duration;
-        InitialSeed = initialSeed;
-        Players = players.ToArray();
-        AiMentality = aiMentality;
-    }
-
-    public ScenarioId Scenario { get; }
-    public GameDuration Duration { get; }
-    public int InitialSeed { get; }
-    public IReadOnlyList<MatchPlayerSetup> Players { get; }
-    public AiDifficulty AiMentality { get; }
-}
-
 public sealed partial class MatchPlayerState
 {
     private readonly List<MatchGangState> _gangs;
@@ -254,8 +212,8 @@ public sealed class MatchSectorState
             throw new ArgumentException("Inactive police cannot have turns remaining.", nameof(crackdownTurnsRemaining));
         if (crackdownHistory is { Count: > 2 }
             || crackdownHistory?.Any(turn => turn < 1) == true
-            || crackdownHistory?.Zip(crackdownHistory.Skip(1), (left, right) => left >= right).Any(invalid => invalid) == true)
-            throw new ArgumentException("Crackdown history must contain at most two increasing positive turns.", nameof(crackdownHistory));
+            || crackdownHistory?.Zip(crackdownHistory.Skip(1), (left, right) => left > right).Any(invalid => invalid) == true)
+            throw new ArgumentException("Crackdown history must contain at most two nondecreasing positive turns.", nameof(crackdownHistory));
         Id = id;
         Sites = sites.OrderBy(site => site.Slot).ToArray();
         Owner = owner;
@@ -291,10 +249,14 @@ public sealed class MatchSectorState
         if (turn < 1) throw new ArgumentOutOfRangeException(nameof(turn));
         if (_crackdownHistory.Count > 0 && turn <= _crackdownHistory[^1])
             throw new InvalidOperationException("A sector can record at most one Crackdown per turn.");
-        _crackdownHistory.RemoveAll(previous => previous < turn - 4);
+        _crackdownHistory.RemoveAll(previous => previous < turn - 5);
         var losesControl = _crackdownHistory.Count >= 2;
+        if (losesControl)
+        {
+            _crackdownHistory.Clear();
+            _crackdownHistory.Add(turn);
+        }
         _crackdownHistory.Add(turn);
-        while (_crackdownHistory.Count > 2) _crackdownHistory.RemoveAt(0);
         return losesControl;
     }
 }
@@ -358,9 +320,9 @@ public sealed partial class MatchState
     private readonly List<GameEvent> _events = [];
     private readonly Dictionary<PlayerId, NotificationQueue> _notifications;
     private readonly Dictionary<PlayerId, long> _nextNotificationSequences;
+    private readonly Dictionary<PlayerId, ComlinkInbox> _comlinkInboxes;
     private readonly List<PhaseBoundaryHash> _phaseHashes = [];
     private long _nextEventSequence;
-
     public MatchState(
         OriginalData definitions,
         MatchSetup setup,
@@ -378,6 +340,10 @@ public sealed partial class MatchState
     {
         Definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
         Setup = setup ?? throw new ArgumentNullException(nameof(setup));
+        if (setup.AllowsSparsePlayerIds)
+            throw new ArgumentException(
+                "Sparse local setup must be completed before authoritative state construction.",
+                nameof(setup));
         ArgumentNullException.ThrowIfNull(players);
         ArgumentNullException.ThrowIfNull(sectors);
         if (players.Count != setup.Players.Count)
@@ -410,6 +376,7 @@ public sealed partial class MatchState
         AiPlanning = restore?.AiPlanning ?? AiPlanningState.Initialize(Players);
         _notifications = Players.ToDictionary(player => player.Id, _ => new NotificationQueue());
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
+        _comlinkInboxes = Players.ToDictionary(player => player.Id, _ => new ComlinkInbox());
         if (restore is not null) RestoreRuntime(restore);
     }
     internal MatchState(
@@ -426,6 +393,8 @@ public sealed partial class MatchState
             players.ToDictionary(player => player.Id,
                 _ => (IReadOnlyList<GameNotification>)Array.Empty<GameNotification>()),
             players.ToDictionary(player => player.Id, _ => 0L),
+            players.ToDictionary(player => player.Id,
+                _ => new ComlinkInboxRestore([], 0, -1)),
             [], null, aiStrategy, AiPlanningState.Initialize(players)))
     {
         ArgumentNullException.ThrowIfNull(initialRandom);
@@ -467,6 +436,8 @@ public sealed partial class MatchState
         if (!restore.Notifications.Keys.OrderBy(player => player.Value)
                 .SequenceEqual(Players.Select(player => player.Id))
             || !restore.NextNotificationSequences.Keys.OrderBy(player => player.Value)
+                .SequenceEqual(Players.Select(player => player.Id))
+            || !restore.ComlinkInboxes.Keys.OrderBy(player => player.Value)
                 .SequenceEqual(Players.Select(player => player.Id)))
             throw new ArgumentException("Restored notification players do not match the match setup.", nameof(restore));
 
@@ -487,16 +458,13 @@ public sealed partial class MatchState
                 throw new ArgumentException("Restored notification sequences are invalid.", nameof(restore));
             foreach (var notification in notifications) _notifications[player.Id].Enqueue(notification);
             _nextNotificationSequences[player.Id] = next;
+            var inbox = restore.ComlinkInboxes[player.Id];
+            _comlinkInboxes[player.Id] = ComlinkInbox.Restore(
+                inbox.Messages, inbox.NextSequence, inbox.ReadThroughSequence);
         }
         _phaseHashes.AddRange(restore.PhaseHashes);
         Outcome = restore.Outcome;
     }
-
-    public MatchPlayerState? FindPlayer(PlayerId id) => Players.SingleOrDefault(player => player.Id == id);
-    public MatchGangState? FindGang(GangId id) => Players.SelectMany(player => player.Gangs).SingleOrDefault(gang => gang.Id == id);
-    public MatchSiteState? FindSite(int id) => id is >= 0 and < MatchLimits.SiteCount
-        ? Sectors[id / MatchLimits.SitesPerSector].Sites[id % MatchLimits.SitesPerSector]
-        : null;
     public bool CanPlayerDetectGang(PlayerId observer, GangId targetGang)
     {
         var player = FindPlayer(observer) ?? throw new ArgumentOutOfRangeException(nameof(observer));
@@ -509,7 +477,6 @@ public sealed partial class MatchState
         return detection >= EffectiveStatisticsCalculator.ForGang(this, target).Stealth;
     }
     public IReadOnlyList<GameNotification> NotificationsFor(PlayerId player) => GetNotificationQueue(player).Items;
-
     public bool TryDismissNotification(PlayerId player, out GameNotification? notification) =>
         GetNotificationQueue(player).TryDequeue(out notification);
 
@@ -765,7 +732,9 @@ public sealed partial class MatchState
             command.Gang,
             command.Action,
             command.Target,
-            command.SecondaryTarget);
+            command.SecondaryTarget,
+            command.TertiaryTarget,
+            command.QuaternaryTarget);
         _events.Add(gameEvent);
         return gameEvent;
     }
@@ -788,6 +757,8 @@ public sealed partial class MatchState
             command.Action,
             command.Target,
             command.SecondaryTarget,
+            command.TertiaryTarget,
+            command.QuaternaryTarget,
             resolution);
         _events.Add(gameEvent);
         return gameEvent;
@@ -981,12 +952,10 @@ public sealed partial class MatchState
         _nextNotificationSequences.TryGetValue(player, out var sequence)
             ? sequence
             : throw new ArgumentOutOfRangeException(nameof(player));
-
     private NotificationQueue GetNotificationQueue(PlayerId player) =>
         _notifications.TryGetValue(player, out var queue)
             ? queue
             : throw new ArgumentOutOfRangeException(nameof(player));
-
     private TurnTransition CaptureBoundary(TurnTransition transition)
     {
         _phaseHashes.Add(new PhaseBoundaryHash(
@@ -996,5 +965,4 @@ public sealed partial class MatchState
             MatchStateHasher.ComputeSha256(this)));
         return transition;
     }
-
 }
