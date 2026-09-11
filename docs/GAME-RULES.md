@@ -63,27 +63,31 @@ controlled reference observation confirms its execution timing and edge cases.
 
 ### RULE-HIDE-001 — Enter hidden state
 
-- Source: `MANUAL-GOG-1`; Hide command and Stealth descriptions. Exact manual
-  scan page locations still need transcription.
+- Source: `MANUAL-GOG-1`; Hide command and Stealth descriptions;
+  `BIN-HIDE-LIFECYCLE-001` and `BIN-AI-007`.
 - Observed statement: Hide makes the acting gang hidden so opposing gangs must
   detect it before targeting it.
-- Interpretation: the Instant resolver changes the acting gang's `Hidden` flag
-  to true without an RNG roll; the state expires at the following Upkeep before
-  repeat Hide resolves again. An attack against the hiding gang rolls 1–100
-  against `clamp(50 + 5 × (attacker Detect − defender Stealth), 0, 100)` using
-  the individual attacker's Detect. Failure means the target evades; success
-  proceeds normally but cannot retaliate. Hide does not change whether the gang
-  is visible in the sector.
-- Current exclusions: binary confirmation of the five-point probability step,
-  exact reveal timing, and interactions with police attacks.
-- Confidence: High that Hide enters hidden state and successful hits prevent
-  retaliation; Medium for the probability formula; Low for timing.
+- Interpretation: Hide becomes active as soon as it is assigned. At the next
+  turn initialization, a gang's active action is replaced with its retained
+  recurring action: one-off Hide therefore ends at Upkeep, while recurring Hide
+  stays active until the player replaces or cancels it. An ordinary attacker
+  hits a hidden target on an inclusive d20 roll at or above
+  `Stealth + 14 - Detect`; an expert computer uses `Stealth + 10 - Detect`.
+  Evasion skips the attack, while a hit proceeds normally but cannot retaliate.
+  Police instead use
+  `clamp(115 - 5 × effective Stealth - 20, 0, 100)%`. Hide does not change
+  whether the gang is visible in the sector.
+- Current exclusions: controlled native UI observation of the planning-time
+  visibility transition.
+- Confidence: High from the active/recurring action-byte writes, turn-start
+  copy, combat and police consumers, and manual semantics.
 - Implementation: `CommandResolver.ResolveHide`, combat detection handling,
   `ManualRules.HiddenAttackHitPercent`, and `MatchGangState.Hidden`.
-- Tests: `InstantResolutionTests.HideMarksGangHiddenAndRecordsTransition` and
-  `CombatResolutionTests` evasion/hit cases.
-- Next experiment: compare saves and target availability before Hide, directly
-  after Instant, and after the hidden gang acts or is detected.
+- Tests: `InstantResolutionTests` covers immediate assignment, one-off expiry,
+  recurring retention/counting, replacement and cancellation;
+  `CombatResolutionTests` covers evasion/hit cases.
+- Next experiment: capture target availability before assignment, after one-off
+  Hide, and while replacing a recurring Hide in a fixed native turn.
 
 ### RULE-INFLUENCE-001 — Cooperative site influence
 
@@ -285,11 +289,11 @@ claim about original-game behavior.
   who is also an unarmed positive-Martial-Arts gang. The sole Damage Inflicted
   write adds the computed opening damage before accumulated damage is applied,
   with no remaining-Force cap.
-- Current exclusions: reveal-state timing.
+- Current exclusions: controlled native combat fixture coverage.
 - Confidence: High for weapon-skill associations, the complete Martial Arts /
   weapon / Hide retaliation gate, its damage formula, player/roster roll
-  ordering, and overkill statistic accounting; Medium/High for the
-  Force-corrected opening formula; Low for hidden-state timing.
+  ordering, overkill statistic accounting, and hidden-state timing;
+  Medium/High for the Force-corrected opening formula.
 - Implementation: `ManualRules.CombatRating`, `ManualRules.AttackDiceCount`,
   `ManualRules.RetaliationDamage`, and `CommandResolver.ResolveCombatPhase`.
 - Tests: `CombatResolutionTests` covers effective attack/defense pools,
@@ -594,7 +598,7 @@ claim about original-game behavior.
   ownership after Move/Terminate, a single phase-opening
   defense for several owned-sector challengers,
   execution-time Crackdown rejection, overthrow/statistics, influence reset,
-  deterministic hashes, and Hide expiration;
+  deterministic hashes, and the one-off/recurring Hide lifecycle;
   `ManualRulesTests` covers equation arithmetic.
 
 ## Upkeep economy
@@ -776,7 +780,7 @@ claim about original-game behavior.
   recovered activity threshold. Retain zero-valued Dollar/Safe ties. Outcome
   data retains every award, while the native row presenter shows only the first
   three awards assigned to a player. Every resolved Hide increments the counter;
-  recurring Hide therefore counts again after the next Upkeep reveals the gang.
+  recurring Hide therefore counts again each turn while remaining hidden.
 - Current exclusions: none for award calculation or Hide counting.
 - Confidence: High for award/statistic mapping, thresholds, scan/order, ties,
   inactive-player eligibility, three-icon presentation cap, and retaliation
@@ -788,6 +792,6 @@ claim about original-game behavior.
   priority, ties, three-icon presentation, outcome/event integration and hashes;
   `CombatResolutionTests` verifies that
   retaliation is not credited; `InstantResolutionTests` verifies initial and
-  recurring Hide counts across the Upkeep reveal boundary.
+  recurring Hide counts while preserving hidden state across Upkeep.
 - Next experiment: capture a native golden Endgame Screen containing tied and
   threshold-boundary awards to confirm final typography and icon placement.

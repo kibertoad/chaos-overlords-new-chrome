@@ -486,7 +486,7 @@ public sealed partial class MatchState
             throw new InvalidOperationException("The match has ended and cannot advance another turn.");
         foreach (var gang in Players.SelectMany(player => player.Gangs))
         {
-            gang.Hidden = false;
+            gang.Hidden = gang.QueuedCommand?.Command.Action == GangAction.Hide;
             gang.HiredThisTurn = false;
         }
         CrackdownResolver.ResolveUpkeep(this);
@@ -700,7 +700,9 @@ public sealed partial class MatchState
 
         var replaced = Commands.TryGet(command.Gang, out _);
         var queued = Commands.Set(command);
-        FindGang(command.Gang)!.QueuedCommand = queued;
+        var gang = FindGang(command.Gang)!;
+        gang.QueuedCommand = queued;
+        gang.Hidden = command.Action == GangAction.Hide;
         RecordAiPlannedAction(command);
         var gameEvent = AppendEvent(replaced ? GameEventKind.CommandReplaced : GameEventKind.CommandQueued, command);
         return new CommandSubmissionResult(validation, gameEvent);
@@ -715,7 +717,9 @@ public sealed partial class MatchState
         if (!Commands.Cancel(gangId))
             return new CommandSubmissionResult(CommandValidation.Reject(CommandValidationCode.CommandNotQueued), null);
 
-        FindGang(gangId)!.QueuedCommand = null;
+        var gang = FindGang(gangId)!;
+        gang.QueuedCommand = null;
+        gang.Hidden = false;
         RecordAiPlannedAction(new GameCommand(player, gangId, GangAction.None, CommandTarget.None));
         return new CommandSubmissionResult(validation, AppendEvent(GameEventKind.CommandCancelled, command));
     }

@@ -13,20 +13,22 @@ public sealed class InstantResolutionTests
         EnterCommand(match);
         Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(10), GangAction.Hide, CommandTarget.None)).Accepted);
+        Assert.True(match.FindGang(new GangId(10))!.Hidden);
+        Assert.Equal(0, match.Players[0].Statistics.TimesHidden);
         EnterExecution(match);
 
         match.FinishExecutionPhase();
 
         Assert.True(match.FindGang(new GangId(10))!.Hidden);
         var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
-        Assert.Equal(0, resolution.PreviousValue);
+        Assert.Equal(1, resolution.PreviousValue);
         Assert.Equal(1, resolution.ResultValue);
         Assert.Empty(resolution.Rolls);
         Assert.Equal(1, match.Players[0].Statistics.TimesHidden);
     }
 
     [Fact]
-    public void RepeatingHideCountsAgainAfterNextUpkeepRevealsGang()
+    public void RepeatingHideStaysActiveAcrossUpkeepAndCountsAgainOnResolution()
     {
         var match = CreateMatch(siteResistance: 100);
         EnterCommand(match);
@@ -44,6 +46,7 @@ public sealed class InstantResolutionTests
         foreach (var player in match.Players) match.FinishHire(player.Id);
         match.FinishPlayerElimination();
         EnterCommand(match);
+        Assert.True(match.FindGang(new GangId(10))!.Hidden);
         EnterExecution(match);
 
         match.FinishExecutionPhase();
@@ -51,8 +54,31 @@ public sealed class InstantResolutionTests
         Assert.True(match.FindGang(new GangId(10))!.Hidden);
         Assert.Equal(2, match.Players[0].Statistics.TimesHidden);
         var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
-        Assert.Equal(0, resolution.PreviousValue);
+        Assert.Equal(1, resolution.PreviousValue);
         Assert.Equal(1, resolution.ResultValue);
+    }
+
+    [Fact]
+    public void ReplacingOrCancellingHideRevealsGangDuringPlanning()
+    {
+        var match = CreateMatch(siteResistance: 100);
+        EnterCommand(match);
+        var player = new PlayerId(0);
+        var gang = new GangId(10);
+
+        Assert.True(match.Submit(new GameCommand(
+            player, gang, GangAction.Hide, CommandTarget.None, Repeat: true)).Accepted);
+        Assert.True(match.FindGang(gang)!.Hidden);
+
+        Assert.True(match.Submit(new GameCommand(
+            player, gang, GangAction.Heal, CommandTarget.None)).Accepted);
+        Assert.False(match.FindGang(gang)!.Hidden);
+
+        Assert.True(match.Submit(new GameCommand(
+            player, gang, GangAction.Hide, CommandTarget.None, Repeat: true)).Accepted);
+        Assert.True(match.FindGang(gang)!.Hidden);
+        Assert.True(match.Cancel(player, gang).Accepted);
+        Assert.False(match.FindGang(gang)!.Hidden);
     }
 
     [Fact]

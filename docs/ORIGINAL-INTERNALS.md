@@ -2107,6 +2107,38 @@ complete retaliation-eligibility predicate.
 **Next validation:** capture fixed original traces at bands 0, 1, and 2 for
 every affected action, including Hide and both Martial Arts branches.
 
+### BIN-HIDE-LIFECYCLE-001 - active and recurring action boundary
+
+**Observation:** Each 32-byte public gang record stores its active action at
+offset `+7` (`0x00498daf` base) and its recurring action at offset `+10`
+(`0x00498db2` base). In outer turn function `0x0046e766`, decompiler lines
+154-192 validate recurring actions and copy `+10` to `+7` for all six players
+and all 81 roster slots before planning. Hide is action 8. Human recurring-menu
+handler `0x0041462f` writes both fields immediately; its None branch sets both
+to zero. One-off handler `0x00414d8c` clears `+10` for non-recurring choices
+and writes the selected action to `+7`. Combat and police subsequently test the
+same `+7` byte to decide whether the gang is hiding.
+
+**Interpretation:** There is no independent delayed Hide flag in the native
+record. Assigning Hide makes the gang hidden immediately. At the next turn
+boundary, one-off Hide is replaced by recurring None, while recurring Hide is
+copied back as the active action and remains hidden. Replacing or cancelling
+Hide during planning changes the active action immediately and reveals the
+gang. Resolution still increments the Hide statistic every turn that recurring
+Hide executes.
+
+**Confidence:** High from the bounded field writes, whole-roster turn-start
+copy, action-8 dispatcher, and combat/police consumers in executable SHA-256
+`A1430159BBE20869E277A5000311344F4EC141AB77C96B385336617149E97D89`
+under Ghidra 12.1.3.
+
+**Recreation status:** `MatchGangState.Hidden` now mirrors the active-action
+lifecycle at assignment, cancellation, and Upkeep. Tests distinguish one-off
+expiry from recurring retention and verify immediate replacement/cancellation.
+
+**Next validation:** capture the targetability transition in a fixed native
+hot-seat turn before and after replacing recurring Hide.
+
 ### BIN-COMBAT-ORDER-001 - player/roster attack and police rolls
 
 **Observation:** The action-1 (**Attack**) block in `0x00472775` is nested in

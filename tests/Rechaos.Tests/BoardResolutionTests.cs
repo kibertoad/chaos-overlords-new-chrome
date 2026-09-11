@@ -491,7 +491,7 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
-    public void HiddenStateExpiresAtFollowingUpkeep()
+    public void OneOffHiddenStateExpiresAtFollowingUpkeep()
     {
         var match = CreateMatch([Gang(10, 0, 0, 5)], [Gang(20, 1, 3, 5)]);
         Queue(match, new GameCommand(new PlayerId(0), new GangId(10), GangAction.Hide, CommandTarget.None));

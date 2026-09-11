@@ -174,7 +174,8 @@ public static class HelpContentAugmentation
         ("EQUIP", "Equip…", "An influenced Factory in the acting gang's controlled sector changes price to Cost - trunc(Cost / 3). Replacing an occupied equipment slot destroys the old item."),
         ("HEAL", "Heal", "A human gang rolls max(0, 4 + effective Heal) dice. Only 5s and 6s restore Force, up to the maximum of 10."),
         ("HIDE", "Hide", "Against a human or standard computer attacker, chance to hit a hidden target is clamp((7 + attacker Detect - target Stealth) x 5, 0, 100)%. "
-            + "An expert computer gets 20 additional percentage points. A successful hit against a hiding gang cannot be retaliated against. Hide does not by itself remove a gang from the sector display."),
+            + "An expert computer gets 20 additional percentage points. A successful hit against a hiding gang cannot be retaliated against. "
+            + "Hide applies as soon as it is assigned. A one-off Hide ends at the next Upkeep; a recurring Hide stays active until it is replaced or cancelled. Hide does not by itself remove a gang from the sector display."),
         ("INFSITES", "Influence…", "Each human gang separately rolls max(0, Force + effective Influence) dice at 5+. "
             + "Successes immediately reduce remaining Resistance, so several queued gangs accumulate progress in roster order; once Resistance reaches zero, later gangs do not roll."),
         ("RESEARCH", "Research", "A human gang rolls max(0, Force + effective Research) dice. Only a 6 is a success. "

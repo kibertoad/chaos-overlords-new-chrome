@@ -161,7 +161,9 @@ Last updated: 2026-09-11
   followed by most/least Cash Spent. All six player slots and ties participate;
   outcome data keeps every award while each visible row shows the first three.
   The sole native Hide-counter write is unconditional, so a recurring Hide
-  counts again after the next Upkeep reveals the gang.
+  counts again each turn. Native active/recurring action-byte writes also show
+  that recurring Hide remains hidden across Upkeep until replaced or cancelled;
+  only one-off Hide expires at the boundary.
 - Damage Inflicted now matches the sole native resolver write: every opening
   attack credits its complete computed damage even when it exceeds remaining
   Force or several attacks collectively overkill one target. Retaliation still

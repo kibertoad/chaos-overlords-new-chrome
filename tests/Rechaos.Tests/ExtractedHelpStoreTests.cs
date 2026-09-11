@@ -148,6 +148,9 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         Assert.Contains("115 - 5 x effective Stealth", augmented.Topics[1].Text,
             StringComparison.Ordinal);
         Assert.Contains("charges $3", augmented.Topics[2].Text, StringComparison.Ordinal);
+        Assert.Contains(augmented.Topics, topic =>
+            string.Equals(topic.Title, "Hide", StringComparison.OrdinalIgnoreCase)
+            && topic.Text.Contains("recurring Hide stays active", StringComparison.Ordinal));
         Assert.True(augmented.Topics[2].ListedInContents);
         Assert.Equal("Unchanged text", augmented.Topics[3].Text);
         Assert.Contains(augmented.Topics[0].Runs!, run =>

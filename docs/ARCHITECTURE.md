@@ -367,6 +367,9 @@ equipment class, and Hidden state for every gang; calculates all attacks and
 eligible retaliation in binary player/roster-slot order; then commits aggregate
 damage. This keeps
 an eliminated gang's simultaneous response independent of event emission order.
+Hidden state mirrors native active action 8: assigning Hide applies it
+immediately, the next Upkeep replaces a one-off order with None but retains a
+recurring Hide, and planning replacement or cancellation reveals the gang.
 Hidden attacks use an individual Detect-versus-Stealth roll and suppress
 retaliation on a hit. Cooperative sector visibility is a separate deterministic
 query shared by the Sector portrait strip and Search screen because Hide does
@@ -557,7 +560,7 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
   while sector/gang views project authoritative sites, influence, effective stats,
   equipment and queued commands.
 - Remaining resolver debt is narrowly tracked in the parity matrix: original
-  seeding/call context, combat reveal timing, police notification edges, and a
+  seeding/call context, police notification edges, and a
   small set of economy/special-building boundaries.
 - Runtime manifest checking validates version only.
 - Music and mapped combat/general sound effects are presented; Smacker video
