@@ -107,7 +107,13 @@ public sealed partial class ChaosGame
     private void AdvanceEndgamePresentation()
     {
         if (_showEndgameNotice)
-            _showEndgameNotice = false;
+        {
+            var notice = _state is null ? null : EndgameNoticePresentation.For(_state);
+            if (notice is not null && EndgameNoticePresentation.ContinuesToSummary(notice.Kind))
+                _showEndgameNotice = false;
+            else
+                _screens.Show(ClientScreen.Title);
+        }
         else
             _screens.Show(ClientScreen.Title);
     }
@@ -123,6 +129,9 @@ public sealed record EndgameNotice(EndgameNoticeKind Kind, PlayerId Player, shor
 
 public static class EndgameNoticePresentation
 {
+    public static bool ContinuesToSummary(EndgameNoticeKind kind) =>
+        kind == EndgameNoticeKind.Victory;
+
     public static EndgameNotice? For(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);

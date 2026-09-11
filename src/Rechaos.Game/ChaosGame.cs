@@ -759,7 +759,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Endgame:
                 if (_showEndgameNotice && EndgameNoticeLayout.Panel.Contains(point))
-                    _showEndgameNotice = false;
+                    AdvanceEndgamePresentation();
                 else if (!_showEndgameNotice && EndgameLayout.Awards.Contains(point))
                     _showEndgameStats = false;
                 else if (!_showEndgameNotice && EndgameLayout.Stats.Contains(point))

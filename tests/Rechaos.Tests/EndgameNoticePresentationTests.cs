@@ -19,6 +19,7 @@ public sealed class EndgameNoticePresentationTests
         Assert.Equal(EndgameNoticeKind.Victory, notice.Kind);
         Assert.Equal(new PlayerId(0), notice.Player);
         Assert.Equal(9, notice.PortraitId);
+        Assert.True(EndgameNoticePresentation.ContinuesToSummary(notice.Kind));
     }
 
     [Fact]
@@ -31,6 +32,7 @@ public sealed class EndgameNoticePresentationTests
         Assert.NotNull(notice);
         Assert.Equal(EndgameNoticeKind.Elimination, notice.Kind);
         Assert.Equal(4, notice.PortraitId);
+        Assert.False(EndgameNoticePresentation.ContinuesToSummary(notice.Kind));
     }
 
     [Fact]

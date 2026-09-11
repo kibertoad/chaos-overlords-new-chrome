@@ -3,7 +3,8 @@ namespace Rechaos.Core.GameModel;
 public enum MatchEndReason : byte
 {
     TimeLimit,
-    ObjectiveCompleted
+    ObjectiveCompleted,
+    PlayerEliminated
 }
 
 public sealed record MatchOutcome(
@@ -25,6 +26,24 @@ public static class MatchOutcomeEvaluator
     public static MatchOutcome? Evaluate(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
+        var humans = state.Players
+            .Where(player => player.Setup.Controller == PlayerController.Human).ToArray();
+        if (humans is [{ Status: PlayerStatus.Eliminated }])
+        {
+            var survivingOpponents = state.Players
+                .Where(player => player.Id != humans[0].Id && player.Status == PlayerStatus.Active)
+                .Select(player => player.Id)
+                .OrderBy(player => player.Value)
+                .ToArray();
+            if (survivingOpponents.Length > 0)
+                return new MatchOutcome(
+                    state.Setup.Scenario,
+                    MatchEndReason.PlayerEliminated,
+                    state.Coordinator.Turn,
+                    survivingOpponents,
+                    [],
+                    EndgameAwardEvaluator.Evaluate(state));
+        }
         var definition = ScenarioCatalog.Get(state.Setup.Scenario);
         if (definition.IsTimed)
         {

@@ -640,7 +640,9 @@ claim about original-game behavior.
 - Source: `MANUAL-GOG-1`; scenario descriptions and scoring tables.
 - Observed statement: Greed, Power, Acceptance, and Dominance end at their
   selected time limit; the other six scenarios end when their stated objective
-  is achieved. Dominance uses the duration-specific weights recorded in
+  is achieved. A single-player game also ends when its human Overlord is
+  eliminated; the elimination splash returns to the title instead of showing
+  the Endgame Awards/Stats screen. Dominance uses the duration-specific weights recorded in
   `ScenarioCatalog`. In Big Man, each of the four center sectors grants one
   point per turn to its controller and the first player to 40 wins. In
   Eliminate, losing the Right Hands removes that player: all remaining gangs
@@ -659,7 +661,10 @@ claim about original-game behavior.
   score-descending standings; equal scores share a competition rank, with the
   next place skipped. Big Man points are awarded in player-ID order at this
   boundary before its victory check. Eliminate cleanup also clears equipment,
-  pending hires, and the eliminated player's site influence.
+  pending hires, and the eliminated player's site influence. After elimination
+  resolution, a one-human match records `PlayerEliminated` immediately when that
+  human is no longer active; a hot-seat match continues while its objective is
+  unfinished.
 - Current exclusions: binary end-boundary timing, tie-break presentation,
   eliminated-player eligibility, objective-scenario ranking, the original
   display order within a timed tie, exact Siege pylon artwork, exact Eliminate
@@ -670,7 +675,8 @@ claim about original-game behavior.
   Big Man accrual in `MatchState.FinishPlayerElimination`, `MatchState.Outcome`,
   and the canonical state hash.
 - Tests: `MatchOutcomeTests` covers authoritative projection, objective event
-  and notification emission, Eliminate's Right Hands distinction, exact timed
+  and notification emission, immediate single-player defeat versus continuing
+  hot-seat play, Eliminate's Right Hands distinction, exact timed
   boundary ties/standings, and outcome hashing; `EndgameRankingTests` covers
   descending scores, competition ties, and rejecting unsupported objective
   rankings; `ScenarioLifecycleTests` covers Big Man accrual/event order and

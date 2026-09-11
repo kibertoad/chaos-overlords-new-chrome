@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,101 tests with no warnings.
+  isolated Release build passed all 1,103 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -23,9 +23,13 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Single-player objective games now end at the Player Elimination boundary when
+  their sole human Overlord is eliminated, recording the distinct
+  `PlayerEliminated` outcome. The elimination splash returns to the title as the
+  Help specifies; hot-seat games continue after one human is eliminated.
 - A completed single-player match now shows the original `PX00202` victory or
   `PX00203` elimination splash, including the configured human Overlord portrait,
-  before advancing to the awards/statistics screen. That screen now uses the
+  before advancing to the awards/statistics screen when victorious. That screen now uses the
   six original portrait rows, `PX00201` award icons, and an Awards/Stats toggle
   exposing Cash Earned, Cash Spent, Damage Inflicted, Casualties, and Overthrows.
   Hot-seat matches still go directly to shared standings until the original
