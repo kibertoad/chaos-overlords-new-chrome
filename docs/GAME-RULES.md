@@ -547,8 +547,10 @@ claim about original-game behavior.
   terminal repeat targets (completed Move/transactions, eliminated Attack
   target, maximum Heal, zero-tolerance Snitch) are removed while ongoing
   behaviors such as Hide and Chaos remain repeatable across turns.
-- Current exclusions: original crackdown ordering, abandoned-sector rules, and
-  negative-total edge behavior.
+- Moving or terminating the last friendly gang does not abandon the sector;
+  ownership changes only through a separate ownership-changing rule.
+- Current exclusions: original crackdown ordering and negative-total edge
+  behavior.
 - Confidence: High for equation components, density-derived sector Income,
   influence loss, zero-margin neutral selection, and cross-player winner/order
   behavior.
@@ -557,7 +559,8 @@ claim about original-game behavior.
 - Tests: `BoardResolutionTests` covers neutral capture, pooled strength,
   generated sector Income versus site Cash, defended
   failure, recorded deterministic zero-margin chance, positive and zero-margin
-  cross-player ties, unique-highest neutral conflicts, a single phase-opening
+  cross-player ties, unique-highest neutral conflicts, retained empty-sector
+  ownership after Move/Terminate, a single phase-opening
   defense for several owned-sector challengers,
   execution-time Crackdown rejection, overthrow/statistics, influence reset,
   deterministic hashes, and Hide expiration;

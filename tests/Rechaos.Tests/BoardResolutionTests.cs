@@ -23,6 +23,38 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
+    public void MovingLastGangOutDoesNotAbandonControlledSector()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 5)], [Gang(20, 1, 3, 5)], owner: new PlayerId(0));
+        Queue(match, new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Move, CommandTarget.Sector(1)));
+        EnterMovement(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(1, match.FindGang(new GangId(10))!.SectorId);
+        Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
+        Assert.DoesNotContain(match.Players[0].Gangs,
+            gang => gang.IsActive && gang.SectorId == 0);
+    }
+
+    [Fact]
+    public void TerminatingLastGangDoesNotImmediatelyAbandonControlledSector()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 5)], [Gang(20, 1, 3, 5)], owner: new PlayerId(0));
+        Queue(match, new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Terminate, CommandTarget.None));
+        EnterMovement(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.False(match.FindGang(new GangId(10))!.IsActive);
+        Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
+    }
+
+    [Fact]
     public void MoveRejectsDestinationAlreadyAtFriendlyCapacity()
     {
         var gangs = new List<MatchGangState> { Gang(10, 0, 0, 5) };

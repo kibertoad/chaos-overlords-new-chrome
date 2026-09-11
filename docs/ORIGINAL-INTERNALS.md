@@ -2053,6 +2053,21 @@ comparison behavior, candidate order, one-based RNG call, neutral sentinel, and
 capture predicate. The manual independently corroborates the single-player
 zero-margin probability; multi-player runtime capture remains useful.
 
+The same focused owner-field audit establishes retained control of an empty
+sector. Within the complete whole-turn resolver, the owner byte at
+`0x004a08e8 + sector * 0x24` is written only at decompiled lines 313-318, where
+the third qualifying Crackdown sets it to -1 and clears influence totals, and at
+lines 801-815, where a non--1 Control winner replaces the prior owner and clears
+those totals. The Movement and Terminate passes contain no owner write.
+
+**Interpretation:** Moving or terminating the last friendly gang in a sector
+does not itself abandon control. Ownership persists until another explicit
+ownership-changing rule runs. A later Control attempt still includes sector
+Income and influenced Support but naturally has no defending-gang contribution.
+
+**Confidence:** High static evidence within the whole-turn resolver; moving and
+terminating last-gang recreation fixtures guard the negative behavior.
+
 ## New-game initialization
 
 ### BIN-CITY-001 - density-derived sector income and tolerance
