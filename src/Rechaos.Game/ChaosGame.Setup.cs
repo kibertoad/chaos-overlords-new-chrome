@@ -214,8 +214,8 @@ public sealed partial class ChaosGame
             ["seed"] = setup.InitialSeed.ToString()
         });
         _state = OriginalMatchFactory.Create(_definitions, setup);
-        _replay = new MatchReplayRecorder(_state);
-        if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_replay);
+        _actions = new MatchActions(new MatchReplayRecorder(_state));
+        if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
         if (!_debugPhaseStepping) PrepareCurrentHireOffers();
         _cursor = _state.Players[0].Gangs[0].SectorId;
         _selectedGangIndex = 0;
@@ -239,7 +239,8 @@ public sealed partial class ChaosGame
             DrawCentered(font, batch, "CHAOS OVERLORDS", 103, Color.Gold, 3);
         }
         DrawButton(batch, pixel, font, TitleNewGame, "NEW GAME", true);
-        DrawButton(batch, pixel, font, TitleLoadGame, "LOAD GAME", true);
+        DrawButton(batch, pixel, font, TitleLoadGame, "LOAD", true);
+        DrawButton(batch, pixel, font, TitleOnline, "ONLINE", true);
         DrawButton(batch, pixel, font, TitleOptions, "OPTIONS", true);
         DrawButton(batch, pixel, font, TitleHelp, "HELP", true);
         DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);

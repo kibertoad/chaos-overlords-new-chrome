@@ -1,5 +1,20 @@
-import { z } from 'zod'
+import {
+  array,
+  boolean,
+  type InferOutput,
+  integer,
+  literal,
+  maxLength,
+  maxValue,
+  minValue,
+  nullable,
+  number,
+  pipe,
+  strictObject,
+  variant,
+} from 'valibot'
 import { LIMITS } from './limits'
+import { notNegativeZero, slotSchema } from './primitives'
 
 /**
  * The order document: what one player intends to do in a turn, in the vocabulary the game core
@@ -28,6 +43,17 @@ import { LIMITS } from './limits'
  * only crash or diverge a peer is refused at the door, by the one party every client trusts.
  *
  * See `docs/MULTIPLAYER.md`, "What the server does and does not defend against".
+ *
+ * @example
+ * ```ts
+ * import { parse } from 'valibot'
+ * import { orderDocumentSchema } from '@chaos-overlords/contracts'
+ *
+ * parse(orderDocumentSchema, {
+ *   schemaVersion: 1,
+ *   ops: [{ op: 'cancelCommand', player: 0, gang: 12 }],
+ * })
+ * ```
  */
 
 /** `MatchLimits` and the enum ranges of `Rechaos.Core`, mirrored for validation. */
@@ -52,67 +78,121 @@ export const GAME_BOUNDS = {
   maxGangDefinitionId: 32_767,
 } as const
 
-/** `CommandTargetKind`. Each kind bounds its own id; `none` carries no id. */
-export const commandTargetSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('none') }).strict(),
-  z.object({ kind: z.literal('gang'), id: bounded(GAME_BOUNDS.maxGangId) }).strict(),
-  z.object({ kind: z.literal('sector'), id: bounded(GAME_BOUNDS.sectorCount - 1) }).strict(),
-  z.object({ kind: z.literal('site'), id: bounded(GAME_BOUNDS.siteCount - 1) }).strict(),
-  z.object({ kind: z.literal('item'), id: bounded(GAME_BOUNDS.itemSlots - 1) }).strict(),
-])
+/**
+ * The bounded ids, spelled out rather than derived from {@link GAME_BOUNDS}.
+ *
+ * The C# generator reads this source without running it, so `maxValue(GAME_BOUNDS.sectorCount - 1)`
+ * is a bound it cannot see, and a bound it cannot see is a `long` where the client wants an `int`.
+ * `orders.spec.ts` holds the two in step.
+ */
+export const gangIdSchema = pipe(
+  number(),
+  integer(),
+  minValue(0),
+  maxValue(2_147_483_647),
+  notNegativeZero,
+)
+export const sectorIdSchema = pipe(number(), integer(), minValue(0), maxValue(63), notNegativeZero)
+export const siteIdSchema = pipe(number(), integer(), minValue(0), maxValue(191), notNegativeZero)
+export const itemIdSchema = pipe(number(), integer(), minValue(0), maxValue(63), notNegativeZero)
+export const gangActionSchema = pipe(
+  number(),
+  integer(),
+  minValue(0),
+  maxValue(14),
+  notNegativeZero,
+)
+export const gangDefinitionIdSchema = pipe(
+  number(),
+  integer(),
+  minValue(-32_768),
+  maxValue(32_767),
+  notNegativeZero,
+)
 
-const playerId = bounded(GAME_BOUNDS.playerCount - 1)
-const gangId = bounded(GAME_BOUNDS.maxGangId)
-const sectorId = bounded(GAME_BOUNDS.sectorCount - 1)
-const gangAction = bounded(GAME_BOUNDS.maxGangAction)
-const gangDefinitionId = integerIn(GAME_BOUNDS.minGangDefinitionId, GAME_BOUNDS.maxGangDefinitionId)
+/**
+ * `CommandTargetKind`. Each kind bounds its own id; `none` carries no id.
+ *
+ * Every member is named rather than inlined so the generated C# derives `NoneTarget`,
+ * `GangTarget`, `SectorTarget` and friends, instead of `None`, `Gang` and `Sector` — bare nouns
+ * that would collide with the game's own vocabulary in a shared namespace.
+ */
+export const noneTargetSchema = strictObject({ kind: literal('none') })
+export const gangTargetSchema = strictObject({ kind: literal('gang'), id: gangIdSchema })
+export const sectorTargetSchema = strictObject({ kind: literal('sector'), id: sectorIdSchema })
+export const siteTargetSchema = strictObject({ kind: literal('site'), id: siteIdSchema })
+export const itemTargetSchema = strictObject({ kind: literal('item'), id: itemIdSchema })
+
+export const commandTargetSchema = variant('kind', [
+  noneTargetSchema,
+  gangTargetSchema,
+  sectorTargetSchema,
+  siteTargetSchema,
+  itemTargetSchema,
+])
 
 /**
  * The five player intents. `player` is on every one of them because the game core takes it on
  * every one of them; the server checks it against the submitter's own slot rather than trusting
  * it (see `assertOwnOps` in the kernel's turn service).
  */
-export const orderOpSchema = z.discriminatedUnion('op', [
-  /** `MatchState.Submit(GameCommand)`. */
-  z
-    .object({
-      op: z.literal('submitCommand'),
-      player: playerId,
-      gang: gangId,
-      action: gangAction,
-      target: commandTargetSchema,
-      repeat: z.boolean(),
-      secondaryTarget: commandTargetSchema.nullable(),
-    })
-    .strict(),
-  /** `MatchState.Cancel(player, gang)`. */
-  z.object({ op: z.literal('cancelCommand'), player: playerId, gang: gangId }).strict(),
-  /** `MatchState.QueueHire(player, gangDefinitionId, sectorId)`. */
-  z
-    .object({
-      op: z.literal('queueHire'),
-      player: playerId,
-      gangDefinitionId,
-      sectorId,
-    })
-    .strict(),
-  /** `MatchState.SnubHireOffer(player, gangDefinitionId)`. */
-  z.object({ op: z.literal('snubHireOffer'), player: playerId, gangDefinitionId }).strict(),
-  /** `MatchState.TryDismissNotification(player)`. */
-  z.object({ op: z.literal('dismissNotification'), player: playerId }).strict(),
+
+/** `MatchState.Submit(GameCommand)`. */
+export const submitCommandOpSchema = strictObject({
+  op: literal('submitCommand'),
+  player: slotSchema,
+  gang: gangIdSchema,
+  action: gangActionSchema,
+  target: commandTargetSchema,
+  repeat: boolean(),
+  secondaryTarget: nullable(commandTargetSchema),
+})
+
+/** `MatchState.Cancel(player, gang)`. */
+export const cancelCommandOpSchema = strictObject({
+  op: literal('cancelCommand'),
+  player: slotSchema,
+  gang: gangIdSchema,
+})
+
+/** `MatchState.QueueHire(player, gangDefinitionId, sectorId)`. */
+export const queueHireOpSchema = strictObject({
+  op: literal('queueHire'),
+  player: slotSchema,
+  gangDefinitionId: gangDefinitionIdSchema,
+  sectorId: sectorIdSchema,
+})
+
+/** `MatchState.SnubHireOffer(player, gangDefinitionId)`. */
+export const snubHireOfferOpSchema = strictObject({
+  op: literal('snubHireOffer'),
+  player: slotSchema,
+  gangDefinitionId: gangDefinitionIdSchema,
+})
+
+/** `MatchState.TryDismissNotification(player)`. */
+export const dismissNotificationOpSchema = strictObject({
+  op: literal('dismissNotification'),
+  player: slotSchema,
+})
+
+export const orderOpSchema = variant('op', [
+  submitCommandOpSchema,
+  cancelCommandOpSchema,
+  queueHireOpSchema,
+  snubHireOfferOpSchema,
+  dismissNotificationOpSchema,
 ])
 
-export const orderDocumentSchema = z
-  .object({
-    schemaVersion: z.literal(1),
-    ops: z.array(orderOpSchema).max(LIMITS.ordersMaxOps),
-  })
-  .strict()
+export const orderDocumentSchema = strictObject({
+  schemaVersion: literal(1),
+  ops: pipe(array(orderOpSchema), maxLength(LIMITS.ordersMaxOps)),
+})
 
-export type CommandTarget = z.infer<typeof commandTargetSchema>
-export type OrderOp = z.infer<typeof orderOpSchema>
+export type CommandTarget = InferOutput<typeof commandTargetSchema>
+export type OrderOp = InferOutput<typeof orderOpSchema>
 export type OrderOpKind = OrderOp['op']
-export type OrderDocument = z.infer<typeof orderDocumentSchema>
+export type OrderDocument = InferOutput<typeof orderDocumentSchema>
 
 /** Every op kind the wire accepts, for documentation and for exhaustiveness in clients. */
 export const ORDER_OP_KINDS = [
@@ -134,25 +214,4 @@ export const ORDER_OP_KINDS = [
  */
 export function foreignOps(document: OrderDocument, slot: number): OrderOp[] {
   return document.ops.filter((op) => op.player !== slot)
-}
-
-function bounded(max: number) {
-  return integerIn(0, max)
-}
-
-/**
- * An integer in a closed range, with `-0` refused.
- *
- * `-0` passes every numeric comparison a range check makes, but it has no portable canonical JSON
- * form — and the order digest is taken over exactly that text. Letting it through here would turn a
- * doctored request into a canonicalisation failure deeper in, which is a 500 where a 422 is the
- * truth.
- */
-function integerIn(min: number, max: number) {
-  return z
-    .number()
-    .int()
-    .min(min)
-    .max(max)
-    .refine((value) => !Object.is(value, -0), 'negative zero has no portable JSON form')
 }

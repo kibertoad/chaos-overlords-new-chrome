@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>Rechaos.OnlineSmoke</AssemblyName>
+    <RootNamespace>Rechaos.OnlineSmoke</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Rechaos.Multiplayer/Rechaos.Multiplayer.csproj" />
+  </ItemGroup>
+</Project>

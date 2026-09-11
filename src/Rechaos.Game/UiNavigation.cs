@@ -83,6 +83,8 @@ public enum ClientScreen
     Options,
     Help,
     Setup,
+    Online,
+    Lobby,
     City,
     GameInfo,
     Commands,

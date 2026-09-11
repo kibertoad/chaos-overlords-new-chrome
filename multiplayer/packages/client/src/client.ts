@@ -1,16 +1,33 @@
-import type {
-  CreateMatchRequest,
-  JoinMatchRequest,
-  LobbyListing,
-  MatchEvent,
-  MatchView,
-  MembershipView,
-  OwnSubmissionView,
-  SealedOrdersView,
-  SnapshotView,
-  SubmitOrdersRequest,
-  TurnReportRequest,
-  UploadSnapshotRequest,
+import {
+  type CreateMatchRequest,
+  createMatchContract,
+  type EventPage,
+  getMatchContract,
+  type JoinMatchRequest,
+  joinMatchContract,
+  kickPlayerContract,
+  type LobbyList,
+  latestSnapshotContract,
+  leaveMatchContract,
+  listEventsContract,
+  listLobbiesContract,
+  type MatchDetail,
+  type MatchEvent,
+  type MembershipView,
+  type OwnSubmissionView,
+  ownSubmissionContract,
+  reportTurnContract,
+  type SealedOrdersView,
+  type SnapshotView,
+  type SubmitOrdersRequest,
+  sealedOrdersContract,
+  snapshotContract,
+  startMatchContract,
+  streamEventsContract,
+  submitOrdersContract,
+  type TurnReportRequest,
+  type UploadSnapshotRequest,
+  uploadSnapshotContract,
 } from '@chaos-overlords/contracts'
 import { MultiplayerApiError } from './errors'
 import { parseEventStream } from './sse'
@@ -44,16 +61,15 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 15_000
 const DEFAULT_RECONNECT_DELAY_MS = 1_000
 const DEFAULT_MAX_RECONNECT_DELAY_MS = 30_000
 
-export interface MatchDetail {
-  match: MatchView
-  joinCode: string
-  /** The caller's own player id. */
-  you: string
-}
-
 const API = '/api/v1'
 
-/** Typed access to the server. Unauthenticated calls first; `withToken` binds a membership. */
+/**
+ * Typed access to the server. Unauthenticated calls first; `withToken` binds a membership.
+ *
+ * Every method reads its method and path off the contract it calls, so this client and the server's
+ * routes cannot disagree about either: the server mounts the same contracts through
+ * `@toad-contracts/hono`, and the C# client's records are generated from their schemas.
+ */
 export class MultiplayerClient {
   private readonly fetchImpl: FetchLike
   private readonly baseUrl: string
@@ -76,16 +92,16 @@ export class MultiplayerClient {
     })
   }
 
-  listLobbies(): Promise<{ matches: LobbyListing[] }> {
-    return this.call('GET', '/matches')
+  listLobbies(): Promise<LobbyList> {
+    return this.call(listLobbiesContract.method, listLobbiesContract.pathResolver())
   }
 
   createMatch(request: CreateMatchRequest): Promise<MembershipView> {
-    return this.call('POST', '/matches', request)
+    return this.call(createMatchContract.method, createMatchContract.pathResolver(), request)
   }
 
   join(request: JoinMatchRequest): Promise<MembershipView> {
-    return this.call('POST', '/matches/join', request)
+    return this.call(joinMatchContract.method, joinMatchContract.pathResolver(), request)
   }
 
   match(matchId: string): MatchHandle {
@@ -97,7 +113,7 @@ export class MultiplayerClient {
     const headers: Record<string, string> = { Accept: 'application/json' }
     if (this.token) headers.Authorization = `Bearer ${this.token}`
     if (body !== undefined) headers['Content-Type'] = 'application/json'
-    const init: RequestInit = { method, headers }
+    const init: RequestInit = { method: method.toUpperCase(), headers }
     if (body !== undefined) init.body = JSON.stringify(body)
     if (this.requestTimeoutMs > 0) init.signal = AbortSignal.timeout(this.requestTimeoutMs)
     const response = await this.fetchImpl(`${this.baseUrl}${API}${path}`, init)
@@ -132,62 +148,95 @@ export class MatchHandle {
     readonly matchId: string,
   ) {}
 
-  private path(suffix = ''): string {
-    return `/matches/${encodeURIComponent(this.matchId)}${suffix}`
-  }
-
   get(): Promise<MatchDetail> {
-    return this.client.call('GET', this.path())
+    return this.client.call(
+      getMatchContract.method,
+      getMatchContract.pathResolver({ matchId: this.matchId }),
+    )
   }
 
   start(): Promise<void> {
-    return this.client.call('POST', this.path('/start'))
+    return this.client.call(
+      startMatchContract.method,
+      startMatchContract.pathResolver({ matchId: this.matchId }),
+    )
   }
 
   leave(): Promise<void> {
-    return this.client.call('POST', this.path('/leave'))
+    return this.client.call(
+      leaveMatchContract.method,
+      leaveMatchContract.pathResolver({ matchId: this.matchId }),
+    )
   }
 
   kick(playerId: string): Promise<void> {
-    return this.client.call('POST', this.path(`/players/${encodeURIComponent(playerId)}/kick`))
+    return this.client.call(
+      kickPlayerContract.method,
+      kickPlayerContract.pathResolver({ matchId: this.matchId, playerId }),
+    )
   }
 
   submitOrders(turn: number, request: SubmitOrdersRequest): Promise<OwnSubmissionView> {
-    return this.client.call('PUT', this.path(`/turns/${turn}/orders`), request)
+    return this.client.call(
+      submitOrdersContract.method,
+      submitOrdersContract.pathResolver({ matchId: this.matchId, turn }),
+      request,
+    )
   }
 
   mySubmission(turn: number): Promise<OwnSubmissionView> {
-    return this.client.call('GET', this.path(`/turns/${turn}/orders/mine`))
+    return this.client.call(
+      ownSubmissionContract.method,
+      ownSubmissionContract.pathResolver({ matchId: this.matchId, turn }),
+    )
   }
 
   sealedOrders(turn: number): Promise<SealedOrdersView> {
-    return this.client.call('GET', this.path(`/turns/${turn}/orders`))
+    return this.client.call(
+      sealedOrdersContract.method,
+      sealedOrdersContract.pathResolver({ matchId: this.matchId, turn }),
+    )
   }
 
   report(turn: number, request: TurnReportRequest): Promise<void> {
-    return this.client.call('POST', this.path(`/turns/${turn}/report`), request)
+    return this.client.call(
+      reportTurnContract.method,
+      reportTurnContract.pathResolver({ matchId: this.matchId, turn }),
+      request,
+    )
   }
 
   uploadSnapshot(request: UploadSnapshotRequest): Promise<void> {
-    return this.client.call('POST', this.path('/snapshots'), request)
+    return this.client.call(
+      uploadSnapshotContract.method,
+      uploadSnapshotContract.pathResolver({ matchId: this.matchId }),
+      request,
+    )
   }
 
   latestSnapshot(): Promise<SnapshotView> {
-    return this.client.call('GET', this.path('/snapshots/latest'))
+    return this.client.call(
+      latestSnapshotContract.method,
+      latestSnapshotContract.pathResolver({ matchId: this.matchId }),
+    )
   }
 
   snapshot(turn: number): Promise<SnapshotView> {
-    return this.client.call('GET', this.path(`/snapshots/${turn}`))
+    return this.client.call(
+      snapshotContract.method,
+      snapshotContract.pathResolver({ matchId: this.matchId, turn }),
+    )
   }
 
-  events(after = 0, limit = 200): Promise<{ events: MatchEvent[] }> {
-    return this.client.call('GET', this.path(`/events?after=${after}&limit=${limit}`))
+  events(after = 0, limit = 200): Promise<EventPage> {
+    const path = listEventsContract.pathResolver({ matchId: this.matchId })
+    return this.client.call(listEventsContract.method, `${path}?after=${after}&limit=${limit}`)
   }
 
   /** One connection's worth of events; ends when the server closes it. */
   async *streamOnce(options: StreamOptions = {}): AsyncGenerator<MatchEvent> {
     const response = await this.client.openStream(
-      this.path('/stream'),
+      streamEventsContract.pathResolver({ matchId: this.matchId }),
       options.after ?? 0,
       options.signal,
     )

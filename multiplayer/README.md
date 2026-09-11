@@ -13,11 +13,12 @@ This file is the operator and contributor manual.
 
 | Package | Role |
 |---|---|
-| `packages/contracts` | Wire contracts: zod request schemas, response views, event union, error envelope, limits. Shared with clients. |
+| `packages/contracts` | Wire contracts: valibot schemas for every request, view and event, plus one `defineApiContract` per endpoint. The source of truth the server mounts its routes from and the C# client's records are generated from. |
 | `packages/kernel` | Runtime-neutral domain: entities, storage/runtime ports, pure turn logic, the lobby/turn/snapshot services, an in-memory storage for hermetic tests. |
 | `packages/storage` | Drizzle schemas and repositories. One SQLite dialect serves better-sqlite3 and D1 from the same migration lineage; Postgres has its own. |
 | `packages/server` | The Hono app: routes, bearer auth, error envelope, the SSE response builder, the in-process event hub. |
-| `packages/client` | TypeScript client (REST + resumable SSE iterator). The conformance suite drives every runtime through it; the game's C# client mirrors it. |
+| `packages/client` | TypeScript client (REST + resumable SSE iterator). The conformance suite drives every runtime through it; the game's C# client in `src/Rechaos.Multiplayer` mirrors it. |
+| `scripts/generate-csharp.mjs` | Regenerates the game's C# mirror of the contracts. See "Generating the C# client" below. |
 | `packages/conformance` | Storage and HTTP behaviour suites every implementation and runtime runs. |
 | `runtimes/node` | Node facade: `@hono/node-server`, SQLite or Postgres, timer-based deadlines plus a sweeper. |
 | `runtimes/cloudflare` | Worker facade: D1, a `MatchHub` Durable Object per match for SSE fan-out and deadline alarms, a cron sweeper. |
@@ -63,6 +64,37 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
 
 Put TLS in front of it (Caddy, nginx, a tunnel): player tokens are bearer credentials.
+
+## Generating the C# client
+
+The game is a .NET client of this server, so its wire types are derived from these schemas rather
+than typed a second time:
+
+```sh
+pnpm codegen        # rewrite src/Rechaos.Multiplayer/Generated/*.cs
+pnpm codegen:check  # fail if the committed files no longer match the schemas
+```
+
+`WireContracts.cs` comes from the valibot schemas through
+[`@game-infra/valibot-to-csharp`](https://www.npmjs.com/package/@game-infra/valibot-to-csharp);
+`RouteTemplates.cs` comes from the endpoint contracts through the same `mapApiContractToPath` the
+Hono routes are derived from. Both are committed, so building the game never needs Node.
+
+The generator is fetched on demand rather than declared as a dependency — nothing about installing,
+building or testing this workspace should wait on a maintenance tool. To run an unpublished one out
+of a sibling `game-infra` checkout:
+
+```sh
+pnpm codegen --generator "npx tsx ../game-infra/packages/valibot-to-csharp/src/cli.ts"
+```
+
+Run `pnpm codegen` after changing anything under `packages/contracts/src`, and commit what it
+writes; CI runs `pnpm codegen:check` and fails if you did not.
+
+The generator is pinned to an exact version rather than a range, because this script both writes the
+committed output and checks it: under a range, a generator release would turn CI red on whatever
+unrelated pull request was open that day. Adopting a new one is a deliberate commit — bump the
+version in `scripts/generate-csharp.mjs`, run `pnpm codegen`, and the diff says what changed.
 
 ### Central server (Cloudflare)
 

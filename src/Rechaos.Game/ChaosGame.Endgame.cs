@@ -110,12 +110,25 @@ public sealed partial class ChaosGame
         {
             var notice = _state is null ? null : EndgameNoticePresentation.For(_state);
             if (notice is not null && EndgameNoticePresentation.ContinuesToSummary(notice.Kind))
+            {
                 _showEndgameNotice = false;
-            else
-                _screens.Show(ClientScreen.Title);
+                return;
+            }
         }
-        else
-            _screens.Show(ClientScreen.Title);
+        LeaveEndgame();
+    }
+
+    /// <summary>
+    /// The last step out of the endgame, whichever presentation led to it.
+    /// </summary>
+    /// <remarks>
+    /// An online match is over in its own right, but the session that drove it is still holding a
+    /// token and a connection until somebody says so.
+    /// </remarks>
+    private void LeaveEndgame()
+    {
+        if (_session is not null) EndOnlineMatch("THE MATCH IS OVER");
+        else _screens.Show(ClientScreen.Title);
     }
 }
 

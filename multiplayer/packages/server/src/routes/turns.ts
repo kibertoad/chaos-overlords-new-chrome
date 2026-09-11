@@ -1,46 +1,55 @@
 import {
-  LIMITS,
-  submitOrdersRequestSchema,
-  turnReportRequestSchema,
+  ownSubmissionContract,
+  reportTurnContract,
+  sealedOrdersContract,
+  submitOrdersContract,
 } from '@chaos-overlords/contracts'
-import { Hono } from 'hono'
-import { bodyLimit } from 'hono/body-limit'
-import { parseBody, requireMember, turnParam } from '../http/guards'
+import type { Hono } from 'hono'
+import { requireMember } from '../http/guards'
+import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
 
 /** The turn barrier: submit privately, read the sealed set, report the resulting hash. */
-export function turnRoutes(): Hono<AppEnv> {
-  const app = new Hono<AppEnv>()
-
-  app.put('/:turn/orders', bodyLimit({ maxSize: LIMITS.ordersBytes }), async (c) => {
-    const request = await parseBody(c, submitOrdersRequestSchema)
+export function registerTurnRoutes(api: Hono<AppEnv>): void {
+  buildHonoRoute(api, submitOrdersContract, async (c) => {
+    const { turn } = c.req.valid('param')
     const view = await c
       .get('container')
-      .kernel.turns.submitOrders(requireMember(c), turnParam(c), request)
-    return c.json(view)
+      .kernel.turns.submitOrders(
+        requireMember(c.get('principal'), c.req.valid('param').matchId),
+        turn,
+        c.req.valid('json'),
+      )
+    return c.json(view, 200)
   })
 
-  app.get('/:turn/orders/mine', async (c) => {
-    const principal = requireMember(c)
+  buildHonoRoute(api, ownSubmissionContract, async (c) => {
+    const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
+    const { turn } = c.req.valid('param')
     const view = await c
       .get('container')
-      .kernel.query.ownSubmission(principal.match, principal.player.id, turnParam(c))
-    return c.json(view)
+      .kernel.query.ownSubmission(principal.match, principal.player.id, turn)
+    return c.json(view, 200)
   })
 
-  app.get('/:turn/orders', async (c) => {
-    const principal = requireMember(c)
-    const view = await c.get('container').kernel.query.sealedOrders(principal.match, turnParam(c))
+  buildHonoRoute(api, sealedOrdersContract, async (c) => {
+    const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
+    const { turn } = c.req.valid('param')
+    const view = await c.get('container').kernel.query.sealedOrders(principal.match, turn)
     // A sealed set never changes, so clients and proxies may keep it.
     c.header('Cache-Control', 'private, max-age=31536000, immutable')
-    return c.json(view)
+    return c.json(view, 200)
   })
 
-  app.post('/:turn/report', bodyLimit({ maxSize: 4096 }), async (c) => {
-    const request = await parseBody(c, turnReportRequestSchema)
-    await c.get('container').kernel.turns.report(requireMember(c), turnParam(c), request)
+  buildHonoRoute(api, reportTurnContract, async (c) => {
+    const { turn } = c.req.valid('param')
+    await c
+      .get('container')
+      .kernel.turns.report(
+        requireMember(c.get('principal'), c.req.valid('param').matchId),
+        turn,
+        c.req.valid('json'),
+      )
     return c.body(null, 204)
   })
-
-  return app
 }

@@ -11,6 +11,12 @@ importers:
       '@biomejs/biome':
         specifier: ^2.5.13
         version: 2.5.13
+      '@game-infra/valibot-to-csharp':
+        specifier: 0.2.0
+        version: 0.2.0
+      tsx:
+        specifier: 4.20.6
+        version: 4.20.6
       turbo:
         specifier: ^2.10.12
         version: 2.10.12
@@ -52,9 +58,15 @@ importers:
 
   packages/contracts:
     dependencies:
-      zod:
-        specifier: ^4.6.1
-        version: 4.6.1
+      '@toad-contracts/core':
+        specifier: 0.4.0
+        version: 0.4.0
+      '@toad-contracts/valibot':
+        specifier: 0.5.0
+        version: 0.5.0(valibot@1.5.0(typescript@5.9.3))
+      valibot:
+        specifier: ^1.4.0
+        version: 1.5.0(typescript@5.9.3)
     devDependencies:
       typescript:
         specifier: ^5.9.3
@@ -72,6 +84,9 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+      valibot:
+        specifier: ^1.4.0
+        version: 1.5.0(typescript@5.9.3)
       vitest:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
@@ -84,12 +99,15 @@ importers:
       '@chaos-overlords/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@toad-contracts/core':
+        specifier: 0.4.0
+        version: 0.4.0
+      '@toad-contracts/hono':
+        specifier: 0.3.2
+        version: 0.3.2(hono@4.13.7)
       hono:
         specifier: ^4.13.7
         version: 4.13.7
-      zod:
-        specifier: ^4.6.1
-        version: 4.6.1
     devDependencies:
       '@chaos-overlords/conformance':
         specifier: workspace:*
@@ -990,6 +1008,10 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@game-infra/valibot-to-csharp@0.2.0':
+    resolution: {integrity: sha512-/O6o2qSCo4GT73l+sWrIIquo994tEjfMtQY/MzHMt6BRLGOG9/QKs3oPqk2hwTlFf5Ciwr+QsMnM23K1NSeRjA==}
+    hasBin: true
+
   '@hono/node-server@2.1.1':
     resolution: {integrity: sha512-ELuehkj5VCBdgEw9zs+ivkKwyzzUCSQuE96YmiPvn1ECBoZCczbFXJLeEGMTYjphP6gydh4pHMqEYPVMYUVgQg==}
     engines: {node: '>=20'}
@@ -1447,6 +1469,19 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
+  '@toad-contracts/core@0.4.0':
+    resolution: {integrity: sha512-5wyHoGMPN/X/J1woRk279jFoup2B+kmbyW1MF+BbdqD5aEQJtqWI9WWyoZLYIczhi02c4Yap1unonfcQz7GAyw==}
+
+  '@toad-contracts/hono@0.3.2':
+    resolution: {integrity: sha512-rARlCsEHaCkRXOXZ0NYgqLONwACu3x9MTQYzbeSIEe4kkxP+U92UitoOlIho1YzP0pEG5y/bBcEQytD+cwWyfg==}
+    peerDependencies:
+      hono: '>=4.0.0'
+
+  '@toad-contracts/valibot@0.5.0':
+    resolution: {integrity: sha512-Zi9+YlyPzUz9Vcf/NLtQTkenR16YnD4ipl3Uwr+/den6wYnfrJ+V8Pxdcwe/3akpIdZuP7cz/5R7E0/Khaz1/Q==}
+    peerDependencies:
+      valibot: '>=1.0.0'
+
   '@turbo/darwin-64@2.10.12':
     resolution: {integrity: sha512-9nKgKoF6ZOUsM+or0OtNf+TTJSfGvDNP7ZFv/ZGWVwOSCkumyctQiTeHwB4UNljHTnC41AqylgbunLDHoccNrA==}
     cpu: [x64]
@@ -1494,6 +1529,10 @@ packages:
 
   '@types/pg@8.23.1':
     resolution: {integrity: sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A==}
+
+  '@typescript/typescript6@6.0.2':
+    resolution: {integrity: sha512-mbCddXd+jm7hfx7w2YU64/Av4/NqqeG3GoRZgxPcgoTxYjhrcfJRw9ULch71SS4G+Q3bOXFhRvPqjguN0Hyp5w==}
+    hasBin: true
 
   '@vitest/expect@4.1.11':
     resolution: {integrity: sha512-VX2x5vNJXET47KAFzwERI+KRMtTTCSWTfSMKsW7JsUsXV4psq++e3DvZpuTDOpHcxytiDs6p2nhVb2tVDiiUYw==}
@@ -1947,6 +1986,11 @@ packages:
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
+  tsx@4.20.6:
+    resolution: {integrity: sha512-ytQKuwgmrrkDTFP4LjR0ToE2nqgy886GpvRSpU0JAnrdBYppuY5rLkRUYPU1yCryb24SsKBTL/hlDQAEFVwtZg==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+
   tsx@4.23.13:
     resolution: {integrity: sha512-BL5MGkRln6aDYhb0xbQlEAGw743BaZYWdbWtdJOBriYJboKgUUYCadFp2/FpBBZquBC/ezNBn7wMMPx7FDZUDw==}
     engines: {node: '>=18.0.0'}
@@ -1961,6 +2005,11 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
@@ -1970,6 +2019,14 @@ packages:
 
   unenv@2.0.0-rc.24:
     resolution: {integrity: sha512-i7qRCmY42zmCwnYlh9H2SvLEypEFGye5iRmEMKjcGi7zk9UquigRjFtTLz0TYqr0ZGLZhaMHl/foy1bZR+Cwlw==}
+
+  valibot@1.5.0:
+    resolution: {integrity: sha512-nil6AkP2TChWL43Z5uJ6GTxX01CUA+g8LWUM+N/rB9NBbkUMaUsi9PUNzlUPgoKASgmx9f7eGOYpJ04/fSa6FQ==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   vite@8.3.0:
     resolution: {integrity: sha512-lhZBVvEHefgE+HQZC9O7EBJgCU/nVzFNl7vkS4RE0APtWLP02/8QVIkQtzBxPquh7lq5/78NHipTj7ODQ6XuyQ==}
@@ -2114,9 +2171,6 @@ packages:
 
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
-
-  zod@4.6.1:
-    resolution: {integrity: sha512-341aRWQsve0rvronKNTqZpjmzdbUDlFuzHaI/XLg/Ej82qffDJRRfBTCuv7+9q/rMjB6LSLyEBnW4InJeMtt/Q==}
 
 snapshots:
 
@@ -2537,6 +2591,10 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
+  '@game-infra/valibot-to-csharp@0.2.0':
+    dependencies:
+      '@typescript/typescript6': 6.0.2
+
   '@hono/node-server@2.1.1(hono@4.13.7)':
     dependencies:
       hono: 4.13.7
@@ -2827,6 +2885,21 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
+  '@toad-contracts/core@0.4.0':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+
+  '@toad-contracts/hono@0.3.2(hono@4.13.7)':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@toad-contracts/core': 0.4.0
+      hono: 4.13.7
+
+  '@toad-contracts/valibot@0.5.0(valibot@1.5.0(typescript@5.9.3))':
+    dependencies:
+      '@toad-contracts/core': 0.4.0
+      valibot: 1.5.0(typescript@5.9.3)
+
   '@turbo/darwin-64@2.10.12':
     optional: true
 
@@ -2867,6 +2940,10 @@ snapshots:
       '@types/node': 22.20.2
       pg-protocol: 1.16.0
       pg-types: 2.2.0
+
+  '@typescript/typescript6@6.0.2':
+    dependencies:
+      '@typescript/old': typescript@6.0.3
 
   '@vitest/expect@4.1.11':
     dependencies:
@@ -3347,6 +3424,13 @@ snapshots:
   tslib@2.8.1:
     optional: true
 
+  tsx@4.20.6:
+    dependencies:
+      esbuild: 0.25.12
+      get-tsconfig: 4.14.3
+    optionalDependencies:
+      fsevents: 2.3.3
+
   tsx@4.23.13:
     dependencies:
       esbuild: 0.28.2
@@ -3364,6 +3448,8 @@ snapshots:
 
   typescript@5.9.3: {}
 
+  typescript@6.0.3: {}
+
   undici-types@6.21.0: {}
 
   undici@7.29.0: {}
@@ -3371,6 +3457,10 @@ snapshots:
   unenv@2.0.0-rc.24:
     dependencies:
       pathe: 2.0.3
+
+  valibot@1.5.0(typescript@5.9.3):
+    optionalDependencies:
+      typescript: 5.9.3
 
   vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13):
     dependencies:
@@ -3486,5 +3576,3 @@ snapshots:
       youch-core: 0.3.3
 
   zod@4.4.3: {}
-
-  zod@4.6.1: {}

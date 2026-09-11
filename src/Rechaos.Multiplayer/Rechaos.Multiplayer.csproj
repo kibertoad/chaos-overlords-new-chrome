@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyTitle>Chaos Overlords: New Chrome multiplayer client</AssemblyTitle>
+    <Product>Chaos Overlords: New Chrome</Product>
+    <Company>kibertoad</Company>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Rechaos.Core/Rechaos.Core.csproj" />
+  </ItemGroup>
+</Project>

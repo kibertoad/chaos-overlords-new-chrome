@@ -1,4 +1,5 @@
 import { type OrderDocument, orderDocumentSchema } from '@chaos-overlords/contracts'
+import { safeParse } from 'valibot'
 import { describe, expect, it } from 'vitest'
 import type { Player, TurnReport } from '../src'
 import {
@@ -75,7 +76,7 @@ describe('canonicalJson', () => {
       ],
     }
     // The pin is only worth anything over a document the wire would actually carry.
-    expect(orderDocumentSchema.safeParse(document).success).toBe(true)
+    expect(safeParse(orderDocumentSchema, document).success).toBe(true)
     expect(await hashOrderDocument(document)).toBe(
       '1e8d923be158821a974c60903be48d010f7499bdadc3510f6ea3714abadd6631',
     )

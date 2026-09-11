@@ -10,6 +10,37 @@ namespace Rechaos.Tests;
 
 public sealed class MatchReplayTests
 {
+    /// <summary>
+    /// The operation kind is serialized as its number, so a stored replay reads whatever member
+    /// happens to sit at that ordinal today. Adding one is safe; moving one silently reinterprets
+    /// every replay already on disk, which is why the whole order is pinned rather than the count.
+    /// </summary>
+    [Fact]
+    public void OperationKindOrdinalsAreStableOnTheWire()
+    {
+        Assert.Equal(
+            new[]
+            {
+                (ReplayOperationKind.SubmitCommand, 0),
+                (ReplayOperationKind.CancelCommand, 1),
+                (ReplayOperationKind.QueueHire, 2),
+                (ReplayOperationKind.SnubHireOffer, 3),
+                (ReplayOperationKind.FinishUpkeep, 4),
+                (ReplayOperationKind.FinishCommand, 5),
+                (ReplayOperationKind.FinishExecutionPhase, 6),
+                (ReplayOperationKind.FinishHire, 7),
+                (ReplayOperationKind.FinishPlayerElimination, 8),
+                (ReplayOperationKind.DismissNotification, 9),
+                (ReplayOperationKind.PrepareHireOffers, 10),
+                (ReplayOperationKind.PrepareAiPlanning, 11),
+                (ReplayOperationKind.PrepareAiHiring, 12),
+                (ReplayOperationKind.SendComlinkMessage, 13),
+                (ReplayOperationKind.MarkComlinkRead, 14),
+                (ReplayOperationKind.PrepareSimultaneousHireOffers, 15)
+            },
+            Enum.GetValues<ReplayOperationKind>().Select(kind => (kind, (int)kind)));
+    }
+
     [Fact]
     public void ReplaysAcceptedRejectedAndPhaseOperationsToIdenticalState()
     {

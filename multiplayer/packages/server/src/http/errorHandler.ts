@@ -1,8 +1,8 @@
 import { type ErrorCode, type ErrorEnvelope, STATUS_BY_CODE } from '@chaos-overlords/contracts'
 import { isDomainError } from '@chaos-overlords/kernel'
+import { SchemaValidationError } from '@toad-contracts/core'
 import type { Context } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { ZodError } from 'zod'
 import type { AppEnv } from './types'
 
 /** The ONE producer of the error envelope. Controllers throw; nothing else builds `{ error }`. */
@@ -11,12 +11,15 @@ export function handleError(error: Error, c: Context<AppEnv>): Response {
   if (isDomainError(error)) {
     return respond(c, error.code, error.message, error.details, requestId)
   }
-  if (error instanceof ZodError) {
+  if (error instanceof SchemaValidationError) {
+    // The contract validator refused a path param, a query value or the body. The issue paths and
+    // messages come straight from valibot rather than being restated per endpoint, so a client is
+    // told which field it got wrong.
     return respond(
       c,
       'validation_failed',
-      'Request body failed validation',
-      { reason: 'invalid_body', issues: error.issues },
+      'Request failed contract validation',
+      { reason: 'invalid_request', issues: error.issues },
       requestId,
     )
   }

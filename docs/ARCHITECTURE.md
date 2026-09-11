@@ -514,7 +514,8 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
   deferred Hire placement. F5/F9 expose atomic native quick-save/load with backup recovery in
   the user's local application-data directory; the same store writes an
   automatic recovery checkpoint after Player Elimination completes each turn.
-  All client mutations pass through `MatchReplayRecorder`; F6/F10 atomically
+  All client mutations pass through `MatchActions`, which applies them to the match in
+  hot-seat play and to a speculative copy plus the turn's order document online; F6/F10 atomically
   save and verify/play the current replay, recovering the previous verified
   generation when the primary is missing or corrupt. New matches now use the
   recovered density/site generator, fixed HQ

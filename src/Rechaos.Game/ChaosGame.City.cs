@@ -47,10 +47,22 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.N)) OpenComlinkSend(ClientScreen.City);
         if (Pressed(keyboard, Keys.J)) OpenManagement(ClientScreen.GameInfo, ClientScreen.City);
         if (Pressed(keyboard, Keys.Space)) AdvanceTurn();
-        if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
-        if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
-        if (Pressed(keyboard, Keys.F6)) SaveReplay();
-        if (Pressed(keyboard, Keys.F10)) LoadReplay();
+        // Saving and loading belong to a match this client owns. Online the authoritative state is
+        // the sealed one, so loading would put the interface on a match nobody else is playing while
+        // the session carried on behind it, and saving would capture the speculative copy rather than
+        // anything a peer would recognise.
+        if (_session is null)
+        {
+            if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
+            if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
+            if (Pressed(keyboard, Keys.F6)) SaveReplay();
+            if (Pressed(keyboard, Keys.F10)) LoadReplay();
+        }
+        else if (Pressed(keyboard, Keys.F5) || Pressed(keyboard, Keys.F9)
+            || Pressed(keyboard, Keys.F6) || Pressed(keyboard, Keys.F10))
+        {
+            _message = "AN ONLINE MATCH CANNOT BE SAVED OR LOADED";
+        }
     }
 
     private void HandleCityClick(Point point)
@@ -207,7 +219,12 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.GangPortrait(draggedDefinition), Color.White);
             DrawBorder(batch, pixel, token, Color.White, 1);
         }
-        font.Draw(batch, "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY", new Vector2(18, 439), new Color(180, 190, 190), 1);
+        // Online, the footer says where the turn stands instead of which keys save: a match nobody
+        // can save is one where the only thing worth knowing is whether it is waiting on you.
+        var footer = _session is null
+            ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
+            : OnlineTurnStatus();
+        font.Draw(batch, footer, new Vector2(18, 439), new Color(180, 190, 190), 1);
         if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
     }
 
@@ -238,6 +255,11 @@ public sealed partial class ChaosGame
 
     private void QueueBoardCommand()
     {
+        if (_actions is null)
+        {
+            _message = OnlinePlanningClosed;
+            return;
+        }
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
@@ -253,7 +275,7 @@ public sealed partial class ChaosGame
         var command = gang.SectorId == _cursor
             ? new GameCommand(playerId, gang.Id, GangAction.Control, CommandTarget.None)
             : new GameCommand(playerId, gang.Id, GangAction.Move, CommandTarget.Sector(_cursor));
-        var result = _replay!.Submit(command);
+        var result = _actions.Submit(command);
         _message = result.Accepted
             ? $"{command.Action.ToString().ToUpperInvariant()} QUEUED"
             : result.Validation.Message.ToUpperInvariant();

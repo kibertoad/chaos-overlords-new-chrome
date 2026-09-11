@@ -6,5 +6,7 @@ dist/
 *.sqlite
 *.sqlite-journal
 *.db
+*.db-shm
+*.db-wal
 .env
 .dev.vars

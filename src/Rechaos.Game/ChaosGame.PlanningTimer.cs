@@ -148,9 +148,18 @@ public sealed partial class ChaosGame
         SelectPlanningTimeLimit(choices[(index + 1) % choices.Count]);
     }
 
+    /// <summary>
+    /// Arms the planning clock for the local player, in a hot-seat match.
+    /// </summary>
+    /// <remarks>
+    /// Online matches have their own clock — the server's turn deadline, shown in the city footer —
+    /// and a second one running against it would submit a player's turn early for reasons nothing
+    /// on screen explains.
+    /// </remarks>
     private void StartPlanningTimer(TimeSpan now)
     {
         _planningTimer.Stop();
+        if (_session is not null) return;
         if (_debugPhaseStepping || _state?.Coordinator.ActivePlayer is not { } playerId
             || _state.Coordinator.Phase != TurnPhase.Command
             || _state.FindPlayer(playerId)?.Setup.Controller != PlayerController.Human)
@@ -168,6 +177,7 @@ public sealed partial class ChaosGame
             || _state.Coordinator.Phase != TurnPhase.Command
             || _state.FindPlayer(playerId)?.Setup.Controller != PlayerController.Human
             || _screens.Current is ClientScreen.Title or ClientScreen.Setup
+                or ClientScreen.Online or ClientScreen.Lobby
                 or ClientScreen.Handoff or ClientScreen.Endgame)
         {
             StopPlanningTimer();
@@ -187,7 +197,11 @@ public sealed partial class ChaosGame
             case PlanningTimerSignal.Expired:
                 _idleGangWarningOpen = false;
                 _message = "TURN TIME LIMIT EXPIRED";
-                FinishPlanningTurn();
+                // Online this never fires, because the clock is not armed there. It still goes
+                // through the online path rather than straight to the local resolution, so that
+                // arming it later cannot silently resolve a turn on one client alone.
+                if (_session is not null) SubmitOnlineTurn();
+                else FinishPlanningTurn();
                 return true;
             default:
                 throw new InvalidOperationException("Unknown planning timer signal.");

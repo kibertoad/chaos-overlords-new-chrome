@@ -17,7 +17,7 @@ Last updated: 2026-09-11
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v19, replays are v20, canonical hashes are v22, asset
+- Native saves are format v19, replays are v21, canonical hashes are v22, asset
   manifests are v4, extracted help is v1, and client preferences are v6. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
@@ -258,7 +258,7 @@ Last updated: 2026-09-11
   of the source gang's exact three equipped items. Transactions now scan fixed
   player and roster slots, reserve outgoing items, and apply incoming gifts only
   after recipient transactions, allowing swaps and overwriting same-turn buys
-  exactly as the resolver does. Native saves are v19, replays are v20 and canonical hashes
+  exactly as the resolver does. Native saves are v19, replays are v21 and canonical hashes
   are v22; the immediately previous formats
   remain readable through their preserved fingerprint projections.
 - Move now uses the original `PX05006` Movement panel. Its destination aperture

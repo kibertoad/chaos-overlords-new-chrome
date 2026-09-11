@@ -161,7 +161,7 @@ public sealed partial class ChaosGame
 
     private void ActivateCommandSelection()
     {
-        if (_replay is null) return;
+        if (_actions is null) return;
         if (_choosingCommandTarget)
         {
             if (IsEquipmentCommandPicker() && (_state is null
@@ -214,9 +214,9 @@ public sealed partial class ChaosGame
 
     private void SubmitCommand(GameCommand selection)
     {
-        if (_replay is null) return;
+        if (_actions is null) return;
         var command = selection with { Repeat = _commandRepeats };
-        var result = _replay.Submit(command);
+        var result = _actions.Submit(command);
         _message = result.Accepted
             ? $"{(_commandRepeats ? "REPEATING " : "")}{command.Action.ToString().ToUpperInvariant()} QUEUED"
             : result.Validation.Message.ToUpperInvariant();
@@ -225,10 +225,10 @@ public sealed partial class ChaosGame
 
     private void CancelSelectedCommand()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         if (gang is null) return;
-        var result = _replay.Cancel(playerId, gang.Id);
+        var result = _actions.Cancel(playerId, gang.Id);
         _message = result.Accepted ? "COMMAND CLEARED" : result.Validation.Message.ToUpperInvariant();
         if (result.Accepted) _screens.Show(_commandReturnScreen);
     }

@@ -7,19 +7,37 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    /// <summary>
+    /// Whether Comlink can be opened at all, which an online match currently cannot.
+    /// </summary>
+    /// <remarks>
+    /// Both halves of Comlink write hashed state — a message lands in an inbox, and opening the
+    /// view clears the read mark — so neither can happen on one client alone. Refusing at the door
+    /// says so once, where a player can see it, rather than letting them write a message the turn
+    /// will not carry.
+    /// </remarks>
+    private bool ComlinkAvailable()
+    {
+        if (_actions?.IsOnline != true) return true;
+        _message = "COMLINK IS NOT CARRIED BY AN ONLINE TURN YET";
+        return false;
+    }
+
     private void OpenComlinkView(ClientScreen returnScreen)
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (!ComlinkAvailable()) return;
         _managementReturnScreen = returnScreen;
         var inbox = _state.ComlinkFor(playerId);
         _comlinkCursor = Math.Max(0, inbox.Count - 1);
-        if (inbox.HasUnread) _replay?.MarkComlinkRead(playerId);
+        if (inbox.HasUnread) _actions?.MarkComlinkRead(playerId);
         _screens.Show(ClientScreen.ComlinkView);
     }
 
     private void OpenComlinkSend(ClientScreen returnScreen)
     {
         if (_state?.Coordinator.ActivePlayer is null) return;
+        if (!ComlinkAvailable()) return;
         _managementReturnScreen = returnScreen;
         Array.Fill(_comlinkRecipients, false);
         _comlinkEditor.Clear();
@@ -105,12 +123,12 @@ public sealed partial class ChaosGame
 
     private void SendComlink()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } sender || _replay is null) return;
+        if (_state?.Coordinator.ActivePlayer is not { } sender || _actions is null) return;
         var recipients = Enumerable.Range(0, MatchLimits.PlayerCount)
             .Where(index => _comlinkRecipients[index])
             .Select(index => new PlayerId(index))
             .ToArray();
-        var result = _replay.SendComlinkMessage(sender, recipients, _comlinkEditor.Text);
+        var result = _actions.SendComlinkMessage(sender, recipients, _comlinkEditor.Text);
         _message = result.Message.ToUpperInvariant();
         if (!result.Accepted)
         {

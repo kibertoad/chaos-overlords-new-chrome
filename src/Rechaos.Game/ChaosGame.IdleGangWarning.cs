@@ -53,11 +53,20 @@ public sealed partial class ChaosGame
         else if (IdleGangWarningLayout.Cancel.Contains(point)) CancelIdleGangWarning();
     }
 
+    /// <summary>
+    /// The player said "yes, finish anyway", so the turn ends the way its match ends turns.
+    /// </summary>
+    /// <remarks>
+    /// Online that means submitting the order document and waiting for the seal, not resolving
+    /// here: a client that finished its own turn would be a turn ahead of everyone else's, and the
+    /// sealed set would then apply the same orders a second time.
+    /// </remarks>
     private void ConfirmIdleGangWarning()
     {
         _idleGangWarningOpen = false;
         if (_slidePanels) PlayGeneralSound(GeneralSoundSlot.PanelClose);
-        FinishPlanningTurn();
+        if (_session is not null) SubmitOnlineTurn();
+        else FinishPlanningTurn();
     }
 
     private void CancelIdleGangWarning()

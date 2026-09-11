@@ -80,7 +80,7 @@ public sealed partial class ChaosGame
 
     private void OpenHire(ClientScreen returnScreen = ClientScreen.City)
     {
-        if (_state is null || _replay is null
+        if (_state is null || _actions is null
             || _state.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
@@ -101,12 +101,12 @@ public sealed partial class ChaosGame
 
     private void PrepareCurrentHireOffers()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
         var player = _state.FindPlayer(playerId)!;
         if (player.HireOfferSlots.Any(slot => !slot.GangDefinitionId.HasValue)
             && player.PendingHires.Count == 0
             && !player.HasSnubbedHireOfferThisTurn)
-            _replay.PrepareHireOffers(playerId);
+            _actions.PrepareHireOffers(playerId);
     }
 
     private IReadOnlyList<HireDockEntry?> CurrentHireDock(MatchPlayerState player) =>
@@ -114,7 +114,7 @@ public sealed partial class ChaosGame
 
     private void BeginHireDrag(int slot, Point point)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null
             || _state.Coordinator.Phase != TurnPhase.Command)
         {
             _message = "HIRING REQUIRES A PLANNING TURN";
@@ -153,7 +153,7 @@ public sealed partial class ChaosGame
         _draggedHireDefinitionId = null;
         _draggedHireSlot = null;
         if (definitionId is null || slot is null || _state?.Coordinator.ActivePlayer is not { } playerId
-            || _replay is null)
+            || _actions is null)
             return;
         _hireDragStarted = false;
         bool hasSector;
@@ -176,7 +176,7 @@ public sealed partial class ChaosGame
             _message = "HIRE CANCELLED";
             return;
         }
-        var result = _replay.QueueHire(playerId, definitionId.Value, sectorId);
+        var result = _actions.QueueHire(playerId, definitionId.Value, sectorId);
         _message = result.Accepted
             ? $"HIRED FOR SECTOR {sectorId + 1}"
             : result.Validation.Message.ToUpperInvariant();
@@ -204,12 +204,12 @@ public sealed partial class ChaosGame
 
     private void QueueSelectedHireOffer()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
         var player = _state.FindPlayer(playerId)!;
         _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
         if (_hireCursor < 0) return;
         var offer = player.HireOfferSlots[_hireCursor].GangDefinitionId!.Value;
-        var result = _replay.QueueHire(playerId, offer, _cursor);
+        var result = _actions.QueueHire(playerId, offer, _cursor);
         _message = result.Accepted ? "HIRE QUEUED" : result.Validation.Message.ToUpperInvariant();
         if (result.Accepted)
         {
@@ -219,14 +219,14 @@ public sealed partial class ChaosGame
 
     private void SnubSelectedHireOffer()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
         var player = _state.FindPlayer(playerId)!;
         _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
         if (_hireCursor < 0) return;
         var offer = player.HireOfferSlots[_hireCursor].GangDefinitionId!.Value;
         var cancelsPendingHire = player.PendingHires.Any(hire => hire.OfferSlot == _hireCursor);
         var cancelsSnub = player.SnubbedHireOfferSlot == _hireCursor;
-        var result = _replay.SnubHireOffer(playerId, offer);
+        var result = _actions.SnubHireOffer(playerId, offer);
         _message = result.Accepted
             ? cancelsPendingHire ? "HIRE CANCELLED"
                 : cancelsSnub ? "REJECTION CANCELLED" : "OFFER SNUBBED"
@@ -236,7 +236,7 @@ public sealed partial class ChaosGame
 
     private void SnubHireDockOffer(int slot)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _replay is null) return;
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
         PrepareCurrentHireOffers();
         var entry = CurrentHireDock(_state.FindPlayer(playerId)!)[slot];
         if (entry is null)
@@ -246,7 +246,7 @@ public sealed partial class ChaosGame
         }
         var cancelsPendingHire = entry.Hired;
         var cancelsSnub = _state.FindPlayer(playerId)!.SnubbedHireOfferSlot == slot;
-        var result = _replay.SnubHireOffer(playerId, entry.GangDefinitionId);
+        var result = _actions.SnubHireOffer(playerId, entry.GangDefinitionId);
         _message = result.Accepted
             ? cancelsPendingHire ? "HIRE CANCELLED"
                 : cancelsSnub ? "REJECTION CANCELLED" : "OFFER REJECTED"

@@ -3,9 +3,12 @@ name: Multiplayer server
 on:
   push:
     branches: [main]
-    paths: ["multiplayer/**", ".github/workflows/multiplayer.yml"]
+    paths: &watched
+      - "multiplayer/**"
+      - "src/Rechaos.Multiplayer/Generated/**"
+      - ".github/workflows/multiplayer.yml"
   pull_request:
-    paths: ["multiplayer/**", ".github/workflows/multiplayer.yml"]
+    paths: *watched
   workflow_dispatch:
 
 permissions:
@@ -68,3 +71,10 @@ jobs:
         run: pnpm exec turbo run test:run --env-mode=loose
         env:
           TEST_DATABASE_URL: postgres://chaos:chaos@localhost:5432/chaos
+
+      # The game's C# wire types are generated from these schemas and committed, so building the
+      # game never needs Node. This is what stops the two from drifting apart in the meantime — which
+      # is why the generated files are among the paths that trigger this workflow, and why the
+      # generator is a pinned dependency rather than something fetched when the script runs.
+      - name: Check the generated C# still matches the contracts
+        run: pnpm codegen:check

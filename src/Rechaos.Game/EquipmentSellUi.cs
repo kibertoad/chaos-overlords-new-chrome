@@ -96,7 +96,7 @@ public sealed partial class ChaosGame
     private void QueueSelectedSale()
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId
-            || _sellGang is not { } gangId || _replay is null) return;
+            || _sellGang is not { } gangId || _actions is null) return;
         var gang = _state.FindGang(gangId);
         if (gang is null) return;
         var equipped = EquippedItems(gang);
@@ -110,7 +110,7 @@ public sealed partial class ChaosGame
             return;
         }
 
-        var result = _replay.Submit(EquipmentSellSelection.CreateCommand(
+        var result = _actions.Submit(EquipmentSellSelection.CreateCommand(
             playerId, gangId, selected, _sellRepeats));
         _message = result.Accepted
             ? $"{selected.Length} ITEM{(selected.Length == 1 ? string.Empty : "S")} TO SELL QUEUED"

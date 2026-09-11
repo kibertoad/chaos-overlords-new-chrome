@@ -11,5 +11,6 @@
     <ProjectReference Include="../../src/Rechaos.Core/Rechaos.Core.csproj" />
     <ProjectReference Include="../../src/Rechaos.Extractor/Rechaos.Extractor.csproj" />
     <ProjectReference Include="../../src/Rechaos.Game/Rechaos.Game.csproj" />
+    <ProjectReference Include="../../src/Rechaos.Multiplayer/Rechaos.Multiplayer.csproj" />
   </ItemGroup>
 </Project>
