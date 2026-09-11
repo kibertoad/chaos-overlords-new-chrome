@@ -453,7 +453,7 @@ public static class EquipmentCommandLayout
 {
     public const int CategoryCount = 4;
     public static Rectangle Panel => new(104, 125, 344, 209);
-    public static Rectangle Portrait => new(130, 143, 64, 64);
+    public static Rectangle Portrait => new(130, 142, 64, 64);
     public static Rectangle Cancel => new(136, 262, 49, 24);
     public static Rectangle Ok => new(136, 294, 49, 24);
 
@@ -495,7 +495,7 @@ public static class EquipmentCommandLayout
 public static class GangInformationLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(130, 143, 64, 62);
+    public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
     public const int LeftValueRight = 287;
     public const int RightValueRight = 383;
@@ -522,7 +522,7 @@ public static class GangInformationLayout
 public static class SiteInformationLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(132, 141, 120, 64);
+    public static Rectangle Portrait => new(132, 140, 120, 64);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
     public const int DataValueRight = 383;
     public const int LeftValueRight = 287;
@@ -559,7 +559,8 @@ public static class SiteInformationLayout
 public static class ItemInformationLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(132, 141, 56, 50);
+    public static Rectangle Portrait => new(138, 142, 48, 48);
+    public static Rectangle CompactPortrait => new(152, 156, 20, 20);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
     public const int LeftValueRight = 287;
     public const int RightValueRight = 383;
@@ -671,7 +672,7 @@ public static class ComlinkSendLayout
 public static class InfluenceCommandLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(130, 141, 64, 64);
+    public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 
@@ -688,21 +689,21 @@ public static class AttackCommandLayout
 {
     public const int VisibleTargets = 6;
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle ActorPortrait => new(129, 141, 64, 64);
+    public static Rectangle ActorPortrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static Rectangle ActorForceBar => new(129, 228, 64, 3);
+    public static Rectangle ActorForceBar => new(130, 228, 64, 3);
 
     public static Rectangle ActorItem(int slot)
     {
         if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(129 + slot * 22, 207, 20, 20);
+        return new Rectangle(130 + slot * 22, 207, 20, 20);
     }
 
     public static Rectangle Opponent(int slot)
     {
         if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(200, 141 + slot * 37, 32, 32);
+        return new Rectangle(202, 141 + slot * 37, 32, 32);
     }
 
     public static Rectangle TargetCard(int targetSlot)

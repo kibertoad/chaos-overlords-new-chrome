@@ -305,16 +305,23 @@ enemy gang with its equipment and Force track. `PX05005` is the `SITE TO
 INFLUENCE` picker; its three staggered apertures contain the selected sector's
 actual building art. These identities and workflows are confirmed by supplied
 original-game captures. The recreation implements `PX05005` and the two-stage
-player/gang selection of `PX05003`. `PX05001` is now shared by Purchase and
-Research: a stationary item-row double-click opens its art, type, description,
-cost, tech level and fourteen modifiers, then returns to the same tab/selection.
+player/gang selection of `PX05003`. Their acting-gang aperture, shared with the
+other gang-command panels, is the template's local `(26,17,64,64)` rectangle at
+screen `(130,142,64,64)`; Attack's opponent cells begin at screen x 202.
+`PX05001` is now shared by Purchase and Research: a stationary item-row
+double-click opens its art, type, description, cost, tech level and fourteen
+modifiers, then returns to the same tab/selection. Its local `(34,17,48,48)`
+monitor aperture is screen `(138,142,48,48)` and continuously plays the item's
+15-frame `PX04xxx` rotation at 80 ms per frame. The compact `PX04999` inventory
+icon is centered in that aperture only as a fallback when a rotation is absent.
 
-`PX05002` is the Site Information panel. Its 120-by-64 aperture uses the same
-`PX02000` strip as the detailed-sector buildings; the right data block reports
-live remaining Resistance plus the site's Tolerance, Support and Cash, and the
-lower block reports all fourteen site modifiers. A stationary double-click
-opens it from either a detailed-sector building or a `PX05005` Influence target,
-then returns to the originating screen without discarding target selection.
+`PX05002` is the Site Information panel. Its local `(28,15,120,64)` aperture is
+screen `(132,140,120,64)` and uses the same `PX02000` strip as the
+detailed-sector buildings; the right data block reports live remaining
+Resistance plus the site's Tolerance, Support and Cash, and the lower block
+reports all fourteen site modifiers. A stationary double-click opens it from
+either a detailed-sector building or a `PX05005` Influence target, then returns
+to the originating screen without discarding target selection.
 
 `PX05013` is the original `EQUIPMENT TO SELL` panel. Its three fixed rows map
 to the acting gang's weapon, armor and miscellaneous slots. Clicking a populated

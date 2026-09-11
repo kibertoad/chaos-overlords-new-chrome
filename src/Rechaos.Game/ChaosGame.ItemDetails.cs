@@ -29,8 +29,12 @@ public sealed partial class ChaosGame
 
         var item = state.Definitions.Items[itemId];
         ClearItemInformationFields(batch, pixel);
-        if (_itemPortraits is not null)
-            batch.Draw(_itemPortraits, ItemInformationLayout.Portrait,
+        if (itemId >= 0 && itemId < _itemRotationTextures.Length
+            && _itemRotationTextures[itemId] is { } rotation)
+            batch.Draw(rotation, ItemInformationLayout.Portrait,
+                ItemRotationPresentation.Frame(_inputTime), Color.White);
+        else if (_itemPortraits is not null)
+            batch.Draw(_itemPortraits, ItemInformationLayout.CompactPortrait,
                 OriginalSpriteLayout.ItemPortrait(item.Id), Color.White);
         font.Draw(batch, item.Name, new Vector2(199, 152), Color.Lime, 1);
         DrawPanelValue(font, batch, ItemInformationLayout.TypeLabel(item.Type),

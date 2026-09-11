@@ -21,11 +21,11 @@ public sealed class UiNavigationTests
     public void AttackTargetPanelUsesAcquisitionGridApertures()
     {
         Assert.Equal(EquipmentCommandLayout.Panel, AttackCommandLayout.Panel);
-        Assert.Equal(new Rectangle(129, 141, 64, 64), AttackCommandLayout.ActorPortrait);
+        Assert.Equal(new Rectangle(130, 142, 64, 64), AttackCommandLayout.ActorPortrait);
         Assert.Equal(new Rectangle(240, 141, 64, 64), AttackCommandLayout.TargetPortrait(0));
-        Assert.Equal(new Rectangle(200, 141, 32, 32), AttackCommandLayout.Opponent(0));
-        Assert.Equal(new Rectangle(200, 289, 32, 32), AttackCommandLayout.Opponent(4));
-        Assert.Equal(new Rectangle(129, 207, 20, 20), AttackCommandLayout.ActorItem(0));
+        Assert.Equal(new Rectangle(202, 141, 32, 32), AttackCommandLayout.Opponent(0));
+        Assert.Equal(new Rectangle(202, 289, 32, 32), AttackCommandLayout.Opponent(4));
+        Assert.Equal(new Rectangle(130, 207, 20, 20), AttackCommandLayout.ActorItem(0));
         Assert.Equal(new Rectangle(284, 207, 20, 20), AttackCommandLayout.TargetItem(0, 2));
         Assert.Equal(new Rectangle(0, 240, 20, 20), OriginalSpriteLayout.ItemPortrait(12));
     }
@@ -42,7 +42,7 @@ public sealed class UiNavigationTests
     [Fact]
     public void InfluencePickerUsesOriginalStaggeredSiteLayout()
     {
-        Assert.Equal(new Rectangle(130, 141, 64, 64), InfluenceCommandLayout.Portrait);
+        Assert.Equal(new Rectangle(130, 142, 64, 64), InfluenceCommandLayout.Portrait);
         Assert.Equal(new Rectangle(209, 141, 120, 64), InfluenceCommandLayout.Site(0));
         Assert.Equal(new Rectangle(312, 198, 120, 64), InfluenceCommandLayout.Site(1));
         Assert.Equal(new Rectangle(209, 255, 120, 64), InfluenceCommandLayout.Site(2));
@@ -466,15 +466,16 @@ public sealed class UiNavigationTests
         Assert.Equal(1, EquipmentCommandLayout.CategoryForItemType(2));
         Assert.Equal(2, EquipmentCommandLayout.CategoryForItemType(3));
         Assert.Equal(3, EquipmentCommandLayout.CategoryForItemType(4));
-        Assert.Equal(new Rectangle(130, 143, 64, 62), GangInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(130, 142, 64, 64), GangInformationLayout.Portrait);
         Assert.Equal(new Rectangle(254, 87, 63, 15), SectorGangCardLayout.AssignedCommand(0));
-        Assert.Equal(new Rectangle(132, 141, 120, 64), SiteInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(132, 140, 120, 64), SiteInformationLayout.Portrait);
         Assert.Equal(170, SiteInformationLayout.DataY(0));
         Assert.Equal(188, SiteInformationLayout.DataY(1));
         Assert.Equal(245, SiteInformationLayout.StatisticY(0));
         Assert.Equal(272, SiteInformationLayout.StatisticY(2));
         Assert.Equal(308, SiteInformationLayout.StatisticY(6));
-        Assert.Equal(new Rectangle(132, 141, 56, 50), ItemInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(138, 142, 48, 48), ItemInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(152, 156, 20, 20), ItemInformationLayout.CompactPortrait);
         Assert.Equal("RANGE", ItemInformationLayout.TypeLabel(2));
         Assert.Equal("ARMOR", ItemInformationLayout.TypeLabel(3));
         Assert.Equal(244, ItemInformationLayout.StatisticY(0));

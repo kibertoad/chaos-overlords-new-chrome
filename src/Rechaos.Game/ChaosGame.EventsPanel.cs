@@ -154,7 +154,7 @@ public sealed partial class ChaosGame
             && itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, LastTurnEventsLayout.ResearchItem,
-                LastTurnEventPresentation.RotationFrame(_inputTime), Color.White);
+                ItemRotationPresentation.Frame(_inputTime), Color.White);
     }
 
     private static string EventObject(MatchState state, GameNotification notification)
@@ -211,9 +211,6 @@ public static class EventReviewProgress
 
 public static class LastTurnEventPresentation
 {
-    public const int RotationFrameCount = 15;
-    private static readonly TimeSpan RotationFrameDuration = TimeSpan.FromMilliseconds(80);
-
     public static int? ResearchItemId(GameNotification notification, GameEvent? relatedEvent)
     {
         ArgumentNullException.ThrowIfNull(notification);
@@ -223,12 +220,18 @@ public static class LastTurnEventPresentation
                 ? relatedEvent.Target.Id
                 : null;
     }
+}
 
-    public static Rectangle RotationFrame(TimeSpan elapsed)
+public static class ItemRotationPresentation
+{
+    public const int FrameCount = 15;
+    private static readonly TimeSpan FrameDuration = TimeSpan.FromMilliseconds(80);
+
+    public static Rectangle Frame(TimeSpan elapsed)
     {
         if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
-        var frame = (int)(elapsed.TotalMilliseconds / RotationFrameDuration.TotalMilliseconds)
-            % RotationFrameCount;
+        var frame = (int)(elapsed.TotalMilliseconds / FrameDuration.TotalMilliseconds)
+            % FrameCount;
         return new Rectangle(frame * 48, 0, 48, 48);
     }
 }

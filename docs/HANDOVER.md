@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   published on `main`; the local `codex/full-reimplementation` branch contains
   the same history and remains the development branch for a future session.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,154 tests with no warnings.
+  isolated Release build passed all 1,175 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -24,6 +24,11 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Item Information now fills the exact 48-by-48 monitor aperture with the
+  selected item's 15-frame `PX04xxx` rotation, using the compact inventory icon
+  only as a centered fallback. Shared gang-command portraits, Attack equipment
+  and opponent cells, and Site Information art now use their measured template
+  apertures instead of the earlier one- or two-pixel offsets.
 - Gang Information now slides independently over a stationary City or Sector
   backdrop. Opening the command picker no longer applies a panel entrance, and
   closing nested details back to Sector no longer replays the Sector entrance.
