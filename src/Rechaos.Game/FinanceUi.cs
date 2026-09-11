@@ -89,14 +89,15 @@ public sealed record FinanceProjection(
 
     private static int EquipmentAdjustment(MatchState state, GameCommand command)
     {
-        var item = command.Target.Kind == CommandTargetKind.Item
-            ? state.Definitions.Items[command.Target.Id]
-            : null;
         return command.Action switch
         {
-            GangAction.Equip when item is not null => -SpecialSiteRules.EquipmentCost(
-                state, state.FindGang(command.Gang)!, item),
-            GangAction.Sell when item is not null => EquipmentRules.SaleValue(item),
+            GangAction.Equip when command.Target.Kind == CommandTargetKind.Item =>
+                -SpecialSiteRules.EquipmentCost(
+                    state,
+                    state.FindGang(command.Gang)!,
+                    state.Definitions.Items[command.Target.Id]),
+            GangAction.Sell => command.SellTargets().Sum(target =>
+                EquipmentRules.SaleValue(state.Definitions.Items[target.Id])),
             _ => 0
         };
     }

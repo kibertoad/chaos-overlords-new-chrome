@@ -622,7 +622,8 @@ claim about original-game behavior.
 - Confidence: High for the component values and negative-cash restrictions; Medium for whether
   all components commit in one Upkeep boundary; Low for excluded edge cases.
 - Implementation: `EconomyResolver.ResolveUpkeep` and
-  `MatchState.FinishUpkeep`.
+  `MatchState.FinishUpkeep`; `FinanceProjection` previews the same component
+  classes and sums every selected item in a queued multi-item Sell.
 - Tests: `EconomyResolutionTests` covers component accounting, persistent debt,
   eliminated players, ordered events/notifications, and deterministic phase
   hashes. Command, transaction, and hire tests cover debt restrictions.

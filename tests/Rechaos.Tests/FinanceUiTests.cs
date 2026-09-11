@@ -76,6 +76,35 @@ public sealed class FinanceUiTests
         Assert.Equal(0, other.ChaosEstimate);
     }
 
+    [Fact]
+    public void ProjectionIncludesEveryItemInQueuedMultiSell()
+    {
+        var state = CreatePlanningMatch();
+        var player = state.Players[0];
+        var gang = player.Gangs.Single(candidate => candidate.IsActive);
+        var weapon = state.Definitions.Items.First(item => item.Type is >= 0 and <= 2);
+        var armor = state.Definitions.Items.First(item => item.Type == 3);
+        var miscellaneous = state.Definitions.Items.First(item => item.Type == 4);
+        gang.WeaponItemId = weapon.Id;
+        gang.ArmorItemId = armor.Id;
+        gang.MiscellaneousItemId = miscellaneous.Id;
+        Assert.True(state.Submit(new GameCommand(
+            player.Id,
+            gang.Id,
+            GangAction.Sell,
+            CommandTarget.Item(weapon.Id),
+            SecondaryTarget: CommandTarget.Item(armor.Id),
+            TertiaryTarget: CommandTarget.Item(miscellaneous.Id))).Accepted);
+
+        var projection = FinanceProjection.Project(state, player, null);
+
+        Assert.Equal(
+            EquipmentRules.SaleValue(weapon)
+                + EquipmentRules.SaleValue(armor)
+                + EquipmentRules.SaleValue(miscellaneous),
+            projection.Equipment);
+    }
+
     private static MatchState CreatePlanningMatch()
     {
         var definitions = BundledOriginalData.Load();

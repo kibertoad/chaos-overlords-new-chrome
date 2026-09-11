@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,352 tests; its offline restore emitted
+  isolated Release build passed all 1,353 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -25,6 +25,9 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- City and Sector Financial now include the sale value of every weapon, armor,
+  and miscellaneous item selected by a queued multi-item Sell instead of
+  projecting only the primary slot.
 - Online order readiness is now monotonic per turn even while a prior document
   is already in flight. A replacement draft can update the whole order document
   without accidentally retracting the player's earlier ready signal.
