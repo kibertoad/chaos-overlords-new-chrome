@@ -123,13 +123,16 @@ Target subdivisions:
 - Rejects malformed paths, missing assets, size changes, and hash changes.
 
 `Rechaos.Game` loads that optional topic document through a separate bounded
-validator. F1 opens a cross-platform two-pane viewer with contextual initial
-topics and complete topic reachability. The mouse wheel scrolls the topic list
-or article according to pointer position; keyboard topic navigation and paging
-remain available. Help is presentation-only: opening it pauses AI progression
-but never mutates authoritative match state, replay state, or deterministic
-hashes. Missing or invalid help data degrades to an import instruction instead
-of invoking the obsolete Windows WinHelp subsystem.
+validator. F1 opens a cross-platform two-pane viewer whose navigation follows
+the contents-listed topics in original order, omits unlisted internal fragments,
+and falls back to every decoded topic only when no contents entries exist.
+Contextual entry maps each implemented screen to its most specific available
+original topic and normalizes legacy ellipsis styling. The mouse wheel scrolls
+the topic list or article according to pointer position; keyboard topic
+navigation and paging remain available. Help is presentation-only: opening it
+pauses AI progression but never mutates authoritative match state, replay state,
+or deterministic hashes. Missing or invalid help data degrades to an import
+instruction instead of invoking the obsolete Windows WinHelp subsystem.
 
 CLI modes:
 

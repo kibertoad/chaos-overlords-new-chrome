@@ -71,6 +71,74 @@ public static class HelpTextLayout
     }
 }
 
+public static class HelpNavigation
+{
+    public static IReadOnlyList<int> TopicOrder(ExtractedHelpDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        var topics = document.Topics.ToList();
+        var result = document.Contents
+            .Where(entry => entry.TopicId is not null)
+            .Select(entry => topics.FindIndex(topic => topic.Id == entry.TopicId!.Value))
+            .Where(index => index >= 0)
+            .Distinct()
+            .ToArray();
+        return result.Length > 0
+            ? result
+            : Enumerable.Range(0, document.Topics.Count).ToArray();
+    }
+
+    public static int FindTopicPosition(
+        ExtractedHelpDocument document,
+        IReadOnlyList<int> topicOrder,
+        ClientScreen screen)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(topicOrder);
+        var wanted = ContextTitle(screen);
+        var topicIndex = document.Topics.ToList().FindIndex(topic =>
+            string.Equals(NormalizeTitle(topic.Title), wanted,
+                StringComparison.OrdinalIgnoreCase));
+        var position = PositionOf(topicOrder, topicIndex);
+        return position < 0 ? 0 : position;
+    }
+
+    public static int PositionOf(IReadOnlyList<int> topicOrder, int topicId)
+    {
+        ArgumentNullException.ThrowIfNull(topicOrder);
+        for (var index = 0; index < topicOrder.Count; index++)
+            if (topicOrder[index] == topicId) return index;
+        return -1;
+    }
+
+    public static string ContextTitle(ClientScreen screen) => screen switch
+    {
+        ClientScreen.Setup => "Scenario Selection Control Panel",
+        ClientScreen.Options => "Options Menu",
+        ClientScreen.City => "City View",
+        ClientScreen.Commands => "Commands",
+        ClientScreen.Hire => "Hire",
+        ClientScreen.Sector => "Sector View",
+        ClientScreen.SectorGangs or ClientScreen.Gang => "Gang Information",
+        ClientScreen.Site => "Sites",
+        ClientScreen.ItemInformation or ClientScreen.Items => "Item Information",
+        ClientScreen.Give or ClientScreen.GiveTarget => "Give",
+        ClientScreen.Sell => "Sell",
+        ClientScreen.GameInfo => "Game Info Screen",
+        ClientScreen.ComlinkView or ClientScreen.ComlinkSend => "Comm Menu",
+        ClientScreen.Finance => "The Inner Sanctum",
+        ClientScreen.Ranking or ClientScreen.Endgame => "Endgame Screen",
+        ClientScreen.Events or ClientScreen.CombatSummary or ClientScreen.Search =>
+            "Main Control Panel",
+        _ => "Introduction"
+    };
+
+    private static string NormalizeTitle(string title) => title
+        .Replace("...", "", StringComparison.Ordinal)
+        .Replace("…", "", StringComparison.Ordinal)
+        .Trim();
+}
+
 public sealed partial class ChaosGame
 {
     private ExtractedHelpDocument? _helpDocument;
@@ -79,15 +147,25 @@ public sealed partial class ChaosGame
     private int _helpTopicIndex;
     private int _helpTopicOffset;
     private int _helpLineOffset;
+    private IReadOnlyList<int> _helpTopicOrder = [];
 
     private void OpenHelp()
     {
         _helpReturnScreen = _screens.Current;
         _helpReturnMessage = _message;
-        _helpTopicIndex = HelpTopicForScreen(_helpReturnScreen);
+        _helpTopicOrder = _helpDocument is null
+            ? []
+            : HelpNavigation.TopicOrder(_helpDocument);
+        var topicPosition = _helpDocument is null
+            ? 0
+            : HelpNavigation.FindTopicPosition(
+                _helpDocument, _helpTopicOrder, _helpReturnScreen);
+        _helpTopicIndex = _helpTopicOrder.Count == 0
+            ? 0
+            : _helpTopicOrder[topicPosition];
         _helpTopicOffset = _helpDocument is null
             ? 0
-            : HelpLayout.TopicWindowStart(_helpDocument.Topics.Count, _helpTopicIndex);
+            : HelpLayout.TopicWindowStart(_helpTopicOrder.Count, topicPosition);
         _helpLineOffset = 0;
         _screens.Show(ClientScreen.Help);
         _message = _helpDocument is null ? "HELP CONTENT IS UNAVAILABLE" : "HELP";
@@ -97,30 +175,6 @@ public sealed partial class ChaosGame
     {
         _screens.Show(_helpReturnScreen);
         _message = _helpReturnMessage;
-    }
-
-    private int HelpTopicForScreen(ClientScreen screen)
-    {
-        if (_helpDocument is null) return 0;
-        var title = screen switch
-        {
-            ClientScreen.Setup => "Scenario Selection Control Panel",
-            ClientScreen.City => "City View",
-            ClientScreen.Commands => "Commands",
-            ClientScreen.Hire => "Hire",
-            ClientScreen.Sector => "Sector View",
-            ClientScreen.SectorGangs => "Gang Information",
-            ClientScreen.Gang => "Gang Information",
-            ClientScreen.Site => "Sites",
-            ClientScreen.ItemInformation or ClientScreen.Items or ClientScreen.Give
-                or ClientScreen.GiveTarget or ClientScreen.Sell => "Item Information",
-            ClientScreen.Finance => "The Inner Sanctum",
-            ClientScreen.Ranking or ClientScreen.Endgame => "Endgame Screen",
-            _ => "Introduction"
-        };
-        var index = _helpDocument.Topics.ToList().FindIndex(topic =>
-            string.Equals(topic.Title, title, StringComparison.OrdinalIgnoreCase));
-        return index < 0 ? 0 : index;
     }
 
     private void UpdateHelp(KeyboardState keyboard)
@@ -133,9 +187,9 @@ public sealed partial class ChaosGame
         }
         if (Pressed(keyboard, Keys.Up)) ChangeHelpTopic(-1);
         if (Pressed(keyboard, Keys.Down)) ChangeHelpTopic(1);
-        if (Pressed(keyboard, Keys.Home)) SelectHelpTopic(0);
-        if (Pressed(keyboard, Keys.End) && _helpDocument is not null)
-            SelectHelpTopic(_helpDocument.Topics.Count - 1);
+        if (Pressed(keyboard, Keys.Home)) SelectHelpTopicPosition(0);
+        if (Pressed(keyboard, Keys.End))
+            SelectHelpTopicPosition(_helpTopicOrder.Count - 1);
         if (Pressed(keyboard, Keys.PageUp)) ScrollHelp(-HelpLayout.VisibleTextLines);
         if (Pressed(keyboard, Keys.PageDown) || Pressed(keyboard, Keys.Space))
             ScrollHelp(HelpLayout.VisibleTextLines);
@@ -143,18 +197,19 @@ public sealed partial class ChaosGame
 
     private void ChangeHelpTopic(int delta)
     {
-        if (_helpDocument is null) return;
-        SelectHelpTopic(Math.Clamp(_helpTopicIndex + delta, 0, _helpDocument.Topics.Count - 1));
+        if (_helpDocument is null || _helpTopicOrder.Count == 0) return;
+        var current = HelpNavigation.PositionOf(_helpTopicOrder, _helpTopicIndex);
+        SelectHelpTopicPosition(Math.Clamp(current + delta, 0, _helpTopicOrder.Count - 1));
     }
 
-    private void SelectHelpTopic(int index)
+    private void SelectHelpTopicPosition(int position)
     {
-        if (_helpDocument is null || index < 0 || index >= _helpDocument.Topics.Count) return;
-        _helpTopicIndex = index;
-        if (_helpTopicIndex < _helpTopicOffset)
-            _helpTopicOffset = _helpTopicIndex;
-        else if (_helpTopicIndex >= _helpTopicOffset + HelpLayout.VisibleTopicRows)
-            _helpTopicOffset = _helpTopicIndex - HelpLayout.VisibleTopicRows + 1;
+        if (_helpDocument is null || position < 0 || position >= _helpTopicOrder.Count) return;
+        _helpTopicIndex = _helpTopicOrder[position];
+        if (position < _helpTopicOffset)
+            _helpTopicOffset = position;
+        else if (position >= _helpTopicOffset + HelpLayout.VisibleTopicRows)
+            _helpTopicOffset = position - HelpLayout.VisibleTopicRows + 1;
         _helpLineOffset = 0;
     }
 
@@ -173,10 +228,10 @@ public sealed partial class ChaosGame
         else if (_helpDocument is not null)
         {
             for (var row = 0; row < HelpLayout.VisibleTopicRows; row++)
-                if (_helpTopicOffset + row < _helpDocument.Topics.Count
+                if (_helpTopicOffset + row < _helpTopicOrder.Count
                     && HelpLayout.TopicRow(row).Contains(point))
                 {
-                    SelectHelpTopic(_helpTopicOffset + row);
+                    SelectHelpTopicPosition(_helpTopicOffset + row);
                     break;
                 }
         }
@@ -187,7 +242,7 @@ public sealed partial class ChaosGame
         if (_helpDocument is null || wheelDelta == 0) return;
         if (HelpLayout.TopicList.Contains(point))
             _helpTopicOffset = HelpLayout.ScrollTopicWindow(
-                _helpDocument.Topics.Count, _helpTopicOffset, wheelDelta);
+                _helpTopicOrder.Count, _helpTopicOffset, wheelDelta);
         else if (HelpLayout.Text.Contains(point))
             ScrollHelp(-HelpLayout.WheelSteps(wheelDelta) * 3);
     }
@@ -228,10 +283,11 @@ public sealed partial class ChaosGame
         batch.Draw(pixel, HelpLayout.TopicList, new Color(18, 37, 38, 245));
         DrawBorder(batch, pixel, HelpLayout.TopicList, new Color(65, 105, 92), 1);
         for (var row = 0;
-             row < HelpLayout.VisibleTopicRows && _helpTopicOffset + row < topics.Count;
+             row < HelpLayout.VisibleTopicRows && _helpTopicOffset + row < _helpTopicOrder.Count;
              row++)
         {
-            var index = _helpTopicOffset + row;
+            var position = _helpTopicOffset + row;
+            var index = _helpTopicOrder[position];
             var rectangle = HelpLayout.TopicRow(row);
             if (index == _helpTopicIndex)
                 batch.Draw(pixel, rectangle, new Color(80, 58, 18, 245));
@@ -255,7 +311,7 @@ public sealed partial class ChaosGame
             font.Draw(batch, lines[_helpLineOffset + row], new Vector2(226, 94 + row * 9),
                 new Color(210, 220, 216), 1);
         font.Draw(batch,
-            $"TOPIC {_helpTopicIndex + 1}/{_helpDocument.Topics.Count}  LINE {_helpLineOffset + 1}/{Math.Max(1, lines.Count)}",
+            $"TOPIC {HelpNavigation.PositionOf(_helpTopicOrder, _helpTopicIndex) + 1}/{_helpTopicOrder.Count}  LINE {_helpLineOffset + 1}/{Math.Max(1, lines.Count)}",
             new Vector2(226, 370), new Color(155, 180, 172), 1);
     }
 }

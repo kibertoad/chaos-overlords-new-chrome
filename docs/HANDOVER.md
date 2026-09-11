@@ -88,8 +88,12 @@ Last updated: 2026-09-11
   authoritative replay-recorded operation. Viewing clears unread state through
   that same authoritative path.
 - The title and in-game Help commands open a cross-platform viewer backed by
-  the locally extracted original WinHelp content. Mouse-wheel scrolling follows
-  the topic-list/content pane under the pointer. The Attack topic carries the
+  the locally extracted original WinHelp content. Navigation follows the 59
+  player-facing entries in the original contents order and omits 21 unlisted
+  internal fragments; documents without a contents table safely fall back to
+  all decoded topics. Mouse-wheel scrolling follows the topic-list/content pane
+  under the pointer. Game Info, Give, Sell, Comlink, Events, Search, and Combat
+  now open their specific original topics. The Attack topic carries the
   corrected Force-inclusive simultaneous-combat explanation.
 - Music and sound effects have independent recovered 0-10 controls and persisted
   defaults. Full local-setup push buttons, setup selection/rejection, panel
