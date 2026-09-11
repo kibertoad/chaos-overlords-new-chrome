@@ -228,6 +228,14 @@ portraits and their sixteen comparison values. Hiring itself remains the
 original drag-from-dock interaction; the comparison panel's OK control closes
 the overlay.
 
+`PX05017` is the original 344-by-209 `COMLINK: INCOMING MESSAGES` viewer. It
+contains the bounded page counter and previous/next controls, a 64-by-64 sender
+portrait, date and sender fields, and the message aperture. `PX05018` is the
+matching `COMLINK: SEND MESSAGE` panel: six recipient cells in two columns by
+three rows and four fixed 40-character composition rows. The recreation routes
+both halves of the main-console Comlink control, blinks View while the active
+human has unread mail, and uses authoritative inbox/read/send operations.
+
 `PX05001` is the shared Item Information panel opened from the Equip and
 Research item lists. `PX05003` is the `TARGET ACQUISITION` Attack picker: it
 shows the acting gang, an opponent-player portrait column, and the selected

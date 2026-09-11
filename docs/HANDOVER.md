@@ -7,9 +7,10 @@ Last updated: 2026-09-11
 
 - Work continues on `codex/full-reimplementation` at
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`.
-- The latest pushed functional checkpoint is the tip of that branch.
+- The latest functional checkpoints are committed on that branch; publish the
+  local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,046 tests with no warnings.
+  isolated Release build passed all 1,056 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -22,6 +23,12 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- The main console now routes its split Comlink controls to the original
+  `PX05017` incoming-message viewer and `PX05018` sender. Human players can page
+  the newest 16 messages, see unread-state blinking, select multiple human
+  recipients, enter the recovered four 40-character rows, and send through the
+  authoritative replay-recorded operation. Viewing clears unread state through
+  that same authoritative path.
 - The title and in-game Help commands open a cross-platform viewer backed by
   the locally extracted original WinHelp content. Mouse-wheel scrolling follows
   the topic-list/content pane under the pointer. The Attack topic carries the

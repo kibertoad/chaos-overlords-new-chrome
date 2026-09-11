@@ -9,6 +9,8 @@ public sealed partial class ChaosGame
 {
     private static readonly Rectangle CityDone = new(492, 278, 106, 54);
     private static readonly Rectangle CityEvents = new(492, 124, 50, 51);
+    private static readonly Rectangle CityComlinkView = new(548, 124, 50, 25);
+    private static readonly Rectangle CityComlinkSend = new(548, 150, 50, 25);
     private static readonly Rectangle CityCombatSummary = new(492, 176, 50, 49);
     private static readonly Rectangle CityFinance = new(548, 176, 50, 49);
     private static readonly Rectangle CityGangs = new(492, 226, 50, 17);
@@ -39,6 +41,8 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.B)) _screens.Show(ClientScreen.CombatSummary);
         if (Pressed(keyboard, Keys.X)) _screens.Show(ClientScreen.Search);
         if (Pressed(keyboard, Keys.H)) OpenHire();
+        if (Pressed(keyboard, Keys.M)) OpenComlinkView(ClientScreen.City);
+        if (Pressed(keyboard, Keys.N)) OpenComlinkSend(ClientScreen.City);
         if (Pressed(keyboard, Keys.Space)) AdvanceTurn();
         if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
         if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
@@ -86,6 +90,8 @@ public sealed partial class ChaosGame
     {
         if (CityDone.Contains(point)) AdvanceTurn();
         else if (CityEvents.Contains(point)) OpenManagement(ClientScreen.Events, returnScreen);
+        else if (CityComlinkView.Contains(point)) OpenComlinkView(returnScreen);
+        else if (CityComlinkSend.Contains(point)) OpenComlinkSend(returnScreen);
         else if (CityCombatSummary.Contains(point)) OpenManagement(ClientScreen.CombatSummary, returnScreen);
         else if (CityFinance.Contains(point)) OpenManagement(ClientScreen.Finance, returnScreen);
         else if (CityGangs.Contains(point)) OpenSelectedGangDetails(returnScreen);
@@ -174,6 +180,10 @@ public sealed partial class ChaosGame
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(4));
         font.Draw(batch, _message.Length <= 32 ? _message : _message[..32],
             new Vector2(438, 354), Color.Gold, 1);
+        if (state.Coordinator.ActivePlayer is { } activePlayer
+            && state.ComlinkFor(activePlayer).HasUnread
+            && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)
+            DrawBorder(batch, pixel, CityComlinkView, Color.Yellow, 2);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
         {

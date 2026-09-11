@@ -286,10 +286,13 @@ literal capacity, record stride, copy bounds, count update, and cursor branch.
 active command-phase sender and human recipients, supports deterministic
 multi-recipient delivery, retains the newest 16 messages, and tracks unread
 state. Version-17 saves, version-18 replays, and canonical hash version 20
-include every inbox. The View/Send panels are not yet routed in the client.
+include every inbox. The client routes the original `PX05017` View and
+`PX05018` Send panels, including newest-first entry, paging, read-state clearing,
+six recipient cells, the four recovered 40-character rows, and the main-console
+unread blink.
 
-**Next validation:** Implement `PX05018` local-human composition, recipient
-selection, unread indication, and handoff-safe viewing; legacy transport
+**Next validation:** Compare the routed panels against a native golden-screen
+capture and recover the remaining legacy record fields; network transport
 interoperability remains out of scope.
 
 ### BIN-OPTIONS-001 - registry keys, initialized defaults, and idle-gang warning

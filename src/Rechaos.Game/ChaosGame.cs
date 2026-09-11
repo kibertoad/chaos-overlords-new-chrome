@@ -55,6 +55,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _combatBackground;
     private Texture2D? _combatResultsBackground;
     private Texture2D? _lastTurnEventsBackground;
+    private Texture2D? _comlinkViewBackground;
+    private Texture2D? _comlinkSendBackground;
     private readonly Texture2D?[] _lastTurnEventArtwork = new Texture2D?[10];
     private Texture2D? _hireComparisonBackground;
     private Texture2D? _influenceBackground;
@@ -104,6 +106,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _itemCursor;
     private int _combatSummaryCursor;
     private int _eventCursor;
+    private int _comlinkCursor;
+    private readonly bool[] _comlinkRecipients = new bool[MatchLimits.PlayerCount];
+    private readonly ComlinkTextEditor _comlinkEditor = new();
+    private string _comlinkStatus = string.Empty;
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
     private int? _draggedHireSlot;
@@ -199,6 +205,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _combatBackground = LoadTexture("PX05014.bmp");
         _combatResultsBackground = LoadTexture("PX05012.bmp");
         _lastTurnEventsBackground = LoadTexture("PX05010.bmp");
+        _comlinkViewBackground = LoadTexture("PX05017.bmp");
+        _comlinkSendBackground = LoadTexture("PX05018.bmp");
         for (var eventArt = 1; eventArt <= 9; eventArt++)
             _lastTurnEventArtwork[eventArt] = LoadTexture($"PX060{eventArt:00}.bmp");
         _hireComparisonBackground = LoadTexture("PX05016.bmp");
@@ -282,6 +290,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         {
             UpdateHelp(keyboard);
         }
+        else if (_screens.Current == ClientScreen.ComlinkSend)
+        {
+            UpdateComlinkSend(keyboard);
+        }
         else
         {
             if (!_idleGangWarningOpen)
@@ -313,6 +325,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveEventCursor(1);
                     if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Delete)) CloseEvents();
                     if (Pressed(keyboard, Keys.Back)) CloseEvents();
+                    break;
+                case ClientScreen.ComlinkView:
+                    UpdateComlinkView(keyboard);
                     break;
                 case ClientScreen.Commands:
                     if (Pressed(keyboard, Keys.Up)) MoveCommandCursor(-1);
@@ -475,6 +490,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Events when _state is not null:
                 DrawLastTurnEventsPanel(_batch, _pixel, _font, _state);
                 break;
+            case ClientScreen.ComlinkView when _state is not null:
+                DrawComlinkView(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.ComlinkSend when _state is not null:
+                DrawComlinkSend(_batch, _pixel, _font, _state);
+                break;
             case ClientScreen.Commands when _state is not null:
                 DrawCommands(_batch, _pixel, _font, _state);
                 break;
@@ -606,6 +627,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Events:
                 HandleEventsClick(point);
+                break;
+            case ClientScreen.ComlinkView:
+                HandleComlinkViewClick(point);
+                break;
+            case ClientScreen.ComlinkSend:
+                HandleComlinkSendClick(point);
                 break;
             case ClientScreen.Commands:
                 HandleCommandsClick(point);

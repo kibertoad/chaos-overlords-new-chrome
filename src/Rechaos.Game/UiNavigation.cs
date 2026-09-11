@@ -80,6 +80,8 @@ public enum ClientScreen
     Commands,
     Hire,
     Events,
+    ComlinkView,
+    ComlinkSend,
     Sector,
     Gang,
     Site,
@@ -110,7 +112,8 @@ public sealed class ScreenRouter
     public bool Back()
     {
         if (Current == ClientScreen.Title) return false;
-        var destination = Current is ClientScreen.Events or ClientScreen.Commands or ClientScreen.Hire
+        var destination = Current is ClientScreen.Events or ClientScreen.ComlinkView
+            or ClientScreen.ComlinkSend or ClientScreen.Commands or ClientScreen.Hire
             or ClientScreen.Sector or ClientScreen.Gang or ClientScreen.Finance or ClientScreen.Ranking
             or ClientScreen.Site
             or ClientScreen.ItemInformation
@@ -589,6 +592,40 @@ public static class LastTurnEventsLayout
     public static Rectangle Next => new(163, 151, 25, 21);
     public static Rectangle Artwork => new(198, 133, 242, 158);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
+}
+
+public static class ComlinkViewLayout
+{
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Page => new(132, 135, 60, 13);
+    public static Rectangle Previous => new(134, 158, 26, 22);
+    public static Rectangle Next => new(162, 158, 26, 22);
+    public static Rectangle SenderPortrait => new(204, 173, 64, 64);
+    public static Rectangle Message => new(196, 251, 240, 36);
+    public static Rectangle Ok => new(134, 294, 56, 22);
+}
+
+public static class ComlinkSendLayout
+{
+    public const int MessageColumns = 40;
+    public const int MessageRows = 4;
+    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Message => new(196, 258, 240, 36);
+    public static Rectangle Cancel => new(134, 263, 56, 22);
+    public static Rectangle Ok => new(134, 296, 56, 22);
+
+    public static Rectangle Recipient(int slot)
+    {
+        if (slot is < 0 or >= MatchLimits.PlayerCount)
+            throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(196 + slot / 3 * 128, 143 + slot % 3 * 33, 56, 32);
+    }
+
+    public static Rectangle RecipientPortrait(int slot)
+    {
+        var cell = Recipient(slot);
+        return new Rectangle(cell.X + 8, cell.Y, 32, 32);
+    }
 }
 
 public static class InfluenceCommandLayout
