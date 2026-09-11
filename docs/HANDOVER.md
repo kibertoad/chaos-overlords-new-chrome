@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,099 tests with no warnings.
+  isolated Release build passed all 1,101 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -25,8 +25,11 @@ Last updated: 2026-09-11
 
 - A completed single-player match now shows the original `PX00202` victory or
   `PX00203` elimination splash, including the configured human Overlord portrait,
-  before advancing to the awards/statistics screen. Hot-seat matches still go
-  directly to shared standings until the original private sequencing is captured.
+  before advancing to the awards/statistics screen. That screen now uses the
+  six original portrait rows, `PX00201` award icons, and an Awards/Stats toggle
+  exposing Cash Earned, Cash Spent, Damage Inflicted, Casualties, and Overthrows.
+  Hot-seat matches still go directly to shared standings until the original
+  private sequencing is captured.
 - Search now uses the original `PX05024` Search: Sites panel instead of the
   earlier incorrect detected-gang list. Its two-column aperture contains all 22
   site types with ALL/NONE and individual toggles; OK applies a presentation-only

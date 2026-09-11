@@ -1,6 +1,7 @@
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
+using Microsoft.Xna.Framework;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -38,6 +39,32 @@ public sealed class EndgameNoticePresentationTests
         var state = CompletedMatch(ScenarioId.Greed, humanPortrait: 2, humanCount: 2);
 
         Assert.Null(EndgameNoticePresentation.For(state));
+    }
+
+    [Fact]
+    public void EndgameRowsFollowAuthoritativeCompetitionStandings()
+    {
+        var state = CompletedMatch(ScenarioId.Greed, humanPortrait: 3);
+
+        var rows = EndgamePresentation.Rows(state);
+
+        Assert.Equal(state.Outcome!.Standings.Select(standing => standing.Player),
+            rows.Select(row => row.Player));
+        Assert.All(state.Outcome.Standings.Zip(rows), pair =>
+            Assert.StartsWith($"{pair.First.Place}. ", pair.Second.Label));
+    }
+
+    [Fact]
+    public void EndgameAtlasLayoutProvidesSixRowsFiveAwardsAndExactControls()
+    {
+        Assert.Equal(new Rectangle(0, 50, 428, 410), EndgameLayout.Panel);
+        Assert.Equal(new Rectangle(320, 50, 50, 56), EndgameLayout.Awards);
+        Assert.Equal(new Rectangle(372, 50, 52, 56), EndgameLayout.Stats);
+        Assert.Equal(new Rectangle(320, 402, 104, 58), EndgameLayout.Done);
+        Assert.Equal(new Rectangle(4, 382, 64, 64), EndgameLayout.Portrait(5));
+        Assert.Equal(new Rectangle(200, 0, 50, 48),
+            EndgameLayout.AwardSource(EndgameAward.Safe));
+        Assert.Throws<ArgumentOutOfRangeException>(() => EndgameLayout.Portrait(6));
     }
 
     private static MatchState CompletedMatch(

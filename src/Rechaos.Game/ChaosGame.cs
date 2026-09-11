@@ -190,7 +190,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
                 PlayGeneralSound(slot);
             if (current == ClientScreen.Endgame && _state?.Outcome is not null)
+            {
                 _showEndgameNotice = EndgameNoticePresentation.For(_state) is not null;
+                _showEndgameStats = false;
+            }
         };
         var userDataRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -233,6 +236,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         for (var index = 0; index < _cityOwnershipLayers.Length; index++)
             _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
         _endgameBackground = LoadTexture("PX00200.bmp");
+        _endgameSprites = LoadTexture("PX00201.bmp", transparentBlack: true);
         _victoryBackground = LoadTexture("PX00202.bmp");
         _eliminationBackground = LoadTexture("PX00203.bmp");
         _gameInfoBackground = LoadTexture("PX05021.bmp");
@@ -366,6 +370,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     UpdateCity(keyboard);
                     break;
                 case ClientScreen.Endgame:
+                    if (!_showEndgameNotice && Pressed(keyboard, Keys.A)) _showEndgameStats = false;
+                    if (!_showEndgameNotice && Pressed(keyboard, Keys.S)) _showEndgameStats = true;
                     if (Pressed(keyboard, Keys.Enter)) AdvanceEndgamePresentation();
                     break;
                 case ClientScreen.Handoff:
@@ -754,6 +760,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Endgame:
                 if (_showEndgameNotice && EndgameNoticeLayout.Panel.Contains(point))
                     _showEndgameNotice = false;
+                else if (!_showEndgameNotice && EndgameLayout.Awards.Contains(point))
+                    _showEndgameStats = false;
+                else if (!_showEndgameNotice && EndgameLayout.Stats.Contains(point))
+                    _showEndgameStats = true;
                 else if (!_showEndgameNotice && EndgameDone.Contains(point))
                     _screens.Show(ClientScreen.Title);
                 break;
