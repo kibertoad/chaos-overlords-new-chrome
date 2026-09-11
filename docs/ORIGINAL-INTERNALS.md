@@ -2125,6 +2125,28 @@ sector or gang-ID order.
 **Confidence:** High static evidence for both scan bounds, action dispatch,
 and placement of their RNG consumers. Runtime seed correlation remains pending.
 
+### BIN-POLICE-COMBAT-001 - exact detection and damage formulas
+
+In whole-turn resolver `0x00472775`, the police pass calculates a threshold
+immediately before its inclusive 1-through-100 RNG call at `0x0047419b`. The
+instructions at `0x00474173`-`0x00474199` recognize current action byte 8
+(**Hide**), multiply that boolean by 20, multiply effective Stealth by 5, and
+compare the roll with `115 - 5 * Stealth - (Hide ? 20 : 0)`. Because the roll
+is bounded to 1 through 100, probabilities outside that range are effectively
+clamped without skipping the RNG call.
+
+When detected, the call at `0x004741d6` passes `25 - effective Defense` and
+success threshold 5 to the shared dice routine `0x00475f70`. The 25 combines
+the manual-listed Police Force 5 and Combat 20. The resolver therefore does
+not use the manual's visible “certain through Stealth 5” table or a separate
+Police Detect 12 hidden-hit calculation.
+
+**Confidence:** High from bounded decompiler dataflow and instruction-context
+reports against executable SHA-256
+`A1430159BBE20869E277A5000311344F4EC141AB77C96B385336617149E97D89` in
+Ghidra 12.1.3. Runtime boundary captures remain useful for notification timing,
+not for selecting the implemented arithmetic.
+
 ### BIN-COMBAT-STATS-001 - full opening damage is credited
 
 The player-indexed Damage Inflicted array at `0x004a5ed8` has one resolver

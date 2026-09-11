@@ -25,11 +25,12 @@ public sealed class PoliceCombatResolutionTests
             Assert.Equal(ManualRules.PoliceDetectionPercent(
                 EffectiveStatisticsCalculator.ForGang(match, gang).Stealth), result.Details.DetectionChance);
             Assert.Equal(result.Details.Detected
-                    ? Math.Max(0, ManualRules.PoliceCombat
-                        - EffectiveStatisticsCalculator.ForGang(match, gang).Defense)
+                    ? ManualRules.PoliceAttackDiceCount(
+                        EffectiveStatisticsCalculator.ForGang(match, gang).Defense)
                     : 0,
                 result.Details.AttackValue);
-            Assert.Equal(ManualRules.CountSuccesses(result.Details.Rolls), result.Details.Successes);
+            Assert.Equal(OriginalResolutionRules.CountSuccesses(
+                result.Details.Rolls, ManualRules.PoliceSuccessThreshold), result.Details.Successes);
             Assert.Equal(Math.Max(0, result.Details.PreviousForce - result.Details.Damage), result.Details.ResultForce);
             Assert.Equal(GameEventKind.PoliceAttackResolved, result.Event.Kind);
         });
@@ -59,7 +60,7 @@ public sealed class PoliceCombatResolutionTests
     }
 
     [Fact]
-    public void HiddenGangUsesPoliceDetectTwelveProbability()
+    public void HiddenGangUsesExecutableTwentyPointDetectionReduction()
     {
         var match = CreateMatch(
             new MatchGangState(new GangId(10), new PlayerId(0), 1, 0, 10));
@@ -74,7 +75,7 @@ public sealed class PoliceCombatResolutionTests
 
         var result = Assert.Single(match.LastPoliceAttackResolutions);
         var stealth = EffectiveStatisticsCalculator.ForGang(match, match.FindGang(new GangId(10))!).Stealth;
-        Assert.Equal(ManualRules.HiddenAttackHitPercent(ManualRules.PoliceDetect, stealth),
+        Assert.Equal(ManualRules.PoliceDetectionPercent(stealth, hidden: true),
             result.Details.DetectionChance);
         Assert.NotEqual(ManualRules.PoliceDetectionPercent(stealth), result.Details.DetectionChance);
     }
@@ -104,6 +105,11 @@ public sealed class PoliceCombatResolutionTests
         Assert.Contains(match.NotificationsFor(new PlayerId(0)), notification =>
             notification.Kind == GameNotificationKind.Elimination && notification.Gang == gang.Id);
     }
+
+    [Fact]
+    public void PoliceDamageCountsOnlyFiveAndSixAsSuccesses() =>
+        Assert.Equal(2, OriginalResolutionRules.CountSuccesses(
+            [1, 4, 5, 6], ManualRules.PoliceSuccessThreshold));
 
     [Fact]
     public void EquivalentCrackdownsProduceIdenticalEventsAndHash()

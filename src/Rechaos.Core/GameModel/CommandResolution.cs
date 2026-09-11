@@ -325,11 +325,12 @@ public static partial class CommandResolver
             target.Statistics.Stealth, target.Hidden);
         var detectionRoll = state.Random.NextInclusive(100);
         var detected = detectionRoll <= detectionChance;
-        var attackValue = detected ? Math.Max(0, ManualRules.PoliceCombat - target.Statistics.Defense) : 0;
+        var attackValue = detected ? ManualRules.PoliceAttackDiceCount(target.Statistics.Defense) : 0;
         var rolls = detected ? DiceRoller.RollD6(state.Random, attackValue) : [];
         return new PoliceCombatOutcome(
             target, detectionChance, detectionRoll, detected, attackValue,
-            rolls, ManualRules.CountSuccesses(rolls));
+            rolls, OriginalResolutionRules.CountSuccesses(
+                rolls, ManualRules.PoliceSuccessThreshold));
     }
 
     private static void AddDamage(Dictionary<GangId, int> damage, GangId gang, int amount)

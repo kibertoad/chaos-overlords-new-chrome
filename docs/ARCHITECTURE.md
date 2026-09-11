@@ -141,6 +141,15 @@ the topic list or article according to pointer position; keyboard topic
 navigation and paging remain available. Authored internal jumps navigate to
 their resolved topics, while popup hotspots display the otherwise-unlisted
 definition fragments modally; links never execute external files or macros.
+At load time, presentation-only executable notes are appended by recovered
+context symbol to the original Game Settings, command, and Crackdown subjects.
+They document only high-confidence implemented formulas that clarify or correct
+the manual: difficulty bands, command pools and thresholds, combat/Hide,
+Bribe/Snitch, Control, Factory/Sell arithmetic, and police combat. A title match
+is the bounded fallback for a missing context anchor; if the subject itself is
+absent, a listed subject with the expected title and context is synthesized.
+Existing topics and contents order remain otherwise unchanged, and augmentation
+is idempotent so newly extracted and previously imported help packs behave alike.
 Help is presentation-only: opening it
 pauses AI progression but never mutates authoritative match state, replay state,
 or deterministic hashes. Missing or invalid help data degrades to an import
@@ -362,7 +371,10 @@ Hidden attacks use an individual Detect-versus-Stealth roll and suppress
 retaliation on a hit. Cooperative sector visibility is a separate deterministic
 query shared by the Sector portrait strip and Search screen because Hide does
 not affect whether a gang is displayed. The subsequent police roll pass also
-uses player/roster-slot order. Every opening attack credits its full computed
+uses player/roster-slot order. Its executable-derived detection threshold is
+`115 - 5 * effective Stealth`, reduced by 20 while Hide is the current action;
+a detected attack rolls `max(0, Police Force 5 + Combat 20 - effective Defense)`
+dice at 5+. Every opening attack credits its full computed
 damage even when it exceeds the target's remaining Force; retaliation is not
 credited.
 

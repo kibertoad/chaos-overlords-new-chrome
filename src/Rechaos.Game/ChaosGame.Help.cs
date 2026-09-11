@@ -152,6 +152,109 @@ public sealed record HelpTextLine(IReadOnlyList<ExtractedHelpTextRun> Runs)
     public string Text => string.Concat(Runs.Select(run => run.Text));
 }
 
+public static class HelpContentAugmentation
+{
+    public const string NoteHeading = "NEW CHROME EXECUTABLE NOTE";
+
+    private static readonly (string Context, string Title, string Text)[] Notes =
+    [
+        ("GSP", "Game Settings Panel", "AI Mentality changes resolution odds, not only planning. Humans always use the standard band. "
+            + "Goon computers attack on 6, use 5+ for Heal, Influence, and Chaos, use 6 for Research, lose trunc(pool / 5) dice from Influence, Research, and Chaos, and lose trunc(Defense / 4) Defense when attacked. "
+            + "Criminal computers use the human band: Attack, Heal, Influence, Chaos, and retaliation succeed on 5+, while Research succeeds on 6. "
+            + "Crime Lord and Homicidal Maniac computers use the expert band: Attack, Heal, Influence, Chaos, and retaliation succeed on 4+, Research succeeds on 5+, and attacks against hidden gangs are 20 percentage points easier."),
+        ("ATTACK", "Attack…", "For a human gang, attack dice = max(0, current Force + modified Combat - effective Defense). "
+            + "Each 5 or 6 is a success. A positive pool causes damage equal to the greater of its successes and trunc(pool / 4). "
+            + "Strength adds to bare-handed, melee, and blade attacks; Blade adds only to blade weapons; Range adds only to ranged weapons; Fighting and Martial Arts add only while bare-handed. "
+            + "Eligible retaliation also succeeds on 5 or 6, then halves successes with truncation."),
+        ("BRIBE", "Bribe", "The shipped game charges $3, not the manual's printed $5. Bribe directly adds 3 Tolerance and does not apply the printed 40-point cap."),
+        ("CHAOS", "Chaos", "Each human gang separately rolls max(0, sector Income + Force + effective Chaos) dice at 5+. "
+            + "Same-player successes in one sector are combined: controlled sectors pay the full total, uncontrolled sectors pay trunc(total / 2), and a present or newly triggered Crackdown prevents payment. Crackdown requires total sector Chaos to be strictly greater than Tolerance."),
+        ("CONTROL", "Control", "Control uses no dice. Each player totals Force + effective Control from participating gangs, then subtracts sector Income. "
+            + "Against an enemy sector it also subtracts Force + Control from every active non-hiding defender and Support from influenced sites. A positive margin captures; a single zero-margin challenger has a 50% chance because neutral/no-capture is an equal candidate."),
+        ("EQUIP", "Equip…", "An influenced Factory in the acting gang's controlled sector changes price to Cost - trunc(Cost / 3). Replacing an occupied equipment slot destroys the old item."),
+        ("HEAL", "Heal", "A human gang rolls max(0, 4 + effective Heal) dice. Only 5s and 6s restore Force, up to the maximum of 10."),
+        ("HIDE", "Hide", "Against a human or standard computer attacker, chance to hit a hidden target is clamp((7 + attacker Detect - target Stealth) x 5, 0, 100)%. "
+            + "An expert computer gets 20 additional percentage points. A successful hit against a hiding gang cannot be retaliated against. Hide does not by itself remove a gang from the sector display."),
+        ("INFSITES", "Influence…", "Each human gang separately rolls max(0, Force + effective Influence) dice at 5+. "
+            + "Successes immediately reduce remaining Resistance, so several queued gangs accumulate progress in roster order; once Resistance reaches zero, later gangs do not roll."),
+        ("RESEARCH", "Research", "A human gang rolls max(0, Force + effective Research) dice. Only a 6 is a success. "
+            + "Successes persist against the item's research requirement, and later same-turn gangs do not roll after the item is completed."),
+        ("SELL", "Sell…", "Each sold item is removed and is worth trunc(Cost / 2). To match the shipped resolver, selling several slots in one command pays only the highest selected slot: miscellaneous, otherwise armor, otherwise weapon; the values are not added together."),
+        ("SNITCH", "Snitch", "Snitch directly subtracts 3 Tolerance. After all Instant commands, every sector below 1 is raised to 1."),
+        ("CRACKDOWN", "Crackdown", "Police detection chance (%) = clamp(115 - 5 x effective Stealth - (20 if the gang is Hiding), 0, 100). "
+            + "Visible gangs are certain to be detected through Stealth 3 and cannot be detected at Stealth 23 or above; hiding gangs cannot be detected at Stealth 19 or above. "
+            + "When detected, police roll max(0, Force 5 + Combat 20 - effective Defense) dice. Each 5 or 6 causes one Force of damage.")
+    ];
+
+    public static ExtractedHelpDocument AddExecutableNotes(ExtractedHelpDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        var topics = document.Topics.ToList();
+        var contents = document.Contents.ToList();
+        var nextId = topics.Count == 0 ? 0 : checked(topics.Max(topic => topic.Id) + 1);
+        var nextOffset = topics.Count == 0 ? 0 : checked(topics.Max(topic => topic.TopicOffset) + 1);
+        var changed = false;
+        foreach (var note in Notes)
+        {
+            var topicId = contents.FirstOrDefault(entry =>
+                string.Equals(entry.ContextName, note.Context,
+                    StringComparison.OrdinalIgnoreCase))?.TopicId;
+            var topicIndex = topicId is null
+                ? -1
+                : topics.FindIndex(topic => topic.Id == topicId.Value);
+            if (topicIndex < 0)
+                topicIndex = topics.FindIndex(topic => string.Equals(
+                    NormalizeSubject(topic.Title), NormalizeSubject(note.Title),
+                    StringComparison.OrdinalIgnoreCase));
+            if (topicIndex < 0)
+            {
+                topicIndex = topics.Count;
+                topics.Add(new ExtractedHelpTopic(
+                    nextId, note.Title, string.Empty, ListedInContents: true,
+                    nextOffset, []));
+                contents.Add(new ExtractedHelpContentsEntry(
+                    1, note.Title, nextId, note.Context));
+                nextId = checked(nextId + 1);
+                nextOffset = checked(nextOffset + 1);
+            }
+            else if (!contents.Any(entry => entry.TopicId == topics[topicIndex].Id))
+            {
+                topics[topicIndex] = topics[topicIndex] with { ListedInContents = true };
+                contents.Add(new ExtractedHelpContentsEntry(
+                    1, note.Title, topics[topicIndex].Id, note.Context));
+                changed = true;
+            }
+            if (topics[topicIndex].Text.Contains(
+                    NoteHeading, StringComparison.Ordinal))
+                continue;
+
+            var topic = topics[topicIndex];
+            IReadOnlyList<ExtractedHelpTextRun> runs = topic.Runs is { Count: > 0 }
+                ? topic.Runs
+                : topic.Text.Length > 0
+                    ? [new ExtractedHelpTextRun(topic.Text)]
+                    : [];
+            var heading = topic.Text.Length == 0
+                ? $"{NoteHeading}\n"
+                : $"\n\n{NoteHeading}\n";
+            topics[topicIndex] = topic with
+            {
+                Text = topic.Text + heading + note.Text,
+                Runs = [.. runs,
+                    new ExtractedHelpTextRun(heading, Bold: true),
+                    new ExtractedHelpTextRun(note.Text)]
+            };
+            changed = true;
+        }
+        return changed ? document with { Topics = topics, Contents = contents } : document;
+    }
+
+    private static string NormalizeSubject(string title) => title
+        .Replace("...", string.Empty, StringComparison.Ordinal)
+        .Replace("…", string.Empty, StringComparison.Ordinal)
+        .Trim();
+}
+
 public readonly record struct HelpLinkTarget(int TopicIndex, bool Popup);
 
 public static class HelpNavigation

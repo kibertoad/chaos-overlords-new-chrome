@@ -45,18 +45,33 @@ public sealed class ManualRulesTests
     [Theory]
     [InlineData(-10, 100)]
     [InlineData(0, 100)]
-    [InlineData(5, 100)]
-    [InlineData(6, 95)]
-    [InlineData(12, 65)]
-    [InlineData(24, 5)]
-    [InlineData(25, 0)]
+    [InlineData(3, 100)]
+    [InlineData(4, 95)]
+    [InlineData(12, 55)]
+    [InlineData(22, 5)]
+    [InlineData(23, 0)]
     [InlineData(50, 0)]
-    public void PoliceDetectionMatchesManualTable(int stealth, int percent) =>
+    public void VisiblePoliceDetectionMatchesExecutableCurve(int stealth, int percent) =>
         Assert.Equal(percent, ManualRules.PoliceDetectionPercent(stealth));
 
-    [Fact]
-    public void HiddenPoliceDetectionUsesDetectTwelveAgainstStealth() =>
-        Assert.Equal(60, ManualRules.PoliceDetectionPercent(10, hidden: true));
+    [Theory]
+    [InlineData(-1, 100)]
+    [InlineData(0, 95)]
+    [InlineData(10, 45)]
+    [InlineData(18, 5)]
+    [InlineData(19, 0)]
+    [InlineData(50, 0)]
+    public void HiddenPoliceDetectionSubtractsTwentyPoints(int stealth, int percent) =>
+        Assert.Equal(percent, ManualRules.PoliceDetectionPercent(stealth, hidden: true));
+
+    [Theory]
+    [InlineData(-5, 30)]
+    [InlineData(0, 25)]
+    [InlineData(24, 1)]
+    [InlineData(25, 0)]
+    [InlineData(40, 0)]
+    public void PoliceAttackPoolAddsForceAndCombatBeforeDefense(int defense, int dice) =>
+        Assert.Equal(dice, ManualRules.PoliceAttackDiceCount(defense));
 
     [Theory]
     [InlineData(1, 3, 4)]

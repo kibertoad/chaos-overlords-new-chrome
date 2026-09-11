@@ -122,6 +122,42 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         Assert.Equal([0, 1, 2], HelpNavigation.TopicOrder(document with { Contents = [] }));
     }
 
+    [Fact]
+    public void HelpAddsExecutableNotesInsideMatchingOriginalSubjects()
+    {
+        var document = new ExtractedHelpDocument(
+            ExtractedHelpDocument.CurrentFormatVersion,
+            "Help",
+            [
+                Topic(10, "Attack…", "Original attack text", true),
+                Topic(20, "Crackdown", "Original crackdown text", true),
+                Topic(30, "Bribe", "Existing unlisted Bribe text", false),
+                Topic(40, "Unrelated", "Unchanged text", true)
+            ],
+            [
+                new ExtractedHelpContentsEntry(1, "Attack...", 10, "ATTACK"),
+                new ExtractedHelpContentsEntry(1, "Crackdown", 20, "CRACKDOWN"),
+                new ExtractedHelpContentsEntry(1, "Unrelated", 40, "OTHER")
+            ],
+            []);
+
+        var augmented = HelpContentAugmentation.AddExecutableNotes(document);
+
+        Assert.Contains("current Force + modified Combat", augmented.Topics[0].Text,
+            StringComparison.Ordinal);
+        Assert.Contains("115 - 5 x effective Stealth", augmented.Topics[1].Text,
+            StringComparison.Ordinal);
+        Assert.Contains("charges $3", augmented.Topics[2].Text, StringComparison.Ordinal);
+        Assert.True(augmented.Topics[2].ListedInContents);
+        Assert.Equal("Unchanged text", augmented.Topics[3].Text);
+        Assert.Contains(augmented.Topics[0].Runs!, run =>
+            run.Bold && run.Text.Contains(HelpContentAugmentation.NoteHeading,
+                StringComparison.Ordinal));
+        Assert.Contains(augmented.Contents, entry =>
+            entry.TopicId == 30 && entry.ContextName == "BRIBE");
+        Assert.Same(augmented, HelpContentAugmentation.AddExecutableNotes(augmented));
+    }
+
     [Theory]
     [InlineData(ClientScreen.GameInfo, "Game Info Screen", "GIS")]
     [InlineData(ClientScreen.Give, "Give", "GIVE")]

@@ -250,7 +250,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData([Color.White]);
         _definitions = BundledOriginalData.Load();
-        _helpDocument = ExtractedHelpStore.LoadOrNull(_assetRoot);
+        _helpDocument = ExtractedHelpStore.LoadOrNull(_assetRoot) is { } help
+            ? HelpContentAugmentation.AddExecutableNotes(help)
+            : null;
 
         _titleBackground = LoadTexture("PX00130.bmp");
         _setupBackground = LoadTexture("PX00143.bmp");

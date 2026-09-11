@@ -1,9 +1,8 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Small, unambiguous rules stated by the original manual. These are separated
-/// from binary-verified rules so intended behavior and compatibility evidence
-/// are not conflated.
+/// Small standalone rule arithmetic. Manual-stated values remain explicitly
+/// distinct from executable-derived compatibility values where they differ.
 /// </summary>
 public static class ManualRules
 {
@@ -16,8 +15,12 @@ public static class ManualRules
     public const int SnitchToleranceDecrease = 3;
     public const int MinimumTolerance = 0;
     public const int MaximumTolerance = 40;
+    public const int PoliceForce = 5;
     public const int PoliceCombat = 20;
-    public const int PoliceDetect = 12;
+    public const int PoliceDetectionBasePercent = 115;
+    public const int PoliceHideReductionPercent = 20;
+    public const int PoliceDetectionPercentPerStealth = 5;
+    public const int PoliceSuccessThreshold = 5;
     public const int MinimumCrackdownTurns = 3;
     public const int MaximumCrackdownTurns = 5;
     public const int HealBaseDice = 4;
@@ -49,13 +52,22 @@ public static class ManualRules
         return rolls.Count(IsDieSuccess);
     }
 
-    /// <summary>Manual-stated chance that police detect a gang during crackdown.</summary>
+    /// <summary>Executable-derived chance that police detect a visible gang during a crackdown.</summary>
     public static int PoliceDetectionPercent(int stealth) =>
-        (int)Math.Clamp(100L - Math.Max(0L, (long)stealth - 5) * 5, 0, 100);
+        PoliceDetectionPercent(stealth, hidden: false);
 
-    public static int PoliceDetectionPercent(int stealth, bool hidden) => hidden
-        ? HiddenAttackHitPercent(PoliceDetect, stealth)
-        : PoliceDetectionPercent(stealth);
+    /// <summary>Executable-derived detection curve; Hide subtracts twenty percentage points.</summary>
+    public static int PoliceDetectionPercent(int stealth, bool hidden) =>
+        (int)Math.Clamp(
+            (long)PoliceDetectionBasePercent
+            - (long)PoliceDetectionPercentPerStealth * stealth
+            - (hidden ? PoliceHideReductionPercent : 0),
+            0,
+            100);
+
+    /// <summary>Police Force plus Combat minus the target's effective Defense.</summary>
+    public static int PoliceAttackDiceCount(int defense) =>
+        (int)Math.Clamp((long)PoliceForce + PoliceCombat - defense, 0, int.MaxValue);
 
     public static int RestoreForce(int currentForce, int successes)
     {

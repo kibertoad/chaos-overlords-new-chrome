@@ -471,7 +471,7 @@ claim about original-game behavior.
 ### RULE-POLICE-001 — Crackdown detection and combat
 
 - Source: `MANUAL-GOG-1`; Crackdown and Math of the Game descriptions, plus
-  `BIN-COMBAT-ORDER-001`.
+  `BIN-COMBAT-ORDER-001` and `BIN-POLICE-COMBAT-001`.
 - Observed statement: during a crackdown, police attack every gang in the
   sector with Combat 20. Police detection is certain through Stealth 5 and
   drops five percentage points per additional Stealth point, reaching zero at
@@ -480,19 +480,21 @@ claim about original-game behavior.
 - Observed statement: police remain for three to five turns. Triggering another
   Crackdown while they are present makes them stay longer. Three Crackdowns in
   a five-turn period make the controlling Overlord lose the sector.
-- Interpretation: at the Combat phase boundary, snapshot every active gang in
-  a crackdown sector in ascending player/roster-slot order. Roll one percentile
-  detection check per gang. On detection, roll
-  `max(0, 20 - effective Defense)` dice and
-  apply one damage per success. Police attacks do not retaliate or credit a
+- Interpretation: the executable differs from the abbreviated manual table.
+  At the Combat phase boundary, snapshot every active gang in a crackdown
+  sector in ascending player/roster-slot order. Roll one inclusive percentile
+  check per gang against
+  `clamp(115 - 5 * effective Stealth - (Hide ? 20 : 0), 0, 100)`.
+  Thus a visible gang is certain to be detected through Stealth 3, has a 95%
+  chance at Stealth 4, and reaches 0% at Stealth 23; Hide subtracts exactly 20
+  percentage points and reaches 0% at Stealth 19. On detection, roll
+  `max(0, Police Force 5 + Police Combat 20 - effective Defense)` dice at 5+
+  and apply one damage per success. Police attacks do not retaliate or credit a
   player's damage statistic. Gang-command and police damage are accumulated
   against the same phase-start snapshots before casualties and equipment loss
   are applied. Control is rejected at submission while a crackdown is already
   active and fails without changing ownership if police arrive before the
   later Control subphase.
-- Interpretation: a gang that resolved Hide during Instant uses the ordinary
-  hidden-hit formula with police Detect 12 (`50% + 5% * (12 - Stealth)`),
-  clamped to 0–100, instead of the non-hidden police stealth table.
 - Interpretation: each trigger draws an inclusive three-to-five-turn duration
   from the deterministic simulation RNG and adds it to any remaining police
   presence. Each Combat phase in which police are present consumes one remaining
@@ -506,26 +508,29 @@ claim about original-game behavior.
   again on another recent trigger. The displaced owner receives a distinct
   `ControlLost` notification in addition to the global Crackdown notification.
   History mutation and ownership cleanup precede the duration-extension draw.
-- Current exclusions: whether 0%/100% checks consume RNG,
-  weapon/damage-cap treatment, and exact original message wording.
-- Confidence: High for the detection percentage table, hidden Detect 12 branch,
-  Combat 20, defense subtraction, player/roster attack order, occurrence
+- Current exclusions: exact original message wording and notification timing.
+- Confidence: High for the executable detection curves, Hide reduction,
+  Force 5 + Combat 20 pool, 5+ threshold, effective Defense subtraction,
+  player/roster attack order, occurrence
   window/reset, and duration RNG order; Low for the listed exclusions.
 - Implementation: `CommandResolver.ResolveCombatPhase`, exposed through
   `MatchState.LastPoliceAttackResolutions` and `PoliceAttackResolved` events;
   `CommandValidator` and `CommandResolver.ResolveControl` enforce the Control
   lockout at both relevant boundaries; `CrackdownResolver` owns duration and
   extension plus the two-turn history represented in the original save layout.
+  `HelpContentAugmentation` places the formulas inside the in-game Crackdown
+  subject, synthesizing that listed subject only for an incomplete help pack.
 - Tests: `PoliceCombatResolutionTests` covers player/roster ordering,
-  normal and hidden detection, effective Stealth/Defense, undetectability at
-  Stealth 25, deterministic RNG consumption/hashes, notifications, casualties,
+  exact visible and Hide detection boundaries, effective Stealth/Defense,
+  exact police attack-pool boundaries, deterministic RNG consumption/hashes,
+  notifications, casualties,
   and equipment loss. `ChaosResolutionTests` covers duration, extension,
   five-turn history boundaries, neutralization and cleanup. `BoardResolutionTests`
   covers submission-time and execution-time Control lockout without ownership
   mutation; save/replay tests cover migration and multi-turn continuation.
 - Next experiment: capture otherwise identical pre-Combat saves spanning
-  Stealth 5/6/24/25 and several Defense values, with and without a player
-  Attack command, then compare detection, damage, ordering, and RNG deltas.
+  visible Stealth 3/4/22/23, hidden Stealth 0/18/19, and Defense 24/25, with
+  and without a player Attack command, then compare notifications and RNG deltas.
 
 ### RULE-MOVE-001 — Adjacent movement and friendly capacity
 

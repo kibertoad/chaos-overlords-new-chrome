@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,293 tests with no warnings.
+  isolated Release build passed all 1,305 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -24,6 +24,17 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Crackdown combat now follows the executable rather than the manual's
+  abbreviated detection table: visible detection is
+  `clamp(115 - 5 * Stealth, 0, 100)`, Hide subtracts 20 percentage points, and
+  detected police roll Force 5 + Combat 20 minus effective Defense dice at 5+.
+  Exact probability and dice-pool boundary fixtures guard both formulas.
+- In-game Help now adds recovered executable notes directly to their matching
+  Game Settings, Attack, Bribe, Chaos, Control, Equip, Heal, Hide, Influence,
+  Research, Sell, Snitch, and Crackdown subjects. These cover the implemented
+  high-confidence difficulty, pool, threshold, combat, transaction, and police
+  formulas; missing context anchors fall back to subject titles, and a missing
+  subject becomes a clearly named listed entry instead of a catch-all page.
 - The `PX00132` hot-seat handoff now draws the incoming player's Overlord in
   its measured 80-by-77 portrait aperture instead of leaving the frame black.
 - Combat Results now follows the original sector-indexed table instead of
