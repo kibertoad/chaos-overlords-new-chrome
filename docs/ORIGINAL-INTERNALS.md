@@ -285,7 +285,7 @@ literal capacity, record stride, copy bounds, count update, and cursor branch.
 **Recreation status:** Authoritative local-human delivery now validates the
 active command-phase sender and human recipients, supports deterministic
 multi-recipient delivery, retains the newest 16 messages, and tracks unread
-state. Version-17 saves, version-18 replays, and canonical hash version 20
+state. Version-19 saves, version-20 replays, and canonical hash version 22
 include every inbox. The client routes the original `PX05017` View and
 `PX05018` Send panels, including newest-first entry, paging, read-state clearing,
 six recipient cells, the four recovered 40-character rows, and the main-console
@@ -1904,9 +1904,10 @@ family records and are included in authoritative hashes, saves, and replays.
 bonus. Homicidal Maniac begins maximally hostile toward human players and
 maximally friendly toward computer players; ordinary interactions can create
 directed hostility at other mentalities, and hostility decays toward
-friendliness by one point per turn. The recreation's current attack score
-approximates part of the visible outcome but does not yet persist or resolve
-this matrix.
+friendliness by one point per turn. The earlier scalar attack score only
+approximated part of that outcome; the current recreation persists and resolves
+the matrix, applies the recovered recovery and combat/Control mutations, and
+uses negative hostility in attack targeting.
 
 **Confidence:** High for matrix dimensions and direction, `[-10,+10]` bounds,
 initial values, mentality-gated per-turn recovery, reaction range/immutability, combat and

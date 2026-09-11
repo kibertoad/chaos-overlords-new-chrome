@@ -102,7 +102,8 @@ Target subdivisions:
 - `Determinism`: original-compatible PRNG and state hashing.
 - `MatchOutcome`: state projection and end-of-turn scenario completion.
 - `EndgameAwards`: deterministic award projection from player statistics.
-- `EndgameRanking`: timed-scenario score ordering and tied placements.
+- `EndgameRanking`: exact all-scenario score projection, competition standings,
+  player-slot tie order, and trailing inactive players.
 - `SpecialSiteRules`: controlled/local influenced-site research Tech ceilings
   and binary-recovered Factory pricing (`Cost - trunc(Cost / 3)`) without
   duplicating those rules in UI or AI. Match validation enforces that every
@@ -167,10 +168,10 @@ and machine-readable diagnostics.
 ### `Rechaos.Game`
 
 The current client owns the MonoGame loop, point-scaled virtual canvas, asset
-loading, title/setup/hot-seat-handoff/city/sector/sector-gangs/gang/finance/ranking/items/Give/combat-summary/search/commands/hire/events/endgame routing,
+loading, title/setup/hot-seat-handoff/city/sector/sector-gangs/gang/finance/ranking/items/Give/Sell/combat-summary/search/commands/hire/events/endgame/help routing,
 keyboard and inverse-mapped mouse input, including edge-triggered right-click
 cancellation that delegates to each interaction's existing close/back operation,
-prototype board renderer, and an atlas-backed renderer for the original
+an ownership-composited city/sector renderer, and an atlas-backed renderer for the original
 `PX00129` pixel font. `UI-ATLAS.md` records the
 first full-screen resource and hit-region mappings.
 The client shell is a partial class split by responsibility. `ChaosGame.cs`
@@ -310,7 +311,10 @@ lag behind resolved state but cannot change it.
 One turn contains Upkeep, Command, Execution, Hire, and Player Elimination.
 Execution resolves all players in Instant, Combat, Transaction, Chaos, Movement,
 and Control order. `TurnStructure` is the current executable specification of
-that ordering. Within-subphase ordering and tie-breaking remain unverified.
+that ordering. The implemented resolvers use the recovered fixed player/roster
+scans, phase-opening snapshots, and board ordering described below; only the
+specific reveal, overkill, police-notification, and remaining edge cases listed
+in the parity matrix remain unverified.
 Before an execution subphase mutates state, every queued action in that subphase
 must have a supported resolver. Unsupported actions block advancement rather
 than being silently consumed.
@@ -438,16 +442,18 @@ a reference fixture.
   stable IDs, force, position, equipment,
   queued/repeat action, targets, flags and effective stats;
 - three-entry hire pool, pending hire placement and per-turn snub state per player;
-- bounded notification queues;
+- bounded notification queues and per-player 16-entry Comlink inboxes;
+- fixed-six-player AI strategy/planning state, including action/target history,
+  cooldowns, placement/formation/focus/coverage fields, and first-plan flags;
+- ordered events, phase hashes, scenario outcome, and all-scenario standings;
 - deterministic PRNG state and consumption counter.
 
-The initial schema covers setup identity, phases, players, sectors/sites, gangs,
+The current schema covers setup identity, phases, players, sectors/sites, gangs,
 hire state, persistent research progress/completion, inventory, equipment,
-statistics, command projections,
-ordered events, bounded notification queues, deterministic PRNG state, and
-phase-boundary hashes. Reference-derived resolvers remain to be added. Public
-collection projections are read-only; renderer/view models must not receive
-mutation paths.
+statistics, four-target command projections, ordered events, notifications and
+Comlink state, AI strategy/planning state, deterministic PRNG state,
+phase-boundary hashes, and match outcome. Public collection projections are
+read-only; renderer/view models must not receive mutation paths.
 
 ## Determinism boundary
 
@@ -462,9 +468,10 @@ a separate cosmetic stream.
 
 State hashes are computed from a versioned canonical little-endian binary
 encoding after transitions made through `MatchState`. The encoding includes
-definitions, setup, phase/RNG state, players, sectors, commands, and pending
-notifications. Replays store an initial native snapshot, ordered authoritative
-operations and expected state hashes.
+definitions, setup, phase/RNG state, players, sectors, four-target commands,
+events, notifications, Comlink inboxes, AI state, and match outcome. Replays
+store an initial native snapshot, ordered authoritative operations and expected
+state hashes.
 
 ## Proprietary-content boundary
 
@@ -502,9 +509,9 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
 
 ## Known architectural debt
 
-- The client now consumes authoritative `MatchState`, advances its real phase
-  coordinator, submits validated Move/Control commands, and uses deferred Hire
-  placement. F5/F9 expose atomic native quick-save/load with backup recovery in
+- The client consumes authoritative `MatchState`, advances its real phase
+  coordinator, submits every original command through Core validation, and uses
+  deferred Hire placement. F5/F9 expose atomic native quick-save/load with backup recovery in
   the user's local application-data directory; the same store writes an
   automatic recovery checkpoint after Player Elimination completes each turn.
   All client mutations pass through `MatchReplayRecorder`; F6/F10 atomically
@@ -528,9 +535,13 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
   its Hire panel exposes all three offers, selected-sector placement and snubbing,
   while sector/gang views project authoritative sites, influence, effective stats,
   equipment and queued commands.
-- Exact control edges and within-subphase command ordering remain provisional.
+- Remaining resolver debt is narrowly tracked in the parity matrix: original
+  seeding/call context, combat reveal and overkill attribution, police
+  notification edges, and a small set of economy/special-building boundaries.
 - Runtime manifest checking validates version only.
-- Media resources are extracted but not presented.
+- Music and mapped combat/general sound effects are presented; Smacker video
+  playback, remaining effect triggers, exact cadence/color keys, and native
+  playback validation remain open.
 
 Each item must move to the parity matrix before replacement so behavior changes
 remain traceable.

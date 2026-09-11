@@ -1,14 +1,15 @@
 # Development handover
 
-Status: ready to resume
+Status: paused at a validated, published checkpoint
 Last updated: 2026-09-11
 
 ## Repository state
 
-- Work continues on `codex/full-reimplementation` at
-  `https://github.com/kibertoad/chaos-overlords-new-chrome.git`.
-- The latest functional checkpoints are committed on that branch; publish the
-  local commits when repository push authorization is available.
+- The canonical repository is
+  `https://github.com/kibertoad/chaos-overlords-new-chrome.git`. All functional
+  checkpoints through the sole-survivor/endgame-ranking parity batches are
+  published on `main`; the local `codex/full-reimplementation` branch contains
+  the same history and remains the development branch for a future session.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
   isolated Release build passed all 1,154 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
