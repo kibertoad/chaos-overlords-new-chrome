@@ -2097,6 +2097,23 @@ combined-value intent.
 pending-array lifecycle/application, selection-mask order, item clearing, and
 single Sell credit. Runtime corroboration remains useful.
 
+### BIN-MOVEMENT-001 - Terminate pass before roster-ordered Move
+
+**Observation:** The whole-turn resolver `0x00472775` has two distinct movement
+passes. Lines 678-701 scan player slots 0 through 5 and each player's 81 roster
+slots, resolving action 14 (**Terminate**). Only after that pass finishes do
+lines 702-725 repeat the same player/roster scan and resolve action 10
+(**Move**) from its stored destination sector.
+
+**Interpretation:** Every Terminate resolves before any Move, regardless of
+command submission order. Within each pass, results follow ascending player
+slot and persistent roster slot. Competing Moves therefore fill a destination's
+last friendly capacity slot in roster order.
+
+**Confidence:** High static evidence for pass precedence, action identities,
+loop bounds, player/roster ordering, and Move target decoding. Runtime
+corroboration remains useful.
+
 ### BIN-CONTROL-001 - cross-player winner and zero-margin neutral candidate
 
 **Observation:** The Control block in the whole-turn resolver `0x00472775`

@@ -404,16 +404,19 @@ claim about original-game behavior.
 
 ### RULE-TERMINATE-001 — Remove gang and equipment
 
-- Source: `MANUAL-GOG-1`; Terminate description and command sequence on numbered
+- Source: `MANUAL-GOG-1` and `BIN-MOVEMENT-001`; Terminate description
+  and command sequence on numbered
   pages 44–45.
 - Observed statement: Terminate removes the gang from play and all items it
   possesses; it executes during Movement.
 - Interpretation: set Force to zero, clear Hidden and all three equipment slots,
-  and emit an elimination notification.
-- Confidence: High for gang/item removal and phase; Low for statistics,
-  notification presentation, and effects on simultaneous Movement.
+  and emit an elimination notification. Resolve the complete player/roster
+  Terminate pass before any Move.
+- Confidence: High for gang/item removal, phase, and scheduling; Low for
+  statistics and notification presentation.
 - Implementation: `CommandResolver.ResolveTerminate`.
-- Tests: `TransactionResolutionTests.TerminateRemovesGangAndAllEquipmentDuringMovement`.
+- Tests: `TransactionResolutionTests.TerminateRemovesGangAndAllEquipmentDuringMovement`
+  and `BoardResolutionTests.TerminatePassPrecedesMovePassRegardlessOfSubmissionOrder`.
 
 ## Movement and sector control
 
@@ -516,18 +519,20 @@ claim about original-game behavior.
 
 ### RULE-MOVE-001 — Adjacent movement and friendly capacity
 
-- Source: `MANUAL-GOG-1`; Move command and command sequence descriptions.
+- Source: `MANUAL-GOG-1`; Move command and command sequence descriptions, plus
+  `BIN-MOVEMENT-001`.
 - Observed statement: Move relocates a gang to an adjacent sector during the
   Movement phase. The structural limit is six friendly gangs per sector.
 - Interpretation: move to any of the eight neighboring sectors, including a
   diagonal neighbor, rejecting a target already at friendly capacity; commands
   that compete for the final slot resolve
-  in stable queue order and later commands fail without moving.
-- Confidence: High for adjacency/capacity; Low for original simultaneous
-  collision and final-slot ordering.
+  in ascending player/roster-slot order and later commands fail without moving.
+- Confidence: High for adjacency, capacity, phase precedence, and final-slot
+  ordering.
 - Implementation: movement validation and `CommandResolver.ResolveMove`.
 - Tests: `BoardResolutionTests` covers movement events, capacity at submission,
-  runtime contention, stable result order, and notifications.
+  reversed-submission runtime contention, roster result order, Terminate
+  precedence, and notifications.
 
 ### RULE-CONTROL-001 — Cooperative sector control comparison
 

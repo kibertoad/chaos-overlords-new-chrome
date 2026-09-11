@@ -55,6 +55,7 @@ public static partial class CommandResolver
         if (phase == ExecutionPhase.Combat) return ResolveCombatPhase(state, commands).Commands;
         if (phase == ExecutionPhase.Chaos) return ResolveChaosPhase(state, commands);
         if (phase == ExecutionPhase.Control) return ResolveControlPhase(state, commands);
+        if (phase == ExecutionPhase.Movement) return ResolveMovementPhase(state, commands);
         if (phase == ExecutionPhase.Transaction) return ResolveTransactionPhase(state, commands);
         return commands.Select(queued => Resolve(state, queued)).ToArray();
     }
@@ -429,6 +430,15 @@ public static partial class CommandResolver
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, destination),
             GameNotificationKind.Movement);
     }
+
+    private static IReadOnlyList<CommandResolutionResult> ResolveMovementPhase(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> commands) => commands
+        .OrderBy(queued => queued.Command.Action == GangAction.Terminate ? 0 : 1)
+        .ThenBy(queued => queued.Command.Player.Value)
+        .ThenBy(queued => GangSlot(state, queued.Command))
+        .Select(queued => Resolve(state, queued))
+        .ToArray();
 
     private static IReadOnlyList<CommandResolutionResult> ResolveChaosPhase(
         MatchState state,

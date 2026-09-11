@@ -93,7 +93,8 @@ public sealed record QueuedCommand(long Sequence, GameCommand Command)
 
 /// <summary>
 /// Deterministic command storage for a turn. Replacement receives a new sequence
-/// number, making the provisional within-phase order explicit and replayable.
+/// number for replay and for phases whose exact scheduler is not yet recovered;
+/// recovered phase resolvers may instead apply binary action/player/roster order.
 /// </summary>
 public sealed class TurnCommandQueue
 {

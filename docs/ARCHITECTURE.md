@@ -364,9 +364,10 @@ validated state reserved for future acquisition workflows; it is not silently
 used as a shop or overflow stash. Terminate clears all gang-owned equipment in
 the Movement phase.
 
-Move commits in stable queue order and enforces the six-friendly-gang capacity
-both during submission and again during resolution. Control ownership changes
-are atomic with former-owner influenced-site cleanup, Support adjustment, and
+Movement resolution runs a complete player/roster-ordered Terminate pass before
+a separate player/roster-ordered Move pass. Move enforces the six-friendly-gang
+capacity both during submission and again during resolution. Control ownership
+changes are atomic with former-owner influenced-site cleanup, Support adjustment, and
 Overthrow statistics so phase hashes cannot observe a partially captured sector.
 The binary owner-write inventory also makes ownership independent of garrison:
 moving or terminating the last friendly gang does not neutralize the sector.

@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,143 tests with no warnings.
+  isolated Release build passed all 1,144 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -177,6 +177,9 @@ Last updated: 2026-09-11
   only for the third-Crackdown neutralization and a successful Control winner.
   Moving or terminating the last friendly gang therefore leaves sector ownership
   intact; dedicated fixtures now prevent accidental auto-abandonment.
+- Movement now mirrors the binary's two fixed scans: every Terminate resolves
+  first, then Moves resolve by player and persistent roster slot, so destination
+  capacity contention no longer depends on submission order.
 - Crackdown history now matches the original two shorts exactly: entries expire
   only below `current turn - 5`, the third retained trigger writes the current
   turn to both slots after neutralizing control, and only then does the resolver

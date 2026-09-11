@@ -71,7 +71,7 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
-    public void SimultaneousFriendlyMovesRespectCapacityInQueueOrder()
+    public void SimultaneousFriendlyMovesRespectCapacityInRosterOrder()
     {
         var gangs = new List<MatchGangState>
         {
@@ -83,9 +83,9 @@ public sealed class BoardResolutionTests
         var match = CreateMatch(gangs, [Gang(20, 1, 3, 5)]);
         match.FinishUpkeep();
         Assert.True(match.Submit(new GameCommand(
-            new PlayerId(0), new GangId(10), GangAction.Move, CommandTarget.Sector(1))).Accepted);
-        Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(11), GangAction.Move, CommandTarget.Sector(1))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Move, CommandTarget.Sector(1))).Accepted);
         FinishCommands(match);
         EnterMovementFromExecution(match);
 
@@ -96,6 +96,28 @@ public sealed class BoardResolutionTests
         Assert.Equal(
             [CommandResolutionCode.Resolved, CommandResolutionCode.DestinationFull],
             match.LastPhaseResolutions.Select(result => result.Code));
+    }
+
+    [Fact]
+    public void TerminatePassPrecedesMovePassRegardlessOfSubmissionOrder()
+    {
+        var match = CreateMatch([Gang(10, 0, 0, 5)], [Gang(20, 1, 3, 5)]);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Move, CommandTarget.Sector(1))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(1), new GangId(20), GangAction.Terminate, CommandTarget.None)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        EnterMovementFromExecution(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(
+            [GangAction.Terminate, GangAction.Move],
+            match.LastPhaseResolutions.Select(result => result.Command.Action).ToArray());
+        Assert.False(match.FindGang(new GangId(20))!.IsActive);
+        Assert.Equal(1, match.FindGang(new GangId(10))!.SectorId);
     }
 
     [Fact]
