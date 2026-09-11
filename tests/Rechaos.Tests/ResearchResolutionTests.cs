@@ -107,6 +107,42 @@ public sealed class ResearchResolutionTests
     }
 
     [Fact]
+    public void NewlyInfluencedScienceCenterDoesNotChangeSameInstantResearchPool()
+    {
+        var data = BundledOriginalData.Load();
+        var item = data.Items.First(value =>
+            value.Type != 99 && value.ResearchDifficulty > 1 && value.TechLevel <= 5).Id;
+        var match = CreateMatch(
+            researchProgress: new Dictionary<short, int> { [item] = 100 },
+            specialSiteDefinition: 8,
+            specialSiteInfluenced: false,
+            includeSecondResearchGang: true);
+        var researchGang = match.FindGang(new GangId(11))!;
+        var statisticsBefore = EffectiveStatisticsCalculator.ForGang(match, researchGang);
+        match.FinishUpkeep();
+
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Influence,
+            CommandTarget.Site(1))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), researchGang.Id, GangAction.Research,
+            CommandTarget.Item(item))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(new PlayerId(0), match.FindSite(1)!.InfluencedBy);
+        Assert.Equal(statisticsBefore.Research + 2,
+            EffectiveStatisticsCalculator.ForGang(match, researchGang).Research);
+        var research = match.LastPhaseResolutions.Single(result =>
+            result.Command.Action == GangAction.Research).Event!.Resolution!;
+        Assert.Equal(
+            ManualRules.ResearchDiceCount(researchGang.Force, statisticsBefore.Research),
+            research.Rolls.Count);
+    }
+
+    [Fact]
     public void EquivalentResearchRunsProduceIdenticalStateAndPhaseHash()
     {
         var first = CreateMatch();
@@ -187,6 +223,8 @@ public sealed class ResearchResolutionTests
         IReadOnlySet<short>? researchedItems = null,
         short? gangDefinitionId = null,
         short? specialSiteDefinition = null,
+        bool specialSiteInfluenced = true,
+        bool includeSecondResearchGang = false,
         PlayerController playerZeroController = PlayerController.Human,
         AiDifficulty difficulty = AiDifficulty.Criminal)
     {
@@ -201,10 +239,16 @@ public sealed class ResearchResolutionTests
         var researchGang = gangDefinitionId is { } definitionId
             ? data.Gangs.Single(gang => gang.Id == definitionId)
             : data.Gangs.OrderByDescending(gang => gang.Stats.Research).First();
+        var playerZeroGangs = new List<MatchGangState>
+        {
+            new(new GangId(10), new PlayerId(0), researchGang.Id, 0, 10)
+        };
+        if (includeSecondResearchGang)
+            playerZeroGangs.Add(new MatchGangState(
+                new GangId(11), new PlayerId(0), researchGang.Id, 0, 10));
         MatchPlayerState[] players =
         [
-            new(setup.Players[0], 500,
-                [new MatchGangState(new GangId(10), new PlayerId(0), researchGang.Id, 0, 10)],
+            new(setup.Players[0], 500, playerZeroGangs,
                 researchProgress: researchProgress,
                 researchedItems: researchedItems),
             new(setup.Players[1], 500,
@@ -214,8 +258,10 @@ public sealed class ResearchResolutionTests
             .Select(id => new MatchSectorState(id,
             [
                 new MatchSiteState(0, 0, 7),
-                new MatchSiteState(1, specialSiteDefinition ?? 1, 5,
-                    id == 0 && specialSiteDefinition.HasValue ? new PlayerId(0) : null),
+                new MatchSiteState(1, specialSiteDefinition ?? 1,
+                    id == 0 && specialSiteDefinition.HasValue && !specialSiteInfluenced ? 0 : 5,
+                    id == 0 && specialSiteDefinition.HasValue && specialSiteInfluenced
+                        ? new PlayerId(0) : null),
                 new MatchSiteState(2, 2, 4)
             ], owner: id == 0 && specialSiteDefinition.HasValue ? new PlayerId(0) : null))
             .ToArray();

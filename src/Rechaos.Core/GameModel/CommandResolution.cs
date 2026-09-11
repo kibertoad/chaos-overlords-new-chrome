@@ -51,10 +51,23 @@ public static class CommandResolver
             throw new InvalidOperationException("A command phase can only resolve during Execution.");
         if (commands.Any(command => command.ExecutionPhase != phase))
             throw new ArgumentException("Every command must belong to the current execution subphase.", nameof(commands));
+        if (phase == ExecutionPhase.Instant) return ResolveInstantPhase(state, commands);
         if (phase == ExecutionPhase.Combat) return ResolveCombatPhase(state, commands).Commands;
         if (phase == ExecutionPhase.Chaos) return ResolveChaosPhase(state, commands);
         if (phase == ExecutionPhase.Control) return ResolveControlPhase(state, commands);
         if (phase == ExecutionPhase.Transaction) return ResolveTransactionPhase(state, commands);
+        return commands.Select(queued => Resolve(state, queued)).ToArray();
+    }
+
+    private static IReadOnlyList<CommandResolutionResult> ResolveInstantPhase(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> commands)
+    {
+        var statistics = commands
+            .Select(queued => queued.Command.Gang)
+            .Distinct()
+            .ToDictionary(gangId => gangId,
+                gangId => EffectiveStatisticsCalculator.ForGang(state, state.FindGang(gangId)!));
         var results = new List<CommandResolutionResult>(commands.Count);
         var resolvedSequences = new HashSet<long>();
         foreach (var queued in commands)
@@ -62,7 +75,14 @@ public static class CommandResolver
             if (!resolvedSequences.Add(queued.Sequence)) continue;
             if (queued.Command.Action != GangAction.Influence)
             {
-                results.Add(Resolve(state, queued));
+                results.Add(queued.Command.Action switch
+                {
+                    GangAction.Heal => ResolveHeal(
+                        state, queued.Command, statistics[queued.Command.Gang]),
+                    GangAction.Research => ResolveResearch(
+                        state, queued.Command, statistics[queued.Command.Gang]),
+                    _ => Resolve(state, queued)
+                });
                 continue;
             }
 
@@ -71,7 +91,7 @@ public static class CommandResolver
                 && candidate.Command.Player == queued.Command.Player
                 && candidate.Command.Target == queued.Command.Target).ToArray();
             foreach (var participant in participants) resolvedSequences.Add(participant.Sequence);
-            results.AddRange(ResolveInfluence(state, participants));
+            results.AddRange(ResolveInfluence(state, participants, statistics));
         }
         return results;
     }
@@ -787,10 +807,13 @@ public static class CommandResolver
 
     private static int SectorIncome(MatchState state, MatchSectorState sector) => sector.Income;
 
-    private static CommandResolutionResult ResolveHeal(MatchState state, GameCommand command)
+    private static CommandResolutionResult ResolveHeal(
+        MatchState state,
+        GameCommand command,
+        EffectiveStatistics? phaseStatistics = null)
     {
         var gang = state.FindGang(command.Gang)!;
-        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
+        var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var rolls = DiceRoller.RollD6(state.Random, ManualRules.HealDiceCount(statistics.Heal));
         var successes = OriginalResolutionRules.CountSuccesses(
@@ -813,7 +836,8 @@ public static class CommandResolver
 
     private static IReadOnlyList<CommandResolutionResult> ResolveInfluence(
         MatchState state,
-        IReadOnlyList<QueuedCommand> participants)
+        IReadOnlyList<QueuedCommand> participants,
+        IReadOnlyDictionary<GangId, EffectiveStatistics>? phaseStatistics = null)
     {
         if (participants.Count == 0) throw new ArgumentException("At least one participant is required.", nameof(participants));
         var first = participants[0].Command;
@@ -821,7 +845,10 @@ public static class CommandResolver
         var dice = participants.Select(queued =>
         {
             var gang = state.FindGang(queued.Command.Gang)!;
-            return (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Influence);
+            var statistics = phaseStatistics is null
+                ? EffectiveStatisticsCalculator.ForGang(state, gang)
+                : phaseStatistics[gang.Id];
+            return (gang.Force, statistics.Influence);
         });
         var band = OriginalResolutionRules.Band(state, first.Player);
         var pool = OriginalResolutionRules.ActionPool(
@@ -869,12 +896,15 @@ public static class CommandResolver
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, after));
     }
 
-    private static CommandResolutionResult ResolveResearch(MatchState state, GameCommand command)
+    private static CommandResolutionResult ResolveResearch(
+        MatchState state,
+        GameCommand command,
+        EffectiveStatistics? phaseStatistics = null)
     {
         var gang = state.FindGang(command.Gang)!;
         var player = state.FindPlayer(command.Player)!;
         var itemIndex = checked((short)command.Target.Id);
-        var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
+        var statistics = phaseStatistics ?? EffectiveStatisticsCalculator.ForGang(state, gang);
         var band = OriginalResolutionRules.Band(state, command.Player);
         var pool = OriginalResolutionRules.ActionPool(
             band, GangAction.Research,

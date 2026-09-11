@@ -314,6 +314,13 @@ effective Control into one non-dice comparison. Each group resolves at its
 earliest queue position and emits one ordered result per participating command.
 Cross-player conflicts remain an explicit parity gap.
 
+Instant resolution snapshots every acting gang's effective statistics before
+any command mutates site influence. Heal, Research, and grouped Influence rolls
+therefore share the phase-opening view of equipment and local sites; acquiring a
+Science Center or Research Lab cannot retroactively improve a concurrent roll.
+Mutation and event emission retain deterministic queue order while exact
+original within-phase ordering remains a reference-fixture gap.
+
 Chaos is resolved across the entire subphase: one player's same-sector gangs
 share a roll, every group in a sector contributes before its crackdown state and
 payouts commit, and a new crackdown suppresses all groups in that sector. This

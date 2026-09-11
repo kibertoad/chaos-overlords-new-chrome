@@ -160,10 +160,12 @@ controlled reference observation confirms its execution timing and edge cases.
 - Implementation: `MatchPlayerState.RemainingResearch`,
   `MatchPlayerState.ApplyResearch`, `ManualRules.ResearchDiceCount`, and
   `CommandResolver.ResolveResearch`; `SpecialSiteRules.ResearchTechLimit`
-  enforces the gang/site ceiling during validation.
+  enforces the gang/site ceiling during validation. Instant resolution snapshots
+  effective statistics before any same-phase Influence acquisition.
 - Tests: `ResearchResolutionTests` covers effective dice count, recorded rolls,
   progress, completion, repeat rejection, state invariants, RNG consumption,
-  notifications, and deterministic phase hashes.
+  notifications, deterministic phase hashes, and a newly influenced Science
+  Center not changing a concurrent Research pool.
 - Next experiment: execute Research from identical saves across gang/item/site
   modifiers, tech-level boundaries, and near-completion values, then compare
   rolls, unlock state, repeat behavior, and save deltas.
