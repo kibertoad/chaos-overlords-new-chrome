@@ -8,7 +8,7 @@ namespace Rechaos.Game;
 public static class EquipmentSellLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(130, 143, 64, 64);
+    public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 

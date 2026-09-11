@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   published on `main`; the local `codex/full-reimplementation` branch contains
   the same history and remains the development branch for a future session.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,154 tests with no warnings.
+  isolated Release build passed all 1,175 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -24,6 +24,11 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Item Information now fills the exact 48-by-48 monitor aperture with the
+  selected item's 15-frame `PX04xxx` rotation, using the compact inventory icon
+  only as a centered fallback. Shared gang-command portraits, Attack equipment
+  and opponent cells, and Site Information art now use their measured template
+  apertures instead of the earlier one- or two-pixel offsets.
 - Gang Information now slides independently over a stationary City or Sector
   backdrop. Opening the command picker no longer applies a panel entrance, and
   closing nested details back to Sector no longer replays the Sector entrance.
@@ -50,6 +55,9 @@ Last updated: 2026-09-11
   active OK state for a valid item and shows accumulated/required progress.
   Completed-research reports name the resolved item and play its dedicated
   15-frame `PX04xxx` rotation in the monitor.
+- The `PX05016` Gangs for Hire comparison now opens at the shared management
+  panel destination instead of screen origin. Its three portraits, right-aligned
+  values, and irregular sixteen-row baselines follow the template pixels.
 - Handoff now auto-presents combat from the immediately completed turn. When
   both report types exist, Last Turn Events opens first and then chains into
   Combat Results; Detailed animation capture waits until private handoff/event
@@ -106,6 +114,11 @@ Last updated: 2026-09-11
   Computers. Clicking a visible player's name edits the original bounded
   10-character field, enabling ordinary custom names and the recovered
   exact-name modifiers; portrait 15 is no longer selectable as a human face.
+  There is no separate Human/AI toggle: Add/Remove determines how many local
+  humans are configured, while every omitted color slot becomes a Computer at
+  Begin. The top-strip faces and two-by-three editable cards now use the measured
+  `PX00143` apertures plus the `PX00140` arrow/name construction offsets, without
+  the recreation-only player-count label or portrait border.
   Dragging a human face to an empty color moves that identity into the sparse
   slot; dropping onto another human exchanges their colors. Begin then fills
   missing color slots in ascending order before AI and city RNG consumption.

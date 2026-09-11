@@ -52,7 +52,7 @@ original-game capture confirms the screen and interaction state.
 | `PX05000`-`PX05024` | Gang-information panel family | Medium from visible template fields |
 | `PX10000`-`PX10006` | Neutral plus six player-colored 8x8 city layers; each sector is a 54x52 source cell | High from dimensions, grid, and color inspection |
 
-## `PX00143` provisional hit map
+## `PX00143` hit map
 
 The recreation currently overlays selection borders and routes clicks through
 these rectangles:
@@ -71,9 +71,17 @@ these rectangles:
 - Begin: `(370,375,92,45)`.
 - Cancel: `(468,375,92,45)`.
 
+The six top-strip portrait apertures are 32 by 32 at `(360 + 36n,38)`.
+The editable player cards form two columns at x 397 and 480 and three rows at
+y 89, 163 and 237. Each face is 64 by 64; its portrait arrows use 12-by-18 hit
+areas at face-relative `(2,20)` and `(50,20)`, and its 64-by-8 name field begins
+immediately below the face. These coordinates follow the black apertures in
+`PX00143` and the arrow/name construction mask at `(220,138)` in `PX00140`.
+
 The four push-button rectangles are verified against the destination rectangles
-in original helper `0x0040eb5f`; the other coordinates were measured from the
-extracted bitmap. The helper uses half-open rectangle containment, restores the
+in original helper `0x0040eb5f`; the scenario, duration, mentality, planning,
+and player-card coordinates were measured from the extracted bitmaps. The helper
+uses half-open rectangle containment, restores the
 released image when the pointer leaves, and accepts only release inside. The
 recreation now uses its exact hit rectangles, defers each action until release
 inside the same control, and cancels a release outside. While held inside, it
@@ -91,15 +99,18 @@ cursor feedback remain to be validated.
   not embedded in source or redistributed.
 - `PX00129` contains sixteen 32-by-32 overlord portraits across source row
   y=480. Setup renders these in the top strip and scales the selected portrait
-  into each visible local-player slot; green left/right arrows cycle that
+  into the exact 64-by-64 aperture in each visible local-player card; green
+  left/right arrows overlay the face and cycle that
   player's portrait. Static setup analysis now identifies portrait 15 as the
   empty-slot marker, not an active Overlord portrait. On original local Begin,
   every empty slot becomes a Computer and receives a unique bounded draw from
   portraits 0 through 14 before city generation. The client now treats its
   visible count as explicitly configured local humans, starts with one, and
   completes omitted slots at Begin through the original-compatible fresh-match
-  factory. Add/Remove changes that human count. Clicking the bounded name field
-  below a visible face opens the original 10-character uppercase editor; empty
+  factory. Add/Remove changes that human count: there is no separate per-slot
+  Human/AI switch, because every omitted color slot becomes an AI at Begin.
+  Clicking the bounded name field below a visible face opens the original
+  10-character uppercase editor; empty
   confirmation restores `PLAYER#n`. Dragging a face to an empty cell changes its
   color slot; dropping on another human exchanges their name/portrait identities.
   Portrait 15 remains display-only.
@@ -273,7 +284,11 @@ continues to identify the influencing player's color.
 Hire console button overlays it on the live city, with three 32-by-32 gang
 portraits and their sixteen comparison values. Hiring itself remains the
 original drag-from-dock interaction; the comparison panel's OK control closes
-the overlay.
+the overlay. The panel uses the shared `(104,125)` management-panel destination;
+its portrait cells begin at source `(164,14)` with a 40-pixel pitch, and its
+right-aligned value columns end at source x 185, 225, and 265. The sixteen rows
+follow the baked irregular 9/10-pixel label baselines rather than a uniform
+pitch.
 
 `PX05017` is the original 344-by-209 `COMLINK: INCOMING MESSAGES` viewer. It
 contains the bounded page counter and previous/next controls, a 64-by-64 sender
@@ -290,16 +305,23 @@ enemy gang with its equipment and Force track. `PX05005` is the `SITE TO
 INFLUENCE` picker; its three staggered apertures contain the selected sector's
 actual building art. These identities and workflows are confirmed by supplied
 original-game captures. The recreation implements `PX05005` and the two-stage
-player/gang selection of `PX05003`. `PX05001` is now shared by Purchase and
-Research: a stationary item-row double-click opens its art, type, description,
-cost, tech level and fourteen modifiers, then returns to the same tab/selection.
+player/gang selection of `PX05003`. Their acting-gang aperture, shared with the
+other gang-command panels, is the template's local `(26,17,64,64)` rectangle at
+screen `(130,142,64,64)`; Attack's opponent cells begin at screen x 202.
+`PX05001` is now shared by Purchase and Research: a stationary item-row
+double-click opens its art, type, description, cost, tech level and fourteen
+modifiers, then returns to the same tab/selection. Its local `(34,17,48,48)`
+monitor aperture is screen `(138,142,48,48)` and continuously plays the item's
+15-frame `PX04xxx` rotation at 80 ms per frame. The compact `PX04999` inventory
+icon is centered in that aperture only as a fallback when a rotation is absent.
 
-`PX05002` is the Site Information panel. Its 120-by-64 aperture uses the same
-`PX02000` strip as the detailed-sector buildings; the right data block reports
-live remaining Resistance plus the site's Tolerance, Support and Cash, and the
-lower block reports all fourteen site modifiers. A stationary double-click
-opens it from either a detailed-sector building or a `PX05005` Influence target,
-then returns to the originating screen without discarding target selection.
+`PX05002` is the Site Information panel. Its local `(28,15,120,64)` aperture is
+screen `(132,140,120,64)` and uses the same `PX02000` strip as the
+detailed-sector buildings; the right data block reports live remaining
+Resistance plus the site's Tolerance, Support and Cash, and the lower block
+reports all fourteen site modifiers. A stationary double-click opens it from
+either a detailed-sector building or a `PX05005` Influence target, then returns
+to the originating screen without discarding target selection.
 
 `PX05013` is the original `EQUIPMENT TO SELL` panel. Its three fixed rows map
 to the acting gang's weapon, armor and miscellaneous slots. Clicking a populated

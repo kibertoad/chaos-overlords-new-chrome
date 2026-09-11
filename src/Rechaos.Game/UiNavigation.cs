@@ -455,7 +455,7 @@ public static class EquipmentCommandLayout
 {
     public const int CategoryCount = 4;
     public static Rectangle Panel => new(104, 125, 344, 209);
-    public static Rectangle Portrait => new(130, 143, 64, 64);
+    public static Rectangle Portrait => new(130, 142, 64, 64);
     public static Rectangle Cancel => new(136, 262, 49, 24);
     public static Rectangle Ok => new(136, 294, 49, 24);
 
@@ -497,7 +497,7 @@ public static class EquipmentCommandLayout
 public static class GangInformationLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(130, 143, 64, 62);
+    public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
     public const int LeftValueRight = 287;
     public const int RightValueRight = 383;
@@ -524,7 +524,7 @@ public static class GangInformationLayout
 public static class SiteInformationLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(132, 141, 120, 64);
+    public static Rectangle Portrait => new(132, 140, 120, 64);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
     public const int DataValueRight = 383;
     public const int LeftValueRight = 287;
@@ -561,7 +561,8 @@ public static class SiteInformationLayout
 public static class ItemInformationLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(132, 141, 56, 50);
+    public static Rectangle Portrait => new(138, 142, 48, 48);
+    public static Rectangle CompactPortrait => new(152, 156, 20, 20);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
     public const int LeftValueRight = 287;
     public const int RightValueRight = 383;
@@ -673,7 +674,7 @@ public static class ComlinkSendLayout
 public static class InfluenceCommandLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(130, 141, 64, 64);
+    public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 
@@ -690,21 +691,21 @@ public static class AttackCommandLayout
 {
     public const int VisibleTargets = 6;
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle ActorPortrait => new(129, 141, 64, 64);
+    public static Rectangle ActorPortrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static Rectangle ActorForceBar => new(129, 228, 64, 3);
+    public static Rectangle ActorForceBar => new(130, 228, 64, 3);
 
     public static Rectangle ActorItem(int slot)
     {
         if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(129 + slot * 22, 207, 20, 20);
+        return new Rectangle(130 + slot * 22, 207, 20, 20);
     }
 
     public static Rectangle Opponent(int slot)
     {
         if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(200, 141 + slot * 37, 32, 32);
+        return new Rectangle(202, 141 + slot * 37, 32, 32);
     }
 
     public static Rectangle TargetCard(int targetSlot)
@@ -801,7 +802,7 @@ public static class PlayerPortraitLayout
     public static Rectangle SetupTop(int player)
     {
         Validate(player);
-        return new Rectangle(360 + player * 36, 32, 32, 32);
+        return new Rectangle(360 + player * 36, 38, 32, 32);
     }
 
     public static Rectangle CityTop(int player)
@@ -809,10 +810,10 @@ public static class PlayerPortraitLayout
         Validate(player);
         return new Rectangle(8 + player * 72, 4, 32, 32);
     }
-    public static Rectangle SetupLarge(int player) => Player(player, 379, 83, 106, 64, 64, rowStride: 92);
-    public static Rectangle Previous(int player) => Player(player, 363, 106, 106, 12, 18, rowStride: 92);
-    public static Rectangle Next(int player) => Player(player, 447, 106, 106, 12, 18, rowStride: 92);
-    public static Rectangle Name(int player) => Player(player, 379, 149, 106, 64, 12, rowStride: 92);
+    public static Rectangle SetupLarge(int player) => Player(player, 397, 89, 83, 64, 64, rowStride: 74);
+    public static Rectangle Previous(int player) => Player(player, 399, 109, 83, 12, 18, rowStride: 74);
+    public static Rectangle Next(int player) => Player(player, 447, 109, 83, 12, 18, rowStride: 74);
+    public static Rectangle Name(int player) => Player(player, 397, 153, 83, 64, 8, rowStride: 74);
 
     private static Rectangle Player(
         int player,
@@ -956,35 +957,5 @@ public static class HireDockLayout
     private static void ValidateSlot(int slot)
     {
         if (slot is < 0 or >= SlotCount) throw new ArgumentOutOfRangeException(nameof(slot));
-    }
-}
-
-public static class HireComparisonLayout
-{
-    public static Rectangle Panel => new(0, 0, 344, 209);
-    public static Rectangle Ok => new(32, 168, 50, 24);
-
-    public static Rectangle Portrait(int slot)
-    {
-        if (slot is < 0 or >= HireDockLayout.SlotCount)
-            throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(164 + slot * 41, 10, 32, 32);
-    }
-
-    public static Vector2 StatPosition(int slot, int row)
-    {
-        if (slot is < 0 or >= HireDockLayout.SlotCount)
-            throw new ArgumentOutOfRangeException(nameof(slot));
-        if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
-        return new Vector2(166 + slot * 41, 49 + row * 9);
-    }
-
-    public static bool IsBestValue(int row, short value, IEnumerable<short> comparison)
-    {
-        ArgumentNullException.ThrowIfNull(comparison);
-        if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
-        var values = comparison.ToArray();
-        if (values.Length == 0) throw new ArgumentException("At least one value is required.", nameof(comparison));
-        return row == 1 ? value == values.Min() : value == values.Max();
     }
 }

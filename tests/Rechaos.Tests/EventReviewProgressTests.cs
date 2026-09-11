@@ -35,10 +35,10 @@ public sealed class EventReviewProgressTests
         Assert.Equal(12, LastTurnEventPresentation.ResearchItemId(notification, related));
         Assert.True(LastTurnEventsLayout.Artwork.Contains(LastTurnEventsLayout.ResearchItem));
         Assert.Equal(new Rectangle(0, 0, 48, 48),
-            LastTurnEventPresentation.RotationFrame(TimeSpan.Zero));
+            ItemRotationPresentation.Frame(TimeSpan.Zero));
         Assert.Equal(new Rectangle(14 * 48, 0, 48, 48),
-            LastTurnEventPresentation.RotationFrame(TimeSpan.FromMilliseconds(14 * 80)));
+            ItemRotationPresentation.Frame(TimeSpan.FromMilliseconds(14 * 80)));
         Assert.Equal(new Rectangle(0, 0, 48, 48),
-            LastTurnEventPresentation.RotationFrame(TimeSpan.FromMilliseconds(15 * 80)));
+            ItemRotationPresentation.Frame(TimeSpan.FromMilliseconds(15 * 80)));
     }
 }

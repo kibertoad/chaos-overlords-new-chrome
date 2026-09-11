@@ -58,10 +58,11 @@ public sealed partial class ChaosGame
                     OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
             var values = valuesBySlot[slot]!;
             for (var row = 0; row < values.Length; row++)
-                font.Draw(batch, values[row].ToString(), HireComparisonLayout.StatPosition(slot, row),
+                DrawPanelValue(font, batch, values[row].ToString(),
+                    HireComparisonLayout.StatRight(slot), HireComparisonLayout.StatY(row),
                     HireComparisonLayout.IsBestValue(row, values[row],
                         valuesBySlot.Where(candidate => candidate is not null).Select(candidate => candidate![row]))
-                        ? Color.Lime : Color.Red, 1);
+                        ? Color.Lime : Color.Red);
         }
     }
 

@@ -11,7 +11,7 @@ public sealed class EquipmentSellUiTests
     public void LayoutMatchesOriginalEquipmentToSellPanel()
     {
         Assert.Equal(new Rectangle(104, 125, 344, 209), EquipmentSellLayout.Panel);
-        Assert.Equal(new Rectangle(130, 143, 64, 64), EquipmentSellLayout.Portrait);
+        Assert.Equal(new Rectangle(130, 142, 64, 64), EquipmentSellLayout.Portrait);
         Assert.Equal(new Rectangle(212, 141, 220, 51), EquipmentSellLayout.ItemRow(0));
         Assert.Equal(new Rectangle(212, 269, 220, 51), EquipmentSellLayout.ItemRow(2));
         Assert.Equal(EquipmentCommandLayout.Cancel, EquipmentSellLayout.Cancel);

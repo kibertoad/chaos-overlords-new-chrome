@@ -21,11 +21,11 @@ public sealed class UiNavigationTests
     public void AttackTargetPanelUsesAcquisitionGridApertures()
     {
         Assert.Equal(EquipmentCommandLayout.Panel, AttackCommandLayout.Panel);
-        Assert.Equal(new Rectangle(129, 141, 64, 64), AttackCommandLayout.ActorPortrait);
+        Assert.Equal(new Rectangle(130, 142, 64, 64), AttackCommandLayout.ActorPortrait);
         Assert.Equal(new Rectangle(240, 141, 64, 64), AttackCommandLayout.TargetPortrait(0));
-        Assert.Equal(new Rectangle(200, 141, 32, 32), AttackCommandLayout.Opponent(0));
-        Assert.Equal(new Rectangle(200, 289, 32, 32), AttackCommandLayout.Opponent(4));
-        Assert.Equal(new Rectangle(129, 207, 20, 20), AttackCommandLayout.ActorItem(0));
+        Assert.Equal(new Rectangle(202, 141, 32, 32), AttackCommandLayout.Opponent(0));
+        Assert.Equal(new Rectangle(202, 289, 32, 32), AttackCommandLayout.Opponent(4));
+        Assert.Equal(new Rectangle(130, 207, 20, 20), AttackCommandLayout.ActorItem(0));
         Assert.Equal(new Rectangle(284, 207, 20, 20), AttackCommandLayout.TargetItem(0, 2));
         Assert.Equal(new Rectangle(0, 240, 20, 20), OriginalSpriteLayout.ItemPortrait(12));
     }
@@ -42,7 +42,7 @@ public sealed class UiNavigationTests
     [Fact]
     public void InfluencePickerUsesOriginalStaggeredSiteLayout()
     {
-        Assert.Equal(new Rectangle(130, 141, 64, 64), InfluenceCommandLayout.Portrait);
+        Assert.Equal(new Rectangle(130, 142, 64, 64), InfluenceCommandLayout.Portrait);
         Assert.Equal(new Rectangle(209, 141, 120, 64), InfluenceCommandLayout.Site(0));
         Assert.Equal(new Rectangle(312, 198, 120, 64), InfluenceCommandLayout.Site(1));
         Assert.Equal(new Rectangle(209, 255, 120, 64), InfluenceCommandLayout.Site(2));
@@ -466,15 +466,16 @@ public sealed class UiNavigationTests
         Assert.Equal(1, EquipmentCommandLayout.CategoryForItemType(2));
         Assert.Equal(2, EquipmentCommandLayout.CategoryForItemType(3));
         Assert.Equal(3, EquipmentCommandLayout.CategoryForItemType(4));
-        Assert.Equal(new Rectangle(130, 143, 64, 62), GangInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(130, 142, 64, 64), GangInformationLayout.Portrait);
         Assert.Equal(new Rectangle(254, 87, 63, 15), SectorGangCardLayout.AssignedCommand(0));
-        Assert.Equal(new Rectangle(132, 141, 120, 64), SiteInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(132, 140, 120, 64), SiteInformationLayout.Portrait);
         Assert.Equal(170, SiteInformationLayout.DataY(0));
         Assert.Equal(188, SiteInformationLayout.DataY(1));
         Assert.Equal(245, SiteInformationLayout.StatisticY(0));
         Assert.Equal(272, SiteInformationLayout.StatisticY(2));
         Assert.Equal(308, SiteInformationLayout.StatisticY(6));
-        Assert.Equal(new Rectangle(132, 141, 56, 50), ItemInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(138, 142, 48, 48), ItemInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(152, 156, 20, 20), ItemInformationLayout.CompactPortrait);
         Assert.Equal("RANGE", ItemInformationLayout.TypeLabel(2));
         Assert.Equal("ARMOR", ItemInformationLayout.TypeLabel(3));
         Assert.Equal(244, ItemInformationLayout.StatisticY(0));
@@ -511,11 +512,15 @@ public sealed class UiNavigationTests
     [Fact]
     public void PlayerPortraitLayoutUsesOriginalTopStripsAndSelectionSlots()
     {
-        Assert.Equal(new Rectangle(360, 32, 32, 32), PlayerPortraitLayout.SetupTop(0));
-        Assert.Equal(new Rectangle(540, 32, 32, 32), PlayerPortraitLayout.SetupTop(5));
+        Assert.Equal(new Rectangle(360, 38, 32, 32), PlayerPortraitLayout.SetupTop(0));
+        Assert.Equal(new Rectangle(540, 38, 32, 32), PlayerPortraitLayout.SetupTop(5));
         Assert.Equal(new Rectangle(8, 4, 32, 32), PlayerPortraitLayout.CityTop(0));
         Assert.Equal(new Rectangle(368, 4, 32, 32), PlayerPortraitLayout.CityTop(5));
-        Assert.Equal(new Rectangle(485, 175, 64, 64), PlayerPortraitLayout.SetupLarge(3));
+        Assert.Equal(new Rectangle(397, 89, 64, 64), PlayerPortraitLayout.SetupLarge(0));
+        Assert.Equal(new Rectangle(480, 163, 64, 64), PlayerPortraitLayout.SetupLarge(3));
+        Assert.Equal(new Rectangle(399, 257, 12, 18), PlayerPortraitLayout.Previous(4));
+        Assert.Equal(new Rectangle(530, 257, 12, 18), PlayerPortraitLayout.Next(5));
+        Assert.Equal(new Rectangle(480, 301, 64, 8), PlayerPortraitLayout.Name(5));
         Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.SetupTop(6));
     }
 
@@ -653,10 +658,14 @@ public sealed class UiNavigationTests
     [Fact]
     public void HireComparisonMatchesOriginalThreeColumnPanel()
     {
-        Assert.Equal(new Rectangle(0, 0, 344, 209), HireComparisonLayout.Panel);
-        Assert.Equal(new Rectangle(32, 168, 50, 24), HireComparisonLayout.Ok);
-        Assert.Equal(new Rectangle(246, 10, 32, 32), HireComparisonLayout.Portrait(2));
-        Assert.Equal(new Vector2(248, 184), HireComparisonLayout.StatPosition(2, 15));
+        Assert.Equal(new Rectangle(104, 125, 344, 209), HireComparisonLayout.Panel);
+        Assert.Equal(EquipmentCommandLayout.Ok, HireComparisonLayout.Ok);
+        Assert.Equal(new Rectangle(348, 139, 32, 32), HireComparisonLayout.Portrait(2));
+        Assert.Equal(369, HireComparisonLayout.StatRight(2));
+        Assert.Equal(311, HireComparisonLayout.StatY(15));
+        Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.Portrait(3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.StatRight(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.StatY(16));
         Assert.True(HireComparisonLayout.IsBestValue(0, 10, [10, 5, 10]));
         Assert.False(HireComparisonLayout.IsBestValue(0, 5, [10, 5, 10]));
         Assert.True(HireComparisonLayout.IsBestValue(1, 2, [2, 4, 7]));

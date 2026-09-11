@@ -669,7 +669,9 @@ claim about original-game behavior.
 - Local setup starts with one human. Add/Remove changes the human count from one
   through six, and Begin fills every remaining slot with a Computer. Human names
   use the Help-specified 10-character name field; portrait 15 is the empty
-  marker and cannot be selected as a human face.
+  marker and cannot be selected as a human face. Consequently there is no
+  separate per-player Human/AI switch: remove a local human to leave that color
+  slot for AI completion, or add one to reclaim the next local-human slot.
 - A face dragged to an empty color moves that local-human identity to the target
   slot. A face dropped on another human exchanges their colors. The resulting
   sparse human slots are preserved as player IDs, then every missing slot is
