@@ -34,7 +34,8 @@ public sealed partial class ChaosGame
             _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
             _lastAnimatedEventSequence = _state.Events.LastOrDefault()?.Sequence ?? -1;
             _combatAnimationPlayer.Clear();
-            _screens.Show(_state.Outcome is null ? ClientScreen.City : ClientScreen.Endgame);
+            _managementReturnScreen = ClientScreen.City;
+            _screens.Show(_state.Outcome is null ? ClientScreen.GameInfo : ClientScreen.Endgame);
             if (_state.Outcome is null) StartPlanningTimer(_inputTime);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)

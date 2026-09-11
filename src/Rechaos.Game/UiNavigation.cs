@@ -77,6 +77,7 @@ public enum ClientScreen
     Help,
     Setup,
     City,
+    GameInfo,
     Commands,
     Hire,
     Events,
@@ -112,7 +113,7 @@ public sealed class ScreenRouter
     public bool Back()
     {
         if (Current == ClientScreen.Title) return false;
-        var destination = Current is ClientScreen.Events or ClientScreen.ComlinkView
+        var destination = Current is ClientScreen.GameInfo or ClientScreen.Events or ClientScreen.ComlinkView
             or ClientScreen.ComlinkSend or ClientScreen.Commands or ClientScreen.Hire
             or ClientScreen.Sector or ClientScreen.Gang or ClientScreen.Finance or ClientScreen.Ranking
             or ClientScreen.Site

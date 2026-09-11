@@ -222,7 +222,10 @@ public sealed partial class ChaosGame
         _message = _debugPhaseStepping ? "ADVANCE UPKEEP TO BEGIN" : "PLAN YOUR TURN";
         _lastAnimatedEventSequence = -1;
         _combatAnimationPlayer.Clear();
-        _screens.Show(ClientScreen.City);
+        _managementReturnScreen = ClientScreen.City;
+        _screens.Show(GameInformationPresentation.OpensAtNewGame(_state.Setup)
+            ? ClientScreen.GameInfo
+            : ClientScreen.City);
         StartPlanningTimer(_inputTime);
     }
 

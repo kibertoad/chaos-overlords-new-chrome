@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,063 tests with no warnings.
+  isolated Release build passed all 1,068 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -23,6 +23,12 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- The main console's original Game Info button now opens the `PX05021`
+  Scenario Information panel over either City or Sector. It lists the scenario,
+  AI mentality, planning limit, and all six color-coded players with the
+  manual-defined Human/AI intelligence labels. As documented by the original
+  help, it auto-opens when a local multiplayer match starts and whenever a live
+  saved game is loaded.
 - Local setup now begins with one human, Add/Remove changes the local-human
   count, and Begin lets the recovered factory fill all omitted slots as
   Computers. Clicking a visible player's name edits the original bounded

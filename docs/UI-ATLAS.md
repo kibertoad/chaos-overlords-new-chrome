@@ -35,6 +35,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00201` | Endgame award/statistics symbols and controls | High from visible labels |
 | `PX00202`, `PX00203` | Victory and elimination panels | High from visible text |
 | `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; patrol-car cell `(116,0,48,64)` | High for sheet contents, Medium for patrol-car crop |
+| `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
 | `PX02000` | 22 vertically stacked site portraits, 120x64 each | High from dimensions and definition coverage |
 | `PX03000` | 10x9 gang portrait grid, 64x64 each, covering all 90 definitions | High from dimensions and definition coverage |
 | `PX07000`-`PX07027`, `PX07200`-`PX07228` | Eight-frame 64x64 attacker overlays facing opposite directions; index 27 is target-evasion/question art and right-facing index 28 is the police car | High from frame inspection and item-table indices |
@@ -101,6 +102,11 @@ cursor feedback remain to be validated.
 - The optional human planning countdown uses the 60-by-3 aperture at
   `(520,336)` on the main control panel. The recreation fills it green over a
   black background and scales the visible width from 60 to zero.
+- The `PX00128` Game Info button at `(588,40,30,54)` opens `PX05021` at
+  `(104,125,344,209)`. Dynamic fields report the scenario, global AI mentality,
+  selected planning limit, and all six names with the manual-defined `HUMAN` or
+  `AI` intelligence label. The panel opens automatically for a new game with
+  multiple local humans and after loading a live saved game.
 - City sectors use their fixed 54 by 52 cell from `PX10000` when neutral or
   `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
 - Active Crackdown sectors overlay the color-keyed patrol-car slice from

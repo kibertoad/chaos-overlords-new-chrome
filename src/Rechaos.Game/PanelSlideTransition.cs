@@ -29,7 +29,7 @@ public sealed class PanelSlideTransition
     public void Clear() => _screen = null;
 
     public static bool IsPanel(ClientScreen screen) => screen is
-        ClientScreen.Options or ClientScreen.Help or ClientScreen.Commands
+        ClientScreen.Options or ClientScreen.Help or ClientScreen.GameInfo or ClientScreen.Commands
         or ClientScreen.Hire or ClientScreen.Events or ClientScreen.ComlinkView
         or ClientScreen.ComlinkSend or ClientScreen.Sector
         or ClientScreen.Gang or ClientScreen.Site or ClientScreen.ItemInformation

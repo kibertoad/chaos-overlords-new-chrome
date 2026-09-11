@@ -8,6 +8,7 @@ namespace Rechaos.Game;
 public sealed partial class ChaosGame
 {
     private static readonly Rectangle CityDone = new(492, 278, 106, 54);
+    private static readonly Rectangle CityGameInfo = new(588, 40, 30, 54);
     private static readonly Rectangle CityEvents = new(492, 124, 50, 51);
     private static readonly Rectangle CityComlinkView = new(548, 124, 50, 25);
     private static readonly Rectangle CityComlinkSend = new(548, 150, 50, 25);
@@ -43,6 +44,7 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.H)) OpenHire();
         if (Pressed(keyboard, Keys.M)) OpenComlinkView(ClientScreen.City);
         if (Pressed(keyboard, Keys.N)) OpenComlinkSend(ClientScreen.City);
+        if (Pressed(keyboard, Keys.J)) OpenManagement(ClientScreen.GameInfo, ClientScreen.City);
         if (Pressed(keyboard, Keys.Space)) AdvanceTurn();
         if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
         if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
@@ -88,7 +90,8 @@ public sealed partial class ChaosGame
 
     private bool HandleCityConsoleClick(Point point, ClientScreen returnScreen)
     {
-        if (CityDone.Contains(point)) AdvanceTurn();
+        if (CityGameInfo.Contains(point)) OpenManagement(ClientScreen.GameInfo, returnScreen);
+        else if (CityDone.Contains(point)) AdvanceTurn();
         else if (CityEvents.Contains(point)) OpenManagement(ClientScreen.Events, returnScreen);
         else if (CityComlinkView.Contains(point)) OpenComlinkView(returnScreen);
         else if (CityComlinkSend.Contains(point)) OpenComlinkSend(returnScreen);

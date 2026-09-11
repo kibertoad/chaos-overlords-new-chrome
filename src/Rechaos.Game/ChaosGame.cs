@@ -49,6 +49,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _setupControls;
     private Texture2D? _cityBackground;
     private readonly Texture2D?[] _cityOwnershipLayers = new Texture2D?[MatchLimits.PlayerCount + 1];
+    private Texture2D? _gameInfoBackground;
     private Texture2D? _gangInfoBackground;
     private Texture2D? _siteInfoBackground;
     private Texture2D? _itemInfoBackground;
@@ -204,6 +205,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         for (var index = 0; index < _cityOwnershipLayers.Length; index++)
             _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
         _endgameBackground = LoadTexture("PX00200.bmp");
+        _gameInfoBackground = LoadTexture("PX05021.bmp");
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
         _siteInfoBackground = LoadTexture("PX05002.bmp");
@@ -372,6 +374,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                         CloseItemDetails();
                     break;
+                case ClientScreen.GameInfo:
                 case ClientScreen.Finance:
                 case ClientScreen.Ranking:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
@@ -503,6 +506,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.City when _state is not null:
                 DrawBoard(_batch, _pixel, _font, _state);
+                break;
+            case ClientScreen.GameInfo when _state is not null:
+                DrawGameInformation(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.Endgame when _state?.Outcome is not null:
                 DrawEndgame(_batch, _pixel, _font, _state);
@@ -679,6 +685,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.ItemInformation:
                 if (ItemInformationLayout.Ok.Contains(point)) CloseItemDetails();
+                break;
+            case ClientScreen.GameInfo:
+                if (GameInformationLayout.Ok.Contains(point))
+                    _screens.Show(_managementReturnScreen);
                 break;
             case ClientScreen.Finance:
             case ClientScreen.Ranking:
