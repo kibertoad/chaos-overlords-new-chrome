@@ -67,6 +67,27 @@ public sealed class AssetPackVerifierTests : IDisposable
     }
 
     [Fact]
+    public async Task UnexpectedFilesInvalidatePackEvenInQuickMode()
+    {
+        var assetPath = Path.Combine(_root, "images", "test.bin");
+        Directory.CreateDirectory(Path.GetDirectoryName(assetPath)!);
+        await File.WriteAllBytesAsync(assetPath, [1, 2, 3], TestContext.Current.CancellationToken);
+        await WriteManifestAsync([new ExtractedAsset("images/test.bin", 3,
+            Convert.ToHexStringLower(SHA256.HashData([1, 2, 3]))) ]);
+        var stalePath = Path.Combine(_root, "obsolete", "old.bin");
+        Directory.CreateDirectory(Path.GetDirectoryName(stalePath)!);
+        await File.WriteAllBytesAsync(stalePath, [9], TestContext.Current.CancellationToken);
+
+        var result = await AssetPackVerifier.VerifyAsync(
+            _root, ExtractorProgram.FormatVersion, verifyHashes: false);
+
+        Assert.False(result.IsValid);
+        Assert.Equal(1, result.VerifiedFiles);
+        Assert.Contains(result.Errors, error => error.Contains(
+            Path.Combine("obsolete", "old.bin"), StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task NullManifestFieldsAreReportedInsteadOfThrowing()
     {
         Directory.CreateDirectory(_root);

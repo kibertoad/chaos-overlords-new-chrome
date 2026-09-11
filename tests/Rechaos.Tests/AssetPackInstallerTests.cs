@@ -58,6 +58,27 @@ public sealed class AssetPackInstallerTests : IDisposable
         Assert.Empty(TemporaryDirectories());
     }
 
+    [Fact]
+    public async Task UnmanifestedStagedFileLeavesExistingPackUntouched()
+    {
+        var output = Path.Combine(_parent, "assets");
+        Directory.CreateDirectory(output);
+        var oldPath = Path.Combine(output, "old.txt");
+        await File.WriteAllTextAsync(oldPath, "old", TestContext.Current.CancellationToken);
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => AssetPackInstaller.InstallAsync(
+            output, ExtractorProgram.FormatVersion, expectedFileCount: 1, async staging =>
+            {
+                var manifest = await WriteValidPackAsync(staging);
+                await File.WriteAllTextAsync(Path.Combine(staging, "stale.bin"), "stale",
+                    TestContext.Current.CancellationToken);
+                return manifest;
+            }));
+
+        Assert.Equal("old", await File.ReadAllTextAsync(oldPath, TestContext.Current.CancellationToken));
+        Assert.Empty(TemporaryDirectories());
+    }
+
     private static async Task<AssetManifest> WriteValidPackAsync(string staging)
     {
         var bytes = new byte[] { 1, 2, 3 };

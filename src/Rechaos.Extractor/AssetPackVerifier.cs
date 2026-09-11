@@ -50,6 +50,7 @@ public static class AssetPackVerifier
         var rootWithSeparator = assetRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
             + Path.DirectorySeparatorChar;
         var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var expectedPaths = new HashSet<string>(PathComparer);
         var verified = 0;
         foreach (var asset in manifest.Files)
         {
@@ -87,6 +88,7 @@ public static class AssetPackVerifier
                 errors.Add($"Manifest path escapes the asset directory: {asset.Path}");
                 continue;
             }
+            expectedPaths.Add(path);
             if (!File.Exists(path))
             {
                 errors.Add($"Asset is missing: {asset.Path}");
@@ -110,6 +112,21 @@ public static class AssetPackVerifier
             }
             verified++;
         }
+        try
+        {
+            foreach (var installedPath in Directory.EnumerateFiles(
+                         assetRoot, "*", SearchOption.AllDirectories))
+            {
+                var fullPath = Path.GetFullPath(installedPath);
+                if (PathComparer.Equals(fullPath, manifestPath)) continue;
+                if (!expectedPaths.Contains(fullPath))
+                    errors.Add($"Unexpected asset file: {Path.GetRelativePath(assetRoot, fullPath)}");
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            errors.Add($"Asset directory cannot be completely inventoried: {exception.Message}");
+        }
         return new AssetPackVerification(errors.Count == 0, manifest, errors, verified);
 
         AssetPackVerification Invalid(string error) => new(false, null, [error], 0);
@@ -117,4 +134,8 @@ public static class AssetPackVerifier
 
     private static bool IsSha256(string? value) =>
         value is { Length: 64 } && value.All(Uri.IsHexDigit);
+
+    private static StringComparer PathComparer => OperatingSystem.IsWindows()
+        ? StringComparer.OrdinalIgnoreCase
+        : StringComparer.Ordinal;
 }

@@ -6,7 +6,7 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | Area | Original requirement | Recreation status | Evidence/confidence | Next parity gate |
 |---|---|---|---|---|
 | Source pack | Exact supported DATA/HELP/MUSIC set | Implemented | Full SHA-256, Verified | Add second-source-version test |
-| Output pack | 686 outputs from 471 original resources | Implemented | Transactional promotion plus per-file size/SHA-256, including one locally decoded help derivative; Verified | Add stale-install cleanup |
+| Output pack | 686 outputs from 471 original resources | Implemented | Exact manifest-to-disk inventory, transactional whole-directory promotion, and per-file size/SHA-256, including one locally decoded help derivative; Verified | Add machine-readable verification diagnostics |
 | PX16 | Repair four missing BMP fields as RGB555 | Implemented | Payload arithmetic plus 12,065,806 paired-pixel comparison, High | Verify transparency/color keys in reference rendering |
 | PX08 | 207 RLE8 and 7 uncompressed indexed graphics | Implemented | Strict decoder, full 214-file extraction and payload checks; High | Compare palettes/pixels with PX16 and reference rendering |
 | Tables | 22 sites, 90 gangs, 64 items | Parity verified (values only) | Source/payload hashes, Verified | Semantic field-use fixtures |

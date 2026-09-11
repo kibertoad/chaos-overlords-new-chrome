@@ -127,9 +127,11 @@ Target subdivisions:
   output hash/size/media type, and conversion method/geometry per asset.
 - Stages and fully verifies a complete pack before rollback-safe directory
   promotion; `--force` explicitly rebuilds an already-valid matching pack.
-- Verifies installed packs and skips extraction when the full pack already
-  matches.
-- Rejects malformed paths, missing assets, size changes, and hash changes.
+- Verifies installed packs and skips extraction only when the full manifest and
+  on-disk inventory match. Unmanifested files invalidate the pack, forcing the
+  rollback-safe whole-directory promotion to remove obsolete outputs.
+- Rejects malformed paths, missing or unexpected assets, size changes, and hash
+  changes, including during quick verification where content hashes are skipped.
 
 `Rechaos.Game` loads that optional topic document through a separate bounded
 validator. F1 opens a cross-platform two-pane viewer whose navigation follows
