@@ -1379,6 +1379,12 @@ Thus result state may retain every superlative while presentation must cap icons
 at three in the builder's priority order. These observations replace the former
 manual-derived zero-activity and five-visible-icon assumptions.
 
+The Hide counter has one resolver write: action dispatcher `0x00472775` reaches
+the action-8 case at `0x00472d00`, which increments the current player's
+`0x004a25d0` counter without testing any hidden-state predicate. Consequently
+every resolved Hide counts; in the recreation's ordinary lifecycle, recurring
+Hide counts again after the next Upkeep has revealed the gang.
+
 Mode 6 is now bounded. If at least one human participates, a sector owned by a
 player whom the active AI views negatively receives `+2` only when that owner
 is human. It then adds one independent leader-routing point: with a unique

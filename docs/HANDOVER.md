@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,283 tests with no warnings.
+  isolated Release build passed all 1,292 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -149,6 +149,8 @@ Last updated: 2026-09-11
   thresholds: Fist 5 Overthrows, Skull 50 direct Damage, and Chicken 10 Hides,
   followed by most/least Cash Spent. All six player slots and ties participate;
   outcome data keeps every award while each visible row shows the first three.
+  The sole native Hide-counter write is unconditional, so a recurring Hide
+  counts again after the next Upkeep reveals the gang.
 - Search now uses the original `PX05024` Search: Sites panel instead of the
   earlier incorrect detected-gang list. Its two-column aperture contains all 22
   site types with ALL/NONE and individual toggles; OK applies a presentation-only

@@ -766,18 +766,19 @@ claim about original-game behavior.
   authoritative player statistics. Omit Fist, Skull, or Chicken below its
   recovered activity threshold. Retain zero-valued Dollar/Safe ties. Outcome
   data retains every award, while the native row presenter shows only the first
-  three awards assigned to a player.
-- Current exclusions: whether a repeated Hide while already hidden increments
-  the counter.
+  three awards assigned to a player. Every resolved Hide increments the counter;
+  recurring Hide therefore counts again after the next Upkeep reveals the gang.
+- Current exclusions: none for award calculation or Hide counting.
 - Confidence: High for award/statistic mapping, thresholds, scan/order, ties,
   inactive-player eligibility, three-icon presentation cap, and retaliation
-  exclusion; Low for repeated Hide behavior.
+  exclusion. Static resolver evidence makes repeated Hide counting High.
 - Implementation: `EndgameAwardEvaluator`, `MatchStatistics.TimesHidden`,
   direct-damage accounting in `CommandResolver`, and award snapshots in
   `MatchOutcome`, `MatchEnded` events, and canonical hashes.
 - Tests: `EndgameAwardTests` covers every category, exact inclusive thresholds,
   priority, ties, three-icon presentation, outcome/event integration and hashes;
   `CombatResolutionTests` verifies that
-  retaliation is not credited; `InstantResolutionTests` verifies Hide counts.
-- Next experiment: repeat Hide commands across turns and compare the native
-  counter after already-hidden actions.
+  retaliation is not credited; `InstantResolutionTests` verifies initial and
+  recurring Hide counts across the Upkeep reveal boundary.
+- Next experiment: capture a native golden Endgame Screen containing tied and
+  threshold-boundary awards to confirm final typography and icon placement.

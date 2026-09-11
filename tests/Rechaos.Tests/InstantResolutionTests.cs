@@ -26,6 +26,36 @@ public sealed class InstantResolutionTests
     }
 
     [Fact]
+    public void RepeatingHideCountsAgainAfterNextUpkeepRevealsGang()
+    {
+        var match = CreateMatch(siteResistance: 100);
+        EnterCommand(match);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Hide,
+            CommandTarget.None, Repeat: true)).Accepted);
+        EnterExecution(match);
+
+        match.FinishExecutionPhase();
+        Assert.True(match.FindGang(new GangId(10))!.Hidden);
+        Assert.Equal(1, match.Players[0].Statistics.TimesHidden);
+
+        while (match.Coordinator.Phase == TurnPhase.Execution)
+            match.FinishExecutionPhase();
+        foreach (var player in match.Players) match.FinishHire(player.Id);
+        match.FinishPlayerElimination();
+        EnterCommand(match);
+        EnterExecution(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.True(match.FindGang(new GangId(10))!.Hidden);
+        Assert.Equal(2, match.Players[0].Statistics.TimesHidden);
+        var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.Equal(0, resolution.PreviousValue);
+        Assert.Equal(1, resolution.ResultValue);
+    }
+
+    [Fact]
     public void FriendlyInfluenceCommandsRollSeparatelyAndAccumulateProgress()
     {
         var match = CreateMatch(siteResistance: 100);
