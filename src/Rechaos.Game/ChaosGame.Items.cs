@@ -43,7 +43,7 @@ public sealed partial class ChaosGame
         else if (ItemsResearch.Contains(point)) QueueItemCommand(GangAction.Research);
         else if (ItemsEquip.Contains(point)) QueueItemCommand(GangAction.Equip);
         else if (ItemsGive.Contains(point)) OpenGiveTargets();
-        else if (ItemsSell.Contains(point)) QueueItemCommand(GangAction.Sell);
+        else if (ItemsSell.Contains(point)) OpenSellEquipment(ClientScreen.Items);
         else if (ItemsBack.Contains(point)) _screens.Show(ClientScreen.City);
     }
 

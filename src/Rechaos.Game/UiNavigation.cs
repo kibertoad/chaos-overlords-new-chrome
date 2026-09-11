@@ -91,6 +91,7 @@ public enum ClientScreen
     Ranking,
     Items,
     Give,
+    Sell,
     CombatSummary,
     Search,
     Handoff,
@@ -118,10 +119,10 @@ public sealed class ScreenRouter
             or ClientScreen.Sector or ClientScreen.Gang or ClientScreen.Finance or ClientScreen.Ranking
             or ClientScreen.Site
             or ClientScreen.ItemInformation
-            or ClientScreen.Items or ClientScreen.Give
+            or ClientScreen.Items or ClientScreen.Give or ClientScreen.Sell
             or ClientScreen.CombatSummary
             or ClientScreen.Search
-            ? Current == ClientScreen.Give ? ClientScreen.Items : ClientScreen.City
+            ? Current is ClientScreen.Give or ClientScreen.Sell ? ClientScreen.Items : ClientScreen.City
             : ClientScreen.Title;
         Show(destination);
         return true;

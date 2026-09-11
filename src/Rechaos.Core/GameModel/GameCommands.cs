@@ -65,7 +65,17 @@ public sealed record GameCommand(
     GangAction Action,
     CommandTarget Target,
     bool Repeat = false,
-    CommandTarget? SecondaryTarget = null);
+    CommandTarget? SecondaryTarget = null,
+    CommandTarget? TertiaryTarget = null)
+{
+    /// <summary>The one-to-three exact items selected by the sell panel.</summary>
+    public IEnumerable<CommandTarget> SellTargets()
+    {
+        yield return Target;
+        if (SecondaryTarget is { } secondary) yield return secondary;
+        if (TertiaryTarget is { } tertiary) yield return tertiary;
+    }
+}
 
 public sealed record QueuedCommand(long Sequence, GameCommand Command)
 {

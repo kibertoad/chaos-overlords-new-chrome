@@ -36,6 +36,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00202`, `PX00203` | Victory and elimination panels | High from visible text |
 | `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; patrol-car cell `(116,0,48,64)` | High for sheet contents, Medium for patrol-car crop |
 | `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
+| `PX05013` | Equipment to Sell panel with acting-gang portrait, three independently selectable equipment rows, original-price half-value proceeds, Cancel and OK | High from visible labels and original manual Sell workflow |
 | `PX05011` | Player Rankings panel with six player-color vertical rails and movable Overlord portraits | High from visible structure and original WinHelp Ranking description |
 | `PX05020` | System Warning panel for confirming an end turn while at least one active gang is idle | High from visible text and client trigger semantics |
 | `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
@@ -285,6 +286,12 @@ live remaining Resistance plus the site's Tolerance, Support and Cash, and the
 lower block reports all fourteen site modifiers. A stationary double-click
 opens it from either a detailed-sector building or a `PX05005` Influence target,
 then returns to the originating screen without discarding target selection.
+
+`PX05013` is the original `EQUIPMENT TO SELL` panel. Its three fixed rows map
+to the acting gang's weapon, armor and miscellaneous slots. Clicking a populated
+row toggles its highlight; OK submits every highlighted exact item as one
+authoritative transaction, credits half of each raw item price rounded down, and
+ignores Factory purchase discounts. Cancel leaves the existing command intact.
 
 `PX05014` is the dedicated live Combat comparison panel rather than a flat
 target list. It identifies the sector, places attacker and defender owner/gang

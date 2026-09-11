@@ -69,6 +69,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _targetAcquisitionBackground;
     private Texture2D? _equipmentPurchaseBackground;
     private Texture2D? _equipmentResearchBackground;
+    private Texture2D? _equipmentSellBackground;
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
     private Texture2D? _itemPortraits;
@@ -123,6 +124,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private string _comlinkStatus = string.Empty;
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
+    private readonly bool[] _sellSelections = new bool[3];
+    private GangId? _sellGang;
+    private ClientScreen _sellReturnScreen = ClientScreen.Items;
+    private bool _sellRepeats;
     private int? _draggedHireSlot;
     private int? _draggedSetupPlayerSlot;
     private SetupPushButton? _pressedSetupButton;
@@ -234,6 +239,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _targetAcquisitionBackground = LoadTexture("PX05003.bmp");
         _equipmentPurchaseBackground = LoadTexture("PX05004.bmp");
         _equipmentResearchBackground = LoadTexture("PX05007.bmp");
+        _equipmentSellBackground = LoadTexture("PX05013.bmp");
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
         _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);
@@ -408,7 +414,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.R)) QueueItemCommand(GangAction.Research);
                     if (Pressed(keyboard, Keys.E)) QueueItemCommand(GangAction.Equip);
                     if (Pressed(keyboard, Keys.V)) OpenGiveTargets();
-                    if (Pressed(keyboard, Keys.S)) QueueItemCommand(GangAction.Sell);
+                    if (Pressed(keyboard, Keys.S)) OpenSellEquipment(ClientScreen.Items);
                     if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.City);
                     break;
                 case ClientScreen.Give:
@@ -416,6 +422,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Down)) MoveGiveCursor(1);
                     if (Pressed(keyboard, Keys.Enter)) QueueSelectedGive();
                     if (Pressed(keyboard, Keys.Back)) _screens.Show(ClientScreen.Items);
+                    break;
+                case ClientScreen.Sell:
+                    if (Pressed(keyboard, Keys.D1)) ToggleSellSelection(0);
+                    if (Pressed(keyboard, Keys.D2)) ToggleSellSelection(1);
+                    if (Pressed(keyboard, Keys.D3)) ToggleSellSelection(2);
+                    if (Pressed(keyboard, Keys.Enter)) QueueSelectedSale();
+                    if (Pressed(keyboard, Keys.Back)) CloseSellEquipment();
                     break;
                 case ClientScreen.CombatSummary:
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveCombatSummary(-1);
@@ -575,6 +588,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Give when _state is not null:
                 DrawGiveTargets(_batch, _pixel, _font, _state);
                 break;
+            case ClientScreen.Sell when _state is not null:
+                DrawSellEquipment(_batch, _pixel, _font, _state);
+                break;
             case ClientScreen.CombatSummary when _state is not null:
                 DrawCombatResultsPanel(_batch, _pixel, _font, _state);
                 break;
@@ -731,6 +747,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Give:
                 HandleGiveClick(point);
+                break;
+            case ClientScreen.Sell:
+                HandleSellClick(point);
                 break;
         }
     }

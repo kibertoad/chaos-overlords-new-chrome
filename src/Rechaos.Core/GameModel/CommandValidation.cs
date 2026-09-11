@@ -102,8 +102,7 @@ public static class CommandValidator
         if (!actorValidation.IsValid) return actorValidation;
         if (!CommandRules.ByAction.TryGetValue(command.Action, out var rule))
             return CommandValidation.Reject(CommandValidationCode.InvalidTargetKind);
-        if (command.Target.Kind != rule.PrimaryTarget
-            || (command.SecondaryTarget?.Kind ?? CommandTargetKind.None) != rule.SecondaryTarget)
+        if (!HasValidTargetShape(command, rule))
             return CommandValidation.Reject(CommandValidationCode.InvalidTargetKind);
 
         var actor = state.FindGang(command.Gang)!;
@@ -113,6 +112,10 @@ public static class CommandValidator
             ? ValidateTarget(state, actor, secondary, rule with { SpatialConstraint = SpatialConstraint.None })
             : CommandValidation.Valid();
         if (!secondaryValidation.IsValid) return secondaryValidation;
+        var tertiaryValidation = command.TertiaryTarget is { } tertiary
+            ? ValidateTarget(state, actor, tertiary, rule with { SpatialConstraint = SpatialConstraint.None })
+            : CommandValidation.Valid();
+        if (!tertiaryValidation.IsValid) return tertiaryValidation;
         if (command.Action == GangAction.Research
             && state.FindPlayer(command.Player)!.ResearchedItems.Contains((short)command.Target.Id))
             return CommandValidation.Reject(CommandValidationCode.ItemAlreadyResearched);
@@ -139,6 +142,19 @@ public static class CommandValidator
         if (command.Action == GangAction.Heal && actor.Force >= ManualRules.MaximumForce)
             return CommandValidation.Reject(CommandValidationCode.GangAtFullForce);
         return ValidateTransaction(state, command, actor);
+    }
+
+    private static bool HasValidTargetShape(GameCommand command, CommandRule rule)
+    {
+        if (command.Target.Kind != rule.PrimaryTarget) return false;
+        if (command.Action == GangAction.Sell)
+            return (command.SecondaryTarget?.Kind ?? CommandTargetKind.Item) == CommandTargetKind.Item
+                && (command.TertiaryTarget?.Kind ?? CommandTargetKind.Item) == CommandTargetKind.Item
+                && (command.TertiaryTarget is null || command.SecondaryTarget is not null)
+                && command.SellTargets().Select(target => target.Id).Distinct().Count()
+                    == command.SellTargets().Count();
+        return (command.SecondaryTarget?.Kind ?? CommandTargetKind.None) == rule.SecondaryTarget
+            && command.TertiaryTarget is null;
     }
 
     public static CommandValidation ValidateCancellation(MatchState state, PlayerId player, GangId gang) =>
@@ -246,6 +262,18 @@ public static class CommandValidator
     {
         if (command.Action is not (GangAction.Equip or GangAction.Give or GangAction.Sell))
             return CommandValidation.Valid();
+        if (command.Action == GangAction.Sell)
+        {
+            foreach (var target in command.SellTargets())
+            {
+                var selectedItem = checked((short)target.Id);
+                var selectedSlot = EquipmentRules.SlotFor(state.Definitions.Items[selectedItem]);
+                if (EquipmentRules.EquippedItem(actor, selectedSlot) != selectedItem)
+                    return CommandValidation.Reject(CommandValidationCode.ItemNotEquipped);
+            }
+            return CommandValidation.Valid();
+        }
+
         var itemIndex = checked((short)(command.Action == GangAction.Give
             ? command.SecondaryTarget!.Value.Id
             : command.Target.Id));

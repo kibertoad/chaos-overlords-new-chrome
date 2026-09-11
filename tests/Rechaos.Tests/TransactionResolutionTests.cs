@@ -119,6 +119,57 @@ public sealed class TransactionResolutionTests
     }
 
     [Fact]
+    public void SellRemovesAllSelectedEquipmentAndPaysCombinedHalfPrices()
+    {
+        var data = BundledOriginalData.Load();
+        var weapon = data.Items.First(item => item.Type is >= 0 and <= 2).Id;
+        var armor = data.Items.First(item => item.Type == 3).Id;
+        var miscellaneous = data.Items.First(item => item.Type == 4).Id;
+        var match = CreateMatch(cash: 100, actorWeapon: weapon);
+        var gang = match.FindGang(new GangId(10))!;
+        gang.ArmorItemId = armor;
+        gang.MiscellaneousItemId = miscellaneous;
+        EnterCommand(match);
+        var command = new GameCommand(new PlayerId(0), gang.Id, GangAction.Sell,
+            CommandTarget.Item(weapon), SecondaryTarget: CommandTarget.Item(armor),
+            TertiaryTarget: CommandTarget.Item(miscellaneous));
+
+        Assert.True(match.Submit(command).Accepted);
+        EnterTransaction(match);
+        var cashBefore = match.Players[0].Cash;
+        match.FinishExecutionPhase();
+
+        Assert.Null(gang.WeaponItemId);
+        Assert.Null(gang.ArmorItemId);
+        Assert.Null(gang.MiscellaneousItemId);
+        var proceeds = new[] { weapon, armor, miscellaneous }
+            .Sum(item => EquipmentRules.SaleValue(data.Items[item]));
+        Assert.Equal(cashBefore + proceeds, match.Players[0].Cash);
+        Assert.Equal(proceeds, Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.CashDelta);
+    }
+
+    [Fact]
+    public void SellRejectsDuplicateOrGappedAdditionalTargets()
+    {
+        var data = BundledOriginalData.Load();
+        var weapon = data.Items.First(item => item.Type is >= 0 and <= 2).Id;
+        var armor = data.Items.First(item => item.Type == 3).Id;
+        var match = CreateMatch(cash: 100, actorWeapon: weapon);
+        match.FindGang(new GangId(10))!.ArmorItemId = armor;
+        EnterCommand(match);
+
+        var duplicate = CommandValidator.Validate(match, new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Sell, CommandTarget.Item(weapon),
+            SecondaryTarget: CommandTarget.Item(weapon)));
+        var gap = CommandValidator.Validate(match, new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Sell, CommandTarget.Item(weapon),
+            TertiaryTarget: CommandTarget.Item(armor)));
+
+        Assert.Equal(CommandValidationCode.InvalidTargetKind, duplicate.Code);
+        Assert.Equal(CommandValidationCode.InvalidTargetKind, gap.Code);
+    }
+
+    [Fact]
     public void EquipRequiresResearchAndRecipientTechLevel()
     {
         var data = BundledOriginalData.Load();

@@ -728,7 +728,8 @@ public sealed partial class MatchState
             command.Gang,
             command.Action,
             command.Target,
-            command.SecondaryTarget);
+            command.SecondaryTarget,
+            command.TertiaryTarget);
         _events.Add(gameEvent);
         return gameEvent;
     }
@@ -751,6 +752,7 @@ public sealed partial class MatchState
             command.Action,
             command.Target,
             command.SecondaryTarget,
+            command.TertiaryTarget,
             resolution);
         _events.Add(gameEvent);
         return gameEvent;

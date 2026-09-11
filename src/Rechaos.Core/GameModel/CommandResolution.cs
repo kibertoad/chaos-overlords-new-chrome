@@ -437,23 +437,27 @@ public static class CommandResolver
     {
         var player = state.FindPlayer(command.Player)!;
         var gang = state.FindGang(command.Gang)!;
-        var itemIndex = checked((short)command.Target.Id);
-        var item = state.Definitions.Items[itemIndex];
-        var slot = EquipmentRules.SlotFor(item);
-        if (EquipmentRules.EquippedItem(gang, slot) != itemIndex)
+        var selected = command.SellTargets()
+            .Select(target => checked((short)target.Id))
+            .Select(itemIndex => (ItemIndex: itemIndex, Item: state.Definitions.Items[itemIndex]))
+            .ToArray();
+        var unavailable = selected.FirstOrDefault(entry =>
+            EquipmentRules.EquippedItem(gang, EquipmentRules.SlotFor(entry.Item)) != entry.ItemIndex);
+        if (unavailable.Item is not null)
             return Complete(state, command, GameEventKind.CommandFailed,
                 new CommandResolutionDetails(
-                    CommandResolutionCode.ItemUnavailable, [], 0, ItemId: itemIndex),
+                    CommandResolutionCode.ItemUnavailable, [], 0, ItemId: unavailable.ItemIndex),
                 GameNotificationKind.Equipment);
 
-        EquipmentRules.Unequip(gang, slot);
-        var proceeds = EquipmentRules.SaleValue(item);
+        foreach (var entry in selected)
+            EquipmentRules.Unequip(gang, EquipmentRules.SlotFor(entry.Item));
+        var proceeds = selected.Sum(entry => EquipmentRules.SaleValue(entry.Item));
         player.Cash = checked(player.Cash + proceeds);
         player.Statistics.CashEarned += proceeds;
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(
                 CommandResolutionCode.Resolved, [], 0,
-                PreviousValue: itemIndex, CashDelta: proceeds, ItemId: itemIndex),
+                PreviousValue: selected[0].ItemIndex, CashDelta: proceeds, ItemId: selected[0].ItemIndex),
             GameNotificationKind.Equipment);
     }
 

@@ -103,6 +103,12 @@ Last updated: 2026-09-11
   promotion, retain the last valid primary as a backup, and do not poison a good
   backup when replacing a corrupt primary. F10 transparently verifies the
   replay backup when the primary is missing or invalid.
+- Sell now uses the original `PX05013` Equipment to Sell panel. Any combination
+  of the acting gang's three equipped slots can be highlighted and confirmed in
+  one command; resolution sells those exact items atomically for half their raw
+  prices, rounded down, without applying Factory discounts. Native saves are v18,
+  replays are v19 and canonical hashes are v21; the immediately previous formats
+  remain readable through their preserved fingerprint projections.
 - Fresh Siege matches now designate all six assigned starting HQ sectors as
   important, matching the manual's setup rule, and the city renders two gray
   pylons in each objective tile. This closes the unwinnable generated-Siege gap;

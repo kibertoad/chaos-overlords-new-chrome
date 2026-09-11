@@ -64,7 +64,7 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 20;
+    private const int FormatVersion = 21;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
@@ -168,6 +168,15 @@ public static class MatchStateHasher
             includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
             includeAiFormationSectors: true, includeAiCoverageSectors: true);
 
+    internal static string ComputeVersionTwentySha256(MatchState state) =>
+        ComputeSha256(state, 20, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
+            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
+            includeAiFormationSectors: true, includeAiCoverageSectors: true,
+            includeComlink: true);
+
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
@@ -175,7 +184,7 @@ public static class MatchStateHasher
             includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
             includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
             includeAiFormationSectors: true, includeAiCoverageSectors: true,
-            includeComlink: true);
+            includeComlink: true, includeTertiaryTargets: true);
 
     private static string ComputeSha256(
         MatchState state,
@@ -196,7 +205,8 @@ public static class MatchStateHasher
         bool includeAiCooldowns = false,
         bool includeAiFormationSectors = false,
         bool includeAiCoverageSectors = false,
-        bool includeComlink = false)
+        bool includeComlink = false,
+        bool includeTertiaryTargets = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -300,7 +310,7 @@ public static class MatchStateHasher
             foreach (var command in commands)
             {
                 writer.Write(command.Sequence);
-                WriteCommand(writer, command.Command);
+                WriteCommand(writer, command.Command, includeTertiaryTargets);
             }
 
             foreach (var player in state.Players.OrderBy(item => item.Id.Value))
@@ -434,11 +444,16 @@ public static class MatchStateHasher
         }
     }
 
-    private static void WriteCommand(BinaryWriter writer, GameCommand command)
+    private static void WriteCommand(BinaryWriter writer, GameCommand command, bool includeTertiaryTarget)
     {
         writer.Write(command.Player.Value); writer.Write(command.Gang.Value); writer.Write((byte)command.Action);
         WriteTarget(writer, command.Target); writer.Write(command.Repeat);
         writer.Write(command.SecondaryTarget.HasValue); if (command.SecondaryTarget is { } target) WriteTarget(writer, target);
+        if (includeTertiaryTarget)
+        {
+            writer.Write(command.TertiaryTarget.HasValue);
+            if (command.TertiaryTarget is { } tertiary) WriteTarget(writer, tertiary);
+        }
     }
 
     private static void WriteTarget(BinaryWriter writer, CommandTarget target) { writer.Write((byte)target.Kind); writer.Write(target.Id); }

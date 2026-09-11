@@ -100,6 +100,7 @@ public sealed record GameEvent(
     GangAction Action,
     CommandTarget Target,
     CommandTarget? SecondaryTarget = null,
+    CommandTarget? TertiaryTarget = null,
     CommandResolutionDetails? Resolution = null,
     EconomyResolutionDetails? Economy = null,
     HireResolutionDetails? Hire = null,

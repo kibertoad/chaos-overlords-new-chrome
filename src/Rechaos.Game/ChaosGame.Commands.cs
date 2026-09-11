@@ -179,6 +179,11 @@ public sealed partial class ChaosGame
         }
         if (CommandOverlayLayout.OpensTargetPicker(action))
         {
+            if (action == GangAction.Sell)
+            {
+                OpenSellEquipment(_commandReturnScreen, _commandRepeats);
+                return;
+            }
             _commandTargetOptions = action == GangAction.Attack && _state is not null
                 ? AttackTargetRoster.Order(_state, options)
                 : options;

@@ -64,6 +64,32 @@ public sealed class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void RoundTripPreservesThreeItemSellCommand()
+    {
+        var match = CreateMatch();
+        var gang = match.FindGang(new GangId(0))!;
+        var weapon = match.Definitions.Items.First(item => item.Type is >= 0 and <= 2).Id;
+        var armor = match.Definitions.Items.First(item => item.Type == 3).Id;
+        var miscellaneous = match.Definitions.Items.First(item => item.Type == 4).Id;
+        gang.WeaponItemId = weapon;
+        gang.ArmorItemId = armor;
+        gang.MiscellaneousItemId = miscellaneous;
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), gang.Id, GangAction.Sell, CommandTarget.Item(weapon),
+            SecondaryTarget: CommandTarget.Item(armor),
+            TertiaryTarget: CommandTarget.Item(miscellaneous))).Accepted);
+
+        var restored = RoundTrip(match);
+        var command = restored.FindGang(gang.Id)!.QueuedCommand!.Command;
+
+        Assert.Equal(CommandTarget.Item(weapon), command.Target);
+        Assert.Equal(CommandTarget.Item(armor), command.SecondaryTarget);
+        Assert.Equal(CommandTarget.Item(miscellaneous), command.TertiaryTarget);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
     public void RoundTripPreservesComlinkMessagesAndReadState()
     {
         var match = CreateMatch(secondPlayerHuman: true);
