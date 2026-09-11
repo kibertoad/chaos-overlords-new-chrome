@@ -122,6 +122,10 @@ public sealed partial class ChaosGame
 
     private static void DrawPanelValue(PixelFont font, SpriteBatch batch, string text, int right, int y)
     {
-        font.Draw(batch, text, new Vector2(right - text.Length * 6, y), Color.Lime, 1);
+        DrawPanelValue(font, batch, text, right, y, Color.Lime);
     }
+
+    private static void DrawPanelValue(
+        PixelFont font, SpriteBatch batch, string text, int right, int y, Color color) =>
+        font.Draw(batch, text, new Vector2(right - text.Length * 6, y), color, 1);
 }

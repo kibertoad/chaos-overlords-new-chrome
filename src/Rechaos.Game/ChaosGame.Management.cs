@@ -8,29 +8,53 @@ public sealed partial class ChaosGame
 {
     private void DrawFinance(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        DrawManagementPanel(batch, pixel);
+        if (_managementReturnScreen == ClientScreen.Sector)
+            DrawSectorDetails(batch, pixel, font, state);
+        else
+            DrawBoard(batch, pixel, font, state);
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var player = state.FindPlayer(playerId)!;
-        var forecast = EconomyResolver.Project(state, player);
-        font.Draw(batch, "FINANCIAL", new Vector2(18, 60), Color.Gold, 2);
-        font.Draw(batch, player.Setup.Name, new Vector2(18, 86), PlayerColors[playerId.Value], 1);
-        string[] rows =
+        var background = _financeScope == FinanceScope.City
+            ? _cityFinanceBackground
+            : _sectorFinanceBackground;
+        if (background is not null)
+            batch.Draw(background, FinanceLayout.Panel, Color.White);
+        else
+            batch.Draw(pixel, FinanceLayout.Panel, new Color(0, 0, 0, 245));
+        int? sectorId = _financeScope == FinanceScope.Sector ? _cursor : null;
+        var projection = FinanceProjection.Project(state, player, sectorId);
+        ClearFinanceFields(batch, pixel);
+        if (_uiSprites is not null)
+            batch.Draw(_uiSprites, FinanceLayout.Portrait,
+                OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
+        int[] rows =
         [
-            $"CURRENT CASH       ${forecast.CurrentCash}",
-            $"SECTOR TAXES       +${forecast.SectorIncome}",
-            $"SITE INCOME        +${forecast.SiteIncome}",
-            $"GANG UPKEEP        -${forecast.GangUpkeep}",
-            "---------------------------",
-            $"NEXT BALANCE       ${forecast.ResultCash}",
-            $"NET CHANGE         {Signed(forecast.NetChange)}",
-            "",
-            $"TOTAL CASH EARNED  ${player.Statistics.CashEarned}",
-            $"TOTAL CASH SPENT   ${player.Statistics.CashSpent}"
+            projection.GangUpkeep,
+            projection.NewContracts,
+            projection.Equipment,
+            projection.CityOfficials,
+            projection.SectorTax,
+            projection.SiteProtection,
+            projection.ChaosEstimate,
+            projection.CashAdjustment
         ];
         for (var index = 0; index < rows.Length; index++)
-            font.Draw(batch, rows[index], new Vector2(18, 120 + index * 22), Color.White, 1);
-        font.Draw(batch, "PROJECTED AT NEXT UPKEEP", new Vector2(18, 368), new Color(180, 230, 170), 1);
-        DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
+            DrawFinanceValue(font, batch, rows[index], FinanceLayout.ValueY(index));
+        font.Draw(batch, $"({projection.ProjectedGangCount})",
+            new Vector2(FinanceLayout.ContractCountLeft, FinanceLayout.ValueY(1)), Color.Lime, 1);
+    }
+
+    private static void DrawFinanceValue(
+        PixelFont font, SpriteBatch batch, int value, int y) =>
+        DrawPanelValue(font, batch, Math.Abs(value).ToString(), FinanceLayout.ValueRight, y,
+            value < 0 ? Color.Red : Color.Lime);
+
+    private static void ClearFinanceFields(SpriteBatch batch, Texture2D pixel)
+    {
+        for (var row = 0; row < FinanceLayout.RowCount; row++)
+            batch.Draw(pixel, new Rectangle(366, FinanceLayout.ValueY(row), 28, 7), Color.Black);
+        batch.Draw(pixel, new Rectangle(FinanceLayout.ContractCountLeft,
+            FinanceLayout.ValueY(1), 42, 7), Color.Black);
     }
 
     private void DrawSearch(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
@@ -109,8 +133,6 @@ public sealed partial class ChaosGame
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 235));
     }
-
-    private static string Signed(int value) => value >= 0 ? $"+${value}" : $"-${Math.Abs(value)}";
 
     private static string ObjectiveProgress(ScenarioId scenario, PlayerScoreState score) => scenario switch
     {

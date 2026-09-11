@@ -35,6 +35,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00201` | Endgame award/statistics symbols and controls | High from visible labels |
 | `PX00202`, `PX00203` | Victory and elimination panels | High from visible text |
 | `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; patrol-car cell `(116,0,48,64)` | High for sheet contents, Medium for patrol-car crop |
+| `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
 | `PX05020` | System Warning panel for confirming an end turn while at least one active gang is idle | High from visible text and client trigger semantics |
 | `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
 | `PX02000` | 22 vertically stacked site portraits, 120x64 each | High from dimensions and definition coverage |
@@ -111,6 +112,11 @@ cursor feedback remain to be validated.
 - The idle-gang end-turn check now uses the baked `PX05020` System Warning at
   `(104,125,344,209)`. Its original Cancel control returns to planning and its
   OK control confirms the ordinary end-turn path.
+- The split Financial City/Sector control selects `PX05008` or `PX05019` at
+  `(104,125,344,209)`. Both render the active Overlord portrait and a read-only
+  projection of current/pending upkeep, contracts and headcount, equipment,
+  bribes, tax, influenced-site cash, estimated Chaos and the resulting cash
+  adjustment. Costs are red and income is green as specified by the manual.
 - City sectors use their fixed 54 by 52 cell from `PX10000` when neutral or
   `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
 - Active Crackdown sectors overlay the color-keyed patrol-car slice from

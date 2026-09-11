@@ -13,7 +13,8 @@ public sealed partial class ChaosGame
     private static readonly Rectangle CityComlinkView = new(548, 124, 50, 25);
     private static readonly Rectangle CityComlinkSend = new(548, 150, 50, 25);
     private static readonly Rectangle CityCombatSummary = new(492, 176, 50, 49);
-    private static readonly Rectangle CityFinance = new(548, 176, 50, 49);
+    private static readonly Rectangle CityFinanceCity = new(548, 176, 50, 32);
+    private static readonly Rectangle CityFinanceSector = new(548, 208, 50, 17);
     private static readonly Rectangle CityGangs = new(492, 226, 50, 17);
     private static readonly Rectangle CityHire = new(492, 260, 50, 17);
     private static readonly Rectangle CitySector = new(548, 226, 50, 17);
@@ -36,7 +37,7 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.C)) OpenCommands();
         if (Pressed(keyboard, Keys.G)) CycleGang(1);
         if (Pressed(keyboard, Keys.I)) _screens.Show(ClientScreen.Sector);
-        if (Pressed(keyboard, Keys.F)) _screens.Show(ClientScreen.Finance);
+        if (Pressed(keyboard, Keys.F)) OpenFinance(FinanceScope.City, ClientScreen.City);
         if (Pressed(keyboard, Keys.R)) _screens.Show(ClientScreen.Ranking);
         if (Pressed(keyboard, Keys.T)) OpenItems();
         if (Pressed(keyboard, Keys.B)) _screens.Show(ClientScreen.CombatSummary);
@@ -96,7 +97,8 @@ public sealed partial class ChaosGame
         else if (CityComlinkView.Contains(point)) OpenComlinkView(returnScreen);
         else if (CityComlinkSend.Contains(point)) OpenComlinkSend(returnScreen);
         else if (CityCombatSummary.Contains(point)) OpenManagement(ClientScreen.CombatSummary, returnScreen);
-        else if (CityFinance.Contains(point)) OpenManagement(ClientScreen.Finance, returnScreen);
+        else if (CityFinanceCity.Contains(point)) OpenFinance(FinanceScope.City, returnScreen);
+        else if (CityFinanceSector.Contains(point)) OpenFinance(FinanceScope.Sector, returnScreen);
         else if (CityGangs.Contains(point)) OpenSelectedGangDetails(returnScreen);
         else if (CityHire.Contains(point)) OpenHire(returnScreen);
         else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
@@ -112,6 +114,12 @@ public sealed partial class ChaosGame
         if (screen == ClientScreen.CombatSummary) _combatSummaryCursor = 0;
         if (screen == ClientScreen.Events) _eventCursor = 0;
         _screens.Show(screen);
+    }
+
+    private void OpenFinance(FinanceScope scope, ClientScreen returnScreen)
+    {
+        _financeScope = scope;
+        OpenManagement(ClientScreen.Finance, returnScreen);
     }
 
     private void DrawBoard(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)

@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,068 tests with no warnings.
+  isolated Release build passed all 1,071 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -23,6 +23,11 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Finance now uses the original paired `PX05008` City Financial and `PX05019`
+  Sector Financial panels selected by the split main-console control. The
+  non-mutating projection covers active and pending upkeep, recruit cost and
+  projected gang count, queued equipment and bribe cash, taxes, influenced-site
+  income, estimated Chaos, and the net adjustment with original red/green signs.
 - Ending planning with an unassigned active gang now displays the original
   `PX05020` System Warning panel. Its baked Cancel control returns to planning;
   OK confirms the same authoritative end-turn flow as before.

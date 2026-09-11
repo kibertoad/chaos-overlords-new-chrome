@@ -51,6 +51,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly Texture2D?[] _cityOwnershipLayers = new Texture2D?[MatchLimits.PlayerCount + 1];
     private Texture2D? _gameInfoBackground;
     private Texture2D? _idleGangWarningBackground;
+    private Texture2D? _cityFinanceBackground;
+    private Texture2D? _sectorFinanceBackground;
     private Texture2D? _gangInfoBackground;
     private Texture2D? _siteInfoBackground;
     private Texture2D? _itemInfoBackground;
@@ -112,6 +114,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _itemCursor;
     private int _combatSummaryCursor;
     private int _eventCursor;
+    private FinanceScope _financeScope = FinanceScope.City;
     private int _comlinkCursor;
     private readonly bool[] _comlinkRecipients = new bool[MatchLimits.PlayerCount];
     private readonly ComlinkTextEditor _comlinkEditor = new();
@@ -208,6 +211,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _endgameBackground = LoadTexture("PX00200.bmp");
         _gameInfoBackground = LoadTexture("PX05021.bmp");
         _idleGangWarningBackground = LoadTexture("PX05020.bmp");
+        _cityFinanceBackground = LoadTexture("PX05008.bmp");
+        _sectorFinanceBackground = LoadTexture("PX05019.bmp");
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
         _siteInfoBackground = LoadTexture("PX05002.bmp");
@@ -377,7 +382,15 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         CloseItemDetails();
                     break;
                 case ClientScreen.GameInfo:
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        _screens.Show(_managementReturnScreen);
+                    break;
                 case ClientScreen.Finance:
+                    if (Pressed(keyboard, Keys.Left)) _financeScope = FinanceScope.City;
+                    if (Pressed(keyboard, Keys.Right)) _financeScope = FinanceScope.Sector;
+                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
+                        _screens.Show(_managementReturnScreen);
+                    break;
                 case ClientScreen.Ranking:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                         _screens.Show(_managementReturnScreen);
@@ -693,6 +706,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     _screens.Show(_managementReturnScreen);
                 break;
             case ClientScreen.Finance:
+                if (CityFinanceCity.Contains(point)) _financeScope = FinanceScope.City;
+                else if (CityFinanceSector.Contains(point)) _financeScope = FinanceScope.Sector;
+                else if (FinanceLayout.Ok.Contains(point))
+                    _screens.Show(_managementReturnScreen);
+                break;
             case ClientScreen.Ranking:
             case ClientScreen.Search:
                 if (ManagementBack.Contains(point)) _screens.Show(_managementReturnScreen);
