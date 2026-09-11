@@ -87,7 +87,7 @@ public sealed partial class ChaosGame
         else if (CityMapLayout.TrySectorAt(point, out var selected))
         {
             _cursor = selected;
-            _message = $"SECTOR {_cursor + 1}";
+            _message = string.Empty;
             if (_citySectorClicks.Register(selected, _inputTime))
             {
                 _screens.Show(ClientScreen.Sector);
@@ -137,9 +137,15 @@ public sealed partial class ChaosGame
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         if (_uiSprites is not null)
+        {
             foreach (var setupPlayer in state.Setup.Players)
                 batch.Draw(_uiSprites, PlayerPortraitLayout.CityTop(setupPlayer.Id.Value),
                     OriginalSpriteLayout.OverlordPortrait(setupPlayer.PortraitId), Color.White);
+            if (state.Coordinator.ActivePlayer is { } turnPlayer)
+                batch.Draw(_uiSprites, PlayerPortraitLayout.CityActiveMarker(turnPlayer.Value),
+                    OriginalSpriteLayout.ActivePlayerMarker(
+                        ActivePlayerMarkerPresentation.Frame(_inputTime)), Color.White);
+        }
         var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
         var player = state.Players[playerIndex];
         for (var index = 0; index < state.Sectors.Count; index++)
@@ -250,7 +256,7 @@ public sealed partial class ChaosGame
         var x = Math.Clamp(_cursor % MatchLimits.BoardWidth + dx, 0, MatchLimits.BoardWidth - 1);
         var y = Math.Clamp(_cursor / MatchLimits.BoardWidth + dy, 0, MatchLimits.BoardWidth - 1);
         _cursor = y * MatchLimits.BoardWidth + x;
-        _message = $"SECTOR {_cursor + 1}";
+        _message = string.Empty;
     }
 
     private void QueueBoardCommand()
@@ -276,9 +282,7 @@ public sealed partial class ChaosGame
             ? new GameCommand(playerId, gang.Id, GangAction.Control, CommandTarget.None)
             : new GameCommand(playerId, gang.Id, GangAction.Move, CommandTarget.Sector(_cursor));
         var result = _actions.Submit(command);
-        _message = result.Accepted
-            ? $"{command.Action.ToString().ToUpperInvariant()} QUEUED"
-            : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
     }
 
     private static int SectorIncome(MatchSectorState sector) => sector.Income;

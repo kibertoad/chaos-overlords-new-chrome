@@ -33,7 +33,7 @@ public sealed partial class ChaosGame
             return false;
 
         _idleGangWarningOpen = true;
-        _message = "SOME GANGS HAVE NO COMMANDS";
+        _message = string.Empty;
         if (_slidePanels) PlayGeneralSound(GeneralSoundSlot.PanelOpen);
         return true;
     }
@@ -73,7 +73,7 @@ public sealed partial class ChaosGame
     {
         _idleGangWarningOpen = false;
         if (_slidePanels) PlayGeneralSound(GeneralSoundSlot.PanelClose);
-        _message = "PLANNING CONTINUES";
+        _message = string.Empty;
     }
 
     private void DrawIdleGangWarning(SpriteBatch batch, Texture2D pixel, PixelFont font)

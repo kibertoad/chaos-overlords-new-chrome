@@ -68,6 +68,19 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void SetupSelectionBordersUseInsetButtonFacesInsteadOfBroadHitRows()
+    {
+        Assert.Equal(new Rectangle(80, 109, 108, 31), SetupSelectionLayout.Scenario(0));
+        Assert.Equal(new Rectangle(192, 250, 108, 31), SetupSelectionLayout.Scenario(9));
+        Assert.Equal(new Rectangle(80, 285, 50, 23), SetupSelectionLayout.Duration(0));
+        Assert.Equal(new Rectangle(248, 285, 52, 23), SetupSelectionLayout.Duration(3));
+        Assert.Equal(new Rectangle(80, 364, 108, 23), SetupSelectionLayout.AiMentality(1));
+        Assert.Equal(new Rectangle(192, 418, 108, 23), SetupSelectionLayout.PlanningTime(3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => SetupSelectionLayout.Scenario(10));
+        Assert.Throws<ArgumentOutOfRangeException>(() => SetupSelectionLayout.Duration(4));
+    }
+
+    [Fact]
     public void SetupPushButtonsUseRecoveredReleaseHitRectangles()
     {
         Assert.Equal(new Rectangle(370, 328, 92, 24), SetupButtonLayout.AddPlayer);
@@ -386,6 +399,8 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(492, 147, 20, 20), OriginalSpriteLayout.IncomingGangStatus);
         Assert.Equal(new Rectangle(164, 17, 70, 110), OriginalSpriteLayout.GangCardFrame);
         Assert.Equal(new Rectangle(120, 211, 30, 47), OriginalSpriteLayout.SectorBackArrow);
+        Assert.Equal(new Rectangle(0, 626, 20, 20), OriginalSpriteLayout.ActivePlayerMarker(0));
+        Assert.Equal(new Rectangle(220, 626, 20, 20), OriginalSpriteLayout.ActivePlayerMarker(11));
         Assert.Equal(new Rectangle(480, 480, 32, 32), OriginalSpriteLayout.OverlordPortrait(15));
         Assert.Equal(new Rectangle(0, 0, 120, 64), OriginalSpriteLayout.SitePortrait(0));
         Assert.Equal(new Rectangle(0, 21 * 64, 120, 64), OriginalSpriteLayout.SitePortrait(21));
@@ -393,6 +408,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(576, 512, 64, 64), OriginalSpriteLayout.GangPortrait(89));
         Assert.Throws<ArgumentOutOfRangeException>(() => OriginalSpriteLayout.SitePortrait(22));
         Assert.Throws<ArgumentOutOfRangeException>(() => OriginalSpriteLayout.GangPortrait(90));
+        Assert.Throws<ArgumentOutOfRangeException>(() => OriginalSpriteLayout.ActivePlayerMarker(12));
     }
 
     [Fact]
@@ -492,6 +508,7 @@ public sealed class UiNavigationTests
         Assert.Equal(EquipmentCommandLayout.Cancel, CombatResultsLayout.Detail);
         Assert.Equal(EquipmentCommandLayout.Panel, LastTurnEventsLayout.Panel);
         Assert.Equal(new Rectangle(198, 133, 242, 158), LastTurnEventsLayout.Artwork);
+        Assert.Equal(new Rectangle(296, 187, 48, 48), LastTurnEventsLayout.ResearchItem);
         Assert.Equal(new Rectangle(135, 151, 25, 21), LastTurnEventsLayout.Previous);
     }
 
@@ -514,14 +531,26 @@ public sealed class UiNavigationTests
     {
         Assert.Equal(new Rectangle(360, 38, 32, 32), PlayerPortraitLayout.SetupTop(0));
         Assert.Equal(new Rectangle(540, 38, 32, 32), PlayerPortraitLayout.SetupTop(5));
-        Assert.Equal(new Rectangle(8, 4, 32, 32), PlayerPortraitLayout.CityTop(0));
-        Assert.Equal(new Rectangle(368, 4, 32, 32), PlayerPortraitLayout.CityTop(5));
+        Assert.Equal(new Rectangle(16, 4, 32, 32), PlayerPortraitLayout.CityTop(0));
+        Assert.Equal(new Rectangle(376, 4, 32, 32), PlayerPortraitLayout.CityTop(5));
+        Assert.Equal(new Rectangle(48, 4, 20, 20), PlayerPortraitLayout.CityActiveMarker(0));
+        Assert.Equal(new Rectangle(408, 4, 20, 20), PlayerPortraitLayout.CityActiveMarker(5));
         Assert.Equal(new Rectangle(397, 89, 64, 64), PlayerPortraitLayout.SetupLarge(0));
         Assert.Equal(new Rectangle(480, 163, 64, 64), PlayerPortraitLayout.SetupLarge(3));
         Assert.Equal(new Rectangle(399, 257, 12, 18), PlayerPortraitLayout.Previous(4));
         Assert.Equal(new Rectangle(530, 257, 12, 18), PlayerPortraitLayout.Next(5));
         Assert.Equal(new Rectangle(480, 301, 64, 8), PlayerPortraitLayout.Name(5));
         Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.SetupTop(6));
+    }
+
+    [Fact]
+    public void ActivePlayerMarkerCyclesAllTwelveRecoveredFrames()
+    {
+        Assert.Equal(0, ActivePlayerMarkerPresentation.Frame(TimeSpan.Zero));
+        Assert.Equal(11, ActivePlayerMarkerPresentation.Frame(TimeSpan.FromMilliseconds(11 * 80)));
+        Assert.Equal(0, ActivePlayerMarkerPresentation.Frame(TimeSpan.FromMilliseconds(12 * 80)));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            ActivePlayerMarkerPresentation.Frame(TimeSpan.FromMilliseconds(-1)));
     }
 
     [Fact]

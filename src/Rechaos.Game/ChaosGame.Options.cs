@@ -86,7 +86,7 @@ public sealed partial class ChaosGame
         _optionsReturnMessage = _message;
         _optionsRow = 0;
         _screens.Show(ClientScreen.Options);
-        _message = "UP/DOWN SELECTS; LEFT/RIGHT ADJUSTS";
+        _message = string.Empty;
     }
 
     private void CloseOptions()
@@ -174,7 +174,7 @@ public sealed partial class ChaosGame
         _showBaseStatistics = !_showBaseStatistics;
         SavePreferences();
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _message = $"GANG STATISTICS: {(_showBaseStatistics ? "BASE" : "CURRENT")}";
+        _message = string.Empty;
     }
 
     private void ToggleDetailedCombat()
@@ -183,7 +183,7 @@ public sealed partial class ChaosGame
         if (!_detailedCombat) _combatAnimationPlayer.Clear();
         SavePreferences();
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _message = $"DETAILED COMBAT {(_detailedCombat ? "ON" : "OFF")}";
+        _message = string.Empty;
     }
 
     private void ToggleSlidePanels()
@@ -192,7 +192,7 @@ public sealed partial class ChaosGame
         if (!_slidePanels) _panelSlideTransition.Clear();
         SavePreferences();
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _message = $"SLIDE PANELS {(_slidePanels ? "ON" : "OFF")}";
+        _message = string.Empty;
     }
 
     private void ChangeMusicVolume(int delta) =>
@@ -207,9 +207,7 @@ public sealed partial class ChaosGame
         ApplyMusicVolumeLevel(level, _inputTime);
         SavePreferences();
         if (changed) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _message = _musicVolumeLevel == 0
-            ? "MUSIC OFF"
-            : $"MUSIC LEVEL {_musicVolumeLevel}";
+        _message = string.Empty;
     }
 
     private void SetSoundEffectVolumeLevel(int level)
@@ -221,7 +219,7 @@ public sealed partial class ChaosGame
         _soundEffectVolumeLevel = level;
         SavePreferences();
         if (changed) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _message = level == 0 ? "SOUND EFFECTS OFF" : $"SOUND EFFECTS LEVEL {level}";
+        _message = string.Empty;
     }
 
     private void ToggleIdleGangWarning()
@@ -229,7 +227,7 @@ public sealed partial class ChaosGame
         _warnIfIdleGangs = !_warnIfIdleGangs;
         SavePreferences();
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _message = $"IDLE GANG WARNING {(_warnIfIdleGangs ? "ON" : "OFF")}";
+        _message = string.Empty;
     }
 
     private void SavePreferences() =>
@@ -253,7 +251,7 @@ public sealed partial class ChaosGame
             _graphics.ToggleFullScreen();
             _fullscreen = _graphics.IsFullScreen;
             SavePreferences();
-            _message = _fullscreen ? "BORDERLESS FULLSCREEN" : "WINDOWED DISPLAY";
+            _message = string.Empty;
         }
         catch
         {

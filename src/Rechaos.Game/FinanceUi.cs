@@ -15,7 +15,7 @@ public static class FinanceLayout
     public const int ValueRight = 393;
     public const int ContractCountLeft = 293;
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(130, 143, 60, 60);
+    public static Rectangle Portrait => new(130, 143, 64, 64);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 
     public static int ValueY(int row) => row switch

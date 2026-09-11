@@ -124,13 +124,7 @@ public sealed partial class ChaosGame
     {
         _siteSearchApplied.Clear();
         _siteSearchApplied.UnionWith(_siteSearchSelection);
-        if (_state is not null)
-        {
-            var matches = SiteSearchProjection.MatchingSectors(_state, _siteSearchApplied);
-            _message = _siteSearchApplied.Count == 0
-                ? "SITE SEARCH CLEARED"
-                : $"SITE SEARCH: {matches.Count} SECTORS";
-        }
+        _message = string.Empty;
         _screens.Show(_managementReturnScreen);
     }
 

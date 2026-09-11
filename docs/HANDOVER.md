@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   published on `main`; the local `codex/full-reimplementation` branch contains
   the same history and remains the development branch for a future session.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,175 tests with no warnings.
+  isolated Release build passed all 1,259 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -24,6 +24,15 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Setup selection outlines now use the inset `PX00143` button faces instead of
+  the broader hit rectangles that overlap section labels. The city/sector top
+  bar uses the original portrait aperture and plays the twelve-frame
+  `PX00129` active-player marker beside the current Overlord. Recreation-only
+  navigation, drag, cancellation and success hints are suppressed while
+  rejection reasons and genuine failures remain visible.
+- Completed-Research artwork now occupies the exact 48-by-48 black monitor
+  interior in `PX06005` instead of extending above and left of it. City and
+  Sector Financial panels now fill their full 64-by-64 portrait aperture.
 - Item Information now fills the exact 48-by-48 monitor aperture with the
   selected item's 15-frame `PX04xxx` rotation, using the compact inventory icon
   only as a centered fallback. Shared gang-command portraits, Attack equipment

@@ -217,9 +217,7 @@ public sealed partial class ChaosGame
         if (_actions is null) return;
         var command = selection with { Repeat = _commandRepeats };
         var result = _actions.Submit(command);
-        _message = result.Accepted
-            ? $"{(_commandRepeats ? "REPEATING " : "")}{command.Action.ToString().ToUpperInvariant()} QUEUED"
-            : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
         if (result.Accepted) _screens.Show(_commandReturnScreen);
     }
 
@@ -229,7 +227,7 @@ public sealed partial class ChaosGame
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
         if (gang is null) return;
         var result = _actions.Cancel(playerId, gang.Id);
-        _message = result.Accepted ? "COMMAND CLEARED" : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
         if (result.Accepted) _screens.Show(_commandReturnScreen);
     }
 

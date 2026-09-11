@@ -129,7 +129,7 @@ public sealed partial class ChaosGame
             .Select(index => new PlayerId(index))
             .ToArray();
         var result = _actions.SendComlinkMessage(sender, recipients, _comlinkEditor.Text);
-        _message = result.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Message.ToUpperInvariant();
         if (!result.Accepted)
         {
             _comlinkStatus = _message;

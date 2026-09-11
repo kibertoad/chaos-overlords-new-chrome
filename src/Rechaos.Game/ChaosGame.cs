@@ -351,7 +351,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 || cancelClicked || rightClicked)
             {
                 _combatAnimationPlayer.Clear();
-                _message = "COMBAT DETAIL SKIPPED";
+                _message = string.Empty;
                 rightClicked = false;
             }
             else
@@ -560,21 +560,21 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                          || Math.Abs(virtualPoint.Y - _setupPlayerPressPoint.Y) >= 4))
             {
                 _setupPlayerDragStarted = true;
-                _message = "DROP ON ANOTHER PLAYER COLOR";
+                _message = string.Empty;
             }
             else if (_draggedHireDefinitionId is not null && !_hireDragStarted
                      && (Math.Abs(virtualPoint.X - _hirePressPoint.X) >= 4
                          || Math.Abs(virtualPoint.Y - _hirePressPoint.Y) >= 4))
             {
                 _hireDragStarted = true;
-                _message = "DROP ON A CONTROLLED SECTOR";
+                _message = string.Empty;
             }
             else if (_draggedGangId is not null && !_gangDragStarted
                      && (Math.Abs(virtualPoint.X - _gangPressPoint.X) >= 4
                          || Math.Abs(virtualPoint.Y - _gangPressPoint.Y) >= 4))
             {
                 _gangDragStarted = true;
-                _message = "DROP ON A NEIGHBORING SECTOR";
+                _message = string.Empty;
             }
         }
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
@@ -913,7 +913,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _cursor = gangs[_selectedGangIndex].SectorId;
         if (_screens.Current == ClientScreen.Gang && _gangDetailsInstanceId is not null)
             _gangDetailsInstanceId = gangs[_selectedGangIndex].Id;
-        _message = $"GANG {gangs[_selectedGangIndex].Id.Value}";
+        _message = string.Empty;
     }
 
     private MatchGangState? SelectedGang(MatchPlayerState player)

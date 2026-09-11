@@ -61,7 +61,7 @@ public sealed partial class ChaosGame
         }
         _combatAnimationPlayer.Clear();
         foreach (var clip in clips) _combatAnimationPlayer.Enqueue(clip);
-        _message = "ESCAPE OR CANCEL SKIPS COMBAT DETAIL";
+        _message = string.Empty;
     }
 
     private void MoveCombatSummary(int delta)

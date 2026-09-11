@@ -79,7 +79,7 @@ public sealed partial class ChaosGame
         _editingPlayerName = index;
         _setupOriginalName = _playerNames[index];
         _setupNameEditor.Begin(_playerNames[index]);
-        _message = "TYPE NAME  ENTER ACCEPTS  ESC CANCELS";
+        _message = string.Empty;
     }
 
     private void UpdateSetupName(KeyboardState keyboard)
@@ -118,7 +118,7 @@ public sealed partial class ChaosGame
             ? _setupOriginalName
             : entered.Length == 0 ? LocalSetupPolicy.DefaultPlayerName(index) : entered;
         _editingPlayerName = null;
-        _message = cancel ? "NAME CHANGE CANCELLED" : $"PLAYER {index + 1} NAME SET";
+        _message = string.Empty;
     }
 
     private void CycleDifficulty()
@@ -127,7 +127,7 @@ public sealed partial class ChaosGame
         _selectedAiMentality = values[Mod(
             Array.IndexOf(values, _selectedAiMentality) + 1, values.Length)];
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _message = $"AI MENTALITY {DifficultyPresentation.Label(_selectedAiMentality)}";
+        _message = string.Empty;
     }
 
     private void SelectDifficulty(AiDifficulty difficulty)
@@ -135,7 +135,7 @@ public sealed partial class ChaosGame
         if (_selectedAiMentality != difficulty)
             PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _selectedAiMentality = difficulty;
-        _message = $"AI MENTALITY {DifficultyPresentation.Label(difficulty)}";
+        _message = string.Empty;
     }
 
     private void CyclePortrait(int player, int delta)
@@ -144,7 +144,7 @@ public sealed partial class ChaosGame
         _playerPortraits[player] = checked((short)Mod(
             _playerPortraits[player] + delta, PlayerPortraitLayout.SelectableCount));
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _message = $"PLAYER {player + 1} PORTRAIT {_playerPortraits[player] + 1}";
+        _message = string.Empty;
     }
 
     private void BeginSetupPlayerDrag(int player, Point point)
@@ -174,14 +174,12 @@ public sealed partial class ChaosGame
             (_playerPortraits[source], _playerPortraits[target]) =
                 (_playerPortraits[target], _playerPortraits[source]);
             PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-            _message = result == LocalSetupMoveResult.ExchangedHumanColors
-                ? "PLAYER COLORS EXCHANGED"
-                : $"PLAYER MOVED TO COLOR {target + 1}";
+            _message = string.Empty;
         }
         else if (result == LocalSetupMoveResult.Invalid)
         {
             PlayGeneralSound(GeneralSoundSlot.RejectedInput);
-            _message = "DROP ON A PLAYER COLOR";
+            _message = string.Empty;
         }
         CancelSetupPlayerDrag();
     }
@@ -219,7 +217,7 @@ public sealed partial class ChaosGame
         if (!_debugPhaseStepping) PrepareCurrentHireOffers();
         _cursor = _state.Players[0].Gangs[0].SectorId;
         _selectedGangIndex = 0;
-        _message = _debugPhaseStepping ? "ADVANCE UPKEEP TO BEGIN" : string.Empty;
+        _message = string.Empty;
         _combatPresentationProgress.Clear();
         _combatAnimationPlayer.Clear();
         _managementReturnScreen = ClientScreen.City;
@@ -262,8 +260,9 @@ public sealed partial class ChaosGame
             && SetupButtonLayout.HitTest(buttonHover) == pressed)
             batch.Draw(_setupControls, SetupButtonLayout.Destination(pressed),
                 SetupButtonLayout.PressedSource(pressed), Color.White);
-        DrawBorder(batch, pixel, SetupScenarios[(int)_selectedScenario], Color.Gold, 2);
-        DrawBorder(batch, pixel, SetupDurations[Array.IndexOf(Durations, _selectedDuration)], Color.Gold, 2);
+        DrawBorder(batch, pixel, SetupSelectionLayout.Scenario((int)_selectedScenario), Color.Gold, 2);
+        DrawBorder(batch, pixel,
+            SetupSelectionLayout.Duration(Array.IndexOf(Durations, _selectedDuration)), Color.Gold, 2);
         for (var index = 0; index < MatchLimits.PlayerCount; index++)
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
@@ -297,9 +296,10 @@ public sealed partial class ChaosGame
                 && target >= 0)
                 DrawBorder(batch, pixel, PlayerPortraitLayout.SetupLarge(target), Color.Lime, 2);
         }
-        DrawBorder(batch, pixel, SetupAiMentalities[(int)_selectedAiMentality], Color.Gold, 2);
         DrawBorder(batch, pixel,
-            PlanningTimerLayout.SetupChoices[(int)_selectedPlanningTimeLimit], Color.Gold, 2);
+            SetupSelectionLayout.AiMentality((int)_selectedAiMentality), Color.Gold, 2);
+        DrawBorder(batch, pixel,
+            SetupSelectionLayout.PlanningTime((int)_selectedPlanningTimeLimit), Color.Gold, 2);
         if (_hoverPoint is { } hover)
         {
             var hovered = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(hover));

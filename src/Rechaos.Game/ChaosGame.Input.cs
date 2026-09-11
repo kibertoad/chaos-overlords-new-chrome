@@ -17,25 +17,25 @@ public sealed partial class ChaosGame
         if (_pressedSetupButton is not null)
         {
             _pressedSetupButton = null;
-            _message = "ACTION CANCELLED";
+            _message = string.Empty;
             return;
         }
         if (_draggedSetupPlayerSlot is not null)
         {
             CancelSetupPlayerDrag();
-            _message = "PLAYER MOVE CANCELLED";
+            _message = string.Empty;
             return;
         }
         if (_draggedHireDefinitionId is not null)
         {
             CancelHireDrag();
-            _message = "HIRE CANCELLED";
+            _message = string.Empty;
             return;
         }
         if (_draggedGangId is not null)
         {
             CancelGangDrag();
-            _message = "MOVE CANCELLED";
+            _message = string.Empty;
             return;
         }
 

@@ -11,7 +11,7 @@ public sealed partial class ChaosGame
         try
         {
             NativeSaveStore.SaveAtomic(_quickSavePath, _state);
-            _message = "GAME SAVED";
+            _message = string.Empty;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -31,7 +31,7 @@ public sealed partial class ChaosGame
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _selectedGangIndex = 0;
-            _message = result.RecoveredFromBackup ? "BACKUP GAME LOADED" : "GAME LOADED";
+            _message = string.Empty;
             _combatPresentationProgress.ResetTo(
                 _state.Players.Select(player => player.Id),
                 _state.Events.LastOrDefault()?.Sequence ?? -1);
@@ -52,7 +52,7 @@ public sealed partial class ChaosGame
         try
         {
             MatchReplayStore.SaveAtomic(_replayPath, _actions.HotSeatRecorder);
-            _message = "REPLAY SAVED";
+            _message = string.Empty;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
@@ -72,9 +72,7 @@ public sealed partial class ChaosGame
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
-            _message = result.RecoveredFromBackup
-                ? "BACKUP REPLAY VERIFIED"
-                : "REPLAY VERIFIED";
+            _message = string.Empty;
             _combatPresentationProgress.ResetTo(
                 _state.Players.Select(player => player.Id),
                 _state.Events.LastOrDefault()?.Sequence ?? -1);

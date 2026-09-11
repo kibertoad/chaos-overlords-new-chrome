@@ -168,7 +168,7 @@ public sealed partial class ChaosGame
             : HelpLayout.TopicWindowStart(_helpTopicOrder.Count, topicPosition);
         _helpLineOffset = 0;
         _screens.Show(ClientScreen.Help);
-        _message = _helpDocument is null ? "HELP CONTENT IS UNAVAILABLE" : "HELP";
+        _message = _helpDocument is null ? "HELP CONTENT IS UNAVAILABLE" : string.Empty;
     }
 
     private void CloseHelp()

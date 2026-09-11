@@ -138,7 +138,7 @@ public sealed partial class ChaosGame
             PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _selectedPlanningTimeLimit = limit;
         SavePreferences();
-        _message = $"TURN TIME LIMIT {PlanningTimerPolicy.Label(limit)}";
+        _message = string.Empty;
     }
 
     private void CyclePlanningTimeLimit()
@@ -196,7 +196,7 @@ public sealed partial class ChaosGame
                 return false;
             case PlanningTimerSignal.Expired:
                 _idleGangWarningOpen = false;
-                _message = "TURN TIME LIMIT EXPIRED";
+                _message = string.Empty;
                 // Online this never fires, because the clock is not armed there. It still goes
                 // through the online path rather than straight to the local resolution, so that
                 // arming it later cannot silently resolve a turn on one client alone.

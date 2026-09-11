@@ -247,7 +247,7 @@ public sealed partial class ChaosGame
         _online.DeadlineAt = _session.InitialDeadline;
         _online.SeatedSeats = view.Players.Count(player => player.Slot >= 0);
         if (!AdoptOnlineState(_session.InitialState)) return;
-        _message = "PLAN YOUR TURN";
+        _message = string.Empty;
         _screens.Show(ClientScreen.City);
     }
 
@@ -309,7 +309,7 @@ public sealed partial class ChaosGame
         _online.Stage = MultiplayerStage.Finished;
         _online.DeadlineAt = null;
         CloseOnlinePlanning();
-        _message = "MATCH COMPLETE";
+        _message = string.Empty;
         _screens.Show(ClientScreen.Endgame);
     }
 
@@ -406,14 +406,14 @@ public sealed partial class ChaosGame
             case MultiplayerNotice.TurnResolved resolved:
                 if (AdoptOnlineState(resolved.State))
                 {
-                    _message = $"TURN {resolved.Turn} RESOLVED";
+                    _message = string.Empty;
                     _screens.Show(ClientScreen.City);
                 }
                 return;
             case MultiplayerNotice.Resynced resynced:
                 if (AdoptOnlineState(resynced.State))
                 {
-                    _message = $"RESYNCED ON TURN {resynced.Turn}";
+                    _message = string.Empty;
                     _screens.Show(ClientScreen.City);
                 }
                 return;
@@ -457,7 +457,7 @@ public sealed partial class ChaosGame
                 {
                     _online.Stage = MultiplayerStage.Finished;
                     CloseOnlinePlanning();
-                    _message = "MATCH COMPLETE";
+                    _message = string.Empty;
                     if (_state?.Outcome is not null) _screens.Show(ClientScreen.Endgame);
                 }
                 return;

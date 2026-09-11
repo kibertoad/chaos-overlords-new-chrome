@@ -31,14 +31,14 @@ public sealed partial class ChaosGame
         StopPlanningTimer();
         if (_state.Outcome is not null)
         {
-            _message = "MATCH COMPLETE";
+            _message = string.Empty;
             return;
         }
         if (_state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
             GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
-            _message = "PLANNING TURN READY";
+            _message = string.Empty;
             return;
         }
 
@@ -57,16 +57,16 @@ public sealed partial class ChaosGame
             try
             {
                 NativeSaveStore.SaveAtomic(_autoSavePath, _state);
-                _message = "TURN RESOLVED  AUTOSAVED";
+                _message = string.Empty;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                _message = "TURN RESOLVED  AUTOSAVE FAILED";
+                _message = "AUTOSAVE FAILED";
             }
         }
         else
         {
-            _message = "PLANNING COMPLETE";
+            _message = string.Empty;
         }
 
         if (_state.Outcome is not null)
@@ -83,7 +83,7 @@ public sealed partial class ChaosGame
         if (_state is null) return;
         if (_state.Outcome is not null)
         {
-            _message = "MATCH COMPLETE";
+            _message = string.Empty;
             return;
         }
         var previousActivePlayer = _state.Coordinator.ActivePlayer;
@@ -97,19 +97,17 @@ public sealed partial class ChaosGame
             TurnPhase.PlayerElimination => _actions!.HotSeatRecorder.FinishPlayerElimination(),
             _ => throw new InvalidOperationException("Unknown turn phase.")
         };
-        _message = transition.ExecutionPhase is { } execution
-            ? execution.ToString().ToUpperInvariant()
-            : transition.Phase.ToString().ToUpperInvariant();
+        _message = string.Empty;
         if (completedTurn)
         {
             try
             {
                 NativeSaveStore.SaveAtomic(_autoSavePath, _state);
-                _message += "  AUTOSAVED";
+                _message = string.Empty;
             }
             catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
             {
-                _message += "  AUTOSAVE FAILED";
+                _message = "AUTOSAVE FAILED";
             }
         }
         if (_state.Outcome is not null)
@@ -176,7 +174,7 @@ public sealed partial class ChaosGame
         }
         if (!acted) return;
         _selectedGangIndex = 0;
-        _message = "COMPUTER TURN COMPLETE";
+        _message = string.Empty;
         if (_state.Outcome is not null)
         {
             _screens.Show(ClientScreen.Endgame);

@@ -271,6 +271,7 @@ public static class SiegePylonLayout
 
 public static class OriginalSpriteLayout
 {
+    public const int ActivePlayerMarkerFrameCount = 12;
     public static Rectangle PolicePatrolCar => new(116, 0, 48, 64);
     public static Rectangle HiredStamp => new(120, 300, 60, 60);
     public static Rectangle AssignedGangStatus => new(492, 67, 20, 20);
@@ -280,6 +281,13 @@ public static class OriginalSpriteLayout
     // of the gang card. The card ends with its three equipment slots.
     public static Rectangle GangCardFrame => new(164, 17, 70, 110);
     public static Rectangle SectorBackArrow => new(120, 211, 30, 47);
+
+    public static Rectangle ActivePlayerMarker(int frame)
+    {
+        if (frame is < 0 or >= ActivePlayerMarkerFrameCount)
+            throw new ArgumentOutOfRangeException(nameof(frame));
+        return new Rectangle(frame * 20, 626, 20, 20);
+    }
 
     public static Rectangle OverlordPortrait(int portraitId)
     {
@@ -631,7 +639,7 @@ public static class LastTurnEventsLayout
     public static Rectangle Previous => new(135, 151, 25, 21);
     public static Rectangle Next => new(163, 151, 25, 21);
     public static Rectangle Artwork => new(198, 133, 242, 158);
-    public static Rectangle ResearchItem => new(274, 181, 48, 48);
+    public static Rectangle ResearchItem => new(296, 187, 48, 48);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 }
 
@@ -808,7 +816,13 @@ public static class PlayerPortraitLayout
     public static Rectangle CityTop(int player)
     {
         Validate(player);
-        return new Rectangle(8 + player * 72, 4, 32, 32);
+        return new Rectangle(16 + player * 72, 4, 32, 32);
+    }
+
+    public static Rectangle CityActiveMarker(int player)
+    {
+        Validate(player);
+        return new Rectangle(48 + player * 72, 4, 20, 20);
     }
     public static Rectangle SetupLarge(int player) => Player(player, 397, 89, 83, 64, 64, rowStride: 74);
     public static Rectangle Previous(int player) => Player(player, 399, 109, 83, 12, 18, rowStride: 74);

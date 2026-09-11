@@ -173,13 +173,11 @@ public sealed partial class ChaosGame
         }
         if (!hasSector)
         {
-            _message = "HIRE CANCELLED";
+            _message = string.Empty;
             return;
         }
         var result = _actions.QueueHire(playerId, definitionId.Value, sectorId);
-        _message = result.Accepted
-            ? $"HIRED FOR SECTOR {sectorId + 1}"
-            : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
     }
 
     private void CancelHireDrag()
@@ -187,7 +185,7 @@ public sealed partial class ChaosGame
         _draggedHireDefinitionId = null;
         _draggedHireSlot = null;
         _hireDragStarted = false;
-        _message = "HIRE CANCELLED";
+        _message = string.Empty;
     }
 
     private void MoveHireCursor(int delta)
@@ -210,7 +208,7 @@ public sealed partial class ChaosGame
         if (_hireCursor < 0) return;
         var offer = player.HireOfferSlots[_hireCursor].GangDefinitionId!.Value;
         var result = _actions.QueueHire(playerId, offer, _cursor);
-        _message = result.Accepted ? "HIRE QUEUED" : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
         if (result.Accepted)
         {
             _screens.Show(ClientScreen.City);
@@ -224,13 +222,8 @@ public sealed partial class ChaosGame
         _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
         if (_hireCursor < 0) return;
         var offer = player.HireOfferSlots[_hireCursor].GangDefinitionId!.Value;
-        var cancelsPendingHire = player.PendingHires.Any(hire => hire.OfferSlot == _hireCursor);
-        var cancelsSnub = player.SnubbedHireOfferSlot == _hireCursor;
         var result = _actions.SnubHireOffer(playerId, offer);
-        _message = result.Accepted
-            ? cancelsPendingHire ? "HIRE CANCELLED"
-                : cancelsSnub ? "REJECTION CANCELLED" : "OFFER SNUBBED"
-            : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
         _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
     }
 
@@ -244,12 +237,7 @@ public sealed partial class ChaosGame
             _message = "NO HIRE OFFER IN THIS SLOT";
             return;
         }
-        var cancelsPendingHire = entry.Hired;
-        var cancelsSnub = _state.FindPlayer(playerId)!.SnubbedHireOfferSlot == slot;
         var result = _actions.SnubHireOffer(playerId, entry.GangDefinitionId);
-        _message = result.Accepted
-            ? cancelsPendingHire ? "HIRE CANCELLED"
-                : cancelsSnub ? "REJECTION CANCELLED" : "OFFER REJECTED"
-            : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
     }
 }

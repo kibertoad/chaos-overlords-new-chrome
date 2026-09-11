@@ -54,8 +54,7 @@ original-game capture confirms the screen and interaction state.
 
 ## `PX00143` hit map
 
-The recreation currently overlays selection borders and routes clicks through
-these rectangles:
+The recreation routes clicks through these broad rectangles:
 
 - Objectives: two columns at x 80 and 192, width 108; row tops 102, 137,
   171, 206 and 241 with heights 30-31. Row-major order follows the ten
@@ -70,6 +69,12 @@ these rectangles:
 - Remove player: `(468,328,92,24)`.
 - Begin: `(370,375,92,45)`.
 - Cancel: `(468,375,92,45)`.
+
+Selection borders do not reuse those hit regions: several include the raised
+frame or section-label pixels. The visible inset faces use objective row tops
+109, 144, 179, 215 and 250; the duration faces use y 285 with height 23; and
+the AI Mentality / Planning Time faces use row tops 337, 364, 391 and 418 with
+height 23. This keeps the two-pixel gold outline inside each baked button face.
 
 The six top-strip portrait apertures are 32 by 32 at `(360 + 36n,38)`.
 The editable player cards form two columns at x 397 and 480 and three rows at
@@ -114,6 +119,11 @@ cursor feedback remain to be validated.
   confirmation restores `PLAYER#n`. Dragging a face to an empty cell changes its
   color slot; dropping on another human exchanges their name/portrait identities.
   Portrait 15 remains display-only.
+- The city and detailed-sector top bar places each 32-by-32 Overlord portrait
+  at `(16 + 72n,4)`. During a player-owned phase, the adjacent
+  `(48 + 72n,4,20,20)` status cell plays the twelve-frame red rotation strip at
+  `PX00129` source y 626; this is the original active-player marker rather than
+  a new border effect.
 - AI difficulty is the setup screen's single global **AI Mentality** selection,
   not a per-player field. The four baked rows select Goon, Criminal, Crime Lord,
   or Homicidal Maniac; hover-only thematic tooltips explain the behavioral
@@ -131,10 +141,11 @@ cursor feedback remain to be validated.
   `(104,125,344,209)`. Its original Cancel control returns to planning and its
   OK control confirms the ordinary end-turn path.
 - The split Financial City/Sector control selects `PX05008` or `PX05019` at
-  `(104,125,344,209)`. Both render the active Overlord portrait and a read-only
-  projection of current/pending upkeep, contracts and headcount, equipment,
-  bribes, tax, influenced-site cash, estimated Chaos and the resulting cash
-  adjustment. Costs are red and income is green as specified by the manual.
+  `(104,125,344,209)`. Both fill the template's 64-by-64 active-Overlord
+  aperture at `(130,143)` and render a read-only projection of current/pending
+  upkeep, contracts and headcount, equipment, bribes, tax, influenced-site
+  cash, estimated Chaos and the resulting cash adjustment. Costs are red and
+  income is green as specified by the manual.
 - Ranking opens `PX05011` at `(104,125,344,209)`. Each active player's
   32-by-32 portrait is centered on its fixed color rail; the recovered
   all-scenario score table determines a zero-based competition standing and
@@ -362,8 +373,14 @@ one report at a time. Its `(198,133,242,158)` aperture uses the dedicated
 not stretched city tiles or gang portraits; the two footer lines report
 date/object and status.
 Completed Research uses the resolved item's dedicated 15-frame, 48-by-48
-`PX04xxx` rotation strip in the `PX06005` monitor; `PX04999` is only the compact
-20-by-20 inventory icon sheet.
+`PX04xxx` rotation strip in the `PX06005` monitor. The green monitor frame is
+local `(97,53)` and its exact black 48-by-48 interior is local `(98,54)`, or
+screen `(296,187)` after composition; `PX04999` is only the compact 20-by-20
+inventory icon sheet.
+The recreation-only navigation, drag instruction, cancellation and successful
+`... QUEUED` status strings are suppressed. The status line remains available
+for rejections and genuine failures that explain why an operation could not be
+performed.
 Routine implementation notifications such as upkeep/economy, movement,
 equipment transactions and ordinary command completion do not create reports;
 captured/lost control, newly influenced sites, completed research, crackdowns,

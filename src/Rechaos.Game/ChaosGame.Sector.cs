@@ -46,7 +46,7 @@ public sealed partial class ChaosGame
         if (SectorDetailLayout.TrySectorAt(point, _cursor, out var selectedSector))
         {
             _cursor = selectedSector;
-            _message = $"SECTOR {_cursor + 1}";
+            _message = string.Empty;
             return;
         }
         var siteSlot = Enumerable.Range(0, MatchLimits.SitesPerSector)
@@ -68,7 +68,7 @@ public sealed partial class ChaosGame
         var gang = visible[index];
         if (gang.Owner != playerId)
         {
-            _message = "ENEMY GANG DETECTED";
+            _message = string.Empty;
             return;
         }
         var ownGangs = _state.FindPlayer(playerId)!.Gangs.Where(candidate => candidate.IsActive).ToArray();
@@ -232,13 +232,13 @@ public sealed partial class ChaosGame
             }
             var influenceResult = _actions.Submit(influence with { Repeat = true });
             _message = influenceResult.Accepted
-                ? $"INFLUENCE SITE {siteSlot + 1} QUEUED"
+                ? string.Empty
                 : influenceResult.Validation.Message.ToUpperInvariant();
             return;
         }
         if (!SectorDetailLayout.TrySectorAt(point, _cursor, out var sectorId))
         {
-            _message = "MOVE CANCELLED";
+            _message = string.Empty;
             return;
         }
         var legal = CommandOptionCatalog.LegalCommands(_state, gang.Owner, gang.Id)
@@ -250,16 +250,14 @@ public sealed partial class ChaosGame
             return;
         }
         var result = _actions.Submit(legal with { Repeat = false });
-        _message = result.Accepted
-            ? $"MOVE TO SECTOR {sectorId + 1} QUEUED"
-            : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
     }
 
     private void CancelGangDrag()
     {
         _draggedGangId = null;
         _gangDragStarted = false;
-        _message = "MOVE CANCELLED";
+        _message = string.Empty;
     }
 
     private void DrawGangMoveDrag(SpriteBatch batch, Texture2D pixel, MatchState state)

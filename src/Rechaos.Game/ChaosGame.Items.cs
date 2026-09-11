@@ -60,7 +60,7 @@ public sealed partial class ChaosGame
             .ToArray();
         if (selected.Length == 0)
         {
-            _message = "SELECT EQUIPMENT TO GIVE";
+            _message = "NO EQUIPMENT SELECTED";
             return;
         }
 
@@ -102,9 +102,7 @@ public sealed partial class ChaosGame
         if (_giveOptions.Count == 0 || _actions is null) return;
         var command = _giveOptions[_giveCursor];
         var result = _actions.Submit(command);
-        _message = result.Accepted
-            ? "GIVE QUEUED"
-            : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
         if (result.Accepted) _screens.Show(_giveReturnScreen);
     }
 
@@ -121,9 +119,7 @@ public sealed partial class ChaosGame
         }
         var command = new GameCommand(playerId, gang.Id, action, CommandTarget.Item(items[_itemCursor].Id));
         var result = _actions.Submit(command);
-        _message = result.Accepted
-            ? $"{action.ToString().ToUpperInvariant()} QUEUED"
-            : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
         if (result.Accepted) _screens.Show(ClientScreen.City);
     }
 

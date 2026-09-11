@@ -60,7 +60,7 @@ public sealed partial class ChaosGame
             .Where(candidate => candidate.IsActive)
             .Select((candidate, index) => (candidate, index))
             .First(entry => entry.candidate.Id == gang.Id).index;
-        _message = $"GANG {gang.Id.Value}";
+        _message = string.Empty;
     }
 
     private void DrawGangDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)

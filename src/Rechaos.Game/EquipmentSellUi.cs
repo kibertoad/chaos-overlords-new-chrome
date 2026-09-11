@@ -106,15 +106,13 @@ public sealed partial class ChaosGame
             .ToArray();
         if (selected.Length == 0)
         {
-            _message = "SELECT EQUIPMENT TO SELL";
+            _message = "NO EQUIPMENT SELECTED";
             return;
         }
 
         var result = _actions.Submit(EquipmentSellSelection.CreateCommand(
             playerId, gangId, selected, _sellRepeats));
-        _message = result.Accepted
-            ? $"{selected.Length} ITEM{(selected.Length == 1 ? string.Empty : "S")} TO SELL QUEUED"
-            : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
         if (result.Accepted) _screens.Show(_sellReturnScreen);
     }
 
