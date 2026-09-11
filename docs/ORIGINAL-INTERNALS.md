@@ -247,42 +247,48 @@ playing with the opening attack. Simple Combat does not enter this presenter.
 countdown-warning cadence at
 runtime, then validate overlap/interruption and native amplitude behavior.
 
-### BIN-REPORT-001 - per-player report queue capacity and overflow
+### BIN-COMLINK-001 - per-player message queue capacity and overflow
 
-**Observation:** The report recorder at `0x0045d2f0` stores one 166-byte record
+**Observation:** The Comlink recorder at `0x0045d2f0` stores one 166-byte record
 in a player-strided table at `0x0049ca90`. The per-player count at
 `0x004981e0 + player * 4` is compared with `0x10`. Counts below 16 append at the
 current index. At capacity, the routine sets the index to 15, copies records
 1 through 15 down into slots 0 through 14, writes the new record to slot 15,
 and increments the count back to 16. It also decrements the player's visible
-report cursor at `0x004981c8 + player * 4` when positive, otherwise retaining
+message cursor at `0x004981c8 + player * 4` when positive, otherwise retaining
 zero.
 
 All four direct callers have now been classified. Two calls in the legacy
 transport dispatcher at `0x0046ba84` handle packet type 10 and pass either
 message ID 0 or the received dynamic ID. The other two calls in the report
-screen handler at `0x0045eab1` pass `-1`, which copies the already-formatted
-global report buffer, and broadcast it to each enabled player. The recorder
-itself sends packet type 10 for remote recipients. Consequently, report-kind
-selection happens upstream while formatting that shared record, not in the
-capacity/overflow routine.
+composition handler at `0x0045eab1` pass `-1`, which copies the already-formatted
+global message buffer, and broadcast it to each enabled recipient. The recorder
+itself sends packet type 10 for remote recipients. Consequently, Last Turn
+Events filtering is unrelated to this capacity/overflow routine.
 
-**Interpretation:** Each player retains the newest 16 Last Turn Events reports;
-overflow deterministically drops exactly the oldest report and preserves the
-viewer's logical position relative to the shifted entries.
+The composition handler loads `PX05018` (or alternate resource 5023), whose
+template is labeled `COMLINK: SEND MESSAGE` and contains six recipient cells
+plus four 40-character message rows. Its helper at `0x0045fdf1` renders six
+recipient selectors and those four rows from offsets within the same 166-byte
+buffer. The original Help independently states that Comlink View stores the 16
+most recent messages sent by other human Overlords and that Send can target
+multiple human recipients.
+
+**Interpretation:** Each human player retains the newest 16 Comlink messages;
+overflow deterministically drops exactly the oldest message and preserves the
+viewer's logical position relative to the shifted entries. This bound does not
+apply to the separate Last Turn Events panel.
 
 **Confidence:** High static evidence from the complete bounded recorder,
 literal capacity, record stride, copy bounds, count update, and cursor branch.
 
-**Recreation status:** The `PX05010` projection filters the broader mechanical
-notification stream into report-worthy entries and then retains the newest 16
-in original drop-oldest order. The recreation-internal notification queue also
-carries non-report command, economy, movement, and combat facts, so its safety
-bound remains separate and does not incorrectly consume original report slots.
+**Recreation status:** Comlink View/Send is not yet implemented. The recreation's
+bounded mechanical notification stream and `PX05010` Last Turn Events
+projection are separate and do not claim this Comlink capacity.
 
-**Next validation:** Trace writes to the formatted report buffer to map report
-kinds, then validate the cursor/page transition between the recorder, handoff,
-and `PX05010` presenter.
+**Next validation:** Implement local-human Comlink composition, recipient
+selection, 16-message drop-oldest storage, unread indication, and handoff-safe
+viewing; legacy transport interoperability remains out of scope.
 
 ### BIN-OPTIONS-001 - registry keys, initialized defaults, and idle-gang warning
 

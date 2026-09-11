@@ -55,7 +55,7 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   one-point Upkeep restoration of temporary Bribe/Snitch changes.
 - `GameModel/Notifications.cs`: bounded presentation-independent mechanical
   notification queues. The client filters those richer payloads into Last Turn
-  Events and applies the original 16-report drop-oldest bound to that projection.
+  Events; the separately recovered 16-entry bound belongs to Comlink messages.
 - `GameModel/Determinism.cs`: serializable recovered Visual C++ random step and
   three-sample range wrapper plus canonical little-endian SHA-256 encoding.
 - `GameModel/EffectiveStatistics.cs`: definition/equipment/influenced-site stat

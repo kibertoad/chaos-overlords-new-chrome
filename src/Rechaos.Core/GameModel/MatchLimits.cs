@@ -12,8 +12,7 @@ public static class MatchLimits
     public const int FriendlyGangsPerSector = 6;
     public const int ItemSlots = 64;
     public const int HireOffersPerPlayer = 3;
-    // Recreation-internal mechanical queue; the original 16-entry bound applies
-    // after filtering this stream into Last Turn Events reports.
+    // Recreation-internal mechanical queue. The original's separate Comlink
+    // message queue retained 16 entries; it did not cap Last Turn Events.
     public const int NotificationsPerPlayer = 64;
-    public const int LastTurnReportsPerPlayer = 16;
 }
