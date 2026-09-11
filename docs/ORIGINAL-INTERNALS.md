@@ -234,6 +234,32 @@ playing with the opening attack. Simple Combat does not enter this presenter.
 repeat/suppression boundary, and countdown-warning cadence at
 runtime, then validate overlap/interruption and native amplitude behavior.
 
+### BIN-REPORT-001 - per-player report queue capacity and overflow
+
+**Observation:** The report recorder at `0x0045d2f0` stores one 166-byte record
+in a player-strided table at `0x0049ca90`. The per-player count at
+`0x004981e0 + player * 4` is compared with `0x10`. Counts below 16 append at the
+current index. At capacity, the routine sets the index to 15, copies records
+1 through 15 down into slots 0 through 14, writes the new record to slot 15,
+and increments the count back to 16. It also decrements the player's visible
+report cursor at `0x004981c8 + player * 4` when positive, otherwise retaining
+zero.
+
+**Interpretation:** Each player retains the newest 16 Last Turn Events reports;
+overflow deterministically drops exactly the oldest report and preserves the
+viewer's logical position relative to the shifted entries.
+
+**Confidence:** High static evidence from the complete bounded recorder,
+literal capacity, record stride, copy bounds, count update, and cursor branch.
+
+**Recreation status:** The authoritative per-player notification queue now uses
+the recovered capacity 16 and already matches the original drop-oldest order.
+Recreation-native pre-1.0 snapshots that relied on the former provisional
+64-entry bound are intentionally outside the compatibility guarantee.
+
+**Next validation:** Map report-kind filtering and the cursor/page transition
+between the recorder, handoff, and `PX05010` presenter.
+
 ### BIN-OPTIONS-001 - registry keys, initialized defaults, and idle-gang warning
 
 **Observation:** The preference-name table contains `prefsVidDeep`,

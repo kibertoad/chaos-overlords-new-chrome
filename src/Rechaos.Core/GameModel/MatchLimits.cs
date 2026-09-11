@@ -12,6 +12,5 @@ public static class MatchLimits
     public const int FriendlyGangsPerSector = 6;
     public const int ItemSlots = 64;
     public const int HireOffersPerPlayer = 3;
-    // Provisional recreation safety bound; the original queue capacity is not yet known.
-    public const int NotificationsPerPlayer = 64;
+    public const int NotificationsPerPlayer = 16;
 }
