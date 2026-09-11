@@ -117,9 +117,11 @@ Target subdivisions:
 - Validates canonical original tables and the whole source fingerprint.
 - Repairs missing PX16 BMP header fields without modifying pixel bytes.
 - Copies media/opaque resources and generates a per-output hash manifest.
-- Decodes the supported user-owned WinHelp container and contents index into a
-  bounded, versioned local JSON topic document; neither the source nor decoded
-  copyrighted text is checked into or packaged with the project.
+- Decodes the supported user-owned WinHelp container, native context B+ tree,
+  numeric context map, and contents index into a bounded, versioned local JSON
+  topic document; neither the source nor decoded copyrighted text is checked
+  into or packaged with the project. Asset-pack format 5 forces existing packs
+  to regenerate the expanded help schema.
 - Records manifest format and extractor versions, original-relative source,
   output hash/size/media type, and conversion method/geometry per asset.
 - Stages and fully verifies a complete pack before rollback-safe directory

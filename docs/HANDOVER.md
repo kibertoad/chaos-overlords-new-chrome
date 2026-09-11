@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   published on `main`; the local `codex/full-reimplementation` branch contains
   the same history and remains the development branch for a future session.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,259 tests with no warnings.
+  isolated Release build passed all 1,266 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -142,9 +142,12 @@ Last updated: 2026-09-11
   player-facing entries in the original contents order and omits 21 unlisted
   internal fragments; documents without a contents table safely fall back to
   all decoded topics. Mouse-wheel scrolling follows the topic-list/content pane
-  under the pointer. Game Info, Give, Sell, Comlink, Events, Search, and Combat
-  now open their specific original topics. The Attack topic carries the
-  corrected Force-inclusive simultaneous-combat explanation.
+  under the pointer. Asset-pack format 5 preserves all 80 native `|CONTEXT`
+  hash/target pairs, verifies every one of the 59 `CHAOS.CNT` context names, and
+  records that this file's `|CTXOMAP` contains no numeric IDs. Contextual F1
+  routing now uses those exact symbols rather than ambiguous topic-title
+  matching; title matching remains only as a bounded fallback. The Attack topic
+  carries the corrected Force-inclusive simultaneous-combat explanation.
 - Music and sound effects have independent recovered 0-10 controls and persisted
   defaults. Full local-setup push buttons, setup selection/rejection, panel
   confirmation, equipped and unarmed gang attacks, retaliation, detected police
@@ -299,8 +302,8 @@ Last updated: 2026-09-11
    the reference contradicts it.
 3. Investigate and explain the reported GOG/1.1 Detailed Combat freeze, then
    compare the bounded recreation cadence with a controlled original capture.
-4. Recover WinHelp links, inline formatting, and context IDs, then expand exact
-   contextual Help entry points.
+4. Recover WinHelp inline links and formatting now that native context
+   names/hashes and the absence of numeric map IDs are recorded.
 5. Complete remaining sound triggers, native audio/music validation, and the
    Smacker video playback/transcode decision.
 

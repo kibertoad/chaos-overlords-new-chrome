@@ -4,9 +4,10 @@ public sealed record ExtractedHelpDocument(
     int FormatVersion,
     string Title,
     IReadOnlyList<ExtractedHelpTopic> Topics,
-    IReadOnlyList<ExtractedHelpContentsEntry> Contents)
+    IReadOnlyList<ExtractedHelpContentsEntry> Contents,
+    IReadOnlyList<ExtractedHelpContext>? Contexts = null)
 {
-    public const int CurrentFormatVersion = 1;
+    public const int CurrentFormatVersion = 2;
 }
 
 public sealed record ExtractedHelpTopic(
@@ -15,7 +16,14 @@ public sealed record ExtractedHelpTopic(
     string Text,
     bool ListedInContents);
 
+public sealed record ExtractedHelpContext(
+    string? Name,
+    uint? Hash,
+    uint? NumericId,
+    int TargetOffset);
+
 public sealed record ExtractedHelpContentsEntry(
     int Level,
     string Label,
-    int? TopicId);
+    int? TopicId,
+    string? ContextName = null);

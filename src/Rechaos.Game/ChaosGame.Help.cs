@@ -95,6 +95,15 @@ public static class HelpNavigation
     {
         ArgumentNullException.ThrowIfNull(document);
         ArgumentNullException.ThrowIfNull(topicOrder);
+        var context = ContextReference(screen);
+        var contextTopicId = document.Contents.FirstOrDefault(entry =>
+            string.Equals(entry.ContextName, context, StringComparison.OrdinalIgnoreCase))?.TopicId;
+        if (contextTopicId is { } exactTopicId)
+        {
+            var exactIndex = document.Topics.ToList().FindIndex(topic => topic.Id == exactTopicId);
+            var exactPosition = PositionOf(topicOrder, exactIndex);
+            if (exactPosition >= 0) return exactPosition;
+        }
         var wanted = ContextTitle(screen);
         var topicIndex = document.Topics.ToList().FindIndex(topic =>
             string.Equals(NormalizeTitle(topic.Title), wanted,
@@ -131,6 +140,28 @@ public static class HelpNavigation
         ClientScreen.Events or ClientScreen.CombatSummary or ClientScreen.Search =>
             "Main Control Panel",
         _ => "Introduction"
+    };
+
+    public static string ContextReference(ClientScreen screen) => screen switch
+    {
+        ClientScreen.Setup => "SSCP",
+        ClientScreen.Options => "OPTMENU",
+        ClientScreen.Online or ClientScreen.Lobby => "SETMPG",
+        ClientScreen.City => "CITYVIEW",
+        ClientScreen.Commands => "COMMAND",
+        ClientScreen.Hire => "CONTHIRE",
+        ClientScreen.Sector => "SECTVIEW",
+        ClientScreen.SectorGangs or ClientScreen.Gang => "GANGINFO",
+        ClientScreen.Site => "SITES",
+        ClientScreen.ItemInformation or ClientScreen.Items => "ITEMINFO",
+        ClientScreen.Give or ClientScreen.GiveTarget => "GIVE",
+        ClientScreen.Sell => "SELL",
+        ClientScreen.GameInfo => "GIS",
+        ClientScreen.ComlinkView or ClientScreen.ComlinkSend => "COMMMENU",
+        ClientScreen.Finance or ClientScreen.Handoff => "TIS",
+        ClientScreen.Ranking or ClientScreen.Endgame => "ENDGAME2",
+        ClientScreen.Events or ClientScreen.CombatSummary or ClientScreen.Search => "MCP",
+        _ => "INTRO"
     };
 
     private static string NormalizeTitle(string title) => title

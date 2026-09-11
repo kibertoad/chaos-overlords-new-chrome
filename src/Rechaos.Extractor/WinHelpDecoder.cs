@@ -46,17 +46,36 @@ public static class WinHelpDecoder
 
         var phrases = ReadHallPhrases(container);
         var topics = ReadTopics(container.ReadStream("|TOPIC"), flags, phrases);
+        var contexts = container.TryReadStream("|CONTEXT", out var contextStream)
+            ? ReadContextMap(contextStream.Span)
+            : new Dictionary<uint, int>();
+        var contextIds = container.TryReadStream("|CTXOMAP", out var contextIdStream)
+            ? ReadContextIds(contextIdStream.Span)
+            : new Dictionary<uint, int>();
         var parsedContents = ParseContents(contents.Span);
         var listedTopics = parsedContents.Count(entry => entry.Reference is not null);
         if (listedTopics > topics.Count)
             throw new InvalidDataException("WinHelp contents references more topics than were decoded.");
 
         var nextTopic = 0;
+        var contextNames = new Dictionary<uint, string>();
         var contentsEntries = parsedContents.Select(entry =>
         {
             int? topicId = null;
-            if (entry.Reference is not null) topicId = topics[nextTopic++].Id;
-            return new ExtractedHelpContentsEntry(entry.Level, entry.Label, topicId);
+            if (entry.Reference is not null)
+            {
+                topicId = topics[nextTopic++].Id;
+                if (contexts.Count > 0)
+                {
+                    var hash = CalculateContextHash(entry.Reference);
+                    if (!contexts.ContainsKey(hash))
+                        throw new InvalidDataException(
+                            $"WinHelp contents context {entry.Reference} is missing.");
+                    contextNames.TryAdd(hash, entry.Reference);
+                }
+            }
+            return new ExtractedHelpContentsEntry(
+                entry.Level, entry.Label, topicId, entry.Reference);
         }).ToArray();
 
         var listedIds = contentsEntries.Where(entry => entry.TopicId is not null)
@@ -65,12 +84,46 @@ public static class WinHelpDecoder
         {
             ListedInContents = listedIds.Contains(topic.Id)
         }).Select(ApplyGameplayClarifications).ToList();
+        var extractedContexts = contexts
+            .Select(entry => new ExtractedHelpContext(
+                contextNames.GetValueOrDefault(entry.Key), entry.Key, null, entry.Value))
+            .Concat(contextIds.Select(entry =>
+                new ExtractedHelpContext(null, null, entry.Key, entry.Value)))
+            .OrderBy(context => context.TargetOffset)
+            .ThenBy(context => context.Hash is null ? 1 : 0)
+            .ThenBy(context => context.Hash)
+            .ThenBy(context => context.NumericId)
+            .ToArray();
 
         return new ExtractedHelpDocument(
             ExtractedHelpDocument.CurrentFormatVersion,
             ReadContentsTitle(contents.Span) ?? "Chaos Overlords Help",
             topics,
-            contentsEntries);
+            contentsEntries,
+            extractedContexts);
+    }
+
+    public static uint CalculateContextHash(string contextName)
+    {
+        ArgumentNullException.ThrowIfNull(contextName);
+        if (contextName.Length == 0) return 1;
+        var hash = 0u;
+        foreach (var character in contextName)
+        {
+            var value = character switch
+            {
+                '0' => 10,
+                >= '1' and <= '9' => character - '0',
+                >= 'A' and <= 'Z' => character - 'A' + 0x11,
+                >= 'a' and <= 'z' => character - 'a' + 0x11,
+                '.' => 0x0c,
+                '_' => 0x0d,
+                _ => throw new ArgumentException(
+                    "Context name contains a character unsupported by HC31.", nameof(contextName))
+            };
+            hash = unchecked(hash * 43 + (uint)value);
+        }
+        return hash;
     }
 
     private static ExtractedHelpTopic ApplyGameplayClarifications(ExtractedHelpTopic topic)
@@ -296,7 +349,10 @@ public static class WinHelpDecoder
         }
     }
 
-    private static void AppendDisplayText(StringBuilder output, ReadOnlySpan<byte> data1, ReadOnlySpan<byte> data2)
+    private static void AppendDisplayText(
+        StringBuilder output,
+        ReadOnlySpan<byte> data1,
+        ReadOnlySpan<byte> data2)
     {
         var commandOffset = ParagraphCommandsOffset(data1);
         var textOffset = 0;
@@ -400,6 +456,95 @@ public static class WinHelpDecoder
         var size = ReadCompressedLong(data, ref cursor);
         if (kind == 0x22) _ = ReadCompressedWord(data, ref cursor);
         return Advance(data, cursor, size);
+    }
+
+    private static Dictionary<uint, int> ReadContextMap(ReadOnlySpan<byte> data)
+    {
+        var entries = ReadFixedBTreeLeaves(data, 8, "context");
+        var result = new Dictionary<uint, int>();
+        foreach (var entry in entries)
+        {
+            var hash = ReadUInt32(entry);
+            var topicOffset = ReadInt32(entry, 4);
+            if (topicOffset < 0 || !result.TryAdd(hash, topicOffset))
+                throw new InvalidDataException("WinHelp context entry is invalid.");
+        }
+        return result;
+    }
+
+    private static Dictionary<uint, int> ReadContextIds(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 2) throw new InvalidDataException("WinHelp context-id map is truncated.");
+        var count = ReadUInt16(data);
+        Require(data, 2, checked(count * 8));
+        var result = new Dictionary<uint, int>();
+        for (var index = 0; index < count; index++)
+        {
+            var offset = 2 + index * 8;
+            var contextId = ReadUInt32(data, offset);
+            var topicOffset = ReadInt32(data, offset + 4);
+            if (topicOffset < 0 || !result.TryAdd(contextId, topicOffset))
+                throw new InvalidDataException("WinHelp context-id entry is invalid.");
+        }
+        return result;
+    }
+
+    private static IReadOnlyList<byte[]> ReadFixedBTreeLeaves(
+        ReadOnlySpan<byte> tree,
+        int entrySize,
+        string label)
+    {
+        if (tree.Length < BTreeHeaderSize)
+            throw new InvalidDataException($"WinHelp {label} B-tree is truncated.");
+        if (ReadUInt16(tree) != BTreeMagic)
+            throw new InvalidDataException($"WinHelp {label} B-tree magic is invalid.");
+        var pageSize = ReadUInt16(tree, 4);
+        var page = ReadInt16(tree, 26);
+        var totalPages = ReadInt16(tree, 30);
+        var levels = ReadInt16(tree, 32);
+        var totalEntries = ReadInt32(tree, 34);
+        if (pageSize is < 64 or > 8192 || totalPages is <= 0 or > 4096
+            || levels is <= 0 or > 16 || totalEntries is < 0 or > 4096)
+            throw new InvalidDataException($"WinHelp {label} B-tree metadata is invalid.");
+        Require(tree, BTreeHeaderSize, checked(pageSize * totalPages));
+        for (var level = 1; level < levels; level++)
+        {
+            var indexPage = BTreePage(tree, page, pageSize, totalPages, label);
+            Require(indexPage, 0, 6);
+            page = ReadInt16(indexPage, 4);
+        }
+
+        var result = new List<byte[]>(totalEntries);
+        var visited = new HashSet<int>();
+        while (page != -1)
+        {
+            if (page < 0 || page >= totalPages || !visited.Add(page))
+                throw new InvalidDataException($"WinHelp {label} B-tree leaf chain is invalid.");
+            var leaf = BTreePage(tree, page, pageSize, totalPages, label);
+            Require(leaf, 0, 8);
+            var count = ReadInt16(leaf, 2);
+            if (count < 0 || count > totalEntries || 8 + count * entrySize > leaf.Length)
+                throw new InvalidDataException($"WinHelp {label} B-tree entry count is invalid.");
+            for (var index = 0; index < count; index++)
+                result.Add(leaf.Slice(8 + index * entrySize, entrySize).ToArray());
+            page = ReadInt16(leaf, 6);
+        }
+        if (result.Count != totalEntries)
+            throw new InvalidDataException(
+                $"WinHelp {label} B-tree entry count does not match its header.");
+        return result;
+    }
+
+    private static ReadOnlySpan<byte> BTreePage(
+        ReadOnlySpan<byte> tree,
+        int index,
+        int pageSize,
+        int totalPages,
+        string label)
+    {
+        if (index < 0 || index >= totalPages)
+            throw new InvalidDataException($"WinHelp {label} B-tree page is out of bounds.");
+        return tree.Slice(BTreeHeaderSize + index * pageSize, pageSize);
     }
 
     private static IReadOnlyList<byte[]> ReadHallPhrases(Container container)
@@ -643,6 +788,17 @@ public static class WinHelpDecoder
                 throw new InvalidDataException($"WinHelp stream {name} has invalid bounds.");
             Require(_data.Span, offset + FileHeaderSize, used);
             return _data.Slice(offset + FileHeaderSize, used);
+        }
+
+        public bool TryReadStream(string name, out ReadOnlyMemory<byte> stream)
+        {
+            if (!_streams.ContainsKey(name))
+            {
+                stream = default;
+                return false;
+            }
+            stream = ReadStream(name);
+            return true;
         }
 
         private Dictionary<string, int> ReadDirectory(int directoryOffset)

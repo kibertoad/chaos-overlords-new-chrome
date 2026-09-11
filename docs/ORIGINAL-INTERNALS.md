@@ -477,6 +477,25 @@ The `00000` suffix strongly suggests integer-to-five-digit resource formatting,
 but the formatter and valid ranges must be located before this is marked
 Verified.
 
+### BIN-ASSET-002 - WinHelp context maps
+
+**Observation:** The fingerprinted `Help\Chaos.hlp` contains an 80-entry
+`|CONTEXT` B+ tree. Each leaf record is an unsigned 32-bit context-name hash
+paired with a signed topic offset. All 59 symbolic targets in `CHAOS.CNT` hash
+to entries in that tree. The file's `|CTXOMAP` stream contains a zero entry
+count, so this build defines no numeric `[MAP]` context IDs. For example,
+`INTRO` hashes to `0x053d9a5c`, `CITYVIEW` to `0x86ee9810`, and `ITEMINFO` to
+`0xeb824ced`.
+
+**Interpretation:** Context targets are native logical anchors and are not
+required to equal topic-header positions. The modern viewer should retain the
+raw hash/offset map and route screen help through the exact `CHAOS.CNT` symbols;
+numeric-context routing is inapplicable to this help file.
+
+**Confidence:** High. A bounded clean-room decoder verifies the B+ tree,
+recomputes every contents hash, and reproduced 80 contexts, 59 named contexts,
+zero numeric IDs, 80 topics, and 73 contents rows from the legal GOG files.
+
 ## Timing and RNG candidates
 
 ### BIN-RNG-001 - imported clocks

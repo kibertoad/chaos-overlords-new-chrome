@@ -30,11 +30,16 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         Directory.CreateDirectory(System.IO.Path.Combine(_directory.FullName, "help"));
         File.WriteAllText(HelpPath(), "not-json");
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
-        Write(Document() with { FormatVersion = 2 });
+        Write(Document() with { FormatVersion = ExtractedHelpDocument.CurrentFormatVersion + 1 });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
         Write(Document() with
         {
             Contents = [new ExtractedHelpContentsEntry(0, "Broken", 99)]
+        });
+        Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
+        Write(Document() with
+        {
+            Contexts = [new ExtractedHelpContext(null, null, null, 0)]
         });
         Assert.Null(ExtractedHelpStore.LoadOrNull(_directory.FullName));
     }
@@ -79,20 +84,48 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             [
                 new ExtractedHelpContentsEntry(1, "Last", 30),
                 new ExtractedHelpContentsEntry(1, "First", 10)
-            ]);
+            ],
+            []);
 
         Assert.Equal([2, 0], HelpNavigation.TopicOrder(document));
         Assert.Equal([0, 1, 2], HelpNavigation.TopicOrder(document with { Contents = [] }));
     }
 
     [Theory]
-    [InlineData(ClientScreen.GameInfo, "Game Info Screen")]
-    [InlineData(ClientScreen.Give, "Give")]
-    [InlineData(ClientScreen.Sell, "Sell")]
-    [InlineData(ClientScreen.ComlinkView, "Comm Menu")]
-    [InlineData(ClientScreen.Events, "Main Control Panel")]
-    public void HelpContextUsesSpecificOriginalTopics(ClientScreen screen, string title) =>
+    [InlineData(ClientScreen.GameInfo, "Game Info Screen", "GIS")]
+    [InlineData(ClientScreen.Give, "Give", "GIVE")]
+    [InlineData(ClientScreen.Sell, "Sell", "SELL")]
+    [InlineData(ClientScreen.ComlinkView, "Comm Menu", "COMMMENU")]
+    [InlineData(ClientScreen.Events, "Main Control Panel", "MCP")]
+    [InlineData(ClientScreen.Online, "Introduction", "SETMPG")]
+    public void HelpContextUsesSpecificOriginalTopics(
+        ClientScreen screen,
+        string title,
+        string context)
+    {
         Assert.Equal(title, HelpNavigation.ContextTitle(screen));
+        Assert.Equal(context, HelpNavigation.ContextReference(screen));
+    }
+
+    [Fact]
+    public void HelpContextReferenceDisambiguatesDuplicateTitles()
+    {
+        var document = new ExtractedHelpDocument(
+            ExtractedHelpDocument.CurrentFormatVersion,
+            "Help",
+            [
+                new ExtractedHelpTopic(10, "Sites", "Control overview", true),
+                new ExtractedHelpTopic(20, "Sites", "Site reference", true)
+            ],
+            [
+                new ExtractedHelpContentsEntry(1, "Sites", 10, "SITE"),
+                new ExtractedHelpContentsEntry(1, "Sites", 20, "SITES")
+            ],
+            []);
+
+        Assert.Equal(1, HelpNavigation.FindTopicPosition(
+            document, HelpNavigation.TopicOrder(document), ClientScreen.Site));
+    }
 
     [Fact]
     public void HelpContextLookupIgnoresLegacyEllipsisStyling()
@@ -107,7 +140,8 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             [
                 new ExtractedHelpContentsEntry(1, "Introduction", 2),
                 new ExtractedHelpContentsEntry(1, "Give...", 7)
-            ]);
+            ],
+            []);
         var order = HelpNavigation.TopicOrder(document);
 
         Assert.Equal(1, HelpNavigation.FindTopicPosition(
@@ -128,5 +162,6 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         ExtractedHelpDocument.CurrentFormatVersion,
         "Synthetic Help",
         [new ExtractedHelpTopic(0, "Topic", "Readable text", true)],
-        [new ExtractedHelpContentsEntry(0, "Topic", 0)]);
+        [new ExtractedHelpContentsEntry(0, "Topic", 0)],
+        []);
 }

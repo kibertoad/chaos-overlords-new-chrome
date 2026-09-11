@@ -46,10 +46,46 @@ public sealed class WinHelpDecoderTests
         Assert.Equal("Synthetic", topic.Title);
         Assert.Equal("Hello\nworld", topic.Text);
         Assert.True(topic.ListedInContents);
+        Assert.Collection(document.Contexts!,
+            context =>
+            {
+                Assert.Equal("SYNTH", context.Name);
+                Assert.Equal(WinHelpDecoder.CalculateContextHash("SYNTH"), context.Hash);
+                Assert.Null(context.NumericId);
+                Assert.Equal(0, context.TargetOffset);
+            },
+            context =>
+            {
+                Assert.Null(context.Name);
+                Assert.Null(context.Hash);
+                Assert.Equal(7001u, context.NumericId);
+                Assert.Equal(0, context.TargetOffset);
+            });
         var entry = Assert.Single(document.Contents);
         Assert.Equal(0, entry.Level);
         Assert.Equal("Synthetic", entry.Label);
         Assert.Equal(topic.Id, entry.TopicId);
+        Assert.Equal("SYNTH", entry.ContextName);
+    }
+
+    [Theory]
+    [InlineData("", 0x00000001u)]
+    [InlineData("INTRO", 0x053d9a5cu)]
+    [InlineData("CITYVIEW", 0x86ee9810u)]
+    [InlineData("ITEMINFO", 0xeb824cedu)]
+    public void ContextHashMatchesWinHelpContextTreeKeys(string name, uint expected) =>
+        Assert.Equal(expected, WinHelpDecoder.CalculateContextHash(name));
+
+    [Fact]
+    public void DecoderRejectsContentsReferencesMissingFromNativeContextTree()
+    {
+        var contents = Encoding.ASCII.GetBytes(":Title Synthetic Help\r\n1 Missing=MISSING\r\n");
+
+        var error = Assert.Throws<InvalidDataException>(() =>
+            WinHelpDecoder.Decode(BuildHelpFile(), contents));
+
+        Assert.Contains("MISSING", error.Message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentException>(() => WinHelpDecoder.CalculateContextHash("NOT VALID"));
     }
 
     [Fact]
@@ -101,6 +137,8 @@ public sealed class WinHelpDecoderTests
 
         var streams = new Dictionary<string, byte[]>
         {
+            ["|CONTEXT"] = BuildContextTree("SYNTH", 0),
+            ["|CTXOMAP"] = BuildContextIdMap(7001, 0),
             ["|PhrImage"] = [],
             ["|PhrIndex"] = phraseIndex,
             ["|SYSTEM"] = system,
@@ -151,6 +189,33 @@ public sealed class WinHelpDecoderTests
         WriteInt32(result, 4, directoryOffset);
         WriteInt32(result, 8, -1);
         WriteInt32(result, 12, result.Length);
+        return result;
+    }
+
+    private static byte[] BuildContextTree(string name, int topicOffset)
+    {
+        var tree = new byte[38 + 1024];
+        WriteUInt16(tree, 0, 0x293b);
+        WriteUInt16(tree, 4, 1024);
+        WriteInt16(tree, 26, 0);
+        WriteInt16(tree, 28, -1);
+        WriteInt16(tree, 30, 1);
+        WriteInt16(tree, 32, 1);
+        WriteInt32(tree, 34, 1);
+        WriteInt16(tree, 38 + 2, 1);
+        WriteInt16(tree, 38 + 4, -1);
+        WriteInt16(tree, 38 + 6, -1);
+        WriteUInt32(tree, 38 + 8, WinHelpDecoder.CalculateContextHash(name));
+        WriteInt32(tree, 38 + 12, topicOffset);
+        return tree;
+    }
+
+    private static byte[] BuildContextIdMap(uint contextId, int topicOffset)
+    {
+        var result = new byte[10];
+        WriteUInt16(result, 0, 1);
+        WriteUInt32(result, 2, contextId);
+        WriteInt32(result, 6, topicOffset);
         return result;
     }
 
