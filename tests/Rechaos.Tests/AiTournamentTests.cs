@@ -7,6 +7,28 @@ namespace Rechaos.Tests;
 
 public sealed class AiTournamentTests
 {
+    public static TheoryData<ScenarioId, int> ObjectiveStressCases => new()
+    {
+        { ScenarioId.KillEmAll, 1977 },
+        { ScenarioId.Big40, 1977 },
+        { ScenarioId.Eliminate, 1977 },
+        { ScenarioId.Siege, 1977 },
+        { ScenarioId.BigMan, 1977 },
+        { ScenarioId.Armageddon, 1977 },
+        { ScenarioId.KillEmAll, 4093 },
+        { ScenarioId.Big40, 4093 },
+        { ScenarioId.Eliminate, 4093 },
+        { ScenarioId.Siege, 4093 },
+        { ScenarioId.BigMan, 4093 },
+        { ScenarioId.Armageddon, 4093 },
+        { ScenarioId.KillEmAll, 12289 },
+        { ScenarioId.Big40, 12289 },
+        { ScenarioId.Eliminate, 12289 },
+        { ScenarioId.Siege, 12289 },
+        { ScenarioId.BigMan, 12289 },
+        { ScenarioId.Armageddon, 12289 }
+    };
+
     [Theory]
     [InlineData(ScenarioId.Greed)]
     [InlineData(ScenarioId.Power)]
@@ -77,6 +99,25 @@ public sealed class AiTournamentTests
 
         Assert.NotNull(campaign.State.Outcome);
         Assert.Equal(MatchEndReason.ObjectiveCompleted, campaign.State.Outcome!.Reason);
+        AssertReplayMatches(campaign);
+    }
+
+    [Theory]
+    [MemberData(nameof(ObjectiveStressCases))]
+    public void SixComputerObjectiveCampaignRemainsLiveAcrossAdditionalSeeds(
+        ScenarioId scenario,
+        int seed)
+    {
+        const int horizon = 40;
+        var campaign = DriveMatch(
+            scenario, seed, GameDuration.FourYears, throughTurn: horizon);
+
+        Assert.True(campaign.State.Outcome is not null
+            || campaign.State.Coordinator.Turn > horizon);
+        Assert.Contains(campaign.State.Events,
+            gameEvent => gameEvent.Kind == GameEventKind.HireResolved);
+        Assert.True(campaign.State.Sectors.Count(sector => sector.Owner is not null)
+            > MatchLimits.PlayerCount);
         AssertReplayMatches(campaign);
     }
 
