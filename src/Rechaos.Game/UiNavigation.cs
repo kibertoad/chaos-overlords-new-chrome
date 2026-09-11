@@ -226,6 +226,8 @@ public static class CityMapLayout
     public const int Top = 44;
     public const int TileWidth = 54;
     public const int TileHeight = 52;
+    public static Rectangle Bounds => new(
+        Left, Top, TileWidth * MatchLimits.BoardWidth, TileHeight * MatchLimits.BoardWidth);
 
     public static Rectangle Source(int sectorId)
     {
@@ -242,6 +244,11 @@ public static class CityMapLayout
         var source = Source(sectorId);
         return new Rectangle(Left + source.X, Top + source.Y, source.Width, source.Height);
     }
+
+    // Every PX1000x cell contains its own copy of the green grid edge. Keep the
+    // neutral sheet's grid fixed and replace only the artwork inside an owned cell.
+    public static Rectangle OwnershipSource(int sectorId) => Inset(Source(sectorId));
+    public static Rectangle OwnershipDestination(int sectorId) => Inset(Destination(sectorId));
 
     public static int OwnershipSheet(PlayerId? owner) => owner?.Value + 1 ?? 0;
 
@@ -263,6 +270,9 @@ public static class CityMapLayout
         if (sectorId is < 0 or >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sectorId));
     }
+
+    private static Rectangle Inset(Rectangle rectangle) => new(
+        rectangle.X + 1, rectangle.Y + 1, rectangle.Width - 2, rectangle.Height - 2);
 }
 
 /// <summary>Manual-described pair of gray pylons inside each Siege objective sector.</summary>
@@ -744,22 +754,6 @@ public static class AttackTargetRoster
         .ThenBy(entry => entry.target!.Id.Value)
         .Select(entry => entry.command)
         .ToArray();
-}
-
-public static class StatusConsoleLayout
-{
-    public const int LabelLeft = 480;
-    public const int ValueRight = 579;
-    public const int ScenarioY = 3;
-    public const int DateY = 15;
-    public const int ScoreY = 24;
-    public const int CashY = 42;
-
-    public static int SectorValueY(int row)
-    {
-        if (row is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(row));
-        return 60 + row * 9;
-    }
 }
 
 public static class DifficultyPresentation

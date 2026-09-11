@@ -6,7 +6,7 @@ namespace Rechaos.Game;
 public static class CombatPanelLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Sector => new(134, 136, 52, 52);
+    public static Rectangle Sector => new(133, 136, 54, 52);
     public static Rectangle Cancel => EquipmentCommandLayout.Ok;
     public static Rectangle LeftHeader => new(201, 136, 119, 37);
     public static Rectangle RightHeader => new(324, 136, 119, 37);
@@ -36,7 +36,7 @@ public static class CombatResultsLayout
     public static Rectangle Page => new(133, 136, 58, 12);
     public static Rectangle Previous => new(135, 161, 25, 20);
     public static Rectangle Next => new(163, 161, 25, 20);
-    public static Rectangle Sector => new(134, 192, 52, 52);
+    public static Rectangle Sector => new(133, 192, 54, 52);
     public static Rectangle FriendlyPanel => new(202, 141, 94, 179);
     public static Rectangle EnemyPanel => new(344, 141, 94, 179);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;

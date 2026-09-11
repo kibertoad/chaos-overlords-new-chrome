@@ -53,19 +53,7 @@ public static class OptionsTooltip
     }
 
     public static Rectangle Bounds(Point point, IReadOnlyList<string> lines)
-    {
-        ArgumentNullException.ThrowIfNull(lines);
-        if (lines.Count == 0) return Rectangle.Empty;
-        var width = Math.Min(OptionsLayout.Panel.Width - 16,
-            lines.Max(line => line.Length) * OriginalFontLayout.CellWidth + 16);
-        var height = lines.Count * OriginalFontLayout.LineHeight + 16;
-        var x = Math.Clamp(point.X + 10, 4, VirtualInput.Width - width - 4);
-        var below = point.Y + 12;
-        var y = below + height <= VirtualInput.Height - 4
-            ? below
-            : Math.Max(4, point.Y - height - 8);
-        return new Rectangle(x, y, width, height);
-    }
+        => HoverTooltipLayout.Bounds(point, lines);
 }
 
 public sealed partial class ChaosGame
@@ -310,7 +298,18 @@ public sealed partial class ChaosGame
     {
         var lines = OptionsTooltip.At(point);
         if (lines.Count == 0) return;
-        var panel = OptionsTooltip.Bounds(point, lines);
+        DrawHoverTooltip(batch, pixel, font, point, lines);
+    }
+
+    private static void DrawHoverTooltip(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        Point point,
+        IReadOnlyList<string> lines)
+    {
+        if (lines.Count == 0) return;
+        var panel = HoverTooltipLayout.Bounds(point, lines);
         batch.Draw(pixel, panel, new Color(8, 18, 16, 252));
         DrawBorder(batch, pixel, panel, Color.Lime, 2);
         for (var row = 0; row < lines.Count; row++)

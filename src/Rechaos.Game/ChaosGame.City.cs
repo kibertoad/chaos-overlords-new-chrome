@@ -148,14 +148,18 @@ public sealed partial class ChaosGame
         }
         var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
         var player = state.Players[playerIndex];
+        var neutralLayer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];
+        if (neutralLayer is not null)
+            batch.Draw(neutralLayer, CityMapLayout.Bounds, Color.White);
         for (var index = 0; index < state.Sectors.Count; index++)
         {
             var sector = state.Sectors[index];
             var destination = CityMapLayout.Destination(index);
             var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
-            if (layer is not null)
-                batch.Draw(layer, destination, CityMapLayout.Source(index), Color.White);
-            else
+            if (sector.Owner is not null && layer is not null)
+                batch.Draw(layer, CityMapLayout.OwnershipDestination(index),
+                    CityMapLayout.OwnershipSource(index), Color.White);
+            else if (neutralLayer is null)
                 batch.Draw(pixel, destination, sector.Owner is { } owner
                     ? PlayerColors[owner.Value] * .68f
                     : new Color(24, 37, 39));
@@ -195,7 +199,8 @@ public sealed partial class ChaosGame
             new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.DateY), Color.Lime, 1);
         DrawPanelValue(font, batch, ScenarioScore(state, player).ToString(),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.ScoreY);
-        DrawPanelValue(font, batch, player.Cash,
+        var projectedCashflow = FinanceProjection.Project(state, player, sectorId: null).CashAdjustment;
+        DrawPanelValue(font, batch, StatusConsolePresentation.Cash(player.Cash, projectedCashflow),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.CashY);
         DrawPanelValue(font, batch, SectorCode(_cursor),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(0));
@@ -231,6 +236,8 @@ public sealed partial class ChaosGame
             ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
             : OnlineTurnStatus();
         font.Draw(batch, footer, new Vector2(18, 439), new Color(180, 190, 190), 1);
+        if (_hoverPoint is { } statusHover)
+            DrawHoverTooltip(batch, pixel, font, statusHover, StatusConsoleTooltip.At(statusHover));
         if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
     }
 

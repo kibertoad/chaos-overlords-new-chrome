@@ -200,6 +200,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             });
         _screens.Changed += (previous, current) =>
         {
+            _citySectorClicks.Cancel();
+            _sectorSiteClicks.Cancel();
+            _sectorGangClicks.Cancel();
             if (_slidePanels) _panelSlideTransition.Begin(previous, current, _inputTime);
             foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
                 PlayGeneralSound(slot);

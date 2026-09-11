@@ -75,6 +75,36 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void EveryStatusConsoleStatisticHasAnExplanatoryHoverTooltip()
+    {
+        Rectangle[] entries =
+        [
+            StatusConsoleLayout.Score,
+            StatusConsoleLayout.Cash,
+            .. Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorEntry)
+        ];
+
+        Assert.All(entries, entry =>
+        {
+            var lines = StatusConsoleTooltip.At(entry.Center);
+            Assert.True(lines.Count >= 2);
+            var bounds = StatusConsoleTooltip.Bounds(entry.Center, lines);
+            Assert.NotEqual(Rectangle.Empty, bounds);
+            Assert.True(bounds.X >= 0 && bounds.Y >= 0
+                && bounds.Right <= VirtualInput.Width && bounds.Bottom <= VirtualInput.Height);
+        });
+        var income = string.Join(' ', StatusConsoleTooltip.At(
+            StatusConsoleLayout.SectorEntry(1).Center));
+        Assert.Contains("CHAOS DICE", income);
+        Assert.Contains("NOT PASSIVE CASH", income);
+        Assert.Contains("$1 SECTOR TAX", income);
+        Assert.Equal("12 +1", StatusConsolePresentation.Cash(12, 1));
+        Assert.Equal("12 -3", StatusConsolePresentation.Cash(12, -3));
+        Assert.Equal("12 0", StatusConsolePresentation.Cash(12, 0));
+        Assert.Empty(StatusConsoleTooltip.At(Point.Zero));
+    }
+
+    [Fact]
     public void SetupPlanningTimerButtonsMatchOriginalArtworkRows()
     {
         Assert.Equal(
@@ -226,6 +256,11 @@ public sealed class UiNavigationTests
 
         Assert.Equal(new Rectangle(0, 0, 54, 52), CityMapLayout.Source(0));
         Assert.Equal(new Rectangle(378, 364, 54, 52), CityMapLayout.Source(63));
+        Assert.Equal(new Rectangle(2, 44, 432, 416), CityMapLayout.Bounds);
+        Assert.Equal(new Rectangle(1, 1, 52, 50), CityMapLayout.OwnershipSource(0));
+        Assert.Equal(new Rectangle(3, 45, 52, 50), CityMapLayout.OwnershipDestination(0));
+        Assert.Equal(new Rectangle(379, 365, 52, 50), CityMapLayout.OwnershipSource(63));
+        Assert.Equal(new Rectangle(381, 409, 52, 50), CityMapLayout.OwnershipDestination(63));
         Assert.Equal(0, CityMapLayout.OwnershipSheet(null));
         Assert.Equal(6, CityMapLayout.OwnershipSheet(new PlayerId(5)));
         Assert.False(CityMapLayout.TrySectorAt(new Point(434, 460), out _));
@@ -521,13 +556,13 @@ public sealed class UiNavigationTests
         Assert.Equal(244, ItemInformationLayout.StatisticY(0));
         Assert.Equal(271, ItemInformationLayout.StatisticY(2));
         Assert.Equal(EquipmentCommandLayout.Panel, CombatPanelLayout.Panel);
-        Assert.Equal(new Rectangle(134, 136, 52, 52), CombatPanelLayout.Sector);
+        Assert.Equal(new Rectangle(133, 136, 54, 52), CombatPanelLayout.Sector);
         Assert.Equal(EquipmentCommandLayout.Ok, CombatPanelLayout.Cancel);
         Assert.Equal(new Rectangle(253, 255, 67, 64), CombatPanelLayout.LeftAction);
         Assert.Equal(new Rectangle(324, 255, 67, 64), CombatPanelLayout.RightAction);
         Assert.Equal(new Rectangle(255, 249, 63, 3), CombatPanelLayout.ForceBar(false));
         Assert.Equal(EquipmentCommandLayout.Panel, CombatResultsLayout.Panel);
-        Assert.Equal(new Rectangle(134, 192, 52, 52), CombatResultsLayout.Sector);
+        Assert.Equal(new Rectangle(133, 192, 54, 52), CombatResultsLayout.Sector);
         Assert.Equal(new Rectangle(202, 141, 94, 179), CombatResultsLayout.FriendlyPanel);
         Assert.Equal(new Rectangle(207, 173, 40, 40), CombatResultsLayout.Force(0, enemy: false));
         Assert.Equal(new Rectangle(394, 277, 40, 40), CombatResultsLayout.Force(5, enemy: true));

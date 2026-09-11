@@ -30,7 +30,7 @@ Last updated: 2026-09-11
   two-by-three gang grid, all five opposing-player slots retain their fixed
   order and inactive dimming, and selecting a populated opponent uses the
   recovered slot-3 cue before Detail replays that selected result.
-- Combat Results and live Combat fit their required sector image into the
+- Combat Results and live Combat fit the native 54-by-52 sector image into the
   original map aperture and leave the sector code below it. `PX05012` force
   grids and opponent portraits use the recovered renderer origins; `PX05014`
   retains one baked, functional Cancel control instead of painting a duplicate.
@@ -52,9 +52,17 @@ Last updated: 2026-09-11
   and initial instruction status were removed; validation and connection
   failures still use the status line.
 - The 432-by-416 ownership atlases are confirmed as exact 8-by-8 arrays of
-  54-by-52 cells at city destination `(2,44)`; their grid and colour boundaries
-  already coincide with the 640-by-460 city background, so no corrective
-  presentation offset is applied.
+  54-by-52 cells at city destination `(2,44)`. The whole neutral atlas is now
+  the stable city grid; owned cells replace only their one-pixel-inset
+  interiors, preventing colored copies of cell borders from appearing above or
+  left of the neutral grid.
+- The upper-right city console now provides hover explanations for Score, Cash,
+  Sector, Income, Tolerance, Support, and Chaos. Cash displays its current
+  signed whole-city Financial adjustment; the Income tooltip explicitly
+  distinguishes the Chaos dice rating from the passive `$1` Sector Tax.
+- Screen changes clear pending city/sector double-click state, preventing a
+  previous sector click from leaking through a Ranking transition and opening
+  Sector Details later.
 - Setup selection outlines now use the inset `PX00143` button faces instead of
   the broader hit rectangles that overlap section labels. The city/sector top
   bar uses the original portrait aperture and plays the twelve-frame

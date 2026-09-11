@@ -150,8 +150,15 @@ cursor feedback remain to be validated.
   32-by-32 portrait is centered on its fixed color rail; the recovered
   all-scenario score table determines a zero-based competition standing and
   tied players share a height. Eliminated players are omitted.
-- City sectors use their fixed 54 by 52 cell from `PX10000` when neutral or
-  `PX10001` through `PX10006` according to owner, composited at `(2,44)`.
+- The city draws the complete neutral `PX10000` grid at `(2,44)`, then replaces
+  only each owned cell's one-pixel-inset interior with the corresponding
+  `PX10001` through `PX10006` artwork. This retains one stable set of grid lines
+  instead of overwriting them with 64 independently composited cell borders.
+- The upper-right status console shows current Cash followed by the signed
+  whole-city Financial projection. Hover text explains Score, Cash, Sector,
+  Income, Tolerance, Support, and Chaos. In particular, sector Income is the
+  value added to each participating gang's Chaos dice, not passive cash;
+  ordinary control contributes the separate `$1` Sector Tax.
 - Active Crackdown sectors overlay the color-keyed patrol-car slice from
   `PX00300`; pure black is treated as transparent for this sprite sheet.
 - Sector detail uses `PX02000` source `(0, siteId*64, 120, 64)`; gang detail
@@ -210,6 +217,9 @@ cursor feedback remain to be validated.
 - Combat Summary places compact owner-colored attacker and defender portraits
   beside each visible attack result; police rows use the `PX00300` patrol car
   opposite the attacked gang.
+- Live Combat and Combat Results preserve the sector tile's native 54-by-52
+  dimensions inside their map apertures, with the coordinate printed below the
+  Combat Results tile.
 - Resolved combat plays the item-selected `PX070xx`+`PX071xx` eight-frame pair;
   retaliation uses the mirrored `PX072xx`+`PX073xx` pair. The presentation also
   routes the recovered question/evasion and police-car/beam sheets. Weapon IDs
