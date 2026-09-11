@@ -324,7 +324,10 @@ the affected sector, and presents both sides with gang/equipment art and Force
 tracks; police uses the recovered police art. Its Detail control replays the
 selected resolved event through `PX05014`, regardless of the automatic Detailed
 Combat preference. Escape or the panel's Cancel control clears the bounded
-presentation queue without touching match state. Both identities are confirmed by
+presentation queue without touching match state. At handoff, only visible combat
+from the immediately completed turn is eligible. Last Turn Events opens first
+when both exist, and Detailed animation capture waits until the handoff/event
+privacy panels have closed. Both identities are confirmed by
 their template text, apertures, and the supplied original Combat capture.
 
 `PX05010` is the paged Last Turn Events panel. At the next human-player handoff,

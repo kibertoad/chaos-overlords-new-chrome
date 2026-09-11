@@ -40,7 +40,7 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.F)) OpenFinance(FinanceScope.City, ClientScreen.City);
         if (Pressed(keyboard, Keys.R)) _screens.Show(ClientScreen.Ranking);
         if (Pressed(keyboard, Keys.T)) OpenItems();
-        if (Pressed(keyboard, Keys.B)) _screens.Show(ClientScreen.CombatSummary);
+        if (Pressed(keyboard, Keys.B)) OpenCombatResults(ClientScreen.City);
         if (Pressed(keyboard, Keys.X)) OpenSiteSearch(ClientScreen.City);
         if (Pressed(keyboard, Keys.H)) OpenHire();
         if (Pressed(keyboard, Keys.M)) OpenComlinkView(ClientScreen.City);
@@ -96,7 +96,7 @@ public sealed partial class ChaosGame
         else if (CityEvents.Contains(point)) OpenEvents(returnScreen);
         else if (CityComlinkView.Contains(point)) OpenComlinkView(returnScreen);
         else if (CityComlinkSend.Contains(point)) OpenComlinkSend(returnScreen);
-        else if (CityCombatSummary.Contains(point)) OpenManagement(ClientScreen.CombatSummary, returnScreen);
+        else if (CityCombatSummary.Contains(point)) OpenCombatResults(returnScreen);
         else if (CityFinanceCity.Contains(point)) OpenFinance(FinanceScope.City, returnScreen);
         else if (CityFinanceSector.Contains(point)) OpenFinance(FinanceScope.Sector, returnScreen);
         else if (CityGangs.Contains(point)) OpenSectorGangDetails(returnScreen);
@@ -111,7 +111,6 @@ public sealed partial class ChaosGame
     private void OpenManagement(ClientScreen screen, ClientScreen returnScreen)
     {
         _managementReturnScreen = returnScreen;
-        if (screen == ClientScreen.CombatSummary) _combatSummaryCursor = 0;
         _screens.Show(screen);
     }
 

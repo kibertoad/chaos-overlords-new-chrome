@@ -6,6 +6,19 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private void OpenCombatResults(ClientScreen returnScreen)
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } viewer) return;
+        if (VisibleCombatResults(_state, viewer).Count == 0)
+        {
+            _message = "NO COMBAT RESULTS";
+            return;
+        }
+        _combatSummaryCursor = 0;
+        _managementReturnScreen = returnScreen;
+        _screens.Show(ClientScreen.CombatSummary);
+    }
+
     private void HandleCombatSummaryClick(Point point)
     {
         if (CombatResultsLayout.Ok.Contains(point))
@@ -99,6 +112,8 @@ public sealed partial class ChaosGame
     }
 
     private static IReadOnlyList<GameEvent> VisibleCombatResults(MatchState state, PlayerId viewer) => state.Events
+        .Where(gameEvent => CombatResultProjection.IsFromLastCompletedTurn(
+            gameEvent.Turn, state.Coordinator.Turn))
         .Where(gameEvent => IsVisibleCombatEvent(state, viewer, gameEvent))
         .Where(gameEvent => gameEvent.Kind == GameEventKind.PoliceAttackResolved
             || gameEvent.Action == GangAction.Attack)
@@ -192,4 +207,14 @@ public sealed partial class ChaosGame
 
     private static void ClearCombatResultPage(SpriteBatch batch, Texture2D pixel)
         => batch.Draw(pixel, new Rectangle(133, 136, 58, 12), Color.Black);
+}
+
+public static class CombatResultProjection
+{
+    public static bool IsFromLastCompletedTurn(int eventTurn, int currentTurn)
+    {
+        if (eventTurn < 0) throw new ArgumentOutOfRangeException(nameof(eventTurn));
+        if (currentTurn < 1) throw new ArgumentOutOfRangeException(nameof(currentTurn));
+        return eventTurn == currentTurn - 1;
+    }
 }

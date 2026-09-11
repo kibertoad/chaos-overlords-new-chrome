@@ -81,12 +81,15 @@ public sealed partial class ChaosGame
     private void CaptureNewCombatAnimations()
     {
         if (_state is null) return;
+        if (_screens.Current is not (ClientScreen.City or ClientScreen.CombatSummary)) return;
         var viewer = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
         foreach (var gameEvent in _state.Events
                      .Where(value => value.Sequence > _lastAnimatedEventSequence)
                      .OrderBy(value => value.Sequence))
         {
             if (_detailedCombat && _combatAnimationTextures.Count > 0
+                && CombatResultProjection.IsFromLastCompletedTurn(
+                    gameEvent.Turn, _state.Coordinator.Turn)
                 && IsVisibleCombatEvent(_state, viewer, gameEvent))
                 foreach (var clip in CombatAnimationRouting.ForEvent(_state, gameEvent))
                     _combatAnimationPlayer.Enqueue(clip);

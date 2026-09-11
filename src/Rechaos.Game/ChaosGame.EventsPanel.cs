@@ -18,11 +18,14 @@ public sealed partial class ChaosGame
         if (AudioRouting.IncomingMessageSound(_state.ComlinkFor(playerId).HasUnread) is { } alert)
             PlayGeneralSound(alert);
         var reports = LastTurnReports(_state, playerId);
+        var hasCombat = VisibleCombatResults(_state, playerId).Count > 0;
         if (reports.Count == 0)
         {
-            _screens.Show(ClientScreen.City);
+            if (hasCombat) OpenCombatResults(ClientScreen.City);
+            else _screens.Show(ClientScreen.City);
             return;
         }
+        _openCombatAfterEvents = hasCombat;
         _managementReturnScreen = ClientScreen.City;
         BeginEventReview(reports.Count);
         _screens.Show(ClientScreen.Events);
@@ -81,7 +84,15 @@ public sealed partial class ChaosGame
         }
         _eventCursor = 0;
         _eventViewedPages.Clear();
-        _screens.Show(_managementReturnScreen);
+        if (_openCombatAfterEvents)
+        {
+            _openCombatAfterEvents = false;
+            OpenCombatResults(_managementReturnScreen);
+        }
+        else
+        {
+            _screens.Show(_managementReturnScreen);
+        }
     }
 
     private void DrawLastTurnEventsPanel(
