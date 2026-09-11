@@ -171,6 +171,9 @@ Last updated: 2026-09-11
   it requires and spends $3, records $3 spent, and adds 3 directly to effective
   tolerance without the recreation's former 40-point base clamp. Finance and AI
   affordability use the same shipped cost; the $5/cap helper is manual-only.
+- Snitch likewise follows the resolver: it subtracts 3 even in debt, then one
+  global post-Instant pass floors every sector at tolerance 1. This replaces the
+  provisional per-command zero floor and negative-tolerance automatic Crackdown.
 - Control conflicts now use one phase-opening owner and defense snapshot for all
   player groups in a sector. The binary-recovered candidate list chooses equal
   positive leaders randomly in ascending player-slot order; at zero margin it

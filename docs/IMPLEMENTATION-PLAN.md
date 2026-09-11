@@ -255,10 +255,10 @@ the exact RNG consumption order.
   manual's site-influence contribution and contested-sector rules.
 - The manual prints Bribe as $5 with a 40 cap; the shipped resolver instead
   checks/deducts $3 and directly adds 3 tolerance without clamping. Snitch is
-  free and lowers tolerance by 3, floored at zero. At Upkeep, tolerance moves one
+  free even in debt and directly lowers tolerance by 3; after all Instant actions,
+  every sector is floored at 1. At Upkeep, tolerance moves one
   point toward `17 - Income` plus the tolerance values of influenced sites.
-  Site modifiers remain outside the base cap and a negative effective tolerance
-  triggers a crackdown even without a Chaos command.
+  Site modifiers participate in those direct deltas before the global floor.
 - Chaos uses total Force + Chaos, earns cash subject to sector income/control,
   increases chaos, and may trigger a crackdown. Exact cash and chaos increments
   require binary fixtures.

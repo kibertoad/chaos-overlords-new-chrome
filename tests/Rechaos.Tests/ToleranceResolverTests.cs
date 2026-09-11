@@ -32,7 +32,7 @@ public sealed class ToleranceResolverTests
     }
 
     [Fact]
-    public void BinaryBribeAddsDirectlyWhileSnitchRetainsBaseFloor()
+    public void BinaryBribeAndSnitchApplyDirectDeltasBeforePhaseClamp()
     {
         var match = CreateMatch(tolerance: -6, income: 7, influenceFirstTwoSites: true);
         var sector = match.Sectors[0];
@@ -41,7 +41,7 @@ public sealed class ToleranceResolverTests
         sector.Tolerance = -1;
         Assert.Equal(-1, ToleranceResolver.SiteAdjustment(match, sector));
         Assert.Equal(2, ToleranceResolver.ApplyBribe(match, sector));
-        Assert.Equal(-1, ToleranceResolver.ApplySnitch(match, sector));
+        Assert.Equal(-4, ToleranceResolver.ApplySnitch(match, sector));
 
         sector.Tolerance = 39;
         Assert.Equal(42, ToleranceResolver.ApplyBribe(match, sector));

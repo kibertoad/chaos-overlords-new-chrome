@@ -200,20 +200,22 @@ controlled reference observation confirms its execution timing and edge cases.
 
 ### RULE-SNITCH-001 — Snitch tolerance adjustment
 
-- Source: `MANUAL-GOG-1`; Snitch command description. Exact scan page location
-  still needs transcription into the evidence log.
+- Source: `MANUAL-GOG-1`; Snitch command description, plus `BIN-SNITCH-001`.
+  Exact scan page location still needs transcription into the evidence log.
 - Observed statement: Snitch is free and lowers the acting gang's sector
   tolerance by 3, with a minimum unmodified tolerance of zero.
-- Interpretation: during the Instant execution subphase, remove the current
-  site modifier, floor the adjusted base at zero, then restore the modifier,
-  without changing cash.
-- Confidence: High for cost/delta/floor; Medium for execution timing; Low for
-  automatic tolerance interactions in sectors without influenced sites.
-- Implementation: `ManualRules.ApplySnitch`, `CommandResolver.ResolveSnitch`.
-- Tests: `ManualRulesTests.SnitchSubtractsThreeAndFloorsAtZero` and
-  `CommandResolutionTests.SnitchFloorsToleranceAtZeroWithoutCost`.
-- Next experiment: execute Snitch at tolerance 0–4 with and without influenced
-  sites and compare immediate plus next-turn save deltas.
+- Interpretation: during Instant, subtract 3 directly from effective sector
+  tolerance regardless of player cash. After all Instant commands, clamp every
+  sector below 1 to 1. The printed base-zero helper remains manual-only.
+- Confidence: High static evidence for the direct delta, debt independence,
+  post-Instant global floor, and timing.
+- Implementation: `ToleranceResolver.ApplySnitch`,
+  `ToleranceResolver.ClampAfterInstant`, and `CommandResolver.ResolveSnitch`.
+- Tests: `ManualRulesTests` preserves the printed zero-floor formula;
+  `CommandResolutionTests` covers phase-floor and debt behavior, while
+  `ChaosResolutionTests` covers clamping before commandless Chaos evaluation.
+- Next experiment: confirm the visible Snitch report when the intermediate
+  result is below 1.
 
 ### RULE-TOLERANCE-001 — Return toward normal tolerance
 
@@ -226,16 +228,14 @@ controlled reference observation confirms its execution timing and edge cases.
   adjustments apply immediately when influence is gained or lost, may move the
   effective value outside 0–40, and remain outside Bribe/Snitch's base caps.
   During Upkeep, every sector's current value moves exactly one point toward
-  its normal effective value. During the Chaos phase, `Chaos > Tolerance`
-  triggers a crackdown even when no gang submitted a Chaos command; therefore
-  any negative effective tolerance automatically triggers one.
+  its normal effective value. The post-Instant global floor then raises every
+  value below 1 to 1 before Combat and Chaos.
 - Confidence: High for the formula and one-point adjustment; Medium for the
   exact turn boundary and whether an influence change applies immediately.
 - Implementation: `ToleranceResolver`, invoked by `MatchState.FinishUpkeep`.
 - Tests: `ToleranceResolverTests` covers movement from both directions, stable
-  values, site adjustments and base-cap separation; influence tests cover the
-  immediate modifier, and `ChaosResolutionTests` covers commandless negative-
-  tolerance crackdown.
+  values, direct action deltas and the post-Instant floor; influence tests cover
+  the immediate modifier, and `ChaosResolutionTests` covers the pre-Chaos clamp.
 - Next experiment: compare saves before and after Upkeep around a Bribe or
   Snitch, then repeat while gaining or losing influence over modifier sites.
 
@@ -594,12 +594,12 @@ claim about original-game behavior.
   descriptions. Exact scan page locations still need transcription.
 - Observed statement: each controlled sector grants $1; influenced sites apply
   their listed cash values; active gangs charge their listed upkeep. Cash may
-  become negative. While it is negative, equipment cannot be bought, Bribe and
-  Snitch cannot execute, and only gangs with zero initial cost can be hired.
+  become negative. The manual says equipment, Bribe, and Snitch are restricted,
+  while the executable's Snitch resolver contains no debt gate.
 - Interpretation: for each active player in stable ID order, calculate
   `cash + controlled sectors + influenced-site cash - active-gang upkeep` with
-  checked integer arithmetic. Runtime affordability rejects equipment, Bribe,
-  and Snitch without changing cash or the target; hiring permits a zero-cost
+  checked integer arithmetic. Runtime affordability rejects equipment and
+  Bribe; Snitch remains free and executable in debt. Hiring permits a zero-cost
   gang even while the balance is negative.
 - Current exclusions: insufficient-funds desertion, site protection, cash
   adjustment, special gang/item/site modifiers, integer overflow behavior, and

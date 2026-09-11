@@ -87,6 +87,7 @@ public static partial class CommandResolver
                 _ => Resolve(state, queued)
             });
         }
+        ToleranceResolver.ClampAfterInstant(state);
         return results;
     }
 
@@ -815,16 +816,9 @@ public static partial class CommandResolver
 
     private static CommandResolutionResult ResolveSnitch(MatchState state, GameCommand command)
     {
-        var player = state.FindPlayer(command.Player)!;
         var gang = state.FindGang(command.Gang)!;
         var sector = state.Sectors[gang.SectorId];
         var before = sector.Tolerance;
-        if (player.Cash < 0)
-        {
-            return Complete(state, command, GameEventKind.CommandFailed,
-                new CommandResolutionDetails(CommandResolutionCode.InsufficientCash, [], 0, before, before));
-        }
-
         var after = ToleranceResolver.ApplySnitch(state, sector);
         sector.Tolerance = after;
         return Complete(state, command, GameEventKind.CommandResolved,

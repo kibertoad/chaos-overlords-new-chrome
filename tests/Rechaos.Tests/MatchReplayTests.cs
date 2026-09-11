@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
@@ -35,7 +36,9 @@ public sealed class MatchReplayTests
         var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
 
         Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
-        Assert.Equal(recorder.State.Events, restored.Events);
+        Assert.Equal(
+            JsonSerializer.Serialize(recorder.State.Events),
+            JsonSerializer.Serialize(restored.Events));
         Assert.Equal(recorder.State.PhaseHashes, restored.PhaseHashes);
         Assert.Equal(16, recorder.Steps.Count);
     }
@@ -63,8 +66,10 @@ public sealed class MatchReplayTests
     [Fact]
     public void ReplaysCrackdownTriggerCountdownAndFollowingPoliceCombat()
     {
-        var recorder = new MatchReplayRecorder(CreateMatch(negativeTolerance: true));
+        var recorder = new MatchReplayRecorder(CreateMatch());
         recorder.FinishUpkeep();
+        Assert.True(recorder.Submit(new GameCommand(
+            new PlayerId(0), new GangId(0), GangAction.Chaos, CommandTarget.None)).Accepted);
         FinishCommands(recorder);
         while (recorder.State.Coordinator.Phase == TurnPhase.Execution)
             recorder.FinishExecutionPhase();
@@ -91,7 +96,9 @@ public sealed class MatchReplayTests
         Assert.Equal(recorder.State.Sectors[0].CrackdownTurnsRemaining,
             restored.Sectors[0].CrackdownTurnsRemaining);
         Assert.Equal(recorder.State.Sectors[0].CrackdownHistory, restored.Sectors[0].CrackdownHistory);
-        Assert.Equal(recorder.State.Events, restored.Events);
+        Assert.Equal(
+            JsonSerializer.Serialize(recorder.State.Events),
+            JsonSerializer.Serialize(restored.Events));
     }
 
     [Fact]
@@ -603,7 +610,6 @@ public sealed class MatchReplayTests
     }
 
     private static MatchState CreateMatch(
-        bool negativeTolerance = false,
         string firstPlayerName = "ONE",
         bool secondPlayerHuman = false)
     {
@@ -622,7 +628,7 @@ public sealed class MatchReplayTests
                     id is 0 or 63 ? 0 : 7),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ], tolerance: id == 0 && negativeTolerance ? -2 : ManualRules.MinimumTolerance))
+            ], tolerance: ManualRules.MinimumTolerance))
             .ToArray();
         return MatchBootstrap.Create(data, setup, sectors,
         [

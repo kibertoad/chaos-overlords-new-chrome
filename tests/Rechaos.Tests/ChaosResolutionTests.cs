@@ -281,7 +281,7 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
-    public void NegativeEffectiveToleranceTriggersCrackdownWithoutChaosCommands()
+    public void InstantPhaseClampsNegativeToleranceBeforeCommandlessChaosCheck()
     {
         var match = CreateMatch(tolerance: -2);
         match.FinishUpkeep();
@@ -292,12 +292,11 @@ public sealed class ChaosResolutionTests
 
         match.FinishExecutionPhase();
 
-        Assert.True(match.Sectors[0].CrackdownActive);
-        Assert.All(match.Players, player => Assert.Contains(
+        Assert.Equal(1, match.Sectors[0].Tolerance);
+        Assert.False(match.Sectors[0].CrackdownActive);
+        Assert.All(match.Players, player => Assert.DoesNotContain(
             match.NotificationsFor(player.Id),
-            notification => notification.Kind == GameNotificationKind.Crackdown
-                && notification.SectorId == 0
-                && notification.RelatedEventSequence is null));
+            notification => notification.Kind == GameNotificationKind.Crackdown));
     }
 
     [Fact]

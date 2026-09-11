@@ -2030,6 +2030,22 @@ is not used by authoritative resolution, finance projection, or AI budgeting.
 tolerance delta, and failure branch. Exact original message wording remains
 unverified.
 
+### BIN-SNITCH-001 - debt-independent delta and post-Instant floor
+
+**Observation:** Case 13 in `0x00472775`, lines 210-212, subtracts 3 directly
+from the sector tolerance byte and marks the sector changed. It contains no
+cash read or failure branch. After the complete Instant player/roster scan,
+the sector loop at lines 224-226 raises every tolerance below 1 to exactly 1.
+
+**Interpretation:** Snitch executes even while its player is in debt and first
+applies a direct -3 delta. The single global post-Instant floor, rather than a
+per-command base-zero clamp, then prevents any sector from entering later
+phases below tolerance 1. This also prevents commandless negative-tolerance
+Chaos triggers in the shipped turn path.
+
+**Confidence:** High static evidence for the direct delta, absence of a cash
+gate, global clamp value, and clamp placement after all Instant actions.
+
 ### BIN-CHAOS-001 - roster-order rolls and grouped uncontrolled payout
 
 **Observation:** The action-3 (**Chaos**) pass in `0x00472775` scans player
