@@ -177,8 +177,9 @@ the hire dock, comparison screen, and hire interactions. `ChaosGame.City.cs`
 owns city navigation, control-panel routing, board rendering, status projection,
 and direct map-command assignment. `ChaosGame.Sector.cs` owns the detailed-sector
 projection, gang/site interaction, drag/drop command assignment, and hover
-target feedback. `ChaosGame.Management.cs` owns the
-Finance, Search, and Ranking projections and their shared panel shell. Gang,
+target feedback. `ChaosGame.Management.cs` owns the Finance, site-search, and
+Ranking presentations. `SiteSearchUi.cs` keeps the presentation-only site
+filter and matching-sector projection outside authoritative state. Gang,
 site, and item information modal navigation lives with its corresponding renderer in
 `ChaosGame.GangDetails.cs`, `ChaosGame.SiteDetails.cs`, and
 `ChaosGame.ItemDetails.cs`. `ChaosGame.Items.cs` owns the research/equipment

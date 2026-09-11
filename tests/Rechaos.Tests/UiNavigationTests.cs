@@ -489,14 +489,24 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(378, 370, 36, 36), portraits[^1]);
         Assert.All(portraits.SelectMany((left, index) => portraits.Skip(index + 1)
             .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
-        Assert.Equal(new Rectangle(18, 107, 36, 36), SectorGangView.SearchPortrait(0));
-        Assert.Equal(new Rectangle(18, 347, 36, 36),
-            SectorGangView.SearchPortrait(SectorGangView.MaximumSearchRows - 1));
         Assert.Equal(new Rectangle(67, 90, 64, 64), GangArtLayout.DetailPortrait);
         Assert.Equal(new Rectangle(558, 58, 56, 56), GangArtLayout.SelectedEquipmentPortrait);
         Assert.Equal(new Rectangle(18, 108, 20, 20), GangArtLayout.CombatPortrait(0, false));
         Assert.Equal(new Rectangle(42, 372, 20, 20), GangArtLayout.CombatPortrait(11, true));
         Assert.Throws<ArgumentOutOfRangeException>(() => GangArtLayout.CombatPortrait(12, false));
+    }
+
+    [Fact]
+    public void SiteSearchPanelFitsAllTwentyTwoSiteTypesInTwoColumns()
+    {
+        var rows = Enumerable.Range(0, SiteSearchLayout.MaximumSites)
+            .Select(SiteSearchLayout.Site).ToArray();
+
+        Assert.Equal(new Rectangle(200, 143, 115, 14), rows[0]);
+        Assert.Equal(new Rectangle(319, 303, 115, 14), rows[^1]);
+        Assert.All(rows.SelectMany((left, index) => rows.Skip(index + 1)
+            .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => SiteSearchLayout.Site(22));
     }
 
     [Fact]

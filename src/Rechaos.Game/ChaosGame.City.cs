@@ -41,7 +41,7 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.R)) _screens.Show(ClientScreen.Ranking);
         if (Pressed(keyboard, Keys.T)) OpenItems();
         if (Pressed(keyboard, Keys.B)) _screens.Show(ClientScreen.CombatSummary);
-        if (Pressed(keyboard, Keys.X)) _screens.Show(ClientScreen.Search);
+        if (Pressed(keyboard, Keys.X)) OpenSiteSearch(ClientScreen.City);
         if (Pressed(keyboard, Keys.H)) OpenHire();
         if (Pressed(keyboard, Keys.M)) OpenComlinkView(ClientScreen.City);
         if (Pressed(keyboard, Keys.N)) OpenComlinkSend(ClientScreen.City);
@@ -103,7 +103,7 @@ public sealed partial class ChaosGame
         else if (CityHire.Contains(point)) OpenHire(returnScreen);
         else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
         else if (CityRanking.Contains(point)) OpenManagement(ClientScreen.Ranking, returnScreen);
-        else if (CitySearch.Contains(point)) OpenManagement(ClientScreen.Search, returnScreen);
+        else if (CitySearch.Contains(point)) OpenSiteSearch(returnScreen);
         else return false;
         return true;
     }
@@ -151,8 +151,10 @@ public sealed partial class ChaosGame
                     new Rectangle(destination.X + 14, destination.Y + 10, 27, 32),
                     OriginalSpriteLayout.PolicePatrolCar,
                     Color.White);
-            if (index == _cursor) DrawBorder(batch, pixel, destination, Color.Gold, 2);
         }
+        foreach (var sectorId in SiteSearchProjection.MatchingSectors(state, _siteSearchApplied))
+            DrawBorder(batch, pixel, CityMapLayout.Destination(sectorId), Color.Cyan, 1);
+        DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
         foreach (var gangs in player.Gangs.Where(gang => gang.IsActive).GroupBy(gang => gang.SectorId))
             DrawGangStatusMarker(batch, gangs.Key,
                 gangs.Any(gang => gang.QueuedCommand is not null)

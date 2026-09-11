@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,093 tests with no warnings.
+  isolated Release build passed all 1,096 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -23,6 +23,12 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Search now uses the original `PX05024` Search: Sites panel instead of the
+  earlier incorrect detected-gang list. Its two-column aperture contains all 22
+  site types with ALL/NONE and individual toggles; OK applies a presentation-only
+  cyan outline to matching city sectors. The panel identity and geometry are
+  directly visible in the asset, while the post-confirmation outline remains
+  provisional pending an original runtime capture.
 - Player Ranking now uses `PX05011` and positions every active Overlord portrait
   on its original color rail by canonical timed score or objective progress.
   Competition ties share a height and eliminated players disappear.

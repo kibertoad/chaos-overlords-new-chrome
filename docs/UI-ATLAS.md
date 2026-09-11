@@ -44,6 +44,7 @@ original-game capture confirms the screen and interaction state.
 | `PX05020` | System Warning panel for confirming an end turn while at least one active gang is idle | High from visible text and client trigger semantics |
 | `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
 | `PX05022` | Gang Information variant without live-instance equipment cells, used for hire-offer definition inspection | High from comparison with `PX05000` and Hire/Gang help topics |
+| `PX05024` | Search: Sites panel with ALL, NONE, and OK controls plus a two-column aperture sized for all 22 site types | High for visible identity and geometry; Low for the post-confirmation city-map presentation |
 | `PX02000` | 22 vertically stacked site portraits, 120x64 each | High from dimensions and definition coverage |
 | `PX03000` | 10x9 gang portrait grid, 64x64 each, covering all 90 definitions | High from dimensions and definition coverage |
 | `PX07000`-`PX07027`, `PX07200`-`PX07228` | Eight-frame 64x64 attacker overlays facing opposite directions; index 27 is target-evasion/question art and right-facing index 28 is the police car | High from frame inspection and item-table indices |
@@ -143,8 +144,12 @@ cursor feedback remain to be validated.
   details use `PX05000` and fill its three right-side
   weapon/armor/miscellaneous cells from `PX04999`; a hire offer has no instance
   equipment and therefore uses the clean `PX05022` form.
-- Search results reuse the same sheet and visibility projection for seven
-  portrait-led rows, with owner-colored borders and overflow count.
+- Search uses `PX05024` and presents all 22 site definitions in two columns.
+  ALL, NONE, individual mouse/keyboard toggles, and OK are implemented. The
+  resulting non-authoritative cyan city-sector outline is provisional pending
+  an original runtime capture of the post-confirmation presentation. The prior
+  detected-gang list was removed: it duplicated Sector View and contradicted
+  the original panel's explicit `SEARCH: SITES` label.
 - The Equipment panel shows the selected gang from `PX03000` at `(558,58)` in
   a 56-by-56 owner-colored frame, keeping the item list and statistics visible.
 - Gang Information places its 64-by-64 portrait at `(67,90)`, aligned to the

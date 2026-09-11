@@ -59,34 +59,99 @@ public sealed partial class ChaosGame
 
     private void DrawSearch(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        DrawManagementPanel(batch, pixel);
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
-        font.Draw(batch, $"SEARCH SECTOR {_cursor + 1}", new Vector2(18, 60), Color.Gold, 2);
-        font.Draw(batch, state.FindPlayer(playerId)!.Setup.Name, new Vector2(18, 86),
-            PlayerColors[playerId.Value], 1);
-        var visible = SectorGangView.Visible(state, playerId, _cursor);
-        if (visible.Count == 0)
-            font.Draw(batch, "NO GANGS DETECTED", new Vector2(18, 116), Color.White, 1);
-        foreach (var entry in visible.Take(SectorGangView.MaximumSearchRows)
-                     .Select((gang, index) => (gang, index)))
+        if (_managementReturnScreen == ClientScreen.Sector)
+            DrawSectorDetails(batch, pixel, font, state);
+        else
+            DrawBoard(batch, pixel, font, state);
+        if (_siteSearchBackground is not null)
+            batch.Draw(_siteSearchBackground, SiteSearchLayout.Panel, Color.White);
+        else
+            batch.Draw(pixel, SiteSearchLayout.Panel, new Color(0, 0, 0, 245));
+
+        var sites = state.Definitions.Sites.OrderBy(site => site.Id)
+            .Take(SiteSearchLayout.MaximumSites).ToArray();
+        for (var index = 0; index < sites.Length; index++)
         {
-            var gang = entry.gang;
-            var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
-            var owner = state.FindPlayer(gang.Owner)!;
-            var y = 112 + entry.index * 40;
-            var portrait = SectorGangView.SearchPortrait(entry.index);
-            if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, portrait,
-                    OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
-            DrawBorder(batch, pixel, portrait, PlayerColors[gang.Owner.Value], 1);
-            font.Draw(batch, definition.Name, new Vector2(62, y), PlayerColors[gang.Owner.Value], 1);
-            font.Draw(batch, $"{owner.Setup.Name}  FORCE {gang.Force}"
-                + (gang.Hidden ? "  HIDDEN" : ""), new Vector2(190, y), Color.White, 1);
+            var row = SiteSearchLayout.Site(index);
+            var selected = _siteSearchSelection.Contains(sites[index].Id);
+            if (index == _siteSearchCursor) DrawBorder(batch, pixel, row, Color.Gold, 1);
+            DrawBorder(batch, pixel, new Rectangle(row.X + 2, row.Y + 2, 8, 8),
+                selected ? Color.Lime : new Color(90, 100, 100), 1);
+            if (selected)
+                batch.Draw(pixel, new Rectangle(row.X + 4, row.Y + 4, 4, 4), Color.Lime);
+            font.Draw(batch, sites[index].Name,
+                new Vector2(row.X + 14, row.Y + 3), selected ? Color.Lime : Color.White, 1);
         }
-        if (visible.Count > SectorGangView.MaximumSearchRows)
-            font.Draw(batch, $"+{visible.Count - SectorGangView.MaximumSearchRows} MORE",
-                new Vector2(18, 390), Color.White, 1);
-        DrawButton(batch, pixel, font, ManagementBack, "BACK", false);
+    }
+
+    private void OpenSiteSearch(ClientScreen returnScreen)
+    {
+        _managementReturnScreen = returnScreen;
+        _siteSearchSelection.Clear();
+        _siteSearchSelection.UnionWith(_siteSearchApplied);
+        _siteSearchCursor = 0;
+        _screens.Show(ClientScreen.Search);
+    }
+
+    private void MoveSiteSearchCursor(int delta)
+    {
+        if (_definitions is null || _definitions.Sites.Count == 0) return;
+        var count = Math.Min(_definitions.Sites.Count, SiteSearchLayout.MaximumSites);
+        _siteSearchCursor = (_siteSearchCursor + delta + count) % count;
+    }
+
+    private void ToggleSiteSearchSelection()
+    {
+        if (_definitions is null) return;
+        var sites = _definitions.Sites.OrderBy(site => site.Id)
+            .Take(SiteSearchLayout.MaximumSites).ToArray();
+        if (_siteSearchCursor >= sites.Length) return;
+        var id = sites[_siteSearchCursor].Id;
+        if (!_siteSearchSelection.Remove(id)) _siteSearchSelection.Add(id);
+    }
+
+    private void SelectAllSiteSearch()
+    {
+        if (_definitions is null) return;
+        _siteSearchSelection.Clear();
+        _siteSearchSelection.UnionWith(_definitions.Sites
+            .OrderBy(site => site.Id).Take(SiteSearchLayout.MaximumSites).Select(site => site.Id));
+    }
+
+    private void ClearSiteSearch() => _siteSearchSelection.Clear();
+
+    private void ApplySiteSearch()
+    {
+        _siteSearchApplied.Clear();
+        _siteSearchApplied.UnionWith(_siteSearchSelection);
+        if (_state is not null)
+        {
+            var matches = SiteSearchProjection.MatchingSectors(_state, _siteSearchApplied);
+            _message = _siteSearchApplied.Count == 0
+                ? "SITE SEARCH CLEARED"
+                : $"SITE SEARCH: {matches.Count} SECTORS";
+        }
+        _screens.Show(_managementReturnScreen);
+    }
+
+    private void CancelSiteSearch() => _screens.Show(_managementReturnScreen);
+
+    private void HandleSiteSearchClick(Point point)
+    {
+        if (SiteSearchLayout.All.Contains(point)) SelectAllSiteSearch();
+        else if (SiteSearchLayout.None.Contains(point)) ClearSiteSearch();
+        else if (SiteSearchLayout.Ok.Contains(point)) ApplySiteSearch();
+        else if (_definitions is not null)
+        {
+            var count = Math.Min(_definitions.Sites.Count, SiteSearchLayout.MaximumSites);
+            for (var index = 0; index < count; index++)
+            {
+                if (!SiteSearchLayout.Site(index).Contains(point)) continue;
+                _siteSearchCursor = index;
+                ToggleSiteSearchSelection();
+                break;
+            }
+        }
     }
 
     private void DrawRanking(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)

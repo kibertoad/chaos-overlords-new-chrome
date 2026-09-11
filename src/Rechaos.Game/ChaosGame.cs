@@ -73,6 +73,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _equipmentSellBackground;
     private Texture2D? _equipmentGiveBackground;
     private Texture2D? _movementBackground;
+    private Texture2D? _siteSearchBackground;
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
     private Texture2D? _itemPortraits;
@@ -120,6 +121,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _itemCursor;
     private int _combatSummaryCursor;
     private int _eventCursor;
+    private int _siteSearchCursor;
+    private readonly HashSet<short> _siteSearchSelection = [];
+    private readonly HashSet<short> _siteSearchApplied = [];
     private FinanceScope _financeScope = FinanceScope.City;
     private int _comlinkCursor;
     private readonly bool[] _comlinkRecipients = new bool[MatchLimits.PlayerCount];
@@ -253,6 +257,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _equipmentSellBackground = LoadTexture("PX05013.bmp");
         _equipmentGiveBackground = LoadTexture("PX05015.bmp");
         _movementBackground = LoadTexture("PX05006.bmp");
+        _siteSearchBackground = LoadTexture("PX05024.bmp");
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
         _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);
@@ -476,8 +481,17 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         _screens.Show(_managementReturnScreen);
                     break;
                 case ClientScreen.Search:
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        _screens.Show(_managementReturnScreen);
+                    if (Pressed(keyboard, Keys.Left))
+                        MoveSiteSearchCursor(-SiteSearchLayout.RowsPerColumn);
+                    if (Pressed(keyboard, Keys.Right))
+                        MoveSiteSearchCursor(SiteSearchLayout.RowsPerColumn);
+                    if (Pressed(keyboard, Keys.Up)) MoveSiteSearchCursor(-1);
+                    if (Pressed(keyboard, Keys.Down)) MoveSiteSearchCursor(1);
+                    if (Pressed(keyboard, Keys.Space)) ToggleSiteSearchSelection();
+                    if (Pressed(keyboard, Keys.A)) SelectAllSiteSearch();
+                    if (Pressed(keyboard, Keys.N)) ClearSiteSearch();
+                    if (Pressed(keyboard, Keys.Enter)) ApplySiteSearch();
+                    if (Pressed(keyboard, Keys.Back)) CancelSiteSearch();
                     break;
             }
         }
@@ -784,7 +798,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     _screens.Show(_managementReturnScreen);
                 break;
             case ClientScreen.Search:
-                if (ManagementBack.Contains(point)) _screens.Show(_managementReturnScreen);
+                HandleSiteSearchClick(point);
                 break;
             case ClientScreen.CombatSummary:
                 HandleCombatSummaryClick(point);
