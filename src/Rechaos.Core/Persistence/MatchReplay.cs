@@ -214,6 +214,8 @@ public sealed class MatchReplayRecorder
 
     private void Add(ReplayStep step)
     {
+        if (step.Recipients is not null)
+            step = step with { Recipients = Array.AsReadOnly(step.Recipients.ToArray()) };
         _steps.Add(step);
         _currentStateSha256 = step.ResultingStateSha256;
     }
@@ -297,6 +299,7 @@ public static class MatchReplaySerializer
         if (replayVersion < minimumVersion)
             throw new InvalidDataException(
                 $"Replay step {index} uses an operation introduced in replay format {minimumVersion}.");
+        ValidateStepPayload(step, index);
 
         switch (step.Kind)
         {
@@ -383,6 +386,48 @@ public static class MatchReplaySerializer
             }
             default: throw new InvalidDataException($"Replay step {index} has an unknown operation kind.");
         }
+    }
+
+    private static void ValidateStepPayload(ReplayStep step, int index)
+    {
+        var actual = ReplayStepFields.None;
+        if (step.Command is not null) actual |= ReplayStepFields.Command;
+        if (step.Player is not null) actual |= ReplayStepFields.Player;
+        if (step.Gang is not null) actual |= ReplayStepFields.Gang;
+        if (step.GangDefinitionId is not null) actual |= ReplayStepFields.GangDefinition;
+        if (step.SectorId is not null) actual |= ReplayStepFields.Sector;
+        if (step.Accepted is not null) actual |= ReplayStepFields.Accepted;
+        if (step.ValidationCode is not null) actual |= ReplayStepFields.Validation;
+        if (step.Recipients is not null) actual |= ReplayStepFields.Recipients;
+        if (step.Text is not null) actual |= ReplayStepFields.Text;
+
+        var result = ReplayStepFields.Accepted | ReplayStepFields.Validation;
+        var expected = step.Kind switch
+        {
+            ReplayOperationKind.SubmitCommand => ReplayStepFields.Command | result,
+            ReplayOperationKind.CancelCommand =>
+                ReplayStepFields.Player | ReplayStepFields.Gang | result,
+            ReplayOperationKind.QueueHire => ReplayStepFields.Player
+                | ReplayStepFields.GangDefinition | ReplayStepFields.Sector | result,
+            ReplayOperationKind.SnubHireOffer =>
+                ReplayStepFields.Player | ReplayStepFields.GangDefinition | result,
+            ReplayOperationKind.FinishCommand or ReplayOperationKind.FinishHire
+                or ReplayOperationKind.PrepareHireOffers
+                or ReplayOperationKind.PrepareAiPlanning
+                or ReplayOperationKind.PrepareAiHiring => ReplayStepFields.Player,
+            ReplayOperationKind.DismissNotification or ReplayOperationKind.MarkComlinkRead =>
+                ReplayStepFields.Player | ReplayStepFields.Accepted,
+            ReplayOperationKind.SendComlinkMessage => ReplayStepFields.Player | result
+                | ReplayStepFields.Recipients | ReplayStepFields.Text,
+            ReplayOperationKind.FinishUpkeep
+                or ReplayOperationKind.FinishExecutionPhase
+                or ReplayOperationKind.FinishPlayerElimination
+                or ReplayOperationKind.PrepareSimultaneousHireOffers => ReplayStepFields.None,
+            _ => (ReplayStepFields)(-1)
+        };
+        if (actual != expected)
+            throw new InvalidDataException(
+                $"Replay step {index} has an invalid payload for {step.Kind}.");
     }
 
     private static int MinimumVersionFor(ReplayOperationKind kind) => kind switch
@@ -474,6 +519,21 @@ public static class MatchReplaySerializer
         }
         memory.Position = 0;
         return memory;
+    }
+
+    [Flags]
+    private enum ReplayStepFields
+    {
+        None = 0,
+        Command = 1 << 0,
+        Player = 1 << 1,
+        Gang = 1 << 2,
+        GangDefinition = 1 << 3,
+        Sector = 1 << 4,
+        Accepted = 1 << 5,
+        Validation = 1 << 6,
+        Recipients = 1 << 7,
+        Text = 1 << 8
     }
 }
 

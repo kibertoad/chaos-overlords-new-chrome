@@ -92,6 +92,27 @@ public sealed class MatchReplayTests
             restored.ComlinkFor(new PlayerId(1)).Messages);
         Assert.False(restored.ComlinkFor(new PlayerId(1)).HasUnread);
         Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
+        var recipients = Assert.IsAssignableFrom<IList<PlayerId>>(
+            recorder.Steps.Single(step => step.Kind == ReplayOperationKind.SendComlinkMessage).Recipients!);
+        Assert.True(recipients.IsReadOnly);
+    }
+
+    [Fact]
+    public void ReplayRejectsFieldsThatDoNotBelongToOperation()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch());
+        recorder.FinishUpkeep();
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["steps"]![0]!["player"] = 0;
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            MatchReplaySerializer.LoadAndReplay(modified, recorder.State.Definitions));
+
+        Assert.Contains("invalid payload", exception.Message);
     }
 
     [Fact]

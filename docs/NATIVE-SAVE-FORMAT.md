@@ -164,6 +164,9 @@ into newer mutations or target shapes.
 
 Each ordered replay step stores its operation payload, the expected validation
 result where applicable, and the canonical state SHA-256 after the operation.
+The tagged operation union is exact: every kind requires its complete field set
+and rejects fields belonging to another operation, even though those names are
+known to the shared JSON record. Nested recipient lists are frozen on record.
 `MatchReplaySerializer.LoadAndReplay` restores the initial snapshot, repeats the
 operations, checks validation outcomes, and rejects the file at the first hash
 divergence. Replay input is limited to 32 MiB and 1,000,000 operations. Unknown
