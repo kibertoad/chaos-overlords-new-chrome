@@ -77,6 +77,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
     private Texture2D? _itemPortraits;
+    private readonly Texture2D?[] _itemRotationTextures = new Texture2D?[53];
     private Texture2D? _policeSprites;
     private Texture2D? _uiSprites;
     private PixelFont? _font;
@@ -274,6 +275,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
         _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);
+        for (var itemId = 0; itemId < _itemRotationTextures.Length; itemId++)
+            _itemRotationTextures[itemId] = LoadTexture($"PX04{itemId:000}.bmp", transparentBlack: true);
         _policeSprites = LoadTexture("PX00300.bmp", transparentBlack: true);
         _uiSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
         _font = _uiSprites is null
@@ -588,9 +591,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         GraphicsDevice.Clear(new Color(8, 10, 12));
         if (_batch is null || _pixel is null || _font is null) return;
         var viewport = GraphicsDevice.Viewport;
-        var slideOffset = _slidePanels
-            ? _panelSlideTransition.Offset(_screens.Current, gameTime.TotalGameTime)
-            : 0;
+        var slideOffset = _panelSlideTransition.Offset(
+            _screens.Current, gameTime.TotalGameTime, _slidePanels);
         if (_screens.Current == ClientScreen.Gang && _state is not null)
         {
             var fixedTransform = VirtualInput.Transform(viewport);

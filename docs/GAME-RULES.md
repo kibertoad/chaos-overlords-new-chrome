@@ -564,10 +564,11 @@ claim about original-game behavior.
   On an overthrow, increment the attacker's statistic, remove the former
   owner's site Support, clear influence, and restore table resistance. A
   repeating Control order clears once its player owns the sector; repeating
-  Influence similarly clears when its target reaches zero resistance. Other
-  terminal repeat targets (completed Move/transactions, eliminated Attack
-  target, maximum Heal, zero-tolerance Snitch) are removed while ongoing
-  behaviors such as Hide and Chaos remain repeatable across turns.
+  Influence similarly clears when its target reaches zero resistance. The
+  repeatable actions are Bribe, Chaos, Control, Heal, Hide, Influence, Research,
+  and Snitch. Attack, Equip, Give, Move, Sell, and Terminate are one-off actions
+  and are absent from the recurring-action picker; core validation rejects a
+  repeated form submitted through any other path.
 - Moving or terminating the last friendly gang does not abandon the sector;
   ownership changes only through a separate ownership-changing rule.
 - Current exclusions: original crackdown ordering and negative-total edge

@@ -15,7 +15,7 @@ public sealed class FinanceUiTests
         Assert.Equal(new Rectangle(104, 125, 344, 209), FinanceLayout.Panel);
         Assert.Equal(new Rectangle(130, 143, 60, 60), FinanceLayout.Portrait);
         Assert.Equal(new Rectangle(136, 294, 49, 24), FinanceLayout.Ok);
-        Assert.Equal([160, 172, 187, 202, 217, 232, 247, 271],
+        Assert.Equal([152, 161, 179, 197, 215, 224, 242, 269],
             Enumerable.Range(0, FinanceLayout.RowCount).Select(FinanceLayout.ValueY));
         Assert.Throws<ArgumentOutOfRangeException>(() => FinanceLayout.ValueY(8));
     }

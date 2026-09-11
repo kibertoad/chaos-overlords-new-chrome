@@ -19,6 +19,32 @@ public sealed class MatchStateTests
         Assert.Equal(ManualRules.OriginalBribeCost, CommandRules.ByAction[GangAction.Bribe].CashCost);
 
     [Fact]
+    public void OnlyOngoingActionsCanBeAssignedAsRecurring()
+    {
+        GangAction[] repeatable =
+        [
+            GangAction.Bribe, GangAction.Chaos, GangAction.Control, GangAction.Heal,
+            GangAction.Hide, GangAction.Influence, GangAction.Research, GangAction.Snitch
+        ];
+        GangAction[] oneOff =
+        [
+            GangAction.Attack, GangAction.Equip, GangAction.Give,
+            GangAction.Move, GangAction.Sell, GangAction.Terminate
+        ];
+
+        Assert.All(repeatable, action => Assert.True(CommandRules.CanRepeat(action)));
+        Assert.All(oneOff, action => Assert.False(CommandRules.CanRepeat(action)));
+
+        var match = CreateMatch();
+        match.Coordinator.FinishUpkeep();
+        var validation = CommandValidator.Validate(match, new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)), Repeat: true));
+
+        Assert.Equal(CommandValidationCode.ActionCannotRepeat, validation.Code);
+    }
+
+    [Fact]
     public void MatchRequiresExplicitCompleteBoard()
     {
         var data = BundledOriginalData.Load();

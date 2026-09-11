@@ -33,6 +33,13 @@ public sealed class PanelSlideTransition
         return (int)Math.Round(StartOffset * (1 - progress));
     }
 
+    public int Offset(ClientScreen screen, TimeSpan now, bool enabled)
+    {
+        if (enabled) return Offset(screen, now);
+        Clear();
+        return 0;
+    }
+
     public void Clear() => _screen = null;
 
     public static bool ShouldAnimate(ClientScreen previous, ClientScreen current)

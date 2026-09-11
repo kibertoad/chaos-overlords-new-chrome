@@ -20,14 +20,14 @@ public static class FinanceLayout
 
     public static int ValueY(int row) => row switch
     {
-        0 => 160,
-        1 => 172,
-        2 => 187,
-        3 => 202,
-        4 => 217,
-        5 => 232,
-        6 => 247,
-        7 => 271,
+        0 => 152,
+        1 => 161,
+        2 => 179,
+        3 => 197,
+        4 => 215,
+        5 => 224,
+        6 => 242,
+        7 => 269,
         _ => throw new ArgumentOutOfRangeException(nameof(row))
     };
 }

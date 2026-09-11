@@ -243,6 +243,63 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void EveryOptionsEntryHasAnExplanatoryHoverTooltip()
+    {
+        Rectangle[] entries =
+        [
+            OptionsLayout.Music,
+            OptionsLayout.SoundEffects,
+            OptionsLayout.BaseStatistics,
+            OptionsLayout.DetailedCombat,
+            OptionsLayout.SlidePanels,
+            OptionsLayout.WarnIfIdleGangs,
+            OptionsLayout.ColorDepth,
+            OptionsLayout.Done
+        ];
+
+        Assert.All(entries, entry =>
+        {
+            var lines = OptionsTooltip.At(entry.Center);
+            Assert.True(lines.Count >= 2);
+            var bounds = OptionsTooltip.Bounds(entry.Center, lines);
+            Assert.True(bounds.Left >= 0 && bounds.Top >= 0);
+            Assert.True(bounds.Right <= VirtualInput.Width);
+            Assert.True(bounds.Bottom <= VirtualInput.Height);
+        });
+        Assert.Contains("ALWAYS ABOVE 16-BIT",
+            string.Join(' ', OptionsTooltip.At(OptionsLayout.ColorDepth.Center)));
+        Assert.Contains("IMMEDIATELY",
+            string.Join(' ', OptionsTooltip.At(OptionsLayout.SlidePanels.Center)));
+        Assert.Empty(OptionsTooltip.At(Point.Zero));
+        Assert.Equal(Rectangle.Empty, OptionsTooltip.Bounds(Point.Zero, []));
+    }
+
+    [Fact]
+    public void RecurringCommandMenuOmitsOneOffActions()
+    {
+        var actions = CommandOverlayLayout.ActionsFor(recurring: true);
+
+        Assert.Contains(GangAction.None, actions);
+        Assert.Contains(GangAction.Research, actions);
+        Assert.DoesNotContain(GangAction.Attack, actions);
+        Assert.DoesNotContain(GangAction.Equip, actions);
+        Assert.DoesNotContain(GangAction.Give, actions);
+        Assert.DoesNotContain(GangAction.Move, actions);
+        Assert.DoesNotContain(GangAction.Sell, actions);
+        Assert.DoesNotContain(GangAction.Terminate, actions);
+        Assert.Equal(CommandOverlayLayout.Actions, CommandOverlayLayout.ActionsFor(recurring: false));
+    }
+
+    [Fact]
+    public void ResearchPickerReportsCompletedProgressAgainstDifficulty()
+    {
+        Assert.Equal("0/8", EquipmentCommandLayout.ResearchProgress(8, 8));
+        Assert.Equal("3/8", EquipmentCommandLayout.ResearchProgress(8, 5));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            EquipmentCommandLayout.ResearchProgress(8, 9));
+    }
+
+    [Fact]
     public void PanelSlideIsBoundedAndOnlyAppliesToPanelScreens()
     {
         var slide = new PanelSlideTransition();
@@ -276,6 +333,21 @@ public sealed class UiNavigationTests
         slide.Begin(ClientScreen.Sector, ClientScreen.Gang, start);
         Assert.Equal(PanelSlideTransition.StartOffset,
             slide.Offset(ClientScreen.Gang, start));
+    }
+
+    [Fact]
+    public void DisablingPanelSlidesCancelsEveryInFlightEntrance()
+    {
+        var slide = new PanelSlideTransition();
+        var start = TimeSpan.FromSeconds(4);
+        slide.Begin(ClientScreen.City, ClientScreen.Sector, start);
+
+        Assert.Equal(0, slide.Offset(ClientScreen.Sector, start, enabled: false));
+        Assert.Equal(0, slide.Offset(ClientScreen.Sector, start, enabled: true));
+
+        slide.Begin(ClientScreen.Sector, ClientScreen.Gang, start);
+        Assert.Equal(0, slide.Offset(ClientScreen.Gang, start, enabled: false));
+        Assert.Equal(0, slide.Offset(ClientScreen.Gang, start, enabled: true));
     }
 
     [Fact]

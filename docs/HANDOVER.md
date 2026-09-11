@@ -27,6 +27,8 @@ Last updated: 2026-09-11
 - Gang Information now slides independently over a stationary City or Sector
   backdrop. Opening the command picker no longer applies a panel entrance, and
   closing nested details back to Sector no longer replays the Sector entrance.
+  Disabling Slide Panels globally cancels any in-flight entrance, so Sector and
+  every detail panel appear immediately and cannot resume a stale transition.
   The provisional `PLAN YOUR TURN` and `SECTOR n DETAIL` status hints were
   removed.
 - Scenario Information fields now follow the exact placeholder baselines and
@@ -36,6 +38,18 @@ Last updated: 2026-09-11
   player can no longer win from retained Big Man points or other stale objective
   projections; exact-threshold, nearest-incomplete, eliminated-player, and
   simultaneous-active-winner fixtures cover all six objective scenarios.
+- Every Options entry now exposes a bounded pointer-hover explanation. The
+  legacy Thousands of Colors row explicitly explains that the modern renderer
+  is always above 16-bit and that no changeable retro-color mode is currently
+  planned; Slide Panels explains the global immediate-display behavior when off.
+- Recurring commands are now limited in both the picker and authoritative
+  validation to Bribe, Chaos, Control, Heal, Hide, Influence, Research, and
+  Snitch. Attack, Equip, Give, Move, Sell, and Terminate remain one-off actions.
+- City Financial, Comlink View, and Gangs in Sector dynamic fields now follow
+  their original template baselines and apertures. Research selection paints an
+  active OK state for a valid item and shows accumulated/required progress.
+  Completed-research reports name the resolved item and play its dedicated
+  15-frame `PX04xxx` rotation in the monitor.
 - Handoff now auto-presents combat from the immediately completed turn. When
   both report types exist, Last Turn Events opens first and then chains into
   Combat Results; Detailed animation capture waits until private handoff/event

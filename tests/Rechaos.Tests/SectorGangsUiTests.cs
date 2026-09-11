@@ -10,9 +10,9 @@ public sealed class SectorGangsUiTests
     public void LayoutMatchesOriginalGangsInSectorPanel()
     {
         Assert.Equal(new Rectangle(104, 125, 344, 209), SectorGangsLayout.Panel);
-        Assert.Equal(new Rectangle(132, 135, 60, 62), SectorGangsLayout.Portrait);
-        Assert.Equal(151, SectorGangsLayout.ValueY(0));
-        Assert.Equal(286, SectorGangsLayout.ValueY(15));
+        Assert.Equal(new Rectangle(134, 135, 55, 65), SectorGangsLayout.Portrait);
+        Assert.Equal(173, SectorGangsLayout.ValueY(0));
+        Assert.Equal(311, SectorGangsLayout.ValueY(15));
         Assert.Equal(EquipmentCommandLayout.Ok, SectorGangsLayout.Ok);
     }
 

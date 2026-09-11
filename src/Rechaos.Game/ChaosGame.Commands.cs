@@ -20,7 +20,9 @@ public sealed partial class ChaosGame
             _message = "NO ACTIVE GANG";
             return;
         }
-        _commandOptions = CommandOptionCatalog.LegalCommands(_state, playerId, gang.Id);
+        _commandOptions = CommandOptionCatalog.LegalCommands(_state, playerId, gang.Id)
+            .Where(command => !repeat || CommandRules.CanRepeat(command.Action))
+            .ToArray();
         _commandCursor = 0;
         _commandTargetOptions = [];
         _commandTargetCursor = 0;
@@ -48,7 +50,8 @@ public sealed partial class ChaosGame
         }
         else
         {
-            _commandCursor = Mod(_commandCursor + delta, CommandOverlayLayout.Actions.Count);
+            _commandCursor = Mod(_commandCursor + delta,
+                CommandOverlayLayout.ActionsFor(_commandRepeats).Count);
         }
     }
 
@@ -145,7 +148,8 @@ public sealed partial class ChaosGame
             else if (!CommandOverlayLayout.TargetPanel.Contains(point)) BackFromCommands();
             return;
         }
-        var actionIndex = Enumerable.Range(0, CommandOverlayLayout.Actions.Count)
+        var actions = CommandOverlayLayout.ActionsFor(_commandRepeats);
+        var actionIndex = Enumerable.Range(0, actions.Count)
             .FirstOrDefault(index => CommandOverlayLayout.ActionRow(index).Contains(point), -1);
         if (actionIndex >= 0)
         {
@@ -161,7 +165,8 @@ public sealed partial class ChaosGame
         if (_choosingCommandTarget)
         {
             if (IsEquipmentCommandPicker() && (_state is null
-                || !EquipmentCommandIndices(_state).Contains(_commandTargetCursor)))
+                || !EquipmentCommandLayout.CanConfirm(
+                    _commandTargetCursor, EquipmentCommandIndices(_state))))
             {
                 _message = "NO ITEMS IN THIS CATEGORY";
             }
@@ -170,7 +175,7 @@ public sealed partial class ChaosGame
             return;
         }
 
-        var action = CommandOverlayLayout.Actions[_commandCursor];
+        var action = CommandOverlayLayout.ActionsFor(_commandRepeats)[_commandCursor];
         if (action == GangAction.None)
         {
             CancelSelectedCommand();
@@ -256,9 +261,10 @@ public sealed partial class ChaosGame
         DrawBorder(batch, pixel, panel, new Color(0, 190, 65), 2);
         font.Draw(batch, _commandRepeats ? "RECURRING ACTION" : "ONE-OFF ACTION",
             new Vector2(panel.X + 8, panel.Y + 5), Color.Gold, 1);
-        for (var index = 0; index < CommandOverlayLayout.Actions.Count; index++)
+        var actions = CommandOverlayLayout.ActionsFor(_commandRepeats);
+        for (var index = 0; index < actions.Count; index++)
         {
-            var action = CommandOverlayLayout.Actions[index];
+            var action = actions[index];
             var row = CommandOverlayLayout.ActionRow(index);
             var available = action == GangAction.None
                 ? gang?.QueuedCommand is not null
@@ -397,12 +403,15 @@ public sealed partial class ChaosGame
                 batch.Draw(pixel, rectangle, new Color(55, 65, 25));
             font.Draw(batch, item.Name, new Vector2(rectangle.X + 2, rectangle.Y + 1), Color.Lime, 1);
             var value = action == GangAction.Equip
-                ? SpecialSiteRules.EquipmentCost(state, actor, item)
-                : item.ResearchDifficulty;
-            font.Draw(batch, value.ToString(), new Vector2(rectangle.Right - 12, rectangle.Y + 1),
+                ? SpecialSiteRules.EquipmentCost(state, actor, item).ToString()
+                : EquipmentCommandLayout.ResearchProgress(item.ResearchDifficulty,
+                    state.FindPlayer(actor.Owner)!.RemainingResearch(state.Definitions, item.Id));
+            font.Draw(batch, value, new Vector2(rectangle.Right - value.Length * 6 - 2, rectangle.Y + 1),
                 Color.Lime, 1);
         }
         DrawBorder(batch, pixel, EquipmentCommandLayout.Category(_equipmentCategory), Color.White, 2);
+        DrawButton(batch, pixel, font, EquipmentCommandLayout.Ok, "OK",
+            EquipmentCommandLayout.CanConfirm(_commandTargetCursor, indices));
     }
 
     private List<int> EquipmentCommandIndices(MatchState state) => Enumerable.Range(0, _commandTargetOptions.Count)
