@@ -280,6 +280,17 @@ are the accepted-selection and rejected-input cues. Slot 6 is the incoming
 Comlink alert: the bounded Comlink recorder at `0x0045d2f0` plays it when
 appending a message for the active player, and the city/planning entry paths at
 `0x00462579` and `0x0046fd80` play it when their pending-message flag is set.
+The recorder sets pending byte `0x0048781c`, plays slot 6 immediately, and
+zeros repeat counter `0x00487808`. Planning entry rebuilds the pending byte by
+scanning the active player's 16 records for an occupied unread entry, plays
+slot 6 once, and also zeros the repeat counter. Timer slot zero runs at the
+already recovered 6 Hz. On each tick the event pump advances an eight-step
+animation counter; every eighth tick advances the repeat counter modulo three,
+and its wrap to zero plays slot 6 while pending remains set. The resulting
+repeat interval is exactly 24 timer ticks, or four nominal seconds. Message-view
+helper `0x0045e04d` marks the current record read and rescans all 16 read bytes,
+so the repeat stops after the final unread record is acknowledged rather than
+merely when the Comlink panel opens.
 Slot 9 is loaded but has no call site through the
 only gated general-effect wrapper in this executable. Music and effects share
 the same numeric conversion but have separate state and enable flags.
@@ -297,7 +308,7 @@ use slot 3, and a rejected player-count boundary additionally uses slot 4. The
 main-console controls, Hire Reject controls, handoff Ready control, and endgame
 Awards/Stats/Done controls use slot 2 on pointer press. A successful pointer
 Hire rejection does not add slot 3; a rejected operation may still add slot 4.
-mapped management and command workflows now play slot 4 when the player asks
+Mapped management and command workflows now play slot 4 when the player asks
 for an unavailable action, selects no required item/target, submits a rejected
 command or transaction, or opens an empty Events, Combat Results, or Gangs in
 Sector view. Successful submissions, standard panel confirmations/cancellations,
@@ -309,6 +320,14 @@ pressed rectangle and cancel a release outside. Their held-inside state uses
 the exact four source rectangles from `PX00140`, while leaving the rectangle
 restores the baked `PX00143` control. A human handoff into an unread Comlink
 inbox plays slot 6 once before entering the planning UI.
+While an inbox remains unread, a presentation-only cadence repeats slot 6 every
+four seconds on match screens. Handoff defers the first alert until Ready, and
+opening an unread save/replay directly into planning also starts the cadence.
+The cadence clears when authoritative unread state clears and never enters the
+canonical match hash. The current recreation still marks the entire inbox read
+when Comlink View opens; the original's per-record acknowledgement scope remains
+to be migrated before this suppression boundary is exact for multiple unread
+messages.
 Every routed panel transition plays the recovered slot-0/slot-1 entry and exit
 cues while Slide Panels is enabled; nested panel transitions close the old
 panel and open the new one. The idle-gang confirmation follows the same
@@ -321,8 +340,8 @@ clip carries its event-time cue; the player emits it on the recovered first
 animation tick, so retaliation waits for its reversed second clip instead of
 playing with the opening attack. Simple Combat does not enter this presenter.
 
-**Next validation:** Validate the slot-6 repeat/suppression boundary and
-countdown-warning cadence at runtime,
+**Next validation:** Migrate per-record Comlink acknowledgement, validate the
+slot-6 cadence and countdown-warning cadence at runtime,
 then validate overlap/interruption and native amplitude behavior.
 
 ### BIN-COMLINK-001 - per-player message queue capacity and overflow

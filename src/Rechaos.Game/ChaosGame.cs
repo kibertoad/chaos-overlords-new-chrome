@@ -142,6 +142,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _comlinkCursor;
     private readonly bool[] _comlinkRecipients = new bool[MatchLimits.PlayerCount];
     private readonly ComlinkTextEditor _comlinkEditor = new();
+    private readonly ComlinkAlertCadence _comlinkAlertCadence = new();
     private string _comlinkStatus = string.Empty;
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
@@ -326,6 +327,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     {
         _inputTime = gameTime.TotalGameTime;
         UpdateSoundtrack(gameTime);
+        UpdateComlinkAlert(gameTime.TotalGameTime);
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
         // Before the planning timer, so a turn that resolved on the server is adopted even on the

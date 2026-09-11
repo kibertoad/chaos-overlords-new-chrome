@@ -23,8 +23,7 @@ public sealed partial class ChaosGame
         }
         PrepareCurrentHireOffers();
         StartPlanningTimer(_inputTime);
-        if (AudioRouting.IncomingMessageSound(_state.ComlinkFor(playerId).HasUnread) is { } alert)
-            PlayGeneralSound(alert);
+        UpdateComlinkAlert(_inputTime, enteringPlanning: true);
         var reports = LastTurnReports(_state, playerId);
         var hasCombat = VisibleCombatResults(_state, playerId).Count > 0;
         if (reports.Count == 0)
@@ -37,6 +36,19 @@ public sealed partial class ChaosGame
         _managementReturnScreen = ClientScreen.City;
         BeginEventReview(reports.Count);
         _screens.Show(ClientScreen.Events);
+    }
+
+    private void UpdateComlinkAlert(TimeSpan now, bool enteringPlanning = false)
+    {
+        var hasUnread = _state?.Coordinator.ActivePlayer is { } playerId
+            && _state.Outcome is null
+            && _state.ComlinkFor(playerId).HasUnread;
+        var presentationActive = enteringPlanning || _screens.Current is not (
+            ClientScreen.Title or ClientScreen.Setup or ClientScreen.Online
+            or ClientScreen.Lobby or ClientScreen.Handoff or ClientScreen.Endgame);
+        if (_comlinkAlertCadence.Advance(hasUnread, presentationActive, now)
+            && AudioRouting.IncomingMessageSound(hasUnread) is { } alert)
+            PlayGeneralSound(alert);
     }
 
     private void OpenEvents(ClientScreen returnScreen)

@@ -868,6 +868,12 @@ close/adjacent-buffer/combat cadence and preference/menu
 restart boundaries, native validation, video, and exact visual behavior are
 still required.
 
+Unread Comlink entry now starts the recovered slot-6 presentation cadence and
+repeats every four seconds (24 ticks of the original 6 Hz timer), stopping when
+authoritative unread state clears. Per-record acknowledgement still needs a
+save/replay-compatible migration; the current Comlink View clears the complete
+inbox instead of only each record actually viewed.
+
 Depends on: M1-M6 event model, complete asset catalog.
 Gate: visual and media trigger comparisons pass across the entire game flow.
 

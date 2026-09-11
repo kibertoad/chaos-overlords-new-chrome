@@ -424,9 +424,10 @@ Last updated: 2026-09-11
    the reference contradicts it.
 3. Investigate and explain the reported GOG/1.1 Detailed Combat freeze, then
    compare the bounded recreation cadence with a controlled original capture.
-4. Validate slot-6 suppression plus effect overlap/interruption, then complete
-   native audio/music validation. The slot-2 inventory and Combat-selection
-   slot-3 call are statically classified and routed.
+4. Migrate Comlink acknowledgement from whole-inbox to per-viewed-record state,
+   then validate slot-6 cadence plus effect overlap/interruption and complete
+   native audio/music validation. The four-second repeat, slot-2 inventory, and
+   Combat-selection slot-3 call are statically classified and routed.
 5. Decide and implement Smacker playback or extractor-side transcoding; capture
    native WinHelp typography/paragraph geometry only where pixel-viewer fidelity
    materially benefits from it.
