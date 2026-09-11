@@ -121,6 +121,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _itemCursor;
     private int _combatSummaryCursor;
     private int _eventCursor;
+    private readonly HashSet<int> _eventViewedPages = [];
     private int _siteSearchCursor;
     private readonly HashSet<short> _siteSearchSelection = [];
     private readonly HashSet<short> _siteSearchApplied = [];

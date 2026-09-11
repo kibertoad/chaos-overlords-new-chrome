@@ -338,7 +338,9 @@ Routine implementation notifications such as upkeep/economy, movement,
 equipment transactions and ordinary command completion do not create reports;
 captured/lost control, newly influenced sites, completed research, crackdowns,
 eliminations and objective changes do. Closing the panel consumes the queued
-notifications that were present when it opened.
+notifications only after every report page was visited. Closing early retains
+the queue and blinks the Events control, matching the original Help; trying to
+open the panel without reportable events leaves the current screen unchanged.
 
 ## Next mapping work
 

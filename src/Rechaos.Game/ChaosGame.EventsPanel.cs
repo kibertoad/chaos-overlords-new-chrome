@@ -23,9 +23,30 @@ public sealed partial class ChaosGame
             _screens.Show(ClientScreen.City);
             return;
         }
-        _eventCursor = 0;
         _managementReturnScreen = ClientScreen.City;
+        BeginEventReview(reports.Count);
         _screens.Show(ClientScreen.Events);
+    }
+
+    private void OpenEvents(ClientScreen returnScreen)
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        var count = LastTurnReports(_state, playerId).Count;
+        if (count == 0)
+        {
+            _message = "NO EVENTS TO REPORT";
+            return;
+        }
+        _managementReturnScreen = returnScreen;
+        BeginEventReview(count);
+        _screens.Show(ClientScreen.Events);
+    }
+
+    private void BeginEventReview(int count)
+    {
+        _eventCursor = 0;
+        _eventViewedPages.Clear();
+        if (count > 0) _eventViewedPages.Add(0);
     }
 
     private void HandleEventsClick(Point point)
@@ -39,18 +60,27 @@ public sealed partial class ChaosGame
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
         var count = LastTurnReports(_state, playerId).Count;
-        if (count > 0) _eventCursor = Mod(_eventCursor + delta, count);
+        if (count > 0)
+        {
+            _eventCursor = Mod(_eventCursor + delta, count);
+            _eventViewedPages.Add(_eventCursor);
+        }
     }
 
     private void CloseEvents()
     {
         if (_state?.Coordinator.ActivePlayer is { } playerId && _replay is not null)
         {
-            var count = _state.NotificationsFor(playerId).Count;
-            for (var index = 0; index < count; index++)
-                _replay.TryDismissNotification(playerId, out _);
+            var reportCount = LastTurnReports(_state, playerId).Count;
+            if (EventReviewProgress.IsComplete(reportCount, _eventViewedPages))
+            {
+                var count = _state.NotificationsFor(playerId).Count;
+                for (var index = 0; index < count; index++)
+                    _replay.TryDismissNotification(playerId, out _);
+            }
         }
         _eventCursor = 0;
+        _eventViewedPages.Clear();
         _screens.Show(_managementReturnScreen);
     }
 
@@ -148,5 +178,15 @@ public sealed partial class ChaosGame
     {
         batch.Draw(pixel, LastTurnEventsLayout.Page, Color.Black);
         batch.Draw(pixel, new Rectangle(198, 291, 242, 19), Color.Black);
+    }
+}
+
+public static class EventReviewProgress
+{
+    public static bool IsComplete(int pageCount, IReadOnlySet<int> viewedPages)
+    {
+        ArgumentNullException.ThrowIfNull(viewedPages);
+        if (pageCount < 0) throw new ArgumentOutOfRangeException(nameof(pageCount));
+        return pageCount == 0 || Enumerable.Range(0, pageCount).All(viewedPages.Contains);
     }
 }

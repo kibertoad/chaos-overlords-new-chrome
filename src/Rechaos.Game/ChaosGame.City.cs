@@ -93,7 +93,7 @@ public sealed partial class ChaosGame
     {
         if (CityGameInfo.Contains(point)) OpenManagement(ClientScreen.GameInfo, returnScreen);
         else if (CityDone.Contains(point)) AdvanceTurn();
-        else if (CityEvents.Contains(point)) OpenManagement(ClientScreen.Events, returnScreen);
+        else if (CityEvents.Contains(point)) OpenEvents(returnScreen);
         else if (CityComlinkView.Contains(point)) OpenComlinkView(returnScreen);
         else if (CityComlinkSend.Contains(point)) OpenComlinkSend(returnScreen);
         else if (CityCombatSummary.Contains(point)) OpenManagement(ClientScreen.CombatSummary, returnScreen);
@@ -112,7 +112,6 @@ public sealed partial class ChaosGame
     {
         _managementReturnScreen = returnScreen;
         if (screen == ClientScreen.CombatSummary) _combatSummaryCursor = 0;
-        if (screen == ClientScreen.Events) _eventCursor = 0;
         _screens.Show(screen);
     }
 
@@ -193,6 +192,10 @@ public sealed partial class ChaosGame
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(4));
         font.Draw(batch, _message.Length <= 32 ? _message : _message[..32],
             new Vector2(438, 354), Color.Gold, 1);
+        if (state.Coordinator.ActivePlayer is { } reportPlayer
+            && LastTurnReports(state, reportPlayer).Count > 0
+            && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)
+            DrawBorder(batch, pixel, CityEvents, Color.Yellow, 2);
         if (state.Coordinator.ActivePlayer is { } activePlayer
             && state.ComlinkFor(activePlayer).HasUnread
             && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)

@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,103 tests with no warnings.
+  isolated Release build passed all 1,105 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -23,6 +23,10 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Last Turn Events now tracks which report pages were actually visited. Closing
+  before viewing every page preserves the report queue and blinks the Events
+  control; viewing all pages clears it through replay-recorded dismissals. The
+  Events control also refuses to open an empty panel.
 - Single-player objective games now end at the Player Elimination boundary when
   their sole human Overlord is eliminated, recording the distinct
   `PlayerEliminated` outcome. The elimination splash returns to the title as the
