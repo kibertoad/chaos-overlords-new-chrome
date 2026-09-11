@@ -205,8 +205,10 @@ with pending Last Turn Events plays slot 6 once before opening the report panel.
 Equipped, unarmed, and detected-police combat events route their recovered
 sounds, while evasion remains silent. Combat and general effects share the
 independent recovered Effects level and its level-6 default, and both audio
-levels persist in the recreation-native preferences file. Retaliation is
-resolved authoritatively but its second-clip sound timing is not yet sequenced.
+levels persist in the recreation-native preferences file. Each Detailed Combat
+clip carries its event-time cue; the player emits it on the recovered first
+animation tick, so retaliation waits for its reversed second clip instead of
+playing with the opening attack. Simple Combat does not enter this presenter.
 
 **Next validation:** Validate slots 0-2 (panel open, panel close, and held-button
 press), the slot-6 repeat/suppression boundary, and countdown-warning cadence at

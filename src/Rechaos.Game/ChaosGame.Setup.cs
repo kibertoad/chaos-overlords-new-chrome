@@ -95,7 +95,6 @@ public sealed partial class ChaosGame
         _cursor = _state.Players[0].Gangs[0].SectorId;
         _selectedGangIndex = 0;
         _message = _debugPhaseStepping ? "ADVANCE UPKEEP TO BEGIN" : "PLAN YOUR TURN";
-        _lastAudibleEventSequence = -1;
         _lastAnimatedEventSequence = -1;
         _combatAnimationPlayer.Clear();
         _screens.Show(ClientScreen.City);

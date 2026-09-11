@@ -70,7 +70,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _policeSprites;
     private Texture2D? _uiSprites;
     private PixelFont? _font;
-    private readonly Dictionary<short, SoundEffect> _weaponSounds = [];
+    private readonly Dictionary<short, SoundEffect> _combatSounds = [];
     private readonly Dictionary<int, SoundEffect> _generalSounds = [];
     private readonly Dictionary<string, Texture2D> _combatAnimationTextures = [];
     private readonly CombatAnimationPlayer _combatAnimationPlayer = new();
@@ -121,7 +121,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private string _message = string.Empty;
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
-    private long _lastAudibleEventSequence = -1;
     private long _lastAnimatedEventSequence = -1;
     private TimeSpan _inputTime;
     private ClientScreen _gangDetailsReturnScreen = ClientScreen.City;
@@ -218,7 +217,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         for (short index = 0; index <= 18; index++)
         {
             var sound = LoadSound(AudioRouting.SoundFile(index));
-            if (sound is not null) _weaponSounds.Add(index, sound);
+            if (sound is not null) _combatSounds.Add(index, sound);
         }
         foreach (var slot in AudioRouting.GeneralSoundSlots)
         {
@@ -229,7 +228,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
         {
             ["helpAvailable"] = (_helpDocument is not null).ToString(),
-            ["weaponSounds"] = _weaponSounds.Count.ToString(),
+            ["combatSounds"] = _combatSounds.Count.ToString(),
             ["generalSounds"] = _generalSounds.Count.ToString(),
             ["combatAnimations"] = _combatAnimationTextures.Count.ToString()
         });
@@ -250,7 +249,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         RunComputerTurns();
         CaptureNewCombatAnimations();
-        _combatAnimationPlayer.Advance(gameTime.ElapsedGameTime);
+        foreach (var clip in _combatAnimationPlayer.Advance(gameTime.ElapsedGameTime))
+            if (clip.Sound is { } soundIndex) PlayCombatSound(soundIndex);
         if (_combatAnimationPlayer.IsPlaying)
         {
             var cancelPointMapped = VirtualInput.TryMap(
@@ -267,7 +267,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             }
             else
             {
-                PlayNewCombatSounds();
                 _previousKeyboard = keyboard;
                 _previousMouse = mouse;
                 base.Update(gameTime);
@@ -425,7 +424,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             else if (pointerMapped) CompleteGangClick();
             else CancelGangDrag();
         }
-        PlayNewCombatSounds();
         CaptureNewCombatAnimations();
         _previousKeyboard = keyboard;
         _previousMouse = mouse;

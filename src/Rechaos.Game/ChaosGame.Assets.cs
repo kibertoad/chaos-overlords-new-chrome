@@ -55,17 +55,9 @@ public sealed partial class ChaosGame
         return SoundEffect.FromStream(stream);
     }
 
-    private void PlayNewCombatSounds()
+    private void PlayCombatSound(short soundIndex)
     {
-        if (_state is null) return;
-        foreach (var gameEvent in _state.Events.Where(value => value.Sequence > _lastAudibleEventSequence)
-                     .OrderBy(value => value.Sequence))
-        {
-            if (AudioRouting.CombatSound(_state, gameEvent) is { } soundIndex
-                && _weaponSounds.TryGetValue(soundIndex, out var sound))
-                TryPlaySound(sound);
-            _lastAudibleEventSequence = gameEvent.Sequence;
-        }
+        if (_combatSounds.TryGetValue(soundIndex, out var sound)) TryPlaySound(sound);
     }
 
     private void PlayGeneralSound(int slot)

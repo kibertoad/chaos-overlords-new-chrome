@@ -51,9 +51,20 @@ public static class AudioRouting
             || gameEvent.Gang is not { } gangId)
             return null;
         var itemId = gameEvent.Resolution.ItemId ?? state.FindGang(gangId)?.WeaponItemId;
-        if (itemId is { } weapon) return state.Definitions.Items[weapon].Sound;
+        return GangAttackSound(state, gangId, itemId);
+    }
+
+    public static short GangAttackSound(MatchState state, GangId gangId, short? itemId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if (itemId is { } weapon)
+        {
+            if (weapon < 0 || weapon >= state.Definitions.Items.Count)
+                throw new ArgumentOutOfRangeException(nameof(itemId));
+            return state.Definitions.Items[weapon].Sound;
+        }
         var gang = state.FindGang(gangId)
-            ?? throw new ArgumentOutOfRangeException(nameof(gameEvent));
+            ?? throw new ArgumentOutOfRangeException(nameof(gangId));
         var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
         return definition.Stats.MartialArts > 0 ? MartialArtsSound : UnarmedSound;
     }

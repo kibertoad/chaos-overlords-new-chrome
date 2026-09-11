@@ -28,10 +28,11 @@ Last updated: 2026-09-11
   corrected Force-inclusive simultaneous-combat explanation.
 - Music and sound effects have independent recovered 0-10 controls and persisted
   defaults. Setup selection/rejection, panel confirmation, equipped and unarmed
-  gang attacks, detected police attacks, idle planning confirmation, pending
-  Last Turn Events, and planning-countdown
+  gang attacks, retaliation, detected police attacks, idle planning confirmation,
+  pending Last Turn Events, and planning-countdown
   warnings use mapped sounds. General slot 9 is loaded by the original but has
-  no call through its gated effect wrapper.
+  no call through its gated effect wrapper. Detailed Combat cues start with
+  their corresponding animation clips rather than at resolution time.
 - Setup now offers the original None, 30 Seconds, 2 Minutes, and 5 Minutes
   planning limits. Human planning displays the recovered 60-by-3 bar, continues
   through planning panels, uses the original percent-first width quantization,
