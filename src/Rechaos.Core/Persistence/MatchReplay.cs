@@ -294,6 +294,11 @@ public static class MatchReplaySerializer
 
     private static void ApplyStep(MatchState state, ReplayStep step, int index, int replayVersion)
     {
+        var minimumVersion = MinimumVersionFor(step.Kind);
+        if (replayVersion < minimumVersion)
+            throw new InvalidDataException(
+                $"Replay step {index} uses an operation introduced in replay format {minimumVersion}.");
+
         switch (step.Kind)
         {
             case ReplayOperationKind.SubmitCommand:
@@ -349,9 +354,6 @@ public static class MatchReplaySerializer
                 state.PrepareHireOffers(Required(step.Player, index));
                 break;
             case ReplayOperationKind.PrepareSimultaneousHireOffers:
-                if (replayVersion < 21)
-                    throw new InvalidDataException(
-                        $"Replay step {index} uses an operation introduced in replay format 21.");
                 state.PrepareSimultaneousHireOffers();
                 break;
             case ReplayOperationKind.PrepareAiPlanning:
@@ -381,6 +383,16 @@ public static class MatchReplaySerializer
             default: throw new InvalidDataException($"Replay step {index} has an unknown operation kind.");
         }
     }
+
+    private static int MinimumVersionFor(ReplayOperationKind kind) => kind switch
+    {
+        ReplayOperationKind.PrepareHireOffers => 3,
+        ReplayOperationKind.PrepareAiPlanning => 6,
+        ReplayOperationKind.PrepareAiHiring => 8,
+        ReplayOperationKind.SendComlinkMessage or ReplayOperationKind.MarkComlinkRead => 18,
+        ReplayOperationKind.PrepareSimultaneousHireOffers => 21,
+        _ => 2
+    };
 
     private static void VerifyResult(ReplayStep step, bool accepted, int validationCode, int index)
     {

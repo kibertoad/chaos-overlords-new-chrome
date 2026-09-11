@@ -132,6 +132,11 @@ simultaneous online turns. The operation is rejected when it is mislabeled as
 version 20 or earlier instead of being retroactively accepted by an older
 schema.
 
+Playback enforces the introduction boundary of every operation added after the
+base v2 schema: `PrepareHireOffers` requires v3, `PrepareAiPlanning` v6,
+`PrepareAiHiring` v8, Comlink send/read v18, and simultaneous hire preparation
+v21. Relabeling a document cannot opt an older schema into newer mutations.
+
 Each ordered replay step stores its operation payload, the expected validation
 result where applicable, and the canonical state SHA-256 after the operation.
 `MatchReplaySerializer.LoadAndReplay` restores the initial snapshot, repeats the

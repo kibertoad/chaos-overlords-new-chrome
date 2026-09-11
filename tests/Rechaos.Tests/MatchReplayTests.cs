@@ -199,6 +199,46 @@ public sealed class MatchReplayTests
         Assert.Contains("introduced in replay format 21", exception.Message);
     }
 
+    [Theory]
+    [InlineData(ReplayOperationKind.PrepareHireOffers, 2, 3)]
+    [InlineData(ReplayOperationKind.PrepareAiPlanning, 5, 6)]
+    [InlineData(ReplayOperationKind.PrepareAiHiring, 7, 8)]
+    [InlineData(ReplayOperationKind.SendComlinkMessage, 17, 18)]
+    [InlineData(ReplayOperationKind.MarkComlinkRead, 17, 18)]
+    public void OlderReplayVersionsRejectOperationsAddedByLaterSchemas(
+        ReplayOperationKind operation,
+        int labeledVersion,
+        int introducedVersion)
+    {
+        var initial = CreateMatch();
+        var legacyInitialHash = labeledVersion switch
+        {
+            2 => MatchStateHasher.ComputeVersionFourSha256(initial),
+            5 => MatchStateHasher.ComputeVersionSixSha256(initial),
+            7 => MatchStateHasher.ComputeVersionTenSha256(initial),
+            17 => MatchStateHasher.ComputeVersionNineteenSha256(initial),
+            _ => throw new InvalidOperationException("Test case needs its legacy hash projection.")
+        };
+        var recorder = new MatchReplayRecorder(initial);
+        recorder.FinishUpkeep();
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = labeledVersion;
+        document["initialStateSha256"] = legacyInitialHash;
+        document["steps"]![0]!["kind"] = (int)operation;
+        using var mislabeled = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            MatchReplaySerializer.LoadAndReplay(
+                mislabeled, recorder.State.Definitions));
+
+        Assert.Contains(
+            $"introduced in replay format {introducedVersion}",
+            exception.Message);
+    }
+
     [Fact]
     public void ReplaysAiHiringRolePreparation()
     {
