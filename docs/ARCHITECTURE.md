@@ -163,7 +163,8 @@ and machine-readable diagnostics.
 
 The current client owns the MonoGame loop, point-scaled virtual canvas, asset
 loading, title/setup/hot-seat-handoff/city/sector/sector-gangs/gang/finance/ranking/items/Give/combat-summary/search/commands/hire/events/endgame routing,
-keyboard and inverse-mapped mouse input,
+keyboard and inverse-mapped mouse input, including edge-triggered right-click
+cancellation that delegates to each interaction's existing close/back operation,
 prototype board renderer, and an atlas-backed renderer for the original
 `PX00129` pixel font. `UI-ATLAS.md` records the
 first full-screen resource and hit-region mappings.
@@ -189,7 +190,9 @@ site, and item information modal navigation lives with its corresponding rendere
 `ChaosGame.ItemDetails.cs`. `ChaosGame.Items.cs` owns the research/equipment
 browser and Give workflow. `ChaosGame.Commands.cs` owns command-picker state
 transitions and input handling, while the specialized attack picker remains in
-`ChaosGame.AttackPicker.cs`. Combat presentation, results, and turn events
+`ChaosGame.AttackPicker.cs`. `ChaosGame.Input.cs` centralizes right-click
+cancellation priority across transient edits/drags and nested panels. Combat
+presentation, results, and turn events
 likewise remain in their focused partials. Further screen groups should follow
 these boundaries instead of growing the shell again.
 `Directory.Build.targets` enforces a 1,000-line ceiling for every compiled C#

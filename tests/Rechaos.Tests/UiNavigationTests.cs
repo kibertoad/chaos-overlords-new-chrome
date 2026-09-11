@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
 using Xunit;
@@ -7,6 +8,15 @@ namespace Rechaos.Tests;
 
 public sealed class UiNavigationTests
 {
+    [Fact]
+    public void PointerButtonEdgeFiresOnlyOnReleasedToPressedTransition()
+    {
+        Assert.True(PointerButtonEdges.Pressed(ButtonState.Pressed, ButtonState.Released));
+        Assert.False(PointerButtonEdges.Pressed(ButtonState.Pressed, ButtonState.Pressed));
+        Assert.False(PointerButtonEdges.Pressed(ButtonState.Released, ButtonState.Pressed));
+        Assert.False(PointerButtonEdges.Pressed(ButtonState.Released, ButtonState.Released));
+    }
+
     [Fact]
     public void AttackTargetPanelUsesAcquisitionGridApertures()
     {

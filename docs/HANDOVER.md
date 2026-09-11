@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,122 tests with no warnings.
+  isolated Release build passed all 1,123 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -132,6 +132,11 @@ Last updated: 2026-09-11
   Enabled panel entrances use the recovered horizontal 344-pixel primary travel
   and 250 ms benchmark target. The legacy 16-bit color choice is explicitly
   always enabled by the modern renderer.
+- A press edge on the right mouse button now cancels the active transient edit,
+  pressed setup control, drag, warning, Detailed Combat playback, or nested
+  panel through that workflow's existing close/back path. This preserves dynamic
+  return screens and prevents held-button repeats; idle right-clicks on title,
+  city, handoff, and endgame do nothing.
 - Combat Summary now replays the selected result through the detailed combat
   panel in either presentation mode. Escape or the panel Cancel control clears
   the queue immediately; cancellation and large-elapsed stress tests guard the

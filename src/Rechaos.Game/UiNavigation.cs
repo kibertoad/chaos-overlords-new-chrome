@@ -1,8 +1,15 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
+
+public static class PointerButtonEdges
+{
+    public static bool Pressed(ButtonState current, ButtonState previous) =>
+        current == ButtonState.Pressed && previous == ButtonState.Released;
+}
 
 public static class OriginalFontLayout
 {

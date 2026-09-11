@@ -306,6 +306,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         UpdateSoundtrack(gameTime);
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
+        var rightClicked = PointerButtonEdges.Pressed(
+            mouse.RightButton, _previousMouse.RightButton);
         if (Pressed(keyboard, Keys.F11)) ToggleFullscreen();
         if (UpdatePlanningTimer(gameTime.TotalGameTime))
         {
@@ -327,10 +329,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 && _previousMouse.LeftButton == ButtonState.Released
                 && CombatPanelLayout.Cancel.Contains(cancelPoint);
             if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Back)
-                || cancelClicked)
+                || cancelClicked || rightClicked)
             {
                 _combatAnimationPlayer.Clear();
                 _message = "COMBAT DETAIL SKIPPED";
+                rightClicked = false;
             }
             else
             {
@@ -340,6 +343,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 return;
             }
         }
+        if (rightClicked) CancelCurrentInteraction();
         if (_screens.Current == ClientScreen.Options)
         {
             UpdateOptions(keyboard);
