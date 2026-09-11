@@ -210,8 +210,11 @@ The item workflow projects research/equipment state and submits Research,
 Equip, Give, and Sell through the replay recorder and authoritative Core
 validator. Give first uses the original three-slot equipment selection panel,
 then expands only recipients in the same sector who can accept every selected
-item. The transaction resolver reserves all outgoing Give items before applying
-transfers, preserving the manual's supported two-gang swap behavior.
+item. The transaction resolver uses the binary's player/roster-slot scan,
+reserves outgoing Give items, processes recipient transactions, and applies
+incoming gifts afterward. This preserves two-gang swaps and the original rule
+that an incoming gift overwrites a recipient's same-turn purchase. Multi-slot
+Sell likewise preserves the original payout-local overwrite quirk.
 Move uses `PX05006` and projects its 3-by-3 neighborhood directly from the same
 native ownership tiles as the city map; command validation remains the authority
 for edge, adjacency, and friendly-capacity availability.

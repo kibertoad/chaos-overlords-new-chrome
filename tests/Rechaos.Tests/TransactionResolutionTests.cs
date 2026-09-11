@@ -210,6 +210,64 @@ public sealed class TransactionResolutionTests
     }
 
     [Fact]
+    public void IncomingGiveOverwritesRecipientsSameTurnPurchaseAfterGangPass()
+    {
+        var data = BundledOriginalData.Load();
+        var weapons = data.Items.Where(item => item.Type is >= 0 and <= 2)
+            .Take(3).Select(item => item.Id).ToArray();
+        var match = CreateMatch(cash: 100, actorWeapon: weapons[0], targetWeapon: weapons[1],
+            researchedItems: new HashSet<short> { weapons[2] });
+        var source = match.FindGang(new GangId(10))!;
+        var target = match.FindGang(new GangId(11))!;
+        EnterCommand(match);
+
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), target.Id, GangAction.Equip,
+            CommandTarget.Item(weapons[2]))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), source.Id, GangAction.Give, CommandTarget.Gang(target.Id),
+            SecondaryTarget: CommandTarget.Item(weapons[0]))).Accepted);
+        EnterTransaction(match);
+        match.FinishExecutionPhase();
+
+        Assert.Null(source.WeaponItemId);
+        Assert.Equal(weapons[0], target.WeaponItemId);
+        Assert.Equal([source.Id, target.Id],
+            match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
+        var equip = match.LastPhaseResolutions.Single(result =>
+            result.Command.Action == GangAction.Equip).Event!.Resolution!;
+        var give = match.LastPhaseResolutions.Single(result =>
+            result.Command.Action == GangAction.Give).Event!.Resolution!;
+        Assert.Equal(weapons[1], equip.ReplacedItemId);
+        Assert.Equal(weapons[2], give.ReplacedItemId);
+    }
+
+    [Fact]
+    public void TransactionsResolveByPlayerAndRosterSlotRatherThanSubmissionOrder()
+    {
+        var data = BundledOriginalData.Load();
+        var item = ResearchedWeapon(data);
+        var match = CreateMatch(cash: 100, researchedItems: new HashSet<short> { item });
+        EnterCommand(match);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(11), GangAction.Equip, CommandTarget.Item(item))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Equip, CommandTarget.Item(item))).Accepted);
+        EnterTransaction(match);
+        match.Players[0].Cash = data.Items[item].Cost;
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal([new GangId(10), new GangId(11)],
+            match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
+        Assert.True(match.LastPhaseResolutions[0].Succeeded);
+        Assert.Equal(CommandResolutionCode.InsufficientCash, match.LastPhaseResolutions[1].Code);
+        Assert.Equal(item, match.FindGang(new GangId(10))!.WeaponItemId);
+        Assert.Null(match.FindGang(new GangId(11))!.WeaponItemId);
+        Assert.Equal(0, match.Players[0].Cash);
+    }
+
+    [Fact]
     public void SellRemovesItemAndPaysHalfRoundedDown()
     {
         var data = BundledOriginalData.Load();
@@ -233,7 +291,7 @@ public sealed class TransactionResolutionTests
     }
 
     [Fact]
-    public void SellRemovesAllSelectedEquipmentAndPaysCombinedHalfPrices()
+    public void SellRemovesAllSelectedEquipmentButPaysOnlyHighestFixedSlot()
     {
         var data = BundledOriginalData.Load();
         var weapon = data.Items.First(item => item.Type is >= 0 and <= 2).Id;
@@ -245,8 +303,8 @@ public sealed class TransactionResolutionTests
         gang.MiscellaneousItemId = miscellaneous;
         EnterCommand(match);
         var command = new GameCommand(new PlayerId(0), gang.Id, GangAction.Sell,
-            CommandTarget.Item(weapon), SecondaryTarget: CommandTarget.Item(armor),
-            TertiaryTarget: CommandTarget.Item(miscellaneous));
+            CommandTarget.Item(miscellaneous), SecondaryTarget: CommandTarget.Item(armor),
+            TertiaryTarget: CommandTarget.Item(weapon));
 
         Assert.True(match.Submit(command).Accepted);
         EnterTransaction(match);
@@ -256,8 +314,7 @@ public sealed class TransactionResolutionTests
         Assert.Null(gang.WeaponItemId);
         Assert.Null(gang.ArmorItemId);
         Assert.Null(gang.MiscellaneousItemId);
-        var proceeds = new[] { weapon, armor, miscellaneous }
-            .Sum(item => EquipmentRules.SaleValue(data.Items[item]));
+        var proceeds = EquipmentRules.SaleValue(data.Items[miscellaneous]);
         Assert.Equal(cashBefore + proceeds, match.Players[0].Cash);
         Assert.Equal(proceeds, Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.CashDelta);
     }

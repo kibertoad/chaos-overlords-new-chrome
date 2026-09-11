@@ -350,8 +350,9 @@ claim about original-game behavior.
   reduces purchase price to `Cost - trunc(Cost / 3)`. This is a one-third
   discount rounded toward the full price; for example, an $11 Katana costs $8.
 - Confidence: High for cost, categories, research, tech gates, the decoded
-  zero-difficulty set, Factory division/rounding, and controlled/influenced
-  locality; Medium for same-slot replacement and repeat commands.
+  zero-difficulty set, Factory division/rounding, controlled/influenced locality,
+  fixed player/roster-slot resolution order, and same-slot replacement; Medium
+  for repeat commands.
 - Implementation: `EquipmentRules`, `SpecialSiteRules.EquipmentCost`,
   transaction validation, and `CommandResolver.ResolveEquip`.
 - Tests: `TransactionResolutionTests` covers purchase, replacement, cash and
@@ -368,10 +369,12 @@ claim about original-game behavior.
 - Interpretation: one Give command transfers one, two, or all three selected
   equipped items to one friendly same-sector target, clears every selected
   source slot, and replaces the target's corresponding slots without a cash
-  change. All outgoing Give items are reserved before transfers are applied so
-  two gangs can exchange same-slot equipment as the manual explicitly allows.
-- Confidence: High for transfer, tech gate, and replacement loss; Medium for
-  within-phase swap ordering.
+  change. The binary defers incoming items until every gang in that player's
+  roster has completed its transaction, preserving same-slot swaps and making
+  a gift overwrite the recipient's same-turn purchase. Later roster-slot gifts
+  win when several target the same recipient slot.
+- Confidence: High for transfer, tech gate, replacement loss, fixed scan order,
+  and deferred application.
 - Implementation: transaction validation, grouped transaction-phase Give
   preparation, and `CommandResolver.ResolveGive`.
 - Tests: transfer, three-item batching, same-slot swaps, replacement loss,
@@ -382,13 +385,17 @@ claim about original-game behavior.
 - Source: `MANUAL-GOG-1`; Sell description on numbered page 44.
 - Observed statement: selling returns half the original listed price, excluding
   factory discounts, rounded down.
-- Interpretation: remove the selected equipped item, add `floor(Cost / 2)` to
-  player cash, and record the proceeds as cash earned.
-- Confidence: High for the formula; Medium for statistics timing and multi-item
-  UI batching.
+- Interpretation: remove every selected equipped item. A single-slot sale adds
+  `floor(Cost / 2)` to player cash. The original's fixed weapon/armor/miscellaneous
+  branches overwrite one payout local instead of accumulating it, so a multi-slot
+  sale pays only the highest selected slot's half-price (miscellaneous, else
+  armor, else weapon). Preserve this binary quirk and record that one payout as
+  cash earned.
+- Confidence: High for clearing, fixed slot order, payout overwrite, formula,
+  and statistics update.
 - Implementation: `EquipmentRules.SaleValue` and `CommandResolver.ResolveSell`.
-- Tests: odd-price rounding, equipment removal, cash/statistics accounting, and
-  runtime possession failure in `TransactionResolutionTests` and
+- Tests: odd-price rounding, multi-slot payout overwrite, equipment removal,
+  cash/statistics accounting, and runtime possession failure in `TransactionResolutionTests` and
   `ManualRulesTests`.
 
 ### RULE-TERMINATE-001 — Remove gang and equipment

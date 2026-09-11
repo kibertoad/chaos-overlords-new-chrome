@@ -1993,6 +1993,38 @@ $11 Katana costs $8, while a $12 item costs $8.
 owner check, and rounding. A runtime capture remains useful corroboration but is
 not required to choose between the former provisional formulas.
 
+### BIN-EQUIP-002 - fixed transaction scan, deferred gifts, and Sell overwrite
+
+**Observation:** The transaction pass in `0x00472775` loops player slots 0
+through 5 and, inside each player, all 81 gang-record slots in ascending order.
+It initializes three 81-entry pending arrays to -1 before the gang scan. For
+action 5 (**Equip**) it immediately checks and subtracts cash, then replaces the
+copied gang record's weapon, armor, or miscellaneous byte. For action 6
+(**Give**) it writes selected item bytes into those pending arrays at the
+recipient slot and clears the giver's copied item bytes. Only after every gang
+for that player has been processed does the resolver copy non--1 pending values
+into recipients at decompiled lines 633-643.
+
+Action 12 (**Sell**) tests the fixed selection-mask bits in weapon, armor, then
+miscellaneous order. Each selected branch clears that copied item byte and
+assigns `Cost / 2` to the same local value at decompiled lines 605-617; the cash
+and earned-cash updates at lines 618-621 occur once after all three branches.
+The branches do not accumulate their values.
+
+**Interpretation:** Transactions resolve by player slot and persistent roster
+slot, independent of command submission order. Incoming gifts are applied only
+after the recipient's own transaction, so they overwrite a same-turn purchase
+or surviving same-slot item; later roster-slot givers overwrite earlier pending
+gifts to the same target slot. A multi-slot Sell destroys every selected item
+but pays only half the raw Cost of the highest selected fixed slot
+(miscellaneous, else armor, else weapon). This last behavior is retained as an
+original compatibility quirk rather than corrected to the manual's apparent
+combined-value intent.
+
+**Confidence:** High static evidence for loop bounds/order, action dispatch,
+pending-array lifecycle/application, selection-mask order, item clearing, and
+single Sell credit. Runtime corroboration remains useful.
+
 ### BIN-CONTROL-001 - cross-player winner and zero-margin neutral candidate
 
 **Observation:** The Control block in the whole-turn resolver `0x00472775`

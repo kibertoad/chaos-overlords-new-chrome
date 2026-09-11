@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,135 tests with no warnings.
+  isolated Release build passed all 1,137 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -149,8 +149,9 @@ Last updated: 2026-09-11
   replay backup when the primary is missing or invalid.
 - Sell now uses the original `PX05013` Equipment to Sell panel. Any combination
   of the acting gang's three equipped slots can be highlighted and confirmed in
-  one command; resolution sells those exact items atomically for half their raw
-  prices, rounded down, without applying Factory discounts.
+  one command. The binary clears every selected slot but overwrites one payout
+  local in weapon/armor/miscellaneous order, so compatibility resolution credits
+  only the highest selected slot's half raw price, rounded down, without Factory.
 - Factory integration now has a combined acquisition/replacement fixture:
   Influence completed during Instant makes the local Factory available to a
   same-turn Transaction Equip, which replaces the old slot item and charges the
@@ -174,9 +175,10 @@ Last updated: 2026-09-11
   sector Income separately to every participating gang's pool before grouping.
 - Give now uses the original `PX05015` Equipment to Give panel before its
   compatible same-sector recipient list. One command can carry any combination
-  of the source gang's exact three equipped items; grouped transaction resolution
-  reserves outgoing items first, allowing the manual's explicit two-gang
-  same-slot swaps. Native saves are v19, replays are v20 and canonical hashes
+  of the source gang's exact three equipped items. Transactions now scan fixed
+  player and roster slots, reserve outgoing items, and apply incoming gifts only
+  after recipient transactions, allowing swaps and overwriting same-turn buys
+  exactly as the resolver does. Native saves are v19, replays are v20 and canonical hashes
   are v22; the immediately previous formats
   remain readable through their preserved fingerprint projections.
 - Move now uses the original `PX05006` Movement panel. Its destination aperture
