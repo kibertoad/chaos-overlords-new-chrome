@@ -26,7 +26,7 @@ public sealed class InstantResolutionTests
     }
 
     [Fact]
-    public void FriendlyInfluenceCommandsPoolForceAndSkillOnce()
+    public void FriendlyInfluenceCommandsRollSeparatelyAndAccumulateProgress()
     {
         var match = CreateMatch(siteResistance: 100);
         QueueInfluencePair(match);
@@ -34,16 +34,16 @@ public sealed class InstantResolutionTests
         match.FinishExecutionPhase();
 
         var gangs = new[] { match.FindGang(new GangId(10))!, match.FindGang(new GangId(11))! };
-        var expectedDice = ManualRules.InfluenceDiceCount(gangs.Select(gang =>
-            (gang.Force, EffectiveStatisticsCalculator.ForGang(match, gang).Influence)));
         Assert.Equal(2, match.LastPhaseResolutions.Count);
         var first = match.LastPhaseResolutions[0].Event!.Resolution!;
         var second = match.LastPhaseResolutions[1].Event!.Resolution!;
-        Assert.Equal(expectedDice, first.Rolls.Count);
-        Assert.Equal(first.Rolls, second.Rolls);
-        Assert.Equal(first.Successes, second.Successes);
-        Assert.Equal(100 - first.Successes, match.FindSite(0)!.Resistance);
-        Assert.Equal(expectedDice * 3, match.Random.ConsumptionCount);
+        var expectedDice = gangs.Select(gang => ManualRules.InfluenceDiceCount(
+            [(gang.Force, EffectiveStatisticsCalculator.ForGang(match, gang).Influence)])).ToArray();
+        Assert.Equal(expectedDice[0], first.Rolls.Count);
+        Assert.Equal(expectedDice[1], second.Rolls.Count);
+        Assert.Equal(100 - first.Successes, second.PreviousValue);
+        Assert.Equal(100 - first.Successes - second.Successes, match.FindSite(0)!.Resistance);
+        Assert.Equal(expectedDice.Sum() * 3, match.Random.ConsumptionCount);
         Assert.Equal(2, match.NotificationsFor(new PlayerId(0))
             .Count(value => value.Kind == GameNotificationKind.Influence));
     }
@@ -62,6 +62,31 @@ public sealed class InstantResolutionTests
         Assert.Equal(new PlayerId(0), match.FindSite(0)!.InfluencedBy);
         Assert.Equal(siteDefinition.Support, match.Players[0].Support);
         Assert.Equal(toleranceBefore + siteDefinition.Tolerance, match.Sectors[0].Tolerance);
+    }
+
+    [Fact]
+    public void LaterInfluenceSkipsRollAfterEarlierRosterSlotCompletesSite()
+    {
+        var match = CreateMatch(siteResistance: 1, siteDefinitionId: 6);
+        EnterCommand(match);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(11), GangAction.Influence, CommandTarget.Site(0))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Influence, CommandTarget.Site(0))).Accepted);
+        EnterExecution(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal([new GangId(10), new GangId(11)],
+            match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
+        var first = match.LastPhaseResolutions[0].Event!.Resolution!;
+        var second = match.LastPhaseResolutions[1].Event!.Resolution!;
+        Assert.True(first.Successes > 0);
+        Assert.NotEmpty(first.Rolls);
+        Assert.Empty(second.Rolls);
+        Assert.Equal(0, second.Successes);
+        Assert.Equal(0, second.PreviousValue);
+        Assert.Equal(0, second.ResultValue);
     }
 
     [Fact]

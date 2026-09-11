@@ -315,11 +315,12 @@ Before an execution subphase mutates state, every queued action in that subphase
 must have a supported resolver. Unsupported actions block advancement rather
 than being silently consumed.
 
-Influence, Chaos, and Control are grouped resolvers. Influence commands from one player
-aimed at the same site pool Force and effective Influence into one deterministic
-roll stream. Control commands from one player in the same sector pool Force and
-effective Control into one non-dice comparison. Each group resolves at its
-earliest queue position and emits one ordered result per participating command.
+Instant commands resolve in fixed player/roster-slot order. Each Influence gang
+rolls Force plus effective Influence separately and immediately reduces the
+site's remaining resistance; later commands skip their rolls after completion.
+Chaos and Control are grouped resolvers. Control commands from one player in the
+same sector pool Force and effective Control into one non-dice comparison. Each
+Control group emits one ordered result per participating command.
 Cross-player groups in one sector evaluate against the same phase-opening owner,
 visible defenders, influenced Support, and income. A unique positive leader
 captures directly; equal positive leaders use one bounded draw in ascending
@@ -328,11 +329,10 @@ before every tied player. An owned sector can therefore be overthrown at most
 once per phase, and an execution-time Crackdown rejects every group.
 
 Instant resolution snapshots every acting gang's effective statistics before
-any command mutates site influence. Heal, Research, and grouped Influence rolls
+any command mutates site influence. Heal, Research, and per-gang Influence rolls
 therefore share the phase-opening view of equipment and local sites; acquiring a
 Science Center or Research Lab cannot retroactively improve a concurrent roll.
-Mutation and event emission retain deterministic queue order while exact
-original within-phase ordering remains a reference-fixture gap.
+Mutation and event emission follow the binary player/roster-slot scan.
 
 Chaos is resolved across the entire subphase: gangs roll individually in binary
 player/roster-slot order, one player's same-sector gangs share the aggregate

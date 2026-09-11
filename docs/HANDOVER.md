@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,142 tests with no warnings.
+  isolated Release build passed all 1,143 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -162,8 +162,11 @@ Last updated: 2026-09-11
   binary addresses and operation order are recorded in `ORIGINAL-INTERNALS.md`.
 - Instant resolution now snapshots acting gangs' effective statistics before
   applying any command. Same-phase Influence can still acquire a site, but its
-  modifiers cannot leak into concurrent Heal, Research, or grouped Influence
+  modifiers cannot leak into concurrent Heal, Research, or per-gang Influence
   rolls; the Science Center regression fixture guards this simultaneous boundary.
+  The binary's fixed player/roster-slot scan is reproduced, so friendly gangs
+  roll and apply Influence separately and a later gang consumes no RNG after an
+  earlier roster slot completes the site.
 - Control conflicts now use one phase-opening owner and defense snapshot for all
   player groups in a sector. The binary-recovered candidate list chooses equal
   positive leaders randomly in ascending player-slot order; at zero margin it

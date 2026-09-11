@@ -88,27 +88,31 @@ controlled reference observation confirms its execution timing and edge cases.
 ### RULE-INFLUENCE-001 — Cooperative site influence
 
 - Source: `MANUAL-GOG-1`; Influence command, dice, site resistance, and site
-  benefit descriptions, plus `BIN-RNG-002` and `BIN-RNG-003`.
+  benefit descriptions, plus `BIN-RNG-002`, `BIN-RNG-003`, and
+  `BIN-INSTANT-001`.
 - Observed statement: participating gangs contribute total Force plus Influence;
   successes reduce site resistance; reaching zero influences the site and grants
   its listed benefits.
-- Interpretation: pool same-player gangs targeting the same site, roll
-  `max(0, sum(Force + effective Influence))` dice once, persist reduced
-  resistance, and at zero assign the player and add the site's Support value.
+- Interpretation: scan player slots and persistent gang slots in ascending
+  order. Each participating gang separately rolls
+  `max(0, Force + effective Influence)` dice and immediately persists its
+  successes against the remaining resistance. At zero, assign the player and
+  add the site's Support value; later queued Influence commands skip their roll.
 - Current exclusions: cross-player simultaneous contests, already-influenced
   takeovers, cash/tolerance/stat benefit timing, site special behavior, and
   influenced-site modifiers in the dice pool. The recreation currently rejects
   commands against an already-influenced site until takeover rules are verified.
 - Confidence: High for the base pool, success threshold, resistance reduction,
-  and Support value; Medium for friendly pooling; Low for conflict ordering and
+  Support value, per-gang scheduling, and completion guard; Low for takeover and
   benefit timing.
 - Implementation: `CommandResolver.ResolvePhase`,
   `CommandResolver.ResolveInfluence`, `ManualRules.InfluenceDiceCount`, and
   `ManualRules.ApplyInfluenceProgress`; validation requires player ownership of
   the target sector.
-- Tests: `InstantResolutionTests` covers friendly pooling, single RNG
-  consumption, partial progress, completion/Support, target rejection,
-  notifications, deterministic replay, and phase hashes.
+- Tests: `InstantResolutionTests` covers separate roster-ordered rolls,
+  cumulative partial progress, post-completion RNG suppression,
+  completion/Support, target rejection, notifications, deterministic replay,
+  and phase hashes.
 - Next experiment: queue one and multiple gangs for the same site, then opposing
   players for the same site, and diff resistance, ownership, Support, RNG, and
   event ordering.

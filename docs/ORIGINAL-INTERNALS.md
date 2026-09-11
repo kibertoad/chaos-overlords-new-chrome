@@ -1972,6 +1972,27 @@ complete retaliation-eligibility predicate.
 **Next validation:** capture fixed original traces at bands 0, 1, and 2 for
 every affected action, including Hide and both Martial Arts branches.
 
+### BIN-INSTANT-001 - roster-order actions and cumulative Influence
+
+**Observation:** The Instant-action switch in `0x00472775` executes while the
+resolver scans player slots 0 through 5 and each player's 81 gang slots in
+ascending order. Cases 2, 7, 8, 9, 11, and 13 dispatch Bribe, Heal, Hide,
+Influence, Research, and Snitch respectively. In the Influence block at lines
+151-185, the resolver compares the site's current progress with its base
+resistance, then rolls only the current gang's `Force + effective Influence`.
+It immediately adds that gang's successes, clamps progress to the base value,
+and records completion before the roster scan continues. Once progress equals
+the base resistance, a later Influence command skips its roll.
+
+**Interpretation:** Instant actions resolve in fixed player/roster-slot order,
+not submission order. Friendly Influence is cumulative rather than pooled:
+each gang consumes its own roll stream and mutates the site before the next
+gang acts. A gang encountered after completion consumes no Influence RNG.
+
+**Confidence:** High static evidence for action dispatch, scan order,
+per-gang Influence pools, immediate progress mutation, clamping, and the
+completion guard. Runtime seed correlation remains pending.
+
 ### BIN-CHAOS-001 - roster-order rolls and grouped uncontrolled payout
 
 **Observation:** The action-3 (**Chaos**) pass in `0x00472775` scans player
