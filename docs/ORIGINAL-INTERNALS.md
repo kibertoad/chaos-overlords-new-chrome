@@ -2135,18 +2135,23 @@ corroboration remains useful.
 ### BIN-CONTROL-001 - cross-player winner and zero-margin neutral candidate
 
 **Observation:** The Control block in the whole-turn resolver `0x00472775`
-initializes its best margin to zero, winner to -1, and the first candidate to
--1. It then scans player slots 0 through 5, subtracting the phase sector Income,
-defending-gang strength, and influenced-site Support from each player's pooled
-Control strength. A strictly larger margin replaces the candidate list; an
+first accumulates action-4 strength in the player/81-slot scan at lines 733-744,
+then resolves sectors in ascending board order in the loop beginning at line
+751. Within each sector, it initializes its best margin to zero, winner to -1,
+and the first candidate to -1. It then scans player slots 0 through 5,
+subtracting the phase sector Income, defending-gang strength, and
+influenced-site Support from each player's pooled Control strength. A strictly
+larger margin replaces the candidate list; an
 equal margin appends that player. When more than one candidate exists, the call
 at `0x004756d9` passes the candidate count to the recovered one-based bounded
 RNG wrapper. The selected value indexes through a four-byte slot immediately
 before the player-candidate array, so value 1 selects candidate zero. Capture
 proceeds only when the selected candidate is not -1.
 
-**Interpretation:** Negative margins cannot capture. A unique positive leader
-captures without a random draw. Equal positive leaders are chosen uniformly in
+**Interpretation:** Control tie-break RNG is consumed in ascending sector order,
+independent of command submission order. Participants aggregate by ascending
+player and persistent roster slot. Negative margins cannot capture. A unique
+positive leader captures without a random draw. Equal positive leaders are chosen uniformly in
 ascending player-slot order. At best margin zero, the original neutral -1 entry
 remains ahead of every tied player: the one-based result 1 means no capture and
 results 2 onward select the tied players in ascending slot order. Thus one
@@ -2155,10 +2160,10 @@ zero-margin challengers each have probability `1 / (n + 1)` and the remaining
 outcome leaves ownership unchanged. Every random selection consumes the usual
 three raw RNG values.
 
-**Confidence:** High static evidence for initialization, six-slot scan,
-comparison behavior, candidate order, one-based RNG call, neutral sentinel, and
-capture predicate. The manual independently corroborates the single-player
-zero-margin probability; multi-player runtime capture remains useful.
+**Confidence:** High static evidence for board/player/roster scan order,
+initialization, comparison behavior, candidate order, one-based RNG call,
+neutral sentinel, and capture predicate. The manual independently corroborates
+the single-player zero-margin probability; multi-player runtime capture remains useful.
 
 The same focused owner-field audit establishes retained control of an empty
 sector. Within the complete whole-turn resolver, the owner byte at

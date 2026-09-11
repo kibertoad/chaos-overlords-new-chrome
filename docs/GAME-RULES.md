@@ -546,8 +546,10 @@ claim about original-game behavior.
   non-hiding defending gang's `Force + Control` and total influenced-site
   Support. Losing a sector loses all influenced sites, which return to full
   resistance; taking ownership directly from another player is an Overthrow.
-- Interpretation: group same-player Control commands by sector, calculate the
-  signed margin without dice, and capture when it is positive. A unique positive
+- Interpretation: aggregate gangs by player/roster slot, then resolve sectors
+  in ascending board order so tie-break RNG is submission-order independent.
+  Group same-player Control commands by sector, calculate the signed margin
+  without dice, and capture when it is positive. A unique positive
   leader captures directly; equal positive leaders are selected by one bounded
   random draw in ascending player-slot order. At best margin zero, select among
   a leading neutral candidate and every tied player, again in slot order. This
@@ -572,8 +574,8 @@ claim about original-game behavior.
   behavior.
 - Implementation: `ManualRules.ControlStrength`, `ManualRules.ControlMargin`,
   grouped `CommandResolver.ResolveControl`, and site-reset handling.
-- Tests: `BoardResolutionTests` covers neutral capture, pooled strength,
-  generated sector Income versus site Cash, defended
+- Tests: `BoardResolutionTests` covers neutral capture, board/roster ordering,
+  pooled strength, generated sector Income versus site Cash, defended
   failure, recorded deterministic zero-margin chance, positive and zero-margin
   cross-player ties, unique-highest neutral conflicts, retained empty-sector
   ownership after Move/Terminate, a single phase-opening

@@ -326,7 +326,8 @@ visible defenders, influenced Support, and income. A unique positive leader
 captures directly; equal positive leaders use one bounded draw in ascending
 player-slot order. At best margin zero, neutral/no-capture is the first candidate
 before every tied player. An owned sector can therefore be overthrown at most
-once per phase, and an execution-time Crackdown rejects every group.
+once per phase, and an execution-time Crackdown rejects every group. Sectors
+resolve in ascending board order, fixing the order of independent tie-break draws.
 
 Instant resolution snapshots every acting gang's effective statistics before
 any command mutates site influence. Heal, Research, and per-gang Influence rolls

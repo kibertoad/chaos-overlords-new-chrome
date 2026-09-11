@@ -240,6 +240,30 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
+    public void ControlSectorsAndResultsFollowBoardThenRosterOrder()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 3), Gang(11, 0, 1, 3)],
+            [Gang(20, 1, 3, 5)]);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Control(0, 11)).Accepted);
+        Assert.True(match.Submit(Control(0, 10)).Accepted);
+        FinishCommands(match);
+        EnterControlFromExecution(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal([new GangId(10), new GangId(11)],
+            match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
+        Assert.All(match.LastPhaseResolutions, result =>
+        {
+            Assert.Equal(result.Event!.Resolution!.AttackValue,
+                result.Event.Resolution.DefenseValue);
+            Assert.Equal(2, result.Event.Resolution.ChanceSides);
+        });
+    }
+
+    [Fact]
     public void UniqueHighestControlMarginWinsNeutralConflictFromPhaseSnapshot()
     {
         var match = CreateMatch(

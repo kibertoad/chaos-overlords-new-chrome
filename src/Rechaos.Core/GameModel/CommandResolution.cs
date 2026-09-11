@@ -570,12 +570,14 @@ public static partial class CommandResolver
         var results = new List<CommandResolutionResult>(commands.Count);
         foreach (var sectorCommands in commands
             .GroupBy(queued => state.FindGang(queued.Command.Gang)!.SectorId)
-            .OrderBy(group => group.Min(queued => queued.Sequence)))
+            .OrderBy(group => group.Key))
         {
             var groups = sectorCommands
                 .GroupBy(queued => queued.Command.Player)
-                .Select(group => group.OrderBy(queued => queued.Sequence).ToArray())
-                .OrderBy(group => group[0].Sequence)
+                .OrderBy(group => group.Key.Value)
+                .Select(group => group
+                    .OrderBy(queued => GangSlot(state, queued.Command))
+                    .ToArray())
                 .ToArray();
             var sector = state.Sectors[sectorCommands.Key];
             if (groups.Length > 1)
