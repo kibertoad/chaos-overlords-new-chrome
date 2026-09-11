@@ -29,6 +29,14 @@ public static class OriginalFontLayout
     }
 }
 
+public static class SetupButtonLayout
+{
+    public static Rectangle AddPlayer => new(370, 328, 92, 24);
+    public static Rectangle RemovePlayer => new(468, 328, 92, 24);
+    public static Rectangle Start => new(370, 375, 92, 45);
+    public static Rectangle Back => new(468, 375, 92, 45);
+}
+
 public enum ClientScreen
 {
     Title,

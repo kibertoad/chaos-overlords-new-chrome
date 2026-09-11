@@ -28,15 +28,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     ];
     private static readonly Rectangle[] SetupDurations =
     [new(80, 282, 50, 24), new(136, 282, 50, 24), new(192, 282, 50, 24), new(248, 282, 52, 24)];
-    private static readonly Rectangle SetupPlayersAdd = new(370, 326, 92, 30);
-    private static readonly Rectangle SetupPlayersRemove = new(466, 326, 96, 30);
     private static readonly Rectangle[] SetupAiMentalities =
     [
         new(80, 330, 108, 27), new(80, 359, 108, 27),
         new(80, 388, 108, 27), new(80, 417, 108, 27)
     ];
-    private static readonly Rectangle SetupStart = new(370, 374, 92, 50);
-    private static readonly Rectangle SetupBack = new(466, 374, 96, 50);
     private static readonly Rectangle ManagementBack = new(322, 414, 96, 28);
     private readonly GraphicsDeviceManager _graphics;
     private readonly string _assetRoot;
@@ -584,14 +580,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     var mentality = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(point));
                     if (mentality >= 0) SelectDifficulty((AiDifficulty)mentality);
                     else if (playerSlot >= 0) ToggleController(playerSlot);
-                    else if (SetupPlayersAdd.Contains(point)) ChangePlayerCount(1, pointerButton: true);
-                    else if (SetupPlayersRemove.Contains(point)) ChangePlayerCount(-1, pointerButton: true);
-                    else if (SetupStart.Contains(point))
+                    else if (SetupButtonLayout.AddPlayer.Contains(point))
+                        ChangePlayerCount(1, pointerButton: true);
+                    else if (SetupButtonLayout.RemovePlayer.Contains(point))
+                        ChangePlayerCount(-1, pointerButton: true);
+                    else if (SetupButtonLayout.Start.Contains(point))
                     {
                         PlayGeneralSound(GeneralSoundSlot.ButtonPress);
                         StartMatch();
                     }
-                    else if (SetupBack.Contains(point))
+                    else if (SetupButtonLayout.Back.Contains(point))
                     {
                         PlayGeneralSound(GeneralSoundSlot.ButtonPress);
                         _screens.Show(ClientScreen.Title);

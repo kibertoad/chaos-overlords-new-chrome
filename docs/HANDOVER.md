@@ -9,7 +9,7 @@ Last updated: 2026-09-11
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`.
 - The latest pushed functional checkpoint is the tip of that branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,045 tests with no warnings.
+  isolated Release build passed all 1,046 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build

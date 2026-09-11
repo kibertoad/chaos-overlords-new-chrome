@@ -58,6 +58,15 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void SetupPushButtonsUseRecoveredReleaseHitRectangles()
+    {
+        Assert.Equal(new Rectangle(370, 328, 92, 24), SetupButtonLayout.AddPlayer);
+        Assert.Equal(new Rectangle(468, 328, 92, 24), SetupButtonLayout.RemovePlayer);
+        Assert.Equal(new Rectangle(370, 375, 92, 45), SetupButtonLayout.Start);
+        Assert.Equal(new Rectangle(468, 375, 92, 45), SetupButtonLayout.Back);
+    }
+
+    [Fact]
     public void HirePriceSitsBesideRejectControl()
     {
         Assert.Equal(new Rectangle(438, 436, 33, 24), HireDockLayout.PriceCell(0));

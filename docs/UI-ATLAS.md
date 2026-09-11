@@ -56,14 +56,17 @@ these rectangles:
 - Planning time: x 192 with width 108; row tops 330, 359, 388 and 417,
   each 27 pixels high, corresponding to None, 30 Seconds, 2 Minutes and
   5 Minutes.
-- Add player: `(370,326,92,30)`.
-- Remove player: `(466,326,96,30)`.
-- Begin: `(370,374,92,50)`.
-- Cancel: `(466,374,96,50)`.
+- Add player: `(370,328,92,24)`.
+- Remove player: `(468,328,92,24)`.
+- Begin: `(370,375,92,45)`.
+- Cancel: `(468,375,92,45)`.
 
-These coordinates were measured from the extracted bitmap. Exact inclusive
-edges, pressed states, disabled states and original cursor feedback remain to be
-validated against the executable.
+The four push-button rectangles are verified against the destination rectangles
+in original helper `0x0040eb5f`; the other coordinates were measured from the
+extracted bitmap. The helper uses half-open rectangle containment, restores the
+released image when the pointer leaves, and accepts only release inside. The
+recreation now uses its exact hit rectangles. Other pressed/disabled states and
+original cursor feedback remain to be validated.
 
 ## Rendering rules recovered so far
 
