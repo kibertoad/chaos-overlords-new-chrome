@@ -173,6 +173,39 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
+    public void ChaosRollsAndEventsFollowRosterSlotsRatherThanSubmissionOrder()
+    {
+        var match = CreateMatch(twoPlayerZeroGangs: true, owner: new PlayerId(0), tolerance: 40);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Chaos(0, 11)).Accepted);
+        Assert.True(match.Submit(Chaos(0, 10)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        for (var index = 0; index < 3; index++) match.FinishExecutionPhase();
+        var expectedRandom = new DeterministicRandom(
+            match.Random.State, match.Random.ConsumptionCount);
+        var band = OriginalResolutionRules.Band(match, new PlayerId(0));
+        var expectedRolls = new List<int>();
+        foreach (var gangId in new[] { new GangId(10), new GangId(11) })
+        {
+            var gang = match.FindGang(gangId)!;
+            var pool = match.Sectors[gang.SectorId].Income + gang.Force
+                + EffectiveStatisticsCalculator.ForGang(match, gang).Chaos;
+            var dice = OriginalResolutionRules.ActionPool(band, GangAction.Chaos, pool);
+            expectedRolls.AddRange(DiceRoller.RollD6(expectedRandom, dice));
+        }
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal([new GangId(10), new GangId(11)],
+            match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
+        Assert.All(match.LastPhaseResolutions, result =>
+            Assert.Equal(expectedRolls, result.Event!.Resolution!.Rolls));
+        Assert.Equal(expectedRandom.State, match.Random.State);
+        Assert.Equal(expectedRandom.ConsumptionCount, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void UncontrolledSectorPaysHalfOfSuccessesRoundedDown()
     {
         var match = CreateMatch(tolerance: 40);

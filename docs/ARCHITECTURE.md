@@ -334,12 +334,13 @@ Science Center or Research Lab cannot retroactively improve a concurrent roll.
 Mutation and event emission retain deterministic queue order while exact
 original within-phase ordering remains a reference-fixture gap.
 
-Chaos is resolved across the entire subphase: one player's same-sector gangs
-share a roll, every group in a sector contributes before its crackdown state and
-payouts commit, and a new crackdown suppresses all groups in that sector. This
-phase-wide barrier is deterministic and prevents queue order from letting an
-earlier player escape suppression; accumulation/reset and original ordering are
-still provisional pending binary fixtures.
+Chaos is resolved across the entire subphase: gangs roll individually in binary
+player/roster-slot order, one player's same-sector gangs share the aggregate
+result, and every group in a sector contributes before its crackdown state and
+payouts commit. A new crackdown suppresses all groups in that sector. This
+phase-wide barrier prevents queue order from changing RNG or letting an earlier
+player escape suppression; uncontrolled payout divides the completed
+player-sector success total once.
 
 Combat also uses a phase-wide barrier. It snapshots Force, effective statistics,
 equipment class, and Hidden state for every gang; calculates all attacks and

@@ -441,30 +441,33 @@ public static partial class CommandResolver
         MatchState state,
         IReadOnlyList<QueuedCommand> commands)
     {
-        var groups = commands
-            .GroupBy(queued => (
-                queued.Command.Player,
-                SectorId: state.FindGang(queued.Command.Gang)!.SectorId))
+        var ordered = commands
+            .OrderBy(queued => queued.Command.Player.Value)
+            .ThenBy(queued => GangSlot(state, queued.Command))
+            .ToArray();
+        var rolled = ordered.Select(queued =>
+        {
+            var gang = state.FindGang(queued.Command.Gang)!;
+            var sector = state.Sectors[gang.SectorId];
+            var band = OriginalResolutionRules.Band(state, queued.Command.Player);
+            var pool = checked(SectorIncome(state, sector) + gang.Force
+                + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos);
+            var dice = OriginalResolutionRules.ActionPool(band, GangAction.Chaos, pool);
+            var rolls = DiceRoller.RollD6(state.Random, dice);
+            var successes = OriginalResolutionRules.CountSuccesses(
+                rolls, OriginalResolutionRules.SuccessThreshold(band, GangAction.Chaos));
+            return new ChaosRoll(queued, sector, rolls, successes, dice, band);
+        }).ToArray();
+        var groups = rolled
+            .GroupBy(value => (value.Queued.Command.Player, value.Sector.Id))
             .Select(group =>
             {
-                var participants = group.ToArray();
-                var sector = state.Sectors[group.Key.SectorId];
-                var band = OriginalResolutionRules.Band(state, group.Key.Player);
-                var threshold = OriginalResolutionRules.SuccessThreshold(band, GangAction.Chaos);
-                var rolls = new List<int>();
-                var dice = 0;
-                foreach (var queued in participants)
-                {
-                    var gang = state.FindGang(queued.Command.Gang)!;
-                    var pool = checked(SectorIncome(state, sector) + gang.Force
-                        + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos);
-                    var gangDice = OriginalResolutionRules.ActionPool(band, GangAction.Chaos, pool);
-                    dice = checked(dice + gangDice);
-                    rolls.AddRange(DiceRoller.RollD6(state.Random, gangDice));
-                }
+                var values = group.ToArray();
                 return new ChaosGroup(
-                    participants, sector, rolls,
-                    OriginalResolutionRules.CountSuccesses(rolls, threshold), dice, band);
+                    values.Select(value => value.Queued).ToArray(), values[0].Sector,
+                    values.SelectMany(value => value.Rolls).ToArray(),
+                    values.Sum(value => value.Successes), values.Sum(value => value.DiceCount),
+                    values[0].Band);
             })
             .ToArray();
 
@@ -493,8 +496,10 @@ public static partial class CommandResolver
             triggered.Add(sector.Id);
         }
 
-        var results = new List<CommandResolutionResult>(commands.Count);
-        var firstEventBySector = new Dictionary<int, long>();
+        var groupByCommand = groups.SelectMany(group => group.Participants.Select(
+                participant => (participant.Sequence, Group: group)))
+            .ToDictionary(value => value.Sequence, value => value.Group);
+        var payouts = new Dictionary<(PlayerId Player, int SectorId), int>();
         foreach (var group in groups)
         {
             var player = state.FindPlayer(group.Participants[0].Command.Player)!;
@@ -503,19 +508,25 @@ public static partial class CommandResolver
                 : ManualRules.ChaosIncome(group.Successes, group.Sector.Owner == player.Id);
             player.Cash = checked(player.Cash + payout);
             player.Statistics.CashEarned += payout;
-            for (var index = 0; index < group.Participants.Count; index++)
-            {
-                var participant = group.Participants[index];
-                var result = Complete(state, participant.Command, GameEventKind.CommandResolved,
-                    new CommandResolutionDetails(
-                        CommandResolutionCode.Resolved, group.Rolls, group.Successes,
-                        sectorBefore[group.Sector.Id], group.Sector.Chaos,
-                        CashDelta: index == 0 ? payout : 0,
-                        AttackValue: group.DiceCount, DefenseValue: group.Sector.Tolerance),
-                    GameNotificationKind.Chaos);
-                results.Add(result);
-                firstEventBySector.TryAdd(group.Sector.Id, result.Event!.Sequence);
-            }
+            payouts[(player.Id, group.Sector.Id)] = payout;
+        }
+
+        var results = new List<CommandResolutionResult>(ordered.Length);
+        var firstEventBySector = new Dictionary<int, long>();
+        var paidGroups = new HashSet<(PlayerId Player, int SectorId)>();
+        foreach (var participant in ordered)
+        {
+            var group = groupByCommand[participant.Sequence];
+            var key = (participant.Command.Player, group.Sector.Id);
+            var result = Complete(state, participant.Command, GameEventKind.CommandResolved,
+                new CommandResolutionDetails(
+                    CommandResolutionCode.Resolved, group.Rolls, group.Successes,
+                    sectorBefore[group.Sector.Id], group.Sector.Chaos,
+                    CashDelta: paidGroups.Add(key) ? payouts[key] : 0,
+                    AttackValue: group.DiceCount, DefenseValue: group.Sector.Tolerance),
+                GameNotificationKind.Chaos);
+            results.Add(result);
+            firstEventBySector.TryAdd(group.Sector.Id, result.Event!.Sequence);
         }
 
         foreach (var sectorId in triggered.Order())
@@ -528,6 +539,14 @@ public static partial class CommandResolver
         }
         return results;
     }
+
+    private sealed record ChaosRoll(
+        QueuedCommand Queued,
+        MatchSectorState Sector,
+        IReadOnlyList<int> Rolls,
+        int Successes,
+        int DiceCount,
+        OriginalResolutionBand Band);
 
     private sealed record ChaosGroup(
         IReadOnlyList<QueuedCommand> Participants,

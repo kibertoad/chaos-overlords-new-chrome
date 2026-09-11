@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,141 tests with no warnings.
+  isolated Release build passed all 1,142 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -181,7 +181,10 @@ Last updated: 2026-09-11
   duplicate-slot save round-trip fixtures cover the recovered behavior.
 - Control and Chaos regression fixtures now make density-derived sector Income
   differ from summed site Cash, guarding the recovered distinction. Chaos adds
-  sector Income separately to every participating gang's pool before grouping.
+  sector Income separately to every participating gang's pool, rolls gangs in
+  fixed player/roster-slot order, then groups successes by player and sector.
+  Uncontrolled half income is divided once after that aggregation; reversed
+  submission and RNG-state fixtures guard the recovered ordering.
 - Give now uses the original `PX05015` Equipment to Give panel before its
   compatible same-sector recipient list. One command can carry any combination
   of the source gang's exact three equipped items. Transactions now scan fixed

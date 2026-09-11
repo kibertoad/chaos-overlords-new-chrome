@@ -1972,6 +1972,30 @@ complete retaliation-eligibility predicate.
 **Next validation:** capture fixed original traces at bands 0, 1, and 2 for
 every affected action, including Hide and both Martial Arts branches.
 
+### BIN-CHAOS-001 - roster-order rolls and grouped uncontrolled payout
+
+**Observation:** The action-3 (**Chaos**) pass in `0x00472775` scans player
+slots 0 through 5 and each player's 81 gang slots in ascending order. Lines
+245-265 calculate and roll each participating gang separately, store its
+success count by gang slot, and add that count to a player-by-sector aggregate.
+After all rolls, the sector pass at lines 268-327 evaluates Crackdown totals and
+zeroes participating gang results when the sector triggers.
+
+The later payout pass at lines 645-672 rebuilds player-by-sector totals from
+the stored per-gang successes. When the player does not own that sector, lines
+668-670 divide the completed aggregate by two once; line 672 then adds it to
+cash. The division is not performed per gang.
+
+**Interpretation:** Chaos RNG order is fixed player slot, then persistent roster
+slot, regardless of submission order or intervening sectors. Same-player gangs
+in one sector still share the final success result and payout. Uncontrolled
+income is `trunc(total successes / 2)`, preserving an odd success contributed
+across multiple gangs rather than rounding each gang independently.
+
+**Confidence:** High static evidence for scan order, per-gang rolls/storage,
+player-sector aggregation, Crackdown suppression, ownership comparison, and
+single post-aggregation division. Runtime seed correlation remains pending.
+
 ### BIN-POLICE-001 - occurrence window, neutralization, and duration order
 
 **Observation:** In `0x00472775`, each sector's two signed Crackdown occurrence

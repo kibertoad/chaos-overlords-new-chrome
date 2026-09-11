@@ -424,24 +424,26 @@ claim about original-game behavior.
   prevents all Chaos income in that sector.
 - Interpretation: reset the prior turn's sector Chaos during Upkeep, then group
   one player's Chaos commands by sector. Each participating gang contributes
-  `sector Income + Force + Chaos` dice before the group is pooled and rolled in
-  earliest queue order. Generated sector Income is independent of the three
+  `sector Income + Force + Chaos` dice and rolls in fixed player-slot then
+  persistent roster-slot order, independent of submission order or intervening
+  sectors. Generated sector Income is independent of the three
   sites' Cash benefits. Accumulate every
   player's successes into `MatchSectorState.Chaos` before paying anybody. A
   sector already in crackdown, or crossing the strict `Chaos > Tolerance`
   threshold during this phase, pays no group; otherwise controlled groups earn
-  all successes and uncontrolled groups earn `floor(successes / 2)`. A newly
+  all successes and uncontrolled groups earn `floor(group successes / 2)` after
+  all same-player gangs in that sector have been aggregated. A newly
   triggered crackdown notifies every active player.
-- Current exclusions: exact half-dollar rounding and binary within-phase
-  RNG/event order.
+- Current exclusions: exact binary notification/event order and controlled
+  runtime corroboration.
 - Confidence: High for the per-gang pool, generated-Income distinction, control
-  multiplier, and suppression rule; Medium for friendly pooling; Low for
-  accumulation, rounding, and ordering.
+  multiplier, roster RNG order, grouped half payout, and suppression rule;
+  Medium for notification presentation.
 - Implementation: `CommandResolver.ResolveChaosPhase`,
   `ManualRules.ChaosDiceCount`, `ManualRules.ChaosIncome`, and
   `ManualRules.TriggersCrackdown`.
 - Tests: `ChaosResolutionTests` covers turn-start reset, pooling, generated
-  sector Income versus site Cash, payout,
+  sector Income versus site Cash, fixed player/roster RNG order, grouped payout,
   statistics, sector-wide
   cross-player aggregation, existing/new crackdown behavior, notifications,
   RNG consumption, and phase hashes; `ManualRulesTests` covers arithmetic and
