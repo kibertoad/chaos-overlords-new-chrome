@@ -77,7 +77,7 @@ public sealed class FinanceUiTests
     }
 
     [Fact]
-    public void ProjectionIncludesEveryItemInQueuedMultiSell()
+    public void ProjectionUsesOriginalLastSlotPayoutForQueuedMultiSell()
     {
         var state = CreatePlanningMatch();
         var player = state.Players[0];
@@ -98,11 +98,7 @@ public sealed class FinanceUiTests
 
         var projection = FinanceProjection.Project(state, player, null);
 
-        Assert.Equal(
-            EquipmentRules.SaleValue(weapon)
-                + EquipmentRules.SaleValue(armor)
-                + EquipmentRules.SaleValue(miscellaneous),
-            projection.Equipment);
+        Assert.Equal(EquipmentRules.SaleValue(miscellaneous), projection.Equipment);
     }
 
     private static MatchState CreatePlanningMatch()

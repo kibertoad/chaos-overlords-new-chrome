@@ -96,10 +96,18 @@ public sealed record FinanceProjection(
                     state,
                     state.FindGang(command.Gang)!,
                     state.Definitions.Items[command.Target.Id]),
-            GangAction.Sell => command.SellTargets().Sum(target =>
-                EquipmentRules.SaleValue(state.Definitions.Items[target.Id])),
+            GangAction.Sell => SellAdjustment(state, command),
             _ => 0
         };
+    }
+
+    private static int SellAdjustment(MatchState state, GameCommand command)
+    {
+        var credited = command.SellTargets()
+            .Select(target => state.Definitions.Items[target.Id])
+            .OrderBy(EquipmentRules.SlotFor)
+            .Last();
+        return EquipmentRules.SaleValue(credited);
     }
 
     private static int EstimateChaos(

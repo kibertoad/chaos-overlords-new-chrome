@@ -25,9 +25,9 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
-- City and Sector Financial now include the sale value of every weapon, armor,
-  and miscellaneous item selected by a queued multi-item Sell instead of
-  projecting only the primary slot.
+- City and Sector Financial now mirror the recovered multi-item Sell payout
+  overwrite: the last selected equipment slot supplies the projected credit,
+  rather than incorrectly using the primary selection.
 - Online order readiness is now monotonic per turn even while a prior document
   is already in flight. A replacement draft can update the whole order document
   without accidentally retracting the player's earlier ready signal.

@@ -623,7 +623,8 @@ claim about original-game behavior.
   all components commit in one Upkeep boundary; Low for excluded edge cases.
 - Implementation: `EconomyResolver.ResolveUpkeep` and
   `MatchState.FinishUpkeep`; `FinanceProjection` previews the same component
-  classes and sums every selected item in a queued multi-item Sell.
+  classes and mirrors the recovered last-slot payout overwrite for multi-item
+  Sell.
 - Tests: `EconomyResolutionTests` covers component accounting, persistent debt,
   eliminated players, ordered events/notifications, and deterministic phase
   hashes. Command, transaction, and hire tests cover debt restrictions.
