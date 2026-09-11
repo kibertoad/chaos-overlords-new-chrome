@@ -54,6 +54,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _cityFinanceBackground;
     private Texture2D? _sectorFinanceBackground;
     private Texture2D? _gangInfoBackground;
+    private Texture2D? _gangDefinitionInfoBackground;
     private Texture2D? _siteInfoBackground;
     private Texture2D? _itemInfoBackground;
     private Texture2D? _combatBackground;
@@ -142,6 +143,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private ClientScreen _gangDetailsReturnScreen = ClientScreen.City;
     private GangId? _gangDetailsInstanceId;
     private short? _gangDetailsDefinitionId;
+    private int? _gangDetailsSectorFilter;
     private ClientScreen _siteDetailsReturnScreen = ClientScreen.Sector;
     private int? _siteDetailsSectorId;
     private int? _siteDetailsSlot;
@@ -215,6 +217,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _sectorFinanceBackground = LoadTexture("PX05019.bmp");
         _handoffPanel = LoadTexture("PX00132.bmp");
         _gangInfoBackground = LoadTexture("PX05000.bmp");
+        _gangDefinitionInfoBackground = LoadTexture("PX05022.bmp");
         _siteInfoBackground = LoadTexture("PX05002.bmp");
         _itemInfoBackground = LoadTexture("PX05001.bmp");
         _combatBackground = LoadTexture("PX05014.bmp");
@@ -367,8 +370,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 case ClientScreen.Gang:
                     if (_gangDetailsInstanceId is not null)
                     {
-                        if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) CycleGang(-1);
-                        if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) CycleGang(1);
+                        if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) CycleGangDetails(-1);
+                        if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) CycleGangDetails(1);
                     }
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                         CloseGangDetails();

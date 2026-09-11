@@ -83,7 +83,7 @@ public sealed partial class ChaosGame
         else if (SectorGangCardLayout.Portrait(index).Contains(point))
             BeginGangDrag(gang, point);
         else if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
-            OpenGangDetails(gang, ClientScreen.Sector);
+            OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
     }
 
     private void DrawSectorDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
@@ -208,7 +208,7 @@ public sealed partial class ChaosGame
         _gangDragStarted = false;
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang) return;
         if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
-            OpenGangDetails(gang, ClientScreen.Sector);
+            OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
     }
 
     private void CompleteGangDrag(Point point)

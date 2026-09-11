@@ -470,6 +470,12 @@ public static class GangInformationLayout
     public const int LeftValueRight = 287;
     public const int RightValueRight = 383;
 
+    public static Rectangle Equipment(int slot)
+    {
+        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
+        return new Rectangle(394, 146 + slot * 64, 40, 40);
+    }
+
     public static int StatisticY(int row) => row switch
     {
         0 => 244,

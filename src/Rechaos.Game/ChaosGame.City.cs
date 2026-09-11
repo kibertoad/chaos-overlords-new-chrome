@@ -15,7 +15,7 @@ public sealed partial class ChaosGame
     private static readonly Rectangle CityCombatSummary = new(492, 176, 50, 49);
     private static readonly Rectangle CityFinanceCity = new(548, 176, 50, 32);
     private static readonly Rectangle CityFinanceSector = new(548, 208, 50, 17);
-    private static readonly Rectangle CityGangs = new(492, 226, 50, 17);
+    private static readonly Rectangle CityGangs = new(492, 226, 50, 34);
     private static readonly Rectangle CityHire = new(492, 260, 50, 17);
     private static readonly Rectangle CitySector = new(548, 226, 50, 17);
     private static readonly Rectangle CityRanking = new(548, 243, 50, 17);
@@ -99,7 +99,7 @@ public sealed partial class ChaosGame
         else if (CityCombatSummary.Contains(point)) OpenManagement(ClientScreen.CombatSummary, returnScreen);
         else if (CityFinanceCity.Contains(point)) OpenFinance(FinanceScope.City, returnScreen);
         else if (CityFinanceSector.Contains(point)) OpenFinance(FinanceScope.Sector, returnScreen);
-        else if (CityGangs.Contains(point)) OpenSelectedGangDetails(returnScreen);
+        else if (CityGangs.Contains(point)) OpenSectorGangDetails(returnScreen);
         else if (CityHire.Contains(point)) OpenHire(returnScreen);
         else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
         else if (CityRanking.Contains(point)) OpenManagement(ClientScreen.Ranking, returnScreen);

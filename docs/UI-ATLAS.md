@@ -38,6 +38,7 @@ original-game capture confirms the screen and interaction state.
 | `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
 | `PX05020` | System Warning panel for confirming an end turn while at least one active gang is idle | High from visible text and client trigger semantics |
 | `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
+| `PX05022` | Gang Information variant without live-instance equipment cells, used for hire-offer definition inspection | High from comparison with `PX05000` and Hire/Gang help topics |
 | `PX02000` | 22 vertically stacked site portraits, 120x64 each | High from dimensions and definition coverage |
 | `PX03000` | 10x9 gang portrait grid, 64x64 each, covering all 90 definitions | High from dimensions and definition coverage |
 | `PX07000`-`PX07027`, `PX07200`-`PX07228` | Eight-frame 64x64 attacker overlays facing opposite directions; index 27 is target-evasion/question art and right-facing index 28 is the police car | High from frame inspection and item-table indices |
@@ -126,6 +127,11 @@ cursor feedback remain to be validated.
 - Sector detail also shows up to ten friendly or detected enemy portraits from
   `PX03000` in owner colors. Friendly portraits are mouse-selectable and open
   that gang's information panel; enemy portraits remain read-only.
+- The main control panel's Gangs/Sector half selects only active friendly gangs
+  in the current sector, refuses an empty roster, and keeps arrow navigation
+  within that stable ID-ordered roster. Live gang details use `PX05000` and fill
+  its three right-side weapon/armor/miscellaneous cells from `PX04999`; a hire
+  offer has no instance equipment and therefore uses the clean `PX05022` form.
 - Search results reuse the same sheet and visibility projection for seven
   portrait-led rows, with owner-colored borders and overflow count.
 - The Equipment panel shows the selected gang from `PX03000` at `(558,58)` in
