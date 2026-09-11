@@ -1,6 +1,8 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Rechaos.Core.GameModel;
 using Rechaos.Multiplayer.Generated;
+using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
 
 namespace Rechaos.Game;
 
@@ -12,15 +14,18 @@ public sealed partial class ChaosGame
         DrawField(batch, pixel, font, OnlineServerField, _online.Server);
         DrawField(batch, pixel, font, OnlineNameField, _online.DisplayName);
         DrawField(batch, pixel, font, OnlineJoinCodeField, _online.JoinCode);
+        DrawField(batch, pixel, font, OnlinePasswordField, _online.Password);
         var busy = _online.Stage == MultiplayerStage.Busy;
         DrawButton(batch, pixel, font, OnlineHost, "HOST", !busy);
         DrawButton(batch, pixel, font, OnlineJoin, "JOIN", !busy);
         DrawButton(batch, pixel, font, OnlineBack, "BACK", !busy);
-        font.Draw(batch, "LEAVE THE CODE EMPTY TO HOST A NEW MATCH", new Vector2(120, 274),
-            new Color(150, 165, 165), 1);
-        font.Draw(batch, "THE SETUP SCREEN'S SCENARIO AND MENTALITY ARE USED", new Vector2(120, 288),
-            new Color(150, 165, 165), 1);
-        DrawCentered(font, batch, _online.Status, 320, Color.Gold, 1);
+        var hint = new Color(150, 165, 165);
+        font.Draw(batch, "LEAVE THE CODE EMPTY TO HOST A NEW MATCH", new Vector2(120, 296), hint, 1);
+        font.Draw(batch, "A PASSWORD GATES THE LOBBY  LEAVE IT BLANK FOR NONE", new Vector2(120, 310),
+            hint, 1);
+        font.Draw(batch, "THE SETUP SCREEN'S SCENARIO AND MENTALITY ARE USED", new Vector2(120, 324),
+            hint, 1);
+        DrawCentered(font, batch, _online.Status, 348, Color.Gold, 1);
     }
 
     private void DrawLobby(SpriteBatch batch, Texture2D pixel, PixelFont font)
@@ -36,12 +41,12 @@ public sealed partial class ChaosGame
         font.Draw(batch, $"{match.Settings.Name}", new Vector2(120, 156), Color.White, 1);
         font.Draw(
             batch,
-            $"{match.Players.Count} OF {match.Settings.MaxPlayers} SEATED",
+            $"{SeatedPlayerCount(match)} OF {match.Settings.MaxPlayers} SEATED",
             new Vector2(120, 172),
             new Color(150, 165, 165),
             1);
         var row = 0;
-        foreach (var player in match.Players)
+        foreach (var player in match.Players.Where(Seated))
         {
             var colour = player.Slot >= 0 && player.Slot < PlayerColors.Length
                 ? PlayerColors[player.Slot]
@@ -51,7 +56,7 @@ public sealed partial class ChaosGame
             row++;
         }
         // Every unseated slot plays as a computer player, which is worth saying before the start.
-        var computers = MatchLimitsPlayerCount - match.Players.Count;
+        var computers = MatchLimits.PlayerCount - SeatedPlayerCount(match);
         if (computers > 0)
         {
             font.Draw(batch, $"{computers} COMPUTER PLAYERS WILL FILL THE REST",
@@ -84,8 +89,17 @@ public sealed partial class ChaosGame
         font.Draw(batch, field.Display, new Vector2(bounds.X + 4, bounds.Y + 6), Color.White, 1);
     }
 
-    /// <summary>The six seats of the original game, named here so the draw does not reach for core.</summary>
-    private const int MatchLimitsPlayerCount = 6;
+    /// <summary>
+    /// Whether a roster entry is somebody the lobby is still counting.
+    /// </summary>
+    /// <remarks>
+    /// A player who left or was kicked stays on the roster — the match's history needs them — so
+    /// counting rows would over-report how full a lobby is and under-report how many computer players
+    /// will fill the rest of the table.
+    /// </remarks>
+    private static bool Seated(PlayerView player) => player.Status == WirePlayerStatus.Active;
+
+    private static int SeatedPlayerCount(MatchView match) => match.Players.Count(Seated);
 
     /// <summary>
     /// The countdown for the open turn, or an empty string when the match has no timer.
@@ -102,12 +116,36 @@ public sealed partial class ChaosGame
         return $"{(int)remaining.TotalMinutes:00}:{remaining.Seconds:00}";
     }
 
-    /// <summary>A line for the city screen saying where the online turn stands.</summary>
-    private string OnlineTurnStatus() => _online.Stage switch
+    /// <summary>
+    /// A line for the city screen saying where the online turn stands.
+    /// </summary>
+    /// <remarks>
+    /// A disconnection takes the line over, because it explains everything else on it: a countdown
+    /// that is still running and a turn that is not resolving mean something quite different when the
+    /// server has stopped answering, and the player is the one who can do something about it.
+    /// </remarks>
+    private string OnlineTurnStatus()
     {
-        MultiplayerStage.WaitingForSeal => $"WAITING FOR THE OTHER PLAYERS {OnlineCountdown()}",
-        MultiplayerStage.Desynced => "MATCH PAUSED  REPAIRING A DESYNC",
-        MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineCountdown()}",
-        _ => string.Empty,
-    };
+        if (!_online.IsConnected) return $"RECONNECTING TO THE SERVER  {OnlineSeatTally()}";
+        return _online.Stage switch
+        {
+            MultiplayerStage.WaitingForSeal =>
+                $"WAITING FOR THE OTHER PLAYERS {OnlineSeatTally()} {OnlineCountdown()}",
+            MultiplayerStage.Desynced => "MATCH PAUSED  REPAIRING A DESYNC",
+            MultiplayerStage.Finished => "MATCH COMPLETE",
+            MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineCountdown()}",
+            _ => string.Empty,
+        };
+    }
+
+    /// <summary>
+    /// How many seats have finished planning, of the ones the turn seals on.
+    /// </summary>
+    /// <remarks>
+    /// The point of showing it is that "waiting for the other players" does not say whether one
+    /// opponent is deciding or four have closed the game. Empty until the server has said something
+    /// about this turn's readiness, rather than claiming nobody is ready when nobody has reported.
+    /// </remarks>
+    private string OnlineSeatTally() =>
+        _online.SeatedSeats > 0 ? $"{_online.ReadySeats}/{_online.SeatedSeats}" : string.Empty;
 }

@@ -74,11 +74,25 @@ public sealed class SpeculativeTurn
             throw new InvalidOperationException(
                 $"A turn is planned during Command, not {authoritative.Coordinator.Phase}.");
         }
+        if (slot < 0 || slot >= authoritative.Setup.Players.Count)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(slot), slot, "That seat is not at this table.");
+        }
         var player = new PlayerId(slot);
         var replay = new MatchReplayRecorder(MatchStateClone.Of(authoritative, definitions));
         while (replay.State.Coordinator.ActivePlayer is { } active && active != player)
         {
             replay.FinishCommand(active);
+        }
+        // The coordinator walks every seat, so the local one always comes up. Saying so out loud
+        // matters because the failure if it ever stopped being true is silent: the copy would be
+        // left past Command, the core would refuse every command the player gave it, and the turn
+        // would submit an empty document from an interface that looked like it was working.
+        if (replay.State.Coordinator.ActivePlayer != player)
+        {
+            throw new InvalidOperationException(
+                $"Seat {slot} never becomes the active player, so there is no turn to plan on it.");
         }
         return new SpeculativeTurn(replay, player);
     }

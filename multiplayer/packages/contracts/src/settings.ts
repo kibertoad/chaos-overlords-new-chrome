@@ -32,8 +32,11 @@ import { matchNameSchema } from './primitives'
  */
 export const gameSettingsSchema = pipe(
   record(string(), unknown()),
-  check(withinDepth, `gameSettings nests deeper than ${LIMITS.gameSettingsMaxDepth}`),
+  // Size before shape. Both checks walk the whole blob, and the cheaper question to answer about an
+  // oversized one is that it is oversized: measuring its depth first would mean doing the work on a
+  // body that was never going to be accepted.
   check(withinBytes, `gameSettings exceeds ${LIMITS.gameSettingsBytes} bytes`),
+  check(withinDepth, `gameSettings nests deeper than ${LIMITS.gameSettingsMaxDepth}`),
 )
 
 export const matchVisibilitySchema = picklist(['public', 'private'])
@@ -91,8 +94,8 @@ function withinBytes(value: Record<string, unknown>): boolean {
   try {
     json = JSON.stringify(value)
   } catch {
-    // Nesting deep enough to overflow `JSON.stringify` is over budget by any measure, and the
-    // depth check above has already said so. Both checks run: valibot finishes the pipe.
+    // Nesting deep enough to overflow `JSON.stringify` is over budget by any measure, and the depth
+    // check reports it in its own words. Both checks run: valibot finishes the pipe.
     return false
   }
   let bytes = 0

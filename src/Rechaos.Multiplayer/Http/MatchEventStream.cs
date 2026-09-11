@@ -3,15 +3,6 @@ using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Multiplayer.Http;
 
-/// <summary>How hard a dropped event stream is retried before the caller gives up on it.</summary>
-/// <param name="InitialDelay">First reconnect delay; it doubles up to <paramref name="MaxDelay"/>.</param>
-/// <param name="MaxDelay">The ceiling on the backoff window.</param>
-public sealed record ReconnectPolicy(TimeSpan InitialDelay, TimeSpan MaxDelay)
-{
-    public static ReconnectPolicy Default { get; } =
-        new(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30));
-}
-
 /// <summary>
 /// The match's event log, forever: one connection at a time, resumed from the last sequence seen.
 /// </summary>
@@ -28,11 +19,11 @@ public sealed record ReconnectPolicy(TimeSpan InitialDelay, TimeSpan MaxDelay)
 /// </remarks>
 public sealed class MatchEventStream(
     MatchHandle match,
-    ReconnectPolicy? policy = null,
-    Action<Exception, int>? onReconnect = null)
+    RetryPolicy? policy = null,
+    Action<Exception, int>? onReconnect = null,
+    Action? onConnected = null)
 {
-    private readonly ReconnectPolicy _policy = policy ?? ReconnectPolicy.Default;
-    private readonly Random _jitter = new();
+    private readonly RetryPolicy _policy = policy ?? RetryPolicy.Stream;
 
     /// <summary>
     /// Events from <paramref name="afterSeq"/> onwards, reconnecting until cancelled.
@@ -55,6 +46,7 @@ public sealed class MatchEventStream(
                 .ConfigureAwait(false);
             if (connection is not null)
             {
+                onConnected?.Invoke();
                 await using var reader = connection;
                 await using var events = reader
                     .EventsAsync(cancellationToken).GetAsyncEnumerator(cancellationToken);
@@ -77,7 +69,7 @@ public sealed class MatchEventStream(
             }
             if (cancellationToken.IsCancellationRequested) yield break;
             attempt++;
-            await Task.Delay(Backoff(attempt), cancellationToken).ConfigureAwait(false);
+            await Task.Delay(_policy.Backoff(attempt), cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -89,7 +81,7 @@ public sealed class MatchEventStream(
         {
             return (await events.MoveNextAsync().ConfigureAwait(false), null);
         }
-        catch (Exception exception) when (IsTransport(exception))
+        catch (Exception exception) when (TransientFailure.IsTransient(exception))
         {
             return (false, exception);
         }
@@ -113,38 +105,11 @@ public sealed class MatchEventStream(
             var response = await match.OpenStreamAsync(after, cancellationToken).ConfigureAwait(false);
             return new Connection(response);
         }
-        catch (MultiplayerApiException exception) when (exception.EndsTheStream)
-        {
-            throw;
-        }
-        catch (Exception exception) when (IsTransport(exception))
+        catch (Exception exception) when (TransientFailure.IsTransient(exception))
         {
             onReconnect?.Invoke(exception, attempt);
             return null;
         }
-    }
-
-    /// <summary>
-    /// A failure of this attempt rather than of the membership: worth another connection.
-    /// </summary>
-    /// <remarks>
-    /// A protocol failure is in the list because the frame that could not be read is one frame; the
-    /// resume point is the last event that did read, so reconnecting re-requests it rather than
-    /// skipping it. Anything else — a cancellation, a bug — leaves the stream.
-    /// </remarks>
-    private static bool IsTransport(Exception exception) =>
-        exception is MultiplayerApiException or HttpRequestException or IOException
-            or MultiplayerProtocolException;
-
-    /// <summary>
-    /// Exponential with full jitter, so every client of a restarting server picks a different
-    /// moment to come back rather than all of them arriving together.
-    /// </summary>
-    private TimeSpan Backoff(int attempt)
-    {
-        var doubled = _policy.InitialDelay.TotalMilliseconds * Math.Pow(2, Math.Min(attempt - 1, 16));
-        var window = Math.Min(_policy.MaxDelay.TotalMilliseconds, doubled);
-        return TimeSpan.FromMilliseconds(window * (0.5 + _jitter.NextDouble() / 2));
     }
 
     private sealed class Connection(HttpResponseMessage response) : IAsyncDisposable

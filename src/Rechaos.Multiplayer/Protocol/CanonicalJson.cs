@@ -108,7 +108,8 @@ public static class CanonicalJson
         if (!long.TryParse(raw, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var integer)
             || raw.StartsWith("-0", StringComparison.Ordinal) && integer == 0)
         {
-            throw new NonCanonicalValueException(path, $"{raw} is not a safe non-negative-zero integer");
+            throw new NonCanonicalValueException(
+                path, $"{raw} is not an integer with one portable spelling");
         }
         if (integer is > MaxSafeInteger or < -MaxSafeInteger)
         {

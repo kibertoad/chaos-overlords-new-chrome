@@ -21,6 +21,14 @@ namespace Rechaos.Multiplayer.Protocol;
 /// <see cref="JsonPolymorphicAttribute"/> declarations the generator emits, so a new union needs
 /// nothing added here.
 /// </para>
+/// <para>
+/// An object is rebuilt only when it actually carries a tag that is not already first. Everything
+/// else — which is most of a payload — is walked and left alone, because a rebuild means detaching
+/// and re-parenting every property of every object in the document to fix the few that need it.
+/// Should this ever become worth removing altogether, the way to do it is a
+/// <c>JsonConverter</c> per union that reads the tag wherever it sits, which would also save parsing
+/// each payload into a node tree before deserializing it.
+/// </para>
 /// </remarks>
 public static class WireOrder
 {
@@ -28,9 +36,13 @@ public static class WireOrder
     /// Every discriminator name any generated union uses. Three today: <c>type</c>, <c>kind</c>,
     /// <c>op</c>.
     /// </summary>
+    /// <remarks>
+    /// Declared attributes only (<c>inherit: false</c>): a union's members inherit the attribute from
+    /// their base, and counting them would say the same three names several times over.
+    /// </remarks>
     private static readonly HashSet<string> Discriminators = typeof(Generated.MatchEvent).Assembly
         .GetTypes()
-        .Select(type => type.GetCustomAttribute<JsonPolymorphicAttribute>())
+        .Select(type => type.GetCustomAttribute<JsonPolymorphicAttribute>(inherit: false))
         .Select(attribute => attribute?.TypeDiscriminatorPropertyName)
         .OfType<string>()
         .ToHashSet(StringComparer.Ordinal);
@@ -43,37 +55,72 @@ public static class WireOrder
     /// <c>type</c> field is reordered too. That is harmless: the order of an object's properties is
     /// not part of what JSON says.
     /// </remarks>
-    public static JsonNode? TagFirst(JsonNode? node)
+    public static JsonNode? TagFirst(JsonNode? node) => node switch
     {
-        switch (node)
+        JsonArray array => Normalise(array),
+        JsonObject shape => Normalise(shape),
+        _ => node,
+    };
+
+    /// <summary>
+    /// Normalises each element, replacing only the ones that came back as a different node.
+    /// </summary>
+    /// <remarks>
+    /// Assigning a node back into the slot it already occupies throws — a node may have one parent —
+    /// so an element normalised in place is left where it is rather than reassigned.
+    /// </remarks>
+    private static JsonArray Normalise(JsonArray array)
+    {
+        for (var index = 0; index < array.Count; index++)
         {
-            case JsonArray array:
-                for (var index = 0; index < array.Count; index++)
-                {
-                    var item = array[index];
-                    array[index] = null;
-                    array[index] = TagFirst(item);
-                }
-                return array;
-            case JsonObject shape:
-                return Reorder(shape);
-            default:
-                return node;
+            var item = array[index];
+            var normalised = TagFirst(item);
+            if (ReferenceEquals(item, normalised)) continue;
+            array[index] = null;
+            array[index] = normalised;
         }
+        return array;
     }
 
-    private static JsonNode Reorder(JsonObject shape)
+    /// <summary>The same object, with its properties normalised and its tag hoisted if it has one.</summary>
+    private static JsonNode Normalise(JsonObject shape)
     {
-        var properties = shape.ToArray();
-        foreach (var property in properties) shape.Remove(property.Key);
-        var reordered = new JsonObject();
-        foreach (var property in properties.Where(entry => Discriminators.Contains(entry.Key)))
+        // Snapshot the names: normalising a property can replace it, and an object cannot be written
+        // to while it is being enumerated.
+        var names = new string[shape.Count];
+        var index = 0;
+        var tag = -1;
+        foreach (var property in shape)
         {
-            reordered[property.Key] = TagFirst(property.Value);
+            if (tag < 0 && Discriminators.Contains(property.Key)) tag = index;
+            names[index++] = property.Key;
         }
-        foreach (var property in properties.Where(entry => !Discriminators.Contains(entry.Key)))
+
+        foreach (var name in names)
         {
-            reordered[property.Key] = TagFirst(property.Value);
+            var child = shape[name];
+            var normalised = TagFirst(child);
+            if (!ReferenceEquals(child, normalised)) shape[name] = normalised;
+        }
+
+        // No tag, or one already in front: the reader will take it as it stands.
+        return tag <= 0 ? shape : Hoist(shape, names, tag);
+    }
+
+    /// <summary>The object again with <paramref name="tag"/>'s property first, everything else in order.</summary>
+    private static JsonObject Hoist(JsonObject shape, string[] names, int tag)
+    {
+        var values = new JsonNode?[names.Length];
+        for (var index = 0; index < names.Length; index++)
+        {
+            values[index] = shape[names[index]];
+            // Removing detaches the value, which is what lets it be re-parented below.
+            shape.Remove(names[index]);
+        }
+        var reordered = new JsonObject { [names[tag]] = values[tag] };
+        for (var index = 0; index < names.Length; index++)
+        {
+            if (index != tag) reordered[names[index]] = values[index];
         }
         return reordered;
     }

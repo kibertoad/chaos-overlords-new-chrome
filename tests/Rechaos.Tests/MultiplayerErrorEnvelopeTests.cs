@@ -55,15 +55,41 @@ public sealed class MultiplayerErrorEnvelopeTests
     }
 
     /// <summary>
-    /// The strictness the schemas have is kept where it belongs: a view is refused when it carries
-    /// a field this build does not know, because that is a server this client cannot fully read.
+    /// An ordinary view tolerates a field this build does not know, and keeps the rest.
     /// </summary>
+    /// <remarks>
+    /// Forward compatibility where it costs nothing: the client does nothing with a field it cannot
+    /// name, and refusing the whole view over one would lock every client out of a server that had
+    /// grown it.
+    /// </remarks>
     [Fact]
-    public void StillRefusesAnUnknownFieldOnAStrictView()
+    public void SkipsAnUnknownFieldOnAView()
     {
-        Assert.Throws<MultiplayerProtocolException>(() => WireJson.Read<SnapshotView>("""
-            {"turn":1,"formatVersion":18,"stateHash":"aaaa","uploadedByPlayerId":"p1",
+        var view = WireJson.Read<SnapshotView>("""
+            {"turn":1,"formatVersion":16,"stateHash":"aaaa","uploadedByPlayerId":"p1",
              "uploadedAt":"2026-09-10T12:00:00.000Z","body":"QUJD","smuggled":true}
+            """);
+
+        Assert.Equal(1, view.Turn);
+        Assert.Equal("QUJD", view.Body);
+    }
+
+    /// <summary>
+    /// A payload whose digest is recomputed here is still read exactly.
+    /// </summary>
+    /// <remarks>
+    /// This is the one place strictness is load-bearing rather than defensive. The order documents in
+    /// a sealed set are re-serialized to check the hash the seal announced, so a field dropped on the
+    /// way in could not be written back out — the digest would not match however sound the set was.
+    /// Refusing the field says which one; tolerating it would report a mismatch and explain nothing.
+    /// </remarks>
+    [Fact]
+    public void StillRefusesAnUnknownFieldWhereTheDigestDependsOnIt()
+    {
+        Assert.Throws<MultiplayerProtocolException>(() => WireJson.ReadExact<SealedOrdersView>("""
+            {"turn":1,"orderSetHash":"aaaa",
+             "players":[{"playerId":"p1","slot":0,"ordersHash":"bbbb",
+                         "orders":{"version":1,"ops":[],"smuggled":true}}]}
             """));
     }
 }

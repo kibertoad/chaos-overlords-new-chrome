@@ -221,6 +221,9 @@ public sealed partial class ChaosGame
         foreach (var sound in _generalSounds.Values) sound.Dispose();
         _weaponSounds.Clear();
         _generalSounds.Clear();
+        // Closing the window while an online match is running should tell the server so, and let go
+        // of the sockets either way.
+        ReleaseOnlineResources();
         base.UnloadContent();
     }
 }

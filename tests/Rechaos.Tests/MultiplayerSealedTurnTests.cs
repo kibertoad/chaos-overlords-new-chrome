@@ -80,7 +80,6 @@ public sealed class MultiplayerSealedTurnTests
         Assert.Equal(PlayerController.Human, controllers[1]);
         Assert.All(controllers.Skip(2), controller => Assert.Equal(PlayerController.Computer, controller));
         Assert.Equal("ADA", replay.State.Setup.Players[0].Name);
-        Assert.Equal([0, 1], MatchBootstrapFactory.HumanSlots(Roster).Order());
     }
 
     /// <summary>
@@ -90,13 +89,12 @@ public sealed class MultiplayerSealedTurnTests
     [Fact]
     public void ApplyingTheSameSealedSetLeavesEveryClientOnTheSameHash()
     {
-        var humans = MatchBootstrapFactory.HumanSlots(Roster);
         var (left, _) = NewClient();
         var (right, _) = NewClient();
         var orders = Sealed(1, (0, OrdersFor(left.State, 0)), (1, OrdersFor(left.State, 1)));
 
-        var leftHash = SealedTurnApplier.Apply(left, orders, humans);
-        var rightHash = SealedTurnApplier.Apply(right, orders, humans);
+        var leftHash = SealedTurnApplier.Apply(left, orders);
+        var rightHash = SealedTurnApplier.Apply(right, orders);
 
         Assert.Equal(leftHash, rightHash);
         Assert.Equal(MatchStateHasher.ComputeSha256(left.State), leftHash);
@@ -113,7 +111,7 @@ public sealed class MultiplayerSealedTurnTests
     {
         var (replay, _) = NewClient();
 
-        var hash = SealedTurnApplier.Apply(replay, Sealed(1), MatchBootstrapFactory.HumanSlots(Roster));
+        var hash = SealedTurnApplier.Apply(replay, Sealed(1));
 
         Assert.Equal(MatchStateHasher.ComputeSha256(replay.State), hash);
         Assert.Equal(2, replay.State.Coordinator.Turn);
@@ -126,7 +124,6 @@ public sealed class MultiplayerSealedTurnTests
     [Fact]
     public void StaysInStepOverSeveralTurns()
     {
-        var humans = MatchBootstrapFactory.HumanSlots(Roster);
         var (left, _) = NewClient();
         var (right, _) = NewClient();
 
@@ -134,8 +131,8 @@ public sealed class MultiplayerSealedTurnTests
         {
             var orders = Sealed(turn, (0, OrdersFor(left.State, 0)));
             Assert.Equal(
-                SealedTurnApplier.Apply(left, orders, humans),
-                SealedTurnApplier.Apply(right, orders, humans));
+                SealedTurnApplier.Apply(left, orders),
+                SealedTurnApplier.Apply(right, orders));
         }
         Assert.Equal(5, left.State.Coordinator.Turn);
     }
@@ -147,7 +144,6 @@ public sealed class MultiplayerSealedTurnTests
     [Fact]
     public void AttributesOpsToTheSlotTheSealFrozeThemUnder()
     {
-        var humans = MatchBootstrapFactory.HumanSlots(Roster);
         var (honest, _) = NewClient();
         var (lying, _) = NewClient();
         var gang = honest.State.Players[1].Gangs[0].Id.Value;
@@ -157,8 +153,8 @@ public sealed class MultiplayerSealedTurnTests
         var truthful = new OrderDocument(1, [new CancelCommandOp(0, gang)]);
 
         Assert.Equal(
-            SealedTurnApplier.Apply(honest, Sealed(1, (0, truthful)), humans),
-            SealedTurnApplier.Apply(lying, Sealed(1, (0, forged)), humans));
+            SealedTurnApplier.Apply(honest, Sealed(1, (0, truthful))),
+            SealedTurnApplier.Apply(lying, Sealed(1, (0, forged))));
     }
 
     /// <summary>

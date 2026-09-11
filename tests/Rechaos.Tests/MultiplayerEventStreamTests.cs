@@ -120,13 +120,52 @@ public sealed class MultiplayerEventStreamTests
     }
 
     /// <summary>
-    /// The schemas are strict on the server, and so is this side: a field the server grew that this
-    /// build has never heard of is noticed at the boundary rather than dropped on the floor.
+    /// A field the server grew is skipped, so a client that predates it keeps playing.
     /// </summary>
+    /// <remarks>
+    /// The server is deployed separately — self-hosted ones especially — so an additive release has
+    /// to be survivable. Refusing the event instead would end the match of every client built before
+    /// the field existed, which is a worse outcome than ignoring something this build has no use for.
+    /// </remarks>
     [Fact]
-    public async Task RefusesAPayloadCarryingAFieldItDoesNotKnow()
+    public async Task SkipsAPayloadFieldItDoesNotKnow()
+    {
+        var events = await ReadAsync(
+            Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\",\"smuggled\":true}"));
+
+        var hostChanged = Assert.IsType<LobbyHostChangedEvent>(Assert.Single(events));
+        Assert.Equal("p1", hostChanged.Payload.HostPlayerId);
+    }
+
+    /// <summary>
+    /// Tolerance stops at a null the schema does not allow.
+    /// </summary>
+    /// <remarks>
+    /// Worth pinning next to the test above, because the two look like one setting and are not. A
+    /// server that skips a field this build has no use for is a newer server; one that sends null for
+    /// a field declared non-nullable is a wrong server, and the difference matters because the second
+    /// case would otherwise put a null into a property every caller is entitled to rely on and
+    /// surface somewhere else entirely.
+    /// </remarks>
+    [Fact]
+    public async Task RefusesANullWhereThePayloadDeclaresOneCannotBe()
     {
         await Assert.ThrowsAsync<MultiplayerProtocolException>(() => ReadAsync(
-            Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\",\"smuggled\":true}")));
+            Frame("turn.sealed", "{\"turn\":3,\"orderSetHash\":null}")));
+    }
+
+    /// <summary>
+    /// A payload read for its digest is held to every field being present.
+    /// </summary>
+    /// <remarks>
+    /// The other half of <see cref="WireJson.ReadExact{T}"/>'s promise. Tolerating an absent field
+    /// there would leave a default in its place, re-serialize it as that default, and report a digest
+    /// mismatch for a set that was never wrong in the way the message implied.
+    /// </remarks>
+    [Fact]
+    public void StillRefusesADigestPayloadMissingAField()
+    {
+        Assert.Throws<MultiplayerProtocolException>(
+            () => WireJson.ReadExact<OrderDocument>("{\"version\":1}"));
     }
 }

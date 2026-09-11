@@ -356,7 +356,6 @@ public static class MatchReplaySerializer
         string[] candidateHashes = replayVersion switch
         {
             >= 17 => [MatchStateHasher.ComputeSha256(state)],
-
             16 => [MatchStateHasher.ComputeVersionEighteenSha256(state)],
             15 => [MatchStateHasher.ComputeVersionSeventeenSha256(state)],
             14 => [MatchStateHasher.ComputeVersionSixteenSha256(state)],

@@ -35,6 +35,13 @@ public static class EventStreamParser
             }
             if (line.Length > 0)
             {
+                if (frame.Length + line.Length > MaximumFrameChars)
+                {
+                    // A frame this long is not an event. Without a ceiling, a server that never sent
+                    // the blank line would grow this buffer for as long as it kept writing.
+                    throw new MultiplayerProtocolException(
+                        $"an event stream frame passed {MaximumFrameChars} characters without ending");
+                }
                 frame.Append(line).Append('\n');
                 continue;
             }
@@ -43,6 +50,16 @@ public static class EventStreamParser
             if (parsed is not null) yield return parsed;
         }
     }
+
+    /// <summary>
+    /// The largest frame worth assembling.
+    /// </summary>
+    /// <remarks>
+    /// Generous next to the events the protocol defines — the longest carries a handful of state
+    /// hashes — and far below the snapshots, which are fetched over REST rather than streamed. It is
+    /// here to bound the buffer, not to validate an event.
+    /// </remarks>
+    private const int MaximumFrameChars = 256 * 1024;
 
     /// <summary>
     /// One frame, or null when it carried no data (a keepalive comment).

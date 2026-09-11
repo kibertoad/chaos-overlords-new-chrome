@@ -22,6 +22,13 @@ internal sealed class TextField(string label, int maxLength, string value = "")
     /// <summary>Whether typing goes to this field.</summary>
     internal bool IsFocused { get; set; }
 
+    /// <summary>Whether the field draws as dots rather than as what was typed.</summary>
+    /// <remarks>
+    /// For a lobby password, which is read out loud across a room as often as it is typed in private.
+    /// It changes nothing about the value, only what is on screen.
+    /// </remarks>
+    internal bool IsMasked { get; init; }
+
     /// <summary>
     /// Takes one character the window decoded.
     /// </summary>
@@ -50,5 +57,12 @@ internal sealed class TextField(string label, int maxLength, string value = "")
     }
 
     /// <summary>The value with a caret, when focused, for drawing.</summary>
-    internal string Display => IsFocused ? $"{Value}_" : Value;
+    internal string Display
+    {
+        get
+        {
+            var shown = IsMasked ? new string('*', _value.Length) : Value;
+            return IsFocused ? $"{shown}_" : shown;
+        }
+    }
 }

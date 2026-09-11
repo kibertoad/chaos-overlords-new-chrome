@@ -56,17 +56,23 @@ public static class OrderDigest
         ArgumentNullException.ThrowIfNull(sealedOrders);
         foreach (var entry in sealedOrders.Players)
         {
-            if (!FixedTimeEquals(OfDocument(entry.Orders), entry.OrdersHash)) return false;
+            if (!DigestsMatch(OfDocument(entry.Orders), entry.OrdersHash)) return false;
         }
-        return FixedTimeEquals(OfSet(sealedOrders.Players), announcedOrderSetHash);
+        return DigestsMatch(OfSet(sealedOrders.Players), announcedOrderSetHash);
     }
 
     /// <summary>Lowercase hex SHA-256, the only digest spelling the protocol carries.</summary>
     public static string Sha256Hex(ReadOnlySpan<byte> bytes) =>
         Convert.ToHexStringLower(SHA256.HashData(bytes));
 
-    private static bool FixedTimeEquals(string left, string right) =>
-        left.Length == right.Length
-        && CryptographicOperations.FixedTimeEquals(
-            Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right));
+    /// <summary>
+    /// Whether two digests are the same.
+    /// </summary>
+    /// <remarks>
+    /// An ordinary comparison, deliberately. Both sides are digests the server publishes to every
+    /// member of the match, so there is no secret here for a timing difference to leak — and a
+    /// constant-time compare of a public value costs two allocations per check while implying one.
+    /// </remarks>
+    private static bool DigestsMatch(string left, string right) =>
+        string.Equals(left, right, StringComparison.Ordinal);
 }

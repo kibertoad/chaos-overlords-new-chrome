@@ -40,10 +40,22 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.X)) _screens.Show(ClientScreen.Search);
         if (Pressed(keyboard, Keys.H)) OpenHire();
         if (Pressed(keyboard, Keys.Space)) AdvanceTurn();
-        if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
-        if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
-        if (Pressed(keyboard, Keys.F6)) SaveReplay();
-        if (Pressed(keyboard, Keys.F10)) LoadReplay();
+        // Saving and loading belong to a match this client owns. Online the authoritative state is
+        // the sealed one, so loading would put the interface on a match nobody else is playing while
+        // the session carried on behind it, and saving would capture the speculative copy rather than
+        // anything a peer would recognise.
+        if (_session is null)
+        {
+            if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
+            if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
+            if (Pressed(keyboard, Keys.F6)) SaveReplay();
+            if (Pressed(keyboard, Keys.F10)) LoadReplay();
+        }
+        else if (Pressed(keyboard, Keys.F5) || Pressed(keyboard, Keys.F9)
+            || Pressed(keyboard, Keys.F6) || Pressed(keyboard, Keys.F10))
+        {
+            _message = "AN ONLINE MATCH CANNOT BE SAVED OR LOADED";
+        }
     }
 
     private void HandleCityClick(Point point)
@@ -205,6 +217,11 @@ public sealed partial class ChaosGame
 
     private void QueueBoardCommand()
     {
+        if (_actions is null)
+        {
+            _message = OnlinePlanningClosed;
+            return;
+        }
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
@@ -220,7 +237,7 @@ public sealed partial class ChaosGame
         var command = gang.SectorId == _cursor
             ? new GameCommand(playerId, gang.Id, GangAction.Control, CommandTarget.None)
             : new GameCommand(playerId, gang.Id, GangAction.Move, CommandTarget.Sector(_cursor));
-        var result = _actions!.Replay.Submit(command);
+        var result = _actions.Submit(command);
         _message = result.Accepted
             ? $"{command.Action.ToString().ToUpperInvariant()} QUEUED"
             : result.Validation.Message.ToUpperInvariant();

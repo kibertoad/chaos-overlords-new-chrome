@@ -18,6 +18,18 @@ public sealed record MultiplayerClientOptions(Uri BaseAddress, TimeSpan? Request
     public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(15);
 
     internal TimeSpan EffectiveTimeout => RequestTimeout ?? DefaultRequestTimeout;
+
+    /// <summary>
+    /// <see cref="BaseAddress"/> guaranteed to end in a slash, so routes resolve beneath it.
+    /// </summary>
+    /// <remarks>
+    /// <c>new Uri(base, relative)</c> replaces the last segment of a base that does not end in one,
+    /// so <c>https://host/game</c> would lose <c>/game</c> and a server published under a path
+    /// would be unreachable. A player typing the address has no reason to add the slash.
+    /// </remarks>
+    internal Uri RootAddress { get; } = BaseAddress.AbsolutePath.EndsWith('/')
+        ? BaseAddress
+        : new Uri(BaseAddress, $"{BaseAddress.AbsolutePath}/");
 }
 
 /// <summary>
@@ -81,11 +93,21 @@ public sealed class MultiplayerClient
     /// <summary>A handle for the calls that name a match.</summary>
     public MatchHandle Match(string matchId) => new(this, matchId);
 
+    /// <summary>
+    /// One request, with the answer read as <typeparamref name="T"/>.
+    /// </summary>
+    /// <param name="exactRoundTrip">
+    /// Refuse a field this build does not know about, rather than skipping it. Set for a payload
+    /// whose digest this client recomputes: there, a field dropped on the way in is a hash that
+    /// cannot match, and saying which field is missing beats reporting a mismatch. Everything else
+    /// tolerates a server that has grown one — see <see cref="WireJson.Read{T}"/>.
+    /// </param>
     internal async Task<T> SendAsync<T>(
         HttpMethod method,
         string path,
         object? body,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool exactRoundTrip = false)
     {
         using var request = new HttpRequestMessage(method, Absolute(path));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -97,8 +119,8 @@ public sealed class MultiplayerClient
         }
 
         using var timeout = Deadline(cancellationToken);
-        using var response = await _http
-            .SendAsync(request, HttpCompletionOption.ResponseContentRead, timeout.Token)
+        using var response = await SendWithDeadlineAsync(
+            request, HttpCompletionOption.ResponseContentRead, timeout, cancellationToken)
             .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
@@ -112,7 +134,33 @@ public sealed class MultiplayerClient
                 $"the server answered 204 where a {typeof(T).Name} was expected");
         }
         var payload = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        return WireJson.Read<T>(payload);
+        return exactRoundTrip ? WireJson.ReadExact<T>(payload) : WireJson.Read<T>(payload);
+    }
+
+    /// <summary>
+    /// Sends a request, telling its own deadline apart from the caller's cancellation.
+    /// </summary>
+    /// <remarks>
+    /// Both arrive from the HTTP stack as an <see cref="OperationCanceledException"/> and they mean
+    /// opposite things: a deadline is worth another attempt, and a caller that asked to stop must
+    /// never be retried. Only the linked source can tell them apart, and only here, so this is
+    /// where the distinction is made — see <see cref="MultiplayerTimeoutException"/>.
+    /// </remarks>
+    private async Task<HttpResponseMessage> SendWithDeadlineAsync(
+        HttpRequestMessage request,
+        HttpCompletionOption completion,
+        CancellationTokenSource timeout,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _http.SendAsync(request, completion, timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException exception)
+            when (!cancellationToken.IsCancellationRequested && timeout.IsCancellationRequested)
+        {
+            throw new MultiplayerTimeoutException(_options.EffectiveTimeout, exception);
+        }
     }
 
     /// <summary>
@@ -144,7 +192,16 @@ public sealed class MultiplayerClient
         }
     }
 
-    private Uri Absolute(string path) => new(_options.BaseAddress, $"{ApiRoutes.Prefix}{path}");
+    /// <summary>
+    /// The absolute URL of a route, under whatever path the server is mounted at.
+    /// </summary>
+    /// <remarks>
+    /// The prefix is joined as a relative reference against a base that always ends in a slash,
+    /// because an absolute one (<c>/api/v1/...</c>) resolves from the host root and would discard
+    /// the path of a server published behind a reverse proxy at <c>https://host/game/</c>.
+    /// </remarks>
+    private Uri Absolute(string path) =>
+        new(_options.RootAddress, $"{ApiRoutes.Prefix}{path}".TrimStart('/'));
 
     private void Authorize(HttpRequestMessage request)
     {

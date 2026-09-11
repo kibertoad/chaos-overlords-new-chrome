@@ -256,6 +256,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // Before the planning timer, so a turn that resolved on the server is adopted even on the
         // frame the local clock would otherwise have taken over the loop.
         PumpOnlineNotices();
+        SendOnlineDraft(gameTime);
         if (UpdatePlanningTimer(gameTime.TotalGameTime))
         {
             _previousKeyboard = keyboard;
@@ -324,7 +325,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     UpdateCity(keyboard);
                     break;
                 case ClientScreen.Endgame:
-                    if (Pressed(keyboard, Keys.Enter)) _screens.Show(ClientScreen.Title);
+                    // An online match is over in its own right, but the session that drove it is
+                    // still holding a token and a connection until somebody says so.
+                    if (Pressed(keyboard, Keys.Enter))
+                    {
+                        if (_session is not null) EndOnlineMatch("THE MATCH IS OVER");
+                        else _screens.Show(ClientScreen.Title);
+                    }
                     break;
                 case ClientScreen.Handoff:
                     if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))

@@ -1,6 +1,7 @@
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Multiplayer.Session;
 
@@ -29,19 +30,29 @@ public static class SealedTurnApplier
     /// </summary>
     /// <param name="replay">The recorder every mutation is routed through.</param>
     /// <param name="sealedOrders">The set the server froze, in slot order.</param>
-    /// <param name="humanSlots">
-    /// The slots a human is seated in. Every other slot is a computer player and is planned by the
-    /// deterministic AI on every client identically, so its orders never cross the wire.
-    /// </param>
     /// <returns>The canonical state hash to report.</returns>
-    public static string Apply(
-        MatchReplayRecorder replay,
-        SealedOrdersView sealedOrders,
-        IReadOnlySet<int> humanSlots)
+    /// <remarks>
+    /// <para>
+    /// Which seats the computer plays is read out of the match being applied, not passed in. It is
+    /// part of the state every client hashes, so it is the one answer every client is already
+    /// guaranteed to agree on; a roster read from the server alongside it could be newer on one
+    /// client than another, and a slot planned by the AI on one and left idle on another is a desync
+    /// on the turn after the one that caused it.
+    /// </para>
+    /// <para>
+    /// That makes a human seat with no document in the set do nothing for the turn, which is what a
+    /// player who ran out of clock ordered: nothing. A player who has left the match is the same
+    /// case for as long as the match lasts — the server stops waiting on their readiness, so the
+    /// turns seal without them, and their gangs hold position. Handing the seat to the computer
+    /// instead would mean changing who controls it, which is hashed state, and so needs a step every
+    /// client takes at the same point in the log; <c>docs/MULTIPLAYER.md</c> says what that would
+    /// take.
+    /// </para>
+    /// </remarks>
+    public static string Apply(MatchReplayRecorder replay, SealedOrdersView sealedOrders)
     {
         ArgumentNullException.ThrowIfNull(replay);
         ArgumentNullException.ThrowIfNull(sealedOrders);
-        ArgumentNullException.ThrowIfNull(humanSlots);
         var state = replay.State;
         if (state.Coordinator.Phase != TurnPhase.Command)
         {
@@ -49,14 +60,15 @@ public static class SealedTurnApplier
                 $"A sealed turn is applied during Command, not {state.Coordinator.Phase}.");
         }
 
-        var bySlot = sealedOrders.Players.ToDictionary(entry => entry.Slot, entry => entry.Orders);
+        var bySlot = DocumentsBySlot(sealedOrders, state.Setup.Players.Count);
         // Slot order, every slot, so the sequence of mutations is the same on every client even
         // though only some of them have documents.
         for (var slot = 0; slot < state.Setup.Players.Count; slot++)
         {
             var player = new PlayerId(slot);
             if (bySlot.TryGetValue(slot, out var document)) ApplyDocument(replay, player, document);
-            else if (!humanSlots.Contains(slot)) PlanComputerTurn(replay, player);
+            else if (state.Setup.Players[slot].Controller == PlayerController.Computer)
+                PlanComputerTurn(replay, player);
             replay.FinishCommand(player);
         }
 
@@ -64,6 +76,36 @@ public static class SealedTurnApplier
         // CommandPhase for why the hire draw cannot wait for a player to open the dock.
         CommandPhase.Enter(replay);
         return MatchStateHasher.ComputeSha256(state);
+    }
+
+    /// <summary>
+    /// The set indexed by slot, refusing a shape no client could apply consistently.
+    /// </summary>
+    /// <remarks>
+    /// Two documents for one slot has no defined meaning — which of them the turn contains would
+    /// come down to enumeration order — and a slot past the board cannot be applied at all. Both are
+    /// protocol failures rather than exceptions out of a dictionary, so the session reports them as
+    /// the server having sent something it cannot act on.
+    /// </remarks>
+    private static Dictionary<int, OrderDocument> DocumentsBySlot(
+        SealedOrdersView sealedOrders,
+        int slotCount)
+    {
+        var bySlot = new Dictionary<int, OrderDocument>(sealedOrders.Players.Count);
+        foreach (var entry in sealedOrders.Players)
+        {
+            if (entry.Slot < 0 || entry.Slot >= slotCount)
+            {
+                throw new MultiplayerProtocolException(
+                    $"the sealed set names slot {entry.Slot}, which this match does not have");
+            }
+            if (!bySlot.TryAdd(entry.Slot, entry.Orders))
+            {
+                throw new MultiplayerProtocolException(
+                    $"the sealed set carries two documents for slot {entry.Slot}");
+            }
+        }
+        return bySlot;
     }
 
     /// <summary>
@@ -115,7 +157,7 @@ public static class SealedTurnApplier
     /// A computer player's turn, planned identically on every client from the shared state.
     /// </summary>
     /// <remarks>
-    /// Empty slots and departed players are computer players too, which is why their orders never
+    /// Every seat no human took at match start is a computer player, which is why those orders never
     /// need to cross the wire: the same planner over the same state produces the same commands
     /// everywhere, and a client whose planner disagreed would surface as a desync like any other.
     /// </remarks>

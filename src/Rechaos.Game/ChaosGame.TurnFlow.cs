@@ -18,7 +18,8 @@ public sealed partial class ChaosGame
         // online as off, and harder to fix once the turn has sealed.
         if (_session is not null)
         {
-            if (!TryOpenIdleGangWarning()) SubmitOnlineTurn();
+            if (!_online.PlanningIsOpen) _message = OnlinePlanningClosed;
+            else if (!TryOpenIdleGangWarning()) SubmitOnlineTurn();
         }
         else if (_debugPhaseStepping) AdvanceDebugPhase();
         else if (!TryOpenIdleGangWarning()) FinishPlanningTurn();
@@ -36,13 +37,13 @@ public sealed partial class ChaosGame
         if (_state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
-            GameplayTurnFlow.AdvanceToPlanning(_actions.Replay);
+            GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             _message = "PLANNING TURN READY";
             return;
         }
 
         var previousTurn = _state.Coordinator.Turn;
-        GameplayTurnFlow.FinishPlanningTurn(_actions.Replay, playerId);
+        GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
         _diagnostics?.Write("planning.finished", new Dictionary<string, string?>
         {
             ["player"] = playerId.Value.ToString(),
@@ -89,11 +90,11 @@ public sealed partial class ChaosGame
         var completedTurn = _state.Coordinator.Phase == TurnPhase.PlayerElimination;
         var transition = _state.Coordinator.Phase switch
         {
-            TurnPhase.Upkeep => _actions!.Replay.FinishUpkeep(),
-            TurnPhase.Command => _actions!.Replay.FinishCommand(_state.Coordinator.ActivePlayer!.Value),
-            TurnPhase.Execution => _actions!.Replay.FinishExecutionPhase(),
-            TurnPhase.Hire => _actions!.Replay.FinishHire(_state.Coordinator.ActivePlayer!.Value),
-            TurnPhase.PlayerElimination => _actions!.Replay.FinishPlayerElimination(),
+            TurnPhase.Upkeep => _actions!.HotSeatRecorder.FinishUpkeep(),
+            TurnPhase.Command => _actions!.HotSeatRecorder.FinishCommand(_state.Coordinator.ActivePlayer!.Value),
+            TurnPhase.Execution => _actions!.HotSeatRecorder.FinishExecutionPhase(),
+            TurnPhase.Hire => _actions!.HotSeatRecorder.FinishHire(_state.Coordinator.ActivePlayer!.Value),
+            TurnPhase.PlayerElimination => _actions!.HotSeatRecorder.FinishPlayerElimination(),
             _ => throw new InvalidOperationException("Unknown turn phase.")
         };
         _message = transition.ExecutionPhase is { } execution
@@ -142,10 +143,10 @@ public sealed partial class ChaosGame
             if (player.Setup.Controller != PlayerController.Computer) break;
             if (_state.Coordinator.Phase == TurnPhase.Command)
             {
-                _actions.Replay.PrepareAiPlanning(playerId);
+                _actions.HotSeatRecorder.PrepareAiPlanning(playerId);
                 var commands = AiTurnPlanner.Plan(_state, playerId);
                 foreach (var command in commands)
-                    _actions.Replay.Submit(command);
+                    _actions.HotSeatRecorder.Submit(command);
                 _diagnostics?.Write("ai.planned", new Dictionary<string, string?>
                 {
                     ["player"] = playerId.Value.ToString(),
@@ -153,19 +154,19 @@ public sealed partial class ChaosGame
                     ["commands"] = commands.Count.ToString()
                 });
                 PrepareCurrentHireOffers();
-                var hiring = _actions.Replay.PrepareAiHiring(playerId);
+                var hiring = _actions.HotSeatRecorder.PrepareAiHiring(playerId);
                 if (hiring.Choice is { } planningHire)
-                    _actions.Replay.QueueHire(playerId, planningHire.GangDefinitionId, planningHire.SectorId);
+                    _actions.HotSeatRecorder.QueueHire(playerId, planningHire.GangDefinitionId, planningHire.SectorId);
                 else if (hiring.RejectedGangDefinitionId is { } rejectedOffer)
-                    _actions.Replay.SnubHireOffer(playerId, rejectedOffer);
-                if (_debugPhaseStepping) _actions.Replay.FinishCommand(playerId);
-                else GameplayTurnFlow.FinishPlanningTurn(_actions.Replay, playerId);
+                    _actions.HotSeatRecorder.SnubHireOffer(playerId, rejectedOffer);
+                if (_debugPhaseStepping) _actions.HotSeatRecorder.FinishCommand(playerId);
+                else GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
             }
             else if (_debugPhaseStepping && _state.Coordinator.Phase == TurnPhase.Hire)
             {
                 if (AiTurnPlanner.ChooseHire(_state, playerId) is { } hire)
-                    _actions.Replay.QueueHire(playerId, hire.GangDefinitionId, hire.SectorId);
-                _actions.Replay.FinishHire(playerId);
+                    _actions.HotSeatRecorder.QueueHire(playerId, hire.GangDefinitionId, hire.SectorId);
+                _actions.HotSeatRecorder.FinishHire(playerId);
             }
             else
             {

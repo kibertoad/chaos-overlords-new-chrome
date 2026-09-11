@@ -1,4 +1,5 @@
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Multiplayer.Http;
 
@@ -26,7 +27,15 @@ public sealed class MatchHandle
         _client.SendAsync<Unit>(
             HttpMethod.Post, ApiRoutes.StartMatch(MatchId), body: null, cancellationToken);
 
-    /// <summary>Gives up the seat. The slot becomes a computer player from the next turn.</summary>
+    /// <summary>
+    /// Gives up the seat, and the token with it.
+    /// </summary>
+    /// <remarks>
+    /// The match stops waiting on this player's readiness, so the turns that follow seal without
+    /// them. Their gangs are not taken over by the computer: which player controls a seat is part
+    /// of the state every client hashes, so handing one over needs a step every client takes at the
+    /// same point — see <c>docs/MULTIPLAYER.md</c>.
+    /// </remarks>
     public Task<Unit> LeaveAsync(CancellationToken cancellationToken) =>
         _client.SendAsync<Unit>(
             HttpMethod.Post, ApiRoutes.LeaveMatch(MatchId), body: null, cancellationToken);
@@ -55,10 +64,19 @@ public sealed class MatchHandle
         _client.SendAsync<OwnSubmissionView>(
             HttpMethod.Get, ApiRoutes.OwnOrders(MatchId, turn), body: null, cancellationToken);
 
-    /// <summary>The sealed set in slot order, with its digest. Refused while the turn is open.</summary>
+    /// <summary>
+    /// The sealed set in slot order, with its digest. Refused while the turn is open.
+    /// </summary>
+    /// <remarks>
+    /// Read exactly: the order documents in it are re-serialized to check the digest the seal
+    /// announced, so a field dropped on the way in would make the hash unverifiable. This is the
+    /// only payload strict enough to refuse a server that has grown one — see
+    /// <see cref="WireJson.ReadExact{T}"/>.
+    /// </remarks>
     public Task<SealedOrdersView> SealedOrdersAsync(int turn, CancellationToken cancellationToken) =>
         _client.SendAsync<SealedOrdersView>(
-            HttpMethod.Get, ApiRoutes.Orders(MatchId, turn), body: null, cancellationToken);
+            HttpMethod.Get, ApiRoutes.Orders(MatchId, turn), body: null, cancellationToken,
+            exactRoundTrip: true);
 
     /// <summary>The state hash this client reached after applying the sealed turn.</summary>
     public Task<Unit> ReportAsync(

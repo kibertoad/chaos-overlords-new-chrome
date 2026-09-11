@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text.Json;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Protocol;
 
@@ -52,20 +51,20 @@ public sealed class MultiplayerApiException : Exception
         var body = await ReadBodyAsync(response, cancellationToken).ConfigureAwait(false);
         try
         {
-            var envelope = JsonSerializer.Deserialize<ErrorEnvelope>(body, WireJson.Options);
-            if (envelope is not null)
-            {
-                return new MultiplayerApiException(
-                    response.StatusCode,
-                    envelope.Error.Code,
-                    envelope.Error.Message,
-                    envelope.Error.Details?.Reason,
-                    envelope.Error.RequestId);
-            }
+            // Read tolerantly. The reason is what a caller branches on and what a player is shown,
+            // so an envelope carrying a field this build does not know about must not cost us both.
+            var envelope = WireJson.Read<ErrorEnvelope>(body);
+            return new MultiplayerApiException(
+                response.StatusCode,
+                envelope.Error.Code,
+                envelope.Error.Message,
+                envelope.Error.Details?.Reason,
+                envelope.Error.RequestId);
         }
-        catch (JsonException)
+        catch (MultiplayerProtocolException)
         {
-            // Not the envelope. Fall through to the status-only error below.
+            // Not the envelope. A proxy's HTML page and an empty 502 both land here; fall through
+            // to the status-only error below.
         }
         return new MultiplayerApiException(
             response.StatusCode,
