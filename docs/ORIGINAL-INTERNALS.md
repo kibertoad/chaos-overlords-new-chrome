@@ -650,19 +650,30 @@ attributes, and resolved every target in a fresh 686-asset legal extraction.
 
 ## Timing and RNG candidates
 
-### BIN-RNG-001 - imported clocks
+### BIN-RNG-001 - original process seed
 
 **Observation:** `GetTickCount`, `timeGetTime`, periodic multimedia timer APIs,
 and asynchronous key state are imported. No external C runtime DLL appears in
-the import table, so any C library RNG would be statically linked.
+the import table, so the C runtime RNG is statically linked. Process initializer
+`0x00465620` calls `timeGetTime` at `0x004658fb`, zero-extends only the returned
+AX/low 16 bits, and calls `0x00478cc0` at `0x00465905`. That adjacent runtime
+function obtains the current thread data through `__getptd` and writes its sole
+argument directly to `_holdrand`; it has no other incoming reference.
 
-**Interpretation:** One clock may seed random state, but any may instead be used
-only for UI animation, input, networking, or audio timing.
+**Interpretation:** The original initializes its gameplay RNG once per process
+from `timeGetTime() & 0xffff`, producing an unsigned seed from 0 through 65,535.
+The other clock consumers remain presentation/network/timing candidates until
+their individual data flow is classified.
 
-**Confidence:** Verified observation; Low RNG interpretation.
+**Confidence:** High static evidence for the seed source, truncation, zero
+extension, single writer, and process-initialization placement.
 
-**Next validation:** Follow clock return-value data flow to determine whether
-either clock seeds gameplay state or is presentation-only.
+**Implementation:** Local-game startup captures the low 16 bits of the analogous
+process-uptime millisecond clock when `ChaosGame` is constructed. Explicit
+replay/test and multiplayer seeds remain full-width deterministic inputs.
+
+**Next validation:** Classify any pre-match calls to the bounded gameplay RNG
+wrapper and correlate the first generated city against a native launch.
 
 ### BIN-RNG-002 - runtime random step
 
@@ -689,15 +700,17 @@ returns the chosen value modulo the clamped input plus one.
 through the input and consumes exactly three raw RNG values for each request.
 
 **Confidence:** High for control flow, constants, range, and consumption count.
-The initial hold-state seed and complete wrapper call-site ownership remain
+Complete wrapper call-site ownership and runtime output correlation remain
 unknown.
 
 **Implementation:** `DeterministicRandom.NextRaw` and `NextInclusive` reproduce
-these address-level facts. `MatchSetup.InitialSeed` remains a recreation input,
-not a verified mapping to the original hold state.
+these address-level facts. `DeterministicRandom.SeedFromTimerMilliseconds`
+reproduces the original seed narrowing for local games; `MatchSetup.InitialSeed`
+also remains an explicit modern deterministic input for tests, replays, and
+multiplayer.
 
-**Next validation:** Locate writes to the per-thread hold state and all callers
-of `0x0045d227`; correlate a controlled dice sequence with predicted outputs.
+**Next validation:** Classify all callers of `0x0045d227`; correlate a controlled
+dice sequence with predicted outputs.
 
 Ghidra reports direct calls to `0x0045d227` from 21 containing functions and 61
 call sites. This establishes broad reuse but does not yet assign gameplay

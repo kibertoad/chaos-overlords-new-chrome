@@ -6,8 +6,7 @@ namespace Rechaos.Core.GameModel;
 
 /// <summary>
 /// Stable, serializable implementation of the original executable's statically
-/// linked Visual C++ rand step and three-sample bounded-range wrapper. Initial
-/// seed selection remains provisional until its source is recovered.
+/// linked Visual C++ rand step and three-sample bounded-range wrapper.
 /// </summary>
 public sealed class DeterministicRandom
 {
@@ -30,6 +29,13 @@ public sealed class DeterministicRandom
 
     public uint State => _state;
     public long ConsumptionCount { get; private set; }
+
+    /// <summary>
+    /// Reproduces the original process initializer's zero-extension of the low
+    /// 16 bits returned by <c>timeGetTime</c> before it seeds the runtime stream.
+    /// </summary>
+    public static int SeedFromTimerMilliseconds(uint timerMilliseconds) =>
+        checked((int)(timerMilliseconds & ushort.MaxValue));
 
     public int NextRaw()
     {

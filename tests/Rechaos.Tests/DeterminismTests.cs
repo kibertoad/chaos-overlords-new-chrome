@@ -7,6 +7,15 @@ namespace Rechaos.Tests;
 public sealed class DeterminismTests
 {
     [Fact]
+    public void OriginalTimerSeedZeroExtendsOnlyTheLowSixteenBits()
+    {
+        Assert.Equal(0, DeterministicRandom.SeedFromTimerMilliseconds(0x1234_0000));
+        Assert.Equal(0x5678, DeterministicRandom.SeedFromTimerMilliseconds(0x1234_5678));
+        Assert.Equal(ushort.MaxValue,
+            DeterministicRandom.SeedFromTimerMilliseconds(uint.MaxValue));
+    }
+
+    [Fact]
     public void RandomStreamCanBeRestoredExactly()
     {
         var random = new DeterministicRandom(1996);

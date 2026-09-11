@@ -8,6 +8,9 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private readonly int _originalProcessSeed = DeterministicRandom.SeedFromTimerMilliseconds(
+        unchecked((uint)Environment.TickCount));
+
     private void ChangeScenario(int delta)
     {
         var count = ScenarioCatalog.All.Count;
@@ -200,7 +203,7 @@ public sealed partial class ChaosGame
                 _playerPortraits[slot]))
             .ToArray();
         var setup = new MatchSetup(
-            _selectedScenario, _selectedDuration, Environment.TickCount, players,
+            _selectedScenario, _selectedDuration, _originalProcessSeed, players,
             _selectedAiMentality, allowSparsePlayerIds: true);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>
         {
