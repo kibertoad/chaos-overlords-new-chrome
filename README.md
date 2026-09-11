@@ -44,6 +44,27 @@ when importing them.
 | Saves and replays | F5/F9 recreation-native save/load, end-turn autosaves, F6/F10 deterministic record/playback verification, bounded loading, read-back-before-promotion, and last-valid-generation backup recovery for both saves and replays. Current formats are save v19, replay v21, and canonical hash v22. | These formats may change incompatibly before 1.0.0. Original 1996 save import/export is not supported. |
 | Audio, music, and video | Original audio, eight music tracks, and two videos are extracted; Detailed Combat synchronizes equipped, unarmed, retaliation, and detected-police cues to their corresponding clips, while full local-setup push buttons, setup selection/rejection, panel confirmation, pending Last Turn Events, and planning-timer warnings play their mapped original sounds. The recovered soundtrack uses Track 2 for title/setup, Tracks 3-8 for gameplay, and Track 9 for endgame, with repeat and focus pause/resume. Options exposes independent original 0-10 Music and Sound Effects scales, using the recovered defaults of 5 and 6 respectively and remembered between launches. | Exact menu restart boundaries and native-platform playback still need validation. Video playback and the remaining UI/impact sound triggers are not wired yet. |
 
+## Quality-of-life additions
+
+New Chrome keeps compatibility behavior as the default while adding optional or
+presentation-only conveniences that make the original systems easier to read:
+
+- Built-in cross-platform Help opens with F1 and uses the locally imported
+  original manual topics, contents order, links, and definition popups.
+- Hover tooltips explain the practical effects of city statistics, gang and
+  site attributes, item modifiers, setup difficulty, and every Options entry.
+- The city console shows projected turn cashflow beside current Cash, with
+  finance panels breaking down upkeep, purchases, taxes, site income, Chaos,
+  and the resulting adjustment.
+- Command pickers name their valid gang, sector, site, and item targets. In the
+  detailed-sector view, hovering an assigned gang highlights its queued Move,
+  Influence, or Attack target directly on the board, building, or gang card.
+- Research lists accumulated progress beside its required total, and report
+  panels retain unread/page progress so information is not silently consumed.
+- Windowed and borderless-fullscreen modes can be toggled globally with F11 or
+  Alt+Enter, and foreground panel motion can be disabled without changing game
+  rules or deterministic state.
+
 ## Controls
 
 | Action | Keyboard | Mouse |

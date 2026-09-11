@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,292 tests with no warnings.
+  isolated Release build passed all 1,293 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -151,6 +151,10 @@ Last updated: 2026-09-11
   outcome data keeps every award while each visible row shows the first three.
   The sole native Hide-counter write is unconditional, so a recurring Hide
   counts again after the next Upkeep reveals the gang.
+- Damage Inflicted now matches the sole native resolver write: every opening
+  attack credits its complete computed damage even when it exceeds remaining
+  Force or several attacks collectively overkill one target. Retaliation still
+  awards no Damage Inflicted.
 - Search now uses the original `PX05024` Search: Sites panel instead of the
   earlier incorrect detected-gang list. Its two-column aperture contains all 22
   site types with ALL/NONE and individual toggles; OK applies a presentation-only

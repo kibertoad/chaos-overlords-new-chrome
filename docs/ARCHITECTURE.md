@@ -319,8 +319,8 @@ Execution resolves all players in Instant, Combat, Transaction, Chaos, Movement,
 and Control order. `TurnStructure` is the current executable specification of
 that ordering. The implemented resolvers use the recovered fixed player/roster
 scans, phase-opening snapshots, and board ordering described below; only the
-specific reveal, overkill, police-notification, and remaining edge cases listed
-in the parity matrix remain unverified.
+specific reveal, police-notification, and remaining edge cases listed in the
+parity matrix remain unverified.
 Before an execution subphase mutates state, every queued action in that subphase
 must have a supported resolver. Unsupported actions block advancement rather
 than being silently consumed.
@@ -362,7 +362,9 @@ Hidden attacks use an individual Detect-versus-Stealth roll and suppress
 retaliation on a hit. Cooperative sector visibility is a separate deterministic
 query shared by the Sector portrait strip and Search screen because Hide does
 not affect whether a gang is displayed. The subsequent police roll pass also
-uses player/roster-slot order; overkill attribution remains a binary-parity gap.
+uses player/roster-slot order. Every opening attack credits its full computed
+damage even when it exceeds the target's remaining Force; retaliation is not
+credited.
 
 All action resolvers consume the same effective-stat projection. It adds gang
 definition, three equipment slots, and every same-sector site influenced by the
@@ -543,8 +545,8 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
   while sector/gang views project authoritative sites, influence, effective stats,
   equipment and queued commands.
 - Remaining resolver debt is narrowly tracked in the parity matrix: original
-  seeding/call context, combat reveal and overkill attribution, police
-  notification edges, and a small set of economy/special-building boundaries.
+  seeding/call context, combat reveal timing, police notification edges, and a
+  small set of economy/special-building boundaries.
 - Runtime manifest checking validates version only.
 - Music and mapped combat/general sound effects are presented; Smacker video
   playback, remaining effect triggers, exact cadence/color keys, and native

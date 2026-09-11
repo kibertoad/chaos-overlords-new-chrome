@@ -272,31 +272,35 @@ claim about original-game behavior.
   retaliation, rather than creating a second attack/retaliation pair.
   Consequently, a gang eliminated by one result still completes
   attacks and retaliation calculated from its phase-start Force. Force is
-  floored at zero; elimination clears equipment and Hidden state. Actual damage
-  credit is allocated in stable result order when attacks overkill one target;
-  retaliation is not credited to Damage Inflicted.
+  floored at zero; elimination clears equipment and Hidden state. Every opening
+  attack credits its full computed damage to Damage Inflicted, even when that
+  damage exceeds the target's Force or concurrent attacks collectively overkill
+  it. Retaliation is not credited to Damage Inflicted.
 - Hidden target behavior: a target that became Hidden during Instant receives
   an individual Detect-versus-Stealth percentage roll. Evasion produces an
   ordered `TargetEvaded` result; a successful hit prevents retaliation.
 - Static binary confirmation: the original eligibility predicate requires the
   target action not to be Hide and allows retaliation when the attacker has no
   positive effective Martial Arts, has a weapon equipped, or faces a defender
-  who is also an unarmed positive-Martial-Arts gang.
-- Current exclusions: original overkill-stat attribution and reveal-state timing.
+  who is also an unarmed positive-Martial-Arts gang. The sole Damage Inflicted
+  write adds the computed opening damage before accumulated damage is applied,
+  with no remaining-Force cap.
+- Current exclusions: reveal-state timing.
 - Confidence: High for weapon-skill associations, the complete Martial Arts /
-  weapon / Hide retaliation gate, its damage formula, and player/roster roll
-  ordering; Medium/High for the Force-corrected opening formula; Low for
-  overkill accounting and hidden-state timing.
+  weapon / Hide retaliation gate, its damage formula, player/roster roll
+  ordering, and overkill statistic accounting; Medium/High for the
+  Force-corrected opening formula; Low for hidden-state timing.
 - Implementation: `ManualRules.CombatRating`, `ManualRules.AttackDiceCount`,
   `ManualRules.RetaliationDamage`, and `CommandResolver.ResolveCombatPhase`.
 - Tests: `CombatResolutionTests` covers effective attack/defense pools,
   retaliation, phase-start simultaneity, Martial Arts, hidden targets,
   reciprocal-order coalescing, reversed-submission roster order,
-  elimination/equipment loss, statistics, RNG consumption, notifications, and
-  hashes; `ManualRulesTests` covers the formulas.
+  elimination/equipment loss, full overkill credit from multiple attacks,
+  statistics, RNG consumption, notifications, and hashes; `ManualRulesTests`
+  covers the formulas.
 - Next experiment: reproduce a fixed unarmed matchup from the FAQ, then repeat
-  with melee/blade/ranged weapons, Martial Arts, two attackers, and a target
-  hidden during Instant while capturing force bars, damage, and RNG order.
+  with melee/blade/ranged weapons, Martial Arts, and a target hidden during
+  Instant while capturing force bars, damage, and RNG order.
 
 ### RULE-DETECT-001 — Cooperative sector visibility
 

@@ -39,7 +39,7 @@ public sealed class CombatResolutionTests
             resolution.RetaliationDamage);
         Assert.Equal(Math.Max(0, targetForce - resolution.Damage), target.Force);
         Assert.Equal(Math.Max(0, attackerForce - resolution.RetaliationDamage), attacker.Force);
-        Assert.Equal(Math.Min(targetForce, resolution.Damage), match.Players[0].Statistics.DamageInflicted);
+        Assert.Equal(resolution.Damage, match.Players[0].Statistics.DamageInflicted);
         Assert.Equal(0, match.Players[1].Statistics.DamageInflicted);
         Assert.Equal(
             Math.Max(AiStrategicState.MinimumAttitude,
@@ -92,6 +92,31 @@ public sealed class CombatResolutionTests
 
         Assert.Equal([new GangId(10), new GangId(11)],
             match.LastPhaseResolutions.Select(result => result.Command.Gang).ToArray());
+    }
+
+    [Fact]
+    public void MultipleAttacksCreditFullRolledDamageBeyondTargetForce()
+    {
+        var match = CreateMatch(playerOneForce: 1, secondPlayerZeroGang: true);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)))).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(11), GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase();
+
+        match.FinishExecutionPhase();
+
+        var damage = match.LastPhaseResolutions.Sum(
+            result => result.Event!.Resolution!.Damage);
+        Assert.True(damage > 1);
+        Assert.Equal(0, match.FindGang(new GangId(20))!.Force);
+        Assert.Equal(damage, match.Players[0].Statistics.DamageInflicted);
+        Assert.Equal(0, match.Players[1].Statistics.DamageInflicted);
     }
 
     [Fact]

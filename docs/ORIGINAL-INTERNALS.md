@@ -2125,6 +2125,22 @@ sector or gang-ID order.
 **Confidence:** High static evidence for both scan bounds, action dispatch,
 and placement of their RNG consumers. Runtime seed correlation remains pending.
 
+### BIN-COMBAT-STATS-001 - full opening damage is credited
+
+The player-indexed Damage Inflicted array at `0x004a5ed8` has one resolver
+write. In attack dispatcher `0x00472775`, the opening damage value is finalized
+at decompiler lines 381-393, accumulated into the target's phase damage at
+lines 395-396, and immediately added to the attacker's statistic at instruction
+`0x00473ccc` / lines 397-398. No target-Force or remaining-damage comparison
+intervenes. The later retaliation calculation has no write to this array.
+
+Therefore each resolved opening attack credits its complete computed damage,
+including excess beyond the target's Force and multiple same-phase attacks that
+collectively overkill it. Only Force application is floored at zero;
+retaliation damage is deliberately excluded from the statistic.
+
+**Confidence:** High from the sole-write inventory and local dataflow.
+
 ### BIN-INSTANT-001 - roster-order actions and cumulative Influence
 
 **Observation:** The Instant-action switch in `0x00472775` executes while the

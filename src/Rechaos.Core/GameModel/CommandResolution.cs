@@ -251,7 +251,7 @@ public static partial class CommandResolver
             var gang = state.FindGang(gangId)!;
             gang.Force = Math.Max(0, snapshots[gangId].Force - damage);
         }
-        CreditCombatStatistics(state, snapshots, outcomes);
+        CreditCombatStatistics(state, outcomes);
 
         var results = new List<CommandResolutionResult>(commands.Count);
         var firstEventByGang = new Dictionary<GangId, long>();
@@ -340,21 +340,12 @@ public static partial class CommandResolver
 
     private static void CreditCombatStatistics(
         MatchState state,
-        IReadOnlyDictionary<GangId, CombatSnapshot> snapshots,
         IReadOnlyList<CombatOutcome> outcomes)
     {
-        var remainingForce = snapshots.ToDictionary(pair => pair.Key, pair => pair.Value.Force);
         foreach (var outcome in outcomes.Where(outcome => outcome.Code == CommandResolutionCode.Resolved))
         {
-            Credit(outcome.Attacker.Owner, outcome.Target.Id, outcome.Damage);
-        }
-
-        void Credit(PlayerId source, GangId victim, int attempted)
-        {
-            var applied = Math.Min(attempted, remainingForce[victim]);
-            remainingForce[victim] -= applied;
-            state.FindPlayer(source)!.Statistics.DamageInflicted = checked(
-                state.FindPlayer(source)!.Statistics.DamageInflicted + applied);
+            var statistics = state.FindPlayer(outcome.Attacker.Owner)!.Statistics;
+            statistics.DamageInflicted = checked(statistics.DamageInflicted + outcome.Damage);
         }
     }
 
