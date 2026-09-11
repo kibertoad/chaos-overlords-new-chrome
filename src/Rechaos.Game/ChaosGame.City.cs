@@ -12,13 +12,13 @@ public sealed partial class ChaosGame
     private static readonly Rectangle CityEvents = new(492, 124, 50, 51);
     private static readonly Rectangle CityComlinkView = new(548, 124, 50, 25);
     private static readonly Rectangle CityComlinkSend = new(548, 150, 50, 25);
-    private static readonly Rectangle CityCombatSummary = new(492, 176, 50, 49);
+    private static readonly Rectangle CityCombatSummary = CityConsoleLayout.CombatSummary;
     private static readonly Rectangle CityFinanceCity = new(548, 176, 50, 32);
     private static readonly Rectangle CityFinanceSector = new(548, 208, 50, 17);
     private static readonly Rectangle CityGangs = new(492, 226, 50, 34);
     private static readonly Rectangle CityHire = new(492, 260, 50, 17);
-    private static readonly Rectangle CitySector = new(548, 226, 50, 17);
-    private static readonly Rectangle CityRanking = new(548, 243, 50, 17);
+    private static readonly Rectangle CitySector = CityConsoleLayout.SectorDetails;
+    private static readonly Rectangle CityRanking = CityConsoleLayout.Ranking;
     private static readonly Rectangle CitySearch = new(548, 260, 50, 17);
 
     private void UpdateCity(KeyboardState keyboard)
@@ -210,6 +210,10 @@ public sealed partial class ChaosGame
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(2));
         DrawPanelValue(font, batch, SectorSupport(state, player.Id, selectedSector),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(3));
+        batch.Draw(pixel, StatusConsoleLayout.ChaosLabel, Color.Black);
+        font.Draw(batch, "CHAOS",
+            new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.SectorValueY(4)),
+            Color.Lime, 1);
         DrawPanelValue(font, batch, selectedSector.Chaos,
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(4));
         font.Draw(batch, _message.Length <= 32 ? _message : _message[..32],
@@ -236,9 +240,14 @@ public sealed partial class ChaosGame
             ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
             : OnlineTurnStatus();
         font.Draw(batch, footer, new Vector2(18, 439), new Color(180, 190, 190), 1);
+        DrawStatusConsoleTooltip(batch, pixel, font);
+        if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
+    }
+
+    private void DrawStatusConsoleTooltip(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
         if (_hoverPoint is { } statusHover)
             DrawHoverTooltip(batch, pixel, font, statusHover, StatusConsoleTooltip.At(statusHover));
-        if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
     }
 
     private void DrawGangStatusMarker(SpriteBatch batch, int sectorId, Rectangle source)

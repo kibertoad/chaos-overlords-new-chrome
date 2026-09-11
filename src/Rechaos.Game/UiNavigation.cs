@@ -199,6 +199,21 @@ public sealed class CitySectorClickTracker
     public void Cancel() => _lastSector = null;
 }
 
+public static class CityConsoleLayout
+{
+    public static Rectangle CombatSummary => new(492, 176, 50, 32);
+    public static Rectangle SectorDetails => new(492, 208, 50, 17);
+    public static Rectangle Ranking => new(548, 226, 50, 34);
+}
+
+public static class HandoffLayout
+{
+    public static Rectangle Panel => new(266, 148, 108, 164);
+    public static Rectangle Portrait => new(280, 170, 80, 77);
+    public static Rectangle Ready => new(266, 246, 108, 66);
+    public const int NameY = 194;
+}
+
 public sealed class IndexedDoubleClickTracker
 {
     private int? _lastIndex;
@@ -224,6 +239,10 @@ public static class CityMapLayout
 {
     public const int Left = 2;
     public const int Top = 44;
+    public const int GridInsetX = 4;
+    public const int GridInsetY = 3;
+    public const int ColumnStride = 53;
+    public const int RowStride = 51;
     public const int TileWidth = 54;
     public const int TileHeight = 52;
     public static Rectangle Bounds => new(
@@ -233,8 +252,8 @@ public static class CityMapLayout
     {
         ValidateSector(sectorId);
         return new Rectangle(
-            sectorId % 8 * TileWidth,
-            sectorId / 8 * TileHeight,
+            GridInsetX + sectorId % 8 * ColumnStride,
+            GridInsetY + sectorId / 8 * RowStride,
             TileWidth,
             TileHeight);
     }
@@ -254,14 +273,16 @@ public static class CityMapLayout
 
     public static bool TrySectorAt(Point point, out int sectorId)
     {
-        var x = point.X - Left;
-        var y = point.Y - Top;
-        if (x < 0 || x >= TileWidth * 8 || y < 0 || y >= TileHeight * 8)
+        var x = point.X - Left - GridInsetX;
+        var y = point.Y - Top - GridInsetY;
+        if (x < 0 || x > ColumnStride * 8 || y < 0 || y > RowStride * 8)
         {
             sectorId = -1;
             return false;
         }
-        sectorId = y / TileHeight * 8 + x / TileWidth;
+        var column = Math.Min(x / ColumnStride, MatchLimits.BoardWidth - 1);
+        var row = Math.Min(y / RowStride, MatchLimits.BoardWidth - 1);
+        sectorId = row * MatchLimits.BoardWidth + column;
         return true;
     }
 
@@ -608,6 +629,7 @@ public static class ItemInformationLayout
     public static Rectangle Portrait => new(138, 142, 48, 48);
     public static Rectangle CompactPortrait => new(152, 156, 20, 20);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
+    public const int DescriptionColumns = 29;
     public const int LeftValueRight = 287;
     public const int RightValueRight = 383;
     public static int StatisticY(int row) => GangInformationLayout.StatisticY(row);

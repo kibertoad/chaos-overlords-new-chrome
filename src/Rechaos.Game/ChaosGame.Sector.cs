@@ -139,6 +139,9 @@ public sealed partial class ChaosGame
         DrawQueuedCommandTargetHighlight(batch, pixel, visibleGangs);
         DrawGangMoveDrag(batch, pixel, state);
         DrawSectorHireDrag(batch, pixel, state);
+        // The Sector workspace covers the left side of right-edge tooltips drawn by
+        // DrawBoard, so composite the tooltip again after the workspace is complete.
+        DrawStatusConsoleTooltip(batch, pixel, font);
         if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
     }
 

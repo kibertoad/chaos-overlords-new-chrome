@@ -65,6 +65,8 @@ public sealed partial class ChaosGame
             DrawPanelValue(font, batch, left[row], SiteInformationLayout.LeftValueRight, y);
             DrawPanelValue(font, batch, right[row], SiteInformationLayout.RightValueRight, y);
         }
+        if (_hoverPoint is { } hover)
+            DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.SiteAt(hover));
     }
 
     private static void ClearSiteInformationFields(SpriteBatch batch, Texture2D pixel)

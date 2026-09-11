@@ -24,6 +24,8 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- The `PX00132` hot-seat handoff now draws the incoming player's Overlord in
+  its measured 80-by-77 portrait aperture instead of leaving the frame black.
 - Combat Results now follows the original sector-indexed table instead of
   paging individual events. Sectors appear in board order, occupied sectors
   reveal other players' fights, both force apertures use the recovered
@@ -51,18 +53,30 @@ Last updated: 2026-09-11
   the next label. Its remaining recreation-only hosting/password/setup guidance
   and initial instruction status were removed; validation and connection
   failures still use the status line.
-- The 432-by-416 ownership atlases are confirmed as exact 8-by-8 arrays of
-  54-by-52 cells at city destination `(2,44)`. The whole neutral atlas is now
-  the stable city grid; owned cells replace only their one-pixel-inset
-  interiors, preventing colored copies of cell borders from appearing above or
-  left of the neutral grid.
+- The 432-by-416 ownership atlases place their visible grid at source `(4,3)`;
+  its 54-by-52 sector crops advance by 53-by-51 because neighboring cells share
+  their border pixels. The whole neutral atlas remains at city destination
+  `(2,44)`, while ownership interiors, selection frames, hit-testing, and
+  single-sector crops all use that measured grid origin and stride.
 - The upper-right city console now provides hover explanations for Score, Cash,
   Sector, Income, Tolerance, Support, and Chaos. Cash displays its current
   signed whole-city Financial adjustment; the Income tooltip explicitly
-  distinguishes the Chaos dice rating from the passive `$1` Sector Tax.
+  distinguishes the Chaos dice rating from the passive `$1` Sector Tax. The
+  final template label is corrected from `CASH` to `CHAOS`, and its tooltips are
+  composited above the Sector Details workspace rather than being clipped by it.
+- Gang, Site, and Item Information now expose hover explanations for every
+  statistic, including its actual dice/combat role and whether equipment or an
+  influenced local site applies the modifier. Force, Upkeep, Tech, Resistance,
+  Tolerance, Support, site Cash, and item Cost receive matching explanations.
+  Item descriptions wrap within the native text aperture instead of touching
+  its right border. The Hire comparison shares the gang-effect explanations;
+  its baked zero placeholders are cleared before aligned, consistently colored
+  values are rendered, including intentional two-digit Tech levels.
 - Screen changes clear pending city/sector double-click state, preventing a
   previous sector click from leaking through a Ranking transition and opening
-  Sector Details later.
+  Sector Details later. The console hit map also matches the artwork: the left
+  `DETAIL` button opens Sector Details, while the complete 34-pixel right-hand
+  `RANKING` row opens Ranking instead of its upper half being misrouted.
 - Setup selection outlines now use the inset `PX00143` button faces instead of
   the broader hit rectangles that overlap section labels. The city/sector top
   bar uses the original portrait aperture and plays the twelve-frame

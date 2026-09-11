@@ -26,7 +26,7 @@ original-game capture confirms the screen and interaction state.
 | Resource | Mapping | Confidence |
 |---|---|---|
 | `PX00129` | Main UI composite sheet: original font strip `(0,0,354,7)` containing six-pixel ASCII cells from space through `Z`, action names, player bars, arrows, buttons, portraits, message controls and command icons; diagonal `HIRED` stamp `(120,300,60,60)`; assigned `(492,67,20,20)`, idle/question `(492,107,20,20)`, and incoming-hire `(492,147,20,20)` gang-status markers | High from pixel inspection, visible content, and user captures; remaining rectangles not yet complete |
-| `PX00132` | Next-player/Ready handoff panel | High from visible labels |
+| `PX00132` | Next-player/Ready handoff panel; active Overlord fills the measured 80x77 portrait aperture | High from visible labels and border pixels |
 | `PX00137`, `PX00139` | Empty and filled horizontal meter frames | Medium |
 | `PX00138` | Circular action/command icons | High from repeated command imagery |
 | `PX00140` | Compact setup-control sheet matching `PX00143` labels | High |
@@ -50,7 +50,7 @@ original-game capture confirms the screen and interaction state.
 | `PX07000`-`PX07027`, `PX07200`-`PX07228` | Eight-frame 64x64 attacker overlays facing opposite directions; index 27 is target-evasion/question art and right-facing index 28 is the police car | High from frame inspection and item-table indices |
 | `PX07100`-`PX07119`, `PX07300`-`PX07320` | Eight-frame 64x64 hit/background layers facing opposite directions; right-facing index 20 is the police beam impact | High from composited frame inspection and item-table indices |
 | `PX05000`-`PX05024` | Gang-information panel family | Medium from visible template fields |
-| `PX10000`-`PX10006` | Neutral plus six player-colored 8x8 city layers; each sector is a 54x52 source cell | High from dimensions, grid, and color inspection |
+| `PX10000`-`PX10006` | Neutral plus six player-colored 8x8 city layers; the grid starts at `(4,3)` and its 54x52 sector crops share borders on a 53x51 stride | High from dimensions, grid, and color inspection |
 
 ## `PX00143` hit map
 

@@ -39,7 +39,7 @@ public sealed partial class ChaosGame
         font.Draw(batch, item.Name, new Vector2(199, 152), Color.Lime, 1);
         DrawPanelValue(font, batch, ItemInformationLayout.TypeLabel(item.Type),
             ItemInformationLayout.RightValueRight, 152);
-        foreach (var entry in WrapPanelText(item.Description, 31).Take(3)
+        foreach (var entry in WrapPanelText(item.Description, ItemInformationLayout.DescriptionColumns).Take(3)
                      .Select((text, row) => (text, row)))
             font.Draw(batch, entry.text, new Vector2(199, 170 + entry.row * 9), Color.Lime, 1);
 
@@ -61,6 +61,8 @@ public sealed partial class ChaosGame
             DrawPanelValue(font, batch, left[row], ItemInformationLayout.LeftValueRight, y);
             DrawPanelValue(font, batch, right[row], ItemInformationLayout.RightValueRight, y);
         }
+        if (_hoverPoint is { } hover)
+            DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.ItemAt(hover));
     }
 
     private static void ClearItemInformationFields(SpriteBatch batch, Texture2D pixel)

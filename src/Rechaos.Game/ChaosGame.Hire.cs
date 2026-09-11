@@ -54,6 +54,9 @@ public sealed partial class ChaosGame
             ? null
             : HireComparisonValues(state.Definitions.Gangs.Single(gang => gang.Id == entry.GangDefinitionId)))
             .ToArray();
+        for (var slot = 0; slot < HireDockLayout.SlotCount; slot++)
+            for (var row = 0; row < 16; row++)
+                batch.Draw(pixel, HireComparisonLayout.ValueCell(slot, row), Color.Black);
         for (var slot = 0; slot < entries.Count; slot++)
         {
             if (entries[slot] is not { } entry) continue;
@@ -63,12 +66,14 @@ public sealed partial class ChaosGame
                     OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
             var values = valuesBySlot[slot]!;
             for (var row = 0; row < values.Length; row++)
-                DrawPanelValue(font, batch, values[row].ToString(),
+                DrawPanelValue(font, batch, HireComparisonLayout.FormatValue(row, values[row]),
                     HireComparisonLayout.StatRight(slot), HireComparisonLayout.StatY(row),
                     HireComparisonLayout.IsBestValue(row, values[row],
                         valuesBySlot.Where(candidate => candidate is not null).Select(candidate => candidate![row]))
                         ? Color.Lime : Color.Red);
         }
+        if (_hoverPoint is { } hover)
+            DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.HireAt(hover));
     }
 
     private static short[] HireComparisonValues(GangDefinition definition) =>

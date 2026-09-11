@@ -19,6 +19,15 @@ public static class HireComparisonLayout
         return 289 + slot * 40;
     }
 
+    public static Rectangle ValueCell(int slot, int row) =>
+        new(StatRight(slot) - 12, StatY(row), 12, 7);
+
+    public static string FormatValue(int row, short value)
+    {
+        if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
+        return row == 0 ? value.ToString("D2") : value.ToString();
+    }
+
     public static int StatY(int row)
     {
         if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));

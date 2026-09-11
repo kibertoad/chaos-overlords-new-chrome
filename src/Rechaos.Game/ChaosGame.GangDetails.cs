@@ -136,6 +136,8 @@ public sealed partial class ChaosGame
                 DrawPanelValue(font, batch, right[index], GangInformationLayout.RightValueRight, y);
             }
         }
+        if (_hoverPoint is { } hover)
+            DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.GangAt(hover));
     }
 
     private static void ClearGangInformationFields(SpriteBatch batch, Texture2D pixel)

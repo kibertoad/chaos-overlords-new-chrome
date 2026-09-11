@@ -70,6 +70,7 @@ public sealed class UiNavigationTests
     public void StatusConsoleValuesFollowTemplateRows()
     {
         Assert.Equal(579, StatusConsoleLayout.ValueRight);
+        Assert.Equal(new Rectangle(476, 95, 44, 9), StatusConsoleLayout.ChaosLabel);
         Assert.Equal([60, 69, 78, 87, 96],
             Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorValueY));
     }
@@ -102,6 +103,49 @@ public sealed class UiNavigationTests
         Assert.Equal("12 -3", StatusConsolePresentation.Cash(12, -3));
         Assert.Equal("12 0", StatusConsolePresentation.Cash(12, 0));
         Assert.Empty(StatusConsoleTooltip.At(Point.Zero));
+    }
+
+    [Fact]
+    public void GangSiteAndItemEffectsExplainTheirRulesAndScope()
+    {
+        Assert.Equal(29, ItemInformationLayout.DescriptionColumns);
+        foreach (var row in Enumerable.Range(0, 7))
+        {
+            var gangLeft = InformationEffectTooltips.GangAt(
+                new Point(220, GangInformationLayout.StatisticY(row)));
+            var gangRight = InformationEffectTooltips.GangAt(
+                new Point(320, GangInformationLayout.StatisticY(row)));
+            var siteLeft = InformationEffectTooltips.SiteAt(
+                new Point(220, SiteInformationLayout.StatisticY(row)));
+            var itemRight = InformationEffectTooltips.ItemAt(
+                new Point(320, ItemInformationLayout.StatisticY(row)));
+
+            Assert.True(gangLeft.Count >= 3);
+            Assert.True(gangRight.Count >= 3);
+            Assert.Contains("SECTOR", siteLeft[^1]);
+            Assert.Contains("EQUIPPED", itemRight[^1]);
+        }
+
+        Assert.StartsWith("FORCE", InformationEffectTooltips.GangAt(new Point(220, 217))[0]);
+        Assert.StartsWith("RESISTANCE", InformationEffectTooltips.SiteAt(new Point(300, 170))[0]);
+        Assert.StartsWith("COST", InformationEffectTooltips.ItemAt(new Point(220, 217))[0]);
+        Assert.Contains("ATTACK DICE", InformationEffectTooltips.Describe(
+            InformationEffect.Blade, "SCOPE")[1]);
+        Assert.Contains("ATTACK DICE", InformationEffectTooltips.Describe(
+            InformationEffect.Range, "SCOPE")[1]);
+        Assert.Contains("INFLUENCE ACTION", InformationEffectTooltips.Describe(
+            InformationEffect.Influence, "SCOPE")[1]);
+        Assert.Contains("SECTOR DEFENSE", InformationEffectTooltips.Describe(
+            InformationEffect.Control, "SCOPE")[1]);
+        var strength = InformationEffectTooltips.Describe(
+            InformationEffect.Strength, "SCOPE")[1];
+        Assert.Contains("STRENGTH/BLADE TYPES", strength);
+        Assert.DoesNotContain("MELEE", strength);
+        var fighting = InformationEffectTooltips.Describe(
+            InformationEffect.Fighting, "SCOPE")[1];
+        Assert.Contains("UNARMED", fighting);
+        Assert.DoesNotContain("BARE", fighting);
+        Assert.Empty(InformationEffectTooltips.GangAt(Point.Zero));
     }
 
     [Fact]
@@ -242,6 +286,27 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
+    public void CityConsoleGivesDetailAndRankingTheirCompleteArtworkButtons()
+    {
+        Assert.Equal(new Rectangle(492, 176, 50, 32), CityConsoleLayout.CombatSummary);
+        Assert.Equal(new Rectangle(492, 208, 50, 17), CityConsoleLayout.SectorDetails);
+        Assert.Equal(new Rectangle(548, 226, 50, 34), CityConsoleLayout.Ranking);
+        Assert.False(CityConsoleLayout.CombatSummary.Intersects(CityConsoleLayout.SectorDetails));
+        Assert.True(CityConsoleLayout.SectorDetails.Contains(new Point(510, 212)));
+        Assert.True(CityConsoleLayout.Ranking.Contains(new Point(560, 233)));
+        Assert.True(CityConsoleLayout.Ranking.Contains(new Point(560, 248)));
+    }
+
+    [Fact]
+    public void NextPlayerPortraitFillsTheNativeHandoffAperture()
+    {
+        Assert.Equal(new Rectangle(266, 148, 108, 164), HandoffLayout.Panel);
+        Assert.Equal(new Rectangle(280, 170, 80, 77), HandoffLayout.Portrait);
+        Assert.Equal(new Rectangle(266, 246, 108, 66), HandoffLayout.Ready);
+        Assert.True(HandoffLayout.Panel.Contains(HandoffLayout.Portrait));
+    }
+
+    [Fact]
     public void CityMapLayoutMapsEveryAtlasTileAndOwnershipLayer()
     {
         for (var sector = 0; sector < MatchLimits.SectorCount; sector++)
@@ -254,16 +319,16 @@ public sealed class UiNavigationTests
             Assert.Equal(sector, mapped);
         }
 
-        Assert.Equal(new Rectangle(0, 0, 54, 52), CityMapLayout.Source(0));
-        Assert.Equal(new Rectangle(378, 364, 54, 52), CityMapLayout.Source(63));
+        Assert.Equal(new Rectangle(4, 3, 54, 52), CityMapLayout.Source(0));
+        Assert.Equal(new Rectangle(375, 360, 54, 52), CityMapLayout.Source(63));
         Assert.Equal(new Rectangle(2, 44, 432, 416), CityMapLayout.Bounds);
-        Assert.Equal(new Rectangle(1, 1, 52, 50), CityMapLayout.OwnershipSource(0));
-        Assert.Equal(new Rectangle(3, 45, 52, 50), CityMapLayout.OwnershipDestination(0));
-        Assert.Equal(new Rectangle(379, 365, 52, 50), CityMapLayout.OwnershipSource(63));
-        Assert.Equal(new Rectangle(381, 409, 52, 50), CityMapLayout.OwnershipDestination(63));
+        Assert.Equal(new Rectangle(5, 4, 52, 50), CityMapLayout.OwnershipSource(0));
+        Assert.Equal(new Rectangle(7, 48, 52, 50), CityMapLayout.OwnershipDestination(0));
+        Assert.Equal(new Rectangle(376, 361, 52, 50), CityMapLayout.OwnershipSource(63));
+        Assert.Equal(new Rectangle(378, 405, 52, 50), CityMapLayout.OwnershipDestination(63));
         Assert.Equal(0, CityMapLayout.OwnershipSheet(null));
         Assert.Equal(6, CityMapLayout.OwnershipSheet(new PlayerId(5)));
-        Assert.False(CityMapLayout.TrySectorAt(new Point(434, 460), out _));
+        Assert.False(CityMapLayout.TrySectorAt(new Point(432, 456), out _));
     }
 
     [Fact]
@@ -280,7 +345,7 @@ public sealed class UiNavigationTests
         }
 
         Assert.Equal(
-            [new Rectangle(10, 56, 6, 14), new Rectangle(42, 56, 6, 14)],
+            [new Rectangle(14, 59, 6, 14), new Rectangle(46, 59, 6, 14)],
             SiegePylonLayout.ForSector(0));
         Assert.Throws<ArgumentOutOfRangeException>(() => SiegePylonLayout.ForSector(64));
     }
@@ -467,8 +532,8 @@ public sealed class UiNavigationTests
     [Fact]
     public void GangStatusMarkerOccupiesLowerRightOfSectorCell()
     {
-        Assert.Equal(new Rectangle(34, 64, 20, 20), GangStatusMarkerLayout.Destination(0));
-        Assert.Equal(new Rectangle(412, 428, 20, 20), GangStatusMarkerLayout.Destination(63));
+        Assert.Equal(new Rectangle(38, 67, 20, 20), GangStatusMarkerLayout.Destination(0));
+        Assert.Equal(new Rectangle(409, 424, 20, 20), GangStatusMarkerLayout.Destination(63));
     }
 
     [Fact]
@@ -754,6 +819,11 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(348, 139, 32, 32), HireComparisonLayout.Portrait(2));
         Assert.Equal(369, HireComparisonLayout.StatRight(2));
         Assert.Equal(311, HireComparisonLayout.StatY(15));
+        Assert.Equal(new Rectangle(357, 173, 12, 7), HireComparisonLayout.ValueCell(2, 0));
+        Assert.Equal("05", HireComparisonLayout.FormatValue(0, 5));
+        Assert.Equal("-2", HireComparisonLayout.FormatValue(4, -2));
+        Assert.Contains("ATTACK DICE", InformationEffectTooltips.HireAt(
+            new Point(220, HireComparisonLayout.StatY(12)))[1]);
         Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.Portrait(3));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.StatRight(-1));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.StatY(16));

@@ -19,6 +19,7 @@ public static class StatusConsoleLayout
 
     public static Rectangle Score => Entry(ScoreY);
     public static Rectangle Cash => Entry(CashY);
+    public static Rectangle ChaosLabel => new(476, SectorValueY(4) - 1, 44, 9);
     public static Rectangle SectorEntry(int row) => Entry(SectorValueY(row));
 
     private static Rectangle Entry(int y) => new(476, y - 1, 108, 9);
