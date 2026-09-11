@@ -54,4 +54,21 @@ public sealed class LocalSetupUiTests
         Assert.Equal('/', slash);
         Assert.False(OriginalTextInput.TryCharacter(Keys.F1, shift: false, out _));
     }
+
+    [Fact]
+    public void HumanRosterAddsRemovesMovesAndExchangesColorSlots()
+    {
+        var roster = new LocalSetupRoster();
+
+        Assert.Equal([0], roster.HumanSlots);
+        Assert.Equal(1, roster.AddHuman());
+        Assert.Equal(2, roster.AddHuman());
+        Assert.Equal(LocalSetupMoveResult.ExchangedHumanColors, roster.MoveHuman(0, 2));
+        Assert.Equal([0, 1, 2], roster.HumanSlots);
+        Assert.Equal(LocalSetupMoveResult.MovedToEmptyColor, roster.MoveHuman(0, 5));
+        Assert.Equal([5, 1, 2], roster.HumanSlots);
+        Assert.Equal(2, roster.RemoveLastHuman());
+        Assert.Equal([5, 1], roster.HumanSlots);
+        Assert.Equal(LocalSetupMoveResult.Invalid, roster.MoveHuman(0, 3));
+    }
 }

@@ -2069,8 +2069,10 @@ most 10 characters. The resource-name helper at `0x0046d1f7` also passes an
 exact length of 10 to `0x00466673` when filling an omitted computer's 12-byte
 name record. The client now starts with one configured human, adds/removes
 humans rather than synthetic CPU toggles, restricts selectable portraits to 0
-through 14, and exposes the bounded name field. Color drag/swap and exact
-name-field coordinates still require native capture.
+through 14, and exposes the bounded name field. Face dragging now moves a human
+identity into an empty color or exchanges two human colors; the transient sparse
+setup is normalized into ascending slots before recovered empty-slot completion.
+Exact name/drop-field coordinates still require native capture.
 
 ### BIN-SETUP-003 - `SMGISLANDS` neutral-sector Chaos override
 

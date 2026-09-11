@@ -174,6 +174,45 @@ public sealed class OriginalCityGeneratorTests
     }
 
     [Fact]
+    public void FactoryFillsSparseHumanColorSlotsInAscendingOrder()
+    {
+        var setup = new MatchSetup(
+            ScenarioId.Greed,
+            GameDuration.SixMonths,
+            1996,
+            [new MatchPlayerSetup(new PlayerId(4), "FIVE", PlayerController.Human, 4)],
+            allowSparsePlayerIds: true);
+
+        var match = OriginalMatchFactory.Create(BundledOriginalData.Load(), setup);
+
+        Assert.Equal(Enumerable.Range(0, MatchLimits.PlayerCount),
+            match.Setup.Players.Select(player => player.Id.Value));
+        Assert.Equal("FIVE", match.Setup.Players[4].Name);
+        Assert.Equal(PlayerController.Human, match.Setup.Players[4].Controller);
+        Assert.All(match.Setup.Players.Where(player => player.Id.Value != 4),
+            player => Assert.Equal(PlayerController.Computer, player.Controller));
+        Assert.Equal(MatchLimits.PlayerCount,
+            match.Setup.Players.Select(player => player.PortraitId).Distinct().Count());
+        Assert.False(match.Setup.AllowsSparsePlayerIds);
+    }
+
+    [Fact]
+    public void SparseSetupRequiresExplicitTransientOptIn()
+    {
+        MatchPlayerSetup[] player =
+            [new(new PlayerId(2), "THREE", PlayerController.Human, 2)];
+
+        Assert.Throws<ArgumentException>(() => new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1, player));
+        var sparse = new MatchSetup(
+            ScenarioId.Greed, GameDuration.SixMonths, 1, player,
+            allowSparsePlayerIds: true);
+        Assert.True(sparse.AllowsSparsePlayerIds);
+        Assert.Throws<ArgumentException>(() => new MatchState(
+            BundledOriginalData.Load(), sparse, [], []));
+    }
+
+    [Fact]
     public void FirstHireInteractionFillsThreeDistinctOriginalRangeOffers()
     {
         var data = BundledOriginalData.Load();

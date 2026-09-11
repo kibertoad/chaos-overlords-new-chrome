@@ -89,12 +89,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string[] _playerNames = Enumerable.Range(0, MatchLimits.PlayerCount)
         .Select(LocalSetupPolicy.DefaultPlayerName).ToArray();
     private readonly SetupPlayerNameEditor _setupNameEditor = new();
+    private readonly LocalSetupRoster _localSetupRoster = new();
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
     private AiDifficulty _selectedAiMentality = AiDifficulty.Criminal;
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.SixMonths;
-    private int _selectedPlayerCount = LocalSetupPolicy.DefaultHumanPlayerCount;
     private int _cursor;
     private int _selectedGangIndex;
     private IReadOnlyList<GameCommand> _commandOptions = [];
@@ -117,10 +117,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
     private int? _draggedHireSlot;
+    private int? _draggedSetupPlayerSlot;
     private SetupPushButton? _pressedSetupButton;
     private short? _draggedHireDefinitionId;
     private Point _hirePressPoint;
+    private Point _setupPlayerPressPoint;
     private bool _hireDragStarted;
+    private bool _setupPlayerDragStarted;
     private GangId? _draggedGangId;
     private Point _gangPressPoint;
     private bool _gangDragStarted;
@@ -418,6 +421,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         {
             _dragPoint = virtualPoint;
             if (_previousMouse.LeftButton == ButtonState.Released) HandleClick(virtualPoint);
+            else if (_draggedSetupPlayerSlot is not null && !_setupPlayerDragStarted
+                     && (Math.Abs(virtualPoint.X - _setupPlayerPressPoint.X) >= 4
+                         || Math.Abs(virtualPoint.Y - _setupPlayerPressPoint.Y) >= 4))
+            {
+                _setupPlayerDragStarted = true;
+                _message = "DROP ON ANOTHER PLAYER COLOR";
+            }
             else if (_draggedHireDefinitionId is not null && !_hireDragStarted
                      && (Math.Abs(virtualPoint.X - _hirePressPoint.X) >= 4
                          || Math.Abs(virtualPoint.Y - _hirePressPoint.Y) >= 4))
@@ -438,6 +448,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         {
             if (pointerMapped) CompleteSetupButton(virtualPoint);
             else _pressedSetupButton = null;
+        }
+        else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
+                 && _draggedSetupPlayerSlot is not null)
+        {
+            if (pointerMapped && _setupPlayerDragStarted) CompleteSetupPlayerDrag(virtualPoint);
+            else CancelSetupPlayerDrag();
         }
         else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
                  && _draggedHireDefinitionId is not null)
@@ -590,12 +606,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     PlanningTimerLayout.SetupChoices.ToArray(),
                     rectangle => rectangle.Contains(point));
                 var setupButton = SetupButtonLayout.HitTest(point);
-                var playerName = Enumerable.Range(0, _selectedPlayerCount)
+                var playerName = _localSetupRoster.HumanSlots
                     .FirstOrDefault(index => PlayerPortraitLayout.Name(index).Contains(point), -1);
-                var previousPortrait = Enumerable.Range(0, _selectedPlayerCount)
+                var previousPortrait = _localSetupRoster.HumanSlots
                     .FirstOrDefault(index => PlayerPortraitLayout.Previous(index).Contains(point), -1);
-                var nextPortrait = Enumerable.Range(0, _selectedPlayerCount)
+                var nextPortrait = _localSetupRoster.HumanSlots
                     .FirstOrDefault(index => PlayerPortraitLayout.Next(index).Contains(point), -1);
+                var draggedPlayer = _localSetupRoster.HumanSlots
+                    .FirstOrDefault(index => PlayerPortraitLayout.SetupLarge(index).Contains(point), -1);
                 if (_editingPlayerName is not null
                     && (setupButton is not null || playerName != _editingPlayerName))
                     FinishSetupNameEdit(cancel: false);
@@ -619,6 +637,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     SelectPlanningTimeLimit((PlanningTimeLimit)planningTimeLimit);
                 else if (previousPortrait >= 0) CyclePortrait(previousPortrait, -1);
                 else if (nextPortrait >= 0) CyclePortrait(nextPortrait, 1);
+                else if (draggedPlayer >= 0) BeginSetupPlayerDrag(draggedPlayer, point);
                 else
                 {
                     var mentality = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(point));

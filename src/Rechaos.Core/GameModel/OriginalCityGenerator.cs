@@ -232,22 +232,23 @@ public static class OriginalMatchFactory
 
     private static MatchSetup CompleteLocalPlayers(MatchSetup setup, DeterministicRandom random)
     {
-        if (setup.Players.Count == MatchLimits.PlayerCount) return setup;
-
-        var players = setup.Players.ToList();
-        var usedPortraits = players.Select(player => (int)player.PortraitId).ToHashSet();
-        for (var slot = players.Count; slot < MatchLimits.PlayerCount; slot++)
+        var playersById = setup.Players.ToDictionary(player => player.Id.Value);
+        var usedPortraits = setup.Players.Select(player => (int)player.PortraitId).ToHashSet();
+        for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
         {
+            if (playersById.ContainsKey(slot)) continue;
             int portrait;
             do portrait = random.NextInt(ActivePortraitCount);
             while (usedPortraits.Contains(portrait));
             usedPortraits.Add(portrait);
-            players.Add(new MatchPlayerSetup(
+            playersById.Add(slot, new MatchPlayerSetup(
                 new PlayerId(slot), DefaultPlayerNames[portrait], PlayerController.Computer,
                 checked((short)portrait)));
         }
 
         return new MatchSetup(
-            setup.Scenario, setup.Duration, setup.InitialSeed, players, setup.AiMentality);
+            setup.Scenario, setup.Duration, setup.InitialSeed,
+            playersById.OrderBy(entry => entry.Key).Select(entry => entry.Value).ToArray(),
+            setup.AiMentality);
     }
 }

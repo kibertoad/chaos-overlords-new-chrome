@@ -23,11 +23,22 @@ public sealed partial class ChaosGame
 
     private void ChangePlayerCount(int delta, bool pointerButton = false)
     {
-        var previous = _selectedPlayerCount;
-        _selectedPlayerCount = Math.Clamp(_selectedPlayerCount + delta, 1, MatchLimits.PlayerCount);
+        var changed = delta switch
+        {
+            > 0 => _localSetupRoster.AddHuman() is not null,
+            < 0 => RemoveSetupHuman(),
+            _ => false
+        };
         if (AudioRouting.PlayerCountResultSound(
-                previous != _selectedPlayerCount, pointerButton) is { } slot)
+                changed, pointerButton) is { } slot)
             PlayGeneralSound(slot);
+    }
+
+    private bool RemoveSetupHuman()
+    {
+        if (_localSetupRoster.RemoveLastHuman() is not { } removed) return false;
+        if (_editingPlayerName == removed) FinishSetupNameEdit(cancel: true);
+        return true;
     }
 
     private void BeginSetupButton(SetupPushButton button)
@@ -63,7 +74,7 @@ public sealed partial class ChaosGame
 
     private void BeginSetupNameEdit(int index)
     {
-        if (index < 0 || index >= _selectedPlayerCount) return;
+        if (!_localSetupRoster.IsHuman(index)) return;
         if (_editingPlayerName is not null) FinishSetupNameEdit(cancel: false);
         _editingPlayerName = index;
         _setupOriginalName = _playerNames[index];
@@ -129,29 +140,75 @@ public sealed partial class ChaosGame
 
     private void CyclePortrait(int player, int delta)
     {
-        if (player < 0 || player >= _selectedPlayerCount) return;
+        if (!_localSetupRoster.IsHuman(player)) return;
         _playerPortraits[player] = checked((short)Mod(
             _playerPortraits[player] + delta, PlayerPortraitLayout.SelectableCount));
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"PLAYER {player + 1} PORTRAIT {_playerPortraits[player] + 1}";
     }
 
+    private void BeginSetupPlayerDrag(int player, Point point)
+    {
+        if (!_localSetupRoster.IsHuman(player)) return;
+        _draggedSetupPlayerSlot = player;
+        _setupPlayerPressPoint = point;
+        _dragPoint = point;
+        _setupPlayerDragStarted = false;
+    }
+
+    private void CompleteSetupPlayerDrag(Point point)
+    {
+        if (_draggedSetupPlayerSlot is not { } source)
+        {
+            CancelSetupPlayerDrag();
+            return;
+        }
+        var target = Enumerable.Range(0, MatchLimits.PlayerCount)
+            .FirstOrDefault(index => PlayerPortraitLayout.SetupLarge(index).Contains(point), -1);
+        var result = _localSetupRoster.MoveHuman(source, target);
+        if (result is LocalSetupMoveResult.MovedToEmptyColor
+            or LocalSetupMoveResult.ExchangedHumanColors)
+        {
+            (_playerNames[source], _playerNames[target]) =
+                (_playerNames[target], _playerNames[source]);
+            (_playerPortraits[source], _playerPortraits[target]) =
+                (_playerPortraits[target], _playerPortraits[source]);
+            PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+            _message = result == LocalSetupMoveResult.ExchangedHumanColors
+                ? "PLAYER COLORS EXCHANGED"
+                : $"PLAYER MOVED TO COLOR {target + 1}";
+        }
+        else if (result == LocalSetupMoveResult.Invalid)
+        {
+            PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+            _message = "DROP ON A PLAYER COLOR";
+        }
+        CancelSetupPlayerDrag();
+    }
+
+    private void CancelSetupPlayerDrag()
+    {
+        _draggedSetupPlayerSlot = null;
+        _setupPlayerDragStarted = false;
+    }
+
     private void StartMatch()
     {
         if (_definitions is null) return;
-        var players = Enumerable.Range(0, _selectedPlayerCount)
-            .Select(index => new MatchPlayerSetup(
-                new PlayerId(index), _playerNames[index],
+        var players = _localSetupRoster.HumanSlots.Order()
+            .Select(slot => new MatchPlayerSetup(
+                new PlayerId(slot), _playerNames[slot],
                 PlayerController.Human,
-                _playerPortraits[index]))
+                _playerPortraits[slot]))
             .ToArray();
         var setup = new MatchSetup(
-            _selectedScenario, _selectedDuration, Environment.TickCount, players, _selectedAiMentality);
+            _selectedScenario, _selectedDuration, Environment.TickCount, players,
+            _selectedAiMentality, allowSparsePlayerIds: true);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>
         {
             ["scenario"] = _selectedScenario.ToString(),
             ["duration"] = _selectedDuration.ToString(),
-            ["configuredPlayers"] = _selectedPlayerCount.ToString(),
+            ["configuredPlayers"] = _localSetupRoster.Count.ToString(),
             ["computerPlayers"] = "0",
             ["mentality"] = _selectedAiMentality.ToString(),
             ["seed"] = setup.InitialSeed.ToString()
@@ -207,10 +264,12 @@ public sealed partial class ChaosGame
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
                     OriginalSpriteLayout.OverlordPortrait(
-                        index < _selectedPlayerCount ? _playerPortraits[index] : PlayerPortraitLayout.Count - 1),
+                        _localSetupRoster.IsHuman(index)
+                            ? _playerPortraits[index]
+                            : PlayerPortraitLayout.Count - 1),
                     Color.White);
-        font.Draw(batch, $"PLAYERS {_selectedPlayerCount}", new Vector2(376, 306), Color.White, 1);
-        for (var index = 0; index < _selectedPlayerCount; index++)
+        font.Draw(batch, $"PLAYERS {_localSetupRoster.Count}", new Vector2(376, 306), Color.White, 1);
+        foreach (var index in _localSetupRoster.HumanSlots)
         {
             var portrait = PlayerPortraitLayout.SetupLarge(index);
             if (_uiSprites is not null)
@@ -224,6 +283,17 @@ public sealed partial class ChaosGame
                 : _playerNames[index];
             var name = PlayerPortraitLayout.Name(index);
             font.Draw(batch, label, new Vector2(name.X, name.Y), PlayerColors[index], 1);
+        }
+        if (_setupPlayerDragStarted && _draggedSetupPlayerSlot is { } dragged
+            && _uiSprites is not null)
+        {
+            var token = new Rectangle(_dragPoint.X - 24, _dragPoint.Y - 24, 48, 48);
+            batch.Draw(_uiSprites, token,
+                OriginalSpriteLayout.OverlordPortrait(_playerPortraits[dragged]), Color.White);
+            if (Enumerable.Range(0, MatchLimits.PlayerCount).FirstOrDefault(
+                    index => PlayerPortraitLayout.SetupLarge(index).Contains(_dragPoint), -1) is { } target
+                && target >= 0)
+                DrawBorder(batch, pixel, PlayerPortraitLayout.SetupLarge(target), Color.Lime, 2);
         }
         DrawBorder(batch, pixel, SetupAiMentalities[(int)_selectedAiMentality], Color.Gold, 2);
         DrawBorder(batch, pixel,

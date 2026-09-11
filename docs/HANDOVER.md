@@ -10,7 +10,7 @@ Last updated: 2026-09-11
 - The latest functional checkpoints are committed on that branch; publish the
   local commits when repository push authorization is available.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,060 tests with no warnings.
+  isolated Release build passed all 1,063 tests with no warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -28,6 +28,9 @@ Last updated: 2026-09-11
   Computers. Clicking a visible player's name edits the original bounded
   10-character field, enabling ordinary custom names and the recovered
   exact-name modifiers; portrait 15 is no longer selectable as a human face.
+  Dragging a human face to an empty color moves that identity into the sparse
+  slot; dropping onto another human exchanges their colors. Begin then fills
+  missing color slots in ascending order before AI and city RNG consumption.
 - The main console now routes its split Comlink controls to the original
   `PX05017` incoming-message viewer and `PX05018` sender. Human players can page
   the newest 16 messages, see unread-state blinking, select multiple human

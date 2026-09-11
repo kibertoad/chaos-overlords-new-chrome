@@ -376,6 +376,10 @@ $500 and all-items-researched overrides at this boundary. `OriginalMatchFactory`
 uses the recovered ascending empty-slot completion, unique portrait/name draws,
 density/site algorithm, fixed HQ candidates, Force 10 Right Hands, $20 standard
 cash, `SMGISLANDS` neutral-sector override and deferred offer initialization.
+The setup client supplies a transient ordered sparse `MatchSetup` when a human
+has moved to a non-contiguous color slot; the factory fills missing IDs in
+ascending order and returns the ordinary contiguous six-player setup before any
+authoritative state is constructed.
 Original seed and the remaining pre-city call context remain provisional pending
 a reference fixture.
 
@@ -467,16 +471,17 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
   recovered density/site generator, fixed HQ
   candidates, Right Hands setup and deferred initial offers; omitted local slots
   are completed as Computers with the recovered pre-city portrait/name RNG, and
-  original seed selection remains provisional.
+  original seed selection remains provisional. Local setup begins with one
+  human and supports Add/Remove, 10-character names, portrait selection, and
+  face-drag movement/exchange between the six color slots.
 - Fresh Siege setup marks the six assigned starting HQ sectors as authoritative
   objective landmarks without consuming RNG. The city projection draws the
   manual-described pair of gray pylons over each landmark regardless of owner.
 - The client has a title/setup/city router and virtual-coordinate mouse input,
   original next-player privacy handoff, an event/notification viewer whose
   dismissal mutations are replay-recorded, plus a state-driven endgame summary
-  on the mapped original frame, but still
-  lacks the original setup detail, AI turn driver, notification presentation
-  detail, animations and most original panels. Its command picker projects all
+  on the mapped original frame. Exact setup hit alignment and golden-screen
+  comparison remain open. Its command picker projects all
   currently legal commands from Core rather than maintaining parallel UI rules;
   its Hire panel exposes all three offers, selected-sector placement and snubbing,
   while sector/gang views project authoritative sites, influence, effective stats,

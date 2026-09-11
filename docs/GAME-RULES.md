@@ -617,6 +617,10 @@ claim about original-game behavior.
   through six, and Begin fills every remaining slot with a Computer. Human names
   use the Help-specified 10-character name field; portrait 15 is the empty
   marker and cannot be selected as a human face.
+- A face dragged to an empty color moves that local-human identity to the target
+  slot. A face dropped on another human exchanges their colors. The resulting
+  sparse human slots are preserved as player IDs, then every missing slot is
+  filled in ascending order before AI initialization and city generation.
 - Current exclusions: initial seed selection, the remaining setup call context,
   initial hire offers, and an original runtime fixture remain open.
 - Confidence: High static evidence for ordinary/Armageddon cash, the name

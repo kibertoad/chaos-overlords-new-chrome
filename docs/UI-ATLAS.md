@@ -90,7 +90,9 @@ cursor feedback remain to be validated.
   completes omitted slots at Begin through the original-compatible fresh-match
   factory. Add/Remove changes that human count. Clicking the bounded name field
   below a visible face opens the original 10-character uppercase editor; empty
-  confirmation restores `PLAYER#n`. Portrait 15 remains display-only.
+  confirmation restores `PLAYER#n`. Dragging a face to an empty cell changes its
+  color slot; dropping on another human exchanges their name/portrait identities.
+  Portrait 15 remains display-only.
 - AI difficulty is the setup screen's single global **AI Mentality** selection,
   not a per-player field. The four baked rows select Goon, Criminal, Crime Lord,
   or Homicidal Maniac; hover-only thematic tooltips explain the behavioral
