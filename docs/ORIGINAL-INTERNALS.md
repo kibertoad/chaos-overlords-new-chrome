@@ -2558,10 +2558,17 @@ collect cash before recomputing the sector records again.
 controlled sector plus Cash from its influenced sites. The executable stores
 those components combined as `1 + completed-site Cash`; the recreation exposes
 them separately in events and Finance projections. Generated city density must
-not be substituted for sector tax.
+not be substituted for sector tax. This combined byte is also operational
+sector Income: `0x004120ef` renders sector `+3` on the owner-gated Income row,
+AI selector case 6 in `0x00402d70` returns that same byte, and the whole-turn
+resolver consumes sector Income in both Chaos and Control. Consequently the
+generated 3-7 value is not the playable Control/Chaos value after the first
+pre-planning recomputation; it establishes the sector's base Tolerance before
+the operational byte is replaced.
 
 **Confidence:** High static evidence for arrays, offsets, initial skip,
-recomputation/write-back, player/gang/sector scan order, and arithmetic;
+recomputation/write-back, UI and AI consumers, player/gang/sector scan order,
+and arithmetic;
 controlled runtime corroboration remains pending.
 
 ## New-game initialization

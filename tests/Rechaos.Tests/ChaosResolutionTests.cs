@@ -189,7 +189,8 @@ public sealed class ChaosResolutionTests
         foreach (var gangId in new[] { new GangId(10), new GangId(11) })
         {
             var gang = match.FindGang(gangId)!;
-            var pool = match.Sectors[gang.SectorId].Income + gang.Force
+            var pool = SectorIncomeResolver.OperationalIncome(
+                    match, match.Sectors[gang.SectorId]) + gang.Force
                 + EffectiveStatisticsCalculator.ForGang(match, gang).Chaos;
             var dice = OriginalResolutionRules.ActionPool(band, GangAction.Chaos, pool);
             expectedRolls.AddRange(DiceRoller.RollD6(expectedRandom, dice));
@@ -314,14 +315,13 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
-    public void ChaosUsesGeneratedSectorIncomeInsteadOfSiteCashBenefits()
+    public void ChaosUsesRecomputedSectorTaxAndInfluencedSiteCash()
     {
         var match = CreateMatch(tolerance: 40, income: 7);
         var gang = match.FindGang(new GangId(10))!;
         var sector = match.Sectors[0];
-        var siteCash = sector.Sites.Sum(site => match.Definitions.Sites.Single(
-            definition => definition.Id == site.DefinitionId).Cash);
-        Assert.NotEqual(siteCash, sector.Income);
+        var operationalIncome = SectorIncomeResolver.OperationalIncome(match, sector);
+        Assert.NotEqual(sector.Income, operationalIncome);
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
 
         match.FinishExecutionPhase();
@@ -329,11 +329,11 @@ public sealed class ChaosResolutionTests
         var band = OriginalResolutionRules.Band(match, new PlayerId(0));
         var statistics = EffectiveStatisticsCalculator.ForGang(match, gang);
         var expectedDice = OriginalResolutionRules.ActionPool(
+            band, GangAction.Chaos, operationalIncome + gang.Force + statistics.Chaos);
+        var generatedDice = OriginalResolutionRules.ActionPool(
             band, GangAction.Chaos, sector.Income + gang.Force + statistics.Chaos);
-        var siteDerivedDice = OriginalResolutionRules.ActionPool(
-            band, GangAction.Chaos, siteCash + gang.Force + statistics.Chaos);
         var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
-        Assert.NotEqual(siteDerivedDice, expectedDice);
+        Assert.NotEqual(generatedDice, expectedDice);
         Assert.Equal(expectedDice, resolution.AttackValue);
         Assert.Equal(expectedDice, resolution.Rolls.Count);
     }
@@ -429,7 +429,7 @@ public sealed class ChaosResolutionTests
         new(new PlayerId(player), new GangId(gang), GangAction.Chaos, CommandTarget.None);
 
     private static int SectorIncome(MatchState match, int sectorId) =>
-        match.Sectors[sectorId].Income;
+        SectorIncomeResolver.OperationalIncome(match, match.Sectors[sectorId]);
 
     private static void AdvanceCoordinatorTurn(MatchState match)
     {

@@ -229,8 +229,8 @@ controlled reference observation confirms its execution timing and edge cases.
   with influenced-site Tolerance values modifying that normal. Temporary
   tolerance changes move one point toward normal each turn.
 - Interpretation: normal effective tolerance is
-  `17 - sector Income + sum(Tolerance)` for currently influenced sites. Site
-  adjustments apply immediately when influence is gained or lost, may move the
+  `17 - density-derived base Income + sum(Tolerance)` for currently influenced
+  sites. Site adjustments apply immediately when influence is gained or lost, may move the
   effective value outside 0–40, and remain outside Bribe/Snitch's base caps.
   During Upkeep, every sector's current value moves exactly one point toward
   its normal effective value. The post-Instant global floor then raises every
@@ -444,10 +444,10 @@ claim about original-game behavior.
   prevents all Chaos income in that sector.
 - Interpretation: reset the prior turn's sector Chaos during Upkeep, then group
   one player's Chaos commands by sector. Each participating gang contributes
-  `sector Income + Force + Chaos` dice and rolls in fixed player-slot then
-  persistent roster-slot order, independent of submission order or intervening
-  sectors. Generated sector Income is independent of the three
-  sites' Cash benefits. Accumulate every
+  `operational sector Income + Force + Chaos` dice and rolls in fixed
+  player-slot then persistent roster-slot order, independent of submission order or intervening
+  sectors. Before playable turns the executable replaces the generated 3-7
+  density value with operational Income `1 + completed-site Cash`. Accumulate every
   player's successes into `MatchSectorState.Chaos` before paying anybody. A
   sector already in crackdown, or crossing the strict `Chaos > Tolerance`
   threshold during this phase, pays no group; otherwise controlled groups earn
@@ -461,14 +461,15 @@ claim about original-game behavior.
   until the Chaos boundary.
 - Current exclusions: exact original message wording and controlled runtime
   corroboration.
-- Confidence: High for the per-gang pool, generated-Income distinction, control
+- Confidence: High for the per-gang pool, operational-Income recomputation, control
   multiplier, roster RNG order, grouped half payout, and suppression rule;
   Medium for notification presentation.
 - Implementation: `CommandResolver.ResolveChaosPhase`,
   `ManualRules.ChaosDiceCount`, `ManualRules.ChaosIncome`, and
   `ManualRules.TriggersCrackdown`.
-- Tests: `ChaosResolutionTests` covers turn-start reset, pooling, generated
-  sector Income versus site Cash, fixed player/roster RNG order, grouped payout,
+- Tests: `ChaosResolutionTests` covers turn-start reset, pooling, recomputed
+  operational Income versus generated density, fixed player/roster RNG order,
+  grouped payout,
   statistics, sector-wide
   cross-player aggregation, existing/new crackdown behavior, notifications,
   RNG consumption, and phase hashes; `ManualRulesTests` covers arithmetic and
@@ -594,13 +595,13 @@ claim about original-game behavior.
   ownership changes only through a separate ownership-changing rule.
 - Current exclusions: original crackdown ordering and negative-total edge
   behavior.
-- Confidence: High for equation components, density-derived sector Income,
+- Confidence: High for equation components, recomputed operational sector Income,
   influence loss, zero-margin neutral selection, and cross-player winner/order
   behavior.
 - Implementation: `ManualRules.ControlStrength`, `ManualRules.ControlMargin`,
   grouped `CommandResolver.ResolveControl`, and site-reset handling.
 - Tests: `BoardResolutionTests` covers neutral capture, board/roster ordering,
-  pooled strength, generated sector Income versus site Cash, defended
+  pooled strength, operational Income versus generated density, defended
   failure, recorded deterministic zero-margin chance, positive and zero-margin
   cross-player ties, unique-highest neutral conflicts, retained empty-sector
   ownership after Move/Terminate, a single phase-opening
@@ -627,6 +628,9 @@ claim about original-game behavior.
   checked integer arithmetic. Runtime affordability rejects equipment and
   Bribe; Snitch remains free and executable in debt. Hiring permits a zero-cost
   gang even while the balance is negative.
+  The same recomputed byte is the sector Income shown in the city UI and used
+  by Control, Chaos, and the original AI; the generator's 3-7 density value
+  survives semantically as the base for initial/normal Tolerance.
 - Current exclusions: cash adjustment, special gang/item/site modifiers,
   integer overflow behavior, and the exact statistics accounting boundary.
 - Confidence: High static evidence for flat sector tax, influenced-site Cash,

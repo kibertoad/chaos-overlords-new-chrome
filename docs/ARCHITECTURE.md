@@ -408,8 +408,10 @@ moving or terminating the last friendly gang does not neutralize the sector.
 before entering Command. Each result separates flat sector tax, influenced-site
 cash, and active-gang upkeep so reference fixtures can locate the first differing
 component. The original combines tax and site Cash into one recomputed sector
-byte; the recreation keeps their equivalent sum observable. Unverified special
-modifiers remain outside this slice.
+byte; `SectorIncomeResolver` derives that same operational Income for Upkeep,
+Control, Chaos, AI evaluation, and presentation while `MatchSectorState.Income`
+retains the generated density value needed by tolerance normalization.
+Unverified special modifiers remain outside this slice.
 
 Hiring uses the same deferred boundary as the manual: during the player's
 planning turn, selecting one of three offers reserves the recruit without

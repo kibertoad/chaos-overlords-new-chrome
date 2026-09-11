@@ -88,14 +88,14 @@ public static partial class AiTurnPlanner
         ScenarioId objective)
     {
         var sector = state.Sectors[gang.SectorId];
-        if (sector.Owner == player.Id) return 250 + ControlObjectiveBonus(objective, sector);
+        if (sector.Owner == player.Id) return 250 + ControlObjectiveBonus(state, objective, sector);
 
         // The original planner's selector 0x2c only proceeds when one gang's
         // Force + Control strictly exceeds the sector and defending strength.
         // Keep the recreation's objective weights, but do not rank a known
         // futile solo attempt above useful actions.
         return (CanSoloControl(state, player.Id, gang) ? 850 : -1_000)
-            + ControlObjectiveBonus(objective, sector);
+            + ControlObjectiveBonus(state, objective, sector);
     }
 
     private static int CombatObjectiveBonus(ScenarioId scenario) => scenario switch
@@ -105,13 +105,15 @@ public static partial class AiTurnPlanner
     };
 
     private static int ControlObjectiveBonus(
+        MatchState state,
         ScenarioId scenario,
         MatchSectorState sector) => scenario switch
     {
         ScenarioId.Power or ScenarioId.Big40 or ScenarioId.Armageddon => 400,
         ScenarioId.Siege when sector.IsImportant => 600,
         ScenarioId.BigMan when sector.Id is 27 or 28 or 35 or 36 => 600,
-        ScenarioId.Greed or ScenarioId.Dominance => sector.Income * 20,
+        ScenarioId.Greed or ScenarioId.Dominance =>
+            SectorIncomeResolver.OperationalIncome(state, sector) * 20,
         _ => 0
     };
 
@@ -146,7 +148,7 @@ public static partial class AiTurnPlanner
         if (scenario == ScenarioId.BigMan && sectorId is 27 or 28 or 35 or 36) value += 300;
         if (scenario == ScenarioId.Eliminate
             && OriginalCityGenerator.HeadquartersCandidates.Contains(sectorId)) value += 300;
-        return value + sector.Income * 10;
+        return value + SectorIncomeResolver.OperationalIncome(state, sector) * 10;
     }
 
     private static bool IsObservableFallbackAttack(

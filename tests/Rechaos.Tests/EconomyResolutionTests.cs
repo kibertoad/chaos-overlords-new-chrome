@@ -98,6 +98,17 @@ public sealed class EconomyResolutionTests
         Assert.Equal(forecast.ResultCash, resolved.ResultCash);
     }
 
+    [Fact]
+    public void OperationalIncomeReplacesGeneratedDensityWithTaxAndCompletedSiteCash()
+    {
+        var match = CreateMatch(20);
+
+        Assert.Equal(4, match.Sectors[0].Income);
+        Assert.Equal(6, SectorIncomeResolver.OperationalIncome(match, match.Sectors[0]));
+        Assert.Equal(7, match.Sectors[1].Income);
+        Assert.Equal(1, SectorIncomeResolver.OperationalIncome(match, match.Sectors[1]));
+    }
+
     private static MatchState CreateMatch(
         int playerZeroCash,
         bool playerZeroOwnsSectors = true,

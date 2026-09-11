@@ -229,7 +229,7 @@ public sealed partial class ChaosGame
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.CashY);
         DrawPanelValue(font, batch, SectorCode(_cursor),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(0));
-        DrawPanelValue(font, batch, $"${SectorIncome(selectedSector)}",
+        DrawPanelValue(font, batch, $"${SectorIncome(state, selectedSector)}",
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(1));
         DrawPanelValue(font, batch, selectedSector.Tolerance,
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(2));
@@ -326,7 +326,8 @@ public sealed partial class ChaosGame
         ReportInputResult(result.Accepted, result.Validation.Message);
     }
 
-    private static int SectorIncome(MatchSectorState sector) => sector.Income;
+    private static int SectorIncome(MatchState state, MatchSectorState sector) =>
+        SectorIncomeResolver.OperationalIncome(state, sector);
 
     private static string SectorCode(int sectorId) =>
         $"{(char)('A' + sectorId % MatchLimits.BoardWidth)}{sectorId / MatchLimits.BoardWidth + 1}";

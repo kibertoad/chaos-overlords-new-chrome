@@ -62,7 +62,7 @@ public sealed class FinanceUiTests
 
         var local = FinanceProjection.Project(state, player, gang.SectorId);
         var sector = state.Sectors[gang.SectorId];
-        var pool = sector.Income + gang.Force
+        var pool = SectorIncomeResolver.OperationalIncome(state, sector) + gang.Force
             + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos;
         var expected = sector.CrackdownActive
             ? 0

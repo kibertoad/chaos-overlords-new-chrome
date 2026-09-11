@@ -11,7 +11,7 @@ Last updated: 2026-09-12
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,385 tests; its offline restore emitted
+  isolated Release build passed all 1,386 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -392,10 +392,11 @@ Last updated: 2026-09-12
   turn to both slots after neutralizing control, and only then does the resolver
   draw and add 3-5 police turns. Inclusive-boundary, reacquisition, cleanup, and
   duplicate-slot save round-trip fixtures cover the recovered behavior.
-- Control and Chaos regression fixtures now make density-derived sector Income
-  differ from summed site Cash, guarding the recovered distinction. Chaos adds
-  sector Income separately to every participating gang's pool, rolls gangs in
-  fixed player/roster-slot order, then groups successes by player and sector.
+- Control and Chaos now use the executable's recomputed operational Income:
+  `$1` sector tax plus influenced-site Cash, rather than the one-time 3-7
+  density value. Regression fixtures keep those values different. Chaos adds
+  operational Income separately to every participating gang's pool, rolls
+  gangs in fixed player/roster-slot order, then groups successes by player and sector.
   Uncontrolled half income is divided once after that aggregation; reversed
   submission and RNG-state fixtures guard the recovered ordering.
 - Give now uses the original `PX05015` Equipment to Give panel before its

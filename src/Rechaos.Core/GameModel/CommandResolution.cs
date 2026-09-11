@@ -786,7 +786,8 @@ public static partial class CommandResolver
         return results;
     }
 
-    private static int SectorIncome(MatchState state, MatchSectorState sector) => sector.Income;
+    private static int SectorIncome(MatchState state, MatchSectorState sector) =>
+        SectorIncomeResolver.OperationalIncome(state, sector);
 
     private static CommandResolutionResult ResolveHeal(
         MatchState state,

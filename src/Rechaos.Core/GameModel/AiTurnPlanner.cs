@@ -555,7 +555,7 @@ public static partial class AiTurnPlanner
 
         var statistics = EffectiveStatisticsCalculator.ForGang(state, gang);
         var attack = ManualRules.ControlStrength([(gang.Force, statistics.Control)]);
-        var defense = sector.Income;
+        var defense = SectorIncomeResolver.OperationalIncome(state, sector);
         if (sector.Owner is { } owner && owner != playerId)
         {
             defense = checked(defense + ManualRules.ControlStrength(state.FindPlayer(owner)!.Gangs
