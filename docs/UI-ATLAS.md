@@ -86,8 +86,11 @@ cursor feedback remain to be validated.
   empty-slot marker, not an active Overlord portrait. On original local Begin,
   every empty slot becomes a Computer and receives a unique bounded draw from
   portraits 0 through 14 before city generation. The client now treats its
-  visible count as explicitly configured slots and completes omitted slots at
-  Begin through the original-compatible fresh-match factory.
+  visible count as explicitly configured local humans, starts with one, and
+  completes omitted slots at Begin through the original-compatible fresh-match
+  factory. Add/Remove changes that human count. Clicking the bounded name field
+  below a visible face opens the original 10-character uppercase editor; empty
+  confirmation restores `PLAYER#n`. Portrait 15 remains display-only.
 - AI difficulty is the setup screen's single global **AI Mentality** selection,
   not a per-player field. The four baked rows select Goon, Criminal, Crime Lord,
   or Homicidal Maniac; hover-only thematic tooltips explain the behavioral

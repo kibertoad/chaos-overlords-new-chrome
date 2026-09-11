@@ -2062,6 +2062,16 @@ their portrait-selection RNG before AI state and city generation.
 range, duplicate rejection, resource-name mapping, and placement before city
 generation. Initial RNG seeding and a runtime setup fixture remain pending.
 
+The original Help further specifies the interactive local-player side of this
+state machine: setup begins with one local human; Add introduces another local
+human and Remove reverts the last one; clicking the name under a face edits at
+most 10 characters. The resource-name helper at `0x0046d1f7` also passes an
+exact length of 10 to `0x00466673` when filling an omitted computer's 12-byte
+name record. The client now starts with one configured human, adds/removes
+humans rather than synthetic CPU toggles, restricts selectable portraits to 0
+through 14, and exposes the bounded name field. Color drag/swap and exact
+name-field coordinates still require native capture.
+
 ### BIN-SETUP-003 - `SMGISLANDS` neutral-sector Chaos override
 
 **Observation:** The same exact, case-sensitive fresh-name scan sets transient

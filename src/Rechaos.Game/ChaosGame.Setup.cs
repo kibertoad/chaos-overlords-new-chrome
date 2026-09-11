@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 
@@ -27,8 +28,6 @@ public sealed partial class ChaosGame
         if (AudioRouting.PlayerCountResultSound(
                 previous != _selectedPlayerCount, pointerButton) is { } slot)
             PlayGeneralSound(slot);
-        for (var index = previous; index < _selectedPlayerCount; index++)
-            _computerPlayers[index] = true;
     }
 
     private void BeginSetupButton(SetupPushButton button)
@@ -62,12 +61,53 @@ public sealed partial class ChaosGame
         }
     }
 
-    private void ToggleController(int index)
+    private void BeginSetupNameEdit(int index)
     {
         if (index < 0 || index >= _selectedPlayerCount) return;
-        _computerPlayers[index] = !_computerPlayers[index];
-        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _message = $"PLAYER {index + 1} {(_computerPlayers[index] ? "COMPUTER" : "HUMAN")}";
+        if (_editingPlayerName is not null) FinishSetupNameEdit(cancel: false);
+        _editingPlayerName = index;
+        _setupOriginalName = _playerNames[index];
+        _setupNameEditor.Begin(_playerNames[index]);
+        _message = "TYPE NAME  ENTER ACCEPTS  ESC CANCELS";
+    }
+
+    private void UpdateSetupName(KeyboardState keyboard)
+    {
+        if (_editingPlayerName is null) return;
+        if (Pressed(keyboard, Keys.Escape))
+        {
+            FinishSetupNameEdit(cancel: true);
+            return;
+        }
+        if (Pressed(keyboard, Keys.Enter))
+        {
+            FinishSetupNameEdit(cancel: false);
+            return;
+        }
+        if (Pressed(keyboard, Keys.Back))
+        {
+            _setupNameEditor.Backspace();
+            return;
+        }
+
+        var shift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
+        foreach (var key in keyboard.GetPressedKeys())
+        {
+            if (_previousKeyboard.IsKeyDown(key)) continue;
+            if (OriginalTextInput.TryCharacter(key, shift, out var character))
+                _setupNameEditor.TryAppend(character);
+        }
+    }
+
+    private void FinishSetupNameEdit(bool cancel)
+    {
+        if (_editingPlayerName is not { } index) return;
+        var entered = _setupNameEditor.Text.Trim();
+        _playerNames[index] = cancel
+            ? _setupOriginalName
+            : entered.Length == 0 ? LocalSetupPolicy.DefaultPlayerName(index) : entered;
+        _editingPlayerName = null;
+        _message = cancel ? "NAME CHANGE CANCELLED" : $"PLAYER {index + 1} NAME SET";
     }
 
     private void CycleDifficulty()
@@ -91,21 +131,18 @@ public sealed partial class ChaosGame
     {
         if (player < 0 || player >= _selectedPlayerCount) return;
         _playerPortraits[player] = checked((short)Mod(
-            _playerPortraits[player] + delta, PlayerPortraitLayout.Count));
+            _playerPortraits[player] + delta, PlayerPortraitLayout.SelectableCount));
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = $"PLAYER {player + 1} PORTRAIT {_playerPortraits[player] + 1}";
     }
-
-    private static Rectangle SetupPlayerSlot(int index) =>
-        new(368 + index % 2 * 96, 120 + index / 2 * 64, 94, 54);
 
     private void StartMatch()
     {
         if (_definitions is null) return;
         var players = Enumerable.Range(0, _selectedPlayerCount)
             .Select(index => new MatchPlayerSetup(
-                new PlayerId(index), $"PLAYER {index + 1}",
-                _computerPlayers[index] ? PlayerController.Computer : PlayerController.Human,
+                new PlayerId(index), _playerNames[index],
+                PlayerController.Human,
                 _playerPortraits[index]))
             .ToArray();
         var setup = new MatchSetup(
@@ -115,7 +152,7 @@ public sealed partial class ChaosGame
             ["scenario"] = _selectedScenario.ToString(),
             ["duration"] = _selectedDuration.ToString(),
             ["configuredPlayers"] = _selectedPlayerCount.ToString(),
-            ["computerPlayers"] = players.Count(player => player.Controller == PlayerController.Computer).ToString(),
+            ["computerPlayers"] = "0",
             ["mentality"] = _selectedAiMentality.ToString(),
             ["seed"] = setup.InitialSeed.ToString()
         });
@@ -182,8 +219,11 @@ public sealed partial class ChaosGame
             DrawBorder(batch, pixel, portrait, PlayerColors[index], 1);
             DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Previous(index), left: true, Color.Lime);
             DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Next(index), left: false, Color.Lime);
-            var label = $"P{index + 1} {(_computerPlayers[index] ? "CPU" : "HUMAN")}";
-            font.Draw(batch, label, new Vector2(portrait.X, portrait.Bottom + 2), PlayerColors[index], 1);
+            var label = _editingPlayerName == index
+                ? _setupNameEditor.Text + ((int)(_inputTime.TotalMilliseconds / 350) % 2 == 0 ? "_" : "")
+                : _playerNames[index];
+            var name = PlayerPortraitLayout.Name(index);
+            font.Draw(batch, label, new Vector2(name.X, name.Y), PlayerColors[index], 1);
         }
         DrawBorder(batch, pixel, SetupAiMentalities[(int)_selectedAiMentality], Color.Gold, 2);
         DrawBorder(batch, pixel,

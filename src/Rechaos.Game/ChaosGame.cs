@@ -84,13 +84,17 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _hirePortraitClicks = new();
-    private readonly bool[] _computerPlayers = new bool[MatchLimits.PlayerCount];
     private readonly short[] _playerPortraits = Enumerable.Range(0, MatchLimits.PlayerCount)
         .Select(index => checked((short)index)).ToArray();
+    private readonly string[] _playerNames = Enumerable.Range(0, MatchLimits.PlayerCount)
+        .Select(LocalSetupPolicy.DefaultPlayerName).ToArray();
+    private readonly SetupPlayerNameEditor _setupNameEditor = new();
+    private int? _editingPlayerName;
+    private string _setupOriginalName = string.Empty;
     private AiDifficulty _selectedAiMentality = AiDifficulty.Criminal;
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.SixMonths;
-    private int _selectedPlayerCount = 2;
+    private int _selectedPlayerCount = LocalSetupPolicy.DefaultHumanPlayerCount;
     private int _cursor;
     private int _selectedGangIndex;
     private IReadOnlyList<GameCommand> _commandOptions = [];
@@ -179,7 +183,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         };
         IsMouseVisible = true;
         Window.Title = "Chaos Overlords: New Chrome";
-        _computerPlayers[1] = true;
     }
 
     protected override void LoadContent()
@@ -293,6 +296,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         else if (_screens.Current == ClientScreen.ComlinkSend)
         {
             UpdateComlinkSend(keyboard);
+        }
+        else if (_screens.Current == ClientScreen.Setup && _editingPlayerName is not null)
+        {
+            UpdateSetupName(keyboard);
         }
         else
         {
@@ -554,9 +561,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.Down)) ChangeDuration(-1);
         if (Pressed(keyboard, Keys.OemMinus)) ChangePlayerCount(-1);
         if (Pressed(keyboard, Keys.OemPlus)) ChangePlayerCount(1);
-        Keys[] controllerKeys = [Keys.D1, Keys.D2, Keys.D3, Keys.D4, Keys.D5, Keys.D6];
-        for (var index = 0; index < _selectedPlayerCount; index++)
-            if (Pressed(keyboard, controllerKeys[index])) ToggleController(index);
         if (Pressed(keyboard, Keys.M)) CycleDifficulty();
         if (Pressed(keyboard, Keys.L)) CyclePlanningTimeLimit();
         if (Pressed(keyboard, Keys.Enter)) StartMatch();
@@ -585,13 +589,21 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 var planningTimeLimit = Array.FindIndex(
                     PlanningTimerLayout.SetupChoices.ToArray(),
                     rectangle => rectangle.Contains(point));
-                var playerSlot = Enumerable.Range(0, _selectedPlayerCount)
-                    .FirstOrDefault(index => SetupPlayerSlot(index).Contains(point), -1);
+                var setupButton = SetupButtonLayout.HitTest(point);
+                var playerName = Enumerable.Range(0, _selectedPlayerCount)
+                    .FirstOrDefault(index => PlayerPortraitLayout.Name(index).Contains(point), -1);
                 var previousPortrait = Enumerable.Range(0, _selectedPlayerCount)
                     .FirstOrDefault(index => PlayerPortraitLayout.Previous(index).Contains(point), -1);
                 var nextPortrait = Enumerable.Range(0, _selectedPlayerCount)
                     .FirstOrDefault(index => PlayerPortraitLayout.Next(index).Contains(point), -1);
-                if (scenario >= 0)
+                if (_editingPlayerName is not null
+                    && (setupButton is not null || playerName != _editingPlayerName))
+                    FinishSetupNameEdit(cancel: false);
+                if (setupButton is { } button)
+                    BeginSetupButton(button);
+                else if (playerName >= 0)
+                    BeginSetupNameEdit(playerName);
+                else if (scenario >= 0)
                 {
                     if (_selectedScenario != (ScenarioId)scenario)
                         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
@@ -611,9 +623,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 {
                     var mentality = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(point));
                     if (mentality >= 0) SelectDifficulty((AiDifficulty)mentality);
-                    else if (playerSlot >= 0) ToggleController(playerSlot);
-                    else if (SetupButtonLayout.HitTest(point) is { } button)
-                        BeginSetupButton(button);
                 }
                 break;
             case ClientScreen.City:

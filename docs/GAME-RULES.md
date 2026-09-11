@@ -613,6 +613,10 @@ claim about original-game behavior.
   local Begin also completes all empty slots as Computers before city generation;
   each receives a unique portrait 0..14 and its resource-defined name. Exact
   uppercase `SMGISLANDS` subsequently sets neutral non-HQ sectors to Chaos 100.
+- Local setup starts with one human. Add/Remove changes the human count from one
+  through six, and Begin fills every remaining slot with a Computer. Human names
+  use the Help-specified 10-character name field; portrait 15 is the empty
+  marker and cannot be selected as a human face.
 - Current exclusions: initial seed selection, the remaining setup call context,
   initial hire offers, and an original runtime fixture remain open.
 - Confidence: High static evidence for ordinary/Armageddon cash, the name
