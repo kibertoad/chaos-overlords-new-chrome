@@ -216,6 +216,7 @@ public static class HelpContentAugmentation
                     1, note.Title, nextId, note.Context));
                 nextId = checked(nextId + 1);
                 nextOffset = checked(nextOffset + 1);
+                changed = true;
             }
             else if (!contents.Any(entry => entry.TopicId == topics[topicIndex].Id))
             {

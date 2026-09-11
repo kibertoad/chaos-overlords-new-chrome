@@ -158,6 +158,34 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         Assert.Same(augmented, HelpContentAugmentation.AddExecutableNotes(augmented));
     }
 
+    [Fact]
+    public void HelpCreatesNamedListedSubjectsWhenRelevantSectionsAreMissing()
+    {
+        var document = new ExtractedHelpDocument(
+            ExtractedHelpDocument.CurrentFormatVersion,
+            "Incomplete Help",
+            [Topic(10, "Introduction", "Original introduction", true)],
+            [new ExtractedHelpContentsEntry(0, "Introduction", 10, "INTRO")],
+            []);
+
+        var augmented = HelpContentAugmentation.AddExecutableNotes(document);
+
+        Assert.DoesNotContain(augmented.Topics, topic =>
+            topic.Title.Contains("formula", StringComparison.OrdinalIgnoreCase)
+            || topic.Title.Contains("recovered rules", StringComparison.OrdinalIgnoreCase));
+        foreach (var expected in new[] { "Bribe", "Chaos", "Control", "Heal", "Hide", "Research", "Crackdown" })
+        {
+            var topic = Assert.Single(augmented.Topics, topic =>
+                string.Equals(topic.Title, expected, StringComparison.OrdinalIgnoreCase));
+            Assert.True(topic.ListedInContents);
+            Assert.Contains(augmented.Contents, entry =>
+                entry.TopicId == topic.Id
+                && string.Equals(entry.Label, expected, StringComparison.OrdinalIgnoreCase));
+            Assert.Contains(HelpContentAugmentation.NoteHeading, topic.Text,
+                StringComparison.Ordinal);
+        }
+    }
+
     [Theory]
     [InlineData(ClientScreen.GameInfo, "Game Info Screen", "GIS")]
     [InlineData(ClientScreen.Give, "Give", "GIVE")]
