@@ -93,7 +93,7 @@ post-1.0 policy.
 Original-save import/export is an explicit non-goal. Native snapshots must never
 be presented as converted original saves.
 
-## Replay format version 20
+## Replay format version 21
 
 `MatchReplayRecorder` captures an initial native snapshot, then requires every
 authoritative mutation to pass through its API. It covers command submission and
@@ -126,7 +126,11 @@ fingerprints every bounded Comlink inbox, and records send/read operations.
 Version 19 embeds native snapshot version 18 and hash version 21, including
 tertiary command targets for multi-item Sell. Version 20 embeds native snapshot
 version 19 and hash version 22, including quaternary command targets for
-multi-item Give.
+multi-item Give. Version 21 retains native snapshot version 19 and hash version
+22, and adds the ordered `PrepareSimultaneousHireOffers` operation required by
+simultaneous online turns. The operation is rejected when it is mislabeled as
+version 20 or earlier instead of being retroactively accepted by an older
+schema.
 
 Each ordered replay step stores its operation payload, the expected validation
 result where applicable, and the canonical state SHA-256 after the operation.
@@ -154,7 +158,7 @@ single-action validation. Replay version 11 embeds native version 10, version
 embeds native version 13, version 15 embeds native version 14, version 16
 embeds native version 15, version 17 embeds native version 16, version 18
 embeds native version 17, version 19 embeds native version 18, and version 20
-embeds native version 19.
+embeds native version 19. Version 21 retains native version 19.
 Version 12 uses the version-14 hash and initializes action histories to `None`;
 version 11 uses the version-13 hash and
 derives placement anchors; version 10 uses the version-12 hash and migrates the
@@ -162,7 +166,8 @@ new modifier to false; version 9 uses its version-11 hash, versions 7 and 8
 use version 10, and version 6 uses version 9. Version 2 through 5 replay
 documents remain accepted through their legacy hash paths. Replay versions 18
 and 19 retain their version-20 and version-21 hash projections respectively;
-the current canonical state hash is version 22. Initial-state migration is covered for
+replay versions 20 and 21 use the current canonical state hash version 22.
+Initial-state migration is covered for
 replay version 8, and version 9 operation semantics are covered. Additional
 pre-1.0 legacy fixtures are not a release gate. The initial snapshot remains
 required until original seed selection and the complete setup context are

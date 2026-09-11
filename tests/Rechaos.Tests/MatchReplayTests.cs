@@ -154,6 +154,52 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void VersionTwentyOneReplaysSimultaneousHireOfferGeneration()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch());
+        recorder.FinishUpkeep();
+
+        var drawn = recorder.PrepareSimultaneousHireOffers();
+
+        Assert.Empty(drawn);
+        Assert.Equal(
+            ReplayOperationKind.PrepareSimultaneousHireOffers,
+            recorder.Steps[^1].Kind);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        Assert.Equal(21, document["formatVersion"]!.GetValue<int>());
+        replay.Position = 0;
+
+        var restored = MatchReplaySerializer.LoadAndReplay(
+            replay, recorder.State.Definitions);
+
+        Assert.Equal(
+            MatchStateHasher.ComputeSha256(recorder.State),
+            MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void VersionTwentyRejectsSimultaneousHireOfferOperation()
+    {
+        var recorder = new MatchReplayRecorder(CreateMatch());
+        recorder.FinishUpkeep();
+        recorder.PrepareSimultaneousHireOffers();
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
+        document["formatVersion"] = 20;
+        using var mislabeled = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            MatchReplaySerializer.LoadAndReplay(
+                mislabeled, recorder.State.Definitions));
+
+        Assert.Contains("introduced in replay format 21", exception.Message);
+    }
+
+    [Fact]
     public void ReplaysAiHiringRolePreparation()
     {
         var data = BundledOriginalData.Load();

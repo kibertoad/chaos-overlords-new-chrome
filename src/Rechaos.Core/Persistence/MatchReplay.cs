@@ -349,6 +349,9 @@ public static class MatchReplaySerializer
                 state.PrepareHireOffers(Required(step.Player, index));
                 break;
             case ReplayOperationKind.PrepareSimultaneousHireOffers:
+                if (replayVersion < 21)
+                    throw new InvalidDataException(
+                        $"Replay step {index} uses an operation introduced in replay format 21.");
                 state.PrepareSimultaneousHireOffers();
                 break;
             case ReplayOperationKind.PrepareAiPlanning:
