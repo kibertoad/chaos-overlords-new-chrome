@@ -460,11 +460,16 @@ public sealed class MultiplayerSessionTests
         builder.Cancel(new PlayerId(0), gang);
 
         session.QueueOrders(1, builder.Build(), ready: true);
+        await Until(
+            () => server.CallsTo(HttpMethod.Put, "/turns/1/orders") == 1,
+            "the ready submission");
         session.QueueOrders(1, builder.Build(), ready: false);
 
         await WaitFor<MultiplayerNotice.OrdersAccepted>(session);
+        await WaitFor<MultiplayerNotice.OrdersAccepted>(session);
         await Until(
-            () => server.CallsTo(HttpMethod.Put, "/turns/1/orders") >= 1, "the submission");
+            () => server.CallsTo(HttpMethod.Put, "/turns/1/orders") == 2,
+            "the replacement submission");
         Assert.All(
             server.BodiesSentTo(HttpMethod.Put, "/turns/1/orders"),
             body => Assert.Contains("\"ready\":true", body, StringComparison.Ordinal));

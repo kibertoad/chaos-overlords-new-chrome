@@ -295,6 +295,11 @@ What the generator cannot mirror, `Rechaos.Multiplayer` writes by hand and pins 
 canonical JSON. `packages/kernel/test/logic.spec.ts` and `MultiplayerCanonicalJsonTests` hold the
 same golden document, the same canonical text and the same digest, on both sides of the wire.
 
+Client-side readiness is monotonic for one open turn. Once any queued or
+in-flight order replacement says `ready: true`, later drafts for that same turn
+continue sending `true` until the server seals it; document replacement must
+not retract readiness merely because the earlier request has left the outbox.
+
 ## Client integration contract
 
 What the C# client has to do. `multiplayer/packages/client` is the reference and

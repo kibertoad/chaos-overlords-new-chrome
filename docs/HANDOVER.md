@@ -25,6 +25,9 @@ Last updated: 2026-09-11
 
 ## Latest playable work
 
+- Online order readiness is now monotonic per turn even while a prior document
+  is already in flight. A replacement draft can update the whole order document
+  without accidentally retracting the player's earlier ready signal.
 - Crackdown combat now follows the executable rather than the manual's
   abbreviated detection table: visible detection is
   `clamp(115 - 5 * Stealth, 0, 100)`, Hide subtracts 20 percentage points, and

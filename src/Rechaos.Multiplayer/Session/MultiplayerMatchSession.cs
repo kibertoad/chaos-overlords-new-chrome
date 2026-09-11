@@ -65,6 +65,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
 
     /// <summary>Seats that have said they are done with <see cref="_readinessTurn"/>.</summary>
     private readonly HashSet<string> _readyPlayerIds = new(StringComparer.Ordinal);
+    private readonly HashSet<int> _locallyReadyTurns = [];
 
     private PendingOrders? _pending;
     private MatchReplayRecorder _replay;
@@ -191,7 +192,8 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(document);
         lock (_outboxGate)
         {
-            var carriedReady = ready
+            if (ready) _locallyReadyTurns.Add(turn);
+            var carriedReady = _locallyReadyTurns.Contains(turn)
                 || (_pending is { } pending && pending.Turn == turn && pending.Ready);
             _pending = new PendingOrders(turn, document, carriedReady);
         }
@@ -342,6 +344,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         switch (@event)
         {
             case TurnSealedEvent sealedTurn:
+                lock (_outboxGate) _locallyReadyTurns.Remove(sealedTurn.Payload.Turn);
                 await ResolveSealedTurnAsync(sealedTurn.Payload.Turn, cancellationToken)
                     .ConfigureAwait(false);
                 return;
