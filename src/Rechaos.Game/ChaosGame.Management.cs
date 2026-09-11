@@ -70,10 +70,12 @@ public sealed partial class ChaosGame
 
         var sites = state.Definitions.Sites.OrderBy(site => site.Id)
             .Take(SiteSearchLayout.MaximumSites).ToArray();
+        var selection = _siteSearchSelections.For(
+            state.Coordinator.ActivePlayer ?? new PlayerId(0));
         for (var index = 0; index < sites.Length; index++)
         {
             var row = SiteSearchLayout.Site(index);
-            var selected = _siteSearchSelection.Contains(sites[index].Id);
+            var selected = selection.Contains(sites[index].Id);
             if (index == _siteSearchCursor) DrawBorder(batch, pixel, row, Color.Gold, 1);
             DrawBorder(batch, pixel, new Rectangle(row.X + 2, row.Y + 2, 8, 8),
                 selected ? Color.Lime : new Color(90, 100, 100), 1);
@@ -87,8 +89,6 @@ public sealed partial class ChaosGame
     private void OpenSiteSearch(ClientScreen returnScreen)
     {
         _managementReturnScreen = returnScreen;
-        _siteSearchSelection.Clear();
-        _siteSearchSelection.UnionWith(_siteSearchApplied);
         _siteSearchCursor = 0;
         _screens.Show(ClientScreen.Search);
     }
@@ -107,29 +107,28 @@ public sealed partial class ChaosGame
             .Take(SiteSearchLayout.MaximumSites).ToArray();
         if (_siteSearchCursor >= sites.Length) return;
         var id = sites[_siteSearchCursor].Id;
-        if (!_siteSearchSelection.Remove(id)) _siteSearchSelection.Add(id);
+        _siteSearchSelections.Toggle(SiteSearchPlayer(), id);
     }
 
     private void SelectAllSiteSearch()
     {
         if (_definitions is null) return;
         AcceptInput();
-        _siteSearchSelection.Clear();
-        _siteSearchSelection.UnionWith(_definitions.Sites
-            .OrderBy(site => site.Id).Take(SiteSearchLayout.MaximumSites).Select(site => site.Id));
+        _siteSearchSelections.SelectAll(
+            SiteSearchPlayer(),
+            _definitions.Sites.OrderBy(site => site.Id)
+                .Take(SiteSearchLayout.MaximumSites).Select(site => site.Id));
     }
 
     private void ClearSiteSearch()
     {
         AcceptInput();
-        _siteSearchSelection.Clear();
+        _siteSearchSelections.Clear(SiteSearchPlayer());
     }
 
     private void ApplySiteSearch()
     {
         AcceptInput();
-        _siteSearchApplied.Clear();
-        _siteSearchApplied.UnionWith(_siteSearchSelection);
         _message = string.Empty;
         _screens.Show(_managementReturnScreen);
     }
@@ -148,11 +147,19 @@ public sealed partial class ChaosGame
             {
                 if (!SiteSearchLayout.Site(index).Contains(point)) continue;
                 _siteSearchCursor = index;
-                ToggleSiteSearchSelection();
+                var siteId = _definitions.Sites.OrderBy(site => site.Id)
+                    .Take(SiteSearchLayout.MaximumSites).ElementAt(index).Id;
+                if (_siteSearchClicks.Register(index, _inputTime))
+                    OpenSiteDefinitionDetails(siteId, ClientScreen.Search);
+                else
+                    ToggleSiteSearchSelection();
                 break;
             }
         }
     }
+
+    private PlayerId SiteSearchPlayer() =>
+        _state?.Coordinator.ActivePlayer ?? new PlayerId(0);
 
     private void DrawRanking(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {

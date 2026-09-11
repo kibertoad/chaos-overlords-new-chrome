@@ -30,7 +30,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00137`, `PX00139` | Empty and filled horizontal meter frames | Medium |
 | `PX00138` | Circular action/command icons | High from repeated command imagery |
 | `PX00140` | Compact setup-control sheet matching `PX00143` labels | High |
-| `PX00150` | Two-state small command/equipment icon sheet | Medium |
+| `PX00150` | Twenty-two 20x14 city site markers in two 11-item rows and controlled/uncontrolled states | High from the complete native city marker renderer |
 | `PX00200` | Endgame awards/statistics frame | High from visible labels |
 | `PX00201` | Endgame award icons (fist, skull, chicken, dollar, safe), colored player-number rows, statistics labels, and pressed Awards/Stats/Done controls | High from visible content and the original Help Endgame topic |
 | `PX00202`, `PX00203` | Single-player victory and elimination splashes with one Overlord portrait aperture | High from visible text and geometry; hot-seat sequencing unresolved |
@@ -44,7 +44,7 @@ original-game capture confirms the screen and interaction state.
 | `PX05020` | System Warning panel for confirming an end turn while at least one active gang is idle | High from visible text and client trigger semantics |
 | `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
 | `PX05022` | Gang Information variant without live-instance equipment cells, used for hire-offer definition inspection | High from comparison with `PX05000` and Hire/Gang help topics |
-| `PX05024` | Search: Sites panel with ALL, NONE, and OK controls plus a two-column aperture sized for all 22 site types | High for visible identity and geometry; Low for the post-confirmation city-map presentation |
+| `PX05024` | Search: Sites panel with ALL, NONE, and OK controls plus a two-column aperture sized for all 22 site types | High from visible identity, geometry, and the complete native handler |
 | `PX02000` | 22 vertically stacked site portraits, 120x64 each | High from dimensions and definition coverage |
 | `PX03000` | 10x9 gang portrait grid, 64x64 each, covering all 90 definitions | High from dimensions and definition coverage |
 | `PX07000`-`PX07027`, `PX07200`-`PX07228` | Eight-frame 64x64 attacker overlays facing opposite directions; index 27 is target-evasion/question art and right-facing index 28 is the police car | High from frame inspection and item-table indices |
@@ -174,11 +174,12 @@ cursor feedback remain to be validated.
   weapon/armor/miscellaneous cells from `PX04999`; a hire offer has no instance
   equipment and therefore uses the clean `PX05022` form.
 - Search uses `PX05024` and presents all 22 site definitions in two columns.
-  ALL, NONE, individual mouse/keyboard toggles, and OK are implemented. The
-  resulting non-authoritative cyan city-sector outline is provisional pending
-  an original runtime capture of the post-confirmation presentation. The prior
-  detected-gang list was removed: it duplicated Sector View and contradicted
-  the original panel's explicit `SEARCH: SITES` label.
+  ALL, NONE, and individual mouse/keyboard toggles update the active player's
+  presentation filter. The city always shows controlled sites and additionally
+  shows selected uncontrolled types using exact 20-by-14 `PX00150` crops in
+  compacted sector slots. Double-clicking a row opens definition-level Site
+  Information. The prior detected-gang list and cyan sector outlines were
+  removed because they contradicted the recovered handler and city renderer.
 - The Equipment panel shows the selected gang from `PX03000` at `(558,58)` in
   a 56-by-56 owner-colored frame, keeping the item list and statistics visible.
 - Gang Information places its 64-by-64 portrait at `(67,90)`, aligned to the
@@ -321,6 +322,13 @@ matching `COMLINK: SEND MESSAGE` panel: six recipient cells in two columns by
 three rows and four fixed 40-character composition rows. The recreation routes
 both halves of the main-console Comlink control, blinks View while the active
 human has unread mail, and uses authoritative inbox/read/send operations.
+
+`PX05024` is the Search: Sites filter. Its 22 selection bytes are independent
+for each player and change immediately on ALL, NONE, or an individual row.
+The city then draws `PX00150` markers for every controlled site regardless of
+the filter and for every selected uncontrolled site. Visible sites compact to
+slots 0 through 2 within each sector. A row double-click opens `PX05002` with
+that site's definition and base Resistance before returning to Search.
 
 `PX05001` is the shared Item Information panel opened from the Equip and
 Research item lists. `PX05003` is the `TARGET ACQUISITION` Attack picker: it

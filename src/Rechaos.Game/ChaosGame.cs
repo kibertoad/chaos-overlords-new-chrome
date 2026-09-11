@@ -75,6 +75,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _equipmentGiveBackground;
     private Texture2D? _movementBackground;
     private Texture2D? _siteSearchBackground;
+    private Texture2D? _siteMarkerSprites;
     private Texture2D? _sitePortraits;
     private Texture2D? _gangPortraits;
     private Texture2D? _itemPortraits;
@@ -136,8 +137,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _eventCursor;
     private readonly HashSet<int> _eventViewedPages = [];
     private int _siteSearchCursor;
-    private readonly HashSet<short> _siteSearchSelection = [];
-    private readonly HashSet<short> _siteSearchApplied = [];
+    private readonly SiteSearchSelectionState _siteSearchSelections = new();
+    private readonly IndexedDoubleClickTracker _siteSearchClicks = new();
     private FinanceScope _financeScope = FinanceScope.City;
     private int _comlinkCursor;
     private readonly bool[] _comlinkRecipients = new bool[MatchLimits.PlayerCount];
@@ -182,6 +183,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private ClientScreen _siteDetailsReturnScreen = ClientScreen.Sector;
     private int? _siteDetailsSectorId;
     private int? _siteDetailsSlot;
+    private short? _siteDetailsDefinitionId;
     private short? _itemDetailsId;
 
     public ChaosGame(
@@ -204,6 +206,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _citySectorClicks.Cancel();
             _sectorSiteClicks.Cancel();
             _sectorGangClicks.Cancel();
+            _siteSearchClicks.Cancel();
             if (_slidePanels) _panelSlideTransition.Begin(previous, current, _inputTime);
             foreach (var slot in AudioRouting.PanelTransitionSounds(previous, current, _slidePanels))
                 PlayGeneralSound(slot);
@@ -292,6 +295,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _equipmentGiveBackground = LoadTexture("PX05015.bmp");
         _movementBackground = LoadTexture("PX05006.bmp");
         _siteSearchBackground = LoadTexture("PX05024.bmp");
+        _siteMarkerSprites = LoadTexture("PX00150.bmp", transparentBlack: true);
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
         _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);

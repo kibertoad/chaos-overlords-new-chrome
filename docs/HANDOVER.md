@@ -11,7 +11,7 @@ Last updated: 2026-09-11
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,353 tests; its offline restore emitted
+  isolated Release build passed all 1,368 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -177,10 +177,10 @@ Last updated: 2026-09-11
   awards no Damage Inflicted.
 - Search now uses the original `PX05024` Search: Sites panel instead of the
   earlier incorrect detected-gang list. Its two-column aperture contains all 22
-  site types with ALL/NONE and individual toggles; OK applies a presentation-only
-  cyan outline to matching city sectors. The panel identity and geometry are
-  directly visible in the asset, while the post-confirmation outline remains
-  provisional pending an original runtime capture.
+  site types with ALL/NONE and per-player individual toggles. The recovered city
+  renderer uses `PX00150` to draw each controlled site unconditionally and each
+  selected uncontrolled site, compacted to three marker slots per sector. A
+  row double-click opens the site's definition information.
 - Player Ranking now uses `PX05011` and positions every active Overlord portrait
   on its original color rail by the recovered scenario score table.
   Competition ties share a height and eliminated players disappear.
@@ -375,8 +375,8 @@ Last updated: 2026-09-11
   of the source gang's exact three equipped items. Transactions now scan fixed
   player and roster slots, reserve outgoing items, and apply incoming gifts only
   after recipient transactions, allowing swaps and overwriting same-turn buys
-  exactly as the resolver does. Native saves are v21, replays are v23 and canonical hashes
-  are v24; the immediately previous formats
+  exactly as the resolver does. Native saves are v22, replays are v24 and canonical hashes
+  are v25; the immediately previous formats
   remain readable through their preserved fingerprint projections.
 - Canonical hash v24 authenticates the complete ordered event history, including
   nested command, economy, hire, police, objective, and outcome facts. Native
@@ -425,9 +425,9 @@ Last updated: 2026-09-11
    the reference contradicts it.
 3. Investigate and explain the reported GOG/1.1 Detailed Combat freeze, then
    compare the bounded recreation cadence with a controlled original capture.
-4. Migrate Comlink acknowledgement from whole-inbox to per-viewed-record state,
-   then validate slot-6 cadence plus effect overlap/interruption and complete
-   native audio/music validation. The four-second repeat, slot-2 inventory, and
+4. Validate the recovered per-record Comlink acknowledgement and slot-6 cadence
+   at runtime, then validate effect overlap/interruption and complete native
+   audio/music validation. The four-second repeat, slot-2 inventory, and
    Combat-selection slot-3 call are statically classified and routed.
 5. Decide and implement Smacker playback or extractor-side transcoding; capture
    native WinHelp typography/paragraph geometry only where pixel-viewer fidelity

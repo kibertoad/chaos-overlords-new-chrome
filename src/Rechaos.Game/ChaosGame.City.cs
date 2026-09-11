@@ -188,8 +188,17 @@ public sealed partial class ChaosGame
                     OriginalSpriteLayout.PolicePatrolCar,
                     Color.White);
         }
-        foreach (var sectorId in SiteSearchProjection.MatchingSectors(state, _siteSearchApplied))
-            DrawBorder(batch, pixel, CityMapLayout.Destination(sectorId), Color.Cyan, 1);
+        foreach (var marker in CitySiteMarkerProjection.Project(
+                     state, player.Id, _siteSearchSelections.For(player.Id)))
+        {
+            var destination = CitySiteMarkerProjection.Destination(marker);
+            if (_siteMarkerSprites is not null)
+                batch.Draw(_siteMarkerSprites, destination,
+                    CitySiteMarkerProjection.Source(marker), Color.White);
+            else
+                DrawBorder(batch, pixel, destination,
+                    marker.Controlled ? Color.Lime : Color.Cyan, 1);
+        }
         DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
         foreach (var gangs in player.Gangs.Where(gang => gang.IsActive).GroupBy(gang => gang.SectorId))
             DrawGangStatusMarker(batch, gangs.Key,

@@ -339,9 +339,46 @@ clip carries its event-time cue; the player emits it on the recovered first
 animation tick, so retaliation waits for its reversed second clip instead of
 playing with the opening attack. Simple Combat does not enter this presenter.
 
-**Next validation:** Migrate per-record Comlink acknowledgement, validate the
-slot-6 cadence and countdown-warning cadence at runtime,
+**Next validation:** Validate per-record Comlink acknowledgement, the slot-6
+cadence, and countdown-warning cadence at runtime,
 then validate overlap/interruption and native amplitude behavior.
+
+### BIN-SEARCH-001 - per-player site filters and city markers
+
+**Observation:** Search handler `0x00448e32` loads `PX05024` and the 220x56
+`PX00150` sheet. Its 22 row states live at `0x004a24e8 + player * 22`; ALL and
+NONE write all 22 bytes, an individual row toggles one byte, and a row
+double-click calls Site Information handler `0x0044c476` with the selected
+definition. Fresh-game initialization at `0x0046e766` clears the complete
+per-player table.
+
+The sole city consumer at `0x00412990`, inside redraw routine `0x004123cc`,
+walks the three physical site slots of each sector. A site controlled by the
+active player is always visible. Any other site is visible only when its
+definition's Search byte is set. Visible sites receive compact ordinals 0, 1,
+and 2 and enter marker renderer `0x00412ac4`. That renderer copies a transparent
+20x14 rectangle from `PX00150`: source x is `(definition % 11) * 20`, source y
+is `(definition / 11) * 14 + (controlled ? 0 : 28)`. Its destination within
+the 432x416 city buffer is x `(sector % 8) * 53 + 9` and y
+`(sector / 8) * 51 + ordinal * 15 + 7`.
+
+**Interpretation:** Search is a persistent per-player presentation filter for
+individual city-site markers, not a sector highlight. Influence ownership is
+the recreation's exact controlled-site predicate. The Search double-click
+shows definition-level information, including base rather than live remaining
+Resistance.
+
+**Confidence:** High static evidence from the complete handler, initializer,
+sole selection-table consumer, and marker renderer.
+
+**Recreation status:** The checklist now mutates an independent filter for each
+player, draws the exact controlled/uncontrolled `PX00150` crops at recovered
+city coordinates, compacts visible slots, and routes row double-clicks through
+definition-level Site Information. Presentation filters reset on fresh match,
+native-save load, and replay load because they are not authoritative state.
+
+**Next validation:** Capture native Search and city golden screens to validate
+palette transparency and pointer timing.
 
 ### BIN-COMLINK-001 - per-player message queue capacity and overflow
 
@@ -381,9 +418,9 @@ literal capacity, record stride, copy bounds, count update, and cursor branch.
 **Recreation status:** Authoritative local-human delivery now validates the
 active command-phase sender and human recipients, supports deterministic
 multi-recipient delivery, retains the newest 16 messages, and tracks unread
-state. Version-20 saves, version-22 replays, and canonical hash version 23
+state. Version-22 saves, version-24 replays, and canonical hash version 25
 include every inbox. The client routes the original `PX05017` View and
-`PX05018` Send panels, including newest-first entry, paging, read-state clearing,
+`PX05018` Send panels, including newest-first entry, paging, per-record read state,
 six recipient cells, the four recovered 40-character rows, and the main-console
 unread blink.
 
