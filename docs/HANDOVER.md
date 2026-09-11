@@ -27,7 +27,7 @@ Last updated: 2026-09-11
   the topic-list/content pane under the pointer. The Attack topic carries the
   corrected Force-inclusive simultaneous-combat explanation.
 - Music and sound effects have independent recovered 0-10 controls and persisted
-  defaults. Title/setup push buttons, setup selection/rejection, panel
+  defaults. Full local-setup push buttons, setup selection/rejection, panel
   confirmation, equipped and unarmed gang attacks, retaliation, detected police
   attacks, idle planning confirmation, pending Last Turn Events, and planning-countdown
   warnings use mapped sounds. General slot 9 is loaded by the original but has

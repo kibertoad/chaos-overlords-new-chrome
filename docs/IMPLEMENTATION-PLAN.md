@@ -824,7 +824,7 @@ native-resolution visual baselines.
 
 Current foundation: original city/site/gang imagery is routed, resolved
 equipped-weapon attacks use item-defined `SND005xx` cues, and all nine recovered
-general-effect slots load with proven title/setup push-button, setup
+general-effect slots load with proven full local-setup push-button, setup
 selection/rejection, panel,
 pending-report, and countdown triggers. The runtime streams
 the recovered Track 2 title/setup, Tracks 3-8 gameplay, and Track 9 endgame

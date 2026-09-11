@@ -544,11 +544,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         switch (_screens.Current)
         {
             case ClientScreen.Title:
-                if (TitleNewGame.Contains(point)) PressTitleButton(() => _screens.Show(ClientScreen.Setup));
-                else if (TitleLoadGame.Contains(point)) PressTitleButton(LoadQuickGame);
-                else if (TitleOptions.Contains(point)) PressTitleButton(OpenOptions);
-                else if (TitleHelp.Contains(point)) PressTitleButton(OpenHelp);
-                else if (TitleQuit.Contains(point)) PressTitleButton(Exit);
+                if (TitleNewGame.Contains(point)) _screens.Show(ClientScreen.Setup);
+                else if (TitleLoadGame.Contains(point)) LoadQuickGame();
+                else if (TitleOptions.Contains(point)) OpenOptions();
+                else if (TitleHelp.Contains(point)) OpenHelp();
+                else if (TitleQuit.Contains(point)) Exit();
                 break;
             case ClientScreen.Options:
                 HandleOptionsClick(point);
@@ -638,12 +638,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 HandleGiveClick(point);
                 break;
         }
-    }
-
-    private void PressTitleButton(Action action)
-    {
-        PlayGeneralSound(GeneralSoundSlot.ButtonPress);
-        action();
     }
 
     private void CycleGang(int delta)

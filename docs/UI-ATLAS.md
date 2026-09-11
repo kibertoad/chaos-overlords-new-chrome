@@ -16,10 +16,10 @@ original-game capture confirms the screen and interaction state.
 | `PX00128` | Main city view and right control-panel frame | High from visible labels | City screen background |
 | `PX00130` | Chaos Overlords title/logo | High from visible title | Title screen background |
 | `PX00131` | Limited/demo-version promotion | High from visible text | Not used for full version |
-| `PX00143` | Six-slot new-game objective/player setup | High from visible labels | Setup screen background |
-| `PX00144` | Setup variant with reduced/changed player area | Low | Unmapped |
-| `PX00145` | Compact player setup frame | Low | Unmapped |
-| `PX00146` | Minimal two-slot setup frame | Low | Unmapped |
+| `PX00143` | Full local objective/player setup | High from visible labels and load at `0x0040e150` | Setup screen background |
+| `PX00144` | Alternate full objective/player setup flow | Medium from visible layout and isolated load at `0x00467b06` | Unsupported legacy setup flow |
+| `PX00145` | Compact player Add/Remove/Begin/Cancel setup flow | Medium-High from visible layout and isolated load at `0x0040bc2e` | Unsupported legacy setup flow |
+| `PX00146` | Minimal player-strip Begin/Cancel setup flow | Medium from visible layout and isolated load at `0x00457295` | Unsupported legacy setup flow |
 
 ## Composite sheets and panels
 
@@ -276,8 +276,8 @@ notifications that were present when it opened.
 
 1. Identify the main-city content layers placed inside the black viewport of
    `PX00128` and validate/complete its provisional right-panel button rectangles.
-2. Correlate `PX00143` through `PX00146` with local player counts; legacy
-   network setup variants are explicitly out of scope.
+2. Finish classifying the separate `PX00144` through `PX00146` setup flows;
+   implementing legacy network/setup protocols remains explicitly out of scope.
 3. Map remaining cursor frames, selection/pressed-state sprites and transparency.
 4. Capture reference screenshots for title, every setup configuration and the
    initial city, then add masked native-resolution golden comparisons.

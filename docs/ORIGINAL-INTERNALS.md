@@ -161,11 +161,16 @@ transitions on each supported native platform.
 five-digit sound resource ID. Title initialization at `0x00460ccf` loads slots
 0-4 from `SND00200`-`SND00204`, skips slot 5, and loads slots 6-9 from
 `SND00205`-`SND00208`. The gated wrapper at `0x00464290` plays a loaded slot
-only while byte `0x0048783c` enables effects. In both the title handler at
-`0x0040b9c0` and setup handler at `0x0040e0a0`, accepted selector-arrow input
-plays slot 3 while rejected input plays slot 4.
+only while byte `0x0048783c` enables effects. In both compact player-setup
+handler `0x0040b9c0` and full local-setup handler `0x0040e0a0`, accepted
+selector-arrow input plays slot 3 while rejected input plays slot 4. The image
+loader wrapper at `0x00464108` independently identifies these screens: their
+calls at `0x0040bc2e` and `0x0040e150` load `PX00145` and `PX00143`
+respectively. Separate handlers `0x004677f0` and `0x00456f80` load `PX00144`
+and `PX00146`; the four resources are distinct flows, not local-player-count
+variants selected by one presenter.
 
-The four-case title helper at `0x0040cba5` and setup helper at `0x0040eb5f`
+The four-case compact-setup helper at `0x0040cba5` and full-setup helper at `0x0040eb5f`
 draw a depressed push-button image, call slot 2 once, track whether the pointer
 remains inside while the left button is held, restore the released image when
 it leaves, and return whether release occurred inside. The setup destinations
@@ -204,13 +209,13 @@ only gated general-effect wrapper in this executable. Music and effects share
 the same numeric conversion but have separate state and enable flags.
 
 **Confidence:** High static evidence for slot/resource mapping, push-button,
-setup/title selection, and report-alert roles, the lack of a slot-9 wrapper call site, scale, enable
+full/compact setup selection, and report-alert roles, the lack of a slot-9 wrapper call site, scale, enable
 boundary, initialized levels, and channel values; High manual evidence for the
 independent controls. Other slot semantics remain partially classified.
 
 **Recreation status:** all nine general resources are loaded through the
-recovered slot table, whose known roles are named in code. Title push buttons
-and the four recovered setup push controls use slot 2; setup selector changes
+recovered slot table, whose known roles are named in code. The four recovered
+full local-setup push controls use slot 2; setup selector changes
 use slot 3, and a rejected player-count boundary additionally uses slot 4. The
 four setup controls defer their action until release inside the originally
 pressed rectangle and cancel a release outside. Their held-inside state uses
