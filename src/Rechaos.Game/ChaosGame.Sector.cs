@@ -260,7 +260,9 @@ public sealed partial class ChaosGame
                     && command.Target == target);
             if (influence is null)
             {
-                RejectInput("BUILDING CANNOT BE INFLUENCED");
+                RejectInput(_state.Sectors[_cursor].Owner != gang.Owner
+                    ? "BUILDING CANNOT BE INFLUENCED: CONTROL SECTOR FIRST"
+                    : "BUILDING CANNOT BE INFLUENCED");
                 return;
             }
             var influenceResult = _actions.Submit(influence with { Repeat = true });
