@@ -1,7 +1,7 @@
 # Complete implementation and migration plan
 
 Status: active roadmap
-Last updated: 2026-09-12
+Last updated: 2026-09-13
 Target: a deterministic, cross-platform MonoGame recreation of the Windows 95
 release of *Chaos Overlords*, requiring a user-owned original asset pack.
 
@@ -749,6 +749,15 @@ platforms from clean machines using only user-supplied legal assets.
 
 ## 6. Milestone order and dependency gates
 
+The milestone gates below describe proof dependencies, not the order in which
+all implementation work must be attempted. While Codex Computer Use is
+unavailable, work that requires autonomous interaction with the original game
+or native GUI applications is deferred. Headless simulation, static binary and
+asset analysis, server/client integration, persistence, tooling, and automated
+rendering infrastructure remain actionable and take priority. User-supplied
+reference captures may unblock a specific deferred comparison without changing
+this general ordering.
+
 ### Current milestone status (2026-09-08)
 
 No milestone gate has passed yet. Work completed ahead of a dependency gate is
@@ -941,33 +950,62 @@ not lines of code or asset counts.
 
 ## 9. Immediate next implementation sequence
 
-1. Capture controlled original-turn fixtures for the now-guarded family-1 cash
-   50/51, Force 8/9, effective-Heal -3/-4, and Tolerance 3/4 boundaries, plus
-   fixed band 0/1/2 retaliation Hide and Martial Arts branches and family-0/4
-   previous-action transitions.
-2. Capture persistent-anchor hire placement plus the family-11
-   weapon-replacement cooldown and mode-10/mode-16 formation behavior across
-   consecutive original turns.
-3. Replace provisional AI scoring only where handler-exact evidence or fixed
-   reference decisions support it; expand deterministic tournaments to larger
-   player counts and objective-completion stress cases.
-4. Capture an original new-game fixture to validate city generation,
-   HQ/Right Hands placement, hire offers, initial Force, seeding, and complete
-   setup RNG order.
-5. Close the remaining economy, police, special-building, objective, and
-   current-format persistence safety gates with binary/reference fixtures;
-   investigate the GOG/1.1 Detailed Combat freeze and add presentation-mode
-   state-equivalence plus no-hang stress tests.
-6. Complete setup alignment, remaining management hit maps, atlas semantics,
-   transparency/color keys, modern locally extracted help viewer, combat cadence,
-   sound triggers, Options close/adjacent-buffer/combat cadence and original music preference
-   and menu restart boundaries plus native playback validation, video triggers,
-   and native-resolution golden screens.
-7. Run the full section 4.4 accuracy audit across layouts, rules, animations,
-   AI, RNG, media, and persistence; resolve or explicitly classify every
-   in-scope discrepancy. Original networking remains excluded.
-8. Finish signing/notarization, native interactive Windows/Linux/macOS
-   validation, accessibility/performance work, and the complete release gate.
+The active order deliberately puts work that can be completed without Codex
+Computer Use first. A task belongs in the deferred group when completing its
+proof gate requires autonomous clicks, timing, screen capture, or inspection of
+a running native GUI. Static analysis of the original executable and assets does
+not require Computer Use and should continue where it can establish the fact.
+
+### Active while Computer Use is unavailable
+
+1. Expand headless deterministic AI tournaments and objective-completion stress
+   cases, then correct evidence-supported stalls in Kill 'Em All, Big 40,
+   Eliminate, Siege, and Armageddon. Preserve replay equality and bounded
+   completion diagnostics for every seed.
+2. Harden the modern online path with reconnect/resume integration coverage,
+   automatic host-snapshot recovery where the protocol already permits it, and
+   a deterministic recorded policy for departed seats before implementing AI
+   takeover. Lobby browser, spectator, and chat work remain separate product
+   choices rather than parity requirements.
+3. Close independently testable persistence and simulation safety work:
+   save/replay fuzz and soak coverage, corrupt-generation recovery, transaction
+   and repeat-command boundaries derivable from static evidence, notification
+   invariants, and long-running phase/state validation.
+4. Build the golden-screen harness without depending on native captures: fixed
+   recreation states, exact 640x460 off-screen rendering, deterministic masks,
+   image-difference reports, baseline metadata, and CI artifact output. Do not
+   approve recreation output as an original-parity baseline until a verified
+   original capture is available.
+5. Continue static executable/resource analysis for remaining hit rectangles,
+   draw order, palette/color-key rules, event filtering, combat selection,
+   audio triggers, menu transitions, and RNG/action call order. Convert each
+   high-confidence finding into a focused fixture without launching the GUI.
+6. Implement non-interactive polish that has objective specifications: Smacker
+   decode/playback plumbing with deterministic skip/failure behavior, remaining
+   mapped sound routes, configurable bindings, diagnostics export, performance
+   benchmarks, and automated installer/package checks.
+
+### Deferred until Computer Use works or equivalent captures are supplied
+
+7. Capture an original new-game fixture covering city generation, HQ and Right
+   Hands placement, hire offers, initial Force, seed derivation, and complete
+   setup RNG order; then reconcile it with the headless model.
+8. Capture controlled original AI and resolver experiments for family-1 cash,
+   Force, Heal and Tolerance boundaries; family-0/4 transitions; retaliation,
+   Hide and Martial Arts bands; persistent-anchor placement; family-11
+   cooldown/formation behavior; economy, police, Influence takeover, and
+   objective edge cases.
+9. Capture native-resolution original and recreation screens for Setup, City,
+   Sector, Search, Last Turn Events, Combat Results/Detail, management, Help,
+   and endgame. Use them to finish hit maps, typography, offsets,
+   transparency/color keys, panel/combat cadence, the reported Detailed Combat
+   freeze, Siege art, hot-seat sequencing, and the golden-screen baselines.
+10. Perform native interactive audio, music, video, installer, focus,
+    fullscreen, and Windows/Linux/macOS validation. Then run the complete
+    section 4.4 accuracy audit and resolve or explicitly classify every in-scope
+    discrepancy. Original networking remains excluded.
+11. Finish signing/notarization and the complete release gate after the deferred
+    parity and native-platform evidence is available.
 
 ## 10. Source hierarchy
 
