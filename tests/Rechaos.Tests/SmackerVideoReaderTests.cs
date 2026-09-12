@@ -114,6 +114,46 @@ public sealed class SmackerVideoReaderTests
             SmackerFrameDemuxer.Read(stream, metadata, 0));
     }
 
+    [Fact]
+    public void PaletteDecoderAppliesNewColorAndRetainsSkippedColors()
+    {
+        var previous = Enumerable.Range(0, SmackerPaletteDecoder.ColorCount)
+            .Select(index => new SmackerPaletteColor((byte)index, 2, 3))
+            .ToArray();
+        byte[] chunk = [2, 1, 2, 3, 0xff, 0xfe, 0, 0];
+
+        var palette = SmackerPaletteDecoder.Apply(chunk, previous);
+
+        Assert.Equal(new SmackerPaletteColor(12, 8, 4), palette[0]);
+        Assert.Equal(previous[1], palette[1]);
+        Assert.Equal(previous[255], palette[255]);
+    }
+
+    [Fact]
+    public void PaletteDecoderCopiesAPreviousRange()
+    {
+        var previous = Enumerable.Range(0, SmackerPaletteDecoder.ColorCount)
+            .Select(index => new SmackerPaletteColor((byte)index, 0, 0))
+            .ToArray();
+        byte[] chunk = [2, 0x41, 10, 0xff, 0xfd, 0, 0, 0];
+
+        var palette = SmackerPaletteDecoder.Apply(chunk, previous);
+
+        Assert.Equal(previous[10], palette[0]);
+        Assert.Equal(previous[11], palette[1]);
+        Assert.Equal(previous[2], palette[2]);
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 1, 0, 0, 0 })]
+    [InlineData(new byte[] { 1, 0x7f, 0, 0 })]
+    [InlineData(new byte[] { 1, 0x7f, 250, 0 })]
+    public void PaletteDecoderRejectsMalformedCommands(byte[] chunk)
+    {
+        Assert.Throws<InvalidDataException>(() =>
+            SmackerPaletteDecoder.Apply(chunk, SmackerPaletteDecoder.CreateEmpty()));
+    }
+
     private static MemoryStream BuildContainer(
         int width,
         int height,

@@ -131,8 +131,13 @@ public static class ExtractorProgram
             var video = OriginalDataReader.FindCaseInsensitive(Path.Combine(dataDirectory, videoName));
             using var stream = File.OpenRead(video);
             var metadata = SmackerVideoReader.Read(stream);
+            var palette = SmackerPaletteDecoder.CreateEmpty();
             for (var frameIndex = 0; frameIndex < metadata.Frames.Count; frameIndex++)
-                _ = SmackerFrameDemuxer.Read(stream, metadata, frameIndex);
+            {
+                var packet = SmackerFrameDemuxer.Read(stream, metadata, frameIndex);
+                if (!packet.PaletteChunk.IsEmpty)
+                    palette = SmackerPaletteDecoder.Apply(packet.PaletteChunk.Span, palette);
+            }
         }
         var fingerprint = await SourceFingerprint.ComputeAsync(dataDirectory, musicDirectory, helpDirectory);
         if (!string.Equals(fingerprint, KnownSourceFingerprintSha256, StringComparison.OrdinalIgnoreCase))

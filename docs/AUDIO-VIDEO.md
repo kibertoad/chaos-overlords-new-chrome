@@ -50,6 +50,8 @@ optional ring frame, and proves that the fixed header, frame-size/type tables,
 Huffman trees, and all declared frame payloads exactly cover the file.
 `SmackerFrameDemuxer` then bounds and separates each physical frame's optional
 palette update, ordered audio chunks, and remaining video bitstream.
+`SmackerPaletteDecoder` applies the format's skip, previous-palette copy, and
+six-bit BGR color commands while bounding every source and destination range.
 
 | File | SHA-256 | Size | Video | Timing | Audio |
 |---|---|---:|---|---|---|
@@ -70,6 +72,6 @@ replays, phase hashes, or multiplayer state. Input skipping and exact logo/
 intro trigger order still require original-runtime evidence before their final
 policy is classified as parity.
 
-Palette application and frame/audio decompression, client presentation, skip
-controls, and cadence tests are not implemented yet. Until they are, the title
-opens directly as before.
+Video/audio decompression, client presentation, skip controls, and cadence
+tests are not implemented yet. Until they are, the title opens directly as
+before.
