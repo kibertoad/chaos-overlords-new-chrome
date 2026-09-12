@@ -23,7 +23,7 @@ public static class NotificationPresentation
     {
         GameNotificationKind.Control => "SECTOR CONTROL ATTAINED.",
         GameNotificationKind.ControlLost => "SECTOR CONTROL LOST.",
-        GameNotificationKind.Influence => "SITE INFLUENCE ATTAINED.",
+        GameNotificationKind.Influence => "SITE COOPERATION ACHIEVED.",
         GameNotificationKind.Research => "RESEARCH COMPLETED.",
         GameNotificationKind.Crackdown => "POLICE CRACKDOWN.",
         GameNotificationKind.Elimination => "PLAYER ELIMINATED.",

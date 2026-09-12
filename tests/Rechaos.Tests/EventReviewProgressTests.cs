@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
 using Xunit;
@@ -40,5 +41,33 @@ public sealed class EventReviewProgressTests
             ItemRotationPresentation.Frame(TimeSpan.FromMilliseconds(14 * 80)));
         Assert.Equal(new Rectangle(0, 0, 48, 48),
             ItemRotationPresentation.Frame(TimeSpan.FromMilliseconds(15 * 80)));
+    }
+
+    [Fact]
+    public void InfluenceReportUsesSiteObjectCooperationTextAndForegroundArtwork()
+    {
+        var state = OriginalMatchFactory.Create(
+            BundledOriginalData.Load(),
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996,
+            [
+                new MatchPlayerSetup(
+                    new PlayerId(0), "PLAYER 1", PlayerController.Human, 0)
+            ], allowSparsePlayerIds: true));
+        const int siteId = 4;
+        var related = new GameEvent(7, 3, TurnPhase.Execution, ExecutionPhase.Instant,
+            GameEventKind.CommandResolved, new PlayerId(0), new GangId(0),
+            GangAction.Influence, CommandTarget.Site(siteId));
+        var notification = new GameNotification(6, 3, TurnPhase.Execution,
+            ExecutionPhase.Instant, GameNotificationKind.Influence,
+            new GangId(0), RelatedEventSequence: related.Sequence);
+        var definition = state.Definitions.Sites.Single(value =>
+            value.Id == state.FindSite(siteId)!.DefinitionId);
+
+        Assert.Equal(siteId, LastTurnEventPresentation.InfluenceSiteId(notification, related));
+        Assert.Equal($"04:{definition.Name}",
+            LastTurnEventPresentation.InfluenceSiteObject(state, notification, related));
+        Assert.Equal(4, LastTurnEventPresentation.ArtworkIndex(notification, related));
+        Assert.Equal("SITE COOPERATION ACHIEVED.",
+            NotificationPresentation.LastTurnStatus(notification));
     }
 }

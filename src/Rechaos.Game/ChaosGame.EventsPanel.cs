@@ -165,18 +165,12 @@ public sealed partial class ChaosGame
     {
         batch.Draw(pixel, LastTurnEventsLayout.Artwork, Color.Black);
         var related = RelatedEvent(state, notification);
-        var artworkIndex = notification.Kind switch
-        {
-            GameNotificationKind.Crackdown => 1,
-            GameNotificationKind.Control => 2,
-            GameNotificationKind.ControlLost => 3,
-            GameNotificationKind.Elimination when related?.Kind == GameEventKind.PlayerEliminated => 9,
-            GameNotificationKind.Elimination => 4,
-            GameNotificationKind.Research => 5,
-            GameNotificationKind.Influence => 6,
-            GameNotificationKind.Objective => 7,
-            _ => 0
-        };
+        if (LastTurnEventPresentation.InfluenceSiteId(notification, related) is { } siteId
+            && state.FindSite(siteId) is { } site
+            && _sitePortraits is not null)
+            batch.Draw(_sitePortraits, LastTurnEventsLayout.Artwork,
+                OriginalSpriteLayout.SitePortrait(site.DefinitionId), Color.White);
+        var artworkIndex = LastTurnEventPresentation.ArtworkIndex(notification, related);
         if (artworkIndex > 0 && _lastTurnEventArtwork[artworkIndex] is { } artwork)
             batch.Draw(artwork, LastTurnEventsLayout.Artwork, Color.White);
         if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId
@@ -194,6 +188,8 @@ public sealed partial class ChaosGame
                 ?? $"PLAYER {elimination.EliminatedPlayer.Value + 1}";
         if (LastTurnEventPresentation.ResearchItemId(notification, related) is { } itemId)
             return state.Definitions.Items[itemId].Name;
+        if (LastTurnEventPresentation.InfluenceSiteObject(state, notification, related) is { } site)
+            return site;
         if (notification.Gang is { } gangId && state.FindGang(gangId) is { } gang)
             return state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Name;
         if (notification.SectorId is { } sectorId) return SectorCode(sectorId);
@@ -240,6 +236,23 @@ public static class EventReviewProgress
 
 public static class LastTurnEventPresentation
 {
+    public static int ArtworkIndex(GameNotification notification, GameEvent? relatedEvent)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+        return notification.Kind switch
+        {
+            GameNotificationKind.Crackdown => 1,
+            GameNotificationKind.Control => 2,
+            GameNotificationKind.ControlLost => 3,
+            GameNotificationKind.Elimination when relatedEvent?.Kind == GameEventKind.PlayerEliminated => 9,
+            GameNotificationKind.Elimination => 4,
+            GameNotificationKind.Research => 5,
+            GameNotificationKind.Influence => 4,
+            GameNotificationKind.Objective => 7,
+            _ => 0
+        };
+    }
+
     public static int? ResearchItemId(GameNotification notification, GameEvent? relatedEvent)
     {
         ArgumentNullException.ThrowIfNull(notification);
@@ -248,6 +261,29 @@ public static class LastTurnEventPresentation
             && relatedEvent.Target.Kind == CommandTargetKind.Item
                 ? relatedEvent.Target.Id
                 : null;
+    }
+
+    public static int? InfluenceSiteId(GameNotification notification, GameEvent? relatedEvent)
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+        return notification.Kind == GameNotificationKind.Influence
+            && relatedEvent?.Action == GangAction.Influence
+            && relatedEvent.Target.Kind == CommandTargetKind.Site
+                ? relatedEvent.Target.Id
+                : null;
+    }
+
+    public static string? InfluenceSiteObject(
+        MatchState state,
+        GameNotification notification,
+        GameEvent? relatedEvent)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if (InfluenceSiteId(notification, relatedEvent) is not { } siteId
+            || state.FindSite(siteId) is not { } site)
+            return null;
+        var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+        return $"{siteId:00}:{definition.Name}";
     }
 }
 

@@ -24,7 +24,7 @@ public static class ToleranceResolver
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sector);
         return sector.Sites
-            .Where(site => site.InfluencedBy is not null)
+            .Where(site => SiteControlRules.Controller(sector, site) is not null)
             .Sum(site => state.Definitions.Sites.Single(
                 definition => definition.Id == site.DefinitionId).Tolerance);
     }

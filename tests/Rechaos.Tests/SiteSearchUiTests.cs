@@ -15,23 +15,20 @@ public sealed class SiteSearchUiTests
         var first = new PlayerId(0);
         var second = new PlayerId(1);
 
-        Assert.Equal(SiteSearchLayout.MaximumSites, selections.For(first).Count);
-        Assert.Equal(SiteSearchLayout.MaximumSites, selections.For(second).Count);
-
         selections.Toggle(first, 4);
         selections.SelectAll(second, [4, 8, 12]);
 
-        Assert.False(selections.IsSelected(first, 4));
-        Assert.True(selections.IsSelected(first, 8));
+        Assert.True(selections.IsSelected(first, 4));
+        Assert.False(selections.IsSelected(first, 8));
         Assert.Equal<short>([4, 8, 12], selections.For(second).Order());
 
         selections.Clear(second);
         Assert.Empty(selections.For(second));
-        Assert.False(selections.IsSelected(first, 4));
+        Assert.True(selections.IsSelected(first, 4));
 
         selections.Reset();
-        Assert.Equal(SiteSearchLayout.MaximumSites, selections.For(first).Count);
-        Assert.Equal(SiteSearchLayout.MaximumSites, selections.For(second).Count);
+        Assert.Empty(selections.For(first));
+        Assert.Empty(selections.For(second));
     }
 
     [Fact]
@@ -61,17 +58,21 @@ public sealed class SiteSearchUiTests
     }
 
     [Fact]
-    public void DefaultSelectionProjectsAllThreeSitesInEverySector()
+    public void DefaultSelectionProjectsOnlyControlledHeadquarters()
     {
         var state = CreateMatch();
         var player = new PlayerId(0);
         var selections = new SiteSearchSelectionState();
+        var headquarters = state.Sectors
+            .Where(sector => sector.Owner == player)
+            .SelectMany(sector => sector.Sites)
+            .Single(site => site.Resistance == 0);
 
         var result = CitySiteMarkerProjection.Project(state, player, selections.For(player));
 
-        Assert.Equal(state.Sectors.Sum(sector => sector.Sites.Count), result.Count);
-        Assert.All(result.GroupBy(marker => marker.SectorId), markers =>
-            Assert.Equal(MatchLimits.SitesPerSector, markers.Count()));
+        var marker = Assert.Single(result);
+        Assert.Equal(headquarters.DefinitionId, marker.SiteDefinitionId);
+        Assert.True(marker.Controlled);
     }
 
     [Theory]

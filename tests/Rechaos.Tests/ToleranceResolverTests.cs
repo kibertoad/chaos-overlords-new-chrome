@@ -26,9 +26,9 @@ public sealed class ToleranceResolverTests
     {
         var match = CreateMatch(tolerance: 12, income: 5, influenceFirstTwoSites: true);
 
-        // Condos add one, Corporate Towers subtract two, and the uninfluenced
-        // Headquarters contribution is excluded: 17 - 5 + 1 - 2 = 11.
-        Assert.Equal(11, ToleranceResolver.NormalTolerance(match, match.Sectors[0]));
+        // Condos add one, Corporate Towers subtract two, and the automatically
+        // controlled Headquarters adds two: 17 - 5 + 1 - 2 + 2 = 13.
+        Assert.Equal(13, ToleranceResolver.NormalTolerance(match, match.Sectors[0]));
     }
 
     [Fact]
@@ -36,10 +36,10 @@ public sealed class ToleranceResolverTests
     {
         var match = CreateMatch(tolerance: -6, income: 7, influenceFirstTwoSites: true);
         var sector = match.Sectors[0];
-        // The two test sites contribute -1 in total, so an effective -1 is a
-        // base-zero value with the modifier still applied.
+        // The two explicitly influenced sites contribute -1 in total and the
+        // automatically controlled Headquarters adds two.
         sector.Tolerance = -1;
-        Assert.Equal(-1, ToleranceResolver.SiteAdjustment(match, sector));
+        Assert.Equal(1, ToleranceResolver.SiteAdjustment(match, sector));
         Assert.Equal(2, ToleranceResolver.ApplyBribe(match, sector));
         Assert.Equal(-4, ToleranceResolver.ApplySnitch(match, sector));
 

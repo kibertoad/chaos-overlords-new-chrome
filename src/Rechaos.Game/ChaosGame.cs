@@ -285,7 +285,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _comlinkViewBackground = LoadTexture("PX05017.bmp");
         _comlinkSendBackground = LoadTexture("PX05018.bmp");
         for (var eventArt = 1; eventArt <= 9; eventArt++)
-            _lastTurnEventArtwork[eventArt] = LoadTexture($"PX060{eventArt:00}.bmp");
+            _lastTurnEventArtwork[eventArt] = LoadTexture(
+                $"PX060{eventArt:00}.bmp", transparentWhite: eventArt == 4);
         _hireComparisonBackground = LoadTexture("PX05016.bmp");
         _influenceBackground = LoadTexture("PX05005.bmp");
         _targetAcquisitionBackground = LoadTexture("PX05003.bmp");
@@ -295,7 +296,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _equipmentGiveBackground = LoadTexture("PX05015.bmp");
         _movementBackground = LoadTexture("PX05006.bmp");
         _siteSearchBackground = LoadTexture("PX05024.bmp");
-        _siteMarkerSprites = LoadTexture("PX00150.bmp", transparentBlack: true);
+        _siteMarkerSprites = LoadTexture("PX00150.bmp", transparentWhite: true);
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
         _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);

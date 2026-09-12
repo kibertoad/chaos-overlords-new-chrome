@@ -350,9 +350,7 @@ then validate overlap/interruption and native amplitude behavior.
 NONE write all 22 bytes, an individual row toggles one byte, and a row
 double-click calls Site Information handler `0x0044c476` with the selected
 definition. Fresh-game initialization at `0x0046e766` clears the complete
-per-player table. The supplied original city capture shows that normal city
-presentation nevertheless begins with all site types visible; the recreation
-represents that visible state as an ALL selection.
+per-player table.
 
 The sole city consumer at `0x00412990`, inside redraw routine `0x004123cc`,
 walks the three physical site slots of each sector. A site controlled by the
@@ -362,17 +360,24 @@ and 2 and enter marker renderer `0x00412ac4`. That renderer copies a transparent
 20x14 rectangle from `PX00150`: source x is `(definition % 11) * 20`, source y
 is `(definition / 11) * 14 + (controlled ? 0 : 28)`. Its destination within
 the 432x416 city buffer is x `(sector % 8) * 53 + 9` and y
-`(sector / 8) * 51 + ordinal * 15 + 7`.
+`(sector / 8) * 51 + ordinal * 15 + 7`. The sheet's pure-white cell background
+is the transparency key; it is not part of the white/gray controlled-site icon.
 
 **Interpretation:** Search is a persistent per-player presentation filter for
 individual city-site markers, not a sector highlight. Influence ownership is
-the recreation's exact controlled-site predicate. Each player's recreation
-filter initializes and resets to ALL; NONE and individual toggles can then
-suppress uninfluenced site types. The Search double-click shows definition-level
-information, including base rather than live remaining Resistance.
+the recreation's exact controlled-site predicate. With the overview filter
+empty, only the active player's influenced sites appear using white/gray icons;
+this includes the zero-resistance Headquarters in the player's starting sector,
+which is controlled from the beginning without a separate Influence action and
+contributes its `+2` Tolerance site effect.
+Enabling site types through the 1.1 Search overview additionally reveals their
+uninfluenced instances using amber icons, matching the 1.1 release notes. The
+Search double-click shows definition-level information, including base rather
+than live remaining Resistance.
 
 **Confidence:** High static evidence from the complete handler, initializer,
-sole selection-table consumer, and marker renderer.
+sole selection-table consumer, and marker renderer, plus supplied original 1.1
+city captures for marker colors and transparency.
 
 **Recreation status:** The checklist now mutates an independent filter for each
 player, draws the exact controlled/uncontrolled `PX00150` crops at recovered

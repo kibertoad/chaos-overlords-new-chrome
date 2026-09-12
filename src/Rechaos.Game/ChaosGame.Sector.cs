@@ -108,8 +108,7 @@ public sealed partial class ChaosGame
         {
             var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
             var portrait = SectorDetailLayout.SitePortrait(site.Slot);
-            var controlOwner = SectorDetailLayout.SiteControlOwner(
-                site.InfluencedBy, sector.Owner, site.Resistance);
+            var controlOwner = SiteControlRules.Controller(sector, site);
             if (_sitePortraits is not null)
                 batch.Draw(_sitePortraits, portrait,
                     OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);

@@ -30,7 +30,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00137`, `PX00139` | Empty and filled horizontal meter frames | Medium |
 | `PX00138` | Circular action/command icons | High from repeated command imagery |
 | `PX00140` | Compact setup-control sheet matching `PX00143` labels | High |
-| `PX00150` | Twenty-two 20x14 city site markers in two 11-item rows and controlled/uncontrolled states | High from the complete native city marker renderer |
+| `PX00150` | Twenty-two 20x14 city site markers in two 11-item rows and controlled/uncontrolled states; pure white is transparent | High from the complete native city marker renderer and original 1.1 captures |
 | `PX00200` | Endgame awards/statistics frame | High from visible labels |
 | `PX00201` | Endgame award icons (fist, skull, chicken, dollar, safe), colored player-number rows, statistics labels, and pressed Awards/Stats/Done controls | High from visible content and the original Help Endgame topic |
 | `PX00202`, `PX00203` | Single-player victory and elimination splashes with one Overlord portrait aperture | High from visible text and geometry; hot-seat sequencing unresolved |
@@ -178,10 +178,11 @@ cursor feedback remain to be validated.
 - Search uses `PX05024` and presents all 22 site definitions in two columns.
   ALL, NONE, and individual mouse/keyboard toggles update the active player's
   presentation filter. The city always shows controlled sites and additionally
-  shows selected uncontrolled types using exact 20-by-14 `PX00150` crops in
-  compacted sector slots. Double-clicking a row opens definition-level Site
-  Information. The prior detected-gang list and cyan sector outlines were
-  removed because they contradicted the recovered handler and city renderer.
+  shows selected uncontrolled types as amber, exact 20-by-14 `PX00150` crops in
+  compacted sector slots after the player confirms with OK. Double-clicking a
+  row opens definition-level Site Information. The prior detected-gang list and
+  cyan sector outlines were removed because they contradicted the recovered
+  handler and city renderer.
 - The Equipment panel shows the selected gang from `PX03000` at `(558,58)` in
   a 56-by-56 owner-colored frame, keeping the item list and statistics visible.
 - Gang Information places its 64-by-64 portrait at `(67,90)`, aligned to the
@@ -402,8 +403,11 @@ the recreation opens it automatically when that player has queued notifications
 and otherwise proceeds directly to the city. Its counter and arrow cells page
 one report at a time. Its `(198,133,242,158)` aperture uses the dedicated
 `PX06001`-`PX06009` report illustrations (`PX06002` is sector control attained),
-not stretched city tiles or gang portraits; the two footer lines report
-date/object and status.
+with event-specific composition rather than stretched city tiles or gang
+portraits. Site cooperation stretches the attained site's `PX02000` portrait
+into the aperture, then overlays white-keyed `PX06004` (the person holding the
+bill and the gun). Its footer identifies the site as `<id>:<name>` and reports
+`SITE COOPERATION ACHIEVED.`
 Completed Research uses the resolved item's dedicated 15-frame, 48-by-48
 `PX04xxx` rotation strip in the `PX06005` monitor. The green monitor frame is
 local `(97,53)` and its exact black 48-by-48 interior is local `(98,54)`, or

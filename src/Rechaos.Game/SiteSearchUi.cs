@@ -24,13 +24,8 @@ public static class SiteSearchLayout
 
 public sealed class SiteSearchSelectionState
 {
-    private static readonly short[] AllSiteIds = Enumerable
-        .Range(0, SiteSearchLayout.MaximumSites)
-        .Select(id => (short)id)
-        .ToArray();
-
     private readonly HashSet<short>[] _selections = Enumerable.Range(0, MatchLimits.PlayerCount)
-        .Select(_ => new HashSet<short>(AllSiteIds)).ToArray();
+        .Select(_ => new HashSet<short>()).ToArray();
 
     public bool IsSelected(PlayerId player, short siteId)
     {
@@ -70,11 +65,7 @@ public sealed class SiteSearchSelectionState
 
     public void Reset()
     {
-        foreach (var selection in _selections)
-        {
-            selection.Clear();
-            selection.UnionWith(AllSiteIds);
-        }
+        foreach (var selection in _selections) selection.Clear();
     }
 
     private static void Validate(PlayerId player, short siteId)
@@ -113,7 +104,7 @@ public static class CitySiteMarkerProjection
             var visibleSlot = 0;
             foreach (var site in sector.Sites.OrderBy(site => site.Slot))
             {
-                var controlled = site.InfluencedBy == player;
+                var controlled = SiteControlRules.Controller(sector, site) == player;
                 if (!controlled && !selectedSiteIds.Contains(site.DefinitionId)) continue;
                 result.Add(new CitySiteMarker(
                     sector.Id, site.DefinitionId, visibleSlot++, controlled));
