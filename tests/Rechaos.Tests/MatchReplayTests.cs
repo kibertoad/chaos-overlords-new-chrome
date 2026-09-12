@@ -80,6 +80,40 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
+    public void ReplayPreservesDelayedSiteActivationAcrossTurnBoundary()
+    {
+        var initial = CreateMatch();
+        initial.FindSite(1)!.Resistance = 1;
+        var recorder = new MatchReplayRecorder(initial);
+        recorder.FinishUpkeep();
+        Assert.True(recorder.Submit(new GameCommand(
+            new PlayerId(0), new GangId(0), GangAction.Influence,
+            CommandTarget.Site(1))).Accepted);
+        FinishCommands(recorder);
+
+        recorder.FinishExecutionPhase();
+        Assert.Null(recorder.State.FindSite(1)!.InfluencedBy);
+        while (recorder.State.Coordinator.Phase == TurnPhase.Execution)
+            recorder.FinishExecutionPhase();
+        FinishHireAndElimination(recorder);
+        recorder.FinishUpkeep();
+
+        Assert.Equal(new PlayerId(0), recorder.State.FindSite(1)!.InfluencedBy);
+        using var replay = new MemoryStream();
+        MatchReplaySerializer.Save(replay, recorder);
+        replay.Position = 0;
+        var restored = MatchReplaySerializer.LoadAndReplay(
+            replay, recorder.State.Definitions);
+
+        Assert.Equal(recorder.State.FindSite(1)!.InfluencedBy,
+            restored.FindSite(1)!.InfluencedBy);
+        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State),
+            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(JsonSerializer.Serialize(recorder.State.Events),
+            JsonSerializer.Serialize(restored.Events));
+    }
+
+    [Fact]
     public void ReplaysComlinkDeliveryAndReadState()
     {
         var recorder = new MatchReplayRecorder(CreateMatch(secondPlayerHuman: true));
