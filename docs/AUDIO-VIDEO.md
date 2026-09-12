@@ -48,11 +48,13 @@ Both source movies use the `SMK2` signature and little-endian fixed header.
 frame-duration encodings, identifies packed PCM track flags, accounts for an
 optional ring frame, and proves that the fixed header, frame-size/type tables,
 Huffman trees, and all declared frame payloads exactly cover the file.
+`SmackerFrameDemuxer` then bounds and separates each physical frame's optional
+palette update, ordered audio chunks, and remaining video bitstream.
 
 | File | SHA-256 | Size | Video | Timing | Audio |
 |---|---|---:|---|---|---|
-| `MVLOGOS.smk` | `cd5b80b01626155ec1b7be0c879378117f2323ed9ec824a704e4ca08c1974752` | 1,832,372 | 480x256, 200 frames | 100 ms/frame, 20 s | packed PCM, 22,050 Hz, 16-bit mono; max decoded frame 24,260 bytes |
-| `MVINTRO.smk` | `52478e0fbcd0fc39bb31171d2dc86115a2b685cc930107587c6a7dba496a77dd` | 8,592,724 | 480x256, 1,150 frames | 100 ms/frame, 115 s | packed PCM, 22,050 Hz, 16-bit stereo; max decoded frame 48,512 bytes |
+| `MVLOGOS.smk` | `cd5b80b01626155ec1b7be0c879378117f2323ed9ec824a704e4ca08c1974752` | 1,832,372 | 480x256, 200 frames | 100 ms/frame, 20 s | packed PCM, 22,050 Hz, 8-bit mono; max decoded frame 24,260 bytes |
+| `MVINTRO.smk` | `52478e0fbcd0fc39bb31171d2dc86115a2b685cc930107587c6a7dba496a77dd` | 8,592,724 | 480x256, 1,150 frames | 100 ms/frame, 115 s | packed PCM, 22,050 Hz, 8-bit stereo; max decoded frame 48,512 bytes |
 
 The structural metadata above is Verified against the fingerprinted GOG pack.
 The extractor validates both containers before accepting the source pack.
@@ -68,5 +70,6 @@ replays, phase hashes, or multiplayer state. Input skipping and exact logo/
 intro trigger order still require original-runtime evidence before their final
 policy is classified as parity.
 
-Frame/audio decompression, client presentation, skip controls, and cadence tests
-are not implemented yet. Until they are, the title opens directly as before.
+Palette application and frame/audio decompression, client presentation, skip
+controls, and cadence tests are not implemented yet. Until they are, the title
+opens directly as before.

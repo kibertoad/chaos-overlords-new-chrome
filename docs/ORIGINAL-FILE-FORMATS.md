@@ -220,7 +220,7 @@ and looping rules are **Low**. They are copied byte-for-byte.
 Smacker v2 signature. Little-endian dimensions at offsets 4 and 8 are 480 x 256;
 frame counts at offset 12 are 1,150 and 200. Both store `-10000` in the frame-
 duration field, encoding 100 ms per frame and total durations of 115 and 20
-seconds. Their first audio descriptors identify packed 22,050 Hz, 16-bit PCM:
+seconds. Their first audio descriptors identify packed 22,050 Hz, 8-bit PCM:
 stereo with a 48,512-byte maximum decoded frame for `MVINTRO`, and mono with a
 24,260-byte maximum for `MVLOGOS`.
 
@@ -228,9 +228,12 @@ The bounded reader accounts for the fixed 104-byte header, optional ring frame,
 four-byte frame sizes, one-byte frame types, Huffman-tree region, and every
 declared frame payload. Those regions exactly cover each supported file with no
 trailing bytes. Container structure and header semantics are therefore
-**Verified**. The extractor copies both videos byte-for-byte and now rejects a
-structurally inconsistent source container. Managed frame/audio decompression
-and client playback remain unimplemented; see [AUDIO-VIDEO.md](AUDIO-VIDEO.md).
+**Verified**. Frame descriptors retain the physical offset, masked payload
+length, type flags, and first-frame/keyframe status; the bounded demultiplexer
+separates palette, audio, and video chunks in their encoded order. The extractor
+copies both videos byte-for-byte and rejects a structurally inconsistent source
+container. Palette application, managed frame/audio decompression, and client
+playback remain unimplemented; see [AUDIO-VIDEO.md](AUDIO-VIDEO.md).
 
 ## Help
 

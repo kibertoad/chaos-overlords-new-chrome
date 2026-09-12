@@ -29,7 +29,7 @@ public sealed class AssetCatalogGeneratorTests
         Assert.Contains("Asset count: 3", catalog);
         Assert.Contains("2x2x16 (RGB555)", catalog);
         Assert.Contains("Palette and transparency unresolved", catalog);
-        Assert.Contains("1,150 frames; 100 ms/frame; packed PCM 22050 Hz 16-bit stereo", catalog);
+        Assert.Contains("1,150 frames; 100 ms/frame; packed PCM 22050 Hz 8-bit stereo", catalog);
         Assert.True(catalog.IndexOf("images/PX00001.bmp", StringComparison.Ordinal) <
                     catalog.IndexOf("raw/px08/PX00002", StringComparison.Ordinal));
         Assert.Equal(3, catalog.Split('\n').Count(line => line.StartsWith("| `", StringComparison.Ordinal)));

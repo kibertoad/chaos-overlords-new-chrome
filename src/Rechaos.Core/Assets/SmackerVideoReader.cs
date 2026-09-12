@@ -17,8 +17,33 @@ public sealed record SmackerVideoMetadata(
     TimeSpan FrameDuration,
     TimeSpan Duration,
     uint Flags,
+    long TreeOffset,
     uint TreeBytes,
-    IReadOnlyList<SmackerAudioTrack> AudioTracks);
+    SmackerHuffmanTreeSizes TreeAllocationSizes,
+    IReadOnlyList<SmackerAudioTrack> AudioTracks,
+    IReadOnlyList<SmackerFrameDescriptor> Frames);
+
+public sealed record SmackerHuffmanTreeSizes(
+    uint MonochromeMap,
+    uint MonochromeColor,
+    uint FullBlock,
+    uint BlockType);
+
+public sealed record SmackerFrameDescriptor(
+    int Index,
+    long Offset,
+    int PayloadBytes,
+    byte TypeFlags,
+    bool IsKeyFrame)
+{
+    public bool HasPalette => (TypeFlags & 1) != 0;
+
+    public bool HasAudioTrack(int trackIndex)
+    {
+        if (trackIndex is < 0 or > 6) throw new ArgumentOutOfRangeException(nameof(trackIndex));
+        return (TypeFlags & (1 << (trackIndex + 1))) != 0;
+    }
+}
 
 /// <summary>Bounded metadata and container-layout validation for Smacker v2 files.</summary>
 public static class SmackerVideoReader
@@ -26,11 +51,13 @@ public static class SmackerVideoReader
     private const int HeaderBytes = 104;
     private const uint RingFrameFlag = 1;
     private const uint PackedAudioFlag = 0x8000_0000;
-    private const uint SixteenBitAudioFlag = 0x4000_0000;
+    private const uint AudioPresentFlag = 0x4000_0000;
+    private const uint SixteenBitAudioFlag = 0x2000_0000;
     private const uint StereoAudioFlag = 0x1000_0000;
     private const uint SampleRateMask = 0x00ff_ffff;
     private const int MaximumDimension = 8_192;
     private const int MaximumFrames = 1_000_000;
+    internal const int MaximumFramePayloadBytes = 64 * 1024 * 1024;
 
     public static SmackerVideoMetadata Read(string path)
     {
@@ -67,19 +94,22 @@ public static class SmackerVideoReader
         for (var index = 0; index < audioBufferSizes.Length; index++)
             audioBufferSizes[index] = reader.ReadUInt32();
         var treeBytes = reader.ReadUInt32();
-        reader.ReadUInt32(); // monochrome map tree unpacked size
-        reader.ReadUInt32(); // monochrome color tree unpacked size
-        reader.ReadUInt32(); // full-block tree unpacked size
-        reader.ReadUInt32(); // block-type tree unpacked size
+        var treeAllocationSizes = new SmackerHuffmanTreeSizes(
+            reader.ReadUInt32(),
+            reader.ReadUInt32(),
+            reader.ReadUInt32(),
+            reader.ReadUInt32());
 
         var audioTracks = new List<SmackerAudioTrack>();
         for (var index = 0; index < audioBufferSizes.Length; index++)
         {
             var audioInfo = reader.ReadUInt32();
-            if (audioBufferSizes[index] == 0) continue;
             var sampleRate = checked((int)(audioInfo & SampleRateMask));
+            if (sampleRate == 0 && audioBufferSizes[index] == 0) continue;
             if (sampleRate == 0)
                 throw new InvalidDataException($"Smacker audio track {index} has no sample rate.");
+            if ((audioInfo & AudioPresentFlag) == 0 || audioBufferSizes[index] == 0)
+                throw new InvalidDataException($"Smacker audio track {index} has inconsistent presence metadata.");
             audioTracks.Add(new SmackerAudioTrack(
                 index,
                 audioBufferSizes[index],
@@ -95,14 +125,37 @@ public static class SmackerVideoReader
         if (HeaderBytes + tableBytes + treeBytes > stream.Length)
             throw new InvalidDataException("Smacker frame tables and trees exceed the file length.");
 
+        var frameSizes = new uint[storedFrameCount];
         long framePayloadBytes = 0;
         for (var index = 0; index < storedFrameCount; index++)
-            framePayloadBytes = checked(framePayloadBytes + (reader.ReadUInt32() & 0xffff_fffcu));
-        stream.Position = checked(stream.Position + storedFrameCount); // per-frame type bytes
-        var structuralLength = checked(stream.Position + treeBytes + framePayloadBytes);
+        {
+            frameSizes[index] = reader.ReadUInt32();
+            var payloadBytes = frameSizes[index] & 0xffff_fffcu;
+            if (payloadBytes > MaximumFramePayloadBytes)
+                throw new InvalidDataException(
+                    $"Smacker frame {index} payload exceeds the allocation limit.");
+            framePayloadBytes = checked(framePayloadBytes + payloadBytes);
+        }
+        var frameTypes = reader.ReadBytes(storedFrameCount);
+        if (frameTypes.Length != storedFrameCount)
+            throw new InvalidDataException("Smacker frame-type table is truncated.");
+        var treeOffset = stream.Position;
+        var firstFrameOffset = checked(treeOffset + treeBytes);
+        var structuralLength = checked(firstFrameOffset + framePayloadBytes);
         if (structuralLength != stream.Length)
             throw new InvalidDataException(
                 $"Smacker structural length is {structuralLength}, but the file length is {stream.Length}.");
+
+        var frames = new List<SmackerFrameDescriptor>(storedFrameCount);
+        var frameOffset = firstFrameOffset;
+        for (var index = 0; index < storedFrameCount; index++)
+        {
+            var payloadBytes = (int)(frameSizes[index] & 0xffff_fffcu);
+            frames.Add(new SmackerFrameDescriptor(
+                index, frameOffset, payloadBytes, frameTypes[index],
+                index == 0 || (frameSizes[index] & 1) != 0));
+            frameOffset = checked(frameOffset + payloadBytes);
+        }
 
         return new SmackerVideoMetadata(
             width,
@@ -111,8 +164,11 @@ public static class SmackerVideoReader
             frameDuration,
             TimeSpan.FromTicks(checked(frameDuration.Ticks * frameCount)),
             flags,
+            treeOffset,
             treeBytes,
-            new ReadOnlyCollection<SmackerAudioTrack>(audioTracks));
+            treeAllocationSizes,
+            new ReadOnlyCollection<SmackerAudioTrack>(audioTracks),
+            new ReadOnlyCollection<SmackerFrameDescriptor>(frames));
     }
 
     private static int ReadBoundedInt32(

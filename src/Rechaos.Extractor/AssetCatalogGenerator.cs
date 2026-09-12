@@ -69,9 +69,9 @@ public static class AssetCatalogGenerator
     private static string DescribeConversion(ExtractedAsset asset)
     {
         if (asset.Path.Equals("video/MVINTRO.smk", StringComparison.OrdinalIgnoreCase))
-            return "copy; validated Smacker v2; 480x256; 1,150 frames; 100 ms/frame; packed PCM 22050 Hz 16-bit stereo";
+            return "copy; validated Smacker v2; 480x256; 1,150 frames; 100 ms/frame; packed PCM 22050 Hz 8-bit stereo";
         if (asset.Path.Equals("video/MVLOGOS.smk", StringComparison.OrdinalIgnoreCase))
-            return "copy; validated Smacker v2; 480x256; 200 frames; 100 ms/frame; packed PCM 22050 Hz 16-bit mono";
+            return "copy; validated Smacker v2; 480x256; 200 frames; 100 ms/frame; packed PCM 22050 Hz 8-bit mono";
 
         var conversion = asset.Conversion;
         if (conversion is null) return "Unknown";

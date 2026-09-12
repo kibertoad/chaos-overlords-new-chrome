@@ -129,7 +129,10 @@ public static class ExtractorProgram
         foreach (var videoName in new[] { "MVINTRO", "MVLOGOS" })
         {
             var video = OriginalDataReader.FindCaseInsensitive(Path.Combine(dataDirectory, videoName));
-            _ = SmackerVideoReader.Read(video);
+            using var stream = File.OpenRead(video);
+            var metadata = SmackerVideoReader.Read(stream);
+            for (var frameIndex = 0; frameIndex < metadata.Frames.Count; frameIndex++)
+                _ = SmackerFrameDemuxer.Read(stream, metadata, frameIndex);
         }
         var fingerprint = await SourceFingerprint.ComputeAsync(dataDirectory, musicDirectory, helpDirectory);
         if (!string.Equals(fingerprint, KnownSourceFingerprintSha256, StringComparison.OrdinalIgnoreCase))
