@@ -2,10 +2,13 @@
 
 ## Git push destination
 
+The authorized canonical repository is
+`https://github.com/kibertoad/chaos-overlords-new-chrome.git`.
 Before every push, inspect the repository's configured push destination with
 `git remote get-url --push origin` (and `git remote -v` when additional context
-is useful). Push through the configured remote name and an explicit refspec,
-for example `git push origin HEAD:main`.
+is useful), and verify that it resolves to this canonical repository. Push
+through the configured remote name and an explicit refspec, for example
+`git push origin HEAD:main`.
 
 Never rewrite, replace, or temporarily override a remote URL in order to push.
 This prohibition includes `git remote set-url`, changing `remote.*.url` or
