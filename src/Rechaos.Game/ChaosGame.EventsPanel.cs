@@ -173,7 +173,7 @@ public sealed partial class ChaosGame
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var reportCount = ReviewableReports(state, playerId).Count;
         font.Draw(batch, $"{_eventCursor + 1:00} OF {reportCount:00}",
-            new Vector2(136, 137), Color.Lime, 1);
+            new Vector2(138, 138), Color.Lime, 1);
         DrawEventArtworkForeground(batch, state, notification);
         font.Draw(batch, MatchDate(notification.Turn),
             new Vector2(LastTurnEventsLayout.DateValue.X, LastTurnEventsLayout.DateValue.Y),

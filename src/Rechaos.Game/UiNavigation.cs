@@ -673,7 +673,7 @@ public static class ItemInformationLayout
 public static class LastTurnEventsLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Page => new(136, 137, 50, 7);
+    public static Rectangle Page => new(138, 138, 47, 7);
     public static Rectangle Previous => new(135, 151, 25, 21);
     public static Rectangle Next => new(163, 151, 25, 21);
     public static Rectangle Artwork => new(198, 133, 242, 158);

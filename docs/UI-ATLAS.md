@@ -401,7 +401,10 @@ their template text, apertures, and the supplied original Combat capture.
 `PX05010` is the paged Last Turn Events panel. At the next human-player handoff,
 the recreation opens it automatically when that player has queued notifications
 and otherwise proceeds directly to the city. Its counter and arrow cells page
-one report at a time. Its `(198,133,242,158)` aperture uses the dedicated
+one report at a time. The baked counter occupies screen `(138,138,47,7)` inside
+the preserved two-pixel green frame; replacement text uses that same origin and
+baseline so no template glyph pixels survive around it. Its
+`(198,133,242,158)` aperture uses the dedicated
 `PX06001`-`PX06009` report illustrations (`PX06002` is sector control attained),
 with event-specific composition rather than stretched city tiles or gang
 portraits. Site cooperation takes the centered `(12, row + 1, 94, 62)` interior

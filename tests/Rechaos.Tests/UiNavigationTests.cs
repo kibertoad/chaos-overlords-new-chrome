@@ -701,7 +701,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(307, 289, 31, 32), CombatResultsLayout.Opponent(4));
         Assert.Equal(EquipmentCommandLayout.Cancel, CombatResultsLayout.Detail);
         Assert.Equal(EquipmentCommandLayout.Panel, LastTurnEventsLayout.Panel);
-        Assert.Equal(new Rectangle(136, 137, 50, 7), LastTurnEventsLayout.Page);
+        Assert.Equal(new Rectangle(138, 138, 47, 7), LastTurnEventsLayout.Page);
         Assert.Equal(new Rectangle(198, 133, 242, 158), LastTurnEventsLayout.Artwork);
         Assert.Equal(new Rectangle(296, 187, 48, 48), LastTurnEventsLayout.ResearchItem);
         Assert.Equal(new Rectangle(135, 151, 25, 21), LastTurnEventsLayout.Previous);
