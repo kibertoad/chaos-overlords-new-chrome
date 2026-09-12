@@ -9,7 +9,7 @@ release of *Chaos Overlords*, requiring a user-owned original asset pack.
 
 The recreation is complete when it can reproduce a full original single-player
 or hot-seat match from setup through the final score, with equivalent rules,
-turn resolution, AI decisions, audiovisual feedback, and all ten objectives.
+turn resolution, Original AI decisions, audiovisual feedback, and all ten objectives.
 Given the same initial state and RNG stream, the simulation must produce the
 same state transitions as the reference game except where a documented,
 optional modernization is enabled.
@@ -54,6 +54,10 @@ kind is not part of this implementation plan.
 The current game is a broad playable pre-1.0 implementation, not evidence of
 complete rule parity. Any provisional gameplay formula must be replaced or
 validated before its workstream can be marked complete.
+The current client does not yet expose an Improved AI option. Until that option
+and its isolated policy layer exist, AI work targets Original AI reproduction;
+current tournament success must not be used as permission to optimize away a
+functional shipped decision.
 
 ### Handover checkpoint - 2026-09-11
 
@@ -173,7 +177,11 @@ validated before its workstream can be marked complete.
 3. **One explicit RNG stream.** Record the algorithm, seed, consumption order,
    and every call site. UI effects must use a separate cosmetic RNG.
 4. **Original and modern behavior are separate.** Compatibility is the default.
-   Fixes, widescreen, alternate controls, and balance changes are named options.
+   Original AI reproduces shipped decisions, including non-ideal but functional
+   strategy. Only clear failures such as crashes, freezes, invalid state, or
+   unbounded execution are repaired unconditionally. Strategic improvements
+   belong exclusively to a named, default-off Improved AI option. Fixes,
+   widescreen, alternate controls, and balance changes are named options.
 5. **No unmarked guesses.** Code based on an unverified interpretation must link
    to a research entry and carry a test or issue describing how it will be
    confirmed.
@@ -200,10 +208,13 @@ confirmed against controlled runs of the original executable.
   Game, and Quit, including when each is enabled. Host/Join are intentionally
   unsupported legacy-network entries.
 - Recreate Options for color depth, music, sound effects, base statistics,
-  detailed combat, sliding panels, and warnings for idle gangs. All local
-  presentation settings are implemented and persisted: color depth is explicitly
-  classified as always-on because the modern renderer already exceeds the legacy
-  16-bit mode. Exact defaults and visual cadence still require reference capture.
+  detailed combat, sliding panels, warnings for idle gangs, and Original or
+  Improved AI. Original AI is the default; Improved AI is a recreation
+  extension and never a parity baseline. The existing presentation settings are
+  implemented and persisted; the AI selector remains planned. Color depth is
+  explicitly classified as always-on because the modern renderer already
+  exceeds the legacy 16-bit mode. Exact defaults and visual cadence still
+  require reference capture.
 - Implement 10 scenarios, four time limits (6 months = 26 turns, 1 year = 52,
   2 years = 104, and 4 years = 208), difficulty, player/portrait/name/color
   setup, computer/human assignment, and the begin/cancel flow.
@@ -620,6 +631,10 @@ state as Simple Combat.
 
 ### I. AI
 
+- Treat faithful reproduction of the shipped AI as the primary deliverable.
+  Original AI is the default and must preserve observed action selection,
+  priorities, information boundaries, tie-breaking, and RNG consumption even
+  when a choice is strategically weak.
 - Determine exactly what state the AI can observe and whether it receives hidden
   information or resource bonuses.
 - Recover difficulty-specific evaluation weights and modifiers.
@@ -627,11 +642,22 @@ state as Simple Combat.
   selection, threat response, objective strategy and end-turn decisions.
 - Preserve action ordering, tie-breaking and RNG consumption.
 - Build fixed-state AI decision snapshots and long-run statistical comparisons.
+- Repair clear original failures such as crashes, freezes, invalid-state writes,
+  or non-terminating planning in both modes. Keep the smallest deterministic
+  safety correction possible, document the original defect and deviation, and
+  do not use "suboptimal" alone as justification for changing Original AI.
+- Put beneficial but parity-breaking choices behind a persistent `Improved AI`
+  option. It defaults off, uses an isolated planner/policy layer, and must never
+  change Original AI fixtures. Snapshot the selected mode into match setup so
+  saves, replays, hashes, and online peers cannot disagree or change an active
+  match implicitly.
 - Add turn-time budgets only as an optional modern behavior that does not alter
   deterministic compatibility mode.
 
-**Exit gate:** AI decisions match reference fixtures and complete large automated
-tournaments without invalid state, stalls, or nondeterminism.
+**Exit gate:** Original AI decisions match reference fixtures and complete large
+automated tournaments without crashes, freezes, invalid state, or nondeterminism.
+Improved AI has separate deterministic fixtures and is never used to make an
+Original AI parity gate pass.
 
 ### J. User interface and input
 
@@ -851,11 +877,16 @@ Gate: all ten scenarios can be completed locally with reference-equivalent rules
 
 ### M6 - AI parity
 
-Deliver all difficulty levels and objective-aware AI with deterministic decision
-fixtures and automated tournament coverage.
+Deliver all difficulty levels and objective-aware Original AI with deterministic
+decision fixtures and automated tournament coverage. Preserve functional but
+non-ideal shipped behavior. Add the separate, default-off Improved AI option
+only for deliberate strategic enhancements, with its mode persisted in setup,
+saves, replays, hashes, and online match configuration.
 
 Depends on: M5.
-Gate: single-player campaigns complete reliably and AI validation targets pass.
+Gate: single-player campaigns using Original AI complete without crashes,
+freezes, invalid state, or nondeterminism and match the available reference
+targets. Improved AI results do not count as original-parity evidence.
 
 ### M7 - Audiovisual parity
 
@@ -958,10 +989,13 @@ not require Computer Use and should continue where it can establish the fact.
 
 ### Active while Computer Use is unavailable
 
-1. Expand headless deterministic AI tournaments and objective-completion stress
-   cases, then correct evidence-supported stalls in Kill 'Em All, Big 40,
-   Eliminate, Siege, and Armageddon. Preserve replay equality and bounded
-   completion diagnostics for every seed.
+1. Expand headless deterministic Original AI tournaments and objective-completion
+   stress cases for Kill 'Em All, Big 40, Eliminate, Siege, and Armageddon.
+   Correct crashes, freezes, invalid state, or genuinely unbounded stalls with
+   the smallest compatibility-safe change. Preserve merely non-ideal original
+   choices. Prototype strategic enhancements only behind the separate Improved
+   AI mode, with independent fixtures, replay equality, and bounded diagnostics
+   for every seed.
 2. Harden the modern online path with reconnect/resume integration coverage,
    automatic host-snapshot recovery where the protocol already permits it, and
    a deterministic recorded policy for departed seats before implementing AI
