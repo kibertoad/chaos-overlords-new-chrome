@@ -1,5 +1,19 @@
 # Repository agent instructions
 
+## Git push destination
+
+Before every push, inspect the repository's configured push destination with
+`git remote get-url --push origin` (and `git remote -v` when additional context
+is useful). Push through the configured remote name and an explicit refspec,
+for example `git push origin HEAD:main`.
+
+Never rewrite, replace, or temporarily override a remote URL in order to push.
+This prohibition includes `git remote set-url`, changing `remote.*.url` or
+`remote.*.pushurl`, and command-scoped configuration such as
+`git -c remote.origin.pushurl=...`. If the configured destination is missing or
+does not match the repository the user authorized, stop and ask the user to
+correct or approve the remote configuration instead of modifying it.
+
 ## Post-commit orphan-process audit
 
 After every commit in this repository, inspect running processes for orphaned
