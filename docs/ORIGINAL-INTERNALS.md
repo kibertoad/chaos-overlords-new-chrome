@@ -2633,6 +2633,23 @@ slots omitted by the local players have already become computer players.
 
 **Confidence:** High static evidence; a runtime reference fixture remains pending.
 
+### BIN-SETUP-000 - fresh setup defaults to Greed
+
+**Observation:** In EXE-GOG-1.1, the initialized preference byte at
+`0x00487858` is `0`. Preference loader `0x0046439a` replaces it with the
+registry value `prefsObjective` when that value exists. Setup initializer
+`0x004384c0` copies the signed byte into the active scenario dword at
+`0x004abbe8` before rendering the full local setup screen. The recovered
+scenario numbering maps value 0 to Greed and value 4 to Kill 'Em All.
+
+**Interpretation:** A fresh original installation selects Greed by default.
+Kill 'Em All is the first button in visual order, but is not the initial active
+scenario. A previously stored `prefsObjective` may restore another selection.
+
+**Confidence:** High static evidence from the verified GOG 1.1 executable;
+runtime corroboration remains useful but is not required to identify the
+initialized value.
+
 ### BIN-SETUP-001 - `SMGFUNDAGE` starting cash override
 
 **Observation:** Fresh-game initialization assigns each player $500 in scenario

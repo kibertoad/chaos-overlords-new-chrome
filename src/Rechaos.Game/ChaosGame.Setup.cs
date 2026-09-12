@@ -8,20 +8,71 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private const string ObjectiveDurationWarning =
+        "TIME LIMITS ARE DISABLED FOR OBJECTIVE SCENARIOS";
+
+    private void UpdateTitle(KeyboardState keyboard)
+    {
+        if (Pressed(keyboard, Keys.Enter)) _screens.Show(ClientScreen.Setup);
+        if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false, fromTitle: true);
+    }
+
+    private void UpdateSetup(KeyboardState keyboard)
+    {
+        if (Pressed(keyboard, Keys.Left)) ChangeScenario(-1);
+        if (Pressed(keyboard, Keys.Right)) ChangeScenario(1);
+        if (Pressed(keyboard, Keys.Up)) ChangeDuration(1);
+        if (Pressed(keyboard, Keys.Down)) ChangeDuration(-1);
+        if (Pressed(keyboard, Keys.OemMinus)) ChangePlayerCount(-1);
+        if (Pressed(keyboard, Keys.OemPlus)) ChangePlayerCount(1);
+        if (Pressed(keyboard, Keys.M)) CycleDifficulty();
+        if (Pressed(keyboard, Keys.L)) CyclePlanningTimeLimit();
+        if (Pressed(keyboard, Keys.Enter)) StartMatch();
+    }
+
     private readonly int _originalProcessSeed = DeterministicRandom.SeedFromTimerMilliseconds(
         unchecked((uint)Environment.TickCount));
 
     private void ChangeScenario(int delta)
     {
-        var count = ScenarioCatalog.All.Count;
-        _selectedScenario = ScenarioCatalog.All[Mod((int)_selectedScenario + delta, count)].Id;
+        var currentButton = SetupScenarioButtons.ButtonForScenario(_selectedScenario);
+        _selectedScenario = SetupScenarioButtons.ScenarioForButton(
+            Mod(currentButton + delta, SetupScenarioButtons.VisualOrder.Count));
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _message = string.Empty;
     }
 
     private void ChangeDuration(int delta)
     {
+        if (!ScenarioCatalog.Get(_selectedScenario).IsTimed)
+        {
+            RejectInput(ObjectiveDurationWarning);
+            return;
+        }
         _selectedDuration = Durations[Mod(Array.IndexOf(Durations, _selectedDuration) + delta, Durations.Length)];
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _message = string.Empty;
+    }
+
+    private void SelectSetupScenarioButton(int button)
+    {
+        var scenario = SetupScenarioButtons.ScenarioForButton(button);
+        if (_selectedScenario != scenario) PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _selectedScenario = scenario;
+        _message = string.Empty;
+    }
+
+    private void SelectSetupDurationButton(int button)
+    {
+        if (!ScenarioCatalog.Get(_selectedScenario).IsTimed)
+        {
+            RejectInput(ObjectiveDurationWarning);
+            return;
+        }
+        if (_selectedDuration != Durations[button])
+            PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _selectedDuration = Durations[button];
+        _message = string.Empty;
     }
 
     private void ChangePlayerCount(int delta, bool pointerButton = false)
@@ -264,9 +315,11 @@ public sealed partial class ChaosGame
             && SetupButtonLayout.HitTest(buttonHover) == pressed)
             batch.Draw(_setupControls, SetupButtonLayout.Destination(pressed),
                 SetupButtonLayout.PressedSource(pressed), Color.White);
-        DrawBorder(batch, pixel, SetupSelectionLayout.Scenario((int)_selectedScenario), Color.Gold, 2);
-        DrawBorder(batch, pixel,
-            SetupSelectionLayout.Duration(Array.IndexOf(Durations, _selectedDuration)), Color.Gold, 2);
+        DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.Scenario(
+            SetupScenarioButtons.ButtonForScenario(_selectedScenario)));
+        if (ScenarioCatalog.Get(_selectedScenario).IsTimed)
+            DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.Duration(
+                Array.IndexOf(Durations, _selectedDuration)));
         for (var index = 0; index < MatchLimits.PlayerCount; index++)
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
@@ -300,15 +353,34 @@ public sealed partial class ChaosGame
                 && target >= 0)
                 DrawBorder(batch, pixel, PlayerPortraitLayout.SetupLarge(target), Color.Lime, 2);
         }
-        DrawBorder(batch, pixel,
-            SetupSelectionLayout.AiMentality((int)_selectedAiMentality), Color.Gold, 2);
-        DrawBorder(batch, pixel,
-            SetupSelectionLayout.PlanningTime((int)_selectedPlanningTimeLimit), Color.Gold, 2);
-        if (_hoverPoint is { } hover)
+        DrawSelectionLight(batch, pixel,
+            OriginalSelectionLightLayout.AiMentality((int)_selectedAiMentality));
+        DrawSelectionLight(batch, pixel,
+            OriginalSelectionLightLayout.PlanningTime((int)_selectedPlanningTimeLimit));
+        if (_message == ObjectiveDurationWarning)
+            DrawHoverTooltip(batch, pixel, font, _hoverPoint ?? new Point(300, 280),
+                ["TIME LIMIT DISABLED", "OBJECTIVE SCENARIOS RUN UNTIL THEIR GOAL IS MET."]);
+        else if (_hoverPoint is { } hover)
         {
-            var hovered = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(hover));
-            if (hovered >= 0) DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)hovered);
+            var scenario = Array.FindIndex(SetupScenarios, rectangle => rectangle.Contains(hover));
+            var duration = Array.FindIndex(SetupDurations, rectangle => rectangle.Contains(hover));
+            var difficulty = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(hover));
+            if (scenario >= 0)
+                DrawHoverTooltip(batch, pixel, font, hover,
+                    ScenarioSetupTooltip.Lines(
+                        SetupScenarioButtons.ScenarioForButton(scenario), _selectedDuration));
+            else if (duration >= 0)
+                DrawHoverTooltip(batch, pixel, font, hover,
+                    DurationSetupTooltip.Lines(Durations[duration]));
+            else if (difficulty >= 0)
+                DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)difficulty);
         }
+    }
+
+    private static void DrawSelectionLight(
+        SpriteBatch batch, Texture2D pixel, Rectangle indicator)
+    {
+        batch.Draw(pixel, indicator, Color.Gold);
     }
 
     private static void DrawDifficultyTooltip(

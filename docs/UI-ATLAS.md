@@ -70,11 +70,13 @@ The recreation routes clicks through these broad rectangles:
 - Begin: `(370,375,92,45)`.
 - Cancel: `(468,375,92,45)`.
 
-Selection borders do not reuse those hit regions: several include the raised
-frame or section-label pixels. The visible inset faces use objective row tops
+Selection lights do not reuse those hit regions: several include the raised
+frame or section-label pixels. The option faces use objective row tops
 109, 144, 179, 215 and 250; the duration faces use y 285 with height 23; and
 the AI Mentality / Planning Time faces use row tops 337, 364, 391 and 418 with
-height 23. This keeps the two-pixel gold outline inside each baked button face.
+height 23. Selection lights the narrow indicator well at the face's right edge;
+the original UI does not outline the whole button. Objective scenarios leave
+the duration indicators dark because those modes do not use a time limit.
 
 The six top-strip portrait apertures are 32 by 32 at `(360 + 36n,38)`.
 The editable player cards form two columns at x 397 and 480 and three rows at

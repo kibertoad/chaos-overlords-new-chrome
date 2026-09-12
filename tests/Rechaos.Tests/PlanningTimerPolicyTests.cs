@@ -89,4 +89,23 @@ public sealed class PlanningTimerPolicyTests
         Assert.Equal(PlanningTimerSignal.None, timer.Advance(TimeSpan.FromDays(1)));
         Assert.Equal(PlanningTimerPolicy.BarWidth, timer.VisibleBarWidth(TimeSpan.FromDays(1)));
     }
+
+    [Fact]
+    public void PausedTimerPreservesItsRemainingTimeUntilResumed()
+    {
+        var timer = new PlanningTimer();
+        timer.Start(PlanningTimeLimit.ThirtySeconds, TimeSpan.Zero);
+
+        timer.Pause(TimeSpan.FromSeconds(10));
+
+        Assert.Equal(41, timer.VisibleBarWidth(TimeSpan.FromHours(1)));
+        Assert.Equal(PlanningTimerSignal.None, timer.Advance(TimeSpan.FromHours(1)));
+
+        timer.Resume(TimeSpan.FromHours(1));
+
+        Assert.NotEqual(PlanningTimerSignal.Expired,
+            timer.Advance(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(19)));
+        Assert.Equal(PlanningTimerSignal.Expired,
+            timer.Advance(TimeSpan.FromHours(1) + TimeSpan.FromSeconds(20)));
+    }
 }

@@ -82,6 +82,7 @@ public sealed class PlanningTimer
     private TimeSpan _duration;
     private TimeSpan _deadline;
     private int _refreshCountdown;
+    private TimeSpan? _pausedRemaining;
 
     public bool IsActive { get; private set; }
 
@@ -100,11 +101,27 @@ public sealed class PlanningTimer
         _duration = TimeSpan.Zero;
         _deadline = TimeSpan.Zero;
         _refreshCountdown = 0;
+        _pausedRemaining = null;
+    }
+
+    public void Pause(TimeSpan now)
+    {
+        if (!IsActive || _pausedRemaining is not null) return;
+        var remaining = _deadline - now;
+        _pausedRemaining = remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+    }
+
+    public void Resume(TimeSpan now)
+    {
+        if (!IsActive || _pausedRemaining is not { } remaining) return;
+        _deadline = now + remaining;
+        _pausedRemaining = null;
     }
 
     public PlanningTimerSignal Advance(TimeSpan now)
     {
         if (!IsActive) return PlanningTimerSignal.None;
+        if (_pausedRemaining is not null) return PlanningTimerSignal.None;
         var remaining = _deadline - now;
         if (remaining <= TimeSpan.Zero)
         {
@@ -122,7 +139,7 @@ public sealed class PlanningTimer
     }
 
     public int VisibleBarWidth(TimeSpan now) => IsActive
-        ? PlanningTimerPolicy.VisibleBarWidth(_duration, _deadline - now)
+        ? PlanningTimerPolicy.VisibleBarWidth(_duration, _pausedRemaining ?? _deadline - now)
         : PlanningTimerPolicy.BarWidth;
 }
 

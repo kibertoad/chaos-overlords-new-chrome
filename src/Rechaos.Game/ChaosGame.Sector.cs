@@ -233,6 +233,23 @@ public sealed partial class ChaosGame
         _draggedGangId = null;
         _gangDragStarted = false;
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang || _actions is null) return;
+        var playerId = _state.Coordinator.ActivePlayer ?? gang.Owner;
+        var visibleGangs = SectorGangView.Visible(_state, playerId, _cursor).ToArray();
+        if (SectorGangDropTarget.EnemyAt(visibleGangs, gang.Owner, point) is { } enemyId)
+        {
+            var attackTarget = CommandTarget.Gang(enemyId);
+            var attack = CommandOptionCatalog.LegalCommands(_state, gang.Owner, gang.Id)
+                .FirstOrDefault(command => command.Action == GangAction.Attack
+                    && command.Target == attackTarget);
+            if (attack is null)
+            {
+                RejectInput("GANG CANNOT BE ATTACKED");
+                return;
+            }
+            var attackResult = _actions.Submit(attack with { Repeat = false });
+            ReportInputResult(attackResult.Accepted, attackResult.Validation.Message);
+            return;
+        }
         var siteSlot = Enumerable.Range(0, MatchLimits.SitesPerSector)
             .FirstOrDefault(slot => SectorDetailLayout.SitePortrait(slot).Contains(point), -1);
         if (siteSlot >= 0)
@@ -282,6 +299,22 @@ public sealed partial class ChaosGame
             .Where(command => command.Action == GangAction.Move)
             .Select(command => command.Target.Id)
             .ToHashSet();
+        var visibleGangs = SectorGangView.Visible(state, gang.Owner, _cursor).ToArray();
+        if (SectorGangDropTarget.EnemyAt(visibleGangs, gang.Owner, _dragPoint) is { } enemyId)
+        {
+            var canAttack = CommandOptionCatalog.LegalCommands(state, gang.Owner, gang.Id)
+                .Any(command => command.Action == GangAction.Attack
+                    && command.Target == CommandTarget.Gang(enemyId));
+            var displayed = visibleGangs
+                .OrderBy(candidate => candidate.Owner == gang.Owner ? 0 : 1)
+                .ThenBy(candidate => candidate.Id.Value)
+                .Take(SectorGangCardLayout.VisibleCards)
+                .ToArray();
+            var enemySlot = Array.FindIndex(displayed, candidate => candidate.Id == enemyId);
+            if (enemySlot >= 0)
+                DrawBorder(batch, pixel, SectorGangCardLayout.Frame(enemySlot),
+                    canAttack ? Color.Lime : Color.OrangeRed, 2);
+        }
         for (var column = 0; column < SectorDetailLayout.Columns; column++)
         for (var row = 0; row < SectorDetailLayout.Rows; row++)
         {
@@ -370,6 +403,8 @@ public sealed partial class ChaosGame
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, SectorGangCardLayout.Portrait(slot),
                 OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
+        short?[] equippedItems =
+            [gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId];
         for (var itemSlot = 0; itemSlot < 3; itemSlot++)
         {
             // The source frame also contains legacy pixels in this strip. The
@@ -377,6 +412,9 @@ public sealed partial class ChaosGame
             var item = SectorGangCardLayout.ItemSlot(slot, itemSlot);
             batch.Draw(pixel, item, Color.Black);
             DrawBorder(batch, pixel, item, Color.LightGray, 1);
+            if (_itemPortraits is not null && equippedItems[itemSlot] is { } itemId)
+                batch.Draw(_itemPortraits, SectorGangCardLayout.ItemPortrait(slot, itemSlot),
+                    OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
         }
     }
 

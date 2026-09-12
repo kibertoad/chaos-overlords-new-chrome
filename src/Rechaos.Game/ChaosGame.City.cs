@@ -17,7 +17,7 @@ public sealed partial class ChaosGame
     private static readonly Rectangle CityFinanceSector = new(548, 208, 50, 17);
     private static readonly Rectangle CityGangs = new(492, 226, 50, 34);
     private static readonly Rectangle CityHire = new(492, 260, 50, 17);
-    private static readonly Rectangle CitySector = CityConsoleLayout.SectorDetails;
+    private static readonly Rectangle CityCombatDetail = CityConsoleLayout.CombatDetail;
     private static readonly Rectangle CityRanking = CityConsoleLayout.Ranking;
     private static readonly Rectangle CitySearch = new(548, 260, 50, 17);
 
@@ -47,21 +47,18 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.N)) OpenComlinkSend(ClientScreen.City);
         if (Pressed(keyboard, Keys.J)) OpenManagement(ClientScreen.GameInfo, ClientScreen.City);
         if (Pressed(keyboard, Keys.Space)) AdvanceTurn();
-        // Saving and loading belong to a match this client owns. Online the authoritative state is
-        // the sealed one, so loading would put the interface on a match nobody else is playing while
-        // the session carried on behind it, and saving would capture the speculative copy rather than
-        // anything a peer would recognise.
+        if (Pressed(keyboard, Keys.F5)) OpenSaveBrowser(saving: true);
+        if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false);
+        // Replays belong to a locally authoritative match. Slot saves may still capture an online
+        // match as a labelled offline snapshot, while replaying speculative online state may not.
         if (_session is null)
         {
-            if (Pressed(keyboard, Keys.F5)) SaveQuickGame();
-            if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
             if (Pressed(keyboard, Keys.F6)) SaveReplay();
             if (Pressed(keyboard, Keys.F10)) LoadReplay();
         }
-        else if (Pressed(keyboard, Keys.F5) || Pressed(keyboard, Keys.F9)
-            || Pressed(keyboard, Keys.F6) || Pressed(keyboard, Keys.F10))
+        else if (Pressed(keyboard, Keys.F6) || Pressed(keyboard, Keys.F10))
         {
-            _message = "AN ONLINE MATCH CANNOT BE SAVED OR LOADED";
+            _message = "AN ONLINE MATCH CANNOT SAVE OR LOAD A REPLAY";
         }
     }
 
@@ -115,7 +112,7 @@ public sealed partial class ChaosGame
         else if (CityFinanceSector.Contains(point)) OpenFinance(FinanceScope.Sector, returnScreen);
         else if (CityGangs.Contains(point)) OpenSectorGangDetails(returnScreen);
         else if (CityHire.Contains(point)) OpenHire(returnScreen);
-        else if (CitySector.Contains(point)) _screens.Show(ClientScreen.Sector);
+        else if (CityCombatDetail.Contains(point)) OpenCombatDetail(returnScreen);
         else if (CityRanking.Contains(point)) OpenManagement(ClientScreen.Ranking, returnScreen);
         else if (CitySearch.Contains(point)) OpenSiteSearch(returnScreen);
         return true;
@@ -132,7 +129,7 @@ public sealed partial class ChaosGame
         || CityFinanceSector.Contains(point)
         || CityGangs.Contains(point)
         || CityHire.Contains(point)
-        || CitySector.Contains(point)
+        || CityCombatDetail.Contains(point)
         || CityRanking.Contains(point)
         || CitySearch.Contains(point);
 
@@ -246,11 +243,11 @@ public sealed partial class ChaosGame
         if (state.Coordinator.ActivePlayer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
             && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)
-            DrawBorder(batch, pixel, CityEvents, Color.Yellow, 2);
+            DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.CityEvents);
         if (state.Coordinator.ActivePlayer is { } activePlayer
             && state.ComlinkFor(activePlayer).HasUnread
             && (int)(_inputTime.TotalMilliseconds / 350) % 2 == 0)
-            DrawBorder(batch, pixel, CityComlinkView, Color.Yellow, 2);
+            DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.CityComlinkView);
         DrawHireDock(batch, font, state, player);
         if (_hireDragStarted && _draggedHireDefinitionId is { } draggedDefinition && _gangPortraits is not null)
         {

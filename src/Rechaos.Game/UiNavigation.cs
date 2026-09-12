@@ -202,7 +202,7 @@ public sealed class CitySectorClickTracker
 public static class CityConsoleLayout
 {
     public static Rectangle CombatSummary => new(492, 176, 50, 32);
-    public static Rectangle SectorDetails => new(492, 208, 50, 17);
+    public static Rectangle CombatDetail => new(492, 208, 50, 17);
     public static Rectangle Ranking => new(548, 226, 50, 34);
 }
 
@@ -472,6 +472,12 @@ public static class SectorGangCardLayout
         return At(slot, 3 + itemSlot * 21, 88, 21, 21);
     }
 
+    public static Rectangle ItemPortrait(int slot, int itemSlot)
+    {
+        var box = ItemSlot(slot, itemSlot);
+        return new Rectangle(box.X + 1, box.Y + 1, box.Width - 2, box.Height - 2);
+    }
+
     private static Rectangle At(int slot, int x, int y, int width, int height)
     {
         if (slot is < 0 or >= VisibleCards) throw new ArgumentOutOfRangeException(nameof(slot));
@@ -480,6 +486,25 @@ public static class SectorGangCardLayout
             Top + slot / Columns * RowStride + y,
             width,
             height);
+    }
+}
+
+public static class SectorGangDropTarget
+{
+    public static GangId? EnemyAt(
+        IReadOnlyList<MatchGangState> visibleGangs,
+        PlayerId actorOwner,
+        Point point)
+    {
+        ArgumentNullException.ThrowIfNull(visibleGangs);
+        var displayed = visibleGangs
+            .OrderBy(gang => gang.Owner == actorOwner ? 0 : 1)
+            .ThenBy(gang => gang.Id.Value)
+            .Take(SectorGangCardLayout.VisibleCards)
+            .ToArray();
+        var slot = Enumerable.Range(0, displayed.Length)
+            .FirstOrDefault(index => SectorGangCardLayout.Frame(index).Contains(point), -1);
+        return slot >= 0 && displayed[slot].Owner != actorOwner ? displayed[slot].Id : null;
     }
 }
 

@@ -129,7 +129,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void RunComputerTurns()
     {
-        if (_session is not null) return;
+        if (_session is not null || _gameMenuOpen) return;
         if (_state is null || _actions is null
             || _screens.Current is ClientScreen.Title or ClientScreen.Options or ClientScreen.Help
                 or ClientScreen.Setup or ClientScreen.Online or ClientScreen.Lobby
@@ -204,6 +204,5 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         DrawCentered(font, batch, player.Setup.Name, HandoffLayout.NameY,
             PlayerColors[playerId.Value], 1);
-        DrawBorder(batch, pixel, HandoffReady, Color.Gold, 2);
     }
 }

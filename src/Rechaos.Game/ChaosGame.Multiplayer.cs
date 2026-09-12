@@ -62,9 +62,14 @@ public sealed partial class ChaosGame
         fields[Mod(current + 1, fields.Length)].IsFocused = true;
     }
 
-    /// <summary>Routes typed characters to the focused field; only the online screens have any.</summary>
+    /// <summary>Routes typed characters to whichever text field currently owns focus.</summary>
     private void HandleTextInput(char character)
     {
+        if (_gameMenuOpen && _editingSaveName)
+        {
+            _saveName.Type(character);
+            return;
+        }
         if (_screens.Current != ClientScreen.Online) return;
         foreach (var field in OnlineFields) field.Type(character);
     }

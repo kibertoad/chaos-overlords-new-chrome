@@ -81,8 +81,8 @@ public sealed partial class ChaosGame
             else
                 DrawEndgameAwards(batch, font, outcome, row.Player, index);
         }
-        DrawBorder(batch, pixel, _showEndgameStats ? EndgameLayout.Stats : EndgameLayout.Awards,
-            Color.Gold, 2);
+        DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.EndgameTab(
+            _showEndgameStats ? EndgameLayout.Stats : EndgameLayout.Awards));
     }
 
     private void DrawEndgameAwards(

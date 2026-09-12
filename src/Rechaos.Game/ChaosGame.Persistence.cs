@@ -5,27 +5,31 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private void SaveQuickGame()
+    private SaveSlotSummary? SaveGameToSlot(int slot, string name)
     {
-        if (_state is null) return;
+        if (_state is null) return null;
         try
         {
-            NativeSaveStore.SaveAtomic(_quickSavePath, _state);
-            _message = string.Empty;
+            var summary = SaveSlotCatalog.Save(
+                _saveDirectory, slot, name, _state, _session is not null);
+            _message = "GAME SAVED";
+            return summary;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             _message = "SAVE FAILED";
+            return null;
         }
     }
 
-    private void LoadQuickGame()
+    private bool LoadGameFromSlot(int slot)
     {
-        if (_definitions is null) return;
+        if (_definitions is null) return false;
         try
         {
-            var result = NativeSaveStore.LoadRecoveringBackup(_quickSavePath, _definitions);
-            _state = result.State;
+            var loaded = SaveSlotCatalog.Load(_saveDirectory, slot, _definitions);
+            if (_session is not null) EndOnlineMatch("LOADED SAVED GAME");
+            _state = loaded;
             _actions = new MatchActions(new MatchReplayRecorder(_state));
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
@@ -40,10 +44,12 @@ public sealed partial class ChaosGame
             _managementReturnScreen = ClientScreen.City;
             _screens.Show(_state.Outcome is null ? ClientScreen.GameInfo : ClientScreen.Endgame);
             if (_state.Outcome is null) StartPlanningTimer(_inputTime);
+            return true;
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)
         {
             _message = "LOAD FAILED";
+            return false;
         }
     }
 

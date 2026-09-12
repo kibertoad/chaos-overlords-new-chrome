@@ -1,7 +1,7 @@
 # Complete implementation and migration plan
 
 Status: active roadmap
-Last updated: 2026-09-11
+Last updated: 2026-09-12
 Target: a deterministic, cross-platform MonoGame recreation of the Windows 95
 release of *Chaos Overlords*, requiring a user-owned original asset pack.
 
@@ -763,6 +763,11 @@ the repository, is never copied by the extractor or release, and is not an
 end-user runtime dependency. If this exact binary becomes unavailable, binary-
 dependent parity work must be reported as blocked rather than replaced by an
 unmarked guess.
+The complete installed tree at `C:\GOG Games\Chaos Overlords` is available as a
+read-only local reference and should be used whenever static analysis, resource
+comparison, or controlled original-behavior confirmation is needed. Research
+may read files in place but must never modify the installation or commit its
+proprietary contents.
 
 | Milestone | Status | Implemented foundation | Work required before gate |
 |---|---|---|---|

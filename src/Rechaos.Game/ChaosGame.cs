@@ -37,7 +37,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Rectangle ManagementBack = new(322, 414, 96, 28);
     private readonly GraphicsDeviceManager _graphics;
     private readonly string _assetRoot;
-    private readonly string _quickSavePath;
+    private readonly string _saveDirectory;
     private readonly string _autoSavePath;
     private readonly string _replayPath;
     private readonly string _preferencesPath;
@@ -219,7 +219,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var userDataRoot = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Rechaos Overlords");
-        _quickSavePath = Path.Combine(userDataRoot, "quicksave.rchsave");
+        _saveDirectory = userDataRoot;
         _autoSavePath = Path.Combine(userDataRoot, "autosave.rchsave");
         _replayPath = Path.Combine(userDataRoot, "last-match.rchreplay");
         _preferencesPath = Path.Combine(userDataRoot, "preferences.json");
@@ -350,7 +350,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             base.Update(gameTime);
             return;
         }
-        if (UpdatePlanningTimer(gameTime.TotalGameTime))
+        if (!_gameMenuOpen && UpdatePlanningTimer(gameTime.TotalGameTime))
         {
             _previousKeyboard = keyboard;
             _previousMouse = mouse;
@@ -384,8 +384,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 return;
             }
         }
-        if (rightClicked) CancelCurrentInteraction();
-        if (_screens.Current == ClientScreen.Options)
+        if (rightClicked && !_gameMenuOpen) CancelCurrentInteraction();
+        if (_gameMenuOpen)
+        {
+            UpdateGameMenu(keyboard);
+        }
+        else if (_screens.Current == ClientScreen.Options)
         {
             UpdateOptions(keyboard);
         }
@@ -407,9 +411,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             {
                 if (Pressed(keyboard, Keys.F1)) OpenHelp();
                 else if (Pressed(keyboard, Keys.O)) OpenOptions();
-                else if (Pressed(keyboard, Keys.Escape) && !_screens.Back()) Exit();
+                else if (Pressed(keyboard, Keys.Escape))
+                {
+                    if (_state is not null && _screens.Current is not ClientScreen.Title)
+                        OpenGameMenu();
+                    else if (!_screens.Back()) Exit();
+                }
             }
-            switch (_screens.Current)
+            if (!_gameMenuOpen) switch (_screens.Current)
             {
                 case ClientScreen.Title:
                     UpdateTitle(keyboard);
@@ -571,7 +580,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             }
         }
         var pointerMapped = VirtualInput.TryMap(GraphicsDevice.Viewport, mouse.Position, out var virtualPoint);
-        if (pointerMapped && _slidePanels)
+        if (pointerMapped && _slidePanels && !_gameMenuOpen)
         {
             var offset = _panelSlideTransition.Offset(_screens.Current, gameTime.TotalGameTime);
             virtualPoint = new Point(virtualPoint.X - offset, virtualPoint.Y);
@@ -662,11 +671,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             if (_combatAnimationPlayer.IsPlaying)
                 DrawCombatPanel(_batch, _pixel, _font, _state);
             DrawPlanningTimer(_batch, _pixel);
+            DrawGameMenu(_batch, _pixel, _font);
             _batch.End();
             base.Draw(gameTime);
             return;
         }
-        if (DrawSeparatedSlidingPanel(viewport, slideOffset))
+        if (!_gameMenuOpen && DrawSeparatedSlidingPanel(viewport, slideOffset))
         {
             base.Draw(gameTime);
             return;
@@ -765,36 +775,23 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (_state is not null && _combatAnimationPlayer.IsPlaying)
             DrawCombatPanel(_batch, _pixel, _font, _state);
         DrawPlanningTimer(_batch, _pixel);
+        DrawGameMenu(_batch, _pixel, _font);
         _batch.End();
         base.Draw(gameTime);
     }
 
-    private void UpdateTitle(KeyboardState keyboard)
-    {
-        if (Pressed(keyboard, Keys.Enter)) _screens.Show(ClientScreen.Setup);
-        if (Pressed(keyboard, Keys.F9)) LoadQuickGame();
-    }
-
-    private void UpdateSetup(KeyboardState keyboard)
-    {
-        if (Pressed(keyboard, Keys.Left)) ChangeScenario(-1);
-        if (Pressed(keyboard, Keys.Right)) ChangeScenario(1);
-        if (Pressed(keyboard, Keys.Up)) ChangeDuration(1);
-        if (Pressed(keyboard, Keys.Down)) ChangeDuration(-1);
-        if (Pressed(keyboard, Keys.OemMinus)) ChangePlayerCount(-1);
-        if (Pressed(keyboard, Keys.OemPlus)) ChangePlayerCount(1);
-        if (Pressed(keyboard, Keys.M)) CycleDifficulty();
-        if (Pressed(keyboard, Keys.L)) CyclePlanningTimeLimit();
-        if (Pressed(keyboard, Keys.Enter)) StartMatch();
-    }
-
     private void HandleClick(Point point)
     {
+        if (_gameMenuOpen)
+        {
+            HandleGameMenuClick(point);
+            return;
+        }
         switch (_screens.Current)
         {
             case ClientScreen.Title:
                 if (TitleNewGame.Contains(point)) _screens.Show(ClientScreen.Setup);
-                else if (TitleLoadGame.Contains(point)) LoadQuickGame();
+                else if (TitleLoadGame.Contains(point)) OpenSaveBrowser(saving: false, fromTitle: true);
                 else if (TitleOnline.Contains(point)) OpenOnline();
                 else if (TitleOptions.Contains(point)) OpenOptions();
                 else if (TitleHelp.Contains(point)) OpenHelp();
@@ -835,17 +832,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 else if (playerName >= 0)
                     BeginSetupNameEdit(playerName);
                 else if (scenario >= 0)
-                {
-                    if (_selectedScenario != (ScenarioId)scenario)
-                        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-                    _selectedScenario = (ScenarioId)scenario;
-                }
+                    SelectSetupScenarioButton(scenario);
                 else if (duration >= 0)
-                {
-                    if (_selectedDuration != Durations[duration])
-                        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-                    _selectedDuration = Durations[duration];
-                }
+                    SelectSetupDurationButton(duration);
                 else if (planningTimeLimit >= 0)
                     SelectPlanningTimeLimit((PlanningTimeLimit)planningTimeLimit);
                 else if (previousPortrait >= 0) CyclePortrait(previousPortrait, -1);

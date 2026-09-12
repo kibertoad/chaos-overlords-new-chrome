@@ -36,7 +36,7 @@ public static class CombatResultsLayout
     public static Rectangle Page => new(133, 136, 58, 12);
     public static Rectangle Previous => new(135, 161, 25, 20);
     public static Rectangle Next => new(163, 161, 25, 20);
-    public static Rectangle Sector => new(133, 192, 54, 52);
+    public static Rectangle Sector => new(135, 192, 54, 52);
     public static Rectangle FriendlyPanel => new(202, 141, 94, 179);
     public static Rectangle EnemyPanel => new(344, 141, 94, 179);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
@@ -54,6 +54,6 @@ public static class CombatResultsLayout
     public static Rectangle Opponent(int slot)
     {
         if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(306, 142 + slot * 37, 32, 32);
+        return new Rectangle(307, 141 + slot * 37, 31, 32);
     }
 }

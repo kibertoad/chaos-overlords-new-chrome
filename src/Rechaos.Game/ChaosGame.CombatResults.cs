@@ -21,6 +21,13 @@ public sealed partial class ChaosGame
         _screens.Show(ClientScreen.CombatSummary);
     }
 
+    private void OpenCombatDetail(ClientScreen returnScreen)
+    {
+        OpenCombatResults(returnScreen);
+        if (_screens.Current == ClientScreen.CombatSummary)
+            ReplaySelectedCombatDetail();
+    }
+
     private void HandleCombatSummaryClick(Point point)
     {
         if (CombatResultsLayout.Ok.Contains(point))
