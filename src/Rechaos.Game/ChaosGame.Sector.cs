@@ -389,8 +389,8 @@ public sealed partial class ChaosGame
         {
             var once = SectorGangCardLayout.OneOffAction(slot);
             var repeat = SectorGangCardLayout.RepeatingAction(slot);
-            batch.Draw(pixel, once, new Color(34, 34, 34));
-            batch.Draw(pixel, repeat, new Color(34, 34, 34));
+            batch.Draw(pixel, once, Color.Black);
+            batch.Draw(pixel, repeat, Color.Black);
             DrawBorder(batch, pixel, once, Color.LightGray, 1);
             DrawBorder(batch, pixel, repeat, Color.LightGray, 1);
             DrawDownArrow(batch, pixel, once.Center.X, once.Y + 5,
