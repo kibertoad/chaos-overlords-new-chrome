@@ -11,7 +11,7 @@ Last updated: 2026-09-12
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,387 tests; its offline restore emitted
+  isolated Release build passed all 1,421 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -24,6 +24,13 @@ Last updated: 2026-09-12
   migration/versioning machinery for post-1.0 compatibility.
 
 ## Latest playable work
+
+- The embedded gameplay tables now have a reproducible extractor command:
+  `--generate-game-data <json> --source <install>`. Format 1 validates the
+  fingerprinted legal source, deterministically reproduces the pinned JSON,
+  and promotes it atomically. The original-table reader and embedded loader
+  share semantic validation for counts/order, names, special-site roles, item
+  categories and media bounds, and all eleven unused item sentinels.
 
 - Last Turn Events retains each fully reviewed batch for later reopening
   through Events while dismissing its unread blink. Site-cooperation reports

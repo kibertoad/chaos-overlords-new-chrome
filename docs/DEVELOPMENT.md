@@ -31,6 +31,18 @@ Regenerate the checked-in factual asset inventory from a fully verified pack:
 dotnet run --project src/Rechaos.Extractor -- --catalog
 ```
 
+Regenerate the embedded non-expressive gameplay tables from the fingerprinted
+legal source files:
+
+```powershell
+dotnet run --project src/Rechaos.Extractor -- --generate-game-data src/Rechaos.Core/GameData/original-data.json --source "C:\GOG Games\Chaos Overlords"
+```
+
+Generator format 1 writes deterministic UTF-8 JSON. The loader and generator
+both enforce the canonical 22-site, 90-gang, and 64-item table shape, ordered
+identifiers, special-site mapping, item category ranges, combat-media bounds,
+and the eleven unused item sentinels.
+
 Pass `--debug-phases` to the game to expose individual deterministic resolution
 steps during development.
 

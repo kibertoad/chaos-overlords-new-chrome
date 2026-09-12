@@ -7,10 +7,12 @@ public static class OriginalDataReader
     public static OriginalData Read(string dataDirectory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
-        return new OriginalData(
+        var data = new OriginalData(
             ReadRecords(Path.Combine(dataDirectory, "SITES"), 62, ParseSite),
             ReadRecords(Path.Combine(dataDirectory, "GANGS"), 156, ParseGang),
             ReadRecords(Path.Combine(dataDirectory, "ITEMS"), 166, ParseItem));
+        OriginalDataValidator.Validate(data);
+        return data;
     }
 
     private static IReadOnlyList<T> ReadRecords<T>(string path, int size, Func<BinaryReader, T> parse)

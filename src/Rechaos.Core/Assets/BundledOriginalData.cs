@@ -16,7 +16,9 @@ public static class BundledOriginalData
         const string name = "Rechaos.Core.GameData.original-data.json";
         using var stream = assembly.GetManifestResourceStream(name)
             ?? throw new InvalidOperationException($"Missing embedded gameplay data: {name}");
-        return JsonSerializer.Deserialize<OriginalData>(stream)
+        var data = JsonSerializer.Deserialize<OriginalData>(stream)
             ?? throw new InvalidDataException("Bundled gameplay data is invalid.");
+        OriginalDataValidator.Validate(data);
+        return data;
     }
 }

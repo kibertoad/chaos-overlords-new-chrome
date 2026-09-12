@@ -56,6 +56,19 @@ public static class ExtractorProgram
                 return comparison.Rgb555AbsoluteError < comparison.Rgb565AbsoluteError ? 0 : 1;
             }
 
+            if (options.Mode == ExtractorMode.GenerateGameplayData)
+            {
+                var gameDataSource = options.Source
+                    ?? throw new ArgumentException("--source is required when generating gameplay data.");
+                var gameDataSourcePack = await VerifySourceAsync(gameDataSource);
+                var data = OriginalDataReader.Read(gameDataSourcePack.DataDirectory);
+                await GameplayDataGenerator.WriteAsync(data, options.GameDataOutput!);
+                Console.WriteLine(
+                    $"Generated gameplay-data format {GameplayDataGenerator.FormatVersion} at " +
+                    Path.GetFullPath(options.GameDataOutput!));
+                return 0;
+            }
+
             var source = options.Source
                 ?? throw new ArgumentException("--source is required; the port does not distribute original assets.");
             Console.WriteLine($"Checking the original Chaos Overlords installation at {Path.GetFullPath(source)}...");
@@ -227,7 +240,7 @@ public static class ExtractorProgram
     private static ExtractorOptions ParseArguments(string[] args)
     {
         if (args.Length == 0 || args.Contains("--help"))
-            throw new ArgumentException("Usage:\n  Rechaos.Extractor --source <original install> [--output <assets>] [--force]\n  Rechaos.Extractor --verify-source --source <original install>\n  Rechaos.Extractor --verify-output [--output <assets>] [--quick] [--json]\n  Rechaos.Extractor --catalog [--output <assets>] [--catalog-output <markdown>]\n  Rechaos.Extractor --analyze-px [--output <assets>]");
+            throw new ArgumentException("Usage:\n  Rechaos.Extractor --source <original install> [--output <assets>] [--force]\n  Rechaos.Extractor --verify-source --source <original install>\n  Rechaos.Extractor --verify-output [--output <assets>] [--quick] [--json]\n  Rechaos.Extractor --catalog [--output <assets>] [--catalog-output <markdown>]\n  Rechaos.Extractor --analyze-px [--output <assets>]\n  Rechaos.Extractor --generate-game-data <json> --source <original install>");
         string? source = null;
         var output = Path.Combine("src", "Rechaos.Game", "Assets");
         var mode = ExtractorMode.Extract;
@@ -235,6 +248,7 @@ public static class ExtractorProgram
         var force = false;
         var json = false;
         string? catalogOutput = null;
+        string? gameDataOutput = null;
         for (var i = 0; i < args.Length; i++)
         {
             if (args[i] == "--source" && ++i < args.Length) source = args[i];
@@ -247,6 +261,11 @@ public static class ExtractorProgram
             else if (args[i] == "--catalog") mode = ExtractorMode.GenerateCatalog;
             else if (args[i] == "--analyze-px") mode = ExtractorMode.AnalyzePxColor;
             else if (args[i] == "--catalog-output" && ++i < args.Length) catalogOutput = args[i];
+            else if (args[i] == "--generate-game-data" && ++i < args.Length)
+            {
+                mode = ExtractorMode.GenerateGameplayData;
+                gameDataOutput = args[i];
+            }
             else throw new ArgumentException($"Unknown or incomplete argument: {args[i]}");
         }
         if (quick && mode != ExtractorMode.VerifyOutput)
@@ -257,7 +276,10 @@ public static class ExtractorProgram
             throw new ArgumentException("--force is valid only when extracting.");
         if (catalogOutput is not null && mode != ExtractorMode.GenerateCatalog)
             throw new ArgumentException("--catalog-output is valid only with --catalog.");
-        return new ExtractorOptions(mode, source, output, quick, force, json, catalogOutput);
+        if (gameDataOutput is not null && mode != ExtractorMode.GenerateGameplayData)
+            throw new ArgumentException("--generate-game-data cannot be combined with another mode.");
+        return new ExtractorOptions(
+            mode, source, output, quick, force, json, catalogOutput, gameDataOutput);
     }
 
     private static void PrintVerification(
@@ -335,7 +357,15 @@ public static class ExtractorProgram
     }
 }
 
-public enum ExtractorMode { Extract, VerifySource, VerifyOutput, GenerateCatalog, AnalyzePxColor }
+public enum ExtractorMode
+{
+    Extract,
+    VerifySource,
+    VerifyOutput,
+    GenerateCatalog,
+    AnalyzePxColor,
+    GenerateGameplayData
+}
 public sealed record ExtractorOptions(
     ExtractorMode Mode,
     string? Source,
@@ -343,7 +373,8 @@ public sealed record ExtractorOptions(
     bool Quick,
     bool Force,
     bool Json,
-    string? CatalogOutput);
+    string? CatalogOutput,
+    string? GameDataOutput);
 public sealed record AssetPackVerificationReport(
     int SchemaVersion,
     string AssetRoot,

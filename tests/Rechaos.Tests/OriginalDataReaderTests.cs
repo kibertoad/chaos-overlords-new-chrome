@@ -31,6 +31,32 @@ public sealed class OriginalDataReaderTests
     }
 
     [Fact]
+    public void VersionedGeneratorReproducesBundledPayloadExactly()
+    {
+        Assert.Equal(1, GameplayDataGenerator.FormatVersion);
+        using var stream = typeof(BundledOriginalData).Assembly.GetManifestResourceStream(
+            "Rechaos.Core.GameData.original-data.json");
+        Assert.NotNull(stream);
+        using var reader = new StreamReader(stream);
+        Assert.Equal(reader.ReadToEnd(), GameplayDataGenerator.Serialize(BundledOriginalData.Load()));
+    }
+
+    [Fact]
+    public void SemanticValidationRejectsMisorderedIdsAndInvalidSentinels()
+    {
+        var canonical = BundledOriginalData.Load();
+        var sites = canonical.Sites.ToArray();
+        sites[0] = sites[0] with { Id = 1 };
+        Assert.Throws<InvalidDataException>(() => OriginalDataValidator.Validate(
+            canonical with { Sites = sites }));
+
+        var items = canonical.Items.ToArray();
+        items[^1] = items[^1] with { Type = 4 };
+        Assert.Throws<InvalidDataException>(() => OriginalDataValidator.Validate(
+            canonical with { Items = items }));
+    }
+
+    [Fact]
     public void BmpRepairRestoresMissingHeaderFields()
     {
         var bytes = new byte[54];

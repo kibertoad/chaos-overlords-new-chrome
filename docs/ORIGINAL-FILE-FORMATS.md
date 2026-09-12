@@ -62,6 +62,16 @@ terminating NUL bytes are intentionally not bundled; decoded string content and
 every numeric field are exact, while raw source identity is covered by the
 three source-file hashes.
 
+`Rechaos.Extractor --generate-game-data <json> --source <install>` is the
+versioned format-1 generator for this payload. It verifies the complete source
+pack before reading the tables, writes deterministic UTF-8 JSON through a
+same-directory temporary file, and atomically promotes the result. An
+end-to-end regeneration from the fingerprinted GOG installation produces the
+same pinned hash. `OriginalDataValidator` rejects incorrect record counts,
+misordered IDs, duplicate or missing names, incorrect special-site mappings,
+invalid item category/media ranges, and malformed unused item sentinels both
+when reading original tables and when loading the embedded payload.
+
 That statement does **not** elevate semantic labels or gameplay formulas. For
 example, a value can be bit-perfect while our belief that it means “influence”
 or that the original combines it in a particular formula is still **Medium** or
