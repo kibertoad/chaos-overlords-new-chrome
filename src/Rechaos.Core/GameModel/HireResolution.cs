@@ -49,6 +49,27 @@ public sealed record HireResolutionResult(
     int InitialForce,
     GameEvent Event);
 
+internal static class HireValidationMessages
+{
+    private static readonly IReadOnlyDictionary<HireValidationCode, string> Messages =
+        new Dictionary<HireValidationCode, string>
+        {
+            [HireValidationCode.Valid] = string.Empty,
+            [HireValidationCode.InvalidPhase] = "Hire requires planning turn.",
+            [HireValidationCode.InactivePlayer] = "Hiring player is not active.",
+            [HireValidationCode.PlayerEliminated] = "Eliminated player cannot hire.",
+            [HireValidationCode.OfferUnavailable] = "Hire offer is not available.",
+            [HireValidationCode.OfferAlreadySnubbed] = "One hire snub allowed per turn.",
+            [HireValidationCode.HireAlreadyPending] = "Hire already reserved this turn.",
+            [HireValidationCode.InsufficientCash] = "Not enough cash to hire.",
+            [HireValidationCode.SectorNotControlled] = "Use owned or occupied sector.",
+            [HireValidationCode.GangCapacityReached] = "Player gang limit reached.",
+            [HireValidationCode.SectorCapacityReached] = "Sector gang limit reached."
+        };
+
+    public static string For(HireValidationCode code) => Messages[code];
+}
+
 public static class HireRules
 {
     private sealed record Context(
@@ -63,22 +84,22 @@ public static class HireRules
     private static readonly IReadOnlyList<IValidationRule<Context, HireValidationCode>> SelectionRules =
     [
         new DelegateRule(HireValidationCode.InvalidPhase,
-            "Gangs may only be hired during the player's planning turn.",
+            HireValidationMessages.For(HireValidationCode.InvalidPhase),
             context => context.State.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)),
         new DelegateRule(HireValidationCode.InactivePlayer,
-            "The hiring player is not active.",
+            HireValidationMessages.For(HireValidationCode.InactivePlayer),
             context => context.State.Coordinator.ActivePlayer != context.PlayerId),
         new DelegateRule(HireValidationCode.InactivePlayer,
-            "The hiring player does not exist.",
+            HireValidationMessages.For(HireValidationCode.InactivePlayer),
             context => context.Player is null),
         new DelegateRule(HireValidationCode.PlayerEliminated,
-            "An eliminated player cannot hire gangs.",
+            HireValidationMessages.For(HireValidationCode.PlayerEliminated),
             context => context.Player!.Status != PlayerStatus.Active),
         new DelegateRule(HireValidationCode.OfferUnavailable,
-            "The selected gang is not in the player's hire pool.",
+            HireValidationMessages.For(HireValidationCode.OfferUnavailable),
             context => !context.Player!.HirePool.Contains(context.GangDefinitionId)),
         new DelegateRule(HireValidationCode.SectorNotControlled,
-            "A recruit must be placed in a controlled sector or with one of the player's gangs.",
+            HireValidationMessages.For(HireValidationCode.SectorNotControlled),
             context => context.TargetSectorId is < 0 or >= MatchLimits.SectorCount ||
                 context.State.Sectors[context.TargetSectorId].Owner != context.PlayerId
                 && !context.Player!.Gangs.Any(gang =>
@@ -89,23 +110,23 @@ public static class HireRules
     [
         .. SelectionRules.Take(5),
         new DelegateRule(HireValidationCode.HireAlreadyPending,
-            "The player has already selected a recruit this turn.",
+            HireValidationMessages.For(HireValidationCode.HireAlreadyPending),
             context => context.Player!.PendingHires.Count != 0
                 || context.Player.HasSnubbedHireOfferThisTurn),
         new DelegateRule(HireValidationCode.InsufficientCash,
-            "The player cannot afford the selected gang.",
+            HireValidationMessages.For(HireValidationCode.InsufficientCash),
             context => !CanAffordInitialCost(
                 context.Player!.Cash,
                 context.State.Definitions.Gangs.Single(item => item.Id == context.GangDefinitionId))),
         new DelegateRule(HireValidationCode.SectorNotControlled,
-            "A recruit must be placed in a sector controlled by the hiring player.",
+            HireValidationMessages.For(HireValidationCode.SectorNotControlled),
             context => context.TargetSectorId is < 0 or >= MatchLimits.SectorCount ||
                 context.State.Sectors[context.TargetSectorId].Owner != context.PlayerId),
         new DelegateRule(HireValidationCode.GangCapacityReached,
-            "The player already commands the maximum number of gangs.",
+            HireValidationMessages.For(HireValidationCode.GangCapacityReached),
             context => context.Player!.Gangs.Count(gang => gang.IsActive) >= MatchLimits.GangsPerPlayer),
         new DelegateRule(HireValidationCode.SectorCapacityReached,
-            "The target sector already contains the maximum number of friendly gangs.",
+            HireValidationMessages.For(HireValidationCode.SectorCapacityReached),
             context => context.Player!.Gangs.Count(gang =>
                 gang.IsActive && gang.SectorId == context.TargetSectorId) >= MatchLimits.FriendlyGangsPerSector)
     ];
@@ -172,14 +193,17 @@ public static class HireRules
         ArgumentNullException.ThrowIfNull(state);
         var player = state.FindPlayer(playerId);
         if (state.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire))
-            return new HireValidation(HireValidationCode.InvalidPhase, "Hire offers may only be snubbed during the player's planning turn.");
+            return Reject(HireValidationCode.InvalidPhase);
         if (state.Coordinator.ActivePlayer != playerId || player is null)
-            return new HireValidation(HireValidationCode.InactivePlayer, "The hiring player is not active.");
+            return Reject(HireValidationCode.InactivePlayer);
         if (player.Status != PlayerStatus.Active)
-            return new HireValidation(HireValidationCode.PlayerEliminated, "An eliminated player cannot snub hire offers.");
+            return Reject(HireValidationCode.PlayerEliminated);
         if (!player.HirePool.Contains(gangDefinitionId))
-            return new HireValidation(HireValidationCode.OfferUnavailable, "The selected gang is not in the player's hire pool.");
+            return Reject(HireValidationCode.OfferUnavailable);
         return HireValidation.Accept();
+
+        static HireValidation Reject(HireValidationCode code) =>
+            new(code, HireValidationMessages.For(code));
     }
 
     internal static HireValidation ValidateSnubLegacySingleAction(
@@ -191,9 +215,11 @@ public static class HireRules
         if (!validation.IsValid) return validation;
         var player = state.FindPlayer(playerId)!;
         if (player.HasSnubbedHireOfferThisTurn)
-            return new HireValidation(HireValidationCode.OfferAlreadySnubbed, "Only one hire offer may be snubbed per turn.");
+            return new HireValidation(HireValidationCode.OfferAlreadySnubbed,
+                HireValidationMessages.For(HireValidationCode.OfferAlreadySnubbed));
         if (player.PendingHires.Count != 0)
-            return new HireValidation(HireValidationCode.HireAlreadyPending, "The player has already selected a recruit this turn.");
+            return new HireValidation(HireValidationCode.HireAlreadyPending,
+                HireValidationMessages.For(HireValidationCode.HireAlreadyPending));
         return HireValidation.Accept();
     }
 }
@@ -212,8 +238,16 @@ internal static class HireResolver
                 .Count(gang => gang.IsActive && gang.SectorId == pending.TargetSectorId)
                 < MatchLimits.FriendlyGangsPerSector;
             var canAfford = HireRules.CanAffordInitialCost(player.Cash, definition);
-            if (!pending.InitialCostPaid && (!hasSectorCapacity || !canAfford))
+            if (!pending.InitialCostPaid && !canAfford)
             {
+                RecordFailure(state, player, pending, definition,
+                    GameNotificationKind.HireInsufficientCash);
+                continue;
+            }
+            if (!pending.InitialCostPaid && !hasSectorCapacity)
+            {
+                RecordFailure(state, player, pending, definition,
+                    GameNotificationKind.HireSectorFull);
                 continue;
             }
 
@@ -225,6 +259,8 @@ internal static class HireResolver
             var hasGangCapacity = player.Gangs.Count(gang => gang.IsActive) < MatchLimits.GangsPerPlayer;
             if (!pending.InitialCostPaid && !hasGangCapacity)
             {
+                RecordFailure(state, player, pending, definition,
+                    GameNotificationKind.HireGangLimit);
                 continue;
             }
 
@@ -294,6 +330,23 @@ internal static class HireResolver
             player.ClearSnubbedHireOffer();
         }
         return results;
+    }
+
+    private static void RecordFailure(
+        MatchState state,
+        MatchPlayerState player,
+        PendingHireState pending,
+        GangDefinition definition,
+        GameNotificationKind notificationKind)
+    {
+        var details = new HireResolutionDetails(
+            pending.GangDefinitionId, pending.TargetSectorId,
+            HireRules.InitialCost(definition));
+        var gameEvent = state.AppendHireEvent(
+            GameEventKind.HireFailed, player.Id, details);
+        state.QueueNotification(player.Id, notificationKind,
+            sectorId: pending.TargetSectorId,
+            relatedEventSequence: gameEvent.Sequence);
     }
 
     internal static void FillOffers(MatchState state, MatchPlayerState player)

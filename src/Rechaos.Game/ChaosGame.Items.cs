@@ -75,7 +75,7 @@ public sealed partial class ChaosGame
         _giveCursor = 0;
         if (_giveOptions.Count == 0)
         {
-            RejectInput("NO LEGAL RECIPIENT FOR EQUIPPED ITEM");
+            RejectInput("NO LEGAL EQUIPMENT RECIPIENT");
             return;
         }
         AcceptInput();

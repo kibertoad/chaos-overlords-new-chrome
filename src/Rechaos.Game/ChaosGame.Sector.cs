@@ -260,7 +260,7 @@ public sealed partial class ChaosGame
             if (influence is null)
             {
                 RejectInput(_state.Sectors[_cursor].Owner != gang.Owner
-                    ? "BUILDING CANNOT BE INFLUENCED: CONTROL SECTOR FIRST"
+                    ? "CONTROL SECTOR TO INFLUENCE"
                     : "BUILDING CANNOT BE INFLUENCED");
                 return;
             }
@@ -278,7 +278,7 @@ public sealed partial class ChaosGame
                 && command.Target == CommandTarget.Sector(sectorId));
         if (legal is null)
         {
-            RejectInput("MOVE REQUIRES A NEIGHBORING SECTOR");
+            RejectInput("MOVE REQUIRES NEIGHBOR SECTOR");
             return;
         }
         var result = _actions.Submit(legal with { Repeat = false });

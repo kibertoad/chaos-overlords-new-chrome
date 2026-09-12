@@ -187,7 +187,7 @@ public sealed partial class ChaosGame
             return;
         }
         var result = _actions.QueueHire(playerId, definitionId.Value, sectorId);
-        ReportInputResult(result.Accepted, result.Validation.Message);
+        ReportHireSubmission(result, _state.FindPlayer(playerId)!);
     }
 
     private void CancelHireDrag()
@@ -222,11 +222,26 @@ public sealed partial class ChaosGame
         if (_hireCursor < 0) return;
         var offer = player.HireOfferSlots[_hireCursor].GangDefinitionId!.Value;
         var result = _actions.QueueHire(playerId, offer, _cursor);
-        ReportInputResult(result.Accepted, result.Validation.Message);
+        ReportHireSubmission(result, player);
         if (result.Accepted)
         {
             _screens.Show(ClientScreen.City);
         }
+    }
+
+    private void ReportHireSubmission(HireSubmissionResult result, MatchPlayerState player)
+    {
+        if (!result.Accepted || result.PendingHire is not { } pending)
+        {
+            ReportInputResult(false, result.Validation.Message);
+            return;
+        }
+
+        var projection = FinanceProjection.Project(_state!, player, null);
+        var projectedHireBalance = HireReservationWarning.ProjectedBalanceAtHire(
+            player.Cash, projection);
+        _message = HireReservationWarning.For(projectedHireBalance);
+        PlayGeneralSound(AudioRouting.InputResultSound(true));
     }
 
     private void SnubSelectedHireOffer()
@@ -258,7 +273,7 @@ public sealed partial class ChaosGame
             ReportInputResult(result.Accepted, result.Validation.Message);
             return;
         }
-        _message = result.Accepted ? string.Empty : result.Validation.Message.ToUpperInvariant();
+        _message = result.Accepted ? string.Empty : CityStatusMessage.Error(result.Validation.Message);
         if (AudioRouting.PointerPushResultSound(result.Accepted) is { } sound)
             PlayGeneralSound(sound);
     }

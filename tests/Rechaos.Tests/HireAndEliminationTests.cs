@@ -86,7 +86,7 @@ public sealed class HireAndEliminationTests
         var wrongPhase = match.QueueHire(new PlayerId(0), 2, 0);
 
         Assert.Equal(HireValidationCode.InvalidPhase, wrongPhase.Validation.Code);
-        Assert.Equal("Gangs may only be hired during the player's planning turn.", wrongPhase.Validation.Message);
+        Assert.Equal("Hire requires planning turn.", wrongPhase.Validation.Message);
         Assert.Equal(10, match.Players[0].Cash);
         Assert.Empty(match.Events);
 
@@ -95,7 +95,7 @@ public sealed class HireAndEliminationTests
         var eventCountBefore = match.Events.Count;
         var uncontrolled = match.QueueHire(new PlayerId(0), 2, 1);
         Assert.Equal(HireValidationCode.SectorNotControlled, uncontrolled.Validation.Code);
-        Assert.Equal("A recruit must be placed in a controlled sector or with one of the player's gangs.",
+        Assert.Equal("Use owned or occupied sector.",
             uncontrolled.Validation.Message);
         Assert.Equal(cashBefore, match.Players[0].Cash);
         Assert.Empty(match.Players[0].PendingHires);
@@ -272,6 +272,11 @@ public sealed class HireAndEliminationTests
         Assert.Equal(randomBefore, match.Random.ConsumptionCount);
         Assert.Equal(HireOfferSlotState.Available(2), player.HireOfferSlots[1]);
         Assert.Single(player.Gangs);
+        var failure = Assert.Single(match.Events, item => item.Kind == GameEventKind.HireFailed);
+        Assert.Equal((short)2, failure.Hire!.GangDefinitionId);
+        var notice = Assert.Single(match.NotificationsFor(new PlayerId(0)));
+        Assert.Equal(GameNotificationKind.HireInsufficientCash, notice.Kind);
+        Assert.Equal(failure.Sequence, notice.RelatedEventSequence);
     }
 
     [Fact]
@@ -299,6 +304,8 @@ public sealed class HireAndEliminationTests
         Assert.Equal(MatchLimits.FriendlyGangsPerSector,
             match.Players.SelectMany(candidate => candidate.Gangs)
                 .Count(gang => gang.IsActive && gang.SectorId == 0));
+        Assert.Equal(GameNotificationKind.HireSectorFull,
+            Assert.Single(match.NotificationsFor(new PlayerId(0))).Kind);
     }
 
     [Fact]
@@ -352,6 +359,8 @@ public sealed class HireAndEliminationTests
         Assert.Equal(randomBefore + 3, match.Random.ConsumptionCount);
         Assert.Equal(HireOfferSlotState.Available(2), player.HireOfferSlots[1]);
         Assert.Equal(MatchLimits.GangsPerPlayer, player.Gangs.Count);
+        Assert.Equal(GameNotificationKind.HireGangLimit,
+            Assert.Single(match.NotificationsFor(new PlayerId(0))).Kind);
     }
 
     [Fact]

@@ -184,7 +184,7 @@ public sealed partial class ChaosGame
         font.Draw(batch, eventObject,
             new Vector2(LastTurnEventsLayout.ObjectValue.X, LastTurnEventsLayout.ObjectValue.Y),
             Color.Lime, 1);
-        var status = NotificationPresentation.LastTurnStatus(notification);
+        var status = NotificationPresentation.LastTurnStatus(notification, RelatedEvent(state, notification));
         var statusColumns = LastTurnEventsLayout.StatusValue.Width / OriginalFontLayout.CellWidth;
         if (status.Length > statusColumns) status = status[..statusColumns];
         font.Draw(batch, status,
@@ -233,6 +233,8 @@ public sealed partial class ChaosGame
             return state.Definitions.Items[itemId].Name;
         if (LastTurnEventPresentation.InfluenceSiteObject(state, notification, related) is { } site)
             return site;
+        if (related?.Hire is { } hire)
+            return state.Definitions.Gangs.Single(value => value.Id == hire.GangDefinitionId).Name;
         if (notification.Gang is { } gangId && state.FindGang(gangId) is { } gang)
             return state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Name;
         if (notification.SectorId is { } sectorId) return SectorCode(sectorId);

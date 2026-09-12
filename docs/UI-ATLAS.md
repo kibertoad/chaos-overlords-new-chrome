@@ -428,7 +428,14 @@ re-centering its opaque pixels, so item-specific asymmetry is preserved.
 The recreation-only navigation, drag instruction, cancellation and successful
 `... QUEUED` status strings are suppressed. The status line remains available
 for rejections and genuine failures that explain why an operation could not be
-performed.
+performed. Its fixed 32-character capacity is centralized in
+`CityStatusMessage`: the common rejection path uppercases and requires every
+message to fit before display, and a catalog-wide test covers every command,
+Hire and Comlink validation code. Rendering clips unexpected external/dynamic
+text only as a final containment guard. The Hire placement rejection is the
+complete `USE OWNED OR OCCUPIED SECTOR.`; the projected-hire warning is the
+deliberately short `HIRE SHORTFALL: $n`, reporting the amount missing at Hire
+resolution rather than the post-Upkeep balance shown by the Finance projection.
 Routine implementation notifications such as upkeep/economy, movement,
 equipment transactions and ordinary command completion do not create reports;
 captured/lost control, newly influenced sites, completed research, crackdowns,

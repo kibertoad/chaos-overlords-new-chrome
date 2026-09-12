@@ -17,7 +17,10 @@ public enum GameNotificationKind : byte
     Chaos,
     Crackdown,
     Police,
-    ControlLost
+    ControlLost,
+    HireInsufficientCash,
+    HireSectorFull,
+    HireGangLimit
 }
 
 /// <summary>A mechanical notification reference; presentation supplies localized text.</summary>

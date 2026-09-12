@@ -43,6 +43,20 @@ controlled reference observation confirms its execution timing and edge cases.
   first inactive slot among the original 80 usable gang records. The new gang
   receives a fresh stable match ID, and the reused AI family/action record is
   reset so no prior occupant's planning history leaks into it.
+- Turn-boundary cost timing: the successful hire resolver charges only the
+  initial contract cost. It installs an active gang before returning to the
+  outer turn loop, so that gang pays its first ordinary Upkeep at the start of
+  the immediately following turn. Normal play processes that next Upkeep before
+  returning control, making both deductions visible together even though they
+  occur in distinct phases. Static call evidence is `0x0046f706` ->
+  `0x004726c0` -> (`0x00472750`) `0x00472775`; the contract debit is
+  `0x00475cba`-`0x00475ce4`, while the separate active-roster Upkeep scan is in
+  `0x0046e766` decompiler lines 194-215.
+- Presentation: reserving a hire remains allowed regardless of current cash.
+  The client shows a warning only when the Finance projection through Execution
+  and the contract debit leaves a negative balance at the Hire boundary. It
+  excludes the following turn's income and Upkeep; a queued Sell or projected
+  Chaos payout can therefore fund a reservation without a warning.
 - Current exclusions: controlled runtime corroboration and behavior with
   modified or incomplete definition data remain pending.
 - Confidence: High for the range, static call sites, rejection behavior and RNG

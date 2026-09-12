@@ -22,6 +22,28 @@ public enum ComlinkValidationCode : byte
     MessageTooLong
 }
 
+internal static class ComlinkValidationMessages
+{
+    private static readonly IReadOnlyDictionary<ComlinkValidationCode, string> Messages =
+        new Dictionary<ComlinkValidationCode, string>
+        {
+            [ComlinkValidationCode.Accepted] = "Message sent.",
+            [ComlinkValidationCode.SenderNotFound] = "Sender is not in this match.",
+            [ComlinkValidationCode.SenderNotHuman] = "Comlink is for human players.",
+            [ComlinkValidationCode.SenderNotActive] = "Sender is not the active player.",
+            [ComlinkValidationCode.WrongPhase] = "Comlink requires Command phase.",
+            [ComlinkValidationCode.NoRecipients] = "Select at least one recipient.",
+            [ComlinkValidationCode.RecipientNotFound] = "Recipient is not in this match.",
+            [ComlinkValidationCode.RecipientNotHuman] = "Recipient must be human.",
+            [ComlinkValidationCode.SenderIsRecipient] = "Cannot send Comlink to yourself.",
+            [ComlinkValidationCode.DuplicateRecipient] = "Recipients must be unique.",
+            [ComlinkValidationCode.EmptyMessage] = "Enter a message.",
+            [ComlinkValidationCode.MessageTooLong] = "Message exceeds 160 characters."
+        };
+
+    public static string For(ComlinkValidationCode code) => Messages[code];
+}
+
 public sealed record ComlinkSendResult(
     bool Accepted,
     ComlinkValidationCode Code,

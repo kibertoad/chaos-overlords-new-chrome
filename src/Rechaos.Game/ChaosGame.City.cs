@@ -58,7 +58,7 @@ public sealed partial class ChaosGame
         }
         else if (Pressed(keyboard, Keys.F6) || Pressed(keyboard, Keys.F10))
         {
-            _message = "AN ONLINE MATCH CANNOT SAVE OR LOAD A REPLAY";
+            RejectInput("ONLINE MATCH CANNOT SAVE REPLAY");
         }
     }
 
@@ -238,7 +238,7 @@ public sealed partial class ChaosGame
             Color.Lime, 1);
         DrawPanelValue(font, batch, selectedSector.Chaos,
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(4));
-        font.Draw(batch, _message.Length <= 32 ? _message : _message[..32],
+        font.Draw(batch, CityStatusMessage.Clip(_message),
             new Vector2(438, 354), Color.Gold, 1);
         if (state.Coordinator.ActivePlayer is { } reportPlayer
             && LastTurnReports(state, reportPlayer).Count > 0
@@ -307,7 +307,7 @@ public sealed partial class ChaosGame
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
-            RejectInput("BOARD COMMANDS REQUIRE THE COMMAND PHASE");
+            RejectInput("BOARD REQUIRES COMMAND PHASE");
             return;
         }
         var gang = SelectedGang(_state.FindPlayer(playerId)!);

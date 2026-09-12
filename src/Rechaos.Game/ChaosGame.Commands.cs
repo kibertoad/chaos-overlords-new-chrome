@@ -11,7 +11,7 @@ public sealed partial class ChaosGame
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
-            RejectInput("COMMAND PICKER REQUIRES THE COMMAND PHASE");
+            RejectInput("COMMANDS REQUIRE COMMAND PHASE");
             return;
         }
         var gang = SelectedGang(_state.FindPlayer(playerId)!);

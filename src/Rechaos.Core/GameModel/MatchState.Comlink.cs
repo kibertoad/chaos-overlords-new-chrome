@@ -30,38 +30,37 @@ public sealed partial class MatchState
     {
         var senderSetup = Setup.Players.SingleOrDefault(player => player.Id == sender);
         if (senderSetup is null)
-            return Rejected(ComlinkValidationCode.SenderNotFound, "Sender is not in this match.");
+            return Rejected(ComlinkValidationCode.SenderNotFound);
         if (senderSetup.Controller != PlayerController.Human)
-            return Rejected(ComlinkValidationCode.SenderNotHuman, "Only human players can use Comlink.");
+            return Rejected(ComlinkValidationCode.SenderNotHuman);
         if (Coordinator.ActivePlayer != sender)
-            return Rejected(ComlinkValidationCode.SenderNotActive, "Sender is not the active player.");
+            return Rejected(ComlinkValidationCode.SenderNotActive);
         if (Coordinator.Phase != TurnPhase.Command)
-            return Rejected(ComlinkValidationCode.WrongPhase, "Comlink sending requires the command phase.");
+            return Rejected(ComlinkValidationCode.WrongPhase);
         if (recipients.Count == 0)
-            return Rejected(ComlinkValidationCode.NoRecipients, "Select at least one recipient.");
+            return Rejected(ComlinkValidationCode.NoRecipients);
         if (string.IsNullOrWhiteSpace(message))
-            return Rejected(ComlinkValidationCode.EmptyMessage, "Enter a message.");
+            return Rejected(ComlinkValidationCode.EmptyMessage);
         if (message.Length > MatchLimits.ComlinkMessageCharacters)
-            return Rejected(ComlinkValidationCode.MessageTooLong,
-                $"Message cannot exceed {MatchLimits.ComlinkMessageCharacters} characters.");
+            return Rejected(ComlinkValidationCode.MessageTooLong);
         if (recipients.Distinct().Count() != recipients.Count)
-            return Rejected(ComlinkValidationCode.DuplicateRecipient, "Recipients must be unique.");
+            return Rejected(ComlinkValidationCode.DuplicateRecipient);
         if (recipients.Contains(sender))
-            return Rejected(ComlinkValidationCode.SenderIsRecipient, "You cannot send Comlink to yourself.");
+            return Rejected(ComlinkValidationCode.SenderIsRecipient);
         foreach (var recipient in recipients)
         {
             var setup = Setup.Players.SingleOrDefault(player => player.Id == recipient);
             if (setup is null)
-                return Rejected(ComlinkValidationCode.RecipientNotFound, "Recipient is not in this match.");
+                return Rejected(ComlinkValidationCode.RecipientNotFound);
             if (setup.Controller != PlayerController.Human)
-                return Rejected(ComlinkValidationCode.RecipientNotHuman,
-                    "Comlink recipients must be human players.");
+                return Rejected(ComlinkValidationCode.RecipientNotHuman);
         }
         return new ComlinkSendResult(true, ComlinkValidationCode.Accepted,
-            recipients.OrderBy(player => player.Value).ToArray(), "Message sent.");
+            recipients.OrderBy(player => player.Value).ToArray(),
+            ComlinkValidationMessages.For(ComlinkValidationCode.Accepted));
 
-        ComlinkSendResult Rejected(ComlinkValidationCode code, string reason) =>
-            new(false, code, [], reason);
+        ComlinkSendResult Rejected(ComlinkValidationCode code) =>
+            new(false, code, [], ComlinkValidationMessages.For(code));
     }
 
     private ComlinkInbox GetComlinkInbox(PlayerId player) =>

@@ -67,7 +67,7 @@ public sealed partial class ChaosGame
 
     private void ReportInputResult(bool accepted, string rejectionMessage)
     {
-        _message = accepted ? string.Empty : rejectionMessage.ToUpperInvariant();
+        _message = accepted ? string.Empty : CityStatusMessage.Error(rejectionMessage);
         PlayGeneralSound(AudioRouting.InputResultSound(accepted));
     }
 

@@ -583,7 +583,7 @@ public sealed partial class ChaosGame
     /// submitted and in a hot-seat match means there is no match at all. The online reading is the
     /// one worth a message, and it is the only one a player can arrive at by pressing a key.
     /// </remarks>
-    private const string OnlinePlanningClosed = "THIS TURN IS SENT  WAITING FOR THE OTHER PLAYERS";
+    private const string OnlinePlanningClosed = "TURN SENT; WAITING FOR PLAYERS";
 
     /// <summary>A lobby needs two humans to be worth sealing a turn for.</summary>
     private const int MinimumOnlinePlayers = 2;

@@ -7,29 +7,61 @@ public static class NotificationPresentation
     public static bool IsLastTurnReport(GameNotification notification, GameEvent? relatedEvent)
     {
         ArgumentNullException.ThrowIfNull(notification);
+        if (relatedEvent?.Kind == GameEventKind.CommandFailed) return true;
         return notification.Kind switch
         {
             GameNotificationKind.Control => relatedEvent?.Resolution?.Successes > 0,
             GameNotificationKind.Influence or GameNotificationKind.Research =>
                 relatedEvent?.Resolution is { PreviousValue: > 0, ResultValue: 0 },
             GameNotificationKind.Elimination => relatedEvent?.Kind == GameEventKind.PlayerEliminated,
+            GameNotificationKind.HireInsufficientCash or GameNotificationKind.HireSectorFull
+                or GameNotificationKind.HireGangLimit => relatedEvent?.Kind == GameEventKind.HireFailed,
             GameNotificationKind.ControlLost or GameNotificationKind.Crackdown
                 or GameNotificationKind.Objective => true,
             _ => false
         };
     }
 
-    public static string LastTurnStatus(GameNotification notification) => notification.Kind switch
+    public static string LastTurnStatus(GameNotification notification) =>
+        LastTurnStatus(notification, null);
+
+    public static string LastTurnStatus(
+        GameNotification notification,
+        GameEvent? relatedEvent)
     {
-        GameNotificationKind.Control => "SECTOR CONTROL ATTAINED.",
-        GameNotificationKind.ControlLost => "SECTOR CONTROL LOST.",
-        GameNotificationKind.Influence => "SITE COOPERATION ACHIEVED.",
-        GameNotificationKind.Research => "RESEARCH COMPLETED.",
-        GameNotificationKind.Crackdown => "POLICE CRACKDOWN.",
-        GameNotificationKind.Elimination => "PLAYER ELIMINATED.",
-        GameNotificationKind.Objective => "OBJECTIVE STATUS UPDATED.",
-        _ => throw new ArgumentOutOfRangeException(nameof(notification))
-    };
+        ArgumentNullException.ThrowIfNull(notification);
+        if (relatedEvent is { Kind: GameEventKind.CommandFailed, Resolution: { } resolution })
+        {
+            var action = SplitWords(relatedEvent.Action.ToString()).ToUpperInvariant();
+            var reason = resolution.Code switch
+            {
+                CommandResolutionCode.InsufficientCash => "NOT ENOUGH CASH",
+                CommandResolutionCode.ItemUnavailable => "ITEM NO LONGER AVAILABLE",
+                CommandResolutionCode.DestinationFull => "DESTINATION IS FULL",
+                CommandResolutionCode.TargetHidden => "TARGET IS HIDDEN",
+                CommandResolutionCode.TargetEvaded => "TARGET EVADED",
+                CommandResolutionCode.SectorInCrackdown => "SECTOR IS IN POLICE CRACKDOWN",
+                CommandResolutionCode.UnsupportedAction => "ACTION IS NOT SUPPORTED",
+                _ => "ORDER COULD NOT BE COMPLETED"
+            };
+            return $"{action} FAILED: {reason}.";
+        }
+
+        return notification.Kind switch
+        {
+            GameNotificationKind.Control => "SECTOR CONTROL ATTAINED.",
+            GameNotificationKind.ControlLost => "SECTOR CONTROL LOST.",
+            GameNotificationKind.Influence => "SITE COOPERATION ACHIEVED.",
+            GameNotificationKind.Research => "RESEARCH COMPLETED.",
+            GameNotificationKind.Crackdown => "POLICE CRACKDOWN.",
+            GameNotificationKind.Elimination => "PLAYER ELIMINATED.",
+            GameNotificationKind.Objective => "OBJECTIVE STATUS UPDATED.",
+            GameNotificationKind.HireInsufficientCash => "HIRE FAILED: NOT ENOUGH CASH.",
+            GameNotificationKind.HireSectorFull => "HIRE FAILED: TARGET SECTOR IS FULL.",
+            GameNotificationKind.HireGangLimit => "HIRE FAILED: GANG LIMIT REACHED.",
+            _ => throw new ArgumentOutOfRangeException(nameof(notification))
+        };
+    }
 
     public static string Describe(GameNotification notification)
     {

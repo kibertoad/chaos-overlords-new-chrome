@@ -132,12 +132,16 @@ public sealed class ExtractedHelpStoreTests : IDisposable
                 Topic(10, "Attack…", "Original attack text", true),
                 Topic(20, "Crackdown", "Original crackdown text", true),
                 Topic(30, "Bribe", "Existing unlisted Bribe text", false),
-                Topic(40, "Unrelated", "Unchanged text", true)
+                Topic(40, "Unrelated", "Unchanged text", true),
+                Topic(50, "Hire", "Original hire text", true),
+                Topic(60, "The Inner Sanctum", "Original finance text", true)
             ],
             [
                 new ExtractedHelpContentsEntry(1, "Attack...", 10, "ATTACK"),
                 new ExtractedHelpContentsEntry(1, "Crackdown", 20, "CRACKDOWN"),
-                new ExtractedHelpContentsEntry(1, "Unrelated", 40, "OTHER")
+                new ExtractedHelpContentsEntry(1, "Unrelated", 40, "OTHER"),
+                new ExtractedHelpContentsEntry(1, "Hire", 50, "CONTHIRE"),
+                new ExtractedHelpContentsEntry(1, "The Inner Sanctum", 60, "TIS")
             ],
             []);
 
@@ -153,6 +157,14 @@ public sealed class ExtractedHelpStoreTests : IDisposable
             && topic.Text.Contains("recurring Hide stays active", StringComparison.Ordinal));
         Assert.True(augmented.Topics[2].ListedInContents);
         Assert.Equal("Unchanged text", augmented.Topics[3].Text);
+        Assert.Contains("reserves the recruit", augmented.Topics[4].Text,
+            StringComparison.Ordinal);
+        Assert.Contains("Upkeep may make cash negative", augmented.Topics[4].Text,
+            StringComparison.Ordinal);
+        Assert.Contains("Paid commands are checked when their phase resolves", augmented.Topics[5].Text,
+            StringComparison.Ordinal);
+        Assert.Contains("Bribe costs $3", augmented.Topics[5].Text,
+            StringComparison.Ordinal);
         Assert.Contains(augmented.Topics[0].Runs!, run =>
             run.Bold && run.Text.Contains(HelpContentAugmentation.NoteHeading,
                 StringComparison.Ordinal));
@@ -176,7 +188,7 @@ public sealed class ExtractedHelpStoreTests : IDisposable
         Assert.DoesNotContain(augmented.Topics, topic =>
             topic.Title.Contains("formula", StringComparison.OrdinalIgnoreCase)
             || topic.Title.Contains("recovered rules", StringComparison.OrdinalIgnoreCase));
-        foreach (var expected in new[] { "Bribe", "Chaos", "Control", "Heal", "Hide", "Research", "Crackdown" })
+        foreach (var expected in new[] { "Bribe", "Chaos", "Control", "Heal", "Hide", "Hire", "Research", "The Inner Sanctum", "Crackdown" })
         {
             var topic = Assert.Single(augmented.Topics, topic =>
                 string.Equals(topic.Title, expected, StringComparison.OrdinalIgnoreCase));

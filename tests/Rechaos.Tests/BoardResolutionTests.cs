@@ -410,7 +410,7 @@ public sealed class BoardResolutionTests
 
         Assert.False(result.Accepted);
         Assert.Equal(CommandValidationCode.SectorInCrackdown, result.Validation.Code);
-        Assert.Equal("A sector cannot be controlled while police are present.", result.Validation.Message);
+        Assert.Equal("Police block control attempt.", result.Validation.Message);
     }
 
     [Fact]

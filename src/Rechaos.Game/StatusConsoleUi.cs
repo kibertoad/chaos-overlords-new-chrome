@@ -2,6 +2,29 @@ using Microsoft.Xna.Framework;
 
 namespace Rechaos.Game;
 
+public static class CityStatusMessage
+{
+    public const int MaxCharacters = 32;
+
+    public static bool Fits(string message) =>
+        (message ?? throw new ArgumentNullException(nameof(message))).Length <= MaxCharacters;
+
+    public static string RequireFit(string message)
+    {
+        if (!Fits(message))
+            throw new ArgumentException(
+                $"City status messages cannot exceed {MaxCharacters} characters.", nameof(message));
+        return message;
+    }
+
+    public static string Error(string message) =>
+        RequireFit((message ?? throw new ArgumentNullException(nameof(message))).ToUpperInvariant());
+
+    public static string Clip(string message) => Fits(message)
+        ? message
+        : message[..MaxCharacters];
+}
+
 public static class StatusConsoleLayout
 {
     public const int LabelLeft = 480;

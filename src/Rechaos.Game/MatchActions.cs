@@ -111,7 +111,7 @@ internal sealed class MatchActions
                 false,
                 ComlinkValidationCode.WrongPhase,
                 [],
-                "Comlink is not carried by an online turn yet.");
+                "Comlink unavailable online.");
 
     /// <summary>
     /// Marks one displayed Comlink message read, in a hot-seat match.

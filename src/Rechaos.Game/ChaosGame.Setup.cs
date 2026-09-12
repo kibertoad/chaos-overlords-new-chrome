@@ -9,7 +9,7 @@ namespace Rechaos.Game;
 public sealed partial class ChaosGame
 {
     private const string ObjectiveDurationWarning =
-        "TIME LIMITS ARE DISABLED FOR OBJECTIVE SCENARIOS";
+        "OBJECTIVES DISABLE TIME LIMITS";
 
     private void UpdateTitle(KeyboardState keyboard)
     {

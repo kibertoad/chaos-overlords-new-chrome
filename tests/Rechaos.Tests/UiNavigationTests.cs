@@ -782,6 +782,85 @@ public sealed class UiNavigationTests
         Assert.Equal("SECTOR CONTROL ATTAINED.", NotificationPresentation.LastTurnStatus(control));
     }
 
+    [Theory]
+    [InlineData(GameNotificationKind.HireInsufficientCash, "HIRE FAILED: NOT ENOUGH CASH.")]
+    [InlineData(GameNotificationKind.HireSectorFull, "HIRE FAILED: TARGET SECTOR IS FULL.")]
+    [InlineData(GameNotificationKind.HireGangLimit, "HIRE FAILED: GANG LIMIT REACHED.")]
+    public void FailedHiresAreExplicitLastTurnReports(
+        GameNotificationKind kind,
+        string expectedStatus)
+    {
+        var gameEvent = new GameEvent(42, 2, TurnPhase.Hire, null,
+            GameEventKind.HireFailed, new PlayerId(0), null, GangAction.None,
+            CommandTarget.Sector(7), Hire: new HireResolutionDetails(2, 7, 5));
+        var notification = new GameNotification(0, 2, TurnPhase.Hire, null,
+            kind, SectorId: 7, RelatedEventSequence: 42);
+
+        Assert.True(NotificationPresentation.IsLastTurnReport(notification, gameEvent));
+        Assert.Equal(expectedStatus, NotificationPresentation.LastTurnStatus(notification));
+    }
+
+    [Theory]
+    [InlineData(GangAction.Bribe, GameNotificationKind.CommandResult,
+        "BRIBE FAILED: NOT ENOUGH CASH.")]
+    [InlineData(GangAction.Equip, GameNotificationKind.Equipment,
+        "EQUIP FAILED: NOT ENOUGH CASH.")]
+    public void CashDependentCommandFailuresAreExplicitLastTurnReports(
+        GangAction action,
+        GameNotificationKind notificationKind,
+        string expectedStatus)
+    {
+        var gameEvent = new GameEvent(42, 2, TurnPhase.Execution, ExecutionPhase.Instant,
+            GameEventKind.CommandFailed, new PlayerId(0), new GangId(10), action,
+            CommandTarget.None, Resolution: new CommandResolutionDetails(
+                CommandResolutionCode.InsufficientCash, [], 0));
+        var notification = new GameNotification(0, 2, TurnPhase.Execution,
+            ExecutionPhase.Instant, notificationKind, new GangId(10), 7, 42);
+
+        Assert.True(NotificationPresentation.IsLastTurnReport(notification, gameEvent));
+        Assert.Equal(expectedStatus,
+            NotificationPresentation.LastTurnStatus(notification, gameEvent));
+    }
+
+    [Theory]
+    [InlineData(-3, "HIRE SHORTFALL: $3")]
+    [InlineData(0, "")]
+    [InlineData(6, "")]
+    public void HireReservationWarningExplainsOnlyFinancialRisk(
+        int projectedCash,
+        string expected) =>
+        Assert.Equal(expected,
+            HireReservationWarning.For(projectedCash));
+
+    [Fact]
+    public void HireWarningFitsCityStatusLineForLargestDebt()
+    {
+        var warning = HireReservationWarning.For(int.MinValue);
+
+        Assert.True(CityStatusMessage.Fits(warning));
+        Assert.Equal("HIRE SHORTFALL: $2147483648", warning);
+        Assert.Throws<ArgumentException>(() =>
+            CityStatusMessage.RequireFit(new string('X', CityStatusMessage.MaxCharacters + 1)));
+    }
+
+    [Fact]
+    public void HireWarningProjectionUsesExecutionAndContractButNotNextUpkeep()
+    {
+        var projection = new FinanceProjection(
+            GangUpkeep: -8,
+            NewContracts: -5,
+            ProjectedGangCount: 2,
+            Equipment: 7,
+            CityOfficials: -3,
+            SectorTax: 2,
+            SiteProtection: 4,
+            ChaosEstimate: 1,
+            CashAdjustment: -2);
+
+        Assert.Equal(10,
+            HireReservationWarning.ProjectedBalanceAtHire(10, projection));
+    }
+
     [Fact]
     public void LastTurnReportsExcludeGangLossButRetainNamedPlayerElimination()
     {

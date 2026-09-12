@@ -805,7 +805,7 @@ public sealed partial class MatchState
 
     internal GameEvent AppendHireEvent(GameEventKind kind, PlayerId player, HireResolutionDetails hire)
     {
-        if (kind is not (GameEventKind.HireQueued or GameEventKind.HireResolved))
+        if (kind is not (GameEventKind.HireQueued or GameEventKind.HireResolved or GameEventKind.HireFailed))
             throw new ArgumentOutOfRangeException(nameof(kind));
         var gameEvent = new GameEvent(
             _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,

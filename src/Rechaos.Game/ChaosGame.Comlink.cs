@@ -19,7 +19,7 @@ public sealed partial class ChaosGame
     private bool ComlinkAvailable()
     {
         if (_actions?.IsOnline != true) return true;
-        RejectInput("COMLINK IS NOT CARRIED BY AN ONLINE TURN YET");
+        RejectInput("COMLINK UNAVAILABLE ONLINE");
         return false;
     }
 

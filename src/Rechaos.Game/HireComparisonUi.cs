@@ -2,6 +2,20 @@ using Microsoft.Xna.Framework;
 
 namespace Rechaos.Game;
 
+public static class HireReservationWarning
+{
+    public static int ProjectedBalanceAtHire(int currentCash, FinanceProjection projection)
+    {
+        ArgumentNullException.ThrowIfNull(projection);
+        return checked(currentCash + projection.Equipment + projection.CityOfficials
+            + projection.ChaosEstimate + projection.NewContracts);
+    }
+
+    public static string For(int projectedCash) => projectedCash < 0
+        ? CityStatusMessage.RequireFit($"HIRE SHORTFALL: ${-(long)projectedCash}")
+        : string.Empty;
+}
+
 public static class HireComparisonLayout
 {
     public static Rectangle Panel => EquipmentCommandLayout.Panel;

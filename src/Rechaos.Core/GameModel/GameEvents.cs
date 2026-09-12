@@ -15,7 +15,8 @@ public enum GameEventKind : byte
     PoliceAttackResolved,
     PlayerEliminated,
     BigManPointsAwarded,
-    MatchEnded
+    MatchEnded,
+    HireFailed
 }
 
 public sealed record CommandResolutionDetails(
@@ -150,7 +151,7 @@ internal static class GameEventValidator
             GameEventKind.UpkeepResolved =>
                 detailCount == 1 && value.Economy is not null
                     && value.Action == GangAction.None,
-            GameEventKind.HireQueued or GameEventKind.HireResolved =>
+            GameEventKind.HireQueued or GameEventKind.HireResolved or GameEventKind.HireFailed =>
                 detailCount == 1 && value.Hire is not null
                     && value.Action == GangAction.None,
             GameEventKind.HireOfferSnubbed or GameEventKind.HireOfferRefilled =>

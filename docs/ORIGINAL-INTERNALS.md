@@ -2615,6 +2615,20 @@ recomputation/write-back, UI and AI consumers, player/gang/sector scan order,
 and arithmetic;
 controlled runtime corroboration remains pending.
 
+**Hire-boundary corroboration:** The outer turn function performs this cash/
+Upkeep scan at the top of each non-initial loop iteration, before entering the
+six player planning handlers. After all planning handlers return, its direct
+call at `0x0046f706` enters whole-turn resolver `0x004726c0`; that wrapper's
+call at `0x00472750` enters hire resolver `0x00472775`. A successful hire copies
+a complete 32-byte gang record into the first free roster entry and writes its
+sector byte at record offset `+2` to the selected destination rather than the
+inactive sentinel 100. On the next outer-loop iteration, the Upkeep scan's
+active predicate sees that new record and subtracts its definition's signed
+Upkeep field. Therefore the original charges no Upkeep before or inside the
+hire resolver, but it does charge the recruit at the immediately following
+turn-start Upkeep. The original UI returns control only after that scan, which
+can make the contract price and first Upkeep deduction appear simultaneous.
+
 ## New-game initialization
 
 ### BIN-CITY-001 - density-derived sector income and tolerance
@@ -2822,6 +2836,16 @@ cannot immediately replace itself. Hired Force is uniformly 5 through 9 through
 the recovered bounded wrapper. Selecting a hire reserves no cash: affordability
 is evaluated during resolution, and an unaffordable action is cleared without
 creating a vacancy.
+
+Hire resolution is reached from the outer turn loop through the direct call
+chain `0x0046f706` -> `0x004726c0`, then `0x00472750` -> `0x00472775`. The
+successful path subtracts only the gang definition's initial hire cost at
+`0x00475cba`-`0x00475ce4`; it does not read the definition's Upkeep field.
+Because the newly copied gang record has a real destination sector instead of
+inactive sentinel 100, it participates in the separate Upkeep scan at the top
+of the next `0x0046e766` outer-loop iteration. This statically distinguishes
+"hire cost at the end of turn N" from "first Upkeep at the start of turn N+1,"
+even though the normal UI exposes no player-controlled pause between them.
 
 The six-byte array at `0x004a5ef0` is a persistent per-player modifier. Fresh
 local-game setup clears each byte, compares that player's Pascal name with the
