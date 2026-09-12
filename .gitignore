@@ -60,3 +60,6 @@ src/Rechaos.Game/Assets/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Local process cleanup audit trail
+orphanCleanupLog.md
