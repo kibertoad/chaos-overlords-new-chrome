@@ -18,7 +18,6 @@ then; the versioned migration machinery is retained for post-1.0 compatibility.
 
 1. Buy and install a legal copy of
    [*Chaos Overlords* from GOG](https://www.gog.com/en/game/chaos_overlords).
-   The GOG release is fully compatible with the new runtime.
 2. Download and run the latest **Chaos Overlords: New Chrome** Windows installer
    from [GitHub Releases](https://github.com/kibertoad/chaos-overlords-new-chrome/releases/latest).
 3. Let Setup detect your GOG installation, or select its folder when prompted.
@@ -27,22 +26,53 @@ then; the versioned migration machinery is retained for post-1.0 compatibility.
 The installer contains no original assets and requires an installed legal copy
 when importing them.
 
-## Current playable slice
+## Project status
 
-| Area | Supported now | Not yet / current limitation |
-|---|---|---|
-| Installation and assets | Windows installer detects or prompts for the legal GOG installation, verifies it, repairs the original 16-bit graphics, and imports the required media. Linux and macOS packages can also import assets. | By design, original assets are never bundled and must be imported from a legal copy. All installers are currently unsigned. |
-| Game setup | All ten scenarios, four durations, the global AI Mentality setting, atlas-aligned original portrait cards, one-to-six configured local human players, and the recovered optional 30-second/2-minute/5-minute planning timer. Add/Remove changes the human count; omitted color slots become computer players at Begin, so every match has six participants. | Original seed/setup fixture and golden-screen verification remain. |
-| Local play | Complete deterministic hot-seat turn flow across Upkeep, Command, Execution, Hire, and Elimination, with the original handoff screen between human players. The recovered optional warning prevents accidentally finishing planning while active gangs lack commands. | Legacy protocol compatibility is a permanent non-goal. |
-| Online play | Host or join a match from the title screen against a self-hostable or central coordination server (`multiplayer/`), which seals each simultaneous turn, relays the order set and verifies every client's state hash. Every client resolves the turn through the same deterministic core, so a disagreement is caught the turn it happens; see [`docs/MULTIPLAYER.md`](docs/MULTIPLAYER.md). | No lobby browser, no chat, no Comlink, and no joining a match already in progress. A seat whose player leaves stops being waited on and its gangs hold position rather than being taken over by the computer. Desync recovery waits on the host to send a snapshot. |
-| City and sector UI | Native 640x460 presentation with integer-friendly scaling, persistent windowed/borderless-fullscreen display, grid-aligned ownership-composited city art, selectable 8x8 city, detailed 3x3 sector view with a six-gang card grid, gang/site information, finance, ranking, research, equipment, hire, sector-paged combat results, search, events, endgame, and a modern viewer for the locally imported original help. The upper-right city statistics have explanatory hover text, and Cash includes the current projected adjustment. The viewer preserves authored font emphasis and all internal jump/popup links. Keyboard and mouse navigation are supported, including right-click cancellation of transient interactions and nested panels. Options can show base or current gang statistics and enable or disable foreground-only panel motion. | Remaining original hit maps, configurable bindings, exact WinHelp typography/paragraph geometry, and golden-screen alignment are unfinished. |
-| Gangs and commands | All 14 original command types are represented, validated, queued, cancelled, and resolved. The recovered recurring subset is Bribe, Chaos, Control, Heal, Hide, Influence, Research, and Snitch; incompatible one-off actions are omitted from the recurring picker. Hide follows the recovered active-action lifecycle: one-off Hide expires at the next Upkeep, recurring Hide remains active, and replacing or cancelling it reveals the gang immediately. Drag-to-move, drag-to-hire, Give, Sell, equipment replacement, research, Influence, Chaos, Control, Hide, Heal, Bribe, Snitch, and combat are playable. | Some resolver edge ordering, special-building boundaries, and exact message wording still need reference validation. |
-| Hiring and economy | Original three-offer hire dock, automatic next-turn replacement portraits, comparison panel, snubbing, Force generation, cash, income, upkeep, debt restrictions, equipment purchasing, and persistent research progression with current/required progress display. | A few locality, rounding, and failure-edge behaviors remain under reverse engineering. |
-| Combat and police | Simultaneous gang combat, retaliation, evasion, detection, casualties, equipment loss, Crackdowns, and executable-matched police attacks using the exact visible/Hide detection curves and Police Force 5 + Combat 20 − effective Defense pool. The original combat/result panels use fitted sector apertures, decoded animations and cadence, and equipped, unarmed, and detected-police sound cues. Detailed Combat controls automatic bounded animation playback without changing resolution; Simple Combat leaves the non-animated summaries available without blocking input. Selected summary results can be replayed in Detail mode and cancelled immediately. | Color-key details, bare-hand presentation, native targetability fixtures, and police notification edges remain to validate. |
-| Objectives and endgame | All ten scenarios use the recovered score table and competition standings, with player-slot tie order and eliminated players trailing unranked. Timed and objective completion, the global sole-survivor rule, tied winners, five awards, statistics, elimination cleanup, victory/defeat routing, and playable Siege setup with six starting-sector pylon markers are implemented. | Special objective edges, exact Siege pylon art, hot-seat result sequencing, and final presentation details remain provisional. |
-| Computer players | Deterministic objective-aware AI with recovered mentality, attitudes, reactions, live-equivalent offer refills, hiring, placement, difficulty calibration, handlers for every original strategy family wired into gameplay, and deterministic/replay stress coverage for six-player matches. Forty-turn objective campaigns across four guarded seeds must expand, hire, and replay exactly; Big Man completes naturally by turn 60 at one guarded seed. | Fixed original-reference boundaries, tournament coverage approaching the release-scale matrix, and reliable completion policy for five objective scenarios remain incomplete; unsupported decision edges retain an isolated provisional fallback. |
-| Saves and replays | F5/F9 recreation-native save/load, end-turn autosaves, F6/F10 deterministic record/playback verification, bounded loading, read-back-before-promotion, and last-valid-generation backup recovery for both saves and replays. Current formats are save v22, replay v24, and canonical hash v25; event bodies, nested resolution facts, phase-boundary history, and per-message Comlink read state are authenticated. | These formats may change incompatibly before 1.0.0. Original 1996 save import/export is not supported. |
-| Audio, music, and video | Original audio, eight music tracks, and two videos are extracted; Detailed Combat synchronizes equipped, unarmed, retaliation, and detected-police cues to their corresponding clips, while full local-setup push buttons, setup selection/rejection, panel confirmation, pending Last Turn Events, and planning-timer warnings play their mapped original sounds. The recovered soundtrack uses Track 2 for title/setup, Tracks 3-8 for gameplay, and Track 9 for endgame, with repeat and focus pause/resume. Options exposes independent original 0-10 Music and Sound Effects scales, using the recovered defaults of 5 and 6 respectively and remembered between launches. | Exact menu restart boundaries and native-platform playback still need validation. Video playback and the remaining UI/impact sound triggers are not wired yet. |
+New Chrome is a broad, playable pre-1.0 recreation. A complete match can be
+played locally from setup through results, and the deterministic core, original
+asset importer, modern online transport, native saves, and replays are all
+operational. It is not yet a claim of pixel-perfect or rule-perfect parity with
+the shipped 1996 executable. The detailed evidence and next proof gate for each
+system are tracked in the [parity matrix](docs/PARITY-MATRIX.md).
+
+### Implemented
+
+| Area | Available now |
+|---|---|
+| Installation and assets | Windows, Linux, and macOS packaging can verify a supported legal GOG installation and import the required assets. The transactional extractor repairs RGB555 graphics, decodes indexed graphics and WinHelp content, imports audio/music/video, validates exact output inventories and hashes, and never copies the original executable. |
+| New Game setup | All ten scenarios are mapped to their correct visual buttons and default to Greed. Every mode and game-length button has a rules tooltip. The four duration choices are active only for the timed Greed, Power, Acceptance, and Dominance modes; objective modes run until their goal is reached, hide the duration selection light, and explain why duration clicks are disabled. Setup supports the global AI Mentality, one-to-six named local humans, portrait/color rearrangement, six total participants after AI fill, and optional None/30-second/2-minute/5-minute planning clocks. |
+| Local and hot-seat play | Deterministic turns run through Upkeep, Command, Execution, Hire, and Elimination. Multiple local humans receive the original private handoff screen. The optional idle-gang warning prevents accidental completion while an active gang has no order. |
+| Commands and economy | All 14 original actions are validated, queued, cancelled, and resolved, with the recovered recurring subset enforced. Dragging a gang onto a neighboring sector queues Move, onto an eligible site queues Influence, and onto a visible enemy gang queues Attack. Hire, Reject, Equip, Give, multi-item Sell, Research, Bribe, Chaos, Control, Heal, Hide, Snitch, and Terminate are playable. Cash, upkeep, sector tax, influenced-site income, debt restrictions, site effects, delayed Influence activation, and the recovered Factory/Sell rules are represented. |
+| City, sector, and management UI | The 640x460 interface includes the 8x8 city, 3x3 detailed-sector neighborhood, up to six gang cards, three equipped-item cells in Gang Information, site/item details, City and Sector Finance, Ranking, Hire comparison, Comlink, Game Info, Research/Equipment, Give/Sell, Combat Summary/Detail, Options, Help, and endgame panels. Mouse and keyboard input, right-click cancellation, nested-panel return, panel-motion control, and windowed/borderless-fullscreen presentation are wired. |
+| Search and turn reports | Search: Sites exposes all 22 site types with ALL/NONE and individual filters. Controlled sites are always shown as white transparent markers; selected uncontrolled site types appear amber only while the overview is applied. Last Turn Events auto-opens when required, preserves unread progress until every page is viewed, remains reviewable afterward, and uses the recovered native site crop, palette stretch, ordered mask, foreground event art, and footer layout. Options can switch event-site backgrounds from Original to Smooth filtering. |
+| Combat and police | Simultaneous combat, retaliation, Hide/evasion, casualties, equipment loss, Crackdowns, police detection and damage, and combat statistics are implemented. Summary results are grouped by sector; Detail replays the chosen fight with decoded eight-frame animations and event-time equipped, unarmed, retaliation, and police sounds. Detailed/Simple presentation changes no authoritative outcome. |
+| Objectives, ranking, and AI | All ten scenarios have timed/objective completion, recovered score tables, competition ranking, tied winners, sole-survivor handling, elimination cleanup, awards/statistics, and Siege objective markers. Deterministic computer players use the recovered difficulty bands, attitudes/reactions, hiring and placement rules, and handlers for every known strategy family. |
+| Saves and replays | Escape opens an in-game Resume/Save/Load/Quit-to-main-menu menu; quitting requires confirmation that unsaved progress will be lost. F5/F9 open a nine-slot save/load browser. Saves suggest an editable name and display timestamp, scenario, single/hot-seat/online type, and human/AI counts. Atomic writes, backups, autosaves, and corruption recovery are implemented. F6/F10 save and verify deterministic local replays. Current formats are save v22, replay v24, and canonical hash v25. |
+| Online play | The title screen can host or join matches through the new self-hostable coordination service. It privately seals simultaneous order sets, distributes deterministic seeds and slot assignments, verifies client state hashes, resumes its ordered event stream, and supports host-snapshot desync recovery. See [Multiplayer](docs/MULTIPLAYER.md). This does not reproduce the original network protocols. |
+| Help, audio, and options | F1 opens a cross-platform viewer for the imported original Help contents, styles, internal jumps, and definition popups, augmented with verified executable formulas. The recovered title/game/endgame music programs, independent 0-10 music/effect levels, focus pause/resume, mapped interface sounds, combat cues, planning warnings, display mode, gang-stat mode, combat detail, panel motion, idle warning, and event-image filter are implemented and persisted. |
+| Engineering baseline | The authoritative simulation is headless and deterministic; saves, replays, online lockstep, and phase hashes share that state model. Automated coverage spans extraction, persistence/migrations, all command resolvers, scenarios, AI families, UI projections/layouts, networking contracts, installers, and multi-turn deterministic campaigns. Static-analysis findings, confidence, and unresolved behavior are documented rather than silently guessed. |
+
+### Still missing or provisional
+
+| Area | Remaining work |
+|---|---|
+| Exact gameplay parity | Capture native initial-city/setup/RNG fixtures and more controlled runtime traces. Confirm remaining action-order, takeover, debt, notification, targetability, transaction, repeat-command, and special-objective boundaries where current behavior is documented as provisional or supported only by static/manual evidence. |
+| Original AI parity | Compare full native AI decisions and RNG consumption against fixed reference traces, expand multi-seed tournament coverage, and establish reliable evidence-led completion behavior for Kill 'Em All, Big 40, Eliminate, Siege, and Armageddon. Current AI is playable and deterministic, but complete outer-planner parity is not proven. |
+| Visual and input parity | Finish original hit maps and golden-screen comparisons; validate remaining offsets, transparency/color keys, combat compositing, bare-hand style, Siege pylons, endgame/hot-seat sequencing, and panel animation cadence. Configurable key bindings and broader accessibility work are not implemented. |
+| Online experience | There is no public lobby browser, spectator/join-in-progress flow, lobby chat, online Comlink integration, or automatic AI takeover for a departed player. A desync still depends on the host supplying a snapshot. Security and deployment limitations are documented in [Multiplayer](docs/MULTIPLAYER.md). |
+| Media and platform polish | The two Smacker movies are extracted but not played. Some interface/impact sound triggers and exact menu music restart boundaries remain unmapped. Installers are unsigned; native interactive installer/playback validation, macOS notarization, and wider platform QA remain. |
+| Help fidelity | Help content and navigation are functional, but exact native WinHelp typography and paragraph geometry are intentionally approximated by the cross-platform viewer. Unsafe legacy macro/external-file execution remains disabled. |
+| Compatibility policy | Recreation save/replay formats may change before 1.0.0. Post-1.0 migration guarantees still need a release policy. Importing or exporting original 1996 save files is not planned. |
+
+### Permanent scope boundaries
+
+- Original copyrighted assets are never bundled; a supported legal copy is
+  required for import.
+- Original 1996 save import/export is not supported.
+- WinSock, IPX, modem, serial, AppleTalk, and other legacy protocol
+  interoperability will not be recreated. Online play uses the new documented
+  transport instead.
+- Legacy Help macros and external-file execution are not run.
 
 ## Quality-of-life additions
 
@@ -54,7 +84,8 @@ presentation-only conveniences that make the original systems easier to read:
   executable formulas are added inside their relevant subjects; an incomplete
   compatible help pack receives a clearly named listed subject for any missing one.
 - Hover tooltips explain the practical effects of city statistics, gang and
-  site attributes, item modifiers, setup difficulty, and every Options entry.
+  site attributes, item modifiers, every game mode and duration, setup
+  difficulty, and every Options entry.
 - The city console shows projected turn cashflow beside current Cash, with
   finance panels breaking down upkeep, purchases, taxes, site income, Chaos,
   and the resulting adjustment.
@@ -63,6 +94,8 @@ presentation-only conveniences that make the original systems easier to read:
   Influence, or Attack target directly on the board, building, or gang card.
 - Research lists accumulated progress beside its required total, and report
   panels retain unread/page progress so information is not silently consumed.
+- Nine named save slots show when and how each match was played; Escape pauses
+  into save/load controls before offering a confirmed return to the main menu.
 - Windowed and borderless-fullscreen modes can be toggled globally with F11 or
   Alt+Enter, and foreground panel motion can be disabled without changing game
   rules or deterministic state.
@@ -81,14 +114,18 @@ presentation-only conveniences that make the original systems easier to read:
 | Ranking | R | Click Ranking |
 | Research and equipment | T | Click Research or Equipment |
 | Combat summary | B | Click Combat Summary |
-| Search | X | Click Search |
-| Presentation and audio options | O | Click Options, then adjust gang statistics, detailed combat, panel motion, idle warnings, Music, and Sound Effects |
-| Windowed/fullscreen display | F11 or Alt+Enter | Use either shortcut from any screen; the borderless-fullscreen choice is remembered between launches |
+| Search: Sites | X | Click Search |
+| View/Send Comlink | M / N | Click the matching Comlink control |
+| Scenario information | J | Click Game Info |
+| Presentation and audio options | O | Click Options, then adjust the available gameplay-presentation, display, and audio choices |
+| Windowed/fullscreen display | F11 or Alt+Enter | Use either shortcut from any screen; the choice is remembered between launches |
 | Planning timer (setup) | L | Click None, 30 Seconds, 2 Minutes, or 5 Minutes |
 | Help | F1 | Click Help on the title screen; point at the topic list or article and use the mouse wheel to scroll it |
 | Online play | Tab between fields, Enter to host or join | Click Online on the title screen, then Host or Join |
+| Save / load | F5 / F9 | Use Save Game or Load Game in the Escape menu and choose one of nine slots |
+| Save / load replay | F6 / F10 | Local games only; records or verifies the recreation replay file |
 | Finish planning | Space | Click the end-turn control |
-| Return to title | Escape | Use the on-screen back/cancel control where available |
+| Pause/game menu | Escape | Resume, save, load, or request a confirmed return to the main menu |
 
 ## Crash reports
 
