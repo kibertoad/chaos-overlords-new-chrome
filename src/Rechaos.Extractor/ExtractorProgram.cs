@@ -131,6 +131,7 @@ public static class ExtractorProgram
             var video = OriginalDataReader.FindCaseInsensitive(Path.Combine(dataDirectory, videoName));
             using var stream = File.OpenRead(video);
             var metadata = SmackerVideoReader.Read(stream);
+            var videoDecoder = SmackerVideoDecoder.Create(stream, metadata);
             var palette = SmackerPaletteDecoder.CreateEmpty();
             for (var frameIndex = 0; frameIndex < metadata.Frames.Count; frameIndex++)
             {
@@ -142,6 +143,7 @@ public static class ExtractorProgram
                     var track = metadata.AudioTracks.Single(value => value.Index == audioChunk.TrackIndex);
                     _ = SmackerAudioDecoder.Decode(audioChunk, track);
                 }
+                _ = videoDecoder.Decode(packet);
             }
         }
         var fingerprint = await SourceFingerprint.ComputeAsync(dataDirectory, musicDirectory, helpDirectory);

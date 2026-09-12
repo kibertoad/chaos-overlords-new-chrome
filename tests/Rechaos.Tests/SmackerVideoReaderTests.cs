@@ -74,6 +74,18 @@ public sealed class SmackerVideoReaderTests
     }
 
     [Fact]
+    public void RejectsOversizedDecodedTreeAllocation()
+    {
+        using var stream = BuildContainer(320, 200, 1, 50, 0, [4]);
+        stream.Position = 56;
+        using (var writer = new BinaryWriter(stream, Encoding.ASCII, leaveOpen: true))
+            writer.Write(1_048_577u);
+        stream.Position = 0;
+
+        Assert.Throws<InvalidDataException>(() => SmackerVideoReader.Read(stream));
+    }
+
+    [Fact]
     public void DemuxesPalettePackedAudioAndVideoInContainerOrder()
     {
         byte[] payload =
@@ -199,12 +211,101 @@ public sealed class SmackerVideoReaderTests
             SmackerAudioDecoder.Decode(chunk, AudioTrack(channels: 1, maximumBytes: 1)));
     }
 
+    [Fact]
+    public void VideoDecoderExpandsMonochromeBlockBitsByRow()
+    {
+        var decoder = BuildVideoDecoder(
+            monochromeMap: 0x8421,
+            monochromeColor: 0x0703,
+            fullBlock: 0,
+            blockType: 0);
+
+        var frame = decoder.Decode(VideoPacket());
+
+        Assert.Equal(new byte[]
+        {
+            7, 3, 3, 3,
+            3, 7, 3, 3,
+            3, 3, 7, 3,
+            3, 3, 3, 7
+        }, frame.ColorIndices.ToArray());
+    }
+
+    [Fact]
+    public void VideoDecoderExpandsFullAndFillBlocks()
+    {
+        var full = BuildVideoDecoder(0, 0, 0x0201, blockType: 1)
+            .Decode(VideoPacket());
+        var fill = BuildVideoDecoder(0, 0, 0, blockType: 0x0903)
+            .Decode(VideoPacket());
+
+        Assert.Equal(new byte[]
+        {
+            1, 2, 1, 2,
+            1, 2, 1, 2,
+            1, 2, 1, 2,
+            1, 2, 1, 2
+        }, full.ColorIndices.ToArray());
+        Assert.All(fill.ColorIndices.ToArray(), value => Assert.Equal(9, value));
+    }
+
+    [Fact]
+    public void VideoDecoderRejectsRunBeyondFrame()
+    {
+        var decoder = BuildVideoDecoder(0, 0, 0, blockType: 0x0907);
+
+        Assert.Throws<InvalidDataException>(() => decoder.Decode(VideoPacket()));
+    }
+
+    private static SmackerVideoDecoder BuildVideoDecoder(
+        ushort monochromeMap,
+        ushort monochromeColor,
+        ushort fullBlock,
+        ushort blockType)
+    {
+        var bits = new List<int>();
+        foreach (var value in new[] { monochromeMap, monochromeColor, fullBlock, blockType })
+            AppendConstantCodebook(bits, value);
+        var treeData = PackBits(bits);
+        using var stream = new MemoryStream(treeData);
+        var metadata = new SmackerVideoMetadata(
+            4, 4, 1, TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100),
+            0, 0, (uint)treeData.Length, new SmackerHuffmanTreeSizes(4, 4, 4, 4),
+            [], []);
+        return SmackerVideoDecoder.Create(stream, metadata);
+    }
+
+    private static void AppendConstantCodebook(List<int> bits, ushort value)
+    {
+        bits.Add(1);
+        bits.AddRange([1, 0]);
+        AppendByte(bits, (byte)value);
+        bits.Add(0);
+        bits.AddRange([1, 0]);
+        AppendByte(bits, (byte)(value >> 8));
+        bits.Add(0);
+        AppendUInt16(bits, 0xfffd);
+        AppendUInt16(bits, 0xfffe);
+        AppendUInt16(bits, 0xffff);
+        bits.AddRange([0, 0]);
+    }
+
+    private static SmackerFramePacket VideoPacket() =>
+        new(new SmackerFrameDescriptor(0, 0, 0, 0, IsKeyFrame: true),
+            ReadOnlyMemory<byte>.Empty, [], ReadOnlyMemory<byte>.Empty);
+
     private static SmackerAudioTrack AudioTrack(int channels, int maximumBytes) =>
         new(0, (uint)maximumBytes, 22_050, 8, channels, IsPacked: true);
 
     private static void AppendByte(List<int> bits, byte value)
     {
         for (var index = 0; index < 8; index++) bits.Add((value >> index) & 1);
+    }
+
+    private static void AppendUInt16(List<int> bits, ushort value)
+    {
+        AppendByte(bits, (byte)value);
+        AppendByte(bits, (byte)(value >> 8));
     }
 
     private static byte[] PackBits(IReadOnlyList<int> bits)

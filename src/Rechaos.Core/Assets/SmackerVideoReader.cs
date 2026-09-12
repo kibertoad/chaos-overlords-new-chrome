@@ -58,6 +58,8 @@ public static class SmackerVideoReader
     private const int MaximumDimension = 8_192;
     private const int MaximumFrames = 1_000_000;
     internal const int MaximumFramePayloadBytes = 64 * 1024 * 1024;
+    internal const uint MaximumTreeBytes = 4 * 1024 * 1024;
+    internal const uint MaximumTreeAllocationBytes = 1024 * 1024;
 
     public static SmackerVideoMetadata Read(string path)
     {
@@ -94,11 +96,21 @@ public static class SmackerVideoReader
         for (var index = 0; index < audioBufferSizes.Length; index++)
             audioBufferSizes[index] = reader.ReadUInt32();
         var treeBytes = reader.ReadUInt32();
+        if (treeBytes > MaximumTreeBytes)
+            throw new InvalidDataException("Smacker Huffman trees exceed the allocation limit.");
         var treeAllocationSizes = new SmackerHuffmanTreeSizes(
             reader.ReadUInt32(),
             reader.ReadUInt32(),
             reader.ReadUInt32(),
             reader.ReadUInt32());
+        if (new[]
+            {
+                treeAllocationSizes.MonochromeMap,
+                treeAllocationSizes.MonochromeColor,
+                treeAllocationSizes.FullBlock,
+                treeAllocationSizes.BlockType
+            }.Any(size => size > MaximumTreeAllocationBytes))
+            throw new InvalidDataException("Smacker decoded Huffman tree exceeds the allocation limit.");
 
         var audioTracks = new List<SmackerAudioTrack>();
         for (var index = 0; index < audioBufferSizes.Length; index++)

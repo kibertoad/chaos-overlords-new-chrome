@@ -56,6 +56,10 @@ The managed audio decoder reconstructs the movies' packed unsigned 8-bit mono
 and stereo PCM, including per-chunk Huffman trees, channel predictors, and the
 codec's intentional byte wraparound. Source verification decodes every audio
 chunk rather than trusting container metadata alone.
+`SmackerVideoDecoder` builds the four bounded canonical Huffman codebooks and
+reconstructs every 4x4 monochrome, full, skipped, or filled block into indexed
+pixels while preserving inter-frame state. Source verification now decodes all
+1,350 physical video frames as well as their palette and audio data.
 
 | File | SHA-256 | Size | Video | Timing | Audio |
 |---|---|---:|---|---|---|
@@ -76,5 +80,5 @@ replays, phase hashes, or multiplayer state. Input skipping and exact logo/
 intro trigger order still require original-runtime evidence before their final
 policy is classified as parity.
 
-Video decompression, client presentation, skip controls, and cadence tests are
-not implemented yet. Until they are, the title opens directly as before.
+Client presentation, skip controls, and cadence tests are not implemented yet.
+Until they are, the title opens directly as before.
