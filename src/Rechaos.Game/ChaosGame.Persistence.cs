@@ -41,6 +41,7 @@ public sealed partial class ChaosGame
                 _state.Events.LastOrDefault()?.Sequence ?? -1);
             _combatAnimationPlayer.Clear();
             _siteSearchSelections.Reset();
+            _lastTurnEventArchive.Clear();
             _managementReturnScreen = ClientScreen.City;
             _screens.Show(_state.Outcome is null ? ClientScreen.GameInfo : ClientScreen.Endgame);
             if (_state.Outcome is null) StartPlanningTimer(_inputTime);
@@ -85,6 +86,7 @@ public sealed partial class ChaosGame
                 _state.Events.LastOrDefault()?.Sequence ?? -1);
             _combatAnimationPlayer.Clear();
             _siteSearchSelections.Reset();
+            _lastTurnEventArchive.Clear();
             StartPlanningTimer(_inputTime);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)

@@ -22,6 +22,8 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(OriginalOptionsPolicy.DetailedCombatByDefault, preferences.DetailedCombat);
         Assert.Equal(OriginalOptionsPolicy.SlidePanelsByDefault, preferences.SlidePanels);
         Assert.Equal(OriginalOptionsPolicy.FullscreenByDefault, preferences.Fullscreen);
+        Assert.Equal(OriginalOptionsPolicy.SmoothEventSiteImagesByDefault,
+            preferences.SmoothEventSiteImages);
     }
 
     [Fact]
@@ -29,7 +31,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
     {
         var expected = new GamePreferences(
             GamePreferences.CurrentFormatVersion, 8, 3, false,
-            PlanningTimeLimit.TwoMinutes, true, false, false, true);
+            PlanningTimeLimit.TwoMinutes, true, false, false, true, true);
 
         Assert.True(GamePreferencesStore.TrySave(Path(), expected));
 
@@ -77,6 +79,24 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.False(preferences.DetailedCombat);
         Assert.False(preferences.SlidePanels);
         Assert.False(preferences.Fullscreen);
+        Assert.False(preferences.SmoothEventSiteImages);
+    }
+
+    [Fact]
+    public void VersionSixPreferencesMigrateWithOriginalEventImageFiltering()
+    {
+        File.WriteAllText(Path(), """
+            {"FormatVersion":6,"MusicVolumeLevel":8,"SoundEffectVolumeLevel":3,
+             "WarnIfIdleGangs":false,"PlanningTimeLimit":2,
+             "ShowBaseStatistics":true,"DetailedCombat":false,"SlidePanels":false,
+             "Fullscreen":true}
+            """);
+
+        var preferences = GamePreferencesStore.LoadOrDefault(Path());
+
+        Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
+        Assert.True(preferences.Fullscreen);
+        Assert.False(preferences.SmoothEventSiteImages);
     }
 
     [Theory]
@@ -101,7 +121,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.False(GamePreferencesStore.TrySave(
             Path(), new GamePreferences(
                 GamePreferences.CurrentFormatVersion, -1, 5, true,
-                PlanningTimeLimit.None, false, true, true, false)));
+                PlanningTimeLimit.None, false, true, true, false, false)));
         Assert.False(File.Exists(Path()));
     }
 

@@ -68,6 +68,30 @@ selected within this platform layer.
 **Next validation:** Find cross-references from the literal PX paths and palette
 APIs, then map the load/convert/blit functions and color-key behavior.
 
+### BIN-UI-016 - Last Turn Events site-image treatment
+
+**Observation:** Both bitmap stretch wrappers, `FUN_0042773e` and
+`FUN_00427864`, call `SetStretchBltMode(destinationDc, 3)` immediately before
+`StretchBlt` (call sites `0x004277fd`/`0x00427854` and
+`0x004279a2`/`0x004279f9`). Win32 mode 3 is `COLORONCOLOR`. In the site
+cooperation branch of `FUN_0044fd6c`, the source rectangle starts at x 12 and
+the site's 64-pixel atlas row plus 1, with width 94 and height 62. After it is
+stretched into the 242-by-158 aperture, `FUN_004266a6` and `FUN_00427e60`
+combine it through pattern-bitmap resource 146. That 8-by-8 monochrome pattern
+retains two pixels per row at x 0/4 on even rows and x 2/6 on odd rows, making
+75 percent of the background pixels black. Resource 6004 is composited after
+this operation and is therefore unaffected by the pattern.
+
+**Interpretation:** The original effect is a color-preserving nearest-style
+stretch followed by a fixed 25-percent ordered-dither mask over a centered,
+borderless portion of `PX02000`. Linear filtering without that mask is a modern
+presentation option, not the native default.
+
+**Confidence:** High static evidence; agrees with supplied original captures.
+
+**Next validation:** Pixel-compare several native site-event captures with the
+recovered crop, `COLORONCOLOR` projection, and resource-146 mask.
+
 ### BIN-UI-001 - combat animation cadence
 
 **Observation:** `FUN_0042e040` references the four combat-strip resource bases:

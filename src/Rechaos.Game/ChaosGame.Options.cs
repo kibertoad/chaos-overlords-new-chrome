@@ -18,10 +18,11 @@ public static class OptionsLayout
         Enumerable.Range(0, AudioRouting.MaximumEffectVolumeLevel + 1)
             .Select(level => new Rectangle(132 + level * 34, 140, 28, 28))
             .ToArray();
-    public static Rectangle BaseStatistics => new(150, 184, 340, 28);
-    public static Rectangle DetailedCombat => new(150, 222, 340, 28);
-    public static Rectangle SlidePanels => new(150, 260, 340, 28);
-    public static Rectangle WarnIfIdleGangs => new(150, 298, 340, 28);
+    public static Rectangle BaseStatistics => new(150, 176, 340, 28);
+    public static Rectangle DetailedCombat => new(150, 208, 340, 28);
+    public static Rectangle SlidePanels => new(150, 240, 340, 28);
+    public static Rectangle WarnIfIdleGangs => new(150, 272, 340, 28);
+    public static Rectangle EventSiteImages => new(150, 304, 340, 28);
     public static Rectangle ColorDepth => new(150, 336, 340, 28);
 }
 
@@ -41,6 +42,12 @@ public static class OptionsTooltip
             return ["SLIDE PANELS", "OFF MAKES SECTORS AND DETAILS APPEAR IMMEDIATELY."];
         if (OptionsLayout.WarnIfIdleGangs.Contains(point))
             return ["WARN IF IDLE GANGS", "ASKS BEFORE ENDING WITH UNASSIGNED ACTIVE GANGS."];
+        if (OptionsLayout.EventSiteImages.Contains(point))
+            return [
+                "EVENT SITE IMAGES",
+                "ORIGINAL USES THE NATIVE STRETCH AND ORDERED DITHER.",
+                "SMOOTH USES LINEAR FILTERING FOR A CLEANER ENLARGEMENT."
+            ];
         if (OptionsLayout.ColorDepth.Contains(point))
             return [
                 "THOUSANDS OF COLORS",
@@ -67,6 +74,7 @@ public sealed partial class ChaosGame
     private bool _detailedCombat = OriginalOptionsPolicy.DetailedCombatByDefault;
     private bool _slidePanels = OriginalOptionsPolicy.SlidePanelsByDefault;
     private bool _fullscreen = OriginalOptionsPolicy.FullscreenByDefault;
+    private bool _smoothEventSiteImages = OriginalOptionsPolicy.SmoothEventSiteImagesByDefault;
 
     private void OpenOptions()
     {
@@ -86,7 +94,7 @@ public sealed partial class ChaosGame
     private void UpdateOptions(KeyboardState keyboard)
     {
         if (Pressed(keyboard, Keys.Up)) _optionsRow = Math.Max(0, _optionsRow - 1);
-        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(5, _optionsRow + 1);
+        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(6, _optionsRow + 1);
         if (Pressed(keyboard, Keys.Left)) ChangeSelectedVolume(-1);
         if (Pressed(keyboard, Keys.Right)) ChangeSelectedVolume(1);
         if (_optionsRow >= 2 && Pressed(keyboard, Keys.Space)) ToggleSelectedOption();
@@ -132,6 +140,11 @@ public sealed partial class ChaosGame
             _optionsRow = 5;
             ToggleIdleGangWarning();
         }
+        else if (OptionsLayout.EventSiteImages.Contains(point))
+        {
+            _optionsRow = 6;
+            ToggleEventSiteImageFilter();
+        }
         else if (OptionsLayout.ColorDepth.Contains(point))
             _message = "THOUSANDS OF COLORS IS ALWAYS ENABLED";
         else if (OptionsLayout.Done.Contains(point)) CloseOptions();
@@ -155,6 +168,7 @@ public sealed partial class ChaosGame
         else if (_optionsRow == 3) ToggleDetailedCombat();
         else if (_optionsRow == 4) ToggleSlidePanels();
         else if (_optionsRow == 5) ToggleIdleGangWarning();
+        else if (_optionsRow == 6) ToggleEventSiteImageFilter();
     }
 
     private void ToggleBaseStatistics()
@@ -218,6 +232,14 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
+    private void ToggleEventSiteImageFilter()
+    {
+        _smoothEventSiteImages = !_smoothEventSiteImages;
+        SavePreferences();
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _message = string.Empty;
+    }
+
     private void SavePreferences() =>
         GamePreferencesStore.TrySave(
             _preferencesPath,
@@ -230,7 +252,8 @@ public sealed partial class ChaosGame
                 _showBaseStatistics,
                 _detailedCombat,
                 _slidePanels,
-                _fullscreen));
+                _fullscreen,
+                _smoothEventSiteImages));
 
     private void ToggleFullscreen()
     {
@@ -280,6 +303,8 @@ public sealed partial class ChaosGame
             $"SLIDE PANELS: {(_slidePanels ? "ON" : "OFF")}", 4);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.WarnIfIdleGangs,
             $"WARN IF IDLE GANGS: {(_warnIfIdleGangs ? "ON" : "OFF")}", 5);
+        DrawOptionToggle(batch, pixel, font, OptionsLayout.EventSiteImages,
+            $"EVENT SITE IMAGES: {(_smoothEventSiteImages ? "SMOOTH" : "ORIGINAL")}", 6);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ColorDepth,
             "THOUSANDS OF COLORS: ALWAYS ON", -1);
 

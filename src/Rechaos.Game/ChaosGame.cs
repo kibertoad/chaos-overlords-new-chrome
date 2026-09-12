@@ -63,6 +63,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _combatBackground;
     private Texture2D? _combatResultsBackground;
     private Texture2D? _lastTurnEventsBackground;
+    private Texture2D? _eventSiteDitherOverlay;
     private Texture2D? _comlinkViewBackground;
     private Texture2D? _comlinkSendBackground;
     private readonly Texture2D?[] _lastTurnEventArtwork = new Texture2D?[10];
@@ -136,6 +137,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private bool _openCombatAfterEvents;
     private int _eventCursor;
     private readonly HashSet<int> _eventViewedPages = [];
+    private readonly LastTurnEventArchive _lastTurnEventArchive = new();
     private int _siteSearchCursor;
     private readonly SiteSearchSelectionState _siteSearchSelections = new();
     private readonly IndexedDoubleClickTracker _siteSearchClicks = new();
@@ -232,6 +234,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _detailedCombat = preferences.DetailedCombat;
         _slidePanels = preferences.SlidePanels;
         _fullscreen = preferences.Fullscreen;
+        _smoothEventSiteImages = preferences.SmoothEventSiteImages;
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -253,6 +256,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _batch = new SpriteBatch(GraphicsDevice);
         _pixel = new Texture2D(GraphicsDevice, 1, 1);
         _pixel.SetData([Color.White]);
+        _eventSiteDitherOverlay = LastTurnEventPresentation.CreateEventSiteDitherOverlay(
+            GraphicsDevice);
         _definitions = BundledOriginalData.Load();
         _helpDocument = ExtractedHelpStore.LoadOrNull(_assetRoot) is { } help
             ? HelpContentAugmentation.AddExecutableNotes(help)
@@ -682,6 +687,11 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             base.Draw(gameTime);
             return;
         }
+        if (DrawFilteredLastTurnEvents(viewport, slideOffset))
+        {
+            base.Draw(gameTime);
+            return;
+        }
         var transform = Matrix.CreateTranslation(slideOffset, 0, 0)
             * VirtualInput.Transform(viewport);
         _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);
@@ -717,9 +727,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Handoff when _state is not null:
                 DrawHandoff(_batch, _pixel, _font, _state);
-                break;
-            case ClientScreen.Events when _state is not null:
-                DrawLastTurnEventsPanel(_batch, _pixel, _font, _state);
                 break;
             case ClientScreen.ComlinkView when _state is not null:
                 DrawComlinkView(_batch, _pixel, _font, _state);

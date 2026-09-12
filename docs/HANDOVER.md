@@ -19,11 +19,20 @@ Last updated: 2026-09-12
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
 - Native saves are format v22, replays are v24, canonical hashes are v25, asset
-  manifests are v6, extracted help is v3, and client preferences are v6. Save
+  manifests are v6, extracted help is v3, and client preferences are v7. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
 
 ## Latest playable work
+
+- Last Turn Events retains each fully reviewed batch for later reopening
+  through Events while dismissing its unread blink. Site-cooperation reports
+  use the statically recovered centered 94-by-62 site crop, native
+  `COLORONCOLOR`-equivalent stretch, and resource-146 25-percent ordered mask
+  by default; Options persists a Smooth alternative that linearly filters the
+  unmasked background. The
+  template's white DATE/OBJECT/STATUS labels remain intact and dynamic green
+  values use their measured baselines.
 
 - Upkeep and both Finance panels preserve the executable's actual sector cash:
   flat $1 tax plus influenced-site Cash. Static caller tracing confirmed that

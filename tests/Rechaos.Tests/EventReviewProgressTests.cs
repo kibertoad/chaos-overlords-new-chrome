@@ -69,5 +69,43 @@ public sealed class EventReviewProgressTests
         Assert.Equal(4, LastTurnEventPresentation.ArtworkIndex(notification, related));
         Assert.Equal("SITE COOPERATION ACHIEVED.",
             NotificationPresentation.LastTurnStatus(notification));
+        Assert.Equal(new Rectangle(12, definition.Id * 64 + 1, 94, 62),
+            LastTurnEventPresentation.SiteBackgroundSource(definition.Id));
+    }
+
+    [Fact]
+    public void ReviewedReportsAreArchivedPerPlayerAsASnapshot()
+    {
+        var archive = new LastTurnEventArchive();
+        var player = new PlayerId(0);
+        var reports = new List<GameNotification>
+        {
+            new(6, 3, TurnPhase.Execution, ExecutionPhase.Instant,
+                GameNotificationKind.Influence, new GangId(0))
+        };
+
+        archive.Store(player, reports);
+        reports.Clear();
+
+        Assert.Single(archive.For(player));
+        Assert.Empty(archive.For(new PlayerId(1)));
+        archive.Clear();
+        Assert.Empty(archive.For(player));
+    }
+
+    [Fact]
+    public void NativeEventSiteDitherMatchesOriginalBitmapResource146()
+    {
+        for (var y = 0; y < LastTurnEventPresentation.NativeDitherPatternSize; y++)
+        for (var x = 0; x < LastTurnEventPresentation.NativeDitherPatternSize; x++)
+        {
+            var expected = (x, y) switch
+            {
+                (0 or 4, 0 or 2 or 4 or 6) => true,
+                (2 or 6, 1 or 3 or 5 or 7) => true,
+                _ => false
+            };
+            Assert.Equal(expected, LastTurnEventPresentation.NativeDitherKeepsPixel(x, y));
+        }
     }
 }

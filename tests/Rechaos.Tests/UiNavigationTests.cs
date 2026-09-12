@@ -431,6 +431,7 @@ public sealed class UiNavigationTests
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.BaseStatistics));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.DetailedCombat));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.SlidePanels));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.EventSiteImages));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ColorDepth));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
     }
@@ -446,6 +447,7 @@ public sealed class UiNavigationTests
             OptionsLayout.DetailedCombat,
             OptionsLayout.SlidePanels,
             OptionsLayout.WarnIfIdleGangs,
+            OptionsLayout.EventSiteImages,
             OptionsLayout.ColorDepth,
             OptionsLayout.Done
         ];
@@ -463,6 +465,8 @@ public sealed class UiNavigationTests
             string.Join(' ', OptionsTooltip.At(OptionsLayout.ColorDepth.Center)));
         Assert.Contains("IMMEDIATELY",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.SlidePanels.Center)));
+        Assert.Contains("NATIVE STRETCH AND ORDERED DITHER",
+            string.Join(' ', OptionsTooltip.At(OptionsLayout.EventSiteImages.Center)));
         Assert.Empty(OptionsTooltip.At(Point.Zero));
         Assert.Equal(Rectangle.Empty, OptionsTooltip.Bounds(Point.Zero, []));
     }
@@ -697,9 +701,13 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(307, 289, 31, 32), CombatResultsLayout.Opponent(4));
         Assert.Equal(EquipmentCommandLayout.Cancel, CombatResultsLayout.Detail);
         Assert.Equal(EquipmentCommandLayout.Panel, LastTurnEventsLayout.Panel);
+        Assert.Equal(new Rectangle(136, 137, 50, 7), LastTurnEventsLayout.Page);
         Assert.Equal(new Rectangle(198, 133, 242, 158), LastTurnEventsLayout.Artwork);
         Assert.Equal(new Rectangle(296, 187, 48, 48), LastTurnEventsLayout.ResearchItem);
         Assert.Equal(new Rectangle(135, 151, 25, 21), LastTurnEventsLayout.Previous);
+        Assert.Equal(new Rectangle(225, 299, 43, 7), LastTurnEventsLayout.DateValue);
+        Assert.Equal(new Rectangle(305, 299, 135, 7), LastTurnEventsLayout.ObjectValue);
+        Assert.Equal(new Rectangle(239, 308, 201, 7), LastTurnEventsLayout.StatusValue);
     }
 
     [Theory]

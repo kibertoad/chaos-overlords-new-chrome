@@ -54,7 +54,7 @@ public sealed partial class ChaosGame
     private void OpenEvents(ClientScreen returnScreen)
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
-        var count = LastTurnReports(_state, playerId).Count;
+        var count = ReviewableReports(_state, playerId).Count;
         if (count == 0)
         {
             RejectInput("NO EVENTS TO REPORT");
@@ -86,7 +86,7 @@ public sealed partial class ChaosGame
     private void MoveEventCursor(int delta)
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
-        var count = LastTurnReports(_state, playerId).Count;
+        var count = ReviewableReports(_state, playerId).Count;
         if (count > 0)
         {
             var next = BoundedPageNavigation.Move(_eventCursor, count, delta);
@@ -103,9 +103,12 @@ public sealed partial class ChaosGame
     {
         if (_state?.Coordinator.ActivePlayer is { } playerId && _actions is not null)
         {
-            var reportCount = LastTurnReports(_state, playerId).Count;
-            if (EventReviewProgress.IsComplete(reportCount, _eventViewedPages))
+            var currentReports = LastTurnReports(_state, playerId);
+            var reportCount = ReviewableReports(_state, playerId).Count;
+            if (currentReports.Count > 0
+                && EventReviewProgress.IsComplete(reportCount, _eventViewedPages))
             {
+                _lastTurnEventArchive.Store(playerId, currentReports);
                 var count = _state.NotificationsFor(playerId).Count;
                 for (var index = 0; index < count; index++)
                     _actions.DismissNotification(playerId);
@@ -124,7 +127,7 @@ public sealed partial class ChaosGame
         }
     }
 
-    private void DrawLastTurnEventsPanel(
+    private void DrawLastTurnEventsFrame(
         SpriteBatch batch,
         Texture2D pixel,
         PixelFont font,
@@ -136,40 +139,80 @@ public sealed partial class ChaosGame
         else
             batch.Draw(pixel, LastTurnEventsLayout.Panel, new Color(0, 0, 0, 245));
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
-        var notifications = LastTurnReports(state, playerId);
+        var notifications = ReviewableReports(state, playerId);
         ClearLastTurnEventFields(batch, pixel);
+        batch.Draw(pixel, LastTurnEventsLayout.Artwork, Color.Black);
         if (notifications.Count == 0)
+            return;
+
+        _eventCursor = Math.Clamp(_eventCursor, 0, notifications.Count - 1);
+    }
+
+    private GameNotification? CurrentEventReport(MatchState state)
+    {
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var notifications = ReviewableReports(state, playerId);
+        if (notifications.Count == 0) return null;
+        _eventCursor = Math.Clamp(_eventCursor, 0, notifications.Count - 1);
+        return notifications[_eventCursor];
+    }
+
+    private void DrawLastTurnEventContent(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        MatchState state,
+        GameNotification? notification)
+    {
+        if (notification is null)
         {
             font.Draw(batch, "NO EVENTS TO REPORT", new Vector2(253, 221), Color.Lime, 1);
             return;
         }
 
-        _eventCursor = Math.Clamp(_eventCursor, 0, notifications.Count - 1);
-        var notification = notifications[_eventCursor];
-        font.Draw(batch, $"{_eventCursor + 1:00} OF {notifications.Count:00}",
+        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var reportCount = ReviewableReports(state, playerId).Count;
+        font.Draw(batch, $"{_eventCursor + 1:00} OF {reportCount:00}",
             new Vector2(136, 137), Color.Lime, 1);
-        DrawEventArtwork(batch, pixel, state, notification);
-        var heading = $"DATE {MatchDate(notification.Turn)} OBJECT {EventObject(state, notification)}";
-        if (heading.Length > 40) heading = heading[..40];
-        font.Draw(batch, heading, new Vector2(198, 293), Color.White, 1);
+        DrawEventArtworkForeground(batch, state, notification);
+        font.Draw(batch, MatchDate(notification.Turn),
+            new Vector2(LastTurnEventsLayout.DateValue.X, LastTurnEventsLayout.DateValue.Y),
+            Color.Lime, 1);
+        var eventObject = EventObject(state, notification);
+        var objectColumns = LastTurnEventsLayout.ObjectValue.Width / OriginalFontLayout.CellWidth;
+        if (eventObject.Length > objectColumns) eventObject = eventObject[..objectColumns];
+        font.Draw(batch, eventObject,
+            new Vector2(LastTurnEventsLayout.ObjectValue.X, LastTurnEventsLayout.ObjectValue.Y),
+            Color.Lime, 1);
         var status = NotificationPresentation.LastTurnStatus(notification);
-        if (status.Length > 39) status = status[..39];
-        font.Draw(batch, "STATUS " + status, new Vector2(198, 302), Color.Lime, 1);
+        var statusColumns = LastTurnEventsLayout.StatusValue.Width / OriginalFontLayout.CellWidth;
+        if (status.Length > statusColumns) status = status[..statusColumns];
+        font.Draw(batch, status,
+            new Vector2(LastTurnEventsLayout.StatusValue.X, LastTurnEventsLayout.StatusValue.Y),
+            Color.Lime, 1);
     }
 
-    private void DrawEventArtwork(
+    private bool DrawInfluenceSiteBackground(
         SpriteBatch batch,
-        Texture2D pixel,
         MatchState state,
         GameNotification notification)
     {
-        batch.Draw(pixel, LastTurnEventsLayout.Artwork, Color.Black);
         var related = RelatedEvent(state, notification);
-        if (LastTurnEventPresentation.InfluenceSiteId(notification, related) is { } siteId
-            && state.FindSite(siteId) is { } site
-            && _sitePortraits is not null)
-            batch.Draw(_sitePortraits, LastTurnEventsLayout.Artwork,
-                OriginalSpriteLayout.SitePortrait(site.DefinitionId), Color.White);
+        if (LastTurnEventPresentation.InfluenceSiteId(notification, related) is not { } siteId
+            || state.FindSite(siteId) is not { } site
+            || _sitePortraits is null)
+            return false;
+        batch.Draw(_sitePortraits, LastTurnEventsLayout.Artwork,
+            LastTurnEventPresentation.SiteBackgroundSource(site.DefinitionId), Color.White);
+        return true;
+    }
+
+    private void DrawEventArtworkForeground(
+        SpriteBatch batch,
+        MatchState state,
+        GameNotification notification)
+    {
+        var related = RelatedEvent(state, notification);
         var artworkIndex = LastTurnEventPresentation.ArtworkIndex(notification, related);
         if (artworkIndex > 0 && _lastTurnEventArtwork[artworkIndex] is { } artwork)
             batch.Draw(artwork, LastTurnEventsLayout.Artwork, Color.White);
@@ -212,6 +255,12 @@ public sealed partial class ChaosGame
         return reports;
     }
 
+    private IReadOnlyList<GameNotification> ReviewableReports(MatchState state, PlayerId playerId)
+    {
+        var current = LastTurnReports(state, playerId);
+        return current.Count > 0 ? current : _lastTurnEventArchive.For(playerId);
+    }
+
     private static GameEvent? RelatedEvent(MatchState state, GameNotification notification) =>
         notification.RelatedEventSequence is { } sequence
             ? state.Events.FirstOrDefault(gameEvent => gameEvent.Sequence == sequence)
@@ -220,7 +269,9 @@ public sealed partial class ChaosGame
     private static void ClearLastTurnEventFields(SpriteBatch batch, Texture2D pixel)
     {
         batch.Draw(pixel, LastTurnEventsLayout.Page, Color.Black);
-        batch.Draw(pixel, new Rectangle(198, 291, 242, 19), Color.Black);
+        batch.Draw(pixel, LastTurnEventsLayout.DateValue, Color.Black);
+        batch.Draw(pixel, LastTurnEventsLayout.ObjectValue, Color.Black);
+        batch.Draw(pixel, LastTurnEventsLayout.StatusValue, Color.Black);
     }
 }
 
@@ -234,8 +285,26 @@ public static class EventReviewProgress
     }
 }
 
+public sealed class LastTurnEventArchive
+{
+    private readonly Dictionary<PlayerId, IReadOnlyList<GameNotification>> _reports = [];
+
+    public void Store(PlayerId player, IEnumerable<GameNotification> reports)
+    {
+        ArgumentNullException.ThrowIfNull(reports);
+        _reports[player] = reports.ToArray();
+    }
+
+    public IReadOnlyList<GameNotification> For(PlayerId player) =>
+        _reports.TryGetValue(player, out var reports) ? reports : [];
+
+    public void Clear() => _reports.Clear();
+}
+
 public static class LastTurnEventPresentation
 {
+    public const int NativeDitherPatternSize = 8;
+
     public static int ArtworkIndex(GameNotification notification, GameEvent? relatedEvent)
     {
         ArgumentNullException.ThrowIfNull(notification);
@@ -284,6 +353,35 @@ public static class LastTurnEventPresentation
             return null;
         var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
         return $"{siteId:00}:{definition.Name}";
+    }
+
+    public static Rectangle SiteBackgroundSource(short definitionId)
+    {
+        var portrait = OriginalSpriteLayout.SitePortrait(definitionId);
+        return new Rectangle(portrait.X + 12, portrait.Y + 1, 94, 62);
+    }
+
+    public static bool NativeDitherKeepsPixel(int x, int y)
+    {
+        if (x < 0) throw new ArgumentOutOfRangeException(nameof(x));
+        if (y < 0) throw new ArgumentOutOfRangeException(nameof(y));
+        return (x & 3) == ((y & 1) << 1);
+    }
+
+    public static Texture2D CreateEventSiteDitherOverlay(GraphicsDevice graphicsDevice)
+    {
+        ArgumentNullException.ThrowIfNull(graphicsDevice);
+        var width = LastTurnEventsLayout.Artwork.Width;
+        var height = LastTurnEventsLayout.Artwork.Height;
+        var pixels = new Color[width * height];
+        for (var y = 0; y < height; y++)
+        for (var x = 0; x < width; x++)
+            pixels[y * width + x] = NativeDitherKeepsPixel(x, y)
+                ? Color.Transparent
+                : Color.Black;
+        var texture = new Texture2D(graphicsDevice, width, height);
+        texture.SetData(pixels);
+        return texture;
     }
 }
 

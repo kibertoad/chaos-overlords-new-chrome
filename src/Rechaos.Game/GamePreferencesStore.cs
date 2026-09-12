@@ -9,6 +9,7 @@ public static class OriginalOptionsPolicy
     public const bool DetailedCombatByDefault = true;
     public const bool SlidePanelsByDefault = true;
     public const bool FullscreenByDefault = false;
+    public const bool SmoothEventSiteImagesByDefault = false;
 }
 
 public sealed record GamePreferences(
@@ -20,9 +21,10 @@ public sealed record GamePreferences(
     bool ShowBaseStatistics,
     bool DetailedCombat,
     bool SlidePanels,
-    bool Fullscreen)
+    bool Fullscreen,
+    bool SmoothEventSiteImages)
 {
-    public const int CurrentFormatVersion = 6;
+    public const int CurrentFormatVersion = 7;
 
     public static GamePreferences Default { get; } =
         new(CurrentFormatVersion,
@@ -33,7 +35,8 @@ public sealed record GamePreferences(
             OriginalOptionsPolicy.ShowBaseStatisticsByDefault,
             OriginalOptionsPolicy.DetailedCombatByDefault,
             OriginalOptionsPolicy.SlidePanelsByDefault,
-            OriginalOptionsPolicy.FullscreenByDefault);
+            OriginalOptionsPolicy.FullscreenByDefault,
+            OriginalOptionsPolicy.SmoothEventSiteImagesByDefault);
 }
 
 public static class GamePreferencesStore
@@ -66,7 +69,8 @@ public static class GamePreferencesStore
                         OriginalOptionsPolicy.ShowBaseStatisticsByDefault,
                         OriginalOptionsPolicy.DetailedCombatByDefault,
                         OriginalOptionsPolicy.SlidePanelsByDefault,
-                        OriginalOptionsPolicy.FullscreenByDefault)
+                        OriginalOptionsPolicy.FullscreenByDefault,
+                        OriginalOptionsPolicy.SmoothEventSiteImagesByDefault)
                     : GamePreferences.Default;
             }
             if (version.GetInt32() == 5)
@@ -77,7 +81,20 @@ public static class GamePreferencesStore
                         legacy!.MusicVolumeLevel, legacy.SoundEffectVolumeLevel,
                         legacy.WarnIfIdleGangs, legacy.PlanningTimeLimit,
                         legacy.ShowBaseStatistics, legacy.DetailedCombat,
-                        legacy.SlidePanels, OriginalOptionsPolicy.FullscreenByDefault)
+                        legacy.SlidePanels, OriginalOptionsPolicy.FullscreenByDefault,
+                        OriginalOptionsPolicy.SmoothEventSiteImagesByDefault)
+                    : GamePreferences.Default;
+            }
+            if (version.GetInt32() == 6)
+            {
+                var legacy = JsonSerializer.Deserialize<VersionSixPreferences>(bytes, JsonOptions);
+                return IsValid(legacy)
+                    ? new GamePreferences(GamePreferences.CurrentFormatVersion,
+                        legacy!.MusicVolumeLevel, legacy.SoundEffectVolumeLevel,
+                        legacy.WarnIfIdleGangs, legacy.PlanningTimeLimit,
+                        legacy.ShowBaseStatistics, legacy.DetailedCombat,
+                        legacy.SlidePanels, legacy.Fullscreen,
+                        OriginalOptionsPolicy.SmoothEventSiteImagesByDefault)
                     : GamePreferences.Default;
             }
             var preferences = JsonSerializer.Deserialize<GamePreferences>(bytes, JsonOptions);
@@ -152,6 +169,16 @@ public static class GamePreferencesStore
                 and <= AudioRouting.MaximumEffectVolumeLevel
         } && Enum.IsDefined(preferences.PlanningTimeLimit);
 
+    private static bool IsValid(VersionSixPreferences? preferences) =>
+        preferences is
+        {
+            FormatVersion: 6,
+            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
+                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
+            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
+                and <= AudioRouting.MaximumEffectVolumeLevel
+        } && Enum.IsDefined(preferences.PlanningTimeLimit);
+
     private sealed record VersionFourPreferences(
         int FormatVersion,
         int MusicVolumeLevel,
@@ -168,4 +195,15 @@ public static class GamePreferencesStore
         bool ShowBaseStatistics,
         bool DetailedCombat,
         bool SlidePanels);
+
+    private sealed record VersionSixPreferences(
+        int FormatVersion,
+        int MusicVolumeLevel,
+        int SoundEffectVolumeLevel,
+        bool WarnIfIdleGangs,
+        PlanningTimeLimit PlanningTimeLimit,
+        bool ShowBaseStatistics,
+        bool DetailedCombat,
+        bool SlidePanels,
+        bool Fullscreen);
 }

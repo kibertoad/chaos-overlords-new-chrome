@@ -275,6 +275,7 @@ public sealed partial class ChaosGame
         _combatPresentationProgress.Clear();
         _combatAnimationPlayer.Clear();
         _siteSearchSelections.Reset();
+        _lastTurnEventArchive.Clear();
         _managementReturnScreen = ClientScreen.City;
         _screens.Show(GameInformationPresentation.OpensAtNewGame(_state.Setup)
             ? ClientScreen.GameInfo

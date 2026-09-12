@@ -404,9 +404,17 @@ and otherwise proceeds directly to the city. Its counter and arrow cells page
 one report at a time. Its `(198,133,242,158)` aperture uses the dedicated
 `PX06001`-`PX06009` report illustrations (`PX06002` is sector control attained),
 with event-specific composition rather than stretched city tiles or gang
-portraits. Site cooperation stretches the attained site's `PX02000` portrait
-into the aperture, then overlays white-keyed `PX06004` (the person holding the
-bill and the gun). Its footer identifies the site as `<id>:<name>` and reports
+portraits. Site cooperation takes the centered `(12, row + 1, 94, 62)` interior
+of the attained site's 120-by-64 `PX02000` portrait and stretches it into the
+aperture. The default `ORIGINAL` event-image option uses the executable's
+recovered `COLORONCOLOR`-equivalent point stretch and then applies its 8-by-8
+resource-146 ordered mask, retaining 25 percent of background pixels. It next
+overlays white-keyed `PX06004` (the person holding the bill and the gun), which
+the mask does not affect. The explicit `SMOOTH` option linearly filters the
+unmasked site background; foreground art, panel, borders, and text remain point
+sampled. The footer preserves the template's antialiased white `DATE`, `OBJECT`,
+and `STATUS` labels and replaces only their values in green at the measured
+y=299 and y=308 baselines. It identifies the site as `<id>:<name>` and reports
 `SITE COOPERATION ACHIEVED.`
 Completed Research uses the resolved item's dedicated 15-frame, 48-by-48
 `PX04xxx` rotation strip in the `PX06005` monitor. The green monitor frame is
@@ -421,10 +429,13 @@ performed.
 Routine implementation notifications such as upkeep/economy, movement,
 equipment transactions and ordinary command completion do not create reports;
 captured/lost control, newly influenced sites, completed research, crackdowns,
-eliminations and objective changes do. Closing the panel consumes the queued
-notifications only after every report page was visited. Closing early retains
-the queue and blinks the Events control, matching the original Help; trying to
-open the panel without reportable events leaves the current screen unchanged.
+eliminations and objective changes do. Closing the panel consumes the unread
+queued notifications only after every report page was visited. The completed
+batch is retained in a per-player presentation archive, so the Events button
+can reopen it without resuming the unread blink. Closing early retains the live
+queue and blink, matching the original Help; trying to open the panel without a
+live or archived report batch leaves the current screen unchanged. New match,
+load, and replay initialization clear the presentation-only archive.
 
 ## Next mapping work
 
