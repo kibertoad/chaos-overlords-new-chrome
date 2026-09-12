@@ -1,7 +1,7 @@
 # Original asset catalog
 
 Status: generated inventory; semantic ownership remains incomplete
-Manifest format: 4
+Manifest format: 6
 Extractor version: 1.0.0.0
 Source fingerprint: `ad958a934a691318f31a27a87252f420dd89a0ad03759457d8feaf49914d29e3`
 Asset count: 686
@@ -40,7 +40,7 @@ This file is generated from a fully verified local manifest. Resource names and 
 | `audio/SND00518.wav` | `DATA/SND00518` | audio/wav | copy | Sound effect | Unknown action/UI trigger | N/A | `9e6d2d894ee02221be922067d0a675ba5d0e72372514c1fb38fd62d8c93c4247` |
 | `help/CHAOS.CNT` | `HELP/CHAOS.CNT` | application/octet-stream | copy | Original WinHelp resource | Local extraction input; not used at runtime | Format-dependent | `8243a864ee73aa828408fa675c0f1dea9bb12cd77e4dfeb2a0b0dbdca8fbc343` |
 | `help/Chaos.hlp` | `HELP/Chaos.hlp` | application/octet-stream | copy | Original WinHelp resource | Local extraction input; not used at runtime | Format-dependent | `16bffe0ae29d3f87fc39569825b678e2820370bdd62610d2be2c91b6e538ddf4` |
-| `help/contents.json` | `HELP/Chaos.hlp + HELP/CHAOS.CNT` | application/vnd.rechaos.help+json | winhelp-topic-decode | Decoded WinHelp topics and contents | Modern in-game help viewer | N/A | `5b1426c0f0705cf96b2b1539e12fbe693f728d03da33e13ea621082d18b5b153` |
+| `help/contents.json` | `HELP/Chaos.hlp + HELP/CHAOS.CNT` | application/vnd.rechaos.help+json | winhelp-topic-decode | Decoded WinHelp topics and contents | Modern in-game help viewer | N/A | `39b6976b340baaa00cf0093234526f33808738abbdffd74b99a384b185893330` |
 | `images/PX00100.bmp` | `DATA/PX16/PX00100` | image/bmp | bmp-header-repair; 640x460x16 (RGB555) | PX16 presentation image | Unknown | RGB555; color key unresolved | `a85ed663d8bfbae66015df6c57f9801bf31abdd0ba090f85f88cd4b5185279d2` |
 | `images/PX00128.bmp` | `DATA/PX16/PX00128` | image/bmp | bmp-header-repair; 640x460x16 (RGB555) | PX16 presentation image | Unknown | RGB555; color key unresolved | `79d5f85b30ed1cf3600a6d2e5518f7c5f3aa2dbda6dbf2ff462b78055bd1a376` |
 | `images/PX00129.bmp` | `DATA/PX16/PX00129` | image/bmp | bmp-header-repair; 512x646x16 (RGB555) | PX16 presentation image | Unknown | RGB555; color key unresolved | `5d1036eec4871044c628758b783b7d32b838b3383be9d0bd8f0c8cfbcdb024fe` |
@@ -694,5 +694,5 @@ This file is generated from a fully verified local manifest. Resource names and 
 | `raw/px08/PX10004` | `DATA/PX08/PX10004` | application/x-chaos-px08 | copy | PX08 indexed image source | Unknown | Palette and transparency unresolved | `a3c6fe4fd217f292d9268df17caabca113b25047150b30bff9e49ebfc937d817` |
 | `raw/px08/PX10005` | `DATA/PX08/PX10005` | application/x-chaos-px08 | copy | PX08 indexed image source | Unknown | Palette and transparency unresolved | `35938ab14f151e4ff96ffba308d7e98943f55ef3bbf633c3204f701198f3a1df` |
 | `raw/px08/PX10006` | `DATA/PX08/PX10006` | application/x-chaos-px08 | copy | PX08 indexed image source | Unknown | Palette and transparency unresolved | `07b2700ef61354ed6bfc1c15e7fb509e7072b1bc88d4034c81286ded1f995e15` |
-| `video/MVINTRO.smk` | `DATA/MVINTRO` | video/x-smacker | copy | Smacker video | Intro | N/A | `52478e0fbcd0fc39bb31171d2dc86115a2b685cc930107587c6a7dba496a77dd` |
-| `video/MVLOGOS.smk` | `DATA/MVLOGOS` | video/x-smacker | copy | Smacker video | Logo flow | N/A | `cd5b80b01626155ec1b7be0c879378117f2323ed9ec824a704e4ca08c1974752` |
+| `video/MVINTRO.smk` | `DATA/MVINTRO` | video/x-smacker | copy; validated Smacker v2; 480x256; 1,150 frames; 100 ms/frame; packed PCM 22050 Hz 16-bit stereo | Smacker video | Intro | N/A | `52478e0fbcd0fc39bb31171d2dc86115a2b685cc930107587c6a7dba496a77dd` |
+| `video/MVLOGOS.smk` | `DATA/MVLOGOS` | video/x-smacker | copy; validated Smacker v2; 480x256; 200 frames; 100 ms/frame; packed PCM 22050 Hz 16-bit mono | Smacker video | Logo flow | N/A | `cd5b80b01626155ec1b7be0c879378117f2323ed9ec824a704e4ca08c1974752` |

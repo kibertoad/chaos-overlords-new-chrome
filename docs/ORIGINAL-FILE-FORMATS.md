@@ -217,11 +217,20 @@ and looping rules are **Low**. They are copied byte-for-byte.
 ## Video
 
 `MVINTRO` (8,592,724 bytes) and `MVLOGOS` (1,832,372 bytes) begin `SMK2`, the
-Smacker v2 signature. Header values appear to give 480 x 256 dimensions at
-offsets 4 and 8; frame counts appear to be 1,150 and 200 at offset 12. Container
-identity is **Verified**; field interpretation is **High**; playback/timing and
-audio tracks are **Low**. The extractor copies both videos byte-for-byte, but
-the MonoGame client has no Smacker decoder yet.
+Smacker v2 signature. Little-endian dimensions at offsets 4 and 8 are 480 x 256;
+frame counts at offset 12 are 1,150 and 200. Both store `-10000` in the frame-
+duration field, encoding 100 ms per frame and total durations of 115 and 20
+seconds. Their first audio descriptors identify packed 22,050 Hz, 16-bit PCM:
+stereo with a 48,512-byte maximum decoded frame for `MVINTRO`, and mono with a
+24,260-byte maximum for `MVLOGOS`.
+
+The bounded reader accounts for the fixed 104-byte header, optional ring frame,
+four-byte frame sizes, one-byte frame types, Huffman-tree region, and every
+declared frame payload. Those regions exactly cover each supported file with no
+trailing bytes. Container structure and header semantics are therefore
+**Verified**. The extractor copies both videos byte-for-byte and now rejects a
+structurally inconsistent source container. Managed frame/audio decompression
+and client playback remain unimplemented; see [AUDIO-VIDEO.md](AUDIO-VIDEO.md).
 
 ## Help
 

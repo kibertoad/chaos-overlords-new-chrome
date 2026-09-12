@@ -36,7 +36,7 @@ public static class AssetCatalogGenerator
             builder.Append("| `").Append(Escape(asset.Path)).Append("` | `")
                 .Append(Escape(asset.SourcePath)).Append("` | ")
                 .Append(Escape(asset.MediaType)).Append(" | ")
-                .Append(Escape(DescribeConversion(asset.Conversion))).Append(" | ")
+                .Append(Escape(DescribeConversion(asset))).Append(" | ")
                 .Append(classification.Role).Append(" | ")
                 .Append(classification.Owner).Append(" | ")
                 .Append(classification.Palette).Append(" | `")
@@ -66,8 +66,14 @@ public static class AssetCatalogGenerator
         return ("Opaque original data", "Unknown", "Unknown");
     }
 
-    private static string DescribeConversion(AssetConversion? conversion)
+    private static string DescribeConversion(ExtractedAsset asset)
     {
+        if (asset.Path.Equals("video/MVINTRO.smk", StringComparison.OrdinalIgnoreCase))
+            return "copy; validated Smacker v2; 480x256; 1,150 frames; 100 ms/frame; packed PCM 22050 Hz 16-bit stereo";
+        if (asset.Path.Equals("video/MVLOGOS.smk", StringComparison.OrdinalIgnoreCase))
+            return "copy; validated Smacker v2; 480x256; 200 frames; 100 ms/frame; packed PCM 22050 Hz 16-bit mono";
+
+        var conversion = asset.Conversion;
         if (conversion is null) return "Unknown";
         var geometry = conversion.Width is not null && conversion.Height is not null
             ? $"; {conversion.Width}x{conversion.Height}x{conversion.BitsPerPixel} ({conversion.PixelFormat})"

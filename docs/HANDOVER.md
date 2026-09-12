@@ -11,7 +11,7 @@ Last updated: 2026-09-12
   interaction-layout batch; `codex/full-reimplementation` remains the
   development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,421 tests; its offline restore emitted
+  isolated Release build passed all 1,426 tests; its offline restore emitted
   only the expected unreachable-advisory-source `NU1900` warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -25,6 +25,12 @@ Last updated: 2026-09-12
 
 ## Latest playable work
 
+- Both original Smacker-v2 movies now pass a bounded structural parser before
+  source-pack acceptance. Exact 480x256 geometry, 100 ms cadence, 200/1,150
+  frame counts, 20/115-second durations, packed 22,050 Hz 16-bit mono/stereo
+  descriptors, and byte-exact container extents are pinned. The media decision
+  is managed runtime decoding without ambient codecs; decompression and client
+  playback remain the next implementation layer.
 - The embedded gameplay tables now have a reproducible extractor command:
   `--generate-game-data <json> --source <install>`. Format 1 validates the
   fingerprinted legal source, deterministically reproduces the pinned JSON,

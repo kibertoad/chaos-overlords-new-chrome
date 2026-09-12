@@ -580,9 +580,12 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
   seeding/call context, police notification edges, and a
   small set of economy/special-building boundaries.
 - Runtime manifest checking validates version only.
-- Music and mapped combat/general sound effects are presented; Smacker video
-  playback, remaining effect triggers, exact cadence/color keys, and native
-  playback validation remain open.
+- Music and mapped combat/general sound effects are presented. The Core asset
+  layer now validates the exact supported Smacker-v2 header, audio descriptors,
+  frame tables, tree extent, and payload extent before extraction accepts a
+  source pack. Managed video/audio decompression and client playback, remaining
+  effect triggers, exact cadence/color keys, and native playback validation
+  remain open.
 
 Each item must move to the parity matrix before replacement so behavior changes
 remain traceable.

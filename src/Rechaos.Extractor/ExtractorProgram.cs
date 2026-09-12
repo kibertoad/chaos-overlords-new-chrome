@@ -126,6 +126,11 @@ public static class ExtractorProgram
         }
 
         _ = OriginalDataReader.Read(dataDirectory); // Validate exact record structure before extraction.
+        foreach (var videoName in new[] { "MVINTRO", "MVLOGOS" })
+        {
+            var video = OriginalDataReader.FindCaseInsensitive(Path.Combine(dataDirectory, videoName));
+            _ = SmackerVideoReader.Read(video);
+        }
         var fingerprint = await SourceFingerprint.ComputeAsync(dataDirectory, musicDirectory, helpDirectory);
         if (!string.Equals(fingerprint, KnownSourceFingerprintSha256, StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException($"Unsupported or incomplete original asset pack (SHA-256 {fingerprint}).");
