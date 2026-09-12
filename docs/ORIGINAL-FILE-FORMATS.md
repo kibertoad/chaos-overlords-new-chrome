@@ -232,8 +232,9 @@ trailing bytes. Container structure and header semantics are therefore
 length, type flags, and first-frame/keyframe status; the bounded demultiplexer
 separates palette, audio, and video chunks in their encoded order. The extractor
 copies both videos byte-for-byte and rejects a structurally inconsistent source
-container. Palette application, managed frame/audio decompression, and client
-playback remain unimplemented; see [AUDIO-VIDEO.md](AUDIO-VIDEO.md).
+container. Palette state and packed unsigned 8-bit mono/stereo audio decode in
+managed code during full source verification. Video-frame decompression and
+client playback remain unimplemented; see [AUDIO-VIDEO.md](AUDIO-VIDEO.md).
 
 ## Help
 

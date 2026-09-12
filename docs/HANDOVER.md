@@ -1,18 +1,16 @@
 # Development handover
 
 Status: active at a validated local checkpoint
-Last updated: 2026-09-12
+Last updated: 2026-09-13
 
 ## Repository state
 
 - The canonical repository is
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`. `main` contains
-  every accepted checkpoint through the sector-indexed Combat Results and
-  interaction-layout batch; `codex/full-reimplementation` remains the
-  development branch.
+  every accepted checkpoint through managed Smacker palette decoding;
+  `codex/full-reimplementation` remains the development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,428 tests; its offline restore emitted
-  only the expected unreachable-advisory-source `NU1900` warnings.
+  isolated Release build passed all 1,436 tests with zero warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -30,8 +28,9 @@ Last updated: 2026-09-12
   frame counts, 20/115-second durations, packed 22,050 Hz 8-bit mono/stereo
   descriptors, and byte-exact container extents are pinned. Physical frame
   descriptors and bounded palette/audio/video demultiplexing are implemented.
-  The media decision is managed runtime decoding without ambient codecs;
-  palette application, decompression, and client playback are next.
+  Palette state and packed unsigned 8-bit mono/stereo audio now decode in
+  managed code across both complete movies. Video-frame decompression and
+  client playback are next; no ambient codec is required.
 - The embedded gameplay tables now have a reproducible extractor command:
   `--generate-game-data <json> --source <install>`. Format 1 validates the
   fingerprinted legal source, deterministically reproduces the pinned JSON,
@@ -485,7 +484,7 @@ Last updated: 2026-09-12
    at runtime, then validate effect overlap/interruption and complete native
    audio/music validation. The four-second repeat, slot-2 inventory, and
    Combat-selection slot-3 call are statically classified and routed.
-5. Decide and implement Smacker playback or extractor-side transcoding; capture
+5. Complete managed Smacker video-frame decoding and client playback; capture
    native WinHelp typography/paragraph geometry only where pixel-viewer fidelity
    materially benefits from it.
 

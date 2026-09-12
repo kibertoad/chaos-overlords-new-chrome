@@ -154,6 +154,67 @@ public sealed class SmackerVideoReaderTests
             SmackerPaletteDecoder.Apply(chunk, SmackerPaletteDecoder.CreateEmpty()));
     }
 
+    [Fact]
+    public void AudioDecoderReconstructsMonoPredictiveSamples()
+    {
+        var bits = new List<int> { 1, 0, 0, 1, 1, 0 };
+        AppendByte(bits, 1);
+        bits.Add(0);
+        AppendByte(bits, 255);
+        bits.Add(0);
+        AppendByte(bits, 10);
+        bits.AddRange([0, 1, 0]);
+        var chunk = new SmackerAudioChunk(0, 4, PackBits(bits));
+
+        var output = SmackerAudioDecoder.Decode(chunk, AudioTrack(channels: 1, maximumBytes: 4));
+
+        Assert.Equal(new byte[] { 10, 11, 10, 11 }, output);
+    }
+
+    [Fact]
+    public void AudioDecoderReconstructsInterleavedStereoSamples()
+    {
+        var bits = new List<int> { 1, 1, 0 };
+        foreach (var delta in new byte[] { 1, 2 })
+        {
+            bits.AddRange([1, 0]);
+            AppendByte(bits, delta);
+            bits.Add(0);
+        }
+        AppendByte(bits, 20);
+        AppendByte(bits, 10);
+        var chunk = new SmackerAudioChunk(0, 6, PackBits(bits));
+
+        var output = SmackerAudioDecoder.Decode(chunk, AudioTrack(channels: 2, maximumBytes: 6));
+
+        Assert.Equal(new byte[] { 10, 20, 11, 22, 12, 24 }, output);
+    }
+
+    [Fact]
+    public void AudioDecoderRejectsTruncatedTree()
+    {
+        var chunk = new SmackerAudioChunk(0, 1, new byte[] { 1 });
+
+        Assert.Throws<InvalidDataException>(() =>
+            SmackerAudioDecoder.Decode(chunk, AudioTrack(channels: 1, maximumBytes: 1)));
+    }
+
+    private static SmackerAudioTrack AudioTrack(int channels, int maximumBytes) =>
+        new(0, (uint)maximumBytes, 22_050, 8, channels, IsPacked: true);
+
+    private static void AppendByte(List<int> bits, byte value)
+    {
+        for (var index = 0; index < 8; index++) bits.Add((value >> index) & 1);
+    }
+
+    private static byte[] PackBits(IReadOnlyList<int> bits)
+    {
+        var bytes = new byte[(bits.Count + 7) / 8];
+        for (var index = 0; index < bits.Count; index++)
+            bytes[index / 8] |= (byte)(bits[index] << (index % 8));
+        return bytes;
+    }
+
     private static MemoryStream BuildContainer(
         int width,
         int height,

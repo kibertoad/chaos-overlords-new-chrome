@@ -137,6 +137,11 @@ public static class ExtractorProgram
                 var packet = SmackerFrameDemuxer.Read(stream, metadata, frameIndex);
                 if (!packet.PaletteChunk.IsEmpty)
                     palette = SmackerPaletteDecoder.Apply(packet.PaletteChunk.Span, palette);
+                foreach (var audioChunk in packet.AudioChunks)
+                {
+                    var track = metadata.AudioTracks.Single(value => value.Index == audioChunk.TrackIndex);
+                    _ = SmackerAudioDecoder.Decode(audioChunk, track);
+                }
             }
         }
         var fingerprint = await SourceFingerprint.ComputeAsync(dataDirectory, musicDirectory, helpDirectory);

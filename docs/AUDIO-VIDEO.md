@@ -52,6 +52,10 @@ Huffman trees, and all declared frame payloads exactly cover the file.
 palette update, ordered audio chunks, and remaining video bitstream.
 `SmackerPaletteDecoder` applies the format's skip, previous-palette copy, and
 six-bit BGR color commands while bounding every source and destination range.
+The managed audio decoder reconstructs the movies' packed unsigned 8-bit mono
+and stereo PCM, including per-chunk Huffman trees, channel predictors, and the
+codec's intentional byte wraparound. Source verification decodes every audio
+chunk rather than trusting container metadata alone.
 
 | File | SHA-256 | Size | Video | Timing | Audio |
 |---|---|---:|---|---|---|
@@ -72,6 +76,5 @@ replays, phase hashes, or multiplayer state. Input skipping and exact logo/
 intro trigger order still require original-runtime evidence before their final
 policy is classified as parity.
 
-Video/audio decompression, client presentation, skip controls, and cadence
-tests are not implemented yet. Until they are, the title opens directly as
-before.
+Video decompression, client presentation, skip controls, and cadence tests are
+not implemented yet. Until they are, the title opens directly as before.
