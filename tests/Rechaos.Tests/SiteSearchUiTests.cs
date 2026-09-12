@@ -15,19 +15,23 @@ public sealed class SiteSearchUiTests
         var first = new PlayerId(0);
         var second = new PlayerId(1);
 
+        Assert.Equal(SiteSearchLayout.MaximumSites, selections.For(first).Count);
+        Assert.Equal(SiteSearchLayout.MaximumSites, selections.For(second).Count);
+
         selections.Toggle(first, 4);
         selections.SelectAll(second, [4, 8, 12]);
 
-        Assert.True(selections.IsSelected(first, 4));
-        Assert.False(selections.IsSelected(first, 8));
+        Assert.False(selections.IsSelected(first, 4));
+        Assert.True(selections.IsSelected(first, 8));
         Assert.Equal<short>([4, 8, 12], selections.For(second).Order());
 
         selections.Clear(second);
         Assert.Empty(selections.For(second));
-        Assert.True(selections.IsSelected(first, 4));
+        Assert.False(selections.IsSelected(first, 4));
 
         selections.Reset();
-        Assert.Empty(selections.For(first));
+        Assert.Equal(SiteSearchLayout.MaximumSites, selections.For(first).Count);
+        Assert.Equal(SiteSearchLayout.MaximumSites, selections.For(second).Count);
     }
 
     [Fact]
@@ -54,6 +58,20 @@ public sealed class SiteSearchUiTests
         Assert.All(result.GroupBy(marker => marker.SectorId), markers =>
             Assert.Equal(Enumerable.Range(0, markers.Count()),
                 markers.Select(marker => marker.VisibleSlot)));
+    }
+
+    [Fact]
+    public void DefaultSelectionProjectsAllThreeSitesInEverySector()
+    {
+        var state = CreateMatch();
+        var player = new PlayerId(0);
+        var selections = new SiteSearchSelectionState();
+
+        var result = CitySiteMarkerProjection.Project(state, player, selections.For(player));
+
+        Assert.Equal(state.Sectors.Sum(sector => sector.Sites.Count), result.Count);
+        Assert.All(result.GroupBy(marker => marker.SectorId), markers =>
+            Assert.Equal(MatchLimits.SitesPerSector, markers.Count()));
     }
 
     [Theory]

@@ -350,7 +350,9 @@ then validate overlap/interruption and native amplitude behavior.
 NONE write all 22 bytes, an individual row toggles one byte, and a row
 double-click calls Site Information handler `0x0044c476` with the selected
 definition. Fresh-game initialization at `0x0046e766` clears the complete
-per-player table.
+per-player table. The supplied original city capture shows that normal city
+presentation nevertheless begins with all site types visible; the recreation
+represents that visible state as an ALL selection.
 
 The sole city consumer at `0x00412990`, inside redraw routine `0x004123cc`,
 walks the three physical site slots of each sector. A site controlled by the
@@ -364,9 +366,10 @@ the 432x416 city buffer is x `(sector % 8) * 53 + 9` and y
 
 **Interpretation:** Search is a persistent per-player presentation filter for
 individual city-site markers, not a sector highlight. Influence ownership is
-the recreation's exact controlled-site predicate. The Search double-click
-shows definition-level information, including base rather than live remaining
-Resistance.
+the recreation's exact controlled-site predicate. Each player's recreation
+filter initializes and resets to ALL; NONE and individual toggles can then
+suppress uninfluenced site types. The Search double-click shows definition-level
+information, including base rather than live remaining Resistance.
 
 **Confidence:** High static evidence from the complete handler, initializer,
 sole selection-table consumer, and marker renderer.
