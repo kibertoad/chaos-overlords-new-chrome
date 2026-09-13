@@ -146,9 +146,10 @@ Linux and macOS installer builders run only on matching native hosted runners.
 The Linux gate opens the generated `.deb` and smoke-runs its installed-layout
 executable. Each macOS gate validates the generated plist, smoke-runs the app
 bundle executable, builds the `.pkg`, expands it again, and confirms the game
-payload. Windows additionally exercises silent install and uninstall. Unsigned
-packages are development artifacts until the signing/notarization release gate
-is implemented.
+payload. Windows additionally exercises silent install and uninstall. The
+manual release gate signs and verifies Windows executables and the installer
+through SSL.com eSigner; local and continuous-integration packages remain
+unsigned, and signing/notarization for the other platforms is still deferred.
 
 GitHub Actions dependencies are pinned to immutable commits corresponding to
 their documented latest releases. `.github/workflows/zizmor.yml` uses the

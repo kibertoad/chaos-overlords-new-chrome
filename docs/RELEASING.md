@@ -24,7 +24,7 @@ Build Linux x64 and macOS arm64/x64 installers on their native hosts:
 
 The Linux `.deb` installs launch and import commands. The macOS `.pkg` installs
 an application bundle containing the game, extractor, and asset-import helper.
-All release installers are currently unsigned.
+Linux and macOS release installers are currently unsigned.
 
 The Windows installer scans GOG and Windows uninstall records plus common GOG
 paths, accepts a manually selected source, and imports the required assets. Its
@@ -40,6 +40,21 @@ and select `windows` or `all`. The default builds Windows x64 only. `all`
 requires matching Windows x64, Linux x64, macOS arm64, and macOS x64 artifacts.
 The workflow creates the tag and GitHub Release only after tests and all selected
 builds succeed. It has no scheduled or push trigger.
+
+The Windows release job uses the `release-signing` GitHub environment and
+SSL.com eSigner to Authenticode-sign the project executables before Inno Setup
+packages them, then signs the completed installer. Configure these environment
+secrets before running a release:
+
+- `ES_USERNAME`: SSL.com account username.
+- `ES_PASSWORD`: SSL.com account password.
+- `CREDENTIAL_ID`: eSigner code-signing certificate credential ID.
+- `ES_TOTP_SECRET`: OAuth TOTP secret used for unattended signing.
+
+The job uses eSigner's production environment, verifies that every signature is
+valid and timestamped, and confirms after installation that the packaged game
+retained its signature. Development installers produced locally or by the
+continuous-integration workflow remain unsigned.
 
 ## Continuous integration
 

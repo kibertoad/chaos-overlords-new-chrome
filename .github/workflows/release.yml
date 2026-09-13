@@ -84,9 +84,10 @@ jobs:
         run: ./tools/Invoke-Validation.ps1 -LongRunningTestsOnly -TraceTestOutput
 
   build-windows:
-    name: Build Windows x64 installer
+    name: Build and sign Windows x64 installer
     needs: [prepare, test]
     runs-on: windows-latest
+    environment: release-signing
     permissions:
       contents: read
     steps:
@@ -95,6 +96,20 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.commit }}
           persist-credentials: false
+
+      - name: Verify eSigner configuration
+        shell: pwsh
+        env:
+          ES_USERNAME: ${{ secrets.ES_USERNAME }}
+          ES_PASSWORD: ${{ secrets.ES_PASSWORD }}
+          CREDENTIAL_ID: ${{ secrets.CREDENTIAL_ID }}
+          ES_TOTP_SECRET: ${{ secrets.ES_TOTP_SECRET }}
+        run: |
+          $missing = @('ES_USERNAME', 'ES_PASSWORD', 'CREDENTIAL_ID', 'ES_TOTP_SECRET') |
+            Where-Object { -not [Environment]::GetEnvironmentVariable($_) }
+          if ($missing.Count -ne 0) {
+            throw "Missing release-signing environment secret(s): $($missing -join ', ')."
+          }
 
       - name: Set up .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -126,11 +141,92 @@ jobs:
           }
           "INNO_COMPILER=$compilerRoot\ISCC.exe" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Build installer
+      - name: Build Windows package
+        shell: pwsh
+        run: ./tools/Publish-Windows.ps1 -SkipArchive
+
+      - name: Stage executables for signing
+        shell: pwsh
+        run: |
+          $packageRoot = 'artifacts/ChaosOverlordsNewChrome-win-x64'
+          $signingInput = 'artifacts/esigner-input'
+          $executables = @(Get-ChildItem -LiteralPath $packageRoot -Recurse -File -Filter 'Rechaos*.exe')
+          if ($executables.Count -eq 0) { throw "No project executables were found below '$packageRoot'." }
+          $duplicates = $executables | Group-Object Name | Where-Object Count -gt 1
+          if ($duplicates) {
+            throw "Executable names must be unique for eSigner staging: $($duplicates.Name -join ', ')."
+          }
+          New-Item -ItemType Directory -Path $signingInput -Force | Out-Null
+          $executables | Copy-Item -Destination $signingInput
+
+      - name: Sign Windows executables with SSL.com eSigner
+        uses: sslcom/esigner-codesign@b7f8ff36fc0de8690fbbab8e5b4421d29802f747 # develop, pinned 2026-09-13
+        with:
+          command: batch_sign
+          username: ${{ secrets.ES_USERNAME }}
+          password: ${{ secrets.ES_PASSWORD }}
+          credential_id: ${{ secrets.CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.ES_TOTP_SECRET }}
+          dir_path: ${{ github.workspace }}\artifacts\esigner-input
+          output_path: ${{ github.workspace }}\artifacts\esigner-output
+          malware_block: false
+          clean_logs: true
+          environment_name: PROD
+
+      - name: Install and verify signed executables
+        shell: pwsh
+        run: |
+          $packageRoot = 'artifacts/ChaosOverlordsNewChrome-win-x64'
+          $expectedNames = @(Get-ChildItem -LiteralPath 'artifacts/esigner-input' -File -Filter '*.exe' |
+            Select-Object -ExpandProperty Name)
+          $signedExecutables = @(Get-ChildItem -LiteralPath 'artifacts/esigner-output' -File -Filter '*.exe')
+          $signedNames = @($signedExecutables | Select-Object -ExpandProperty Name)
+          $difference = @(Compare-Object $expectedNames $signedNames)
+          if ($difference.Count -ne 0) {
+            throw "eSigner output did not match the staged executables: $($difference.InputObject -join ', ')."
+          }
+          foreach ($signedExecutable in $signedExecutables) {
+            $destinations = @(Get-ChildItem -LiteralPath $packageRoot -Recurse -File -Filter $signedExecutable.Name)
+            if ($destinations.Count -ne 1) {
+              throw "Expected one destination for '$($signedExecutable.Name)', found $($destinations.Count)."
+            }
+            Copy-Item -LiteralPath $signedExecutable.FullName -Destination $destinations[0].FullName -Force
+            $signature = Get-AuthenticodeSignature -LiteralPath $destinations[0].FullName
+            if ($signature.Status -ne 'Valid' -or -not $signature.TimeStamperCertificate) {
+              throw "Invalid or untimestamped eSigner signature on '$($destinations[0].FullName)': $($signature.Status)."
+            }
+          }
+
+      - name: Build installer from signed package
         shell: pwsh
         env:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-        run: ./tools/Build-WindowsInstaller.ps1 -Version $env:RELEASE_VERSION -Compiler "$env:INNO_COMPILER"
+        run: ./tools/Build-WindowsInstaller.ps1 -Version $env:RELEASE_VERSION -Compiler "$env:INNO_COMPILER" -SkipPackage
+
+      - name: Sign Windows installer with SSL.com eSigner
+        uses: sslcom/esigner-codesign@b7f8ff36fc0de8690fbbab8e5b4421d29802f747 # develop, pinned 2026-09-13
+        with:
+          command: sign
+          username: ${{ secrets.ES_USERNAME }}
+          password: ${{ secrets.ES_PASSWORD }}
+          credential_id: ${{ secrets.CREDENTIAL_ID }}
+          totp_secret: ${{ secrets.ES_TOTP_SECRET }}
+          file_path: ${{ github.workspace }}\artifacts\ChaosOverlords-NewChrome-Setup-${{ needs.prepare.outputs.version }}.exe
+          override: true
+          malware_block: false
+          clean_logs: true
+          environment_name: PROD
+
+      - name: Verify signed installer
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          $installer = "artifacts/ChaosOverlords-NewChrome-Setup-$env:RELEASE_VERSION.exe"
+          $signature = Get-AuthenticodeSignature -LiteralPath $installer
+          if ($signature.Status -ne 'Valid' -or -not $signature.TimeStamperCertificate) {
+            throw "Invalid or untimestamped eSigner signature on '$installer': $($signature.Status)."
+          }
 
       - name: Smoke-test installer
         shell: pwsh
@@ -149,6 +245,10 @@ jobs:
           $expectedTarget = [IO.Path]::GetFullPath((Join-Path $testRoot 'Game/Rechaos.Game.exe'))
           if ($link.TargetPath -ne $expectedTarget -or [IO.Path]::GetExtension($link.TargetPath) -ne '.exe') {
             throw "Shortcut target is invalid: '$($link.TargetPath)' (expected '$expectedTarget')."
+          }
+          $installedSignature = Get-AuthenticodeSignature -LiteralPath $link.TargetPath
+          if ($installedSignature.Status -ne 'Valid' -or -not $installedSignature.TimeStamperCertificate) {
+            throw "Installed game executable has an invalid or missing timestamped signature: $($installedSignature.Status)."
           }
           foreach ($nativeLibrary in @('SDL2.dll', 'openal.dll')) {
             $nativePath = Join-Path (Split-Path -Parent $link.TargetPath) $nativeLibrary
