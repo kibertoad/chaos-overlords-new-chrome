@@ -26,7 +26,8 @@ This file is the operator and contributor manual.
 
 ## Run it
 
-Prerequisites: Node.js 22+, pnpm 10 (`corepack enable`).
+Prerequisites: Node.js 22+, pnpm 11 (`corepack enable`). The workspace pins the latest supported
+11.x release and explicitly allowlists the native build scripts required by its runtime adapters.
 
 ```sh
 cd multiplayer

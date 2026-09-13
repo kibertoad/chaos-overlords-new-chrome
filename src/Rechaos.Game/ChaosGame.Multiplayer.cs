@@ -429,7 +429,8 @@ public sealed partial class ChaosGame
                         ? parsed
                         : null;
                 _online.SeatedSeats = resumed.Match.Players.Count(
-                    player => player.Slot >= 0 && player.Status == WirePlayerStatus.Active);
+                    player => player.Slot >= 0
+                        && player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending);
                 _online.Status = string.Empty;
                 if (AdoptOnlineState(resumed.State, resumed.Submission))
                 {
@@ -461,6 +462,19 @@ public sealed partial class ChaosGame
                 return;
             case MultiplayerNotice.MatchUpdated updated:
                 _online.Match = updated.Match;
+                return;
+            case MultiplayerNotice.TakeoverVoteChanged changed:
+                var name = _online.Match?.Players
+                    .FirstOrDefault(player => player.Id == changed.PlayerId)?.DisplayName
+                    ?? "THE ABSENT PLAYER";
+                _online.TakeoverVotes[changed.PlayerId] = new TakeoverVotePrompt(
+                    changed.PlayerId, name, changed.Turn, changed.Votes);
+                return;
+            case MultiplayerNotice.TakeoverVoteClosed closed:
+                _online.TakeoverVotes.Remove(closed.PlayerId);
+                _message = closed.ComputerControl
+                    ? "PLAYERS APPROVED COMPUTER CONTROL"
+                    : "THE PLAYER RETURNED  TAKEOVER VOTE CANCELLED";
                 return;
             case MultiplayerNotice.DeadlineChanged deadline:
                 _online.DeadlineAt = deadline.DeadlineAt;
@@ -526,6 +540,27 @@ public sealed partial class ChaosGame
     {
         Forget(_lobby?.LeaveAsync(), "multiplayer.leave.failed");
         EndOnlineMatch("LEFT THE MATCH");
+    }
+
+    private bool HandleTakeoverVoteClick(Point point)
+    {
+        if (_online.CurrentTakeoverVote is not { } vote || _session is null) return false;
+        TakeoverChoice? choice = point switch
+        {
+            _ when TakeoverVoteWait.Contains(point) => TakeoverChoice.Wait,
+            _ when TakeoverVoteComputer.Contains(point) => TakeoverChoice.Computer,
+            _ => null,
+        };
+        if (choice is { } selected)
+        {
+            Forget(
+                _session.VoteOnTakeoverAsync(vote.PlayerId, selected),
+                "multiplayer.takeover-vote.failed");
+            _message = selected == TakeoverChoice.Wait
+                ? "VOTED TO WAIT FOR THE PLAYER"
+                : "VOTED TO USE COMPUTER CONTROL";
+        }
+        return true;
     }
 
     /// <summary>

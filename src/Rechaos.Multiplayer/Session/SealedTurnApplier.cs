@@ -41,11 +41,10 @@ public static class SealedTurnApplier
     /// </para>
     /// <para>
     /// That makes a human seat with no document in the set do nothing for the turn, which is what a
-    /// player who ran out of clock ordered: nothing. A player who has left the match is still the
-    /// same case in the live protocol: the server stops waiting on their readiness, so turns seal
-    /// without them and their gangs hold position. <see cref="MatchReplayRecorder.TransferPlayerToComputer"/>
-    /// is the deterministic handover prerequisite; the wire does not invoke it until departure
-    /// history can be reconstructed at the exact same boundary on every client.
+    /// player who ran out of clock ordered: nothing. An absent or departed player's gangs likewise
+    /// hold position while the other players vote to wait. <see cref="MatchReplayRecorder.TransferPlayerToComputer"/>
+    /// is invoked only by the authoritative approved-takeover event, at the exact same boundary on
+    /// every live or reconnecting client.
     /// </para>
     /// </remarks>
     public static string Apply(MatchReplayRecorder replay, SealedOrdersView sealedOrders)

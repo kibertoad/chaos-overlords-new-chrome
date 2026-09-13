@@ -111,6 +111,10 @@ public sealed class MultiplayerEventStreamTests
     [InlineData("turn.readiness", "{\"turn\":1,\"playerId\":\"p1\",\"ready\":true}")]
     [InlineData("turn.opened", "{\"turn\":2,\"deadlineAt\":null}")]
     [InlineData("match.statusChanged", "{\"status\":\"finished\"}")]
+    [InlineData("match.takeoverVoteRequested", "{\"playerId\":\"p2\",\"turn\":1}")]
+    [InlineData("match.takeoverVoteCast", "{\"playerId\":\"p2\",\"voterPlayerId\":\"p1\",\"decision\":\"wait\"}")]
+    [InlineData("match.takeoverVoteCancelled", "{\"playerId\":\"p2\"}")]
+    [InlineData("match.playerTakenOver", "{\"playerId\":\"p2\"}")]
     public async Task CarriesTheEnvelopeOnEveryEventType(string type, string payload)
     {
         var parsed = Assert.Single(await ReadAsync(Frame(type, payload)));

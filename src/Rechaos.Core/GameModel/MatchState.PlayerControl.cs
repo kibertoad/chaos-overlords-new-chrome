@@ -8,7 +8,7 @@ public sealed partial class MatchState
     /// <remarks>
     /// This is deliberately one-way and does not infer a departure from an absent order document:
     /// an absent document can also mean an active player timed out. Online callers must record an
-    /// authoritative departure and apply this operation on every client before planning the seal.
+    /// authoritative approved-takeover event and apply this operation on every client before planning the seal.
     /// A sender with authenticated human Comlink history cannot transfer because current save
     /// validation cannot otherwise prove that those earlier messages were sent before the handover.
     /// </remarks>

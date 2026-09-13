@@ -1,8 +1,8 @@
 packages:
   - packages/*
   - runtimes/*
-# better-sqlite3 compiles or downloads a native binary; allow its build script.
-onlyBuiltDependencies:
-  - better-sqlite3
-  - workerd
-  - esbuild
+allowBuilds:
+  # These packages compile or download the native binaries used by tests and runtime adapters.
+  better-sqlite3: true
+  esbuild: true
+  workerd: true

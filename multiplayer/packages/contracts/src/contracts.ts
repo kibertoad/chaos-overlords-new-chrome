@@ -10,6 +10,7 @@ import {
   createMatchRequestSchema,
   joinMatchRequestSchema,
   submitOrdersRequestSchema,
+  takeoverVoteRequestSchema,
   turnReportRequestSchema,
   uploadSnapshotRequestSchema,
 } from './schemas'
@@ -63,6 +64,7 @@ const REFUSALS = {
 const matchParams = withObjectKeys(object({ matchId: resourceIdSchema }))
 const turnParams = withObjectKeys(object({ matchId: resourceIdSchema, turn: turnPathParamSchema }))
 const kickParams = withObjectKeys(object({ matchId: resourceIdSchema, playerId: resourceIdSchema }))
+const takeoverVoteParams = kickParams
 
 // ---------------------------------------------------------------------------
 // Lobby
@@ -114,7 +116,7 @@ export const leaveMatchContract = defineApiContract({
   pathResolver: ({ matchId }) => `/matches/${matchId}/leave`,
   requestBodySchema: ContractNoBody,
   responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
-  summary: 'Give up the seat; the slot becomes a computer player.',
+  summary: 'Give up the seat and open a player vote on computer control.',
 })
 
 export const kickPlayerContract = defineApiContract({
@@ -124,6 +126,15 @@ export const kickPlayerContract = defineApiContract({
   requestBodySchema: ContractNoBody,
   responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
   summary: 'Host removes a player, exactly as if they had left.',
+})
+
+export const takeoverVoteContract = defineApiContract({
+  method: 'post',
+  requestPathParamsSchema: takeoverVoteParams,
+  pathResolver: ({ matchId, playerId }) => `/matches/${matchId}/players/${playerId}/takeover-vote`,
+  requestBodySchema: takeoverVoteRequestSchema,
+  responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
+  summary: 'Vote to keep waiting for an absent player or hand their seat to the computer.',
 })
 
 // ---------------------------------------------------------------------------
@@ -254,6 +265,7 @@ export const API_CONTRACTS = {
   startMatch: startMatchContract,
   leaveMatch: leaveMatchContract,
   kickPlayer: kickPlayerContract,
+  takeoverVote: takeoverVoteContract,
   submitOrders: submitOrdersContract,
   ownSubmission: ownSubmissionContract,
   sealedOrders: sealedOrdersContract,

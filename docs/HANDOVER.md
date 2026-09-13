@@ -7,14 +7,13 @@ Last updated: 2026-09-13
 
 - The canonical repository is
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`. `main` contains
-  every accepted checkpoint through deterministic online AI takeover;
-  `codex/full-reimplementation-continued` is the active development branch.
-  The earlier `codex/full-reimplementation` ref is retained without rewriting
-  its pre-rebase history.
+  every accepted checkpoint through player-approved online AI takeover and pnpm 11 tooling. New cohesive batches are
+  committed and pushed directly to `main`; older `codex/full-reimplementation*` refs remain only as
+  historical checkpoints and are not the active integration path.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`: its fast default
-  passes 1,518 focused tests in about 28 seconds with zero warnings. Use
-  `-IncludeLongRunningTests` for the complete 1,571-test gate, last passing in
-  7 minutes 24 seconds. The 53 repeated AI campaign cases are tagged
+  passes 1,522 focused tests in about 35 seconds with zero warnings. Use
+  `-IncludeLongRunningTests` for the complete 1,575-test gate. The 53 repeated AI campaign cases last
+  passed independently in 8 minutes 35 seconds and are tagged
   `LongRunning`; focused planner/policy/headless/replay checks remain in default.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
@@ -28,15 +27,11 @@ Last updated: 2026-09-13
 
 ## Latest playable work
 
-- Deterministic departed-seat takeover is live end to end. The session applies
-  the server's authoritative departure at its exact event-log position, records
-  the replay-v26 Human-to-Computer transfer at a clean Command boundary, and
-  computer-plans that seat from the following seal. Reconnect loads any verified
-  snapshot, then validates and replays the gapless durable history through the
-  refreshed sequence number so departures immediately before and after seals
-  remain distinct. Duplicate delivery is idempotent, fetched sealed sets must
-  match the digest announced by their event, and an absent timed-out order never
-  transfers an active human.
+- Online AI takeover is player-approved end to end. A departure or wholly missed timed turn opens
+  a visible unanimous `WAIT`/`USE AI` vote; waiting preserves the human controller indefinitely,
+  authenticated returning activity atomically cancels a pending absence, and only
+  `match.playerTakenOver` records replay-v26 Human-to-Computer transfer at a clean Command boundary.
+  Reconnect replays votes, approved transfers, and seals gaplessly in authoritative order.
 
 - `Rechaos.Tools ai-tournament` now drives presentation-free six-computer
   matches directly through the authoritative model with bounded parallelism,

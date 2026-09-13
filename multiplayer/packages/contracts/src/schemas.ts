@@ -1,4 +1,4 @@
-import { boolean, type InferOutput, optional, strictObject } from 'valibot'
+import { boolean, type InferOutput, optional, picklist, strictObject } from 'valibot'
 import { orderDocumentSchema } from './orders'
 import {
   base64BodySchema,
@@ -44,6 +44,11 @@ export const submitOrdersRequestSchema = strictObject({
   ready: boolean(),
 })
 
+export const takeoverVoteRequestSchema = strictObject({
+  /** `computer` approves AI control; `wait` keeps the returning player's human seat intact. */
+  decision: picklist(['computer', 'wait']),
+})
+
 export const turnReportRequestSchema = strictObject({
   /** Canonical state hash after the client applied the sealed turn. */
   stateHash: sha256HexSchema,
@@ -62,5 +67,6 @@ export const uploadSnapshotRequestSchema = strictObject({
 export type CreateMatchRequest = InferOutput<typeof createMatchRequestSchema>
 export type JoinMatchRequest = InferOutput<typeof joinMatchRequestSchema>
 export type SubmitOrdersRequest = InferOutput<typeof submitOrdersRequestSchema>
+export type TakeoverVoteRequest = InferOutput<typeof takeoverVoteRequestSchema>
 export type TurnReportRequest = InferOutput<typeof turnReportRequestSchema>
 export type UploadSnapshotRequest = InferOutput<typeof uploadSnapshotRequestSchema>

@@ -85,6 +85,34 @@ export const matchStatusChangedEventSchema = strictObject({
   payload: strictObject({ status: matchStatusSchema }),
 })
 
+export const matchTakeoverVoteRequestedEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('match.takeoverVoteRequested'),
+  payload: strictObject({ playerId: resourceIdSchema, turn: turnNumberSchema }),
+})
+
+export const matchTakeoverVoteCastEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('match.takeoverVoteCast'),
+  payload: strictObject({
+    playerId: resourceIdSchema,
+    voterPlayerId: resourceIdSchema,
+    decision: picklist(['computer', 'wait']),
+  }),
+})
+
+export const matchTakeoverVoteCancelledEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('match.takeoverVoteCancelled'),
+  payload: strictObject({ playerId: resourceIdSchema }),
+})
+
+export const matchPlayerTakenOverEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('match.playerTakenOver'),
+  payload: strictObject({ playerId: resourceIdSchema }),
+})
+
 export const turnOpenedEventSchema = strictObject({
   ...eventEnvelope,
   type: literal('turn.opened'),
@@ -151,6 +179,10 @@ export const matchEventSchema = variant('type', [
   lobbyHostChangedEventSchema,
   matchStartedEventSchema,
   matchStatusChangedEventSchema,
+  matchTakeoverVoteRequestedEventSchema,
+  matchTakeoverVoteCastEventSchema,
+  matchTakeoverVoteCancelledEventSchema,
+  matchPlayerTakenOverEventSchema,
   turnOpenedEventSchema,
   turnDeadlineExtendedEventSchema,
   turnReadinessEventSchema,

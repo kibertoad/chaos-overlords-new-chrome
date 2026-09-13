@@ -31,10 +31,9 @@ public sealed class MatchHandle
     /// Gives up the seat, and the token with it.
     /// </summary>
     /// <remarks>
-    /// The match stops waiting on this player's readiness, so the turns that follow seal without
-    /// them. Their gangs are not yet taken over by the computer: the replay-recorded core transfer
-    /// exists, but the live protocol must still place the authoritative departure at the same event
-    /// boundary on every client. See <c>docs/MULTIPLAYER.md</c>.
+    /// The match stops waiting on this player's readiness and opens a vote. Their gangs remain under
+    /// an idle human controller unless every present player approves the replay-recorded transfer.
+    /// See <c>docs/MULTIPLAYER.md</c>.
     /// </remarks>
     public Task<Unit> LeaveAsync(CancellationToken cancellationToken) =>
         _client.SendAsync<Unit>(
@@ -44,6 +43,14 @@ public sealed class MatchHandle
     public Task<Unit> KickAsync(string playerId, CancellationToken cancellationToken) =>
         _client.SendAsync<Unit>(
             HttpMethod.Post, ApiRoutes.KickPlayer(MatchId, playerId), body: null, cancellationToken);
+
+    /// <summary>Votes to keep waiting for an absent player or approve computer control.</summary>
+    public Task<Unit> VoteOnTakeoverAsync(
+        string playerId,
+        TakeoverVoteRequest request,
+        CancellationToken cancellationToken) =>
+        _client.SendAsync<Unit>(
+            HttpMethod.Post, ApiRoutes.TakeoverVote(MatchId, playerId), request, cancellationToken);
 
     /// <summary>
     /// Replaces this player's order document for the open turn and sets readiness.

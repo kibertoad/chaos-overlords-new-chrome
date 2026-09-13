@@ -3,6 +3,12 @@ using Rechaos.Multiplayer.Generated;
 
 namespace Rechaos.Multiplayer.Session;
 
+public enum TakeoverChoice
+{
+    Computer,
+    Wait,
+}
+
 /// <summary>
 /// Something the session wants the interface to know about, polled from the game loop.
 /// </summary>
@@ -19,6 +25,15 @@ public abstract record MultiplayerNotice
 
     /// <summary>The lobby's roster or status changed.</summary>
     public sealed record MatchUpdated(MatchView Match) : MultiplayerNotice;
+
+    /// <summary>A vote is open, or its latest votes changed.</summary>
+    public sealed record TakeoverVoteChanged(
+        string PlayerId,
+        int Turn,
+        IReadOnlyDictionary<string, TakeoverChoice> Votes) : MultiplayerNotice;
+
+    /// <summary>The player returned or the vote transferred their seat, closing the prompt.</summary>
+    public sealed record TakeoverVoteClosed(string PlayerId, bool ComputerControl) : MultiplayerNotice;
 
     /// <summary>
     /// A restarted session reconstructed the authoritative state and recovered this seat's current

@@ -235,6 +235,47 @@ describe('multiplayer kernel', () => {
     expect(scheduler.scheduled).toHaveLength(2)
   })
 
+  it('keeps an absent human seat when a player votes to wait, then cancels on return', async () => {
+    const { host, guest } = await startedMatch(60)
+    await submit(await principalOf(host.token), 1, 1, true)
+    clock.advance(60_000)
+    await kernel.turns.sweep()
+
+    expect((await storage.players.get(guest.player.id))?.status).toBe('takeoverPending')
+    expect(notifier.events.map((event) => event.type)).toContain('match.takeoverVoteRequested')
+    await kernel.lobby.voteOnTakeover(await principalOf(host.token), guest.player.id, {
+      decision: 'wait',
+    })
+    expect((await storage.players.get(guest.player.id))?.status).toBe('takeoverPending')
+
+    await submit(await principalOf(guest.token), 2, 2, false)
+    expect((await storage.players.get(guest.player.id))?.status).toBe('active')
+    expect(notifier.events.map((event) => event.type)).toContain('match.takeoverVoteCancelled')
+  })
+
+  it('requires every present player to approve computer control exactly once', async () => {
+    const { host, guest, third } = await startedMatchOfThree(60)
+    await submit(await principalOf(host.token), 1, 1, true)
+    await submit(await principalOf(third.token), 1, 3, true)
+    clock.advance(60_000)
+    await kernel.turns.sweep()
+
+    await kernel.lobby.voteOnTakeover(await principalOf(host.token), guest.player.id, {
+      decision: 'computer',
+    })
+    expect((await storage.players.get(guest.player.id))?.status).toBe('takeoverPending')
+    await kernel.lobby.voteOnTakeover(await principalOf(third.token), guest.player.id, {
+      decision: 'computer',
+    })
+    expect((await storage.players.get(guest.player.id))?.status).toBe('computer')
+    await expect(principalOf(guest.token)).rejects.toMatchObject({
+      details: { reason: 'invalid_token' },
+    })
+    expect(notifier.events.filter((event) => event.type === 'match.playerTakenOver')).toHaveLength(
+      1,
+    )
+  })
+
   it('kicking the straggler completes readiness, and a leaving host hands over', async () => {
     const { host, guest } = await startedMatch()
     const third = await kernel.lobby
@@ -255,8 +296,8 @@ describe('multiplayer kernel', () => {
 
   it('serves a sealed set that re-hashes to the digest it was announced with', async () => {
     const { host, guest } = await startedMatch()
-    // The guest plans, is then kicked, and the turn seals without them: their slot becomes a
-    // computer player on every client, so their orders must be in neither the set nor its digest.
+    // The guest plans, is then kicked, and the turn seals without them. The vote has not approved
+    // computer control yet, so their orders must be in neither the set nor its digest.
     await submit(await principalOf(guest.token), 1, 2, false)
     await kernel.lobby.kick(await principalOf(host.token), guest.player.id)
     await submit(await principalOf(host.token), 1, 1, true)

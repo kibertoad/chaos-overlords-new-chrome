@@ -105,3 +105,10 @@ export const ACTIVE_PLAYER: PlayerStatus = 'active'
 export function activePlayers(players: readonly Player[]): Player[] {
   return players.filter((player) => player.status === ACTIVE_PLAYER)
 }
+
+/** Human-controlled seats, including an absent player the lobby elected to keep waiting for. */
+export function humanParticipants(players: readonly Player[]): Player[] {
+  return players.filter(
+    (player) => player.status === 'active' || player.status === 'takeoverPending',
+  )
+}

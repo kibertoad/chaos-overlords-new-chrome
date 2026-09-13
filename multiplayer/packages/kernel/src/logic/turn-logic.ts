@@ -1,8 +1,10 @@
 import type { Player, TurnOrders, TurnReport } from '../domain/entities'
 
-/** Every active player has marked ready. An empty roster is never "ready". */
+/** Every human seat still being waited on has marked ready. An empty roster is never "ready". */
 export function allActiveReady(players: readonly Player[], orders: readonly TurnOrders[]): boolean {
-  const active = players.filter((player) => player.status === 'active')
+  const active = players.filter(
+    (player) => player.status === 'active' || player.status === 'takeoverPending',
+  )
   if (active.length === 0) return false
   const readyIds = new Set(orders.filter((row) => row.ready).map((row) => row.playerId))
   return active.every((player) => readyIds.has(player.id))

@@ -54,7 +54,10 @@ const NAMESPACE = 'Rechaos.Multiplayer.Generated'
  * discriminated union all landed in it.
  */
 const GENERATOR_SPEC = '@game-infra/valibot-to-csharp'
-const DEFAULT_CLI = localBin('valibot-to-csharp')
+const DEFAULT_CLI = [
+  process.execPath,
+  join(multiplayerRoot, 'node_modules', GENERATOR_SPEC, 'dist', 'cli.js'),
+]
 
 /**
  * A workspace binary, by absolute path.
@@ -63,10 +66,6 @@ const DEFAULT_CLI = localBin('valibot-to-csharp')
  * is missing — quietly turning a stale install into a download, and a check of committed files into
  * something that can fail offline.
  */
-function localBin(name) {
-  return join(multiplayerRoot, 'node_modules', '.bin', name)
-}
-
 /**
  * The schema files, not the barrel.
  *
@@ -160,9 +159,10 @@ function routeTemplates() {
 
 /** Runs the generator into a scratch directory and returns what it wrote. */
 function run(scratch) {
-  // Split on whitespace so `--generator "tsx path/to/cli.ts"` works as one argument. The default is
-  // a single resolved path, which has nothing to split.
-  const cli = (generatorOverride() ?? DEFAULT_CLI).split(/\s+/).filter(Boolean)
+  // Split an explicit `--generator "tsx path/to/cli.ts"`; the default invokes the installed CLI's
+  // JavaScript entry point through this Node executable, avoiding platform-specific shell shims.
+  const override = generatorOverride()
+  const cli = override ? override.split(/\s+/).filter(Boolean) : DEFAULT_CLI
   const [command, ...leading] = cli
   const args = [
     ...leading,
@@ -206,7 +206,8 @@ function readRoutes() {
     '])',
     'process.stdout.write(JSON.stringify(rows))',
   ].join('\n')
-  const result = spawnSync(localBin('tsx'), ['--eval', script], {
+  const tsxCli = join(multiplayerRoot, 'node_modules', 'tsx', 'dist', 'cli.mjs')
+  const result = spawnSync(process.execPath, [tsxCli, '--eval', script], {
     cwd: join(multiplayerRoot, 'packages', 'contracts'),
     encoding: 'utf8',
   })

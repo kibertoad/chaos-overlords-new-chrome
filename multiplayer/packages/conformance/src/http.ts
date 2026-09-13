@@ -237,7 +237,7 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       expect(types(events)).toContain('snapshot.available')
     })
 
-    it('kicking hands the slot to the AI and unblocks readiness; leaving as host passes the crown', async () => {
+    it('kicking opens a takeover vote and unblocks readiness; leaving as host passes the crown', async () => {
       const { host, guest } = await lobbyOfTwo()
       const third = await client().join({ joinCode: host.joinCode, displayName: 'Linus' })
       const thirdApi = client().withToken(third.token).match(host.match.id)

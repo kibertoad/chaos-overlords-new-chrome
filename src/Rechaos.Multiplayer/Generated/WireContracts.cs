@@ -19,6 +19,10 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonDerivedType(typeof(LobbyHostChangedEvent), "lobby.hostChanged")]
 [JsonDerivedType(typeof(MatchStartedEvent), "match.started")]
 [JsonDerivedType(typeof(MatchStatusChangedEvent), "match.statusChanged")]
+[JsonDerivedType(typeof(MatchTakeoverVoteRequestedEvent), "match.takeoverVoteRequested")]
+[JsonDerivedType(typeof(MatchTakeoverVoteCastEvent), "match.takeoverVoteCast")]
+[JsonDerivedType(typeof(MatchTakeoverVoteCancelledEvent), "match.takeoverVoteCancelled")]
+[JsonDerivedType(typeof(MatchPlayerTakenOverEvent), "match.playerTakenOver")]
 [JsonDerivedType(typeof(TurnOpenedEvent), "turn.opened")]
 [JsonDerivedType(typeof(TurnDeadlineExtendedEvent), "turn.deadlineExtended")]
 [JsonDerivedType(typeof(TurnReadinessEvent), "turn.readiness")]
@@ -98,6 +102,62 @@ public sealed record MatchStatusChangedEvent(
     string CreatedAt,
     [property: JsonPropertyName("payload")] MatchStatusChangedEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "match.statusChanged");
+
+public sealed record MatchTakeoverVoteRequestedEventPayload(
+    [property: JsonPropertyName("playerId")] string PlayerId,
+    [property: JsonPropertyName("turn")] int Turn
+);
+
+public sealed record MatchTakeoverVoteRequestedEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] MatchTakeoverVoteRequestedEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "match.takeoverVoteRequested");
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum MatchTakeoverVoteCastEventPayloadDecision
+{
+    [JsonStringEnumMemberName("computer")]
+    Computer,
+    [JsonStringEnumMemberName("wait")]
+    Wait
+}
+
+public sealed record MatchTakeoverVoteCastEventPayload(
+    [property: JsonPropertyName("playerId")] string PlayerId,
+    [property: JsonPropertyName("voterPlayerId")] string VoterPlayerId,
+    [property: JsonPropertyName("decision")] MatchTakeoverVoteCastEventPayloadDecision Decision
+);
+
+public sealed record MatchTakeoverVoteCastEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] MatchTakeoverVoteCastEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "match.takeoverVoteCast");
+
+public sealed record MatchTakeoverVoteCancelledEventPayload(
+    [property: JsonPropertyName("playerId")] string PlayerId
+);
+
+public sealed record MatchTakeoverVoteCancelledEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] MatchTakeoverVoteCancelledEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "match.takeoverVoteCancelled");
+
+public sealed record MatchPlayerTakenOverEventPayload(
+    [property: JsonPropertyName("playerId")] string PlayerId
+);
+
+public sealed record MatchPlayerTakenOverEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] MatchPlayerTakenOverEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "match.playerTakenOver");
 
 public sealed record TurnOpenedEventPayload(
     [property: JsonPropertyName("turn")] int Turn,
@@ -399,6 +459,19 @@ public sealed record SubmitOrdersRequest(
     [property: JsonPropertyName("ready")] bool Ready
 );
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum TakeoverVoteRequestDecision
+{
+    [JsonStringEnumMemberName("computer")]
+    Computer,
+    [JsonStringEnumMemberName("wait")]
+    Wait
+}
+
+public sealed record TakeoverVoteRequest(
+    [property: JsonPropertyName("decision")] TakeoverVoteRequestDecision Decision
+);
+
 public sealed record TurnReportRequest(
     [property: JsonPropertyName("stateHash")] string StateHash,
     [property: JsonPropertyName("finished")] bool Finished
@@ -431,6 +504,10 @@ public enum PlayerStatus
 {
     [JsonStringEnumMemberName("active")]
     Active,
+    [JsonStringEnumMemberName("takeoverPending")]
+    TakeoverPending,
+    [JsonStringEnumMemberName("computer")]
+    Computer,
     [JsonStringEnumMemberName("left")]
     Left,
     [JsonStringEnumMemberName("kicked")]

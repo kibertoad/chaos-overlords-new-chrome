@@ -28,8 +28,8 @@ incremental outputs and MSBuild/Roslyn server reuse are retained because both
 materially speed repeated builds.
 
 The default gate excludes only the 53-case `LongRunning` AI campaign category.
-At the current checkpoint it builds with zero warnings and runs 1,518 focused
-tests in about 28 seconds. These retain deterministic planner, Advanced-policy,
+At the current checkpoint it builds with zero warnings and runs 1,522 focused
+tests in about 35 seconds. These retain deterministic planner, Advanced-policy,
 headless-runner, replay, persistence, and bounded single-case behavior coverage;
 the exclusion is the repeated 20/40/60-turn, multi-seed statistical campaign
 matrix, not the AI unit and integration tests.
@@ -40,7 +40,8 @@ Run every test, including the campaigns, explicitly:
 ./tools/Invoke-Validation.ps1 -IncludeLongRunningTests
 ```
 
-The complete 1,571-test suite last passed in 7 minutes 24 seconds. Both tiers
+The complete gate contains 1,575 tests; its 53-test long-running tier most recently passed
+independently in 8 minutes 35 seconds. Both tiers
 carry exact minimum discovery counts so accidentally excluding or failing to
 discover tests fails the gate. This is an implementation regression baseline,
 not a measure of parity completeness.

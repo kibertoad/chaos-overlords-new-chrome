@@ -82,8 +82,8 @@ export class MatchQueryService {
    *
    * The participants come from the set the seal froze, never from the roster as it stands now. That
    * is what makes the response re-hash to the `orderSetHash` it is served with: someone leaving
-   * between the submission and the seal (their orders are excluded, their slot becomes a computer
-   * player) or after it (their orders stay in) changes the roster but not this set.
+   * between the submission and the seal (their orders are excluded while takeover is voted on) or
+   * after it (their orders stay in) changes the roster but not this set.
    */
   async sealedOrders(match: Match, number: number): Promise<SealedOrdersView> {
     const turn = await this.requireTurn(match.id, number)

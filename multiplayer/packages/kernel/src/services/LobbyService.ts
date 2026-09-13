@@ -3,6 +3,7 @@ import {
   type JoinMatchRequest,
   LIMITS,
   type MembershipView,
+  type TakeoverVoteRequest,
 } from '@chaos-overlords/contracts'
 import { activePlayers, type Match, type Player } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../domain/errors'
@@ -157,6 +158,67 @@ export class LobbyService {
     await this.remove(match, target, 'kicked')
   }
 
+  /**
+   * Record one present player's latest choice. AI control is deliberately unanimous: a single
+   * `wait` vote preserves the human seat, and there is no timeout that silently changes it.
+   */
+  async voteOnTakeover(
+    principal: Principal,
+    targetPlayerId: string,
+    request: TakeoverVoteRequest,
+  ): Promise<void> {
+    const { match, player } = principal
+    if (match.status !== 'running' && match.status !== 'desynced') {
+      throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
+    }
+    const currentVoter = await this.deps.storage.players.get(player.id)
+    if (currentVoter?.status !== 'active') {
+      throw new ForbiddenError('Only present players may vote', { reason: 'not_active' })
+    }
+    const target = await this.deps.storage.players.get(targetPlayerId)
+    if (!target || target.matchId !== match.id) {
+      throw new NotFoundError('No such player in this match', { reason: 'unknown_player' })
+    }
+    if (!['takeoverPending', 'left', 'kicked'].includes(target.status)) {
+      throw new ConflictError('That player is not awaiting a takeover vote', {
+        reason: 'takeover_not_pending',
+      })
+    }
+    await this.publisher.publish(match.id, {
+      type: 'match.takeoverVoteCast',
+      payload: { playerId: target.id, voterPlayerId: player.id, decision: request.decision },
+    })
+    if (request.decision === 'wait') return
+
+    const votes = await this.currentTakeoverVotes(match.id, target.id)
+    const voters = activePlayers(await this.deps.storage.players.listByMatch(match.id))
+    if (voters.length === 0 || voters.some((voter) => votes.get(voter.id) !== 'computer')) return
+    if (
+      !(await this.deps.storage.players.transitionStatus(target.id, [target.status], 'computer'))
+    ) {
+      return
+    }
+    await this.deps.storage.players.revokeToken(target.id)
+    await this.publisher.publish(match.id, {
+      type: 'match.playerTakenOver',
+      payload: { playerId: target.id },
+    })
+    if (target.id === match.hostPlayerId) {
+      const successor = activePlayers(await this.deps.storage.players.listByMatch(match.id))[0]
+      if (successor) {
+        await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {
+          hostPlayerId: successor.id,
+          updatedAt: this.deps.clock.now(),
+        })
+        await this.publisher.publish(match.id, {
+          type: 'lobby.hostChanged',
+          payload: { hostPlayerId: successor.id },
+        })
+      }
+    }
+    await this.turns.reevaluate(match.id)
+  }
+
   async start(principal: Principal): Promise<void> {
     const { match } = principal
     requireHost(principal)
@@ -222,6 +284,10 @@ export class LobbyService {
       await this.abandon(match, now)
       return
     }
+    await this.publisher.publish(match.id, {
+      type: 'match.takeoverVoteRequested',
+      payload: { playerId: target.id, turn: match.currentTurn },
+    })
     if (target.id === match.hostPlayerId) {
       const successor = remaining[0] as Player
       await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {
@@ -235,6 +301,43 @@ export class LobbyService {
     }
     // A departure can complete readiness or a consensus that was waiting on the leaver.
     await this.turns.reevaluate(match.id)
+  }
+
+  private async currentTakeoverVotes(
+    matchId: string,
+    targetPlayerId: string,
+  ): Promise<Map<string, 'computer' | 'wait'>> {
+    const votes = new Map<string, 'computer' | 'wait'>()
+    let requested = false
+    let after = 0
+    for (;;) {
+      const page = await this.deps.storage.events.listAfter(matchId, after, 200)
+      if (page.length === 0) return votes
+      for (const event of page) {
+        after = event.seq
+        if (
+          event.type === 'match.takeoverVoteRequested' &&
+          event.payload.playerId === targetPlayerId
+        ) {
+          requested = true
+          votes.clear()
+        } else if (
+          (event.type === 'match.takeoverVoteCancelled' ||
+            event.type === 'match.playerTakenOver') &&
+          event.payload.playerId === targetPlayerId
+        ) {
+          requested = false
+          votes.clear()
+        } else if (
+          requested &&
+          event.type === 'match.takeoverVoteCast' &&
+          event.payload.playerId === targetPlayerId
+        ) {
+          votes.set(event.payload.voterPlayerId, event.payload.decision)
+        }
+      }
+      if (page.length < 200) return votes
+    }
   }
 
   /**

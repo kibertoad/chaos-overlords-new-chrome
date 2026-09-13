@@ -120,6 +120,12 @@ export class InMemoryStorage implements MultiplayerStorage {
       const player = this.playerRows.get(playerId)
       if (player) player.status = status
     },
+    transitionStatus: async (playerId, from, status) => {
+      const player = this.playerRows.get(playerId)
+      if (!player || !from.includes(player.status)) return false
+      player.status = status
+      return true
+    },
     revokeToken: async (playerId) => {
       const player = this.playerRows.get(playerId)
       if (player) player.tokenHash = null

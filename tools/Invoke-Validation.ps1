@@ -111,12 +111,12 @@ try {
         )
     }
     elseif ($IncludeLongRunningTests) {
-        $testArguments += @('--minimum-expected-tests', '1571')
+        $testArguments += @('--minimum-expected-tests', '1575')
     }
     else {
         $testArguments += @(
             '--filter', 'Category!=LongRunning',
-            '--minimum-expected-tests', '1518'
+            '--minimum-expected-tests', '1522'
         )
     }
     if ($TraceTestOutput) {

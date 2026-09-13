@@ -69,6 +69,12 @@ export interface PlayerRepository {
   /** Ordered by slot, then join order, then id. */
   listByMatch(matchId: string): Promise<Player[]>
   setStatus(playerId: string, status: Player['status']): Promise<void>
+  /** Compare-and-swap a player status; exactly one return/takeover race may win. */
+  transitionStatus(
+    playerId: string,
+    from: readonly Player['status'][],
+    status: Player['status'],
+  ): Promise<boolean>
   /** Clears the token hash, so the player's bearer token stops authenticating immediately. */
   revokeToken(playerId: string): Promise<void>
   /**

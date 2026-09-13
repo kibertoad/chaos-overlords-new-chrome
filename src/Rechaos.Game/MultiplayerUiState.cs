@@ -1,4 +1,5 @@
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Session;
 
 namespace Rechaos.Game;
 
@@ -37,6 +38,12 @@ internal enum MultiplayerStage
 /// </remarks>
 internal sealed class MultiplayerUiState
 {
+    internal Dictionary<string, TakeoverVotePrompt> TakeoverVotes { get; } = new(StringComparer.Ordinal);
+
+    internal TakeoverVotePrompt? CurrentTakeoverVote => TakeoverVotes.Values
+        .OrderBy(vote => vote.Turn)
+        .ThenBy(vote => vote.PlayerId, StringComparer.Ordinal)
+        .FirstOrDefault();
     internal MultiplayerStage Stage { get; set; } = MultiplayerStage.Connect;
 
     internal TextField Server { get; } = new("SERVER", 96, "http://localhost:8787");
@@ -125,6 +132,7 @@ internal sealed class MultiplayerUiState
         SentOpCount = 0;
         DraftDue = TimeSpan.Zero;
         BootstrapFailed = false;
+        TakeoverVotes.Clear();
         Password.Set(string.Empty);
         JoinCode.Set(string.Empty);
     }
@@ -137,3 +145,9 @@ internal sealed class MultiplayerUiState
     /// </remarks>
     internal bool PlanningIsOpen => Stage == MultiplayerStage.Playing;
 }
+
+internal sealed record TakeoverVotePrompt(
+    string PlayerId,
+    string DisplayName,
+    int Turn,
+    IReadOnlyDictionary<string, TakeoverChoice> Votes);

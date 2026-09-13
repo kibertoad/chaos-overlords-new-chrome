@@ -4,7 +4,7 @@ import {
   type SubmitOrdersRequest,
   type TurnReportRequest,
 } from '@chaos-overlords/contracts'
-import { activePlayers, type Match, type SealedSlot } from '../domain/entities'
+import { activePlayers, humanParticipants, type Match, type SealedSlot } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../domain/errors'
 import { hashOrderDocument, hashOrderSet } from '../logic/crypto'
 import { allActiveReady, evaluateConsensus, turnDeadline } from '../logic/turn-logic'
@@ -41,7 +41,7 @@ export class TurnService {
   ): Promise<OwnSubmissionView> {
     const { match, player } = principal
     requireRunning(match)
-    if (player.status !== 'active') {
+    if (player.status !== 'active' && player.status !== 'takeoverPending') {
       throw new ForbiddenError('You are no longer part of this match', { reason: 'not_active' })
     }
     if (number !== match.currentTurn) {
@@ -51,6 +51,7 @@ export class TurnService {
       })
     }
     assertOwnOps(request, player.slot)
+    await this.restorePendingPlayer(player.id, match.id)
     const previous = await this.deps.storage.turns.getOrders(match.id, number, player.id)
     const ordersHash = await hashOrderDocument(request.orders)
     const accepted = await this.deps.storage.turns.submitOrders(match.id, number, player.id, {
@@ -121,7 +122,22 @@ export class TurnService {
         this.deps.storage.turns.listOrders(match.id, number),
         this.deps.storage.players.listByMatch(match.id),
       ])
-      const slotOf = new Map(activePlayers(players).map((player) => [player.id, player.slot]))
+      for (const player of activePlayers(players)) {
+        const row = orders.find((candidate) => candidate.playerId === player.id)
+        if (row?.ordersHash !== null) continue
+        if (
+          await this.deps.storage.players.transitionStatus(player.id, ['active'], 'takeoverPending')
+        ) {
+          await this.publisher.publish(match.id, {
+            type: 'match.takeoverVoteRequested',
+            payload: { playerId: player.id, turn: number },
+          })
+        }
+      }
+      const currentPlayers = await this.deps.storage.players.listByMatch(match.id)
+      const slotOf = new Map(
+        humanParticipants(currentPlayers).map((player) => [player.id, player.slot]),
+      )
       const sealedSlots: SealedSlot[] = []
       const entries: Array<{ slot: number; ordersHash: string }> = []
       for (const row of orders) {
@@ -155,7 +171,7 @@ export class TurnService {
   async openTurn(match: Match, number: number): Promise<boolean> {
     const openedAt = this.deps.clock.now()
     const deadlineAt = turnDeadline(openedAt, match.settings.turnTimerSeconds)
-    const players = activePlayers(await this.deps.storage.players.listByMatch(match.id))
+    const players = humanParticipants(await this.deps.storage.players.listByMatch(match.id))
     const created = await this.deps.storage.turns.open(
       {
         matchId: match.id,
@@ -218,7 +234,7 @@ export class TurnService {
     if (match.status !== 'running' && match.status !== 'desynced') {
       throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
     }
-    if (player.status !== 'active') {
+    if (player.status !== 'active' && player.status !== 'takeoverPending') {
       throw new ForbiddenError('You are no longer part of this match', { reason: 'not_active' })
     }
     const turn = await this.deps.storage.turns.get(match.id, number)
@@ -226,6 +242,7 @@ export class TurnService {
     if (turn.status === 'open') {
       throw new ConflictError('The turn has not been sealed yet', { reason: 'turn_open' })
     }
+    await this.restorePendingPlayer(player.id, match.id)
     await this.deps.storage.turns.upsertReport({
       matchId: match.id,
       turn: number,
@@ -235,6 +252,16 @@ export class TurnService {
       reportedAt: this.deps.clock.now(),
     })
     await this.settle(match.id, number)
+  }
+
+  /** Authenticated turn activity wins the race with an AI vote and restores the human seat. */
+  private async restorePendingPlayer(playerId: string, matchId: string): Promise<void> {
+    if (await this.deps.storage.players.transitionStatus(playerId, ['takeoverPending'], 'active')) {
+      await this.publisher.publish(matchId, {
+        type: 'match.takeoverVoteCancelled',
+        payload: { playerId },
+      })
+    }
   }
 
   /** Re-run the verdict of every unconfirmed turn and the auto-seal of the open one. */

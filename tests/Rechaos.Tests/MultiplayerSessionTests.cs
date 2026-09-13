@@ -271,7 +271,7 @@ public sealed class MultiplayerSessionTests
     [Fact]
     public async Task RestartReplaysADepartureAtItsExactTurnBoundary()
     {
-        var view = ViewAtTurn(3) with { LastEventSeq = 6 };
+        var view = ViewAtTurn(3) with { LastEventSeq = 9 };
         MatchEvent[] history =
         [
             new TurnOpenedEvent(1, MatchId, "2026-09-10T12:00:00.000Z", new(1, null)),
@@ -281,11 +281,18 @@ public sealed class MultiplayerSessionTests
             new LobbyPlayerLeftEvent(
                 3, MatchId, "2026-09-10T12:02:00.000Z",
                 new("p2", LobbyPlayerLeftEventPayloadReason.Left)),
-            new TurnOpenedEvent(4, MatchId, "2026-09-10T12:02:00.000Z", new(2, null)),
+            new MatchTakeoverVoteRequestedEvent(
+                4, MatchId, "2026-09-10T12:02:00.000Z", new("p2", 1)),
+            new MatchTakeoverVoteCastEvent(
+                5, MatchId, "2026-09-10T12:02:00.000Z",
+                new("p2", "p1", MatchTakeoverVoteCastEventPayloadDecision.Computer)),
+            new MatchPlayerTakenOverEvent(
+                6, MatchId, "2026-09-10T12:02:00.000Z", new("p2")),
+            new TurnOpenedEvent(7, MatchId, "2026-09-10T12:02:00.000Z", new(2, null)),
             new TurnSealedEvent(
-                5, MatchId, "2026-09-10T12:03:00.000Z",
+                8, MatchId, "2026-09-10T12:03:00.000Z",
                 new(2, SealedOrdersForSlots(2, 0).OrderSetHash)),
-            new TurnOpenedEvent(6, MatchId, "2026-09-10T12:04:00.000Z", new(3, null)),
+            new TurnOpenedEvent(9, MatchId, "2026-09-10T12:04:00.000Z", new(3, null)),
         ];
         var (session, server, http) = Running(
             matchView: view,
@@ -324,22 +331,29 @@ public sealed class MultiplayerSessionTests
     }
 
     [Fact]
-    public async Task RestartDuringTurnOneStillRestoresAnAlreadyDepartedSeat()
+    public async Task RestartDuringTurnOneRestoresAnApprovedComputerSeat()
     {
         IReadOnlyList<PlayerView> afterLeaving =
         [
             Roster[0],
-            new("p2", 1, "GRACE", WirePlayerStatus.Left, IsHost: false),
+            new("p2", 1, "GRACE", WirePlayerStatus.Computer, IsHost: false),
         ];
-        var view = View() with { Players = afterLeaving, LastEventSeq = 3 };
+        var view = View() with { Players = afterLeaving, LastEventSeq = 6 };
         MatchEvent[] history =
         [
             new TurnOpenedEvent(1, MatchId, "2026-09-10T12:00:00.000Z", new(1, null)),
             new LobbyPlayerLeftEvent(
                 2, MatchId, "2026-09-10T12:01:00.000Z",
                 new("p2", LobbyPlayerLeftEventPayloadReason.Left)),
+            new MatchTakeoverVoteRequestedEvent(
+                3, MatchId, "2026-09-10T12:01:00.000Z", new("p2", 1)),
+            new MatchTakeoverVoteCastEvent(
+                4, MatchId, "2026-09-10T12:01:00.000Z",
+                new("p2", "p1", MatchTakeoverVoteCastEventPayloadDecision.Computer)),
+            new MatchPlayerTakenOverEvent(
+                5, MatchId, "2026-09-10T12:01:00.000Z", new("p2")),
             new LobbyHostChangedEvent(
-                3, MatchId, "2026-09-10T12:01:00.000Z",
+                6, MatchId, "2026-09-10T12:01:00.000Z",
                 new("p1")),
         ];
         var (session, _, http) = Running(
@@ -713,7 +727,7 @@ public sealed class MultiplayerSessionTests
     }
 
     [Fact]
-    public async Task ADepartedSeatIsComputerPlannedFromTheFollowingSeal()
+    public async Task ADepartedSeatIsComputerPlannedOnlyAfterTheApprovedTakeoverEvent()
     {
         var (session, server, http) = Running();
         using var _ = http;
@@ -727,11 +741,32 @@ public sealed class MultiplayerSessionTests
             HttpMethod.Get,
             $"/matches/{MatchId}",
             new MatchDetail(View() with { Players = afterLeaving }, "CODE1234", "p1"));
+        IReadOnlyList<PlayerView> pendingVote =
+        [
+            Roster[0],
+            new("p2", 1, "GRACE", WirePlayerStatus.TakeoverPending, IsHost: false),
+        ];
+        server.Answer(
+            HttpMethod.Get,
+            $"/matches/{MatchId}",
+            new MatchDetail(View() with { Players = pendingVote }, "CODE1234", "p1"));
+        IReadOnlyList<PlayerView> computerControlled =
+        [
+            Roster[0],
+            new("p2", 1, "GRACE", WirePlayerStatus.Computer, IsHost: false),
+        ];
+        server.Answer(
+            HttpMethod.Get,
+            $"/matches/{MatchId}",
+            new MatchDetail(View() with { Players = computerControlled }, "CODE1234", "p1"));
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrdersForSlots(1, 0));
 
         server.Events.Write(Frame(8, "lobby.playerLeft", """{"playerId":"p2","reason":"left"}"""));
-        server.Events.Write(Frame(9, "lobby.playerLeft", """{"playerId":"p2","reason":"left"}"""));
-        server.Events.Write(SealedFrame(10, 1).Replace(
+        server.Events.Write(Frame(9, "match.takeoverVoteRequested", """{"playerId":"p2","turn":1}"""));
+        server.Events.Write(Frame(10, "match.takeoverVoteCast",
+            """{"playerId":"p2","voterPlayerId":"p1","decision":"computer"}"""));
+        server.Events.Write(Frame(11, "match.playerTakenOver", """{"playerId":"p2"}"""));
+        server.Events.Write(SealedFrame(12, 1).Replace(
             SealedOrders(1).OrderSetHash,
             SealedOrdersForSlots(1, 0).OrderSetHash,
             StringComparison.Ordinal));

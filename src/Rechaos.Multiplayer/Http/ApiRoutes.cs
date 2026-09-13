@@ -36,6 +36,9 @@ public static class ApiRoutes
     public static string KickPlayer(string matchId, string playerId) =>
         $"/matches/{matchId}/players/{playerId}/kick";
 
+    public static string TakeoverVote(string matchId, string playerId) =>
+        $"/matches/{matchId}/players/{playerId}/takeover-vote";
+
     public static string Orders(string matchId, int turn) =>
         $"/matches/{matchId}/turns/{Number(turn)}/orders";
 

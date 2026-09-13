@@ -197,6 +197,14 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
     async setStatus(playerId, status) {
       await db.update(players).set({ status }).where(eq(players.id, playerId))
     },
+    async transitionStatus(playerId, from, status) {
+      const rows = await db
+        .update(players)
+        .set({ status })
+        .where(and(eq(players.id, playerId), inArray(players.status, from)))
+        .returning({ id: players.id })
+      return rows.length === 1
+    },
     async revokeToken(playerId) {
       await db.update(players).set({ tokenHash: null }).where(eq(players.id, playerId))
     },

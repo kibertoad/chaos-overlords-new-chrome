@@ -2,12 +2,16 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rechaos.Core.GameModel;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Session;
 using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
 
 namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private static readonly Rectangle TakeoverVoteWait = new(164, 300, 140, 32);
+    private static readonly Rectangle TakeoverVoteComputer = new(336, 300, 140, 32);
+
     private void DrawOnline(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         DrawOnlinePanel(batch, pixel, font, "ONLINE PLAY");
@@ -142,4 +146,21 @@ public sealed partial class ChaosGame
     /// </remarks>
     private string OnlineSeatTally() =>
         _online.SeatedSeats > 0 ? $"{_online.ReadySeats}/{_online.SeatedSeats}" : string.Empty;
+
+    private void DrawTakeoverVote(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        if (_gameMenuOpen || _online.CurrentTakeoverVote is not { } vote || _session is null) return;
+        var panel = new Rectangle(120, 154, 400, 198);
+        batch.Draw(pixel, panel, new Color(6, 12, 12, 248));
+        DrawBorder(batch, pixel, panel, Color.Gold, 2);
+        DrawCentered(font, batch, "PLAYER ABSENT", 174, Color.Gold, 2);
+        DrawCentered(font, batch, vote.DisplayName.ToUpperInvariant(), 212, Color.White, 1);
+        DrawCentered(font, batch, $"MISSED TURN {vote.Turn}", 232, new Color(150, 165, 165), 1);
+        var eligible = _online.Match?.Players.Count(player => player.Status == WirePlayerStatus.Active) ?? 0;
+        var approvals = vote.Votes.Count(entry => entry.Value == TakeoverChoice.Computer);
+        DrawCentered(font, batch, $"AI APPROVALS {approvals}/{eligible}  UNANIMOUS REQUIRED", 256,
+            new Color(150, 165, 165), 1);
+        DrawButton(batch, pixel, font, TakeoverVoteWait, "WAIT", true);
+        DrawButton(batch, pixel, font, TakeoverVoteComputer, "USE AI", true);
+    }
 }

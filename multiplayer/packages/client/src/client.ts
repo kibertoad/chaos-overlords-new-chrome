@@ -25,7 +25,9 @@ import {
   startMatchContract,
   streamEventsContract,
   submitOrdersContract,
+  type TakeoverVoteRequest,
   type TurnReportRequest,
+  takeoverVoteContract,
   type UploadSnapshotRequest,
   uploadSnapshotContract,
 } from '@chaos-overlords/contracts'
@@ -173,6 +175,14 @@ export class MatchHandle {
     return this.client.call(
       kickPlayerContract.method,
       kickPlayerContract.pathResolver({ matchId: this.matchId, playerId }),
+    )
+  }
+
+  voteOnTakeover(playerId: string, request: TakeoverVoteRequest): Promise<void> {
+    return this.client.call(
+      takeoverVoteContract.method,
+      takeoverVoteContract.pathResolver({ matchId: this.matchId, playerId }),
+      request,
     )
   }
 

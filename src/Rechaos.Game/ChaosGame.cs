@@ -785,6 +785,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (_state is not null && _combatAnimationPlayer.IsPlaying)
             DrawCombatPanel(_batch, _pixel, _font, _state);
         DrawPlanningTimer(_batch, _pixel);
+        DrawTakeoverVote(_batch, _pixel, _font);
         DrawGameMenu(_batch, _pixel, _font);
         _batch.End();
         base.Draw(gameTime);
@@ -797,6 +798,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             HandleGameMenuClick(point);
             return;
         }
+        if (HandleTakeoverVoteClick(point)) return;
         switch (_screens.Current)
         {
             case ClientScreen.Title:

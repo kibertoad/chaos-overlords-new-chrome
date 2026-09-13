@@ -30,12 +30,12 @@ Every seat no human took at the start is a computer player, planned by the deter
 client identically, so its orders never cross the wire. The match seed and the slot assignment come
 from the server at start, so every client bootstraps the same city.
 
-A player who *leaves* a running match is handed to the deterministic computer at the departure's
-exact event-log position. The server stops waiting on that player's readiness, while every client
-records the same one-way controller change in the hashed match state. A departure before a seal lets
-the AI plan that missing seat in that seal; one after a seal begins with the next turn. An active
-player who merely times out remains human and idle because a missing order alone is not evidence of
-a departure.
+A departure or a timed turn with no submitted document opens a takeover vote. Every currently
+present player must choose `USE AI` before control changes; any `WAIT` choice keeps the seat human,
+and there is no server-side timeout that approves takeover implicitly. A player who reconnects and
+submits or reports while their absence vote is pending atomically returns to `active` and cancels
+the vote. Only `match.playerTakenOver` changes the deterministic controller, at its exact event-log
+position, so every client records the same one-way change in the hashed match state.
 
 This is the classic deterministic-lockstep model of turn-based strategy games. Its cost is
 stated in the security section: a modified client can read hidden state. Its benefits are that the
@@ -91,8 +91,9 @@ generated from the same valibot schemas (see "Two languages, one contract").
 | `POST /matches/join` | anyone | Joins by code (and password). Returns that player's token. Capacity is a single atomic seat claim. |
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
-| `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: publishes the authoritative departure, stops waiting on that seat, and lets every client transfer it to deterministic AI control at that log position; a leaving host hands the role to the lowest active slot. The token is revoked, so a departed player keeps no read access either. |
+| `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: publishes the departure and opens a takeover vote; it does not transfer control. A leaving host hands the role to the lowest active slot. The token is revoked, so an explicit leaver keeps no read access. |
 | `POST /matches/:id/players/:pid/kick` | host | Same as the target leaving. |
+| `POST /matches/:id/players/:pid/takeover-vote` | active member | `{ decision: "computer" | "wait" }`. The latest choice per voter counts. Computer control requires every currently active player to approve; one wait vote preserves the human controller. |
 
 ### Turn barrier
 
@@ -146,9 +147,9 @@ Sealing opens the next turn immediately, so players plan turn n+1 while reports 
 The seal also **freezes its participant set** on the turn row, beside the digest taken over it. The
 set a client fetches is therefore always the set the digest was computed from: a player who left
 after submitting but before the seal is absent from both, and one who leaves after the seal stays in
-both. A slot absent from the set contributes no human document. It is computer-planned only if an
-earlier departure event transferred its controller; a still-active player who ran out of clock
-remains idle.
+both. A slot absent from the set contributes no human document. The first wholly missed timed turn
+marks an otherwise active seat `takeoverPending` and opens a vote. It remains idle and human while
+players wait; only a later `match.playerTakenOver` makes it computer-planned.
 
 A desync pauses the match (`match.status = desynced`): the open turn stays open but cannot seal
 until every unsettled turn is confirmed. The host uploads the snapshot of the disputed turn;
@@ -373,7 +374,7 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
 6. On `turn.deadlineExtended`, replace the countdown for that turn: the match resumed after a
    desync pause and the turn's clock restarted.
 7. On reconnect, fetch the match, load the latest snapshot if the local state is behind, then read
-   the durable event log gaplessly through the refreshed `lastEventSeq`. Replay departure and seal
+   the durable event log gaplessly through the refreshed `lastEventSeq`. Replay approved takeover and seal
    events in order, skipping seals already represented by the snapshot, before restoring the current
    draft and resuming the stream. A token that answers 401 means the membership was revoked — the
    player left or was kicked.
@@ -392,9 +393,9 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
 The C# client implements the reconnect portion of this contract at session startup. An advanced
 match is refreshed before its stream opens, reconstructed from the newest verified compatible
 snapshot (or from the deterministic seed when no snapshot exists), and advanced through a strictly
-contiguous event-log history. Departures and later sealed sets are applied at their exact relative
-positions; seals already represented by a snapshot and duplicate live departures are harmless
-no-ops. The announced sealed-set digest is checked against the fetched set before its contents are
+contiguous event-log history. Approved takeovers and later sealed sets are applied at their exact
+relative positions; seals already represented by a snapshot and duplicate transfer facts are
+harmless no-ops. The announced sealed-set digest is checked against the fetched set before its contents are
 recomputed. Only after pairing the state with the caller's current whole-document submission does
 the stream resume from the refreshed `lastEventSeq`.
 
@@ -428,9 +429,10 @@ dock a player plans against the dock the sealed turn grants.
   one path that does work under it, because it reads the log directly.
 - Late joining into a running match (taking over a computer slot) is not offered; the lobby is
   the only door.
-- **Departed seats cannot be reclaimed by a human.** Live and reconnecting clients now transfer a
-  departed seat to deterministic AI control at the authoritative event-log position, but the transfer
-  is intentionally one-way. Late joining into that computer-controlled seat remains unsupported.
+- **Approved computer seats cannot be reclaimed by a human.** Players may wait indefinitely while
+  a temporarily absent member retains the human seat, and authenticated turn activity cancels that
+  pending vote. Once everyone approves computer control, the deterministic transfer is intentionally
+  one-way. Late joining into that computer-controlled seat remains unsupported.
 - **The lobby is polled, not streamed.** The game reads the match about once a second while the
   lobby is on screen and opens the event stream when the match starts. The stream carries the lobby
   facts too; opening it earlier would mean unwinding a session for every player who backs out.

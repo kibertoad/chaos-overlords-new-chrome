@@ -58,6 +58,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     private readonly ConcurrentQueue<MultiplayerNotice> _notices = new();
     private readonly CancellationTokenSource _stopping = new();
     private readonly Dictionary<string, int> _slotsByPlayerId;
+    private readonly Dictionary<string, PendingTakeoverVote> _takeoverVotes = new(StringComparer.Ordinal);
 
     /// <summary>Guards <see cref="_pending"/>, which the game thread writes and the outbox reads.</summary>
     private readonly object _outboxGate = new();
@@ -80,9 +81,8 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     /// How many seats the server is still waiting on before readiness alone seals a turn.
     /// </summary>
     /// <remarks>
-    /// Every seat at the start, less the players who have since left: the server stops waiting on a
-    /// departed seat, so a tally that kept counting it would sit at one short of a total the match
-    /// will never reach. Kept from the match view, which the pump refreshes whenever the roster
+    /// Active seats plus temporarily absent seats whose vote still says to wait. Explicit leavers
+    /// and approved computer seats are excluded. Kept from the match view, which the pump refreshes whenever the roster
     /// changes, and only ever read for the line on screen — nothing about the turn depends on it.
     /// </remarks>
     private int _awaitedSeats;
@@ -240,6 +240,20 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
             cancellationToken);
     }
 
+    /// <summary>Votes on whether an absent player's seat should become computer-controlled.</summary>
+    public Task VoteOnTakeoverAsync(
+        string playerId,
+        TakeoverChoice choice,
+        CancellationToken cancellationToken = default) =>
+        CallAsync(
+            token => _match.VoteOnTakeoverAsync(
+                playerId,
+                new TakeoverVoteRequest(choice == TakeoverChoice.Computer
+                    ? TakeoverVoteRequestDecision.Computer
+                    : TakeoverVoteRequestDecision.Wait),
+                token),
+            cancellationToken);
+
     /// <summary>Gives up the seat; the match stops waiting on this player from the next turn.</summary>
     public Task LeaveAsync(CancellationToken cancellationToken) =>
         _match.LeaveAsync(cancellationToken);
@@ -330,7 +344,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                 return;
             }
             _awaitedSeats = view.Players.Count(
-                player => player.Slot >= 0 && player.Status == WirePlayerStatus.Active);
+                player => player.Slot >= 0 && IsAwaitedHuman(player));
             InitialDeadline = ParseInstant(view.Turn?.DeadlineAt);
 
             if (view.CurrentTurn < 1)
@@ -376,6 +390,8 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                 view,
                 MatchStateClone.Of(_replay.State, _definitions),
                 submission));
+            foreach (var vote in _takeoverVotes.Values.OrderBy(item => item.PlayerId, StringComparer.Ordinal))
+                PublishTakeoverVote(vote);
 
             await PumpAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -393,9 +409,9 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     /// Reconstructs controller handovers and sealed turns in their authoritative log order.
     /// </summary>
     /// <remarks>
-    /// A missing order is deliberately insufficient evidence that its player left: an active player
-    /// can time out without submitting too. Replaying the departure event is also what preserves the
-    /// boundary between a player who left just before a seal and one who left just after it.
+    /// Vote requests and choices never change the deterministic model. Replaying only the approved
+    /// takeover fact preserves the exact boundary between a human-held idle turn and the first turn
+    /// on which every client may computer-plan that seat.
     /// </remarks>
     private async Task ReplayEventHistoryAsync(int throughSeq, CancellationToken cancellationToken)
     {
@@ -439,8 +455,18 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     {
         switch (@event)
         {
-            case LobbyPlayerLeftEvent left:
-                TransferDepartedPlayer(left.Payload.PlayerId);
+            case MatchTakeoverVoteRequestedEvent requested:
+                BeginTakeoverVote(requested.Payload.PlayerId, requested.Payload.Turn);
+                return;
+            case MatchTakeoverVoteCastEvent cast:
+                RecordTakeoverVote(cast);
+                return;
+            case MatchTakeoverVoteCancelledEvent cancelled:
+                _takeoverVotes.Remove(cancelled.Payload.PlayerId);
+                return;
+            case MatchPlayerTakenOverEvent takenOver:
+                _takeoverVotes.Remove(takenOver.Payload.PlayerId);
+                TransferPlayerToComputer(takenOver.Payload.PlayerId);
                 return;
             case TurnSealedEvent sealedTurn:
                 if (sealedTurn.Payload.Turn < _replay.State.Coordinator.Turn) return;
@@ -612,8 +638,29 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;
             case LobbyPlayerLeftEvent left:
-                TransferDepartedPlayer(left.Payload.PlayerId);
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
+                return;
+            case MatchTakeoverVoteRequestedEvent requested:
+                var takeoverVote = BeginTakeoverVote(
+                    requested.Payload.PlayerId, requested.Payload.Turn);
+                await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
+                PublishTakeoverVote(takeoverVote);
+                return;
+            case MatchTakeoverVoteCastEvent cast:
+                PublishTakeoverVote(RecordTakeoverVote(cast));
+                return;
+            case MatchTakeoverVoteCancelledEvent cancelled:
+                _takeoverVotes.Remove(cancelled.Payload.PlayerId);
+                await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
+                _notices.Enqueue(new MultiplayerNotice.TakeoverVoteClosed(
+                    cancelled.Payload.PlayerId, ComputerControl: false));
+                return;
+            case MatchPlayerTakenOverEvent takenOver:
+                _takeoverVotes.Remove(takenOver.Payload.PlayerId);
+                TransferPlayerToComputer(takenOver.Payload.PlayerId);
+                await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
+                _notices.Enqueue(new MultiplayerNotice.TakeoverVoteClosed(
+                    takenOver.Payload.PlayerId, ComputerControl: true));
                 return;
             case LobbyPlayerJoinedEvent or LobbyHostChangedEvent:
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
@@ -672,14 +719,38 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         return SealedTurnApplier.Apply(_replay, sealedOrders);
     }
 
-    /// <summary>Applies a real departure once; lobby-only departures have no seated slot.</summary>
-    private void TransferDepartedPlayer(string playerId)
+    /// <summary>Applies an approved handover once; merely leaving never transfers control.</summary>
+    private void TransferPlayerToComputer(string playerId)
     {
         if (!_slotsByPlayerId.TryGetValue(playerId, out var slot)) return;
         var player = _replay.State.FindPlayer(new PlayerId(slot));
         if (player is null || player.Setup.Controller == PlayerController.Computer) return;
         _replay.TransferPlayerToComputer(player.Id);
     }
+
+    private PendingTakeoverVote BeginTakeoverVote(string playerId, int turn)
+    {
+        var vote = new PendingTakeoverVote(playerId, turn);
+        _takeoverVotes[playerId] = vote;
+        return vote;
+    }
+
+    private PendingTakeoverVote RecordTakeoverVote(MatchTakeoverVoteCastEvent cast)
+    {
+        if (!_takeoverVotes.TryGetValue(cast.Payload.PlayerId, out var vote))
+            throw new MultiplayerProtocolException("a takeover vote was cast before it was requested");
+        vote.Votes[cast.Payload.VoterPlayerId] = cast.Payload.Decision
+            == MatchTakeoverVoteCastEventPayloadDecision.Computer
+                ? TakeoverChoice.Computer
+                : TakeoverChoice.Wait;
+        return vote;
+    }
+
+    private void PublishTakeoverVote(PendingTakeoverVote vote) =>
+        _notices.Enqueue(new MultiplayerNotice.TakeoverVoteChanged(
+            vote.PlayerId,
+            vote.Turn,
+            new Dictionary<string, TakeoverChoice>(vote.Votes, StringComparer.Ordinal)));
 
     /// <summary>
     /// The match paused because clients disagreed about a turn.
@@ -779,12 +850,12 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         var detail = await CallAsync(
             token => _match.GetAsync(token), cancellationToken).ConfigureAwait(false);
         _awaitedSeats = detail.Match.Players.Count(
-            player => player.Slot >= 0 && player.Status == WirePlayerStatus.Active);
+            player => player.Slot >= 0 && IsAwaitedHuman(player));
         // A seat that has gone quiet is also no longer one the turn is waiting on, so drop any
         // readiness it had left behind rather than counting it towards a total it is not part of.
         _readyPlayerIds.RemoveWhere(
             ready => !detail.Match.Players.Any(
-                player => player.Id == ready && player.Status == WirePlayerStatus.Active));
+                player => player.Id == ready && IsAwaitedHuman(player)));
         _notices.Enqueue(new MultiplayerNotice.MatchUpdated(detail.Match));
     }
 
@@ -878,6 +949,9 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         return slots;
     }
 
+    private static bool IsAwaitedHuman(PlayerView player) =>
+        player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending;
+
     /// <summary>
     /// An ISO instant, or null when there is none to read.
     /// </summary>
@@ -907,4 +981,9 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
 
     /// <summary>An order document waiting to be sent, and whether it completes the player's turn.</summary>
     private sealed record PendingOrders(int Turn, OrderDocument Document, bool Ready);
+
+    private sealed record PendingTakeoverVote(string PlayerId, int Turn)
+    {
+        internal Dictionary<string, TakeoverChoice> Votes { get; } = new(StringComparer.Ordinal);
+    }
 }

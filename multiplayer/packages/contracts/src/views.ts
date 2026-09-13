@@ -34,7 +34,13 @@ import { matchSettingsSchema } from './settings'
  */
 
 export const matchStatusSchema = picklist(['lobby', 'running', 'desynced', 'finished', 'abandoned'])
-export const playerStatusSchema = picklist(['active', 'left', 'kicked'])
+export const playerStatusSchema = picklist([
+  'active',
+  'takeoverPending',
+  'computer',
+  'left',
+  'kicked',
+])
 export const turnStatusSchema = picklist(['open', 'sealed', 'confirmed', 'desynced'])
 
 export const playerViewSchema = strictObject({
