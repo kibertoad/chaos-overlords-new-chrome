@@ -43,15 +43,20 @@ public sealed class MultiplayerSessionTests
     /// Each test overrides only the route it is about, so what a test sets up is what it is testing.
     /// </remarks>
     private static (MultiplayerMatchSession Session, FakeMultiplayerServer Server, HttpClient Http)
-        Running(string ownPlayerId = "p1", string? deadlineAt = null)
+        Running(
+            string ownPlayerId = "p1",
+            string? deadlineAt = null,
+            MatchView? matchView = null,
+            Action<FakeMultiplayerServer>? configure = null)
     {
         var server = new FakeMultiplayerServer();
         var http = new HttpClient(server);
-        var view = View(deadlineAt);
+        var view = matchView ?? View(deadlineAt);
         server.Answer(HttpMethod.Get, $"/matches/{MatchId}", new MatchDetail(view, "CODE1234", ownPlayerId));
         server.Answer(HttpMethod.Post, "/report", null, HttpStatusCode.NoContent);
         server.Answer(HttpMethod.Post, "/snapshots", null, HttpStatusCode.NoContent);
         server.Answer(HttpMethod.Put, "/orders", new OwnSubmissionView(1, null, Ready: true, null));
+        configure?.Invoke(server);
 
         var handle = new MultiplayerClient(
                 http, new MultiplayerClientOptions(new Uri("http://server.test")))
@@ -90,6 +95,30 @@ public sealed class MultiplayerSessionTests
         $"id: {seq}\ndata: {{\"seq\":{seq},\"matchId\":\"{MatchId}\","
         + $"\"createdAt\":\"2026-09-10T12:00:00.000Z\",\"type\":\"{type}\",\"payload\":{payload}}}\n\n";
 
+    private static MatchView ViewAtTurn(int turn) => View() with
+    {
+        CurrentTurn = turn,
+        Turn = new TurnView(
+            turn,
+            TurnStatus.Open,
+            "2026-09-10T12:05:00.000Z",
+            "2026-09-10T12:10:00.000Z",
+            null,
+            null,
+            [],
+            []),
+        PreviousTurn = new TurnView(
+            turn - 1,
+            TurnStatus.Confirmed,
+            "2026-09-10T12:00:00.000Z",
+            null,
+            "2026-09-10T12:04:00.000Z",
+            new string('a', 64),
+            [],
+            ["p1", "p2"]),
+        LastEventSeq = 20,
+    };
+
     /// <summary>
     /// Drains notices until one of the wanted kind arrives, or gives up.
     /// </summary>
@@ -127,6 +156,114 @@ public sealed class MultiplayerSessionTests
             await Task.Delay(15).ConfigureAwait(false);
         }
         throw new TimeoutException($"{what} did not happen within {Patience.TotalSeconds:0}s");
+    }
+
+    [Fact]
+    public async Task RestartReplaysSealedTurnsAndRestoresTheCurrentSubmission()
+    {
+        var view = ViewAtTurn(3);
+        var draft = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, []);
+        var (session, server, http) = Running(
+            matchView: view,
+            configure: fake =>
+            {
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/snapshots/latest",
+                    Envelope("no_snapshot"),
+                    HttpStatusCode.NotFound);
+                fake.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+                fake.Answer(HttpMethod.Get, "/turns/2/orders", SealedOrders(2));
+                fake.Answer(HttpMethod.Get, "/turns/3/orders", SealedOrders(3));
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/turns/3/orders/mine",
+                    new OwnSubmissionView(3, draft, Ready: true, OrderDigest.OfDocument(draft)));
+            });
+        using var _ = http;
+        await using var __ = session;
+
+        var resumed = await WaitFor<MultiplayerNotice.Resumed>(session);
+
+        Assert.True(session.IsRestoring);
+        Assert.Equal(3, resumed.State.Coordinator.Turn);
+        Assert.Equal(TurnPhase.Command, resumed.State.Coordinator.Phase);
+        Assert.True(resumed.Submission.Ready);
+        Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/1/orders"));
+        Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/2/orders"));
+        Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/3/orders/mine"));
+
+        await Until(() => server.CallsTo(HttpMethod.Get, "/stream") == 1, "the resumed stream");
+        Assert.Equal(
+            "20",
+            server.Requests.Single(request => request.Path.EndsWith("/stream")).LastEventId);
+        server.Events.Write(Frame(21, "turn.sealed", """{"turn":3,"orderSetHash":"cc"}"""));
+        var next = await WaitFor<MultiplayerNotice.TurnResolved>(session);
+        Assert.Equal(3, next.Turn);
+        Assert.Equal(4, next.State.Coordinator.Turn);
+    }
+
+    [Fact]
+    public async Task RestartUsesTheLatestSnapshotBeforeReplayingLaterTurns()
+    {
+        var definitions = BundledOriginalData.Load();
+        var replay = new MatchReplayRecorder(
+            MatchBootstrapFactory.Create(definitions, Seed, GameSettings, Roster));
+        CommandPhase.Enter(replay);
+        SealedTurnApplier.Apply(replay, SealedOrders(1));
+        var snapshot = new SnapshotView(
+            1,
+            NativeSaveSerializer.CurrentFormatVersion,
+            MatchStateHasher.ComputeSha256(replay.State),
+            "p1",
+            "2026-09-10T12:04:00.000Z",
+            MatchStateClone.ToBase64(replay.State));
+        var (session, server, http) = Running(
+            matchView: ViewAtTurn(3),
+            configure: fake =>
+            {
+                fake.Answer(HttpMethod.Get, "/snapshots/latest", snapshot);
+                fake.Answer(HttpMethod.Get, "/turns/2/orders", SealedOrders(2));
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/turns/3/orders/mine",
+                    new OwnSubmissionView(3, null, Ready: false, OrdersHash: null));
+            });
+        using var _ = http;
+        await using var __ = session;
+
+        var resumed = await WaitFor<MultiplayerNotice.Resumed>(session);
+
+        Assert.Equal(3, resumed.State.Coordinator.Turn);
+        Assert.Equal(0, server.CallsTo(HttpMethod.Get, "/turns/1/orders"));
+        Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/2/orders"));
+    }
+
+    [Fact]
+    public async Task RestartRefusesACurrentSubmissionWhoseDigestDoesNotMatch()
+    {
+        var draft = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, []);
+        var (session, _, http) = Running(
+            matchView: ViewAtTurn(2),
+            configure: fake =>
+            {
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/snapshots/latest",
+                    Envelope("no_snapshot"),
+                    HttpStatusCode.NotFound);
+                fake.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/turns/2/orders/mine",
+                    new OwnSubmissionView(2, draft, Ready: false, new string('0', 64)));
+            });
+        using var _ = http;
+        await using var __ = session;
+
+        var failed = await WaitFor<MultiplayerNotice.Failed>(session);
+
+        Assert.Contains("digest", failed.Reason, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

@@ -5,6 +5,7 @@ using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Protocol;
 using Rechaos.Multiplayer.Session;
+using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
 
 namespace Rechaos.Game;
 
@@ -244,6 +245,11 @@ public sealed partial class ChaosGame
         _online.Match = view;
         _online.DeadlineAt = _session.InitialDeadline;
         _online.SeatedSeats = view.Players.Count(player => player.Slot >= 0);
+        if (_session.IsRestoring)
+        {
+            _online.Status = "RESTORING THE MATCH";
+            return;
+        }
         if (!AdoptOnlineState(_session.InitialState)) return;
         _message = string.Empty;
         _screens.Show(ClientScreen.City);
@@ -265,7 +271,9 @@ public sealed partial class ChaosGame
     /// "adopted, the match is over".
     /// </para>
     /// </remarks>
-    private bool AdoptOnlineState(MatchState authoritative)
+    private bool AdoptOnlineState(
+        MatchState authoritative,
+        OwnSubmissionView? submission = null)
     {
         if (_definitions is null || _session is null) return false;
         if (authoritative.Outcome is not null)
@@ -279,17 +287,22 @@ public sealed partial class ChaosGame
             _message = _online.Status;
             return false;
         }
-        var turn = SpeculativeTurn.For(authoritative, _definitions, _session.Slot);
+        var turn = submission?.Orders is { } document
+            ? SpeculativeTurn.Restore(authoritative, _definitions, _session.Slot, document)
+            : SpeculativeTurn.For(authoritative, _definitions, _session.Slot);
         _actions = new MatchActions(turn);
         _state = turn.State;
         _online.PlanningTurn = authoritative.Coordinator.Turn;
-        _online.Stage = MultiplayerStage.Playing;
-        _online.SentOpCount = 0;
+        _online.Stage = submission?.Ready == true
+            ? MultiplayerStage.WaitingForSeal
+            : MultiplayerStage.Playing;
+        _online.SentOpCount = turn.Orders.Count;
         _online.DraftDue = DraftInterval;
         _online.ReadySeats = 0;
         _selectedGangIndex = 0;
         _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
             .FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
+        if (submission?.Ready == true) CloseOnlinePlanning();
         return true;
     }
 
@@ -401,6 +414,23 @@ public sealed partial class ChaosGame
     {
         switch (notice)
         {
+            case MultiplayerNotice.Resumed resumed:
+                _online.Match = resumed.Match;
+                _online.DeadlineAt = resumed.Match.Turn is { DeadlineAt: { } deadlineText }
+                    && DateTimeOffset.TryParse(deadlineText, out var parsed)
+                        ? parsed
+                        : null;
+                _online.SeatedSeats = resumed.Match.Players.Count(
+                    player => player.Slot >= 0 && player.Status == WirePlayerStatus.Active);
+                _online.Status = string.Empty;
+                if (AdoptOnlineState(resumed.State, resumed.Submission))
+                {
+                    _message = resumed.Submission.Ready
+                        ? "ORDERS RESTORED  WAITING FOR THE OTHER PLAYERS"
+                        : "MATCH RESTORED";
+                    _screens.Show(ClientScreen.City);
+                }
+                return;
             case MultiplayerNotice.TurnResolved resolved:
                 if (AdoptOnlineState(resolved.State))
                 {

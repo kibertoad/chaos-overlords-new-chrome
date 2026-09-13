@@ -100,7 +100,10 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
         var body = request.Content is null
             ? string.Empty
             : await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        lock (_gate) _requests.Add(new Recorded(request.Method, path, body));
+        var lastEventId = request.Headers.TryGetValues("Last-Event-ID", out var values)
+            ? values.SingleOrDefault()
+            : null;
+        lock (_gate) _requests.Add(new Recorded(request.Method, path, body, lastEventId));
 
         if (path.EndsWith("/stream", StringComparison.Ordinal))
         {
@@ -168,7 +171,11 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
     private sealed record Reply(HttpStatusCode Status, string Body);
 
     /// <summary>One request the client made.</summary>
-    internal sealed record Recorded(HttpMethod Method, string Path, string Body);
+    internal sealed record Recorded(
+        HttpMethod Method,
+        string Path,
+        string Body,
+        string? LastEventId);
 }
 
 /// <summary>

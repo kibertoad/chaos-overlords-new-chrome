@@ -21,6 +21,15 @@ public abstract record MultiplayerNotice
     public sealed record MatchUpdated(MatchView Match) : MultiplayerNotice;
 
     /// <summary>
+    /// A restarted session reconstructed the authoritative state and recovered this seat's current
+    /// whole-document submission, if one exists.
+    /// </summary>
+    public sealed record Resumed(
+        MatchView Match,
+        MatchState State,
+        OwnSubmissionView Submission) : MultiplayerNotice;
+
+    /// <summary>
     /// A turn resolved on every client that has reported so far, and here is the state after it.
     /// </summary>
     /// <param name="Turn">The turn that was applied.</param>

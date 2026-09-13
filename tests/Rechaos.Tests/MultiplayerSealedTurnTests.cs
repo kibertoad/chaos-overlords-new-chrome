@@ -215,6 +215,39 @@ public sealed class MultiplayerSealedTurnTests
         Assert.Equal(before, MatchStateHasher.ComputeSha256(authoritative.State));
     }
 
+    [Fact]
+    public void RestoresAWholeDocumentIntoTheSpeculativePlanningCopy()
+    {
+        var (authoritative, definitions) = NewClient();
+        var document = OrdersFor(authoritative.State, slot: 1);
+
+        var restored = SpeculativeTurn.Restore(
+            authoritative.State, definitions, slot: 1, document);
+
+        Assert.Equal(OrderDigest.OfDocument(document), OrderDigest.OfDocument(restored.Build()));
+        Assert.Equal(1, restored.Orders.Count);
+        Assert.Contains(
+            restored.State.FindPlayer(new PlayerId(1))!.Gangs,
+            gang => gang.IsActive && gang.QueuedCommand?.Command.Action == GangAction.Hide);
+    }
+
+    [Fact]
+    public void RefusesToRestoreAnUnknownDraftSchema()
+    {
+        var (authoritative, definitions) = NewClient();
+        var document = OrdersFor(authoritative.State, slot: 1) with { SchemaVersion = 2 };
+
+        var failure = Assert.Throws<MultiplayerProtocolException>(() => SpeculativeTurn.Restore(
+            authoritative.State, definitions, slot: 1, document));
+
+        Assert.Contains("schema", failure.Message, StringComparison.OrdinalIgnoreCase);
+
+        var foreign = OrdersFor(authoritative.State, slot: 1);
+        var wrongSeat = Assert.Throws<MultiplayerProtocolException>(() => SpeculativeTurn.Restore(
+            authoritative.State, definitions, slot: 0, foreign));
+        Assert.Contains("slot", wrongSeat.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>
     /// The dock a player plans against is the dock the sealed turn grants: offers are drawn for
     /// every seat before anyone plans, so the copy inherits them rather than drawing its own.

@@ -351,6 +351,13 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    to round-trip byte for byte — where an unknown or missing field is refused by name instead of
    reported much later as a hash that would not match.
 
+The C# client implements the reconnect portion of this contract at session startup. An advanced
+match is refreshed before its stream opens, reconstructed from the newest verified compatible
+snapshot (or from the deterministic seed when no snapshot exists), advanced through each later
+sealed order set, and paired with the caller's current whole-document submission. Only then does
+the stream resume from the refreshed `lastEventSeq`, preventing history from being applied twice
+while preserving commands and readiness already accepted for the open turn.
+
 ### What a hot-seat core does not say
 
 Two things the list above leaves implicit, which a client written against a turn-by-turn core gets

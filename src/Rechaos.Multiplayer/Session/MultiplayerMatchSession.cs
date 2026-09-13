@@ -98,7 +98,8 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         MultiplayerSessionOptions options,
         MatchReplayRecorder replay,
         PlayerView self,
-        Dictionary<string, int> slotsByPlayerId)
+        Dictionary<string, int> slotsByPlayerId,
+        bool isRestoring)
     {
         _match = options.Match;
         _definitions = options.Definitions;
@@ -109,6 +110,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         PlayerId = self.Id;
         Slot = self.Slot;
         IsHost = self.IsHost;
+        IsRestoring = isRestoring;
     }
 
     /// <summary>This client's player id.</summary>
@@ -119,6 +121,9 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
 
     /// <summary>Whether this client is the one that repairs a desync by uploading a snapshot.</summary>
     public bool IsHost { get; }
+
+    /// <summary>Whether startup is reconstructing turns that predate this client session.</summary>
+    public bool IsRestoring { get; }
 
     /// <summary>The first Command phase, for the interface to plan turn 1 on.</summary>
     public MatchState InitialState { get; private set; } = null!;
@@ -156,14 +161,23 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                 $"this client was given slot {self.Slot}, which is not a seat at this table");
         }
         var settings = MultiplayerGameSettings.FromWire(view.Settings.GameSettings);
+        if (view.CurrentTurn < 1)
+        {
+            throw new MultiplayerProtocolException(
+                $"a started match cannot be on turn {view.CurrentTurn}");
+        }
         var state = MatchBootstrapFactory.Create(options.Definitions, seed, settings, view.Players);
         var replay = new MatchReplayRecorder(state);
         CommandPhase.Enter(replay);
 
-        var session = new MultiplayerMatchSession(options, replay, self, SeatedSlots(view.Players));
+        var isRestoring = view.CurrentTurn > replay.State.Coordinator.Turn;
+        var session = new MultiplayerMatchSession(
+            options, replay, self, SeatedSlots(view.Players), isRestoring);
         session.InitialState = MatchStateClone.Of(state, options.Definitions);
         session.InitialDeadline = ParseInstant(view.Turn?.DeadlineAt);
-        session._pump = Task.Run(() => session.PumpAsync(session._stopping.Token));
+        session._pump = Task.Run(() => isRestoring
+            ? session.RestoreAndPumpAsync(session._stopping.Token)
+            : session.PumpAsync(session._stopping.Token));
         session._outbox = Task.Run(() => session.DrainOutboxAsync(session._stopping.Token));
         return session;
     }
@@ -296,6 +310,159 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     }
 
     /// <summary>
+    /// Reconciles a newly created client session with a match that has already advanced, then starts
+    /// the ordinary gapless event pump from the match view used for that reconstruction.
+    /// </summary>
+    private async Task RestoreAndPumpAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var detail = await CallAsync(
+                token => _match.GetAsync(token), cancellationToken).ConfigureAwait(false);
+            var view = detail.Match;
+            if (view.Status == MatchStatus.Abandoned)
+            {
+                _notices.Enqueue(new MultiplayerNotice.MatchAbandoned());
+                return;
+            }
+            _awaitedSeats = view.Players.Count(
+                player => player.Slot >= 0 && player.Status == WirePlayerStatus.Active);
+            InitialDeadline = ParseInstant(view.Turn?.DeadlineAt);
+
+            if (view.CurrentTurn < 1)
+            {
+                throw new MultiplayerProtocolException(
+                    $"a started match cannot be on turn {view.CurrentTurn}");
+            }
+
+            if (view.CurrentTurn > 1)
+            {
+                var snapshot = await LatestSnapshotOrNullAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                if (snapshot is not null) AdoptResumeSnapshot(snapshot, view.CurrentTurn);
+            }
+
+            while (_replay.State.Outcome is null
+                   && _replay.State.Coordinator.Turn < view.CurrentTurn)
+            {
+                await FetchAndApplySealedTurnAsync(
+                    _replay.State.Coordinator.Turn, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (_replay.State.Outcome is null
+                && (_replay.State.Coordinator.Phase != TurnPhase.Command
+                    || _replay.State.Coordinator.Turn != view.CurrentTurn))
+            {
+                throw new MultiplayerProtocolException(
+                    $"the resumed state reached {_replay.State.Coordinator.Phase} turn "
+                    + $"{_replay.State.Coordinator.Turn}, but the server is on turn {view.CurrentTurn}");
+            }
+            if (_replay.State.Outcome is not null
+                && view.Status is not (MatchStatus.Finished or MatchStatus.Abandoned))
+            {
+                throw new MultiplayerProtocolException(
+                    "the reconstructed match has ended while the server still reports it in progress");
+            }
+
+            var submission = _replay.State.Outcome is null
+                ? await CallAsync(
+                    token => _match.OwnSubmissionAsync(view.CurrentTurn, token),
+                    cancellationToken).ConfigureAwait(false)
+                : new OwnSubmissionView(view.CurrentTurn, null, Ready: false, OrdersHash: null);
+            ValidateResumeSubmission(submission, view.CurrentTurn);
+            InitialState = MatchStateClone.Of(_replay.State, _definitions);
+            _resumeAfterSeq = view.LastEventSeq;
+            _notices.Enqueue(new MultiplayerNotice.Resumed(
+                view,
+                MatchStateClone.Of(_replay.State, _definitions),
+                submission));
+
+            await PumpAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Ordinary shutdown while the historical turns were being reconstructed.
+        }
+        catch (Exception exception)
+        {
+            _notices.Enqueue(new MultiplayerNotice.Failed(Describe(exception), exception));
+        }
+    }
+
+    private void ValidateResumeSubmission(OwnSubmissionView submission, int currentTurn)
+    {
+        if (submission.Turn != currentTurn)
+        {
+            throw new MultiplayerProtocolException(
+                $"the saved draft is for turn {submission.Turn}, but the server is on turn "
+                + currentTurn);
+        }
+        if (submission.Orders is null)
+        {
+            if (submission.Ready || submission.OrdersHash is not null)
+            {
+                throw new MultiplayerProtocolException(
+                    "the saved draft has readiness or a digest but no order document");
+            }
+            return;
+        }
+        var digest = OrderDigest.OfDocument(submission.Orders);
+        if (!string.Equals(digest, submission.OrdersHash, StringComparison.Ordinal))
+        {
+            throw new MultiplayerProtocolException(
+                "the saved draft does not match the digest the server returned");
+        }
+        _ = SpeculativeTurn.Restore(
+            _replay.State, _definitions, Slot, submission.Orders);
+    }
+
+    private async Task<SnapshotView?> LatestSnapshotOrNullAsync(
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await CallAsync(
+                token => _match.LatestSnapshotAsync(token), cancellationToken).ConfigureAwait(false);
+        }
+        catch (MultiplayerApiException exception) when (exception.Reason == "no_snapshot")
+        {
+            return null;
+        }
+    }
+
+    private void AdoptResumeSnapshot(SnapshotView snapshot, int currentTurn)
+    {
+        if (snapshot.Turn < 1 || snapshot.Turn >= currentTurn)
+        {
+            throw new MultiplayerProtocolException(
+                $"the latest snapshot is for turn {snapshot.Turn}, but the server is on turn "
+                + currentTurn);
+        }
+        if (snapshot.FormatVersion > NativeSaveSerializer.CurrentFormatVersion)
+        {
+            throw new MultiplayerProtocolException(
+                $"the repair for turn {snapshot.Turn} is save format {snapshot.FormatVersion}, "
+                + $"and this build reads up to {NativeSaveSerializer.CurrentFormatVersion}");
+        }
+        var restored = ReadSnapshot(snapshot.Body, snapshot.Turn);
+        var stateHash = MatchStateHasher.ComputeSha256(restored);
+        if (!string.Equals(stateHash, snapshot.StateHash, StringComparison.Ordinal))
+        {
+            throw new MultiplayerProtocolException(
+                $"the snapshot for turn {snapshot.Turn} does not hash to the state it claims");
+        }
+        if (restored.Outcome is null
+            && (restored.Coordinator.Phase != TurnPhase.Command
+                || restored.Coordinator.Turn != snapshot.Turn + 1))
+        {
+            throw new MultiplayerProtocolException(
+                $"the snapshot for turn {snapshot.Turn} resumes at "
+                + $"{restored.Coordinator.Phase} turn {restored.Coordinator.Turn}");
+        }
+        _replay = new MatchReplayRecorder(restored);
+    }
+
+    /// <summary>
     /// Sends whatever the interface last queued, one document at a time.
     /// </summary>
     /// <remarks>
@@ -395,6 +562,17 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     private async Task ResolveSealedTurnAsync(int turn, CancellationToken cancellationToken)
     {
         if (turn < _replay.State.Coordinator.Turn) return;
+        var stateHash = await FetchAndApplySealedTurnAsync(turn, cancellationToken)
+            .ConfigureAwait(false);
+        await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
+        _notices.Enqueue(new MultiplayerNotice.TurnResolved(
+            turn, MatchStateClone.Of(_replay.State, _definitions), stateHash));
+    }
+
+    private async Task<string> FetchAndApplySealedTurnAsync(
+        int turn,
+        CancellationToken cancellationToken)
+    {
         var sealedOrders = await CallAsync(
             token => _match.SealedOrdersAsync(turn, token), cancellationToken).ConfigureAwait(false);
         if (!OrderDigest.Verifies(sealedOrders, sealedOrders.OrderSetHash))
@@ -402,10 +580,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
             throw new MultiplayerProtocolException(
                 $"the sealed set for turn {turn} does not match the digest the server announced");
         }
-        var stateHash = SealedTurnApplier.Apply(_replay, sealedOrders);
-        await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
-        _notices.Enqueue(new MultiplayerNotice.TurnResolved(
-            turn, MatchStateClone.Of(_replay.State, _definitions), stateHash));
+        return SealedTurnApplier.Apply(_replay, sealedOrders);
     }
 
     /// <summary>

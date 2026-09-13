@@ -2,6 +2,7 @@ using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Multiplayer.Session;
 
@@ -97,6 +98,65 @@ public sealed class SpeculativeTurn
         return new SpeculativeTurn(replay, player);
     }
 
+    /// <summary>
+    /// Recreates the local planning copy represented by a whole-document server submission.
+    /// </summary>
+    /// <remarks>
+    /// Reconnect never trusts a separately serialized speculative state. It starts from the same
+    /// authoritative turn as every peer and replays the caller's own accepted operations in order,
+    /// which restores both the visible queued actions and the document that future edits replace.
+    /// A document that no longer applies to that state is a protocol contradiction, not a partial
+    /// draft: silently dropping one operation would overwrite the server's valid document later.
+    /// </remarks>
+    public static SpeculativeTurn Restore(
+        MatchState authoritative,
+        OriginalData definitions,
+        int slot,
+        OrderDocument document)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        if (document.SchemaVersion != OrderDocumentBuilder.OrderDocumentSchemaVersion)
+        {
+            throw new MultiplayerProtocolException(
+                $"the saved draft uses order schema {document.SchemaVersion}, but this build reads "
+                + OrderDocumentBuilder.OrderDocumentSchemaVersion);
+        }
+        var turn = For(authoritative, definitions, slot);
+        foreach (var operation in document.Ops)
+        {
+            if (operation.Player != slot)
+            {
+                throw new MultiplayerProtocolException(
+                    $"the saved draft attributes {operation.Op} to slot {operation.Player}, "
+                    + $"not this client's slot {slot}");
+            }
+            var accepted = operation switch
+            {
+                SubmitCommandOp submit => turn.Submit(new GameCommand(
+                    turn.Player,
+                    new GangId(submit.Gang),
+                    (GangAction)submit.Action,
+                    FromWire(submit.Target),
+                    submit.Repeat,
+                    submit.SecondaryTarget is { } secondary ? FromWire(secondary) : null)).Accepted,
+                CancelCommandOp cancel => turn.Cancel(new GangId(cancel.Gang)).Accepted,
+                QueueHireOp hire => turn.QueueHire(
+                    checked((short)hire.GangDefinitionId), hire.SectorId).Accepted,
+                SnubHireOfferOp snub => turn.SnubHireOffer(
+                    checked((short)snub.GangDefinitionId)).Accepted,
+                DismissNotificationOp => turn.DismissNotification(),
+                _ => throw new MultiplayerProtocolException(
+                    $"the saved draft carries an operation this client cannot apply: {operation.Op}"),
+            };
+            if (!accepted)
+            {
+                throw new MultiplayerProtocolException(
+                    $"the saved draft operation {operation.Op} is invalid for the resumed turn");
+            }
+        }
+        return turn;
+    }
+
     /// <summary>Queues a command, and records it when the core accepted it.</summary>
     public CommandSubmissionResult Submit(GameCommand command)
     {
@@ -140,4 +200,15 @@ public sealed class SpeculativeTurn
 
     /// <summary>The document to submit for this turn.</summary>
     public OrderDocument Build() => Orders.Build();
+
+    private static Core.GameModel.CommandTarget FromWire(Generated.CommandTarget target) => target switch
+    {
+        NoneTarget => Core.GameModel.CommandTarget.None,
+        GangTarget gang => Core.GameModel.CommandTarget.Gang(new GangId(gang.Id)),
+        SectorTarget sector => Core.GameModel.CommandTarget.Sector(sector.Id),
+        SiteTarget site => Core.GameModel.CommandTarget.Site(site.Id),
+        ItemTarget item => Core.GameModel.CommandTarget.Item(item.Id),
+        _ => throw new MultiplayerProtocolException(
+            $"the saved draft carries a target kind this client cannot apply: {target.Kind}"),
+    };
 }

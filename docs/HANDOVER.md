@@ -91,6 +91,12 @@ Last updated: 2026-09-13
 - Online order readiness is now monotonic per turn even while a prior document
   is already in flight. A replacement draft can update the whole order document
   without accidentally retracting the player's earlier ready signal.
+- A client that reaches an already-advanced online match now refreshes the
+  authoritative match view, loads and verifies the newest compatible snapshot
+  when one exists, replays every later sealed turn, restores its own current
+  whole-document draft and ready state, then resumes the event stream at the
+  refreshed sequence. Invalid snapshot hashes, draft schemas, and replayed
+  operations fail explicitly instead of producing a partial local state.
 - Crackdown combat now follows the executable rather than the manual's
   abbreviated detection table: visible detection is
   `clamp(115 - 5 * Stealth, 0, 100)`, Hide subtracts 20 percentage points, and

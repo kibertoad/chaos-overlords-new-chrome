@@ -530,6 +530,12 @@ The multiplayer server under `multiplayer/` is a separate TypeScript workspace
 simultaneous turn, relays the order set, and verifies the state hash every
 client reports after resolving that set through `Rechaos.Core`. Design,
 protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
+Session startup reconciles an advanced match before opening its stream: the
+client refreshes the match view, verifies and adopts the newest compatible
+snapshot if present, deterministically applies intervening sealed sets, restores
+its own current submission on a speculative copy, and resumes after the refreshed
+event sequence. A missing snapshot falls back to seed-based reconstruction from
+turn one; it is not an error.
 
 ## Error and security model
 

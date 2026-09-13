@@ -28,7 +28,7 @@ incremental outputs and MSBuild/Roslyn server reuse are retained because both
 materially speed repeated builds.
 
 At the current published checkpoint, the isolated Release build completes with
-zero warnings and all 1,457 tests pass. This count is a regression baseline,
+zero warnings and all 1,462 tests pass. This count is a regression baseline,
 not a measure of parity completeness.
 
 A small, stable worker pool is expected. If a prior interrupted run left stale
@@ -78,6 +78,11 @@ Persistence recovery tests corrupt and remove current save and replay generation
 verify fallback hashes against the last valid backup, reload the repaired primary,
 check temporary-file cleanup, and confirm that a backup-only save slot remains
 discoverable in the client browser.
+
+Online-session integration tests restart against an advanced match both with and
+without a prior snapshot, replay intervening sealed turns, restore the caller's
+current submission and readiness, and verify that the live stream resumes from
+the refreshed event sequence before resolving the next turn.
 
 The first complete hosted run of this matrix and installer path was GitHub
 Actions run `34400362789` on 2026-09-09. The latest recorded clean-room matrix
