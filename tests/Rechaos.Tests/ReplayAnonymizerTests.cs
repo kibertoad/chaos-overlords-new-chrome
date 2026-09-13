@@ -151,6 +151,34 @@ public sealed class ReplayAnonymizerTests
         Assert.Equal("PLAYER 1", anonymized.State.Setup.Players[0].Name);
     }
 
+    /// <summary>
+    /// The phase fingerprints in the opening snapshot are dropped rather than carried.
+    /// </summary>
+    /// <remarks>
+    /// They are digests of the match as it was named, so carrying them would both describe a match
+    /// nobody is being sent and answer "was this player called X?" for anybody willing to try a
+    /// name. A journal resumed mid-match is the shape that has them; one recorded from turn one has
+    /// none to begin with.
+    /// </remarks>
+    [Fact]
+    public void DropsThePhaseFingerprintsTakenOverTheNamedMatch()
+    {
+        var earlier = new MatchReplayRecorder(TestMatches.Create("MARGARET"));
+        earlier.FinishUpkeep();
+        foreach (var player in earlier.State.Players) earlier.FinishCommand(player.Id);
+        Assert.NotEmpty(earlier.State.PhaseHashes);
+        var named = earlier.State.PhaseHashes.Select(boundary => boundary.Sha256).ToArray();
+        // A fresh journal over the same match: the boundaries so far are now in its snapshot.
+        var recorder = new MatchReplayRecorder(earlier.State);
+
+        var anonymized = ReplayAnonymizer.Anonymize(recorder);
+
+        Assert.Empty(anonymized.State.PhaseHashes);
+        var journal = SerializeJournal(anonymized);
+        foreach (var digest in named)
+            Assert.DoesNotContain(digest, journal, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static string SerializeJournal(MatchReplayRecorder recorder)
     {
         using var stream = new MemoryStream();

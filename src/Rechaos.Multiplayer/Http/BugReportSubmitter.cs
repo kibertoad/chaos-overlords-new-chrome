@@ -83,16 +83,60 @@ public sealed class BugReportSubmitter
     private readonly Uri _endpoint;
     private readonly TimeSpan _timeout;
 
+    /// <summary>
+    /// A client whose own clock does not overrule this one's.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="HttpClient.Timeout"/> defaults to a hundred seconds and is applied <em>on top of</em>
+    /// whatever token a caller passes, so the shorter of the two is what a request actually gets. A
+    /// default-constructed shared client therefore silently overrules <see cref="DefaultTimeout"/>,
+    /// and the megabyte upload on a slow uplink — the one case the three minutes were written for —
+    /// is abandoned at a hundred seconds and told the server never answered.
+    /// </para>
+    /// <para>
+    /// It also cannot be changed once a request has gone out, so it is not something a caller can be
+    /// left to remember: the client that sends reports is made here, once, with the ambient deadline
+    /// removed. Every send this class makes carries its own linked deadline instead, which is the
+    /// one that should apply.
+    /// </para>
+    /// </remarks>
+    public static HttpClient CreateHttpClient() => Configure(new HttpClient());
+
+    /// <inheritdoc cref="CreateHttpClient()"/>
+    /// <param name="handler">The transport to send over, for a caller that supplies its own.</param>
+    public static HttpClient CreateHttpClient(HttpMessageHandler handler) =>
+        Configure(new HttpClient(handler));
+
+    private static HttpClient Configure(HttpClient client)
+    {
+        client.Timeout = Timeout.InfiniteTimeSpan;
+        return client;
+    }
+
+    /// <exception cref="ArgumentException">
+    /// <paramref name="http"/> carries a deadline shorter than this submitter's, and would be the
+    /// one a slow upload hit. Build the client with <see cref="CreateHttpClient"/>.
+    /// </exception>
     public BugReportSubmitter(HttpClient http, Uri? endpoint = null, TimeSpan? timeout = null)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
+        _timeout = timeout ?? DefaultTimeout;
+        // Fail where the mistake is, rather than a hundred seconds into somebody's report. A client
+        // with a shorter clock than ours makes the deadline above a decoration, and the failure it
+        // produces is indistinguishable from an unreachable server.
+        if (_http.Timeout != Timeout.InfiniteTimeSpan && _http.Timeout < _timeout)
+            throw new ArgumentException(
+                $"The client's own timeout ({_http.Timeout}) is shorter than this submitter's "
+                + $"deadline ({_timeout}), so it, not the deadline, is what a slow upload would "
+                + $"hit. Build the client with {nameof(CreateHttpClient)}().",
+                nameof(http));
         var address = endpoint ?? BugReportEndpoint.Default;
         _endpoint = new Uri(
             address.AbsolutePath.EndsWith('/')
                 ? address
                 : new Uri(address, $"{address.AbsolutePath}/"),
             $"{ApiRoutes.Prefix[1..]}{ApiRoutes.BugReports}");
-        _timeout = timeout ?? DefaultTimeout;
     }
 
     /// <summary>Sends the report and answers the server's receipt.</summary>

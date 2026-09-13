@@ -97,13 +97,11 @@ public static class SaveSlotCatalog
     /// <summary>
     /// The journal belonging to a slot's save, or null when there is none to continue.
     /// </summary>
-    /// <param name="loaded">The state just loaded from the slot, which the journal must match.</param>
-    public static MatchReplayRecorder? LoadJournal(
-        string directory, int slot, OriginalData definitions, MatchState loaded)
+    /// <param name="loaded">The state just loaded from the slot, which the journal must end at.</param>
+    public static MatchReplayRecorder? LoadJournal(string directory, int slot, MatchState loaded)
     {
         ArgumentNullException.ThrowIfNull(loaded);
-        return MatchJournalStore.TryLoadResumable(
-            JournalPath(directory, slot), definitions, MatchStateHasher.ComputeSha256(loaded));
+        return MatchJournalStore.TryResumeOnto(JournalPath(directory, slot), loaded);
     }
 
     private static void WriteJournal(string savePath, MatchReplayRecorder? journal)
@@ -119,10 +117,17 @@ public static class SaveSlotCatalog
             MatchJournalStore.SaveAtomic(journalPath, journal);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
-                                          or ArgumentOutOfRangeException)
+                                          or ArgumentOutOfRangeException
+                                          or InvalidOperationException)
         {
             // The save itself is already on disk and is what the player asked for. Drop the stale
             // companion rather than leaving one that no longer describes this slot.
+            //
+            // InvalidOperationException is the desynced recorder: capturing a journal re-hashes the
+            // match and refuses if it has moved outside the recorder. That is a real defect and one
+            // worth finding, but the save has already succeeded by the time it surfaces, and a
+            // player losing the game they just saved to a fault in its companion would be the worst
+            // possible way to learn about it.
             MatchJournalStore.Delete(journalPath);
         }
     }

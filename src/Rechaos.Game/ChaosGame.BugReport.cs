@@ -38,9 +38,11 @@ public sealed partial class ChaosGame
     /// <remarks>
     /// A field rather than a per-report instance: a new <see cref="HttpClient"/> per send leaks a
     /// socket for the length of its TIME_WAIT, and a player who files three reports in a session
-    /// should not be paying for connection setup three times either.
+    /// should not be paying for connection setup three times either. Built by the submitter, which
+    /// is the only thing that knows what deadline the send needs — a default client carries one of
+    /// its own that would quietly win.
     /// </remarks>
-    private static readonly HttpClient BugReportHttp = new();
+    private static readonly HttpClient BugReportHttp = BugReportSubmitter.CreateHttpClient();
 
     private bool _bugReportOpen;
     private BugReportFocus _bugReportFocus = BugReportFocus.Message;

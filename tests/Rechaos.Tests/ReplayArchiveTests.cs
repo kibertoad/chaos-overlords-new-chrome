@@ -103,6 +103,94 @@ public sealed class ReplayArchiveTests
         Assert.Throws<InvalidDataException>(() => ReplayArchive.Unpack(archive));
     }
 
+    /// <summary>
+    /// Reading from a stream decides on the header, not on a file already in memory.
+    /// </summary>
+    /// <remarks>
+    /// The span overload can only be handed an archive somebody has loaded whole, which is the one
+    /// thing a guard cannot undo: a reader that allocates first has already paid whatever the file
+    /// asked for. This one reads sixteen bytes and decides on those.
+    /// </remarks>
+    [Fact]
+    public void UnpacksFromAStreamWithoutReadingItWhole()
+    {
+        var payload = Encoding.UTF8.GetBytes(new string('x', 64 * 1024));
+        using var archive = new MemoryStream(ReplayArchive.Pack(payload), writable: false);
+
+        Assert.Equal(payload, ReplayArchive.Unpack(archive));
+    }
+
+    /// <summary>A stored payload round-trips through the stream reader too.</summary>
+    [Fact]
+    public void UnpacksAnUncompressedPayloadFromAStream()
+    {
+        var payload = Encoding.UTF8.GetBytes("{}");
+        using var archive = new MemoryStream(ReplayArchive.Pack(payload), writable: false);
+
+        Assert.Equal(payload, ReplayArchive.Unpack(archive));
+    }
+
+    /// <summary>
+    /// A stream longer than any archive could be is refused before a byte of it is read.
+    /// </summary>
+    /// <remarks>
+    /// Nothing bounds the <em>compressed</em> bytes: the header's declared length only says what
+    /// comes out. So the container states its own ceiling, and a seekable source is measured against
+    /// it first — which is what keeps a hostile companion file a refusal rather than an allocation.
+    /// </remarks>
+    [Fact]
+    public void RefusesAStreamLargerThanAnArchiveCanBe()
+    {
+        using var oversized = new OverstatedLengthStream(ReplayArchive.MaximumArchiveBytes + 1L);
+
+        var refusal = Assert.Throws<InvalidDataException>(() => ReplayArchive.Unpack(oversized));
+
+        Assert.Equal(0, oversized.BytesRead);
+        Assert.Contains("larger than", refusal.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RefusesAStreamThatEndsMidPayload()
+    {
+        var archive = ReplayArchive.Pack(Encoding.UTF8.GetBytes(new string('x', 64 * 1024)));
+        using var truncated = new MemoryStream(archive[..(archive.Length / 2)], writable: false);
+
+        Assert.Throws<InvalidDataException>(() => ReplayArchive.Unpack(truncated));
+    }
+
+    [Fact]
+    public void RefusesAStreamThatEndsMidHeader()
+    {
+        using var stump = new MemoryStream(new byte[ReplayArchive.HeaderBytes - 1], writable: false);
+
+        Assert.Throws<InvalidDataException>(() => ReplayArchive.Unpack(stump));
+    }
+
+    /// <summary>An empty, seekable stand-in that claims a length no archive could have.</summary>
+    private sealed class OverstatedLengthStream(long length) : Stream
+    {
+        public int BytesRead { get; private set; }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => true;
+        public override bool CanWrite => false;
+        public override long Length => length;
+        public override long Position { get; set; }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            BytesRead += count;
+            return 0;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Flush()
+        {
+        }
+    }
+
     [Fact]
     public void FingerprintIsTheLowercaseHexDigestOfTheArchive()
     {

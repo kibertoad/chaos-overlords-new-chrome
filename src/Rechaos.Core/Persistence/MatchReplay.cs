@@ -322,6 +322,55 @@ public static class MatchReplaySerializer
             state, document.InitialSnapshot, document.InitialStateSha256, document.Steps);
     }
 
+    /// <summary>
+    /// Adopts a journal onto a state that has already been restored, without replaying it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="TryLoadResumable"/> replays a journal to arrive at the state it ends at, which is
+    /// the only way to get one when the journal is all there is. Beside a save it is not: the save
+    /// <em>is</em> that state, and re-deriving it costs a re-run of the whole match — every recorded
+    /// operation plus a full-state fingerprint each — on the thread the player is waiting on. A
+    /// thirty-turn match measured 147 ms, and it grows with the match, so the reward for a long
+    /// session is a load that visibly stops.
+    /// </para>
+    /// <para>
+    /// What a resumed journal actually needs is the history, and the history is the step list. The
+    /// state comes from the save, and the one thing worth proving is that the two belong together:
+    /// the last step's fingerprint against the restored state's. That is the same equality the
+    /// replay was reduced to at the end, and it is exactly the invariant the recorder holds — the
+    /// journal that replays somewhere else is a leftover from another game in the same slot, and is
+    /// refused here as it was before.
+    /// </para>
+    /// <para>
+    /// So the steps are carried rather than verified. The journal is this build's own companion
+    /// file, and where it is read by something that cares whether every step still reproduces — a
+    /// bug report, which replays it to anonymize it — that check happens there, off the game loop
+    /// and on the copy about to be sent.
+    /// </para>
+    /// </remarks>
+    /// <param name="resumed">The state the journal must end at: the one just loaded from the save.</param>
+    /// <returns>A recorder continuing the journal, or null when it is not this save's.</returns>
+    /// <exception cref="InvalidDataException">The journal is unreadable.</exception>
+    public static MatchReplayRecorder? TryResumeOnto(Stream source, MatchState resumed)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(resumed);
+        if (!source.CanRead)
+            throw new ArgumentException("Source stream is not readable.", nameof(source));
+        var document = Read(source);
+        if (document.FormatVersion != CurrentFormatVersion) return null;
+        if (document.Steps.Count > MaximumSteps)
+            throw new InvalidDataException("Replay exceeds the operation limit.");
+        var ending = document.Steps.Count == 0
+            ? document.InitialStateSha256
+            : document.Steps[^1].ResultingStateSha256;
+        if (!StringComparer.Ordinal.Equals(ending, MatchStateHasher.ComputeSha256(resumed)))
+            return null;
+        return MatchReplayRecorder.Resume(
+            resumed, document.InitialSnapshot, document.InitialStateSha256, document.Steps);
+    }
+
     private static ReplayDocument Read(Stream source)
     {
         try

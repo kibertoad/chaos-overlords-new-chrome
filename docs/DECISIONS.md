@@ -75,10 +75,23 @@ and the client-side wiring of online play is tracked as follow-up work.
   saves carried it: a load used to start a fresh recorder, so the turns that
   produced a bug were exactly what a report filed afterwards did not have.
 - Companion, not a format change: a save writes `<save>.rchjournal` beside
-  itself and a load resumes it when it replays to that save's own state. An old
+  itself and a load resumes it when it ends at that save's own state. An old
   save still loads, a missing or corrupt journal is never a failed load, and a
   slot saved without one loses the journal already there rather than pairing
   with another game's history.
+- A load adopts the journal rather than replaying it. Re-deriving the state from
+  the steps means re-running the whole match — every recorded operation plus a
+  full-state fingerprint each — on the thread the player is waiting on: a
+  30-turn match measured 147 ms, and it grows with the match, so the reward for
+  a long session would be a load that visibly stops. The save already *is* that
+  state, so what the journal supplies is the history, and the one thing worth
+  proving is that the two belong together: the last step's fingerprint against
+  the restored state's. That is the same equality the replay was reduced to at
+  the end, and it is the recorder's own invariant, so a companion left by
+  another game in the same slot is still refused. Adopting measures 7 ms. Where
+  something needs every step to still reproduce — a bug report, which replays
+  the journal to anonymize it — that check happens there, off the game loop and
+  on the copy about to be sent.
 - Compression is Brotli, not zstd, with the codec byte reserved for zstd. A
   journal is the opening snapshot plus every recorded command, each with the
   fingerprint of the state it produced; the commands are most of the bytes and

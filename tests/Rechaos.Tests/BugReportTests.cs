@@ -231,7 +231,7 @@ public sealed class BugReportSubmitterTests
     public async Task PostsToTheBugReportRouteAndReadsTheReceipt()
     {
         using var server = new FakeMultiplayerServer();
-        using var http = new HttpClient(server);
+        using var http = BugReportSubmitter.CreateHttpClient(server);
         server.Answer(
             HttpMethod.Post,
             "/bug-reports",
@@ -254,7 +254,7 @@ public sealed class BugReportSubmitterTests
     public async Task SendsNoCredential()
     {
         using var server = new FakeMultiplayerServer();
-        using var http = new HttpClient(server);
+        using var http = BugReportSubmitter.CreateHttpClient(server);
         server.Answer(
             HttpMethod.Post,
             "/bug-reports",
@@ -279,7 +279,7 @@ public sealed class BugReportSubmitterTests
         HttpStatusCode status, BugReportFailure expected)
     {
         using var server = new FakeMultiplayerServer();
-        using var http = new HttpClient(server);
+        using var http = BugReportSubmitter.CreateHttpClient(server);
         server.Answer(HttpMethod.Post, "/bug-reports", null, status);
 
         var failure = await Assert.ThrowsAsync<BugReportException>(
@@ -298,7 +298,7 @@ public sealed class BugReportSubmitterTests
         string origin, string expected)
     {
         using var server = new FakeMultiplayerServer();
-        using var http = new HttpClient(server);
+        using var http = BugReportSubmitter.CreateHttpClient(server);
         server.Answer(
             HttpMethod.Post,
             "/bug-reports",
@@ -310,6 +310,56 @@ public sealed class BugReportSubmitterTests
             .SubmitAsync(Report(), CancellationToken.None);
 
         Assert.Equal(expected, Assert.Single(server.Requests).Path);
+    }
+
+    /// <summary>
+    /// The client this class builds carries no deadline of its own, so its caller's is the one that
+    /// applies.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="HttpClient.Timeout"/> defaults to a hundred seconds and is applied on top of any
+    /// token passed to a send, so the shorter of the two wins. A default-constructed client would
+    /// quietly overrule <see cref="BugReportSubmitter.DefaultTimeout"/> and abandon a megabyte
+    /// upload on a slow uplink at a hundred seconds — the case those three minutes exist for.
+    /// </remarks>
+    [Fact]
+    public void BuildsAClientThatDoesNotOverruleTheReportDeadline()
+    {
+        using var client = BugReportSubmitter.CreateHttpClient();
+        using var untouched = new HttpClient();
+
+        Assert.Equal(Timeout.InfiniteTimeSpan, client.Timeout);
+        Assert.True(untouched.Timeout < BugReportSubmitter.DefaultTimeout,
+            "the default client's own timeout is what this factory exists to remove");
+    }
+
+    /// <summary>
+    /// A client with a shorter clock is refused where the mistake is, not a hundred seconds into
+    /// somebody's report — where it would be indistinguishable from an unreachable server.
+    /// </summary>
+    [Fact]
+    public void RefusesAClientWhoseOwnTimeoutWouldWin()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var impatient = new HttpClient(server) { Timeout = TimeSpan.FromSeconds(5) };
+
+        var refusal = Assert.Throws<ArgumentException>(() => new BugReportSubmitter(impatient));
+
+        Assert.Equal("http", refusal.ParamName);
+        Assert.Contains(nameof(BugReportSubmitter.CreateHttpClient), refusal.Message,
+            StringComparison.Ordinal);
+    }
+
+    /// <summary>A caller that shortens the deadline itself is taken at its word.</summary>
+    [Fact]
+    public void AcceptsAClientThatIsPatientEnoughForTheDeadlineItIsGiven()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var client = new HttpClient(server) { Timeout = TimeSpan.FromSeconds(30) };
+
+        var submitter = new BugReportSubmitter(client, timeout: TimeSpan.FromSeconds(10));
+
+        Assert.NotNull(submitter);
     }
 
     /// <summary>The placeholder until the public server exists; changing it is one line.</summary>

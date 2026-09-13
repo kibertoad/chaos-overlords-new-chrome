@@ -122,8 +122,18 @@ public static class ReplayAnonymizer
             player["name"] = AnonymizedName(id, name);
         }
 
+        var runtime = root["runtime"]?.AsObject();
+
+        // The phase-boundary fingerprints are digests of the match as it was *named*, and there is
+        // no way to rewrite them: recomputing one needs the state it was taken over, and those
+        // states are behind the journal's first step. Carrying them would be wrong twice — they
+        // describe a match nobody is being sent, and they answer "was this player called X?" for
+        // anyone willing to try a name — so the history starts empty and the replay rebuilds it.
+        // A journal recorded from the first turn has none of these; one resumed mid-match does.
+        if (runtime?["phaseHashes"] is not null) runtime["phaseHashes"] = new JsonArray();
+
         // Comlink arrived in save format 17; an older snapshot legitimately has no inboxes at all.
-        if (root["runtime"]?.AsObject()["comlink"] is JsonArray inboxes)
+        if (runtime?["comlink"] is JsonArray inboxes)
         {
             foreach (var inbox in inboxes)
             {

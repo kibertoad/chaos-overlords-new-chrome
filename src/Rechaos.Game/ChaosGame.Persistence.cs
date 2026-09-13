@@ -33,12 +33,14 @@ public sealed partial class ChaosGame
             var summary = _saveSlots[slot];
             var loaded = SaveSlotCatalog.Load(_saveDirectory, slot, _definitions);
             if (_session is not null) EndOnlineMatch("LOADED SAVED GAME");
-            // The companion journal, when the slot has one that belongs to this save, carries the
-            // match's history from its first turn. Resuming it is what lets a bug report filed after
-            // a load reproduce the whole session rather than only what happened since.
-            var journal = SaveSlotCatalog.LoadJournal(_saveDirectory, slot, _definitions, loaded);
-            _state = journal?.State ?? loaded;
-            _actions = new MatchActions(journal ?? new MatchReplayRecorder(_state));
+            // The save is the match; the companion journal, when the slot has one that belongs to
+            // it, is only how it got there — the history from the first turn, which is what lets a
+            // bug report filed after a load reproduce the whole session rather than the tail of it.
+            // Either way the state that is played on is the one that was saved.
+            _state = loaded;
+            _actions = new MatchActions(
+                SaveSlotCatalog.LoadJournal(_saveDirectory, slot, loaded)
+                ?? new MatchReplayRecorder(loaded));
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);

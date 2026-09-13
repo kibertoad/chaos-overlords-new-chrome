@@ -1,4 +1,3 @@
-using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 
 namespace Rechaos.Core.Persistence;
@@ -76,31 +75,32 @@ public static class MatchJournalStore
     /// Loads a journal and answers a recorder that continues it, or null when there is none to
     /// continue.
     /// </summary>
-    /// <param name="expectedStateSha256">
-    /// The fingerprint of the save this journal is supposed to belong to. A journal that replays to
-    /// a different state is a leftover from another game in the same slot, and is ignored: resuming
+    /// <remarks>
+    /// The journal is adopted onto the save's own state rather than replayed onto a rebuilt one —
+    /// the save is already that state, and re-deriving it would re-run the whole match on the thread
+    /// the player is waiting on. See <see cref="MatchReplaySerializer.TryResumeOnto"/>.
+    /// </remarks>
+    /// <param name="loaded">
+    /// The state just restored from the save this journal is supposed to belong to. A journal that
+    /// ends anywhere else is a leftover from another game in the same slot, and is ignored: resuming
     /// it would append this match's turns to that one's history.
     /// </param>
-    public static MatchReplayRecorder? TryLoadResumable(
-        string path,
-        OriginalData definitions,
-        string expectedStateSha256)
+    public static MatchReplayRecorder? TryResumeOnto(string path, MatchState loaded)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        ArgumentNullException.ThrowIfNull(definitions);
-        ArgumentException.ThrowIfNullOrWhiteSpace(expectedStateSha256);
+        ArgumentNullException.ThrowIfNull(loaded);
         try
         {
             var fullPath = Path.GetFullPath(path);
             if (!File.Exists(fullPath)) return null;
-            using var json = new MemoryStream(
-                ReplayArchive.Unpack(File.ReadAllBytes(fullPath)), writable: false);
-            var recorder = MatchReplaySerializer.TryLoadResumable(json, definitions);
-            if (recorder is null) return null;
-            return StringComparer.Ordinal.Equals(
-                expectedStateSha256, MatchStateHasher.ComputeSha256(recorder.State))
-                ? recorder
-                : null;
+            // Read through the file rather than into memory: the archive's header is what says how
+            // large the payload may be, and a reader that has already loaded the file cannot
+            // un-spend that. See ReplayArchive.MaximumArchiveBytes.
+            using var file = new FileStream(
+                fullPath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                bufferSize: 81920, FileOptions.SequentialScan);
+            using var json = new MemoryStream(ReplayArchive.Unpack(file), writable: false);
+            return MatchReplaySerializer.TryResumeOnto(json, loaded);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException
                                           or UnauthorizedAccessException)

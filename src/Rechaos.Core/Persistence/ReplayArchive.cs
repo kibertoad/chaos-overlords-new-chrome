@@ -96,6 +96,18 @@ public static class ReplayArchive
     public const int MaximumUncompressedBytes = MatchReplaySerializer.MaximumReplayBytes;
 
     /// <summary>
+    /// The largest archive this will read, before its header has been looked at.
+    /// </summary>
+    /// <remarks>
+    /// The declared length bounds what comes <em>out</em> of the decompressor; nothing bounds the
+    /// compressed bytes themselves, and a reader that loads a file whole before consulting its
+    /// header has already spent that allocation by the time the guard runs. So the container states
+    /// a ceiling of its own: a payload at its limit, the header, and the slack a codec adds when it
+    /// is handed data that does not compress.
+    /// </remarks>
+    public const int MaximumArchiveBytes = HeaderBytes + MaximumUncompressedBytes + 64 * 1024;
+
+    /// <summary>
     /// Below this, compression is skipped: a few hundred bytes of Brotli framing on a payload this
     /// small is a cost with nothing to show for it.
     /// </summary>
@@ -169,21 +181,74 @@ public static class ReplayArchive
             return body.ToArray();
         }
 
-        var payload = new byte[header.UncompressedBytes];
         using var source = new MemoryStream(body.ToArray(), writable: false);
-        using var brotli = new BrotliStream(source, CompressionMode.Decompress);
-        var read = 0;
-        while (read < payload.Length)
+        return ReadBody(source, header);
+    }
+
+    /// <summary>
+    /// Unpacks an archive from a stream, reading its header before the rest of it.
+    /// </summary>
+    /// <remarks>
+    /// The overload taking a span can only be handed an archive somebody has already loaded whole,
+    /// which is the one thing a guard cannot undo. This reads the sixteen-byte header first and
+    /// decides on that, so a hostile file is refused as a header rather than as an allocation. A
+    /// seekable source is measured against <see cref="MaximumArchiveBytes"/> before even that.
+    /// </remarks>
+    /// <exception cref="InvalidDataException">The bytes are not a readable archive.</exception>
+    public static byte[] Unpack(Stream source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        if (!source.CanRead)
+            throw new ArgumentException("Source stream is not readable.", nameof(source));
+        if (source.CanSeek && source.Length - source.Position > MaximumArchiveBytes)
+            throw new InvalidDataException("Journal archive is larger than this build accepts.");
+
+        Span<byte> header = stackalloc byte[HeaderBytes];
+        ReadExactly(source, header);
+        var described = ReadHeader(header);
+        if (described.Codec == ReplayArchiveCodec.None)
         {
-            var chunk = brotli.Read(payload, read, payload.Length - read);
-            if (chunk == 0) throw new InvalidDataException("Journal archive is truncated.");
-            read += chunk;
+            var verbatim = new byte[described.UncompressedBytes];
+            ReadExactly(source, verbatim);
+            if (source.ReadByte() != -1)
+                throw new InvalidDataException("Journal archive length does not match its header.");
+            return verbatim;
         }
+        return ReadBody(source, described);
+    }
+
+    /// <summary>Decompresses exactly the payload the header declares, and not one byte more.</summary>
+    private static byte[] ReadBody(Stream body, ReplayArchiveHeader header)
+    {
+        var payload = new byte[header.UncompressedBytes];
+        using var brotli = new BrotliStream(body, CompressionMode.Decompress, leaveOpen: true);
+        ReadExactly(brotli, payload);
         // Exactly the declared length, no more: a stream that still has bytes left declared a
         // smaller payload than it carries, which is how a decompression bomb is spelled.
         if (brotli.ReadByte() != -1)
             throw new InvalidDataException("Journal archive expands beyond its declared size.");
         return payload;
+    }
+
+    /// <summary>
+    /// Fills <paramref name="destination"/>, or says the archive is truncated.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="Stream.ReadExactly(Span{byte})"/> reports a short read as an
+    /// <see cref="EndOfStreamException"/>, which is an <see cref="IOException"/> — a category that
+    /// means the disk failed, and that callers handle differently from a file whose contents are
+    /// wrong. A truncated archive is the latter.
+    /// </remarks>
+    private static void ReadExactly(Stream source, Span<byte> destination)
+    {
+        try
+        {
+            source.ReadExactly(destination);
+        }
+        catch (EndOfStreamException exception)
+        {
+            throw new InvalidDataException("Journal archive is truncated.", exception);
+        }
     }
 
     /// <summary>Replays an archive and answers the match state it ends at.</summary>

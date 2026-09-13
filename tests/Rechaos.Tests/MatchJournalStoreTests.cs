@@ -29,7 +29,7 @@ public sealed class MatchJournalStoreTests
 
             SaveSlotCatalog.Save(directory, 0, "with history", recorder.State, false, recorder);
             var loaded = SaveSlotCatalog.Load(directory, 0, definitions);
-            var resumed = SaveSlotCatalog.LoadJournal(directory, 0, definitions, loaded);
+            var resumed = SaveSlotCatalog.LoadJournal(directory, 0, loaded);
 
             Assert.NotNull(resumed);
             Assert.Equal(stepsBeforeSave, resumed.StepCount);
@@ -73,7 +73,7 @@ public sealed class MatchJournalStoreTests
 
             Assert.False(File.Exists(SaveSlotCatalog.JournalPath(directory, 2)));
             Assert.Null(SaveSlotCatalog.LoadJournal(
-                directory, 2, definitions, SaveSlotCatalog.Load(directory, 2, definitions)));
+                directory, 2, SaveSlotCatalog.Load(directory, 2, definitions)));
         }
         finally
         {
@@ -82,11 +82,12 @@ public sealed class MatchJournalStoreTests
     }
 
     /// <summary>
-    /// A journal that replays to a different state belongs to a different game and is ignored.
+    /// A journal that ends at a different state belongs to a different game and is ignored.
     /// </summary>
     /// <remarks>
     /// Resuming it would graft this match's turns onto that one's history, which replays to a state
-    /// nobody was ever in — worse than having no history at all.
+    /// nobody was ever in — worse than having no history at all. This is the check the load-time
+    /// replay was ultimately reduced to, and the one the companion file actually needs.
     /// </remarks>
     [Fact]
     public void IgnoresAJournalThatDoesNotMatchTheSave()
@@ -102,7 +103,7 @@ public sealed class MatchJournalStoreTests
             // A save from a different game, in the same slot's shape.
             var somebodyElses = TestMatches.Create("SOMEBODY ELSE");
 
-            Assert.Null(SaveSlotCatalog.LoadJournal(directory, 3, definitions, somebodyElses));
+            Assert.Null(SaveSlotCatalog.LoadJournal(directory, 3, somebodyElses));
         }
         finally
         {
@@ -125,7 +126,7 @@ public sealed class MatchJournalStoreTests
             var loaded = SaveSlotCatalog.Load(directory, 4, definitions);
 
             Assert.NotNull(loaded);
-            Assert.Null(SaveSlotCatalog.LoadJournal(directory, 4, definitions, loaded));
+            Assert.Null(SaveSlotCatalog.LoadJournal(directory, 4, loaded));
         }
         finally
         {
@@ -144,7 +145,78 @@ public sealed class MatchJournalStoreTests
             SaveSlotCatalog.Save(directory, 5, "no journal", state, online: false);
 
             Assert.Null(SaveSlotCatalog.LoadJournal(
-                directory, 5, definitions, SaveSlotCatalog.Load(directory, 5, definitions)));
+                directory, 5, SaveSlotCatalog.Load(directory, 5, definitions)));
+        }
+        finally
+        {
+            Delete(directory);
+        }
+    }
+
+    /// <summary>
+    /// A resumed journal plays on over the save's own state, not over one rebuilt from its steps.
+    /// </summary>
+    /// <remarks>
+    /// Re-deriving it means re-running the whole match — every operation plus a fingerprint each —
+    /// on the thread the player is waiting on, and the reward for a long session would be a load
+    /// that visibly stops. The save is already that state; the journal only carries the history.
+    /// </remarks>
+    [Fact]
+    public void ResumesOntoTheSavedStateRatherThanRebuildingIt()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var definitions = BundledOriginalData.Load();
+            var recorder = new MatchReplayRecorder(TestMatches.Create());
+            recorder.FinishUpkeep();
+            foreach (var player in recorder.State.Players) recorder.FinishCommand(player.Id);
+
+            SaveSlotCatalog.Save(directory, 6, "history", recorder.State, false, recorder);
+            var loaded = SaveSlotCatalog.Load(directory, 6, definitions);
+            var resumed = SaveSlotCatalog.LoadJournal(directory, 6, loaded);
+
+            Assert.NotNull(resumed);
+            Assert.Same(loaded, resumed.State);
+            Assert.Equal(recorder.StepCount, resumed.StepCount);
+        }
+        finally
+        {
+            Delete(directory);
+        }
+    }
+
+    /// <summary>
+    /// A recorder that has come adrift from its match costs the companion, never the save.
+    /// </summary>
+    /// <remarks>
+    /// Capturing a journal re-hashes the match and refuses if it moved outside the recorder. That
+    /// is a real defect worth finding, but by the time it surfaces the save is already on disk, and
+    /// a player losing the game they just saved would be the worst possible way to learn about it.
+    /// </remarks>
+    [Fact]
+    public void SavingSurvivesARecorderThatHasComeAdriftFromItsMatch()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var definitions = BundledOriginalData.Load();
+            var recorder = new MatchReplayRecorder(TestMatches.Create());
+            recorder.FinishUpkeep();
+            // Move the match without the recorder: exactly what its own guard is looking for.
+            recorder.State.FinishCommand(recorder.State.Coordinator.ActivePlayer!.Value);
+            Assert.Throws<InvalidOperationException>(() => ReplayArchive.Pack(recorder));
+
+            var summary = SaveSlotCatalog.Save(
+                directory, 8, "adrift", recorder.State, false, recorder);
+
+            Assert.Equal("adrift", summary.Name);
+            Assert.False(File.Exists(SaveSlotCatalog.JournalPath(directory, 8)));
+            var loaded = SaveSlotCatalog.Load(directory, 8, definitions);
+            Assert.Equal(
+                MatchStateHasher.ComputeSha256(recorder.State),
+                MatchStateHasher.ComputeSha256(loaded));
+            Assert.Null(SaveSlotCatalog.LoadJournal(directory, 8, loaded));
         }
         finally
         {
