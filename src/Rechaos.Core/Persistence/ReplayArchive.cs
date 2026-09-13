@@ -17,14 +17,20 @@ public enum ReplayArchiveCodec : byte
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A whole-match journal is JSON with one 64-character state fingerprint per step. The
-    /// fingerprints are incompressible and everything around them is highly repetitive, so the
-    /// achievable ratio is set by the hashes rather than by the codec, and Brotli at its higher
-    /// quality levels is at least a match for zstd on exactly this shape. What decides it is what
-    /// each side already has: Brotli ships in .NET, in Node, and in a Worker under
-    /// <c>nodejs_compat</c>, while zstd needs a package on the game side and has no Workers
+    /// A journal is the opening snapshot followed by every operation the match recorded — the
+    /// commands themselves — each carrying the fingerprint of the state it produced. The commands
+    /// are most of the bytes and almost none of the compressed size, because they are a small
+    /// vocabulary repeated a few hundred times. The fingerprints are the opposite, and they are
+    /// what is left: in a measured 27-turn match the step array compressed from 106 KB to 12.6 KB,
+    /// of which 12.3 KB was the fingerprints and 0.2 KB was everything else.
+    /// </para>
+    /// <para>
+    /// That is 364 hashes at 32 bytes of entropy each, so Brotli is already within a few percent of
+    /// the floor and no codec can do meaningfully better — which is what makes the choice a question
+    /// of what each side already has rather than of ratio. Brotli ships in .NET, in Node, and in a
+    /// Worker under <c>nodejs_compat</c>; zstd needs a package on the game side and has no Workers
     /// decoder at all. A new dependency in a game that must build offline is a real cost; a few
-    /// percent of ratio on a file nobody stores by the million is not.
+    /// percent on a file nobody stores by the million is not.
     /// </para>
     /// <para>
     /// <see cref="Zstd"/> is reserved so adopting it later is a codec byte and a branch, not a

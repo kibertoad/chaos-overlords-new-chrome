@@ -79,12 +79,18 @@ and the client-side wiring of online play is tracked as follow-up work.
   save still loads, a missing or corrupt journal is never a failed load, and a
   slot saved without one loses the journal already there rather than pairing
   with another game's history.
-- Compression is Brotli, not zstd, with the codec byte reserved for zstd. The
-  ratio on this payload is set by the incompressible per-step SHA-256s rather
-  than by the codec, and Brotli ships in .NET, in Node and in a Cloudflare
-  Worker under `nodejs_compat` while zstd needs a package on the game side and
-  has no Workers decoder. A new dependency in a game that must build offline is
-  the larger cost.
+- Compression is Brotli, not zstd, with the codec byte reserved for zstd. A
+  journal is the opening snapshot plus every recorded command, each with the
+  fingerprint of the state it produced; the commands are most of the bytes and
+  almost none of the compressed size, and the fingerprints are the reverse. In a
+  measured 27-turn match the step array went from 106 KB to 12.6 KB, of which
+  12.3 KB was the fingerprints and 0.2 KB everything else — and 364 hashes carry
+  11.6 KB of entropy, so Brotli is already within a few percent of the floor.
+  That makes the codec a question of what each side already has rather than of
+  ratio: Brotli ships in .NET, in Node and in a Cloudflare Worker under
+  `nodejs_compat`, while zstd needs a package on the game side and has no
+  Workers decoder. A new dependency in a game that must build offline is the
+  larger cost.
 - Storage: reports go to the same deployment that hosts multiplayer, over a
   route of its own, into a separate D1 instance (a separate SQLite file when
   self-hosted) with its own migration lineage. They arrive unauthenticated,
