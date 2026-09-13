@@ -229,6 +229,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _slidePanels = preferences.SlidePanels;
         _fullscreen = preferences.Fullscreen;
         _smoothEventSiteImages = preferences.SmoothEventSiteImages;
+        _introMoviesSeen = preferences.IntroMoviesSeen;
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -317,7 +318,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             var sound = LoadSound(AudioRouting.GeneralSoundFile(slot));
             if (sound is not null) _generalSounds.Add(slot, sound);
         }
-        InitializeStartupMovies();
+        InitializeIntroMovies();
         LoadSoundtrack();
         _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
         {
@@ -336,7 +337,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var altEnter = Pressed(keyboard, Keys.Enter)
             && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
         if (Pressed(keyboard, Keys.F11) || altEnter) ToggleFullscreen();
-        if (altEnter || UpdateStartupMovies(gameTime, keyboard, mouse))
+        if (altEnter || UpdateIntroMovies(gameTime, keyboard, mouse))
         {
             _previousKeyboard = keyboard;
             _previousMouse = mouse;
@@ -652,9 +653,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     {
         GraphicsDevice.Clear(new Color(8, 10, 12));
         if (_batch is null || _pixel is null || _font is null) return;
-        if (!_startupMoviesComplete)
+        if (_introMoviesPlaying)
         {
-            DrawStartupMovie(_batch);
+            DrawIntroMovie(_batch);
             base.Draw(gameTime);
             return;
         }
@@ -804,6 +805,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 else if (TitleOnline.Contains(point)) OpenOnline();
                 else if (TitleOptions.Contains(point)) OpenOptions();
                 else if (TitleHelp.Contains(point)) OpenHelp();
+                else if (TitleIntro.Contains(point)) ReplayIntroMovies();
                 else if (TitleQuit.Contains(point)) Exit();
                 break;
             case ClientScreen.Options:

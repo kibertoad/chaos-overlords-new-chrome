@@ -2,10 +2,14 @@ using Microsoft.Xna.Framework;
 
 namespace Rechaos.Game;
 
-public static class StartupMoviePolicy
+public static class IntroMoviePolicy
 {
     public static IReadOnlyList<string> FileNames { get; } =
         ["MVLOGOS.smk", "MVINTRO.smk"];
+
+    /// <summary>The intro streams unattended only until it has been seen; the title screen
+    /// replays it on demand afterwards.</summary>
+    public static bool PlaysAtStartup(bool introMoviesSeen) => !introMoviesSeen;
 
     public static Rectangle Destination(int width, int height) =>
         new((VirtualInput.Width - width) / 2, (VirtualInput.Height - height) / 2, width, height);
