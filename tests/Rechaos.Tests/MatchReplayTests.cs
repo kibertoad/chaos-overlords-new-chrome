@@ -897,7 +897,10 @@ public sealed class MatchReplayTests
                 path, recorder.State.Definitions);
 
             Assert.True(recovered.RecoveredFromBackup);
+            Assert.True(recovered.PrimaryRepaired);
             Assert.Equal(previousHash, MatchStateHasher.ComputeSha256(recovered.State));
+            Assert.Equal(previousHash, MatchStateHasher.ComputeSha256(
+                MatchReplayStore.LoadAndReplay(path, recorder.State.Definitions)));
             Assert.Empty(Directory.EnumerateFiles(directory, "*.tmp"));
         }
         finally

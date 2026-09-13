@@ -360,8 +360,10 @@ Last updated: 2026-09-13
   remain identical to Simple presentation.
 - Snapshot and replay stores read back each flushed temporary generation before
   promotion, retain the last valid primary as a backup, and do not poison a good
-  backup when replacing a corrupt primary. F10 transparently verifies the
-  replay backup when the primary is missing or invalid.
+  backup when replacing a corrupt primary. A verified backup now self-heals a
+  missing or invalid primary through a separately flushed and validated recovery
+  generation. Backup-only save slots remain visible, and both slot and replay
+  recovery report whether the repair succeeded.
 - Replay loading now enforces the recorded introduction version for every
   post-v2 authoritative operation. A relabeled legacy replay cannot execute
   later hire-offer, AI-planning, Comlink, or simultaneous-turn mutations.

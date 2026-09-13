@@ -27,6 +27,7 @@ public sealed partial class ChaosGame
         if (_definitions is null) return false;
         try
         {
+            var summary = _saveSlots[slot];
             var loaded = SaveSlotCatalog.Load(_saveDirectory, slot, _definitions);
             if (_session is not null) EndOnlineMatch("LOADED SAVED GAME");
             _state = loaded;
@@ -35,7 +36,9 @@ public sealed partial class ChaosGame
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
             _selectedGangIndex = 0;
-            _message = string.Empty;
+            _message = summary?.RecoveredFromBackup == true
+                ? summary.PrimaryRepaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
+                : string.Empty;
             _combatPresentationProgress.ResetTo(
                 _state.Players.Select(player => player.Id),
                 _state.Events.LastOrDefault()?.Sequence ?? -1);
@@ -80,7 +83,9 @@ public sealed partial class ChaosGame
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
-            _message = string.Empty;
+            _message = result.RecoveredFromBackup
+                ? result.PrimaryRepaired ? "REPLAY RECOVERED" : "REPLAY LOADED  REPAIR FAILED"
+                : string.Empty;
             _combatPresentationProgress.ResetTo(
                 _state.Players.Select(player => player.Id),
                 _state.Events.LastOrDefault()?.Sequence ?? -1);

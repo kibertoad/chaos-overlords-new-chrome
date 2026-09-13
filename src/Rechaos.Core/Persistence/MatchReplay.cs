@@ -556,7 +556,10 @@ internal sealed record ReplayDocument(
     byte[] InitialSnapshot,
     IReadOnlyList<ReplayStep> Steps);
 
-public sealed record MatchReplayLoadResult(MatchState State, bool RecoveredFromBackup);
+public sealed record MatchReplayLoadResult(
+    MatchState State,
+    bool RecoveredFromBackup,
+    bool PrimaryRepaired = false);
 
 public static class MatchReplayStore
 {
@@ -626,7 +629,11 @@ public static class MatchReplayStore
         {
             var backupPath = Path.GetFullPath(path) + BackupSuffix;
             if (!File.Exists(backupPath)) throw;
-            return new MatchReplayLoadResult(LoadAndReplay(backupPath, definitions), true);
+            var state = LoadAndReplay(backupPath, definitions);
+            var fullPath = Path.GetFullPath(path);
+            var repaired = AtomicGenerationRecovery.TryRestore(
+                fullPath, backupPath, candidate => _ = LoadAndReplay(candidate, definitions));
+            return new MatchReplayLoadResult(state, true, repaired);
         }
     }
 

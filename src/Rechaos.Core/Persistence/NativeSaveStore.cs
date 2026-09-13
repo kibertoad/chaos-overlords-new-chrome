@@ -3,7 +3,10 @@ using Rechaos.Core.GameModel;
 
 namespace Rechaos.Core.Persistence;
 
-public sealed record NativeSaveLoadResult(MatchState State, bool RecoveredFromBackup);
+public sealed record NativeSaveLoadResult(
+    MatchState State,
+    bool RecoveredFromBackup,
+    bool PrimaryRepaired = false);
 
 /// <summary>Crash-resistant file operations for recreation-native snapshots.</summary>
 public static class NativeSaveStore
@@ -72,7 +75,11 @@ public static class NativeSaveStore
         {
             var backupPath = Path.GetFullPath(path) + BackupSuffix;
             if (!File.Exists(backupPath)) throw;
-            return new NativeSaveLoadResult(Load(backupPath, definitions), true);
+            var state = Load(backupPath, definitions);
+            var fullPath = Path.GetFullPath(path);
+            var repaired = AtomicGenerationRecovery.TryRestore(
+                fullPath, backupPath, candidate => _ = Load(candidate, definitions));
+            return new NativeSaveLoadResult(state, true, repaired);
         }
     }
 

@@ -1,5 +1,6 @@
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
 using Rechaos.Game;
 using Xunit;
 
@@ -50,5 +51,39 @@ public sealed class SaveSlotCatalogTests
             [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
 
         Assert.Equal("GREED - TURN 1", SaveSlotCatalog.SuggestedName(state));
+    }
+
+    [Fact]
+    public void BackupOnlySlotIsListedAndRepairsItsPrimary()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"rechaos-slots-{Guid.NewGuid():N}");
+        try
+        {
+            var definitions = BundledOriginalData.Load();
+            var state = OriginalMatchFactory.Create(definitions, new MatchSetup(
+                ScenarioId.BigMan, GameDuration.SixMonths, 1996,
+                [new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human)]));
+            var path = SaveSlotCatalog.SavePath(directory, 4);
+            SaveSlotCatalog.Save(directory, 4, "Recovery test", state, online: false);
+            state.FinishUpkeep();
+            SaveSlotCatalog.Save(directory, 4, "Recovery test", state, online: false);
+            var backupHash = MatchStateHasher.ComputeSha256(NativeSaveStore.Load(
+                path + NativeSaveStore.BackupSuffix, definitions));
+            File.Delete(path);
+
+            var summary = Assert.IsType<SaveSlotSummary>(
+                SaveSlotCatalog.Read(directory, 4, definitions));
+
+            Assert.True(summary.RecoveredFromBackup);
+            Assert.True(summary.PrimaryRepaired);
+            Assert.Contains("RECOVERED", summary.Details);
+            Assert.True(File.Exists(path));
+            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(
+                NativeSaveStore.Load(path, definitions)));
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
     }
 }

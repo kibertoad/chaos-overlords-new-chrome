@@ -12,11 +12,16 @@ public sealed record SaveSlotSummary(
     ScenarioId Scenario,
     int HumanPlayers,
     int AiPlayers,
-    string MatchType)
+    string MatchType,
+    bool RecoveredFromBackup = false,
+    bool PrimaryRepaired = false)
 {
     public string Details =>
         $"{Timestamp.ToLocalTime():yyyy-MM-dd HH:mm}  {Scenario.ToString().ToUpperInvariant()}  "
-        + $"{MatchType}  H{HumanPlayers} A{AiPlayers}";
+        + $"{MatchType}  H{HumanPlayers} A{AiPlayers}"
+        + (RecoveredFromBackup
+            ? PrimaryRepaired ? "  RECOVERED" : "  BACKUP ONLY"
+            : string.Empty);
 }
 
 public static class SaveSlotCatalog
@@ -33,13 +38,15 @@ public static class SaveSlotCatalog
         string directory, int slot, OriginalData definitions)
     {
         var path = SavePath(directory, slot);
-        if (!File.Exists(path)) return null;
+        if (!File.Exists(path) && !File.Exists(path + NativeSaveStore.BackupSuffix)) return null;
         try
         {
-            var state = NativeSaveStore.LoadRecoveringBackup(path, definitions).State;
+            var recovered = NativeSaveStore.LoadRecoveringBackup(path, definitions);
             var timestamp = File.GetLastWriteTimeUtc(path);
             var metadata = ReadMetadata(path);
-            return Summarize(slot, metadata?.Name, timestamp, state, metadata?.Online ?? false);
+            return Summarize(
+                slot, metadata?.Name, timestamp, recovered.State, metadata?.Online ?? false,
+                recovered.RecoveredFromBackup, recovered.PrimaryRepaired);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException
                                            or UnauthorizedAccessException or JsonException)
@@ -67,18 +74,33 @@ public static class SaveSlotCatalog
         $"{state.Setup.Scenario.ToString().ToUpperInvariant()} - TURN {state.Coordinator.Turn}";
 
     private static SaveSlotSummary Summarize(
-        int slot, string? name, DateTime timestamp, MatchState state, bool online) =>
-        Summarize(slot, name, new DateTimeOffset(timestamp, TimeSpan.Zero), state, online);
+        int slot,
+        string? name,
+        DateTime timestamp,
+        MatchState state,
+        bool online,
+        bool recoveredFromBackup = false,
+        bool primaryRepaired = false) =>
+        Summarize(
+            slot, name, new DateTimeOffset(timestamp, TimeSpan.Zero), state, online,
+            recoveredFromBackup, primaryRepaired);
 
     private static SaveSlotSummary Summarize(
-        int slot, string? name, DateTimeOffset timestamp, MatchState state, bool online)
+        int slot,
+        string? name,
+        DateTimeOffset timestamp,
+        MatchState state,
+        bool online,
+        bool recoveredFromBackup = false,
+        bool primaryRepaired = false)
     {
         var humans = state.Setup.Players.Count(player => player.Controller == PlayerController.Human);
         var ai = state.Setup.Players.Count - humans;
         var matchType = online ? "ONLINE" : humans > 1 ? "HOT SEAT" : "SINGLE";
         return new SaveSlotSummary(slot,
             string.IsNullOrWhiteSpace(name) ? SuggestedName(state) : name,
-            timestamp, state.Setup.Scenario, humans, ai, matchType);
+            timestamp, state.Setup.Scenario, humans, ai, matchType,
+            recoveredFromBackup, primaryRepaired);
     }
 
     private static SaveSlotMetadata? ReadMetadata(string savePath)

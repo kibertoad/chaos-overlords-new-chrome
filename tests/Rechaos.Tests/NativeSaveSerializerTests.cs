@@ -898,7 +898,10 @@ public sealed partial class NativeSaveSerializerTests
             File.WriteAllText(path, "corrupt");
             var recovered = NativeSaveStore.LoadRecoveringBackup(path, first.Definitions);
             Assert.True(recovered.RecoveredFromBackup);
+            Assert.True(recovered.PrimaryRepaired);
             Assert.Equal(firstHash, MatchStateHasher.ComputeSha256(recovered.State));
+            Assert.Equal(firstHash, MatchStateHasher.ComputeSha256(
+                NativeSaveStore.Load(path, first.Definitions)));
             Assert.Empty(Directory.EnumerateFiles(directory, "*.tmp"));
         }
         finally
