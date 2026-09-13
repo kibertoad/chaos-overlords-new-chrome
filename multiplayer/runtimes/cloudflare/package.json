@@ -1,21 +1,60 @@
 {
   "name": "@chaos-overlords/worker",
   "version": "0.1.0",
-  "private": true,
   "description": "Cloudflare Workers runtime facade: the shared Hono app over D1, with one Durable Object per match for SSE fan-out and turn-deadline alarms.",
+  "keywords": [
+    "chaos-overlords",
+    "multiplayer",
+    "game-server",
+    "turn-based",
+    "cloudflare-workers",
+    "workers",
+    "durable-objects",
+    "cloudflare-d1",
+    "r2",
+    "wrangler"
+  ],
+  "license": "GPL-3.0-only",
+  "author": "kibertoad",
+  "homepage": "https://github.com/kibertoad/chaos-overlords-new-chrome/tree/main/multiplayer/runtimes/cloudflare#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kibertoad/chaos-overlords-new-chrome.git",
+    "directory": "multiplayer/runtimes/cloudflare"
+  },
+  "bugs": {
+    "url": "https://github.com/kibertoad/chaos-overlords-new-chrome/issues"
+  },
   "type": "module",
   "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json --noEmit",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "db:migrate:local": "wrangler d1 migrations apply chaos_overlords --local",
-    "db:migrate:remote": "wrangler d1 migrations apply chaos_overlords --remote",
+    "dev": "wrangler dev --config wrangler.dev.toml",
     "test": "vitest",
     "test:run": "vitest run",
-    "db:migrate:bugs:local": "wrangler d1 migrations apply chaos_overlords_bug_reports --local",
-    "db:migrate:bugs:remote": "wrangler d1 migrations apply chaos_overlords_bug_reports --remote"
+    "prepublishOnly": "pnpm run build && node ../../scripts/prepublish.mjs",
+    "db:migrate:local": "wrangler d1 migrations apply chaos_overlords_dev --local --config wrangler.dev.toml",
+    "db:migrate:bugs:local": "wrangler d1 migrations apply chaos_overlords_bug_reports_dev --local --config wrangler.dev.toml"
   },
   "dependencies": {
     "@chaos-overlords/bug-reports": "workspace:*",

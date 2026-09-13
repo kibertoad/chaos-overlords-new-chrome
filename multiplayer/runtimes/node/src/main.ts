@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import type { Server } from 'node:http'
 import { serve } from '@hono/node-server'
 import { loadConfig } from './config'

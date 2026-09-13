@@ -11,7 +11,7 @@ export default defineConfig(async () => {
   return {
     plugins: [
       cloudflareTest({
-        wrangler: { configPath: './wrangler.toml' },
+        wrangler: { configPath: './wrangler.dev.toml' },
         miniflare: {
           bindings: {
             TEST_MIGRATIONS: migrations,
