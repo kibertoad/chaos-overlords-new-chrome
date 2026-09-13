@@ -17,6 +17,15 @@ This prohibition includes `git remote set-url`, changing `remote.*.url` or
 does not match the repository the user authorized, stop and ask the user to
 correct or approve the remote configuration instead of modifying it.
 
+## Validation scope
+
+Do not run the full test suite by default. It contains deliberately separated
+long-running campaign coverage and takes too long for routine changes. Use the
+default fast gate in `tools/Invoke-Validation.ps1`, or pass `-TestFilter` for a
+smaller relevant scope. Run with `-IncludeLongRunningTests` or otherwise execute
+the full suite only when the user explicitly requests it or when a specific
+change to long-running coverage provides a documented exceptional reason.
+
 ## Post-commit orphan-process audit
 
 After every commit in this repository, inspect running processes for orphaned

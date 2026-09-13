@@ -32,21 +32,30 @@ public sealed partial class ChaosGame
     private MultiplayerLobbySession? _lobby;
     private MultiplayerMatchSession? _session;
     private TimeSpan _lobbyPollDue;
+    private CancellationTokenSource? _serverProbeCancellation;
+    private Task<bool>? _serverProbe;
 
     private TextField[] OnlineFields =>
-        [_online.Server, _online.DisplayName, _online.JoinCode, _online.Password];
+        _online.Service == OnlineServiceMode.Custom
+            ? [_online.Server, _online.DisplayName, _online.JoinCode, _online.Password]
+            : [_online.DisplayName, _online.JoinCode, _online.Password];
 
     private void OpenOnline()
     {
         if (_session is not null) return;
         _online.Stage = MultiplayerStage.Connect;
         _online.Status = string.Empty;
-        _online.Server.IsFocused = true;
+        foreach (var field in new[]
+                 { _online.Server, _online.DisplayName, _online.JoinCode, _online.Password })
+            field.IsFocused = false;
+        OnlineFields[0].IsFocused = true;
+        BeginServerProbe();
         _screens.Show(ClientScreen.Online);
     }
 
     private void UpdateOnline(KeyboardState keyboard)
     {
+        PumpServerProbe();
         if (Pressed(keyboard, Keys.Tab)) FocusNextOnlineField();
         if (Pressed(keyboard, Keys.Enter) && _online.Stage == MultiplayerStage.Connect)
         {
@@ -79,7 +88,13 @@ public sealed partial class ChaosGame
             return;
         }
         if (_screens.Current != ClientScreen.Online) return;
+        var previousServer = _online.Server.Value;
         foreach (var field in OnlineFields) field.Type(character);
+        if (_online.Service == OnlineServiceMode.Custom
+            && !string.Equals(previousServer, _online.Server.Value, StringComparison.Ordinal))
+        {
+            _online.ServerStatus = "CUSTOM SERVER NOT CHECKED";
+        }
     }
 
     /// <summary>
@@ -92,13 +107,20 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void FocusOnlineField(Point point)
     {
-        (Rectangle Bounds, TextField Field)[] hits =
-        [
-            (OnlineConnectLayout.Server, _online.Server),
-            (OnlineConnectLayout.Name, _online.DisplayName),
-            (OnlineConnectLayout.JoinCode, _online.JoinCode),
-            (OnlineConnectLayout.Password, _online.Password),
-        ];
+        var hits = _online.Service == OnlineServiceMode.Custom
+            ? new (Rectangle Bounds, TextField Field)[]
+            {
+                (OnlineConnectLayout.Server, _online.Server),
+                (OnlineConnectLayout.Name, _online.DisplayName),
+                (OnlineConnectLayout.JoinCode, _online.JoinCode),
+                (OnlineConnectLayout.Password, _online.Password),
+            }
+            :
+            [
+                (OnlineConnectLayout.Name, _online.DisplayName),
+                (OnlineConnectLayout.JoinCode, _online.JoinCode),
+                (OnlineConnectLayout.Password, _online.Password),
+            ];
         if (!Array.Exists(hits, hit => hit.Bounds.Contains(point))) return;
         foreach (var (bounds, field) in hits) field.IsFocused = bounds.Contains(point);
     }
@@ -114,16 +136,72 @@ public sealed partial class ChaosGame
     private bool TryBeginLobby()
     {
         if (_lobby is not null) return true;
-        var address = _online.Server.Value.Trim();
-        if (!Uri.TryCreate(address, UriKind.Absolute, out var baseAddress)
-            || baseAddress.Scheme is not ("http" or "https"))
+        if (!TrySelectedServer(out var baseAddress))
         {
             _online.Stage = MultiplayerStage.Connect;
             _online.Status = "THE SERVER ADDRESS MUST BE AN HTTP OR HTTPS URL";
             return false;
         }
         _lobby = new MultiplayerLobbySession(_http, new MultiplayerClientOptions(baseAddress));
+        SavePreferences();
         return true;
+    }
+
+    private bool TrySelectedServer(out Uri baseAddress)
+    {
+        if (_online.Service == OnlineServiceMode.Central)
+        {
+            baseAddress = MultiplayerServiceEndpoint.Central;
+            return true;
+        }
+        var address = _online.Server.Value.Trim();
+        return Uri.TryCreate(address, UriKind.Absolute, out baseAddress!)
+            && baseAddress.Scheme is "http" or "https";
+    }
+
+    /// <summary>Checks the selected server without ever blocking the drawing thread.</summary>
+    private void BeginServerProbe()
+    {
+        _serverProbeCancellation?.Cancel();
+        _serverProbeCancellation?.Dispose();
+        _serverProbeCancellation = null;
+        _serverProbe = null;
+        if (!TrySelectedServer(out var address))
+        {
+            _online.ServerStatus = "CUSTOM SERVER ADDRESS IS INVALID";
+            return;
+        }
+        _online.ServerStatus = _online.Service == OnlineServiceMode.Central
+            ? "CHECKING CENTRAL SERVER..."
+            : "CHECKING CUSTOM SERVER...";
+        _serverProbeCancellation = new CancellationTokenSource();
+        _serverProbe = MultiplayerServiceEndpoint.IsHealthyAsync(
+            _http, address, _serverProbeCancellation.Token);
+    }
+
+    /// <summary>Picks up the health result on the game thread.</summary>
+    private void PumpServerProbe()
+    {
+        if (_serverProbe is not { IsCompleted: true } probe) return;
+        _serverProbe = null;
+        _serverProbeCancellation?.Dispose();
+        _serverProbeCancellation = null;
+        var healthy = probe.IsCompletedSuccessfully && probe.Result;
+        var name = _online.Service == OnlineServiceMode.Central ? "CENTRAL" : "CUSTOM";
+        _online.ServerStatus = healthy ? $"{name} SERVER ONLINE" : $"{name} SERVER UNAVAILABLE";
+    }
+
+    private void SelectOnlineService(OnlineServiceMode service)
+    {
+        if (_online.Stage != MultiplayerStage.Connect || _online.Service == service) return;
+        _online.Service = service;
+        foreach (var field in new[]
+                 { _online.Server, _online.DisplayName, _online.JoinCode, _online.Password })
+            field.IsFocused = false;
+        OnlineFields[0].IsFocused = true;
+        _online.Status = string.Empty;
+        SavePreferences();
+        BeginServerProbe();
     }
 
     /// <summary>
@@ -573,6 +651,10 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void EndOnlineMatch(string status)
     {
+        _serverProbeCancellation?.Cancel();
+        _serverProbeCancellation?.Dispose();
+        _serverProbeCancellation = null;
+        _serverProbe = null;
         // Only an online match's state is this method's to throw away. Opening the online screen from
         // a hot-seat match in progress and backing out of it again must leave that match alone.
         if (_session is not null)
@@ -600,6 +682,10 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ReleaseOnlineResources()
     {
+        _serverProbeCancellation?.Cancel();
+        _serverProbeCancellation?.Dispose();
+        _serverProbeCancellation = null;
+        _serverProbe = null;
         var stopping = new[] { _session?.StopAsync(), _lobby?.StopAsync() }
             .OfType<Task>()
             .ToArray();
@@ -635,11 +721,15 @@ public sealed partial class ChaosGame
 
     private void HandleOnlineClick(Point point)
     {
-        FocusOnlineField(point);
         if (_online.Stage == MultiplayerStage.Busy) return;
-        if (OnlineConnectLayout.Host.Contains(point)) BeginHost();
+        if (OnlineConnectLayout.Central.Contains(point))
+            SelectOnlineService(OnlineServiceMode.Central);
+        else if (OnlineConnectLayout.Custom.Contains(point))
+            SelectOnlineService(OnlineServiceMode.Custom);
+        else if (OnlineConnectLayout.Host.Contains(point)) BeginHost();
         else if (OnlineConnectLayout.Join.Contains(point)) BeginJoin();
         else if (OnlineConnectLayout.Back.Contains(point)) EndOnlineMatch(string.Empty);
+        else FocusOnlineField(point);
     }
 
     private void HandleLobbyClick(Point point)

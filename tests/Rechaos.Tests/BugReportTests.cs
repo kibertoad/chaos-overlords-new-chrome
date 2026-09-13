@@ -367,6 +367,6 @@ public sealed class BugReportSubmitterTests
     [Fact]
     public void DefaultsToTheCentralServerRatherThanWhicheverLobbyIsOpen()
     {
-        Assert.Equal(new Uri("http://localhost:8787"), BugReportEndpoint.Default);
+        Assert.Equal(MultiplayerServiceEndpoint.Central, BugReportEndpoint.Default);
     }
 }

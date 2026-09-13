@@ -312,7 +312,9 @@ public sealed partial class ChaosGame
                 _fullscreen,
                 _smoothEventSiteImages,
                 _introMoviesSeen,
-                _defaultAiPolicy));
+                _defaultAiPolicy,
+                _online.Service,
+                _online.Server.Value));
 
     private void ToggleFullscreen()
     {

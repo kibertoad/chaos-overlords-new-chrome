@@ -8,6 +8,12 @@ can host and that can also run as a central public service. The server code live
 [`multiplayer/`](../multiplayer/README.md). Nothing about the 1996 protocol is reproduced; this is
 a new design over HTTP.
 
+The game offers the official central service at `https://chaos-overlords.dinorefurb.com` and a
+custom/self-hosted choice. Opening the Online screen probes the selected service's unversioned
+`GET /health` route and reports whether it is available before the player tries to host or join.
+Match discovery is intentionally code-based: a host receives an eight-character code and gives it
+to the other players. The existing public-lobby listing API is not exposed by the game UI.
+
 ## What the server is, and is not
 
 The game is a simultaneous-turn strategy game: every player issues orders during the Command phase,

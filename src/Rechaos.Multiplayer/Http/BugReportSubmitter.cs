@@ -18,13 +18,13 @@ namespace Rechaos.Multiplayer.Http;
 /// reached over a route of its own; only the database behind that route is separate.
 /// </para>
 /// <para>
-/// The public deployment does not exist yet, so this is a local one. Changing it is this one line.
+/// The public deployment is also the official coordination service.
 /// </para>
 /// </remarks>
 public static class BugReportEndpoint
 {
     /// <summary>The address reports are posted to.</summary>
-    public static Uri Default { get; } = new("http://localhost:8787");
+    public static Uri Default { get; } = MultiplayerServiceEndpoint.Central;
 }
 
 /// <summary>Why a report did not reach the server, in terms a player can be told.</summary>

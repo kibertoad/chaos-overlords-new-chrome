@@ -987,10 +987,12 @@ public sealed class UiNavigationTests
     [Fact]
     public void OnlineConnectFieldsLeaveRoomForEveryLabel()
     {
-        Assert.Equal(new Rectangle(120, 116, 400, 22), OnlineConnectLayout.Server);
-        Assert.Equal(new Rectangle(120, 230, 400, 22), OnlineConnectLayout.Password);
-        Assert.Equal(new Rectangle(120, 270, 124, 30), OnlineConnectLayout.Host);
-        Assert.Equal(326, OnlineConnectLayout.StatusY);
+        Assert.Equal(new Rectangle(120, 108, 190, 26), OnlineConnectLayout.Central);
+        Assert.Equal(new Rectangle(120, 150, 400, 22), OnlineConnectLayout.Server);
+        Assert.Equal(new Rectangle(120, 264, 400, 22), OnlineConnectLayout.Password);
+        Assert.Equal(new Rectangle(120, 304, 124, 30), OnlineConnectLayout.Host);
+        Assert.Equal(352, OnlineConnectLayout.ServerStatusY);
+        Assert.Equal(374, OnlineConnectLayout.StatusY);
         Assert.All(OnlineConnectLayout.Fields.Zip(OnlineConnectLayout.Fields.Skip(1)), pair =>
             Assert.True(pair.First.Bottom + 16 <= pair.Second.Y));
     }

@@ -46,7 +46,10 @@ internal sealed class MultiplayerUiState
         .FirstOrDefault();
     internal MultiplayerStage Stage { get; set; } = MultiplayerStage.Connect;
 
-    internal TextField Server { get; } = new("SERVER", 96, "http://localhost:8787");
+    internal OnlineServiceMode Service { get; set; } = OnlineServiceMode.Central;
+
+    internal TextField Server { get; } = new(
+        "SERVER", 96, GamePreferences.DefaultCustomMultiplayerServer);
     internal TextField DisplayName { get; } = new("NAME", 32, "PLAYER");
     internal TextField JoinCode { get; } = new("JOIN CODE", 8);
 
@@ -106,6 +109,9 @@ internal sealed class MultiplayerUiState
     /// <summary>The last thing that went wrong, for the player to read.</summary>
     internal string Status { get; set; } = string.Empty;
 
+    /// <summary>The result of the selected service's lightweight health check.</summary>
+    internal string ServerStatus { get; set; } = string.Empty;
+
     /// <summary>
     /// Whether building this match from the server's description failed.
     /// </summary>
@@ -132,6 +138,7 @@ internal sealed class MultiplayerUiState
         SentOpCount = 0;
         DraftDue = TimeSpan.Zero;
         BootstrapFailed = false;
+        ServerStatus = string.Empty;
         TakeoverVotes.Clear();
         Password.Set(string.Empty);
         JoinCode.Set(string.Empty);

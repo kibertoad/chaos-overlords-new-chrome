@@ -5,6 +5,10 @@ Node.js process (SQLite or Postgres) for anyone hosting a game for friends, and 
 Worker (D1 + Durable Objects) for a central public server. Both serve the same Hono application
 and pass the same conformance suite.
 
+The game's built-in central-service choice points to
+`https://chaos-overlords.dinorefurb.com`. Its Online screen calls `GET /health` when opened; a
+healthy deployment answers `{"ok":true}`. Custom/self-hosted origins use the same check.
+
 The design (why the game core stays on the clients, why REST plus server-sent events, the turn
 barrier, desync recovery, the security model) lives in [`../docs/MULTIPLAYER.md`](../docs/MULTIPLAYER.md).
 This file is the operator and contributor manual.
@@ -137,7 +141,7 @@ pnpm dev
 
 `POST /api/v1/bug-reports` takes what a player typed in the game's Escape menu and, if they left the
 box ticked, the whole match as a compressed event-sourced journal that replays from its first turn.
-The game posts to a hardcoded address (`BugReportEndpoint` in
+The game posts to the official central-service address (`BugReportEndpoint` in
 `src/Rechaos.Multiplayer/Http/BugReportSubmitter.cs`) rather than to whichever lobby a player is in:
 a report goes to the people who maintain the game, and somebody self-hosting a lobby for three
 friends is not them.

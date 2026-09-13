@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rechaos.Core.GameModel;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Session;
 using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
 
@@ -15,7 +16,14 @@ public sealed partial class ChaosGame
     private void DrawOnline(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         DrawOnlinePanel(batch, pixel, font, "ONLINE PLAY");
-        DrawField(batch, pixel, font, OnlineConnectLayout.Server, _online.Server);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.Central, "CENTRAL",
+            _online.Service == OnlineServiceMode.Central);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.Custom, "CUSTOM",
+            _online.Service == OnlineServiceMode.Custom);
+        if (_online.Service == OnlineServiceMode.Custom)
+            DrawField(batch, pixel, font, OnlineConnectLayout.Server, _online.Server);
+        else
+            DrawReadOnlyServer(batch, pixel, font);
         DrawField(batch, pixel, font, OnlineConnectLayout.Name, _online.DisplayName);
         DrawField(batch, pixel, font, OnlineConnectLayout.JoinCode, _online.JoinCode);
         DrawField(batch, pixel, font, OnlineConnectLayout.Password, _online.Password);
@@ -23,7 +31,22 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, OnlineConnectLayout.Host, "HOST", !busy);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Join, "JOIN", !busy);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Back, "BACK", !busy);
+        DrawCentered(font, batch, _online.ServerStatus, OnlineConnectLayout.ServerStatusY,
+            _online.ServerStatus.EndsWith("ONLINE", StringComparison.Ordinal) ? Color.Lime : Color.Gold, 1);
         DrawCentered(font, batch, _online.Status, OnlineConnectLayout.StatusY, Color.Gold, 1);
+    }
+
+    private static void DrawReadOnlyServer(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font)
+    {
+        var bounds = OnlineConnectLayout.Server;
+        font.Draw(batch, "SERVER", new Vector2(bounds.X, bounds.Y - 11), new Color(150, 165, 165), 1);
+        batch.Draw(pixel, bounds, new Color(18, 35, 32));
+        DrawBorder(batch, pixel, bounds, new Color(70, 105, 95), 1);
+        font.Draw(batch, MultiplayerServiceEndpoint.Central.ToString().TrimEnd('/'),
+            new Vector2(bounds.X + 5, bounds.Y + 7), Color.White, 1);
     }
 
     private void DrawLobby(SpriteBatch batch, Texture2D pixel, PixelFont font)

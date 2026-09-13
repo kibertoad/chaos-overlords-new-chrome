@@ -230,6 +230,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _smoothEventSiteImages = preferences.SmoothEventSiteImages;
         _introMoviesSeen = preferences.IntroMoviesSeen;
         _defaultAiPolicy = preferences.DefaultAiPolicy;
+        _online.Service = preferences.OnlineService;
+        _online.Server.Set(preferences.CustomMultiplayerServer);
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
