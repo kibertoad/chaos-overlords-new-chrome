@@ -56,6 +56,8 @@ public sealed class MultiplayerSessionTests
         server.Answer(HttpMethod.Post, "/report", null, HttpStatusCode.NoContent);
         server.Answer(HttpMethod.Post, "/snapshots", null, HttpStatusCode.NoContent);
         server.Answer(HttpMethod.Put, "/orders", new OwnSubmissionView(1, null, Ready: true, null));
+        if (view.CurrentTurn > 1)
+            server.Answer(HttpMethod.Get, "/events", new EventPage(HistoricalEvents(view)));
         configure?.Invoke(server);
 
         var handle = new MultiplayerClient(
@@ -82,9 +84,12 @@ public sealed class MultiplayerSessionTests
 
     /// <summary>The sealed set for a turn nobody ordered anything in, with honest digests.</summary>
     private static SealedOrdersView SealedOrders(int turn)
+        => SealedOrdersForSlots(turn, 0, 1);
+
+    private static SealedOrdersView SealedOrdersForSlots(int turn, params int[] slots)
     {
         var empty = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, []);
-        var players = new[] { 0, 1 }
+        var players = slots
             .Select(slot => new SealedPlayerOrders(
                 $"p{slot + 1}", slot, empty, OrderDigest.OfDocument(empty)))
             .ToArray();
@@ -94,6 +99,30 @@ public sealed class MultiplayerSessionTests
     private static string Frame(int seq, string type, string payload) =>
         $"id: {seq}\ndata: {{\"seq\":{seq},\"matchId\":\"{MatchId}\","
         + $"\"createdAt\":\"2026-09-10T12:00:00.000Z\",\"type\":\"{type}\",\"payload\":{payload}}}\n\n";
+
+    private static string SealedFrame(int seq, int turn) => Frame(
+        seq,
+        "turn.sealed",
+        $$"""{"turn":{{turn}},"orderSetHash":"{{SealedOrders(turn).OrderSetHash}}"}""");
+
+    private static IReadOnlyList<MatchEvent> HistoricalEvents(MatchView view)
+    {
+        var seals = Enumerable.Range(1, view.CurrentTurn - 1)
+            .ToDictionary(turn => turn * 5);
+        return Enumerable.Range(1, view.LastEventSeq)
+            .Select<int, MatchEvent>(seq => seals.TryGetValue(seq, out var turn)
+                ? new TurnSealedEvent(
+                    seq,
+                    MatchId,
+                    "2026-09-10T12:00:00.000Z",
+                    new TurnSealedEventPayload(turn, SealedOrders(turn).OrderSetHash))
+                : new TurnOpenedEvent(
+                    seq,
+                    MatchId,
+                    "2026-09-10T12:00:00.000Z",
+                    new TurnOpenedEventPayload(Math.Max(1, seq / 5), null)))
+            .ToArray();
+    }
 
     private static MatchView ViewAtTurn(int turn) => View() with
     {
@@ -197,7 +226,7 @@ public sealed class MultiplayerSessionTests
         Assert.Equal(
             "20",
             server.Requests.Single(request => request.Path.EndsWith("/stream")).LastEventId);
-        server.Events.Write(Frame(21, "turn.sealed", """{"turn":3,"orderSetHash":"cc"}"""));
+        server.Events.Write(SealedFrame(21, 3));
         var next = await WaitFor<MultiplayerNotice.TurnResolved>(session);
         Assert.Equal(3, next.Turn);
         Assert.Equal(4, next.State.Coordinator.Turn);
@@ -237,6 +266,130 @@ public sealed class MultiplayerSessionTests
         Assert.Equal(3, resumed.State.Coordinator.Turn);
         Assert.Equal(0, server.CallsTo(HttpMethod.Get, "/turns/1/orders"));
         Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/2/orders"));
+    }
+
+    [Fact]
+    public async Task RestartReplaysADepartureAtItsExactTurnBoundary()
+    {
+        var view = ViewAtTurn(3) with { LastEventSeq = 6 };
+        MatchEvent[] history =
+        [
+            new TurnOpenedEvent(1, MatchId, "2026-09-10T12:00:00.000Z", new(1, null)),
+            new TurnSealedEvent(
+                2, MatchId, "2026-09-10T12:01:00.000Z",
+                new(1, SealedOrders(1).OrderSetHash)),
+            new LobbyPlayerLeftEvent(
+                3, MatchId, "2026-09-10T12:02:00.000Z",
+                new("p2", LobbyPlayerLeftEventPayloadReason.Left)),
+            new TurnOpenedEvent(4, MatchId, "2026-09-10T12:02:00.000Z", new(2, null)),
+            new TurnSealedEvent(
+                5, MatchId, "2026-09-10T12:03:00.000Z",
+                new(2, SealedOrdersForSlots(2, 0).OrderSetHash)),
+            new TurnOpenedEvent(6, MatchId, "2026-09-10T12:04:00.000Z", new(3, null)),
+        ];
+        var (session, server, http) = Running(
+            matchView: view,
+            configure: fake =>
+            {
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/snapshots/latest",
+                    Envelope("no_snapshot"),
+                    HttpStatusCode.NotFound);
+                fake.Answer(HttpMethod.Get, "/events", new EventPage(history));
+                fake.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+                fake.Answer(HttpMethod.Get, "/turns/2/orders", SealedOrdersForSlots(2, 0));
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/turns/3/orders/mine",
+                    new OwnSubmissionView(3, null, Ready: false, OrdersHash: null));
+            });
+        using var _ = http;
+        await using var __ = session;
+
+        var resumed = await WaitFor<MultiplayerNotice.Resumed>(session);
+
+        var definitions = BundledOriginalData.Load();
+        var expected = new MatchReplayRecorder(
+            MatchBootstrapFactory.Create(definitions, Seed, GameSettings, Roster));
+        CommandPhase.Enter(expected);
+        SealedTurnApplier.Apply(expected, SealedOrders(1));
+        expected.TransferPlayerToComputer(new PlayerId(1));
+        SealedTurnApplier.Apply(expected, SealedOrdersForSlots(2, 0));
+        Assert.Equal(PlayerController.Computer, resumed.State.Players[1].Setup.Controller);
+        Assert.Equal(
+            MatchStateHasher.ComputeSha256(expected.State),
+            MatchStateHasher.ComputeSha256(resumed.State));
+        Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/events"));
+    }
+
+    [Fact]
+    public async Task RestartDuringTurnOneStillRestoresAnAlreadyDepartedSeat()
+    {
+        IReadOnlyList<PlayerView> afterLeaving =
+        [
+            Roster[0],
+            new("p2", 1, "GRACE", WirePlayerStatus.Left, IsHost: false),
+        ];
+        var view = View() with { Players = afterLeaving, LastEventSeq = 3 };
+        MatchEvent[] history =
+        [
+            new TurnOpenedEvent(1, MatchId, "2026-09-10T12:00:00.000Z", new(1, null)),
+            new LobbyPlayerLeftEvent(
+                2, MatchId, "2026-09-10T12:01:00.000Z",
+                new("p2", LobbyPlayerLeftEventPayloadReason.Left)),
+            new LobbyHostChangedEvent(
+                3, MatchId, "2026-09-10T12:01:00.000Z",
+                new("p1")),
+        ];
+        var (session, _, http) = Running(
+            matchView: view,
+            configure: fake =>
+            {
+                fake.Answer(HttpMethod.Get, "/events", new EventPage(history));
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/turns/1/orders/mine",
+                    new OwnSubmissionView(1, null, Ready: false, OrdersHash: null));
+            });
+        using var _ = http;
+        await using var __ = session;
+
+        var resumed = await WaitFor<MultiplayerNotice.Resumed>(session);
+
+        Assert.True(session.IsRestoring);
+        Assert.Equal(1, resumed.State.Coordinator.Turn);
+        Assert.Equal(PlayerController.Computer, resumed.State.Players[1].Setup.Controller);
+    }
+
+    [Fact]
+    public async Task RestartRefusesAGapInTheAuthoritativeEventHistory()
+    {
+        var view = ViewAtTurn(2) with { LastEventSeq = 3 };
+        MatchEvent[] history =
+        [
+            new TurnOpenedEvent(1, MatchId, "2026-09-10T12:00:00.000Z", new(1, null)),
+            new TurnSealedEvent(
+                3, MatchId, "2026-09-10T12:01:00.000Z",
+                new(1, SealedOrders(1).OrderSetHash)),
+        ];
+        var (session, _, http) = Running(
+            matchView: view,
+            configure: fake =>
+            {
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/snapshots/latest",
+                    Envelope("no_snapshot"),
+                    HttpStatusCode.NotFound);
+                fake.Answer(HttpMethod.Get, "/events", new EventPage(history));
+            });
+        using var _ = http;
+        await using var __ = session;
+
+        var failed = await WaitFor<MultiplayerNotice.Failed>(session);
+
+        Assert.Contains("jumped from sequence 1 to 3", failed.Reason, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -282,7 +435,7 @@ public sealed class MultiplayerSessionTests
         await using var __ = session;
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
 
-        server.Events.Write(Frame(8, "turn.sealed", """{"turn":1,"orderSetHash":"aa"}"""));
+        server.Events.Write(SealedFrame(8, 1));
         var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session);
 
         Assert.Equal(1, resolved.Turn);
@@ -311,10 +464,10 @@ public sealed class MultiplayerSessionTests
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
         server.Answer(HttpMethod.Get, "/turns/2/orders", SealedOrders(2));
 
-        server.Events.Write(Frame(8, "turn.sealed", """{"turn":1,"orderSetHash":"aa"}"""));
+        server.Events.Write(SealedFrame(8, 1));
         var first = await WaitFor<MultiplayerNotice.TurnResolved>(session);
-        server.Events.Write(Frame(9, "turn.sealed", """{"turn":1,"orderSetHash":"aa"}"""));
-        server.Events.Write(Frame(10, "turn.sealed", """{"turn":2,"orderSetHash":"bb"}"""));
+        server.Events.Write(SealedFrame(9, 1));
+        server.Events.Write(SealedFrame(10, 2));
         var second = await WaitFor<MultiplayerNotice.TurnResolved>(session);
 
         // Turn 2 resolving is what proves the repeat was dropped rather than merely slow: the session
@@ -342,7 +495,7 @@ public sealed class MultiplayerSessionTests
         server.AnswerOnce(HttpMethod.Get, "/turns/1/orders", null, HttpStatusCode.BadGateway);
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
 
-        server.Events.Write(Frame(8, "turn.sealed", """{"turn":1,"orderSetHash":"aa"}"""));
+        server.Events.Write(SealedFrame(8, 1));
         var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session);
 
         Assert.Equal(1, resolved.Turn);
@@ -369,7 +522,7 @@ public sealed class MultiplayerSessionTests
             "/turns/1/orders",
             honest with { OrderSetHash = new string('0', 64) });
 
-        server.Events.Write(Frame(8, "turn.sealed", """{"turn":1,"orderSetHash":"aa"}"""));
+        server.Events.Write(SealedFrame(8, 1));
         var failed = await WaitFor<MultiplayerNotice.Failed>(session);
 
         Assert.Contains("digest", failed.Reason, StringComparison.OrdinalIgnoreCase);
@@ -384,7 +537,7 @@ public sealed class MultiplayerSessionTests
         await using var __ = session;
         server.Answer(HttpMethod.Get, "/turns/1/orders", Envelope("revoked"), HttpStatusCode.Unauthorized);
 
-        server.Events.Write(Frame(8, "turn.sealed", """{"turn":1,"orderSetHash":"aa"}"""));
+        server.Events.Write(SealedFrame(8, 1));
         var failed = await WaitFor<MultiplayerNotice.Failed>(session);
 
         Assert.Equal("You are no longer in this match.", failed.Reason);
@@ -559,6 +712,59 @@ public sealed class MultiplayerSessionTests
         Assert.Equal(1, readiness.Seated);
     }
 
+    [Fact]
+    public async Task ADepartedSeatIsComputerPlannedFromTheFollowingSeal()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+        IReadOnlyList<PlayerView> afterLeaving =
+        [
+            Roster[0],
+            new("p2", 1, "GRACE", WirePlayerStatus.Left, IsHost: false),
+        ];
+        server.Answer(
+            HttpMethod.Get,
+            $"/matches/{MatchId}",
+            new MatchDetail(View() with { Players = afterLeaving }, "CODE1234", "p1"));
+        server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrdersForSlots(1, 0));
+
+        server.Events.Write(Frame(8, "lobby.playerLeft", """{"playerId":"p2","reason":"left"}"""));
+        server.Events.Write(Frame(9, "lobby.playerLeft", """{"playerId":"p2","reason":"left"}"""));
+        server.Events.Write(SealedFrame(10, 1).Replace(
+            SealedOrders(1).OrderSetHash,
+            SealedOrdersForSlots(1, 0).OrderSetHash,
+            StringComparison.Ordinal));
+        var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session);
+
+        var definitions = BundledOriginalData.Load();
+        var expected = new MatchReplayRecorder(
+            MatchBootstrapFactory.Create(definitions, Seed, GameSettings, Roster));
+        CommandPhase.Enter(expected);
+        expected.TransferPlayerToComputer(new PlayerId(1));
+        SealedTurnApplier.Apply(expected, SealedOrdersForSlots(1, 0));
+        Assert.Equal(PlayerController.Computer, resolved.State.Players[1].Setup.Controller);
+        Assert.Equal(MatchStateHasher.ComputeSha256(expected.State), resolved.StateHash);
+    }
+
+    [Fact]
+    public async Task MissingOrdersAloneDoNotTransferAnActiveHumanSeat()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+        var sealedOrders = SealedOrdersForSlots(1, 0);
+        server.Answer(HttpMethod.Get, "/turns/1/orders", sealedOrders);
+
+        server.Events.Write(Frame(
+            8,
+            "turn.sealed",
+            $$"""{"turn":1,"orderSetHash":"{{sealedOrders.OrderSetHash}}"}"""));
+        var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session);
+
+        Assert.Equal(PlayerController.Human, resolved.State.Players[1].Setup.Controller);
+    }
+
     /// <summary>
     /// An abandoned match is reported, not waited out.
     /// </summary>
@@ -637,7 +843,7 @@ public sealed class MultiplayerSessionTests
         Assert.Contains("sealed", refused.Reason, StringComparison.OrdinalIgnoreCase);
 
         // And the session is still driving the match.
-        server.Events.Write(Frame(8, "turn.sealed", """{"turn":1,"orderSetHash":"aa"}"""));
+        server.Events.Write(SealedFrame(8, 1));
         Assert.Equal(1, (await WaitFor<MultiplayerNotice.TurnResolved>(session)).Turn);
     }
 

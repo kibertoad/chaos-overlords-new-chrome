@@ -51,6 +51,8 @@ public sealed record MultiplayerSessionOptions(
 /// </remarks>
 public sealed class MultiplayerMatchSession : IAsyncDisposable
 {
+    private const int EventHistoryPageSize = 200;
+
     private readonly MatchHandle _match;
     private readonly OriginalData _definitions;
     private readonly ConcurrentQueue<MultiplayerNotice> _notices = new();
@@ -122,7 +124,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     /// <summary>Whether this client is the one that repairs a desync by uploading a snapshot.</summary>
     public bool IsHost { get; }
 
-    /// <summary>Whether startup is reconstructing turns that predate this client session.</summary>
+    /// <summary>Whether startup is reconstructing turns or handovers from durable history.</summary>
     public bool IsRestoring { get; }
 
     /// <summary>The first Command phase, for the interface to plan turn 1 on.</summary>
@@ -170,7 +172,9 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         var replay = new MatchReplayRecorder(state);
         CommandPhase.Enter(replay);
 
-        var isRestoring = view.CurrentTurn > replay.State.Coordinator.Turn;
+        var isRestoring = view.CurrentTurn > replay.State.Coordinator.Turn
+            || view.Players.Any(player =>
+                player.Slot >= 0 && player.Status != WirePlayerStatus.Active);
         var session = new MultiplayerMatchSession(
             options, replay, self, SeatedSlots(view.Players), isRestoring);
         session.InitialState = MatchStateClone.Of(state, options.Definitions);
@@ -342,12 +346,8 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                 if (snapshot is not null) AdoptResumeSnapshot(snapshot, view.CurrentTurn);
             }
 
-            while (_replay.State.Outcome is null
-                   && _replay.State.Coordinator.Turn < view.CurrentTurn)
-            {
-                await FetchAndApplySealedTurnAsync(
-                    _replay.State.Coordinator.Turn, cancellationToken).ConfigureAwait(false);
-            }
+            await ReplayEventHistoryAsync(view.LastEventSeq, cancellationToken)
+                .ConfigureAwait(false);
 
             if (_replay.State.Outcome is null
                 && (_replay.State.Coordinator.Phase != TurnPhase.Command
@@ -386,6 +386,75 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         catch (Exception exception)
         {
             _notices.Enqueue(new MultiplayerNotice.Failed(Describe(exception), exception));
+        }
+    }
+
+    /// <summary>
+    /// Reconstructs controller handovers and sealed turns in their authoritative log order.
+    /// </summary>
+    /// <remarks>
+    /// A missing order is deliberately insufficient evidence that its player left: an active player
+    /// can time out without submitting too. Replaying the departure event is also what preserves the
+    /// boundary between a player who left just before a seal and one who left just after it.
+    /// </remarks>
+    private async Task ReplayEventHistoryAsync(int throughSeq, CancellationToken cancellationToken)
+    {
+        var after = 0;
+        while (after < throughSeq)
+        {
+            var page = await CallAsync(
+                token => _match.EventsAsync(after, EventHistoryPageSize, token),
+                cancellationToken).ConfigureAwait(false);
+            if (page.Events.Count == 0)
+            {
+                throw new MultiplayerProtocolException(
+                    $"the event history ended at sequence {after}, before sequence {throughSeq}");
+            }
+
+            foreach (var @event in page.Events)
+            {
+                var expected = after + 1;
+                if (@event.Seq != expected)
+                {
+                    throw new MultiplayerProtocolException(
+                        $"the event history jumped from sequence {after} to {@event.Seq}");
+                }
+                if (!string.Equals(@event.MatchId, _match.MatchId, StringComparison.Ordinal))
+                {
+                    throw new MultiplayerProtocolException(
+                        $"event sequence {@event.Seq} belongs to another match");
+                }
+                if (@event.Seq > throughSeq) return;
+
+                await ApplyHistoricalEventAsync(@event, cancellationToken).ConfigureAwait(false);
+                after = @event.Seq;
+                if (after == throughSeq) return;
+            }
+        }
+    }
+
+    private async Task ApplyHistoricalEventAsync(
+        MatchEvent @event,
+        CancellationToken cancellationToken)
+    {
+        switch (@event)
+        {
+            case LobbyPlayerLeftEvent left:
+                TransferDepartedPlayer(left.Payload.PlayerId);
+                return;
+            case TurnSealedEvent sealedTurn:
+                if (sealedTurn.Payload.Turn < _replay.State.Coordinator.Turn) return;
+                if (sealedTurn.Payload.Turn > _replay.State.Coordinator.Turn)
+                {
+                    throw new MultiplayerProtocolException(
+                        $"the event history sealed turn {sealedTurn.Payload.Turn} while the "
+                        + $"reconstructed match was still on turn {_replay.State.Coordinator.Turn}");
+                }
+                await FetchAndApplySealedTurnAsync(
+                    sealedTurn.Payload.Turn,
+                    sealedTurn.Payload.OrderSetHash,
+                    cancellationToken).ConfigureAwait(false);
+                return;
         }
     }
 
@@ -512,7 +581,10 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         {
             case TurnSealedEvent sealedTurn:
                 lock (_outboxGate) _locallyReadyTurns.Remove(sealedTurn.Payload.Turn);
-                await ResolveSealedTurnAsync(sealedTurn.Payload.Turn, cancellationToken)
+                await ResolveSealedTurnAsync(
+                        sealedTurn.Payload.Turn,
+                        sealedTurn.Payload.OrderSetHash,
+                        cancellationToken)
                     .ConfigureAwait(false);
                 return;
             case TurnDesyncedEvent desynced:
@@ -539,7 +611,11 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                 HandleStatus(status.Payload.Status);
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;
-            case LobbyPlayerLeftEvent or LobbyPlayerJoinedEvent or LobbyHostChangedEvent:
+            case LobbyPlayerLeftEvent left:
+                TransferDepartedPlayer(left.Payload.PlayerId);
+                await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
+                return;
+            case LobbyPlayerJoinedEvent or LobbyHostChangedEvent:
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;
             default:
@@ -559,10 +635,14 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     /// stops short of Command — so a repeat of the final seal is dropped rather than reapplied
     /// against a state that can no longer take one.
     /// </remarks>
-    private async Task ResolveSealedTurnAsync(int turn, CancellationToken cancellationToken)
+    private async Task ResolveSealedTurnAsync(
+        int turn,
+        string announcedOrderSetHash,
+        CancellationToken cancellationToken)
     {
         if (turn < _replay.State.Coordinator.Turn) return;
-        var stateHash = await FetchAndApplySealedTurnAsync(turn, cancellationToken)
+        var stateHash = await FetchAndApplySealedTurnAsync(
+                turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
         await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
@@ -571,16 +651,34 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
 
     private async Task<string> FetchAndApplySealedTurnAsync(
         int turn,
+        string announcedOrderSetHash,
         CancellationToken cancellationToken)
     {
         var sealedOrders = await CallAsync(
             token => _match.SealedOrdersAsync(turn, token), cancellationToken).ConfigureAwait(false);
+        if (!string.Equals(
+                sealedOrders.OrderSetHash,
+                announcedOrderSetHash,
+                StringComparison.Ordinal))
+        {
+            throw new MultiplayerProtocolException(
+                $"the sealed-set digest for turn {turn} does not match the event log");
+        }
         if (!OrderDigest.Verifies(sealedOrders, sealedOrders.OrderSetHash))
         {
             throw new MultiplayerProtocolException(
                 $"the sealed set for turn {turn} does not match the digest the server announced");
         }
         return SealedTurnApplier.Apply(_replay, sealedOrders);
+    }
+
+    /// <summary>Applies a real departure once; lobby-only departures have no seated slot.</summary>
+    private void TransferDepartedPlayer(string playerId)
+    {
+        if (!_slotsByPlayerId.TryGetValue(playerId, out var slot)) return;
+        var player = _replay.State.FindPlayer(new PlayerId(slot));
+        if (player is null || player.Setup.Controller == PlayerController.Computer) return;
+        _replay.TransferPlayerToComputer(player.Id);
     }
 
     /// <summary>

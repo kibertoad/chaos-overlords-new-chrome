@@ -10,7 +10,7 @@ Last updated: 2026-09-13
   every accepted checkpoint through managed Smacker startup playback;
   `codex/full-reimplementation` remains the development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passes all 1,505 tests with zero warnings.
+  isolated Release build passes all 1,571 tests with zero warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -23,14 +23,15 @@ Last updated: 2026-09-13
 
 ## Latest playable work
 
-- The core now has the replay-v26 prerequisite for deterministic departed-seat
-  takeover: a one-way Human-to-Computer controller transfer recorded at a clean
-  Command boundary. It updates both authoritative setup views, changes the
-  existing canonical hash, survives native saves and replays, and causes every
-  lockstep client to plan the transferred seat identically. It cannot be
-  inferred from an absent document, which also represents an ordinary timeout;
-  the server/client wire must next record and reconstruct the departure at its
-  exact event-log position before the operation is enabled in live matches.
+- Deterministic departed-seat takeover is live end to end. The session applies
+  the server's authoritative departure at its exact event-log position, records
+  the replay-v26 Human-to-Computer transfer at a clean Command boundary, and
+  computer-plans that seat from the following seal. Reconnect loads any verified
+  snapshot, then validates and replays the gapless durable history through the
+  refreshed sequence number so departures immediately before and after seals
+  remain distinct. Duplicate delivery is idempotent, fetched sealed sets must
+  match the digest announced by their event, and an absent timed-out order never
+  transfers an active human.
 
 - `Rechaos.Tools ai-tournament` now drives presentation-free six-computer
   matches directly through the authoritative model with bounded parallelism,

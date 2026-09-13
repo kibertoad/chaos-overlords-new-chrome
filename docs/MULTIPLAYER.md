@@ -1,7 +1,7 @@
 # Multiplayer
 
 Status: implemented server, game client wired
-Last updated: 2026-09-10
+Last updated: 2026-09-13
 
 Online play for *Chaos Overlords: New Chrome* runs through a coordination server that any player
 can host and that can also run as a central public service. The server code lives under
@@ -30,12 +30,12 @@ Every seat no human took at the start is a computer player, planned by the deter
 client identically, so its orders never cross the wire. The match seed and the slot assignment come
 from the server at start, so every client bootstraps the same city.
 
-A player who *leaves* a running match is a different case, and a narrower one: the server stops
-waiting on their readiness, so the turns that follow seal without them, and their gangs hold
-position. The computer does not take the seat over. Who controls a seat is part of the state every
-client hashes and it is read by the AI's own targeting, so changing it mid-match is a mutation every
-client would have to make at the same point in the log — a recorded core operation and a replay
-format bump, not a local decision. See "Limitations and next steps".
+A player who *leaves* a running match is handed to the deterministic computer at the departure's
+exact event-log position. The server stops waiting on that player's readiness, while every client
+records the same one-way controller change in the hashed match state. A departure before a seal lets
+the AI plan that missing seat in that seal; one after a seal begins with the next turn. An active
+player who merely times out remains human and idle because a missing order alone is not evidence of
+a departure.
 
 This is the classic deterministic-lockstep model of turn-based strategy games. Its cost is
 stated in the security section: a modified client can read hidden state. Its benefits are that the
@@ -91,7 +91,7 @@ generated from the same valibot schemas (see "Two languages, one contract").
 | `POST /matches/join` | anyone | Joins by code (and password). Returns that player's token. Capacity is a single atomic seat claim. |
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
-| `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: the turns that follow seal without waiting on that seat, which then orders nothing; a leaving host hands the role to the lowest active slot. The token is revoked, so a departed player keeps no read access either. |
+| `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: publishes the authoritative departure, stops waiting on that seat, and lets every client transfer it to deterministic AI control at that log position; a leaving host hands the role to the lowest active slot. The token is revoked, so a departed player keeps no read access either. |
 | `POST /matches/:id/players/:pid/kick` | host | Same as the target leaving. |
 
 ### Turn barrier
@@ -146,8 +146,9 @@ Sealing opens the next turn immediately, so players plan turn n+1 while reports 
 The seal also **freezes its participant set** on the turn row, beside the digest taken over it. The
 set a client fetches is therefore always the set the digest was computed from: a player who left
 after submitting but before the seal is absent from both, and one who leaves after the seal stays in
-both. A slot absent from the set orders nothing for that turn, which is the same thing a slot whose
-player ran out of clock orders.
+both. A slot absent from the set contributes no human document. It is computer-planned only if an
+earlier departure event transferred its controller; a still-active player who ran out of clock
+remains idle.
 
 A desync pauses the match (`match.status = desynced`): the open turn stays open but cannot seal
 until every unsettled turn is confirmed. The host uploads the snapshot of the disputed turn;
@@ -355,7 +356,8 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    whenever it changes, with `ready: true` when the player presses Done. Sending it periodically with
    `ready: false` costs one small request and is worth it: the document is a whole-document replace,
    so a turn the clock seals then seals with what the player had planned rather than with nothing.
-4. On `turn.sealed`, fetch the sealed set and verify the digest: SHA-256 over `slot:ordersHash`
+4. On `turn.sealed`, fetch the sealed set and verify both the digest announced by that exact event
+   and the set's internally recomputed digest: SHA-256 over `slot:ordersHash`
    lines joined by `\n` in slot order, each `ordersHash` being SHA-256 of that player's canonical
    document. Apply every player's ops **attributed to the slot they arrived under** through the same
    validator the replay reader uses; plan every slot that *the match state says the computer controls*
@@ -370,9 +372,11 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    recomputes the hash and re-reports.
 6. On `turn.deadlineExtended`, replace the countdown for that turn: the match resumed after a
    desync pause and the turn's clock restarted.
-7. On reconnect, fetch the match, load the latest snapshot if the local state is behind, replay
-   sealed turns from there, and resume the stream. A token that answers 401 means the membership was
-   revoked — the player left or was kicked.
+7. On reconnect, fetch the match, load the latest snapshot if the local state is behind, then read
+   the durable event log gaplessly through the refreshed `lastEventSeq`. Replay departure and seal
+   events in order, skipping seals already represented by the snapshot, before restoring the current
+   draft and resuming the stream. A token that answers 401 means the membership was revoked — the
+   player left or was kicked.
 8. Retry, rather than ending the match. Every call a received fact leads to is idempotent — the reads
    plainly so, and the two writes by definition, since a report restates a hash the server already
    holds and an order document replaces what was held — so a server having a bad moment costs latency
@@ -387,10 +391,12 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
 
 The C# client implements the reconnect portion of this contract at session startup. An advanced
 match is refreshed before its stream opens, reconstructed from the newest verified compatible
-snapshot (or from the deterministic seed when no snapshot exists), advanced through each later
-sealed order set, and paired with the caller's current whole-document submission. Only then does
-the stream resume from the refreshed `lastEventSeq`, preventing history from being applied twice
-while preserving commands and readiness already accepted for the open turn.
+snapshot (or from the deterministic seed when no snapshot exists), and advanced through a strictly
+contiguous event-log history. Departures and later sealed sets are applied at their exact relative
+positions; seals already represented by a snapshot and duplicate live departures are harmless
+no-ops. The announced sealed-set digest is checked against the fetched set before its contents are
+recomputed. Only after pairing the state with the caller's current whole-document submission does
+the stream resume from the refreshed `lastEventSeq`.
 
 ### What a hot-seat core does not say
 
@@ -422,14 +428,9 @@ dock a player plans against the dock the sealed turn grants.
   one path that does work under it, because it reads the log directly.
 - Late joining into a running match (taking over a computer slot) is not offered; the lobby is
   the only door.
-- **A seat whose player has left still goes quiet rather than to the computer.** The turns that follow
-  seal without waiting on it, so the match keeps moving, but the gangs hold position. The core-side
-  prerequisite now exists: replay v26 records a one-way Human-to-Computer transfer at a clean Command
-  boundary, the existing canonical hash authenticates it, native saves retain it, and a lockstep test
-  proves every client then plans the seat identically. It is not yet called by the live session. A
-  missing order cannot trigger it because an active player who timed out produces exactly the same
-  absence. The remaining protocol work must carry the authoritative departure at its ordered event-log
-  position and reconstruct those events during reconnect before live AI takeover is safe.
+- **Departed seats cannot be reclaimed by a human.** Live and reconnecting clients now transfer a
+  departed seat to deterministic AI control at the authoritative event-log position, but the transfer
+  is intentionally one-way. Late joining into that computer-controlled seat remains unsupported.
 - **The lobby is polled, not streamed.** The game reads the match about once a second while the
   lobby is on screen and opens the event stream when the match starts. The stream carries the lobby
   facts too; opening it earlier would mean unwinding a session for every player who backs out.
@@ -438,9 +439,9 @@ dock a player plans against the dock the sealed turn grants.
   state on both sides: a message lands in a recipient's inbox, and merely opening the view clears
   that inbox's read mark. Either done on one client alone is a desync rather than a lost message, so
   the door refuses with a reason instead. Carrying it needs an order kind on the wire that the server
-  relays with the rest of the sealed turn and every client applies at the same point — the same shape
-  as the departed-seat handover above, and the same reason for keeping it out of the client wiring:
-  it is a wire-contract change that wants its own determinism run.
+  relays with the rest of the sealed turn and every client applies at the same point. It is another
+  authenticated simultaneous operation and wants its own determinism run rather than a local
+  interface mutation.
 - The turn timer is a whole-match setting; per-turn extensions are not offered beyond the restart
   that follows a desync pause.
 - **Desync recovery trusts the host.** The snapshot the host uploads becomes the state every other
