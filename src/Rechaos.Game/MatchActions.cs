@@ -70,6 +70,22 @@ internal sealed class MatchActions
             "An online match advances by applying sealed turns, so its recorder is not the "
             + "interface's to drive. Queue the player's intent through MatchActions instead.");
 
+    /// <summary>
+    /// The journal this client owns, for reading rather than driving.
+    /// </summary>
+    /// <remarks>
+    /// Always a real journal, and always replayable from its own first step — but what that first
+    /// step is differs by match kind, which is why this is separate from
+    /// <see cref="HotSeatRecorder"/>. Hot-seat, it is the whole match from setup. Online, it is the
+    /// turn being planned, over a copy taken from the last authoritative state, because that is all
+    /// this client is the authority on. A bug report attaches whichever there is; only the hot-seat
+    /// one is a session's history, so only that one travels with a save.
+    /// </remarks>
+    internal MatchReplayRecorder Journal => _replay;
+
+    /// <summary>The journal only a hot-seat match has: this whole session, from its first turn.</summary>
+    internal MatchReplayRecorder? HotSeatJournal => _turn is null ? _replay : null;
+
     internal CommandSubmissionResult Submit(GameCommand command) =>
         _turn is null ? _replay.Submit(command) : _turn.Submit(command);
 

@@ -1,3 +1,4 @@
+export * from './bug-reports'
 export * from './contracts'
 export * from './errors'
 export * from './events'

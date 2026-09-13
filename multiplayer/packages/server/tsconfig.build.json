@@ -8,6 +8,7 @@
   },
   "include": ["src"],
   "references": [
+    { "path": "../bug-reports/tsconfig.build.json" },
     { "path": "../contracts/tsconfig.build.json" },
     { "path": "../kernel/tsconfig.build.json" }
   ]

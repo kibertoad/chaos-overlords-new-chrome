@@ -1,4 +1,16 @@
-import { type Clock, createKernel, type Kernel, RateLimiter } from '@chaos-overlords/kernel'
+import {
+  type BugReportService,
+  createBugReportService,
+  createMemoryBlobStore,
+} from '@chaos-overlords/bug-reports'
+import { createFileBlobStore, openBugReportStorage } from '@chaos-overlords/bug-reports/node'
+import {
+  type Clock,
+  createKernel,
+  type Kernel,
+  type Logger,
+  RateLimiter,
+} from '@chaos-overlords/kernel'
 import {
   type AppEnv,
   createApp,
@@ -17,7 +29,9 @@ import { startSweeper, TimerDeadlineScheduler } from './TimerDeadlineScheduler'
 export interface NodeRuntime {
   app: Hono<AppEnv>
   kernel: Kernel
-  /** Releases timers and the database. */
+  /** Bug report intake, when this server is configured to take them. */
+  bugReports?: BugReportService
+  /** Releases timers and both databases. */
   close(): Promise<void>
 }
 
@@ -59,14 +73,18 @@ export async function buildNodeRuntime(
   scheduler = new TimerDeadlineScheduler(kernel.turns, clock, logger)
   const stopSweeper = startSweeper(kernel, config.sweepIntervalMs, logger)
 
+  const bugReports = openBugReports(config, clock, logger)
+
   const perMinute = (limit: number) => new RateLimiter(clock, { limit, windowMs: 60_000 })
   const container: ServerContainer = {
     kernel,
+    ...(bugReports ? { bugReports: bugReports.service } : {}),
     eventStream: hub,
     rateLimiters: {
       anonymous: perMinute(config.rateLimitPerMinute),
       member: perMinute(config.memberRateLimitPerMinute),
       upload: perMinute(config.uploadRateLimitPerMinute),
+      bugReport: perMinute(config.bugReportRateLimitPerMinute),
     },
     config: { ...DEFAULT_SERVER_CONFIG, publicListing: config.publicListing },
     clientAddress: (c) =>
@@ -77,16 +95,67 @@ export async function buildNodeRuntime(
     databaseUrl: redactUrl(config.databaseUrl),
     publicListing: config.publicListing,
     retentionDays: config.retentionDays,
+    bugReports: bugReports ? 'on' : 'off',
   })
   return {
     app,
     kernel,
+    ...(bugReports ? { bugReports: bugReports.service } : {}),
     close: async () => {
       stopSweeper()
       scheduler?.stop()
       await opened.close()
+      await bugReports?.close()
     },
   }
+}
+
+/**
+ * Opens the bug report side, or reports that it stays shut.
+ *
+ * Its own database file, opened separately from the match one and closed separately: the two areas
+ * share a process and nothing else. A configuration this cannot honour (a Postgres URL, an
+ * unopenable file) turns the intake off and logs why, rather than refusing to start a server whose
+ * actual job is hosting matches.
+ */
+function openBugReports(
+  config: NodeConfig,
+  clock: Clock,
+  logger: Logger,
+): { service: BugReportService; close: () => Promise<void> } | undefined {
+  const url = config.bugReportDatabaseUrl.trim()
+  if (url === '') return undefined
+  if (!url.startsWith('sqlite:')) {
+    logger.warn('bug report intake is off: BUG_REPORT_DATABASE_URL must be sqlite:<path>', { url })
+    return undefined
+  }
+  const filename = url.slice('sqlite:'.length) || ':memory:'
+  try {
+    const opened = openBugReportStorage(filename)
+    // A configured directory wins. Failing that, an in-memory database has no file for an archive
+    // to outlive, so it gets an in-memory store; a real file keeps small archives in its own rows.
+    const blobs = blobStoreFor(config.bugReportBlobDirectory, filename)
+    return {
+      service: createBugReportService({
+        repository: opened.repository,
+        clock,
+        logger,
+        ...(blobs ? { blobs } : {}),
+      }),
+      close: opened.close,
+    }
+  } catch (error) {
+    logger.warn('bug report intake is off: its database could not be opened', {
+      error: String(error),
+    })
+    return undefined
+  }
+}
+
+function blobStoreFor(directory: string, filename: string) {
+  if (directory !== '') return createFileBlobStore(directory)
+  if (filename === ':memory:') return createMemoryBlobStore()
+  return undefined
 }
 
 function redactUrl(url: string): string {

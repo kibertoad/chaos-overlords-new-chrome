@@ -1,0 +1,67 @@
+using Microsoft.Xna.Framework;
+using Rechaos.Game;
+using Xunit;
+
+namespace Rechaos.Tests;
+
+/// <summary>
+/// The Escape menu and the panels it opens, held to the original 640x460 interface.
+/// </summary>
+public sealed class GameMenuLayoutTests
+{
+    [Fact]
+    public void GameMenuProvidesSaveLoadReportBugAndConfirmedMainMenuExit()
+    {
+        Assert.Equal(new Rectangle(226, 162, 188, 32), GameMenuLayout.Save);
+        Assert.Equal(new Rectangle(226, 200, 188, 32), GameMenuLayout.Load);
+        Assert.Equal(new Rectangle(226, 238, 188, 32), GameMenuLayout.ReportBug);
+        Assert.Equal(new Rectangle(226, 290, 188, 42), GameMenuLayout.QuitToMainMenu);
+        Assert.Equal(9, SaveSlotCatalog.SlotCount);
+        Assert.Equal(new Rectangle(58, 344, 524, 35), GameMenuLayout.SlotRow(8));
+        Assert.True(GameMenuLayout.Panel.Contains(GameMenuLayout.Resume));
+        Assert.True(GameMenuLayout.Panel.Contains(GameMenuLayout.ReportBug));
+        Assert.True(GameMenuLayout.Panel.Contains(GameMenuLayout.ConfirmQuit));
+        Assert.True(GameMenuLayout.Panel.Contains(GameMenuLayout.CancelQuit));
+    }
+
+    /// <summary>Five entries, none of them overlapping, all of them inside the panel.</summary>
+    [Fact]
+    public void EveryGameMenuEntryHasItsOwnPlaceInThePanel()
+    {
+        Rectangle[] entries =
+        [
+            GameMenuLayout.Resume, GameMenuLayout.Save, GameMenuLayout.Load,
+            GameMenuLayout.ReportBug, GameMenuLayout.QuitToMainMenu
+        ];
+
+        Assert.Equal(GameMenuLayout.EntryCount, entries.Length);
+        Assert.Equal(GameMenuLayout.ReportBug, entries[GameMenuLayout.ReportBugIndex]);
+        foreach (var entry in entries) Assert.True(GameMenuLayout.Panel.Contains(entry));
+        for (var index = 1; index < entries.Length; index++)
+            Assert.False(entries[index].Intersects(entries[index - 1]));
+    }
+
+    /// <summary>
+    /// The bug report panel fits the original 640x460 interface, and its controls do not collide.
+    /// </summary>
+    [Fact]
+    public void BugReportPanelFitsTheInterfaceWithoutOverlappingControls()
+    {
+        Rectangle[] controls =
+        [
+            BugReportLayout.Message, BugReportLayout.ShareStateRow,
+            BugReportLayout.Send, BugReportLayout.Cancel
+        ];
+
+        Assert.True(new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height)
+            .Contains(BugReportLayout.Panel));
+        foreach (var control in controls)
+            Assert.True(BugReportLayout.Panel.Contains(control), $"{control} escapes the panel");
+        Assert.True(BugReportLayout.ShareStateRow.Contains(BugReportLayout.ShareStateBox));
+        Assert.False(BugReportLayout.Send.Intersects(BugReportLayout.Cancel));
+        Assert.False(BugReportLayout.Message.Intersects(BugReportLayout.ShareStateRow));
+        // The message box has to hold the lines it says it does, at the original 6x7 font cell.
+        Assert.True(BugReportLayout.MessageColumns * 6 <= BugReportLayout.Message.Width - 10);
+        Assert.True(BugReportLayout.MessageRows * 9 <= BugReportLayout.Message.Height - 5);
+    }
+}

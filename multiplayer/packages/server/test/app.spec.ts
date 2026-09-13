@@ -1,5 +1,11 @@
+import type { BugReportRepository, StoredBugReport } from '@chaos-overlords/bug-reports'
+import {
+  type BugReportService,
+  createBugReportService,
+  createMemoryBlobStore,
+} from '@chaos-overlords/bug-reports'
 import { defineHttpConformance } from '@chaos-overlords/conformance'
-import { createKernel, RateLimiter } from '@chaos-overlords/kernel'
+import { createKernel, RateLimiter, sha256Hex } from '@chaos-overlords/kernel'
 import {
   InMemoryStorage,
   ManualClock,
@@ -9,10 +15,28 @@ import {
 import { describe, expect, it } from 'vitest'
 import { createApp, DEFAULT_SERVER_CONFIG, LocalEventHub, type ServerContainer } from '../src'
 
+/** The repository contract without a database; the bug report placement rules are tested in its own package. */
+function inMemoryBugReports(): BugReportRepository & { rows: StoredBugReport[] } {
+  const rows: StoredBugReport[] = []
+  return {
+    rows,
+    async insert(report) {
+      rows.push(report)
+    },
+    async get(id) {
+      return rows.find((row) => row.id === id) ?? null
+    },
+    async list(limit) {
+      return rows.slice(0, limit)
+    },
+  }
+}
+
 function build(
   overrides: Partial<ServerContainer['config']> = {},
   rateLimit = { limit: 1000, windowMs: 60_000 },
   memberRateLimit = { limit: 1000, windowMs: 60_000 },
+  bugReportOptions: { enabled?: boolean; limit?: number } = {},
 ) {
   const storage = new InMemoryStorage()
   const clock = new ManualClock()
@@ -24,18 +48,33 @@ function build(
     clock,
     logger: new RecordingLogger(),
   })
+  const reports = inMemoryBugReports()
+  const bugReports: BugReportService | undefined =
+    bugReportOptions.enabled === false
+      ? undefined
+      : createBugReportService({
+          repository: reports,
+          clock,
+          logger: new RecordingLogger(),
+          blobs: createMemoryBlobStore(),
+        })
   const container: ServerContainer = {
     kernel,
+    ...(bugReports ? { bugReports } : {}),
     eventStream: hub,
     rateLimiters: {
       anonymous: new RateLimiter(clock, rateLimit),
       member: new RateLimiter(clock, memberRateLimit),
       upload: new RateLimiter(clock, memberRateLimit),
+      bugReport: new RateLimiter(clock, {
+        limit: bugReportOptions.limit ?? 1000,
+        windowMs: 60_000,
+      }),
     },
     config: { ...DEFAULT_SERVER_CONFIG, publicListing: true, ...overrides },
   }
   const app = createApp(container)
-  return { app, clock, kernel, hub }
+  return { app, clock, kernel, hub, reports }
 }
 
 describe('server app over in-memory storage', () => {
@@ -186,5 +225,115 @@ describe('server app over in-memory storage', () => {
     for (let reads = 0; reads < 5 && !done; reads += 1) done = (await reader.read()).done
     expect(done).toBe(true)
     expect(hub.connectionCount(match.id)).toBe(0)
+  })
+})
+
+describe('bug report intake', () => {
+  const encodeBase64 = (bytes: Uint8Array) => {
+    let binary = ''
+    for (const byte of bytes) binary += String.fromCharCode(byte)
+    return btoa(binary)
+  }
+
+  const post = (app: ReturnType<typeof build>['app'], body: unknown, headers = {}) =>
+    app.request('/api/v1/bug-reports', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...headers },
+      body: JSON.stringify(body),
+    })
+
+  const report = (extra: Record<string, unknown> = {}) => ({
+    message: 'Hire offers were empty on turn 3.',
+    client: { version: '0.9.1', platform: 'Unix' },
+    ...extra,
+  })
+
+  it('takes a report without a token and answers a receipt', async () => {
+    const { app, reports } = build()
+    const response = await post(app, report())
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toMatchObject({ stateStored: 'not_sent' })
+    expect(reports.rows[0]?.message).toBe('Hire offers were empty on turn 3.')
+  })
+
+  it('stores the attached journal and reports that it did', async () => {
+    const { app, reports } = build()
+    const bytes = new Uint8Array(96).fill(4)
+    const response = await post(
+      app,
+      report({
+        state: {
+          codec: 'brotli',
+          replayFormatVersion: 24,
+          uncompressedBytes: 4_096,
+          sha256: await sha256Hex(bytes),
+          anonymized: true,
+          body: encodeBase64(bytes),
+        },
+      }),
+    )
+
+    expect(response.status).toBe(201)
+    expect(await response.json()).toMatchObject({ stateStored: 'stored' })
+    expect(reports.rows[0]?.state).toMatchObject({ compressedBytes: 96, anonymized: true })
+  })
+
+  it('refuses a journal whose digest does not match the bytes', async () => {
+    const { app, reports } = build()
+    const response = await post(
+      app,
+      report({
+        state: {
+          codec: 'brotli',
+          replayFormatVersion: 24,
+          uncompressedBytes: 4_096,
+          sha256: 'f'.repeat(64),
+          anonymized: true,
+          body: encodeBase64(new Uint8Array(8).fill(1)),
+        },
+      }),
+    )
+
+    expect(response.status).toBe(422)
+    expect(await response.json()).toMatchObject({
+      error: { code: 'validation_failed', details: { reason: 'state_digest_mismatch' } },
+    })
+    expect(reports.rows).toHaveLength(0)
+  })
+
+  it('refuses an empty message through the contract rather than storing one', async () => {
+    const { app, reports } = build()
+    const response = await post(app, report({ message: '   ' }))
+
+    expect(response.status).toBe(422)
+    expect(reports.rows).toHaveLength(0)
+  })
+
+  it('answers 404 on a server that does not take reports', async () => {
+    const { app } = build({}, undefined, undefined, { enabled: false })
+    const response = await post(app, report())
+
+    expect(response.status).toBe(404)
+    expect(await response.json()).toMatchObject({
+      error: { code: 'not_found', details: { reason: 'bug_reports_disabled' } },
+    })
+  })
+
+  it('spends its own budget rather than the lobby one', async () => {
+    const limited = build({}, { limit: 1000, windowMs: 60_000 }, undefined, { limit: 1 })
+    const headers = { 'x-forwarded-for': '203.0.113.42' }
+
+    expect((await post(limited.app, report(), headers)).status).toBe(201)
+    const throttled = await post(limited.app, report(), headers)
+    expect(throttled.status).toBe(429)
+
+    // The unauthenticated lobby door is untouched by the reports above.
+    const join = await limited.app.request('/api/v1/matches/join', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...headers },
+      body: JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'x' }),
+    })
+    expect(join.status).toBe(404)
   })
 })

@@ -13,9 +13,12 @@
     "db:migrate:local": "wrangler d1 migrations apply chaos_overlords --local",
     "db:migrate:remote": "wrangler d1 migrations apply chaos_overlords --remote",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "db:migrate:bugs:local": "wrangler d1 migrations apply chaos_overlords_bug_reports --local",
+    "db:migrate:bugs:remote": "wrangler d1 migrations apply chaos_overlords_bug_reports --remote"
   },
   "dependencies": {
+    "@chaos-overlords/bug-reports": "workspace:*",
     "@chaos-overlords/contracts": "workspace:*",
     "@chaos-overlords/kernel": "workspace:*",
     "@chaos-overlords/server": "workspace:*",

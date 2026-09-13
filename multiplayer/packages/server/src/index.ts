@@ -6,7 +6,7 @@ export {
   type ServerConfig,
   type ServerContainer,
 } from './container'
-export { defaultClientAddress } from './http/middleware'
+export { bugReportRateLimited, defaultClientAddress } from './http/middleware'
 export type { AppEnv } from './http/types'
 export { createSseResponse, type EventStreamSource, formatEvent } from './sse/createSseResponse'
 export { LocalEventHub } from './sse/LocalEventHub'

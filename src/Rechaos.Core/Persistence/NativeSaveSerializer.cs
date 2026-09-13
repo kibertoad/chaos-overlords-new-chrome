@@ -23,7 +23,32 @@ public static class NativeSaveSerializer
         JsonSerializer.Serialize(destination, Capture(state), JsonOptions);
     }
 
-    public static MatchState Load(Stream source, OriginalData definitions)
+    public static MatchState Load(Stream source, OriginalData definitions) =>
+        Load(source, definitions, verifyStateFingerprint: true);
+
+    /// <summary>
+    /// Restores a snapshot whose own state fingerprint is deliberately stale.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The one caller is <see cref="ReplayAnonymizer"/>, which rewrites the player names and Comlink
+    /// text inside a snapshot before it leaves the machine. Those fields are part of the canonical
+    /// hash, so a rewritten snapshot cannot carry the fingerprint it was saved with, and there is no
+    /// way to compute the new one without first restoring the state it describes.
+    /// </para>
+    /// <para>
+    /// This is not a weaker <see cref="Load"/>: the definition fingerprint, the versioned target
+    /// validation and every structural check still run, and only the snapshot's agreement with
+    /// itself is left to the caller. The anonymizer immediately re-serializes what comes out, which
+    /// is what writes the correct fingerprint back. Nothing that reads a file somebody else wrote
+    /// may use this.
+    /// </para>
+    /// </remarks>
+    internal static MatchState LoadRewritten(Stream source, OriginalData definitions) =>
+        Load(source, definitions, verifyStateFingerprint: false);
+
+    private static MatchState Load(
+        Stream source, OriginalData definitions, bool verifyStateFingerprint)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(definitions);
@@ -41,7 +66,7 @@ public static class NativeSaveSerializer
         }
         try
         {
-            return RestoreDocument(document, definitions);
+            return RestoreDocument(document, definitions, verifyStateFingerprint);
         }
         catch (InvalidDataException)
         {
@@ -54,7 +79,8 @@ public static class NativeSaveSerializer
         }
     }
 
-    private static MatchState RestoreDocument(NativeSaveDocument document, OriginalData definitions)
+    private static MatchState RestoreDocument(
+        NativeSaveDocument document, OriginalData definitions, bool verifyStateFingerprint)
     {
         if (document.FormatVersion is < 1 or > CurrentFormatVersion)
             throw new InvalidDataException($"Unsupported native save format {document.FormatVersion}.");
@@ -208,7 +234,7 @@ public static class NativeSaveSerializer
             22 => MatchStateHasher.ComputeVersionTwentyFiveSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
-        if (!CryptographicOperations.FixedTimeEquals(
+        if (verifyStateFingerprint && !CryptographicOperations.FixedTimeEquals(
                 DecodeSha256(document.StateSha256, "state fingerprint"),
                 DecodeSha256(restoredHash, "restored state fingerprint")))
             throw new InvalidDataException("Native save state fingerprint does not match its contents.");

@@ -171,6 +171,40 @@ expired open turns (a 15-second interval on Node, a cron on Cloudflare) so a los
 most that interval. Sealing on the deadline includes whatever each player last submitted; a player
 who submitted nothing contributes no orders.
 
+## Bug reports: the same deployment, a different database
+
+The server also takes bug reports, at `POST /api/v1/bug-reports`. It is the same application and the
+same deployment that hosts matches, and the game posts there regardless of which lobby a player is
+in: a report goes to the people who maintain the game, and somebody self-hosting a lobby for three
+friends is not them. The address is hardcoded in the client rather than read from the online-play
+field, for exactly that reason.
+
+What travels is what the player typed and — unless they unticked the box — the whole match as a
+compressed event-sourced journal that replays from its first turn. The game anonymizes it first by
+re-running the match with player names replaced by seat labels and Comlink text redacted, so every
+state fingerprint in it is recomputed and the result is a valid journal rather than an edited one;
+if the re-run diverges at any step, nothing is attached. Names the original reads as cheat codes are
+game rules and stay, because substituting one would change how the match plays.
+
+Everything else about it is kept apart from matches:
+
+- **Its own database.** A second D1 instance (`BUG_DB`), or a second SQLite file when self-hosted,
+  with its own migration lineage. Reports arrive unauthenticated, outlive the matches they describe,
+  and carry other players' journals; they share no schema, no lock, no retention sweep and no blast
+  radius with the database holding live matches. The kernel cannot reach the bug database and the
+  intake cannot reach the match one.
+- **Its own budget.** The route is unauthenticated on purpose — the reports worth having most come
+  from a player who could not get into a match at all — so it carries a per-address limit well below
+  the lobby's rather than sharing it.
+- **Its own storage for the bytes.** A journal is hundreds of kilobytes to a few megabytes; D1
+  refuses a row over 2 MB and even the ones that fit would be dragged through every triage query. It
+  goes to R2 (`BUG_BLOBS`) and the row keeps the key, the digest and the size. A deployment with no
+  object store keeps archives under 256 KiB inline and accepts the report without the journal above
+  that, saying so in the receipt.
+
+The server never decompresses or parses an archive. It verifies the SHA-256 the client took over the
+compressed bytes — so a truncated upload is refused rather than filed — and stores opaque bytes.
+
 ## Retention
 
 A coordination server accumulates rows with no second use: a finished match's order documents, a

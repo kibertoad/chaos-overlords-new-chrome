@@ -1,6 +1,7 @@
 import { noBodyResponse, sseResponse } from '@toad-contracts/core'
 import { ContractNoBody, defineApiContract, withObjectKeys } from '@toad-contracts/valibot'
 import { object } from 'valibot'
+import { bugReportReceiptSchema, submitBugReportRequestSchema } from './bug-reports'
 import { errorEnvelopeSchema } from './errors'
 import { eventPageSchema, matchEventSchema } from './events'
 import { resourceIdSchema, turnPathParamSchema } from './primitives'
@@ -224,6 +225,26 @@ export const streamEventsContract = defineApiContract({
   summary: 'The event log as a resumable SSE stream.',
 })
 
+// ---------------------------------------------------------------------------
+// Bug reports
+// ---------------------------------------------------------------------------
+
+/**
+ * The one door a player who is not in a match may knock on.
+ *
+ * It is unauthenticated by design: the reports worth having most come from a player who could not
+ * get into a match at all, and a token requirement would silence exactly those. What stands in for
+ * authentication is a budget — the route carries its own per-address limit, far below the lobby
+ * one — and a body limit sized for a compressed match journal and nothing larger.
+ */
+export const submitBugReportContract = defineApiContract({
+  method: 'post',
+  pathResolver: () => '/bug-reports',
+  requestBodySchema: submitBugReportRequestSchema,
+  responsesByStatusCode: { 201: bugReportReceiptSchema, ...REFUSALS },
+  summary: 'File a bug report, optionally with a replayable journal of the match.',
+})
+
 /** Every contract, for a client that wants to enumerate the surface. */
 export const API_CONTRACTS = {
   listLobbies: listLobbiesContract,
@@ -242,4 +263,5 @@ export const API_CONTRACTS = {
   snapshot: snapshotContract,
   listEvents: listEventsContract,
   streamEvents: streamEventsContract,
+  submitBugReport: submitBugReportContract,
 } as const

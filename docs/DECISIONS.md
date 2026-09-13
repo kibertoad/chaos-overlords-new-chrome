@@ -59,3 +59,61 @@ and the client-side wiring of online play is tracked as follow-up work.
   replays, phase hashes, or multiplayer state, a failed preference write leaves
   playback unaffected, and an unreadable movie pack reports on the title screen
   instead of blocking it.
+
+## 2026-09-13 — Bug reports carry a replayable journal, stored apart from matches
+
+- Decision: the in-game Escape menu can file a bug report to a hardcoded
+  central address, and by default attaches the whole match as an event-sourced
+  journal that replays from its first turn. The journal is anonymized before it
+  is compressed and sent: player names become seat labels and Comlink text is
+  redacted, both by re-running the match and recomputing every state
+  fingerprint, so what is sent is a valid journal rather than an edited one.
+  Names the original reads as cheat codes are game rules and are kept.
+- Reason: a described bug in a deterministic simulation is a guess, and a
+  journal is the bug itself. Recording one costs nothing — the replay recorder
+  already wraps every mutation — but it only became a session's history once
+  saves carried it: a load used to start a fresh recorder, so the turns that
+  produced a bug were exactly what a report filed afterwards did not have.
+- Companion, not a format change: a save writes `<save>.rchjournal` beside
+  itself and a load resumes it when it ends at that save's own state. An old
+  save still loads, a missing or corrupt journal is never a failed load, and a
+  slot saved without one loses the journal already there rather than pairing
+  with another game's history.
+- A load adopts the journal rather than replaying it. Re-deriving the state from
+  the steps means re-running the whole match — every recorded operation plus a
+  full-state fingerprint each — on the thread the player is waiting on: a
+  30-turn match measured 147 ms, and it grows with the match, so the reward for
+  a long session would be a load that visibly stops. The save already *is* that
+  state, so what the journal supplies is the history, and the one thing worth
+  proving is that the two belong together: the last step's fingerprint against
+  the restored state's. That is the same equality the replay was reduced to at
+  the end, and it is the recorder's own invariant, so a companion left by
+  another game in the same slot is still refused. Adopting measures 7 ms. Where
+  something needs every step to still reproduce — a bug report, which replays
+  the journal to anonymize it — that check happens there, off the game loop and
+  on the copy about to be sent.
+- Compression is Brotli, not zstd, with the codec byte reserved for zstd. A
+  journal is the opening snapshot plus every recorded command, each with the
+  fingerprint of the state it produced; the commands are most of the bytes and
+  almost none of the compressed size, and the fingerprints are the reverse. In a
+  measured 27-turn match the step array went from 106 KB to 12.6 KB, of which
+  12.3 KB was the fingerprints and 0.2 KB everything else — and 364 hashes carry
+  11.6 KB of entropy, so Brotli is already within a few percent of the floor.
+  That makes the codec a question of what each side already has rather than of
+  ratio: Brotli ships in .NET, in Node and in a Cloudflare Worker under
+  `nodejs_compat`, while zstd needs a package on the game side and has no
+  Workers decoder. A new dependency in a game that must build offline is the
+  larger cost.
+- Storage: reports go to the same deployment that hosts multiplayer, over a
+  route of its own, into a separate D1 instance (a separate SQLite file when
+  self-hosted) with its own migration lineage. They arrive unauthenticated,
+  outlive the matches they describe, and carry other players' journals, so they
+  share no schema, no lock and no blast radius with live matches. The journals
+  themselves go to R2: one is hundreds of kilobytes to a few megabytes, D1
+  refuses a row over 2 MB, and even the ones that fit would be dragged through
+  every triage query. A deployment with no object store keeps archives under
+  256 KiB inline and accepts the report without the journal above that.
+- Boundary: the server never decompresses or parses an archive. It verifies the
+  digest the client computed over the compressed bytes and stores opaque bytes.
+- Status: implemented and tested. The central address is a placeholder
+  (`http://localhost:8787`) until the public deployment exists.

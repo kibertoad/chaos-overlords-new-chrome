@@ -66,6 +66,13 @@ public sealed partial class ChaosGame
     /// <summary>Routes typed characters to whichever text field currently owns focus.</summary>
     private void HandleTextInput(char character)
     {
+        // Gated on the menu being open as well, so a panel flag left set by some other exit can
+        // never quietly swallow the keystrokes meant for a server address.
+        if (_gameMenuOpen && _bugReportOpen)
+        {
+            if (_bugReportFocus == BugReportFocus.Message) _bugReportText.Type(character);
+            return;
+        }
         if (_gameMenuOpen && _editingSaveName)
         {
             _saveName.Type(character);
