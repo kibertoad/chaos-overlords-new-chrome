@@ -600,9 +600,11 @@ turn one; it is not an error.
   layer now validates the exact supported Smacker-v2 header, audio descriptors,
   frame tables, tree extent, payload extent, palette updates, every packed
   8-bit audio chunk, and all indexed video blocks before extraction accepts a
-  source pack. The client streams the original logo and intro at startup with a
+  source pack. The client streams the original logo and intro with a
   deterministic presentation clock, native-size indexed rendering, decoded PCM,
-  explicit skipping, focus pause/resume, and fail-through behavior. Remaining
+  explicit skipping, focus pause/resume, and fail-through behavior. The first
+  run plays them unattended and records that in client preferences; later runs
+  replay them from the title screen's `INTRO` button. Remaining
   effect triggers, original trigger/skip evidence, exact color fidelity, and
   broader native playback validation remain open.
 

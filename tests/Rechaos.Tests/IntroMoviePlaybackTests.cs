@@ -5,13 +5,20 @@ using Xunit;
 
 namespace Rechaos.Tests;
 
-public sealed class StartupMoviePlaybackTests
+public sealed class IntroMoviePlaybackTests
 {
     [Fact]
     public void StartupOrderAndNativeCenteredDestinationAreStable()
     {
-        Assert.Equal(new[] { "MVLOGOS.smk", "MVINTRO.smk" }, StartupMoviePolicy.FileNames);
-        Assert.Equal(new Rectangle(80, 102, 480, 256), StartupMoviePolicy.Destination(480, 256));
+        Assert.Equal(new[] { "MVLOGOS.smk", "MVINTRO.smk" }, IntroMoviePolicy.FileNames);
+        Assert.Equal(new Rectangle(80, 102, 480, 256), IntroMoviePolicy.Destination(480, 256));
+    }
+
+    [Fact]
+    public void OnlyAnUnseenIntroStreamsAtStartup()
+    {
+        Assert.True(IntroMoviePolicy.PlaysAtStartup(introMoviesSeen: false));
+        Assert.False(IntroMoviePolicy.PlaysAtStartup(introMoviesSeen: true));
     }
 
     [Fact]

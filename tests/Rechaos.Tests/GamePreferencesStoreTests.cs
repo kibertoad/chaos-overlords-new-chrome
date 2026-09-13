@@ -24,6 +24,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(OriginalOptionsPolicy.FullscreenByDefault, preferences.Fullscreen);
         Assert.Equal(OriginalOptionsPolicy.SmoothEventSiteImagesByDefault,
             preferences.SmoothEventSiteImages);
+        Assert.Equal(GamePreferences.IntroMoviesSeenByDefault, preferences.IntroMoviesSeen);
     }
 
     [Fact]
@@ -31,7 +32,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
     {
         var expected = new GamePreferences(
             GamePreferences.CurrentFormatVersion, 8, 3, false,
-            PlanningTimeLimit.TwoMinutes, true, false, false, true, true);
+            PlanningTimeLimit.TwoMinutes, true, false, false, true, true, true);
 
         Assert.True(GamePreferencesStore.TrySave(Path(), expected));
 
@@ -97,6 +98,28 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
         Assert.True(preferences.Fullscreen);
         Assert.False(preferences.SmoothEventSiteImages);
+        Assert.False(preferences.IntroMoviesSeen);
+    }
+
+    [Fact]
+    public void VersionSevenPreferencesMigrateWithTheIntroStillOwedOnce()
+    {
+        File.WriteAllText(Path(), """
+            {"FormatVersion":7,"MusicVolumeLevel":8,"SoundEffectVolumeLevel":3,
+             "WarnIfIdleGangs":false,"PlanningTimeLimit":2,
+             "ShowBaseStatistics":true,"DetailedCombat":false,"SlidePanels":false,
+             "Fullscreen":true,"SmoothEventSiteImages":true}
+            """);
+
+        var preferences = GamePreferencesStore.LoadOrDefault(Path());
+
+        Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
+        Assert.Equal(8, preferences.MusicVolumeLevel);
+        Assert.Equal(3, preferences.SoundEffectVolumeLevel);
+        Assert.Equal(PlanningTimeLimit.TwoMinutes, preferences.PlanningTimeLimit);
+        Assert.True(preferences.Fullscreen);
+        Assert.True(preferences.SmoothEventSiteImages);
+        Assert.False(preferences.IntroMoviesSeen);
     }
 
     [Theory]
@@ -121,7 +144,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.False(GamePreferencesStore.TrySave(
             Path(), new GamePreferences(
                 GamePreferences.CurrentFormatVersion, -1, 5, true,
-                PlanningTimeLimit.None, false, true, true, false, false)));
+                PlanningTimeLimit.None, false, true, true, false, false, false)));
         Assert.False(File.Exists(Path()));
     }
 
