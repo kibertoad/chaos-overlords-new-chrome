@@ -237,7 +237,7 @@ public sealed partial class ChaosGame
             _online.Status = $"COULD NOT START THE MATCH  {exception.Message.ToUpperInvariant()}";
             _diagnostics?.Write("multiplayer.bootstrap.failed", new Dictionary<string, string?>
             {
-                ["error"] = exception.ToString(),
+                ["error"] = RuntimeDiagnostics.ExceptionType(exception),
             });
             return;
         }
@@ -467,7 +467,7 @@ public sealed partial class ChaosGame
                 _diagnostics?.Write("multiplayer.failed", new Dictionary<string, string?>
                 {
                     ["reason"] = failed.Reason,
-                    ["error"] = failed.Error?.ToString(),
+                    ["error"] = RuntimeDiagnostics.ExceptionType(failed.Error),
                 });
                 EndOnlineMatch(failed.Reason.ToUpperInvariant());
                 return;
@@ -553,7 +553,7 @@ public sealed partial class ChaosGame
         _ = task.ContinueWith(
             finished => _diagnostics?.Write(diagnostic, new Dictionary<string, string?>
             {
-                ["error"] = finished.Exception?.ToString(),
+                ["error"] = RuntimeDiagnostics.ExceptionType(finished.Exception),
             }),
             CancellationToken.None,
             TaskContinuationOptions.OnlyOnFaulted,

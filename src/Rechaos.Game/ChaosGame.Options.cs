@@ -7,7 +7,7 @@ namespace Rechaos.Game;
 public static class OptionsLayout
 {
     public static Rectangle Panel => new(80, 24, 480, 412);
-    public static Rectangle Done => new(264, 392, 112, 28);
+    public static Rectangle Done => new(264, 400, 112, 28);
     public static Rectangle Music => new(120, 52, 400, 58);
     public static Rectangle SoundEffects => new(120, 114, 400, 58);
     public static IReadOnlyList<Rectangle> MusicLevels { get; } =
@@ -23,7 +23,8 @@ public static class OptionsLayout
     public static Rectangle SlidePanels => new(150, 240, 340, 28);
     public static Rectangle WarnIfIdleGangs => new(150, 272, 340, 28);
     public static Rectangle EventSiteImages => new(150, 304, 340, 28);
-    public static Rectangle ColorDepth => new(150, 336, 340, 28);
+    public static Rectangle ExportDiagnostics => new(150, 336, 340, 28);
+    public static Rectangle ColorDepth => new(150, 366, 340, 16);
 }
 
 public static class OptionsTooltip
@@ -47,6 +48,12 @@ public static class OptionsTooltip
                 "EVENT SITE IMAGES",
                 "ORIGINAL USES THE NATIVE STRETCH AND ORDERED DITHER.",
                 "SMOOTH USES LINEAR FILTERING FOR A CLEANER ENLARGEMENT."
+            ];
+        if (OptionsLayout.ExportDiagnostics.Contains(point))
+            return [
+                "EXPORT DIAGNOSTICS",
+                "CREATES A SHAREABLE ZIP IN APP DATA/DIAGNOSTICS.",
+                "PRIVATE GAME DATA, EXCEPTION MESSAGES, AND FILE PATHS ARE OMITTED."
             ];
         if (OptionsLayout.ColorDepth.Contains(point))
             return [
@@ -75,12 +82,14 @@ public sealed partial class ChaosGame
     private bool _slidePanels = OriginalOptionsPolicy.SlidePanelsByDefault;
     private bool _fullscreen = OriginalOptionsPolicy.FullscreenByDefault;
     private bool _smoothEventSiteImages = OriginalOptionsPolicy.SmoothEventSiteImagesByDefault;
+    private string _optionsStatus = string.Empty;
 
     private void OpenOptions()
     {
         _optionsReturnScreen = _screens.Current;
         _optionsReturnMessage = _message;
         _optionsRow = 0;
+        _optionsStatus = string.Empty;
         _screens.Show(ClientScreen.Options);
         _message = string.Empty;
     }
@@ -94,12 +103,14 @@ public sealed partial class ChaosGame
     private void UpdateOptions(KeyboardState keyboard)
     {
         if (Pressed(keyboard, Keys.Up)) _optionsRow = Math.Max(0, _optionsRow - 1);
-        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(6, _optionsRow + 1);
+        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(7, _optionsRow + 1);
         if (Pressed(keyboard, Keys.Left)) ChangeSelectedVolume(-1);
         if (Pressed(keyboard, Keys.Right)) ChangeSelectedVolume(1);
         if (_optionsRow >= 2 && Pressed(keyboard, Keys.Space)) ToggleSelectedOption();
-        if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Back)
-            || Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.O))
+        if (Pressed(keyboard, Keys.Enter) && _optionsRow == 7)
+            ExportDiagnostics();
+        else if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Back)
+                 || Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.O))
             CloseOptions();
     }
 
@@ -145,8 +156,13 @@ public sealed partial class ChaosGame
             _optionsRow = 6;
             ToggleEventSiteImageFilter();
         }
+        else if (OptionsLayout.ExportDiagnostics.Contains(point))
+        {
+            _optionsRow = 7;
+            ExportDiagnostics();
+        }
         else if (OptionsLayout.ColorDepth.Contains(point))
-            _message = "THOUSANDS OF COLORS IS ALWAYS ENABLED";
+            _optionsStatus = "THOUSANDS OF COLORS IS ALWAYS ENABLED";
         else if (OptionsLayout.Done.Contains(point)) CloseOptions();
     }
 
@@ -159,7 +175,7 @@ public sealed partial class ChaosGame
                 _soundEffectVolumeLevel + delta,
                 AudioRouting.MinimumEffectVolumeLevel,
                 AudioRouting.MaximumEffectVolumeLevel));
-        else ToggleSelectedOption();
+        else if (_optionsRow <= 6) ToggleSelectedOption();
     }
 
     private void ToggleSelectedOption()
@@ -169,6 +185,7 @@ public sealed partial class ChaosGame
         else if (_optionsRow == 4) ToggleSlidePanels();
         else if (_optionsRow == 5) ToggleIdleGangWarning();
         else if (_optionsRow == 6) ToggleEventSiteImageFilter();
+        else if (_optionsRow == 7) ExportDiagnostics();
     }
 
     private void ToggleBaseStatistics()
@@ -240,6 +257,17 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
+    private void ExportDiagnostics()
+    {
+        var result = _diagnostics?.Export();
+        _optionsStatus = result?.Succeeded == true
+            ? "SAVED TO APP DATA/DIAGNOSTICS"
+            : "DIAGNOSTICS EXPORT FAILED";
+        PlayGeneralSound(result?.Succeeded == true
+            ? GeneralSoundSlot.AcceptedSelection
+            : GeneralSoundSlot.RejectedInput);
+    }
+
     private void SavePreferences() =>
         GamePreferencesStore.TrySave(
             _preferencesPath,
@@ -305,10 +333,16 @@ public sealed partial class ChaosGame
             $"WARN IF IDLE GANGS: {(_warnIfIdleGangs ? "ON" : "OFF")}", 5);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.EventSiteImages,
             $"EVENT SITE IMAGES: {(_smoothEventSiteImages ? "SMOOTH" : "ORIGINAL")}", 6);
-        DrawOptionToggle(batch, pixel, font, OptionsLayout.ColorDepth,
-            "THOUSANDS OF COLORS: ALWAYS ON", -1);
+        DrawOptionToggle(batch, pixel, font, OptionsLayout.ExportDiagnostics,
+            "EXPORT DIAGNOSTICS", 7);
+        DrawCentered(font, batch, "THOUSANDS OF COLORS: ALWAYS ON", 369,
+            new Color(185, 195, 195), 1);
 
-        DrawCentered(font, batch, "F11 DISPLAY  UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS", 374,
+        DrawCentered(font, batch,
+            string.IsNullOrEmpty(_optionsStatus)
+                ? "F11 DISPLAY  UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS"
+                : _optionsStatus,
+            384,
             new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
         if (_hoverPoint is { } hover)

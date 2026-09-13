@@ -28,7 +28,7 @@ incremental outputs and MSBuild/Roslyn server reuse are retained because both
 materially speed repeated builds.
 
 At the current published checkpoint, the isolated Release build completes with
-zero warnings and all 1,154 tests pass. This count is a regression baseline,
+zero warnings and all 1,448 tests pass. This count is a regression baseline,
 not a measure of parity completeness.
 
 A small, stable worker pool is expected. If a prior interrupted run left stale
@@ -65,7 +65,11 @@ creating package output.
 
 Runtime-diagnostics tests open an isolated log directory, deserialize the
 JSON-lines lifecycle stream, verify stable event ordering, and check that
-unique crash reports link back to their session log. Manual crash validation
+unique crash reports link back to their session log. They also inspect the
+bounded ZIP export, prove repeat exports cannot overwrite one another, verify
+that only allowlisted structured fields survive, and ensure raw exception
+messages and filesystem paths do not enter crash summaries or exported session
+events. Manual crash validation
 should additionally confirm that `%LOCALAPPDATA%\ChaosOverlordsNewChrome\Logs`
 retains at most five session logs and ten crash reports and that an unwritable
 directory never prevents startup.

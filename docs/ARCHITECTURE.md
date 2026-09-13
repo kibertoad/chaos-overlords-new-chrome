@@ -537,7 +537,13 @@ protocol and the client contract: [`MULTIPLAYER.md`](./MULTIPLAYER.md).
   exception reports under the user's local application-data directory. It
   retains five sessions and ten crashes, caps a session at 1 MiB, never uploads
   data, and deliberately excludes player names, commands, saves, and asset
-  paths. Diagnostics are best-effort and disable themselves on I/O failure.
+  paths. Error fields retain exception types rather than messages or stacks.
+  The explicit Options export writes a unique, atomically promoted ZIP beneath
+  the sibling `Diagnostics` directory. It reparses a strict session-field
+  allowlist, omits malformed records and oversized/reparse-point inputs, and
+  converts local crash reports to exception-type and source-path-free stack summaries; raw
+  reports remain local. Diagnostics and export are best-effort and never block
+  gameplay on I/O failure.
 - Binary readers reject truncated/partial records and invalid signatures.
 - Source validation uses exact known hashes before content is trusted.
 - Manifest paths are canonicalized and must remain below the selected root.

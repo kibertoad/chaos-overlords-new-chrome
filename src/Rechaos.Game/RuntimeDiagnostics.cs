@@ -13,7 +13,7 @@ public sealed class RuntimeDiagnostics : IDisposable
     public const int MaximumCrashReports = 10;
     public const long MaximumSessionBytes = 1024 * 1024;
     private const int MaximumFields = 16;
-    private const int MaximumFieldCharacters = 256;
+    public const int MaximumFieldCharacters = 256;
     private readonly object _gate = new();
     private StreamWriter? _writer;
     private long _sequence;
@@ -117,6 +117,27 @@ public sealed class RuntimeDiagnostics : IDisposable
             return null;
         }
     }
+
+    public DiagnosticsExportResult Export(string? destinationDirectory = null)
+    {
+        if (LogDirectory is null)
+            return new DiagnosticsExportResult(false, null, "DiagnosticsUnavailable");
+        destinationDirectory ??= Path.Combine(
+            Directory.GetParent(LogDirectory)?.FullName ?? LogDirectory,
+            "Diagnostics");
+        Write("diagnostics.export.requested");
+        var result = DiagnosticsExport.Create(LogDirectory, destinationDirectory);
+        Write(result.Succeeded ? "diagnostics.export.succeeded" : "diagnostics.export.failed",
+            new Dictionary<string, string?>
+            {
+                ["file"] = result.Path is null ? null : Path.GetFileName(result.Path),
+                ["error"] = result.ErrorCode
+            });
+        return result;
+    }
+
+    public static string ExceptionType(Exception? exception) =>
+        exception?.GetBaseException().GetType().FullName ?? string.Empty;
 
     public void Dispose()
     {

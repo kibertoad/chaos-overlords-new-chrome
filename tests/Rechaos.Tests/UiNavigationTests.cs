@@ -432,6 +432,7 @@ public sealed class UiNavigationTests
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.DetailedCombat));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.SlidePanels));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.EventSiteImages));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ExportDiagnostics));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ColorDepth));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
     }
@@ -448,6 +449,7 @@ public sealed class UiNavigationTests
             OptionsLayout.SlidePanels,
             OptionsLayout.WarnIfIdleGangs,
             OptionsLayout.EventSiteImages,
+            OptionsLayout.ExportDiagnostics,
             OptionsLayout.ColorDepth,
             OptionsLayout.Done
         ];
@@ -467,6 +469,8 @@ public sealed class UiNavigationTests
             string.Join(' ', OptionsTooltip.At(OptionsLayout.SlidePanels.Center)));
         Assert.Contains("NATIVE STRETCH AND ORDERED DITHER",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.EventSiteImages.Center)));
+        Assert.Contains("PRIVATE GAME DATA",
+            string.Join(' ', OptionsTooltip.At(OptionsLayout.ExportDiagnostics.Center)));
         Assert.Empty(OptionsTooltip.At(Point.Zero));
         Assert.Equal(Rectangle.Empty, OptionsTooltip.Bounds(Point.Zero, []));
     }

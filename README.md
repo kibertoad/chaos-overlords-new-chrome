@@ -49,7 +49,7 @@ system are tracked in the [parity matrix](docs/PARITY-MATRIX.md).
 | Objectives, ranking, and AI | All ten scenarios have timed/objective completion, recovered score tables, competition ranking, tied winners, sole-survivor handling, elimination cleanup, awards/statistics, and Siege objective markers. Deterministic computer players use the recovered difficulty bands, attitudes/reactions, hiring and placement rules, and handlers for every known strategy family. |
 | Saves and replays | Escape opens an in-game Resume/Save/Load/Quit-to-main-menu menu; quitting requires confirmation that unsaved progress will be lost. F5/F9 open a nine-slot save/load browser. Saves suggest an editable name and display timestamp, scenario, single/hot-seat/online type, and human/AI counts. Atomic writes, backups, autosaves, and corruption recovery are implemented. F6/F10 save and verify deterministic local replays. Current formats are save v22, replay v24, and canonical hash v25. |
 | Online play | The title screen can host or join matches through the new self-hostable coordination service. It privately seals simultaneous order sets, distributes deterministic seeds and slot assignments, verifies client state hashes, resumes its ordered event stream, and supports host-snapshot desync recovery. See [Multiplayer](docs/MULTIPLAYER.md). This does not reproduce the original network protocols. |
-| Help, audio, and options | F1 opens a cross-platform viewer for the imported original Help contents, styles, internal jumps, and definition popups, augmented with verified executable formulas. The recovered title/game/endgame music programs, independent 0-10 music/effect levels, focus pause/resume, mapped interface sounds, combat cues, planning warnings, display mode, gang-stat mode, combat detail, panel motion, idle warning, and event-image filter are implemented and persisted. |
+| Help, audio, and options | F1 opens a cross-platform viewer for the imported original Help contents, styles, internal jumps, and definition popups, augmented with verified executable formulas. The recovered title/game/endgame music programs, independent 0-10 music/effect levels, focus pause/resume, mapped interface sounds, combat cues, planning warnings, display mode, gang-stat mode, combat detail, panel motion, idle warning, and event-image filter are implemented and persisted. Options can create a bounded, privacy-filtered diagnostics ZIP for explicit user sharing. |
 | Engineering baseline | The authoritative simulation is headless and deterministic; saves, replays, online lockstep, and phase hashes share that state model. Automated coverage spans extraction, persistence/migrations, all command resolvers, scenarios, AI families, UI projections/layouts, networking contracts, installers, and multi-turn deterministic campaigns. Static-analysis findings, confidence, and unresolved behavior are documented rather than silently guessed. |
 
 ### Still missing or provisional
@@ -99,6 +99,9 @@ presentation-only conveniences that make the original systems easier to read:
 - Windowed and borderless-fullscreen modes can be toggled globally with F11 or
   Alt+Enter, and foreground panel motion can be disabled without changing game
   rules or deterministic state.
+- Options can explicitly export a bounded support ZIP to the local application-
+  data `Diagnostics` directory. It contains structured session events and crash
+  summaries, while omitting private game data, exception messages, and paths.
 
 ## Controls
 

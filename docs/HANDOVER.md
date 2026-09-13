@@ -7,10 +7,10 @@ Last updated: 2026-09-13
 
 - The canonical repository is
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`. `main` contains
-  every accepted checkpoint through complete managed Smacker frame decoding;
+  every accepted checkpoint through managed Smacker startup playback;
   `codex/full-reimplementation` remains the development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,445 tests with zero warnings.
+  isolated Release build passed all 1,448 tests with zero warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -23,6 +23,11 @@ Last updated: 2026-09-13
 
 ## Latest playable work
 
+- Options now exposes a keyboard/mouse diagnostics export. It creates a unique,
+  atomically promoted ZIP under local application data with allowlisted session
+  events and path/message-free crash summaries. Raw reports stay local, legacy
+  exception strings are reduced to type names during export, new diagnostic
+  error fields record only types, and all export failures remain non-fatal.
 - Both original Smacker-v2 movies now pass a bounded structural parser before
   source-pack acceptance. Exact 480x256 geometry, 100 ms cadence, 200/1,150
   frame counts, 20/115-second durations, packed 22,050 Hz 8-bit mono/stereo

@@ -157,7 +157,7 @@ public sealed partial class ChaosGame
         _diagnostics?.Write(eventName, new Dictionary<string, string?>
         {
             ["file"] = fileName,
-            ["error"] = exception?.Message
+            ["error"] = RuntimeDiagnostics.ExceptionType(exception)
         });
     }
 
