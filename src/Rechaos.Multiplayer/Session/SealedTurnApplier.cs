@@ -41,12 +41,11 @@ public static class SealedTurnApplier
     /// </para>
     /// <para>
     /// That makes a human seat with no document in the set do nothing for the turn, which is what a
-    /// player who ran out of clock ordered: nothing. A player who has left the match is the same
-    /// case for as long as the match lasts — the server stops waiting on their readiness, so the
-    /// turns seal without them, and their gangs hold position. Handing the seat to the computer
-    /// instead would mean changing who controls it, which is hashed state, and so needs a step every
-    /// client takes at the same point in the log; <c>docs/MULTIPLAYER.md</c> says what that would
-    /// take.
+    /// player who ran out of clock ordered: nothing. A player who has left the match is still the
+    /// same case in the live protocol: the server stops waiting on their readiness, so turns seal
+    /// without them and their gangs hold position. <see cref="MatchReplayRecorder.TransferPlayerToComputer"/>
+    /// is the deterministic handover prerequisite; the wire does not invoke it until departure
+    /// history can be reconstructed at the exact same boundary on every client.
     /// </para>
     /// </remarks>
     public static string Apply(MatchReplayRecorder replay, SealedOrdersView sealedOrders)

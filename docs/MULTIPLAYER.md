@@ -422,13 +422,14 @@ dock a player plans against the dock the sealed turn grants.
   one path that does work under it, because it reads the log directly.
 - Late joining into a running match (taking over a computer slot) is not offered; the lobby is
   the only door.
-- **A seat whose player has left goes quiet rather than to the computer.** The turns that follow seal
-  without waiting on it, so the match keeps moving, but the gangs hold position for the rest of it.
-  Handing the seat over properly means changing who controls it, and that is hashed state the AI's own
-  targeting reads — so it needs a recorded core operation every client applies at the same point in
-  the event log (which the log's ordering does guarantee), plus a replay format bump. It is a
-  self-contained change and deliberately not bundled with the client wiring: a mid-match mutation of
-  the setup deserves its own tests and its own determinism run, not a footnote in a larger branch.
+- **A seat whose player has left still goes quiet rather than to the computer.** The turns that follow
+  seal without waiting on it, so the match keeps moving, but the gangs hold position. The core-side
+  prerequisite now exists: replay v26 records a one-way Human-to-Computer transfer at a clean Command
+  boundary, the existing canonical hash authenticates it, native saves retain it, and a lockstep test
+  proves every client then plans the seat identically. It is not yet called by the live session. A
+  missing order cannot trigger it because an active player who timed out produces exactly the same
+  absence. The remaining protocol work must carry the authoritative departure at its ordered event-log
+  position and reconstruct those events during reconnect before live AI takeover is safe.
 - **The lobby is polled, not streamed.** The game reads the match about once a second while the
   lobby is on screen and opens the event stream when the match starts. The stream carries the lobby
   facts too; opening it earlier would mean unwinding a session for every player who backs out.
