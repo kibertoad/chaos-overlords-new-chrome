@@ -45,6 +45,8 @@ public static class RouteTemplates
     public const string ListEvents = "GET /matches/:matchId/events";
     /// <summary><c>GET /matches/:matchId/stream</c></summary>
     public const string StreamEvents = "GET /matches/:matchId/stream";
+    /// <summary><c>POST /bug-reports</c></summary>
+    public const string SubmitBugReport = "POST /bug-reports";
 
     /// <summary>All of them, for a test that asserts the client covers the surface.</summary>
     public static IReadOnlyList<string> All { get; } =
@@ -65,5 +67,6 @@ public static class RouteTemplates
         Snapshot,
         ListEvents,
         StreamEvents,
+        SubmitBugReport,
     ];
 }

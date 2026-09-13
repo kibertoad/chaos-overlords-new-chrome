@@ -9,7 +9,7 @@ import {
 import type { ExecutionContext, ScheduledController } from '@cloudflare/workers-types'
 import type { Hono } from 'hono'
 import type { Env } from './env'
-import { buildKernel, HUB_PATHS, hubFor, workerLogger } from './kernel'
+import { buildBugReports, buildKernel, HUB_PATHS, hubFor, workerLogger } from './kernel'
 
 export { MatchHub } from './MatchHub'
 
@@ -52,8 +52,10 @@ export function buildContainer(env: Env): ServerContainer {
     const effective = Number.isInteger(limit) && limit > 0 ? limit : fallback
     return new RateLimiter(clock, { limit: effective, windowMs: 60_000 })
   }
+  const bugReports = buildBugReports(env)
   return {
     kernel: buildKernel(env),
+    ...(bugReports ? { bugReports } : {}),
     eventStream: {
       open: async ({ matchId, afterSeq, signal }) => {
         const url = `https://hub${HUB_PATHS.subscribe}?matchId=${encodeURIComponent(matchId)}&after=${afterSeq}`
@@ -68,6 +70,10 @@ export function buildContainer(env: Env): ServerContainer {
       anonymous: perMinute(env.RATE_LIMIT_PER_MINUTE, DEFAULT_RATE_LIMITS.anonymousPerMinute),
       member: perMinute(env.MEMBER_RATE_LIMIT_PER_MINUTE, DEFAULT_RATE_LIMITS.memberPerMinute),
       upload: perMinute(env.UPLOAD_RATE_LIMIT_PER_MINUTE, DEFAULT_RATE_LIMITS.uploadPerMinute),
+      bugReport: perMinute(
+        env.BUG_REPORT_RATE_LIMIT_PER_MINUTE,
+        DEFAULT_RATE_LIMITS.bugReportPerMinute,
+      ),
     },
     config: { ...DEFAULT_SERVER_CONFIG, publicListing: env.PUBLIC_LISTING === 'true' },
   }

@@ -1,3 +1,4 @@
+import type { BugReportService } from '@chaos-overlords/bug-reports'
 import type { EventStreamOpener, Kernel, RateLimiter } from '@chaos-overlords/kernel'
 import type { Context } from 'hono'
 import type { AppEnv } from './http/types'
@@ -23,10 +24,24 @@ export interface RateLimiters {
   anonymous: RateLimiter
   member: RateLimiter
   upload: RateLimiter
+  /**
+   * The bug report door, which is the only unauthenticated one that accepts megabytes.
+   *
+   * Its own tier rather than the anonymous one: a player filing a report and a player retrying a
+   * join are nothing alike in cost, and sharing a budget would mean a handful of reports locked
+   * somebody out of a lobby (or, the other way round, that a lobby's generous budget also bought
+   * thirty multi-megabyte uploads a minute from a stranger).
+   */
+  bugReport: RateLimiter
 }
 
 export interface ServerContainer {
   kernel: Kernel
+  /**
+   * Bug report intake, backed by its own database. Absent on a deployment that has not configured
+   * one, where the route answers 404 rather than pretending to take reports.
+   */
+  bugReports?: BugReportService
   eventStream: EventStreamOpener
   rateLimiters: RateLimiters
   config: ServerConfig
@@ -44,4 +59,10 @@ export const DEFAULT_RATE_LIMITS = {
   anonymousPerMinute: 30,
   memberPerMinute: 240,
   uploadPerMinute: 10,
+  /**
+   * Five reports a minute per address. A player filing one files one; a player filing a second
+   * because the first did not seem to send is the case this has to leave room for, and everything
+   * beyond that is a client in a loop uploading whole match journals.
+   */
+  bugReportPerMinute: 5,
 } as const

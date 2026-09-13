@@ -259,6 +259,75 @@ public sealed record DismissNotificationOp(
 ) : OrderOp(Player, "dismissNotification");
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
+public enum BugReportCodec
+{
+    [JsonStringEnumMemberName("none")]
+    None,
+    [JsonStringEnumMemberName("brotli")]
+    Brotli,
+    [JsonStringEnumMemberName("zstd")]
+    Zstd
+}
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum BugReportMatchType
+{
+    [JsonStringEnumMemberName("single")]
+    Single,
+    [JsonStringEnumMemberName("hotseat")]
+    Hotseat,
+    [JsonStringEnumMemberName("online")]
+    Online
+}
+
+public sealed record BugReportClient(
+    [property: JsonPropertyName("version")] string Version,
+    [property: JsonPropertyName("platform")] string Platform
+);
+
+public sealed record BugReportContext(
+    [property: JsonPropertyName("scenario")] string Scenario,
+    [property: JsonPropertyName("matchType")] BugReportMatchType MatchType,
+    [property: JsonPropertyName("turn")] int Turn,
+    [property: JsonPropertyName("phase")] string Phase,
+    [property: JsonPropertyName("humanPlayers")] int HumanPlayers,
+    [property: JsonPropertyName("computerPlayers")] int ComputerPlayers
+);
+
+public sealed record BugReportState(
+    [property: JsonPropertyName("codec")] BugReportCodec Codec,
+    [property: JsonPropertyName("replayFormatVersion")] int ReplayFormatVersion,
+    [property: JsonPropertyName("uncompressedBytes")] int UncompressedBytes,
+    [property: JsonPropertyName("sha256")] string Sha256,
+    [property: JsonPropertyName("anonymized")] bool Anonymized,
+    [property: JsonPropertyName("body")] string Body
+);
+
+public sealed record SubmitBugReportRequest(
+    [property: JsonPropertyName("message")] string Message,
+    [property: JsonPropertyName("client")] BugReportClient Client,
+    [property: JsonPropertyName("context"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] BugReportContext? Context,
+    [property: JsonPropertyName("state"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] BugReportState? State
+);
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum BugReportReceiptStateStored
+{
+    [JsonStringEnumMemberName("stored")]
+    Stored,
+    [JsonStringEnumMemberName("omitted")]
+    Omitted,
+    [JsonStringEnumMemberName("not_sent")]
+    NotSent
+}
+
+public sealed record BugReportReceipt(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("receivedAt")] string ReceivedAt,
+    [property: JsonPropertyName("stateStored")] BugReportReceiptStateStored StateStored
+);
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum ErrorCode
 {
     [JsonStringEnumMemberName("bad_request")]

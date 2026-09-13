@@ -38,6 +38,18 @@ export const rateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
 }
 
 /**
+ * Limiter for the bug report door, keyed by client address like the other unauthenticated ones but
+ * spending its own budget: a report is a rare, large call and a join is a frequent, tiny one, and
+ * one must not be able to exhaust the other.
+ */
+export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const container = c.get('container')
+  const key = (container.clientAddress ?? defaultClientAddress)(c)
+  enforce(container.rateLimiters, 'bugReport', key, c)
+  await next()
+}
+
+/**
  * Limiter for an authenticated member, keyed by player rather than address so one player on a shared
  * address cannot spend another's budget. Must run after `bearerAuth`.
  */

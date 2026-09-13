@@ -1,4 +1,11 @@
 import {
+  type BugReportService,
+  bugReportSchema,
+  createBugReportRepository,
+  createBugReportService,
+  createR2BlobStore,
+} from '@chaos-overlords/bug-reports'
+import {
   createKernel,
   type DeadlineScheduler,
   type EventNotifier,
@@ -75,4 +82,27 @@ export function buildKernel(
       },
     },
   )
+}
+
+/**
+ * Bug report intake over its own D1 instance, or nothing when the binding is absent.
+ *
+ * Built beside the kernel rather than inside it: the kernel is the multiplayer domain, and a bug
+ * report is not part of a match. Keeping them apart here is what makes the separate database
+ * structural rather than a convention — nothing in `Kernel` can reach `BUG_DB`, and nothing here
+ * can reach `DB`.
+ *
+ * The D1 migration lineage is `packages/bug-reports/migrations/sqlite`; apply it with
+ * `wrangler d1 migrations apply chaos_overlords_bug_reports`.
+ */
+export function buildBugReports(env: Env): BugReportService | undefined {
+  if (!env.BUG_DB) return undefined
+  const repository = createBugReportRepository(drizzle(env.BUG_DB, { schema: bugReportSchema }))
+  const blobs = env.BUG_BLOBS ? createR2BlobStore(env.BUG_BLOBS) : undefined
+  return createBugReportService({
+    repository,
+    clock: { now: () => new Date() },
+    logger: workerLogger,
+    ...(blobs ? { blobs } : {}),
+  })
 }

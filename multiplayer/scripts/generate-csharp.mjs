@@ -76,9 +76,14 @@ function localBin(name) {
  * C# client spells its routes out instead, and `RouteTemplates` in the .NET tests pins them
  * against these same contracts.
  */
-const INPUTS = ['errors.ts', 'events.ts', 'orders.ts', 'schemas.ts', 'views.ts'].map((file) =>
-  join(multiplayerRoot, 'packages', 'contracts', 'src', file),
-)
+const INPUTS = [
+  'bug-reports.ts',
+  'errors.ts',
+  'events.ts',
+  'orders.ts',
+  'schemas.ts',
+  'views.ts',
+].map((file) => join(multiplayerRoot, 'packages', 'contracts', 'src', file))
 
 async function main() {
   const check = process.argv.includes('--check')

@@ -15,6 +15,7 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@chaos-overlords/bug-reports": "workspace:*",
     "@chaos-overlords/contracts": "workspace:*",
     "@chaos-overlords/kernel": "workspace:*",
     "@chaos-overlords/server": "workspace:*",

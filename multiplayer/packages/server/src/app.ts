@@ -1,10 +1,17 @@
-import { LIMITS } from '@chaos-overlords/contracts'
+import { BUG_REPORT_LIMITS, LIMITS } from '@chaos-overlords/contracts'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import type { ServerContainer } from './container'
 import { handleError } from './http/errorHandler'
-import { bearerAuth, memberRateLimited, rateLimited, requestId } from './http/middleware'
+import {
+  bearerAuth,
+  bugReportRateLimited,
+  memberRateLimited,
+  rateLimited,
+  requestId,
+} from './http/middleware'
 import type { AppEnv } from './http/types'
+import { registerBugReportRoutes } from './routes/bugReports'
 import { registerEventRoutes } from './routes/events'
 import { registerMemberLobbyRoutes, registerPublicLobbyRoutes } from './routes/lobby'
 import { registerSnapshotRoutes } from './routes/snapshots'
@@ -42,11 +49,19 @@ export function createApp(container: ServerContainer): Hono<AppEnv> {
 function apiRoutes(): Hono<AppEnv> {
   const api = new Hono<AppEnv>()
 
-  // The two doors a stranger can knock on, throttled per client address.
+  // The doors a stranger can knock on, throttled per client address.
   api.use('/matches', rateLimited, bodyLimit({ maxSize: LIMITS.gameSettingsBytes + SMALL_BODY }))
   api.use('/matches/join', rateLimited, bodyLimit({ maxSize: SMALL_BODY }))
+  // The third one. It is unauthenticated like the other two and far larger than either, so it gets
+  // a budget of its own rather than borrowing the lobby's — see `RateLimiters.bugReport`.
+  api.use(
+    '/bug-reports',
+    bugReportRateLimited,
+    bodyLimit({ maxSize: BUG_REPORT_LIMITS.stateBase64Bytes + SMALL_BODY }),
+  )
 
   registerPublicLobbyRoutes(api)
+  registerBugReportRoutes(api)
 
   // `/:matchId/*` also matches the bare `/:matchId`, so this is the only mount: a second one for
   // the bare path would authenticate (a token lookup plus a match read) and charge the member's

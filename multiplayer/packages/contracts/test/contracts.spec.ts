@@ -46,6 +46,7 @@ describe('API_CONTRACTS', () => {
         'GET /matches/:matchId/snapshots/:turn',
         'GET /matches/:matchId/events',
         'GET /matches/:matchId/stream',
+        'POST /bug-reports',
       ].sort(),
     )
     for (const contract of Object.values(API_CONTRACTS)) {
