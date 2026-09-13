@@ -11,8 +11,9 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private static readonly Rectangle LobbyStart = new(160, 372, 148, 32);
-    private static readonly Rectangle LobbyLeave = new(332, 372, 148, 32);
+    private static readonly Rectangle LobbyCopyCode = new(112, 372, 128, 32);
+    private static readonly Rectangle LobbyStart = new(256, 372, 128, 32);
+    private static readonly Rectangle LobbyLeave = new(400, 372, 128, 32);
 
     private static readonly TimeSpan LobbyPollInterval = TimeSpan.FromSeconds(1);
 
@@ -35,10 +36,18 @@ public sealed partial class ChaosGame
     private CancellationTokenSource? _serverProbeCancellation;
     private Task<bool>? _serverProbe;
 
-    private TextField[] OnlineFields =>
-        _online.Service == OnlineServiceMode.Custom
-            ? [_online.Server, _online.DisplayName, _online.JoinCode, _online.Password]
-            : [_online.DisplayName, _online.JoinCode, _online.Password];
+    private TextField[] OnlineFields
+    {
+        get
+        {
+            var fields = new List<TextField>(4);
+            if (_online.Service == OnlineServiceMode.Custom) fields.Add(_online.Server);
+            fields.Add(_online.DisplayName);
+            if (_online.Role == OnlineConnectRole.Join) fields.Add(_online.JoinCode);
+            fields.Add(_online.Password);
+            return [.. fields];
+        }
+    }
 
     private void OpenOnline()
     {
@@ -59,8 +68,7 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Tab)) FocusNextOnlineField();
         if (Pressed(keyboard, Keys.Enter) && _online.Stage == MultiplayerStage.Connect)
         {
-            if (_online.JoinCode.Value.Length > 0) BeginJoin();
-            else BeginHost();
+            ContinueOnline();
         }
     }
 
@@ -107,21 +115,14 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void FocusOnlineField(Point point)
     {
-        var hits = _online.Service == OnlineServiceMode.Custom
-            ? new (Rectangle Bounds, TextField Field)[]
-            {
-                (OnlineConnectLayout.Server, _online.Server),
-                (OnlineConnectLayout.Name, _online.DisplayName),
-                (OnlineConnectLayout.JoinCode, _online.JoinCode),
-                (OnlineConnectLayout.Password, _online.Password),
-            }
-            :
-            [
-                (OnlineConnectLayout.Name, _online.DisplayName),
-                (OnlineConnectLayout.JoinCode, _online.JoinCode),
-                (OnlineConnectLayout.Password, _online.Password),
-            ];
-        if (!Array.Exists(hits, hit => hit.Bounds.Contains(point))) return;
+        var hits = new List<(Rectangle Bounds, TextField Field)>(4);
+        if (_online.Service == OnlineServiceMode.Custom)
+            hits.Add((OnlineConnectLayout.Server, _online.Server));
+        hits.Add((OnlineConnectLayout.Name, _online.DisplayName));
+        if (_online.Role == OnlineConnectRole.Join)
+            hits.Add((OnlineConnectLayout.JoinCode, _online.JoinCode));
+        hits.Add((OnlineConnectLayout.Password, _online.Password));
+        if (!hits.Any(hit => hit.Bounds.Contains(point))) return;
         foreach (var (bounds, field) in hits) field.IsFocused = bounds.Contains(point);
     }
 
@@ -204,6 +205,23 @@ public sealed partial class ChaosGame
         BeginServerProbe();
     }
 
+    private void SelectOnlineRole(OnlineConnectRole role)
+    {
+        if (_online.Stage != MultiplayerStage.Connect || _online.Role == role) return;
+        _online.Role = role;
+        foreach (var field in new[]
+                 { _online.Server, _online.DisplayName, _online.JoinCode, _online.Password })
+            field.IsFocused = false;
+        OnlineFields[0].IsFocused = true;
+        _online.Status = string.Empty;
+    }
+
+    private void ContinueOnline()
+    {
+        if (_online.Role == OnlineConnectRole.Host) BeginHost();
+        else BeginJoin();
+    }
+
     /// <summary>
     /// Opens a lobby with the settings the setup screen is showing.
     /// </summary>
@@ -234,7 +252,13 @@ public sealed partial class ChaosGame
 
     private void BeginJoin()
     {
-        if (!TryBeginLobby() || !RequireUsableName()) return;
+        if (!RequireUsableName()) return;
+        if (string.IsNullOrWhiteSpace(_online.JoinCode.Value))
+        {
+            _online.Status = "ENTER A JOIN CODE";
+            return;
+        }
+        if (!TryBeginLobby()) return;
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "JOINING";
         _lobby!.Join(new JoinMatchRequest(
@@ -726,16 +750,27 @@ public sealed partial class ChaosGame
             SelectOnlineService(OnlineServiceMode.Central);
         else if (OnlineConnectLayout.Custom.Contains(point))
             SelectOnlineService(OnlineServiceMode.Custom);
-        else if (OnlineConnectLayout.Host.Contains(point)) BeginHost();
-        else if (OnlineConnectLayout.Join.Contains(point)) BeginJoin();
+        else if (OnlineConnectLayout.HostRole.Contains(point))
+            SelectOnlineRole(OnlineConnectRole.Host);
+        else if (OnlineConnectLayout.JoinRole.Contains(point))
+            SelectOnlineRole(OnlineConnectRole.Join);
+        else if (OnlineConnectLayout.Continue.Contains(point)) ContinueOnline();
         else if (OnlineConnectLayout.Back.Contains(point)) EndOnlineMatch(string.Empty);
         else FocusOnlineField(point);
     }
 
     private void HandleLobbyClick(Point point)
     {
-        if (LobbyStart.Contains(point)) StartHostedMatch();
+        if (LobbyCopyCode.Contains(point)) CopyLobbyJoinCode();
+        else if (LobbyStart.Contains(point)) StartHostedMatch();
         else if (LobbyLeave.Contains(point)) LeaveOnlineMatch();
+    }
+
+    private void CopyLobbyJoinCode()
+    {
+        _online.Status = DesktopClipboard.TrySetText(_online.JoinCodeShown)
+            ? "JOIN CODE COPIED"
+            : "COULD NOT COPY JOIN CODE";
     }
 
     /// <summary>

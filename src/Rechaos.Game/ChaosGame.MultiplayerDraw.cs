@@ -24,16 +24,37 @@ public sealed partial class ChaosGame
             DrawField(batch, pixel, font, OnlineConnectLayout.Server, _online.Server);
         else
             DrawReadOnlyServer(batch, pixel, font);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.HostRole, "HOST",
+            _online.Role == OnlineConnectRole.Host);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.JoinRole, "JOIN",
+            _online.Role == OnlineConnectRole.Join);
         DrawField(batch, pixel, font, OnlineConnectLayout.Name, _online.DisplayName);
-        DrawField(batch, pixel, font, OnlineConnectLayout.JoinCode, _online.JoinCode);
+        if (_online.Role == OnlineConnectRole.Join)
+            DrawField(batch, pixel, font, OnlineConnectLayout.JoinCode, _online.JoinCode);
+        else
+            DrawDisabledJoinCode(batch, pixel, font);
         DrawField(batch, pixel, font, OnlineConnectLayout.Password, _online.Password);
         var busy = _online.Stage == MultiplayerStage.Busy;
-        DrawButton(batch, pixel, font, OnlineConnectLayout.Host, "HOST", !busy);
-        DrawButton(batch, pixel, font, OnlineConnectLayout.Join, "JOIN", !busy);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.Continue,
+            _online.Role == OnlineConnectRole.Host ? "CREATE" : "CONNECT", !busy);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Back, "BACK", !busy);
         DrawCentered(font, batch, _online.ServerStatus, OnlineConnectLayout.ServerStatusY,
             _online.ServerStatus.EndsWith("ONLINE", StringComparison.Ordinal) ? Color.Lime : Color.Gold, 1);
         DrawCentered(font, batch, _online.Status, OnlineConnectLayout.StatusY, Color.Gold, 1);
+    }
+
+    private static void DrawDisabledJoinCode(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font)
+    {
+        var bounds = OnlineConnectLayout.JoinCode;
+        font.Draw(batch, "JOIN CODE", new Vector2(bounds.X, bounds.Y - 11),
+            new Color(90, 105, 100), 1);
+        batch.Draw(pixel, bounds, new Color(12, 22, 20));
+        DrawBorder(batch, pixel, bounds, new Color(55, 70, 66), 1);
+        font.Draw(batch, "NOT NEEDED WHEN HOSTING", new Vector2(bounds.X + 5, bounds.Y + 7),
+            new Color(90, 105, 100), 1);
     }
 
     private static void DrawReadOnlyServer(
@@ -83,6 +104,7 @@ public sealed partial class ChaosGame
             font.Draw(batch, $"{computers} COMPUTER PLAYERS WILL FILL THE REST",
                 new Vector2(120, 200 + (row + 1) * 16), new Color(150, 165, 165), 1);
         }
+        DrawButton(batch, pixel, font, LobbyCopyCode, "COPY CODE", true);
         DrawButton(batch, pixel, font, LobbyStart, "START", _online.IsHost);
         DrawButton(batch, pixel, font, LobbyLeave, "LEAVE", true);
         DrawCentered(font, batch, _online.Status, 424, Color.Gold, 1);

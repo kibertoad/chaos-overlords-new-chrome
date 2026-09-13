@@ -28,6 +28,12 @@ internal enum MultiplayerStage
     Finished,
 }
 
+internal enum OnlineConnectRole
+{
+    Host,
+    Join
+}
+
 /// <summary>
 /// Everything the online screens need that is not the match itself.
 /// </summary>
@@ -47,6 +53,7 @@ internal sealed class MultiplayerUiState
     internal MultiplayerStage Stage { get; set; } = MultiplayerStage.Connect;
 
     internal OnlineServiceMode Service { get; set; } = OnlineServiceMode.Central;
+    internal OnlineConnectRole Role { get; set; } = OnlineConnectRole.Host;
 
     internal TextField Server { get; } = new(
         "SERVER", 96, GamePreferences.DefaultCustomMultiplayerServer);
@@ -127,6 +134,7 @@ internal sealed class MultiplayerUiState
     internal void Reset()
     {
         Stage = MultiplayerStage.Connect;
+        Role = OnlineConnectRole.Host;
         Match = null;
         JoinCodeShown = string.Empty;
         IsHost = false;

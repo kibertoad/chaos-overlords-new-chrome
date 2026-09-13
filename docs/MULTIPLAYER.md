@@ -12,7 +12,9 @@ The game offers the official central service at `https://chaos-overlords.dinoref
 custom/self-hosted choice. Opening the Online screen probes the selected service's unversioned
 `GET /health` route and reports whether it is available before the player tries to host or join.
 Match discovery is intentionally code-based: a host receives an eight-character code and gives it
-to the other players. The existing public-lobby listing API is not exposed by the game UI.
+to the other players, with a lobby button available to copy it to the system clipboard. Host and
+Join are explicit connect-screen choices; the join-code field is disabled for a host. The existing
+public-lobby listing API is not exposed by the game UI.
 
 ## What the server is, and is not
 
