@@ -28,7 +28,7 @@ incremental outputs and MSBuild/Roslyn server reuse are retained because both
 materially speed repeated builds.
 
 At the current published checkpoint, the isolated Release build completes with
-zero warnings and all 1,495 tests pass. This count is a regression baseline,
+zero warnings and all 1,499 tests pass. This count is a regression baseline,
 not a measure of parity completeness. The runner has a 30-minute global safety
 timeout. AI tournament cases record their scenario and seed at startup, then
 report the turn, phase-boundary count, event count, and elapsed time every ten
@@ -45,6 +45,21 @@ restore, and Release build path:
 `-TestFilter` can select any narrower test slice; `-TraceTestOutput` exposes
 captured test output and completed-case names. Ordinary full validation remains
 compact.
+
+For larger statistical samples, the presentation-free runner avoids xUnit and
+lets replay verification be sampled rather than paid for on every match:
+
+```powershell
+dotnet run --project src/Rechaos.Tools -c Release --no-build -- ai-tournament `
+  --matches 60 --turns 40 --workers 2 --policy original `
+  --scenarios objectives --replay-every 10 --trace
+```
+
+Its periodic heartbeat remains visible without `--trace`; the trace adds each
+live case's scenario, seed, turn, boundary count, event count, and elapsed time.
+The final JSON includes deterministic hashes and territory, defended-territory,
+gang, combat, replay, and timing metrics. Run the same matrix with `--policy
+advanced` for a paired comparison.
 
 A small, stable worker pool is expected. If a prior interrupted run left stale
 workers, perform validation and then stop all .NET build servers owned by the

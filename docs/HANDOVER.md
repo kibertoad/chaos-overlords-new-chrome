@@ -10,7 +10,7 @@ Last updated: 2026-09-13
   every accepted checkpoint through managed Smacker startup playback;
   `codex/full-reimplementation` remains the development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passes all 1,495 tests with zero warnings.
+  isolated Release build passes all 1,499 tests with zero warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -22,6 +22,16 @@ Last updated: 2026-09-13
   migration/versioning machinery for post-1.0 compatibility.
 
 ## Latest playable work
+
+- `Rechaos.Tools ai-tournament` now drives presentation-free six-computer
+  matches directly through the authoritative model with bounded parallelism,
+  deterministic consecutive seeds, selectable Original/Advanced policy and
+  scenario sets, five-second heartbeats, optional turn/boundary/event traces,
+  stable JSON results, and configurable replay sampling. The shared core runner
+  never constructs graphics, audio, input, animation, or real-time pacing. A
+  12-match Advanced objective smoke sample through turn 15 completed with zero
+  failures and replay-verified 3/3 sampled matches; trace output made each live
+  match and its progress visible throughout the 13.4-second run.
 
 - Setup now exposes a default-off Original/Advanced AI policy with exact hover
   and F1 documentation. Advanced composes small transformations over the single

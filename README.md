@@ -103,6 +103,33 @@ presentation-only conveniences that make the original systems easier to read:
   data `Diagnostics` directory. It contains structured session events and crash
   summaries, while omitting private game data, exception messages, and paths.
 
+## Headless AI tournaments
+
+`Rechaos.Tools ai-tournament` runs computer-only matches directly against the
+authoritative model. It does not construct the game window or execute graphics,
+audio, input, animation, or real-time pacing. Cases use deterministic consecutive
+seeds and can run concurrently on a bounded number of workers. The command writes
+progress and optional per-turn traces to standard error, then emits one stable
+JSON report to standard output:
+
+```powershell
+dotnet run --project src/Rechaos.Tools -c Release --no-build -- ai-tournament `
+  --matches 60 --turns 40 --workers 2 --policy advanced `
+  --scenarios objectives --replay-every 10
+```
+
+The default five-second heartbeat shows completed, running, and failed counts.
+Use `--trace` for each match's turn, phase-boundary, event-count, and elapsed-time
+checkpoints. `--replay-every 0` disables the comparatively expensive replay pass;
+a positive value replay-verifies every Nth case while the other cases remain
+bare-model simulations. Use the same seed, scenario set, turn horizon, and worker
+count for statistically paired Original/Advanced runs.
+
+Parallelism is across independent matches. Seats inside one match remain ordered
+because planning preparation, hire offers, and command resolution consume shared
+deterministic state and RNG; online transport may collect order documents
+asynchronously, but every client still applies them in the same sealed order.
+
 ## Controls
 
 | Action | Keyboard | Mouse |
