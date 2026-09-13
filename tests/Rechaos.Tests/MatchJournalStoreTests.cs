@@ -2,6 +2,7 @@ using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Game;
+using Rechaos.Multiplayer.Generated;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -217,6 +218,84 @@ public sealed class MatchJournalStoreTests
                 MatchStateHasher.ComputeSha256(recorder.State),
                 MatchStateHasher.ComputeSha256(loaded));
             Assert.Null(SaveSlotCatalog.LoadJournal(directory, 8, loaded));
+        }
+        finally
+        {
+            Delete(directory);
+        }
+    }
+
+    /// <summary>
+    /// A journal carried across a save and a load still replays from its first turn, in the archive
+    /// a bug report actually sends.
+    /// </summary>
+    /// <remarks>
+    /// This is what the whole companion file is for: a maintainer holding a report needs to step the
+    /// match from turn one to find where a state went wrong, and the turns before the save are the
+    /// ones that matter. Adopting the journal at load rather than replaying it must not cost that —
+    /// the opening snapshot and every step still travel, and the report path replays and re-hashes
+    /// all of them on the way out. Runs the real path: play, save, load, play on, compose.
+    /// </remarks>
+    [Fact]
+    public void AJournalCarriedAcrossASaveStillReplaysFromTurnOneInTheReportItIsSentIn()
+    {
+        var directory = NewDirectory();
+        try
+        {
+            var definitions = BundledOriginalData.Load();
+            var before = new MatchReplayRecorder(TestMatches.Create("MARGARET"));
+            before.FinishUpkeep();
+            foreach (var player in before.State.Players) before.FinishCommand(player.Id);
+            var firstStepHashWhenNamed = before.Steps[0].ResultingStateSha256;
+            var stepsBeforeSave = before.StepCount;
+
+            SaveSlotCatalog.Save(directory, 6, "mid-match", before.State, false, before);
+
+            // The load the player actually performs, which now adopts rather than replays.
+            var loaded = SaveSlotCatalog.Load(directory, 6, definitions);
+            var resumed = SaveSlotCatalog.LoadJournal(directory, 6, loaded);
+            Assert.NotNull(resumed);
+
+            // Play on past the load, as a session that hits a bug after reloading does.
+            while (resumed.State.Coordinator.Phase == TurnPhase.Execution)
+                resumed.FinishExecutionPhase();
+            Assert.True(resumed.StepCount > stepsBeforeSave);
+
+            var composed = BugReportComposer.Compose(
+                "The turn went wrong after I reloaded.",
+                BugReportComposer.Capture(resumed, BugReportMatchType.Single),
+                includeState: true);
+
+            Assert.Equal(BugReportStateOutcome.Attached, composed.StateOutcome);
+            var state = Assert.IsType<BugReportState>(composed.Request.State);
+            var archive = Convert.FromBase64String(state.Body);
+
+            // Replay the sent archive from its first step, exactly as a maintainer would: this
+            // verifies every fingerprint on the way, including all the pre-save ones, and throws on
+            // the first step that does not reproduce.
+            var replayed = ReplayArchive.LoadAndReplay(archive, definitions);
+
+            // It arrives where the anonymized match ends — the names are part of the canonical hash,
+            // so this is the same state the player was in, played by differently named people.
+            Assert.Equal(
+                MatchStateHasher.ComputeSha256(ReplayAnonymizer.Anonymize(resumed).State),
+                MatchStateHasher.ComputeSha256(replayed));
+
+            // And it is the same match: the save-and-load in the middle changed nothing about where
+            // the session got to.
+            Assert.Equal(resumed.State.Coordinator.Turn, replayed.Coordinator.Turn);
+            Assert.Equal(resumed.State.Coordinator.Phase, replayed.Coordinator.Phase);
+
+            // The history really does start before the save rather than at it, and the names are
+            // still gone.
+            using var json = new MemoryStream(ReplayArchive.Unpack(archive), writable: false);
+            var sent = MatchReplaySerializer.TryLoadResumable(json, definitions);
+            Assert.NotNull(sent);
+            Assert.Equal(resumed.StepCount, sent.StepCount);
+            Assert.NotEqual(firstStepHashWhenNamed, sent.Steps[0].ResultingStateSha256);
+            Assert.Equal(
+                ["PLAYER 1", "PLAYER 2"],
+                replayed.Setup.Players.Select(player => player.Name));
         }
         finally
         {
