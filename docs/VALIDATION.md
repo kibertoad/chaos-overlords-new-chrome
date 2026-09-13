@@ -28,7 +28,7 @@ incremental outputs and MSBuild/Roslyn server reuse are retained because both
 materially speed repeated builds.
 
 At the current published checkpoint, the isolated Release build completes with
-zero warnings and all 1,448 tests pass. This count is a regression baseline,
+zero warnings and all 1,454 tests pass. This count is a regression baseline,
 not a measure of parity completeness.
 
 A small, stable worker pool is expected. If a prior interrupted run left stale

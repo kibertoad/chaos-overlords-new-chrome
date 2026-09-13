@@ -7,27 +7,27 @@ namespace Rechaos.Tests;
 
 public sealed class AiTournamentTests
 {
-    public static TheoryData<ScenarioId, int> ObjectiveStressCases => new()
+    private static readonly ScenarioId[] ObjectiveScenarios =
+    [
+        ScenarioId.KillEmAll,
+        ScenarioId.Big40,
+        ScenarioId.Eliminate,
+        ScenarioId.Siege,
+        ScenarioId.BigMan,
+        ScenarioId.Armageddon
+    ];
+
+    public static TheoryData<ScenarioId, int> ObjectiveStressCases
     {
-        { ScenarioId.KillEmAll, 1977 },
-        { ScenarioId.Big40, 1977 },
-        { ScenarioId.Eliminate, 1977 },
-        { ScenarioId.Siege, 1977 },
-        { ScenarioId.BigMan, 1977 },
-        { ScenarioId.Armageddon, 1977 },
-        { ScenarioId.KillEmAll, 4093 },
-        { ScenarioId.Big40, 4093 },
-        { ScenarioId.Eliminate, 4093 },
-        { ScenarioId.Siege, 4093 },
-        { ScenarioId.BigMan, 4093 },
-        { ScenarioId.Armageddon, 4093 },
-        { ScenarioId.KillEmAll, 12289 },
-        { ScenarioId.Big40, 12289 },
-        { ScenarioId.Eliminate, 12289 },
-        { ScenarioId.Siege, 12289 },
-        { ScenarioId.BigMan, 12289 },
-        { ScenarioId.Armageddon, 12289 }
-    };
+        get
+        {
+            var data = new TheoryData<ScenarioId, int>();
+            foreach (var seed in new[] { 1977, 4093, 12289, 32771 })
+            foreach (var scenario in ObjectiveScenarios)
+                data.Add(scenario, seed);
+            return data;
+        }
+    }
 
     [Theory]
     [InlineData(ScenarioId.Greed)]
@@ -88,6 +88,7 @@ public sealed class AiTournamentTests
             > MatchLimits.PlayerCount);
         Assert.Contains(campaign.State.Events,
             gameEvent => gameEvent.Kind == GameEventKind.HireResolved);
+        AssertObjectiveProgress(campaign.State, scenario, 7717);
         AssertReplayMatches(campaign);
     }
 
@@ -118,6 +119,7 @@ public sealed class AiTournamentTests
             gameEvent => gameEvent.Kind == GameEventKind.HireResolved);
         Assert.True(campaign.State.Sectors.Count(sector => sector.Owner is not null)
             > MatchLimits.PlayerCount);
+        AssertObjectiveProgress(campaign.State, scenario, seed);
         AssertReplayMatches(campaign);
     }
 
@@ -131,6 +133,45 @@ public sealed class AiTournamentTests
         Assert.Equal(
             MatchStateHasher.ComputeSha256(recorder.State),
             MatchStateHasher.ComputeSha256(replayed));
+    }
+
+    private static void AssertObjectiveProgress(MatchState state, ScenarioId scenario, int seed)
+    {
+        var attackEvents = state.Events
+            .Where(gameEvent => gameEvent.Action == GangAction.Attack)
+            .ToArray();
+        var negativeAttitudes = state.Players.Sum(observer => state.Players.Count(other =>
+            observer.Id != other.Id && state.AiStrategy.IsHostile(observer.Id, other.Id)));
+        var message = $"{scenario} seed {seed} did not make scenario-specific progress: "
+            + $"{attackEvents.Length} attack events, "
+            + $"{attackEvents.Count(gameEvent =>
+                gameEvent.Kind == GameEventKind.CommandResolved)} resolved, "
+            + $"{negativeAttitudes} hostile player pairs.";
+        if (scenario == ScenarioId.KillEmAll)
+        {
+            Assert.True(attackEvents.Length > 0 || negativeAttitudes == 0, message);
+            return;
+        }
+        if (scenario == ScenarioId.Eliminate)
+        {
+            Assert.True(attackEvents.Any(gameEvent =>
+                gameEvent.Kind == GameEventKind.CommandResolved
+                && gameEvent.Resolution?.Code == CommandResolutionCode.Resolved
+                && (gameEvent.Resolution.Damage > 0
+                    || gameEvent.Resolution.RetaliationDamage > 0)), message);
+            return;
+        }
+
+        var maximumControlled = state.Players
+            .Where(player => player.Status == PlayerStatus.Active)
+            .Max(player => scenario == ScenarioId.Siege
+                ? state.Sectors.Count(sector => sector.IsImportant && sector.Owner == player.Id)
+                : state.Sectors.Count(sector => sector.Owner == player.Id));
+        var resolvedAttack = attackEvents.Any(
+            gameEvent => gameEvent.Kind == GameEventKind.CommandResolved);
+        Assert.True(maximumControlled >= 2
+                    || scenario == ScenarioId.Siege && resolvedAttack,
+            message);
     }
 
     private static MatchReplayRecorder DriveMatch(

@@ -10,7 +10,7 @@ Last updated: 2026-09-13
   every accepted checkpoint through managed Smacker startup playback;
   `codex/full-reimplementation` remains the development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,448 tests with zero warnings.
+  isolated Release build passed all 1,454 tests with zero warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -327,9 +327,12 @@ Last updated: 2026-09-13
   and explicitly provisional fallback scoring. The next AI gate is evidence,
   not another structural rewrite: fixed original-runtime traces plus multi-seed
   tournament coverage. Six-computer deterministic/replay fixtures now exercise
-  all objectives through live-equivalent 40-turn campaigns across four guarded
-  seeds with offer refills, resolved hires, territorial expansion, and replay
-  verification. Big Man completes by turn 60 at one guarded seed; Kill 'Em All,
+  all objectives through live-equivalent 40-turn campaigns across five guarded
+  seeds with offer refills, resolved hires, territorial expansion, scenario-
+  specific combat/control signals, and replay verification. The Kill 'Em All
+  guard respects the recovered rule that neutral all-computer Criminal matches
+  do not invent hostility, while requiring attack activity whenever hostility
+  exists. Big Man completes by turn 60 at one guarded seed; Kill 'Em All,
   Big 40, Eliminate, Siege, and Armageddon still need evidence-led completion
   policy, so that
   remains an explicit M6 gap. Eliminated planning slots are skipped through
