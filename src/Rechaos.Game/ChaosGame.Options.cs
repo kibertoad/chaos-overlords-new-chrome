@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
@@ -18,13 +19,14 @@ public static class OptionsLayout
         Enumerable.Range(0, AudioRouting.MaximumEffectVolumeLevel + 1)
             .Select(level => new Rectangle(132 + level * 34, 140, 28, 28))
             .ToArray();
-    public static Rectangle BaseStatistics => new(150, 176, 340, 28);
-    public static Rectangle DetailedCombat => new(150, 208, 340, 28);
-    public static Rectangle SlidePanels => new(150, 240, 340, 28);
-    public static Rectangle WarnIfIdleGangs => new(150, 272, 340, 28);
-    public static Rectangle EventSiteImages => new(150, 304, 340, 28);
-    public static Rectangle ExportDiagnostics => new(150, 336, 340, 28);
-    public static Rectangle ColorDepth => new(150, 366, 340, 16);
+    public static Rectangle BaseStatistics => new(150, 174, 340, 26);
+    public static Rectangle DetailedCombat => new(150, 202, 340, 26);
+    public static Rectangle SlidePanels => new(150, 230, 340, 26);
+    public static Rectangle WarnIfIdleGangs => new(150, 258, 340, 26);
+    public static Rectangle EventSiteImages => new(150, 286, 340, 26);
+    public static Rectangle AdvancedAiDefault => new(150, 314, 340, 26);
+    public static Rectangle ExportDiagnostics => new(150, 342, 340, 26);
+    public static Rectangle ColorDepth => new(150, 370, 340, 16);
 }
 
 public static class OptionsTooltip
@@ -49,11 +51,22 @@ public static class OptionsTooltip
                 "ORIGINAL USES THE NATIVE STRETCH AND ORDERED DITHER.",
                 "SMOOTH USES LINEAR FILTERING FOR A CLEANER ENLARGEMENT."
             ];
+        if (OptionsLayout.AdvancedAiDefault.Contains(point))
+            return [
+                "ADVANCED AI DEFAULT",
+                "SETS THE INITIAL AI POLICY FOR FUTURE NEW MATCHES.",
+                "NEW MATCHES STORE THIS CHOICE AS PART OF THEIR GAME RULES.",
+                "IT DOES NOT CHANGE A MATCH ALREADY IN PROGRESS OR A LOADED SAVE."
+            ];
         if (OptionsLayout.ExportDiagnostics.Contains(point))
             return [
                 "EXPORT DIAGNOSTICS",
-                "CREATES A SHAREABLE ZIP IN APP DATA/DIAGNOSTICS.",
-                "PRIVATE GAME DATA, EXCEPTION MESSAGES, AND FILE PATHS ARE OMITTED."
+                "SAVES RECENT APP EVENTS AND CRASH SUMMARIES TO A LOCAL ZIP.",
+                "USE IT FOR STARTUP, DISPLAY, AUDIO, OR CRASH PROBLEMS.",
+                "IT SENDS NOTHING AND DOES NOT INCLUDE REPLAYABLE MATCH STATE.",
+                "REPORT BUG SENDS YOUR DESCRIPTION AND OPTIONAL ANONYMIZED REPLAY.",
+                "DIAGNOSTICS HELPS WITH CLIENT PROBLEMS A MATCH REPLAY CANNOT SHOW.",
+                "NAMES, COMMANDS, SAVES, MESSAGES, AND FILE PATHS ARE OMITTED."
             ];
         if (OptionsLayout.ColorDepth.Contains(point))
             return [
@@ -103,11 +116,11 @@ public sealed partial class ChaosGame
     private void UpdateOptions(KeyboardState keyboard)
     {
         if (Pressed(keyboard, Keys.Up)) _optionsRow = Math.Max(0, _optionsRow - 1);
-        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(7, _optionsRow + 1);
+        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(8, _optionsRow + 1);
         if (Pressed(keyboard, Keys.Left)) ChangeSelectedVolume(-1);
         if (Pressed(keyboard, Keys.Right)) ChangeSelectedVolume(1);
         if (_optionsRow >= 2 && Pressed(keyboard, Keys.Space)) ToggleSelectedOption();
-        if (Pressed(keyboard, Keys.Enter) && _optionsRow == 7)
+        if (Pressed(keyboard, Keys.Enter) && _optionsRow == 8)
             ExportDiagnostics();
         else if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Back)
                  || Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.O))
@@ -156,9 +169,14 @@ public sealed partial class ChaosGame
             _optionsRow = 6;
             ToggleEventSiteImageFilter();
         }
-        else if (OptionsLayout.ExportDiagnostics.Contains(point))
+        else if (OptionsLayout.AdvancedAiDefault.Contains(point))
         {
             _optionsRow = 7;
+            ToggleAdvancedAiDefault();
+        }
+        else if (OptionsLayout.ExportDiagnostics.Contains(point))
+        {
+            _optionsRow = 8;
             ExportDiagnostics();
         }
         else if (OptionsLayout.ColorDepth.Contains(point))
@@ -175,7 +193,7 @@ public sealed partial class ChaosGame
                 _soundEffectVolumeLevel + delta,
                 AudioRouting.MinimumEffectVolumeLevel,
                 AudioRouting.MaximumEffectVolumeLevel));
-        else if (_optionsRow <= 6) ToggleSelectedOption();
+        else if (_optionsRow <= 7) ToggleSelectedOption();
     }
 
     private void ToggleSelectedOption()
@@ -185,7 +203,8 @@ public sealed partial class ChaosGame
         else if (_optionsRow == 4) ToggleSlidePanels();
         else if (_optionsRow == 5) ToggleIdleGangWarning();
         else if (_optionsRow == 6) ToggleEventSiteImageFilter();
-        else if (_optionsRow == 7) ExportDiagnostics();
+        else if (_optionsRow == 7) ToggleAdvancedAiDefault();
+        else if (_optionsRow == 8) ExportDiagnostics();
     }
 
     private void ToggleBaseStatistics()
@@ -257,6 +276,16 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
+    private void ToggleAdvancedAiDefault()
+    {
+        _defaultAiPolicy = _defaultAiPolicy == AiPolicyMode.Original
+            ? AiPolicyMode.Advanced
+            : AiPolicyMode.Original;
+        SavePreferences();
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _message = string.Empty;
+    }
+
     private void ExportDiagnostics()
     {
         var result = _diagnostics?.Export();
@@ -282,7 +311,8 @@ public sealed partial class ChaosGame
                 _slidePanels,
                 _fullscreen,
                 _smoothEventSiteImages,
-                _introMoviesSeen));
+                _introMoviesSeen,
+                _defaultAiPolicy));
 
     private void ToggleFullscreen()
     {
@@ -334,16 +364,18 @@ public sealed partial class ChaosGame
             $"WARN IF IDLE GANGS: {(_warnIfIdleGangs ? "ON" : "OFF")}", 5);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.EventSiteImages,
             $"EVENT SITE IMAGES: {(_smoothEventSiteImages ? "SMOOTH" : "ORIGINAL")}", 6);
+        DrawOptionToggle(batch, pixel, font, OptionsLayout.AdvancedAiDefault,
+            $"ADVANCED AI DEFAULT: {(_defaultAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", 7);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ExportDiagnostics,
-            "EXPORT DIAGNOSTICS", 7);
-        DrawCentered(font, batch, "THOUSANDS OF COLORS: ALWAYS ON", 369,
+            "EXPORT DIAGNOSTICS", 8);
+        DrawCentered(font, batch, "THOUSANDS OF COLORS: ALWAYS ON", 373,
             new Color(185, 195, 195), 1);
 
         DrawCentered(font, batch,
             string.IsNullOrEmpty(_optionsStatus)
                 ? "F11 DISPLAY  UP/DOWN SELECTS  LEFT/RIGHT ADJUSTS"
                 : _optionsStatus,
-            384,
+            388,
             new Color(185, 195, 195), 1);
         DrawButton(batch, pixel, font, OptionsLayout.Done, "DONE", true);
         if (_hoverPoint is { } hover)

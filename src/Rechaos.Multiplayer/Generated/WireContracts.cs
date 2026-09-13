@@ -351,7 +351,8 @@ public sealed record BugReportContext(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("phase")] string Phase,
     [property: JsonPropertyName("humanPlayers")] int HumanPlayers,
-    [property: JsonPropertyName("computerPlayers")] int ComputerPlayers
+    [property: JsonPropertyName("computerPlayers")] int ComputerPlayers,
+    [property: JsonPropertyName("aiPolicy"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? AiPolicy
 );
 
 public sealed record BugReportState(

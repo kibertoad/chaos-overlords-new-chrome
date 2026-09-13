@@ -94,6 +94,7 @@ public sealed class BugReportComposerTests
         Assert.Equal(recorder.State.Coordinator.Phase.ToString(), context.Phase);
         Assert.Equal(2, context.HumanPlayers);
         Assert.Equal(0, context.ComputerPlayers);
+        Assert.Equal(AiPolicyMode.Original.ToString(), context.AiPolicy);
         Assert.NotEmpty(composed.Request.Client.Version);
         Assert.NotEmpty(composed.Request.Client.Platform);
     }

@@ -120,6 +120,8 @@ export const bugReportContextSchema = strictObject({
   phase: bugReportLabelSchema,
   humanPlayers: bugReportCountSchema,
   computerPlayers: bugReportCountSchema,
+  /** Original or Advanced command planning, stored with the match from its creation. */
+  aiPolicy: optional(bugReportLabelSchema),
 })
 
 /**

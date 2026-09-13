@@ -1,4 +1,5 @@
 using Rechaos.Game;
+using Rechaos.Core.GameModel;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -25,6 +26,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(OriginalOptionsPolicy.SmoothEventSiteImagesByDefault,
             preferences.SmoothEventSiteImages);
         Assert.Equal(GamePreferences.IntroMoviesSeenByDefault, preferences.IntroMoviesSeen);
+        Assert.Equal(OriginalOptionsPolicy.AiPolicyByDefault, preferences.DefaultAiPolicy);
     }
 
     [Fact]
@@ -32,7 +34,8 @@ public sealed class GamePreferencesStoreTests : IDisposable
     {
         var expected = new GamePreferences(
             GamePreferences.CurrentFormatVersion, 8, 3, false,
-            PlanningTimeLimit.TwoMinutes, true, false, false, true, true, true);
+            PlanningTimeLimit.TwoMinutes, true, false, false, true, true, true,
+            AiPolicyMode.Advanced);
 
         Assert.True(GamePreferencesStore.TrySave(Path(), expected));
 
@@ -120,6 +123,26 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.True(preferences.Fullscreen);
         Assert.True(preferences.SmoothEventSiteImages);
         Assert.False(preferences.IntroMoviesSeen);
+        Assert.Equal(AiPolicyMode.Original, preferences.DefaultAiPolicy);
+    }
+
+    [Fact]
+    public void VersionEightPreferencesMigrateWithOriginalAiAsTheNewMatchDefault()
+    {
+        File.WriteAllText(Path(), """
+            {"FormatVersion":8,"MusicVolumeLevel":8,"SoundEffectVolumeLevel":3,
+             "WarnIfIdleGangs":false,"PlanningTimeLimit":2,
+             "ShowBaseStatistics":true,"DetailedCombat":false,"SlidePanels":true,
+             "Fullscreen":true,"SmoothEventSiteImages":true,"IntroMoviesSeen":true}
+            """);
+
+        var preferences = GamePreferencesStore.LoadOrDefault(Path());
+
+        Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
+        Assert.True(preferences.SlidePanels);
+        Assert.True(preferences.SmoothEventSiteImages);
+        Assert.True(preferences.IntroMoviesSeen);
+        Assert.Equal(AiPolicyMode.Original, preferences.DefaultAiPolicy);
     }
 
     [Theory]
@@ -144,7 +167,19 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.False(GamePreferencesStore.TrySave(
             Path(), new GamePreferences(
                 GamePreferences.CurrentFormatVersion, -1, 5, true,
-                PlanningTimeLimit.None, false, true, true, false, false, false)));
+                PlanningTimeLimit.None, false, true, false, false, false, false,
+                AiPolicyMode.Original)));
+        Assert.False(File.Exists(Path()));
+    }
+
+    [Fact]
+    public void InvalidAiPolicyIsNotWritten()
+    {
+        Assert.False(GamePreferencesStore.TrySave(
+            Path(), new GamePreferences(
+                GamePreferences.CurrentFormatVersion, 5, 5, true,
+                PlanningTimeLimit.None, false, true, false, false, false, false,
+                (AiPolicyMode)99)));
         Assert.False(File.Exists(Path()));
     }
 

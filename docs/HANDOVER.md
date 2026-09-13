@@ -43,8 +43,11 @@ Last updated: 2026-09-13
   failures and replay-verified 3/3 sampled matches; trace output made each live
   match and its progress visible throughout the 13.4-second run.
 
-- Setup now exposes a default-off Original/Advanced AI policy with exact hover
-  and F1 documentation. Advanced composes small transformations over the single
+- Options now exposes a persistent, default-off Advanced AI default for future
+  new matches, with explicit hover and F1 documentation that active and loaded
+  matches retain their stored policy. Save-slot details and the Report Bug panel
+  identify that stored policy, and bug-report context sends it as a triage field.
+  Advanced composes small transformations over the single
   Original planner: deterministic legal recovery for idle gangs, plus a
   Crime-Lord/Homicidal expansion rule that moves healthy gangs outward when
   they would remain idle or repeat Hide, Snitch, or Bribe. Goon and Criminal
@@ -391,8 +394,10 @@ Last updated: 2026-09-13
   remains an explicit M6 gap. Eliminated planning slots are skipped through
   replay-recorded transitions, and negative effective Stealth is safely bounded
   to 100% police detection.
-- Options now uses the recovered defaults: Current gang statistics, Detailed
-  Combat on, Slide Panels on, and Warn If Idle Gangs on, and persists those
+- Options defaults to Current gang statistics, Detailed Combat on, Slide Panels
+  off, Warn If Idle Gangs on, Original Event Site Images, and Original AI for
+  future new matches. The disabled panel-motion default is an intentional
+  usability change from the recovered original default. Options persists those
   choices alongside audio, the planning timer, and a recreation-native
   windowed/borderless-fullscreen mode. F11 switches display mode from any screen
   and the choice survives relaunch; version-4 and version-5 preferences migrate

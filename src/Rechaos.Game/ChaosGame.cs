@@ -229,6 +229,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _fullscreen = preferences.Fullscreen;
         _smoothEventSiteImages = preferences.SmoothEventSiteImages;
         _introMoviesSeen = preferences.IntroMoviesSeen;
+        _defaultAiPolicy = preferences.DefaultAiPolicy;
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -802,7 +803,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         switch (_screens.Current)
         {
             case ClientScreen.Title:
-                if (TitleNewGame.Contains(point)) _screens.Show(ClientScreen.Setup);
+                if (TitleNewGame.Contains(point)) OpenNewGameSetup();
                 else if (TitleLoadGame.Contains(point)) OpenSaveBrowser(saving: false, fromTitle: true);
                 else if (TitleOnline.Contains(point)) OpenOnline();
                 else if (TitleOptions.Contains(point)) OpenOptions();
@@ -850,8 +851,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     SelectSetupDurationButton(duration);
                 else if (planningTimeLimit >= 0)
                     SelectPlanningTimeLimit((PlanningTimeLimit)planningTimeLimit);
-                else if (SetupAiPolicy.Contains(point))
-                    CycleAiPolicy();
                 else if (previousPortrait >= 0) CyclePortrait(previousPortrait, -1);
                 else if (nextPortrait >= 0) CyclePortrait(nextPortrait, 1);
                 else if (draggedPlayer >= 0) BeginSetupPlayerDrag(draggedPlayer, point);

@@ -239,7 +239,11 @@ public sealed partial class ChaosGame
         batch.Draw(pixel, panel, new Color(12, 20, 20, 252));
         DrawBorder(batch, pixel, panel, Color.Gold, 2);
         DrawCentered(font, batch, "REPORT BUG", 56, Color.Gold, 2);
-        font.Draw(batch, "WHAT WENT WRONG?", new Vector2(76, 78), Color.LightGray, 1);
+        var aiPolicy = _state is null
+            ? "NO MATCH"
+            : $"{AiPolicyPresentation.Label(_state.Setup.AiPolicy)} AI";
+        font.Draw(batch, $"WHAT WENT WRONG?   MATCH POLICY: {aiPolicy}",
+            new Vector2(76, 78), Color.LightGray, 1);
 
         var box = BugReportLayout.Message;
         batch.Draw(pixel, box, Color.Black);

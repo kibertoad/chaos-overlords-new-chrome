@@ -20,7 +20,7 @@ public sealed class SaveSlotCatalogTests
                 [
                     new MatchPlayerSetup(new PlayerId(0), "ONE", PlayerController.Human),
                     new MatchPlayerSetup(new PlayerId(1), "TWO", PlayerController.Human)
-                ]);
+                ], aiPolicy: AiPolicyMode.Advanced);
             var state = OriginalMatchFactory.Create(definitions, setup);
 
             var saved = SaveSlotCatalog.Save(directory, 8, "Friday campaign", state, online: false);
@@ -33,6 +33,8 @@ public sealed class SaveSlotCatalogTests
             Assert.Equal(4, read.AiPlayers);
             Assert.Equal("HOT SEAT", read.MatchType);
             Assert.Contains("H2 A4", read.Details);
+            Assert.Equal(AiPolicyMode.Advanced, read.AiPolicy);
+            Assert.Contains("ADVANCED AI", read.Details);
             Assert.NotNull(SaveSlotCatalog.Load(directory, 8, definitions));
             Assert.Null(SaveSlotCatalog.Read(directory, 0, definitions));
         }

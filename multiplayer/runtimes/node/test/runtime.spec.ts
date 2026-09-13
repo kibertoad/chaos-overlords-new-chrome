@@ -112,6 +112,7 @@ describe('node runtime bug report intake', () => {
           phase: 'Command',
           humanPlayers: 1,
           computerPlayers: 5,
+          aiPolicy: 'Advanced',
         },
         state: {
           codec: 'brotli',

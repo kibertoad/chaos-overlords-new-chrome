@@ -40,7 +40,7 @@ system are tracked in the [parity matrix](docs/PARITY-MATRIX.md).
 | Area | Available now |
 |---|---|
 | Installation and assets | Windows, Linux, and macOS packaging can verify a supported legal GOG installation and import the required assets. The transactional extractor repairs RGB555 graphics, decodes indexed graphics and WinHelp content, imports audio/music/video, validates exact output inventories and hashes, and never copies the original executable. |
-| New Game setup | All ten scenarios are mapped to their correct visual buttons and default to Greed. Every mode and game-length button has a rules tooltip. The four duration choices are active only for the timed Greed, Power, Acceptance, and Dominance modes; objective modes run until their goal is reached, hide the duration selection light, and explain why duration clicks are disabled. Setup supports the global AI Mentality, default-off Original/Advanced AI policy, one-to-six named local humans, portrait/color rearrangement, six total participants after AI fill, and optional None/30-second/2-minute/5-minute planning clocks. |
+| New Game setup | All ten scenarios are mapped to their correct visual buttons and default to Greed. Every mode and game-length button has a rules tooltip. The four duration choices are active only for the timed Greed, Power, Acceptance, and Dominance modes; objective modes run until their goal is reached, hide the duration selection light, and explain why duration clicks are disabled. Setup supports the global AI Mentality, the persisted default-off Advanced AI choice from Options, one-to-six named local humans, portrait/color rearrangement, six total participants after AI fill, and optional None/30-second/2-minute/5-minute planning clocks. |
 | Local and hot-seat play | Deterministic turns run through Upkeep, Command, Execution, Hire, and Elimination. Multiple local humans receive the original private handoff screen. The optional idle-gang warning prevents accidental completion while an active gang has no order. |
 | Commands and economy | All 14 original actions are validated, queued, cancelled, and resolved, with the recovered recurring subset enforced. Dragging a gang onto a neighboring sector queues Move, onto an eligible site queues Influence, and onto a visible enemy gang queues Attack. Hire, Reject, Equip, Give, multi-item Sell, Research, Bribe, Chaos, Control, Heal, Hide, Snitch, and Terminate are playable. Cash, upkeep, sector tax, influenced-site income, debt restrictions, site effects, delayed Influence activation, and the recovered Factory/Sell rules are represented. |
 | City, sector, and management UI | The 640x460 interface includes the 8x8 city, 3x3 detailed-sector neighborhood, up to six gang cards, three equipped-item cells in Gang Information, site/item details, City and Sector Finance, Ranking, Hire comparison, Comlink, Game Info, Research/Equipment, Give/Sell, Combat Summary/Detail, Options, Help, and endgame panels. Mouse and keyboard input, right-click cancellation, nested-panel return, panel-motion control, and windowed/borderless-fullscreen presentation are wired. |
@@ -105,8 +105,12 @@ presentation-only conveniences that make the original systems easier to read:
   Alt+Enter, and foreground panel motion can be disabled without changing game
   rules or deterministic state.
 - Options can explicitly export a bounded support ZIP to the local application-
-  data `Diagnostics` directory. It contains structured session events and crash
-  summaries, while omitting private game data, exception messages, and paths.
+  data `Diagnostics` directory. It contains recent client/session events and
+  privacy-filtered crash summaries for startup, display, audio, and crash
+  troubleshooting. The ZIP stays local until the user shares it, contains no
+  replayable match state, and omits names, commands, saves, Comlink messages,
+  exception messages, and file paths. This complements Report Bug: that feature
+  sends a written description and, optionally, an anonymized replay of the match.
 
 ## Headless AI tournaments
 

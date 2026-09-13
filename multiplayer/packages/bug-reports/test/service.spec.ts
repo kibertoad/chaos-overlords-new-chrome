@@ -42,6 +42,7 @@ function request(overrides: Partial<SubmitBugReportRequest> = {}): SubmitBugRepo
       phase: 'Command',
       humanPlayers: 1,
       computerPlayers: 5,
+      aiPolicy: 'Advanced',
     },
     ...overrides,
   }

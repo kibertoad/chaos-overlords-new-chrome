@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
@@ -7,9 +8,10 @@ public static class OriginalOptionsPolicy
     public const bool WarnIfIdleGangsByDefault = true;
     public const bool ShowBaseStatisticsByDefault = false;
     public const bool DetailedCombatByDefault = true;
-    public const bool SlidePanelsByDefault = true;
+    public const bool SlidePanelsByDefault = false;
     public const bool FullscreenByDefault = false;
     public const bool SmoothEventSiteImagesByDefault = false;
+    public const AiPolicyMode AiPolicyByDefault = AiPolicyMode.Original;
 }
 
 public sealed record GamePreferences(
@@ -23,9 +25,10 @@ public sealed record GamePreferences(
     bool SlidePanels,
     bool Fullscreen,
     bool SmoothEventSiteImages,
-    bool IntroMoviesSeen)
+    bool IntroMoviesSeen,
+    AiPolicyMode DefaultAiPolicy)
 {
-    public const int CurrentFormatVersion = 8;
+    public const int CurrentFormatVersion = 9;
 
     /// <summary>Preferences that have never recorded a showing leave the intro owed, so the
     /// first run streams it; the title screen replays it on request from then on.</summary>
@@ -42,7 +45,8 @@ public sealed record GamePreferences(
             OriginalOptionsPolicy.SlidePanelsByDefault,
             OriginalOptionsPolicy.FullscreenByDefault,
             OriginalOptionsPolicy.SmoothEventSiteImagesByDefault,
-            IntroMoviesSeenByDefault);
+            IntroMoviesSeenByDefault,
+            OriginalOptionsPolicy.AiPolicyByDefault);
 }
 
 public static class GamePreferencesStore
@@ -77,7 +81,8 @@ public static class GamePreferencesStore
                         OriginalOptionsPolicy.SlidePanelsByDefault,
                         OriginalOptionsPolicy.FullscreenByDefault,
                         OriginalOptionsPolicy.SmoothEventSiteImagesByDefault,
-                        GamePreferences.IntroMoviesSeenByDefault)
+                        GamePreferences.IntroMoviesSeenByDefault,
+                        OriginalOptionsPolicy.AiPolicyByDefault)
                     : GamePreferences.Default;
             }
             if (version.GetInt32() == 5)
@@ -90,7 +95,8 @@ public static class GamePreferencesStore
                         legacy.ShowBaseStatistics, legacy.DetailedCombat,
                         legacy.SlidePanels, OriginalOptionsPolicy.FullscreenByDefault,
                         OriginalOptionsPolicy.SmoothEventSiteImagesByDefault,
-                        GamePreferences.IntroMoviesSeenByDefault)
+                        GamePreferences.IntroMoviesSeenByDefault,
+                        OriginalOptionsPolicy.AiPolicyByDefault)
                     : GamePreferences.Default;
             }
             if (version.GetInt32() == 6)
@@ -103,7 +109,8 @@ public static class GamePreferencesStore
                         legacy.ShowBaseStatistics, legacy.DetailedCombat,
                         legacy.SlidePanels, legacy.Fullscreen,
                         OriginalOptionsPolicy.SmoothEventSiteImagesByDefault,
-                        GamePreferences.IntroMoviesSeenByDefault)
+                        GamePreferences.IntroMoviesSeenByDefault,
+                        OriginalOptionsPolicy.AiPolicyByDefault)
                     : GamePreferences.Default;
             }
             if (version.GetInt32() == 7)
@@ -116,7 +123,21 @@ public static class GamePreferencesStore
                         legacy.ShowBaseStatistics, legacy.DetailedCombat,
                         legacy.SlidePanels, legacy.Fullscreen,
                         legacy.SmoothEventSiteImages,
-                        GamePreferences.IntroMoviesSeenByDefault)
+                        GamePreferences.IntroMoviesSeenByDefault,
+                        OriginalOptionsPolicy.AiPolicyByDefault)
+                    : GamePreferences.Default;
+            }
+            if (version.GetInt32() == 8)
+            {
+                var legacy = JsonSerializer.Deserialize<VersionEightPreferences>(bytes, JsonOptions);
+                return IsValid(legacy)
+                    ? new GamePreferences(GamePreferences.CurrentFormatVersion,
+                        legacy!.MusicVolumeLevel, legacy.SoundEffectVolumeLevel,
+                        legacy.WarnIfIdleGangs, legacy.PlanningTimeLimit,
+                        legacy.ShowBaseStatistics, legacy.DetailedCombat,
+                        legacy.SlidePanels, legacy.Fullscreen,
+                        legacy.SmoothEventSiteImages, legacy.IntroMoviesSeen,
+                        OriginalOptionsPolicy.AiPolicyByDefault)
                     : GamePreferences.Default;
             }
             var preferences = JsonSerializer.Deserialize<GamePreferences>(bytes, JsonOptions);
@@ -169,7 +190,8 @@ public static class GamePreferencesStore
                 and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
             SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
                 and <= AudioRouting.MaximumEffectVolumeLevel
-        } && Enum.IsDefined(preferences.PlanningTimeLimit);
+        } && Enum.IsDefined(preferences.PlanningTimeLimit)
+          && Enum.IsDefined(preferences.DefaultAiPolicy);
 
     private static bool IsValid(VersionFourPreferences? preferences) =>
         preferences is
@@ -205,6 +227,16 @@ public static class GamePreferencesStore
         preferences is
         {
             FormatVersion: 6,
+            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
+                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
+            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
+                and <= AudioRouting.MaximumEffectVolumeLevel
+        } && Enum.IsDefined(preferences.PlanningTimeLimit);
+
+    private static bool IsValid(VersionEightPreferences? preferences) =>
+        preferences is
+        {
+            FormatVersion: 8,
             MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
                 and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
             SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
@@ -250,4 +282,17 @@ public static class GamePreferencesStore
         bool SlidePanels,
         bool Fullscreen,
         bool SmoothEventSiteImages);
+
+    private sealed record VersionEightPreferences(
+        int FormatVersion,
+        int MusicVolumeLevel,
+        int SoundEffectVolumeLevel,
+        bool WarnIfIdleGangs,
+        PlanningTimeLimit PlanningTimeLimit,
+        bool ShowBaseStatistics,
+        bool DetailedCombat,
+        bool SlidePanels,
+        bool Fullscreen,
+        bool SmoothEventSiteImages,
+        bool IntroMoviesSeen);
 }

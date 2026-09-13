@@ -13,12 +13,13 @@ public sealed record SaveSlotSummary(
     int HumanPlayers,
     int AiPlayers,
     string MatchType,
+    AiPolicyMode AiPolicy,
     bool RecoveredFromBackup = false,
     bool PrimaryRepaired = false)
 {
     public string Details =>
         $"{Timestamp.ToLocalTime():yyyy-MM-dd HH:mm}  {Scenario.ToString().ToUpperInvariant()}  "
-        + $"{MatchType}  H{HumanPlayers} A{AiPlayers}"
+        + $"{MatchType}  H{HumanPlayers} A{AiPlayers}  {AiPolicyPresentation.Label(AiPolicy)} AI"
         + (RecoveredFromBackup
             ? PrimaryRepaired ? "  RECOVERED" : "  BACKUP ONLY"
             : string.Empty);
@@ -161,7 +162,7 @@ public static class SaveSlotCatalog
         var matchType = online ? "ONLINE" : humans > 1 ? "HOT SEAT" : "SINGLE";
         return new SaveSlotSummary(slot,
             string.IsNullOrWhiteSpace(name) ? SuggestedName(state) : name,
-            timestamp, state.Setup.Scenario, humans, ai, matchType,
+            timestamp, state.Setup.Scenario, humans, ai, matchType, state.Setup.AiPolicy,
             recoveredFromBackup, primaryRepaired);
     }
 

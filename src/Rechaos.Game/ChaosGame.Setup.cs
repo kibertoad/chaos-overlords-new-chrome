@@ -8,9 +8,8 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private static readonly Rectangle SetupAiPolicy = new(306, 328, 58, 92);
     private AiDifficulty _selectedAiMentality = AiDifficulty.Criminal;
-    private AiPolicyMode _selectedAiPolicy = AiPolicyMode.Original;
+    private AiPolicyMode _defaultAiPolicy = OriginalOptionsPolicy.AiPolicyByDefault;
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
     private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
@@ -24,8 +23,13 @@ public sealed partial class ChaosGame
 
     private void UpdateTitle(KeyboardState keyboard)
     {
-        if (Pressed(keyboard, Keys.Enter)) _screens.Show(ClientScreen.Setup);
+        if (Pressed(keyboard, Keys.Enter)) OpenNewGameSetup();
         if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false, fromTitle: true);
+    }
+
+    private void OpenNewGameSetup()
+    {
+        _screens.Show(ClientScreen.Setup);
     }
 
     private void UpdateSetup(KeyboardState keyboard)
@@ -37,7 +41,6 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.OemMinus)) ChangePlayerCount(-1);
         if (Pressed(keyboard, Keys.OemPlus)) ChangePlayerCount(1);
         if (Pressed(keyboard, Keys.M)) CycleDifficulty();
-        if (Pressed(keyboard, Keys.A)) CycleAiPolicy();
         if (Pressed(keyboard, Keys.L)) CyclePlanningTimeLimit();
         if (Pressed(keyboard, Keys.Enter)) StartMatch();
     }
@@ -204,15 +207,6 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
-    private void CycleAiPolicy()
-    {
-        _selectedAiPolicy = _selectedAiPolicy == AiPolicyMode.Original
-            ? AiPolicyMode.Advanced
-            : AiPolicyMode.Original;
-        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
-        _message = AiPolicyPresentation.SelectionMessage(_selectedAiPolicy);
-    }
-
     private void CyclePortrait(int player, int delta)
     {
         if (!_localSetupRoster.IsHuman(player)) return;
@@ -277,7 +271,7 @@ public sealed partial class ChaosGame
         var setup = new MatchSetup(
             _selectedScenario, _selectedDuration, _originalProcessSeed, players,
             _selectedAiMentality, allowSparsePlayerIds: true,
-            aiPolicy: _selectedAiPolicy);
+            aiPolicy: _defaultAiPolicy);
         _diagnostics?.Write("match.started", new Dictionary<string, string?>
         {
             ["scenario"] = _selectedScenario.ToString(),
@@ -285,7 +279,7 @@ public sealed partial class ChaosGame
             ["configuredPlayers"] = _localSetupRoster.Count.ToString(),
             ["computerPlayers"] = "0",
             ["mentality"] = _selectedAiMentality.ToString(),
-            ["aiPolicy"] = _selectedAiPolicy.ToString(),
+            ["aiPolicy"] = _defaultAiPolicy.ToString(),
             ["seed"] = setup.InitialSeed.ToString()
         });
         _state = OriginalMatchFactory.Create(_definitions, setup);
@@ -382,15 +376,6 @@ public sealed partial class ChaosGame
             OriginalSelectionLightLayout.AiMentality((int)_selectedAiMentality));
         DrawSelectionLight(batch, pixel,
             OriginalSelectionLightLayout.PlanningTime((int)_selectedPlanningTimeLimit));
-        batch.Draw(pixel, SetupAiPolicy, new Color(8, 18, 16, 235));
-        DrawBorder(batch, pixel, SetupAiPolicy,
-            _selectedAiPolicy == AiPolicyMode.Advanced ? Color.Gold : Color.Lime, 1);
-        DrawCenteredIn(font, batch, "AI", SetupAiPolicy, 8, Color.Gold);
-        DrawCenteredIn(font, batch, "POLICY", SetupAiPolicy, 22, Color.Gold);
-        DrawCenteredIn(font, batch, "[A]", SetupAiPolicy, 43, Color.White);
-        DrawCenteredIn(font, batch,
-            _selectedAiPolicy == AiPolicyMode.Advanced ? "ADV" : "ORIG",
-            SetupAiPolicy, 63, Color.Lime);
         if (_message == ObjectiveDurationWarning)
             DrawHoverTooltip(batch, pixel, font, _hoverPoint ?? new Point(300, 280),
                 ["TIME LIMIT DISABLED", "OBJECTIVE SCENARIOS RUN UNTIL THEIR GOAL IS MET."]);
@@ -408,24 +393,7 @@ public sealed partial class ChaosGame
                     DurationSetupTooltip.Lines(Durations[duration]));
             else if (difficulty >= 0)
                 DrawDifficultyTooltip(batch, pixel, font, (AiDifficulty)difficulty);
-            else if (SetupAiPolicy.Contains(hover))
-                DrawHoverTooltip(batch, pixel, font, hover,
-                    AiPolicyPresentation.Tooltip(_selectedAiPolicy));
         }
-    }
-
-    private static void DrawCenteredIn(
-        PixelFont font,
-        SpriteBatch batch,
-        string text,
-        Rectangle bounds,
-        int top,
-        Color color)
-    {
-        var width = text.Length * OriginalFontLayout.CellWidth;
-        font.Draw(batch, text,
-            new Vector2(bounds.X + Math.Max(2, (bounds.Width - width) / 2), bounds.Y + top),
-            color, 1);
     }
 
     private static void DrawSelectionLight(

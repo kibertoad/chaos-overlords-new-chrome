@@ -48,7 +48,7 @@ public sealed record CapturedJournal(
 /// <para>
 /// Everything that could identify a person is decided here, in one place, so that reviewing what a
 /// report contains is reading one file. The build's version and platform go; the scenario, turn,
-/// phase and seat counts go. Player names, save names, file paths, the display name typed for
+/// phase, AI policy and seat counts go. Player names, save names, file paths, the display name typed for
 /// online play and the exception text of any crash do not — and the journal, which is the one part
 /// large enough to hide something in, goes through <see cref="ReplayAnonymizer"/> first.
 /// </para>
@@ -179,7 +179,8 @@ public static class BugReportComposer
             state.Coordinator.Turn,
             state.Coordinator.Phase.ToString(),
             humans,
-            state.Setup.Players.Count - humans);
+            state.Setup.Players.Count - humans,
+            state.Setup.AiPolicy.ToString());
     }
 
     private static int HumanSeats(MatchState state) =>

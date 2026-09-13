@@ -159,15 +159,9 @@ public sealed class AiPolicyTests
     [Theory]
     [InlineData(AiPolicyMode.Original, "ORIGINAL")]
     [InlineData(AiPolicyMode.Advanced, "ADVANCED")]
-    public void SetupPresentationNamesPolicy(AiPolicyMode policy, string label)
+    public void PresentationNamesPolicy(AiPolicyMode policy, string label)
     {
         Assert.Equal(label, AiPolicyPresentation.Label(policy));
-        Assert.Contains(label, AiPolicyPresentation.SelectionMessage(policy));
-        var tooltip = AiPolicyPresentation.Tooltip(policy);
-        Assert.Contains(tooltip, line => line.Contains("IDLE FALLBACK: HEAL"));
-        Assert.Contains(tooltip, line => line.Contains("FORCE 8+"));
-        Assert.Contains(tooltip, line => line.Contains("KEEP 1 DEFENDER"));
-        Assert.Contains(tooltip, line => line.Contains("NO RNG, CASH, STAT"));
     }
 
     private static MatchState IdleMatch(

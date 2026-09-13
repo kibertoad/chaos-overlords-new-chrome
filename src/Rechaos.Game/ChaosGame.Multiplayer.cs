@@ -140,7 +140,7 @@ public sealed partial class ChaosGame
         var name = _online.DisplayName.Value.Trim();
         var settings = new MultiplayerGameSettings(
             _selectedScenario, _selectedDuration, _selectedAiMentality, _playerPortraits,
-            _selectedAiPolicy);
+            _defaultAiPolicy);
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "HOSTING";
         _lobby!.Host(new CreateMatchRequest(

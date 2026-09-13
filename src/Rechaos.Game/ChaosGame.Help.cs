@@ -158,7 +158,7 @@ public static class HelpContentAugmentation
 
     private static readonly (string Context, string Title, string Text)[] Notes =
     [
-        ("GSP", "Game Settings Panel", "AI Mentality changes resolution odds, not only planning. AI Policy selects Original or Advanced command planning; press A or click AI POLICY. Original is the default. See the listed Advanced AI subject for the exact differences. Humans always use the standard band. "
+        ("GSP", "Game Settings Panel", "AI Mentality changes resolution odds, not only planning. Options sets the Original or Advanced AI default for future new matches; matches already in progress and loaded saves retain their stored policy. Original is the default. See the listed Advanced AI subject for the exact differences. Humans always use the standard band. "
             + "Goon computers attack on 6, use 5+ for Heal, Influence, and Chaos, use 6 for Research, lose trunc(pool / 5) dice from Influence, Research, and Chaos, and lose trunc(Defense / 4) Defense when attacked. "
             + "Criminal computers use the human band: Attack, Heal, Influence, Chaos, and retaliation succeed on 5+, while Research succeeds on 6. "
             + "Crime Lord and Homicidal Maniac computers use the expert band: Attack, Heal, Influence, Chaos, and retaliation succeed on 4+, Research succeeds on 5+, and attacks against hidden gangs are 20 percentage points easier."),
