@@ -1,0 +1,62 @@
+name: Nightly observable AI campaigns
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-ai-campaigns-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changes:
+    name: Check for recent commits
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.changes.outputs.should_run }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Detect commits since the previous daily window
+        id: changes
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if ($env:EVENT_NAME -eq 'workflow_dispatch') {
+            $shouldRun = $true
+          }
+          else {
+            $recentCommit = git log -1 --since='24 hours ago' --format='%H'
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect recent commits.' }
+            $shouldRun = -not [string]::IsNullOrWhiteSpace($recentCommit)
+          }
+          "should_run=$($shouldRun.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+  campaigns:
+    name: Run observable long-running AI campaigns
+    needs: detect-changes
+    if: needs.detect-changes.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Run campaigns with live diagnostics
+        shell: pwsh
+        run: ./tools/Invoke-Validation.ps1 -LongRunningTestsOnly -TraceTestOutput

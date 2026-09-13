@@ -39,7 +39,10 @@ Run the manual-only `Release installers` workflow, enter a tag such as `0.1.0`,
 and select `windows` or `all`. The default builds Windows x64 only. `all`
 requires matching Windows x64, Linux x64, macOS arm64, and macOS x64 artifacts.
 The workflow creates the tag and GitHub Release only after tests and all selected
-builds succeed. It has no scheduled or push trigger.
+builds succeed. It runs the fast validation tier; the repeated long-running AI
+campaign matrix is exercised by the daily `Nightly observable AI campaigns`
+workflow and remains available through manual dispatch. The release workflow has
+no scheduled or push trigger.
 
 ## Continuous integration
 

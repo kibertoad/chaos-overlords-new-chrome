@@ -65,8 +65,11 @@ unambiguous. Every invocation retains the 30-minute global test safety timeout.
 
 The manually dispatched CI workflow runs the fast tier on Windows x64, Linux
 x64, macOS arm64, and macOS x64. Its `fast-and-long-running` option adds the
-observable long category once on Linux. The manually dispatched release workflow
-always runs both tiers before packaging.
+observable long category once on Linux. A separate workflow runs the observable
+long category on Linux every day at 03:17 UTC, but skips scheduled execution when
+the default branch has no commit from the preceding 24 hours. Manual dispatches
+always run it. The release workflow runs the fast tier only, leaving the repeated
+statistical campaign matrix off its critical path.
 
 For larger statistical samples, the presentation-free runner avoids xUnit and
 lets replay verification be sampled rather than paid for on every match:
