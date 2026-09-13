@@ -7,10 +7,10 @@ Last updated: 2026-09-13
 
 - The canonical repository is
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`. `main` contains
-  every accepted checkpoint through managed Smacker palette decoding;
+  every accepted checkpoint through complete managed Smacker frame decoding;
   `codex/full-reimplementation` remains the development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,440 tests with zero warnings.
+  isolated Release build passed all 1,445 tests with zero warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -30,8 +30,11 @@ Last updated: 2026-09-13
   descriptors and bounded palette/audio/video demultiplexing are implemented.
   Palette state, packed unsigned 8-bit mono/stereo audio, the four canonical
   codebooks, and all 1,350 indexed video frames now decode in managed code
-  across both complete movies. Client playback is next; no ambient codec is
-  required.
+  across both complete movies. Startup now streams logo then intro at native
+  centered size on a deterministic 100 ms timeline, submits converted PCM,
+  pauses on focus loss, consumes explicit skip input, and fails through to the
+  next movie or title. A bounded Windows run completed the logo and began the
+  intro without diagnostics; no ambient codec is required.
 - The embedded gameplay tables now have a reproducible extractor command:
   `--generate-game-data <json> --source <install>`. Format 1 validates the
   fingerprinted legal source, deterministically reproduces the pinned JSON,
@@ -485,9 +488,10 @@ Last updated: 2026-09-13
    at runtime, then validate effect overlap/interruption and complete native
    audio/music validation. The four-second repeat, slot-2 inventory, and
    Combat-selection slot-3 call are statically classified and routed.
-5. Complete managed Smacker client playback and deterministic skipping; capture
-   native WinHelp typography/paragraph geometry only where pixel-viewer fidelity
-   materially benefits from it.
+5. Capture original startup-movie trigger/skip behavior and validate native
+   video color/audio fidelity on each supported platform; capture native WinHelp
+   typography/paragraph geometry only where pixel-viewer fidelity materially
+   benefits from it.
 
 For authoritative scope and parity status, continue with
 [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) and

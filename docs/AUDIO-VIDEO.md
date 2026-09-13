@@ -71,14 +71,19 @@ The extractor validates both containers before accepting the source pack.
 
 ### Playback decision
 
-The recreation will decode the validated Smacker-v2 subset in managed runtime
-code. It will not require an ambient FFmpeg installation, emit thousands of
-derived frame files, or depend on host codecs. The raw user-owned `.smk` files
-remain in the local extracted pack. Decoder or audio failure must skip the
-affected movie and continue to the title; playback state must never enter saves,
-replays, phase hashes, or multiplayer state. Input skipping and exact logo/
-intro trigger order still require original-runtime evidence before their final
-policy is classified as parity.
+The recreation decodes the validated Smacker-v2 subset in managed runtime code.
+It does not require an ambient FFmpeg installation, emit thousands of derived
+frame files, or depend on host codecs. The raw user-owned `.smk` files remain in
+the local extracted pack. Startup streams `MVLOGOS.smk` and then `MVINTRO.smk`,
+centers each native 480x256 indexed frame in the 640x460 virtual canvas, advances
+on a deterministic 100 ms presentation timeline, and submits decoded PCM to the
+runtime audio backend. Losing focus pauses movie audio. Escape, Enter, Space,
+or either mouse button skips only the current movie and consumes that input.
 
-Client presentation, skip controls, and cadence tests are not implemented yet.
-Until they are, the title opens directly as before.
+Missing files and decoder, texture, or audio failures skip the affected movie
+and continue through the queue to the title. Playback state never enters saves,
+replays, phase hashes, or multiplayer state. Policy, cadence, ordering, and
+skip/failure behavior have focused tests. A bounded Windows smoke run completed
+the logo and began the intro without a diagnostic failure; exact original
+trigger/skip policy and native visual/audio fidelity still require reference
+capture before they can be classified as parity.

@@ -234,8 +234,10 @@ separates palette, audio, and video chunks in their encoded order. The extractor
 copies both videos byte-for-byte and rejects a structurally inconsistent source
 container. Palette state and packed unsigned 8-bit mono/stereo audio decode in
 managed code during full source verification, as do the four canonical Huffman
-codebooks and all 1,350 indexed video frames. Client playback remains
-unimplemented; see [AUDIO-VIDEO.md](AUDIO-VIDEO.md).
+codebooks and all 1,350 indexed video frames. The client now streams both movies
+through that decoder with deterministic cadence, indexed presentation, PCM
+audio, skip controls, and fail-through behavior; original trigger and native
+fidelity capture remain open. See [AUDIO-VIDEO.md](AUDIO-VIDEO.md).
 
 ## Help
 

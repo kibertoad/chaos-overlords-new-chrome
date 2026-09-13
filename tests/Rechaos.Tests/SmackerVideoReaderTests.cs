@@ -257,7 +257,43 @@ public sealed class SmackerVideoReaderTests
         Assert.Throws<InvalidDataException>(() => decoder.Decode(VideoPacket()));
     }
 
+    [Fact]
+    public void MovieStreamDecodesSequentialPresentationFrame()
+    {
+        var treeData = BuildConstantCodebooks(0, 0, 0, 0x0903);
+        var stream = BuildContainer(
+            4, 4, 1, 100, (uint)treeData.Length, [0],
+            treeData: treeData,
+            treeAllocationSizes: new SmackerHuffmanTreeSizes(4, 4, 4, 4));
+        using var movie = SmackerMovieStream.OpenOwned(stream);
+
+        var frame = movie.ReadNextFrame();
+
+        Assert.Equal(0, frame.Index);
+        Assert.Equal(TimeSpan.FromMilliseconds(100), frame.Duration);
+        Assert.All(frame.Video.ColorIndices.ToArray(), value => Assert.Equal(9, value));
+        Assert.Empty(frame.Audio);
+        Assert.False(movie.HasNextFrame);
+        Assert.Throws<InvalidOperationException>(() => movie.ReadNextFrame());
+    }
+
     private static SmackerVideoDecoder BuildVideoDecoder(
+        ushort monochromeMap,
+        ushort monochromeColor,
+        ushort fullBlock,
+        ushort blockType)
+    {
+        var treeData = BuildConstantCodebooks(
+            monochromeMap, monochromeColor, fullBlock, blockType);
+        using var stream = new MemoryStream(treeData);
+        var metadata = new SmackerVideoMetadata(
+            4, 4, 1, TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100),
+            0, 0, (uint)treeData.Length, new SmackerHuffmanTreeSizes(4, 4, 4, 4),
+            [], []);
+        return SmackerVideoDecoder.Create(stream, metadata);
+    }
+
+    private static byte[] BuildConstantCodebooks(
         ushort monochromeMap,
         ushort monochromeColor,
         ushort fullBlock,
@@ -266,13 +302,7 @@ public sealed class SmackerVideoReaderTests
         var bits = new List<int>();
         foreach (var value in new[] { monochromeMap, monochromeColor, fullBlock, blockType })
             AppendConstantCodebook(bits, value);
-        var treeData = PackBits(bits);
-        using var stream = new MemoryStream(treeData);
-        var metadata = new SmackerVideoMetadata(
-            4, 4, 1, TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100),
-            0, 0, (uint)treeData.Length, new SmackerHuffmanTreeSizes(4, 4, 4, 4),
-            [], []);
-        return SmackerVideoDecoder.Create(stream, metadata);
+        return PackBits(bits);
     }
 
     private static void AppendConstantCodebook(List<int> bits, ushort value)
@@ -327,7 +357,9 @@ public sealed class SmackerVideoReaderTests
         uint audioBufferBytes = 0,
         uint audioInfo = 0,
         IReadOnlyList<byte>? frameTypes = null,
-        IReadOnlyList<byte[]>? framePayloads = null)
+        IReadOnlyList<byte[]>? framePayloads = null,
+        byte[]? treeData = null,
+        SmackerHuffmanTreeSizes? treeAllocationSizes = null)
     {
         var stream = new MemoryStream();
         using (var writer = new BinaryWriter(stream, Encoding.ASCII, leaveOpen: true))
@@ -341,14 +373,20 @@ public sealed class SmackerVideoReaderTests
             writer.Write(audioBufferBytes);
             for (var index = 1; index < 7; index++) writer.Write(0u);
             writer.Write(treeBytes);
-            for (var index = 0; index < 4; index++) writer.Write(0u);
+            var allocations = treeAllocationSizes ?? new SmackerHuffmanTreeSizes(0, 0, 0, 0);
+            writer.Write(allocations.MonochromeMap);
+            writer.Write(allocations.MonochromeColor);
+            writer.Write(allocations.FullBlock);
+            writer.Write(allocations.BlockType);
             writer.Write(audioInfo);
             for (var index = 1; index < 7; index++) writer.Write(0u);
             writer.Write(0u);
             foreach (var payloadSize in framePayloadSizes) writer.Write(payloadSize);
             foreach (var frameType in frameTypes ?? Enumerable.Repeat((byte)0, framePayloadSizes.Count))
                 writer.Write(frameType);
-            writer.Write(new byte[checked((int)treeBytes)]);
+            if (treeData is not null && treeData.Length != treeBytes)
+                throw new ArgumentException("Synthetic tree data length does not match its header.", nameof(treeData));
+            writer.Write(treeData ?? new byte[checked((int)treeBytes)]);
             if (framePayloads is null)
                 foreach (var payloadSize in framePayloadSizes)
                     writer.Write(new byte[checked((int)(payloadSize & 0xffff_fffcu))]);

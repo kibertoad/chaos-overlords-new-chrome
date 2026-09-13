@@ -8,6 +8,13 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
+    private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
+    private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
+    private static readonly Rectangle TitleOptions = new(196, 376, 80, 34);
+    private static readonly Rectangle TitleHelp = new(280, 376, 80, 34);
+    private static readonly Rectangle TitleQuit = new(364, 376, 80, 34);
+
     private const string ObjectiveDurationWarning =
         "OBJECTIVES DISABLE TIME LIMITS";
 

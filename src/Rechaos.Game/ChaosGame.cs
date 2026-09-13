@@ -13,12 +13,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private static readonly Color[] PlayerColors =
         [Color.Red, Color.LimeGreen, Color.Blue, Color.Yellow, Color.Magenta, Color.Cyan];
     private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
-    private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
-    private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
-    private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
-    private static readonly Rectangle TitleOptions = new(196, 376, 80, 34);
-    private static readonly Rectangle TitleHelp = new(280, 376, 80, 34);
-    private static readonly Rectangle TitleQuit = new(364, 376, 80, 34);
     private static readonly Rectangle[] SetupScenarios =
     [
         new(80, 102, 108, 31), new(192, 102, 108, 31),
@@ -323,6 +317,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             var sound = LoadSound(AudioRouting.GeneralSoundFile(slot));
             if (sound is not null) _generalSounds.Add(slot, sound);
         }
+        InitializeStartupMovies();
         LoadSoundtrack();
         _diagnostics?.Write("assets.loaded", new Dictionary<string, string?>
         {
@@ -336,26 +331,26 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     protected override void Update(GameTime gameTime)
     {
         _inputTime = gameTime.TotalGameTime;
-        UpdateSoundtrack(gameTime);
-        UpdateComlinkAlert(gameTime.TotalGameTime);
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
-        // Before the planning timer, so a turn that resolved on the server is adopted even on the
-        // frame the local clock would otherwise have taken over the loop.
-        PumpOnlineNotices();
-        SendOnlineDraft(gameTime);
-        var rightClicked = PointerButtonEdges.Pressed(
-            mouse.RightButton, _previousMouse.RightButton);
         var altEnter = Pressed(keyboard, Keys.Enter)
             && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
         if (Pressed(keyboard, Keys.F11) || altEnter) ToggleFullscreen();
-        if (altEnter)
+        if (altEnter || UpdateStartupMovies(gameTime, keyboard, mouse))
         {
             _previousKeyboard = keyboard;
             _previousMouse = mouse;
             base.Update(gameTime);
             return;
         }
+        UpdateSoundtrack(gameTime);
+        UpdateComlinkAlert(gameTime.TotalGameTime);
+        // Before the planning timer, so a turn that resolved on the server is adopted even on the
+        // frame the local clock would otherwise have taken over the loop.
+        PumpOnlineNotices();
+        SendOnlineDraft(gameTime);
+        var rightClicked = PointerButtonEdges.Pressed(
+            mouse.RightButton, _previousMouse.RightButton);
         if (!_gameMenuOpen && UpdatePlanningTimer(gameTime.TotalGameTime))
         {
             _previousKeyboard = keyboard;
@@ -657,6 +652,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     {
         GraphicsDevice.Clear(new Color(8, 10, 12));
         if (_batch is null || _pixel is null || _font is null) return;
+        if (!_startupMoviesComplete)
+        {
+            DrawStartupMovie(_batch);
+            base.Draw(gameTime);
+            return;
+        }
         var viewport = GraphicsDevice.Viewport;
         var slideOffset = _panelSlideTransition.Offset(
             _screens.Current, gameTime.TotalGameTime, _slidePanels);

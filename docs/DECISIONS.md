@@ -40,5 +40,6 @@ and the client-side wiring of online play is tracked as follow-up work.
 - Boundary: malformed/unsupported video or audio must skip presentation and
   continue to the title. Movie state is never authoritative simulation,
   persistence, replay, or multiplayer state.
-- Status: the bounded header/frame-table/container validator is implemented;
-  decompression, presentation, and final input-trigger parity are pending.
+- Status: bounded container, palette, packed-audio, and indexed-frame decoding
+  plus streaming presentation are implemented. The recreation policy is tested;
+  original trigger/skip evidence and native visual/audio fidelity remain pending.

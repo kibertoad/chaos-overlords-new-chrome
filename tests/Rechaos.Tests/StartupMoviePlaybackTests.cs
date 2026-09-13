@@ -1,0 +1,52 @@
+using Microsoft.Xna.Framework;
+using Rechaos.Core.Assets;
+using Rechaos.Game;
+using Xunit;
+
+namespace Rechaos.Tests;
+
+public sealed class StartupMoviePlaybackTests
+{
+    [Fact]
+    public void StartupOrderAndNativeCenteredDestinationAreStable()
+    {
+        Assert.Equal(new[] { "MVLOGOS.smk", "MVINTRO.smk" }, StartupMoviePolicy.FileNames);
+        Assert.Equal(new Rectangle(80, 102, 480, 256), StartupMoviePolicy.Destination(480, 256));
+    }
+
+    [Fact]
+    public void TimelinePresentsFirstFrameImmediatelyAndUsesExactCadence()
+    {
+        var timeline = new SmackerPlaybackTimeline(3, TimeSpan.FromMilliseconds(100));
+
+        Assert.Equal(new SmackerTimelineAdvance(1, false), timeline.Advance(TimeSpan.Zero));
+        Assert.Equal(new SmackerTimelineAdvance(0, false),
+            timeline.Advance(TimeSpan.FromMilliseconds(99)));
+        Assert.Equal(new SmackerTimelineAdvance(1, false),
+            timeline.Advance(TimeSpan.FromMilliseconds(1)));
+        Assert.Equal(1, timeline.FrameIndex);
+        Assert.Equal(new SmackerTimelineAdvance(1, true),
+            timeline.Advance(TimeSpan.FromMilliseconds(200)));
+        Assert.Equal(2, timeline.FrameIndex);
+    }
+
+    [Fact]
+    public void TimelineCanBeSkippedWithoutAdvancingMoreFrames()
+    {
+        var timeline = new SmackerPlaybackTimeline(200, TimeSpan.FromMilliseconds(100));
+        timeline.Advance(TimeSpan.Zero);
+
+        timeline.Skip();
+
+        Assert.Equal(new SmackerTimelineAdvance(0, true),
+            timeline.Advance(TimeSpan.FromSeconds(30)));
+    }
+
+    [Fact]
+    public void UnsignedMoviePcmConvertsToSignedSixteenBitLittleEndian()
+    {
+        var converted = SmackerPcmConversion.ToSigned16LittleEndian([0, 128, 255]);
+
+        Assert.Equal(new byte[] { 0, 128, 0, 0, 0, 127 }, converted);
+    }
+}

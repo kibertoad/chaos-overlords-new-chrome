@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Media;
 
 namespace Rechaos.Game;
@@ -52,7 +53,7 @@ public sealed partial class ChaosGame
 
     private void UpdateSoundtrack(GameTime gameTime)
     {
-        if (!_soundtrackEnabled) return;
+        if (!_soundtrackEnabled || !_startupMoviesComplete) return;
         try
         {
             SelectSoundtrackMode(SoundtrackContext(), gameTime.TotalGameTime);
@@ -116,6 +117,14 @@ public sealed partial class ChaosGame
 
     protected override void OnDeactivated(object sender, EventArgs args)
     {
+        try
+        {
+            if (_startupMovieAudio?.State == SoundState.Playing) _startupMovieAudio.Pause();
+        }
+        catch (Exception exception)
+        {
+            FinishStartupMovie("movie.failed", exception);
+        }
         if (_soundtrackEnabled)
         {
             try
@@ -137,6 +146,14 @@ public sealed partial class ChaosGame
     protected override void OnActivated(object sender, EventArgs args)
     {
         base.OnActivated(sender, args);
+        try
+        {
+            if (_startupMovieAudio?.State == SoundState.Paused) _startupMovieAudio.Resume();
+        }
+        catch (Exception exception)
+        {
+            FinishStartupMovie("movie.failed", exception);
+        }
         if (!_soundtrackEnabled || !_soundtrackPausedByDeactivation) return;
         try
         {
@@ -171,7 +188,7 @@ public sealed partial class ChaosGame
 
             var shouldStart = !_soundtrackEnabled;
             _soundtrackEnabled = true;
-            if (!shouldStart) return;
+            if (!shouldStart || !_startupMoviesComplete) return;
             _soundtrackMode = null;
             SelectSoundtrackMode(SoundtrackContext(), now);
         }
@@ -216,6 +233,7 @@ public sealed partial class ChaosGame
 
     protected override void UnloadContent()
     {
+        DisposeStartupMovie();
         DisposeSoundtrack();
         foreach (var sound in _combatSounds.Values) sound.Dispose();
         foreach (var sound in _generalSounds.Values) sound.Dispose();
