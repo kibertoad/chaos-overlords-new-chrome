@@ -125,8 +125,9 @@ public sealed partial class ChaosGame
                 if (_state is null) return;
                 var indices = EquipmentCommandIndices(_state);
                 var position = indices.IndexOf(_commandTargetCursor);
-                var itemFirst = Math.Max(0, position - 5);
-                var itemVisible = Math.Min(12, indices.Count - itemFirst);
+                var itemFirst = EquipmentCommandLayout.FirstVisibleItem(indices.Count, position);
+                var itemVisible = Math.Min(
+                    EquipmentCommandLayout.VisibleItemCount, indices.Count - itemFirst);
                 var itemRow = Enumerable.Range(0, Math.Max(0, itemVisible))
                     .FirstOrDefault(row => EquipmentCommandLayout.ItemRow(row).Contains(point), -1);
                 if (itemRow >= 0)
@@ -392,8 +393,8 @@ public sealed partial class ChaosGame
 
         var indices = EquipmentCommandIndices(state);
         var position = indices.IndexOf(_commandTargetCursor);
-        var first = Math.Max(0, position - 5);
-        foreach (var entry in indices.Skip(first).Take(12)
+        var first = EquipmentCommandLayout.FirstVisibleItem(indices.Count, position);
+        foreach (var entry in indices.Skip(first).Take(EquipmentCommandLayout.VisibleItemCount)
                      .Select((index, row) => (index, row)))
         {
             var command = _commandTargetOptions[entry.index];

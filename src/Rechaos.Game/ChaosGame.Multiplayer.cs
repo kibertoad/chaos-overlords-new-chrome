@@ -545,7 +545,8 @@ public sealed partial class ChaosGame
             case MultiplayerNotice.TurnResolved resolved:
                 if (AdoptOnlineState(resolved.State))
                 {
-                    _message = string.Empty;
+                    _message = "NEW TURN READY  PLAY AGAIN";
+                    PlayGeneralSound(AudioRouting.OnlineTurnReadySound());
                     _screens.Show(ClientScreen.City);
                 }
                 return;

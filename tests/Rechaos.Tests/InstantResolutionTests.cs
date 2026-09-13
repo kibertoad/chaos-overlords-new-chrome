@@ -129,6 +129,24 @@ public sealed class InstantResolutionTests
     }
 
     [Fact]
+    public void CompletedInfluenceCommandImmediatelyReleasesGang()
+    {
+        var match = CreateMatch(siteResistance: 1);
+        EnterCommand(match);
+        var player = new PlayerId(0);
+        var gang = new GangId(10);
+        Assert.True(match.Submit(new GameCommand(
+            player, gang, GangAction.Influence, CommandTarget.Site(0), Repeat: true)).Accepted);
+        EnterExecution(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(0, match.FindSite(0)!.Resistance);
+        Assert.False(match.Commands.TryGet(gang, out _));
+        Assert.Null(match.FindGang(gang)!.QueuedCommand);
+    }
+
+    [Fact]
     public void LaterInfluenceSkipsRollAfterEarlierRosterSlotCompletesSite()
     {
         var match = CreateMatch(siteResistance: 1, siteDefinitionId: 6);

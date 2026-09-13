@@ -34,6 +34,8 @@ public sealed partial class ChaosGame
 
         _batch.Begin(samplerState: SamplerState.PointClamp, transformMatrix: transform);
         DrawLastTurnEventContent(_batch, _pixel, _font, _state, notification);
+        DrawButton(_batch, _pixel, _font, LastTurnEventsLayout.Delete, "DELETE", false);
+        DrawButton(_batch, _pixel, _font, LastTurnEventsLayout.Ok, "OK", true);
         if (_combatAnimationPlayer.IsPlaying)
             DrawCombatPanel(_batch, _pixel, _font, _state);
         DrawPlanningTimer(_batch, _pixel);

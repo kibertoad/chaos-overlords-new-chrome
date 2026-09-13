@@ -544,6 +544,7 @@ public static class CommandOverlayLayout
 public static class EquipmentCommandLayout
 {
     public const int CategoryCount = 4;
+    public const int VisibleItemCount = 12;
     public static Rectangle Panel => new(104, 125, 344, 209);
     public static Rectangle Portrait => new(130, 142, 64, 64);
     public static Rectangle Cancel => new(136, 262, 49, 24);
@@ -561,6 +562,17 @@ public static class EquipmentCommandLayout
         if (remaining is < 0 || remaining > difficulty)
             throw new ArgumentOutOfRangeException(nameof(remaining));
         return $"{difficulty - remaining}/{difficulty}";
+    }
+
+    public static int FirstVisibleItem(int itemCount, int selectedPosition)
+    {
+        if (itemCount < 0) throw new ArgumentOutOfRangeException(nameof(itemCount));
+        if (itemCount == 0) return 0;
+        if (selectedPosition is < 0 || selectedPosition >= itemCount)
+            throw new ArgumentOutOfRangeException(nameof(selectedPosition));
+        return itemCount <= VisibleItemCount
+            ? 0
+            : Math.Clamp(selectedPosition - 5, 0, itemCount - VisibleItemCount);
     }
     public static Rectangle Category(int category)
     {
@@ -668,20 +680,6 @@ public static class ItemInformationLayout
         4 => "MISC",
         _ => throw new ArgumentOutOfRangeException(nameof(itemType))
     };
-}
-
-public static class LastTurnEventsLayout
-{
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Page => new(138, 138, 47, 7);
-    public static Rectangle Previous => new(135, 151, 25, 21);
-    public static Rectangle Next => new(163, 151, 25, 21);
-    public static Rectangle Artwork => new(198, 133, 242, 158);
-    public static Rectangle DateValue => new(225, 299, 43, 7);
-    public static Rectangle ObjectValue => new(305, 299, 135, 7);
-    public static Rectangle StatusValue => new(239, 308, 201, 7);
-    public static Rectangle ResearchItem => new(296, 187, 48, 48);
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
 }
 
 public static class ComlinkViewLayout

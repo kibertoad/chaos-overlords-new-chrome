@@ -488,13 +488,16 @@ public sealed partial class ChaosGame
 
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var player = state.FindPlayer(playerId)!;
-        foreach (var gang in player.Gangs.Where(gang => gang.IsActive))
-            if (SectorDetailLayout.Marker(_cursor, gang.SectorId) is { } gangMarker)
+        var activeGangsBySector = player.Gangs.Where(gang => gang.IsActive)
+            .GroupBy(gang => gang.SectorId).ToArray();
+        foreach (var gangs in activeGangsBySector)
+            if (SectorDetailLayout.Marker(_cursor, gangs.Key) is { } gangMarker)
                 DrawGangStatusMarker(batch, gangMarker,
-                    gang.QueuedCommand is null
-                        ? OriginalSpriteLayout.IdleGangStatus
-                        : OriginalSpriteLayout.AssignedGangStatus);
-        foreach (var pending in player.PendingHires)
+                    GangStatusMarkerPresentation.Source(
+                        gangs.Any(gang => gang.QueuedCommand is null)));
+        var occupiedGangSectors = activeGangsBySector.Select(gangs => gangs.Key).ToHashSet();
+        foreach (var pending in player.PendingHires.Where(
+                     pending => !occupiedGangSectors.Contains(pending.TargetSectorId)))
             if (SectorDetailLayout.Marker(_cursor, pending.TargetSectorId) is { } hireMarker)
                 DrawGangStatusMarker(batch, hireMarker, OriginalSpriteLayout.IncomingGangStatus);
     }

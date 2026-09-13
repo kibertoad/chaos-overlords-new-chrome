@@ -544,8 +544,7 @@ public sealed partial class MatchState
         // participate in Combat; its stored successes are paid at the later Chaos boundary.
         if (phase == ExecutionPhase.Instant)
             _ = CommandResolver.PrepareChaosPhase(this, Commands.ForPhase(ExecutionPhase.Chaos));
-        foreach (var result in LastPhaseResolutions.Where(result =>
-                     result.Command.Repeat && RepeatingObjectiveComplete(result)))
+        foreach (var result in LastPhaseResolutions.Where(ShouldStopResolvedCommand))
         {
             Commands.Cancel(result.Command.Gang);
             if (FindGang(result.Command.Gang) is { } gang) gang.QueuedCommand = null;
@@ -560,24 +559,6 @@ public sealed partial class MatchState
         return CaptureBoundary(transition);
     }
 
-    private bool RepeatingObjectiveComplete(CommandResolutionResult result)
-    {
-        if (!result.Succeeded) return false;
-        var command = result.Command;
-        var gang = FindGang(command.Gang);
-        return command.Action switch
-        {
-            GangAction.Attack => FindGang(new GangId(command.Target.Id)) is not { IsActive: true },
-            GangAction.Control => gang is not null && Sectors[gang.SectorId].Owner == command.Player,
-            GangAction.Equip or GangAction.Give or GangAction.Sell or GangAction.Move
-                or GangAction.Terminate => true,
-            GangAction.Heal => gang is null || gang.Force >= ManualRules.MaximumForce,
-            GangAction.Influence => FindSite(command.Target.Id)?.InfluencedBy == command.Player,
-            GangAction.Research => FindPlayer(command.Player)!.ResearchedItems.Contains((short)command.Target.Id),
-            GangAction.Snitch => gang is not null && Sectors[gang.SectorId].Tolerance <= 0,
-            _ => false
-        };
-    }
     public TurnTransition FinishHire(PlayerId player)
     {
         if (Coordinator.Phase != TurnPhase.Hire || Coordinator.ActivePlayer != player)

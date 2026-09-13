@@ -46,7 +46,7 @@ public sealed class ResearchResolutionTests
         var data = BundledOriginalData.Load();
         var item = ResearchableItem(data);
         var match = CreateMatch(researchProgress: new Dictionary<short, int> { [item] = 1 });
-        QueueAndEnterExecution(match, item);
+        QueueAndEnterExecution(match, item, repeat: true);
 
         match.FinishExecutionPhase();
 
@@ -55,6 +55,8 @@ public sealed class ResearchResolutionTests
         Assert.Equal(0, resolution.ResultValue);
         Assert.Contains(item, match.Players[0].ResearchedItems);
         Assert.DoesNotContain(item, match.Players[0].ResearchProgress.Keys);
+        Assert.False(match.Commands.TryGet(new GangId(10), out _));
+        Assert.Null(match.FindGang(new GangId(10))!.QueuedCommand);
     }
 
     [Fact]
@@ -246,12 +248,12 @@ public sealed class ResearchResolutionTests
             researchedItems: new HashSet<short> { item }));
     }
 
-    private static void QueueAndEnterExecution(MatchState match, short item)
+    private static void QueueAndEnterExecution(MatchState match, short item, bool repeat = false)
     {
         match.FinishUpkeep();
         var player = new PlayerId(0);
         Assert.True(match.Submit(new GameCommand(
-            player, new GangId(10), GangAction.Research, CommandTarget.Item(item))).Accepted);
+            player, new GangId(10), GangAction.Research, CommandTarget.Item(item), Repeat: repeat)).Accepted);
         match.FinishCommand(player);
         match.FinishCommand(new PlayerId(1));
     }

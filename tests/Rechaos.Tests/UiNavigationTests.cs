@@ -706,6 +706,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(198, 133, 242, 158), LastTurnEventsLayout.Artwork);
         Assert.Equal(new Rectangle(296, 187, 48, 48), LastTurnEventsLayout.ResearchItem);
         Assert.Equal(new Rectangle(135, 151, 25, 21), LastTurnEventsLayout.Previous);
+        Assert.Equal(EquipmentCommandLayout.Cancel, LastTurnEventsLayout.Delete);
         Assert.Equal(new Rectangle(225, 299, 43, 7), LastTurnEventsLayout.DateValue);
         Assert.Equal(new Rectangle(305, 299, 135, 7), LastTurnEventsLayout.ObjectValue);
         Assert.Equal(new Rectangle(239, 308, 201, 7), LastTurnEventsLayout.StatusValue);
