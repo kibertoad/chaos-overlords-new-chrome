@@ -2,6 +2,15 @@ namespace Rechaos.Core.GameModel;
 
 public sealed partial class MatchState
 {
+    private bool IsValidNotificationHistory(
+        IReadOnlyList<GameNotification> notifications,
+        long nextSequence,
+        MatchRuntimeRestore restore) =>
+        GameNotificationValidator.IsValidHistory(
+            notifications, nextSequence, restore.Turn, restore.Events)
+        && notifications.All(notification =>
+            notification.Gang is not { } gang || FindGang(gang) is not null);
+
     private void RestoreOutcome(MatchRuntimeRestore restore)
     {
         Outcome = restore.Outcome is null

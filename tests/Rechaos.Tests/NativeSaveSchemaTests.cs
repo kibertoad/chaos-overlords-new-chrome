@@ -54,6 +54,64 @@ public sealed partial class NativeSaveSerializerTests
     }
 
     [Fact]
+    public void CurrentSaveRejectsNotificationFromFutureTurn()
+    {
+        var match = CreateMatch();
+        ResolveSecondUpkeep(match);
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["notifications"]![0]!["items"]![0]!["turn"] = 3;
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(modified, match.Definitions));
+
+        Assert.Contains("notification history is invalid", exception.InnerException!.Message);
+    }
+
+    [Fact]
+    public void CurrentSaveRejectsNotificationLinkedToDifferentTurnEvent()
+    {
+        var match = CreateMatch();
+        ResolveSecondUpkeep(match);
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["notifications"]![0]!["items"]![0]!["relatedEventSequence"] = 2;
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(modified, match.Definitions));
+
+        Assert.Contains("notification history is invalid", exception.InnerException!.Message);
+    }
+
+    [Fact]
+    public void CurrentSaveRejectsNotificationForUnknownGang()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(0), GangAction.Hide, CommandTarget.None)).Accepted);
+        foreach (var player in match.Players) match.FinishCommand(player.Id);
+        match.FinishExecutionPhase();
+        using var current = new MemoryStream();
+        NativeSaveSerializer.Save(current, match);
+        var document = JsonNode.Parse(current.ToArray())!.AsObject();
+        document["runtime"]!["notifications"]![0]!["items"]![0]!["gang"] = 999;
+        using var modified = new MemoryStream(
+            Encoding.UTF8.GetBytes(document.ToJsonString()));
+
+        var exception = Assert.Throws<InvalidDataException>(() =>
+            NativeSaveSerializer.Load(modified, match.Definitions));
+
+        Assert.Contains("notification history is invalid", exception.InnerException!.Message);
+    }
+
+    [Fact]
     public void CurrentSaveRejectsComlinkSequenceHoles()
     {
         var match = CreateMatch(secondPlayerHuman: true);
@@ -203,7 +261,7 @@ public sealed partial class NativeSaveSerializerTests
         if (nestedResolution)
             gameEvent["economy"]!["resultCash"] = 999;
         else
-            gameEvent["turn"] = 999;
+            gameEvent["player"] = 1;
         using var modified = new MemoryStream(
             Encoding.UTF8.GetBytes(document.ToJsonString()));
 

@@ -46,8 +46,10 @@ and the client-side wiring of online play is tracked as follow-up work.
 
 ## 2026-09-13 — Stream the intro once, then keep it on the title screen
 
-- Decision: the logo and intro movies play unattended only until a profile has
-  reached the end of the queue once. Completing it records `IntroMoviesSeen` in
+- Decision: the logo and intro movies play unattended only until one run has
+  reached the end of the queue. The recreation has no player profiles, so the
+  record lives in the single local preferences file alongside the other client
+  settings. Completing it records `IntroMoviesSeen` in
   the client preferences (format v8), and the title screen gains an `INTRO`
   button that replays the same queue on demand.
 - Reason: 135 seconds of startup video, even with skip input, is a toll on every

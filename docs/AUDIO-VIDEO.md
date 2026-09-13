@@ -80,10 +80,10 @@ on a deterministic 100 ms presentation timeline, and submits decoded PCM to the
 runtime audio backend. Losing focus pauses movie audio. Escape, Enter, Space,
 or either mouse button skips only the current movie and consumes that input.
 
-Only a profile that has not seen the movies streams them unattended at startup.
-Draining the queue after at least one movie opened, whether it played out or was
-skipped, records `IntroMoviesSeen` in the client preferences, so every later run
-opens at the title screen instead. A pack whose movies all fail to open shows
+The movies stream unattended only while the client preferences have not recorded
+a showing. Draining the queue after at least one movie opened, whether it played
+out or was skipped, records `IntroMoviesSeen` there, so every later run of that
+installation opens at the title screen instead. A pack whose movies all fail to open shows
 nothing and leaves the flag unset. The title screen's `INTRO` button replays the
 same queue on demand and reports `INTRO VIDEO UNAVAILABLE` when no movie file can
 be read. A replay silences the menu music for its duration; the first update

@@ -15,7 +15,7 @@ public sealed class IntroMoviePlaybackTests
     }
 
     [Fact]
-    public void OnlyAProfileThatHasNotSeenTheIntroStreamsItAtStartup()
+    public void OnlyAnUnseenIntroStreamsAtStartup()
     {
         Assert.True(IntroMoviePolicy.PlaysAtStartup(introMoviesSeen: false));
         Assert.False(IntroMoviePolicy.PlaysAtStartup(introMoviesSeen: true));

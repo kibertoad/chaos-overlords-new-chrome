@@ -2,7 +2,9 @@
 param(
     [ValidateRange(1, 16)]
     [int] $MaxCpuCount = 2,
-    [switch] $ShutdownBuildServersAfterRun
+    [switch] $ShutdownBuildServersAfterRun,
+    [string] $TestFilter,
+    [switch] $TraceTestOutput
 )
 
 $ErrorActionPreference = 'Stop'
@@ -82,16 +84,30 @@ try {
             '--no-restore',
             '-p:IncludeOriginalAssets=false'
     ) + $msbuildArguments)
-    Invoke-CheckedDotnet -Arguments (@(
+    $testArguments = @(
         'test',
         '--project', (Join-Path $repositoryRoot 'tests/Rechaos.Tests/Rechaos.Tests.csproj'),
         '--configuration', 'Release',
         '--no-build',
         '--no-restore',
         '--no-progress',
-        '--minimum-expected-tests', '354',
+        '--timeout', '30m',
         '--verbosity', 'minimal'
-    ))
+    )
+    if ($TestFilter) {
+        $testArguments += @('--filter', $TestFilter)
+    }
+    else {
+        $testArguments += @('--minimum-expected-tests', '354')
+    }
+    if ($TraceTestOutput) {
+        $testArguments += @(
+            '--output', 'Detailed',
+            '--show-live-output', 'on',
+            '--show-stdout', 'All'
+        )
+    }
+    Invoke-CheckedDotnet -Arguments $testArguments
 }
 finally {
     if ($ShutdownBuildServersAfterRun) {

@@ -10,7 +10,7 @@ Last updated: 2026-09-13
   every accepted checkpoint through managed Smacker startup playback;
   `codex/full-reimplementation` remains the development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed all 1,464 tests with zero warnings.
+  isolated Release build passed the full test suite with zero warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
@@ -23,6 +23,11 @@ Last updated: 2026-09-13
 
 ## Latest playable work
 
+- Native restore now rejects notification records dated after the restored
+  turn, references whose event turn/phase boundary does not match the
+  notification, and gang references absent from the restored roster. These
+  checks run before accepting even legacy hashes, closing another projection
+  path for structurally impossible histories.
 - Options now exposes a keyboard/mouse diagnostics export. It creates a unique,
   atomically promoted ZIP under local application data with allowlisted session
   events and path/message-free crash summaries. Raw reports stay local, legacy
@@ -42,8 +47,8 @@ Last updated: 2026-09-13
   intro without diagnostics; no ambient codec is required.
 - The movies are no longer an unattended toll on every launch. Completing the
   queue records `IntroMoviesSeen` in preferences (format v8, migrated from v7
-  with the intro still owed once), so only a fresh profile streams them at
-  startup. The title screen carries an `INTRO` button that replays the queue at
+  with the intro still owed once), so only an installation that has not shown
+  them yet streams them at startup. The title screen carries an `INTRO` button that replays the queue at
   any time, reports an unreadable pack instead of stalling, and hands the menu
   music back when the last movie ends.
 - The embedded gameplay tables now have a reproducible extractor command:

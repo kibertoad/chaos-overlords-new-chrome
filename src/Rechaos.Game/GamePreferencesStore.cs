@@ -27,8 +27,8 @@ public sealed record GamePreferences(
 {
     public const int CurrentFormatVersion = 8;
 
-    /// <summary>A fresh profile has not seen the intro, so the first run streams it; the title
-    /// screen replays it on request from then on.</summary>
+    /// <summary>Preferences that have never recorded a showing leave the intro owed, so the
+    /// first run streams it; the title screen replays it on request from then on.</summary>
     public const bool IntroMoviesSeenByDefault = false;
 
     public static GamePreferences Default { get; } =

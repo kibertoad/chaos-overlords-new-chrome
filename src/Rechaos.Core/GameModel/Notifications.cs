@@ -39,23 +39,27 @@ internal static class GameNotificationValidator
     public static bool IsValidHistory(
         IReadOnlyList<GameNotification> values,
         long nextSequence,
-        long nextEventSequence)
+        int currentTurn,
+        IReadOnlyList<GameEvent> events)
     {
+        var eventsBySequence = events.ToDictionary(gameEvent => gameEvent.Sequence);
         if (values.Count > MatchLimits.NotificationsPerPlayer || nextSequence < 0)
             return false;
         if (values.Count > 0 && values.Where((value, index) =>
                 value.Sequence != nextSequence - values.Count + index).Any())
             return false;
         return values.All(value =>
-            value.Turn >= 1
+            value.Turn is >= 1 && value.Turn <= currentTurn
             && Enum.IsDefined(value.Phase)
             && Enum.IsDefined(value.Kind)
             && (value.Phase == TurnPhase.Execution) == value.ExecutionPhase.HasValue
             && (value.ExecutionPhase is null || Enum.IsDefined(value.ExecutionPhase.Value))
             && value.SectorId is null or >= 0 and < MatchLimits.SectorCount
             && (value.RelatedEventSequence is null
-                || value.RelatedEventSequence >= 0
-                && value.RelatedEventSequence < nextEventSequence));
+                || eventsBySequence.TryGetValue(value.RelatedEventSequence.Value, out var gameEvent)
+                && gameEvent.Turn == value.Turn
+                && gameEvent.Phase == value.Phase
+                && gameEvent.ExecutionPhase == value.ExecutionPhase));
     }
 }
 

@@ -7,8 +7,8 @@ public static class IntroMoviePolicy
     public static IReadOnlyList<string> FileNames { get; } =
         ["MVLOGOS.smk", "MVINTRO.smk"];
 
-    /// <summary>The intro streams unattended only until it has been seen; the title screen
-    /// replays it on demand afterwards.</summary>
+    /// <summary>The intro streams unattended only until these preferences have recorded a
+    /// showing; the title screen replays it on demand afterwards.</summary>
     public static bool PlaysAtStartup(bool introMoviesSeen) => !introMoviesSeen;
 
     public static Rectangle Destination(int width, int height) =>
