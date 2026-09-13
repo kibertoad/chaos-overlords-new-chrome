@@ -1,0 +1,62 @@
+# Local development and the workerd test suite. Not a deployment.
+#
+# The bindings here are this package's interface — what any deployment has to supply for the Worker
+# to run — with local, throwaway resources behind them. Everything a real deployment decides (the
+# Worker's name, which account's databases these are, their ids, the cron schedule, the tuning of
+# the vars) lives with that deployment, not in this repository.
+#
+#   pnpm dev                   # wrangler dev against local D1 and R2
+#   pnpm db:migrate:local      # apply the SQLite lineage to the local match database
+#   pnpm db:migrate:bugs:local # ...and the separate lineage to the local bug report database
+#
+# The vitest suite reads this file too, so the tests bind the same way a deployment does.
+
+name = "chaos-overlords-worker-dev"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+PUBLIC_LISTING = "false"
+RATE_LIMIT_PER_MINUTE = "30"
+MEMBER_RATE_LIMIT_PER_MINUTE = "240"
+UPLOAD_RATE_LIMIT_PER_MINUTE = "10"
+BUG_REPORT_RATE_LIMIT_PER_MINUTE = "5"
+RETENTION_DAYS = "30"
+
+# The D1 migration lineage is the storage package's SQLite one, shared with better-sqlite3, so
+# `wrangler d1 migrations apply` and the Node migrator run the same files.
+[[d1_databases]]
+binding = "DB"
+database_name = "chaos_overlords_dev"
+# A local label, not an account id. It has to differ from BUG_DB's: miniflare keys its local storage
+# on the id, and one shared id would quietly make the two lineages the same database — which is the
+# thing "files a report into its own database" exists to catch.
+database_id = "local-chaos-overlords"
+migrations_dir = "../../packages/storage/migrations/sqlite"
+
+# Bug reports live in a SECOND database with its own migration lineage. They arrive
+# unauthenticated, outlive the matches they describe, and carry other players' game journals, so
+# they share nothing with the database holding live matches. Remove this binding and the bug report
+# route answers 404; matches are unaffected either way.
+[[d1_databases]]
+binding = "BUG_DB"
+database_name = "chaos_overlords_bug_reports_dev"
+database_id = "local-chaos-overlords-bug-reports"
+migrations_dir = "../../packages/bug-reports/migrations/sqlite"
+
+# The journals themselves. A compressed whole-match journal runs from hundreds of kilobytes to a few
+# megabytes, D1 refuses a row over 2 MB, and even the ones that fit would be dragged through every
+# triage query, so the bytes go to R2 and BUG_DB keeps the metadata and the key. Without this bucket
+# only journals under BUG_REPORT_LIMITS.inlineStateBytes (256 KiB) are kept at all.
+[[r2_buckets]]
+binding = "BUG_BLOBS"
+bucket_name = "chaos-overlords-bug-reports-dev"
+
+[[durable_objects.bindings]]
+name = "MATCH_HUB"
+class_name = "MatchHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MatchHub"]

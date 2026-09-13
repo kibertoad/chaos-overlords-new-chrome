@@ -1,18 +1,56 @@
 {
   "name": "@chaos-overlords/node-server",
   "version": "0.1.0",
-  "private": true,
   "description": "Node.js runtime facade: serves the shared Hono app over @hono/node-server against SQLite or Postgres, with an in-process event hub and a timer-driven turn deadline scheduler.",
+  "keywords": [
+    "chaos-overlords",
+    "multiplayer",
+    "game-server",
+    "turn-based",
+    "nodejs",
+    "hono",
+    "self-hosted",
+    "sqlite",
+    "postgres"
+  ],
+  "license": "GPL-3.0-only",
+  "author": "kibertoad",
+  "homepage": "https://github.com/kibertoad/chaos-overlords-new-chrome/tree/main/multiplayer/runtimes/node#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kibertoad/chaos-overlords-new-chrome.git",
+    "directory": "multiplayer/runtimes/node"
+  },
+  "bugs": {
+    "url": "https://github.com/kibertoad/chaos-overlords-new-chrome/issues"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "chaos-overlords-server": "./dist/main.js"
+  },
+  "files": [
+    "dist",
+    "!dist/.tsbuildinfo",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/main.js",
     "dev": "node --watch dist/main.js",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "prepublishOnly": "pnpm run build && node ../../scripts/prepublish.mjs"
   },
   "dependencies": {
     "@chaos-overlords/bug-reports": "workspace:*",

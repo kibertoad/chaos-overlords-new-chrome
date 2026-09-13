@@ -103,22 +103,35 @@ version in `scripts/generate-csharp.mjs`, run `pnpm codegen`, and the diff says 
 
 ### Central server (Cloudflare)
 
+The Worker is published as `@chaos-overlords/worker` and deployed from a separate, private
+deployments repository — which account it runs in, what its databases are called and how its vars are
+tuned are that repository's business, not this one's. What this package defines is the interface a
+deployment has to satisfy:
+
+| Binding | Kind | Purpose |
+|---|---|---|
+| `DB` | D1 | Matches, players, turns, snapshots. Migrate from `packages/storage/migrations/sqlite` — the same lineage better-sqlite3 runs. |
+| `BUG_DB` | D1 | Bug reports, from `packages/bug-reports/migrations/sqlite`. Its own database; see "Bug reports" below. Leave it unbound and `POST /api/v1/bug-reports` answers 404. |
+| `BUG_BLOBS` | R2 | Compressed match journals. Leave it unbound and only journals under 256 KiB are kept. |
+| `MATCH_HUB` | Durable Object | `MatchHub`, one per match: SSE fan-out and the turn deadline alarm. Its migration lineage starts at tag `v1`, `new_sqlite_classes = ["MatchHub"]`. |
+
+`PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
+`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE` and `RETENTION_DAYS` are vars,
+with the same meanings as the Node environment variables above. A deployment also wants the cron
+trigger the `scheduled` handler expects — five minutes is the interval the sweeper is written for —
+and Cloudflare rate limiting rules on `/api/v1/matches`, `/api/v1/matches/join` and
+`/api/v1/bug-reports`: the in-Worker limiter counts per isolate, so it softens abuse on one edge node
+rather than globally.
+
+For local work, `runtimes/cloudflare/wrangler.dev.toml` binds all four to throwaway local resources.
+It is a development and test fixture, not a deployment.
+
 ```sh
 cd runtimes/cloudflare
-wrangler d1 create chaos_overlords          # paste the id into wrangler.toml
-pnpm db:migrate:remote
-wrangler d1 create chaos_overlords_bug_reports   # paste the id in too, or drop the binding
-pnpm db:migrate:bugs:remote
-wrangler r2 bucket create chaos-overlords-bug-reports
-wrangler deploy
+pnpm db:migrate:local
+pnpm db:migrate:bugs:local
+pnpm dev
 ```
-
-`wrangler.toml` declares both D1 bindings, the R2 bucket, the `MatchHub` Durable Object and a
-five-minute cron. The same `PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
-`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE` and `RETENTION_DAYS` knobs are
-`[vars]` there. The in-Worker rate limiter counts per isolate, so it softens abuse on one edge node
-rather than globally; add a Cloudflare rate limiting rule on `/api/v1/matches`,
-`/api/v1/matches/join` and `/api/v1/bug-reports` for the real gate.
 
 ## Bug reports
 
@@ -157,6 +170,42 @@ codec byte for zstd) lives with the game in `src/Rechaos.Core/Persistence/Replay
 
 To read one back, `BugReportService` has `list`, `get` and `archive`; none of them are routes, so
 triage is a script or a console against the deployment rather than an endpoint anyone can call.
+
+## Publishing
+
+Every package here is published to npm under `@chaos-overlords/`, GPL-3.0-only, so the server can be
+self-hosted (`npx @chaos-overlords/node-server`) and deployed from elsewhere — a Cloudflare
+deployment consumes `@chaos-overlords/worker` and the two migration lineages as ordinary
+dependencies rather than as a checkout of this repository.
+
+They share one version number. `workspace:*` is what the packages depend on each other by, and pnpm
+rewrites it to that exact version as it packs, so a half-finished bump publishes a package pinning a
+sibling nobody released. `pnpm check-versions` refuses that, and the release workflow runs it against
+the tag before it builds anything.
+
+Releasing is two steps:
+
+```sh
+pnpm -r exec npm version 0.2.0 --no-git-tag-version   # bump every package
+pnpm check-versions 0.2.0                             # they all agree
+# open a pull request, merge it, then:
+git tag multiplayer-v0.2.0 && git push origin multiplayer-v0.2.0
+```
+
+The tag runs [`.github/workflows/multiplayer-publish.yml`](../.github/workflows/multiplayer-publish.yml),
+which lints, builds, tests, rehearses the pack, and then publishes. It authenticates with **npm OIDC
+trusted publishing**: the job trades its GitHub-issued `id-token` for a short-lived registry
+credential, so there is no npm token in this repository to leak or rotate, and every tarball carries
+a provenance attestation. Each package has to name the workflow as a trusted publisher on npmjs.com
+first (*Settings → Trusted publishers*: this repository, workflow `multiplayer-publish.yml`), and the
+very first release of a new package name has to be pushed by hand — a package that does not exist yet
+cannot have a trusted publisher.
+
+`pnpm publish:dry-run` does the whole thing locally without a registry, and prints what each tarball
+would contain. Running the workflow through *Run workflow* does the same on CI. What goes into a
+tarball is `files` in each manifest; `prepublishOnly` builds the package, copies the repository's
+`LICENSE` and `NOTICE` into it (npm ships one tarball per package, so each needs its own), and fails
+the publish if anything `files` promises is missing.
 
 ## Develop
 

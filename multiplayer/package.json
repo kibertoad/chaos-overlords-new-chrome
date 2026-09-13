@@ -7,13 +7,15 @@
     "build": "turbo run build",
     "codegen": "node scripts/generate-csharp.mjs",
     "codegen:check": "node scripts/generate-csharp.mjs --check",
+    "check-versions": "node scripts/check-versions.mjs",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test:run",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "db:generate": "turbo run db:generate",
     "dev:node": "turbo run dev --filter=@chaos-overlords/node-server",
-    "dev:worker": "turbo run dev --filter=@chaos-overlords/worker"
+    "dev:worker": "turbo run dev --filter=@chaos-overlords/worker",
+    "publish:dry-run": "pnpm publish -r --dry-run --no-git-checks"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.13",
