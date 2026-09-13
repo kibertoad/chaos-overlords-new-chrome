@@ -28,8 +28,23 @@ incremental outputs and MSBuild/Roslyn server reuse are retained because both
 materially speed repeated builds.
 
 At the current published checkpoint, the isolated Release build completes with
-zero warnings and all 1,462 tests pass. This count is a regression baseline,
-not a measure of parity completeness.
+zero warnings and all 1,474 tests pass. This count is a regression baseline,
+not a measure of parity completeness. The runner has a 30-minute global safety
+timeout. AI tournament cases record their scenario and seed at startup, then
+report the turn, phase-boundary count, event count, and elapsed time every ten
+turns so an unexpectedly slow run can be distinguished from a stalled one.
+Run that slice with live detailed output while retaining the canonical lock,
+restore, and Release build path:
+
+```powershell
+./tools/Invoke-Validation.ps1 `
+  -TestFilter 'FullyQualifiedName~AiTournamentTests' `
+  -TraceTestOutput
+```
+
+`-TestFilter` can select any narrower test slice; `-TraceTestOutput` exposes
+captured test output and completed-case names. Ordinary full validation remains
+compact.
 
 A small, stable worker pool is expected. If a prior interrupted run left stale
 workers, perform validation and then stop all .NET build servers owned by the
