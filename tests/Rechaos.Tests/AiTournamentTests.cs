@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
@@ -7,6 +8,13 @@ namespace Rechaos.Tests;
 
 public sealed class AiTournamentTests
 {
+    private readonly ITestOutputHelper _output;
+
+    public AiTournamentTests(ITestOutputHelper output)
+    {
+        _output = output;
+    }
+
     private static readonly ScenarioId[] ObjectiveScenarios =
     [
         ScenarioId.KillEmAll,
@@ -22,7 +30,7 @@ public sealed class AiTournamentTests
         get
         {
             var data = new TheoryData<ScenarioId, int>();
-            foreach (var seed in new[] { 1977, 4093, 12289, 32771 })
+            foreach (var seed in new[] { 1977, 4093, 12289, 32771, 65521, 104729 })
             foreach (var scenario in ObjectiveScenarios)
                 data.Add(scenario, seed);
             return data;
@@ -174,12 +182,16 @@ public sealed class AiTournamentTests
             message);
     }
 
-    private static MatchReplayRecorder DriveMatch(
+    private MatchReplayRecorder DriveMatch(
         ScenarioId scenario,
         int seed,
         GameDuration duration = GameDuration.SixMonths,
         int? throughTurn = null)
     {
+        var elapsed = Stopwatch.StartNew();
+        Trace(
+            "AI tournament start: scenario={0}, seed={1}, duration={2}, horizon={3}.",
+            scenario, seed, duration, throughTurn?.ToString() ?? "completion");
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
         [
@@ -193,12 +205,23 @@ public sealed class AiTournamentTests
             recorder.State.Players,
             player => Assert.Equal(PlayerController.Computer, player.Setup.Controller));
         var boundaries = 0;
+        var lastReportedTurn = 0;
         var boundaryLimit = (throughTurn ?? ScenarioCatalog.Turns(duration) + 1) * 32;
         while (recorder.State.Outcome is null
                && (throughTurn is null || recorder.State.Coordinator.Turn <= throughTurn)
                && boundaries++ < boundaryLimit)
         {
             var state = recorder.State;
+            if (state.Coordinator.Phase == TurnPhase.Upkeep
+                && state.Coordinator.Turn % 10 == 0
+                && state.Coordinator.Turn != lastReportedTurn)
+            {
+                lastReportedTurn = state.Coordinator.Turn;
+                Trace(
+                    "AI tournament progress: scenario={0}, seed={1}, turn={2}, boundaries={3}, events={4}, elapsed={5}.",
+                    scenario, seed, state.Coordinator.Turn, boundaries,
+                    state.Events.Count, elapsed.Elapsed);
+            }
             switch (state.Coordinator.Phase)
             {
                 case TurnPhase.Upkeep:
@@ -224,8 +247,21 @@ public sealed class AiTournamentTests
         }
         Assert.True(
             boundaries < boundaryLimit,
-            "AI match exceeded the phase-boundary safety limit.");
+            $"AI match exceeded the phase-boundary safety limit: scenario={scenario}, "
+            + $"seed={seed}, turn={recorder.State.Coordinator.Turn}, boundaries={boundaries}, "
+            + $"events={recorder.State.Events.Count}, elapsed={elapsed.Elapsed}.");
+        Trace(
+            "AI tournament complete: scenario={0}, seed={1}, turn={2}, boundaries={3}, events={4}, outcome={5}, elapsed={6}.",
+            scenario, seed, recorder.State.Coordinator.Turn, boundaries,
+            recorder.State.Events.Count, recorder.State.Outcome?.Reason.ToString() ?? "window-complete",
+            elapsed.Elapsed);
         return recorder;
+    }
+
+    private void Trace(string format, params object[] values)
+    {
+        _output.WriteLine(format, values);
+        TestContext.Current.SendDiagnosticMessage(format, values);
     }
 
     private static void PlanComputerTurn(

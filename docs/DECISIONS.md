@@ -44,6 +44,22 @@ and the client-side wiring of online play is tracked as follow-up work.
   plus streaming presentation are implemented. The recreation policy is tested;
   original trigger/skip evidence and native visual/audio fidelity remain pending.
 
+## 2026-09-13 — Stream the intro once, then keep it on the title screen
+
+- Decision: the logo and intro movies play unattended only until one run has
+  reached the end of the queue. The recreation has no player profiles, so the
+  record lives in the single local preferences file alongside the other client
+  settings. Completing it records `IntroMoviesSeen` in
+  the client preferences (format v8), and the title screen gains an `INTRO`
+  button that replays the same queue on demand.
+- Reason: 135 seconds of startup video, even with skip input, is a toll on every
+  launch of a recreation that players restart often, while the movies themselves
+  are content worth keeping reachable.
+- Boundary: the flag is presentation preference only. It never enters saves,
+  replays, phase hashes, or multiplayer state, a failed preference write leaves
+  playback unaffected, and an unreadable movie pack reports on the title screen
+  instead of blocking it.
+
 ## 2026-09-13 — Bug reports carry a replayable journal, stored apart from matches
 
 - Decision: the in-game Escape menu can file a bug report to a hardcoded

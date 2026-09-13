@@ -11,9 +11,10 @@ public sealed partial class ChaosGame
     private static readonly Rectangle TitleNewGame = new(220, 292, 200, 34);
     private static readonly Rectangle TitleLoadGame = new(220, 334, 98, 34);
     private static readonly Rectangle TitleOnline = new(322, 334, 98, 34);
-    private static readonly Rectangle TitleOptions = new(196, 376, 80, 34);
-    private static readonly Rectangle TitleHelp = new(280, 376, 80, 34);
-    private static readonly Rectangle TitleQuit = new(364, 376, 80, 34);
+    private static readonly Rectangle TitleOptions = new(154, 376, 80, 34);
+    private static readonly Rectangle TitleHelp = new(238, 376, 80, 34);
+    private static readonly Rectangle TitleIntro = new(322, 376, 80, 34);
+    private static readonly Rectangle TitleQuit = new(406, 376, 80, 34);
 
     private const string ObjectiveDurationWarning =
         "OBJECTIVES DISABLE TIME LIMITS";
@@ -304,6 +305,7 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, TitleOnline, "ONLINE", true);
         DrawButton(batch, pixel, font, TitleOptions, "OPTIONS", true);
         DrawButton(batch, pixel, font, TitleHelp, "HELP", true);
+        DrawButton(batch, pixel, font, TitleIntro, "INTRO", true);
         DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
         DrawCentered(font, batch, "NEW CHROME", 280, new Color(210, 52, 43), 1);
         DrawCentered(font, batch, _message, 410, new Color(185, 195, 195), 1);

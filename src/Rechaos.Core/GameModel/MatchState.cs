@@ -453,8 +453,7 @@ public sealed partial class MatchState
         {
             var next = restore.NextNotificationSequences[player.Id];
             var notifications = restore.Notifications[player.Id];
-            if (!GameNotificationValidator.IsValidHistory(
-                    notifications, next, restore.NextEventSequence))
+            if (!IsValidNotificationHistory(notifications, next, restore))
                 throw new ArgumentException("Restored notification history is invalid.", nameof(restore));
             foreach (var notification in notifications) _notifications[player.Id].Enqueue(notification);
             _nextNotificationSequences[player.Id] = next;

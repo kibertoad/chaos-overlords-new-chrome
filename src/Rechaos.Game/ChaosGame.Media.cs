@@ -53,7 +53,7 @@ public sealed partial class ChaosGame
 
     private void UpdateSoundtrack(GameTime gameTime)
     {
-        if (!_soundtrackEnabled || !_startupMoviesComplete) return;
+        if (!_soundtrackEnabled || _introMoviesPlaying) return;
         try
         {
             SelectSoundtrackMode(SoundtrackContext(), gameTime.TotalGameTime);
@@ -97,6 +97,25 @@ public sealed partial class ChaosGame
         }
     }
 
+    /// <summary>Clears the music for a movie; the first update after playback restarts the
+    /// track list the current screen calls for.</summary>
+    private void SuspendSoundtrackForIntroMovies()
+    {
+        if (!_soundtrackEnabled) return;
+        _soundtrackMode = null;
+        _soundtrackIndex = -1;
+        _soundtrackAwaitingStart = false;
+        _soundtrackPausedByDeactivation = false;
+        try
+        {
+            if (MediaPlayer.State != MediaState.Stopped) MediaPlayer.Stop();
+        }
+        catch
+        {
+            DisableSoundtrack();
+        }
+    }
+
     private void SelectSoundtrackMode(ClientScreen screen, TimeSpan now)
     {
         var mode = OriginalSoundtrackPolicy.ModeFor(screen);
@@ -119,11 +138,11 @@ public sealed partial class ChaosGame
     {
         try
         {
-            if (_startupMovieAudio?.State == SoundState.Playing) _startupMovieAudio.Pause();
+            if (_introMovieAudio?.State == SoundState.Playing) _introMovieAudio.Pause();
         }
         catch (Exception exception)
         {
-            FinishStartupMovie("movie.failed", exception);
+            FinishIntroMovie("movie.failed", exception);
         }
         if (_soundtrackEnabled)
         {
@@ -148,11 +167,11 @@ public sealed partial class ChaosGame
         base.OnActivated(sender, args);
         try
         {
-            if (_startupMovieAudio?.State == SoundState.Paused) _startupMovieAudio.Resume();
+            if (_introMovieAudio?.State == SoundState.Paused) _introMovieAudio.Resume();
         }
         catch (Exception exception)
         {
-            FinishStartupMovie("movie.failed", exception);
+            FinishIntroMovie("movie.failed", exception);
         }
         if (!_soundtrackEnabled || !_soundtrackPausedByDeactivation) return;
         try
@@ -188,7 +207,7 @@ public sealed partial class ChaosGame
 
             var shouldStart = !_soundtrackEnabled;
             _soundtrackEnabled = true;
-            if (!shouldStart || !_startupMoviesComplete) return;
+            if (!shouldStart || _introMoviesPlaying) return;
             _soundtrackMode = null;
             SelectSoundtrackMode(SoundtrackContext(), now);
         }
@@ -233,7 +252,7 @@ public sealed partial class ChaosGame
 
     protected override void UnloadContent()
     {
-        DisposeStartupMovie();
+        DisposeIntroMovie();
         DisposeSoundtrack();
         foreach (var sound in _combatSounds.Values) sound.Dispose();
         foreach (var sound in _generalSounds.Values) sound.Dispose();

@@ -281,7 +281,8 @@ public sealed partial class ChaosGame
                 _detailedCombat,
                 _slidePanels,
                 _fullscreen,
-                _smoothEventSiteImages));
+                _smoothEventSiteImages,
+                _introMoviesSeen));
 
     private void ToggleFullscreen()
     {
