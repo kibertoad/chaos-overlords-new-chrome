@@ -83,13 +83,9 @@ public sealed partial class ChaosGame
         }
         var ownGangs = _state.FindPlayer(playerId)!.Gangs.Where(candidate => candidate.IsActive).ToArray();
         _selectedGangIndex = Array.FindIndex(ownGangs, candidate => candidate.Id == gang.Id);
-        if (gang.QueuedCommand is { } queued
-            && SectorGangCardLayout.AssignedCommand(index).Contains(point))
-            OpenCommands(queued.Command.Repeat, ClientScreen.Sector);
-        else if (SectorGangCardLayout.OneOffAction(index).Contains(point))
-            OpenCommands(repeat: false, returnScreen: ClientScreen.Sector);
-        else if (SectorGangCardLayout.RepeatingAction(index).Contains(point))
-            OpenCommands(repeat: true, returnScreen: ClientScreen.Sector);
+        var repeat = SectorGangCardLayout.ActionRepeatAt(index, point);
+        if (repeat is { } selectedRepeat)
+            OpenCommands(selectedRepeat, ClientScreen.Sector);
         else if (SectorGangCardLayout.Portrait(index).Contains(point))
             BeginGangDrag(gang, point);
         else if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))

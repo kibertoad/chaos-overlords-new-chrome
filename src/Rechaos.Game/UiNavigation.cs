@@ -459,12 +459,14 @@ public static class SectorGangCardLayout
     public const int Top = 80;
     public const int ColumnStride = 74;
     public const int RowStride = 110;
-
     public static Rectangle Frame(int slot) => At(slot, 0, 0, 70, 110);
     public static Rectangle ForceBar(int slot) => At(slot, 3, 2, 64, 3);
     public static Rectangle OneOffAction(int slot) => At(slot, 3, 7, 30, 15);
     public static Rectangle RepeatingAction(int slot) => At(slot, 36, 7, 30, 15);
     public static Rectangle AssignedCommand(int slot) => At(slot, 3, 7, 63, 15);
+    public static bool? ActionRepeatAt(int slot, Point point) =>
+        OneOffAction(slot).Contains(point) ? false :
+        RepeatingAction(slot).Contains(point) ? true : null;
     public static Rectangle Portrait(int slot) => At(slot, 3, 23, 64, 64);
     public static Rectangle ItemSlot(int slot, int itemSlot)
     {

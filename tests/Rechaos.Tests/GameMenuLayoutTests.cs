@@ -59,6 +59,7 @@ public sealed class GameMenuLayoutTests
             Assert.True(BugReportLayout.Panel.Contains(control), $"{control} escapes the panel");
         Assert.True(BugReportLayout.ShareStateRow.Contains(BugReportLayout.ShareStateBox));
         Assert.False(BugReportLayout.Send.Intersects(BugReportLayout.Cancel));
+        Assert.Equal(BugReportLayout.Cancel, BugReportLayout.Ok);
         Assert.False(BugReportLayout.Message.Intersects(BugReportLayout.ShareStateRow));
         // The message box has to hold the lines it says it does, at the original 6x7 font cell.
         Assert.True(BugReportLayout.MessageColumns * 6 <= BugReportLayout.Message.Width - 10);

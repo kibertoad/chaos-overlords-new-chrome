@@ -15,6 +15,7 @@ public static class BugReportLayout
     public static Rectangle ShareStateRow => new(76, 300, 488, 22);
     public static Rectangle Send => new(330, 368, 108, 34);
     public static Rectangle Cancel => new(450, 368, 108, 34);
+    public static Rectangle Ok => Cancel;
 
     /// <summary>Characters and lines the message box holds, at the original font's 6x7 cell.</summary>
     public const int MessageColumns = 79;
@@ -49,6 +50,7 @@ public sealed partial class ChaosGame
     private readonly BugReportTextEditor _bugReportText = new();
     private bool _bugReportShareState = true;
     private string _bugReportStatus = string.Empty;
+    private bool _bugReportSent;
 
     /// <summary>The send in flight, or null. Composing and compressing are off the game loop.</summary>
     /// <remarks>
@@ -89,12 +91,23 @@ public sealed partial class ChaosGame
         _bugReportStatus = send.IsCompletedSuccessfully ? send.Result : "COULD NOT SEND THE REPORT";
         var sent = send.IsCompletedSuccessfully
             && send.Result.StartsWith("REPORT SENT", StringComparison.Ordinal);
-        if (sent) _bugReportText.Clear();
+        _bugReportSent = sent;
+        if (sent)
+        {
+            _bugReportText.Clear();
+            _bugReportFocus = BugReportFocus.Cancel;
+        }
         if (!_bugReportOpen) _message = _bugReportStatus;
     }
 
     private void UpdateBugReport(KeyboardState keyboard)
     {
+        if (_bugReportSent)
+        {
+            if (Pressed(keyboard, Keys.Enter)) AcknowledgeBugReport();
+            else if (Pressed(keyboard, Keys.Escape)) CloseBugReport();
+            return;
+        }
         if (Pressed(keyboard, Keys.Escape))
         {
             CloseBugReport();
@@ -125,6 +138,11 @@ public sealed partial class ChaosGame
 
     private void HandleBugReportClick(Point point)
     {
+        if (_bugReportSent)
+        {
+            if (BugReportLayout.Ok.Contains(point)) AcknowledgeBugReport();
+            return;
+        }
         if (BugReportLayout.Message.Contains(point)) _bugReportFocus = BugReportFocus.Message;
         else if (BugReportLayout.ShareStateRow.Contains(point))
         {
@@ -140,6 +158,13 @@ public sealed partial class ChaosGame
         {
             CloseBugReport();
         }
+    }
+
+    private void AcknowledgeBugReport()
+    {
+        _bugReportSent = false;
+        _bugReportStatus = string.Empty;
+        CloseBugReport();
     }
 
     /// <summary>
@@ -261,13 +286,20 @@ public sealed partial class ChaosGame
         if (!string.IsNullOrEmpty(_bugReportStatus))
             font.Draw(batch, _bugReportStatus, new Vector2(76, 346), Color.Gold, 1);
 
-        DrawButton(
-            batch, pixel, font, BugReportLayout.Send,
-            _bugReportSend is null ? "SEND" : "SENDING",
-            _bugReportFocus == BugReportFocus.Send);
-        DrawButton(
-            batch, pixel, font, BugReportLayout.Cancel, "CANCEL",
-            _bugReportFocus == BugReportFocus.Cancel);
+        if (_bugReportSent)
+        {
+            DrawButton(batch, pixel, font, BugReportLayout.Ok, "OK", true);
+        }
+        else
+        {
+            DrawButton(
+                batch, pixel, font, BugReportLayout.Send,
+                _bugReportSend is null ? "SEND" : "SENDING",
+                _bugReportFocus == BugReportFocus.Send);
+            DrawButton(
+                batch, pixel, font, BugReportLayout.Cancel, "CANCEL",
+                _bugReportFocus == BugReportFocus.Cancel);
+        }
     }
 
     /// <summary>
