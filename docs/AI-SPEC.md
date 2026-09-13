@@ -1,7 +1,7 @@
 # AI specification
 
 Status: provisional recreation baseline  
-Last updated: 2026-09-11
+Last updated: 2026-09-13
 
 The original executable's complete difficulty branches and evaluation weights
 have not yet been recovered. Static analysis has recovered the outer per-gang
@@ -10,6 +10,54 @@ Mentality global, all six writes to it, and all eight genuine query consumers.
 The current planner exists to make Human-versus-Computer
 matches operable while preserving deterministic simulation and replay behavior.
 It must not be cited as behavioral parity with the original AI.
+
+## Original and Advanced policy architecture
+
+`AiPolicyPlanner` is the only runtime policy entry point. Original mode delegates
+directly to `AiTurnPlanner.Plan`. Advanced mode calls that same recovered planner
+and composes small, named transformations over its command list; it does not fork
+or copy strategy-family handlers. Both policies share legal-command generation,
+visibility, costs, objective scoring, resolution, and authoritative state. A new
+Advanced behavior must therefore be implemented as an isolated delta, documented
+in the imported in-game Help augmentation, and covered by paired Original and
+Advanced fixtures.
+
+Original is the default. Advanced currently makes exactly these changes:
+
+- It gives an active gang left idle by Original at most one locally compelled
+  legal fallback: Heal while injured, Attack a detectable rival in its sector,
+  or Control its current uncontrolled sector, in that strict order. If none is
+  legal, it remains idle. Attack ties prefer lower current target Force and then
+  target ID. The broader initial fallback was rejected after an isolated
+  same-seed sample showed that eliminating all idle turns reduced territorial
+  performance.
+- On Crime Lord and Homicidal Maniac only, a gang at Force 8 or higher in a sector
+  it controls moves to a neighboring non-controlled sector when Original leaves
+  it idle or repeats Hide, Snitch, or Bribe from its preceding turn. The move uses
+  the existing objective/income destination score, then lower sector ID. A
+  detectable local rival suppresses an Advanced-added move, which may not reduce
+  the friendly gangs remaining after already planned outbound moves below one;
+  incoming moves are not counted. Original Move commands are not cancelled. Goon
+  and Criminal intentionally keep their more passive cadence.
+
+Advanced policy changes are evaluated with paired same-seed Original/Advanced
+fixtures. Each policy pass requires an isolated A/B case recording idle
+gang-turns, controlled and retained sectors, survival, and scenario progress;
+large combined tournaments supplement these cases but cannot substitute for
+them because one improvement could otherwise conceal another regression.
+The aggregate gates run 12 identical Power seeds for 15 turns per isolated
+feature. Criminal idle recovery reduced idle gang-turns from 242 to 128,
+increased controlled-sector turns from 3,126 to 3,132 and final controlled
+sectors from 365 to 372, while undefended-sector turns remained 664. Crime Lord
+expansion reduced idle turns from 258 to 210 and increased outward moves from
+402 to 476, controlled-sector turns from 3,315 to 3,557, final controlled sectors
+from 399 to 433, and defended controlled-sector turns from 2,493 to 2,578. Seed
+pairs execute independently with a maximum of two workers.
+
+These transformations consume no RNG and add no cash, statistics, discounts,
+damage, success chance, or hidden information. AI Mentality remains the separate
+global resolution setting. The policy is immutable match setup and is included in
+native saves, replays, canonical hashes, and online game settings.
 
 ## Inputs and invariants
 

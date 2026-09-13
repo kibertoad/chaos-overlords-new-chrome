@@ -164,7 +164,7 @@ public static class SealedTurnApplier
     private static void PlanComputerTurn(MatchReplayRecorder replay, PlayerId player)
     {
         replay.PrepareAiPlanning(player);
-        foreach (var command in AiTurnPlanner.Plan(replay.State, player)) replay.Submit(command);
+        foreach (var command in AiPolicyPlanner.Plan(replay.State, player)) replay.Submit(command);
         // The offers are already drawn: every client refilled every seat on entering Command.
         var hiring = replay.PrepareAiHiring(player);
         if (hiring.Choice is { } choice) replay.QueueHire(player, choice.GangDefinitionId, choice.SectorId);

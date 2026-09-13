@@ -44,7 +44,8 @@ public static class MatchBootstrapFactory
                     new PlayerId(slot), DerivedSeatName(slot), PlayerController.Computer, portrait);
         }
         return new MatchSetup(
-            settings.Scenario, settings.Duration, seed, setups, settings.AiMentality);
+            settings.Scenario, settings.Duration, seed, setups, settings.AiMentality,
+            aiPolicy: settings.AiPolicy);
     }
 
     /// <summary>The match, generated from the setup, with hire offers drawn for every seat.</summary>

@@ -289,7 +289,7 @@ public sealed class MatchReplayTests
     }
 
     [Fact]
-    public void VersionTwentyFourReplaysSimultaneousHireOfferGeneration()
+    public void CurrentReplayReplaysSimultaneousHireOfferGeneration()
     {
         var recorder = new MatchReplayRecorder(CreateMatch());
         recorder.FinishUpkeep();
@@ -303,7 +303,8 @@ public sealed class MatchReplayTests
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
         var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        Assert.Equal(24, document["formatVersion"]!.GetValue<int>());
+        Assert.Equal(MatchReplaySerializer.CurrentFormatVersion,
+            document["formatVersion"]!.GetValue<int>());
         replay.Position = 0;
 
         var restored = MatchReplaySerializer.LoadAndReplay(

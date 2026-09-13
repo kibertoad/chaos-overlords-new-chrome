@@ -6,6 +6,13 @@ public sealed record MatchPlayerSetup(
     PlayerController Controller,
     short PortraitId = 0);
 
+/// <summary>Chooses the computer command policy without changing AI resolution odds.</summary>
+public enum AiPolicyMode : byte
+{
+    Original,
+    Advanced
+}
+
 public sealed class MatchSetup
 {
     public MatchSetup(
@@ -14,7 +21,8 @@ public sealed class MatchSetup
         int initialSeed,
         IReadOnlyList<MatchPlayerSetup> players,
         AiDifficulty aiMentality = AiDifficulty.Criminal,
-        bool allowSparsePlayerIds = false)
+        bool allowSparsePlayerIds = false,
+        AiPolicyMode aiPolicy = AiPolicyMode.Original)
     {
         ArgumentNullException.ThrowIfNull(players);
         if (players.Count is < 1 or > MatchLimits.PlayerCount)
@@ -37,12 +45,14 @@ public sealed class MatchSetup
             throw new ArgumentException(
                 "Player portrait is outside the original 16-entry atlas.", nameof(players));
         if (!Enum.IsDefined(aiMentality)) throw new ArgumentOutOfRangeException(nameof(aiMentality));
+        if (!Enum.IsDefined(aiPolicy)) throw new ArgumentOutOfRangeException(nameof(aiPolicy));
 
         Scenario = scenario;
         Duration = duration;
         InitialSeed = initialSeed;
         Players = players.ToArray();
         AiMentality = aiMentality;
+        AiPolicy = aiPolicy;
         AllowsSparsePlayerIds = allowSparsePlayerIds;
     }
 
@@ -51,5 +61,6 @@ public sealed class MatchSetup
     public int InitialSeed { get; }
     public IReadOnlyList<MatchPlayerSetup> Players { get; }
     public AiDifficulty AiMentality { get; }
+    public AiPolicyMode AiPolicy { get; }
     public bool AllowsSparsePlayerIds { get; }
 }

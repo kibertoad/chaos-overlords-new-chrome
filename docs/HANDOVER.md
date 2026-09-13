@@ -10,19 +10,35 @@ Last updated: 2026-09-13
   every accepted checkpoint through managed Smacker startup playback;
   `codex/full-reimplementation` remains the development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passed the full test suite with zero warnings.
+  isolated Release build passes all 1,495 tests with zero warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v22, replays are v24, canonical hashes are v25, asset
+- Native saves are format v23, replays are v25, canonical hashes are v26, asset
   manifests are v6, extracted help is v3, and client preferences are v8. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
 
 ## Latest playable work
 
+- Setup now exposes a default-off Original/Advanced AI policy with exact hover
+  and F1 documentation. Advanced composes small transformations over the single
+  Original planner: deterministic legal recovery for idle gangs, plus a
+  Crime-Lord/Homicidal expansion rule that moves healthy gangs outward when
+  they would remain idle or repeat Hide, Snitch, or Bribe. Goon and Criminal
+  retain their more passive cadence. The policy is persisted and authenticated
+  by local saves, replays, hashes, and online settings.
+- Paired 12-seed, 15-turn Power playtests isolate both policy passes. Criminal
+  idle recovery reduced idle gang-turns from 242 to 128, increased controlled
+  sector-turns from 3,126 to 3,132 and final controlled sectors from 365 to 372,
+  while undefended-sector turns remained 664. Crime Lord expansion reduced idle
+  turns from 258 to 210, increased outward moves from 402 to 476, controlled
+  sector-turns from 3,315 to 3,557, final controlled sectors from 399 to 433,
+  and defended controlled-sector turns from 2,493 to 2,578. Independent seed
+  pairs run on two workers and report timings separately from replay-heavy
+  parity tournaments.
 - Native restore now rejects notification records dated after the restored
   turn, references whose event turn/phase boundary does not match the
   notification, and gang references absent from the restored roster. These

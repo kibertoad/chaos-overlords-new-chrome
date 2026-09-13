@@ -142,7 +142,7 @@ public sealed partial class ChaosGame
             if (_state.Coordinator.Phase == TurnPhase.Command)
             {
                 _actions.HotSeatRecorder.PrepareAiPlanning(playerId);
-                var commands = AiTurnPlanner.Plan(_state, playerId);
+                var commands = AiPolicyPlanner.Plan(_state, playerId);
                 foreach (var command in commands)
                     _actions.HotSeatRecorder.Submit(command);
                 _diagnostics?.Write("ai.planned", new Dictionary<string, string?>

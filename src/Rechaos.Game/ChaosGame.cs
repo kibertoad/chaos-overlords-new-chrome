@@ -109,7 +109,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly LocalSetupRoster _localSetupRoster = new();
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
-    private AiDifficulty _selectedAiMentality = AiDifficulty.Criminal;
     private ScenarioId _selectedScenario = ScenarioId.Greed;
     private GameDuration _selectedDuration = GameDuration.SixMonths;
     private int _cursor;
@@ -848,6 +847,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     SelectSetupDurationButton(duration);
                 else if (planningTimeLimit >= 0)
                     SelectPlanningTimeLimit((PlanningTimeLimit)planningTimeLimit);
+                else if (SetupAiPolicy.Contains(point))
+                    CycleAiPolicy();
                 else if (previousPortrait >= 0) CyclePortrait(previousPortrait, -1);
                 else if (nextPortrait >= 0) CyclePortrait(nextPortrait, 1);
                 else if (draggedPlayer >= 0) BeginSetupPlayerDrag(draggedPlayer, point);

@@ -1,7 +1,7 @@
 # Recreation-native save format
 
-Status: implemented format version 22
-Last updated: 2026-09-11
+Status: implemented format version 23
+Last updated: 2026-09-13
 
 This format belongs to the recreation. It is deliberately separate from the
 two partially mapped original *Chaos Overlords* save variants and makes no
@@ -9,7 +9,7 @@ claim of binary compatibility with either of them.
 
 ## Container and limits
 
-- UTF-8 JSON with camel-case property names and `formatVersion: 22`.
+- UTF-8 JSON with camel-case property names and `formatVersion: 23`.
 - Maximum accepted size: 16 MiB.
 - Unknown properties, missing constructor fields, invalid identifiers, invalid
   enum/phase combinations, and inconsistent sequence counters are rejected.
@@ -25,16 +25,16 @@ serializer, then atomically promotes it. A valid previous primary becomes
 good backup. Recovery loads the backup only when the primary is missing,
 unreadable, or invalid.
 
-## Version 22 document
+## Version 23 document
 
 The top-level members are:
 
 | Member | Contents |
 |---|---|
-| `formatVersion` | Schema discriminator; currently `22` |
+| `formatVersion` | Schema discriminator; currently `23` |
 | `definitionsSha256` | Gameplay-definition compatibility fingerprint |
 | `stateSha256` | Canonical authoritative-state fingerprint |
-| `setup` | Scenario, duration, initial seed, global AI mentality, and ordered player definitions including portrait IDs |
+| `setup` | Scenario, duration, initial seed, global AI mentality, Original/Advanced AI policy, and ordered player definitions including portrait IDs |
 | `players` | Cash/support/objective state, gangs, three fixed hire slots, pending action slot and legacy prepaid marker, persistent maximum-hire-Force modifier, research, inventory, statistics |
 | `sectors` | Ownership, explicit base income, tolerance, chaos/crackdown/importance, and three site instances |
 | `runtime` | Phase coordinator, RNG state/count, fixed-six-player AI reactions/directional attitudes, six current and previous AI hire roles, six-by-81 AI family records, three generations of action plus two command-dependent target bytes, weapon/armor planning cooldowns, polymorphic family-2/7 focus/family-11 formation values, family-6 coverage sectors, six first-planning flags, six encoded hire-placement anchors, command queue/counter with primary through quaternary targets, event history/counter, notification queues/counters, per-player Comlink inbox messages/sequences/per-record read sequences, phase hashes, and outcome |
@@ -54,7 +54,7 @@ its nested collections are frozen after construction.
 
 ## Compatibility policy
 
-Readers currently accept versions 1 through 22. This pre-1.0 compatibility is
+Readers currently accept versions 1 through 23. This pre-1.0 compatibility is
 useful test coverage, not a product guarantee: readers and fixtures for old
 development schemas may be removed or replaced when the authoritative model
 changes. Older documents currently migrate formerly implicit
@@ -107,6 +107,9 @@ sorted sequences of the individual records actually viewed and advances the
 canonical hash to version 25. Versions 17 through 21 migrate their read-through
 cursor into the equivalent retained-record prefix and continue to verify with
 their preserved legacy hash projection.
+Version 23 adds the immutable Original/Advanced AI policy to match setup and
+advances the canonical hash to version 26. Versions 1 through 22 migrate to the
+default Original policy and verify through their preserved hash projections.
 The appropriate legacy canonical hash is verified before the
 migrated state is returned. Unknown
 versions remain rejected. Starting with 1.0.0, incompatible changes must
@@ -118,7 +121,7 @@ post-1.0 policy.
 Original-save import/export is an explicit non-goal. Native snapshots must never
 be presented as converted original saves.
 
-## Replay format version 24
+## Replay format version 25
 
 `MatchReplayRecorder` captures an initial native snapshot, then requires every
 authoritative mutation to pass through its API. It covers command submission and
@@ -162,6 +165,8 @@ phase-boundary history as well. Version 24 embeds native snapshot version 22
 and canonical hash version 25; every Comlink read operation names the one
 displayed message sequence it acknowledges. Versions 18 through 23 retain the
 legacy mark-all operation during playback.
+Version 25 embeds native snapshot version 23 and canonical hash version 26,
+authenticating the match's AI policy.
 
 Playback enforces the introduction boundary of every operation added after the
 base v2 schema: `PrepareHireOffers` requires v3, `PrepareAiPlanning` v6,
