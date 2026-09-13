@@ -1,7 +1,7 @@
 # Recreation validation procedure
 
 Status: maintained canonical procedure
-Last updated: 2026-09-11
+Last updated: 2026-09-13
 
 ## Validation layers
 
@@ -27,24 +27,45 @@ installed copy and unrelated `dotnet` processes are left alone. The normal
 incremental outputs and MSBuild/Roslyn server reuse are retained because both
 materially speed repeated builds.
 
-At the current published checkpoint, the isolated Release build completes with
-zero warnings and all 1,571 tests pass. This count is a regression baseline,
-not a measure of parity completeness. The runner has a 30-minute global safety
-timeout. AI tournament cases record their scenario and seed at startup, then
-report the turn, phase-boundary count, event count, and elapsed time every ten
-turns so an unexpectedly slow run can be distinguished from a stalled one.
-Run that slice with live detailed output while retaining the canonical lock,
-restore, and Release build path:
+The default gate excludes only the 53-case `LongRunning` AI campaign category.
+At the current checkpoint it builds with zero warnings and runs 1,518 focused
+tests in about 28 seconds. These retain deterministic planner, Advanced-policy,
+headless-runner, replay, persistence, and bounded single-case behavior coverage;
+the exclusion is the repeated 20/40/60-turn, multi-seed statistical campaign
+matrix, not the AI unit and integration tests.
+
+Run every test, including the campaigns, explicitly:
+
+```powershell
+./tools/Invoke-Validation.ps1 -IncludeLongRunningTests
+```
+
+The complete 1,571-test suite last passed in 7 minutes 24 seconds. Both tiers
+carry exact minimum discovery counts so accidentally excluding or failing to
+discover tests fails the gate. This is an implementation regression baseline,
+not a measure of parity completeness.
+
+For an investigation, run only the long category with live output. Its cases
+record scenario and seed at startup, then report turn, phase-boundary count,
+event count, and elapsed time every ten turns so a slow run can be distinguished
+from a stalled one:
 
 ```powershell
 ./tools/Invoke-Validation.ps1 `
-  -TestFilter 'FullyQualifiedName~AiTournamentTests' `
+  -LongRunningTestsOnly `
   -TraceTestOutput
 ```
 
 `-TestFilter` can select any narrower test slice; `-TraceTestOutput` exposes
-captured test output and completed-case names. Ordinary full validation remains
-compact.
+captured test output and completed-case names. The long-only mode requires all
+53 cases to be discovered. `-TestFilter`, `-IncludeLongRunningTests`, and
+`-LongRunningTestsOnly` are mutually exclusive so the selected scope remains
+unambiguous. Every invocation retains the 30-minute global test safety timeout.
+
+The manually dispatched CI workflow runs the fast tier on Windows x64, Linux
+x64, macOS arm64, and macOS x64. Its `fast-and-long-running` option adds the
+observable long category once on Linux. The manually dispatched release workflow
+always runs both tiers before packaging.
 
 For larger statistical samples, the presentation-free runner avoids xUnit and
 lets replay verification be sampled rather than paid for on every match:

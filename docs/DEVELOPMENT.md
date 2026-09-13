@@ -48,7 +48,7 @@ steps during development.
 
 ## Build and test
 
-Run the repository's complete local gate through its serialized entry point:
+Run the repository's fast regression gate through its serialized entry point:
 
 ```powershell
 ./tools/Invoke-Validation.ps1
@@ -58,7 +58,8 @@ It stops a game launched from this checkout, serializes validation, and bounds
 build parallelism, preventing overlapping sessions and locked game files.
 Normal incremental outputs and build-server reuse remain on for performance.
 Installed copies of the game are not stopped. See [VALIDATION.md](VALIDATION.md)
-for the explicit build-server cleanup option.
+for the explicit 53-case long-running/full-suite modes and build-server cleanup
+option.
 
 ## Repository projects
 

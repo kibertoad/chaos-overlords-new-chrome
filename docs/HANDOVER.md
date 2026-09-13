@@ -7,10 +7,15 @@ Last updated: 2026-09-13
 
 - The canonical repository is
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`. `main` contains
-  every accepted checkpoint through managed Smacker startup playback;
-  `codex/full-reimplementation` remains the development branch.
-- The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passes all 1,571 tests with zero warnings.
+  every accepted checkpoint through deterministic online AI takeover;
+  `codex/full-reimplementation-continued` is the active development branch.
+  The earlier `codex/full-reimplementation` ref is retained without rewriting
+  its pre-rebase history.
+- The canonical local gate is `./tools/Invoke-Validation.ps1`: its fast default
+  passes 1,518 focused tests in about 28 seconds with zero warnings. Use
+  `-IncludeLongRunningTests` for the complete 1,571-test gate, last passing in
+  7 minutes 24 seconds. The 53 repeated AI campaign cases are tagged
+  `LongRunning`; focused planner/policy/headless/replay checks remain in default.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build

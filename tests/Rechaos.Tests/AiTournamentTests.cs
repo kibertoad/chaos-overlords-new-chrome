@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Rechaos.Tests;
 
+[Trait("Category", "LongRunning")]
 public sealed class AiTournamentTests
 {
     private readonly ITestOutputHelper _output;

@@ -4,6 +4,8 @@ param(
     [int] $MaxCpuCount = 2,
     [switch] $ShutdownBuildServersAfterRun,
     [string] $TestFilter,
+    [switch] $IncludeLongRunningTests,
+    [switch] $LongRunningTestsOnly,
     [switch] $TraceTestOutput
 )
 
@@ -12,6 +14,11 @@ $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Pat
 $temporaryRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
 $sha256 = [Security.Cryptography.SHA256]::Create()
 try {
+    if (($TestFilter -and ($IncludeLongRunningTests -or $LongRunningTestsOnly)) -or
+        ($IncludeLongRunningTests -and $LongRunningTestsOnly)) {
+        throw 'Choose only one of -TestFilter, -IncludeLongRunningTests, or -LongRunningTestsOnly.'
+    }
+
     $repositoryHash = $sha256.ComputeHash(
         [Text.Encoding]::UTF8.GetBytes($repositoryRoot.ToUpperInvariant()))
 }
@@ -97,8 +104,20 @@ try {
     if ($TestFilter) {
         $testArguments += @('--filter', $TestFilter)
     }
+    elseif ($LongRunningTestsOnly) {
+        $testArguments += @(
+            '--filter', 'Category=LongRunning',
+            '--minimum-expected-tests', '53'
+        )
+    }
+    elseif ($IncludeLongRunningTests) {
+        $testArguments += @('--minimum-expected-tests', '1571')
+    }
     else {
-        $testArguments += @('--minimum-expected-tests', '354')
+        $testArguments += @(
+            '--filter', 'Category!=LongRunning',
+            '--minimum-expected-tests', '1518'
+        )
     }
     if ($TraceTestOutput) {
         $testArguments += @(
