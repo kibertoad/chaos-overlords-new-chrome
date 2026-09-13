@@ -35,6 +35,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string _autoSavePath;
     private readonly string _replayPath;
     private readonly string _preferencesPath;
+    private readonly string _multiplayerRecoveryPath;
     private readonly bool _debugPhaseStepping;
     private readonly RuntimeDiagnostics? _diagnostics;
     private SpriteBatch? _batch;
@@ -218,6 +219,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _autoSavePath = Path.Combine(userDataRoot, "autosave.rchsave");
         _replayPath = Path.Combine(userDataRoot, "last-match.rchreplay");
         _preferencesPath = Path.Combine(userDataRoot, "preferences.json");
+        _multiplayerRecoveryPath = Path.Combine(userDataRoot, "multiplayer-recovery.json");
         var preferences = GamePreferencesStore.LoadOrDefault(_preferencesPath);
         _musicVolumeLevel = preferences.MusicVolumeLevel;
         _soundEffectVolumeLevel = preferences.SoundEffectVolumeLevel;
@@ -232,6 +234,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _defaultAiPolicy = preferences.DefaultAiPolicy;
         _online.Service = preferences.OnlineService;
         _online.Server.Set(preferences.CustomMultiplayerServer);
+        _lastMultiplayerRecovery = MultiplayerRecoveryStore.Load(_multiplayerRecoveryPath);
+        if (_lastMultiplayerRecovery is { } recovery)
+        {
+            _online.JoinCode.Set(recovery.JoinCode);
+            _online.DisplayName.Set(recovery.DisplayName);
+            if (recovery.ShouldSuggestReconnect)
+                _message = "ONLINE MATCH INTERRUPTED  OPEN ONLINE TO RECONNECT";
+        }
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,

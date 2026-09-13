@@ -36,13 +36,16 @@ before installation.
 ## GitHub release workflow
 
 Run the manual-only `Release installers` workflow, enter a tag such as `0.1.0`,
-and select `windows` or `all`. The default builds Windows x64 only. `all`
-requires matching Windows x64, Linux x64, macOS arm64, and macOS x64 artifacts.
+and select `windows`, `no-mac-x64`, or `all`. The default builds Windows x64 only;
+`no-mac-x64` adds Linux x64 and macOS arm64, while `all` also adds macOS x64.
+Each preset requires all of its selected artifacts.
 The workflow creates the tag and GitHub Release only after tests and all selected
 builds succeed. It runs the fast validation tier; the repeated long-running AI
 campaign matrix is exercised by the daily `Nightly observable AI campaigns`
-workflow and remains available through manual dispatch. The release workflow has
-no scheduled or push trigger.
+workflow and remains available through manual dispatch. Installer artifacts used
+to assemble the release are retained in Actions for one day; the durable downloadable
+copies are the assets attached to the resulting GitHub Release. The release workflow
+has no scheduled or push trigger.
 
 ## Continuous integration
 

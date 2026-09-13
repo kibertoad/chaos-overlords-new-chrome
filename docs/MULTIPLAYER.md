@@ -375,7 +375,8 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    out of the state rather than a roster fetched beside it — the state is the one answer every client
    is already guaranteed to agree on, and a slot the AI plans on one client and not another is a
    desync on the turn *after* the one that caused it.
-5. On `turn.desynced`, the host uploads the native snapshot for that turn (the same bytes as a
+5. After every `turn.confirmed`, the host uploads the native snapshot for that turn as a rolling
+   server autosave. On `turn.desynced`, the host uploads the same kind of snapshot as a repair (the same bytes as a
    quick-save), declaring the **native save** format version — the replay format's says nothing about
    those bytes. Every other client refuses a version newer than it reads, and otherwise loads it,
    recomputes the hash and re-reports.
@@ -406,6 +407,12 @@ relative positions; seals already represented by a snapshot and duplicate transf
 harmless no-ops. The announced sealed-set digest is checked against the fetched set before its contents are
 recomputed. Only after pairing the state with the caller's current whole-document submission does
 the stream resume from the refreshed `lastEventSeq`.
+
+The desktop client writes the server, match id, player id, join code, and membership token to an
+atomic local recovery record as soon as it takes a seat. A normal shutdown marks that record clean;
+an unclean exit leaves it resumable, so the next launch points the player to a Reconnect action.
+Terminal online errors are shown on the title screen and name that recovery path when the saved
+membership may still be valid. A completed match or an explicit Leave retires the recovery record.
 
 ### What a hot-seat core does not say
 

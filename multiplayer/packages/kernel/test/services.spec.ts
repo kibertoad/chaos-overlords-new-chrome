@@ -621,6 +621,30 @@ describe('multiplayer kernel', () => {
     expect((await storage.snapshots.getLatest(hostP.match.id))?.turn).toBe(7)
   })
 
+  it('stores a confirmed-turn autosave without announcing a desync repair', async () => {
+    const { host, guest } = await startedMatch()
+    await submit(await principalOf(host.token), 1, 1, true)
+    await submit(await principalOf(guest.token), 1, 2, true)
+    await kernel.turns.report(await principalOf(host.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+    await kernel.turns.report(await principalOf(guest.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+
+    await kernel.snapshots.upload(await principalOf(host.token), {
+      turn: 1,
+      formatVersion: 23,
+      stateHash: HASH_A,
+      body: 'AUTOSAVE',
+    })
+
+    expect((await kernel.snapshots.latest(host.match.id)).body).toBe('AUTOSAVE')
+    expect(notifier.events.map((event) => event.type)).not.toContain('snapshot.available')
+  })
+
   /**
    * The seal opens the successor before anyone has reported, so the turn that ends the match is
    * always followed by an open one. Leaving its deadline armed would have the sweeper chasing a

@@ -29,15 +29,20 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, OnlineConnectLayout.JoinRole, "JOIN",
             _online.Role == OnlineConnectRole.Join);
         DrawField(batch, pixel, font, OnlineConnectLayout.Name, _online.DisplayName);
+        var busy = _online.Stage == MultiplayerStage.Busy;
         if (_online.Role == OnlineConnectRole.Join)
+        {
             DrawField(batch, pixel, font, OnlineConnectLayout.JoinCode, _online.JoinCode);
+            DrawButton(batch, pixel, font, OnlineConnectLayout.PasteJoinCode, "PASTE", !busy);
+        }
         else
             DrawDisabledJoinCode(batch, pixel, font);
         DrawField(batch, pixel, font, OnlineConnectLayout.Password, _online.Password);
-        var busy = _online.Stage == MultiplayerStage.Busy;
         DrawButton(batch, pixel, font, OnlineConnectLayout.Continue,
             _online.Role == OnlineConnectRole.Host ? "CREATE" : "CONNECT", !busy);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Back, "BACK", !busy);
+        if (_lastMultiplayerRecovery?.ShouldSuggestReconnect == true)
+            DrawButton(batch, pixel, font, OnlineConnectLayout.Reconnect, "RECONNECT", !busy);
         DrawCentered(font, batch, _online.ServerStatus, OnlineConnectLayout.ServerStatusY,
             _online.ServerStatus.EndsWith("ONLINE", StringComparison.Ordinal) ? Color.Lime : Color.Gold, 1);
         DrawCentered(font, batch, _online.Status, OnlineConnectLayout.StatusY, Color.Gold, 1);

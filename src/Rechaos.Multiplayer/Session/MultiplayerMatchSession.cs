@@ -10,22 +10,6 @@ using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
 
 namespace Rechaos.Multiplayer.Session;
 
-/// <summary>What a session needs to start driving a match that has already been seated.</summary>
-/// <param name="Match">The token-bound handle for this player.</param>
-/// <param name="Definitions">The bundled gameplay tables the city is generated from.</param>
-/// <param name="View">The match as the server last described it; the seed and roster come from it.</param>
-/// <param name="OwnPlayerId">This client's player id, for reading its own row out of the roster.</param>
-/// <param name="ResumeAfterSeq">
-/// The last event sequence this client has already handled. Delivery is at least once, so resuming
-/// from it may repeat facts already applied; every handler here is idempotent for that reason.
-/// </param>
-public sealed record MultiplayerSessionOptions(
-    MatchHandle Match,
-    OriginalData Definitions,
-    MatchView View,
-    string OwnPlayerId,
-    int ResumeAfterSeq);
-
 /// <summary>
 /// Drives one online match: the event stream in, the turn barrier out, and an authoritative state
 /// that only ever advances by applying a sealed turn.
@@ -49,7 +33,7 @@ public sealed record MultiplayerSessionOptions(
 /// <see cref="MultiplayerNotice.Failed"/>.
 /// </para>
 /// </remarks>
-public sealed class MultiplayerMatchSession : IAsyncDisposable
+public sealed partial class MultiplayerMatchSession : IAsyncDisposable
 {
     private const int EventHistoryPageSize = 200;
 
@@ -69,6 +53,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     /// <summary>Seats that have said they are done with <see cref="_readinessTurn"/>.</summary>
     private readonly HashSet<string> _readyPlayerIds = new(StringComparer.Ordinal);
     private readonly HashSet<int> _locallyReadyTurns = [];
+    private readonly Dictionary<int, UploadSnapshotRequest> _pendingAutosaves = [];
 
     private PendingOrders? _pending;
     private MatchReplayRecorder _replay;
@@ -613,6 +598,10 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                         cancellationToken)
                     .ConfigureAwait(false);
                 return;
+            case TurnConfirmedEvent confirmed:
+                await AutosaveConfirmedTurnAsync(confirmed, cancellationToken)
+                    .ConfigureAwait(false);
+                return;
             case TurnDesyncedEvent desynced:
                 await HandleDesyncAsync(desynced, cancellationToken).ConfigureAwait(false);
                 return;
@@ -691,6 +680,14 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         var stateHash = await FetchAndApplySealedTurnAsync(
                 turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
+        if (IsHost)
+        {
+            _pendingAutosaves[turn] = new UploadSnapshotRequest(
+                turn,
+                NativeSaveSerializer.CurrentFormatVersion,
+                stateHash,
+                MatchStateClone.ToBase64(_replay.State));
+        }
         await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
             turn, MatchStateClone.Of(_replay.State, _definitions), stateHash));

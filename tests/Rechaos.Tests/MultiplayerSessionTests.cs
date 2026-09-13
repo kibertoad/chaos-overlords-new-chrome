@@ -461,6 +461,27 @@ public sealed class MultiplayerSessionTests
         Assert.Contains(resolved.StateHash, report, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task HostAutosavesEveryConfirmedTurnToTheServer()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+        server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+
+        server.Events.Write(SealedFrame(8, 1));
+        var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session);
+        server.Events.Write(Frame(
+            9,
+            "turn.confirmed",
+            $$"""{"turn":1,"stateHash":"{{resolved.StateHash}}"}"""));
+
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the autosave");
+        var upload = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/snapshots"));
+        Assert.Contains("\"turn\":1", upload, StringComparison.Ordinal);
+        Assert.Contains(resolved.StateHash, upload, StringComparison.Ordinal);
+    }
+
     /// <summary>
     /// A seal for a turn already applied is dropped rather than applied twice.
     /// </summary>

@@ -105,6 +105,8 @@ The manually dispatched continuous-integration workflow runs this verification
 on Windows x64, Linux x64, macOS arm64, and macOS x64. It also publishes with
 `IncludeOriginalAssets=false`, rejects any resulting `Assets` directory, and
 runs the published `--smoke-test` entry point without an original asset pack.
+Disposable installer artifacts from this workflow are retained for one day so routine validation
+does not consume the repository's Actions storage for the default multi-month retention window.
 After all four platforms pass, its Windows packaging job builds the clean-room
 self-contained package and installer, installs with `/NOIMPORT=1`, launches the
 packaged `--platform-smoke-test` entry point, uninstalls it, and uploads both

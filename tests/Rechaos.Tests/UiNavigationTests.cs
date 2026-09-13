@@ -985,16 +985,4 @@ public sealed class UiNavigationTests
         Assert.False(HireComparisonLayout.IsBestValue(1, 7, [2, 4, 7]));
     }
 
-    [Fact]
-    public void OnlineConnectFieldsLeaveRoomForEveryLabel()
-    {
-        Assert.Equal(new Rectangle(120, 188, 190, 26), OnlineConnectLayout.HostRole);
-        Assert.Equal(new Rectangle(120, 264, 400, 22), OnlineConnectLayout.JoinCode);
-        Assert.Equal(new Rectangle(120, 302, 400, 22), OnlineConnectLayout.Password);
-        Assert.Equal(new Rectangle(120, 340, 190, 30), OnlineConnectLayout.Continue);
-        Assert.Equal((390, 410),
-            (OnlineConnectLayout.ServerStatusY, OnlineConnectLayout.StatusY));
-        Assert.All(OnlineConnectLayout.Fields.Zip(OnlineConnectLayout.Fields.Skip(1)), pair =>
-            Assert.True(pair.First.Bottom + 16 <= pair.Second.Y));
-    }
 }

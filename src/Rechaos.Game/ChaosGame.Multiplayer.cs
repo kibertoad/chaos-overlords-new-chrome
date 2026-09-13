@@ -35,6 +35,7 @@ public sealed partial class ChaosGame
     private TimeSpan _lobbyPollDue;
     private CancellationTokenSource? _serverProbeCancellation;
     private Task<bool>? _serverProbe;
+    private MultiplayerRecovery? _lastMultiplayerRecovery;
 
     private TextField[] OnlineFields
     {
@@ -53,7 +54,9 @@ public sealed partial class ChaosGame
     {
         if (_session is not null) return;
         _online.Stage = MultiplayerStage.Connect;
-        _online.Status = string.Empty;
+        _online.Status = _lastMultiplayerRecovery?.ShouldSuggestReconnect == true
+            ? "AN INTERRUPTED MATCH CAN BE RECOVERED"
+            : string.Empty;
         foreach (var field in new[]
                  { _online.Server, _online.DisplayName, _online.JoinCode, _online.Password })
             field.IsFocused = false;
@@ -265,6 +268,40 @@ public sealed partial class ChaosGame
             _online.JoinCode.Value.Trim(), _online.DisplayName.Value.Trim(), OptionalPassword()));
     }
 
+    private void PasteJoinCode()
+    {
+        if (!DesktopClipboard.TryGetText(out var text))
+        {
+            _online.Status = "THE CLIPBOARD DOES NOT CONTAIN TEXT";
+            return;
+        }
+        _online.JoinCode.Set(text);
+        _online.JoinCode.IsFocused = true;
+        _online.Status = text.Length > 8
+            ? "PASTED JOIN CODE WAS SHORTENED"
+            : "JOIN CODE PASTED";
+    }
+
+    private void ResumeLastOnlineMatch()
+    {
+        var recovery = _lastMultiplayerRecovery;
+        if (recovery is null || !recovery.ShouldSuggestReconnect) return;
+        if (!Uri.TryCreate(recovery.Server, UriKind.Absolute, out var server))
+        {
+            _online.Status = "THE SAVED SERVER ADDRESS IS INVALID";
+            return;
+        }
+        _online.Service = server == MultiplayerServiceEndpoint.Central
+            ? OnlineServiceMode.Central
+            : OnlineServiceMode.Custom;
+        if (_online.Service == OnlineServiceMode.Custom) _online.Server.Set(recovery.Server);
+        _serverProbeCancellation?.Cancel();
+        _lobby = new MultiplayerLobbySession(_http, new MultiplayerClientOptions(server));
+        _online.Stage = MultiplayerStage.Busy;
+        _online.Status = "RECONNECTING TO THE INTERRUPTED MATCH";
+        _lobby.Resume(recovery.MatchId, recovery.PlayerId, recovery.Token, recovery.JoinCode);
+    }
+
     private string? OptionalPassword() =>
         _online.Password.Value.Length > 0 ? _online.Password.Value : null;
 
@@ -431,6 +468,7 @@ public sealed partial class ChaosGame
         _online.DeadlineAt = null;
         CloseOnlinePlanning();
         _message = string.Empty;
+        CompleteOnlineRecovery();
         _screens.Show(ClientScreen.Endgame);
     }
 
@@ -500,11 +538,20 @@ public sealed partial class ChaosGame
                 _online.IsHost = seated.Membership.Player.IsHost;
                 _online.JoinCodeShown = seated.Membership.JoinCode;
                 _online.Match = seated.Membership.Match;
+                RememberOnlineMembership(seated.Membership);
+                if (seated.Membership.Match.Status is MatchStatus.Finished or MatchStatus.Abandoned)
+                {
+                    CompleteOnlineRecovery();
+                    EndOnlineMatch("THE SAVED ONLINE MATCH HAS ALREADY ENDED");
+                    return;
+                }
                 _online.Stage = MultiplayerStage.Lobby;
                 _online.Status = _online.IsHost
                     ? "READ OUT THE JOIN CODE"
                     : "WAITING FOR THE HOST";
                 _screens.Show(ClientScreen.Lobby);
+                if (seated.Membership.Match.Status == MatchStatus.Running)
+                    StartOnlineMatch(seated.Membership.Match);
                 return;
             case LobbyNotice.Updated updated:
                 _online.Match = updated.Match;
@@ -613,6 +660,7 @@ public sealed partial class ChaosGame
                     _message = string.Empty;
                     if (_state?.Outcome is not null) _screens.Show(ClientScreen.Endgame);
                 }
+                CompleteOnlineRecovery();
                 return;
             case MultiplayerNotice.MatchAbandoned:
                 _online.Stage = MultiplayerStage.Finished;
@@ -624,7 +672,7 @@ public sealed partial class ChaosGame
                     ["reason"] = failed.Reason,
                     ["error"] = RuntimeDiagnostics.ExceptionType(failed.Error),
                 });
-                EndOnlineMatch(failed.Reason.ToUpperInvariant());
+                EndOnlineMatch(OnlineFailureMessage(failed.Reason));
                 return;
             default:
                 return;
@@ -642,6 +690,7 @@ public sealed partial class ChaosGame
     private void LeaveOnlineMatch()
     {
         Forget(_lobby?.LeaveAsync(), "multiplayer.leave.failed");
+        CompleteOnlineRecovery();
         EndOnlineMatch("LEFT THE MATCH");
     }
 
@@ -693,6 +742,7 @@ public sealed partial class ChaosGame
         _lobby = null;
         _online.Reset();
         _online.Status = status;
+        _message = status;
         _screens.Show(ClientScreen.Title);
     }
 
@@ -707,6 +757,13 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ReleaseOnlineResources()
     {
+        if ((_session is not null || _lobby?.Handle is not null)
+            && _lastMultiplayerRecovery is { Completed: false } recovery)
+        {
+            _lastMultiplayerRecovery = recovery with { CleanExit = true };
+            MultiplayerRecoveryStore.TrySave(
+                _multiplayerRecoveryPath, _lastMultiplayerRecovery);
+        }
         _serverProbeCancellation?.Cancel();
         _serverProbeCancellation?.Dispose();
         _serverProbeCancellation = null;
@@ -755,6 +812,9 @@ public sealed partial class ChaosGame
             SelectOnlineRole(OnlineConnectRole.Host);
         else if (OnlineConnectLayout.JoinRole.Contains(point))
             SelectOnlineRole(OnlineConnectRole.Join);
+        else if (_online.Role == OnlineConnectRole.Join
+            && OnlineConnectLayout.PasteJoinCode.Contains(point)) PasteJoinCode();
+        else if (OnlineConnectLayout.Reconnect.Contains(point)) ResumeLastOnlineMatch();
         else if (OnlineConnectLayout.Continue.Contains(point)) ContinueOnline();
         else if (OnlineConnectLayout.Back.Contains(point)) EndOnlineMatch(string.Empty);
         else FocusOnlineField(point);
@@ -772,6 +832,38 @@ public sealed partial class ChaosGame
         _online.Status = DesktopClipboard.TrySetText(_online.JoinCodeShown)
             ? "JOIN CODE COPIED"
             : "COULD NOT COPY JOIN CODE";
+    }
+
+    private void RememberOnlineMembership(MembershipView membership)
+    {
+        if (!TrySelectedServer(out var server)) return;
+        _lastMultiplayerRecovery = new MultiplayerRecovery(
+            MultiplayerRecovery.CurrentFormatVersion,
+            server.ToString(),
+            membership.Match.Id,
+            membership.Player.Id,
+            membership.Token,
+            membership.JoinCode,
+            membership.Player.DisplayName,
+            membership.Player.IsHost,
+            CleanExit: false,
+            Completed: false);
+        MultiplayerRecoveryStore.TrySave(_multiplayerRecoveryPath, _lastMultiplayerRecovery);
+    }
+
+    private void CompleteOnlineRecovery()
+    {
+        if (_lastMultiplayerRecovery is not { } recovery) return;
+        _lastMultiplayerRecovery = recovery with { CleanExit = true, Completed = true };
+        MultiplayerRecoveryStore.TrySave(_multiplayerRecoveryPath, _lastMultiplayerRecovery);
+    }
+
+    private string OnlineFailureMessage(string reason)
+    {
+        var message = $"ONLINE MATCH STOPPED: {reason.ToUpperInvariant()}";
+        return _lastMultiplayerRecovery is { Completed: false }
+            ? $"{message}  OPEN ONLINE AND RECONNECT"
+            : message;
     }
 
     /// <summary>

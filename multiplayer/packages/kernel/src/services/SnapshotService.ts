@@ -30,7 +30,7 @@ export class SnapshotService {
     if (player.id !== match.hostPlayerId) {
       throw new ForbiddenError('Only the host uploads snapshots', { reason: 'host_only' })
     }
-    if (match.status !== 'running' && match.status !== 'desynced') {
+    if (match.status !== 'running' && match.status !== 'desynced' && match.status !== 'finished') {
       throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
     }
     if (request.turn > match.currentTurn) {
@@ -68,16 +68,20 @@ export class SnapshotService {
     }
     await this.deps.storage.snapshots.put(snapshot)
     await this.pruneOldSnapshots(match.id)
-    await this.publisher.publish(match.id, {
-      type: 'snapshot.available',
-      payload: {
-        turn: request.turn,
-        formatVersion: request.formatVersion,
-        stateHash: request.stateHash,
-        uploadedByPlayerId: player.id,
-      },
-    })
-    await this.turns.settle(match.id, request.turn)
+    // Confirmed-turn uploads are rolling autosaves. Only a desync repair asks live clients to
+    // replace their state; announcing an ordinary autosave would make every client re-report it.
+    if (match.status === 'desynced') {
+      await this.publisher.publish(match.id, {
+        type: 'snapshot.available',
+        payload: {
+          turn: request.turn,
+          formatVersion: request.formatVersion,
+          stateHash: request.stateHash,
+          uploadedByPlayerId: player.id,
+        },
+      })
+      await this.turns.settle(match.id, request.turn)
+    }
   }
 
   /**

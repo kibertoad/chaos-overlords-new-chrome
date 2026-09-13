@@ -90,6 +90,29 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         Run(async token => Seat(await _anonymous.JoinAsync(request, token).ConfigureAwait(false)));
     }
 
+    /// <summary>Reclaims an existing seat after restarting with its durable membership token.</summary>
+    public void Resume(string matchId, string playerId, string token, string joinCode)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(matchId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(playerId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(token);
+        var handle = _anonymous.WithToken(token).Match(matchId);
+        Run(async cancellationToken =>
+        {
+            var detail = await handle.GetAsync(cancellationToken).ConfigureAwait(false);
+            if (!string.Equals(detail.You, playerId, StringComparison.Ordinal))
+                throw new MultiplayerProtocolException("the saved membership belongs to another player");
+            var player = detail.Match.Players.FirstOrDefault(candidate => candidate.Id == playerId)
+                ?? throw new MultiplayerProtocolException("the saved player is no longer in this match");
+            OwnPlayerId = playerId;
+            _handle = handle;
+            _notices.Enqueue(new LobbyNotice.Seated(new MembershipView(
+                detail.Match, player, token, string.IsNullOrWhiteSpace(detail.JoinCode)
+                    ? joinCode
+                    : detail.JoinCode)));
+        });
+    }
+
     /// <summary>Host only: seats the players, draws the seed and opens turn 1.</summary>
     public void Start() => Run(async token =>
     {
