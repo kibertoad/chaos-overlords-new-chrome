@@ -28,12 +28,15 @@ when importing them.
 
 ## Project status
 
-New Chrome is a broad, playable pre-1.0 recreation. A complete match can be
-played locally from setup through results, and the deterministic core, original
-asset importer, modern online transport, native saves, and replays are all
-operational. It is not yet a claim of pixel-perfect or rule-perfect parity with
-the shipped 1996 executable. The detailed evidence and next proof gate for each
-system are tracked in the [parity matrix](docs/PARITY-MATRIX.md).
+New Chrome is a broad, playable pre-1.0 recreation. The functional migration is
+substantially complete: a full match can be played locally from setup through
+results, and the deterministic core, original asset importer, modern online
+transport, native saves, and replays are all operational. The remaining work is
+primarily original-runtime evidence, exact audiovisual/input parity, release
+hardening, and optional online experience rather than missing basic match flow.
+This is not yet a claim of pixel-perfect or rule-perfect parity with the shipped
+1996 executable. The detailed evidence and next proof gate for each system are
+tracked in the [parity matrix](docs/PARITY-MATRIX.md).
 
 ### Implemented
 
@@ -63,7 +66,7 @@ system are tracked in the [parity matrix](docs/PARITY-MATRIX.md).
 | Online experience | A departure or missed timed turn opens a unanimous player vote: `WAIT` preserves the human controller, while unanimous `USE AI` records deterministic computer takeover at one authoritative event-log position. Authenticated turn activity cancels a pending absence vote, and reconnect reconstruction replays the same decision gaplessly. There is no public lobby browser, spectator/join-in-progress flow, lobby chat, or online Comlink integration. A desync still depends on the host supplying a snapshot. Security and deployment limitations are documented in [Multiplayer](docs/MULTIPLAYER.md). |
 | Media and platform polish | The two Smacker movies now stream through the managed decoder with deterministic cadence, PCM audio, explicit skip, focus pause, and safe failure: unattended on the first run, and on demand from the title screen's `INTRO` button afterwards. Original trigger/skip capture, broader native A/V validation, some interface/impact sound triggers, and exact menu music restart boundaries remain. Installers are unsigned; native interactive installer validation, macOS notarization, and wider platform QA remain. |
 | Help fidelity | Help content and navigation are functional, but exact native WinHelp typography and paragraph geometry are intentionally approximated by the cross-platform viewer. Unsafe legacy macro/external-file execution remains disabled. |
-| Compatibility policy | Recreation save/replay formats may change before 1.0.0. Post-1.0 migration guarantees still need a release policy. Importing or exporting original 1996 save files is not planned. |
+| Compatibility and replay UX | Recreation save/replay formats may change before 1.0.0. Post-1.0 migration guarantees still need a release policy. Replays can be recorded and deterministically verified, but user-facing animated playback controls are not implemented. Importing or exporting original 1996 save files is not planned. |
 
 ### Permanent scope boundaries
 
