@@ -1,19 +1,21 @@
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Rechaos.Game;
 
 /// <summary>Copies short game text through the SDL clipboard used by DesktopGL.</summary>
 public static class DesktopClipboard
 {
-    public static bool TryGetText(out string text)
+    public static bool TryGetText(out string text, int maximumCharacters)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maximumCharacters, 1);
         text = string.Empty;
         IntPtr pointer = IntPtr.Zero;
         try
         {
             pointer = GetNativeText();
             if (pointer == IntPtr.Zero) return false;
-            text = Marshal.PtrToStringUTF8(pointer)?.Trim() ?? string.Empty;
+            text = ReadBoundedUtf8(pointer, maximumCharacters).Trim();
             return text.Length > 0;
         }
         catch (Exception exception) when (exception is DllNotFoundException
@@ -25,6 +27,18 @@ public static class DesktopClipboard
         {
             if (pointer != IntPtr.Zero) FreeNative(pointer);
         }
+    }
+
+    private static string ReadBoundedUtf8(IntPtr pointer, int maximumCharacters)
+    {
+        var maximumBytes = checked(maximumCharacters * 4);
+        var length = 0;
+        while (length < maximumBytes && Marshal.ReadByte(pointer, length) != 0) length++;
+        if (length == 0) return string.Empty;
+        var bytes = new byte[length];
+        Marshal.Copy(pointer, bytes, 0, length);
+        var value = Encoding.UTF8.GetString(bytes);
+        return value.Length <= maximumCharacters ? value : value[..maximumCharacters];
     }
 
     public static bool TrySetText(string text)

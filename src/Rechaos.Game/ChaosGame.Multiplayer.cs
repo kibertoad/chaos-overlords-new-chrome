@@ -270,12 +270,15 @@ public sealed partial class ChaosGame
 
     private void PasteJoinCode()
     {
-        if (!DesktopClipboard.TryGetText(out var text))
+        // Read one character beyond the field's capacity so an enormous clipboard cannot stall the
+        // game merely to decide that the join key needs truncating.
+        if (!DesktopClipboard.TryGetText(out var text, maximumCharacters: 9))
         {
             _online.Status = "THE CLIPBOARD DOES NOT CONTAIN TEXT";
             return;
         }
         _online.JoinCode.Set(text);
+        foreach (var field in OnlineFields) field.IsFocused = false;
         _online.JoinCode.IsFocused = true;
         _online.Status = text.Length > 8
             ? "PASTED JOIN CODE WAS SHORTENED"
