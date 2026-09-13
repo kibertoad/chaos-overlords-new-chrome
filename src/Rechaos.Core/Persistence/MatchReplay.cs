@@ -23,7 +23,9 @@ public enum ReplayOperationKind : byte
     SendComlinkMessage,
     MarkComlinkRead,
     /// <summary>One ordered pass drawing every seat's offers, as a simultaneous turn needs.</summary>
-    PrepareSimultaneousHireOffers
+    PrepareSimultaneousHireOffers,
+    /// <summary>One authoritative, one-way handover of a departed human seat.</summary>
+    TransferPlayerToComputer
 }
 
 public sealed record ReplayStep(
@@ -190,6 +192,16 @@ public sealed class MatchReplayRecorder
         return changed;
     }
 
+    public bool TransferPlayerToComputer(PlayerId player)
+    {
+        EnsureSynchronized();
+        var changed = State.TransferPlayerToComputer(player);
+        Add(new ReplayStep(
+            ReplayOperationKind.TransferPlayerToComputer, CurrentHash(),
+            Player: player, Accepted: changed));
+        return changed;
+    }
+
     internal ReplayDocument Capture()
     {
         EnsureSynchronized();
@@ -230,8 +242,8 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    // 25 embeds native save 23 and canonical hash 26, which authenticates the AI policy.
-    public const int CurrentFormatVersion = 25;
+    // 26 adds the recorded departed-seat controller handover.
+    public const int CurrentFormatVersion = 26;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -391,6 +403,14 @@ public static class MatchReplaySerializer
                     throw new InvalidDataException($"Replay step {index} produced a different Comlink read result.");
                 break;
             }
+            case ReplayOperationKind.TransferPlayerToComputer:
+            {
+                var changed = state.TransferPlayerToComputer(Required(step.Player, index));
+                if (step.Accepted != changed)
+                    throw new InvalidDataException(
+                        $"Replay step {index} produced a different control-transfer result.");
+                break;
+            }
             default: throw new InvalidDataException($"Replay step {index} has an unknown operation kind.");
         }
     }
@@ -428,6 +448,8 @@ public static class MatchReplaySerializer
             ReplayOperationKind.MarkComlinkRead => ReplayStepFields.Player
                 | ReplayStepFields.Accepted
                 | (replayVersion >= 24 ? ReplayStepFields.ComlinkSequence : ReplayStepFields.None),
+            ReplayOperationKind.TransferPlayerToComputer =>
+                ReplayStepFields.Player | ReplayStepFields.Accepted,
             ReplayOperationKind.SendComlinkMessage => ReplayStepFields.Player | result
                 | ReplayStepFields.Recipients | ReplayStepFields.Text,
             ReplayOperationKind.FinishUpkeep
@@ -448,6 +470,7 @@ public static class MatchReplaySerializer
         ReplayOperationKind.PrepareAiHiring => 8,
         ReplayOperationKind.SendComlinkMessage or ReplayOperationKind.MarkComlinkRead => 18,
         ReplayOperationKind.PrepareSimultaneousHireOffers => 21,
+        ReplayOperationKind.TransferPlayerToComputer => 26,
         _ => 2
     };
 

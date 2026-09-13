@@ -149,7 +149,8 @@ public sealed class MultiplayerMatchLifecycleTests
     /// <para>
     /// Which seats the computer plays is read out of the hashed state, so every client agrees about it
     /// without being told. A human seat with no document in the sealed set therefore does nothing —
-    /// which is what a player who ran out of clock ordered, and what a player who left keeps ordering.
+    /// which is what a player who ran out of clock ordered. A departed player remains identical in
+    /// the current live protocol until it records the explicit controller-transfer operation.
     /// </para>
     /// <para>
     /// The assertion is that this succeeds at all: the core refuses to plan an AI turn for a seat a

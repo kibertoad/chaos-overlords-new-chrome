@@ -63,4 +63,21 @@ public sealed class MatchSetup
     public AiDifficulty AiMentality { get; }
     public AiPolicyMode AiPolicy { get; }
     public bool AllowsSparsePlayerIds { get; }
+
+    internal MatchSetup WithController(PlayerId playerId, PlayerController controller)
+    {
+        if (!Enum.IsDefined(controller)) throw new ArgumentOutOfRangeException(nameof(controller));
+        if (!Players.Any(player => player.Id == playerId))
+            throw new ArgumentOutOfRangeException(nameof(playerId));
+        return new MatchSetup(
+            Scenario,
+            Duration,
+            InitialSeed,
+            Players.Select(player => player.Id == playerId
+                ? player with { Controller = controller }
+                : player).ToArray(),
+            AiMentality,
+            AllowsSparsePlayerIds,
+            AiPolicy);
+    }
 }

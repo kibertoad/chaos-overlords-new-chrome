@@ -78,7 +78,7 @@ public sealed partial class MatchPlayerState
         UsesMaximumHireForce = usesMaximumHireForce;
     }
 
-    public MatchPlayerSetup Setup { get; }
+    public MatchPlayerSetup Setup { get; internal set; }
     public PlayerId Id => Setup.Id;
     public PlayerStatus Status { get; internal set; } = PlayerStatus.Active;
     public int Cash { get; internal set; }
@@ -406,7 +406,7 @@ public sealed partial class MatchState
         ArgumentNullException.ThrowIfNull(aiStrategy);
     }
     public OriginalData Definitions { get; }
-    public MatchSetup Setup { get; }
+    public MatchSetup Setup { get; private set; }
     public IReadOnlyList<MatchPlayerState> Players { get; }
     public IReadOnlyList<MatchSectorState> Sectors { get; }
     public TurnCoordinator Coordinator { get; }

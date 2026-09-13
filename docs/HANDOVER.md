@@ -10,18 +10,27 @@ Last updated: 2026-09-13
   every accepted checkpoint through managed Smacker startup playback;
   `codex/full-reimplementation` remains the development branch.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`. The latest
-  isolated Release build passes all 1,499 tests with zero warnings.
+  isolated Release build passes all 1,505 tests with zero warnings.
 - Validation deliberately stops only a development `Rechaos.Game` executable
   located inside this checkout, serializes concurrent validation attempts, and
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v23, replays are v25, canonical hashes are v26, asset
+- Native saves are format v23, replays are v26, canonical hashes are v26, asset
   manifests are v6, extracted help is v3, and client preferences are v8. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
 
 ## Latest playable work
+
+- The core now has the replay-v26 prerequisite for deterministic departed-seat
+  takeover: a one-way Human-to-Computer controller transfer recorded at a clean
+  Command boundary. It updates both authoritative setup views, changes the
+  existing canonical hash, survives native saves and replays, and causes every
+  lockstep client to plan the transferred seat identically. It cannot be
+  inferred from an absent document, which also represents an ordinary timeout;
+  the server/client wire must next record and reconstruct the departure at its
+  exact event-log position before the operation is enabled in live matches.
 
 - `Rechaos.Tools ai-tournament` now drives presentation-free six-computer
   matches directly through the authoritative model with bounded parallelism,

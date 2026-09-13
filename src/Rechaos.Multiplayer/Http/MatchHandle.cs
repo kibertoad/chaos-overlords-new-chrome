@@ -32,9 +32,9 @@ public sealed class MatchHandle
     /// </summary>
     /// <remarks>
     /// The match stops waiting on this player's readiness, so the turns that follow seal without
-    /// them. Their gangs are not taken over by the computer: which player controls a seat is part
-    /// of the state every client hashes, so handing one over needs a step every client takes at the
-    /// same point — see <c>docs/MULTIPLAYER.md</c>.
+    /// them. Their gangs are not yet taken over by the computer: the replay-recorded core transfer
+    /// exists, but the live protocol must still place the authoritative departure at the same event
+    /// boundary on every client. See <c>docs/MULTIPLAYER.md</c>.
     /// </remarks>
     public Task<Unit> LeaveAsync(CancellationToken cancellationToken) =>
         _client.SendAsync<Unit>(
