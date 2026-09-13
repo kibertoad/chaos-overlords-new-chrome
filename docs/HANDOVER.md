@@ -27,6 +27,13 @@ Last updated: 2026-09-13
 
 ## Latest playable work
 
+- Fresh New Game setup now defaults to Kill 'Em All, matching the first stable
+  original-runtime capture. Five burst frames agreed byte-for-byte and the
+  current user and machine registry contained no `prefsObjective` override.
+  The earlier static analysis correctly recovered initialized value zero but
+  incorrectly mapped it through the recreation enum instead of the original
+  visual-button order.
+
 - Online AI takeover is player-approved end to end. A departure or wholly missed timed turn opens
   a visible unanimous `WAIT`/`USE AI` vote; waiting preserves the human controller indefinitely,
   authenticated returning activity atomically cancels a pending absence, and only

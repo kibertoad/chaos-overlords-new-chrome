@@ -109,7 +109,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly LocalSetupRoster _localSetupRoster = new();
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
-    private ScenarioId _selectedScenario = ScenarioId.Greed;
+    private ScenarioId _selectedScenario = SetupScenarioButtons.DefaultScenario;
     private GameDuration _selectedDuration = GameDuration.SixMonths;
     private int _cursor;
     private int _selectedGangIndex;

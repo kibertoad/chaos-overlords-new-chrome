@@ -231,6 +231,13 @@ document decoded from the two original WinHelp resources.
 
 ## Original-binary oracle protocol
 
+For a manually operated Windows session, use
+[`Capture-OriginalWindow.ps1`](../tools/Capture-OriginalWindow.ps1) and follow
+the raw-burst evidence rules in [REFERENCE-CAPTURE.md](REFERENCE-CAPTURE.md).
+The helper deliberately captures the visible desktop client area because the
+legacy DirectDraw window may not produce reliable window-only captures on
+modern systems.
+
 Run the original only offline in a controlled Windows environment. Record:
 
 - executable/data hashes and OS compatibility settings;
