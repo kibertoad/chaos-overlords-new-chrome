@@ -26,6 +26,9 @@ public static class ApiRoutes
     public const string Matches = "/matches";
     public const string JoinMatch = "/matches/join";
 
+    /// <summary>The one route that names no match, and needs no token.</summary>
+    public const string BugReports = "/bug-reports";
+
     public static string Match(string matchId) => $"/matches/{matchId}";
     public static string StartMatch(string matchId) => $"/matches/{matchId}/start";
     public static string LeaveMatch(string matchId) => $"/matches/{matchId}/leave";

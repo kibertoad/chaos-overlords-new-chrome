@@ -5,13 +5,16 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    /// <summary>This session's journal, when the match is one this client records in full.</summary>
+    private MatchReplayRecorder? HotSeatJournal => _actions?.HotSeatJournal;
+
     private SaveSlotSummary? SaveGameToSlot(int slot, string name)
     {
         if (_state is null) return null;
         try
         {
             var summary = SaveSlotCatalog.Save(
-                _saveDirectory, slot, name, _state, _session is not null);
+                _saveDirectory, slot, name, _state, _session is not null, HotSeatJournal);
             _message = "GAME SAVED";
             return summary;
         }
@@ -30,8 +33,12 @@ public sealed partial class ChaosGame
             var summary = _saveSlots[slot];
             var loaded = SaveSlotCatalog.Load(_saveDirectory, slot, _definitions);
             if (_session is not null) EndOnlineMatch("LOADED SAVED GAME");
-            _state = loaded;
-            _actions = new MatchActions(new MatchReplayRecorder(_state));
+            // The companion journal, when the slot has one that belongs to this save, carries the
+            // match's history from its first turn. Resuming it is what lets a bug report filed after
+            // a load reproduce the whole session rather than only what happened since.
+            var journal = SaveSlotCatalog.LoadJournal(_saveDirectory, slot, _definitions, loaded);
+            _state = journal?.State ?? loaded;
+            _actions = new MatchActions(journal ?? new MatchReplayRecorder(_state));
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);

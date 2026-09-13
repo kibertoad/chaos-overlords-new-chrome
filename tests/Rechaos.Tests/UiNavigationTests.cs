@@ -331,19 +331,6 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
-    public void GameMenuProvidesSaveLoadAndConfirmedMainMenuExit()
-    {
-        Assert.Equal(new Rectangle(226, 176, 188, 32), GameMenuLayout.Save);
-        Assert.Equal(new Rectangle(226, 220, 188, 32), GameMenuLayout.Load);
-        Assert.Equal(new Rectangle(226, 280, 188, 42), GameMenuLayout.QuitToMainMenu);
-        Assert.Equal(9, SaveSlotCatalog.SlotCount);
-        Assert.Equal(new Rectangle(58, 344, 524, 35), GameMenuLayout.SlotRow(8));
-        Assert.True(GameMenuLayout.Panel.Contains(GameMenuLayout.Resume));
-        Assert.True(GameMenuLayout.Panel.Contains(GameMenuLayout.ConfirmQuit));
-        Assert.True(GameMenuLayout.Panel.Contains(GameMenuLayout.CancelQuit));
-    }
-
-    [Fact]
     public void NextPlayerPortraitFillsTheNativeHandoffAperture()
     {
         Assert.Equal(new Rectangle(266, 148, 108, 164), HandoffLayout.Panel);

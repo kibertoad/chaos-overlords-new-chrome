@@ -16,6 +16,7 @@ This file is the operator and contributor manual.
 | `packages/contracts` | Wire contracts: valibot schemas for every request, view and event, plus one `defineApiContract` per endpoint. The source of truth the server mounts its routes from and the C# client's records are generated from. |
 | `packages/kernel` | Runtime-neutral domain: entities, storage/runtime ports, pure turn logic, the lobby/turn/snapshot services, an in-memory storage for hermetic tests. |
 | `packages/storage` | Drizzle schemas and repositories. One SQLite dialect serves better-sqlite3 and D1 from the same migration lineage; Postgres has its own. |
+| `packages/bug-reports` | Bug report intake, in a database of its own: schema, migration lineage, repository, blob store and service. Shares nothing with the multiplayer storage — see "Bug reports" below. |
 | `packages/server` | The Hono app: routes, bearer auth, error envelope, the SSE response builder, the in-process event hub. |
 | `packages/client` | TypeScript client (REST + resumable SSE iterator). The conformance suite drives every runtime through it; the game's C# client in `src/Rechaos.Multiplayer` mirrors it. |
 | `scripts/generate-csharp.mjs` | Regenerates the game's C# mirror of the contracts. See "Generating the C# client" below. |
@@ -59,6 +60,9 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `UPLOAD_RATE_LIMIT_PER_MINUTE` | `10` | Snapshot uploads per player per minute (a snapshot can be a megabyte). |
 | `RETENTION_DAYS` | `30` | Delete finished, abandoned and never-started matches older than this, with everything they own. `0` keeps every match forever. |
 | `TRUST_PROXY` | `false` | Read the client address from `X-Forwarded-For` / `CF-Connecting-IP`. Set it behind a reverse proxy, never otherwise. |
+| `BUG_REPORT_DATABASE_URL` | `sqlite:./chaos-overlords-bug-reports.db` | A **second** SQLite file, for bug reports. Empty turns the intake off and `POST /api/v1/bug-reports` answers 404. |
+| `BUG_REPORT_BLOB_DIR` | *(unset)* | Directory for compressed match journals. Unset keeps archives under 256 KiB in the database row and drops larger ones (a `sqlite::memory:` bug report database gets an in-memory store instead, since it has no file to outlive). |
+| `BUG_REPORT_RATE_LIMIT_PER_MINUTE` | `5` | Bug reports accepted per client address per minute. Its own budget, not the lobby's. |
 | `SWEEP_INTERVAL_MS` | `15000` | How often the safety net runs: expired turn deadlines, interrupted seals, retention (the timers are the precise path for a deadline). |
 | `SHUTDOWN_GRACE_MS` | `5000` | How long open event streams may delay shutdown before they are cut. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
@@ -102,14 +106,56 @@ version in `scripts/generate-csharp.mjs`, run `pnpm codegen`, and the diff says 
 cd runtimes/cloudflare
 wrangler d1 create chaos_overlords          # paste the id into wrangler.toml
 pnpm db:migrate:remote
+wrangler d1 create chaos_overlords_bug_reports   # paste the id in too, or drop the binding
+pnpm db:migrate:bugs:remote
+wrangler r2 bucket create chaos-overlords-bug-reports
 wrangler deploy
 ```
 
-`wrangler.toml` declares the D1 binding, the `MatchHub` Durable Object and a five-minute cron. The
-same `PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
-`UPLOAD_RATE_LIMIT_PER_MINUTE` and `RETENTION_DAYS` knobs are `[vars]` there. The in-Worker rate
-limiter counts per isolate, so it softens abuse on one edge node rather than globally; add a
-Cloudflare rate limiting rule on `/api/v1/matches` and `/api/v1/matches/join` for the real gate.
+`wrangler.toml` declares both D1 bindings, the R2 bucket, the `MatchHub` Durable Object and a
+five-minute cron. The same `PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
+`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE` and `RETENTION_DAYS` knobs are
+`[vars]` there. The in-Worker rate limiter counts per isolate, so it softens abuse on one edge node
+rather than globally; add a Cloudflare rate limiting rule on `/api/v1/matches`,
+`/api/v1/matches/join` and `/api/v1/bug-reports` for the real gate.
+
+## Bug reports
+
+`POST /api/v1/bug-reports` takes what a player typed in the game's Escape menu and, if they left the
+box ticked, the whole match as a compressed event-sourced journal that replays from its first turn.
+The game posts to a hardcoded address (`BugReportEndpoint` in
+`src/Rechaos.Multiplayer/Http/BugReportSubmitter.cs`) rather than to whichever lobby a player is in:
+a report goes to the people who maintain the game, and somebody self-hosting a lobby for three
+friends is not them.
+
+Three things about it are deliberate.
+
+**It is unauthenticated.** A report is not a match and the player filing one has no seat. Requiring a
+token would silence exactly the reports worth having most — the ones from a player who could not get
+into a match at all. What stands in for it is a per-address budget far below the lobby's, and a body
+limit sized for a compressed journal and nothing larger.
+
+**Its database is separate.** A second D1 instance, a second SQLite file, its own migration lineage
+under `packages/bug-reports/migrations/sqlite`. Reports arrive unauthenticated, outlive every match
+they describe, and carry another player's game journal; they share no schema, no lock, no retention
+sweep and no blast radius with the database holding live matches. Nothing in `Kernel` can reach
+`BUG_DB` and nothing in the intake can reach `DB`.
+
+**The journals are not in it.** A compressed whole-match journal is hundreds of kilobytes to a few
+megabytes; D1 refuses a row over 2 MB and even the ones that fit would be dragged through every
+triage query. With `BUG_BLOBS` (or `BUG_REPORT_BLOB_DIR` on Node) bound, every archive goes there and
+the row keeps the key, the digest and the size. Without one, an archive under 256 KiB is kept inline
+— which is what makes an unconfigured `node-server` work end to end — and a larger one is dropped
+with the report still accepted and the receipt saying `omitted`.
+
+The server never decompresses or parses an archive. It checks the SHA-256 the client computed over
+the compressed bytes, so a truncated upload is refused rather than filed, and stores opaque bytes;
+that is what makes taking one from a stranger safe. The archive format (`RCHJ`, Brotli, a reserved
+codec byte for zstd) lives with the game in `src/Rechaos.Core/Persistence/ReplayArchive.cs`, and
+`docs/DECISIONS.md` records why Brotli.
+
+To read one back, `BugReportService` has `list`, `get` and `archive`; none of them are routes, so
+triage is a script or a console against the deployment rather than an endpoint anyone can call.
 
 ## Develop
 

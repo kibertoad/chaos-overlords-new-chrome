@@ -55,20 +55,77 @@ public static class SaveSlotCatalog
         }
     }
 
+    /// <summary>The journal that travels with a slot, if the match had one to write.</summary>
+    public static string JournalPath(string directory, int slot) =>
+        MatchJournalStore.PathFor(SavePath(directory, slot));
+
+    /// <summary>
+    /// Writes a slot, and the match's journal beside it.
+    /// </summary>
+    /// <param name="journal">
+    /// The recorder for this match, or null in an online one — where the authoritative journal is
+    /// the server's sealed turns rather than anything this client owns.
+    /// </param>
+    /// <remarks>
+    /// The journal is written after the save and never instead of it: a slot that saved but whose
+    /// companion could not be written is a playable save with no history, which is what the slot was
+    /// for. What must not happen is the pairing going stale, so a slot that gets no journal loses
+    /// the one that was there — a previous game's history resumed into this one would be worse than
+    /// no history at all.
+    /// </remarks>
     public static SaveSlotSummary Save(
-        string directory, int slot, string name, MatchState state, bool online)
+        string directory,
+        int slot,
+        string name,
+        MatchState state,
+        bool online,
+        MatchReplayRecorder? journal = null)
     {
         var path = SavePath(directory, slot);
         NativeSaveStore.SaveAtomic(path, state);
         var timestamp = new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
         var finalName = string.IsNullOrWhiteSpace(name) ? SuggestedName(state) : name.Trim();
         WriteMetadata(path, new SaveSlotMetadata(finalName, online));
+        WriteJournal(path, journal);
         return Summarize(slot, finalName, timestamp, state, online);
     }
 
     public static MatchState Load(
         string directory, int slot, OriginalData definitions) =>
         NativeSaveStore.LoadRecoveringBackup(SavePath(directory, slot), definitions).State;
+
+    /// <summary>
+    /// The journal belonging to a slot's save, or null when there is none to continue.
+    /// </summary>
+    /// <param name="loaded">The state just loaded from the slot, which the journal must match.</param>
+    public static MatchReplayRecorder? LoadJournal(
+        string directory, int slot, OriginalData definitions, MatchState loaded)
+    {
+        ArgumentNullException.ThrowIfNull(loaded);
+        return MatchJournalStore.TryLoadResumable(
+            JournalPath(directory, slot), definitions, MatchStateHasher.ComputeSha256(loaded));
+    }
+
+    private static void WriteJournal(string savePath, MatchReplayRecorder? journal)
+    {
+        var journalPath = MatchJournalStore.PathFor(savePath);
+        if (journal is null)
+        {
+            MatchJournalStore.Delete(journalPath);
+            return;
+        }
+        try
+        {
+            MatchJournalStore.SaveAtomic(journalPath, journal);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
+                                          or ArgumentOutOfRangeException)
+        {
+            // The save itself is already on disk and is what the player asked for. Drop the stale
+            // companion rather than leaving one that no longer describes this slot.
+            MatchJournalStore.Delete(journalPath);
+        }
+    }
 
     public static string SuggestedName(MatchState state) =>
         $"{state.Setup.Scenario.ToString().ToUpperInvariant()} - TURN {state.Coordinator.Turn}";

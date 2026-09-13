@@ -36,6 +36,7 @@ public sealed class MultiplayerApiRouteTests
         (RouteTemplates.Snapshot, $"GET {ApiRoutes.Snapshot(MatchId, 7)}"),
         (RouteTemplates.ListEvents, $"GET {ApiRoutes.Events(MatchId, 0, 200)}"),
         (RouteTemplates.StreamEvents, $"GET {ApiRoutes.Stream(MatchId)}"),
+        (RouteTemplates.SubmitBugReport, $"POST {ApiRoutes.BugReports}"),
     ];
 
     [Fact]

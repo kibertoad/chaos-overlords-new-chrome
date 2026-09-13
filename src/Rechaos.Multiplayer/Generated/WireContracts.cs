@@ -280,7 +280,7 @@ public enum BugReportMatchType
     Online
 }
 
-public sealed record BugReportClient(
+public sealed record BugReportBuild(
     [property: JsonPropertyName("version")] string Version,
     [property: JsonPropertyName("platform")] string Platform
 );
@@ -305,7 +305,7 @@ public sealed record BugReportState(
 
 public sealed record SubmitBugReportRequest(
     [property: JsonPropertyName("message")] string Message,
-    [property: JsonPropertyName("client")] BugReportClient Client,
+    [property: JsonPropertyName("client")] BugReportBuild Client,
     [property: JsonPropertyName("context"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] BugReportContext? Context,
     [property: JsonPropertyName("state"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] BugReportState? State
 );

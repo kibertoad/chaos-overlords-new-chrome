@@ -345,6 +345,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         UpdateSoundtrack(gameTime);
         UpdateComlinkAlert(gameTime.TotalGameTime);
+        PumpBugReportSend();
         // Before the planning timer, so a turn that resolved on the server is adopted even on the
         // frame the local clock would otherwise have taken over the loop.
         PumpOnlineNotices();

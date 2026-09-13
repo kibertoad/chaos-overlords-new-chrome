@@ -99,10 +99,10 @@ export const bugReportCountSchema = pipe(
 /**
  * The build the report came from.
  *
- * Deliberately three fields and no more. A crash report that carries a file path carries the
+ * Deliberately two fields and no more. A crash report that carries a file path carries the
  * player's user name in it, and a report nobody can safely read is a report nobody reads.
  */
-export const bugReportClientSchema = strictObject({
+export const bugReportBuildSchema = strictObject({
   version: bugReportLabelSchema,
   platform: bugReportLabelSchema,
 })
@@ -154,7 +154,7 @@ export const bugReportStateSchema = strictObject({
 
 export const submitBugReportRequestSchema = strictObject({
   message: pipe(string(), trim(), minLength(1), maxLength(BUG_REPORT_LIMITS.messageLength)),
-  client: bugReportClientSchema,
+  client: bugReportBuildSchema,
   context: optional(bugReportContextSchema),
   state: optional(bugReportStateSchema),
 })

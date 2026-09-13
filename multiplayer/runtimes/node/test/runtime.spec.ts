@@ -1,8 +1,11 @@
+import { mkdtemp, rm } from 'node:fs/promises'
 import type { AddressInfo } from 'node:net'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { defineHttpConformance } from '@chaos-overlords/conformance'
 import { ManualClock } from '@chaos-overlords/kernel/testing'
 import { type ServerType, serve } from '@hono/node-server'
-import { afterAll, beforeAll, describe } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildNodeRuntime, loadConfig, type NodeRuntime } from '../src'
 
 /**
@@ -29,6 +32,7 @@ function defineFacadeSuite(name: string, databaseUrl: string | undefined): void 
           RATE_LIMIT_PER_MINUTE: '10000',
           MEMBER_RATE_LIMIT_PER_MINUTE: '10000',
           UPLOAD_RATE_LIMIT_PER_MINUTE: '10000',
+          BUG_REPORT_RATE_LIMIT_PER_MINUTE: '10000',
         }),
         { clock },
       )
@@ -55,3 +59,144 @@ function defineFacadeSuite(name: string, databaseUrl: string | undefined): void 
 
 defineFacadeSuite('node runtime over sqlite', 'sqlite::memory:')
 defineFacadeSuite('node runtime over postgres', process.env.TEST_DATABASE_URL)
+
+/**
+ * Bug reports, over the same listener and into a second database file.
+ *
+ * On disk rather than in memory, because the thing worth asserting is that the intake opens and
+ * migrates a database of its own beside the match one rather than sharing it.
+ */
+describe('node runtime bug report intake', () => {
+  let directory = ''
+  let runtime: NodeRuntime
+  let server: ServerType
+  let baseUrl = ''
+
+  beforeAll(async () => {
+    directory = await mkdtemp(join(tmpdir(), 'chaos-node-bug-reports-'))
+    runtime = await buildNodeRuntime(
+      loadConfig({
+        DATABASE_URL: 'sqlite::memory:',
+        BUG_REPORT_DATABASE_URL: `sqlite:${join(directory, 'bug-reports.db')}`,
+        BUG_REPORT_BLOB_DIR: join(directory, 'journals'),
+        LOG_LEVEL: 'error',
+      }),
+    )
+    server = serve({ fetch: runtime.app.fetch, hostname: '127.0.0.1', port: 0 })
+    await new Promise<void>((resolve) => server.once('listening', () => resolve()))
+    baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+  })
+
+  afterAll(async () => {
+    await new Promise<void>((resolve) => server.close(() => resolve()))
+    await runtime.close()
+    await rm(directory, { recursive: true, force: true })
+  })
+
+  it('accepts a report without a token and keeps the journal outside the database', async () => {
+    const bytes = new Uint8Array(64).fill(9)
+    const sha256 = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))]
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('')
+
+    const response = await fetch(`${baseUrl}/api/v1/bug-reports`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        message: 'Gangs stopped moving.',
+        client: { version: '0.9.1', platform: 'Unix' },
+        context: {
+          scenario: 'Greed',
+          matchType: 'single',
+          turn: 4,
+          phase: 'Command',
+          humanPlayers: 1,
+          computerPlayers: 5,
+        },
+        state: {
+          codec: 'brotli',
+          replayFormatVersion: 24,
+          uncompressedBytes: 2_048,
+          sha256,
+          anonymized: true,
+          body: Buffer.from(bytes).toString('base64'),
+        },
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    const receipt = (await response.json()) as { id: string; stateStored: string }
+    expect(receipt.stateStored).toBe('stored')
+
+    const stored = await runtime.bugReports?.get(receipt.id)
+    expect(stored?.message).toBe('Gangs stopped moving.')
+    expect(stored?.state?.body).toBeNull()
+    expect(stored?.state?.blobKey).toMatch(/^bug-reports\//)
+    expect(await runtime.bugReports?.archive(receipt.id)).toEqual(bytes)
+  })
+
+  it('refuses a journal whose digest does not match its bytes', async () => {
+    const response = await fetch(`${baseUrl}/api/v1/bug-reports`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        message: 'Truncated.',
+        client: { version: '0.9.1', platform: 'Unix' },
+        state: {
+          codec: 'brotli',
+          replayFormatVersion: 24,
+          uncompressedBytes: 2_048,
+          sha256: 'a'.repeat(64),
+          anonymized: true,
+          body: Buffer.from(new Uint8Array(8)).toString('base64'),
+        },
+      }),
+    })
+
+    expect(response.status).toBe(422)
+  })
+})
+
+/** An intake that is switched off says so, rather than half-working. */
+describe('node runtime without a bug report database', () => {
+  let runtime: NodeRuntime
+  let server: ServerType
+  let baseUrl = ''
+
+  beforeAll(async () => {
+    runtime = await buildNodeRuntime(
+      loadConfig({
+        DATABASE_URL: 'sqlite::memory:',
+        BUG_REPORT_DATABASE_URL: '',
+        LOG_LEVEL: 'error',
+      }),
+    )
+    server = serve({ fetch: runtime.app.fetch, hostname: '127.0.0.1', port: 0 })
+    await new Promise<void>((resolve) => server.once('listening', () => resolve()))
+    baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
+  })
+
+  afterAll(async () => {
+    await new Promise<void>((resolve) => server.close(() => resolve()))
+    await runtime.close()
+  })
+
+  it('answers 404 and leaves the rest of the server alone', async () => {
+    expect(runtime.bugReports).toBeUndefined()
+
+    const response = await fetch(`${baseUrl}/api/v1/bug-reports`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        message: 'Nowhere to put this.',
+        client: { version: '0.9.1', platform: 'Unix' },
+      }),
+    })
+
+    expect(response.status).toBe(404)
+    expect(await response.json()).toMatchObject({
+      error: { details: { reason: 'bug_reports_disabled' } },
+    })
+    expect((await fetch(`${baseUrl}/health`)).status).toBe(200)
+  })
+})
