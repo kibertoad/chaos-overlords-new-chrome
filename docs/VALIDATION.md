@@ -28,7 +28,7 @@ incremental outputs and MSBuild/Roslyn server reuse are retained because both
 materially speed repeated builds.
 
 At the current published checkpoint, the isolated Release build completes with
-zero warnings and all 1,477 tests pass. This count is a regression baseline,
+zero warnings and all 1,495 tests pass. This count is a regression baseline,
 not a measure of parity completeness. The runner has a 30-minute global safety
 timeout. AI tournament cases record their scenario and seed at startup, then
 report the turn, phase-boundary count, event count, and elapsed time every ten

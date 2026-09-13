@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 22;
+    public const int CurrentFormatVersion = 23;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -97,7 +97,11 @@ public static class NativeSaveSerializer
             document.Setup.Players.Select(player => new MatchPlayerSetup(
                 new PlayerId(player.Id), player.Name, player.Controller,
                 document.FormatVersion >= 5 ? player.PortraitId : checked((short)player.Id))).ToArray(),
-            document.FormatVersion >= 5 ? document.Setup.AiMentality : AiDifficulty.Criminal);
+            document.FormatVersion >= 5 ? document.Setup.AiMentality : AiDifficulty.Criminal,
+            aiPolicy: document.FormatVersion >= 23
+                ? document.Setup.AiPolicy
+                    ?? throw new InvalidDataException("Native save AI policy is missing.")
+                : AiPolicyMode.Original);
         var players = document.Players
             .Select(player => RestorePlayer(setup, player, document.FormatVersion))
             .ToArray();
@@ -227,6 +231,7 @@ public static class NativeSaveSerializer
             19 => MatchStateHasher.ComputeVersionTwentyTwoSha256(state),
             20 => MatchStateHasher.ComputeVersionTwentyThreeSha256(state),
             21 => MatchStateHasher.ComputeVersionTwentyFourSha256(state),
+            22 => MatchStateHasher.ComputeVersionTwentyFiveSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
         if (verifyStateFingerprint && !CryptographicOperations.FixedTimeEquals(
@@ -274,7 +279,8 @@ public static class NativeSaveSerializer
             state.Setup.InitialSeed,
             state.Setup.Players.Select(player => new PlayerSetupDocument(
                 player.Id.Value, player.Name, player.Controller, player.PortraitId)).ToArray(),
-            state.Setup.AiMentality),
+            state.Setup.AiMentality,
+            state.Setup.AiPolicy),
         state.Players.Select(CapturePlayer).ToArray(),
         state.Sectors.Select(CaptureSector).ToArray(),
         new RuntimeDocument(
@@ -608,7 +614,8 @@ internal sealed record MatchSetupDocument(
     GameDuration Duration,
     int InitialSeed,
     IReadOnlyList<PlayerSetupDocument> Players,
-    AiDifficulty AiMentality = AiDifficulty.Criminal);
+    AiDifficulty AiMentality = AiDifficulty.Criminal,
+    AiPolicyMode? AiPolicy = null);
 
 internal sealed record PlayerSetupDocument(
     int Id,

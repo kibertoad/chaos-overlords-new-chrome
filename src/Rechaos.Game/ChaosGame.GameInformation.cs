@@ -26,7 +26,8 @@ public sealed partial class ChaosGame
         font.Draw(batch, ScenarioCatalog.Get(state.Setup.Scenario).Name,
             new Vector2(GameInformationLayout.ValueLeft, GameInformationLayout.ObjectiveY),
             Color.Lime, 1);
-        font.Draw(batch, DifficultyPresentation.Label(state.Setup.AiMentality),
+        font.Draw(batch,
+            $"{DifficultyPresentation.Label(state.Setup.AiMentality)} {AiPolicyPresentation.Label(state.Setup.AiPolicy)}",
             new Vector2(GameInformationLayout.ValueLeft, GameInformationLayout.AiMentalityY),
             Color.Lime, 1);
         font.Draw(batch, PlanningTimerPolicy.Label(_selectedPlanningTimeLimit),

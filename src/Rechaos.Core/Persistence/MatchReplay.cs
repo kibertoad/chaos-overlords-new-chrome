@@ -268,8 +268,8 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    // 24 embeds native save 22 and canonical hash 25, which preserves per-message Comlink reads.
-    public const int CurrentFormatVersion = 24;
+    // 25 embeds native save 23 and canonical hash 26, which authenticates the AI policy.
+    public const int CurrentFormatVersion = 25;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -563,7 +563,8 @@ public static class MatchReplaySerializer
         }
         string[] candidateHashes = replayVersion switch
         {
-            >= 24 => [MatchStateHasher.ComputeSha256(state)],
+            >= 25 => [MatchStateHasher.ComputeSha256(state)],
+            24 => [MatchStateHasher.ComputeVersionTwentyFiveSha256(state)],
             23 => [MatchStateHasher.ComputeVersionTwentyFourSha256(state)],
             22 => [MatchStateHasher.ComputeVersionTwentyThreeSha256(state)],
             20 or 21 => [MatchStateHasher.ComputeVersionTwentyTwoSha256(state)],

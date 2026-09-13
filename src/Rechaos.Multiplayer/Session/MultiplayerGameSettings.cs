@@ -31,13 +31,15 @@ public sealed record MultiplayerGameSettings(
     ScenarioId Scenario,
     GameDuration Duration,
     AiDifficulty AiMentality,
-    IReadOnlyList<short> Portraits)
+    IReadOnlyList<short> Portraits,
+    AiPolicyMode AiPolicy = AiPolicyMode.Original)
 {
     /// <summary>The blob the host sends and every client reads back.</summary>
     public IReadOnlyDictionary<string, JsonElement> ToWire() =>
         JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
             JsonSerializer.Serialize(new Wire(
-                (int)Scenario, (int)Duration, (int)AiMentality, [.. Portraits]),
+                (int)Scenario, (int)Duration, (int)AiMentality, [.. Portraits],
+                (int)AiPolicy),
                 WireJson.Options),
             WireJson.Options)!;
 
@@ -59,7 +61,10 @@ public sealed record MultiplayerGameSettings(
             Defined<ScenarioId>(wire.Scenario, nameof(wire.Scenario)),
             Defined<GameDuration>(wire.Duration, nameof(wire.Duration)),
             Defined<AiDifficulty>(wire.AiMentality, nameof(wire.AiMentality)),
-            ValidPortraits(wire.Portraits));
+            ValidPortraits(wire.Portraits),
+            wire.AiPolicy is { } aiPolicy
+                ? Defined<AiPolicyMode>(aiPolicy, nameof(wire.AiPolicy))
+                : AiPolicyMode.Original);
     }
 
     private static TEnum Defined<TEnum>(int value, string field) where TEnum : struct, Enum
@@ -95,5 +100,10 @@ public sealed record MultiplayerGameSettings(
     /// member is a refactor nobody expects to break a lobby, and the numeric value is what the save
     /// format already carries.
     /// </remarks>
-    private sealed record Wire(int Scenario, int Duration, int AiMentality, short[] Portraits);
+    private sealed record Wire(
+        int Scenario,
+        int Duration,
+        int AiMentality,
+        short[] Portraits,
+        int? AiPolicy = null);
 }

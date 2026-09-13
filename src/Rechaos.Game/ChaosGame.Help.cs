@@ -158,10 +158,16 @@ public static class HelpContentAugmentation
 
     private static readonly (string Context, string Title, string Text)[] Notes =
     [
-        ("GSP", "Game Settings Panel", "AI Mentality changes resolution odds, not only planning. Humans always use the standard band. "
+        ("GSP", "Game Settings Panel", "AI Mentality changes resolution odds, not only planning. AI Policy selects Original or Advanced command planning; press A or click AI POLICY. Original is the default. See the listed Advanced AI subject for the exact differences. Humans always use the standard band. "
             + "Goon computers attack on 6, use 5+ for Heal, Influence, and Chaos, use 6 for Research, lose trunc(pool / 5) dice from Influence, Research, and Chaos, and lose trunc(Defense / 4) Defense when attacked. "
             + "Criminal computers use the human band: Attack, Heal, Influence, Chaos, and retaliation succeed on 5+, while Research succeeds on 6. "
             + "Crime Lord and Homicidal Maniac computers use the expert band: Attack, Heal, Influence, Chaos, and retaliation succeed on 4+, Research succeeds on 5+, and attacks against hidden gangs are 20 percentage points easier."),
+        ("ADVAI", "Advanced AI", "Original AI reproduces the shipped command planner, including cases where an active gang is deliberately left idle. "
+            + "Advanced AI normally keeps every command selected by Original AI. It examines active gangs in ascending gang-ID order and assigns at most one currently legal and affordable fallback to a gang which received no command. "
+            + "Crime Lord and Homicidal Maniac add one expansion rule: a gang at Force 8 or higher in its own controlled sector moves to a neighboring sector it does not control when Original AI would leave it idle, or would repeat Hide, Snitch, or Bribe from its preceding turn. An Advanced-added move is suppressed if a detectable rival is present and never reduces the friendly gangs remaining after already planned outbound moves below one; incoming moves are not counted. Original Move commands are not cancelled. The destination with the highest objective and income value is chosen, then the lower sector ID breaks a tie. Goon and Criminal do not use this expansion override. "
+            + "An idle fallback is used only to Heal an injured gang, Attack a detectable rival in its sector, or Control its current uncontrolled sector, in that exact order; if none is legal, the gang remains idle. Attack ties prefer the rival with lower current Force, then lower target ID. No other fallback action is used. "
+            + "Advanced fallback planning consumes no random numbers, sees no hidden gangs, and receives no extra cash, statistics, discounts, damage, or success chance. AI Mentality remains a separate setting and controls the same resolution odds in either policy. "
+            + "The selected policy is fixed in the match setup and authenticated by saves, replays, deterministic hashes, and online game settings."),
         ("ATTACK", "Attack…", "For a human gang, attack dice = max(0, current Force + modified Combat - effective Defense). "
             + "Each 5 or 6 is a success. A positive pool causes damage equal to the greater of its successes and trunc(pool / 4). "
             + "Strength adds to bare-handed, melee, and blade attacks; Blade adds only to blade weapons; Range adds only to ranged weapons; Fighting and Martial Arts add only while bare-handed. "
