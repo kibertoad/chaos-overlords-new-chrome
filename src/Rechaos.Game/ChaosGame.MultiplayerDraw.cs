@@ -52,11 +52,10 @@ public sealed partial class ChaosGame
         }
         else
         {
-            DrawField(batch, pixel, font, OnlineConnectLayout.JoinCode, _online.SessionName);
-            DrawHostChoice(batch, pixel, font, OnlineConnectLayout.Visibility, "VISIBILITY",
-                _online.PublicListing ? "PUBLIC" : "PRIVATE", !busy);
-            DrawHostChoice(batch, pixel, font, OnlineConnectLayout.LateJoin, "JOIN AFTER START",
-                _online.AllowLateJoin ? "ALLOWED" : "NOT ALLOWED", !busy);
+            DrawSettingChoice(batch, pixel, font, "WHO CAN FIND IT",
+                OnlineConnectLayout.PublicChoice, "PUBLIC",
+                OnlineConnectLayout.PrivateChoice, "PRIVATE",
+                _online.PublicListing);
         }
         if (OnlinePasswordApplies)
             DrawField(batch, pixel, font, OnlineConnectLayout.Password, _online.Password);
@@ -188,6 +187,17 @@ public sealed partial class ChaosGame
         DrawCentered(font, batch, _online.Status, 440, Color.Gold, 1);
     }
 
+    /// <summary>Where a control's caption goes, which is the same place for every one of them.</summary>
+    private static Vector2 CaptionAt(Rectangle bounds) =>
+        new(bounds.X, bounds.Y - OnlineConnectLayout.CaptionOffset);
+
+    /// <summary>As much of a value as fits inside the box it is drawn in.</summary>
+    private static string Fitted(string value, Rectangle bounds)
+    {
+        var columns = (bounds.Width - 10) / OriginalFontLayout.CellWidth;
+        return value.Length > columns ? value[..columns] : value;
+    }
+
     /// <summary>Draws a field's place while the choices on the screen leave it out of use.</summary>
     private static void DrawDisabledField(
         SpriteBatch batch,
@@ -197,33 +207,34 @@ public sealed partial class ChaosGame
         string label,
         string note)
     {
-        font.Draw(batch, label, new Vector2(bounds.X, bounds.Y - 11), new Color(90, 105, 100), 1);
+        font.Draw(batch, label, CaptionAt(bounds), new Color(90, 105, 100), 1);
         batch.Draw(pixel, bounds, new Color(12, 22, 20));
         DrawBorder(batch, pixel, bounds, new Color(55, 70, 66), 1);
         font.Draw(batch, note, new Vector2(bounds.X + 5, bounds.Y + 7), new Color(90, 105, 100), 1);
     }
 
     /// <summary>
-    /// Draws one of the lobby settings the host chooses before the lobby exists.
+    /// Draws a captioned pair of buttons, of which the one in force is lit.
     /// </summary>
     /// <remarks>
-    /// Captioned like the fields they stand beside, and carrying the state rather than the action:
-    /// a button that reads ALLOWED under JOIN AFTER START says what the session will do, where one
-    /// that reads OFF leaves the player to guess what is off.
+    /// The caption carries the question and the buttons carry the answers, so neither has to be read
+    /// through the other: ALLOWED under JOIN AFTER START says what the session will do, where a lone
+    /// button reading OFF leaves the player to work out what is off.
     /// </remarks>
-    private static void DrawHostChoice(
+    private void DrawSettingChoice(
         SpriteBatch batch,
         Texture2D pixel,
         PixelFont font,
-        Rectangle bounds,
         string caption,
-        string value,
-        bool enabled)
+        Rectangle left,
+        string leftLabel,
+        Rectangle right,
+        string rightLabel,
+        bool leftIsChosen)
     {
-        font.Draw(batch, caption,
-            new Vector2(bounds.X, bounds.Y - OnlineConnectLayout.CaptionHeight),
-            new Color(150, 165, 165), 1);
-        DrawButton(batch, pixel, font, bounds, value, enabled);
+        font.Draw(batch, caption, CaptionAt(left), new Color(150, 165, 165), 1);
+        DrawButton(batch, pixel, font, left, leftLabel, leftIsChosen);
+        DrawButton(batch, pixel, font, right, rightLabel, !leftIsChosen);
     }
 
     private static void DrawReadOnlyServer(
@@ -232,7 +243,7 @@ public sealed partial class ChaosGame
         PixelFont font)
     {
         var bounds = OnlineConnectLayout.Server;
-        font.Draw(batch, "SERVER", new Vector2(bounds.X, bounds.Y - 11), new Color(150, 165, 165), 1);
+        font.Draw(batch, "SERVER", CaptionAt(bounds), new Color(150, 165, 165), 1);
         batch.Draw(pixel, bounds, new Color(18, 35, 32));
         DrawBorder(batch, pixel, bounds, new Color(70, 105, 95), 1);
         font.Draw(batch, MultiplayerServiceEndpoint.Central.ToString().TrimEnd('/'),
@@ -249,7 +260,6 @@ public sealed partial class ChaosGame
             DrawCentered(font, batch, "NO LOBBY", 200, Color.White, 1);
             return;
         }
-        font.Draw(batch, $"{match.Settings.Name}", new Vector2(120, 156), Color.White, 1);
         font.Draw(
             batch,
             $"{SeatedPlayerCount(match)} OF {match.Settings.MaxPlayers} SEATED",
@@ -263,21 +273,51 @@ public sealed partial class ChaosGame
                 ? PlayerColors[player.Slot]
                 : Color.White;
             var suffix = player.IsHost ? "  HOST" : string.Empty;
-            font.Draw(batch, $"{player.DisplayName}{suffix}", new Vector2(136, 200 + row * 16), colour, 1);
+            var name = player.DisplayName.Length > OnlineLobbyLayout.RosterNameColumns
+                ? player.DisplayName[..OnlineLobbyLayout.RosterNameColumns]
+                : player.DisplayName;
+            font.Draw(batch, $"{name}{suffix}", new Vector2(136, 200 + row * 16), colour, 1);
             row++;
         }
         // Every unseated slot plays as a computer player, which is worth saying before the start.
         var computers = MatchLimits.PlayerCount - SeatedPlayerCount(match);
         if (computers > 0)
         {
-            font.Draw(batch, $"{computers} COMPUTER PLAYERS WILL FILL THE REST",
+            font.Draw(batch, $"{computers} COMPUTERS FILL THE REST",
                 new Vector2(120, 200 + (row + 1) * 16), new Color(150, 165, 165), 1);
         }
-        DrawButton(batch, pixel, font, LobbyCopyCode, "COPY CODE", true);
-        DrawButton(batch, pixel, font, LobbySetup, "SETUP", _online.IsHost);
-        DrawButton(batch, pixel, font, LobbyStart, "START", _online.IsHost);
-        DrawButton(batch, pixel, font, LobbyLeave, "LEAVE", true);
+        DrawLobbySettings(batch, pixel, font, match);
+        DrawButton(batch, pixel, font, OnlineLobbyLayout.CopyCode, "COPY CODE", true);
+        DrawButton(batch, pixel, font, OnlineLobbyLayout.Setup, "GAME RULES", _online.IsHost);
+        DrawButton(batch, pixel, font, OnlineLobbyLayout.Start, "START", _online.IsHost);
+        DrawButton(batch, pixel, font, OnlineLobbyLayout.Leave, "LEAVE", true);
         DrawCentered(font, batch, _online.Status, 424, Color.Gold, 1);
+    }
+
+    /// <summary>
+    /// Draws the settings of a lobby that has not started, which only its host may change.
+    /// </summary>
+    /// <remarks>
+    /// A seated player reads them rather than being shown nothing: what the session is called,
+    /// whether anyone can find it, and whether they can expect a latecomer are all things worth
+    /// knowing before the match starts, and none of them are theirs to set.
+    /// </remarks>
+    private void DrawLobbySettings(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, MatchView match)
+    {
+        if (_online.IsHost)
+            DrawField(batch, pixel, font, OnlineLobbyLayout.SessionName, _online.SessionName);
+        else
+            DrawDisabledField(batch, pixel, font, OnlineLobbyLayout.SessionName, "SESSION NAME",
+                Fitted(match.Settings.Name, OnlineLobbyLayout.SessionName));
+        DrawSettingChoice(batch, pixel, font, "WHO CAN FIND IT",
+            OnlineLobbyLayout.PublicChoice, "PUBLIC",
+            OnlineLobbyLayout.PrivateChoice, "PRIVATE",
+            _online.PublicListing);
+        DrawSettingChoice(batch, pixel, font, "JOIN AFTER START",
+            OnlineLobbyLayout.LateJoinAllowed, "ALLOWED",
+            OnlineLobbyLayout.LateJoinRefused, "NOT ALLOWED",
+            _online.AllowLateJoin);
     }
 
     private void DrawOnlinePanel(SpriteBatch batch, Texture2D pixel, PixelFont font, string title)
@@ -296,7 +336,7 @@ public sealed partial class ChaosGame
         Rectangle bounds,
         TextField field)
     {
-        font.Draw(batch, field.Label, new Vector2(bounds.X, bounds.Y - 12), new Color(150, 165, 165), 1);
+        font.Draw(batch, field.Label, CaptionAt(bounds), new Color(150, 165, 165), 1);
         batch.Draw(pixel, bounds, new Color(4, 10, 9));
         DrawBorder(batch, pixel, bounds, field.IsFocused ? Color.Gold : new Color(70, 90, 88), 1);
         font.Draw(batch, field.Display, new Vector2(bounds.X + 4, bounds.Y + 6), Color.White, 1);

@@ -446,8 +446,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     UpdateOnline(keyboard);
                     break;
                 case ClientScreen.Lobby:
-                    if (Pressed(keyboard, Keys.Enter)) StartHostedMatch();
-                    else PollLobby(gameTime);
+                    UpdateLobby(keyboard, gameTime);
                     break;
                 case ClientScreen.City:
                     UpdateCity(keyboard);

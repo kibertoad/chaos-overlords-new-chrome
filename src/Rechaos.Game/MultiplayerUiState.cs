@@ -84,7 +84,8 @@ internal sealed class MultiplayerUiState
     internal TextField Server { get; } = new(
         "SERVER", 96, GamePreferences.DefaultCustomMultiplayerServer);
     internal TextField DisplayName { get; } = new("NAME", 32, "PLAYER");
-    internal TextField SessionName { get; } = new("SESSION NAME", 64, "NEW CHROME GAME");
+    /// <summary>Empty until the lobby is made: the host is given a name, and renames it there.</summary>
+    internal TextField SessionName { get; } = new("SESSION NAME", 64);
     internal TextField JoinCode { get; } = new("JOIN CODE", 8);
 
     /// <summary>
@@ -184,6 +185,7 @@ internal sealed class MultiplayerUiState
         TakeoverVotes.Clear();
         Password.Set(string.Empty);
         JoinCode.Set(string.Empty);
+        SessionName.Set(string.Empty);
     }
 
     /// <summary>Whether the player may still change the turn they are planning.</summary>

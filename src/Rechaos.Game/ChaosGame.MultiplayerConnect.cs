@@ -21,7 +21,6 @@ public sealed partial class ChaosGame
             if (_online.Service == OnlineServiceMode.Custom) fields.Add(_online.Server);
             fields.Add(_online.DisplayName);
             if (_online.Role == OnlineConnectRole.Join) fields.Add(_online.JoinCode);
-            else fields.Add(_online.SessionName);
             if (OnlinePasswordApplies) fields.Add(_online.Password);
             return [.. fields];
         }
@@ -49,8 +48,8 @@ public sealed partial class ChaosGame
         if (_online.Service == OnlineServiceMode.Custom)
             hits.Add((OnlineConnectLayout.Server, _online.Server));
         hits.Add((OnlineConnectLayout.Name, _online.DisplayName));
-        hits.Add((OnlineConnectLayout.JoinCode,
-            _online.Role == OnlineConnectRole.Join ? _online.JoinCode : _online.SessionName));
+        if (_online.Role == OnlineConnectRole.Join)
+            hits.Add((OnlineConnectLayout.JoinCode, _online.JoinCode));
         if (OnlinePasswordApplies) hits.Add((OnlineConnectLayout.Password, _online.Password));
         if (!hits.Any(hit => hit.Bounds.Contains(point))) return;
         foreach (var (bounds, field) in hits) field.IsFocused = bounds.Contains(point);
@@ -73,35 +72,25 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Flips between a session anyone can find under BROWSE and one only its join code reaches.
+    /// Chooses between a session anyone can find under BROWSE and one only its join code reaches.
     /// </summary>
     /// <remarks>
     /// Going private forgets the password rather than keeping it out of sight. The field is gone
     /// from the screen at that point, so a secret left behind it would be demanded of everyone the
     /// host hands the code to, by a host who can no longer read what it is.
     /// </remarks>
-    private void ToggleOnlineVisibility()
+    private void SelectOnlineListing(bool publicly)
     {
-        if (_online.Stage != MultiplayerStage.Connect) return;
-        _online.PublicListing = !_online.PublicListing;
-        _online.Status = _online.PublicListing
+        if (_online.Stage != MultiplayerStage.Connect || _online.PublicListing == publicly) return;
+        _online.PublicListing = publicly;
+        _online.Status = publicly
             ? "LISTED UNDER BROWSE, AND STILL JOINABLE BY CODE"
             : "REACHED BY JOIN CODE ONLY, WHICH IS GATE ENOUGH";
-        if (_online.PublicListing) return;
+        if (publicly) return;
         _online.Password.Set(string.Empty);
         if (!_online.Password.IsFocused) return;
         _online.Password.IsFocused = false;
         OnlineFields[0].IsFocused = true;
-    }
-
-    /// <summary>Flips whether a seat the computer is playing can be taken over mid-match.</summary>
-    private void ToggleOnlineLateJoin()
-    {
-        if (_online.Stage != MultiplayerStage.Connect) return;
-        _online.AllowLateJoin = !_online.AllowLateJoin;
-        _online.Status = _online.AllowLateJoin
-            ? "A LATECOMER MAY TAKE OVER A COMPUTER EMPIRE"
-            : "THE ROSTER CLOSES WHEN THE MATCH STARTS";
     }
 
     private void PasteJoinCode()

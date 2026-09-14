@@ -11,11 +11,6 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private static readonly Rectangle LobbyCopyCode = new(112, 372, 128, 32);
-    private static readonly Rectangle LobbyStart = new(256, 372, 128, 32);
-    private static readonly Rectangle LobbyLeave = new(400, 372, 128, 32);
-    private static readonly Rectangle LobbySetup = new(256, 332, 128, 32);
-
     private static readonly TimeSpan LobbyPollInterval = TimeSpan.FromSeconds(1);
 
     /// <summary>
@@ -124,6 +119,11 @@ public sealed partial class ChaosGame
             _saveName.Type(character);
             return;
         }
+        if (_screens.Current == ClientScreen.Lobby)
+        {
+            if (_online.IsHost && _online.SessionName.IsFocused) _online.SessionName.Type(character);
+            return;
+        }
         if (_screens.Current != ClientScreen.Online) return;
         var previousServer = _online.Server.Value;
         foreach (var field in OnlineFields) field.Type(character);
@@ -173,7 +173,6 @@ public sealed partial class ChaosGame
     private void BeginHost()
     {
         if (!TryBeginLobby() || !RequireUsableName()) return;
-        var name = _online.DisplayName.Value.Trim();
         var settings = new MultiplayerGameSettings(
             _selectedScenario, _selectedDuration, _selectedAiMentality, _playerPortraits,
             _defaultAiPolicy, _online.AllowLateJoin);
@@ -181,14 +180,12 @@ public sealed partial class ChaosGame
         _online.Status = "HOSTING";
         _lobby!.Host(new CreateMatchRequest(
             new MatchSettings(
-                string.IsNullOrWhiteSpace(_online.SessionName.Value)
-                    ? $"{name}'S CITY"
-                    : _online.SessionName.Value.Trim(),
+                SessionNameOrDefault(),
                 MatchLimits.PlayerCount,
                 SelectedOnlineTurnTimerSeconds,
                 _online.PublicListing ? MatchVisibility.Public : MatchVisibility.Private,
                 settings.ToWire()),
-            name,
+            _online.DisplayName.Value.Trim(),
             OptionalPassword()));
     }
 
@@ -436,6 +433,7 @@ public sealed partial class ChaosGame
                 _online.IsHost = seated.Membership.Player.IsHost;
                 _online.JoinCodeShown = seated.Membership.JoinCode;
                 _online.Match = seated.Membership.Match;
+                AdoptLobbySettings(seated.Membership.Match);
                 RememberOnlineMembership(seated.Membership);
                 if (seated.Membership.Match.Status is MatchStatus.Finished or MatchStatus.Abandoned)
                 {
@@ -453,6 +451,9 @@ public sealed partial class ChaosGame
                 return;
             case LobbyNotice.Updated updated:
                 _online.Match = updated.Match;
+                // Not while the host is editing them: the poll that carries a settings change back
+                // is the same poll that would type over the name being written next to it.
+                if (!_online.IsHost) AdoptLobbySettings(updated.Match);
                 if (_session is null && updated.Match.Status == MatchStatus.Running)
                     StartOnlineMatch(updated.Match);
                 return;
@@ -735,9 +736,9 @@ public sealed partial class ChaosGame
         else if (_online.Role == OnlineConnectRole.Join
             && OnlineConnectLayout.PasteJoinCode.Contains(point)) PasteJoinCode();
         else if (_online.Role == OnlineConnectRole.Host
-            && OnlineConnectLayout.Visibility.Contains(point)) ToggleOnlineVisibility();
+            && OnlineConnectLayout.PublicChoice.Contains(point)) SelectOnlineListing(publicly: true);
         else if (_online.Role == OnlineConnectRole.Host
-            && OnlineConnectLayout.LateJoin.Contains(point)) ToggleOnlineLateJoin();
+            && OnlineConnectLayout.PrivateChoice.Contains(point)) SelectOnlineListing(publicly: false);
         else if (OnlineConnectLayout.Discover.Contains(point)) OpenOnlineDiscovery();
         else if (OnlineConnectLayout.Reconnect.Contains(point)) OpenOnlineHistory();
         else if (OnlineConnectLayout.Continue.Contains(point)) ContinueOnline();
@@ -783,10 +784,35 @@ public sealed partial class ChaosGame
 
     private void HandleLobbyClick(Point point)
     {
-        if (LobbyCopyCode.Contains(point)) CopyLobbyJoinCode();
-        else if (LobbySetup.Contains(point)) OpenOnlineSetup();
-        else if (LobbyStart.Contains(point)) StartHostedMatch();
-        else if (LobbyLeave.Contains(point)) LeaveOnlineMatch();
+        if (_online.IsHost && OnlineLobbyLayout.SessionName.Contains(point))
+        {
+            _online.SessionName.IsFocused = true;
+            return;
+        }
+        // Anywhere else finishes an edit of the name: the setting it belongs to is about to be sent,
+        // or the player is leaving the screen the caret was on.
+        CommitLobbySessionName();
+        if (OnlineLobbyLayout.CopyCode.Contains(point)) CopyLobbyJoinCode();
+        else if (OnlineLobbyLayout.Setup.Contains(point)) OpenOnlineSetup();
+        else if (OnlineLobbyLayout.Start.Contains(point)) StartHostedMatch();
+        else if (OnlineLobbyLayout.Leave.Contains(point)) LeaveOnlineMatch();
+        else if (!_online.IsHost) return;
+        else if (OnlineLobbyLayout.PublicChoice.Contains(point)) ChangeLobbyListing(publicly: true);
+        else if (OnlineLobbyLayout.PrivateChoice.Contains(point)) ChangeLobbyListing(publicly: false);
+        else if (OnlineLobbyLayout.LateJoinAllowed.Contains(point)) ChangeLobbyLateJoin(allowed: true);
+        else if (OnlineLobbyLayout.LateJoinRefused.Contains(point)) ChangeLobbyLateJoin(allowed: false);
+    }
+
+    private void UpdateLobby(KeyboardState keyboard, GameTime gameTime)
+    {
+        if (_online.SessionName.IsFocused)
+        {
+            if (Pressed(keyboard, Keys.Enter)) CommitLobbySessionName();
+            PollLobby(gameTime);
+            return;
+        }
+        if (Pressed(keyboard, Keys.Enter)) StartHostedMatch();
+        else PollLobby(gameTime);
     }
 
     private void CopyLobbyJoinCode()
