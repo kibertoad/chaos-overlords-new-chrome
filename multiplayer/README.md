@@ -200,34 +200,45 @@ self-hosted (`npx @chaos-overlords/node-server`) and deployed from elsewhere —
 deployment consumes `@chaos-overlords/worker` and the two migration lineages as ordinary
 dependencies rather than as a checkout of this repository.
 
-They share one version number. `workspace:*` is what the packages depend on each other by, and pnpm
-rewrites it to that exact version as it packs, so a half-finished bump publishes a package pinning a
-sibling nobody released. `pnpm check-versions` refuses that, and the release workflow runs it against
-the tag before it builds anything.
+They share one release version. `workspace:*` is what the packages depend on each other by, and pnpm
+rewrites it to that exact version as it packs, so every package must be bumped together. The release
+workflow does that in its checkout and then runs `pnpm check-versions` before it builds anything;
+release commits do not need manual package-version edits.
 
-Releasing is two steps:
+Release from *Actions → Publish multiplayer packages → Run workflow*, which runs
+[`.github/workflows/multiplayer-publish.yml`](../.github/workflows/multiplayer-publish.yml). Enter the
+version and choose a mode:
+
+| Mode | What it does |
+| --- | --- |
+| `rehearse` (default) | Lints, builds, typechecks, tests, checks the C# codegen, and packs every tarball, then stops without contacting the registry. |
+| `release` | The same checks, then publishes all nine packages, then tags the commit it published `multiplayer-v0.2.0`. |
+
+Both cut from the tip of main, pin that commit, and apply the requested version to all nine package
+manifests in the workflow checkout. The checks, tarballs, and tag therefore describe one commit even
+if someone pushes to main mid-run. A release refuses to start if its tag already exists. The tag is
+created last because it is the half that is cheap to redo by hand.
+
+Pushing a `multiplayer-v*` tag still publishes, for a release that has to come from a commit other
+than the tip of main:
 
 ```sh
-pnpm -r exec npm version 0.2.0 --no-git-tag-version   # bump every package
-pnpm check-versions 0.2.0                             # they all agree
-# open a pull request, merge it, then:
 git tag multiplayer-v0.2.0 && git push origin multiplayer-v0.2.0
 ```
 
-The tag runs [`.github/workflows/multiplayer-publish.yml`](../.github/workflows/multiplayer-publish.yml),
-which lints, builds, tests, rehearses the pack, and then publishes. It authenticates with **npm OIDC
-trusted publishing**: the job trades its GitHub-issued `id-token` for a short-lived registry
-credential, so there is no npm token in this repository to leak or rotate, and every tarball carries
-a provenance attestation. Each package has to name the workflow as a trusted publisher on npmjs.com
-first (*Settings → Trusted publishers*: this repository, workflow `multiplayer-publish.yml`), and the
-very first release of a new package name has to be pushed by hand — a package that does not exist yet
-cannot have a trusted publisher.
+Either way the workflow authenticates with **npm OIDC trusted publishing**: the job trades its
+GitHub-issued `id-token` for a short-lived registry credential, so there is no npm token in this
+repository to leak or rotate, and every tarball carries a provenance attestation. Each package has to
+name the workflow as a trusted publisher on npmjs.com first (*Settings → Trusted publishers*: this
+repository, workflow `multiplayer-publish.yml`), and the very first release of a new package name has
+to be pushed by hand — a package that does not exist yet cannot have a trusted publisher. That
+binding is to the workflow's filename, which is why releasing lives in the publishing workflow rather
+than a second one that drives it.
 
-`pnpm publish:dry-run` does the whole thing locally without a registry, and prints what each tarball
-would contain. Running the workflow through *Run workflow* does the same on CI. What goes into a
-tarball is `files` in each manifest; `prepublishOnly` builds the package, copies the repository's
-`LICENSE` and `NOTICE` into it (npm ships one tarball per package, so each needs its own), and fails
-the publish if anything `files` promises is missing.
+`pnpm publish:dry-run` does the pack locally without a registry, and prints what each tarball would
+contain. What goes into a tarball is `files` in each manifest; `prepublishOnly` builds the package,
+copies the repository's `LICENSE` and `NOTICE` into it (npm ships one tarball per package, so each
+needs its own), and fails the publish if anything `files` promises is missing.
 
 ## Develop
 

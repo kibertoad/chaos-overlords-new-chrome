@@ -1,4 +1,4 @@
-name: Multiplayer server
+name: Multiplayer CI
 
 on:
   push:

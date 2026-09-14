@@ -7,8 +7,8 @@
 //
 // The packages depend on each other through `workspace:*`, which pnpm rewrites to the exact version
 // at publish time. A half-finished bump therefore does not fail loudly: it publishes a package that
-// pins a sibling version nobody released. The release workflow runs this against the tag it was
-// triggered by, so the mismatch is caught before anything reaches the registry.
+// pins a sibling version nobody released. The release workflow bumps every manifest in its checkout
+// and then runs this against the requested version before anything reaches the registry.
 
 import { globSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
