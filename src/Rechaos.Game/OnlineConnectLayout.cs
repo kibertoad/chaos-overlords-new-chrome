@@ -12,7 +12,13 @@ public static class OnlineConnectLayout
     public static Rectangle Name => new(120, 226, 400, 22);
     public static Rectangle JoinCode => new(120, 264, 300, 22);
     public static Rectangle PasteJoinCode => new(428, 260, 92, 30);
-    public static Rectangle Password => new(120, 302, 400, 22);
+    public static Rectangle Password => new(120, 302, 300, 22);
+
+    /// <summary>Shares the paste button's place, which is idle while hosting.</summary>
+    public static Rectangle Visibility => new(428, 260, 92, 30);
+
+    /// <summary>Under the visibility button, in the margin the password field leaves.</summary>
+    public static Rectangle LateJoin => new(428, 298, 92, 30);
     public static Rectangle Continue => new(120, 340, 190, 30);
     public static Rectangle Discover => new(330, 340, 190, 30);
     public static Rectangle Reconnect => new(120, 378, 190, 30);

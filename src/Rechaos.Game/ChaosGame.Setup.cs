@@ -40,10 +40,6 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Down)) ChangeDuration(-1);
         if (!_configuringOnlineLobby && Pressed(keyboard, Keys.OemMinus)) ChangePlayerCount(-1);
         if (!_configuringOnlineLobby && Pressed(keyboard, Keys.OemPlus)) ChangePlayerCount(1);
-        if (_configuringOnlineLobby && Pressed(keyboard, Keys.P))
-            _online.PublicListing = !_online.PublicListing;
-        if (_configuringOnlineLobby && Pressed(keyboard, Keys.J))
-            _online.AllowLateJoin = !_online.AllowLateJoin;
         if (Pressed(keyboard, Keys.M)) CycleDifficulty();
         if (Pressed(keyboard, Keys.L)) CyclePlanningTimeLimit();
         if (Pressed(keyboard, Keys.Enter))
@@ -134,20 +130,19 @@ public sealed partial class ChaosGame
             return;
         switch (pressed)
         {
+            // The roster, and the start of the match itself, belong to the lobby when one is open.
+            // Only the rules a solo game also chooses are set here, and CONFIRM carries them back.
             case SetupPushButton.AddPlayer:
-                if (_configuringOnlineLobby) _online.PublicListing = !_online.PublicListing;
-                else ChangePlayerCount(1, pointerButton: true);
+                if (!_configuringOnlineLobby) ChangePlayerCount(1, pointerButton: true);
                 break;
             case SetupPushButton.RemovePlayer:
-                if (_configuringOnlineLobby) _online.AllowLateJoin = !_online.AllowLateJoin;
-                else ChangePlayerCount(-1, pointerButton: true);
+                if (!_configuringOnlineLobby) ChangePlayerCount(-1, pointerButton: true);
                 break;
             case SetupPushButton.Start:
-                if (_configuringOnlineLobby) SaveOnlineSetup();
-                else StartMatch();
+                if (!_configuringOnlineLobby) StartMatch();
                 break;
             case SetupPushButton.Back:
-                if (_configuringOnlineLobby) CloseOnlineSetup();
+                if (_configuringOnlineLobby) SaveOnlineSetup();
                 else _screens.Show(ClientScreen.Title);
                 break;
         }
@@ -403,12 +398,12 @@ public sealed partial class ChaosGame
             OriginalSelectionLightLayout.PlanningTime((int)_selectedPlanningTimeLimit));
         if (_configuringOnlineLobby)
         {
-            DrawButton(batch, pixel, font, SetupButtonLayout.AddPlayer,
-                _online.PublicListing ? "PUBLIC" : "CODE ONLY", true);
-            DrawButton(batch, pixel, font, SetupButtonLayout.RemovePlayer,
-                _online.AllowLateJoin ? "LATE JOIN ON" : "LATE JOIN OFF", true);
-            DrawButton(batch, pixel, font, SetupButtonLayout.Start, "SAVE", true);
-            DrawButton(batch, pixel, font, SetupButtonLayout.Back, "WAITING", true);
+            // The seats belong to the lobby, so the two roster buttons and START are covered over
+            // rather than left showing artwork that does nothing here.
+            DrawButton(batch, pixel, font, SetupButtonLayout.AddPlayer, string.Empty, false);
+            DrawButton(batch, pixel, font, SetupButtonLayout.RemovePlayer, string.Empty, false);
+            DrawButton(batch, pixel, font, SetupButtonLayout.Start, string.Empty, false);
+            DrawButton(batch, pixel, font, SetupButtonLayout.Back, "CONFIRM", true);
         }
         if (_message == ObjectiveDurationWarning)
             DrawHoverTooltip(batch, pixel, font, _hoverPoint ?? new Point(300, 280),

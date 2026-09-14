@@ -46,20 +46,6 @@ public sealed partial class ChaosGame
     private MultiplayerRecovery? LatestOnlineRecovery =>
         _multiplayerRecoveries.FirstOrDefault(recovery => recovery.CanReconnect);
 
-    private TextField[] OnlineFields
-    {
-        get
-        {
-            var fields = new List<TextField>(4);
-            if (_online.Service == OnlineServiceMode.Custom) fields.Add(_online.Server);
-            fields.Add(_online.DisplayName);
-            if (_online.Role == OnlineConnectRole.Join) fields.Add(_online.JoinCode);
-            else fields.Add(_online.SessionName);
-            fields.Add(_online.Password);
-            return [.. fields];
-        }
-    }
-
     private void OpenOnline()
     {
         if (_session is not null) return;
@@ -123,14 +109,6 @@ public sealed partial class ChaosGame
         }
     }
 
-    private void FocusNextOnlineField()
-    {
-        var fields = OnlineFields;
-        var current = Array.FindIndex(fields, field => field.IsFocused);
-        foreach (var field in fields) field.IsFocused = false;
-        fields[Mod(current + 1, fields.Length)].IsFocused = true;
-    }
-
     /// <summary>Routes typed characters to whichever text field currently owns focus.</summary>
     private void HandleTextInput(char character)
     {
@@ -157,27 +135,6 @@ public sealed partial class ChaosGame
     }
 
     /// <summary>
-    /// Moves focus to the field that was clicked, if one was.
-    /// </summary>
-    /// <remarks>
-    /// A click that misses every field — on a button, or on the panel — leaves focus alone. Clearing
-    /// it would mean a player who pressed HOST and then carried on typing had their keystrokes go
-    /// nowhere, with a caret still blinking somewhere to say they had not.
-    /// </remarks>
-    private void FocusOnlineField(Point point)
-    {
-        var hits = new List<(Rectangle Bounds, TextField Field)>(4);
-        if (_online.Service == OnlineServiceMode.Custom)
-            hits.Add((OnlineConnectLayout.Server, _online.Server));
-        hits.Add((OnlineConnectLayout.Name, _online.DisplayName));
-        hits.Add((OnlineConnectLayout.JoinCode,
-            _online.Role == OnlineConnectRole.Join ? _online.JoinCode : _online.SessionName));
-        hits.Add((OnlineConnectLayout.Password, _online.Password));
-        if (!hits.Any(hit => hit.Bounds.Contains(point))) return;
-        foreach (var (bounds, field) in hits) field.IsFocused = bounds.Contains(point);
-    }
-
-    /// <summary>
     /// Starts a lobby session pointed at the typed address, or says why it could not.
     /// </summary>
     /// <remarks>
@@ -197,30 +154,6 @@ public sealed partial class ChaosGame
         _lobby = new MultiplayerLobbySession(_http, new MultiplayerClientOptions(baseAddress));
         SavePreferences();
         return true;
-    }
-
-    private void SelectOnlineService(OnlineServiceMode service)
-    {
-        if (_online.Stage != MultiplayerStage.Connect || _online.Service == service) return;
-        _online.Service = service;
-        foreach (var field in new[]
-                 { _online.Server, _online.DisplayName, _online.SessionName, _online.JoinCode, _online.Password })
-            field.IsFocused = false;
-        OnlineFields[0].IsFocused = true;
-        _online.Status = string.Empty;
-        SavePreferences();
-        BeginServerProbe();
-    }
-
-    private void SelectOnlineRole(OnlineConnectRole role)
-    {
-        if (_online.Stage != MultiplayerStage.Connect || _online.Role == role) return;
-        _online.Role = role;
-        foreach (var field in new[]
-                 { _online.Server, _online.DisplayName, _online.SessionName, _online.JoinCode, _online.Password })
-            field.IsFocused = false;
-        OnlineFields[0].IsFocused = true;
-        _online.Status = string.Empty;
     }
 
     private void ContinueOnline()
@@ -274,19 +207,6 @@ public sealed partial class ChaosGame
             _online.JoinCode.Value.Trim(), _online.DisplayName.Value.Trim(), OptionalPassword()));
     }
 
-    private void PasteJoinCode()
-    {
-        if (!DesktopClipboard.TryGetText(out var text, maximumCharacters: 8))
-        {
-            _online.Status = "THE CLIPBOARD DOES NOT CONTAIN TEXT";
-            return;
-        }
-        _online.JoinCode.Set(text);
-        foreach (var field in OnlineFields) field.IsFocused = false;
-        _online.JoinCode.IsFocused = true;
-        _online.Status = "JOIN CODE PASTED";
-    }
-
     private void ResumeSelectedOnlineMatch()
     {
         var sessions = RecoverableOnlineSessions;
@@ -306,34 +226,6 @@ public sealed partial class ChaosGame
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "RECONNECTING TO THE INTERRUPTED MATCH";
         _lobby.Resume(recovery.MatchId, recovery.PlayerId, recovery.Token, recovery.JoinCode);
-    }
-
-    private string? OptionalPassword() =>
-        _online.Password.Value.Length > 0 ? _online.Password.Value : null;
-
-    /// <summary>
-    /// Refuses a name the original rules read as a cheat code before the server has to.
-    /// </summary>
-    /// <remarks>
-    /// The server refuses these too, and its refusal is the one that counts — but saying so here
-    /// turns a round trip into an immediate answer, and names which field is wrong while the player
-    /// is still looking at it. See <see cref="ReservedPlayerNames"/> for why they cannot be allowed
-    /// through: online, one player's name changes what every client computes.
-    /// </remarks>
-    private bool RequireUsableName()
-    {
-        var name = _online.DisplayName.Value.Trim();
-        if (name.Length == 0)
-        {
-            _online.Status = "ENTER A NAME";
-            return false;
-        }
-        if (ReservedPlayerNames.IsReserved(name))
-        {
-            _online.Status = "THAT NAME IS A CHEAT CODE  PICK ANOTHER";
-            return false;
-        }
-        return true;
     }
 
     /// <summary>
@@ -842,6 +734,10 @@ public sealed partial class ChaosGame
             SelectOnlineRole(OnlineConnectRole.Join);
         else if (_online.Role == OnlineConnectRole.Join
             && OnlineConnectLayout.PasteJoinCode.Contains(point)) PasteJoinCode();
+        else if (_online.Role == OnlineConnectRole.Host
+            && OnlineConnectLayout.Visibility.Contains(point)) ToggleOnlineVisibility();
+        else if (_online.Role == OnlineConnectRole.Host
+            && OnlineConnectLayout.LateJoin.Contains(point)) ToggleOnlineLateJoin();
         else if (OnlineConnectLayout.Discover.Contains(point)) OpenOnlineDiscovery();
         else if (OnlineConnectLayout.Reconnect.Contains(point)) OpenOnlineHistory();
         else if (OnlineConnectLayout.Continue.Contains(point)) ContinueOnline();

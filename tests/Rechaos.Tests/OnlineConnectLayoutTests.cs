@@ -12,7 +12,18 @@ public sealed class OnlineConnectLayoutTests
         Assert.Equal(new Rectangle(120, 188, 190, 26), OnlineConnectLayout.HostRole);
         Assert.Equal(new Rectangle(120, 264, 300, 22), OnlineConnectLayout.JoinCode);
         Assert.Equal(new Rectangle(428, 260, 92, 30), OnlineConnectLayout.PasteJoinCode);
-        Assert.Equal(new Rectangle(120, 302, 400, 22), OnlineConnectLayout.Password);
+        Assert.Equal(new Rectangle(120, 302, 300, 22), OnlineConnectLayout.Password);
+        // The host's two choices stand in the margin those two fields leave, stacked in the column
+        // the paste button occupies while joining.
+        foreach (var choice in new[] { OnlineConnectLayout.Visibility, OnlineConnectLayout.LateJoin })
+        {
+            Assert.Equal(
+                (OnlineConnectLayout.PasteJoinCode.X, OnlineConnectLayout.PasteJoinCode.Width),
+                (choice.X, choice.Width));
+            Assert.False(choice.Intersects(OnlineConnectLayout.JoinCode));
+            Assert.False(choice.Intersects(OnlineConnectLayout.Password));
+        }
+        Assert.False(OnlineConnectLayout.Visibility.Intersects(OnlineConnectLayout.LateJoin));
         Assert.Equal(new Rectangle(120, 340, 190, 30), OnlineConnectLayout.Continue);
         Assert.Equal(new Rectangle(330, 340, 190, 30), OnlineConnectLayout.Discover);
         Assert.Equal(new Rectangle(120, 378, 190, 30), OnlineConnectLayout.Reconnect);

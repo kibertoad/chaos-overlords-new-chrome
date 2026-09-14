@@ -51,8 +51,18 @@ public sealed partial class ChaosGame
             DrawButton(batch, pixel, font, OnlineConnectLayout.PasteJoinCode, "PASTE", !busy);
         }
         else
+        {
             DrawField(batch, pixel, font, OnlineConnectLayout.JoinCode, _online.SessionName);
-        DrawField(batch, pixel, font, OnlineConnectLayout.Password, _online.Password);
+            DrawHostChoice(batch, pixel, font, OnlineConnectLayout.Visibility, "VISIBILITY",
+                _online.PublicListing ? "PUBLIC" : "PRIVATE", !busy);
+            DrawHostChoice(batch, pixel, font, OnlineConnectLayout.LateJoin, "LATE JOIN",
+                _online.AllowLateJoin ? "ON" : "OFF", !busy);
+        }
+        if (OnlinePasswordApplies)
+            DrawField(batch, pixel, font, OnlineConnectLayout.Password, _online.Password);
+        else
+            DrawDisabledField(batch, pixel, font, OnlineConnectLayout.Password, "PASSWORD",
+                "THE JOIN CODE GATES A PRIVATE SESSION");
         DrawButton(batch, pixel, font, OnlineConnectLayout.Continue,
             _online.Role == OnlineConnectRole.Host ? "CREATE" : "CONNECT", !busy);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Discover, "BROWSE", !busy);
@@ -178,18 +188,40 @@ public sealed partial class ChaosGame
         DrawCentered(font, batch, _online.Status, 440, Color.Gold, 1);
     }
 
-    private static void DrawDisabledJoinCode(
+    /// <summary>Draws a field's place while the choices on the screen leave it out of use.</summary>
+    private static void DrawDisabledField(
         SpriteBatch batch,
         Texture2D pixel,
-        PixelFont font)
+        PixelFont font,
+        Rectangle bounds,
+        string label,
+        string note)
     {
-        var bounds = OnlineConnectLayout.JoinCode;
-        font.Draw(batch, "JOIN CODE", new Vector2(bounds.X, bounds.Y - 11),
-            new Color(90, 105, 100), 1);
+        font.Draw(batch, label, new Vector2(bounds.X, bounds.Y - 11), new Color(90, 105, 100), 1);
         batch.Draw(pixel, bounds, new Color(12, 22, 20));
         DrawBorder(batch, pixel, bounds, new Color(55, 70, 66), 1);
-        font.Draw(batch, "NOT NEEDED WHEN HOSTING", new Vector2(bounds.X + 5, bounds.Y + 7),
-            new Color(90, 105, 100), 1);
+        font.Draw(batch, note, new Vector2(bounds.X + 5, bounds.Y + 7), new Color(90, 105, 100), 1);
+    }
+
+    /// <summary>
+    /// Draws one of the lobby settings the host chooses before the lobby exists.
+    /// </summary>
+    /// <remarks>
+    /// Captioned like the fields they stand beside rather than spelling the setting out on the face
+    /// of the button, because a button wide enough for LATE JOIN OFF would not fit the margin these
+    /// share with the session name and the password.
+    /// </remarks>
+    private static void DrawHostChoice(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        Rectangle bounds,
+        string caption,
+        string value,
+        bool enabled)
+    {
+        font.Draw(batch, caption, new Vector2(bounds.X, bounds.Y - 8), new Color(150, 165, 165), 1);
+        DrawButton(batch, pixel, font, bounds, value, enabled);
     }
 
     private static void DrawReadOnlyServer(
