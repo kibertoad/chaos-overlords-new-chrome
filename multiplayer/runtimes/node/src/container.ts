@@ -22,9 +22,9 @@ import {
 import { type OpenedStorage, openStorage, parseStorageTarget } from '@chaos-overlords/storage/node'
 import { getConnInfo } from '@hono/node-server/conninfo'
 import type { Hono } from 'hono'
-import type { NodeConfig } from './config'
-import { createLogger } from './logger'
-import { startSweeper, TimerDeadlineScheduler } from './TimerDeadlineScheduler'
+import type { NodeConfig } from './config.js'
+import { createLogger } from './logger.js'
+import { startSweeper, TimerDeadlineScheduler } from './TimerDeadlineScheduler.js'
 
 export interface NodeRuntime {
   app: Hono<AppEnv>

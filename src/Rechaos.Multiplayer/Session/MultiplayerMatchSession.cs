@@ -282,7 +282,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// Reads the log forever, acting on every fact.
     /// </summary>
     /// <remarks>
-    /// A failure that ends the stream ends the session with it: a revoked token means the player left
+    /// A failure that ends the stream ends the session with it: a revoked token means the player was kicked
     /// or was kicked, and there is nothing left to read. Everything that describes one attempt is
     /// retried — the stream by itself, and the calls a fact leads to by <see cref="CallAsync"/>.
     /// </remarks>
@@ -452,6 +452,14 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             case MatchPlayerTakenOverEvent takenOver:
                 _takeoverVotes.Remove(takenOver.Payload.PlayerId);
                 TransferPlayerToComputer(takenOver.Payload.PlayerId);
+                return;
+            case MatchPlayerReturnedEvent returned:
+                _takeoverVotes.Remove(returned.Payload.PlayerId);
+                if (returned.Payload.ReplacedComputer)
+                    TransferPlayerToHuman(returned.Payload.PlayerId);
+                return;
+            case MatchLatePlayerJoinedEvent joined:
+                AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot);
                 return;
             case TurnSealedEvent sealedTurn:
                 if (sealedTurn.Payload.Turn < _replay.State.Coordinator.Turn) return;
@@ -651,6 +659,18 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 _notices.Enqueue(new MultiplayerNotice.TakeoverVoteClosed(
                     takenOver.Payload.PlayerId, ComputerControl: true));
                 return;
+            case MatchPlayerReturnedEvent returned:
+                _takeoverVotes.Remove(returned.Payload.PlayerId);
+                if (returned.Payload.ReplacedComputer)
+                    TransferPlayerToHuman(returned.Payload.PlayerId);
+                await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
+                _notices.Enqueue(new MultiplayerNotice.TakeoverVoteClosed(
+                    returned.Payload.PlayerId, ComputerControl: false));
+                return;
+            case MatchLatePlayerJoinedEvent joined:
+                AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot);
+                await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
+                return;
             case LobbyPlayerJoinedEvent or LobbyHostChangedEvent:
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;
@@ -686,7 +706,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 turn,
                 NativeSaveSerializer.CurrentFormatVersion,
                 stateHash,
-                MatchStateClone.ToBase64(_replay.State));
+                MatchStateClone.ToBase64(_replay.State),
+                SummarizeSeats(_replay.State));
         }
         await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
@@ -714,15 +735,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 $"the sealed set for turn {turn} does not match the digest the server announced");
         }
         return SealedTurnApplier.Apply(_replay, sealedOrders);
-    }
-
-    /// <summary>Applies an approved handover once; merely leaving never transfers control.</summary>
-    private void TransferPlayerToComputer(string playerId)
-    {
-        if (!_slotsByPlayerId.TryGetValue(playerId, out var slot)) return;
-        var player = _replay.State.FindPlayer(new PlayerId(slot));
-        if (player is null || player.Setup.Controller == PlayerController.Computer) return;
-        _replay.TransferPlayerToComputer(player.Id);
     }
 
     private PendingTakeoverVote BeginTakeoverVote(string playerId, int turn)
@@ -773,7 +785,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                     // save format's — not the replay format's, which says nothing about these bytes.
                     NativeSaveSerializer.CurrentFormatVersion,
                     ours,
-                    MatchStateClone.ToBase64(_replay.State)),
+                    MatchStateClone.ToBase64(_replay.State),
+                    SummarizeSeats(_replay.State)),
                 token),
             cancellationToken).ConfigureAwait(false);
     }
@@ -910,14 +923,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             turn, _readyPlayerIds.Count, _awaitedSeats));
     }
 
-    /// <summary>
-    /// What a change of match status means for the player.
-    /// </summary>
-    /// <remarks>
-    /// Abandoned is as final as finished and easier to miss: the server gives up on a match nobody is
-    /// playing any more, and a client that only watched for <c>finished</c> would sit waiting for a
-    /// turn that is never going to seal.
-    /// </remarks>
     private void HandleStatus(MatchStatus status)
     {
         switch (status)

@@ -47,6 +47,7 @@
     "build": "tsc -b tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/main.js",
+    "start:source": "tsx src/main.ts",
     "dev": "node --watch dist/main.js",
     "test": "vitest",
     "test:run": "vitest run",

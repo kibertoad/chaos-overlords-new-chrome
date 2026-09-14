@@ -5,6 +5,7 @@ using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Session;
 using CoreTarget = Rechaos.Core.GameModel.CommandTarget;
+using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
 
 namespace Rechaos.OnlineSmoke;
 
@@ -87,10 +88,43 @@ public static class Program
             Console.WriteLine($"turn {turn} confirmed on {hostResolved.StateHash[..12]}");
         }
 
+        // Exercise recovery through the same production sessions the game UI owns. The guest is
+        // unanimously replaced, everybody leaves, and the old guest's durable membership then
+        // reclaims both the AI seat and the vacant host role.
+        await guestMatch.LeaveAsync(CancellationToken.None);
+        await WaitForPlayer(guestMatch, guest.Player.Id, WirePlayerStatus.Left);
+        await hostMatch.VoteOnTakeoverAsync(
+            guest.Player.Id,
+            new TakeoverVoteRequest(TakeoverVoteRequestDecision.Computer),
+            CancellationToken.None);
+        await WaitForPlayer(hostMatch, guest.Player.Id, WirePlayerStatus.Computer);
+        await hostMatch.LeaveAsync(CancellationToken.None);
+        await WaitForPlayer(hostMatch, host.Player.Id, WirePlayerStatus.Left);
+
+        await using var recovery = new MultiplayerLobbySession(
+            http, new MultiplayerClientOptions(baseAddress));
+        recovery.Resume(host.Match.Id, guest.Player.Id, guest.Token, host.JoinCode);
+        var reseated = await Seated(recovery);
+        Require(reseated.Membership.Player.Status == WirePlayerStatus.Active,
+            "the returning player's seat was not made active");
+        Require(reseated.Membership.Player.IsHost,
+            "the first player returning to an empty match did not become host");
+        Console.WriteLine("rejoined the AI-held seat and inherited host control");
+
+        var recoveryTurn = turns + 1;
+        var recoveredPlan = SpeculativeTurn.For(guestState, definitions, guestSession.Slot);
+        Hide(recoveredPlan);
+        await guestSession.SubmitOrdersAsync(
+            recoveryTurn, recoveredPlan.Build(), true, CancellationToken.None);
+        var recoveredGuest = await Resolved(guestSession, recoveryTurn);
+        Require(recoveredGuest.State.Players[guestSession.Slot].Setup.Controller == PlayerController.Human,
+            "the rejoined seat stayed under computer control in the actual game state");
+
         var final = (await hostMatch.GetAsync(CancellationToken.None)).Match;
         Require(final.Status == MatchStatus.Running, $"the match ended as {final.Status}");
-        Require(final.CurrentTurn == turns + 1, $"the server is on turn {final.CurrentTurn}");
-        Console.WriteLine($"OK: {turns} turns in lockstep, server on turn {final.CurrentTurn}");
+        Require(final.CurrentTurn == turns + 2, $"the server is on turn {final.CurrentTurn}");
+        Require(final.HostPlayerId == guest.Player.Id, "the recovered host was not persisted");
+        Console.WriteLine($"OK: {turns + 1} turns in lockstep, including crash recovery");
         return 0;
     }
 
@@ -129,6 +163,37 @@ public static class Program
             await Task.Delay(50);
         }
         throw new TimeoutException($"turn {turn} never resolved");
+    }
+
+    private static async Task WaitForPlayer(
+        MatchHandle match,
+        string playerId,
+        WirePlayerStatus status)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(15);
+        while (DateTime.UtcNow < deadline)
+        {
+            var detail = await match.GetAsync(CancellationToken.None);
+            if (detail.Match.Players.First(player => player.Id == playerId).Status == status) return;
+            await Task.Delay(50);
+        }
+        throw new TimeoutException($"player {playerId} never became {status}");
+    }
+
+    private static async Task<LobbyNotice.Seated> Seated(MultiplayerLobbySession lobby)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(15);
+        while (DateTime.UtcNow < deadline)
+        {
+            while (lobby.TryDequeueNotice(out var notice))
+            {
+                if (notice is LobbyNotice.Seated seated) return seated;
+                if (notice is LobbyNotice.Failed failed)
+                    throw new InvalidOperationException($"rejoin failed: {failed.Reason}");
+            }
+            await Task.Delay(50);
+        }
+        throw new TimeoutException("the returning membership was never seated");
     }
 
     private static void Require(bool condition, string message)

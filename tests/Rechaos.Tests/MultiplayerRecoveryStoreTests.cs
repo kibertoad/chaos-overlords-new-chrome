@@ -33,6 +33,27 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     }
 
     [Fact]
+    public void KeepsEveryUnfinishedMembershipInMostRecentOrder()
+    {
+        var first = Recovery(CleanExit: true, Completed: false);
+        var second = first with { MatchId = "match-2", PlayerId = "player-2" };
+
+        Assert.True(MultiplayerRecoveryStore.TrySaveAll(Path(), [second, first]));
+
+        Assert.Equal([second, first], MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.All(MultiplayerRecoveryStore.LoadAll(Path()), item => Assert.True(item.CanReconnect));
+    }
+
+    [Fact]
+    public void ReadsTheLegacySingleMembershipFormat()
+    {
+        var legacy = Recovery(CleanExit: false, Completed: false);
+        File.WriteAllText(Path(), System.Text.Json.JsonSerializer.Serialize(legacy));
+
+        Assert.Equal(legacy, Assert.Single(MultiplayerRecoveryStore.LoadAll(Path())));
+    }
+
+    [Fact]
     public void CorruptRecoveryIsIgnored()
     {
         File.WriteAllText(Path(), "not-json");

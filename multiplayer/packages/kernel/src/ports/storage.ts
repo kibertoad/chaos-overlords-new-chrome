@@ -1,6 +1,7 @@
 import type {
   LobbyListing,
   MatchEventBody,
+  MatchSettings,
   MatchStatus,
   TurnStatus,
 } from '@chaos-overlords/contracts'
@@ -36,6 +37,14 @@ export interface MatchRepository {
    */
   claimSeat(matchId: string): Promise<number | null>
   releaseSeat(matchId: string): Promise<void>
+  /** Host-only lobby configuration; false after the match starts or below the occupied seat count. */
+  updateSettings(matchId: string, settings: MatchSettings, updatedAt: Date): Promise<boolean>
+  /** Host-published public seat facts, written while running without changing lobby policy. */
+  updateRuntimeGameSettings(
+    matchId: string,
+    gameSettings: MatchSettings['gameSettings'],
+    updatedAt: Date,
+  ): Promise<boolean>
   /**
    * Deletes matches in one of `statuses` last touched before `before`, with everything they own
    * (players, turns, orders, reports, snapshots, events cascade). Returns how many went. Live
@@ -63,6 +72,8 @@ export interface PlayerRepository {
    * host pressed start from becoming an unseated player in a running match.
    */
   create(player: Player): Promise<boolean>
+  /** Inserts a deterministic-id late member after start; false if that seat was ever human. */
+  createLate(player: Player): Promise<boolean>
   get(id: string): Promise<Player | null>
   /** Never matches a revoked membership, whose token hash is null. */
   getByTokenHash(tokenHash: string): Promise<Player | null>

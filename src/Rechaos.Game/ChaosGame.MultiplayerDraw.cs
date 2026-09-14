@@ -15,6 +15,21 @@ public sealed partial class ChaosGame
 
     private void DrawOnline(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
+        if (_online.Stage == MultiplayerStage.History)
+        {
+            DrawOnlineHistory(batch, pixel, font);
+            return;
+        }
+        if (_online.Stage == MultiplayerStage.Discover)
+        {
+            DrawOnlineDiscovery(batch, pixel, font);
+            return;
+        }
+        if (_online.Stage == MultiplayerStage.LateJoinSeat)
+        {
+            DrawLateJoinSeats(batch, pixel, font);
+            return;
+        }
         DrawOnlinePanel(batch, pixel, font, "ONLINE PLAY");
         DrawButton(batch, pixel, font, OnlineConnectLayout.Central, "CENTRAL",
             _online.Service == OnlineServiceMode.Central);
@@ -36,16 +51,104 @@ public sealed partial class ChaosGame
             DrawButton(batch, pixel, font, OnlineConnectLayout.PasteJoinCode, "PASTE", !busy);
         }
         else
-            DrawDisabledJoinCode(batch, pixel, font);
+            DrawField(batch, pixel, font, OnlineConnectLayout.JoinCode, _online.SessionName);
         DrawField(batch, pixel, font, OnlineConnectLayout.Password, _online.Password);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Continue,
             _online.Role == OnlineConnectRole.Host ? "CREATE" : "CONNECT", !busy);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Back, "BACK", !busy);
-        if (_lastMultiplayerRecovery?.ShouldSuggestReconnect == true)
-            DrawButton(batch, pixel, font, OnlineConnectLayout.Reconnect, "RECONNECT", !busy);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.Discover, "DISCOVER", !busy);
+        if (RecoverableOnlineSessions.Count > 0)
+            DrawButton(batch, pixel, font, OnlineConnectLayout.Reconnect, "SESSIONS", !busy);
         DrawCentered(font, batch, _online.ServerStatus, OnlineConnectLayout.ServerStatusY,
             _online.ServerStatus.EndsWith("ONLINE", StringComparison.Ordinal) ? Color.Lime : Color.Gold, 1);
         DrawCentered(font, batch, _online.Status, OnlineConnectLayout.StatusY, Color.Gold, 1);
+    }
+
+    private void DrawOnlineDiscovery(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        DrawOnlinePanel(batch, pixel, font, "DISCOVER GAMES");
+        var status = _online.DiscoveryStatusFilter switch
+        {
+            1 => "WAITING",
+            2 => "ONGOING",
+            _ => "ALL STATES",
+        };
+        var scenario = _online.DiscoveryScenarioFilter < 0 ? "ALL MODES"
+            : ((ScenarioId)_online.DiscoveryScenarioFilter).ToString().ToUpperInvariant();
+        var ai = _online.DiscoveryAiFilter < 0 ? "ALL AI"
+            : DifficultyPresentation.Label((AiDifficulty)_online.DiscoveryAiFilter);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryStatus, status, true);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryScenario, scenario, true);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryAi, ai, true);
+        var listings = FilteredOnlineListings();
+        var offset = Math.Clamp(_online.DiscoverySelection - 4, 0, Math.Max(0, listings.Count - 5));
+        for (var row = 0; row < Math.Min(5, listings.Count - offset); row++)
+        {
+            var index = offset + row;
+            var listing = listings[index];
+            var bounds = OnlineConnectLayout.DiscoveryRow(row);
+            batch.Draw(pixel, bounds, index == _online.DiscoverySelection
+                ? new Color(30, 62, 55) : new Color(4, 10, 9));
+            DrawBorder(batch, pixel, bounds,
+                index == _online.DiscoverySelection ? Color.Gold : new Color(70, 90, 88), 1);
+            var phase = listing.Status == MatchStatus.Lobby ? "WAITING" : "ONGOING";
+            font.Draw(batch, $"{listing.Name}  {phase}  {listing.PlayerCount}/{listing.MaxPlayers}",
+                new Vector2(bounds.X + 6, bounds.Y + 6), Color.White, 1);
+            var settings = MultiplayerGameSettings.FromWire(listing.Settings.GameSettings);
+            font.Draw(batch,
+                $"{settings.Scenario}  {DifficultyPresentation.Label(settings.AiMentality)}",
+                new Vector2(bounds.X + 6, bounds.Y + 19), new Color(150, 165, 165), 1);
+        }
+        DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryJoin, "JOIN", listings.Count > 0);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryBack, "BACK", true);
+        DrawCentered(font, batch, _online.Status, 432, Color.Gold, 1);
+    }
+
+    private void DrawOnlineHistory(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        DrawOnlinePanel(batch, pixel, font, "UNFINISHED SESSIONS");
+        var sessions = RecoverableOnlineSessions;
+        var offset = Math.Clamp(_online.RecoverySelection - 5, 0, Math.Max(0, sessions.Count - 6));
+        for (var row = 0; row < Math.Min(6, sessions.Count - offset); row++)
+        {
+            var index = offset + row;
+            var recovery = sessions[index];
+            var bounds = OnlineConnectLayout.HistoryRow(row);
+            batch.Draw(pixel, bounds, index == _online.RecoverySelection
+                ? new Color(30, 62, 55)
+                : new Color(4, 10, 9));
+            DrawBorder(batch, pixel, bounds,
+                index == _online.RecoverySelection ? Color.Gold : new Color(70, 90, 88), 1);
+            var role = recovery.IsHost ? "HOST" : "PLAYER";
+            font.Draw(batch, $"{recovery.DisplayName}  {recovery.JoinCode}  {role}",
+                new Vector2(bounds.X + 7, bounds.Y + 9), Color.White, 1);
+        }
+        DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN", sessions.Count > 0);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK", true);
+        DrawCentered(font, batch, "UP/DOWN SELECT  ENTER REJOINS", 424,
+            new Color(150, 165, 165), 1);
+        DrawCentered(font, batch, _online.Status, 440, Color.Gold, 1);
+    }
+
+    private void DrawLateJoinSeats(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        DrawOnlinePanel(batch, pixel, font, "CHOOSE COMPUTER EMPIRE");
+        var seats = _online.PendingLateJoin?.AvailableSeatSummaries ?? [];
+        for (var row = 0; row < Math.Min(6, seats.Count); row++)
+        {
+            var seat = seats[row];
+            var bounds = OnlineConnectLayout.HistoryRow(row);
+            batch.Draw(pixel, bounds, row == _online.LateJoinSeatSelection
+                ? new Color(30, 62, 55) : new Color(4, 10, 9));
+            DrawBorder(batch, pixel, bounds,
+                row == _online.LateJoinSeatSelection ? Color.Gold : new Color(70, 90, 88), 1);
+            font.Draw(batch,
+                $"PLAYER {seat.Slot + 1}   {seat.Gangs} GANGS   {seat.Sites} SITES   {seat.Sectors} SECTORS",
+                new Vector2(bounds.X + 7, bounds.Y + 9), Color.White, 1);
+        }
+        DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "TAKE OVER", seats.Count > 0);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK", true);
+        DrawCentered(font, batch, _online.Status, 440, Color.Gold, 1);
     }
 
     private static void DrawDisabledJoinCode(
@@ -110,6 +213,7 @@ public sealed partial class ChaosGame
                 new Vector2(120, 200 + (row + 1) * 16), new Color(150, 165, 165), 1);
         }
         DrawButton(batch, pixel, font, LobbyCopyCode, "COPY CODE", true);
+        DrawButton(batch, pixel, font, LobbySetup, "SETUP", _online.IsHost);
         DrawButton(batch, pixel, font, LobbyStart, "START", _online.IsHost);
         DrawButton(batch, pixel, font, LobbyLeave, "LEAVE", true);
         DrawCentered(font, batch, _online.Status, 424, Color.Gold, 1);

@@ -15,6 +15,7 @@ import {
   resourceIdSchema,
   seedSchema,
   sha256HexSchema,
+  slotSchema,
   turnNumberSchema,
 } from './primitives'
 import { matchStatusSchema, playerViewSchema } from './views'
@@ -113,6 +114,18 @@ export const matchPlayerTakenOverEventSchema = strictObject({
   payload: strictObject({ playerId: resourceIdSchema }),
 })
 
+export const matchPlayerReturnedEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('match.playerReturned'),
+  payload: strictObject({ playerId: resourceIdSchema, replacedComputer: boolean() }),
+})
+
+export const matchLatePlayerJoinedEventSchema = strictObject({
+  ...eventEnvelope,
+  type: literal('match.latePlayerJoined'),
+  payload: strictObject({ playerId: resourceIdSchema, slot: slotSchema }),
+})
+
 export const turnOpenedEventSchema = strictObject({
   ...eventEnvelope,
   type: literal('turn.opened'),
@@ -183,6 +196,8 @@ export const matchEventSchema = variant('type', [
   matchTakeoverVoteCastEventSchema,
   matchTakeoverVoteCancelledEventSchema,
   matchPlayerTakenOverEventSchema,
+  matchPlayerReturnedEventSchema,
+  matchLatePlayerJoinedEventSchema,
   turnOpenedEventSchema,
   turnDeadlineExtendedEventSchema,
   turnReadinessEventSchema,

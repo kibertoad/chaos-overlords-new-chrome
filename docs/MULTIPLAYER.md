@@ -1,7 +1,7 @@
 # Multiplayer
 
 Status: implemented server, game client wired
-Last updated: 2026-09-13
+Last updated: 2026-09-14
 
 Online play for *Chaos Overlords: New Chrome* runs through a coordination server that any player
 can host and that can also run as a central public service. The server code lives under
@@ -11,10 +11,11 @@ a new design over HTTP.
 The game offers the official central service at `https://chaos-overlords.dinorefurb.com` and a
 custom/self-hosted choice. Opening the Online screen probes the selected service's unversioned
 `GET /health` route and reports whether it is available before the player tries to host or join.
-Match discovery is intentionally code-based: a host receives an eight-character code and gives it
-to the other players, with a lobby button available to copy it to the system clipboard. Host and
-Join are explicit connect-screen choices; the join-code field is disabled for a host. The existing
-public-lobby listing API is not exposed by the game UI.
+Hosts give each match a name and choose whether it is publicly discoverable or join-code-only. The
+Online screen browses public waiting and ongoing matches and filters them by status, scenario, and
+AI difficulty. Code-only matches remain absent from discovery. A host still receives an
+eight-character code and can copy it to the system clipboard; joiners have a bounded Paste button
+that reads at most the eight supported characters without disturbing the player-name field.
 
 ## What the server is, and is not
 
@@ -35,15 +36,20 @@ was ordered**:
    so every client converges on one state before the next turn can seal.
 
 Every seat no human took at the start is a computer player, planned by the deterministic AI on every
-client identically, so its orders never cross the wire. The match seed and the slot assignment come
-from the server at start, so every client bootstraps the same city.
+client identically, so its orders never cross the wire. A host may start with only themselves and
+may opt into late joining. In that mode an incoming player can claim an AI seat that has never been
+owned by a human. A historically human seat is permanently reserved for its original owner, even
+while AI temporarily controls it. The match seed and slot assignment come from the server at start,
+so every client bootstraps the same city.
 
 A departure or a timed turn with no submitted document opens a takeover vote. Every currently
 present player must choose `USE AI` before control changes; any `WAIT` choice keeps the seat human,
-and there is no server-side timeout that approves takeover implicitly. A player who reconnects and
-submits or reports while their absence vote is pending atomically returns to `active` and cancels
-the vote. Only `match.playerTakenOver` changes the deterministic controller, at its exact event-log
-position, so every client records the same one-way change in the hashed match state.
+and there is no server-side timeout that approves takeover implicitly. A player who reconnects
+atomically returns to `active`, cancels a pending absence vote, and reclaims their seat from AI when
+necessary. `match.playerTakenOver`, `match.playerReturned`, and `match.latePlayerJoined` place both
+directions of a controller transfer at an exact event-log position, so every client records the same
+change in the hashed match state. The first former player to return when no host is present becomes
+host.
 
 This is the classic deterministic-lockstep model of turn-based strategy games. Its cost is
 stated in the security section: a modified client can read hidden state. Its benefits are that the
@@ -95,11 +101,14 @@ generated from the same valibot schemas (see "Two languages, one contract").
 | Call | Who | Effect |
 |---|---|---|
 | `POST /matches` | anyone | Creates a lobby. Returns the host's token, the 8-character join code and the match view. `settings.gameSettings` is an opaque object the server stores for clients (scenario, portraits, difficulty); the server reads only `name`, `maxPlayers`, `turnTimerSeconds`, `visibility`. An optional `password` gates joining. |
-| `GET /matches` | anyone | Public lobbies, when the server enables listing. |
+| `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings and available late-join seats with current gang, site, and sector counts. |
 | `POST /matches/join` | anyone | Joins by code (and password). Returns that player's token. Capacity is a single atomic seat claim. |
+| `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. |
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. |
+| `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
-| `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: publishes the departure and opens a takeover vote; it does not transfer control. A leaving host hands the role to the lowest active slot. The token is revoked, so an explicit leaver keeps no read access. |
+| `POST /matches/:id/leave` | member | In the lobby: frees the seat (the host leaving abandons the lobby). Running: publishes the departure and opens a takeover vote; it does not transfer control. A leaving host hands the role to the lowest active slot. The durable membership token is retained for later rejoin. |
+| `POST /matches/:id/rejoin` | former member | Reactivates the caller's durable seat, restores host authority when appropriate, and transfers an AI-controlled reserved seat back to its owner. |
 | `POST /matches/:id/players/:pid/kick` | host | Same as the target leaving. |
 | `POST /matches/:id/players/:pid/takeover-vote` | active member | `{ decision: "computer" | "wait" }`. The latest choice per voter counts. Computer control requires every currently active player to approve; one wait vote preserves the human controller. |
 
@@ -222,7 +231,9 @@ megabyte of snapshot per desync, the lobby someone opened and never started. Mat
 or never-started state (`finished`, `abandoned`, `lobby`) are deleted once they have been untouched
 for `RETENTION_DAYS` (30 by default, `0` to keep everything), with everything they own — every child
 table cascades from the match row. A running or desynced match is never in scope at any age: a
-desync pause is not abandonment.
+desync pause is not abandonment. Node runs cleanup in its periodic sweep and Cloudflare invokes the
+same sweep from cron. Snapshot storage is independently bounded to the newest five snapshots per
+match, so per-turn autosaves do not grow without limit.
 
 ## Security model
 
@@ -230,8 +241,9 @@ desync pause is not abandonment.
   is shown once; the server stores its SHA-256 and looks it up by hash. There are no accounts,
   which is what makes self-hosting a one-command affair. A token is scoped to one player in one
   match; using it against another match answers 404, never 403, so match ids cannot be probed.
-  Leaving or being kicked **revokes** it (the stored hash is cleared), so a departed player loses the
-  event stream and the sealed order sets of later turns, not merely the right to act.
+  Kicking **revokes** it (the stored hash is cleared). Explicitly leaving a running match preserves
+  the capability for that original player alone, allowing the client to rejoin and reclaim the
+  historically reserved seat later.
 - **Secrecy of orders until the seal** is the property the design guarantees: nobody, the host
   included, can read another player's plan before the turn seals. There is no commit-reveal
   protocol because the server is the trusted holder; a self-hosted server is trusted by whoever

@@ -801,6 +801,29 @@ public sealed class MultiplayerSessionTests
         SealedTurnApplier.Apply(expected, SealedOrdersForSlots(1, 0));
         Assert.Equal(PlayerController.Computer, resolved.State.Players[1].Setup.Controller);
         Assert.Equal(MatchStateHasher.ComputeSha256(expected.State), resolved.StateHash);
+
+        IReadOnlyList<PlayerView> returnedRoster =
+        [
+            Roster[0],
+            new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: false),
+        ];
+        server.Answer(
+            HttpMethod.Get,
+            $"/matches/{MatchId}",
+            new MatchDetail(View() with { Players = returnedRoster, CurrentTurn = 2 }, "CODE1234", "p1"));
+        var secondTurn = SealedOrdersForSlots(2, 0, 1);
+        server.Answer(HttpMethod.Get, "/turns/2/orders", secondTurn);
+        server.Events.Write(Frame(
+            13, "match.playerReturned", """{"playerId":"p2","replacedComputer":true}"""));
+        server.Events.Write(Frame(
+            14, "turn.sealed",
+            $$"""{"turn":2,"orderSetHash":"{{secondTurn.OrderSetHash}}"}"""));
+
+        var returned = await WaitFor<MultiplayerNotice.TurnResolved>(session);
+        expected.TransferPlayerToHuman(new PlayerId(1));
+        SealedTurnApplier.Apply(expected, secondTurn);
+        Assert.Equal(PlayerController.Human, returned.State.Players[1].Setup.Controller);
+        Assert.Equal(MatchStateHasher.ComputeSha256(expected.State), returned.StateHash);
     }
 
     [Fact]

@@ -37,7 +37,7 @@ export interface Player {
   joinOrder: number
   displayName: string
   /**
-   * SHA-256 of the player's bearer token, or null once the membership is revoked (left or kicked
+   * SHA-256 of the player's bearer token, or null once the membership is revoked (kicked
    * from a running match). A null hash matches no token, so revocation needs no extra check.
    */
   tokenHash: string | null

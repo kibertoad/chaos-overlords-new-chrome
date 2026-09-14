@@ -32,14 +32,15 @@ public sealed record MultiplayerGameSettings(
     GameDuration Duration,
     AiDifficulty AiMentality,
     IReadOnlyList<short> Portraits,
-    AiPolicyMode AiPolicy = AiPolicyMode.Original)
+    AiPolicyMode AiPolicy = AiPolicyMode.Original,
+    bool AllowLateJoin = false)
 {
     /// <summary>The blob the host sends and every client reads back.</summary>
     public IReadOnlyDictionary<string, JsonElement> ToWire() =>
         JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
             JsonSerializer.Serialize(new Wire(
                 (int)Scenario, (int)Duration, (int)AiMentality, [.. Portraits],
-                (int)AiPolicy),
+                (int)AiPolicy, AllowLateJoin),
                 WireJson.Options),
             WireJson.Options)!;
 
@@ -64,7 +65,8 @@ public sealed record MultiplayerGameSettings(
             ValidPortraits(wire.Portraits),
             wire.AiPolicy is { } aiPolicy
                 ? Defined<AiPolicyMode>(aiPolicy, nameof(wire.AiPolicy))
-                : AiPolicyMode.Original);
+                : AiPolicyMode.Original,
+            wire.AllowLateJoin);
     }
 
     private static TEnum Defined<TEnum>(int value, string field) where TEnum : struct, Enum
@@ -105,5 +107,6 @@ public sealed record MultiplayerGameSettings(
         int Duration,
         int AiMentality,
         short[] Portraits,
-        int? AiPolicy = null);
+        int? AiPolicy = null,
+        bool AllowLateJoin = false);
 }

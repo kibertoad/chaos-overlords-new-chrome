@@ -41,7 +41,7 @@ describe('joinMatchRequestSchema', () => {
 })
 
 describe('uploadSnapshotRequestSchema', () => {
-  const base = { turn: 1, formatVersion: 1, stateHash: 'a'.repeat(64) }
+  const base = { turn: 1, formatVersion: 1, stateHash: 'a'.repeat(64), seatSummaries: [] }
 
   /** The server never decodes the body, so this is the only chance to notice it cannot be decoded. */
   it('refuses base64 that could never decode', () => {

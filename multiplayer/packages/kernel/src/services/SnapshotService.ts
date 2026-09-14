@@ -67,6 +67,11 @@ export class SnapshotService {
       body: request.body,
     }
     await this.deps.storage.snapshots.put(snapshot)
+    await this.deps.storage.matches.updateRuntimeGameSettings(
+      match.id,
+      { ...match.settings.gameSettings, seatSummaries: request.seatSummaries },
+      this.deps.clock.now(),
+    )
     await this.pruneOldSnapshots(match.id)
     // Confirmed-turn uploads are rolling autosaves. Only a desync repair asks live clients to
     // replace their state; announcing an ordinary autosave would make every client re-report it.

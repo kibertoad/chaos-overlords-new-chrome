@@ -85,6 +85,76 @@ describe('multiplayer kernel', () => {
     return { host, guest, third }
   }
 
+  it('starts with one human and lets the host revise lobby settings', async () => {
+    const host = await kernel.lobby.createMatch({
+      settings: {
+        name: 'Solo Online',
+        maxPlayers: 6,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: { scenario: 1 },
+      },
+      hostDisplayName: 'Host',
+    })
+    await kernel.lobby.updateSettings(await principalOf(host.token), {
+      ...host.match.settings,
+      name: 'Named Session',
+      turnTimerSeconds: 120,
+      visibility: 'public',
+      gameSettings: { scenario: 2, allowLateJoin: true },
+    })
+    await kernel.lobby.start(await principalOf(host.token))
+    const started = await principalOf(host.token)
+    expect(started.match.status).toBe('running')
+    expect(started.match.settings.name).toBe('Named Session')
+    expect(started.match.settings.turnTimerSeconds).toBe(120)
+  })
+
+  it('allows late joining only into a never-human computer slot', async () => {
+    const host = await kernel.lobby.createMatch({
+      settings: {
+        name: 'Drop In',
+        maxPlayers: 6,
+        turnTimerSeconds: 0,
+        visibility: 'public',
+        gameSettings: { allowLateJoin: true },
+      },
+      hostDisplayName: 'Host',
+    })
+    await kernel.lobby.start(await principalOf(host.token))
+    await kernel.snapshots.upload(await principalOf(host.token), {
+      turn: 0,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [{ slot: 3, gangs: 4, sites: 5, sectors: 6 }],
+    })
+    const listing = (await kernel.query.listPublicLobbies(10)).find(
+      (candidate) => candidate.id === host.match.id,
+    )
+    expect(listing?.availableSeatSummaries).toContainEqual({
+      slot: 3,
+      gangs: 4,
+      sites: 5,
+      sectors: 6,
+    })
+    const joined = await kernel.lobby.joinRunning({
+      match: host.match.id,
+      displayName: 'Late',
+      slot: 3,
+    })
+    expect(joined.player.slot).toBe(3)
+    expect(joined.player.status).toBe('active')
+    await expect(
+      kernel.lobby.joinRunning({
+        match: host.joinCode,
+        displayName: 'Other',
+        slot: 3,
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'seat_reserved' } })
+    expect(notifier.events.at(-1)?.type).toBe('match.latePlayerJoined')
+  })
+
   it('creates a lobby, joins by code, and refuses a wrong password', async () => {
     const created = await kernel.lobby.createMatch({
       settings: {
@@ -202,6 +272,7 @@ describe('multiplayer kernel', () => {
         formatVersion: 1,
         stateHash: HASH_A,
         body: 'AAAA',
+        seatSummaries: [],
       }),
     ).rejects.toMatchObject({ details: { reason: 'host_only' } })
     await kernel.snapshots.upload(await principalOf(host.token), {
@@ -209,6 +280,7 @@ describe('multiplayer kernel', () => {
       formatVersion: 1,
       stateHash: HASH_A,
       body: 'AAAA',
+      seatSummaries: [],
     })
     expect(storage.statusOf(host.match.id)).toBe('desynced')
     await kernel.turns.report(await principalOf(guest.token), 1, {
@@ -268,15 +340,19 @@ describe('multiplayer kernel', () => {
       decision: 'computer',
     })
     expect((await storage.players.get(guest.player.id))?.status).toBe('computer')
-    await expect(principalOf(guest.token)).rejects.toMatchObject({
-      details: { reason: 'invalid_token' },
-    })
     expect(notifier.events.filter((event) => event.type === 'match.playerTakenOver')).toHaveLength(
       1,
     )
+    await kernel.lobby.rejoin(await principalOf(guest.token))
+    expect((await storage.players.get(guest.player.id))?.status).toBe('active')
+    expect(notifier.events.at(-1)?.type).toBe('match.playerReturned')
+    expect(notifier.events.at(-1)?.payload).toEqual({
+      playerId: guest.player.id,
+      replacedComputer: true,
+    })
   })
 
-  it('kicking the straggler completes readiness, and a leaving host hands over', async () => {
+  it('kicking the straggler completes readiness and preserves a match with nobody present', async () => {
     const { host, guest } = await startedMatch()
     const third = await kernel.lobby
       .join({ joinCode: host.joinCode, displayName: 'Third' })
@@ -291,7 +367,22 @@ describe('multiplayer kernel', () => {
       details: { reason: 'invalid_token' },
     })
     await kernel.lobby.leave(await principalOf(host.token))
-    expect(storage.statusOf(host.match.id)).toBe('abandoned')
+    expect(storage.statusOf(host.match.id)).toBe('running')
+  })
+
+  it('lets former members rejoin and makes the first returning player host', async () => {
+    const { host, guest } = await startedMatch()
+    await kernel.lobby.leave(await principalOf(host.token))
+    await kernel.lobby.leave(await principalOf(guest.token))
+
+    expect(storage.statusOf(host.match.id)).toBe('running')
+    await kernel.lobby.rejoin(await principalOf(guest.token))
+
+    const detail = await principalOf(guest.token)
+    expect(detail.player.status).toBe('active')
+    expect(detail.match.hostPlayerId).toBe(guest.player.id)
+    expect(notifier.events.map((event) => event.type)).toContain('match.playerReturned')
+    expect(notifier.events.map((event) => event.type)).toContain('lobby.hostChanged')
   })
 
   it('serves a sealed set that re-hashes to the digest it was announced with', async () => {
@@ -390,6 +481,7 @@ describe('multiplayer kernel', () => {
       formatVersion: 1,
       stateHash: HASH_A,
       body: 'AAAA',
+      seatSummaries: [],
     })
     await kernel.turns.report(await principalOf(guest.token), 1, {
       stateHash: HASH_A,
@@ -473,6 +565,7 @@ describe('multiplayer kernel', () => {
         formatVersion: 1,
         stateHash,
         body: 'AAAA',
+        seatSummaries: [],
       })
     // The same bytes again are fine (a reconnecting client may need them); a different state hash
     // would contradict consensus the match already reached.
@@ -552,6 +645,7 @@ describe('multiplayer kernel', () => {
         formatVersion: 1,
         stateHash,
         body: 'AAAA',
+        seatSummaries: [],
       })
     await expect(upload(HASH_B)).rejects.toMatchObject({
       details: { reason: 'uncorroborated_state_hash', candidateStateHashes: [HASH_A] },
@@ -585,6 +679,7 @@ describe('multiplayer kernel', () => {
         formatVersion: 1,
         stateHash: HASH_A,
         body: 'AAAA',
+        seatSummaries: [],
       }),
     ).resolves.toBeUndefined()
   })
@@ -639,6 +734,7 @@ describe('multiplayer kernel', () => {
       formatVersion: 23,
       stateHash: HASH_A,
       body: 'AUTOSAVE',
+      seatSummaries: [],
     })
 
     expect((await kernel.snapshots.latest(host.match.id)).body).toBe('AUTOSAVE')

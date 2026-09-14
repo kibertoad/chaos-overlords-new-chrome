@@ -20,7 +20,7 @@ Last updated: 2026-09-13
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v23, replays are v26, canonical hashes are v26, asset
+- Native saves are format v23, replays are v27, canonical hashes are v26, asset
   manifests are v6, extracted help is v3, and client preferences are v8. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
@@ -37,7 +37,7 @@ Last updated: 2026-09-13
 - Online AI takeover is player-approved end to end. A departure or wholly missed timed turn opens
   a visible unanimous `WAIT`/`USE AI` vote; waiting preserves the human controller indefinitely,
   authenticated returning activity atomically cancels a pending absence, and only
-  `match.playerTakenOver` records replay-v26 Human-to-Computer transfer at a clean Command boundary.
+  `match.playerTakenOver` and `match.playerReturned` record replay-v27 controller transfers at a clean Command boundary.
   Reconnect replays votes, approved transfers, and seals gaplessly in authoritative order.
 
 - `Rechaos.Tools ai-tournament` now drives presentation-free six-computer

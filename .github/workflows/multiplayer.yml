@@ -6,6 +6,9 @@ on:
     paths: &watched
       - "multiplayer/**"
       - "src/Rechaos.Multiplayer/Generated/**"
+      - "src/Rechaos.Core/**"
+      - "src/Rechaos.Multiplayer/**"
+      - "tools/OnlineSmoke/**"
       - ".github/workflows/multiplayer.yml"
   pull_request:
     paths: *watched
@@ -58,6 +61,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: multiplayer/pnpm-lock.yaml
 
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.400
+
       - name: Install
         run: pnpm install --frozen-lockfile
 
@@ -78,3 +86,22 @@ jobs:
       # generator is a pinned dependency rather than something fetched when the script runs.
       - name: Check the generated C# still matches the contracts
         run: pnpm codegen:check
+
+      - name: Run the real headless game against the Node server
+        shell: bash
+        run: |
+          export DATABASE_URL="sqlite:${RUNNER_TEMP}/online-e2e.db"
+          export BUG_REPORT_DATABASE_URL=""
+          pnpm --filter @chaos-overlords/node-server start:source >"${RUNNER_TEMP}/online-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:8787/health >/dev/null; then break; fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat "${RUNNER_TEMP}/online-server.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          curl --fail http://127.0.0.1:8787/health
+          dotnet run --project ../tools/OnlineSmoke/OnlineSmoke.csproj -- http://127.0.0.1:8787 3

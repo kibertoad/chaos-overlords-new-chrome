@@ -9,11 +9,13 @@ import { eventsQuerySchema } from './queries'
 import {
   createMatchRequestSchema,
   joinMatchRequestSchema,
+  joinRunningMatchRequestSchema,
   submitOrdersRequestSchema,
   takeoverVoteRequestSchema,
   turnReportRequestSchema,
   uploadSnapshotRequestSchema,
 } from './schemas'
+import { matchSettingsSchema } from './settings'
 import {
   lobbyListSchema,
   matchDetailSchema,
@@ -93,6 +95,14 @@ export const joinMatchContract = defineApiContract({
   summary: 'Claim a seat by join code.',
 })
 
+export const joinRunningMatchContract = defineApiContract({
+  method: 'post',
+  pathResolver: () => '/matches/join-running',
+  requestBodySchema: joinRunningMatchRequestSchema,
+  responsesByStatusCode: { 201: membershipViewSchema, ...REFUSALS },
+  summary: 'Claim a never-human computer seat in an ongoing match.',
+})
+
 export const getMatchContract = defineApiContract({
   method: 'get',
   requestPathParamsSchema: matchParams,
@@ -110,6 +120,15 @@ export const startMatchContract = defineApiContract({
   summary: 'Seat the players, draw the seed and open turn 1.',
 })
 
+export const updateMatchSettingsContract = defineApiContract({
+  method: 'put',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/matches/${matchId}/settings`,
+  requestBodySchema: matchSettingsSchema,
+  responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
+  summary: 'Host-only lobby game configuration.',
+})
+
 export const leaveMatchContract = defineApiContract({
   method: 'post',
   requestPathParamsSchema: matchParams,
@@ -117,6 +136,15 @@ export const leaveMatchContract = defineApiContract({
   requestBodySchema: ContractNoBody,
   responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
   summary: 'Give up the seat and open a player vote on computer control.',
+})
+
+export const rejoinMatchContract = defineApiContract({
+  method: 'post',
+  requestPathParamsSchema: matchParams,
+  pathResolver: ({ matchId }) => `/matches/${matchId}/rejoin`,
+  requestBodySchema: ContractNoBody,
+  responsesByStatusCode: { 204: noBodyResponse(), ...REFUSALS },
+  summary: 'Return to a former human seat, replacing its computer controller when necessary.',
 })
 
 export const kickPlayerContract = defineApiContract({
@@ -261,9 +289,12 @@ export const API_CONTRACTS = {
   listLobbies: listLobbiesContract,
   createMatch: createMatchContract,
   joinMatch: joinMatchContract,
+  joinRunningMatch: joinRunningMatchContract,
   getMatch: getMatchContract,
+  updateMatchSettings: updateMatchSettingsContract,
   startMatch: startMatchContract,
   leaveMatch: leaveMatchContract,
+  rejoinMatch: rejoinMatchContract,
   kickPlayer: kickPlayerContract,
   takeoverVote: takeoverVoteContract,
   submitOrders: submitOrdersContract,

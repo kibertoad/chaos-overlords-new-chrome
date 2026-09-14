@@ -37,4 +37,23 @@ public sealed partial class MatchState
             Players[index].Setup = Setup.Players[index];
         return true;
     }
+
+    /// <summary>Returns a computer-controlled online seat to its authenticated human owner.</summary>
+    public bool TransferPlayerToHuman(PlayerId playerId)
+    {
+        var player = FindPlayer(playerId) ?? throw new ArgumentOutOfRangeException(nameof(playerId));
+        if (player.Setup.Controller == PlayerController.Human) return false;
+        if (Outcome is not null
+            || Coordinator.Phase != TurnPhase.Command
+            || Coordinator.ActivePlayer != new PlayerId(0)
+            || Commands.ExecutionPlan().Count != 0
+            || Players.Any(candidate => candidate.PendingHires.Count != 0))
+        {
+            throw new InvalidOperationException(
+                "Player control can only transfer at a clean Command turn boundary.");
+        }
+        Setup = Setup.WithController(playerId, PlayerController.Human);
+        for (var index = 0; index < Players.Count; index++) Players[index].Setup = Setup.Players[index];
+        return true;
+    }
 }

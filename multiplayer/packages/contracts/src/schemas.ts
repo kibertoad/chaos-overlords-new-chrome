@@ -1,4 +1,16 @@
-import { boolean, type InferOutput, optional, picklist, strictObject } from 'valibot'
+import {
+  array,
+  boolean,
+  type InferOutput,
+  integer,
+  maxValue,
+  minValue,
+  number,
+  optional,
+  picklist,
+  pipe,
+  strictObject,
+} from 'valibot'
 import { orderDocumentSchema } from './orders'
 import {
   base64BodySchema,
@@ -6,7 +18,9 @@ import {
   formatVersionSchema,
   joinCodeInputSchema,
   passwordSchema,
+  resourceIdSchema,
   sha256HexSchema,
+  slotSchema,
   turnNumberSchema,
 } from './primitives'
 import { matchSettingsSchema } from './settings'
@@ -38,6 +52,13 @@ export const joinMatchRequestSchema = strictObject({
   password: optional(passwordSchema),
 })
 
+export const joinRunningMatchRequestSchema = strictObject({
+  match: resourceIdSchema,
+  displayName: displayNameInputSchema,
+  password: optional(passwordSchema),
+  slot: slotSchema,
+})
+
 export const submitOrdersRequestSchema = strictObject({
   orders: orderDocumentSchema,
   /** `true` = the player has finished planning; the turn seals once every human is ready. */
@@ -56,17 +77,28 @@ export const turnReportRequestSchema = strictObject({
   finished: boolean(),
 })
 
+export const aiSeatSummarySchema = strictObject({
+  slot: slotSchema,
+  gangs: pipe(number(), integer(), minValue(0), maxValue(256)),
+  sites: pipe(number(), integer(), minValue(0), maxValue(512)),
+  sectors: pipe(number(), integer(), minValue(0), maxValue(64)),
+})
+
 export const uploadSnapshotRequestSchema = strictObject({
   turn: turnNumberSchema,
   formatVersion: formatVersionSchema,
   stateHash: sha256HexSchema,
   /** The client's native snapshot, base64-encoded. The server stores it without decoding it. */
   body: base64BodySchema,
+  /** Public, bounded facts that let a late joiner choose an AI seat without exposing the save. */
+  seatSummaries: array(aiSeatSummarySchema),
 })
 
 export type CreateMatchRequest = InferOutput<typeof createMatchRequestSchema>
 export type JoinMatchRequest = InferOutput<typeof joinMatchRequestSchema>
+export type JoinRunningMatchRequest = InferOutput<typeof joinRunningMatchRequestSchema>
 export type SubmitOrdersRequest = InferOutput<typeof submitOrdersRequestSchema>
 export type TakeoverVoteRequest = InferOutput<typeof takeoverVoteRequestSchema>
 export type TurnReportRequest = InferOutput<typeof turnReportRequestSchema>
 export type UploadSnapshotRequest = InferOutput<typeof uploadSnapshotRequestSchema>
+export type AiSeatSummary = InferOutput<typeof aiSeatSummarySchema>

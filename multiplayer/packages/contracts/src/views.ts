@@ -17,6 +17,7 @@ import {
   tokenSchema,
   turnNumberSchema,
 } from './primitives'
+import { aiSeatSummarySchema } from './schemas'
 import { matchSettingsSchema } from './settings'
 
 /**
@@ -86,11 +87,16 @@ export const matchViewSchema = strictObject({
 
 export const lobbyListingSchema = strictObject({
   id: resourceIdSchema,
+  joinCode: joinCodeSchema,
   name: matchNameSchema,
   hostDisplayName: displayNameSchema,
   playerCount: playerCountSchema,
   maxPlayers: playerCountSchema,
   passwordProtected: boolean(),
+  status: matchStatusSchema,
+  settings: matchSettingsSchema,
+  availableSlots: array(slotSchema),
+  availableSeatSummaries: array(aiSeatSummarySchema),
   createdAt: isoTimestampSchema,
 })
 

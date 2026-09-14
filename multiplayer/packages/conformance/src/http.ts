@@ -226,6 +226,7 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
         formatVersion: 1,
         stateHash: HASH_A,
         body: 'c2F2ZQ==',
+        seatSummaries: [],
       })
       expect((await guest.api.latestSnapshot()).body).toBe('c2F2ZQ==')
       await guest.api.report(1, { stateHash: HASH_A, finished: false })

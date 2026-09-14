@@ -4,7 +4,9 @@ import {
   type EventPage,
   getMatchContract,
   type JoinMatchRequest,
+  type JoinRunningMatchRequest,
   joinMatchContract,
+  joinRunningMatchContract,
   kickPlayerContract,
   type LobbyList,
   latestSnapshotContract,
@@ -13,9 +15,11 @@ import {
   listLobbiesContract,
   type MatchDetail,
   type MatchEvent,
+  type MatchSettings,
   type MembershipView,
   type OwnSubmissionView,
   ownSubmissionContract,
+  rejoinMatchContract,
   reportTurnContract,
   type SealedOrdersView,
   type SnapshotView,
@@ -29,6 +33,7 @@ import {
   type TurnReportRequest,
   takeoverVoteContract,
   type UploadSnapshotRequest,
+  updateMatchSettingsContract,
   uploadSnapshotContract,
 } from '@chaos-overlords/contracts'
 import { MultiplayerApiError } from './errors'
@@ -106,6 +111,14 @@ export class MultiplayerClient {
     return this.call(joinMatchContract.method, joinMatchContract.pathResolver(), request)
   }
 
+  joinRunning(request: JoinRunningMatchRequest): Promise<MembershipView> {
+    return this.call(
+      joinRunningMatchContract.method,
+      joinRunningMatchContract.pathResolver(),
+      request,
+    )
+  }
+
   match(matchId: string): MatchHandle {
     return new MatchHandle(this, matchId)
   }
@@ -161,6 +174,21 @@ export class MatchHandle {
     return this.client.call(
       startMatchContract.method,
       startMatchContract.pathResolver({ matchId: this.matchId }),
+    )
+  }
+
+  rejoin(): Promise<void> {
+    return this.client.call(
+      rejoinMatchContract.method,
+      rejoinMatchContract.pathResolver({ matchId: this.matchId }),
+    )
+  }
+
+  updateSettings(settings: MatchSettings): Promise<void> {
+    return this.client.call(
+      updateMatchSettingsContract.method,
+      updateMatchSettingsContract.pathResolver({ matchId: this.matchId }),
+      settings,
     )
   }
 

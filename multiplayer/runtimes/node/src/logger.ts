@@ -1,5 +1,5 @@
 import type { Logger } from '@chaos-overlords/kernel'
-import type { NodeConfig } from './config'
+import type { NodeConfig } from './config.js'
 
 const ORDER = { debug: 0, info: 1, warn: 2, error: 3 } as const
 

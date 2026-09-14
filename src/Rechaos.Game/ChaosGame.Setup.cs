@@ -38,11 +38,19 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Right)) ChangeScenario(1);
         if (Pressed(keyboard, Keys.Up)) ChangeDuration(1);
         if (Pressed(keyboard, Keys.Down)) ChangeDuration(-1);
-        if (Pressed(keyboard, Keys.OemMinus)) ChangePlayerCount(-1);
-        if (Pressed(keyboard, Keys.OemPlus)) ChangePlayerCount(1);
+        if (!_configuringOnlineLobby && Pressed(keyboard, Keys.OemMinus)) ChangePlayerCount(-1);
+        if (!_configuringOnlineLobby && Pressed(keyboard, Keys.OemPlus)) ChangePlayerCount(1);
+        if (_configuringOnlineLobby && Pressed(keyboard, Keys.P))
+            _online.PublicListing = !_online.PublicListing;
+        if (_configuringOnlineLobby && Pressed(keyboard, Keys.J))
+            _online.AllowLateJoin = !_online.AllowLateJoin;
         if (Pressed(keyboard, Keys.M)) CycleDifficulty();
         if (Pressed(keyboard, Keys.L)) CyclePlanningTimeLimit();
-        if (Pressed(keyboard, Keys.Enter)) StartMatch();
+        if (Pressed(keyboard, Keys.Enter))
+        {
+            if (_configuringOnlineLobby) SaveOnlineSetup();
+            else StartMatch();
+        }
     }
 
     private readonly int _originalProcessSeed = DeterministicRandom.SeedFromTimerMilliseconds(
@@ -127,22 +135,27 @@ public sealed partial class ChaosGame
         switch (pressed)
         {
             case SetupPushButton.AddPlayer:
-                ChangePlayerCount(1, pointerButton: true);
+                if (_configuringOnlineLobby) _online.PublicListing = !_online.PublicListing;
+                else ChangePlayerCount(1, pointerButton: true);
                 break;
             case SetupPushButton.RemovePlayer:
-                ChangePlayerCount(-1, pointerButton: true);
+                if (_configuringOnlineLobby) _online.AllowLateJoin = !_online.AllowLateJoin;
+                else ChangePlayerCount(-1, pointerButton: true);
                 break;
             case SetupPushButton.Start:
-                StartMatch();
+                if (_configuringOnlineLobby) SaveOnlineSetup();
+                else StartMatch();
                 break;
             case SetupPushButton.Back:
-                _screens.Show(ClientScreen.Title);
+                if (_configuringOnlineLobby) CloseOnlineSetup();
+                else _screens.Show(ClientScreen.Title);
                 break;
         }
     }
 
     private void BeginSetupNameEdit(int index)
     {
+        if (_configuringOnlineLobby) return;
         if (!_localSetupRoster.IsHuman(index)) return;
         if (_editingPlayerName is not null) FinishSetupNameEdit(cancel: false);
         _editingPlayerName = index;
@@ -209,6 +222,7 @@ public sealed partial class ChaosGame
 
     private void CyclePortrait(int player, int delta)
     {
+        if (_configuringOnlineLobby) return;
         if (!_localSetupRoster.IsHuman(player)) return;
         _playerPortraits[player] = checked((short)Mod(
             _playerPortraits[player] + delta, PlayerPortraitLayout.SelectableCount));
@@ -218,6 +232,7 @@ public sealed partial class ChaosGame
 
     private void BeginSetupPlayerDrag(int player, Point point)
     {
+        if (_configuringOnlineLobby) return;
         if (!_localSetupRoster.IsHuman(player)) return;
         _draggedSetupPlayerSlot = player;
         _setupPlayerPressPoint = point;
@@ -339,23 +354,33 @@ public sealed partial class ChaosGame
         if (ScenarioCatalog.Get(_selectedScenario).IsTimed)
             DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.Duration(
                 Array.IndexOf(Durations, _selectedDuration)));
+        var onlinePlayers = _configuringOnlineLobby
+            ? _online.Match?.Players.Where(player => player.Status == Rechaos.Multiplayer.Generated.PlayerStatus.Active)
+                .Take(MatchLimits.PlayerCount).ToArray() ?? []
+            : [];
         for (var index = 0; index < MatchLimits.PlayerCount; index++)
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
                     OriginalSpriteLayout.OverlordPortrait(
-                        _localSetupRoster.IsHuman(index)
+                        (_configuringOnlineLobby ? index < onlinePlayers.Length : _localSetupRoster.IsHuman(index))
                             ? _playerPortraits[index]
                             : PlayerPortraitLayout.Count - 1),
                     Color.White);
-        foreach (var index in _localSetupRoster.HumanSlots)
+        var shownHumans = _configuringOnlineLobby
+            ? Enumerable.Range(0, onlinePlayers.Length)
+            : _localSetupRoster.HumanSlots;
+        foreach (var index in shownHumans)
         {
             var portrait = PlayerPortraitLayout.SetupLarge(index);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, portrait,
                     OriginalSpriteLayout.OverlordPortrait(_playerPortraits[index]), Color.White);
-            DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Previous(index), left: true, Color.Lime);
-            DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Next(index), left: false, Color.Lime);
-            var label = _editingPlayerName == index
+            if (!_configuringOnlineLobby)
+            {
+                DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Previous(index), left: true, Color.Lime);
+                DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Next(index), left: false, Color.Lime);
+            }
+            var label = _configuringOnlineLobby ? onlinePlayers[index].DisplayName : _editingPlayerName == index
                 ? _setupNameEditor.Text + ((int)(_inputTime.TotalMilliseconds / 350) % 2 == 0 ? "_" : "")
                 : _playerNames[index];
             var name = PlayerPortraitLayout.Name(index);
@@ -376,6 +401,15 @@ public sealed partial class ChaosGame
             OriginalSelectionLightLayout.AiMentality((int)_selectedAiMentality));
         DrawSelectionLight(batch, pixel,
             OriginalSelectionLightLayout.PlanningTime((int)_selectedPlanningTimeLimit));
+        if (_configuringOnlineLobby)
+        {
+            DrawButton(batch, pixel, font, SetupButtonLayout.AddPlayer,
+                _online.PublicListing ? "PUBLIC" : "CODE ONLY", true);
+            DrawButton(batch, pixel, font, SetupButtonLayout.RemovePlayer,
+                _online.AllowLateJoin ? "LATE JOIN ON" : "LATE JOIN OFF", true);
+            DrawButton(batch, pixel, font, SetupButtonLayout.Start, "SAVE", true);
+            DrawButton(batch, pixel, font, SetupButtonLayout.Back, "WAITING", true);
+        }
         if (_message == ObjectiveDurationWarning)
             DrawHoverTooltip(batch, pixel, font, _hoverPoint ?? new Point(300, 280),
                 ["TIME LIMIT DISABLED", "OBJECTIVE SCENARIOS RUN UNTIL THEIR GOAL IS MET."]);

@@ -15,7 +15,17 @@ public static class OnlineConnectLayout
     public static Rectangle Password => new(120, 302, 400, 22);
     public static Rectangle Continue => new(120, 340, 190, 30);
     public static Rectangle Back => new(330, 340, 190, 30);
-    public static Rectangle Reconnect => new(225, 378, 190, 30);
+    public static Rectangle Discover => new(120, 378, 190, 30);
+    public static Rectangle Reconnect => new(330, 378, 190, 30);
+    public static Rectangle HistoryRejoin => new(120, 382, 190, 30);
+    public static Rectangle HistoryBack => new(330, 382, 190, 30);
+    public static Rectangle HistoryRow(int index) => new(120, 126 + index * 38, 400, 30);
+    public static Rectangle DiscoveryStatus => new(120, 112, 126, 28);
+    public static Rectangle DiscoveryScenario => new(257, 112, 126, 28);
+    public static Rectangle DiscoveryAi => new(394, 112, 126, 28);
+    public static Rectangle DiscoveryRow(int index) => new(120, 154 + index * 42, 400, 34);
+    public static Rectangle DiscoveryJoin => new(120, 382, 190, 30);
+    public static Rectangle DiscoveryBack => new(330, 382, 190, 30);
     public const int ServerStatusY = 416;
     public const int StatusY = 436;
 

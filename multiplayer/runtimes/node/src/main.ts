@@ -2,9 +2,9 @@
 
 import type { Server } from 'node:http'
 import { serve } from '@hono/node-server'
-import { loadConfig } from './config'
-import { buildNodeRuntime } from './container'
-import { createLogger } from './logger'
+import { loadConfig } from './config.js'
+import { buildNodeRuntime } from './container.js'
+import { createLogger } from './logger.js'
 
 const config = loadConfig()
 const logger = createLogger(config.logLevel)

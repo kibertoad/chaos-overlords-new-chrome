@@ -38,7 +38,7 @@ public sealed record MultiplayerClientOptions(Uri BaseAddress, TimeSpan? Request
 /// </summary>
 /// <remarks>
 /// Identity is a capability token. Creating or joining answers one, it is scoped to one player in
-/// one match, and leaving or being kicked revokes it — so a 401 on a later call means the
+/// one match, and being kicked revokes it — so a 401 on a later call means the
 /// membership is gone, not that a credential expired.
 /// </remarks>
 /// <example>
@@ -89,6 +89,12 @@ public sealed class MultiplayerClient
         JoinMatchRequest request,
         CancellationToken cancellationToken) =>
         SendAsync<MembershipView>(HttpMethod.Post, ApiRoutes.JoinMatch, request, cancellationToken);
+
+    public Task<MembershipView> JoinRunningAsync(
+        JoinRunningMatchRequest request,
+        CancellationToken cancellationToken) =>
+        SendAsync<MembershipView>(
+            HttpMethod.Post, ApiRoutes.JoinRunningMatch, request, cancellationToken);
 
     /// <summary>A handle for the calls that name a match.</summary>
     public MatchHandle Match(string matchId) => new(this, matchId);

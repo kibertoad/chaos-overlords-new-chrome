@@ -1,7 +1,9 @@
 import {
   type CreateMatchRequest,
   type JoinMatchRequest,
+  type JoinRunningMatchRequest,
   LIMITS,
+  type MatchSettings,
   type MembershipView,
   type TakeoverVoteRequest,
 } from '@chaos-overlords/contracts'
@@ -139,8 +141,125 @@ export class LobbyService {
     }
   }
 
+  async joinRunning(request: JoinRunningMatchRequest): Promise<MembershipView> {
+    const match =
+      (await this.deps.storage.matches.get(request.match)) ??
+      (await this.deps.storage.matches.getByJoinCode(request.match))
+    if (!match)
+      throw new NotFoundError('No match with that id or join code', { reason: 'unknown_match' })
+    if (match.status !== 'running') {
+      throw new ConflictError('The match is not running', { reason: 'match_not_running' })
+    }
+    if (match.settings.gameSettings.allowLateJoin !== true) {
+      throw new ForbiddenError('This match does not allow joining after it starts', {
+        reason: 'late_join_disabled',
+      })
+    }
+    if (!(await this.deps.storage.snapshots.getLatest(match.id))) {
+      throw new ConflictError('Late join is available after the first autosaved turn', {
+        reason: 'late_join_not_ready',
+      })
+    }
+    if (match.passwordHash !== null) {
+      if (!request.password || !(await verifyPassword(request.password, match.passwordHash))) {
+        throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
+      }
+    }
+    const existing = await this.deps.storage.players.listByMatch(match.id)
+    if (existing.some((player) => player.slot === request.slot)) {
+      throw new ConflictError('That seat has already belonged to a human', {
+        reason: 'seat_reserved',
+      })
+    }
+    const token = generateToken()
+    const seatKey = (await hashToken(`${match.id}:${request.slot}`)).slice(0, 32)
+    const player: Player = {
+      id: `late-${seatKey}`,
+      matchId: match.id,
+      slot: request.slot,
+      joinOrder: match.joinCounter,
+      displayName: request.displayName,
+      tokenHash: await hashToken(token),
+      status: 'active',
+      joinedAt: this.deps.clock.now(),
+    }
+    if (!(await this.deps.storage.players.createLate(player))) {
+      throw new ConflictError('That seat was claimed by another player', {
+        reason: 'seat_reserved',
+      })
+    }
+    const openTurn = await this.deps.storage.turns.get(match.id, match.currentTurn)
+    if (openTurn?.status === 'open') await this.deps.storage.turns.open(openTurn, [player.id])
+    await this.publisher.publish(match.id, {
+      type: 'match.latePlayerJoined',
+      payload: { playerId: player.id, slot: player.slot },
+    })
+    return this.membership(match, player, token)
+  }
+
   async leave(principal: Principal): Promise<void> {
     await this.remove(principal.match, principal.player, 'left')
+  }
+
+  async rejoin(principal: Principal): Promise<void> {
+    const { match, player } = principal
+    if (match.status !== 'running' && match.status !== 'desynced') {
+      throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
+    }
+    if (player.status === 'kicked') {
+      throw new ForbiddenError('A kicked player cannot rejoin', { reason: 'kicked' })
+    }
+    if (player.status === 'active') return
+    const replacedComputer = player.status === 'computer'
+    if (
+      !(await this.deps.storage.players.transitionStatus(
+        player.id,
+        ['left', 'takeoverPending', 'computer'],
+        'active',
+      ))
+    ) {
+      throw new ConflictError('The player seat could not be reclaimed', { reason: 'rejoin_race' })
+    }
+    const openTurn = await this.deps.storage.turns.get(match.id, match.currentTurn)
+    if (openTurn?.status === 'open') {
+      // `open` is idempotent and tops up missing participant rows even when the turn already exists.
+      await this.deps.storage.turns.open(openTurn, [player.id])
+    }
+    await this.publisher.publish(match.id, {
+      type: 'match.playerReturned',
+      payload: { playerId: player.id, replacedComputer },
+    })
+    const players = await this.deps.storage.players.listByMatch(match.id)
+    const currentHost = players.find((candidate) => candidate.id === match.hostPlayerId)
+    if (currentHost?.status !== 'active') {
+      await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {
+        hostPlayerId: player.id,
+        updatedAt: this.deps.clock.now(),
+      })
+      await this.publisher.publish(match.id, {
+        type: 'lobby.hostChanged',
+        payload: { hostPlayerId: player.id },
+      })
+    }
+    await this.turns.reevaluate(match.id)
+  }
+
+  async updateSettings(principal: Principal, settings: MatchSettings): Promise<void> {
+    requireHost(principal)
+    if (principal.match.status !== 'lobby') {
+      throw new ConflictError('The match has already started', { reason: 'match_not_in_lobby' })
+    }
+    if (
+      !(await this.deps.storage.matches.updateSettings(
+        principal.match.id,
+        settings,
+        this.deps.clock.now(),
+      ))
+    ) {
+      throw new ConflictError('The lobby has more players than that limit', {
+        reason: 'players_exceed_limit',
+      })
+    }
   }
 
   async kick(principal: Principal, targetPlayerId: string): Promise<void> {
@@ -198,7 +317,6 @@ export class LobbyService {
     ) {
       return
     }
-    await this.deps.storage.players.revokeToken(target.id)
     await this.publisher.publish(match.id, {
       type: 'match.playerTakenOver',
       payload: { playerId: target.id },
@@ -274,14 +392,14 @@ export class LobbyService {
     await this.deps.storage.players.setStatus(target.id, reason)
     // Membership is the only thing the token ever proved, so it stops working here: a kicked player
     // keeps neither the event stream nor the sealed order sets of the turns that follow.
-    await this.deps.storage.players.revokeToken(target.id)
+    if (reason === 'kicked') await this.deps.storage.players.revokeToken(target.id)
     await this.publisher.publish(match.id, {
       type: 'lobby.playerLeft',
       payload: { playerId: target.id, reason },
     })
     const remaining = activePlayers(await this.deps.storage.players.listByMatch(match.id))
     if (remaining.length === 0) {
-      await this.abandon(match, now)
+      // Keep the durable match available. The first former member to rejoin becomes host.
       return
     }
     await this.publisher.publish(match.id, {
@@ -323,7 +441,8 @@ export class LobbyService {
           votes.clear()
         } else if (
           (event.type === 'match.takeoverVoteCancelled' ||
-            event.type === 'match.playerTakenOver') &&
+            event.type === 'match.playerTakenOver' ||
+            event.type === 'match.playerReturned') &&
           event.payload.playerId === targetPlayerId
         ) {
           requested = false

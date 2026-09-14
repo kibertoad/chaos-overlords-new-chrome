@@ -19,12 +19,18 @@ public static class RouteTemplates
     public const string CreateMatch = "POST /matches";
     /// <summary><c>POST /matches/join</c></summary>
     public const string JoinMatch = "POST /matches/join";
+    /// <summary><c>POST /matches/join-running</c></summary>
+    public const string JoinRunningMatch = "POST /matches/join-running";
     /// <summary><c>GET /matches/:matchId</c></summary>
     public const string GetMatch = "GET /matches/:matchId";
+    /// <summary><c>PUT /matches/:matchId/settings</c></summary>
+    public const string UpdateMatchSettings = "PUT /matches/:matchId/settings";
     /// <summary><c>POST /matches/:matchId/start</c></summary>
     public const string StartMatch = "POST /matches/:matchId/start";
     /// <summary><c>POST /matches/:matchId/leave</c></summary>
     public const string LeaveMatch = "POST /matches/:matchId/leave";
+    /// <summary><c>POST /matches/:matchId/rejoin</c></summary>
+    public const string RejoinMatch = "POST /matches/:matchId/rejoin";
     /// <summary><c>POST /matches/:matchId/players/:playerId/kick</c></summary>
     public const string KickPlayer = "POST /matches/:matchId/players/:playerId/kick";
     /// <summary><c>POST /matches/:matchId/players/:playerId/takeover-vote</c></summary>
@@ -56,9 +62,12 @@ public static class RouteTemplates
         ListLobbies,
         CreateMatch,
         JoinMatch,
+        JoinRunningMatch,
         GetMatch,
+        UpdateMatchSettings,
         StartMatch,
         LeaveMatch,
+        RejoinMatch,
         KickPlayer,
         TakeoverVote,
         SubmitOrders,

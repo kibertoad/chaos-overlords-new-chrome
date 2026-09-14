@@ -9,6 +9,15 @@ internal enum MultiplayerStage
     /// <summary>Choosing a server and a name, and whether to host or join.</summary>
     Connect,
 
+    /// <summary>Browsing locally remembered unfinished online memberships.</summary>
+    History,
+
+    /// <summary>Browsing public waiting and ongoing sessions.</summary>
+    Discover,
+
+    /// <summary>Choosing which never-human computer empire to take over.</summary>
+    LateJoinSeat,
+
     /// <summary>A request is in flight; the player can only wait.</summary>
     Busy,
 
@@ -51,13 +60,24 @@ internal sealed class MultiplayerUiState
         .ThenBy(vote => vote.PlayerId, StringComparer.Ordinal)
         .FirstOrDefault();
     internal MultiplayerStage Stage { get; set; } = MultiplayerStage.Connect;
+    internal int RecoverySelection { get; set; }
+    internal int DiscoverySelection { get; set; }
+    internal int DiscoveryStatusFilter { get; set; }
+    internal int DiscoveryScenarioFilter { get; set; } = -1;
+    internal int DiscoveryAiFilter { get; set; } = -1;
+    internal int LateJoinSeatSelection { get; set; }
+    internal LobbyListing? PendingLateJoin { get; set; }
+    internal IReadOnlyList<LobbyListing> Listings { get; set; } = [];
 
     internal OnlineServiceMode Service { get; set; } = OnlineServiceMode.Central;
     internal OnlineConnectRole Role { get; set; } = OnlineConnectRole.Host;
+    internal bool PublicListing { get; set; }
+    internal bool AllowLateJoin { get; set; }
 
     internal TextField Server { get; } = new(
         "SERVER", 96, GamePreferences.DefaultCustomMultiplayerServer);
     internal TextField DisplayName { get; } = new("NAME", 32, "PLAYER");
+    internal TextField SessionName { get; } = new("SESSION NAME", 64, "NEW CHROME GAME");
     internal TextField JoinCode { get; } = new("JOIN CODE", 8);
 
     /// <summary>
@@ -134,6 +154,11 @@ internal sealed class MultiplayerUiState
     internal void Reset()
     {
         Stage = MultiplayerStage.Connect;
+        RecoverySelection = 0;
+        DiscoverySelection = 0;
+        LateJoinSeatSelection = 0;
+        PendingLateJoin = null;
+        Listings = [];
         Role = OnlineConnectRole.Host;
         Match = null;
         JoinCodeShown = string.Empty;

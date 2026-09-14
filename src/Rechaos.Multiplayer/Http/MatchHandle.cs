@@ -27,8 +27,14 @@ public sealed class MatchHandle
         _client.SendAsync<Unit>(
             HttpMethod.Post, ApiRoutes.StartMatch(MatchId), body: null, cancellationToken);
 
+    public Task<Unit> UpdateSettingsAsync(
+        MatchSettings settings,
+        CancellationToken cancellationToken) =>
+        _client.SendAsync<Unit>(
+            HttpMethod.Put, ApiRoutes.UpdateMatchSettings(MatchId), settings, cancellationToken);
+
     /// <summary>
-    /// Gives up the seat, and the token with it.
+    /// Leaves the active roster while retaining the durable membership needed to rejoin.
     /// </summary>
     /// <remarks>
     /// The match stops waiting on this player's readiness and opens a vote. Their gangs remain under
@@ -38,6 +44,11 @@ public sealed class MatchHandle
     public Task<Unit> LeaveAsync(CancellationToken cancellationToken) =>
         _client.SendAsync<Unit>(
             HttpMethod.Post, ApiRoutes.LeaveMatch(MatchId), body: null, cancellationToken);
+
+    /// <summary>Returns this authenticated player to a former human seat.</summary>
+    public Task<Unit> RejoinAsync(CancellationToken cancellationToken) =>
+        _client.SendAsync<Unit>(
+            HttpMethod.Post, ApiRoutes.RejoinMatch(MatchId), body: null, cancellationToken);
 
     /// <summary>Host only: removes a player, exactly as if they had left.</summary>
     public Task<Unit> KickAsync(string playerId, CancellationToken cancellationToken) =>
