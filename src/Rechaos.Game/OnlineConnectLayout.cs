@@ -29,5 +29,37 @@ public static class OnlineConnectLayout
     public const int ServerStatusY = 416;
     public const int StatusY = 436;
 
+    /// <summary>The height of one row of an open filter dropdown.</summary>
+    public const int DiscoveryOptionHeight = 18;
+
+    public static Rectangle DiscoveryFilter(int filter) => filter switch
+    {
+        DiscoveryFilters.Status => DiscoveryStatus,
+        DiscoveryFilters.Scenario => DiscoveryScenario,
+        DiscoveryFilters.Ai => DiscoveryAi,
+        _ => throw new ArgumentOutOfRangeException(nameof(filter))
+    };
+
+    /// <summary>The area an open filter dropdown covers, hanging off the bottom of its button.</summary>
+    public static Rectangle DiscoveryFilterMenu(int filter)
+    {
+        var anchor = DiscoveryFilter(filter);
+        return new Rectangle(
+            anchor.X,
+            anchor.Bottom,
+            anchor.Width,
+            DiscoveryFilters.OptionCount(filter) * DiscoveryOptionHeight);
+    }
+
+    public static Rectangle DiscoveryFilterOption(int filter, int option)
+    {
+        var anchor = DiscoveryFilter(filter);
+        return new Rectangle(
+            anchor.X,
+            anchor.Bottom + option * DiscoveryOptionHeight,
+            anchor.Width,
+            DiscoveryOptionHeight);
+    }
+
     public static IReadOnlyList<Rectangle> Fields => [Server, Name, JoinCode, Password];
 }

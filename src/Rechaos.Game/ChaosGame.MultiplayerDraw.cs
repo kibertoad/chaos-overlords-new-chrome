@@ -67,19 +67,13 @@ public sealed partial class ChaosGame
     private void DrawOnlineDiscovery(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         DrawOnlinePanel(batch, pixel, font, "DISCOVER GAMES");
-        var status = _online.DiscoveryStatusFilter switch
+        for (var filter = 0; filter < DiscoveryFilters.Count; filter++)
         {
-            1 => "WAITING",
-            2 => "ONGOING",
-            _ => "ALL STATES",
-        };
-        var scenario = _online.DiscoveryScenarioFilter < 0 ? "ALL MODES"
-            : ((ScenarioId)_online.DiscoveryScenarioFilter).ToString().ToUpperInvariant();
-        var ai = _online.DiscoveryAiFilter < 0 ? "ALL AI"
-            : DifficultyPresentation.Label((AiDifficulty)_online.DiscoveryAiFilter);
-        DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryStatus, status, true);
-        DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryScenario, scenario, true);
-        DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryAi, ai, true);
+            var bounds = OnlineConnectLayout.DiscoveryFilter(filter);
+            DrawButton(batch, pixel, font,
+                bounds, DiscoveryFilters.Label(filter, ChosenDiscoveryFilterOption(filter)), true);
+            DrawDropdownArrow(batch, pixel, bounds, _online.OpenDiscoveryFilter == filter);
+        }
         var listings = FilteredOnlineListings();
         var offset = Math.Clamp(_online.DiscoverySelection - 4, 0, Math.Max(0, listings.Count - 5));
         for (var row = 0; row < Math.Min(5, listings.Count - offset); row++)
@@ -96,12 +90,45 @@ public sealed partial class ChaosGame
                 new Vector2(bounds.X + 6, bounds.Y + 6), Color.White, 1);
             var settings = MultiplayerGameSettings.FromWire(listing.Settings.GameSettings);
             font.Draw(batch,
-                $"{settings.Scenario}  {DifficultyPresentation.Label(settings.AiMentality)}",
+                $"{ScenarioCatalog.Get(settings.Scenario).Name}  " +
+                $"{DifficultyPresentation.Label(settings.AiMentality)}",
                 new Vector2(bounds.X + 6, bounds.Y + 19), new Color(150, 165, 165), 1);
         }
         DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryJoin, "JOIN", listings.Count > 0);
         DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryBack, "BACK", true);
         DrawCentered(font, batch, _online.Status, 432, Color.Gold, 1);
+        DrawDiscoveryFilterMenu(batch, pixel, font);
+    }
+
+    /// <summary>Draws the open filter dropdown over everything else the screen has already drawn.</summary>
+    private void DrawDiscoveryFilterMenu(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        var filter = _online.OpenDiscoveryFilter;
+        if (filter < 0) return;
+        batch.Draw(pixel, OnlineConnectLayout.DiscoveryFilterMenu(filter), new Color(6, 14, 13));
+        DrawBorder(batch, pixel, OnlineConnectLayout.DiscoveryFilterMenu(filter), Color.Gold, 1);
+        var chosen = ChosenDiscoveryFilterOption(filter);
+        for (var option = 0; option < DiscoveryFilters.OptionCount(filter); option++)
+        {
+            var bounds = OnlineConnectLayout.DiscoveryFilterOption(filter, option);
+            if (option == _online.DiscoveryFilterHighlight)
+                batch.Draw(pixel, new Rectangle(
+                    bounds.X + 1, bounds.Y, bounds.Width - 2, bounds.Height), new Color(30, 62, 55));
+            font.Draw(batch, DiscoveryFilters.Label(filter, option),
+                new Vector2(bounds.X + 6, bounds.Y + 6),
+                option == chosen ? Color.Gold : Color.White, 1);
+        }
+    }
+
+    /// <summary>The three-row triangle that marks a button as a dropdown, pointing the way it opens.</summary>
+    private static void DrawDropdownArrow(
+        SpriteBatch batch, Texture2D pixel, Rectangle bounds, bool open)
+    {
+        var x = bounds.Right - 13;
+        var y = bounds.Y + (bounds.Height - 3) / 2;
+        for (var row = 0; row < 3; row++)
+            batch.Draw(pixel, new Rectangle(
+                x + row, y + (open ? 2 - row : row), 5 - row * 2, 1), Color.Gold);
     }
 
     private void DrawOnlineHistory(SpriteBatch batch, Texture2D pixel, PixelFont font)

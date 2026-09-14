@@ -65,6 +65,13 @@ internal sealed class MultiplayerUiState
     internal int DiscoveryStatusFilter { get; set; }
     internal int DiscoveryScenarioFilter { get; set; } = -1;
     internal int DiscoveryAiFilter { get; set; } = -1;
+
+    /// <summary>Which filter dropdown is open, or -1 when none is.</summary>
+    internal int OpenDiscoveryFilter { get; set; } = -1;
+
+    /// <summary>The row an open dropdown has under the keyboard cursor.</summary>
+    internal int DiscoveryFilterHighlight { get; set; }
+
     internal int LateJoinSeatSelection { get; set; }
     internal LobbyListing? PendingLateJoin { get; set; }
     internal IReadOnlyList<LobbyListing> Listings { get; set; } = [];
@@ -156,6 +163,8 @@ internal sealed class MultiplayerUiState
         Stage = MultiplayerStage.Connect;
         RecoverySelection = 0;
         DiscoverySelection = 0;
+        OpenDiscoveryFilter = -1;
+        DiscoveryFilterHighlight = 0;
         LateJoinSeatSelection = 0;
         PendingLateJoin = null;
         Listings = [];

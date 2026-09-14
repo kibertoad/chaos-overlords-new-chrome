@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Protocol;
@@ -25,6 +26,7 @@ public sealed partial class ChaosGame
     {
         if (!TryBeginLobby()) return;
         _online.Stage = MultiplayerStage.Discover;
+        CloseDiscoveryFilterMenu();
         _online.Status = "FINDING PUBLIC SESSIONS";
         _lobby!.Browse();
     }
@@ -33,6 +35,7 @@ public sealed partial class ChaosGame
     {
         Forget(_lobby?.StopAsync(), "multiplayer.discovery.stop.failed");
         _lobby = null;
+        CloseDiscoveryFilterMenu();
         _online.Stage = MultiplayerStage.Connect;
     }
 
@@ -52,16 +55,64 @@ public sealed partial class ChaosGame
                 || (int)settings.AiMentality == _online.DiscoveryAiFilter);
     }
 
-    private void CycleDiscoveryFilter(int filter)
+    private int DiscoveryFilterValue(int filter) => filter switch
     {
-        if (filter == 0) _online.DiscoveryStatusFilter = (_online.DiscoveryStatusFilter + 1) % 3;
-        else if (filter == 1)
-            _online.DiscoveryScenarioFilter = (_online.DiscoveryScenarioFilter + 2)
-                % (Enum.GetValues<ScenarioId>().Length + 1) - 1;
-        else
-            _online.DiscoveryAiFilter = (_online.DiscoveryAiFilter + 2)
-                % (Enum.GetValues<AiDifficulty>().Length + 1) - 1;
+        DiscoveryFilters.Status => _online.DiscoveryStatusFilter,
+        DiscoveryFilters.Scenario => _online.DiscoveryScenarioFilter,
+        DiscoveryFilters.Ai => _online.DiscoveryAiFilter,
+        _ => throw new ArgumentOutOfRangeException(nameof(filter))
+    };
+
+    /// <summary>The dropdown row a filter currently sits on.</summary>
+    private int ChosenDiscoveryFilterOption(int filter) =>
+        DiscoveryFilters.OptionOf(filter, DiscoveryFilterValue(filter));
+
+    private void OpenDiscoveryFilterMenu(int filter)
+    {
+        if (_online.OpenDiscoveryFilter == filter)
+        {
+            CloseDiscoveryFilterMenu();
+            return;
+        }
+        _online.OpenDiscoveryFilter = filter;
+        _online.DiscoveryFilterHighlight = ChosenDiscoveryFilterOption(filter);
+    }
+
+    private void CloseDiscoveryFilterMenu() => _online.OpenDiscoveryFilter = -1;
+
+    private void ChooseDiscoveryFilterOption(int filter, int option)
+    {
+        var value = DiscoveryFilters.ValueOf(filter, option);
+        if (filter == DiscoveryFilters.Status) _online.DiscoveryStatusFilter = value;
+        else if (filter == DiscoveryFilters.Scenario) _online.DiscoveryScenarioFilter = value;
+        else _online.DiscoveryAiFilter = value;
         _online.DiscoverySelection = 0;
+        CloseDiscoveryFilterMenu();
+    }
+
+    private void HandleDiscoveryFilterMenuClick(Point point)
+    {
+        var filter = _online.OpenDiscoveryFilter;
+        for (var option = 0; option < DiscoveryFilters.OptionCount(filter); option++)
+            if (OnlineConnectLayout.DiscoveryFilterOption(filter, option).Contains(point))
+            {
+                ChooseDiscoveryFilterOption(filter, option);
+                return;
+            }
+        CloseDiscoveryFilterMenu();
+    }
+
+    private void UpdateDiscoveryFilterMenu(KeyboardState keyboard)
+    {
+        var filter = _online.OpenDiscoveryFilter;
+        var count = DiscoveryFilters.OptionCount(filter);
+        if (Pressed(keyboard, Keys.Escape)) CloseDiscoveryFilterMenu();
+        else if (Pressed(keyboard, Keys.Up))
+            _online.DiscoveryFilterHighlight = Mod(_online.DiscoveryFilterHighlight - 1, count);
+        else if (Pressed(keyboard, Keys.Down))
+            _online.DiscoveryFilterHighlight = Mod(_online.DiscoveryFilterHighlight + 1, count);
+        else if (Pressed(keyboard, Keys.Enter))
+            ChooseDiscoveryFilterOption(filter, _online.DiscoveryFilterHighlight);
     }
 
     private void JoinSelectedOnlineListing()

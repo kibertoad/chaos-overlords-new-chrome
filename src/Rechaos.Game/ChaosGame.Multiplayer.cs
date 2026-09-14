@@ -92,6 +92,11 @@ public sealed partial class ChaosGame
         }
         if (_online.Stage == MultiplayerStage.Discover)
         {
+            if (_online.OpenDiscoveryFilter >= 0)
+            {
+                UpdateDiscoveryFilterMenu(keyboard);
+                return;
+            }
             var count = FilteredOnlineListings().Count;
             if (Pressed(keyboard, Keys.Escape)) CloseOnlineDiscovery();
             else if (count > 0 && Pressed(keyboard, Keys.Up))
@@ -846,9 +851,17 @@ public sealed partial class ChaosGame
 
     private void HandleOnlineDiscoveryClick(Point point)
     {
-        if (OnlineConnectLayout.DiscoveryStatus.Contains(point)) CycleDiscoveryFilter(0);
-        else if (OnlineConnectLayout.DiscoveryScenario.Contains(point)) CycleDiscoveryFilter(1);
-        else if (OnlineConnectLayout.DiscoveryAi.Contains(point)) CycleDiscoveryFilter(2);
+        if (_online.OpenDiscoveryFilter >= 0)
+        {
+            HandleDiscoveryFilterMenuClick(point);
+            return;
+        }
+        if (OnlineConnectLayout.DiscoveryStatus.Contains(point))
+            OpenDiscoveryFilterMenu(DiscoveryFilters.Status);
+        else if (OnlineConnectLayout.DiscoveryScenario.Contains(point))
+            OpenDiscoveryFilterMenu(DiscoveryFilters.Scenario);
+        else if (OnlineConnectLayout.DiscoveryAi.Contains(point))
+            OpenDiscoveryFilterMenu(DiscoveryFilters.Ai);
         else if (OnlineConnectLayout.DiscoveryJoin.Contains(point)) JoinSelectedOnlineListing();
         else if (OnlineConnectLayout.DiscoveryBack.Contains(point)) CloseOnlineDiscovery();
         else
