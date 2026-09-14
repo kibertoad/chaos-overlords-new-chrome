@@ -94,7 +94,7 @@ internal sealed class MultiplayerUiState
     /// Empty means none: hosting with it blank opens an unprotected lobby, and joining one that is
     /// protected without it is refused by the server rather than guessed at here.
     /// </remarks>
-    internal TextField Password { get; } = new("PASSWORD (OPTIONAL)", 64) { IsMasked = true };
+    internal TextField Password { get; } = new("PASSWORD (OPTIONAL)", 64);
 
     /// <summary>The lobby as the server last described it, or null before there is one.</summary>
     internal MatchView? Match { get; set; }
