@@ -18,6 +18,16 @@ public sealed partial class ChaosGame
     private static readonly Rectangle TitleIntro = new(322, 376, 80, 34);
     private static readonly Rectangle TitleQuit = new(406, 376, 80, 34);
 
+    /// <summary>
+    /// The strip right of the menu, where a notice can be read without covering a button.
+    /// </summary>
+    /// <remarks>
+    /// Notices arrive on this screen from somewhere else (a match that ended, an online session that
+    /// was left), so they are as long as whatever happened, and a centred line of that length ran
+    /// straight through the row of buttons underneath it.
+    /// </remarks>
+    private static readonly Rectangle TitleMessage = new(494, 292, 138, 118);
+
     private const string ObjectiveDurationWarning =
         "OBJECTIVES DISABLE TIME LIMITS";
 
@@ -327,9 +337,26 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, TitleIntro, "INTRO", true);
         DrawButton(batch, pixel, font, TitleQuit, "QUIT", true);
         DrawCentered(font, batch, "NEW CHROME", 282, new Color(210, 52, 43), 1);
-        DrawCentered(font, batch, _message, 410, new Color(185, 195, 195), 1);
+        DrawTitleMessage(batch, pixel, font);
         DrawCentered(font, batch, "RESTORED BY KIBERTOAD", 430,
             new Color(185, 195, 195), 1);
+    }
+
+    /// <summary>Draws whatever the last screen left to say, wrapped into the margin.</summary>
+    private void DrawTitleMessage(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        if (string.IsNullOrWhiteSpace(_message)) return;
+        var columns = TitleMessage.Width / OriginalFontLayout.CellWidth;
+        var lines = HelpTextLayout.Wrap(_message, columns)
+            .Take(TitleMessage.Height / OriginalFontLayout.LineHeight)
+            .ToArray();
+        var panel = new Rectangle(TitleMessage.X - 5, TitleMessage.Y - 5, TitleMessage.Width + 10,
+            lines.Length * OriginalFontLayout.LineHeight + 9);
+        batch.Draw(pixel, panel, new Color(0, 0, 0, 200));
+        for (var row = 0; row < lines.Length; row++)
+            font.Draw(batch, lines[row],
+                new Vector2(TitleMessage.X, TitleMessage.Y + row * OriginalFontLayout.LineHeight),
+                new Color(185, 195, 195), 1);
     }
 
     private void DrawSetup(SpriteBatch batch, Texture2D pixel, PixelFont font)
