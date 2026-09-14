@@ -14,9 +14,9 @@ public static class OnlineConnectLayout
     public static Rectangle PasteJoinCode => new(428, 260, 92, 30);
     public static Rectangle Password => new(120, 302, 400, 22);
     public static Rectangle Continue => new(120, 340, 190, 30);
-    public static Rectangle Back => new(330, 340, 190, 30);
-    public static Rectangle Discover => new(120, 378, 190, 30);
-    public static Rectangle Reconnect => new(330, 378, 190, 30);
+    public static Rectangle Discover => new(330, 340, 190, 30);
+    public static Rectangle Reconnect => new(120, 378, 190, 30);
+    public static Rectangle Back => new(330, 378, 190, 30);
     public static Rectangle HistoryRejoin => new(120, 382, 190, 30);
     public static Rectangle HistoryBack => new(330, 382, 190, 30);
     public static Rectangle HistoryRow(int index) => new(120, 126 + index * 38, 400, 30);

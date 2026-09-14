@@ -55,10 +55,10 @@ public sealed partial class ChaosGame
         DrawField(batch, pixel, font, OnlineConnectLayout.Password, _online.Password);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Continue,
             _online.Role == OnlineConnectRole.Host ? "CREATE" : "CONNECT", !busy);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.Discover, "BROWSE", !busy);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.Reconnect, "PREVIOUS SESSIONS",
+            !busy && RecoverableOnlineSessions.Count > 0);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Back, "BACK", !busy);
-        DrawButton(batch, pixel, font, OnlineConnectLayout.Discover, "DISCOVER", !busy);
-        if (RecoverableOnlineSessions.Count > 0)
-            DrawButton(batch, pixel, font, OnlineConnectLayout.Reconnect, "SESSIONS", !busy);
         DrawCentered(font, batch, _online.ServerStatus, OnlineConnectLayout.ServerStatusY,
             _online.ServerStatus.EndsWith("ONLINE", StringComparison.Ordinal) ? Color.Lime : Color.Gold, 1);
         DrawCentered(font, batch, _online.Status, OnlineConnectLayout.StatusY, Color.Gold, 1);
@@ -66,7 +66,7 @@ public sealed partial class ChaosGame
 
     private void DrawOnlineDiscovery(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        DrawOnlinePanel(batch, pixel, font, "DISCOVER GAMES");
+        DrawOnlinePanel(batch, pixel, font, "BROWSE GAMES");
         for (var filter = 0; filter < DiscoveryFilters.Count; filter++)
         {
             var bounds = OnlineConnectLayout.DiscoveryFilter(filter);

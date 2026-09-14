@@ -170,8 +170,8 @@ public sealed partial class ChaosGame
         if (_online.Service == OnlineServiceMode.Custom)
             hits.Add((OnlineConnectLayout.Server, _online.Server));
         hits.Add((OnlineConnectLayout.Name, _online.DisplayName));
-        if (_online.Role == OnlineConnectRole.Join)
-            hits.Add((OnlineConnectLayout.JoinCode, _online.JoinCode));
+        hits.Add((OnlineConnectLayout.JoinCode,
+            _online.Role == OnlineConnectRole.Join ? _online.JoinCode : _online.SessionName));
         hits.Add((OnlineConnectLayout.Password, _online.Password));
         if (!hits.Any(hit => hit.Bounds.Contains(point))) return;
         foreach (var (bounds, field) in hits) field.IsFocused = bounds.Contains(point);
