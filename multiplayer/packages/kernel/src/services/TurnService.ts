@@ -182,6 +182,7 @@ export class TurnService {
         sealedAt: null,
         orderSetHash: null,
         sealedSlots: null,
+        stateHash: null,
       },
       players.map((player) => player.id),
     )
@@ -242,6 +243,13 @@ export class TurnService {
     if (turn.status === 'open') {
       throw new ConflictError('The turn has not been sealed yet', { reason: 'turn_open' })
     }
+    // A confirmed turn is settled consensus and its reports are the record of how it settled.
+    // `settle` ignores a confirmed turn, so a late report could not change the verdict — but it would
+    // change `authoritativeCandidates` for that turn, which is what a later autosave upload of the
+    // same turn is held to. Freezing the reports here is what keeps that check meaning something.
+    if (turn.status === 'confirmed') {
+      throw new ConflictError('That turn is already confirmed', { reason: 'turn_confirmed' })
+    }
     await this.restorePendingPlayer(player.id, match.id)
     await this.deps.storage.turns.upsertReport({
       matchId: match.id,
@@ -295,6 +303,7 @@ export class TurnService {
         ['sealed', 'desynced'],
         {
           status: 'confirmed',
+          stateHash: verdict.stateHash,
         },
       )
       if (!won) return

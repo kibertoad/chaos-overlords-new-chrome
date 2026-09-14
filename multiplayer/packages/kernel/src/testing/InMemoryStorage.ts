@@ -103,6 +103,21 @@ export class InMemoryStorage implements MultiplayerStorage {
       for (const match of doomed) this.deleteMatch(match.id)
       return doomed.length
     },
+    deleteAbandonedLive: async (before, limit) => {
+      const doomed = [...this.matchRows.values()]
+        .filter(
+          (match) =>
+            (match.status === 'running' || match.status === 'desynced') &&
+            match.updatedAt < before &&
+            ![...this.playerRows.values()].some(
+              (player) => player.matchId === match.id && player.status === 'active',
+            ),
+        )
+        .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())
+        .slice(0, limit)
+      for (const match of doomed) this.deleteMatch(match.id)
+      return doomed.length
+    },
     transition: async (matchId, from, patch) => {
       const match = this.matchRows.get(matchId)
       if (!match || !from.includes(match.status)) return false

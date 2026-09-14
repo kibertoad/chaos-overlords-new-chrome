@@ -7,6 +7,35 @@ import { type Clock, type Logger, sha256Hex, ValidationError } from '@chaos-over
 import { ARCHIVE_CONTENT_TYPE, archiveKey } from './blobs'
 import type { BlobStore, BugReportRepository, StoredBugReport } from './ports'
 
+/**
+ * What an intake may accumulate.
+ *
+ * The per-address, per-minute limiter in front of the route stops one client in a retry loop. It
+ * does nothing about the other shape: reports arriving from many addresses, a few a minute each,
+ * for as long as anybody cares to keep sending them. Nothing in the intake path ever deleted
+ * anything, so that was unbounded object storage and unbounded rows on the central deployment.
+ *
+ * Two bounds and a sweep. The byte budget is a whole-day ceiling on attached journals across every
+ * reporter, which is what stops a distributed flood without turning away the one player who files
+ * three reports in an afternoon: over budget, the report is still accepted and the journal is
+ * dropped, because the description is the part worth having. Retention then deletes the rows and
+ * the objects once they are older than the window.
+ */
+export interface BugReportRetention {
+  /** Attached journal bytes accepted per rolling day across all reporters. 0 means no ceiling. */
+  dailyStateBytes: number
+  /** Age after which a report and its archive are deleted. 0 keeps everything. */
+  maxAgeMs: number
+  /** Reports deleted per sweep, so one pass cannot monopolise the database. */
+  batchSize: number
+}
+
+export const DEFAULT_BUG_REPORT_RETENTION: BugReportRetention = {
+  dailyStateBytes: 512 * 1024 * 1024,
+  maxAgeMs: 90 * 24 * 60 * 60 * 1000,
+  batchSize: 100,
+}
+
 export interface BugReportServiceDeps {
   repository: BugReportRepository
   clock: Clock
@@ -16,6 +45,8 @@ export interface BugReportServiceDeps {
    * large ones away — see {@link BugReportService.submit}.
    */
   blobs?: BlobStore
+  /** Overrides {@link DEFAULT_BUG_REPORT_RETENTION}; a runtime maps its configuration onto it. */
+  retention?: BugReportRetention
 }
 
 export interface BugReportService {
@@ -25,6 +56,8 @@ export interface BugReportService {
   list(limit: number): Promise<StoredBugReport[]>
   /** The archive itself, wherever it was kept. */
   archive(id: string): Promise<Uint8Array | null>
+  /** Deletes reports past the retention window with their archives; returns how many went. */
+  collect(): Promise<number>
 }
 
 /**
@@ -48,15 +81,14 @@ export interface BugReportService {
  */
 export function createBugReportService(deps: BugReportServiceDeps): BugReportService {
   const { repository, clock, logger, blobs } = deps
+  const retention = deps.retention ?? DEFAULT_BUG_REPORT_RETENTION
 
   return {
     async submit(request) {
       const receivedAt = clock.now()
       const id = crypto.randomUUID()
 
-      const stored = request.state
-        ? await placeArchive(id, receivedAt, request.state)
-        : { state: null, outcome: 'not_sent' as const }
+      const stored = await file(id, receivedAt, request.state)
 
       const report: StoredBugReport = {
         id,
@@ -94,6 +126,23 @@ export function createBugReportService(deps: BugReportServiceDeps): BugReportSer
 
     list: (limit) => repository.list(limit),
 
+    async collect() {
+      if (retention.maxAgeMs <= 0) return 0
+      const before = new Date(clock.now().getTime() - retention.maxAgeMs)
+      const keys = await repository.deleteBefore(before, retention.batchSize)
+      // The rows are already gone, so an object that cannot be removed is an orphan to sweep later
+      // rather than a report that came back. Deleting the row first is the right order: the other
+      // way round leaves a row pointing at an object that is not there.
+      for (const key of keys) await forget(key)
+      if (keys.length > 0) {
+        logger.info('bug report retention deleted reports', {
+          deleted: keys.length,
+          before: before.toISOString(),
+        })
+      }
+      return keys.length
+    },
+
     async archive(id) {
       const report = await repository.get(id)
       const state = report?.state
@@ -111,6 +160,45 @@ export function createBugReportService(deps: BugReportServiceDeps): BugReportSer
    * hash to what its own report claims is worse than no archive, because somebody would spend an
    * afternoon replaying it before finding out.
    */
+  /**
+   * Where the attached journal came to rest, if it came with one and the day had room for it.
+   */
+  async function file(
+    id: string,
+    receivedAt: Date,
+    state: SubmitBugReportRequest['state'],
+  ): Promise<{ state: StoredBugReport['state']; outcome: BugReportReceipt['stateStored'] }> {
+    if (!state) return { state: null, outcome: 'not_sent' }
+    if (!(await withinDailyBudget(receivedAt, state))) return { state: null, outcome: 'omitted' }
+    return placeArchive(id, receivedAt, state)
+  }
+
+  /**
+   * Whether the day still has room for this archive.
+   *
+   * Measured against what is already filed rather than against a counter, so it survives a restart
+   * and is shared by every isolate of a Worker deployment. A report that does not fit keeps its
+   * description and loses its journal, and the receipt says `omitted` so the player knows.
+   */
+  async function withinDailyBudget(
+    receivedAt: Date,
+    state: NonNullable<SubmitBugReportRequest['state']>,
+  ): Promise<boolean> {
+    if (retention.dailyStateBytes <= 0) return true
+    const since = new Date(receivedAt.getTime() - 24 * 60 * 60 * 1000)
+    const spent = await repository.bytesSince(since)
+    // The declared encoded length is what is checked, before anything is decoded: deciding after the
+    // decode would mean the budget is only applied to bytes already in memory.
+    const incoming = Math.ceil((state.body.length * 3) / 4)
+    if (spent + incoming <= retention.dailyStateBytes) return true
+    logger.warn('bug report state dropped: the daily archive budget is spent', {
+      spent,
+      incoming,
+      budget: retention.dailyStateBytes,
+    })
+    return false
+  }
+
   async function placeArchive(
     id: string,
     receivedAt: Date,
@@ -134,7 +222,7 @@ export function createBugReportService(deps: BugReportServiceDeps): BugReportSer
     }
 
     if (blobs) {
-      const key = archiveKey(id, receivedAt)
+      const key = archiveKey(id, receivedAt, state.anonymized)
       await blobs.put(key, bytes, ARCHIVE_CONTENT_TYPE)
       return { state: { ...common, blobKey: key, body: null }, outcome: 'stored' }
     }

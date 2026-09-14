@@ -1,8 +1,10 @@
 import {
   array,
   boolean,
+  check,
   type InferOutput,
   integer,
+  maxLength,
   maxValue,
   minValue,
   number,
@@ -11,6 +13,7 @@ import {
   pipe,
   strictObject,
 } from 'valibot'
+import { LIMITS } from './limits'
 import { orderDocumentSchema } from './orders'
 import {
   base64BodySchema,
@@ -90,8 +93,27 @@ export const uploadSnapshotRequestSchema = strictObject({
   stateHash: sha256HexSchema,
   /** The client's native snapshot, base64-encoded. The server stores it without decoding it. */
   body: base64BodySchema,
-  /** Public, bounded facts that let a late joiner choose an AI seat without exposing the save. */
-  seatSummaries: array(aiSeatSummarySchema),
+  /**
+   * Public, bounded facts that let a late joiner choose an AI seat without exposing the save.
+   *
+   * One entry per seat and no seat twice. Both bounds are load-bearing rather than tidy: the upload
+   * merges this array into the match's `gameSettings` blob, which is served on every match read
+   * and, for a public match, in every listing answer to every anonymous browser. Without a length
+   * the host could write tens of thousands of entries inside the one-megabyte upload budget and
+   * make that blob permanently large for everybody reading the lobby.
+   *
+   * Written inline rather than as a named schema so the C# generator keeps the field a plain list
+   * instead of minting a type for it. `SnapshotService.upload` re-checks the merged blob against
+   * the 8 KiB settings cap as well, so this is the cheap bound and that one is the real one.
+   */
+  seatSummaries: pipe(
+    array(aiSeatSummarySchema),
+    maxLength(LIMITS.maxPlayers),
+    check(
+      (summaries) => new Set(summaries.map((summary) => summary.slot)).size === summaries.length,
+      'seatSummaries may not name a slot twice',
+    ),
+  ),
 })
 
 export type CreateMatchRequest = InferOutput<typeof createMatchRequestSchema>

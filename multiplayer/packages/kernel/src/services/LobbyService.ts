@@ -1,5 +1,6 @@
 import {
   type CreateMatchRequest,
+  foldName,
   type JoinMatchRequest,
   type JoinRunningMatchRequest,
   LIMITS,
@@ -24,6 +25,9 @@ const MIN_PLAYERS_TO_START = LIMITS.minPlayers
 const JOIN_CODE_ATTEMPTS = 5
 /** The host always holds the first position in the join sequence. */
 const HOST_JOIN_ORDER = 0
+
+/** Host statuses that mean the seat is genuinely empty and the role may move. */
+const VACANT_HOST_STATUSES: ReadonlyArray<Player['status']> = ['left', 'kicked', 'computer']
 
 export interface LobbyServiceOptions {
   /** Generates the player/match ids; defaults to `crypto.randomUUID`. */
@@ -90,10 +94,14 @@ export class LobbyService {
 
   async join(request: JoinMatchRequest): Promise<MembershipView> {
     const match = await this.deps.storage.matches.getByJoinCode(request.joinCode)
-    if (!match)
-      throw new NotFoundError('No match with that join code', { reason: 'unknown_join_code' })
-    if (match.status !== 'lobby') {
-      throw new ConflictError('The match has already started', { reason: 'match_not_joinable' })
+    // A code that names no match and a code that names a match which has already started answer the
+    // same 404, so a scan of the code space learns nothing from the difference. The wording covers
+    // both truthfully: a started match has no open lobby either, and a player who was told to join a
+    // match that has since started wants the late-join door, not this one.
+    if (match?.status !== 'lobby') {
+      throw new NotFoundError('No lobby is open with that join code', {
+        reason: 'unknown_join_code',
+      })
     }
     if (match.passwordHash !== null) {
       if (!request.password) {
@@ -103,6 +111,7 @@ export class LobbyService {
         throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
       }
     }
+    await this.refuseDuplicateName(match.id, request.displayName)
     const joinOrder = await this.deps.storage.matches.claimSeat(match.id)
     if (joinOrder === null) {
       throw new ConflictError('The match is full or no longer joinable', { reason: 'match_full' })
@@ -142,9 +151,15 @@ export class LobbyService {
   }
 
   async joinRunning(request: JoinRunningMatchRequest): Promise<MembershipView> {
+    const byId = await this.deps.storage.matches.get(request.match)
+    // A private match is reachable by its join code only. Its id is not a secret — it rides every
+    // event, the client's recovery file and any log line — so looking one up by id would make a
+    // code-gated lobby joinable by anyone who ever saw the id. A public match is listed with both,
+    // so there is nothing left for the code to gate there.
     const match =
-      (await this.deps.storage.matches.get(request.match)) ??
-      (await this.deps.storage.matches.getByJoinCode(request.match))
+      byId?.settings.visibility === 'public'
+        ? byId
+        : await this.deps.storage.matches.getByJoinCode(request.match)
     if (!match)
       throw new NotFoundError('No match with that id or join code', { reason: 'unknown_match' })
     if (match.status !== 'running') {
@@ -171,6 +186,12 @@ export class LobbyService {
         reason: 'seat_reserved',
       })
     }
+    // The lobby door counts seats through `claimSeat`; this one has no counter behind it, so the
+    // host's own limit has to be read here or a two-seat match could gather humans up to six.
+    if (existing.length >= match.settings.maxPlayers) {
+      throw new ConflictError('The match is full', { reason: 'match_full' })
+    }
+    this.assertNameIsFree(existing, request.displayName)
     const token = generateToken()
     const seatKey = (await hashToken(`${match.id}:${request.slot}`)).slice(0, 32)
     const player: Player = {
@@ -231,7 +252,12 @@ export class LobbyService {
     })
     const players = await this.deps.storage.players.listByMatch(match.id)
     const currentHost = players.find((candidate) => candidate.id === match.hostPlayerId)
-    if (currentHost?.status !== 'active') {
+    // Only a host who is gone is replaced. `takeoverPending` is set on a player who is still
+    // connected and merely missed one timed deadline, so treating it as absence would hand the role
+    // to any former member who called `rejoin` at that moment — and the new host can kick the old
+    // one, which revokes their token for good. A pending host is still present; the takeover vote is
+    // the path that decides otherwise.
+    if (currentHost === undefined || VACANT_HOST_STATUSES.includes(currentHost.status)) {
       await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {
         hostPlayerId: player.id,
         updatedAt: this.deps.clock.now(),
@@ -391,8 +417,13 @@ export class LobbyService {
     }
     await this.deps.storage.players.setStatus(target.id, reason)
     // Membership is the only thing the token ever proved, so it stops working here: a kicked player
-    // keeps neither the event stream nor the sealed order sets of the turns that follow.
-    if (reason === 'kicked') await this.deps.storage.players.revokeToken(target.id)
+    // keeps neither the event stream nor the sealed order sets of the turns that follow. The revoke
+    // closes the next request and the hang-up closes the streams already open, which are never
+    // re-authenticated and would otherwise outlive the membership for as long as the client liked.
+    if (reason === 'kicked') {
+      await this.deps.storage.players.revokeToken(target.id)
+      await this.hangUp(match.id, target.id)
+    }
     await this.publisher.publish(match.id, {
       type: 'lobby.playerLeft',
       payload: { playerId: target.id, reason },
@@ -419,6 +450,48 @@ export class LobbyService {
     }
     // A departure can complete readiness or a consensus that was waiting on the leaver.
     await this.turns.reevaluate(match.id)
+  }
+
+  /**
+   * Hang up a revoked membership's streams. Best effort by design: the token is already gone, so a
+   * fan-out that cannot be reached costs one stale stream until it drops, never the revoke itself.
+   */
+  private async hangUp(matchId: string, playerId: string): Promise<void> {
+    try {
+      await this.deps.streams.close({ matchId, playerId })
+    } catch (error) {
+      this.deps.logger.warn('could not close a revoked membership event stream', {
+        matchId,
+        playerId,
+        error: String(error),
+      })
+    }
+  }
+
+  /**
+   * Refuse a join whose name is already on the roster.
+   *
+   * Names are the only thing a player has to tell their peers apart by, and nothing else in a match
+   * is tied to one: a second "Alice", or a copy of the host's name, makes every roster decision a
+   * guess — which seat to vote onto the computer, which player to kick for desyncing. The comparison
+   * is {@link foldName}, so a differing case or a doubled space is the same name.
+   *
+   * Checked before the seat is claimed, which leaves a window two simultaneous joins of the same
+   * name could both pass. That is deliberate: a unique index on (match, folded name) would be a
+   * fourth thing the seat-claim dance has to unwind on failure, and two people racing for one name
+   * is a cosmetic collision, not a capability.
+   */
+  private async refuseDuplicateName(matchId: string, displayName: string): Promise<void> {
+    this.assertNameIsFree(await this.deps.storage.players.listByMatch(matchId), displayName)
+  }
+
+  private assertNameIsFree(roster: readonly Player[], displayName: string): void {
+    const wanted = foldName(displayName)
+    if (roster.some((player) => foldName(player.displayName) === wanted)) {
+      throw new ConflictError('Somebody in this match already plays under that name', {
+        reason: 'display_name_taken',
+      })
+    }
   }
 
   private async currentTakeoverVotes(

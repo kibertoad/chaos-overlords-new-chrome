@@ -1,5 +1,11 @@
 import type { PersistedEvent } from '../domain/entities'
-import type { Clock, DeadlineScheduler, EventNotifier, Logger } from '../ports/runtime'
+import type {
+  Clock,
+  DeadlineScheduler,
+  EventNotifier,
+  Logger,
+  StreamCloser,
+} from '../ports/runtime'
 
 /** A clock tests advance by hand. */
 export class ManualClock implements Clock {
@@ -19,6 +25,14 @@ export class RecordingNotifier implements EventNotifier {
   readonly events: PersistedEvent[] = []
   async notify(event: PersistedEvent): Promise<void> {
     this.events.push(event)
+  }
+}
+
+/** Records the memberships whose streams were hung up, so a test can assert the revoke reached them. */
+export class RecordingStreamCloser implements StreamCloser {
+  readonly closed: Array<{ matchId: string; playerId: string }> = []
+  async close(input: { matchId: string; playerId: string }): Promise<void> {
+    this.closed.push(input)
   }
 }
 

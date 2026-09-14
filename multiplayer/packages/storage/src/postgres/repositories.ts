@@ -171,6 +171,35 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
         .returning({ id: matches.id })
       return rows.length
     },
+    /**
+     * The same delete, aimed at a live match nobody is in any more. The roster test is a
+     * `not exists` over the players rather than a count: one active row is enough to spare the
+     * match, and asking whether any exists stops at the first.
+     */
+    async deleteAbandonedLive(before, limit) {
+      const collectable = db
+        .select({ id: matches.id })
+        .from(matches)
+        .where(
+          and(
+            inArray(matches.status, ['running', 'desynced']),
+            lt(matches.updatedAt, before),
+            notExists(
+              db
+                .select({ one: sql`1` })
+                .from(players)
+                .where(and(eq(players.matchId, matches.id), eq(players.status, 'active'))),
+            ),
+          ),
+        )
+        .limit(limit)
+        .for('update', { skipLocked: true })
+      const rows = await db
+        .delete(matches)
+        .where(inArray(matches.id, collectable))
+        .returning({ id: matches.id })
+      return rows.length
+    },
     async transition(matchId, from, patch) {
       const rows = await db
         .update(matches)

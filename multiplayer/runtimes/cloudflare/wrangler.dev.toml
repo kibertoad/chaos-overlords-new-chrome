@@ -23,6 +23,9 @@ MEMBER_RATE_LIMIT_PER_MINUTE = "240"
 UPLOAD_RATE_LIMIT_PER_MINUTE = "10"
 BUG_REPORT_RATE_LIMIT_PER_MINUTE = "5"
 RETENTION_DAYS = "30"
+ABANDONED_RETENTION_DAYS = "90"
+BUG_REPORT_RETENTION_DAYS = "90"
+BUG_REPORT_DAILY_STATE_MB = "512"
 
 # The D1 migration lineage is the storage package's SQLite one, shared with better-sqlite3, so
 # `wrangler d1 migrations apply` and the Node migrator run the same files.

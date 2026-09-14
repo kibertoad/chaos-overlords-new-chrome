@@ -78,6 +78,8 @@ export const turns = pgTable(
     orderSetHash: text('order_set_hash'),
     /** `[{ playerId, slot }]` frozen at seal time: exactly what `order_set_hash` was taken over. */
     sealedSlots: jsonb('sealed_slots'),
+    /** The state hash the verdict confirmed the turn on; null until a verdict does. */
+    stateHash: text('state_hash'),
   },
   (table) => [
     primaryKey({ columns: [table.matchId, table.number] }),

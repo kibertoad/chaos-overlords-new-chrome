@@ -64,15 +64,32 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `MEMBER_RATE_LIMIT_PER_MINUTE` | `240` | Authenticated calls per player per minute. |
 | `UPLOAD_RATE_LIMIT_PER_MINUTE` | `10` | Snapshot uploads per player per minute (a snapshot can be a megabyte). |
 | `RETENTION_DAYS` | `30` | Delete finished, abandoned and never-started matches older than this, with everything they own. `0` keeps every match forever. |
-| `TRUST_PROXY` | `false` | Read the client address from `X-Forwarded-For` / `CF-Connecting-IP`. Set it behind a reverse proxy, never otherwise. |
-| `BUG_REPORT_DATABASE_URL` | `sqlite:./chaos-overlords-bug-reports.db` | A **second** SQLite file, for bug reports. Empty turns the intake off and `POST /api/v1/bug-reports` answers 404. |
+| `ABANDONED_RETENTION_DAYS` | `90` | Delete a still-`running` match nobody is in any more once it has been silent this long. This is how most public matches actually end, and nothing else collects one. `0` keeps them forever. |
+| `TRUST_PROXY` | `0` | How many trusted proxies sit in front. `0` reads the socket address, the only value a client cannot choose. `1` (or `true`) reads the last `X-Forwarded-For` entry, which is the one the trusted proxy wrote; a higher number skips that many more from the right. See the note below. |
+| `BUG_REPORT_DATABASE_URL` | *(empty, intake off)* | A **second** SQLite file, for bug reports. Empty turns the intake off and `POST /api/v1/bug-reports` answers 404. The game posts its reports to the central service, so a lobby server has no reason to take them. |
+| `BUG_REPORT_RETENTION_DAYS` | `90` | Delete a bug report and its archive once it is older than this. `0` keeps them forever. |
+| `BUG_REPORT_DAILY_STATE_MB` | `512` | Attached journal megabytes accepted per rolling day across every reporter. Over budget, the report is still filed and only its journal is dropped. `0` lifts the ceiling. |
 | `BUG_REPORT_BLOB_DIR` | *(unset)* | Directory for compressed match journals. Unset keeps archives under 256 KiB in the database row and drops larger ones (a `sqlite::memory:` bug report database gets an in-memory store instead, since it has no file to outlive). |
 | `BUG_REPORT_RATE_LIMIT_PER_MINUTE` | `5` | Bug reports accepted per client address per minute. Its own budget, not the lobby's. |
 | `SWEEP_INTERVAL_MS` | `15000` | How often the safety net runs: expired turn deadlines, interrupted seals, retention (the timers are the precise path for a deadline). |
 | `SHUTDOWN_GRACE_MS` | `5000` | How long open event streams may delay shutdown before they are cut. |
+| `MAX_EVENT_STREAMS` | `512` | Event streams this process holds at once, across every match; further opens answer 429. A stream lives until its client closes it and costs one read per published event, so this is what stops one member from holding thousands. Raise it and the file descriptor limit together. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
 
 Put TLS in front of it (Caddy, nginx, a tunnel): player tokens are bearer credentials.
+
+### Behind a proxy
+
+`X-Forwarded-For` is appended to, not replaced, so everything left of the last entry is whatever
+the client sent. `TRUST_PROXY` is therefore a count of the proxies in front rather than a yes or no,
+and the server reads the chain from the right: with `1` it takes the entry the single trusted proxy
+wrote and ignores the rest. Set it too high and the server reads an address the client chose, at
+which point the rate limits stop binding — they are the only guard on the join-code door, the
+password door and multi-megabyte bug-report uploads.
+
+Configure the proxy to overwrite or strip `X-Forwarded-For` and `CF-Connecting-IP` on the way in if
+it can. `CF-Connecting-IP` is trusted only by the Cloudflare runtime, where Cloudflare sets it;
+behind anything else it is a header the client fills in itself and this server ignores it.
 
 ## Generating the C# client
 
@@ -120,7 +137,8 @@ deployment has to satisfy:
 | `MATCH_HUB` | Durable Object | `MatchHub`, one per match: SSE fan-out and the turn deadline alarm. Its migration lineage starts at tag `v1`, `new_sqlite_classes = ["MatchHub"]`. |
 
 `PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
-`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE` and `RETENTION_DAYS` are vars,
+`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
+`ABANDONED_RETENTION_DAYS`, `BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars,
 with the same meanings as the Node environment variables above. A deployment also wants the cron
 trigger the `scheduled` handler expects — five minutes is the interval the sweeper is written for —
 and Cloudflare rate limiting rules on `/api/v1/matches`, `/api/v1/matches/join` and

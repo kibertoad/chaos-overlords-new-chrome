@@ -29,6 +29,16 @@ function inMemoryBugReports(): BugReportRepository & { rows: StoredBugReport[] }
     async list(limit) {
       return rows.slice(0, limit)
     },
+    async bytesSince(since) {
+      return rows
+        .filter((row) => row.receivedAt >= since)
+        .reduce((total, row) => total + (row.state?.compressedBytes ?? 0), 0)
+    },
+    async deleteBefore(before, limit) {
+      const doomed = rows.filter((row) => row.receivedAt < before).slice(0, limit)
+      for (const row of doomed) rows.splice(rows.indexOf(row), 1)
+      return doomed.flatMap((row) => (row.state?.blobKey ? [row.state.blobKey] : []))
+    },
   }
 }
 
@@ -44,6 +54,7 @@ function build(
   const kernel = createKernel({
     storage,
     notifier: hub,
+    streams: hub,
     scheduler: new RecordingScheduler(),
     clock,
     logger: new RecordingLogger(),
@@ -118,6 +129,26 @@ describe('server app over in-memory storage', () => {
       headers: { ...headers, 'x-forwarded-for': '198.51.100.1' },
     })
     expect(otherClient.status).toBe(404)
+  })
+
+  /**
+   * The member limiter is keyed by player and cannot run before there is one, so a bad token used to
+   * cost a SHA-256 and an indexed lookup against no budget at all. Guessing a 256-bit token is not
+   * the worry; driving database reads at line rate is.
+   */
+  it('charges a failed authentication to the caller address', async () => {
+    const limited = build({}, { limit: 2, windowMs: 60_000 })
+    const headers = { authorization: 'Bearer not-a-real-token', 'x-forwarded-for': '203.0.113.5' }
+    const path = '/api/v1/matches/00000000-0000-4000-8000-000000000000'
+    expect((await limited.app.request(path, { headers })).status).toBe(401)
+    expect((await limited.app.request(path, { headers })).status).toBe(401)
+    const third = await limited.app.request(path, { headers })
+    expect(third.status).toBe(429)
+
+    // A caller who never sent a credential at all is charged the same: the cost is the same.
+    const missing = build({}, { limit: 1, windowMs: 60_000 })
+    expect((await missing.app.request(path, { headers: {} })).status).toBe(401)
+    expect((await missing.app.request(path, { headers: {} })).status).toBe(429)
   })
 
   it('rate-limits an authenticated member per player, not per address', async () => {

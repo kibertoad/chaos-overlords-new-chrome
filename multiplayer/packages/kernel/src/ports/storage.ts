@@ -51,6 +51,17 @@ export interface MatchRepository {
    * matches are never in scope: the caller passes only terminal or never-started statuses.
    */
   deleteInactive(statuses: readonly MatchStatus[], before: Date, limit: number): Promise<number>
+  /**
+   * Deletes running or desynced matches last touched before `before` that hold no active player,
+   * with everything they own. Returns how many went.
+   *
+   * The living-dead case: everybody walked away from a running match, which is deliberately kept so
+   * anyone can rejoin, and then nobody ever did. Nothing else collects one — a desync pause is not
+   * abandonment and neither is a weekend — so on a public server this is the ordinary end of most
+   * matches and it accumulated orders, events and up to five megabytes of snapshot each. The
+   * caller's window for these is far longer than the one for a terminated match.
+   */
+  deleteAbandonedLive(before: Date, limit: number): Promise<number>
   /** Compare-and-swap on status; returns false when the match was not in one of `from`. */
   transition(
     matchId: string,
@@ -130,6 +141,8 @@ export interface TurnRepository {
       sealedAt?: Date
       orderSetHash?: string
       sealedSlots?: readonly SealedSlot[]
+      /** Written by the verdict that confirms a turn; see `Turn.stateHash`. */
+      stateHash?: string
     },
   ): Promise<boolean>
   /** Move an open turn's deadline, e.g. when a match resumes after a desync pause. */

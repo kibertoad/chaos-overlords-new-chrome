@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
@@ -30,7 +32,11 @@ public sealed partial class ChaosGame
     private static readonly TimeSpan DraftInterval = TimeSpan.FromSeconds(10);
 
     private readonly MultiplayerUiState _online = new();
-    private readonly HttpClient _http = new();
+    /// <summary>
+    /// The one client every online call goes through, bounded so a hostile server cannot answer with
+    /// a body large enough to take the game down. See <see cref="MultiplayerClientOptions.MaximumResponseBytes"/>.
+    /// </summary>
+    private readonly HttpClient _http = MultiplayerClientOptions.CreateHttpClient();
     private MultiplayerLobbySession? _lobby;
     private MultiplayerMatchSession? _session;
     private TimeSpan _lobbyPollDue;
@@ -231,7 +237,51 @@ public sealed partial class ChaosGame
         _serverProbeCancellation = null;
         var healthy = probe.IsCompletedSuccessfully && probe.Result;
         var name = _online.Service == OnlineServiceMode.Central ? "CENTRAL" : "CUSTOM";
-        _online.ServerStatus = healthy ? $"{name} SERVER ONLINE" : $"{name} SERVER UNAVAILABLE";
+        if (!healthy)
+        {
+            _online.ServerStatus = $"{name} SERVER UNAVAILABLE";
+            return;
+        }
+        // The line reads Lime only when it ends in ONLINE, so a server this player reaches in clear
+        // gets the amber one. That is the point: nothing else in the interface says that the seat
+        // token and the lobby password are about to cross a network readable.
+        _online.ServerStatus = TrySelectedServer(out var address) && SendsCredentialsInClear(address)
+            ? $"{name} SERVER ONLINE, NOT ENCRYPTED"
+            : $"{name} SERVER ONLINE";
+    }
+
+    /// <summary>
+    /// Whether this address would carry the membership token and the lobby password in clear.
+    /// </summary>
+    /// <remarks>
+    /// <c>http</c> to another machine does. Loopback does not, and neither does a literal address in
+    /// one of the private ranges or an mDNS <c>.local</c> name, which are the shapes a player running
+    /// a server for the people in the room actually types. A hostname is warned about even when it
+    /// happens to be a machine down the hall, because nothing here can tell that from a name that
+    /// resolves across the internet.
+    /// </remarks>
+    private static bool SendsCredentialsInClear(Uri address)
+    {
+        if (!string.Equals(address.Scheme, "http", StringComparison.Ordinal)) return false;
+        if (address.IsLoopback) return false;
+        if (address.Host.EndsWith(".local", StringComparison.OrdinalIgnoreCase)) return false;
+        return !IPAddress.TryParse(address.Host, out var ip) || !IsPrivateAddress(ip);
+    }
+
+    private static bool IsPrivateAddress(IPAddress ip)
+    {
+        if (IPAddress.IsLoopback(ip)) return true;
+        if (ip.AddressFamily == AddressFamily.InterNetworkV6)
+        {
+            // fc00::/7 is the v6 equivalent of the v4 private ranges. The deprecated fec0::/10
+            // site-local block is left out: nothing hands one out any more.
+            return ip.IsIPv6LinkLocal || (ip.GetAddressBytes()[0] & 0xFE) == 0xFC;
+        }
+        var octets = ip.GetAddressBytes();
+        return octets[0] == 10
+            || (octets[0] == 172 && octets[1] >= 16 && octets[1] <= 31)
+            || (octets[0] == 192 && octets[1] == 168)
+            || (octets[0] == 169 && octets[1] == 254);
     }
 
     private void SelectOnlineService(OnlineServiceMode service)

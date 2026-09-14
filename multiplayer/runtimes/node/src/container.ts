@@ -2,6 +2,7 @@ import {
   type BugReportService,
   createBugReportService,
   createMemoryBlobStore,
+  DEFAULT_BUG_REPORT_RETENTION,
 } from '@chaos-overlords/bug-reports'
 import { createFileBlobStore, openBugReportStorage } from '@chaos-overlords/bug-reports/node'
 import {
@@ -14,6 +15,7 @@ import {
 import {
   type AppEnv,
   createApp,
+  DEFAULT_EVENT_HUB_LIMITS,
   DEFAULT_SERVER_CONFIG,
   defaultClientAddress,
   LocalEventHub,
@@ -57,23 +59,32 @@ export async function buildNodeRuntime(
   const logger = createLogger(config.logLevel)
   const opened: OpenedStorage = await openStorage(parseStorageTarget(config.databaseUrl))
   const clock: Clock = options.clock ?? { now: () => new Date() }
-  const hub = new LocalEventHub(opened.storage.events, DEFAULT_SERVER_CONFIG.sseHeartbeatMs)
+  const hub = new LocalEventHub(opened.storage.events, DEFAULT_SERVER_CONFIG.sseHeartbeatMs, {
+    ...DEFAULT_EVENT_HUB_LIMITS,
+    perProcess: config.maxEventStreams,
+  })
 
   let scheduler: TimerDeadlineScheduler | undefined
   const kernel = createKernel(
     {
       storage: opened.storage,
       notifier: hub,
+      streams: hub,
       clock,
       logger,
       scheduler: { schedule: (input) => (scheduler as TimerDeadlineScheduler).schedule(input) },
     },
-    { retention: { maxAgeMs: config.retentionDays * DAY_MS, batchSize: 50 } },
+    {
+      retention: {
+        maxAgeMs: config.retentionDays * DAY_MS,
+        abandonedLiveMaxAgeMs: config.abandonedRetentionDays * DAY_MS,
+        batchSize: 50,
+      },
+    },
   )
   scheduler = new TimerDeadlineScheduler(kernel.turns, clock, logger)
-  const stopSweeper = startSweeper(kernel, config.sweepIntervalMs, logger)
-
   const bugReports = openBugReports(config, clock, logger)
+  const stopSweeper = startSweeper(kernel, config.sweepIntervalMs, logger, bugReports?.service)
 
   const perMinute = (limit: number) => new RateLimiter(clock, { limit, windowMs: 60_000 })
   const container: ServerContainer = {
@@ -87,8 +98,13 @@ export async function buildNodeRuntime(
       bugReport: perMinute(config.bugReportRateLimitPerMinute),
     },
     config: { ...DEFAULT_SERVER_CONFIG, publicListing: config.publicListing },
+    // The socket address unless an operator has said how many proxies sit in front. It is the one
+    // value a client cannot choose, so it is the default; `defaultClientAddress` explains what the
+    // hop count buys and what getting it wrong costs.
     clientAddress: (c) =>
-      config.trustProxy ? defaultClientAddress(c) : (getConnInfo(c).remote.address ?? 'unknown'),
+      config.trustedProxyHops > 0
+        ? defaultClientAddress(c, { hops: config.trustedProxyHops - 1 })
+        : (getConnInfo(c).remote.address ?? 'unknown'),
   }
   const app = createApp(container)
   logger.info('runtime ready', {
@@ -140,6 +156,11 @@ function openBugReports(
         repository: opened.repository,
         clock,
         logger,
+        retention: {
+          ...DEFAULT_BUG_REPORT_RETENTION,
+          dailyStateBytes: config.bugReportDailyStateMb * 1024 * 1024,
+          maxAgeMs: config.bugReportRetentionDays * DAY_MS,
+        },
         ...(blobs ? { blobs } : {}),
       }),
       close: opened.close,

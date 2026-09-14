@@ -7,6 +7,7 @@ import {
   RecordingLogger,
   RecordingNotifier,
   RecordingScheduler,
+  RecordingStreamCloser,
 } from '../src/testing'
 
 /**
@@ -30,13 +31,22 @@ describe('multiplayer kernel', () => {
   let clock: ManualClock
   let notifier: RecordingNotifier
   let scheduler: RecordingScheduler
+  let streams: RecordingStreamCloser
 
   beforeEach(() => {
     storage = new InMemoryStorage()
     clock = new ManualClock()
     notifier = new RecordingNotifier()
     scheduler = new RecordingScheduler()
-    kernel = createKernel({ storage, notifier, scheduler, clock, logger: new RecordingLogger() })
+    streams = new RecordingStreamCloser()
+    kernel = createKernel({
+      storage,
+      notifier,
+      scheduler,
+      streams,
+      clock,
+      logger: new RecordingLogger(),
+    })
   })
 
   /** Submit a one-op document for a principal, in the vocabulary the server accepts. */
@@ -153,6 +163,61 @@ describe('multiplayer kernel', () => {
       }),
     ).rejects.toMatchObject({ details: { reason: 'seat_reserved' } })
     expect(notifier.events.at(-1)?.type).toBe('match.latePlayerJoined')
+  })
+
+  it('refuses a late join by id into a private match, and past maxPlayers', async () => {
+    const host = await kernel.lobby.createMatch({
+      settings: {
+        name: 'Code Only',
+        maxPlayers: 2,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: { allowLateJoin: true },
+      },
+      hostDisplayName: 'Host',
+    })
+    const guest = await kernel.lobby.join({ joinCode: host.joinCode, displayName: 'Guest' })
+    await kernel.lobby.start(await principalOf(host.token))
+    await kernel.snapshots.upload(await principalOf(host.token), {
+      turn: 0,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+    // The id rides every event and the client's recovery file, so it cannot be the key to a
+    // code-gated match. The code still is.
+    await expect(
+      kernel.lobby.joinRunning({ match: host.match.id, displayName: 'Late', slot: 4 }),
+    ).rejects.toMatchObject({ details: { reason: 'unknown_match' } })
+    // Two seats, two humans: the late-join door has no seat counter behind it, so it reads the
+    // host's own limit or a two-player match grows to six.
+    await expect(
+      kernel.lobby.joinRunning({ match: host.joinCode, displayName: 'Late', slot: 4 }),
+    ).rejects.toMatchObject({ details: { reason: 'match_full' } })
+    expect(guest.player.slot).toBe(-1)
+  })
+
+  it('refuses a second player under a name already on the roster', async () => {
+    const host = await kernel.lobby.createMatch({
+      settings: {
+        name: 'Impostors',
+        maxPlayers: 4,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Ada',
+    })
+    // Case, spacing and the combining form of an accent are all the same name: the roster is the
+    // only thing telling players apart, so a second Ada would make every vote a guess.
+    for (const name of ['ada', 'ADA', ' Ada ']) {
+      await expect(
+        kernel.lobby.join({ joinCode: host.joinCode, displayName: name }),
+      ).rejects.toMatchObject({ details: { reason: 'display_name_taken' } })
+    }
+    const guest = await kernel.lobby.join({ joinCode: host.joinCode, displayName: 'Grace' })
+    expect(guest.player.displayName).toBe('Grace')
   })
 
   it('creates a lobby, joins by code, and refuses a wrong password', async () => {
@@ -383,6 +448,104 @@ describe('multiplayer kernel', () => {
     expect(detail.match.hostPlayerId).toBe(guest.player.id)
     expect(notifier.events.map((event) => event.type)).toContain('match.playerReturned')
     expect(notifier.events.map((event) => event.type)).toContain('lobby.hostChanged')
+  })
+
+  it('keeps the host role with a host who only missed a deadline', async () => {
+    const { host, guest } = await startedMatch(60)
+    await kernel.lobby.leave(await principalOf(guest.token))
+    // One missed timed turn and the host is `takeoverPending`: still connected, still playing.
+    // Treating that as an empty seat would hand the role to any former member who called rejoin at
+    // that moment, and the new host can kick the old one, which revokes their token for good.
+    await storage.players.setStatus(host.player.id, 'takeoverPending')
+    await kernel.lobby.rejoin(await principalOf(guest.token))
+    expect((await principalOf(guest.token)).match.hostPlayerId).toBe(host.player.id)
+
+    // A host who is actually gone is replaced, which is what the rule is for.
+    await storage.players.setStatus(host.player.id, 'left')
+    await kernel.lobby.leave(await principalOf(guest.token))
+    await kernel.lobby.rejoin(await principalOf(guest.token))
+    expect((await principalOf(guest.token)).match.hostPlayerId).toBe(guest.player.id)
+  })
+
+  it('hangs up the event streams of a membership it revokes', async () => {
+    const { host, guest } = await startedMatch()
+    await kernel.lobby.kick(await principalOf(host.token), guest.player.id)
+    // The revoke stops the next request. A stream already open is never authenticated again, so it
+    // has to be closed from this side or the kicked player reads the match for as long as they like.
+    expect(streams.closed).toEqual([{ matchId: host.match.id, playerId: guest.player.id }])
+    // Leaving is not a revoke: the membership survives so the player can rejoin their seat.
+    await kernel.lobby.leave(await principalOf(host.token))
+    expect(streams.closed).toHaveLength(1)
+  })
+
+  it('refuses a report on a confirmed turn and pins a later autosave to the settled hash', async () => {
+    const { host, guest } = await startedMatch()
+    for (const token of [host.token, guest.token]) {
+      await submit(await principalOf(token), 1, 1, true)
+    }
+    for (const token of [host.token, guest.token]) {
+      await kernel.turns.report(await principalOf(token), 1, { stateHash: HASH_A, finished: false })
+    }
+    // The verdict is in. A later report could not change it, but it would change the corroboration
+    // set that a rolling autosave of the same turn is judged against.
+    await expect(
+      kernel.turns.report(await principalOf(host.token), 1, { stateHash: HASH_B, finished: false }),
+    ).rejects.toMatchObject({ details: { reason: 'turn_confirmed' } })
+
+    // And with every reporter gone, corroboration has nothing left to count — so the hash the turn
+    // confirmed on is what the upload is held to.
+    await kernel.lobby.leave(await principalOf(guest.token))
+    await expect(
+      kernel.snapshots.upload(await principalOf(host.token), {
+        turn: 1,
+        formatVersion: 1,
+        stateHash: HASH_B,
+        body: 'AAAA',
+        seatSummaries: [],
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'turn_confirmed', stateHash: HASH_A } })
+  })
+
+  it('refuses seat summaries that would push the settings blob past its cap', async () => {
+    const host = await kernel.lobby.createMatch({
+      settings: {
+        name: 'Fat Settings',
+        maxPlayers: 2,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: { filler: 'x'.repeat(8 * 1024 - 64) },
+      },
+      hostDisplayName: 'Host',
+    })
+    await kernel.lobby.start(await principalOf(host.token))
+    // The merge writes through `json_set`, which skips the checks `createMatch` applies — and the
+    // blob is served on every match read and in every public listing.
+    await expect(
+      kernel.snapshots.upload(await principalOf(host.token), {
+        turn: 0,
+        formatVersion: 1,
+        stateHash: HASH_A,
+        body: 'AAAA',
+        seatSummaries: [{ slot: 1, gangs: 1, sites: 1, sectors: 1 }],
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'game_settings_too_large' } })
+  })
+
+  it('collects a running match nobody came back to, long after the ordinary window', async () => {
+    const { host, guest } = await startedMatch()
+    await kernel.lobby.leave(await principalOf(host.token))
+    await kernel.lobby.leave(await principalOf(guest.token))
+    expect(storage.statusOf(host.match.id)).toBe('running')
+
+    // Thirty-one days is the terminated-match window and leaves it alone: the match is kept running
+    // precisely so somebody can rejoin it.
+    clock.advance(31 * 24 * 60 * 60 * 1000)
+    expect(await kernel.retention.collect()).toBe(0)
+    expect(storage.statusOf(host.match.id)).toBe('running')
+
+    clock.advance(60 * 24 * 60 * 60 * 1000)
+    expect(await kernel.retention.collect()).toBe(1)
+    expect(storage.statusOf(host.match.id)).toBeUndefined()
   })
 
   it('serves a sealed set that re-hashes to the digest it was announced with', async () => {
@@ -812,9 +975,14 @@ describe('multiplayer kernel', () => {
     })
     await kernel.lobby.join({ joinCode: created.joinCode, displayName: 'G' })
     await kernel.lobby.start(await principalOf(created.token))
+    // The same refusal an unknown code gets, so a scan of the code space cannot tell a code that
+    // exists from one that does not.
     await expect(
       kernel.lobby.join({ joinCode: created.joinCode, displayName: 'Late' }),
-    ).rejects.toMatchObject({ details: { reason: 'match_not_joinable' } })
+    ).rejects.toMatchObject({ details: { reason: 'unknown_join_code' } })
+    await expect(
+      kernel.lobby.join({ joinCode: 'ZZZZZZZZ', displayName: 'Late' }),
+    ).rejects.toMatchObject({ details: { reason: 'unknown_join_code' } })
 
     // And when the race is lost inside the window: the seat is claimed while the lobby is open, the
     // match starts, and only then does the row get written. Capacity and the roster stay honest.

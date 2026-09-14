@@ -19,7 +19,8 @@ The D1 migration lineages ship in `@chaos-overlords/storage` and `@chaos-overlor
 `wrangler d1 migrations apply` at them rather than copying them.
 
 `PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
-`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE` and `RETENTION_DAYS` are vars. The
+`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
+`ABANDONED_RETENTION_DAYS`, `BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars. The
 `scheduled` handler expects a cron trigger; five minutes is the interval its sweeper is written for.
 
 ## Install

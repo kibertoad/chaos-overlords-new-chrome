@@ -9,4 +9,8 @@ export {
 export { bugReportRateLimited, defaultClientAddress } from './http/middleware'
 export type { AppEnv } from './http/types'
 export { createSseResponse, type EventStreamSource, formatEvent } from './sse/createSseResponse'
-export { LocalEventHub } from './sse/LocalEventHub'
+export {
+  DEFAULT_EVENT_HUB_LIMITS,
+  type EventHubLimits,
+  LocalEventHub,
+} from './sse/LocalEventHub'

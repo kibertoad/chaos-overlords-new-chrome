@@ -1,4 +1,10 @@
-import type { SnapshotView, UploadSnapshotRequest } from '@chaos-overlords/contracts'
+import {
+  type GameSettings,
+  gameSettingsSchema,
+  type SnapshotView,
+  type UploadSnapshotRequest,
+} from '@chaos-overlords/contracts'
+import { safeParse } from 'valibot'
 import type { Snapshot } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError } from '../domain/errors'
 import { authoritativeCandidates } from '../logic/turn-logic'
@@ -46,13 +52,19 @@ export class SnapshotService {
     // A confirmed turn's state hash is settled consensus. Re-uploading the same bytes is fine (a
     // reconnecting client may need them); contradicting it is not, or the snapshot clients bootstrap
     // from would disagree with the turn they already agreed on.
+    //
+    // The verdict's own hash is the thing to hold it to, not the snapshot beside it: a turn that
+    // confirmed on unanimity alone has no snapshot yet, and the corroboration check below cannot
+    // stand in for one, because it counts the reports of the players who are active NOW and every
+    // reporter may have left since.
     const turn = await this.deps.storage.turns.get(match.id, request.turn)
     if (turn?.status === 'confirmed') {
-      const existing = await this.deps.storage.snapshots.get(match.id, request.turn)
-      if (existing && existing.stateHash !== request.stateHash) {
+      const settled =
+        turn.stateHash ?? (await this.deps.storage.snapshots.get(match.id, request.turn))?.stateHash
+      if (settled != null && settled !== request.stateHash) {
         throw new ConflictError('Turn already confirmed with a different state hash', {
           reason: 'turn_confirmed',
-          stateHash: existing.stateHash,
+          stateHash: settled,
         })
       }
     }
@@ -69,7 +81,7 @@ export class SnapshotService {
     await this.deps.storage.snapshots.put(snapshot)
     await this.deps.storage.matches.updateRuntimeGameSettings(
       match.id,
-      { ...match.settings.gameSettings, seatSummaries: request.seatSummaries },
+      mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries),
       this.deps.clock.now(),
     )
     await this.pruneOldSnapshots(match.id)
@@ -144,6 +156,30 @@ export class SnapshotService {
     if (!snapshot) throw new NotFoundError('No snapshot for that turn', { reason: 'no_snapshot' })
     return toView(snapshot)
   }
+}
+
+/**
+ * Publishes the seat summaries into the settings blob, or refuses the upload.
+ *
+ * `createMatch` holds `gameSettings` to 8 KiB and to a nesting depth; this write goes in through
+ * `json_set` and would otherwise skip both, which would make the merge a way around a cap that is
+ * there because the blob is served on every match read and in every public listing. Re-running the
+ * schema over the merged object is what keeps the blob's cap the blob's cap. The array itself is
+ * already bounded to one entry per seat by `uploadSnapshotRequestSchema`, so reaching this is a host
+ * that filled the settings almost to the cap before starting.
+ */
+function mergeSeatSummaries(
+  gameSettings: GameSettings,
+  seatSummaries: UploadSnapshotRequest['seatSummaries'],
+): GameSettings {
+  const merged = { ...gameSettings, seatSummaries }
+  const checked = safeParse(gameSettingsSchema, merged)
+  if (!checked.success) {
+    throw new ConflictError('The seat summaries do not fit inside the match settings', {
+      reason: 'game_settings_too_large',
+    })
+  }
+  return checked.output
 }
 
 function toView(snapshot: Snapshot): SnapshotView {

@@ -151,12 +151,46 @@ export const resourceIdSchema = pipe(
 /** A bearer token, shown once on create or join. */
 export const tokenSchema = pipe(string(), minLength(1), maxLength(256))
 
-/** A lobby's name, as the host typed it. */
+/**
+ * Characters no name may carry.
+ *
+ * `Cc` and `Cf` are the two that matter. `Cc` is the C0/C1 controls, which reach a log line and the
+ * lobby list verbatim. `Cf` is the format class, which holds the bidi overrides and the zero-width
+ * joiners: a name carrying `U+202E` reverses the text drawn after it, so one player can rewrite how
+ * another player's name reads on every other screen. `Cs` (lone surrogates), `Co` (private use) and
+ * the line and paragraph separators go with them, because no renderer agrees on what to draw for any
+ * of them.
+ *
+ * `Cn` (unassigned) is deliberately absent: it is whatever the runtime's Unicode tables have not
+ * caught up with, so refusing it would refuse a legal name on an older Node and accept it on a newer.
+ */
+const UNSAFE_NAME_CHARACTERS = /[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Zl}\p{Zp}]/u
+
+const NAME_CHARACTER_MESSAGE = 'a name may not carry control, format or private-use characters'
+
+/**
+ * NFC, so two spellings of one name are one string.
+ *
+ * `Ada` with a precomposed `á` and `Ada` with a combining acute are different byte sequences that
+ * draw identically, which is what impersonation in a lobby list looks like. {@link foldName} does the
+ * comparing; this is what gives it something to compare.
+ */
+const normalizeName = transform((value: string) => value.normalize('NFC'))
+
+/**
+ * A lobby's name, as the host typed it.
+ *
+ * Unlike {@link displayNameSchema} this carries its input rules on the way out as well. A match name
+ * is only ever set through {@link matchSettingsSchema}, so there is no roster of older names that has
+ * to stay readable under looser rules.
+ */
 export const matchNameSchema = pipe(
   string(),
   trim(),
+  normalizeName,
   minLength(1),
   maxLength(LIMITS.matchNameLength),
+  check((name) => !UNSAFE_NAME_CHARACTERS.test(name), NAME_CHARACTER_MESSAGE),
 )
 
 /**
@@ -199,11 +233,25 @@ export const RESERVED_DISPLAY_NAMES = ['SMGFUNDAGE', 'SMGISLANDS'] as const
  */
 export const displayNameInputSchema = pipe(
   displayNameSchema,
+  normalizeName,
+  check((name) => !UNSAFE_NAME_CHARACTERS.test(name), NAME_CHARACTER_MESSAGE),
   check(
     (name) => !RESERVED_DISPLAY_NAMES.some((reserved) => name.toUpperCase() === reserved),
     'that display name is a cheat code in the original game, not a name',
   ),
 )
+
+/**
+ * The form two display names are compared in to decide whether they are the same name.
+ *
+ * The schema has already normalised; this adds the case fold and collapses runs of whitespace, so
+ * `Ada  Lovelace` and `ada lovelace` are one name and a lobby holds only one of them. Impersonating
+ * the host is what this refuses: the roster is the only thing a player has to tell their peers apart
+ * by, and two identical rows on it make the vote to hand a seat to the computer a guess.
+ */
+export function foldName(name: string): string {
+  return name.normalize('NFC').replace(/\s+/g, ' ').trim().toLocaleUpperCase('en-US')
+}
 
 export const passwordSchema = pipe(
   string(),

@@ -65,6 +65,16 @@ export interface Turn {
    * fetches always re-hashes to the digest that was announced, no matter who leaves afterwards.
    */
   sealedSlots: readonly SealedSlot[] | null
+  /**
+   * The post-turn state hash the verdict confirmed on, written once by `TurnService.settle` and
+   * null until then.
+   *
+   * It is the settled consensus of that turn in one field, which is what lets a later autosave
+   * upload be held to it. Recomputing it from the reports would not do: the verdict counts the
+   * players who were active when it ran, and by the time an autosave arrives some of them may have
+   * left, leaving a set of frozen reports that no longer says which hash won.
+   */
+  stateHash: string | null
 }
 
 /** One player's row for a turn. Rows are pre-created when the turn opens (see TurnRepository). */

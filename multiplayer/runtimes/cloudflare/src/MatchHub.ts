@@ -1,3 +1,4 @@
+import { isDomainError } from '@chaos-overlords/kernel'
 import { DEFAULT_SERVER_CONFIG, LocalEventHub } from '@chaos-overlords/server'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
 import type { DurableObjectState } from '@cloudflare/workers-types'
@@ -47,8 +48,22 @@ export class MatchHub {
       }
       case HUB_PATHS.subscribe: {
         const matchId = url.searchParams.get('matchId') ?? ''
+        const playerId = url.searchParams.get('playerId') ?? ''
         const afterSeq = Number(url.searchParams.get('after') ?? '0')
-        return this.hub.open({ matchId, afterSeq, signal: request.signal })
+        try {
+          return await this.hub.open({ matchId, playerId, afterSeq, signal: request.signal })
+        } catch (error) {
+          // The stream caps refuse here, inside the object, where the app's error handler cannot
+          // reach. A bare status crosses back instead and the Worker rethrows it as the domain
+          // error, so the envelope still has exactly one producer.
+          if (!isDomainError(error)) throw error
+          return new Response(null, { status: 429, headers: { 'X-Stream-Refusal': error.code } })
+        }
+      }
+      case HUB_PATHS.disconnect: {
+        const body = (await request.json()) as { matchId: string; playerId: string }
+        await this.hub.close(body)
+        return new Response(null, { status: 204 })
       }
       default:
         return new Response('not found', { status: 404 })
@@ -61,6 +76,7 @@ export class MatchHub {
     const kernel = buildKernel(this.env, {
       // Already inside the hub: wake local streams directly instead of calling ourselves.
       notifier: { notify: async (event) => this.hub.wake(event.matchId) },
+      streams: this.hub,
       scheduler: {
         schedule: async (input) => {
           await this.state.storage.put<PendingDeadline>(DEADLINE_KEY, {

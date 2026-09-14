@@ -4,10 +4,12 @@ import {
   displayNameInputSchema,
   displayNameSchema,
   eventSeqSchema,
+  foldName,
   formatVersionSchema,
   INT32_MAX,
   INT32_MIN,
   isoTimestampSchema,
+  matchNameSchema,
   RESERVED_DISPLAY_NAMES,
   resourceIdSchema,
   seedSchema,
@@ -88,5 +90,47 @@ describe('displayNameInputSchema', () => {
     // The rules match the whole name, so only the whole name is a cheat; refusing a substring would
     // rule out names that do nothing.
     expect(safeParse(displayNameInputSchema, 'SMGFUNDAGE THE THIRD').success).toBe(true)
+  })
+
+  it.each([
+    ['a C0 control', 'Ada\u0007Lovelace'],
+    ['a C1 control', 'Ada\u0085Lovelace'],
+    ['a bidi override', 'Ada\u202ELovelace'],
+    ['a zero-width joiner', 'Ada\u200DLovelace'],
+    ['a private-use glyph', 'Ada\uE000'],
+  ])('refuses a name carrying %s', (_what, name) => {
+    // A bidi override rewrites how every name drawn after it reads, on every other player's screen.
+    // The rest have no agreed rendering at all.
+    expect(safeParse(displayNameInputSchema, name).success).toBe(false)
+  })
+
+  it('normalises a name to NFC, so one name is one string', () => {
+    const composed = 'Ren\u00E9'
+    const decomposed = 'Ren\u0065\u0301'
+    expect(decomposed).not.toBe(composed)
+    const parsed = safeParse(displayNameInputSchema, decomposed)
+    expect(parsed.success && parsed.output).toBe(composed)
+  })
+
+  it('relays a name a looser rule once let through', () => {
+    // Same reason as the reserved names: reading a roster is not choosing a name.
+    expect(safeParse(displayNameSchema, 'Ada\u200DLovelace').success).toBe(true)
+  })
+})
+
+describe('foldName', () => {
+  it('makes case, spacing and the combining form of one name the same key', () => {
+    expect(foldName(' ada  LOVELACE ')).toBe(foldName('Ada Lovelace'))
+    expect(foldName('Ren\u0065\u0301')).toBe(foldName('Ren\u00E9'))
+    expect(foldName('Ada')).not.toBe(foldName('Adam'))
+  })
+})
+
+describe('matchNameSchema', () => {
+  it('holds a lobby name to the same rules, in and out', () => {
+    // Unlike a display name this is only ever set through the settings, so there is no roster of
+    // older names to stay readable for.
+    expect(safeParse(matchNameSchema, 'Night\u202ECity').success).toBe(false)
+    expect(safeParse(matchNameSchema, '  Night City  ').success).toBe(true)
   })
 })

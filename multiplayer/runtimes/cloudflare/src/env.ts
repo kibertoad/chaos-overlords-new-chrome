@@ -28,4 +28,15 @@ export interface Env {
   BUG_REPORT_RATE_LIMIT_PER_MINUTE?: string
   /** Days before a finished, abandoned or never-started match is deleted. 0 keeps everything. */
   RETENTION_DAYS?: string
+  /**
+   * Days before a RUNNING match with nobody active in it is deleted. 0 keeps them forever.
+   *
+   * The ordinary end of a public match is everyone walking away from one that is still running, and
+   * nothing else ever collects one of those.
+   */
+  ABANDONED_RETENTION_DAYS?: string
+  /** Days a bug report and its R2 object are kept. 0 keeps them forever. */
+  BUG_REPORT_RETENTION_DAYS?: string
+  /** Attached journal megabytes accepted per rolling day across every reporter. 0 lifts the cap. */
+  BUG_REPORT_DAILY_STATE_MB?: string
 }

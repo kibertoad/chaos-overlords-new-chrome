@@ -56,6 +56,7 @@ export interface TurnRow {
   sealedAt: Date | null
   orderSetHash: string | null
   sealedSlots: unknown
+  stateHash: string | null
 }
 
 export interface TurnOrdersRow {

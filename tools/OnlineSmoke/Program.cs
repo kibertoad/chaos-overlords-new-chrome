@@ -31,7 +31,7 @@ public static class Program
     {
         var baseAddress = new Uri(args.Length > 0 ? args[0] : "http://localhost:8787");
         var turns = args.Length > 1 ? int.Parse(args[1], CultureInfo.InvariantCulture) : 3;
-        using var http = new HttpClient();
+        using var http = MultiplayerClientOptions.CreateHttpClient();
         var anonymous = new MultiplayerClient(http, new MultiplayerClientOptions(baseAddress));
         var definitions = BundledOriginalData.Load();
 

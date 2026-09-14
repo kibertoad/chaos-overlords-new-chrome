@@ -62,6 +62,7 @@ function turnFixture(match: Match, number: number, overrides: Partial<Turn> = {}
     sealedAt: null,
     orderSetHash: null,
     sealedSlots: null,
+    stateHash: null,
     ...overrides,
   }
 }
@@ -197,6 +198,36 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(await storage.events.listAfter(doomed.id, 0, 10)).toEqual([])
       expect(await storage.matches.get(running.id)).not.toBeNull()
       expect(await storage.matches.get(recent.id)).not.toBeNull()
+    })
+
+    /**
+     * The living-dead case: a match still `running` because it is kept joinable, that nobody ever
+     * came back to. Nothing else collects one, and on a public server it is how most matches end.
+     */
+    it('deletes a long-silent running match with no active player, and spares one with', async () => {
+      const ancient = new Date('2020-01-01T00:00:00.000Z')
+      const cutoff = new Date('2021-01-01T00:00:00.000Z')
+      const stale = matchFixture({ status: 'lobby', updatedAt: ancient })
+      const busy = matchFixture({ status: 'lobby', updatedAt: ancient })
+      for (const match of [stale, busy]) await storage.matches.create(match)
+      // Seated while the match is still a lobby, because that is the only door `create` opens.
+      const departed = playerFixture(stale)
+      const present = playerFixture(busy)
+      await storage.players.create(departed)
+      await storage.players.create(present)
+      await storage.players.setStatus(departed.id, 'left')
+      for (const match of [stale, busy]) {
+        await storage.matches.transition(match.id, ['lobby'], {
+          status: 'running',
+          updatedAt: ancient,
+        })
+      }
+
+      expect(await storage.matches.deleteAbandonedLive(cutoff, 100)).toBeGreaterThanOrEqual(1)
+      expect(await storage.matches.get(stale.id)).toBeNull()
+      expect(await storage.players.get(departed.id)).toBeNull()
+      // One active seat spares the match at any age: it is kept precisely so they can come back.
+      expect(await storage.matches.get(busy.id)).not.toBeNull()
     })
 
     it('lists public waiting and running sessions, newest first, and hides private ones', async () => {
