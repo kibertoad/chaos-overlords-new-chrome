@@ -282,6 +282,10 @@ internal static class HireResolver
                 .FirstOrDefault(-1);
             if (reusableGangSlot >= 0)
             {
+                // The slot's previous occupant is about to stop existing, so anything still holding
+                // its id has to let go first: an order left in the queue would resolve next turn
+                // against a gang `FindGang` can no longer find.
+                state.Commands.Cancel(player.Gangs[reusableGangSlot].Id);
                 player.ReplaceGang(reusableGangSlot, gang);
                 state.AiPlanning.ResetGangSlot(player.Id, reusableGangSlot);
             }

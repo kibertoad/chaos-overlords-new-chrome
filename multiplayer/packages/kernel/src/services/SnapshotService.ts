@@ -58,6 +58,15 @@ export class SnapshotService {
     // stand in for one, because it counts the reports of the players who are active NOW and every
     // reporter may have left since.
     const turn = await this.deps.storage.turns.get(match.id, request.turn)
+    // A sealed turn is one whose reports are still being counted. `settle` judges every report
+    // against a snapshot for that turn when there is one, and anything short of unanimity on it
+    // answers `pending` — so a snapshot accepted here would make the turn's desync verdict
+    // unreachable for good, leave the match running on divergent state and leave the turn
+    // permanently unsettled, which is what a later desync pause waits on to lift. The shipping
+    // client only uploads once a turn is confirmed or desynced; this is the door being shut.
+    if (turn?.status === 'sealed') {
+      throw new ConflictError('That turn has not settled yet', { reason: 'turn_unsettled' })
+    }
     if (turn?.status === 'confirmed') {
       const settled =
         turn.stateHash ?? (await this.deps.storage.snapshots.get(match.id, request.turn))?.stateHash

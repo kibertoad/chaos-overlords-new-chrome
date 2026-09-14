@@ -305,6 +305,43 @@ public sealed class CombatResolutionTests
     }
 
     [Fact]
+    public void CombatEliminationTakesTheDeadGangsRecurringCommandWithIt()
+    {
+        var match = KillingMatch(secondPlayerOneGang: true);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Attack,
+            CommandTarget.Gang(new GangId(20)))).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(1), new GangId(20), GangAction.Heal, CommandTarget.None,
+            Repeat: true)).Accepted);
+        match.FinishCommand(new PlayerId(1));
+        // Instant resolves the Heal, then Combat kills the gang that ordered it.
+        match.FinishExecutionPhase();
+        Assert.Equal(ExecutionPhase.Combat, match.Coordinator.ExecutionPhase);
+
+        match.FinishExecutionPhase();
+
+        var target = match.FindGang(new GangId(20))!;
+        Assert.Equal(0, target.Force);
+        Assert.Null(target.QueuedCommand);
+        Assert.False(match.Commands.TryGet(new GangId(20), out _));
+
+        foreach (var _ in TurnStructure.ExecutionOrder.Skip(2)) match.FinishExecutionPhase();
+        match.FinishHire(new PlayerId(0));
+        match.FinishHire(new PlayerId(1));
+        match.FinishPlayerElimination();
+        match.FinishUpkeep();
+        foreach (var player in match.Players) match.FinishCommand(player.Id);
+        match.FinishExecutionPhase();
+
+        // Without the cancellation the repeating Heal resolved against a destroyed gang and
+        // brought it back.
+        Assert.Equal(0, match.FindGang(new GangId(20))!.Force);
+    }
+
+    [Fact]
     public void SimpleAndDetailedPresentationProduceIdenticalOutcomesAndHash()
     {
         var simple = CreateMatch();
@@ -329,6 +366,26 @@ public sealed class CombatResolutionTests
             detailed.LastPhaseResolutions[0].Event!.Resolution!.RetaliationRolls);
         Assert.Equal(simple.PhaseHashes[^1].Sha256, detailed.PhaseHashes[^1].Sha256);
         Assert.Equal(MatchStateHasher.ComputeSha256(simple), MatchStateHasher.ComputeSha256(detailed));
+    }
+
+    /// <summary>A match whose attacker destroys the defender in one pass.</summary>
+    private static MatchState KillingMatch(bool secondPlayerOneGang = false)
+    {
+        var data = BundledOriginalData.Load();
+        var attackerDefinition = data.Gangs
+            .OrderBy(gang => gang.Stats.Defense)
+            .ThenByDescending(gang => gang.Stats.Combat + gang.Stats.Strength + gang.Stats.Blade)
+            .First().Id;
+        var weapon = data.Items
+            .Select((item, index) => (item, index))
+            .Where(value => value.item.Type == 1)
+            .OrderByDescending(value => value.item.Stats.Combat)
+            .First().index;
+        return CreateMatch(
+            playerZeroDefinition: attackerDefinition,
+            playerZeroWeapon: checked((short)weapon),
+            playerOneForce: 1,
+            secondPlayerOneGang: secondPlayerOneGang);
     }
 
     private static short? WeaponType(MatchState match, MatchGangState gang) =>
@@ -362,7 +419,8 @@ public sealed class CombatResolutionTests
         short? playerOneArmor = null,
         short? playerOneMiscellaneous = null,
         short? influencedSiteDefinition = null,
-        bool secondPlayerZeroGang = false)
+        bool secondPlayerZeroGang = false,
+        bool secondPlayerOneGang = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -379,12 +437,18 @@ public sealed class CombatResolutionTests
         if (secondPlayerZeroGang)
             playerZeroGangs.Add(new MatchGangState(
                 new GangId(11), new PlayerId(0), playerZeroDefinition, 0, playerZeroForce));
+        var playerOneGangs = new List<MatchGangState>
+        {
+            new(new GangId(20), new PlayerId(1), playerOneDefinition, 0,
+                playerOneForce, playerOneWeapon, playerOneArmor, playerOneMiscellaneous)
+        };
+        if (secondPlayerOneGang)
+            playerOneGangs.Add(new MatchGangState(
+                new GangId(21), new PlayerId(1), playerOneDefinition, 1, playerOneForce));
         MatchPlayerState[] players =
         [
             new(setups[0], 500, playerZeroGangs),
-            new(setups[1], 500,
-                [new MatchGangState(new GangId(20), new PlayerId(1), playerOneDefinition, 0,
-                    playerOneForce, playerOneWeapon, playerOneArmor, playerOneMiscellaneous)])
+            new(setups[1], 500, playerOneGangs)
         ];
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,

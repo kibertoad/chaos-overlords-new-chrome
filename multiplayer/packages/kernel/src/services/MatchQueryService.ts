@@ -82,6 +82,10 @@ export class MatchQueryService {
           return { ...current, availableSlots: [], availableSeatSummaries: [] }
         if (!(await this.storage.snapshots.getLatest(listing.id)))
           return { ...current, availableSlots: [], availableSeatSummaries: [] }
+        // `joinRunning` counts every seat a human has ever held against the host's own limit, so a
+        // listing that ignored it advertised seats that every join answers `match_full` for.
+        if (players.length >= listing.settings.maxPlayers)
+          return { ...current, availableSlots: [], availableSeatSummaries: [] }
         const reserved = new Set(players.map((player) => player.slot))
         const availableSlots = Array.from(
           { length: GAME_BOUNDS.playerCount },

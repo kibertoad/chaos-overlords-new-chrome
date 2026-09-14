@@ -297,6 +297,14 @@ public sealed partial class ChaosGame
             : GeneralSoundSlot.RejectedInput);
     }
 
+    /// <summary>
+    /// Writes the player's own preferences.
+    /// </summary>
+    /// <remarks>
+    /// Two of these are borrowed by a lobby, which reads the host's settings into the same fields
+    /// the setup screen edits. What the player chose is what gets stored, so a lobby with a
+    /// different timer or AI default cannot rewrite their preferences while they are in it.
+    /// </remarks>
     private void SavePreferences() =>
         GamePreferencesStore.TrySave(
             _preferencesPath,
@@ -305,14 +313,14 @@ public sealed partial class ChaosGame
                 _musicVolumeLevel,
                 _soundEffectVolumeLevel,
                 _warnIfIdleGangs,
-                _selectedPlanningTimeLimit,
+                _localSetupBeforeLobby?.PlanningTimeLimit ?? _selectedPlanningTimeLimit,
                 _showBaseStatistics,
                 _detailedCombat,
                 _slidePanels,
                 _fullscreen,
                 _smoothEventSiteImages,
                 _introMoviesSeen,
-                _defaultAiPolicy,
+                _localSetupBeforeLobby?.AiPolicy ?? _defaultAiPolicy,
                 _online.Service,
                 _online.Server.Value));
 

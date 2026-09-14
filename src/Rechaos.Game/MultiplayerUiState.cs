@@ -74,6 +74,16 @@ internal sealed class MultiplayerUiState
 
     internal int LateJoinSeatSelection { get; set; }
     internal LobbyListing? PendingLateJoin { get; set; }
+
+    /// <summary>
+    /// Whether this client took its seat in a match that was already running.
+    /// </summary>
+    /// <remarks>
+    /// The session needs it at bootstrap: a late joiner is on the roster before it has built a
+    /// city, so it has to take the host's snapshot and the event log rather than generate one that
+    /// seats itself where every peer seated a computer player.
+    /// </remarks>
+    internal bool JoinedInProgress { get; set; }
     internal IReadOnlyList<LobbyListing> Listings { get; set; } = [];
 
     internal OnlineServiceMode Service { get; set; } = OnlineServiceMode.Central;
@@ -179,6 +189,7 @@ internal sealed class MultiplayerUiState
         DiscoveryFilterHighlight = 0;
         LateJoinSeatSelection = 0;
         PendingLateJoin = null;
+        JoinedInProgress = false;
         Listings = [];
         Role = OnlineConnectRole.Host;
         Match = null;

@@ -166,8 +166,9 @@ internal static class GameEventValidator
             GameEventKind.BigManPointsAwarded =>
                 detailCount == 1 && value.BigManPoints is not null
                     && value.Action == GangAction.None,
+            // A match everybody lost carries no winner; see MatchOutcomeEvaluator.
             GameEventKind.MatchEnded =>
-                detailCount == 1 && value.MatchOutcome is { Winners.Count: > 0 }
+                detailCount == 1 && value.MatchOutcome is not null
                     && value.Action == GangAction.None,
             _ => false
         };

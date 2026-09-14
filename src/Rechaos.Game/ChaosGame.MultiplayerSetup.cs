@@ -1,3 +1,4 @@
+using Rechaos.Core.GameModel;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Protocol;
 using Rechaos.Multiplayer.Session;
@@ -71,6 +72,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void AdoptLobbySettings(MatchView match)
     {
+        RememberLocalSetup();
         _online.SessionName.Set(match.Settings.Name);
         _online.PublicListing = match.Settings.Visibility == MatchVisibility.Public;
         _selectedPlanningTimeLimit = OnlinePlanningLimit(match.Settings.TurnTimerSeconds);
@@ -90,6 +92,48 @@ public sealed partial class ChaosGame
         _online.AllowLateJoin = settings.AllowLateJoin;
         for (var slot = 0; slot < _playerPortraits.Length; slot++)
             _playerPortraits[slot] = settings.Portraits[slot];
+    }
+
+    /// <summary>
+    /// Keeps this client's own setup choices while a lobby's are on the screens that edit them.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="AdoptLobbySettings"/> writes the host's choices straight into the fields the
+    /// setup screen edits, and three of them back stored preferences. Without this, joining a lobby
+    /// hosted with Original AI and no timer turned off the player's own Advanced AI default and
+    /// cleared their planning limit on the next <c>SavePreferences</c>, and left the host's
+    /// portraits on their next local match. Taken once per lobby, so re-reading the lobby a second
+    /// later does not overwrite it with the values the first read installed.
+    /// <para>
+    /// Not for the host: the settings being read back are the ones this client just sent, and the
+    /// setup screen is where the host edits them, so those edits are theirs to keep.
+    /// </para>
+    /// </remarks>
+    private void RememberLocalSetup()
+    {
+        if (_online.IsHost) return;
+        _localSetupBeforeLobby ??= new LocalSetupChoices(
+            _selectedScenario,
+            _selectedDuration,
+            _selectedAiMentality,
+            _selectedPlanningTimeLimit,
+            _defaultAiPolicy,
+            _playerPortraits.ToArray());
+    }
+
+    /// <summary>Gives the player their own setup back when the online match is over.</summary>
+    private void RestoreLocalSetup()
+    {
+        if (_localSetupBeforeLobby is not { } local) return;
+        _localSetupBeforeLobby = null;
+        _selectedScenario = local.Scenario;
+        _selectedDuration = local.Duration;
+        _selectedAiMentality = local.AiMentality;
+        _selectedPlanningTimeLimit = local.PlanningTimeLimit;
+        _defaultAiPolicy = local.AiPolicy;
+        for (var slot = 0; slot < _playerPortraits.Length; slot++)
+            _playerPortraits[slot] = local.Portraits[slot];
+        SavePreferences();
     }
 
     /// <summary>Takes the typed session name off the screen and sends it.</summary>
@@ -128,3 +172,12 @@ public sealed partial class ChaosGame
         _ => PlanningTimeLimit.FiveMinutes,
     };
 }
+
+/// <summary>What the setup screen held before a lobby's settings were read into it.</summary>
+internal sealed record LocalSetupChoices(
+    ScenarioId Scenario,
+    GameDuration Duration,
+    AiDifficulty AiMentality,
+    PlanningTimeLimit PlanningTimeLimit,
+    AiPolicyMode AiPolicy,
+    short[] Portraits);

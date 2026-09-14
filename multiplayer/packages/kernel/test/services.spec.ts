@@ -467,6 +467,25 @@ describe('multiplayer kernel', () => {
     expect((await principalOf(guest.token)).match.hostPlayerId).toBe(guest.player.id)
   })
 
+  /**
+   * A kick reaches a seat in any state. `remove` returned at once for anything but `active`, so
+   * the host was answered 204 while the target kept a working token, an open stream, and `rejoin`,
+   * which turns away nobody but the kicked.
+   */
+  it('kicks a player who has already left, and keeps them out', async () => {
+    const { host, guest } = await startedMatch()
+    await kernel.lobby.leave(await principalOf(guest.token))
+    expect((await storage.players.get(guest.player.id))?.status).toBe('left')
+
+    await kernel.lobby.kick(await principalOf(host.token), guest.player.id)
+
+    expect((await storage.players.get(guest.player.id))?.status).toBe('kicked')
+    expect(streams.closed).toEqual([{ matchId: host.match.id, playerId: guest.player.id }])
+    await expect(principalOf(guest.token)).rejects.toMatchObject({
+      details: { reason: 'invalid_token' },
+    })
+  })
+
   it('hangs up the event streams of a membership it revokes', async () => {
     const { host, guest } = await startedMatch()
     await kernel.lobby.kick(await principalOf(host.token), guest.player.id)
@@ -504,6 +523,84 @@ describe('multiplayer kernel', () => {
         seatSummaries: [],
       }),
     ).rejects.toMatchObject({ details: { reason: 'turn_confirmed', stateHash: HASH_A } })
+  })
+
+  /**
+   * A turn that has sealed but not settled is still counting its reports. `settle` judges every
+   * report against a snapshot for that turn when there is one, and anything short of unanimity on
+   * it answers `pending` — so a snapshot accepted here would put the turn's desync verdict out of
+   * reach for good and leave it unsettled, which is what a desync pause waits on to lift.
+   */
+  it('refuses a snapshot for a turn whose reports are still being counted', async () => {
+    const { host, guest } = await startedMatch()
+    for (const token of [host.token, guest.token]) {
+      await submit(await principalOf(token), 1, 1, true)
+    }
+    await kernel.turns.report(await principalOf(host.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+
+    await expect(
+      kernel.snapshots.upload(await principalOf(host.token), {
+        turn: 1,
+        formatVersion: 1,
+        stateHash: HASH_A,
+        body: 'AAAA',
+        seatSummaries: [],
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'turn_unsettled' } })
+
+    // The disagreement is still free to surface.
+    await kernel.turns.report(await principalOf(guest.token), 1, {
+      stateHash: HASH_B,
+      finished: false,
+    })
+    expect(notifier.events.some((event) => event.type === 'turn.desynced')).toBe(true)
+    // And the repair the desync asks for is accepted.
+    await kernel.snapshots.upload(await principalOf(host.token), {
+      turn: 1,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+  })
+
+  /**
+   * `availableSlots` listed every slot no player row held and ignored the host's own limit, while
+   * `joinRunning` counts every such row against it: every join against those seats was refused.
+   */
+  it('advertises no late-join seats once the roster is at the host limit', async () => {
+    const host = await kernel.lobby.createMatch({
+      settings: {
+        name: 'Two Up',
+        maxPlayers: 2,
+        turnTimerSeconds: 0,
+        visibility: 'public',
+        gameSettings: { allowLateJoin: true },
+      },
+      hostDisplayName: 'Host',
+    })
+    await kernel.lobby.join({ joinCode: host.joinCode, displayName: 'Guest' })
+    await kernel.lobby.start(await principalOf(host.token))
+    await kernel.snapshots.upload(await principalOf(host.token), {
+      turn: 0,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+
+    const listing = (await kernel.query.listPublicLobbies(10)).find(
+      (candidate) => candidate.id === host.match.id,
+    )
+
+    expect(listing?.availableSlots).toEqual([])
+    expect(listing?.availableSeatSummaries).toEqual([])
+    await expect(
+      kernel.lobby.joinRunning({ match: host.match.id, displayName: 'Late', slot: 4 }),
+    ).rejects.toMatchObject({ details: { reason: 'match_full' } })
   })
 
   it('refuses seat summaries that would push the settings blob past its cap', async () => {

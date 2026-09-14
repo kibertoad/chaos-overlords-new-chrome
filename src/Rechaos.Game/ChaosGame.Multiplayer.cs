@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
@@ -38,6 +39,12 @@ public sealed partial class ChaosGame
     private readonly List<MultiplayerRecovery> _multiplayerRecoveries = [];
     private MultiplayerRecovery? _activeMultiplayerRecovery;
     private bool _configuringOnlineLobby;
+
+    /// <summary>
+    /// This client's own setup choices while a lobby's are on the screens that edit them.
+    /// </summary>
+    /// <remarks>Null when no lobby has been joined; see <see cref="RememberLocalSetup"/>.</remarks>
+    private LocalSetupChoices? _localSetupBeforeLobby;
     private MultiplayerRecovery? LatestOnlineRecovery =>
         _multiplayerRecoveries.FirstOrDefault(recovery => recovery.CanReconnect);
 
@@ -178,6 +185,7 @@ public sealed partial class ChaosGame
             _defaultAiPolicy, _online.AllowLateJoin);
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "HOSTING";
+        _online.JoinedInProgress = false;
         var password = OptionalPassword();
         _online.PasswordShown = password ?? string.Empty;
         _lobby!.Host(new CreateMatchRequest(
@@ -202,6 +210,7 @@ public sealed partial class ChaosGame
         if (!TryBeginLobby()) return;
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "JOINING";
+        _online.JoinedInProgress = false;
         var password = OptionalPassword();
         _online.PasswordShown = password ?? string.Empty;
         _lobby!.Join(new JoinMatchRequest(
@@ -227,6 +236,7 @@ public sealed partial class ChaosGame
         _online.PasswordShown = recovery.Password;
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "RECONNECTING TO THE INTERRUPTED MATCH";
+        _online.JoinedInProgress = false;
         _lobby.Resume(recovery.MatchId, recovery.PlayerId, recovery.Token, recovery.JoinCode);
     }
 
@@ -273,7 +283,8 @@ public sealed partial class ChaosGame
         try
         {
             _session = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
-                _lobby.Handle, _definitions, view, _lobby.OwnPlayerId, view.LastEventSeq));
+                _lobby.Handle, _definitions, view, _lobby.OwnPlayerId, view.LastEventSeq,
+                _online.JoinedInProgress));
         }
         catch (Exception exception) when (exception is MultiplayerProtocolException
             or ArgumentOutOfRangeException or InvalidOperationException)
@@ -292,6 +303,7 @@ public sealed partial class ChaosGame
         _online.Match = view;
         _online.DeadlineAt = _session.InitialDeadline;
         _online.SeatedSeats = view.Players.Count(player => player.Slot >= 0);
+        ResetMatchPresentation(_session.InitialState);
         if (_session.IsRestoring)
         {
             _online.Status = "RESTORING THE MATCH";
@@ -300,6 +312,27 @@ public sealed partial class ChaosGame
         if (!AdoptOnlineState(_session.InitialState)) return;
         _message = string.Empty;
         _screens.Show(ClientScreen.City);
+    }
+
+    /// <summary>
+    /// Forgets what the previous match left on screen.
+    /// </summary>
+    /// <remarks>
+    /// The same clearing <see cref="StartMatch"/> and <see cref="LoadGameFromSlot"/> do, for the
+    /// path that starts a match from the server instead. Without it a hot-seat game played first
+    /// leaves its combat progress behind — the new match's events carry lower sequence numbers, so
+    /// they read as already seen and their animations never play — along with its site-search
+    /// markers and its last-turn reports, which the events panel matches on player and turn number
+    /// alone and would happily show from the wrong match.
+    /// </remarks>
+    private void ResetMatchPresentation(MatchState state)
+    {
+        _combatPresentationProgress.ResetTo(
+            state.Players.Select(player => player.Id),
+            state.Events.LastOrDefault()?.Sequence ?? -1);
+        _combatAnimationPlayer.Clear();
+        _siteSearchSelections.Reset();
+        _lastTurnEventArchive.Clear();
     }
 
     /// <summary>
@@ -485,10 +518,16 @@ public sealed partial class ChaosGame
         {
             case MultiplayerNotice.Resumed resumed:
                 _online.Match = resumed.Match;
+                // The same invariant round-trip parse the session uses on the same ISO-8601 string.
+                // Left to the current culture it can fail where the session's own parse succeeded —
+                // on one whose default calendar is not Gregorian — and drop the countdown.
                 _online.DeadlineAt = resumed.Match.Turn is { DeadlineAt: { } deadlineText }
-                    && DateTimeOffset.TryParse(deadlineText, out var parsed)
+                    && DateTimeOffset.TryParse(
+                        deadlineText, CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind, out var parsed)
                         ? parsed
                         : null;
+                ResetMatchPresentation(resumed.State);
                 _online.SeatedSeats = resumed.Match.Players.Count(
                     player => player.Slot >= 0
                         && player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending);
@@ -654,6 +693,7 @@ public sealed partial class ChaosGame
         _session = null;
         _lobby = null;
         _online.Reset();
+        RestoreLocalSetup();
         _online.Status = status;
         _message = status;
         _screens.Show(ClientScreen.Title);

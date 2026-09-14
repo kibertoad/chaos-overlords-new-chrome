@@ -98,6 +98,11 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
             })
             .finally(() => {
               draining = null
+              // `wakeAgain` is only read by the loop above, and this runs microtasks after it
+              // stopped: a wake that landed in between set the flag with nobody left to act on it,
+              // and its event would wait for the next one in the match to carry it out. Re-enter
+              // instead, which is a no-op when nothing arrived.
+              if (wakeAgain && !closed) wake()
             })
         }
 

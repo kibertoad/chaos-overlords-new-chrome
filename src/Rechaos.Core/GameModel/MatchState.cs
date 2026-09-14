@@ -851,6 +851,9 @@ public sealed partial class MatchState
             {
                 var definition = Definitions.Sites.Single(value => value.Id == site.DefinitionId);
                 sector.Tolerance = checked(sector.Tolerance - definition.Tolerance);
+                // As SectorControlResolver.ResetInfluencedSites does when a sector changes hands:
+                // the site stops being influenced, so the Support it granted stops counting.
+                player.Support -= definition.Support;
                 site.InfluencedBy = null;
                 site.Resistance = definition.Resistance;
             }
@@ -914,10 +917,15 @@ public sealed partial class MatchState
         var details = new MatchOutcomeDetails(
             outcome.Scenario, outcome.Reason, outcome.Turn, outcome.Winners,
             outcome.Standings, outcome.Awards);
+        // The event names a player, and a match nobody won has none to name: the first standing
+        // stands in for it, which is deterministic and the same on every client.
+        var subject = outcome.Winners.Count > 0
+            ? outcome.Winners[0]
+            : outcome.Standings[0].Player;
         var gameEvent = new GameEvent(
             _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
             Coordinator.ExecutionPhase, GameEventKind.MatchEnded,
-            outcome.Winners[0], null, GangAction.None, CommandTarget.None,
+            subject, null, GangAction.None, CommandTarget.None,
             MatchOutcome: details);
         gameEvent = StoreEvent(gameEvent);
         foreach (var player in Players)

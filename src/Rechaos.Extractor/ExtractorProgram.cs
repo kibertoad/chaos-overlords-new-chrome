@@ -271,22 +271,26 @@ public static class ExtractorProgram
         string? gameDataOutput = null;
         for (var i = 0; i < args.Length; i++)
         {
-            if (args[i] == "--source" && ++i < args.Length) source = args[i];
-            else if (args[i] == "--output" && ++i < args.Length) output = args[i];
-            else if (args[i] == "--verify-source") mode = ExtractorMode.VerifySource;
-            else if (args[i] == "--verify-output") mode = ExtractorMode.VerifyOutput;
-            else if (args[i] == "--quick") quick = true;
-            else if (args[i] == "--json") json = true;
-            else if (args[i] == "--force") force = true;
-            else if (args[i] == "--catalog") mode = ExtractorMode.GenerateCatalog;
-            else if (args[i] == "--analyze-px") mode = ExtractorMode.AnalyzePxColor;
-            else if (args[i] == "--catalog-output" && ++i < args.Length) catalogOutput = args[i];
-            else if (args[i] == "--generate-game-data" && ++i < args.Length)
+            // The flag is read before the index moves, so a value-taking flag in last place is a
+            // missing value rather than a read past the end of the array.
+            switch (args[i])
             {
-                mode = ExtractorMode.GenerateGameplayData;
-                gameDataOutput = args[i];
+                case "--source": source = TakeValue(args, ref i); break;
+                case "--output": output = TakeValue(args, ref i); break;
+                case "--verify-source": mode = ExtractorMode.VerifySource; break;
+                case "--verify-output": mode = ExtractorMode.VerifyOutput; break;
+                case "--quick": quick = true; break;
+                case "--json": json = true; break;
+                case "--force": force = true; break;
+                case "--catalog": mode = ExtractorMode.GenerateCatalog; break;
+                case "--analyze-px": mode = ExtractorMode.AnalyzePxColor; break;
+                case "--catalog-output": catalogOutput = TakeValue(args, ref i); break;
+                case "--generate-game-data":
+                    mode = ExtractorMode.GenerateGameplayData;
+                    gameDataOutput = TakeValue(args, ref i);
+                    break;
+                default: throw new ArgumentException($"Unknown argument: {args[i]}");
             }
-            else throw new ArgumentException($"Unknown or incomplete argument: {args[i]}");
         }
         if (quick && mode != ExtractorMode.VerifyOutput)
             throw new ArgumentException("--quick is valid only with --verify-output.");
@@ -300,6 +304,15 @@ public static class ExtractorProgram
             throw new ArgumentException("--generate-game-data cannot be combined with another mode.");
         return new ExtractorOptions(
             mode, source, output, quick, force, json, catalogOutput, gameDataOutput);
+    }
+
+    /// <summary>The value that follows a flag, or a refusal naming the flag that wanted one.</summary>
+    private static string TakeValue(string[] args, ref int index)
+    {
+        var flag = args[index];
+        if (++index >= args.Length)
+            throw new ArgumentException($"{flag} needs a value.");
+        return args[index];
     }
 
     private static void PrintVerification(

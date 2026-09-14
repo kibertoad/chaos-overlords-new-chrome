@@ -195,6 +195,41 @@ describe('server app over in-memory storage', () => {
     expect(guestRead.status).toBe(200)
   })
 
+  /**
+   * `use(path, ...)` matches its path verbatim, so `/matches` and `/matches/join` cover neither
+   * each other nor this third unauthenticated door. It was left with no throttle and no cap on a
+   * body that is buffered before anything validates it.
+   */
+  it('rate-limits and caps the body of the late-join door', async () => {
+    const limited = build({}, { limit: 2, windowMs: 60_000 })
+    const body = JSON.stringify({ match: 'ABCDEFGH', displayName: 'x', slot: 3 })
+    const headers = {
+      'content-type': 'application/json',
+      'x-forwarded-for': '203.0.113.21, 10.0.0.1',
+    }
+    const first = await limited.app.request('/api/v1/matches/join-running', {
+      method: 'POST',
+      body,
+      headers,
+    })
+    expect(first.status).toBe(404)
+    await limited.app.request('/api/v1/matches/join-running', { method: 'POST', body, headers })
+    const third = await limited.app.request('/api/v1/matches/join-running', {
+      method: 'POST',
+      body,
+      headers,
+    })
+    expect(third.status).toBe(429)
+
+    const huge = await limited.app.request('/api/v1/matches/join-running', {
+      method: 'POST',
+      headers: { ...headers, 'x-forwarded-for': '198.51.100.7' },
+      body: JSON.stringify({ match: 'ABCDEFGH', displayName: 'y'.repeat(64 * 1024), slot: 3 }),
+    })
+    expect(huge.status).toBe(413)
+    expect(await huge.json()).toMatchObject({ error: { code: 'payload_too_large' } })
+  })
+
   it('refuses an oversized order document before parsing it', async () => {
     const hostRes = await app.request('/api/v1/matches', {
       method: 'POST',

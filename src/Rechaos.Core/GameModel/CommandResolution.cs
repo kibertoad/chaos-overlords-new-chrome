@@ -310,7 +310,7 @@ public static partial class CommandResolver
                      .OrderBy(snapshot => snapshot.Id.Value))
         {
             var gang = state.FindGang(snapshot.Id)!;
-            EliminateGang(gang);
+            EliminateGang(state, gang);
             state.FindPlayer(gang.Owner)!.Statistics.Casualties++;
             state.QueueNotification(
                 gang.Owner, GameNotificationKind.Elimination, gang.Id, gang.SectorId,
@@ -350,8 +350,21 @@ public static partial class CommandResolver
         }
     }
 
-    private static void EliminateGang(MatchGangState gang)
+    /// <summary>
+    /// Destroys a gang and takes its orders with it.
+    /// </summary>
+    /// <remarks>
+    /// The queue entry has to go here, not at the end of the turn. A recurring command survives
+    /// <see cref="TurnCommandQueue.FinishExecution"/>, so a gang killed in Combat would keep a Heal
+    /// that restores its Force next turn, keep earning Chaos income and keep counting towards a
+    /// sector capture — and the player cannot cancel it either, because cancellation refuses an
+    /// eliminated gang. A retired queue entry is also what keeps a hire that reuses the dead gang's
+    /// roster slot from leaving an order behind for a gang id that no longer resolves.
+    /// </remarks>
+    private static void EliminateGang(MatchState state, MatchGangState gang)
     {
+        state.Commands.Cancel(gang.Id);
+        gang.QueuedCommand = null;
         gang.Force = 0;
         gang.Hidden = false;
         gang.WeaponItemId = null;
@@ -403,7 +416,7 @@ public static partial class CommandResolver
     {
         var gang = state.FindGang(command.Gang)!;
         var before = gang.Force;
-        EliminateGang(gang);
+        EliminateGang(state, gang);
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, 0),
             GameNotificationKind.Elimination);

@@ -153,6 +153,7 @@ public sealed partial class ChaosGame
         _online.PasswordShown = password ?? string.Empty;
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "JOINING GAME";
+        _online.JoinedInProgress = true;
         _lobby.JoinRunning(new JoinRunningMatchRequest(
             listing.Id, _online.DisplayName.Value.Trim(), password, seat.Slot));
     }

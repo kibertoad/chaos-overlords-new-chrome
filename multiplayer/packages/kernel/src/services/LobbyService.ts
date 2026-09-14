@@ -400,7 +400,13 @@ export class LobbyService {
   }
 
   private async remove(match: Match, target: Player, reason: 'left' | 'kicked'): Promise<void> {
-    if (target.status !== 'active') return
+    if (target.status === 'kicked') return
+    // Leaving is something only a seated, active player does. A kick has to reach the seat whatever
+    // state it is in: a player who left or went quiet keeps a working token until it is revoked
+    // here, and `rejoin` turns away nobody but the kicked, so answering 204 and doing nothing let a
+    // kicked player walk straight back in.
+    const wasActive = target.status === 'active'
+    if (!wasActive && reason !== 'kicked') return
     const now = this.deps.clock.now()
     if (match.status === 'lobby') {
       if (target.id === match.hostPlayerId) {
@@ -428,6 +434,10 @@ export class LobbyService {
       type: 'lobby.playerLeft',
       payload: { playerId: target.id, reason },
     })
+    // A seat that was already absent changes no tally and holds no host role: whatever vote or
+    // succession its absence called for ran when it went quiet, and it is not a seat any turn is
+    // waiting on now.
+    if (!wasActive) return
     const remaining = activePlayers(await this.deps.storage.players.listByMatch(match.id))
     if (remaining.length === 0) {
       // Keep the durable match available. The first former member to rejoin becomes host.
