@@ -80,6 +80,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// the pump when the stream drops, and the outbox when a submission needs another attempt.
     /// </remarks>
     private int _connected = 1;
+    private bool _uploadInitialSnapshot;
 
     private MultiplayerMatchSession(
         MultiplayerSessionOptions options,
@@ -98,6 +99,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         Slot = self.Slot;
         IsHost = self.IsHost;
         IsRestoring = isRestoring;
+        _uploadInitialSnapshot = IsHost && !isRestoring;
     }
 
     /// <summary>This client's player id.</summary>
@@ -295,6 +297,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             onConnected: () => Report(connected: true, detail: null));
         try
         {
+            if (_uploadInitialSnapshot)
+            {
+                await UploadInitialSnapshotAsync(cancellationToken).ConfigureAwait(false);
+                _uploadInitialSnapshot = false;
+            }
             await foreach (var @event in stream
                 .ReadAsync(_resumeAfterSeq, cancellationToken).ConfigureAwait(false))
             {

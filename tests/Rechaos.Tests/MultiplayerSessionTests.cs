@@ -447,6 +447,7 @@ public sealed class MultiplayerSessionTests
         var (session, server, http) = Running();
         using var _ = http;
         await using var __ = session;
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
 
         server.Events.Write(SealedFrame(8, 1));
@@ -476,8 +477,9 @@ public sealed class MultiplayerSessionTests
             "turn.confirmed",
             $$"""{"turn":1,"stateHash":"{{resolved.StateHash}}"}"""));
 
-        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the autosave");
-        var upload = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/snapshots"));
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 2, "the autosave");
+        var upload = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/snapshots"),
+            body => body.Contains("\"turn\":1", StringComparison.Ordinal));
         Assert.Contains("\"turn\":1", upload, StringComparison.Ordinal);
         Assert.Contains(resolved.StateHash, upload, StringComparison.Ordinal);
     }
@@ -593,13 +595,16 @@ public sealed class MultiplayerSessionTests
         using var _ = http;
         await using var __ = session;
         var ours = MatchStateHasher.ComputeSha256(session.InitialState);
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
 
         server.Events.Write(Frame(8, "turn.desynced", Desync(ours)));
         var desynced = await WaitFor<MultiplayerNotice.Desynced>(session);
 
         Assert.True(desynced.IsHostRepair);
-        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the upload");
-        var upload = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/snapshots"));
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 2, "the upload");
+        var upload = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/snapshots"),
+            body => body.Contains("\"turn\":1", StringComparison.Ordinal)
+                && body.Contains(ours, StringComparison.Ordinal));
         Assert.Contains(ours, upload, StringComparison.Ordinal);
         // The body is a native save, so the version that describes it is the native save format's.
         Assert.Contains(
@@ -615,12 +620,13 @@ public sealed class MultiplayerSessionTests
         var (session, server, http) = Running();
         using var _ = http;
         await using var __ = session;
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
 
         server.Events.Write(Frame(8, "turn.desynced", Desync(new string('7', 64))));
         var desynced = await WaitFor<MultiplayerNotice.Desynced>(session);
 
         Assert.False(desynced.IsHostRepair);
-        Assert.Equal(0, server.CallsTo(HttpMethod.Post, "/snapshots"));
+        Assert.Equal(1, server.CallsTo(HttpMethod.Post, "/snapshots"));
     }
 
     /// <summary>
