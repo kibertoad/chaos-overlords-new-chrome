@@ -28,7 +28,8 @@ public static class ScenarioSetupTooltip
             ScenarioId.KillEmAll => new[]
             {
                 "NO TIME LIMIT: BE THE LAST ACTIVE OVERLORD.",
-                "DESTROY EVERY RIVAL ORGANIZATION."
+                "A RIVAL IS DESTROYED ONLY WHEN THEIR LAST GANG DIES",
+                "AND THEY OWN NO SECTOR; EITHER ONE KEEPS THEM ALIVE."
             },
             ScenarioId.Big40 => new[]
             {
