@@ -42,6 +42,29 @@ public sealed class GameMenuLayoutTests
     }
 
     /// <summary>
+    /// An online match's join code and password grow the panel instead of spilling out of it, and
+    /// land clear of the last button.
+    /// </summary>
+    [Fact]
+    public void SessionLinesSitUnderTheMenuButtonsInsideAPanelThatFitsThem()
+    {
+        Assert.Equal(new Rectangle(176, 84, 288, 272), GameMenuLayout.Panel);
+        Assert.Equal(GameMenuLayout.Panel, GameMenuLayout.PanelWith(lines: 0, columns: 0));
+
+        // "PASSWORD  " and the longest password the connect screen accepts.
+        var panel = GameMenuLayout.PanelWith(lines: 2, columns: 74);
+
+        Assert.True(new Rectangle(0, 0, VirtualInput.Width, VirtualInput.Height).Contains(panel));
+        Assert.True(panel.Contains(GameMenuLayout.QuitToMainMenu));
+        Assert.Equal(VirtualInput.Width / 2, panel.Center.X);
+        Assert.True(74 * 6 <= panel.Width - 16, $"{panel.Width} is too narrow for 74 columns");
+        Assert.True(GameMenuLayout.SessionLine(0) > GameMenuLayout.QuitToMainMenu.Bottom);
+        Assert.True(GameMenuLayout.SessionLine(1) > GameMenuLayout.SessionLine(0));
+        Assert.True(GameMenuLayout.SessionLine(1) + 7 < panel.Bottom);
+        Assert.True(GameMenuLayout.PanelWith(lines: 1, columns: 20).Height < panel.Height);
+    }
+
+    /// <summary>
     /// The bug report panel fits the original 640x460 interface, and its controls do not collide.
     /// </summary>
     [Fact]

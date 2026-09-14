@@ -103,6 +103,17 @@ internal sealed class MultiplayerUiState
     /// <summary>The code the host reads out; empty until there is a lobby.</summary>
     internal string JoinCodeShown { get; set; } = string.Empty;
 
+    /// <summary>
+    /// The password this client is seated with, empty when the session has none.
+    /// </summary>
+    /// <remarks>
+    /// Kept apart from <see cref="Password"/>, which is the connect screen's field and holds
+    /// whatever was last typed into it. This is what the session was actually opened or entered
+    /// with, so the escape menu can put it in front of the player who has to read it out, and a
+    /// private lobby the host never set one on shows none.
+    /// </remarks>
+    internal string PasswordShown { get; set; } = string.Empty;
+
     /// <summary>Whether this client is the host, and so the one that repairs a desync.</summary>
     internal bool IsHost { get; set; }
 
@@ -172,6 +183,7 @@ internal sealed class MultiplayerUiState
         Role = OnlineConnectRole.Host;
         Match = null;
         JoinCodeShown = string.Empty;
+        PasswordShown = string.Empty;
         IsHost = false;
         PlanningTurn = 0;
         DeadlineAt = null;

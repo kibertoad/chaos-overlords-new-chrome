@@ -178,6 +178,8 @@ public sealed partial class ChaosGame
             _defaultAiPolicy, _online.AllowLateJoin);
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "HOSTING";
+        var password = OptionalPassword();
+        _online.PasswordShown = password ?? string.Empty;
         _lobby!.Host(new CreateMatchRequest(
             new MatchSettings(
                 SessionNameOrDefault(),
@@ -186,7 +188,7 @@ public sealed partial class ChaosGame
                 _online.PublicListing ? MatchVisibility.Public : MatchVisibility.Private,
                 settings.ToWire()),
             _online.DisplayName.Value.Trim(),
-            OptionalPassword()));
+            password));
     }
 
     private void BeginJoin()
@@ -200,8 +202,10 @@ public sealed partial class ChaosGame
         if (!TryBeginLobby()) return;
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "JOINING";
+        var password = OptionalPassword();
+        _online.PasswordShown = password ?? string.Empty;
         _lobby!.Join(new JoinMatchRequest(
-            _online.JoinCode.Value.Trim(), _online.DisplayName.Value.Trim(), OptionalPassword()));
+            _online.JoinCode.Value.Trim(), _online.DisplayName.Value.Trim(), password));
     }
 
     private void ResumeSelectedOnlineMatch()
@@ -220,6 +224,7 @@ public sealed partial class ChaosGame
         if (_online.Service == OnlineServiceMode.Custom) _online.Server.Set(recovery.Server);
         _serverProbeCancellation?.Cancel();
         _lobby = new MultiplayerLobbySession(_http, new MultiplayerClientOptions(server));
+        _online.PasswordShown = recovery.Password;
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "RECONNECTING TO THE INTERRUPTED MATCH";
         _lobby.Resume(recovery.MatchId, recovery.PlayerId, recovery.Token, recovery.JoinCode);
@@ -835,7 +840,8 @@ public sealed partial class ChaosGame
             membership.Player.DisplayName,
             membership.Player.IsHost,
             CleanExit: false,
-            Completed: false);
+            Completed: false,
+            _online.PasswordShown);
         _activeMultiplayerRecovery = recovery;
         _multiplayerRecoveries.RemoveAll(item => SameMembership(item, recovery));
         _multiplayerRecoveries.Insert(0, recovery);

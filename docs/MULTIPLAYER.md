@@ -462,17 +462,22 @@ harmless no-ops. The announced sealed-set digest is checked against the fetched 
 recomputed. Only after pairing the state with the caller's current whole-document submission does
 the stream resume from the refreshed `lastEventSeq`.
 
-The desktop client writes the server, match id, player id, join code, and membership token to an
-atomic local recovery record as soon as it takes a seat. A normal shutdown marks that record clean;
-an unclean exit leaves it resumable, so the next launch points the player to a Reconnect action.
-Terminal online errors are shown on the title screen and name that recovery path when the saved
-membership may still be valid. A completed match or an explicit Leave retires the recovery record,
-and a retired record is dropped rather than written back: the token is a full capability for that
-seat, so keeping a spent one on disk buys nothing. On Windows the token is sealed with DPAPI to the
-current user account, so another account on the same machine cannot read it out of the file; macOS
-and Linux keep it in clear under the user's own data root, because their keystores want a native
-dependency the game does not otherwise carry. Neither defends against something already running as
-the player.
+The desktop client writes the server, match id, player id, join code, session password, and
+membership token to an atomic local recovery record as soon as it takes a seat. A normal shutdown
+marks that record clean; an unclean exit leaves it resumable, so the next launch points the player
+to a Reconnect action. Terminal online errors are shown on the title screen and name that recovery
+path when the saved membership may still be valid. A completed match or an explicit Leave retires
+the recovery record, and a retired record is dropped rather than written back: the token is a full
+capability for that seat, so keeping a spent one on disk buys nothing. On Windows the token is
+sealed with DPAPI to the current user account, so another account on the same machine cannot read
+it out of the file; macOS and Linux keep it in clear under the user's own data root, because their
+keystores want a native dependency the game does not otherwise carry. Neither defends against
+something already running as the player.
+
+The session password is kept in clear on every platform. It opens one session's door to whoever the
+player was going to read it out to anyway, where the token is that seat itself, and the player who
+resumes has to be able to read it out again: the escape menu of a match in progress shows it beside
+the join code, which is the reason it is kept at all.
 
 The client also bounds what a server can hand it. Its `HttpClient` buffers at most eight megabytes,
 so a hostile custom server cannot answer a call with a body large enough to take the game down

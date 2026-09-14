@@ -120,6 +120,48 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         Assert.Equal(legacy, Assert.Single(MultiplayerRecoveryStore.LoadAll(Path())));
     }
 
+    /// <summary>
+    /// The session password is kept in the clear, because the player who resumes is the one who
+    /// has to read it out to whoever joins next.
+    /// </summary>
+    [Fact]
+    public void SessionPasswordIsKeptWithTheMembership()
+    {
+        var recovery = Recovery(CleanExit: false, Completed: false) with { Password = "GANGWAR" };
+
+        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+
+        Assert.Equal(recovery, MultiplayerRecoveryStore.Load(Path()));
+    }
+
+    /// <summary>A file from a build that wrote no password reads back as a session without one.</summary>
+    [Fact]
+    public void MembershipWithoutAStoredPasswordHasNone()
+    {
+        File.WriteAllText(Path(), System.Text.Json.JsonSerializer.Serialize(new
+        {
+            FormatVersion = 3,
+            Sessions = new[]
+            {
+                new
+                {
+                    FormatVersion = MultiplayerRecovery.CurrentFormatVersion,
+                    Server = "https://games.example.test/",
+                    MatchId = "match-1",
+                    PlayerId = "player-1",
+                    JoinCode = "CODE1234",
+                    DisplayName = "ADA",
+                    IsHost = true,
+                    CleanExit = false,
+                    Completed = false,
+                    Token = "cop_secret"
+                }
+            }
+        }));
+
+        Assert.Equal(string.Empty, Assert.Single(MultiplayerRecoveryStore.LoadAll(Path())).Password);
+    }
+
     [Fact]
     public void CorruptRecoveryIsIgnored()
     {

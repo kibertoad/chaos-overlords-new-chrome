@@ -14,7 +14,8 @@ public sealed record MultiplayerRecovery(
     string DisplayName,
     bool IsHost,
     bool CleanExit,
-    bool Completed)
+    bool Completed,
+    string Password = "")
 {
     public const int CurrentFormatVersion = 1;
     public bool ShouldSuggestReconnect => !CleanExit && !Completed;
@@ -25,11 +26,19 @@ public sealed record MultiplayerRecovery(
 /// One membership as it sits on disk.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Separate from <see cref="MultiplayerRecovery"/> because the token is not stored the way it is
 /// held: <see cref="ProtectedToken"/> carries it sealed to the current user account where the
 /// platform offers that, and <see cref="Token"/> carries it in clear where it does not. Exactly one
 /// of the two is set. A file written by a build that predates the sealed form has only
 /// <see cref="Token"/>, which is why reading that is still supported.
+/// </para>
+/// <para>
+/// <see cref="Password"/> is stored in the clear, unlike the token. It opens one session's door to
+/// anyone the player was going to read it out to anyway, where the token is that seat itself; and
+/// the reason to keep it is that the player who resumes has to be able to read it out again.
+/// A file from a build that did not write it has none, which reads back as a session without one.
+/// </para>
 /// </remarks>
 internal sealed record PersistedRecovery(
     int FormatVersion,
@@ -42,7 +51,8 @@ internal sealed record PersistedRecovery(
     bool CleanExit,
     bool Completed,
     string? Token = null,
-    string? ProtectedToken = null);
+    string? ProtectedToken = null,
+    string? Password = null);
 
 internal sealed record MultiplayerRecoveryHistory(
     int FormatVersion,
@@ -174,7 +184,8 @@ public static class MultiplayerRecoveryStore
             recovery.CleanExit,
             recovery.Completed,
             Token: sealedToken is null ? recovery.Token : null,
-            ProtectedToken: sealedToken);
+            ProtectedToken: sealedToken,
+            Password: recovery.Password.Length > 0 ? recovery.Password : null);
     }
 
     private static MultiplayerRecovery? Revive(PersistedRecovery stored)
@@ -196,7 +207,8 @@ public static class MultiplayerRecoveryStore
             stored.DisplayName,
             stored.IsHost,
             stored.CleanExit,
-            stored.Completed);
+            stored.Completed,
+            stored.Password ?? string.Empty);
     }
 
     /// <summary>
@@ -247,7 +259,8 @@ public static class MultiplayerRecoveryStore
             PlayerId.Length: > 0 and <= 128,
             Token.Length: > 0 and <= 512,
             JoinCode.Length: > 0 and <= 32,
-            DisplayName.Length: > 0 and <= 32
+            DisplayName.Length: > 0 and <= 32,
+            Password.Length: <= 128
         }
         && recovery.Server.Length <= 256
         && Uri.TryCreate(recovery.Server, UriKind.Absolute, out var server)

@@ -6,7 +6,29 @@ namespace Rechaos.Game;
 
 public static class GameMenuLayout
 {
-    public static Rectangle Panel => new(176, 84, 288, 272);
+    public static Rectangle Panel => PanelWith(lines: 0, columns: 0);
+
+    /// <summary>
+    /// The menu panel, grown to hold the session lines drawn under the buttons.
+    /// </summary>
+    /// <remarks>
+    /// It grows around the longest line rather than the line being cut short, because the point of
+    /// putting a join code and a password on screen is that somebody reads them out, and half a
+    /// password read out confidently is worse than none at all. Growth is symmetrical about the
+    /// interface's centre line, which is where the panel and the buttons in it already sit.
+    /// </remarks>
+    public static Rectangle PanelWith(int lines, int columns)
+    {
+        var width = Math.Max(288, Math.Max(0, columns) * 6 + 32);
+        return new Rectangle(
+            (VirtualInput.Width - width) / 2, 84, width, 272 + Math.Max(0, lines) * SessionLineHeight);
+    }
+
+    /// <summary>The top of the nth session line, below the last button.</summary>
+    public static int SessionLine(int index) => 340 + Math.Max(0, index) * SessionLineHeight;
+
+    private const int SessionLineHeight = 16;
+
     public static Rectangle Resume => new(226, 124, 188, 32);
     public static Rectangle Save => new(226, 162, 188, 32);
     public static Rectangle Load => new(226, 200, 188, 32);
@@ -301,7 +323,10 @@ public sealed partial class ChaosGame
             DrawSaveBrowser(batch, pixel, font);
             return;
         }
-        var panel = GameMenuLayout.Panel;
+        IReadOnlyList<string> session =
+            _quitToMainMenuConfirmationOpen ? [] : OnlineSessionLines();
+        var panel = GameMenuLayout.PanelWith(
+            session.Count, session.Count == 0 ? 0 : session.Max(line => line.Length));
         batch.Draw(pixel, panel, new Color(12, 20, 20, 250));
         DrawBorder(batch, pixel, panel, Color.Gold, 2);
         if (_quitToMainMenuConfirmationOpen)
@@ -323,6 +348,28 @@ public sealed partial class ChaosGame
         for (var index = 0; index < buttons.Length; index++)
             DrawButton(batch, pixel, font, buttons[index].Item1, buttons[index].Item2,
                 _gameMenuCursor == index);
+        for (var index = 0; index < session.Count; index++)
+            DrawCentered(font, batch, session[index], GameMenuLayout.SessionLine(index),
+                Color.Gold, 1);
+    }
+
+    /// <summary>
+    /// What an online match is reached by, for the player holding the menu open.
+    /// </summary>
+    /// <remarks>
+    /// The lobby screen is where the join code was read out, and the match replaces it, so a host
+    /// asked for the code on turn nine had nowhere left to look it up and no way to invite a late
+    /// joiner. The password is here for the same reason and under the same rule: what is shown is
+    /// what this client was actually seated with, so a session opened without one shows none rather
+    /// than whatever the connect screen was last left holding.
+    /// </remarks>
+    private List<string> OnlineSessionLines()
+    {
+        var lines = new List<string>(2);
+        if (_session is null) return lines;
+        if (_online.JoinCodeShown.Length > 0) lines.Add($"JOIN CODE  {_online.JoinCodeShown}");
+        if (_online.PasswordShown.Length > 0) lines.Add($"PASSWORD  {_online.PasswordShown}");
+        return lines;
     }
 
     private void DrawSaveBrowser(SpriteBatch batch, Texture2D pixel, PixelFont font)

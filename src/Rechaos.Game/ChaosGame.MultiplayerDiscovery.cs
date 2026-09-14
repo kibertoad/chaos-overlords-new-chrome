@@ -122,10 +122,12 @@ public sealed partial class ChaosGame
         var listing = listings[Math.Clamp(_online.DiscoverySelection, 0, listings.Count - 1)];
         if (listing.Status == MatchStatus.Lobby)
         {
+            var password = OptionalPassword();
+            _online.PasswordShown = password ?? string.Empty;
             _online.Stage = MultiplayerStage.Busy;
             _online.Status = "JOINING LOBBY";
             _lobby.Join(new JoinMatchRequest(
-                listing.JoinCode, _online.DisplayName.Value.Trim(), OptionalPassword()));
+                listing.JoinCode, _online.DisplayName.Value.Trim(), password));
         }
         else if (listing.AvailableSeatSummaries.Count > 0)
         {
@@ -147,10 +149,12 @@ public sealed partial class ChaosGame
         if (listing is null || listing.AvailableSeatSummaries.Count == 0 || _lobby is null) return;
         var seat = listing.AvailableSeatSummaries[
             Math.Clamp(_online.LateJoinSeatSelection, 0, listing.AvailableSeatSummaries.Count - 1)];
+        var password = OptionalPassword();
+        _online.PasswordShown = password ?? string.Empty;
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "JOINING GAME";
         _lobby.JoinRunning(new JoinRunningMatchRequest(
-            listing.Id, _online.DisplayName.Value.Trim(), OptionalPassword(), seat.Slot));
+            listing.Id, _online.DisplayName.Value.Trim(), password, seat.Slot));
     }
 
     private void HandleLateJoinSeatClick(Point point)
