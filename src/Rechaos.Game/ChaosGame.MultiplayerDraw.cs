@@ -55,14 +55,14 @@ public sealed partial class ChaosGame
             DrawField(batch, pixel, font, OnlineConnectLayout.JoinCode, _online.SessionName);
             DrawHostChoice(batch, pixel, font, OnlineConnectLayout.Visibility, "VISIBILITY",
                 _online.PublicListing ? "PUBLIC" : "PRIVATE", !busy);
-            DrawHostChoice(batch, pixel, font, OnlineConnectLayout.LateJoin, "LATE JOIN",
-                _online.AllowLateJoin ? "ON" : "OFF", !busy);
+            DrawHostChoice(batch, pixel, font, OnlineConnectLayout.LateJoin, "JOIN AFTER START",
+                _online.AllowLateJoin ? "ALLOWED" : "NOT ALLOWED", !busy);
         }
         if (OnlinePasswordApplies)
             DrawField(batch, pixel, font, OnlineConnectLayout.Password, _online.Password);
         else
             DrawDisabledField(batch, pixel, font, OnlineConnectLayout.Password, "PASSWORD",
-                "THE JOIN CODE GATES A PRIVATE SESSION");
+                "THE JOIN CODE IS THE GATE");
         DrawButton(batch, pixel, font, OnlineConnectLayout.Continue,
             _online.Role == OnlineConnectRole.Host ? "CREATE" : "CONNECT", !busy);
         DrawButton(batch, pixel, font, OnlineConnectLayout.Discover, "BROWSE", !busy);
@@ -207,9 +207,9 @@ public sealed partial class ChaosGame
     /// Draws one of the lobby settings the host chooses before the lobby exists.
     /// </summary>
     /// <remarks>
-    /// Captioned like the fields they stand beside rather than spelling the setting out on the face
-    /// of the button, because a button wide enough for LATE JOIN OFF would not fit the margin these
-    /// share with the session name and the password.
+    /// Captioned like the fields they stand beside, and carrying the state rather than the action:
+    /// a button that reads ALLOWED under JOIN AFTER START says what the session will do, where one
+    /// that reads OFF leaves the player to guess what is off.
     /// </remarks>
     private static void DrawHostChoice(
         SpriteBatch batch,
@@ -220,7 +220,9 @@ public sealed partial class ChaosGame
         string value,
         bool enabled)
     {
-        font.Draw(batch, caption, new Vector2(bounds.X, bounds.Y - 8), new Color(150, 165, 165), 1);
+        font.Draw(batch, caption,
+            new Vector2(bounds.X, bounds.Y - OnlineConnectLayout.CaptionHeight),
+            new Color(150, 165, 165), 1);
         DrawButton(batch, pixel, font, bounds, value, enabled);
     }
 

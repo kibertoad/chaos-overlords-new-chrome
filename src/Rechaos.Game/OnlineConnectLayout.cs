@@ -10,15 +10,34 @@ public static class OnlineConnectLayout
     public static Rectangle HostRole => new(120, 188, 190, 26);
     public static Rectangle JoinRole => new(330, 188, 190, 26);
     public static Rectangle Name => new(120, 226, 400, 22);
-    public static Rectangle JoinCode => new(120, 264, 300, 22);
-    public static Rectangle PasteJoinCode => new(428, 260, 92, 30);
-    public static Rectangle Password => new(120, 302, 300, 22);
+    public static Rectangle JoinCode => new(120, 264, 240, 22);
+    public static Rectangle Password => new(120, 302, 240, 22);
+
+    /// <summary>
+    /// The height a caption needs above the control it names.
+    /// </summary>
+    /// <remarks>
+    /// Captions sit in the gap between rows, so a control has to end above the next row's caption or
+    /// its border draws through the words. See <see cref="OriginalFontLayout.GlyphHeight"/> for what
+    /// is actually drawn there: the extra pixel is the gap to the control below it.
+    /// </remarks>
+    public const int CaptionHeight = 8;
+
+    /// <summary>
+    /// The column those two fields leave clear, which the actions beside them stand in.
+    /// </summary>
+    /// <remarks>
+    /// Wide enough to say what each control does on the face of the button. The two host settings
+    /// are stacked here, so both are 24 high rather than the 30 the full-width buttons use: two rows
+    /// of 30 leave the second caption nowhere to go but through the first button's border.
+    /// </remarks>
+    public static Rectangle PasteJoinCode => new(368, 260, 152, 24);
 
     /// <summary>Shares the paste button's place, which is idle while hosting.</summary>
-    public static Rectangle Visibility => new(428, 260, 92, 30);
+    public static Rectangle Visibility => new(368, 260, 152, 24);
 
     /// <summary>Under the visibility button, in the margin the password field leaves.</summary>
-    public static Rectangle LateJoin => new(428, 298, 92, 30);
+    public static Rectangle LateJoin => new(368, 298, 152, 24);
     public static Rectangle Continue => new(120, 340, 190, 30);
     public static Rectangle Discover => new(330, 340, 190, 30);
     public static Rectangle Reconnect => new(120, 378, 190, 30);
