@@ -485,6 +485,54 @@ public sealed class HireAndEliminationTests
         Assert.Equal(TurnPhase.Upkeep, match.Coordinator.Phase);
     }
 
+    [Fact]
+    public void EliminatingAPlayerGivesUpTheSupportTheirSitesGranted()
+    {
+        var definitions = BundledOriginalData.Load();
+        var siteDefinition = definitions.Sites.First(site => site.Support > 0);
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(1), "TWO", PlayerController.Computer)
+        ];
+        var setup = new MatchSetup(ScenarioId.Eliminate, GameDuration.SixMonths, 1996, setups);
+        MatchPlayerState[] players =
+        [
+            // The Right Hands definition is 0; under ELIMINATE, losing it is what ends a player.
+            new(setups[0], 10, [new MatchGangState(new GangId(10), new PlayerId(0), 0, 0, 5)]),
+            new(setups[1], 10,
+                [new MatchGangState(new GangId(11), new PlayerId(1), 0, 1, 0)],
+                support: siteDefinition.Support)
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => new MatchSectorState(id,
+            [
+                new MatchSiteState(0, 0, 7),
+                id == 1
+                    ? new MatchSiteState(1, siteDefinition.Id, 0, new PlayerId(1))
+                    : new MatchSiteState(1, 1, 5),
+                new MatchSiteState(2, 2, 4)
+            ], owner: id == 0 ? new PlayerId(0) : id == 1 ? new PlayerId(1) : null))
+            .ToArray();
+        var match = new MatchState(definitions, setup, players, sectors);
+        var sector = match.Sectors[1];
+
+        match.FinishUpkeep();
+        foreach (var player in match.Players) match.FinishCommand(player.Id);
+        foreach (var _ in TurnStructure.ExecutionOrder) match.FinishExecutionPhase();
+        foreach (var player in match.Players) match.FinishHire(player.Id);
+        var toleranceBefore = sector.Tolerance;
+        var supportBefore = match.Players[1].Support;
+        match.FinishPlayerElimination();
+
+        Assert.Equal(PlayerStatus.Eliminated, match.Players[1].Status);
+        // As when a sector changes hands: the site stops being influenced, so both the Support it
+        // granted the player and the Tolerance it granted the sector go with it.
+        Assert.Equal(supportBefore - siteDefinition.Support, match.Players[1].Support);
+        Assert.Equal(toleranceBefore - siteDefinition.Tolerance, sector.Tolerance);
+        Assert.Null(sector.Sites[1].InfluencedBy);
+    }
+
     private static MatchState CreateMatch(
         int initialCash = 10,
         IReadOnlyList<MatchGangState>? gangs = null,

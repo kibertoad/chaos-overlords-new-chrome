@@ -1,0 +1,1 @@
+ALTER TABLE `turns` ADD `state_hash` text;

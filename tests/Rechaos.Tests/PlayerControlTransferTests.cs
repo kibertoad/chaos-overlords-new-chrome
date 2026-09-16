@@ -12,7 +12,7 @@ namespace Rechaos.Tests;
 public sealed class PlayerControlTransferTests
 {
     [Fact]
-    public void TransferIsOneWayHashedAndUpdatesEverySetupView()
+    public void TransferCanReturnToHumanAndUpdatesEverySetupView()
     {
         var match = CreateMatch();
         match.FinishUpkeep();
@@ -25,6 +25,11 @@ public sealed class PlayerControlTransferTests
         Assert.Equal(match.Setup.Players[1], match.Players[1].Setup);
         Assert.NotEqual(before, MatchStateHasher.ComputeSha256(match));
         Assert.False(match.TransferPlayerToComputer(new PlayerId(1)));
+        Assert.True(match.TransferPlayerToHuman(new PlayerId(1)));
+        Assert.Equal(PlayerController.Human, match.Setup.Players[1].Controller);
+        Assert.Equal(PlayerController.Human, match.Players[1].Setup.Controller);
+        Assert.Equal(before, MatchStateHasher.ComputeSha256(match));
+        Assert.False(match.TransferPlayerToHuman(new PlayerId(1)));
     }
 
     [Fact]
@@ -64,6 +69,7 @@ public sealed class PlayerControlTransferTests
         var recorder = new MatchReplayRecorder(CreateMatch(definitions));
         recorder.FinishUpkeep();
         Assert.True(recorder.TransferPlayerToComputer(new PlayerId(1)));
+        Assert.True(recorder.TransferPlayerToHuman(new PlayerId(1)));
 
         using var save = new MemoryStream();
         NativeSaveSerializer.Save(save, recorder.State);
@@ -74,8 +80,8 @@ public sealed class PlayerControlTransferTests
         replay.Position = 0;
         var restoredReplay = MatchReplaySerializer.LoadAndReplay(replay, definitions);
 
-        Assert.Equal(PlayerController.Computer, restoredSave.Setup.Players[1].Controller);
-        Assert.Equal(PlayerController.Computer, restoredReplay.Setup.Players[1].Controller);
+        Assert.Equal(PlayerController.Human, restoredSave.Setup.Players[1].Controller);
+        Assert.Equal(PlayerController.Human, restoredReplay.Setup.Players[1].Controller);
         Assert.Equal(
             MatchStateHasher.ComputeSha256(recorder.State),
             MatchStateHasher.ComputeSha256(restoredSave));
@@ -86,6 +92,10 @@ public sealed class PlayerControlTransferTests
             item => item.Kind == ReplayOperationKind.TransferPlayerToComputer);
         Assert.Equal(new PlayerId(1), step.Player);
         Assert.True(step.Accepted);
+        var returned = Assert.Single(recorder.Steps,
+            item => item.Kind == ReplayOperationKind.TransferPlayerToHuman);
+        Assert.Equal(new PlayerId(1), returned.Player);
+        Assert.True(returned.Accepted);
     }
 
     [Fact]

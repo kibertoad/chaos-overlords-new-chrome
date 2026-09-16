@@ -1,8 +1,30 @@
 {
   "name": "@chaos-overlords/client",
   "version": "0.1.0",
-  "private": true,
   "description": "TypeScript client for the multiplayer server: typed REST calls and a resumable SSE event iterator. The reference for the game's C# client.",
+  "keywords": [
+    "chaos-overlords",
+    "multiplayer",
+    "game-server",
+    "turn-based",
+    "client",
+    "sdk",
+    "rest",
+    "server-sent-events",
+    "sse",
+    "typescript"
+  ],
+  "license": "GPL-3.0-only",
+  "author": "kibertoad",
+  "homepage": "https://github.com/kibertoad/chaos-overlords-new-chrome/tree/main/multiplayer/packages/client#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kibertoad/chaos-overlords-new-chrome.git",
+    "directory": "multiplayer/packages/client"
+  },
+  "bugs": {
+    "url": "https://github.com/kibertoad/chaos-overlords-new-chrome/issues"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,11 +34,26 @@
       "default": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "!dist/.tsbuildinfo",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "prepublishOnly": "pnpm run build && node ../../scripts/prepublish.mjs"
   },
   "dependencies": {
     "@chaos-overlords/contracts": "workspace:*"

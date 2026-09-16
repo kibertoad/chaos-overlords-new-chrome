@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
@@ -40,6 +41,7 @@ public static class StatusConsoleLayout
         return 60 + row * 9;
     }
 
+    public static Rectangle Scenario => new(476, 0, 108, 10);
     public static Rectangle Score => Entry(ScoreY);
     public static Rectangle Cash => Entry(CashY);
     public static Rectangle ChaosLabel => new(476, SectorValueY(4) - 1, 44, 9);
@@ -51,7 +53,15 @@ public static class StatusConsoleLayout
 public static class StatusConsoleTooltip
 {
     public static IReadOnlyList<string> At(Point point)
+        => At(point, null, GameDuration.SixMonths);
+
+    public static IReadOnlyList<string> At(
+        Point point,
+        ScenarioId? scenario,
+        GameDuration duration)
     {
+        if (scenario is { } mode && StatusConsoleLayout.Scenario.Contains(point))
+            return ScenarioSetupTooltip.Lines(mode, duration);
         if (StatusConsoleLayout.Score.Contains(point))
             return ["SCORE", "CURRENT SCENARIO PROGRESS USED FOR RANKING AND VICTORY."];
         if (StatusConsoleLayout.Cash.Contains(point))

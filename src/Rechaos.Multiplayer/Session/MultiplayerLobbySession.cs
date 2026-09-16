@@ -23,6 +23,8 @@ public abstract record LobbyNotice
     /// <summary>The lobby as the server now describes it.</summary>
     public sealed record Updated(MatchView Match) : LobbyNotice;
 
+    public sealed record Listed(IReadOnlyList<LobbyListing> Matches) : LobbyNotice;
+
     /// <summary>A call was refused, with text a player can act on.</summary>
     public sealed record Failed(string Reason) : LobbyNotice;
 }
@@ -90,11 +92,60 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         Run(async token => Seat(await _anonymous.JoinAsync(request, token).ConfigureAwait(false)));
     }
 
+    public void JoinRunning(JoinRunningMatchRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        Run(async token => Seat(
+            await _anonymous.JoinRunningAsync(request, token).ConfigureAwait(false)));
+    }
+
+    public void Browse() => Run(async token =>
+        _notices.Enqueue(new LobbyNotice.Listed(
+            (await _anonymous.ListLobbiesAsync(token).ConfigureAwait(false)).Matches)));
+
+    /// <summary>Reclaims an existing seat after restarting with its durable membership token.</summary>
+    public void Resume(string matchId, string playerId, string token, string joinCode)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(matchId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(playerId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(token);
+        var handle = _anonymous.WithToken(token).Match(matchId);
+        Run(async cancellationToken =>
+        {
+            var detail = await handle.GetAsync(cancellationToken).ConfigureAwait(false);
+            if (!string.Equals(detail.You, playerId, StringComparison.Ordinal))
+                throw new MultiplayerProtocolException("the saved membership belongs to another player");
+            var player = detail.Match.Players.FirstOrDefault(candidate => candidate.Id == playerId)
+                ?? throw new MultiplayerProtocolException("the saved player is no longer in this match");
+            if (detail.Match.Status is MatchStatus.Running or MatchStatus.Desynced
+                && player.Status != PlayerStatus.Active)
+            {
+                await handle.RejoinAsync(cancellationToken).ConfigureAwait(false);
+                detail = await handle.GetAsync(cancellationToken).ConfigureAwait(false);
+                player = detail.Match.Players.First(candidate => candidate.Id == playerId);
+            }
+            OwnPlayerId = playerId;
+            _handle = handle;
+            _notices.Enqueue(new LobbyNotice.Seated(new MembershipView(
+                detail.Match, player, token, string.IsNullOrWhiteSpace(detail.JoinCode)
+                    ? joinCode
+                    : detail.JoinCode)));
+        });
+    }
+
     /// <summary>Host only: seats the players, draws the seed and opens turn 1.</summary>
     public void Start() => Run(async token =>
     {
         if (_handle is null) return;
         await _handle.StartAsync(token).ConfigureAwait(false);
+        _notices.Enqueue(new LobbyNotice.Updated(
+            (await _handle.GetAsync(token).ConfigureAwait(false)).Match));
+    });
+
+    public void UpdateSettings(MatchSettings settings) => Run(async token =>
+    {
+        if (_handle is null) return;
+        await _handle.UpdateSettingsAsync(settings, token).ConfigureAwait(false);
         _notices.Enqueue(new LobbyNotice.Updated(
             (await _handle.GetAsync(token).ConfigureAwait(false)).Match));
     });

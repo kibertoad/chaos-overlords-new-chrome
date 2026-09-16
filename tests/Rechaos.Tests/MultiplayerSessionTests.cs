@@ -21,172 +21,8 @@ namespace Rechaos.Tests;
 /// part with no tests. Everything here is about how the session reacts to a server rather than about
 /// the rules — <see cref="MultiplayerSealedTurnTests"/> covers what a turn does to a match.
 /// </remarks>
-public sealed class MultiplayerSessionTests
+public sealed partial class MultiplayerSessionTests
 {
-    private const string MatchId = "m1";
-    private const int Seed = 1996;
-    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(10);
-
-    private static readonly MultiplayerGameSettings GameSettings = new(
-        ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, [0, 1, 2, 3, 4, 5]);
-
-    private static readonly IReadOnlyList<PlayerView> Roster =
-    [
-        new("p1", 0, "ADA", WirePlayerStatus.Active, IsHost: true),
-        new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: false),
-    ];
-
-    /// <summary>
-    /// A session against a fake server, with the routes a running match needs already answered.
-    /// </summary>
-    /// <remarks>
-    /// Each test overrides only the route it is about, so what a test sets up is what it is testing.
-    /// </remarks>
-    private static (MultiplayerMatchSession Session, FakeMultiplayerServer Server, HttpClient Http)
-        Running(
-            string ownPlayerId = "p1",
-            string? deadlineAt = null,
-            MatchView? matchView = null,
-            Action<FakeMultiplayerServer>? configure = null)
-    {
-        var server = new FakeMultiplayerServer();
-        var http = new HttpClient(server);
-        var view = matchView ?? View(deadlineAt);
-        server.Answer(HttpMethod.Get, $"/matches/{MatchId}", new MatchDetail(view, "CODE1234", ownPlayerId));
-        server.Answer(HttpMethod.Post, "/report", null, HttpStatusCode.NoContent);
-        server.Answer(HttpMethod.Post, "/snapshots", null, HttpStatusCode.NoContent);
-        server.Answer(HttpMethod.Put, "/orders", new OwnSubmissionView(1, null, Ready: true, null));
-        if (view.CurrentTurn > 1)
-            server.Answer(HttpMethod.Get, "/events", new EventPage(HistoricalEvents(view)));
-        configure?.Invoke(server);
-
-        var handle = new MultiplayerClient(
-                http, new MultiplayerClientOptions(new Uri("http://server.test")))
-            .WithToken("cop_test")
-            .Match(MatchId);
-        var session = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
-            handle, BundledOriginalData.Load(), view, ownPlayerId, ResumeAfterSeq: 7));
-        return (session, server, http);
-    }
-
-    private static MatchView View(string? deadlineAt = null) => new(
-        MatchId,
-        MatchStatus.Running,
-        new MatchSettings("ADA'S CITY", 2, 300, MatchVisibility.Private, GameSettings.ToWire()),
-        "p1",
-        Seed,
-        CurrentTurn: 1,
-        Roster,
-        new TurnView(1, TurnStatus.Open, "2026-09-10T12:00:00.000Z", deadlineAt, null, null, [], []),
-        PreviousTurn: null,
-        LastEventSeq: 7,
-        "2026-09-10T11:59:00.000Z");
-
-    /// <summary>The sealed set for a turn nobody ordered anything in, with honest digests.</summary>
-    private static SealedOrdersView SealedOrders(int turn)
-        => SealedOrdersForSlots(turn, 0, 1);
-
-    private static SealedOrdersView SealedOrdersForSlots(int turn, params int[] slots)
-    {
-        var empty = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, []);
-        var players = slots
-            .Select(slot => new SealedPlayerOrders(
-                $"p{slot + 1}", slot, empty, OrderDigest.OfDocument(empty)))
-            .ToArray();
-        return new SealedOrdersView(turn, OrderDigest.OfSet(players), players);
-    }
-
-    private static string Frame(int seq, string type, string payload) =>
-        $"id: {seq}\ndata: {{\"seq\":{seq},\"matchId\":\"{MatchId}\","
-        + $"\"createdAt\":\"2026-09-10T12:00:00.000Z\",\"type\":\"{type}\",\"payload\":{payload}}}\n\n";
-
-    private static string SealedFrame(int seq, int turn) => Frame(
-        seq,
-        "turn.sealed",
-        $$"""{"turn":{{turn}},"orderSetHash":"{{SealedOrders(turn).OrderSetHash}}"}""");
-
-    private static IReadOnlyList<MatchEvent> HistoricalEvents(MatchView view)
-    {
-        var seals = Enumerable.Range(1, view.CurrentTurn - 1)
-            .ToDictionary(turn => turn * 5);
-        return Enumerable.Range(1, view.LastEventSeq)
-            .Select<int, MatchEvent>(seq => seals.TryGetValue(seq, out var turn)
-                ? new TurnSealedEvent(
-                    seq,
-                    MatchId,
-                    "2026-09-10T12:00:00.000Z",
-                    new TurnSealedEventPayload(turn, SealedOrders(turn).OrderSetHash))
-                : new TurnOpenedEvent(
-                    seq,
-                    MatchId,
-                    "2026-09-10T12:00:00.000Z",
-                    new TurnOpenedEventPayload(Math.Max(1, seq / 5), null)))
-            .ToArray();
-    }
-
-    private static MatchView ViewAtTurn(int turn) => View() with
-    {
-        CurrentTurn = turn,
-        Turn = new TurnView(
-            turn,
-            TurnStatus.Open,
-            "2026-09-10T12:05:00.000Z",
-            "2026-09-10T12:10:00.000Z",
-            null,
-            null,
-            [],
-            []),
-        PreviousTurn = new TurnView(
-            turn - 1,
-            TurnStatus.Confirmed,
-            "2026-09-10T12:00:00.000Z",
-            null,
-            "2026-09-10T12:04:00.000Z",
-            new string('a', 64),
-            [],
-            ["p1", "p2"]),
-        LastEventSeq = 20,
-    };
-
-    /// <summary>
-    /// Drains notices until one of the wanted kind arrives, or gives up.
-    /// </summary>
-    /// <remarks>
-    /// Everything the session does happens on a background task, so a test has to wait for an answer
-    /// rather than look for one. Notices that arrive on the way are kept, because a test that asserts
-    /// what did <em>not</em> happen needs to have seen everything that did.
-    /// </remarks>
-    private static async Task<T> WaitFor<T>(
-        MultiplayerMatchSession session,
-        List<MultiplayerNotice>? seen = null)
-        where T : MultiplayerNotice
-    {
-        var deadline = DateTime.UtcNow + Patience;
-        while (DateTime.UtcNow < deadline)
-        {
-            while (session.TryDequeueNotice(out var notice))
-            {
-                seen?.Add(notice);
-                if (notice is T wanted) return wanted;
-            }
-            await Task.Delay(15).ConfigureAwait(false);
-        }
-        throw new TimeoutException(
-            $"no {typeof(T).Name} notice arrived within {Patience.TotalSeconds:0}s");
-    }
-
-    /// <summary>Waits until a condition about the server holds, or gives up.</summary>
-    private static async Task Until(Func<bool> condition, string what)
-    {
-        var deadline = DateTime.UtcNow + Patience;
-        while (DateTime.UtcNow < deadline)
-        {
-            if (condition()) return;
-            await Task.Delay(15).ConfigureAwait(false);
-        }
-        throw new TimeoutException($"{what} did not happen within {Patience.TotalSeconds:0}s");
-    }
-
     [Fact]
     public async Task RestartReplaysSealedTurnsAndRestoresTheCurrentSubmission()
     {
@@ -330,6 +166,152 @@ public sealed class MultiplayerSessionTests
         Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/events"));
     }
 
+    /// <summary>
+    /// A reconnect whose only snapshot is the bootstrap one resumes from it.
+    /// </summary>
+    /// <remarks>
+    /// The host uploads a snapshot for turn 0 before a turn has been played, and it stays the
+    /// latest one until a confirmed turn is autosaved. Refusing it left a host that crashed during
+    /// turn 1 unable to rejoin its own match at all: every retry read the same row.
+    /// </remarks>
+    [Fact]
+    public async Task RestartResumesFromTheTurnZeroBootstrapSnapshot()
+    {
+        var definitions = BundledOriginalData.Load();
+        var bootstrap = new MatchReplayRecorder(
+            MatchBootstrapFactory.Create(definitions, Seed, GameSettings, Roster));
+        CommandPhase.Enter(bootstrap);
+        var snapshot = new SnapshotView(
+            0,
+            NativeSaveSerializer.CurrentFormatVersion,
+            MatchStateHasher.ComputeSha256(bootstrap.State),
+            "p1",
+            "2026-09-10T11:59:30.000Z",
+            MatchStateClone.ToBase64(bootstrap.State));
+        var (session, server, http) = Running(
+            matchView: ViewAtTurn(2),
+            configure: fake =>
+            {
+                fake.Answer(HttpMethod.Get, "/snapshots/latest", snapshot);
+                fake.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/turns/2/orders/mine",
+                    new OwnSubmissionView(2, null, Ready: false, OrdersHash: null));
+            });
+        using var _ = http;
+        await using var __ = session;
+
+        var resumed = await WaitFor<MultiplayerNotice.Resumed>(session);
+
+        Assert.Equal(2, resumed.State.Coordinator.Turn);
+        Assert.Equal(TurnPhase.Command, resumed.State.Coordinator.Phase);
+        Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/1/orders"));
+    }
+
+    /// <summary>
+    /// A player who joins a running match builds the city its peers are already playing.
+    /// </summary>
+    /// <remarks>
+    /// Their own row is on the roster by the time they bootstrap, so generating a city from it
+    /// would seat them under their own name where every peer seated a computer player under a
+    /// derived one. Both feed the state hash, so turn one would desync.
+    /// </remarks>
+    [Fact]
+    public async Task ALatePlayerTakesTheCityItsPeersAreOnRatherThanGeneratingItsOwn()
+    {
+        var definitions = BundledOriginalData.Load();
+        IReadOnlyList<PlayerView> seatedAtStart = [Roster[0]];
+        var bootstrap = new MatchReplayRecorder(
+            MatchBootstrapFactory.Create(definitions, Seed, GameSettings, seatedAtStart));
+        CommandPhase.Enter(bootstrap);
+        var snapshot = new SnapshotView(
+            0,
+            NativeSaveSerializer.CurrentFormatVersion,
+            MatchStateHasher.ComputeSha256(bootstrap.State),
+            "p1",
+            "2026-09-10T11:59:30.000Z",
+            MatchStateClone.ToBase64(bootstrap.State));
+        IReadOnlyList<PlayerView> withLateJoiner =
+        [
+            Roster[0],
+            new("late-1", 1, "DAVE", WirePlayerStatus.Active, IsHost: false),
+        ];
+        var view = View() with { Players = withLateJoiner, LastEventSeq = 2 };
+        MatchEvent[] history =
+        [
+            new TurnOpenedEvent(1, MatchId, "2026-09-10T12:00:00.000Z", new(1, null)),
+            new MatchLatePlayerJoinedEvent(
+                2, MatchId, "2026-09-10T12:00:30.000Z", new("late-1", 1)),
+        ];
+        var (session, _, http) = Running(
+            ownPlayerId: "late-1",
+            matchView: view,
+            configure: fake =>
+            {
+                fake.Answer(HttpMethod.Get, "/snapshots/latest", snapshot);
+                fake.Answer(HttpMethod.Get, "/events", new EventPage(history));
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/turns/1/orders/mine",
+                    new OwnSubmissionView(1, null, Ready: false, OrdersHash: null));
+            },
+            joinedInProgress: true);
+        using var _ = http;
+        await using var __ = session;
+
+        var resumed = await WaitFor<MultiplayerNotice.Resumed>(session);
+
+        var expected = new MatchReplayRecorder(
+            MatchBootstrapFactory.Create(definitions, Seed, GameSettings, seatedAtStart));
+        CommandPhase.Enter(expected);
+        expected.TransferPlayerToHuman(new PlayerId(1));
+        Assert.True(session.IsRestoring);
+        Assert.Equal(1, resumed.State.Coordinator.Turn);
+        Assert.Equal("PLAYER 2", resumed.State.Players[1].Setup.Name);
+        Assert.Equal(PlayerController.Human, resumed.State.Players[1].Setup.Controller);
+        Assert.Equal(
+            MatchStateHasher.ComputeSha256(expected.State),
+            MatchStateHasher.ComputeSha256(resumed.State));
+    }
+
+    /// <summary>
+    /// The client the server promotes is the one that repairs the next desync.
+    /// </summary>
+    /// <remarks>
+    /// A flag read once at bootstrap left every surviving client waiting for a host that had left,
+    /// so nobody uploaded and the pause never lifted.
+    /// </remarks>
+    [Fact]
+    public async Task APromotedHostRepairsTheNextDesync()
+    {
+        var (session, server, http) = Running(ownPlayerId: "p2");
+        using var _ = http;
+        await using var __ = session;
+        Assert.False(session.IsHost);
+        IReadOnlyList<PlayerView> afterPromotion =
+        [
+            new("p1", 0, "ADA", WirePlayerStatus.Left, IsHost: false),
+            new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: true),
+        ];
+        server.Answer(
+            HttpMethod.Get,
+            $"/matches/{MatchId}",
+            new MatchDetail(
+                View() with { Players = afterPromotion, HostPlayerId = "p2" }, "CODE1234", "p2"));
+
+        server.Events.Write(Frame(8, "lobby.hostChanged", """{"hostPlayerId":"p2"}"""));
+        await WaitFor<MultiplayerNotice.MatchUpdated>(session);
+
+        Assert.True(session.IsHost);
+        var ours = MatchStateHasher.ComputeSha256(session.InitialState);
+        server.Events.Write(Frame(9, "turn.desynced", Desync(ours)));
+        var desynced = await WaitFor<MultiplayerNotice.Desynced>(session);
+
+        Assert.True(desynced.IsHostRepair);
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the repair upload");
+    }
+
     [Fact]
     public async Task RestartDuringTurnOneRestoresAnApprovedComputerSeat()
     {
@@ -360,6 +342,11 @@ public sealed class MultiplayerSessionTests
             matchView: view,
             configure: fake =>
             {
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/snapshots/latest",
+                    Envelope("no_snapshot"),
+                    HttpStatusCode.NotFound);
                 fake.Answer(HttpMethod.Get, "/events", new EventPage(history));
                 fake.Answer(
                     HttpMethod.Get,
@@ -447,6 +434,7 @@ public sealed class MultiplayerSessionTests
         var (session, server, http) = Running();
         using var _ = http;
         await using var __ = session;
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
 
         server.Events.Write(SealedFrame(8, 1));
@@ -459,6 +447,28 @@ public sealed class MultiplayerSessionTests
         await Until(() => server.CallsTo(HttpMethod.Post, "/turns/1/report") == 1, "the report");
         var report = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/turns/1/report"));
         Assert.Contains(resolved.StateHash, report, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task HostAutosavesEveryConfirmedTurnToTheServer()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+        server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+
+        server.Events.Write(SealedFrame(8, 1));
+        var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session);
+        server.Events.Write(Frame(
+            9,
+            "turn.confirmed",
+            $$"""{"turn":1,"stateHash":"{{resolved.StateHash}}"}"""));
+
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 2, "the autosave");
+        var upload = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/snapshots"),
+            body => body.Contains("\"turn\":1", StringComparison.Ordinal));
+        Assert.Contains("\"turn\":1", upload, StringComparison.Ordinal);
+        Assert.Contains(resolved.StateHash, upload, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -572,13 +582,16 @@ public sealed class MultiplayerSessionTests
         using var _ = http;
         await using var __ = session;
         var ours = MatchStateHasher.ComputeSha256(session.InitialState);
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
 
         server.Events.Write(Frame(8, "turn.desynced", Desync(ours)));
         var desynced = await WaitFor<MultiplayerNotice.Desynced>(session);
 
         Assert.True(desynced.IsHostRepair);
-        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the upload");
-        var upload = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/snapshots"));
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 2, "the upload");
+        var upload = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/snapshots"),
+            body => body.Contains("\"turn\":1", StringComparison.Ordinal)
+                && body.Contains(ours, StringComparison.Ordinal));
         Assert.Contains(ours, upload, StringComparison.Ordinal);
         // The body is a native save, so the version that describes it is the native save format's.
         Assert.Contains(
@@ -594,12 +607,13 @@ public sealed class MultiplayerSessionTests
         var (session, server, http) = Running();
         using var _ = http;
         await using var __ = session;
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
 
         server.Events.Write(Frame(8, "turn.desynced", Desync(new string('7', 64))));
         var desynced = await WaitFor<MultiplayerNotice.Desynced>(session);
 
         Assert.False(desynced.IsHostRepair);
-        Assert.Equal(0, server.CallsTo(HttpMethod.Post, "/snapshots"));
+        Assert.Equal(1, server.CallsTo(HttpMethod.Post, "/snapshots"));
     }
 
     /// <summary>
@@ -780,6 +794,29 @@ public sealed class MultiplayerSessionTests
         SealedTurnApplier.Apply(expected, SealedOrdersForSlots(1, 0));
         Assert.Equal(PlayerController.Computer, resolved.State.Players[1].Setup.Controller);
         Assert.Equal(MatchStateHasher.ComputeSha256(expected.State), resolved.StateHash);
+
+        IReadOnlyList<PlayerView> returnedRoster =
+        [
+            Roster[0],
+            new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: false),
+        ];
+        server.Answer(
+            HttpMethod.Get,
+            $"/matches/{MatchId}",
+            new MatchDetail(View() with { Players = returnedRoster, CurrentTurn = 2 }, "CODE1234", "p1"));
+        var secondTurn = SealedOrdersForSlots(2, 0, 1);
+        server.Answer(HttpMethod.Get, "/turns/2/orders", secondTurn);
+        server.Events.Write(Frame(
+            13, "match.playerReturned", """{"playerId":"p2","replacedComputer":true}"""));
+        server.Events.Write(Frame(
+            14, "turn.sealed",
+            $$"""{"turn":2,"orderSetHash":"{{secondTurn.OrderSetHash}}"}"""));
+
+        var returned = await WaitFor<MultiplayerNotice.TurnResolved>(session);
+        expected.TransferPlayerToHuman(new PlayerId(1));
+        SealedTurnApplier.Apply(expected, secondTurn);
+        Assert.Equal(PlayerController.Human, returned.State.Players[1].Setup.Controller);
+        Assert.Equal(MatchStateHasher.ComputeSha256(expected.State), returned.StateHash);
     }
 
     [Fact]
@@ -929,21 +966,4 @@ public sealed class MultiplayerSessionTests
                 handle, BundledOriginalData.Load(), View(), "nobody", ResumeAfterSeq: 0)));
         Assert.Contains("roster", failure.Message, StringComparison.OrdinalIgnoreCase);
     }
-
-    private static string Desync(params string[] candidates)
-    {
-        var hashes = string.Join(',', candidates.Select(hash => $"\"{hash}\""));
-        return $"{{\"turn\":1,\"reports\":[],\"candidateStateHashes\":[{hashes}]}}";
-    }
-
-    private static string Envelope(string reason) => JsonSerializer.Serialize(new
-    {
-        error = new
-        {
-            code = "conflict",
-            message = "refused",
-            details = new { reason },
-            requestId = "req1",
-        },
-    });
 }

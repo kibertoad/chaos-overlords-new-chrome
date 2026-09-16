@@ -36,12 +36,15 @@ internal static class MatchOutcomeValidator
         return value.Scenario == setup.Scenario
             && Enum.IsDefined(value.Reason)
             && value.Turn is >= 1 && value.Turn <= currentTurn
-            && value.Winners.Count > 0
             && value.Winners.Count == value.Winners.Distinct().Count()
             && value.Winners.All(players.Contains)
             && value.Standings.Count == players.Count
             && value.Standings.Select(standing => standing.Player).ToHashSet().SetEquals(players)
-            && value.Standings.All(standing => standing.Place is >= 1
+            // Place 0 is the ranking's own word for unranked, which is what every eliminated player
+            // gets, and an empty winner list is a match everybody lost. Demanding a place for each
+            // and a winner for the match is what used to make every finished match with an
+            // eliminated player in it refuse to load.
+            && value.Standings.All(standing => standing.Place is >= 0
                 && standing.Place <= players.Count)
             && value.Awards.Select(award => award.Award).Distinct().Count() == value.Awards.Count
             && value.Awards.All(award => Enum.IsDefined(award.Award)
@@ -102,6 +105,20 @@ public static class MatchOutcomeEvaluator
                 MatchEndReason.PlayerEliminated,
                 state.Coordinator.Turn,
                 [activePlayers[0].Id],
+                EndgameRankingEvaluator.Evaluate(state),
+                EndgameAwardEvaluator.Evaluate(state));
+        }
+        // Nobody left: the last two Right Hands can destroy each other in one Combat pass, and both
+        // owners are eliminated together. The match is over and no one won it. Without this the
+        // evaluator answered null and the board sat there for good, or the time limit produced an
+        // outcome with no winner in it and the match-ended event threw on the empty list.
+        if (activePlayers.Length == 0)
+        {
+            return new MatchOutcome(
+                state.Setup.Scenario,
+                MatchEndReason.PlayerEliminated,
+                state.Coordinator.Turn,
+                [],
                 EndgameRankingEvaluator.Evaluate(state),
                 EndgameAwardEvaluator.Evaluate(state));
         }

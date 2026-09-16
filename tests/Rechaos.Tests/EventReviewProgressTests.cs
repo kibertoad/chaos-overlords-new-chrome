@@ -84,13 +84,17 @@ public sealed class EventReviewProgressTests
                 GameNotificationKind.Influence, new GangId(0))
         };
 
-        archive.Store(player, reports);
+        archive.Store(player, 4, reports);
         reports.Clear();
 
-        Assert.Single(archive.For(player));
-        Assert.Empty(archive.For(new PlayerId(1)));
+        Assert.Single(archive.For(player, 4));
+        Assert.Empty(archive.For(new PlayerId(1), 4));
+        Assert.Empty(archive.For(player, 5));
+        archive.Store(player, 5, reports);
+        archive.Remove(player);
+        Assert.Empty(archive.For(player, 5));
         archive.Clear();
-        Assert.Empty(archive.For(player));
+        Assert.Empty(archive.For(player, 5));
     }
 
     [Fact]

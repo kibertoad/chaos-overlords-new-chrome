@@ -156,6 +156,7 @@ jobs:
           name: ChaosOverlordsNewChrome-win-x64
           path: artifacts/ChaosOverlordsNewChrome-win-x64
           if-no-files-found: error
+          retention-days: 1
 
       - name: Upload Windows installer
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -163,6 +164,7 @@ jobs:
           name: ChaosOverlords-NewChrome-Setup
           path: artifacts/ChaosOverlords-NewChrome-Setup-0.1.0.exe
           if-no-files-found: error
+          retention-days: 1
 
   package-linux:
     name: Linux installer
@@ -206,6 +208,7 @@ jobs:
           name: ChaosOverlords-NewChrome-linux-x64-Setup
           path: artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-0.1.0.deb
           if-no-files-found: error
+          retention-days: 1
 
   package-macos:
     name: macOS installer (${{ matrix.arch }})
@@ -263,3 +266,4 @@ jobs:
           name: ChaosOverlords-NewChrome-${{ matrix.runtime }}-Setup
           path: artifacts/ChaosOverlords-NewChrome-${{ matrix.runtime }}-Setup-0.1.0.pkg
           if-no-files-found: error
+          retention-days: 1

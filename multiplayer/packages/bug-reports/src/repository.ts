@@ -1,5 +1,5 @@
 import type { BugReportCodec, SubmitBugReportRequest } from '@chaos-overlords/contracts'
-import { desc, eq } from 'drizzle-orm'
+import { asc, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm'
 import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core'
 import type { BugReportRepository, StoredBugReport } from './ports'
 import type * as schema from './schema'
@@ -33,6 +33,31 @@ export function createBugReportRepository(db: BugReportDatabase): BugReportRepos
         .orderBy(desc(bugReports.receivedAt))
         .limit(limit)
       return rows.map(fromRow)
+    },
+
+    async bytesSince(since) {
+      const rows = await db
+        .select({ bytes: sql<number>`coalesce(sum(${bugReports.stateCompressedBytes}), 0)` })
+        .from(bugReports)
+        .where(gte(bugReports.receivedAt, since))
+      return Number(rows[0]?.bytes ?? 0)
+    },
+
+    async deleteBefore(before, limit) {
+      const doomed = await db
+        .select({ id: bugReports.id, blobKey: bugReports.blobKey })
+        .from(bugReports)
+        .where(lt(bugReports.receivedAt, before))
+        .orderBy(asc(bugReports.receivedAt))
+        .limit(limit)
+      if (doomed.length === 0) return []
+      await db.delete(bugReports).where(
+        inArray(
+          bugReports.id,
+          doomed.map((row) => row.id),
+        ),
+      )
+      return doomed.flatMap((row) => (row.blobKey === null ? [] : [row.blobKey]))
     },
   }
 }

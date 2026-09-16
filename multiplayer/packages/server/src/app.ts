@@ -52,6 +52,10 @@ function apiRoutes(): Hono<AppEnv> {
   // The doors a stranger can knock on, throttled per client address.
   api.use('/matches', rateLimited, bodyLimit({ maxSize: LIMITS.gameSettingsBytes + SMALL_BODY }))
   api.use('/matches/join', rateLimited, bodyLimit({ maxSize: SMALL_BODY }))
+  // `use(path, ...)` matches the path verbatim, so neither of the two above covers this one. It is
+  // a password-gated door like `/matches/join` and needs the same throttle and the same cap on a
+  // body that is buffered before anything validates it.
+  api.use('/matches/join-running', rateLimited, bodyLimit({ maxSize: SMALL_BODY }))
   // The third one. It is unauthenticated like the other two and far larger than either, so it gets
   // a budget of its own rather than borrowing the lobby's — see `RateLimiters.bugReport`.
   api.use(

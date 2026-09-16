@@ -16,17 +16,44 @@ export const requestId: MiddlewareHandler<AppEnv> = async (c, next) => {
   await next()
 }
 
-/** Resolves the bearer token to a principal or refuses with 401. */
+/**
+ * Resolves the bearer token to a principal or refuses with 401.
+ *
+ * A refusal is charged to the caller's address. The member limiter is keyed by player and cannot
+ * run until there is a player, so without this a stranger sending a made-up token drives one
+ * SHA-256 and one indexed lookup per request at line rate, against no budget at all. Guessing a
+ * 256-bit token is not the concern; the database reads are.
+ */
 export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   const header = c.req.header('authorization') ?? ''
   const [scheme, token] = header.split(' ', 2)
   if (scheme?.toLowerCase() !== 'bearer' || !token) {
+    chargeFailedAuth(c)
     throw new UnauthorizedError('Send the player token as a Bearer credential', {
       reason: 'missing_token',
     })
   }
-  c.set('principal', await c.get('container').kernel.auth.authenticate(token))
+  try {
+    c.set('principal', await c.get('container').kernel.auth.authenticate(token))
+  } catch (error) {
+    if (error instanceof UnauthorizedError) chargeFailedAuth(c)
+    throw error
+  }
   await next()
+}
+
+/**
+ * Spend one unit of the anonymous budget for a caller who failed to authenticate.
+ *
+ * It shares the budget with create and join deliberately: an address doing either at volume is the
+ * same address either way, and a separate tier would just be a second thing to size. A caller who
+ * is over budget is told so (429) instead of being told the token was wrong, which is the right
+ * order of refusals for a caller who has proved nothing.
+ */
+function chargeFailedAuth(c: Context<AppEnv>): void {
+  const container = c.get('container')
+  const key = (container.clientAddress ?? defaultClientAddress)(c)
+  enforce(container.rateLimiters, 'anonymous', key, c)
 }
 
 /** Fixed-window limiter on the unauthenticated doors, keyed by client address. */
@@ -76,10 +103,40 @@ function enforce(
   })
 }
 
-export function defaultClientAddress(c: Context<AppEnv>): string {
-  return (
-    c.req.header('cf-connecting-ip') ??
-    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ??
-    'unknown'
-  )
+/**
+ * The client address as a trusted proxy reports it.
+ *
+ * Only reached when the runtime has been told there IS a trusted proxy; see the Node container,
+ * which reads the socket address otherwise.
+ *
+ * Two rules, and both are about which parts of the chain the client could have written:
+ *
+ * 1. **The RIGHTMOST `X-Forwarded-For` entry**, not the leftmost. Proxies append, so the last entry
+ *    is the one the trusted proxy wrote and every entry to its left is whatever the client sent.
+ *    Reading the leftmost would let a caller put a different address on every request and never meet
+ *    the anonymous or bug-report limit, which are the only guards on the join-code door, the
+ *    password door and multi-megabyte uploads.
+ * 2. **`CF-Connecting-IP` only where Cloudflare sets it.** No other proxy strips or overwrites that
+ *    header, so behind anything else it is a field the client fills in itself. The Cloudflare runtime
+ *    passes `cloudflare: true`; nothing else does.
+ *
+ * A deployment behind two proxies (a CDN in front of a load balancer, say) has the CDN's address as
+ * the rightmost entry; `hops` says how many entries from the right to skip to reach the real client.
+ */
+export function defaultClientAddress(
+  c: Context<AppEnv>,
+  options: { cloudflare?: boolean; hops?: number } = {},
+): string {
+  if (options.cloudflare) {
+    const connecting = c.req.header('cf-connecting-ip')?.trim()
+    if (connecting) return connecting
+  }
+  const forwarded = c.req.header('x-forwarded-for')
+  if (!forwarded) return 'unknown'
+  const chain = forwarded
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== '')
+  const hops = Math.max(0, options.hops ?? 0)
+  return chain[chain.length - 1 - hops] ?? 'unknown'
 }

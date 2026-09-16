@@ -247,6 +247,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
             || inputs.Family7Count < 1
+            // Dead: no role is 5. See OriginalAiHireAdjustmentInputs.PreviousRole.
             || inputs.PreviousRole == 5;
         if (!changesFive)
         {
@@ -328,6 +329,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
             || inputs.Family7Count < 1
+            // Dead: no role is 10. See OriginalAiHireAdjustmentInputs.PreviousRole.
             || inputs.PreviousRole == 10;
         if (!changesTen)
         {
@@ -408,6 +410,18 @@ internal static class OriginalAiHireRoleRules
 
 internal readonly record struct OriginalAiHireRoleSelection(int RankingMode, int Role);
 
+/// <param name="PreviousRole">
+/// The hire role this player picked last turn, 0 to 6.
+/// <para>
+/// Every scenario's adjustment block compares this against the index of the schedule slot it
+/// guards, and those indices are not roles: Dominance tests 10 and Greed tests 5, neither of which
+/// any role can be, so both disjuncts are dead and the guard that should stop the AI repeating a
+/// family-6 hire never fires. The sibling scenarios test 6, 2 and 5, which a role can be, so they
+/// behave as though the comparison were meant for a role. Whether the original read a persisted
+/// slot here or a role has not been established from the binary, so this is left as the
+/// instruction-verified transcription rather than guessed into a different behaviour.
+/// </para>
+/// </param>
 internal readonly record struct OriginalAiHireAdjustmentInputs(
     int TurnsRemaining,
     int Cash,

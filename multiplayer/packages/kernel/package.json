@@ -1,8 +1,29 @@
 {
   "name": "@chaos-overlords/kernel",
   "version": "0.1.0",
-  "private": true,
   "description": "Runtime-neutral domain of the multiplayer server: entities, ports, pure turn logic and the lobby/turn/snapshot services.",
+  "keywords": [
+    "chaos-overlords",
+    "multiplayer",
+    "game-server",
+    "turn-based",
+    "domain",
+    "hexagonal",
+    "ports-and-adapters",
+    "lobby",
+    "turns"
+  ],
+  "license": "GPL-3.0-only",
+  "author": "kibertoad",
+  "homepage": "https://github.com/kibertoad/chaos-overlords-new-chrome/tree/main/multiplayer/packages/kernel#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kibertoad/chaos-overlords-new-chrome.git",
+    "directory": "multiplayer/packages/kernel"
+  },
+  "bugs": {
+    "url": "https://github.com/kibertoad/chaos-overlords-new-chrome/issues"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,11 +37,26 @@
       "default": "./dist/testing/index.js"
     }
   },
+  "files": [
+    "dist",
+    "!dist/.tsbuildinfo",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "prepublishOnly": "pnpm run build && node ../../scripts/prepublish.mjs"
   },
   "dependencies": {
     "@chaos-overlords/contracts": "workspace:*"

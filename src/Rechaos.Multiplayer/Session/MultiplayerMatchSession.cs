@@ -10,22 +10,6 @@ using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
 
 namespace Rechaos.Multiplayer.Session;
 
-/// <summary>What a session needs to start driving a match that has already been seated.</summary>
-/// <param name="Match">The token-bound handle for this player.</param>
-/// <param name="Definitions">The bundled gameplay tables the city is generated from.</param>
-/// <param name="View">The match as the server last described it; the seed and roster come from it.</param>
-/// <param name="OwnPlayerId">This client's player id, for reading its own row out of the roster.</param>
-/// <param name="ResumeAfterSeq">
-/// The last event sequence this client has already handled. Delivery is at least once, so resuming
-/// from it may repeat facts already applied; every handler here is idempotent for that reason.
-/// </param>
-public sealed record MultiplayerSessionOptions(
-    MatchHandle Match,
-    OriginalData Definitions,
-    MatchView View,
-    string OwnPlayerId,
-    int ResumeAfterSeq);
-
 /// <summary>
 /// Drives one online match: the event stream in, the turn barrier out, and an authoritative state
 /// that only ever advances by applying a sealed turn.
@@ -49,7 +33,7 @@ public sealed record MultiplayerSessionOptions(
 /// <see cref="MultiplayerNotice.Failed"/>.
 /// </para>
 /// </remarks>
-public sealed class MultiplayerMatchSession : IAsyncDisposable
+public sealed partial class MultiplayerMatchSession : IAsyncDisposable
 {
     private const int EventHistoryPageSize = 200;
 
@@ -60,17 +44,10 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     private readonly Dictionary<string, int> _slotsByPlayerId;
     private readonly Dictionary<string, PendingTakeoverVote> _takeoverVotes = new(StringComparer.Ordinal);
 
-    /// <summary>Guards <see cref="_pending"/>, which the game thread writes and the outbox reads.</summary>
-    private readonly object _outboxGate = new();
-
-    /// <summary>Wakes the outbox. Counting, so a spurious wake costs one re-check of nothing.</summary>
-    private readonly SemaphoreSlim _outboxSignal = new(0);
-
     /// <summary>Seats that have said they are done with <see cref="_readinessTurn"/>.</summary>
     private readonly HashSet<string> _readyPlayerIds = new(StringComparer.Ordinal);
-    private readonly HashSet<int> _locallyReadyTurns = [];
+    private readonly Dictionary<int, UploadSnapshotRequest> _pendingAutosaves = [];
 
-    private PendingOrders? _pending;
     private MatchReplayRecorder _replay;
     private Task? _pump;
     private Task? _outbox;
@@ -95,6 +72,18 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     /// the pump when the stream drops, and the outbox when a submission needs another attempt.
     /// </remarks>
     private int _connected = 1;
+    private bool _uploadInitialSnapshot;
+
+    /// <summary>
+    /// Whether this client is the host, as the roster last said.
+    /// </summary>
+    /// <remarks>
+    /// Written by the pump and read by the game thread, hence <c>volatile</c>. The server promotes
+    /// a successor whenever the host leaves, is kicked or is voted onto computer control, and the
+    /// promoted client is the only one that may repair a desync — so a flag frozen at bootstrap
+    /// would leave every client waiting on a host that no longer exists.
+    /// </remarks>
+    private volatile bool _isHost;
 
     private MultiplayerMatchSession(
         MultiplayerSessionOptions options,
@@ -111,8 +100,9 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         _resumeAfterSeq = options.ResumeAfterSeq;
         PlayerId = self.Id;
         Slot = self.Slot;
-        IsHost = self.IsHost;
+        _isHost = self.IsHost;
         IsRestoring = isRestoring;
+        _uploadInitialSnapshot = IsHost && !isRestoring;
     }
 
     /// <summary>This client's player id.</summary>
@@ -122,7 +112,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     public int Slot { get; }
 
     /// <summary>Whether this client is the one that repairs a desync by uploading a snapshot.</summary>
-    public bool IsHost { get; }
+    public bool IsHost => _isHost;
 
     /// <summary>Whether startup is reconstructing turns or handovers from durable history.</summary>
     public bool IsRestoring { get; }
@@ -172,7 +162,8 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         var replay = new MatchReplayRecorder(state);
         CommandPhase.Enter(replay);
 
-        var isRestoring = view.CurrentTurn > replay.State.Coordinator.Turn
+        var isRestoring = options.JoinedInProgress
+            || view.CurrentTurn > replay.State.Coordinator.Turn
             || view.Players.Any(player =>
                 player.Slot >= 0 && player.Status != WirePlayerStatus.Active);
         var session = new MultiplayerMatchSession(
@@ -188,57 +179,6 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
 
     /// <summary>The next thing the interface should know about, if anything is waiting.</summary>
     public bool TryDequeueNotice(out MultiplayerNotice notice) => _notices.TryDequeue(out notice!);
-
-    /// <summary>
-    /// Queues this player's order document for a turn, to be sent off the caller's thread.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// For a game loop, which cannot wait on a round trip. The answer arrives as
-    /// <see cref="MultiplayerNotice.OrdersAccepted"/> or
-    /// <see cref="MultiplayerNotice.OrdersRefused"/>.
-    /// </para>
-    /// <para>
-    /// Only the latest document is kept: the server replaces what it held rather than adding to it,
-    /// so a document superseded before it was ever sent has nothing in it the newer one lacks.
-    /// Readiness is the exception and accumulates — having said "I am done" is not something a later
-    /// draft of the same turn takes back.
-    /// </para>
-    /// </remarks>
-    public void QueueOrders(int turn, OrderDocument document, bool ready)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        lock (_outboxGate)
-        {
-            if (ready) _locallyReadyTurns.Add(turn);
-            var carriedReady = _locallyReadyTurns.Contains(turn)
-                || (_pending is { } pending && pending.Turn == turn && pending.Ready);
-            _pending = new PendingOrders(turn, document, carriedReady);
-        }
-        _outboxSignal.Release();
-    }
-
-    /// <summary>
-    /// Sends this player's order document for a turn, with readiness, and waits for the answer.
-    /// </summary>
-    /// <remarks>
-    /// The whole document goes every time, not a delta: the server replaces what it held, and the
-    /// turn seals in this same call when readiness completes the roster. A submission that lands
-    /// after the seal is refused rather than folded in, so a caller that loses that race re-plans
-    /// against the next turn. For the game loop use <see cref="QueueOrders"/> instead.
-    /// </remarks>
-    public Task<OwnSubmissionView> SubmitOrdersAsync(
-        int turn,
-        OrderDocument document,
-        bool ready,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        return CallAsync(
-            token => _match.SubmitOrdersAsync(
-                turn, new SubmitOrdersRequest(document, ready), token),
-            cancellationToken);
-    }
 
     /// <summary>Votes on whether an absent player's seat should become computer-controlled.</summary>
     public Task VoteOnTakeoverAsync(
@@ -297,7 +237,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     /// Reads the log forever, acting on every fact.
     /// </summary>
     /// <remarks>
-    /// A failure that ends the stream ends the session with it: a revoked token means the player left
+    /// A failure that ends the stream ends the session with it: a revoked token means the player was kicked
     /// or was kicked, and there is nothing left to read. Everything that describes one attempt is
     /// retried — the stream by itself, and the calls a fact leads to by <see cref="CallAsync"/>.
     /// </remarks>
@@ -310,6 +250,11 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
             onConnected: () => Report(connected: true, detail: null));
         try
         {
+            if (_uploadInitialSnapshot)
+            {
+                await UploadInitialSnapshotAsync(cancellationToken).ConfigureAwait(false);
+                _uploadInitialSnapshot = false;
+            }
             await foreach (var @event in stream
                 .ReadAsync(_resumeAfterSeq, cancellationToken).ConfigureAwait(false))
             {
@@ -343,6 +288,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                 _notices.Enqueue(new MultiplayerNotice.MatchAbandoned());
                 return;
             }
+            AdoptHost(view);
             _awaitedSeats = view.Players.Count(
                 player => player.Slot >= 0 && IsAwaitedHuman(player));
             InitialDeadline = ParseInstant(view.Turn?.DeadlineAt);
@@ -353,12 +299,12 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                     $"a started match cannot be on turn {view.CurrentTurn}");
             }
 
-            if (view.CurrentTurn > 1)
-            {
-                var snapshot = await LatestSnapshotOrNullAsync(cancellationToken)
-                    .ConfigureAwait(false);
-                if (snapshot is not null) AdoptResumeSnapshot(snapshot, view.CurrentTurn);
-            }
+            // Turn 1 included. The host uploads a bootstrap snapshot for turn 0, and that row is the
+            // latest one until a confirmed turn has been autosaved — so a client that skipped it on
+            // turn 1 either refused the only snapshot there was, or bootstrapped a city of its own
+            // next to everyone else's.
+            var snapshot = await LatestSnapshotOrNullAsync(cancellationToken).ConfigureAwait(false);
+            if (snapshot is not null) AdoptResumeSnapshot(snapshot, view.CurrentTurn);
 
             await ReplayEventHistoryAsync(view.LastEventSeq, cancellationToken)
                 .ConfigureAwait(false);
@@ -468,6 +414,14 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                 _takeoverVotes.Remove(takenOver.Payload.PlayerId);
                 TransferPlayerToComputer(takenOver.Payload.PlayerId);
                 return;
+            case MatchPlayerReturnedEvent returned:
+                _takeoverVotes.Remove(returned.Payload.PlayerId);
+                if (returned.Payload.ReplacedComputer)
+                    TransferPlayerToHuman(returned.Payload.PlayerId);
+                return;
+            case MatchLatePlayerJoinedEvent joined:
+                AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot);
+                return;
             case TurnSealedEvent sealedTurn:
                 if (sealedTurn.Payload.Turn < _replay.State.Coordinator.Turn) return;
                 if (sealedTurn.Payload.Turn > _replay.State.Coordinator.Turn)
@@ -525,9 +479,14 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         }
     }
 
+    /// <remarks>
+    /// Turn 0 is the host's bootstrap snapshot, taken before a single turn was played. It restores
+    /// like any other — the state it holds is the one every client generates for turn 1 — and it is
+    /// the only snapshot a match has until the first turn is confirmed.
+    /// </remarks>
     private void AdoptResumeSnapshot(SnapshotView snapshot, int currentTurn)
     {
-        if (snapshot.Turn < 1 || snapshot.Turn >= currentTurn)
+        if (snapshot.Turn < 0 || snapshot.Turn >= currentTurn)
         {
             throw new MultiplayerProtocolException(
                 $"the latest snapshot is for turn {snapshot.Turn}, but the server is on turn "
@@ -557,50 +516,6 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         _replay = new MatchReplayRecorder(restored);
     }
 
-    /// <summary>
-    /// Sends whatever the interface last queued, one document at a time.
-    /// </summary>
-    /// <remarks>
-    /// A refusal is reported and forgotten rather than ending the session: a turn that sealed while
-    /// the player was still typing is an ordinary race, and the next turn is still theirs to play.
-    /// </remarks>
-    private async Task DrainOutboxAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                await _outboxSignal.WaitAsync(cancellationToken).ConfigureAwait(false);
-                PendingOrders? next;
-                lock (_outboxGate)
-                {
-                    next = _pending;
-                    _pending = null;
-                }
-                if (next is null) continue;
-                try
-                {
-                    await CallAsync(
-                        token => _match.SubmitOrdersAsync(
-                            next.Turn, new SubmitOrdersRequest(next.Document, next.Ready), token),
-                        cancellationToken).ConfigureAwait(false);
-                    _notices.Enqueue(new MultiplayerNotice.OrdersAccepted(next.Turn, next.Ready));
-                }
-                catch (Exception exception) when (exception is MultiplayerApiException
-                    or MultiplayerProtocolException or MultiplayerTimeoutException
-                    or HttpRequestException or IOException)
-                {
-                    _notices.Enqueue(
-                        new MultiplayerNotice.OrdersRefused(next.Turn, Describe(exception)));
-                }
-            }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            // Ordinary shutdown.
-        }
-    }
-
     private async Task HandleAsync(MatchEvent @event, CancellationToken cancellationToken)
     {
         switch (@event)
@@ -611,6 +526,10 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                         sealedTurn.Payload.Turn,
                         sealedTurn.Payload.OrderSetHash,
                         cancellationToken)
+                    .ConfigureAwait(false);
+                return;
+            case TurnConfirmedEvent confirmed:
+                await AutosaveConfirmedTurnAsync(confirmed, cancellationToken)
                     .ConfigureAwait(false);
                 return;
             case TurnDesyncedEvent desynced:
@@ -662,6 +581,18 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                 _notices.Enqueue(new MultiplayerNotice.TakeoverVoteClosed(
                     takenOver.Payload.PlayerId, ComputerControl: true));
                 return;
+            case MatchPlayerReturnedEvent returned:
+                _takeoverVotes.Remove(returned.Payload.PlayerId);
+                if (returned.Payload.ReplacedComputer)
+                    TransferPlayerToHuman(returned.Payload.PlayerId);
+                await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
+                _notices.Enqueue(new MultiplayerNotice.TakeoverVoteClosed(
+                    returned.Payload.PlayerId, ComputerControl: false));
+                return;
+            case MatchLatePlayerJoinedEvent joined:
+                AddLatePlayer(joined.Payload.PlayerId, joined.Payload.Slot);
+                await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
+                return;
             case LobbyPlayerJoinedEvent or LobbyHostChangedEvent:
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 return;
@@ -691,6 +622,15 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         var stateHash = await FetchAndApplySealedTurnAsync(
                 turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
+        if (IsHost)
+        {
+            _pendingAutosaves[turn] = new UploadSnapshotRequest(
+                turn,
+                NativeSaveSerializer.CurrentFormatVersion,
+                stateHash,
+                MatchStateClone.ToBase64(_replay.State),
+                SummarizeSeats(_replay.State));
+        }
         await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
             turn, MatchStateClone.Of(_replay.State, _definitions), stateHash));
@@ -717,15 +657,6 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                 $"the sealed set for turn {turn} does not match the digest the server announced");
         }
         return SealedTurnApplier.Apply(_replay, sealedOrders);
-    }
-
-    /// <summary>Applies an approved handover once; merely leaving never transfers control.</summary>
-    private void TransferPlayerToComputer(string playerId)
-    {
-        if (!_slotsByPlayerId.TryGetValue(playerId, out var slot)) return;
-        var player = _replay.State.FindPlayer(new PlayerId(slot));
-        if (player is null || player.Setup.Controller == PlayerController.Computer) return;
-        _replay.TransferPlayerToComputer(player.Id);
     }
 
     private PendingTakeoverVote BeginTakeoverVote(string playerId, int turn)
@@ -776,7 +707,8 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
                     // save format's — not the replay format's, which says nothing about these bytes.
                     NativeSaveSerializer.CurrentFormatVersion,
                     ours,
-                    MatchStateClone.ToBase64(_replay.State)),
+                    MatchStateClone.ToBase64(_replay.State),
+                    SummarizeSeats(_replay.State)),
                 token),
             cancellationToken).ConfigureAwait(false);
     }
@@ -849,6 +781,7 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
     {
         var detail = await CallAsync(
             token => _match.GetAsync(token), cancellationToken).ConfigureAwait(false);
+        AdoptHost(detail.Match);
         _awaitedSeats = detail.Match.Players.Count(
             player => player.Slot >= 0 && IsAwaitedHuman(player));
         // A seat that has gone quiet is also no longer one the turn is waiting on, so drop any
@@ -856,7 +789,29 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         _readyPlayerIds.RemoveWhere(
             ready => !detail.Match.Players.Any(
                 player => player.Id == ready && IsAwaitedHuman(player)));
+        // The tally on screen changes when a seat is vacated, not only when somebody toggles
+        // readiness, so it is said here too — otherwise "READY 2/4" keeps a seat count that is no
+        // longer true until the next player happens to toggle.
+        PublishReadiness();
         _notices.Enqueue(new MultiplayerNotice.MatchUpdated(detail.Match));
+    }
+
+    /// <summary>Follows the roster's word on who hosts; the promoted client repairs desyncs.</summary>
+    private void AdoptHost(MatchView view) =>
+        _isHost = string.Equals(view.HostPlayerId, PlayerId, StringComparison.Ordinal);
+
+    /// <summary>
+    /// Says how many of the awaited seats have finished the turn being planned.
+    /// </summary>
+    /// <remarks>
+    /// Readiness belongs to one turn: a tally kept for an earlier one says nothing about this one,
+    /// so it counts as nobody ready rather than carrying the old count forward.
+    /// </remarks>
+    private void PublishReadiness()
+    {
+        var turn = _replay.State.Coordinator.Turn;
+        _notices.Enqueue(new MultiplayerNotice.ReadinessChanged(
+            turn, _readinessTurn == turn ? _readyPlayerIds.Count : 0, _awaitedSeats));
     }
 
     /// <summary>
@@ -913,14 +868,6 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
             turn, _readyPlayerIds.Count, _awaitedSeats));
     }
 
-    /// <summary>
-    /// What a change of match status means for the player.
-    /// </summary>
-    /// <remarks>
-    /// Abandoned is as final as finished and easier to miss: the server gives up on a match nobody is
-    /// playing any more, and a client that only watched for <c>finished</c> would sit waiting for a
-    /// turn that is never going to seal.
-    /// </remarks>
     private void HandleStatus(MatchStatus status)
     {
         switch (status)
@@ -978,9 +925,6 @@ public sealed class MultiplayerMatchSession : IAsyncDisposable
         MultiplayerTimeoutException timeout => timeout.Message,
         _ => "The connection to the match was lost.",
     };
-
-    /// <summary>An order document waiting to be sent, and whether it completes the player's turn.</summary>
-    private sealed record PendingOrders(int Turn, OrderDocument Document, bool Ready);
 
     private sealed record PendingTakeoverVote(string PlayerId, int Turn)
     {

@@ -27,6 +27,9 @@ public sealed class GamePreferencesStoreTests : IDisposable
             preferences.SmoothEventSiteImages);
         Assert.Equal(GamePreferences.IntroMoviesSeenByDefault, preferences.IntroMoviesSeen);
         Assert.Equal(OriginalOptionsPolicy.AiPolicyByDefault, preferences.DefaultAiPolicy);
+        Assert.Equal(OnlineServiceMode.Central, preferences.OnlineService);
+        Assert.Equal(GamePreferences.DefaultCustomMultiplayerServer,
+            preferences.CustomMultiplayerServer);
     }
 
     [Fact]
@@ -35,7 +38,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
         var expected = new GamePreferences(
             GamePreferences.CurrentFormatVersion, 8, 3, false,
             PlanningTimeLimit.TwoMinutes, true, false, false, true, true, true,
-            AiPolicyMode.Advanced);
+            AiPolicyMode.Advanced, OnlineServiceMode.Custom, "https://games.example.test");
 
         Assert.True(GamePreferencesStore.TrySave(Path(), expected));
 
@@ -145,6 +148,26 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(AiPolicyMode.Original, preferences.DefaultAiPolicy);
     }
 
+    [Fact]
+    public void VersionNinePreferencesMigrateToTheCentralService()
+    {
+        File.WriteAllText(Path(), """
+            {"FormatVersion":9,"MusicVolumeLevel":8,"SoundEffectVolumeLevel":3,
+             "WarnIfIdleGangs":false,"PlanningTimeLimit":2,
+             "ShowBaseStatistics":true,"DetailedCombat":false,"SlidePanels":true,
+             "Fullscreen":true,"SmoothEventSiteImages":true,"IntroMoviesSeen":true,
+             "DefaultAiPolicy":1}
+            """);
+
+        var preferences = GamePreferencesStore.LoadOrDefault(Path());
+
+        Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
+        Assert.Equal(OnlineServiceMode.Central, preferences.OnlineService);
+        Assert.Equal(GamePreferences.DefaultCustomMultiplayerServer,
+            preferences.CustomMultiplayerServer);
+        Assert.Equal(AiPolicyMode.Advanced, preferences.DefaultAiPolicy);
+    }
+
     [Theory]
     [InlineData("not-json")]
     [InlineData("{\"FormatVersion\":1,\"MusicVolumeLevel\":8}")]
@@ -168,7 +191,8 @@ public sealed class GamePreferencesStoreTests : IDisposable
             Path(), new GamePreferences(
                 GamePreferences.CurrentFormatVersion, -1, 5, true,
                 PlanningTimeLimit.None, false, true, false, false, false, false,
-                AiPolicyMode.Original)));
+                AiPolicyMode.Original, OnlineServiceMode.Central,
+                GamePreferences.DefaultCustomMultiplayerServer)));
         Assert.False(File.Exists(Path()));
     }
 
@@ -179,7 +203,23 @@ public sealed class GamePreferencesStoreTests : IDisposable
             Path(), new GamePreferences(
                 GamePreferences.CurrentFormatVersion, 5, 5, true,
                 PlanningTimeLimit.None, false, true, false, false, false, false,
-                (AiPolicyMode)99)));
+                (AiPolicyMode)99, OnlineServiceMode.Central,
+                GamePreferences.DefaultCustomMultiplayerServer)));
+        Assert.False(File.Exists(Path()));
+    }
+
+    [Theory]
+    [InlineData(OnlineServiceMode.Custom, "not-a-url")]
+    [InlineData((OnlineServiceMode)99, "https://games.example.test")]
+    public void InvalidOnlineServicePreferencesAreNotWritten(
+        OnlineServiceMode service,
+        string server)
+    {
+        Assert.False(GamePreferencesStore.TrySave(
+            Path(), new GamePreferences(
+                GamePreferences.CurrentFormatVersion, 5, 5, true,
+                PlanningTimeLimit.None, false, true, false, false, false, false,
+                AiPolicyMode.Original, service, server)));
         Assert.False(File.Exists(Path()));
     }
 

@@ -35,6 +35,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string _autoSavePath;
     private readonly string _replayPath;
     private readonly string _preferencesPath;
+    private readonly string _multiplayerRecoveryPath;
     private readonly bool _debugPhaseStepping;
     private readonly RuntimeDiagnostics? _diagnostics;
     private SpriteBatch? _batch;
@@ -109,7 +110,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly LocalSetupRoster _localSetupRoster = new();
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
-    private ScenarioId _selectedScenario = ScenarioId.Greed;
+    private ScenarioId _selectedScenario = SetupScenarioButtons.DefaultScenario;
     private GameDuration _selectedDuration = GameDuration.SixMonths;
     private int _cursor;
     private int _selectedGangIndex;
@@ -218,6 +219,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _autoSavePath = Path.Combine(userDataRoot, "autosave.rchsave");
         _replayPath = Path.Combine(userDataRoot, "last-match.rchreplay");
         _preferencesPath = Path.Combine(userDataRoot, "preferences.json");
+        _multiplayerRecoveryPath = Path.Combine(userDataRoot, "multiplayer-recovery.json");
         var preferences = GamePreferencesStore.LoadOrDefault(_preferencesPath);
         _musicVolumeLevel = preferences.MusicVolumeLevel;
         _soundEffectVolumeLevel = preferences.SoundEffectVolumeLevel;
@@ -230,6 +232,16 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _smoothEventSiteImages = preferences.SmoothEventSiteImages;
         _introMoviesSeen = preferences.IntroMoviesSeen;
         _defaultAiPolicy = preferences.DefaultAiPolicy;
+        _online.Service = preferences.OnlineService;
+        _online.Server.Set(preferences.CustomMultiplayerServer);
+        _multiplayerRecoveries.AddRange(MultiplayerRecoveryStore.LoadAll(_multiplayerRecoveryPath));
+        if (LatestOnlineRecovery is { } recovery)
+        {
+            _online.JoinCode.Set(recovery.JoinCode);
+            _online.DisplayName.Set(recovery.DisplayName);
+            if (recovery.ShouldSuggestReconnect)
+                _message = "ONLINE MATCH INTERRUPTED  OPEN ONLINE TO RECONNECT";
+        }
         _graphics = new GraphicsDeviceManager(this)
         {
             PreferredBackBufferWidth = 1280,
@@ -416,7 +428,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 else if (Pressed(keyboard, Keys.O)) OpenOptions();
                 else if (Pressed(keyboard, Keys.Escape))
                 {
-                    if (_state is not null && _screens.Current is not ClientScreen.Title)
+                    if (_configuringOnlineLobby) CloseOnlineSetup();
+                    else if (_state is not null && _screens.Current is not ClientScreen.Title)
                         OpenGameMenu();
                     else if (!_screens.Back()) Exit();
                 }
@@ -433,8 +446,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     UpdateOnline(keyboard);
                     break;
                 case ClientScreen.Lobby:
-                    if (Pressed(keyboard, Keys.Enter)) StartHostedMatch();
-                    else PollLobby(gameTime);
+                    UpdateLobby(keyboard, gameTime);
                     break;
                 case ClientScreen.City:
                     UpdateCity(keyboard);
@@ -830,13 +842,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     PlanningTimerLayout.SetupChoices.ToArray(),
                     rectangle => rectangle.Contains(point));
                 var setupButton = SetupButtonLayout.HitTest(point);
-                var playerName = _localSetupRoster.HumanSlots
+                var playerName = (_configuringOnlineLobby ? [] : _localSetupRoster.HumanSlots)
                     .FirstOrDefault(index => PlayerPortraitLayout.Name(index).Contains(point), -1);
-                var previousPortrait = _localSetupRoster.HumanSlots
+                var previousPortrait = (_configuringOnlineLobby ? [] : _localSetupRoster.HumanSlots)
                     .FirstOrDefault(index => PlayerPortraitLayout.Previous(index).Contains(point), -1);
-                var nextPortrait = _localSetupRoster.HumanSlots
+                var nextPortrait = (_configuringOnlineLobby ? [] : _localSetupRoster.HumanSlots)
                     .FirstOrDefault(index => PlayerPortraitLayout.Next(index).Contains(point), -1);
-                var draggedPlayer = _localSetupRoster.HumanSlots
+                var draggedPlayer = (_configuringOnlineLobby ? [] : _localSetupRoster.HumanSlots)
                     .FirstOrDefault(index => PlayerPortraitLayout.SetupLarge(index).Contains(point), -1);
                 if (_editingPlayerName is not null
                     && (setupButton is not null || playerName != _editingPlayerName))

@@ -1,5 +1,6 @@
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -146,6 +147,40 @@ public sealed class MatchOutcomeTests
                 new MatchStanding(new PlayerId(1), 1, match.Players[1].Cash)],
             match.Outcome.Standings);
         Assert.Single(match.Events, value => value.Kind == GameEventKind.MatchEnded);
+    }
+
+    [Fact]
+    public void MutualEliminationEndsTheMatchWithNobodyWinningIt()
+    {
+        var match = CreateMatch(ScenarioId.Big40, playerZeroForce: 0, playerOneForce: 0);
+
+        FinishTurn(match);
+
+        var outcome = Assert.IsType<MatchOutcome>(match.Outcome);
+        Assert.Equal(MatchEndReason.PlayerEliminated, outcome.Reason);
+        Assert.Empty(outcome.Winners);
+        Assert.All(match.Players, player =>
+            Assert.Equal(PlayerStatus.Eliminated, player.Status));
+        Assert.All(outcome.Standings, standing => Assert.Equal(0, standing.Place));
+        Assert.Single(match.Events, value => value.Kind == GameEventKind.MatchEnded);
+    }
+
+    [Fact]
+    public void AFinishedMatchWithAnEliminatedPlayerLoadsBackFromASave()
+    {
+        var match = CreateMatch(ScenarioId.Greed, playerOneForce: 0);
+        FinishTurn(match);
+        Assert.Equal(PlayerStatus.Eliminated, match.Players[1].Status);
+        Assert.Contains(match.Outcome!.Standings, standing => standing.Place == 0);
+
+        using var stream = new MemoryStream();
+        NativeSaveSerializer.Save(stream, match);
+        stream.Position = 0;
+        var restored = NativeSaveSerializer.Load(stream, match.Definitions);
+
+        Assert.Equal(match.Outcome.Winners, restored.Outcome!.Winners);
+        Assert.Equal(match.Outcome.Standings, restored.Outcome.Standings);
+        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
     }
 
     [Fact]

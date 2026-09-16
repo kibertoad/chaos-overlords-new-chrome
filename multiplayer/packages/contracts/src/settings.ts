@@ -43,7 +43,7 @@ export const matchVisibilitySchema = picklist(['public', 'private'])
 
 export const matchSettingsSchema = strictObject({
   name: matchNameSchema,
-  maxPlayers: pipe(number(), integer(), minValue(2), maxValue(6)),
+  maxPlayers: pipe(number(), integer(), minValue(1), maxValue(6)),
   /**
    * Seconds, or 0 for no timer. One piped number rather than a union of `literal(0)` and a range:
    * a union of a literal with a number has no C# type that holds both, so the generator falls back

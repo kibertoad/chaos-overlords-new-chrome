@@ -31,6 +31,8 @@ public sealed class AudioRoutingTests
         Assert.Equal(GeneralSoundSlot.IncomingMessageAlert,
             AudioRouting.IncomingMessageSound(hasUnread: true));
         Assert.Null(AudioRouting.IncomingMessageSound(hasUnread: false));
+        Assert.Equal(GeneralSoundSlot.IncomingMessageAlert,
+            AudioRouting.OnlineTurnReadySound());
         Assert.Equal("SND00208.wav",
             AudioRouting.GeneralSoundFile(GeneralSoundSlot.LoadedWithoutCallSite));
         Assert.Throws<ArgumentOutOfRangeException>(() => AudioRouting.GeneralSoundFile(5));

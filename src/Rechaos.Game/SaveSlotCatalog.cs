@@ -43,7 +43,12 @@ public static class SaveSlotCatalog
         try
         {
             var recovered = NativeSaveStore.LoadRecoveringBackup(path, definitions);
-            var timestamp = File.GetLastWriteTimeUtc(path);
+            // The backup's own time when recovery could not put the primary back (a read-only
+            // directory, a full disk). Asking the file system for a file that is not there answers
+            // 1601-01-01, which the browser would then show and sort the row by.
+            var timestamp = File.Exists(path)
+                ? File.GetLastWriteTimeUtc(path)
+                : File.GetLastWriteTimeUtc(path + NativeSaveStore.BackupSuffix);
             var metadata = ReadMetadata(path);
             return Summarize(
                 slot, metadata?.Name, timestamp, recovered.State, metadata?.Online ?? false,

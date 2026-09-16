@@ -10,3 +10,11 @@ dist/
 *.db-wal
 .env
 .dev.vars
+
+# Licence texts are copied into each publishable package from the repository root by
+# scripts/prepublish.mjs, so every npm tarball carries its own copy.
+packages/*/LICENSE
+packages/*/NOTICE
+runtimes/*/LICENSE
+runtimes/*/NOTICE
+pnpm-publish-summary.json

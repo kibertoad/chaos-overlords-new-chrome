@@ -41,7 +41,7 @@ describe('joinMatchRequestSchema', () => {
 })
 
 describe('uploadSnapshotRequestSchema', () => {
-  const base = { turn: 1, formatVersion: 1, stateHash: 'a'.repeat(64) }
+  const base = { turn: 1, formatVersion: 1, stateHash: 'a'.repeat(64), seatSummaries: [] }
 
   /** The server never decodes the body, so this is the only chance to notice it cannot be decoded. */
   it('refuses base64 that could never decode', () => {
@@ -50,6 +50,19 @@ describe('uploadSnapshotRequestSchema', () => {
     expect(safeParse(uploadSnapshotRequestSchema, { ...base, body: '' }).success).toBe(true)
     expect(safeParse(uploadSnapshotRequestSchema, { ...base, body: 'QUJDQ' }).success).toBe(false)
     expect(safeParse(uploadSnapshotRequestSchema, { ...base, body: 'QU_J' }).success).toBe(false)
+  })
+
+  /**
+   * The summaries are merged into the settings blob, which is served on every match read and in
+   * every public listing. There are six seats, so an array longer than six describes nothing.
+   */
+  it('takes one summary per seat and no seat twice', () => {
+    const summary = (slot: number) => ({ slot, gangs: 1, sites: 1, sectors: 1 })
+    const withSummaries = (seatSummaries: unknown) =>
+      safeParse(uploadSnapshotRequestSchema, { ...base, body: 'QUJD', seatSummaries }).success
+    expect(withSummaries([0, 1, 2, 3, 4, 5].map(summary))).toBe(true)
+    expect(withSummaries([0, 1, 2, 3, 4, 5, 5].map(summary))).toBe(false)
+    expect(withSummaries([summary(2), summary(2)])).toBe(false)
   })
 })
 

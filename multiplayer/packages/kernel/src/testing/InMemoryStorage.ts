@@ -46,15 +46,21 @@ export class InMemoryStorage implements MultiplayerStorage {
     listPublicLobbies: async (limit) => {
       const lobbies: LobbyListing[] = []
       for (const match of this.matchRows.values()) {
-        if (match.status !== 'lobby' || match.settings.visibility !== 'public') continue
+        if (!['lobby', 'running'].includes(match.status) || match.settings.visibility !== 'public')
+          continue
         const host = this.playerRows.get(match.hostPlayerId)
         lobbies.push({
           id: match.id,
+          joinCode: match.joinCode,
           name: match.settings.name,
           hostDisplayName: host?.displayName ?? '',
           playerCount: match.seatCount,
           maxPlayers: match.settings.maxPlayers,
           passwordProtected: match.passwordHash !== null,
+          status: match.status,
+          settings: match.settings,
+          availableSlots: [],
+          availableSeatSummaries: [],
           createdAt: match.createdAt.toISOString(),
         })
       }
@@ -75,9 +81,38 @@ export class InMemoryStorage implements MultiplayerStorage {
       const match = this.matchRows.get(matchId)
       if (match && match.seatCount > 0) match.seatCount -= 1
     },
+    updateSettings: async (matchId, settings, updatedAt) => {
+      const match = this.matchRows.get(matchId)
+      if (match?.status !== 'lobby' || settings.maxPlayers < match.seatCount) return false
+      match.settings = structuredClone(settings)
+      match.updatedAt = updatedAt
+      return true
+    },
+    updateRuntimeGameSettings: async (matchId, gameSettings, updatedAt) => {
+      const match = this.matchRows.get(matchId)
+      if (match?.status !== 'running' && match?.status !== 'desynced') return false
+      match.settings = { ...match.settings, gameSettings: structuredClone(gameSettings) }
+      match.updatedAt = updatedAt
+      return true
+    },
     deleteInactive: async (statuses, before, limit) => {
       const doomed = [...this.matchRows.values()]
         .filter((match) => statuses.includes(match.status) && match.updatedAt < before)
+        .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())
+        .slice(0, limit)
+      for (const match of doomed) this.deleteMatch(match.id)
+      return doomed.length
+    },
+    deleteAbandonedLive: async (before, limit) => {
+      const doomed = [...this.matchRows.values()]
+        .filter(
+          (match) =>
+            (match.status === 'running' || match.status === 'desynced') &&
+            match.updatedAt < before &&
+            ![...this.playerRows.values()].some(
+              (player) => player.matchId === match.id && player.status === 'active',
+            ),
+        )
         .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())
         .slice(0, limit)
       for (const match of doomed) this.deleteMatch(match.id)
@@ -101,6 +136,18 @@ export class InMemoryStorage implements MultiplayerStorage {
       }
       // Conditional on the lobby, like the conditional insert the real repositories use.
       if (this.matchRows.get(player.matchId)?.status !== 'lobby') return false
+      this.playerRows.set(player.id, { ...player })
+      return true
+    },
+    createLate: async (player) => {
+      const match = this.matchRows.get(player.matchId)
+      if (match?.status !== 'running') return false
+      if (
+        [...this.playerRows.values()].some(
+          (candidate) => candidate.matchId === player.matchId && candidate.slot === player.slot,
+        )
+      )
+        return false
       this.playerRows.set(player.id, { ...player })
       return true
     },

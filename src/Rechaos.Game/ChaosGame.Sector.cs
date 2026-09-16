@@ -83,13 +83,9 @@ public sealed partial class ChaosGame
         }
         var ownGangs = _state.FindPlayer(playerId)!.Gangs.Where(candidate => candidate.IsActive).ToArray();
         _selectedGangIndex = Array.FindIndex(ownGangs, candidate => candidate.Id == gang.Id);
-        if (gang.QueuedCommand is { } queued
-            && SectorGangCardLayout.AssignedCommand(index).Contains(point))
-            OpenCommands(queued.Command.Repeat, ClientScreen.Sector);
-        else if (SectorGangCardLayout.OneOffAction(index).Contains(point))
-            OpenCommands(repeat: false, returnScreen: ClientScreen.Sector);
-        else if (SectorGangCardLayout.RepeatingAction(index).Contains(point))
-            OpenCommands(repeat: true, returnScreen: ClientScreen.Sector);
+        var repeat = SectorGangCardLayout.ActionRepeatAt(index, point);
+        if (repeat is { } selectedRepeat)
+            OpenCommands(selectedRepeat, ClientScreen.Sector);
         else if (SectorGangCardLayout.Portrait(index).Contains(point))
             BeginGangDrag(gang, point);
         else if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
@@ -488,13 +484,16 @@ public sealed partial class ChaosGame
 
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var player = state.FindPlayer(playerId)!;
-        foreach (var gang in player.Gangs.Where(gang => gang.IsActive))
-            if (SectorDetailLayout.Marker(_cursor, gang.SectorId) is { } gangMarker)
+        var activeGangsBySector = player.Gangs.Where(gang => gang.IsActive)
+            .GroupBy(gang => gang.SectorId).ToArray();
+        foreach (var gangs in activeGangsBySector)
+            if (SectorDetailLayout.Marker(_cursor, gangs.Key) is { } gangMarker)
                 DrawGangStatusMarker(batch, gangMarker,
-                    gang.QueuedCommand is null
-                        ? OriginalSpriteLayout.IdleGangStatus
-                        : OriginalSpriteLayout.AssignedGangStatus);
-        foreach (var pending in player.PendingHires)
+                    GangStatusMarkerPresentation.Source(
+                        gangs.Any(gang => gang.QueuedCommand is null)));
+        var occupiedGangSectors = activeGangsBySector.Select(gangs => gangs.Key).ToHashSet();
+        foreach (var pending in player.PendingHires.Where(
+                     pending => !occupiedGangSectors.Contains(pending.TargetSectorId)))
             if (SectorDetailLayout.Marker(_cursor, pending.TargetSectorId) is { } hireMarker)
                 DrawGangStatusMarker(batch, hireMarker, OriginalSpriteLayout.IncomingGangStatus);
     }

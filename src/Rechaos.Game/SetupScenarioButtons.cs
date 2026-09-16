@@ -12,6 +12,7 @@ public static class SetupScenarioButtons
         ScenarioId.Greed, ScenarioId.Power,
         ScenarioId.Acceptance, ScenarioId.Dominance
     ];
+    public static ScenarioId DefaultScenario => OrderedScenarios[0];
     public static IReadOnlyList<ScenarioId> VisualOrder => OrderedScenarios;
 
     public static ScenarioId ScenarioForButton(int button)

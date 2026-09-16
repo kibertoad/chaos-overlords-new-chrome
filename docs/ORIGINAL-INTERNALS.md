@@ -2679,22 +2679,35 @@ slots omitted by the local players have already become computer players.
 
 **Confidence:** High static evidence; a runtime reference fixture remains pending.
 
-### BIN-SETUP-000 - fresh setup defaults to Greed
+### BIN-SETUP-000 - fresh setup defaults to Kill 'Em All
 
 **Observation:** In EXE-GOG-1.1, the initialized preference byte at
 `0x00487858` is `0`. Preference loader `0x0046439a` replaces it with the
 registry value `prefsObjective` when that value exists. Setup initializer
 `0x004384c0` copies the signed byte into the active scenario dword at
-`0x004abbe8` before rendering the full local setup screen. The recovered
-scenario numbering maps value 0 to Greed and value 4 to Kill 'Em All.
+`0x004abbe8` before rendering the full local setup screen. The earlier analysis
+incorrectly mapped that zero through the recreation's gameplay enum rather
+than the original setup's visual-button order.
 
-**Interpretation:** A fresh original installation selects Greed by default.
-Kill 'Em All is the first button in visual order, but is not the initial active
-scenario. A previously stored `prefsObjective` may restore another selection.
+**Runtime observation:** On 2026-09-13 the fingerprinted original opened its
+full local setup with Kill 'Em All selected. Its first visual-button light was
+the only bright scenario light, and the description panel named the same
+objective. Five desktop-copy frames taken 120 ms apart were byte-identical
+(PNG SHA-256
+`ab81528fa770e991140d5133c5dbb092751c7c3f723195cb33dcb41740410275`).
+Targeted searches found no `prefsObjective` value in that user's HKCU or the
+machine hive, excluding a stored objective override for this observation.
 
-**Confidence:** High static evidence from the verified GOG 1.1 executable;
-runtime corroboration remains useful but is not required to identify the
-initialized value.
+**Interpretation:** A fresh original setup selects the first visual scenario,
+Kill 'Em All. The initialized zero is a setup/original ordering value and must
+not be interpreted through the recreation's enum, where Greed happens to be
+zero. A stored `prefsObjective` may still restore another selection when it
+exists.
+
+**Confidence:** High from the verified GOG 1.1 initialization path plus a
+stable original-runtime observation with the override value absent. This
+corrects the earlier static interpretation without changing the recovered
+initialized byte or preference-loader facts.
 
 ### BIN-SETUP-001 - `SMGFUNDAGE` starting cash override
 

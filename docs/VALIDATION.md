@@ -65,8 +65,11 @@ unambiguous. Every invocation retains the 30-minute global test safety timeout.
 
 The manually dispatched CI workflow runs the fast tier on Windows x64, Linux
 x64, macOS arm64, and macOS x64. Its `fast-and-long-running` option adds the
-observable long category once on Linux. The manually dispatched release workflow
-always runs both tiers before packaging.
+observable long category once on Linux. A separate workflow runs the observable
+long category on Linux every day at 03:17 UTC, but skips scheduled execution when
+the default branch has no commit from the preceding 24 hours. Manual dispatches
+always run it. The release workflow runs the fast tier only, leaving the repeated
+statistical campaign matrix off its critical path.
 
 For larger statistical samples, the presentation-free runner avoids xUnit and
 lets replay verification be sampled rather than paid for on every match:
@@ -102,6 +105,8 @@ The manually dispatched continuous-integration workflow runs this verification
 on Windows x64, Linux x64, macOS arm64, and macOS x64. It also publishes with
 `IncludeOriginalAssets=false`, rejects any resulting `Assets` directory, and
 runs the published `--smoke-test` entry point without an original asset pack.
+Disposable installer artifacts from this workflow are retained for one day so routine validation
+does not consume the repository's Actions storage for the default multi-month retention window.
 After all four platforms pass, its Windows packaging job builds the clean-room
 self-contained package and installer, installs with `/NOIMPORT=1`, launches the
 packaged `--platform-smoke-test` entry point, uninstalls it, and uploads both
@@ -231,6 +236,13 @@ alongside their original inputs, and one entry is the local modern help
 document decoded from the two original WinHelp resources.
 
 ## Original-binary oracle protocol
+
+For a manually operated Windows session, use
+[`Capture-OriginalWindow.ps1`](../tools/Capture-OriginalWindow.ps1) and follow
+the raw-burst evidence rules in [REFERENCE-CAPTURE.md](REFERENCE-CAPTURE.md).
+The helper deliberately captures the visible desktop client area because the
+legacy DirectDraw window may not produce reliable window-only captures on
+modern systems.
 
 Run the original only offline in a controlled Windows environment. Record:
 

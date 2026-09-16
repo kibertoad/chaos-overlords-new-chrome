@@ -1,9 +1,10 @@
-import { RateLimiter } from '@chaos-overlords/kernel'
+import { RateLimitedError, RateLimiter } from '@chaos-overlords/kernel'
 import {
   type AppEnv,
   createApp,
   DEFAULT_RATE_LIMITS,
   DEFAULT_SERVER_CONFIG,
+  defaultClientAddress,
   type ServerContainer,
 } from '@chaos-overlords/server'
 import type { ExecutionContext, ScheduledController } from '@cloudflare/workers-types'
@@ -57,9 +58,17 @@ export function buildContainer(env: Env): ServerContainer {
     kernel: buildKernel(env),
     ...(bugReports ? { bugReports } : {}),
     eventStream: {
-      open: async ({ matchId, afterSeq, signal }) => {
-        const url = `https://hub${HUB_PATHS.subscribe}?matchId=${encodeURIComponent(matchId)}&after=${afterSeq}`
+      open: async ({ matchId, playerId, afterSeq, signal }) => {
+        const query = new URLSearchParams({ matchId, playerId, after: String(afterSeq) })
+        const url = `https://hub${HUB_PATHS.subscribe}?${query}`
         const response = await hubFor(env, matchId).fetch(url, { signal })
+        // The object refuses an over-cap stream with a bare 429; turning it back into the domain
+        // error here is what gets the caller the same envelope every other refusal has.
+        if (response.status === 429) {
+          throw new RateLimitedError('This match is holding as many event streams as it can', {
+            reason: 'too_many_streams',
+          })
+        }
         return new Response(response.body as ReadableStream<Uint8Array> | null, {
           status: response.status,
           headers: response.headers as unknown as HeadersInit,
@@ -76,6 +85,10 @@ export function buildContainer(env: Env): ServerContainer {
       ),
     },
     config: { ...DEFAULT_SERVER_CONFIG, publicListing: env.PUBLIC_LISTING === 'true' },
+    // `CF-Connecting-IP` is authoritative here and only here: Cloudflare sets it on every request
+    // that reaches a Worker and a client cannot forge it through the edge. Off Cloudflare it is a
+    // header anyone can write, which is why the default resolver ignores it unless told otherwise.
+    clientAddress: (c) => defaultClientAddress(c, { cloudflare: true }),
   }
 }
 
@@ -98,6 +111,9 @@ export default {
           workerLogger.info('cron advanced turns', { sealed, repaired })
         }
         await kernel.retention.collect()
+        // A separate database with a separate window; nothing about a match's retention decides
+        // when a bug report and its R2 object go.
+        await container.bugReports?.collect()
       })().catch((error: unknown) => {
         workerLogger.error('cron sweep failed', { error: String(error) })
       }),

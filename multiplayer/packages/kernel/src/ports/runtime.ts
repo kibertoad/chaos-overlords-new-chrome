@@ -34,7 +34,27 @@ export interface DeadlineScheduler {
 /**
  * Opens the server-sent event stream for one match. Each runtime owns the response because the
  * fan-out lives in a different place (an in-process hub on Node, a Durable Object on Cloudflare).
+ *
+ * The player is named as well as the match because the fan-out has to be able to bound and end a
+ * membership's streams: see {@link StreamCloser}.
  */
 export interface EventStreamOpener {
-  open(input: { matchId: string; afterSeq: number; signal: AbortSignal }): Promise<Response>
+  open(input: {
+    matchId: string
+    playerId: string
+    afterSeq: number
+    signal: AbortSignal
+  }): Promise<Response>
+}
+
+/**
+ * Ends every event stream a membership is holding.
+ *
+ * Revoking a token stops the next REQUEST. A stream that is already open is never authenticated
+ * again, so a kicked player would otherwise keep receiving every sealed set, every `turn.desynced`
+ * (which carries each player's state hash) and every host change for as long as they cared to hold
+ * the connection. Called by the kick path, straight after the revoke.
+ */
+export interface StreamCloser {
+  close(input: { matchId: string; playerId: string }): Promise<void>
 }

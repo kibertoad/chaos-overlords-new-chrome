@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
@@ -11,9 +12,6 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private static readonly Rectangle LobbyStart = new(160, 372, 148, 32);
-    private static readonly Rectangle LobbyLeave = new(332, 372, 148, 32);
-
     private static readonly TimeSpan LobbyPollInterval = TimeSpan.FromSeconds(1);
 
     /// <summary>
@@ -28,39 +26,89 @@ public sealed partial class ChaosGame
     private static readonly TimeSpan DraftInterval = TimeSpan.FromSeconds(10);
 
     private readonly MultiplayerUiState _online = new();
-    private readonly HttpClient _http = new();
+    /// <summary>
+    /// The one client every online call goes through, bounded so a hostile server cannot answer with
+    /// a body large enough to take the game down. See <see cref="MultiplayerClientOptions.MaximumResponseBytes"/>.
+    /// </summary>
+    private readonly HttpClient _http = MultiplayerClientOptions.CreateHttpClient();
     private MultiplayerLobbySession? _lobby;
     private MultiplayerMatchSession? _session;
     private TimeSpan _lobbyPollDue;
+    private CancellationTokenSource? _serverProbeCancellation;
+    private Task<bool>? _serverProbe;
+    private readonly List<MultiplayerRecovery> _multiplayerRecoveries = [];
+    private MultiplayerRecovery? _activeMultiplayerRecovery;
+    private bool _configuringOnlineLobby;
 
-    private TextField[] OnlineFields =>
-        [_online.Server, _online.DisplayName, _online.JoinCode, _online.Password];
+    /// <summary>
+    /// This client's own setup choices while a lobby's are on the screens that edit them.
+    /// </summary>
+    /// <remarks>Null when no lobby has been joined; see <see cref="RememberLocalSetup"/>.</remarks>
+    private LocalSetupChoices? _localSetupBeforeLobby;
+    private MultiplayerRecovery? LatestOnlineRecovery =>
+        _multiplayerRecoveries.FirstOrDefault(recovery => recovery.CanReconnect);
 
     private void OpenOnline()
     {
         if (_session is not null) return;
         _online.Stage = MultiplayerStage.Connect;
-        _online.Status = string.Empty;
-        _online.Server.IsFocused = true;
+        _online.Status = _multiplayerRecoveries.Any(recovery => recovery.ShouldSuggestReconnect)
+            ? "AN INTERRUPTED MATCH CAN BE RECOVERED"
+            : string.Empty;
+        foreach (var field in new[]
+                 { _online.Server, _online.DisplayName, _online.SessionName, _online.JoinCode, _online.Password })
+            field.IsFocused = false;
+        OnlineFields[0].IsFocused = true;
+        BeginServerProbe();
         _screens.Show(ClientScreen.Online);
     }
 
     private void UpdateOnline(KeyboardState keyboard)
     {
+        PumpServerProbe();
         if (Pressed(keyboard, Keys.Tab)) FocusNextOnlineField();
+        if (_online.Stage == MultiplayerStage.History)
+        {
+            var count = RecoverableOnlineSessions.Count;
+            if (Pressed(keyboard, Keys.Escape)) CloseOnlineHistory();
+            else if (count > 0 && Pressed(keyboard, Keys.Up))
+                _online.RecoverySelection = Mod(_online.RecoverySelection - 1, count);
+            else if (count > 0 && Pressed(keyboard, Keys.Down))
+                _online.RecoverySelection = Mod(_online.RecoverySelection + 1, count);
+            else if (Pressed(keyboard, Keys.Enter)) ResumeSelectedOnlineMatch();
+            return;
+        }
+        if (_online.Stage == MultiplayerStage.Discover)
+        {
+            if (_online.OpenDiscoveryFilter >= 0)
+            {
+                UpdateDiscoveryFilterMenu(keyboard);
+                return;
+            }
+            var count = FilteredOnlineListings().Count;
+            if (Pressed(keyboard, Keys.Escape)) CloseOnlineDiscovery();
+            else if (count > 0 && Pressed(keyboard, Keys.Up))
+                _online.DiscoverySelection = Mod(_online.DiscoverySelection - 1, count);
+            else if (count > 0 && Pressed(keyboard, Keys.Down))
+                _online.DiscoverySelection = Mod(_online.DiscoverySelection + 1, count);
+            else if (Pressed(keyboard, Keys.Enter)) JoinSelectedOnlineListing();
+            return;
+        }
+        if (_online.Stage == MultiplayerStage.LateJoinSeat)
+        {
+            var count = _online.PendingLateJoin?.AvailableSeatSummaries.Count ?? 0;
+            if (Pressed(keyboard, Keys.Escape)) _online.Stage = MultiplayerStage.Discover;
+            else if (count > 0 && Pressed(keyboard, Keys.Up))
+                _online.LateJoinSeatSelection = Mod(_online.LateJoinSeatSelection - 1, count);
+            else if (count > 0 && Pressed(keyboard, Keys.Down))
+                _online.LateJoinSeatSelection = Mod(_online.LateJoinSeatSelection + 1, count);
+            else if (Pressed(keyboard, Keys.Enter)) ConfirmLateJoin();
+            return;
+        }
         if (Pressed(keyboard, Keys.Enter) && _online.Stage == MultiplayerStage.Connect)
         {
-            if (_online.JoinCode.Value.Length > 0) BeginJoin();
-            else BeginHost();
+            ContinueOnline();
         }
-    }
-
-    private void FocusNextOnlineField()
-    {
-        var fields = OnlineFields;
-        var current = Array.FindIndex(fields, field => field.IsFocused);
-        foreach (var field in fields) field.IsFocused = false;
-        fields[Mod(current + 1, fields.Length)].IsFocused = true;
     }
 
     /// <summary>Routes typed characters to whichever text field currently owns focus.</summary>
@@ -78,29 +126,19 @@ public sealed partial class ChaosGame
             _saveName.Type(character);
             return;
         }
+        if (_screens.Current == ClientScreen.Lobby)
+        {
+            if (_online.IsHost && _online.SessionName.IsFocused) _online.SessionName.Type(character);
+            return;
+        }
         if (_screens.Current != ClientScreen.Online) return;
+        var previousServer = _online.Server.Value;
         foreach (var field in OnlineFields) field.Type(character);
-    }
-
-    /// <summary>
-    /// Moves focus to the field that was clicked, if one was.
-    /// </summary>
-    /// <remarks>
-    /// A click that misses every field — on a button, or on the panel — leaves focus alone. Clearing
-    /// it would mean a player who pressed HOST and then carried on typing had their keystrokes go
-    /// nowhere, with a caret still blinking somewhere to say they had not.
-    /// </remarks>
-    private void FocusOnlineField(Point point)
-    {
-        (Rectangle Bounds, TextField Field)[] hits =
-        [
-            (OnlineConnectLayout.Server, _online.Server),
-            (OnlineConnectLayout.Name, _online.DisplayName),
-            (OnlineConnectLayout.JoinCode, _online.JoinCode),
-            (OnlineConnectLayout.Password, _online.Password),
-        ];
-        if (!Array.Exists(hits, hit => hit.Bounds.Contains(point))) return;
-        foreach (var (bounds, field) in hits) field.IsFocused = bounds.Contains(point);
+        if (_online.Service == OnlineServiceMode.Custom
+            && !string.Equals(previousServer, _online.Server.Value, StringComparison.Ordinal))
+        {
+            _online.ServerStatus = "CUSTOM SERVER NOT CHECKED";
+        }
     }
 
     /// <summary>
@@ -114,16 +152,21 @@ public sealed partial class ChaosGame
     private bool TryBeginLobby()
     {
         if (_lobby is not null) return true;
-        var address = _online.Server.Value.Trim();
-        if (!Uri.TryCreate(address, UriKind.Absolute, out var baseAddress)
-            || baseAddress.Scheme is not ("http" or "https"))
+        if (!TrySelectedServer(out var baseAddress))
         {
             _online.Stage = MultiplayerStage.Connect;
             _online.Status = "THE SERVER ADDRESS MUST BE AN HTTP OR HTTPS URL";
             return false;
         }
         _lobby = new MultiplayerLobbySession(_http, new MultiplayerClientOptions(baseAddress));
+        SavePreferences();
         return true;
+    }
+
+    private void ContinueOnline()
+    {
+        if (_online.Role == OnlineConnectRole.Host) BeginHost();
+        else BeginJoin();
     }
 
     /// <summary>
@@ -137,58 +180,64 @@ public sealed partial class ChaosGame
     private void BeginHost()
     {
         if (!TryBeginLobby() || !RequireUsableName()) return;
-        var name = _online.DisplayName.Value.Trim();
         var settings = new MultiplayerGameSettings(
             _selectedScenario, _selectedDuration, _selectedAiMentality, _playerPortraits,
-            _defaultAiPolicy);
+            _defaultAiPolicy, _online.AllowLateJoin);
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "HOSTING";
+        _online.JoinedInProgress = false;
+        var password = OptionalPassword();
+        _online.PasswordShown = password ?? string.Empty;
         _lobby!.Host(new CreateMatchRequest(
             new MatchSettings(
-                $"{name}'S CITY",
-                Math.Max(MinimumOnlinePlayers, _localSetupRoster.Count),
-                OnlineTurnTimerSeconds,
-                MatchVisibility.Private,
+                SessionNameOrDefault(),
+                MatchLimits.PlayerCount,
+                SelectedOnlineTurnTimerSeconds,
+                _online.PublicListing ? MatchVisibility.Public : MatchVisibility.Private,
                 settings.ToWire()),
-            name,
-            OptionalPassword()));
+            _online.DisplayName.Value.Trim(),
+            password));
     }
 
     private void BeginJoin()
     {
-        if (!TryBeginLobby() || !RequireUsableName()) return;
+        if (!RequireUsableName()) return;
+        if (string.IsNullOrWhiteSpace(_online.JoinCode.Value))
+        {
+            _online.Status = "ENTER A JOIN CODE";
+            return;
+        }
+        if (!TryBeginLobby()) return;
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "JOINING";
+        _online.JoinedInProgress = false;
+        var password = OptionalPassword();
+        _online.PasswordShown = password ?? string.Empty;
         _lobby!.Join(new JoinMatchRequest(
-            _online.JoinCode.Value.Trim(), _online.DisplayName.Value.Trim(), OptionalPassword()));
+            _online.JoinCode.Value.Trim(), _online.DisplayName.Value.Trim(), password));
     }
 
-    private string? OptionalPassword() =>
-        _online.Password.Value.Length > 0 ? _online.Password.Value : null;
-
-    /// <summary>
-    /// Refuses a name the original rules read as a cheat code before the server has to.
-    /// </summary>
-    /// <remarks>
-    /// The server refuses these too, and its refusal is the one that counts — but saying so here
-    /// turns a round trip into an immediate answer, and names which field is wrong while the player
-    /// is still looking at it. See <see cref="ReservedPlayerNames"/> for why they cannot be allowed
-    /// through: online, one player's name changes what every client computes.
-    /// </remarks>
-    private bool RequireUsableName()
+    private void ResumeSelectedOnlineMatch()
     {
-        var name = _online.DisplayName.Value.Trim();
-        if (name.Length == 0)
+        var sessions = RecoverableOnlineSessions;
+        if (sessions.Count == 0) return;
+        var recovery = sessions[Math.Clamp(_online.RecoverySelection, 0, sessions.Count - 1)];
+        if (!Uri.TryCreate(recovery.Server, UriKind.Absolute, out var server))
         {
-            _online.Status = "ENTER A NAME";
-            return false;
+            _online.Status = "THE SAVED SERVER ADDRESS IS INVALID";
+            return;
         }
-        if (ReservedPlayerNames.IsReserved(name))
-        {
-            _online.Status = "THAT NAME IS A CHEAT CODE  PICK ANOTHER";
-            return false;
-        }
-        return true;
+        _online.Service = server == MultiplayerServiceEndpoint.Central
+            ? OnlineServiceMode.Central
+            : OnlineServiceMode.Custom;
+        if (_online.Service == OnlineServiceMode.Custom) _online.Server.Set(recovery.Server);
+        _serverProbeCancellation?.Cancel();
+        _lobby = new MultiplayerLobbySession(_http, new MultiplayerClientOptions(server));
+        _online.PasswordShown = recovery.Password;
+        _online.Stage = MultiplayerStage.Busy;
+        _online.Status = "RECONNECTING TO THE INTERRUPTED MATCH";
+        _online.JoinedInProgress = false;
+        _lobby.Resume(recovery.MatchId, recovery.PlayerId, recovery.Token, recovery.JoinCode);
     }
 
     /// <summary>
@@ -234,7 +283,8 @@ public sealed partial class ChaosGame
         try
         {
             _session = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
-                _lobby.Handle, _definitions, view, _lobby.OwnPlayerId, view.LastEventSeq));
+                _lobby.Handle, _definitions, view, _lobby.OwnPlayerId, view.LastEventSeq,
+                _online.JoinedInProgress));
         }
         catch (Exception exception) when (exception is MultiplayerProtocolException
             or ArgumentOutOfRangeException or InvalidOperationException)
@@ -253,6 +303,7 @@ public sealed partial class ChaosGame
         _online.Match = view;
         _online.DeadlineAt = _session.InitialDeadline;
         _online.SeatedSeats = view.Players.Count(player => player.Slot >= 0);
+        ResetMatchPresentation(_session.InitialState);
         if (_session.IsRestoring)
         {
             _online.Status = "RESTORING THE MATCH";
@@ -261,6 +312,27 @@ public sealed partial class ChaosGame
         if (!AdoptOnlineState(_session.InitialState)) return;
         _message = string.Empty;
         _screens.Show(ClientScreen.City);
+    }
+
+    /// <summary>
+    /// Forgets what the previous match left on screen.
+    /// </summary>
+    /// <remarks>
+    /// The same clearing <see cref="StartMatch"/> and <see cref="LoadGameFromSlot"/> do, for the
+    /// path that starts a match from the server instead. Without it a hot-seat game played first
+    /// leaves its combat progress behind — the new match's events carry lower sequence numbers, so
+    /// they read as already seen and their animations never play — along with its site-search
+    /// markers and its last-turn reports, which the events panel matches on player and turn number
+    /// alone and would happily show from the wrong match.
+    /// </remarks>
+    private void ResetMatchPresentation(MatchState state)
+    {
+        _combatPresentationProgress.ResetTo(
+            state.Players.Select(player => player.Id),
+            state.Events.LastOrDefault()?.Sequence ?? -1);
+        _combatAnimationPlayer.Clear();
+        _siteSearchSelections.Reset();
+        _lastTurnEventArchive.Clear();
     }
 
     /// <summary>
@@ -329,6 +401,7 @@ public sealed partial class ChaosGame
         _online.DeadlineAt = null;
         CloseOnlinePlanning();
         _message = string.Empty;
+        CompleteOnlineRecovery();
         _screens.Show(ClientScreen.Endgame);
     }
 
@@ -398,16 +471,37 @@ public sealed partial class ChaosGame
                 _online.IsHost = seated.Membership.Player.IsHost;
                 _online.JoinCodeShown = seated.Membership.JoinCode;
                 _online.Match = seated.Membership.Match;
+                AdoptLobbySettings(seated.Membership.Match);
+                RememberOnlineMembership(seated.Membership);
+                if (seated.Membership.Match.Status is MatchStatus.Finished or MatchStatus.Abandoned)
+                {
+                    CompleteOnlineRecovery();
+                    EndOnlineMatch("THE SAVED ONLINE MATCH HAS ALREADY ENDED");
+                    return;
+                }
                 _online.Stage = MultiplayerStage.Lobby;
                 _online.Status = _online.IsHost
                     ? "READ OUT THE JOIN CODE"
                     : "WAITING FOR THE HOST";
                 _screens.Show(ClientScreen.Lobby);
+                if (seated.Membership.Match.Status == MatchStatus.Running)
+                    StartOnlineMatch(seated.Membership.Match);
                 return;
             case LobbyNotice.Updated updated:
                 _online.Match = updated.Match;
+                // Not while the host is editing them: the poll that carries a settings change back
+                // is the same poll that would type over the name being written next to it.
+                if (!_online.IsHost) AdoptLobbySettings(updated.Match);
                 if (_session is null && updated.Match.Status == MatchStatus.Running)
                     StartOnlineMatch(updated.Match);
+                return;
+            case LobbyNotice.Listed listed:
+                _online.Listings = listed.Matches;
+                _online.DiscoverySelection = 0;
+                _online.Stage = MultiplayerStage.Discover;
+                _online.Status = listed.Matches.Count == 0
+                    ? "NO PUBLIC SESSIONS FOUND"
+                    : string.Empty;
                 return;
             case LobbyNotice.Failed failed:
                 if (_online.Stage == MultiplayerStage.Busy) _online.Stage = MultiplayerStage.Connect;
@@ -424,10 +518,16 @@ public sealed partial class ChaosGame
         {
             case MultiplayerNotice.Resumed resumed:
                 _online.Match = resumed.Match;
+                // The same invariant round-trip parse the session uses on the same ISO-8601 string.
+                // Left to the current culture it can fail where the session's own parse succeeded —
+                // on one whose default calendar is not Gregorian — and drop the countdown.
                 _online.DeadlineAt = resumed.Match.Turn is { DeadlineAt: { } deadlineText }
-                    && DateTimeOffset.TryParse(deadlineText, out var parsed)
+                    && DateTimeOffset.TryParse(
+                        deadlineText, CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind, out var parsed)
                         ? parsed
                         : null;
+                ResetMatchPresentation(resumed.State);
                 _online.SeatedSeats = resumed.Match.Players.Count(
                     player => player.Slot >= 0
                         && player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending);
@@ -443,7 +543,8 @@ public sealed partial class ChaosGame
             case MultiplayerNotice.TurnResolved resolved:
                 if (AdoptOnlineState(resolved.State))
                 {
-                    _message = string.Empty;
+                    _message = "NEW TURN READY  PLAY AGAIN";
+                    PlayGeneralSound(AudioRouting.OnlineTurnReadySound());
                     _screens.Show(ClientScreen.City);
                 }
                 return;
@@ -510,6 +611,7 @@ public sealed partial class ChaosGame
                     _message = string.Empty;
                     if (_state?.Outcome is not null) _screens.Show(ClientScreen.Endgame);
                 }
+                CompleteOnlineRecovery();
                 return;
             case MultiplayerNotice.MatchAbandoned:
                 _online.Stage = MultiplayerStage.Finished;
@@ -521,7 +623,7 @@ public sealed partial class ChaosGame
                     ["reason"] = failed.Reason,
                     ["error"] = RuntimeDiagnostics.ExceptionType(failed.Error),
                 });
-                EndOnlineMatch(failed.Reason.ToUpperInvariant());
+                EndOnlineMatch(OnlineFailureMessage(failed.Reason));
                 return;
             default:
                 return;
@@ -539,6 +641,8 @@ public sealed partial class ChaosGame
     private void LeaveOnlineMatch()
     {
         Forget(_lobby?.LeaveAsync(), "multiplayer.leave.failed");
+        if (_activeMultiplayerRecovery is { Completed: false } recovery)
+            UpdateOnlineRecovery(recovery with { CleanExit = true });
         EndOnlineMatch("LEFT THE MATCH");
     }
 
@@ -573,6 +677,10 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void EndOnlineMatch(string status)
     {
+        _serverProbeCancellation?.Cancel();
+        _serverProbeCancellation?.Dispose();
+        _serverProbeCancellation = null;
+        _serverProbe = null;
         // Only an online match's state is this method's to throw away. Opening the online screen from
         // a hot-seat match in progress and backing out of it again must leave that match alone.
         if (_session is not null)
@@ -585,7 +693,9 @@ public sealed partial class ChaosGame
         _session = null;
         _lobby = null;
         _online.Reset();
+        RestoreLocalSetup();
         _online.Status = status;
+        _message = status;
         _screens.Show(ClientScreen.Title);
     }
 
@@ -600,6 +710,15 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ReleaseOnlineResources()
     {
+        if ((_session is not null || _lobby?.Handle is not null)
+            && _activeMultiplayerRecovery is { Completed: false } recovery)
+        {
+            UpdateOnlineRecovery(recovery with { CleanExit = true });
+        }
+        _serverProbeCancellation?.Cancel();
+        _serverProbeCancellation?.Dispose();
+        _serverProbeCancellation = null;
+        _serverProbe = null;
         var stopping = new[] { _session?.StopAsync(), _lobby?.StopAsync() }
             .OfType<Task>()
             .ToArray();
@@ -635,18 +754,170 @@ public sealed partial class ChaosGame
 
     private void HandleOnlineClick(Point point)
     {
-        FocusOnlineField(point);
         if (_online.Stage == MultiplayerStage.Busy) return;
-        if (OnlineConnectLayout.Host.Contains(point)) BeginHost();
-        else if (OnlineConnectLayout.Join.Contains(point)) BeginJoin();
+        if (_online.Stage == MultiplayerStage.History)
+        {
+            HandleOnlineHistoryClick(point);
+            return;
+        }
+        if (_online.Stage == MultiplayerStage.Discover)
+        {
+            HandleOnlineDiscoveryClick(point);
+            return;
+        }
+        if (_online.Stage == MultiplayerStage.LateJoinSeat)
+        {
+            HandleLateJoinSeatClick(point);
+            return;
+        }
+        if (OnlineConnectLayout.Central.Contains(point))
+            SelectOnlineService(OnlineServiceMode.Central);
+        else if (OnlineConnectLayout.Custom.Contains(point))
+            SelectOnlineService(OnlineServiceMode.Custom);
+        else if (OnlineConnectLayout.HostRole.Contains(point))
+            SelectOnlineRole(OnlineConnectRole.Host);
+        else if (OnlineConnectLayout.JoinRole.Contains(point))
+            SelectOnlineRole(OnlineConnectRole.Join);
+        else if (_online.Role == OnlineConnectRole.Join
+            && OnlineConnectLayout.PasteJoinCode.Contains(point)) PasteJoinCode();
+        else if (_online.Role == OnlineConnectRole.Host
+            && OnlineConnectLayout.PublicChoice.Contains(point)) SelectOnlineListing(publicly: true);
+        else if (_online.Role == OnlineConnectRole.Host
+            && OnlineConnectLayout.PrivateChoice.Contains(point)) SelectOnlineListing(publicly: false);
+        else if (OnlineConnectLayout.Discover.Contains(point)) OpenOnlineDiscovery();
+        else if (OnlineConnectLayout.Reconnect.Contains(point)) OpenOnlineHistory();
+        else if (OnlineConnectLayout.Continue.Contains(point)) ContinueOnline();
         else if (OnlineConnectLayout.Back.Contains(point)) EndOnlineMatch(string.Empty);
+        else FocusOnlineField(point);
+    }
+
+    private void HandleOnlineDiscoveryClick(Point point)
+    {
+        if (_online.OpenDiscoveryFilter >= 0)
+        {
+            HandleDiscoveryFilterMenuClick(point);
+            return;
+        }
+        if (OnlineConnectLayout.DiscoveryStatus.Contains(point))
+            OpenDiscoveryFilterMenu(DiscoveryFilters.Status);
+        else if (OnlineConnectLayout.DiscoveryScenario.Contains(point))
+            OpenDiscoveryFilterMenu(DiscoveryFilters.Scenario);
+        else if (OnlineConnectLayout.DiscoveryAi.Contains(point))
+            OpenDiscoveryFilterMenu(DiscoveryFilters.Ai);
+        else if (OnlineConnectLayout.DiscoveryJoin.Contains(point)) JoinSelectedOnlineListing();
+        else if (OnlineConnectLayout.DiscoveryBack.Contains(point)) CloseOnlineDiscovery();
+        else
+        {
+            var listings = FilteredOnlineListings();
+            var offset = Math.Clamp(_online.DiscoverySelection - 4, 0, Math.Max(0, listings.Count - 5));
+            for (var row = 0; row < Math.Min(5, listings.Count - offset); row++)
+                if (OnlineConnectLayout.DiscoveryRow(row).Contains(point))
+                    _online.DiscoverySelection = offset + row;
+        }
+    }
+
+    private void HandleOnlineHistoryClick(Point point)
+    {
+        var sessions = RecoverableOnlineSessions;
+        var offset = Math.Clamp(_online.RecoverySelection - 5, 0, Math.Max(0, sessions.Count - 6));
+        for (var row = 0; row < Math.Min(6, sessions.Count - offset); row++)
+            if (OnlineConnectLayout.HistoryRow(row).Contains(point))
+                _online.RecoverySelection = offset + row;
+        if (OnlineConnectLayout.HistoryRejoin.Contains(point)) ResumeSelectedOnlineMatch();
+        else if (OnlineConnectLayout.HistoryBack.Contains(point)) CloseOnlineHistory();
     }
 
     private void HandleLobbyClick(Point point)
     {
-        if (LobbyStart.Contains(point)) StartHostedMatch();
-        else if (LobbyLeave.Contains(point)) LeaveOnlineMatch();
+        if (_online.IsHost && OnlineLobbyLayout.SessionName.Contains(point))
+        {
+            _online.SessionName.IsFocused = true;
+            return;
+        }
+        // Anywhere else finishes an edit of the name: the setting it belongs to is about to be sent,
+        // or the player is leaving the screen the caret was on.
+        CommitLobbySessionName();
+        if (OnlineLobbyLayout.CopyCode.Contains(point)) CopyLobbyJoinCode();
+        else if (OnlineLobbyLayout.Setup.Contains(point)) OpenOnlineSetup();
+        else if (OnlineLobbyLayout.Start.Contains(point)) StartHostedMatch();
+        else if (OnlineLobbyLayout.Leave.Contains(point)) LeaveOnlineMatch();
+        else if (!_online.IsHost) return;
+        else if (OnlineLobbyLayout.PublicChoice.Contains(point)) ChangeLobbyListing(publicly: true);
+        else if (OnlineLobbyLayout.PrivateChoice.Contains(point)) ChangeLobbyListing(publicly: false);
+        else if (OnlineLobbyLayout.LateJoinAllowed.Contains(point)) ChangeLobbyLateJoin(allowed: true);
+        else if (OnlineLobbyLayout.LateJoinRefused.Contains(point)) ChangeLobbyLateJoin(allowed: false);
     }
+
+    private void UpdateLobby(KeyboardState keyboard, GameTime gameTime)
+    {
+        if (_online.SessionName.IsFocused)
+        {
+            if (Pressed(keyboard, Keys.Enter)) CommitLobbySessionName();
+            PollLobby(gameTime);
+            return;
+        }
+        if (Pressed(keyboard, Keys.Enter)) StartHostedMatch();
+        else PollLobby(gameTime);
+    }
+
+    private void CopyLobbyJoinCode()
+    {
+        _online.Status = DesktopClipboard.TrySetText(_online.JoinCodeShown)
+            ? "JOIN CODE COPIED"
+            : "COULD NOT COPY JOIN CODE";
+    }
+
+    private void RememberOnlineMembership(MembershipView membership)
+    {
+        if (!TrySelectedServer(out var server)) return;
+        var recovery = new MultiplayerRecovery(
+            MultiplayerRecovery.CurrentFormatVersion,
+            server.ToString(),
+            membership.Match.Id,
+            membership.Player.Id,
+            membership.Token,
+            membership.JoinCode,
+            membership.Player.DisplayName,
+            membership.Player.IsHost,
+            CleanExit: false,
+            Completed: false,
+            _online.PasswordShown);
+        _activeMultiplayerRecovery = recovery;
+        _multiplayerRecoveries.RemoveAll(item => SameMembership(item, recovery));
+        _multiplayerRecoveries.Insert(0, recovery);
+        SaveOnlineRecoveries();
+    }
+
+    private void CompleteOnlineRecovery()
+    {
+        if (_activeMultiplayerRecovery is not { } recovery) return;
+        UpdateOnlineRecovery(recovery with { CleanExit = true, Completed = true });
+    }
+
+    private string OnlineFailureMessage(string reason)
+    {
+        var message = $"ONLINE MATCH STOPPED: {reason.ToUpperInvariant()}";
+        return _activeMultiplayerRecovery is { Completed: false }
+            ? $"{message}  OPEN ONLINE AND RECONNECT"
+            : message;
+    }
+
+    private void UpdateOnlineRecovery(MultiplayerRecovery recovery)
+    {
+        var index = _multiplayerRecoveries.FindIndex(item => SameMembership(item, recovery));
+        if (index >= 0) _multiplayerRecoveries[index] = recovery;
+        else _multiplayerRecoveries.Insert(0, recovery);
+        _activeMultiplayerRecovery = recovery;
+        SaveOnlineRecoveries();
+    }
+
+    private void SaveOnlineRecoveries() =>
+        MultiplayerRecoveryStore.TrySaveAll(_multiplayerRecoveryPath, _multiplayerRecoveries);
+
+    private static bool SameMembership(MultiplayerRecovery left, MultiplayerRecovery right) =>
+        string.Equals(left.Server, right.Server, StringComparison.OrdinalIgnoreCase)
+        && left.MatchId == right.MatchId
+        && left.PlayerId == right.PlayerId;
 
     /// <summary>
     /// What to say when the player acts on a turn that is no longer theirs to change.
@@ -658,15 +929,4 @@ public sealed partial class ChaosGame
     /// </remarks>
     private const string OnlinePlanningClosed = "TURN SENT; WAITING FOR PLAYERS";
 
-    /// <summary>A lobby needs two humans to be worth sealing a turn for.</summary>
-    private const int MinimumOnlinePlayers = 2;
-
-    /// <summary>
-    /// Five minutes a turn.
-    /// </summary>
-    /// <remarks>
-    /// A timer is what keeps a match from stalling on a player who closed the game, and this is the
-    /// only place it is chosen; the protocol takes 0 (no timer) or 30 seconds upwards.
-    /// </remarks>
-    private const int OnlineTurnTimerSeconds = 300;
 }

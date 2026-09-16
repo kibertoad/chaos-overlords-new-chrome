@@ -1,0 +1,227 @@
+name: Publish multiplayer packages
+
+# Publishes the multiplayer workspace to npm with OIDC trusted publishing: the job trades its
+# GitHub-issued id-token for a short-lived registry credential, so there is no npm token anywhere in
+# this repository. Each package must name this workflow as a trusted publisher on npmjs.com first
+# (Settings -> Trusted publishers: this repository, workflow `multiplayer-publish.yml`), and the
+# first release of a brand-new package name has to be pushed by hand, because a package that does
+# not exist yet cannot have a trusted publisher. That binding is to this file's name, which is why a
+# release runs from here rather than from a second workflow.
+#
+# Run this workflow with the version to release. It applies that version to every publishable
+# package in its checkout before it validates, packs, and optionally publishes them:
+#
+#   mode: rehearse  runs every check and packs each tarball, then stops without touching the registry.
+#   mode: release   runs the same checks, publishes, and only then creates the `multiplayer-vX.Y.Z`
+#                   annotated tag on the commit it published.
+#
+# Pushing a `multiplayer-v*` tag by hand still publishes, which is the escape hatch for a release cut
+# from a commit other than the tip of main. The tag this workflow creates itself does not re-enter
+# here: a ref created with GITHUB_TOKEN does not start another workflow run. Were that ever to
+# change, the second run would fail on npm refusing to republish a version that already exists,
+# rather than publishing anything twice.
+
+on:
+  push:
+    tags:
+      - "multiplayer-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, for example 0.2.0
+        required: true
+        type: string
+      mode:
+        description: Rehearse stops before the registry; release publishes and tags.
+        required: true
+        default: rehearse
+        type: choice
+        options:
+          - rehearse
+          - release
+
+permissions: {}
+
+concurrency:
+  group: multiplayer-publish-${{ inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Validate release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      commit: ${{ steps.release.outputs.commit }}
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      # A dispatched release is cut from the tip of main, whatever branch the Run workflow form was
+      # pointed at. A tag push is cut from the commit the tag names. Both then pin a commit SHA that
+      # the jobs below check out, so a push to main mid-release cannot split them across two commits.
+      - name: Check out the release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
+          persist-credentials: false
+
+      - name: Resolve release version
+        id: release
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            version="${GITHUB_REF_NAME#multiplayer-v}"
+          else
+            version="$INPUT_VERSION"
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::'$version' is not a semantic version." >&2
+            exit 1
+          fi
+          tag="multiplayer-v$version"
+          # On a tag push the tag exists by definition. On a dispatch an existing one means this
+          # version was already cut, and this run would publish under a tag naming another commit.
+          if [[ "$GITHUB_EVENT_NAME" != push ]] &&
+             git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "::error::Tag '$tag' already exists." >&2
+            exit 1
+          fi
+          {
+            echo "version=$version"
+            echo "tag=$tag"
+            echo "commit=$(git rev-parse HEAD)"
+          } >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Verify and publish
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: npm
+    permissions:
+      contents: read # Required to check out the release commit.
+      id-token: write # Required for npm trusted publishing and provenance attestations.
+    defaults:
+      run:
+        working-directory: multiplayer
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+        env:
+          POSTGRES_USER: chaos
+          POSTGRES_PASSWORD: chaos
+          POSTGRES_DB: chaos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chaos -d chaos"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - name: Check out the release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          package_json_file: multiplayer/package.json
+
+      # No dependency cache, deliberately: a cache entry poisoned by a pull request build would be
+      # restored here and baked into a published tarball. A release install is worth the extra
+      # minute. (zizmor's cache-poisoning audit; the pull request workflow does cache.)
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Keep version selection in the release form, as the installer workflow does. The bump is
+      # deliberately local to this checkout: release commits do not need nine mechanical manifest
+      # edits, while the tarballs and their rewritten `workspace:*` dependencies still agree.
+      - name: Apply the release version to every package
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: pnpm -r exec npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version --ignore-scripts
+
+      - name: Check every publishable package is at the release version
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: pnpm check-versions "$RELEASE_VERSION"
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build and typecheck
+        run: pnpm exec turbo run build typecheck
+
+      - name: Test
+        run: pnpm exec turbo run test:run --env-mode=loose
+        env:
+          TEST_DATABASE_URL: postgres://chaos:chaos@localhost:5432/chaos
+
+      - name: Check the generated C# still matches the contracts
+        run: pnpm codegen:check
+
+      # Packs every package and prints the file list without contacting the registry, so a tarball
+      # that is missing its dist or its licence fails here rather than after it is published.
+      - name: Rehearse the publish
+        run: pnpm publish -r --dry-run --no-git-checks --access public
+
+      - name: Publish to npm
+        if: github.event_name == 'push' || inputs.mode == 'release'
+        run: pnpm publish -r --no-git-checks --access public --report-summary
+
+      - name: Summarise what was published
+        if: github.event_name == 'push' || inputs.mode == 'release'
+        run: |
+          {
+            echo '## Published'
+            echo
+            node -e '
+              const summary = require("./pnpm-publish-summary.json");
+              for (const { name, version } of summary.publishedPackages) {
+                console.log(`- \`${name}@${version}\``);
+              }
+            '
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  tag:
+    name: Tag the release
+    needs: [prepare, publish]
+    # Only a dispatched release has a tag left to create, and it waits for the registry to have the
+    # packages: of the two, the tag is the half that is cheap to redo by hand if this step fails.
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # Required to create the annotated tag.
+    steps:
+      - name: Create the annotated tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ needs.prepare.outputs.commit }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          tag_sha="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/tags" \
+            -f "tag=$RELEASE_TAG" \
+            -f "message=Multiplayer packages $RELEASE_VERSION" \
+            -f "object=$RELEASE_COMMIT" \
+            -f 'type=commit' --jq '.sha')"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f "ref=refs/tags/$RELEASE_TAG" \
+            -f "sha=$tag_sha"
+          echo "Tagged \`$RELEASE_COMMIT\` as \`$RELEASE_TAG\`." >> "$GITHUB_STEP_SUMMARY"

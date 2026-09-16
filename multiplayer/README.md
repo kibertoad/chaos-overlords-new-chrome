@@ -5,6 +5,10 @@ Node.js process (SQLite or Postgres) for anyone hosting a game for friends, and 
 Worker (D1 + Durable Objects) for a central public server. Both serve the same Hono application
 and pass the same conformance suite.
 
+The game's built-in central-service choice points to
+`https://chaos-overlords.dinorefurb.com`. Its Online screen calls `GET /health` when opened; a
+healthy deployment answers `{"ok":true}`. Custom/self-hosted origins use the same check.
+
 The design (why the game core stays on the clients, why REST plus server-sent events, the turn
 barrier, desync recovery, the security model) lives in [`../docs/MULTIPLAYER.md`](../docs/MULTIPLAYER.md).
 This file is the operator and contributor manual.
@@ -60,15 +64,32 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `MEMBER_RATE_LIMIT_PER_MINUTE` | `240` | Authenticated calls per player per minute. |
 | `UPLOAD_RATE_LIMIT_PER_MINUTE` | `10` | Snapshot uploads per player per minute (a snapshot can be a megabyte). |
 | `RETENTION_DAYS` | `30` | Delete finished, abandoned and never-started matches older than this, with everything they own. `0` keeps every match forever. |
-| `TRUST_PROXY` | `false` | Read the client address from `X-Forwarded-For` / `CF-Connecting-IP`. Set it behind a reverse proxy, never otherwise. |
-| `BUG_REPORT_DATABASE_URL` | `sqlite:./chaos-overlords-bug-reports.db` | A **second** SQLite file, for bug reports. Empty turns the intake off and `POST /api/v1/bug-reports` answers 404. |
+| `ABANDONED_RETENTION_DAYS` | `90` | Delete a still-`running` match nobody is in any more once it has been silent this long. This is how most public matches actually end, and nothing else collects one. `0` keeps them forever. |
+| `TRUST_PROXY` | `0` | How many trusted proxies sit in front. `0` reads the socket address, the only value a client cannot choose. `1` (or `true`) reads the last `X-Forwarded-For` entry, which is the one the trusted proxy wrote; a higher number skips that many more from the right. See the note below. |
+| `BUG_REPORT_DATABASE_URL` | *(empty, intake off)* | A **second** SQLite file, for bug reports. Empty turns the intake off and `POST /api/v1/bug-reports` answers 404. The game posts its reports to the central service, so a lobby server has no reason to take them. |
+| `BUG_REPORT_RETENTION_DAYS` | `90` | Delete a bug report and its archive once it is older than this. `0` keeps them forever. |
+| `BUG_REPORT_DAILY_STATE_MB` | `512` | Attached journal megabytes accepted per rolling day across every reporter. Over budget, the report is still filed and only its journal is dropped. `0` lifts the ceiling. |
 | `BUG_REPORT_BLOB_DIR` | *(unset)* | Directory for compressed match journals. Unset keeps archives under 256 KiB in the database row and drops larger ones (a `sqlite::memory:` bug report database gets an in-memory store instead, since it has no file to outlive). |
 | `BUG_REPORT_RATE_LIMIT_PER_MINUTE` | `5` | Bug reports accepted per client address per minute. Its own budget, not the lobby's. |
 | `SWEEP_INTERVAL_MS` | `15000` | How often the safety net runs: expired turn deadlines, interrupted seals, retention (the timers are the precise path for a deadline). |
 | `SHUTDOWN_GRACE_MS` | `5000` | How long open event streams may delay shutdown before they are cut. |
+| `MAX_EVENT_STREAMS` | `512` | Event streams this process holds at once, across every match; further opens answer 429. A stream lives until its client closes it and costs one read per published event, so this is what stops one member from holding thousands. Raise it and the file descriptor limit together. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
 
 Put TLS in front of it (Caddy, nginx, a tunnel): player tokens are bearer credentials.
+
+### Behind a proxy
+
+`X-Forwarded-For` is appended to, not replaced, so everything left of the last entry is whatever
+the client sent. `TRUST_PROXY` is therefore a count of the proxies in front rather than a yes or no,
+and the server reads the chain from the right: with `1` it takes the entry the single trusted proxy
+wrote and ignores the rest. Set it too high and the server reads an address the client chose, at
+which point the rate limits stop binding — they are the only guard on the join-code door, the
+password door and multi-megabyte bug-report uploads.
+
+Configure the proxy to overwrite or strip `X-Forwarded-For` and `CF-Connecting-IP` on the way in if
+it can. `CF-Connecting-IP` is trusted only by the Cloudflare runtime, where Cloudflare sets it;
+behind anything else it is a header the client fills in itself and this server ignores it.
 
 ## Generating the C# client
 
@@ -103,28 +124,42 @@ version in `scripts/generate-csharp.mjs`, run `pnpm codegen`, and the diff says 
 
 ### Central server (Cloudflare)
 
+The Worker is published as `@chaos-overlords/worker` and deployed from a separate, private
+deployments repository — which account it runs in, what its databases are called and how its vars are
+tuned are that repository's business, not this one's. What this package defines is the interface a
+deployment has to satisfy:
+
+| Binding | Kind | Purpose |
+|---|---|---|
+| `DB` | D1 | Matches, players, turns, snapshots. Migrate from `packages/storage/migrations/sqlite` — the same lineage better-sqlite3 runs. |
+| `BUG_DB` | D1 | Bug reports, from `packages/bug-reports/migrations/sqlite`. Its own database; see "Bug reports" below. Leave it unbound and `POST /api/v1/bug-reports` answers 404. |
+| `BUG_BLOBS` | R2 | Compressed match journals. Leave it unbound and only journals under 256 KiB are kept. |
+| `MATCH_HUB` | Durable Object | `MatchHub`, one per match: SSE fan-out and the turn deadline alarm. Its migration lineage starts at tag `v1`, `new_sqlite_classes = ["MatchHub"]`. |
+
+`PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
+`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE`, `RETENTION_DAYS`,
+`ABANDONED_RETENTION_DAYS`, `BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars,
+with the same meanings as the Node environment variables above. A deployment also wants the cron
+trigger the `scheduled` handler expects — five minutes is the interval the sweeper is written for —
+and Cloudflare rate limiting rules on `/api/v1/matches`, `/api/v1/matches/join` and
+`/api/v1/bug-reports`: the in-Worker limiter counts per isolate, so it softens abuse on one edge node
+rather than globally.
+
+For local work, `runtimes/cloudflare/wrangler.dev.toml` binds all four to throwaway local resources.
+It is a development and test fixture, not a deployment.
+
 ```sh
 cd runtimes/cloudflare
-wrangler d1 create chaos_overlords          # paste the id into wrangler.toml
-pnpm db:migrate:remote
-wrangler d1 create chaos_overlords_bug_reports   # paste the id in too, or drop the binding
-pnpm db:migrate:bugs:remote
-wrangler r2 bucket create chaos-overlords-bug-reports
-wrangler deploy
+pnpm db:migrate:local
+pnpm db:migrate:bugs:local
+pnpm dev
 ```
-
-`wrangler.toml` declares both D1 bindings, the R2 bucket, the `MatchHub` Durable Object and a
-five-minute cron. The same `PUBLIC_LISTING`, `RATE_LIMIT_PER_MINUTE`, `MEMBER_RATE_LIMIT_PER_MINUTE`,
-`UPLOAD_RATE_LIMIT_PER_MINUTE`, `BUG_REPORT_RATE_LIMIT_PER_MINUTE` and `RETENTION_DAYS` knobs are
-`[vars]` there. The in-Worker rate limiter counts per isolate, so it softens abuse on one edge node
-rather than globally; add a Cloudflare rate limiting rule on `/api/v1/matches`,
-`/api/v1/matches/join` and `/api/v1/bug-reports` for the real gate.
 
 ## Bug reports
 
 `POST /api/v1/bug-reports` takes what a player typed in the game's Escape menu and, if they left the
 box ticked, the whole match as a compressed event-sourced journal that replays from its first turn.
-The game posts to a hardcoded address (`BugReportEndpoint` in
+The game posts to the official central-service address (`BugReportEndpoint` in
 `src/Rechaos.Multiplayer/Http/BugReportSubmitter.cs`) rather than to whichever lobby a player is in:
 a report goes to the people who maintain the game, and somebody self-hosting a lobby for three
 friends is not them.
@@ -157,6 +192,53 @@ codec byte for zstd) lives with the game in `src/Rechaos.Core/Persistence/Replay
 
 To read one back, `BugReportService` has `list`, `get` and `archive`; none of them are routes, so
 triage is a script or a console against the deployment rather than an endpoint anyone can call.
+
+## Publishing
+
+Every package here is published to npm under `@chaos-overlords/`, GPL-3.0-only, so the server can be
+self-hosted (`npx @chaos-overlords/node-server`) and deployed from elsewhere — a Cloudflare
+deployment consumes `@chaos-overlords/worker` and the two migration lineages as ordinary
+dependencies rather than as a checkout of this repository.
+
+They share one release version. `workspace:*` is what the packages depend on each other by, and pnpm
+rewrites it to that exact version as it packs, so every package must be bumped together. The release
+workflow does that in its checkout and then runs `pnpm check-versions` before it builds anything;
+release commits do not need manual package-version edits.
+
+Release from *Actions → Publish multiplayer packages → Run workflow*, which runs
+[`.github/workflows/multiplayer-publish.yml`](../.github/workflows/multiplayer-publish.yml). Enter the
+version and choose a mode:
+
+| Mode | What it does |
+| --- | --- |
+| `rehearse` (default) | Lints, builds, typechecks, tests, checks the C# codegen, and packs every tarball, then stops without contacting the registry. |
+| `release` | The same checks, then publishes all nine packages, then tags the commit it published `multiplayer-v0.2.0`. |
+
+Both cut from the tip of main, pin that commit, and apply the requested version to all nine package
+manifests in the workflow checkout. The checks, tarballs, and tag therefore describe one commit even
+if someone pushes to main mid-run. A release refuses to start if its tag already exists. The tag is
+created last because it is the half that is cheap to redo by hand.
+
+Pushing a `multiplayer-v*` tag still publishes, for a release that has to come from a commit other
+than the tip of main:
+
+```sh
+git tag multiplayer-v0.2.0 && git push origin multiplayer-v0.2.0
+```
+
+Either way the workflow authenticates with **npm OIDC trusted publishing**: the job trades its
+GitHub-issued `id-token` for a short-lived registry credential, so there is no npm token in this
+repository to leak or rotate, and every tarball carries a provenance attestation. Each package has to
+name the workflow as a trusted publisher on npmjs.com first (*Settings → Trusted publishers*: this
+repository, workflow `multiplayer-publish.yml`), and the very first release of a new package name has
+to be pushed by hand — a package that does not exist yet cannot have a trusted publisher. That
+binding is to the workflow's filename, which is why releasing lives in the publishing workflow rather
+than a second one that drives it.
+
+`pnpm publish:dry-run` does the pack locally without a registry, and prints what each tarball would
+contain. What goes into a tarball is `files` in each manifest; `prepublishOnly` builds the package,
+copies the repository's `LICENSE` and `NOTICE` into it (npm ships one tarball per package, so each
+needs its own), and fails the publish if anything `files` promises is missing.
 
 ## Develop
 

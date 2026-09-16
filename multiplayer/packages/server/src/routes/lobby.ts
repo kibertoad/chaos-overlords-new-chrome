@@ -2,11 +2,14 @@ import {
   createMatchContract,
   getMatchContract,
   joinMatchContract,
+  joinRunningMatchContract,
   kickPlayerContract,
   leaveMatchContract,
   listLobbiesContract,
+  rejoinMatchContract,
   startMatchContract,
   takeoverVoteContract,
+  updateMatchSettingsContract,
 } from '@chaos-overlords/contracts'
 import { NotFoundError } from '@chaos-overlords/kernel'
 import type { Hono } from 'hono'
@@ -41,6 +44,11 @@ export function registerPublicLobbyRoutes(api: Hono<AppEnv>): void {
     const membership = await c.get('container').kernel.lobby.join(c.req.valid('json'))
     return c.json(membership, 201)
   })
+
+  buildHonoRoute(api, joinRunningMatchContract, async (c) => {
+    const membership = await c.get('container').kernel.lobby.joinRunning(c.req.valid('json'))
+    return c.json(membership, 201)
+  })
 }
 
 /** The rest of the lobby lifecycle, for a seated member. */
@@ -61,10 +69,27 @@ export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
     return c.body(null, 204)
   })
 
+  buildHonoRoute(api, updateMatchSettingsContract, async (c) => {
+    await c
+      .get('container')
+      .kernel.lobby.updateSettings(
+        requireMember(c.get('principal'), c.req.valid('param').matchId),
+        c.req.valid('json'),
+      )
+    return c.body(null, 204)
+  })
+
   buildHonoRoute(api, leaveMatchContract, async (c) => {
     await c
       .get('container')
       .kernel.lobby.leave(requireMember(c.get('principal'), c.req.valid('param').matchId))
+    return c.body(null, 204)
+  })
+
+  buildHonoRoute(api, rejoinMatchContract, async (c) => {
+    await c
+      .get('container')
+      .kernel.lobby.rejoin(requireMember(c.get('principal'), c.req.valid('param').matchId))
     return c.body(null, 204)
   })
 

@@ -9,6 +9,15 @@ internal enum MultiplayerStage
     /// <summary>Choosing a server and a name, and whether to host or join.</summary>
     Connect,
 
+    /// <summary>Browsing locally remembered unfinished online memberships.</summary>
+    History,
+
+    /// <summary>Browsing public waiting and ongoing sessions.</summary>
+    Discover,
+
+    /// <summary>Choosing which never-human computer empire to take over.</summary>
+    LateJoinSeat,
+
     /// <summary>A request is in flight; the player can only wait.</summary>
     Busy,
 
@@ -28,6 +37,12 @@ internal enum MultiplayerStage
     Finished,
 }
 
+internal enum OnlineConnectRole
+{
+    Host,
+    Join
+}
+
 /// <summary>
 /// Everything the online screens need that is not the match itself.
 /// </summary>
@@ -45,9 +60,42 @@ internal sealed class MultiplayerUiState
         .ThenBy(vote => vote.PlayerId, StringComparer.Ordinal)
         .FirstOrDefault();
     internal MultiplayerStage Stage { get; set; } = MultiplayerStage.Connect;
+    internal int RecoverySelection { get; set; }
+    internal int DiscoverySelection { get; set; }
+    internal int DiscoveryStatusFilter { get; set; }
+    internal int DiscoveryScenarioFilter { get; set; } = -1;
+    internal int DiscoveryAiFilter { get; set; } = -1;
 
-    internal TextField Server { get; } = new("SERVER", 96, "http://localhost:8787");
+    /// <summary>Which filter dropdown is open, or -1 when none is.</summary>
+    internal int OpenDiscoveryFilter { get; set; } = -1;
+
+    /// <summary>The row an open dropdown has under the keyboard cursor.</summary>
+    internal int DiscoveryFilterHighlight { get; set; }
+
+    internal int LateJoinSeatSelection { get; set; }
+    internal LobbyListing? PendingLateJoin { get; set; }
+
+    /// <summary>
+    /// Whether this client took its seat in a match that was already running.
+    /// </summary>
+    /// <remarks>
+    /// The session needs it at bootstrap: a late joiner is on the roster before it has built a
+    /// city, so it has to take the host's snapshot and the event log rather than generate one that
+    /// seats itself where every peer seated a computer player.
+    /// </remarks>
+    internal bool JoinedInProgress { get; set; }
+    internal IReadOnlyList<LobbyListing> Listings { get; set; } = [];
+
+    internal OnlineServiceMode Service { get; set; } = OnlineServiceMode.Central;
+    internal OnlineConnectRole Role { get; set; } = OnlineConnectRole.Host;
+    internal bool PublicListing { get; set; }
+    internal bool AllowLateJoin { get; set; }
+
+    internal TextField Server { get; } = new(
+        "SERVER", 96, GamePreferences.DefaultCustomMultiplayerServer);
     internal TextField DisplayName { get; } = new("NAME", 32, "PLAYER");
+    /// <summary>Empty until the lobby is made: the host is given a name, and renames it there.</summary>
+    internal TextField SessionName { get; } = new("SESSION NAME", 64);
     internal TextField JoinCode { get; } = new("JOIN CODE", 8);
 
     /// <summary>
@@ -57,13 +105,24 @@ internal sealed class MultiplayerUiState
     /// Empty means none: hosting with it blank opens an unprotected lobby, and joining one that is
     /// protected without it is refused by the server rather than guessed at here.
     /// </remarks>
-    internal TextField Password { get; } = new("PASSWORD (OPTIONAL)", 64) { IsMasked = true };
+    internal TextField Password { get; } = new("PASSWORD (OPTIONAL)", 64);
 
     /// <summary>The lobby as the server last described it, or null before there is one.</summary>
     internal MatchView? Match { get; set; }
 
     /// <summary>The code the host reads out; empty until there is a lobby.</summary>
     internal string JoinCodeShown { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The password this client is seated with, empty when the session has none.
+    /// </summary>
+    /// <remarks>
+    /// Kept apart from <see cref="Password"/>, which is the connect screen's field and holds
+    /// whatever was last typed into it. This is what the session was actually opened or entered
+    /// with, so the escape menu can put it in front of the player who has to read it out, and a
+    /// private lobby the host never set one on shows none.
+    /// </remarks>
+    internal string PasswordShown { get; set; } = string.Empty;
 
     /// <summary>Whether this client is the host, and so the one that repairs a desync.</summary>
     internal bool IsHost { get; set; }
@@ -106,6 +165,9 @@ internal sealed class MultiplayerUiState
     /// <summary>The last thing that went wrong, for the player to read.</summary>
     internal string Status { get; set; } = string.Empty;
 
+    /// <summary>The result of the selected service's lightweight health check.</summary>
+    internal string ServerStatus { get; set; } = string.Empty;
+
     /// <summary>
     /// Whether building this match from the server's description failed.
     /// </summary>
@@ -121,8 +183,18 @@ internal sealed class MultiplayerUiState
     internal void Reset()
     {
         Stage = MultiplayerStage.Connect;
+        RecoverySelection = 0;
+        DiscoverySelection = 0;
+        OpenDiscoveryFilter = -1;
+        DiscoveryFilterHighlight = 0;
+        LateJoinSeatSelection = 0;
+        PendingLateJoin = null;
+        JoinedInProgress = false;
+        Listings = [];
+        Role = OnlineConnectRole.Host;
         Match = null;
         JoinCodeShown = string.Empty;
+        PasswordShown = string.Empty;
         IsHost = false;
         PlanningTurn = 0;
         DeadlineAt = null;
@@ -132,9 +204,11 @@ internal sealed class MultiplayerUiState
         SentOpCount = 0;
         DraftDue = TimeSpan.Zero;
         BootstrapFailed = false;
+        ServerStatus = string.Empty;
         TakeoverVotes.Clear();
         Password.Set(string.Empty);
         JoinCode.Set(string.Empty);
+        SessionName.Set(string.Empty);
     }
 
     /// <summary>Whether the player may still change the turn they are planning.</summary>

@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createMemoryBlobStore } from '../src/blobs'
 import { openBugReportStorage } from '../src/node'
 import type { BlobStore, BugReportRepository, StoredBugReport } from '../src/ports'
-import { createBugReportService } from '../src/service'
+import { type BugReportRetention, createBugReportService } from '../src/service'
 
 function encodeBase64(bytes: Uint8Array): string {
   let binary = ''
@@ -64,14 +64,32 @@ function inMemoryRepository(): BugReportRepository & { rows: StoredBugReport[] }
         .sort((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime())
         .slice(0, limit)
     },
+    async bytesSince(since) {
+      return rows
+        .filter((row) => row.receivedAt >= since)
+        .reduce((total, row) => total + (row.state?.compressedBytes ?? 0), 0)
+    },
+    async deleteBefore(before, limit) {
+      const doomed = rows
+        .filter((row) => row.receivedAt < before)
+        .sort((a, b) => a.receivedAt.getTime() - b.receivedAt.getTime())
+        .slice(0, limit)
+      for (const row of doomed) rows.splice(rows.indexOf(row), 1)
+      return doomed.flatMap((row) => (row.state?.blobKey ? [row.state.blobKey] : []))
+    },
   }
 }
 
-function serviceOver(repository: BugReportRepository, blobs?: BlobStore) {
+function serviceOver(
+  repository: BugReportRepository,
+  blobs?: BlobStore,
+  extras: { clock?: ManualClock; retention?: BugReportRetention } = {},
+) {
   return createBugReportService({
     repository,
-    clock: new ManualClock(),
+    clock: extras.clock ?? new ManualClock(),
     logger: new RecordingLogger(),
+    ...(extras.retention ? { retention: extras.retention } : {}),
     ...(blobs ? { blobs } : {}),
   })
 }
@@ -114,6 +132,75 @@ describe('bug report intake', () => {
     expect(receipt.stateStored).toBe('omitted')
     expect(repository.rows[0]?.message).toBe('The gang vanished after Move.')
     expect(repository.rows[0]?.state).toBeNull()
+  })
+
+  /**
+   * The per-minute limiter stops one client in a retry loop. It does nothing about reports arriving
+   * from many addresses, a few a minute each, for as long as anybody keeps sending them — which was
+   * unbounded object storage with nothing that ever deleted.
+   */
+  it('drops the journal but keeps the report once the day budget is spent', async () => {
+    const repository = inMemoryRepository()
+    const blobs = createMemoryBlobStore()
+    const clock = new ManualClock()
+    const service = serviceOver(repository, blobs, {
+      clock,
+      retention: { dailyStateBytes: 96, maxAgeMs: 0, batchSize: 10 },
+    })
+
+    const first = await service.submit(
+      request({ state: await stateOf(new Uint8Array(64).fill(1)) }),
+    )
+    expect(first.stateStored).toBe('stored')
+    const second = await service.submit(
+      request({ state: await stateOf(new Uint8Array(64).fill(2)) }),
+    )
+    // The description is the part worth having, so the report is still filed.
+    expect(second.stateStored).toBe('omitted')
+    expect(repository.rows).toHaveLength(2)
+    expect(repository.rows[1]?.state).toBeNull()
+
+    // The window rolls: yesterday's bytes stop counting against today.
+    clock.advance(25 * 60 * 60 * 1000)
+    const later = await service.submit(
+      request({ state: await stateOf(new Uint8Array(64).fill(3)) }),
+    )
+    expect(later.stateStored).toBe('stored')
+  })
+
+  it('deletes reports past the retention window with the objects they point at', async () => {
+    const repository = inMemoryRepository()
+    const blobs = createMemoryBlobStore()
+    const clock = new ManualClock()
+    const service = serviceOver(repository, blobs, {
+      clock,
+      retention: { dailyStateBytes: 0, maxAgeMs: 30 * 24 * 60 * 60 * 1000, batchSize: 10 },
+    })
+    const receipt = await service.submit(
+      request({ state: await stateOf(new Uint8Array(64).fill(5)) }),
+    )
+    const key = repository.rows[0]?.state?.blobKey as string
+
+    expect(await service.collect()).toBe(0)
+    clock.advance(31 * 24 * 60 * 60 * 1000)
+    expect(await service.collect()).toBe(1)
+    expect(repository.rows).toHaveLength(0)
+    // The blob store is a different system and nothing cascades into it.
+    expect(await blobs.get(key)).toBeNull()
+    expect(await service.archive(receipt.id)).toBeNull()
+  })
+
+  it('files an archive the client did not scrub under its own prefix', async () => {
+    const repository = inMemoryRepository()
+    const service = serviceOver(repository, createMemoryBlobStore())
+    // `anonymized` is whatever the client said. An unscrubbed journal carries other players' names
+    // and their Comlink text, so it is kept apart rather than turned away: whoever triages it is
+    // entitled to know what they are about to open.
+    await service.submit(
+      request({ state: await stateOf(new Uint8Array(32).fill(4), { anonymized: false }) }),
+    )
+    expect(repository.rows[0]?.state?.blobKey).toMatch(/^bug-reports-unscrubbed\//)
+    expect(repository.rows[0]?.state?.anonymized).toBe(false)
   })
 
   it('says so when no archive came with the report', async () => {

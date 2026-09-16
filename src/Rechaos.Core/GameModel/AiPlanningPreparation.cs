@@ -90,7 +90,11 @@ internal static class AiPlanningPreparation
             .Append(0)
             .ToArray();
         var availability = state.Sectors
-            .Select(sector => checked((byte)sector.CrackdownTurnsRemaining))
+            // Clamped, not checked. The original held this counter in a byte; here it is an int
+            // that Trigger adds three to five to and FinishCombat takes one off, so a sector that
+            // is crackdown-triggered most turns crosses 255 in a long game. Everything downstream
+            // reads it as "how long this sector stays shut", and 255 turns is already forever.
+            .Select(sector => (byte)Math.Clamp(sector.CrackdownTurnsRemaining, 0, byte.MaxValue))
             // The aliased retaliation byte is irrelevant while owner[64] != -1.
             .Append((byte)0)
             .ToArray();

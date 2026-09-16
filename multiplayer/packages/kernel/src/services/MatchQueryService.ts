@@ -1,11 +1,12 @@
-import type {
-  LobbyListing,
-  MatchView,
-  OwnSubmissionView,
-  PlayerView,
-  SealedOrdersView,
-  SealedPlayerOrders,
-  TurnView,
+import {
+  GAME_BOUNDS,
+  type LobbyListing,
+  type MatchView,
+  type OwnSubmissionView,
+  type PlayerView,
+  type SealedOrdersView,
+  type SealedPlayerOrders,
+  type TurnView,
 } from '@chaos-overlords/contracts'
 import type { Match, Player, Turn } from '../domain/entities'
 import { ConflictError, NotFoundError } from '../domain/errors'
@@ -67,8 +68,47 @@ export class MatchQueryService {
     }
   }
 
-  listPublicLobbies(limit: number): Promise<LobbyListing[]> {
-    return this.storage.matches.listPublicLobbies(limit)
+  async listPublicLobbies(limit: number): Promise<LobbyListing[]> {
+    const listings = await this.storage.matches.listPublicLobbies(limit)
+    return Promise.all(
+      listings.map(async (listing) => {
+        if (listing.status !== 'running') return listing
+        const players = await this.storage.players.listByMatch(listing.id)
+        const current = {
+          ...listing,
+          playerCount: players.filter((player) => player.status === 'active').length,
+        }
+        if (listing.settings.gameSettings.allowLateJoin !== true)
+          return { ...current, availableSlots: [], availableSeatSummaries: [] }
+        if (!(await this.storage.snapshots.getLatest(listing.id)))
+          return { ...current, availableSlots: [], availableSeatSummaries: [] }
+        // `joinRunning` counts every seat a human has ever held against the host's own limit, so a
+        // listing that ignored it advertised seats that every join answers `match_full` for.
+        if (players.length >= listing.settings.maxPlayers)
+          return { ...current, availableSlots: [], availableSeatSummaries: [] }
+        const reserved = new Set(players.map((player) => player.slot))
+        const availableSlots = Array.from(
+          { length: GAME_BOUNDS.playerCount },
+          (_, slot) => slot,
+        ).filter((slot) => !reserved.has(slot))
+        const summaries = Array.isArray(listing.settings.gameSettings.seatSummaries)
+          ? listing.settings.gameSettings.seatSummaries
+          : []
+        return {
+          ...current,
+          availableSlots,
+          availableSeatSummaries: availableSlots.map(
+            (slot) =>
+              summaries.filter(isSeatSummary).find((summary) => summary.slot === slot) ?? {
+                slot,
+                gangs: 0,
+                sites: 0,
+                sectors: 0,
+              },
+          ),
+        }
+      }),
+    )
   }
 
   async ownSubmission(match: Match, playerId: string, number: number): Promise<OwnSubmissionView> {
@@ -109,4 +149,17 @@ export class MatchQueryService {
     if (!turn) throw new NotFoundError('No such turn', { reason: 'unknown_turn' })
     return turn
   }
+}
+
+function isSeatSummary(value: unknown): value is {
+  slot: number
+  gangs: number
+  sites: number
+  sectors: number
+} {
+  if (value === null || typeof value !== 'object') return false
+  const candidate = value as Record<string, unknown>
+  return ['slot', 'gangs', 'sites', 'sectors'].every(
+    (key) => Number.isSafeInteger(candidate[key]) && (candidate[key] as number) >= 0,
+  )
 }

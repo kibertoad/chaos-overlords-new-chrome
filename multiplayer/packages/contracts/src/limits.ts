@@ -5,7 +5,7 @@
 export const LIMITS = {
   /** Players per match, matching the six slots of the original game. */
   maxPlayers: 6,
-  minPlayers: 2,
+  minPlayers: 1,
   matchNameLength: 64,
   displayNameLength: 32,
   passwordMinLength: 6,

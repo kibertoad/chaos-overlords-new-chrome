@@ -1,3 +1,4 @@
+import type { BugReportService } from '@chaos-overlords/bug-reports'
 import type { Clock, DeadlineScheduler, Kernel, Logger, TurnService } from '@chaos-overlords/kernel'
 
 /**
@@ -49,9 +50,14 @@ export class TimerDeadlineScheduler implements DeadlineScheduler {
  * The periodic safety net: seals turns whose timer was lost to a restart, finishes seals that were
  * interrupted halfway, and collects matches past their retention age. Returns the stop handle.
  */
-export function startSweeper(kernel: Kernel, intervalMs: number, logger: Logger): () => void {
+export function startSweeper(
+  kernel: Kernel,
+  intervalMs: number,
+  logger: Logger,
+  bugReports?: BugReportService,
+): () => void {
   const tick = () => {
-    void sweep(kernel, logger)
+    void sweep(kernel, logger, bugReports)
   }
   const timer = setInterval(tick, intervalMs)
   timer.unref()
@@ -59,7 +65,7 @@ export function startSweeper(kernel: Kernel, intervalMs: number, logger: Logger)
   return () => clearInterval(timer)
 }
 
-async function sweep(kernel: Kernel, logger: Logger): Promise<void> {
+async function sweep(kernel: Kernel, logger: Logger, bugReports?: BugReportService): Promise<void> {
   try {
     const { sealed, repaired } = await kernel.turns.sweep()
     if (sealed > 0 || repaired > 0) logger.info('sweeper advanced turns', { sealed, repaired })
@@ -70,5 +76,12 @@ async function sweep(kernel: Kernel, logger: Logger): Promise<void> {
     await kernel.retention.collect()
   } catch (error) {
     logger.warn('retention sweep failed', { error: String(error) })
+  }
+  // The intake keeps nothing forever either. It is a different database with a different window,
+  // so it gets its own call and its own failure: neither sweep may take the other down.
+  try {
+    await bugReports?.collect()
+  } catch (error) {
+    logger.warn('bug report retention sweep failed', { error: String(error) })
   }
 }

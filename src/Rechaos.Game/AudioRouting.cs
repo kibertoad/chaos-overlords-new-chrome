@@ -56,6 +56,8 @@ public static class AudioRouting
     public static int? IncomingMessageSound(bool hasUnread) =>
         hasUnread ? GeneralSoundSlot.IncomingMessageAlert : null;
 
+    public static int OnlineTurnReadySound() => GeneralSoundSlot.IncomingMessageAlert;
+
     public static int InputResultSound(bool accepted) =>
         accepted ? GeneralSoundSlot.AcceptedSelection : GeneralSoundSlot.RejectedInput;
 

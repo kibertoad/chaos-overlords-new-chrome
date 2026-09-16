@@ -23,6 +23,8 @@ namespace Rechaos.Multiplayer.Generated;
 [JsonDerivedType(typeof(MatchTakeoverVoteCastEvent), "match.takeoverVoteCast")]
 [JsonDerivedType(typeof(MatchTakeoverVoteCancelledEvent), "match.takeoverVoteCancelled")]
 [JsonDerivedType(typeof(MatchPlayerTakenOverEvent), "match.playerTakenOver")]
+[JsonDerivedType(typeof(MatchPlayerReturnedEvent), "match.playerReturned")]
+[JsonDerivedType(typeof(MatchLatePlayerJoinedEvent), "match.latePlayerJoined")]
 [JsonDerivedType(typeof(TurnOpenedEvent), "turn.opened")]
 [JsonDerivedType(typeof(TurnDeadlineExtendedEvent), "turn.deadlineExtended")]
 [JsonDerivedType(typeof(TurnReadinessEvent), "turn.readiness")]
@@ -158,6 +160,30 @@ public sealed record MatchPlayerTakenOverEvent(
     string CreatedAt,
     [property: JsonPropertyName("payload")] MatchPlayerTakenOverEventPayload Payload
 ) : MatchEvent(Seq, MatchId, CreatedAt, "match.playerTakenOver");
+
+public sealed record MatchPlayerReturnedEventPayload(
+    [property: JsonPropertyName("playerId")] string PlayerId,
+    [property: JsonPropertyName("replacedComputer")] bool ReplacedComputer
+);
+
+public sealed record MatchPlayerReturnedEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] MatchPlayerReturnedEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "match.playerReturned");
+
+public sealed record MatchLatePlayerJoinedEventPayload(
+    [property: JsonPropertyName("playerId")] string PlayerId,
+    [property: JsonPropertyName("slot")] int Slot
+);
+
+public sealed record MatchLatePlayerJoinedEvent(
+    int Seq,
+    string MatchId,
+    string CreatedAt,
+    [property: JsonPropertyName("payload")] MatchLatePlayerJoinedEventPayload Payload
+) : MatchEvent(Seq, MatchId, CreatedAt, "match.latePlayerJoined");
 
 public sealed record TurnOpenedEventPayload(
     [property: JsonPropertyName("turn")] int Turn,
@@ -455,6 +481,13 @@ public sealed record JoinMatchRequest(
     [property: JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Password
 );
 
+public sealed record JoinRunningMatchRequest(
+    [property: JsonPropertyName("match")] string Match,
+    [property: JsonPropertyName("displayName")] string DisplayName,
+    [property: JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Password,
+    [property: JsonPropertyName("slot")] int Slot
+);
+
 public sealed record SubmitOrdersRequest(
     [property: JsonPropertyName("orders")] OrderDocument Orders,
     [property: JsonPropertyName("ready")] bool Ready
@@ -478,11 +511,19 @@ public sealed record TurnReportRequest(
     [property: JsonPropertyName("finished")] bool Finished
 );
 
+public sealed record AiSeatSummary(
+    [property: JsonPropertyName("slot")] int Slot,
+    [property: JsonPropertyName("gangs")] int Gangs,
+    [property: JsonPropertyName("sites")] int Sites,
+    [property: JsonPropertyName("sectors")] int Sectors
+);
+
 public sealed record UploadSnapshotRequest(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("formatVersion")] int FormatVersion,
     [property: JsonPropertyName("stateHash")] string StateHash,
-    [property: JsonPropertyName("body")] string Body
+    [property: JsonPropertyName("body")] string Body,
+    [property: JsonPropertyName("seatSummaries")] IReadOnlyList<AiSeatSummary> SeatSummaries
 );
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -563,11 +604,16 @@ public sealed record MatchView(
 
 public sealed record LobbyListing(
     [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("joinCode")] string JoinCode,
     [property: JsonPropertyName("name")] string Name,
     [property: JsonPropertyName("hostDisplayName")] string HostDisplayName,
     [property: JsonPropertyName("playerCount")] int PlayerCount,
     [property: JsonPropertyName("maxPlayers")] int MaxPlayers,
     [property: JsonPropertyName("passwordProtected")] bool PasswordProtected,
+    [property: JsonPropertyName("status")] MatchStatus Status,
+    [property: JsonPropertyName("settings")] MatchSettings Settings,
+    [property: JsonPropertyName("availableSlots")] IReadOnlyList<int> AvailableSlots,
+    [property: JsonPropertyName("availableSeatSummaries")] IReadOnlyList<AiSeatSummary> AvailableSeatSummaries,
     [property: JsonPropertyName("createdAt")] string CreatedAt
 );
 

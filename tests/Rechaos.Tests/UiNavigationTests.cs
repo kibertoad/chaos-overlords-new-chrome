@@ -202,6 +202,9 @@ public sealed class UiNavigationTests
                 ScenarioId.Acceptance, ScenarioId.Dominance
             ],
             SetupScenarioButtons.VisualOrder);
+        Assert.Equal(ScenarioId.KillEmAll, SetupScenarioButtons.DefaultScenario);
+        Assert.Equal(0, SetupScenarioButtons.ButtonForScenario(
+            SetupScenarioButtons.DefaultScenario));
         Assert.Equal(6, SetupScenarioButtons.ButtonForScenario(ScenarioId.Greed));
     }
 
@@ -703,6 +706,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(198, 133, 242, 158), LastTurnEventsLayout.Artwork);
         Assert.Equal(new Rectangle(296, 187, 48, 48), LastTurnEventsLayout.ResearchItem);
         Assert.Equal(new Rectangle(135, 151, 25, 21), LastTurnEventsLayout.Previous);
+        Assert.Equal(EquipmentCommandLayout.Cancel, LastTurnEventsLayout.Delete);
         Assert.Equal(new Rectangle(225, 299, 43, 7), LastTurnEventsLayout.DateValue);
         Assert.Equal(new Rectangle(305, 299, 135, 7), LastTurnEventsLayout.ObjectValue);
         Assert.Equal(new Rectangle(239, 308, 201, 7), LastTurnEventsLayout.StatusValue);
@@ -981,14 +985,4 @@ public sealed class UiNavigationTests
         Assert.False(HireComparisonLayout.IsBestValue(1, 7, [2, 4, 7]));
     }
 
-    [Fact]
-    public void OnlineConnectFieldsLeaveRoomForEveryLabel()
-    {
-        Assert.Equal(new Rectangle(120, 116, 400, 22), OnlineConnectLayout.Server);
-        Assert.Equal(new Rectangle(120, 230, 400, 22), OnlineConnectLayout.Password);
-        Assert.Equal(new Rectangle(120, 270, 124, 30), OnlineConnectLayout.Host);
-        Assert.Equal(326, OnlineConnectLayout.StatusY);
-        Assert.All(OnlineConnectLayout.Fields.Zip(OnlineConnectLayout.Fields.Skip(1)), pair =>
-            Assert.True(pair.First.Bottom + 16 <= pair.Second.Y));
-    }
 }

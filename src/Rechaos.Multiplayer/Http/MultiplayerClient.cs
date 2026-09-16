@@ -17,6 +17,30 @@ public sealed record MultiplayerClientOptions(Uri BaseAddress, TimeSpan? Request
     /// <summary>Fifteen seconds: long enough for a cold self-hosted server, short enough to notice.</summary>
     public static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(15);
 
+    /// <summary>
+    /// What to set <see cref="HttpClient.MaxResponseContentBufferSize"/> to on a client that talks
+    /// to a coordination server.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The default is two gigabytes, which is to say no bound: a malicious or compromised custom
+    /// server can answer any call with a body that large and the client buffers all of it before any
+    /// parser sees a byte. The frame and save limits downstream are checked after the buffering, so
+    /// they do not help.
+    /// </para>
+    /// <para>
+    /// Eight megabytes covers the largest answer a server legitimately gives with room to spare: a
+    /// snapshot is a megabyte of base64, and a sealed set is six players at a quarter of a megabyte
+    /// of orders each. Event streams are unaffected — they are read with
+    /// <see cref="HttpCompletionOption.ResponseHeadersRead"/>, which does not buffer.
+    /// </para>
+    /// </remarks>
+    public const long MaximumResponseBytes = 8L * 1024 * 1024;
+
+    /// <summary>A client bounded by <see cref="MaximumResponseBytes"/>, for a caller that owns one.</summary>
+    public static HttpClient CreateHttpClient() =>
+        new() { MaxResponseContentBufferSize = MaximumResponseBytes };
+
     internal TimeSpan EffectiveTimeout => RequestTimeout ?? DefaultRequestTimeout;
 
     /// <summary>
@@ -38,7 +62,7 @@ public sealed record MultiplayerClientOptions(Uri BaseAddress, TimeSpan? Request
 /// </summary>
 /// <remarks>
 /// Identity is a capability token. Creating or joining answers one, it is scoped to one player in
-/// one match, and leaving or being kicked revokes it — so a 401 on a later call means the
+/// one match, and being kicked revokes it — so a 401 on a later call means the
 /// membership is gone, not that a credential expired.
 /// </remarks>
 /// <example>
@@ -89,6 +113,12 @@ public sealed class MultiplayerClient
         JoinMatchRequest request,
         CancellationToken cancellationToken) =>
         SendAsync<MembershipView>(HttpMethod.Post, ApiRoutes.JoinMatch, request, cancellationToken);
+
+    public Task<MembershipView> JoinRunningAsync(
+        JoinRunningMatchRequest request,
+        CancellationToken cancellationToken) =>
+        SendAsync<MembershipView>(
+            HttpMethod.Post, ApiRoutes.JoinRunningMatch, request, cancellationToken);
 
     /// <summary>A handle for the calls that name a match.</summary>
     public MatchHandle Match(string matchId) => new(this, matchId);

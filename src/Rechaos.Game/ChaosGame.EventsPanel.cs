@@ -76,11 +76,28 @@ public sealed partial class ChaosGame
     {
         if (LastTurnEventsLayout.Previous.Contains(point)) MoveEventCursor(-1);
         else if (LastTurnEventsLayout.Next.Contains(point)) MoveEventCursor(1);
+        else if (LastTurnEventsLayout.Delete.Contains(point))
+        {
+            AcceptInput();
+            DeleteEvents();
+        }
         else if (LastTurnEventsLayout.Ok.Contains(point))
         {
             AcceptInput();
             CloseEvents();
         }
+    }
+
+    private void DeleteEvents()
+    {
+        if (_state?.Coordinator.ActivePlayer is { } playerId && _actions is not null)
+        {
+            var count = _state.NotificationsFor(playerId).Count;
+            for (var index = 0; index < count; index++)
+                _actions.DismissNotification(playerId);
+            _lastTurnEventArchive.Remove(playerId);
+        }
+        CloseEvents();
     }
 
     private void MoveEventCursor(int delta)
@@ -108,7 +125,7 @@ public sealed partial class ChaosGame
             if (currentReports.Count > 0
                 && EventReviewProgress.IsComplete(reportCount, _eventViewedPages))
             {
-                _lastTurnEventArchive.Store(playerId, currentReports);
+                _lastTurnEventArchive.Store(playerId, _state.Coordinator.Turn, currentReports);
                 var count = _state.NotificationsFor(playerId).Count;
                 for (var index = 0; index < count; index++)
                     _actions.DismissNotification(playerId);
@@ -260,7 +277,9 @@ public sealed partial class ChaosGame
     private IReadOnlyList<GameNotification> ReviewableReports(MatchState state, PlayerId playerId)
     {
         var current = LastTurnReports(state, playerId);
-        return current.Count > 0 ? current : _lastTurnEventArchive.For(playerId);
+        return current.Count > 0
+            ? current
+            : _lastTurnEventArchive.For(playerId, state.Coordinator.Turn);
     }
 
     private static GameEvent? RelatedEvent(MatchState state, GameNotification notification) =>
@@ -289,18 +308,31 @@ public static class EventReviewProgress
 
 public sealed class LastTurnEventArchive
 {
-    private readonly Dictionary<PlayerId, IReadOnlyList<GameNotification>> _reports = [];
+    private readonly Dictionary<PlayerId, ArchivedEventReports> _reports = [];
 
-    public void Store(PlayerId player, IEnumerable<GameNotification> reports)
+    public void Store(PlayerId player, int reviewTurn, IEnumerable<GameNotification> reports)
     {
         ArgumentNullException.ThrowIfNull(reports);
-        _reports[player] = reports.ToArray();
+        if (reviewTurn < 1) throw new ArgumentOutOfRangeException(nameof(reviewTurn));
+        _reports[player] = new ArchivedEventReports(reviewTurn, reports.ToArray());
     }
 
-    public IReadOnlyList<GameNotification> For(PlayerId player) =>
-        _reports.TryGetValue(player, out var reports) ? reports : [];
+    public IReadOnlyList<GameNotification> For(PlayerId player, int reviewTurn)
+    {
+        if (reviewTurn < 1) throw new ArgumentOutOfRangeException(nameof(reviewTurn));
+        if (!_reports.TryGetValue(player, out var archive)) return [];
+        if (archive.ReviewTurn == reviewTurn) return archive.Reports;
+        _reports.Remove(player);
+        return [];
+    }
+
+    public void Remove(PlayerId player) => _reports.Remove(player);
 
     public void Clear() => _reports.Clear();
+
+    private sealed record ArchivedEventReports(
+        int ReviewTurn,
+        IReadOnlyList<GameNotification> Reports);
 }
 
 public static class LastTurnEventPresentation

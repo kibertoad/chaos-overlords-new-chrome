@@ -20,6 +20,7 @@ import {
   lt,
   lte,
   ne,
+  notExists,
   or,
   sql,
 } from 'drizzle-orm'
@@ -73,20 +74,27 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
       const rows = await db
         .select({
           id: matches.id,
+          joinCode: matches.joinCode,
           name: matches.name,
           hostDisplayName: players.displayName,
           playerCount: matches.seatCount,
           maxPlayers: matches.maxPlayers,
           passwordHash: matches.passwordHash,
+          status: matches.status,
+          settings: matches.settings,
           createdAt: matches.createdAt,
         })
         .from(matches)
         .innerJoin(players, eq(players.id, matches.hostPlayerId))
-        .where(and(eq(matches.status, 'lobby'), eq(matches.visibility, 'public')))
+        .where(and(inArray(matches.status, ['lobby', 'running']), eq(matches.visibility, 'public')))
         .orderBy(desc(matches.createdAt), asc(matches.id))
         .limit(limit)
       return rows.map(({ passwordHash, createdAt, ...rest }) => ({
         ...rest,
+        status: rest.status as LobbyListing['status'],
+        settings: rest.settings as LobbyListing['settings'],
+        availableSlots: [],
+        availableSeatSummaries: [],
         passwordProtected: passwordHash !== null,
         createdAt: createdAt.toISOString(),
       }))
@@ -115,6 +123,37 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
         .set({ seatCount: sql`${matches.seatCount} - 1` })
         .where(and(eq(matches.id, matchId), sql`${matches.seatCount} > 0`))
     },
+    async updateSettings(matchId, settings, updatedAt) {
+      const rows = await db
+        .update(matches)
+        .set({
+          name: settings.name,
+          visibility: settings.visibility,
+          maxPlayers: settings.maxPlayers,
+          settings,
+          updatedAt,
+        })
+        .where(
+          and(
+            eq(matches.id, matchId),
+            eq(matches.status, 'lobby'),
+            sql`${matches.seatCount} <= ${settings.maxPlayers}`,
+          ),
+        )
+        .returning({ id: matches.id })
+      return rows.length === 1
+    },
+    async updateRuntimeGameSettings(matchId, gameSettings, updatedAt) {
+      const rows = await db
+        .update(matches)
+        .set({
+          settings: sql`jsonb_set(${matches.settings}, '{gameSettings}', ${JSON.stringify(gameSettings)}::jsonb)`,
+          updatedAt,
+        })
+        .where(and(eq(matches.id, matchId), inArray(matches.status, ['running', 'desynced'])))
+        .returning({ id: matches.id })
+      return rows.length === 1
+    },
     async deleteInactive(statuses, before, limit) {
       // `for update skip locked`: two sweeps (two server instances, or a cron overlapping itself)
       // would otherwise pick overlapping batches and deadlock on each other's row locks. Skipping
@@ -126,6 +165,35 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
         .limit(limit)
         .for('update', { skipLocked: true })
       // Children cascade from the match row, so one delete takes the whole match with it.
+      const rows = await db
+        .delete(matches)
+        .where(inArray(matches.id, collectable))
+        .returning({ id: matches.id })
+      return rows.length
+    },
+    /**
+     * The same delete, aimed at a live match nobody is in any more. The roster test is a
+     * `not exists` over the players rather than a count: one active row is enough to spare the
+     * match, and asking whether any exists stops at the first.
+     */
+    async deleteAbandonedLive(before, limit) {
+      const collectable = db
+        .select({ id: matches.id })
+        .from(matches)
+        .where(
+          and(
+            inArray(matches.status, ['running', 'desynced']),
+            lt(matches.updatedAt, before),
+            notExists(
+              db
+                .select({ one: sql`1` })
+                .from(players)
+                .where(and(eq(players.matchId, matches.id), eq(players.status, 'active'))),
+            ),
+          ),
+        )
+        .limit(limit)
+        .for('update', { skipLocked: true })
       const rows = await db
         .delete(matches)
         .where(inArray(matches.id, collectable))
@@ -175,6 +243,38 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
             .from(matches)
             .where(and(eq(matches.id, player.matchId), eq(matches.status, 'lobby'))),
         )
+        .returning({ id: players.id })
+      return rows.length === 1
+    },
+    async createLate(player) {
+      const occupied = db
+        .select({ id: players.id })
+        .from(players)
+        .where(and(eq(players.matchId, player.matchId), eq(players.slot, player.slot)))
+      const rows = await db
+        .insert(players)
+        .select(
+          db
+            .select({
+              id: sql`${player.id}`.as('id'),
+              matchId: sql`${player.matchId}`.as('match_id'),
+              slot: sql`${player.slot}`.as('slot'),
+              joinOrder: sql`${player.joinOrder}`.as('join_order'),
+              displayName: sql`${player.displayName}`.as('display_name'),
+              tokenHash: sql`${player.tokenHash}`.as('token_hash'),
+              status: sql`${player.status}`.as('status'),
+              joinedAt: sql`${player.joinedAt}`.as('joined_at'),
+            })
+            .from(matches)
+            .where(
+              and(
+                eq(matches.id, player.matchId),
+                eq(matches.status, 'running'),
+                notExists(occupied),
+              ),
+            ),
+        )
+        .onConflictDoNothing()
         .returning({ id: players.id })
       return rows.length === 1
     },

@@ -197,12 +197,15 @@ public sealed partial class ChaosGame
                     marker.Controlled ? Color.Lime : Color.Cyan, 1);
         }
         DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
-        foreach (var gangs in player.Gangs.Where(gang => gang.IsActive).GroupBy(gang => gang.SectorId))
+        var activeGangsBySector = player.Gangs.Where(gang => gang.IsActive)
+            .GroupBy(gang => gang.SectorId).ToArray();
+        foreach (var gangs in activeGangsBySector)
             DrawGangStatusMarker(batch, gangs.Key,
-                gangs.Any(gang => gang.QueuedCommand is not null)
-                    ? OriginalSpriteLayout.AssignedGangStatus
-                    : OriginalSpriteLayout.IdleGangStatus);
-        foreach (var pending in player.PendingHires)
+                GangStatusMarkerPresentation.Source(
+                    gangs.Any(gang => gang.QueuedCommand is null)));
+        var occupiedGangSectors = activeGangsBySector.Select(gangs => gangs.Key).ToHashSet();
+        foreach (var pending in player.PendingHires.Where(
+                     pending => !occupiedGangSectors.Contains(pending.TargetSectorId)))
             DrawGangStatusMarker(batch, pending.TargetSectorId, OriginalSpriteLayout.IncomingGangStatus);
         if (_draggedHireDefinitionId is not null
             && CityMapLayout.TrySectorAt(_dragPoint, out var dropSector))
@@ -268,8 +271,9 @@ public sealed partial class ChaosGame
 
     private void DrawStatusConsoleTooltip(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        if (_hoverPoint is { } statusHover)
-            DrawHoverTooltip(batch, pixel, font, statusHover, StatusConsoleTooltip.At(statusHover));
+        if (_hoverPoint is { } statusHover && _state is { } state)
+            DrawHoverTooltip(batch, pixel, font, statusHover, StatusConsoleTooltip.At(
+                statusHover, state.Setup.Scenario, state.Setup.Duration));
     }
 
     private void DrawGangStatusMarker(SpriteBatch batch, int sectorId, Rectangle source)

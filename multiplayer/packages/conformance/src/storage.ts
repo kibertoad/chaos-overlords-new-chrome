@@ -62,6 +62,7 @@ function turnFixture(match: Match, number: number, overrides: Partial<Turn> = {}
     sealedAt: null,
     orderSetHash: null,
     sealedSlots: null,
+    stateHash: null,
     ...overrides,
   }
 }
@@ -134,6 +135,21 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(stored?.hostPlayerId).toBe(match.hostPlayerId)
     })
 
+    it('updates runtime game metadata without changing the lobby policy', async () => {
+      const match = matchFixture({ status: 'running' })
+      await storage.matches.create(match)
+      const at = new Date('2026-03-02T01:00:00.000Z')
+      const gameSettings = {
+        ...match.settings.gameSettings,
+        seatSummaries: [{ slot: 3, gangs: 4, sites: 5, sectors: 6 }],
+      }
+      expect(await storage.matches.updateRuntimeGameSettings(match.id, gameSettings, at)).toBe(true)
+      expect(await storage.matches.get(match.id)).toMatchObject({
+        settings: { ...match.settings, gameSettings },
+        updatedAt: at,
+      })
+    })
+
     it('deletes an inactive match with everything it owns, and leaves live ones alone', async () => {
       // Ancient timestamps and a cutoff well before every other fixture, so a shared database's
       // other rows can never be in scope of this sweep.
@@ -184,7 +200,37 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(await storage.matches.get(recent.id)).not.toBeNull()
     })
 
-    it('lists public lobbies with the host name, newest first, and hides private or started ones', async () => {
+    /**
+     * The living-dead case: a match still `running` because it is kept joinable, that nobody ever
+     * came back to. Nothing else collects one, and on a public server it is how most matches end.
+     */
+    it('deletes a long-silent running match with no active player, and spares one with', async () => {
+      const ancient = new Date('2020-01-01T00:00:00.000Z')
+      const cutoff = new Date('2021-01-01T00:00:00.000Z')
+      const stale = matchFixture({ status: 'lobby', updatedAt: ancient })
+      const busy = matchFixture({ status: 'lobby', updatedAt: ancient })
+      for (const match of [stale, busy]) await storage.matches.create(match)
+      // Seated while the match is still a lobby, because that is the only door `create` opens.
+      const departed = playerFixture(stale)
+      const present = playerFixture(busy)
+      await storage.players.create(departed)
+      await storage.players.create(present)
+      await storage.players.setStatus(departed.id, 'left')
+      for (const match of [stale, busy]) {
+        await storage.matches.transition(match.id, ['lobby'], {
+          status: 'running',
+          updatedAt: ancient,
+        })
+      }
+
+      expect(await storage.matches.deleteAbandonedLive(cutoff, 100)).toBeGreaterThanOrEqual(1)
+      expect(await storage.matches.get(stale.id)).toBeNull()
+      expect(await storage.players.get(departed.id)).toBeNull()
+      // One active seat spares the match at any age: it is kept precisely so they can come back.
+      expect(await storage.matches.get(busy.id)).not.toBeNull()
+    })
+
+    it('lists public waiting and running sessions, newest first, and hides private ones', async () => {
       const host = uid('host')
       const visible = matchFixture({
         hostPlayerId: host,
@@ -195,20 +241,24 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         passwordHash: 'x',
       })
       const hidden = matchFixture({ settings: { ...visible.settings, visibility: 'private' } })
-      const started = matchFixture({ status: 'running' })
+      const started = matchFixture()
       for (const match of [visible, older, hidden, started]) {
         await storage.matches.create(match)
         await storage.players.create(
           playerFixture(match, { id: match.hostPlayerId, displayName: `host of ${match.id}` }),
         )
       }
+      await storage.matches.transition(started.id, ['lobby'], {
+        status: 'running',
+        updatedAt: started.updatedAt,
+      })
       // Filtered to this test's rows: the listing is a global query, and a database that outlives a
       // single run (the shared D1 instance, a Postgres service reused between runs) holds others.
       const mine = new Set([visible.id, older.id, hidden.id, started.id])
       const listing = (await storage.matches.listPublicLobbies(100)).filter((entry) =>
         mine.has(entry.id),
       )
-      expect(listing.map((entry) => entry.id)).toEqual([visible.id, older.id])
+      expect(listing.map((entry) => entry.id)).toEqual([visible.id, started.id, older.id])
       expect(listing[0]).toMatchObject({
         name: 'Conformance',
         hostDisplayName: `host of ${visible.id}`,
@@ -217,7 +267,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         passwordProtected: false,
         createdAt: '2026-03-01T12:00:00.000Z',
       })
-      expect(listing[1]?.passwordProtected).toBe(true)
+      expect(listing[2]?.passwordProtected).toBe(true)
     })
 
     it('finds players by token hash, orders them by slot then join order, and updates status/slots', async () => {

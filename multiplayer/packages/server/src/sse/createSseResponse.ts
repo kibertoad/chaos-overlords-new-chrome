@@ -4,8 +4,14 @@ import type { PersistedEvent } from '@chaos-overlords/kernel'
 export interface EventStreamSource {
   /** Persisted events after `afterSeq`, ascending, at most one page. */
   listAfter(afterSeq: number): Promise<PersistedEvent[]>
-  /** Register a wake-up for new events; returns the unsubscribe. */
-  subscribe(wake: () => void): () => void
+  /**
+   * Register a wake-up for new events; returns the unsubscribe.
+   *
+   * `close` ends this stream from the other side, which is how a revoked membership loses a stream
+   * it already holds and how a player's stale stream is dropped to make room for their reconnect.
+   * It is safe to call at any time and does nothing once the stream is closed.
+   */
+  subscribe(wake: () => void, close: () => void): () => void
 }
 
 export interface SseOptions {
@@ -92,10 +98,20 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
             })
             .finally(() => {
               draining = null
+              // `wakeAgain` is only read by the loop above, and this runs microtasks after it
+              // stopped: a wake that landed in between set the flag with nobody left to act on it,
+              // and its event would wait for the next one in the match to carry it out. Re-enter
+              // instead, which is a no-op when nothing arrived.
+              if (wakeAgain && !closed) wake()
             })
         }
 
-        const unsubscribe = source.subscribe(wake)
+        // A thunk, not `shutdown` itself: the real one is assigned a few lines below and the
+        // placeholder above it only flips `closed`, so passing the reference here would hand the
+        // hub a close that leaves the heartbeat running and the subscription in place.
+        const unsubscribe = source.subscribe(wake, () => {
+          shutdown()
+        })
         const heartbeat = setInterval(
           () => send(`: ${SSE_HEARTBEAT_COMMENT}\n\n`),
           options.heartbeatMs,

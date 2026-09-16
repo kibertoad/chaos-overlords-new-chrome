@@ -38,6 +38,15 @@ public sealed class ScenarioSetupTooltipTests
         Assert.Contains(lines, line => line.Contains("ALL ITEMS RESEARCHED"));
     }
 
+    [Fact]
+    public void KillEmAllTooltipSpellsOutWhatDestroyingARivalTakes()
+    {
+        var lines = ScenarioSetupTooltip.Lines(ScenarioId.KillEmAll, GameDuration.SixMonths);
+
+        Assert.Contains(lines, line => line.Contains("LAST GANG DIES"));
+        Assert.Contains(lines, line => line.Contains("OWN NO SECTOR"));
+    }
+
     [Theory]
     [InlineData(GameDuration.SixMonths, 26)]
     [InlineData(GameDuration.OneYear, 52)]

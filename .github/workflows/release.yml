@@ -14,6 +14,7 @@ on:
         type: choice
         options:
           - windows
+          - no-mac-x64
           - all
 
 permissions: {}
@@ -78,10 +79,6 @@ jobs:
       - name: Verify legal boundary and tests
         shell: pwsh
         run: ./tools/Invoke-Validation.ps1
-
-      - name: Run observable long-running AI campaigns
-        shell: pwsh
-        run: ./tools/Invoke-Validation.ps1 -LongRunningTestsOnly -TraceTestOutput
 
   build-windows:
     name: Build and sign Windows x64 installer
@@ -270,11 +267,12 @@ jobs:
           name: release-windows-x64
           path: artifacts/ChaosOverlords-NewChrome-Setup-*.exe
           if-no-files-found: error
+          retention-days: 1
 
   build-linux:
     name: Build Linux x64 installer
     needs: [prepare, test]
-    if: ${{ inputs.installers == 'all' }}
+    if: ${{ inputs.installers != 'windows' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -302,11 +300,12 @@ jobs:
           name: release-linux-x64
           path: artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-*.deb
           if-no-files-found: error
+          retention-days: 1
 
   build-macos:
     name: Build macOS ${{ matrix.arch }} installer
     needs: [prepare, test]
-    if: ${{ inputs.installers == 'all' }}
+    if: ${{ inputs.installers != 'windows' }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -333,6 +332,7 @@ jobs:
           dotnet-version: 10.0.400
 
       - name: Build installer
+        if: ${{ matrix.arch != 'x64' || inputs.installers == 'all' }}
         shell: pwsh
         env:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
@@ -340,11 +340,13 @@ jobs:
         run: ./tools/Build-MacInstaller.ps1 -Version $env:RELEASE_VERSION -Runtime $env:TARGET_RUNTIME
 
       - name: Upload installer
+        if: ${{ matrix.arch != 'x64' || inputs.installers == 'all' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-macos-${{ matrix.arch }}
           path: artifacts/ChaosOverlords-NewChrome-${{ matrix.runtime }}-Setup-*.pkg
           if-no-files-found: error
+          retention-days: 1
 
   release:
     name: Create GitHub Release
@@ -401,6 +403,7 @@ jobs:
         run: |
           mapfile -t assets < <(find release-assets -type f -print | sort)
           expected=1
+          if [[ "$RELEASE_INSTALLERS" == no-mac-x64 ]]; then expected=3; fi
           if [[ "$RELEASE_INSTALLERS" == all ]]; then expected=4; fi
           if (( ${#assets[@]} != expected )); then
             echo "Expected $expected installer(s), found ${#assets[@]}." >&2

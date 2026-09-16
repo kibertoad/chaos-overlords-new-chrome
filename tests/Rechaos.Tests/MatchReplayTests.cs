@@ -37,7 +37,8 @@ public sealed class MatchReplayTests
                 (ReplayOperationKind.SendComlinkMessage, 13),
                 (ReplayOperationKind.MarkComlinkRead, 14),
                 (ReplayOperationKind.PrepareSimultaneousHireOffers, 15),
-                (ReplayOperationKind.TransferPlayerToComputer, 16)
+                (ReplayOperationKind.TransferPlayerToComputer, 16),
+                (ReplayOperationKind.TransferPlayerToHuman, 17)
             },
             Enum.GetValues<ReplayOperationKind>().Select(kind => (kind, (int)kind)));
     }
@@ -399,6 +400,7 @@ public sealed class MatchReplayTests
     [InlineData(ReplayOperationKind.SendComlinkMessage, 17, 18)]
     [InlineData(ReplayOperationKind.MarkComlinkRead, 17, 18)]
     [InlineData(ReplayOperationKind.TransferPlayerToComputer, 25, 26)]
+    [InlineData(ReplayOperationKind.TransferPlayerToHuman, 26, 27)]
     public void OlderReplayVersionsRejectOperationsAddedByLaterSchemas(
         ReplayOperationKind operation,
         int labeledVersion,
@@ -411,7 +413,7 @@ public sealed class MatchReplayTests
             5 => MatchStateHasher.ComputeVersionSixSha256(initial),
             7 => MatchStateHasher.ComputeVersionTenSha256(initial),
             17 => MatchStateHasher.ComputeVersionNineteenSha256(initial),
-            25 => MatchStateHasher.ComputeSha256(initial),
+            25 or 26 => MatchStateHasher.ComputeSha256(initial),
             _ => throw new InvalidOperationException("Test case needs its legacy hash projection.")
         };
         var recorder = new MatchReplayRecorder(initial);

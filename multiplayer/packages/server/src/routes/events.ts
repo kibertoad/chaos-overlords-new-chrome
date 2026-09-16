@@ -20,6 +20,7 @@ export function registerEventRoutes(api: Hono<AppEnv>): void {
     const afterSeq = resumePoint(c.req.header('last-event-id'), c.req.query('after'))
     return c.get('container').eventStream.open({
       matchId: principal.match.id,
+      playerId: principal.player.id,
       afterSeq,
       signal: c.req.raw.signal,
     })

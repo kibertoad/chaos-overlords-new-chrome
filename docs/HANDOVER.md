@@ -20,17 +20,24 @@ Last updated: 2026-09-13
   caps MSBuild at two workers. It retains incremental outputs and compiler/build
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
-- Native saves are format v23, replays are v26, canonical hashes are v26, asset
+- Native saves are format v23, replays are v27, canonical hashes are v26, asset
   manifests are v6, extracted help is v3, and client preferences are v8. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
 
 ## Latest playable work
 
+- Fresh New Game setup now defaults to Kill 'Em All, matching the first stable
+  original-runtime capture. Five burst frames agreed byte-for-byte and the
+  current user and machine registry contained no `prefsObjective` override.
+  The earlier static analysis correctly recovered initialized value zero but
+  incorrectly mapped it through the recreation enum instead of the original
+  visual-button order.
+
 - Online AI takeover is player-approved end to end. A departure or wholly missed timed turn opens
   a visible unanimous `WAIT`/`USE AI` vote; waiting preserves the human controller indefinitely,
   authenticated returning activity atomically cancels a pending absence, and only
-  `match.playerTakenOver` records replay-v26 Human-to-Computer transfer at a clean Command boundary.
+  `match.playerTakenOver` and `match.playerReturned` record replay-v27 controller transfers at a clean Command boundary.
   Reconnect replays votes, approved transfers, and seals gaplessly in authoritative order.
 
 - `Rechaos.Tools ai-tournament` now drives presentation-free six-computer

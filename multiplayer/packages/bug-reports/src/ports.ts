@@ -25,12 +25,20 @@ export interface StoredBugReportState {
   body: string | null
 }
 
-/** The one write and the two reads this area needs; implemented over Drizzle, faked in tests. */
+/** The writes and reads this area needs; implemented over Drizzle, faked in tests. */
 export interface BugReportRepository {
   insert(report: StoredBugReport): Promise<void>
   get(id: string): Promise<StoredBugReport | null>
   /** Newest first, for triage. */
   list(limit: number): Promise<StoredBugReport[]>
+  /** Compressed bytes filed since `since`, which is what the daily byte budget is spent against. */
+  bytesSince(since: Date): Promise<number>
+  /**
+   * Delete reports received before `before`, oldest first, at most `limit` of them. Returns the
+   * blob keys of the ones that went, so the caller can drop the objects the rows pointed at — the
+   * blob store is a different system and nothing cascades into it.
+   */
+  deleteBefore(before: Date, limit: number): Promise<string[]>
 }
 
 /**
