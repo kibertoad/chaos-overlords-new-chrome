@@ -2276,6 +2276,41 @@ expiry from recurring retention and verify immediate replacement/cancellation.
 **Next validation:** capture the targetability transition in a fixed native
 hot-seat turn before and after replacing recurring Hide.
 
+### BIN-REPEAT-001 - turn-start terminal recurring-command cleanup
+
+**Observation:** Before copying recurring action `+10` to active action `+7`,
+outer turn function `0x0046e766` scans all six players and all 81 roster slots
+in fixed order. Its switch contains terminal checks for exactly four retained
+actions:
+
+- Control (4) clears when the acting player already owns the gang's sector or
+  the sector's Crackdown byte is positive;
+- Heal (7) clears when Force equals 10;
+- Influence (9) clears when site progress has reached base Resistance or the
+  sector owner is no longer the acting player; and
+- Research (11) clears when the selected item's remaining-progress byte is zero.
+
+After that switch, every recurring action clears when the gang's sector byte is
+the inactive sentinel 100. The surviving recurring action and target are then
+copied into the active fields. Bribe, Chaos, Hide, and Snitch have no terminal
+case in this loop and therefore continue until explicitly replaced/cancelled or
+the gang becomes inactive. The cleanup runs before the same outer function's
+Crackdown-duration update and pre-planning site-benefit rebuild.
+
+**Interpretation:** A Control order that becomes illegal because police appeared
+after submission fails during resolution but does not wait out the police; it is
+discarded at the following turn start even if that update would expire the
+Crackdown. Likewise, unfinished recurring Influence is discarded after an
+overthrow rather than resuming automatically if ownership is later regained.
+
+**Confidence:** High static evidence for action IDs, predicates, player/roster
+order, inactive sentinel, copy order, and placement before Crackdown/site updates.
+
+**Recreation status:** turn-start normalization now implements all four native
+terminal checks. Successful Control, Heal, Influence, and Research may still be
+released immediately after resolution as an unobservable internal optimization;
+the next planning state is identical.
+
 ### BIN-COMBAT-ORDER-001 - player/roster attack and police rolls
 
 **Observation:** The action-1 (**Attack**) block in `0x00472775` is nested in

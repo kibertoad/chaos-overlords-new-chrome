@@ -431,6 +431,26 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
+    public void RecurringControlBlockedByNewCrackdownClearsAtFollowingUpkeep()
+    {
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 5)], [Gang(20, 1, 3, 5)]);
+        Queue(match, Control(0, 10) with { Repeat = true });
+        EnterControl(match);
+        match.Sectors[0].CrackdownActive = true;
+
+        match.FinishExecutionPhase();
+
+        Assert.True(match.Commands.TryGet(new GangId(10), out _));
+        match.FinishHire(new PlayerId(0));
+        match.FinishHire(new PlayerId(1));
+        match.FinishPlayerElimination();
+        match.FinishUpkeep();
+        Assert.False(match.Commands.TryGet(new GangId(10), out _));
+        Assert.Null(match.FindGang(new GangId(10))!.QueuedCommand);
+    }
+
+    [Fact]
     public void HidingDefenderDoesNotResistEnemyControl()
     {
         var data = BundledOriginalData.Load();

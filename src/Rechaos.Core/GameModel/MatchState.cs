@@ -495,6 +495,7 @@ public sealed partial class MatchState
     {
         if (Outcome is not null)
             throw new InvalidOperationException("The match has ended and cannot advance another turn.");
+        NormalizeRecurringCommands();
         foreach (var gang in Players.SelectMany(player => player.Gangs))
         {
             gang.Hidden = gang.QueuedCommand?.Command.Action == GangAction.Hide;

@@ -146,7 +146,7 @@ controlled reference observation confirms its execution timing and edge cases.
 - Interpretation: calculate gang-definition plus equipped-item Heal modifiers,
   roll `max(0, 4 + Heal)` six-sided dice, count results at least four, and add
   successes to Force with a maximum of ten. Heal cannot be assigned at maximum
-  Force; a repeating Heal order clears as soon as Force reaches ten.
+  Force; the native turn-start scan clears a repeating Heal order at Force ten.
 - Current exclusions: influenced-site and other contextual stat modifiers are
   not applied until their ownership/scope is verified.
 - Confidence: High for dice threshold and Force cap; Medium for dice-pool and
@@ -170,7 +170,7 @@ controlled reference observation confirms its execution timing and edge cases.
 - Interpretation: calculate gang-definition plus equipped-item Research
   modifiers, roll `max(0, Force + Research)` six-sided dice, count results at
   least four, persist unfinished progress, and mark the item researched at zero.
-  A repeating Research order clears on completion.
+  The native turn-start scan clears a repeating Research order on completion.
 - Tech restrictions: a gang cannot research above its own Tech. Without a local
   influenced special research site the ceiling is Tech 5; an influenced Science
   Center raises it to 8 and a Research Lab to 10. A sector must be controlled
@@ -605,7 +605,10 @@ claim about original-game behavior.
   On an overthrow, increment the attacker's statistic, remove the former
   owner's site Support, clear influence, and restore table resistance. A
   repeating Control order clears once its player owns the sector; repeating
-  Influence similarly clears when its target reaches zero resistance. The
+  Control also clears when a Crackdown is active. Repeating Influence clears
+  when its target reaches zero resistance or the acting player loses sector
+  ownership. These predicates run before Crackdown duration and pending-site
+  updates at the following turn start. The
   repeatable actions are Bribe, Chaos, Control, Heal, Hide, Influence, Research,
   and Snitch. Attack, Equip, Give, Move, Sell, and Terminate are one-off actions
   and are absent from the recurring-action picker; core validation rejects a

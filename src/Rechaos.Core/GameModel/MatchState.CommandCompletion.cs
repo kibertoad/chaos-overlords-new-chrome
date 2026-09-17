@@ -2,6 +2,35 @@ namespace Rechaos.Core.GameModel;
 
 public sealed partial class MatchState
 {
+    /// <summary>
+    /// Applies the original turn-start terminal checks for retained commands before any
+    /// Crackdown duration or sector-benefit update can change the facts they inspect.
+    /// </summary>
+    private void NormalizeRecurringCommands()
+    {
+        foreach (var queued in Commands.ExecutionPlan().Where(value => value.Command.Repeat))
+        {
+            var command = queued.Command;
+            var gang = FindGang(command.Gang);
+            var shouldStop = gang is null || !gang.IsActive || command.Action switch
+            {
+                GangAction.Control => Sectors[gang.SectorId].Owner == command.Player
+                    || Sectors[gang.SectorId].CrackdownActive,
+                GangAction.Heal => gang.Force >= ManualRules.MaximumForce,
+                GangAction.Influence => FindSite(command.Target.Id) is { } site
+                    && (site.Resistance == 0
+                        || Sectors[command.Target.Id / MatchLimits.SitesPerSector].Owner != command.Player),
+                GangAction.Research => FindPlayer(command.Player)!.ResearchedItems
+                    .Contains(checked((short)command.Target.Id)),
+                _ => false
+            };
+            if (!shouldStop) continue;
+
+            Commands.Cancel(command.Gang);
+            if (gang is not null) gang.QueuedCommand = null;
+        }
+    }
+
     private bool ShouldStopResolvedCommand(CommandResolutionResult result)
     {
         if (!result.Succeeded) return false;

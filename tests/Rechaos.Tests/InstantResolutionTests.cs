@@ -147,6 +147,26 @@ public sealed class InstantResolutionTests
     }
 
     [Fact]
+    public void RecurringInfluenceClearsAtFollowingUpkeepAfterOwnershipLoss()
+    {
+        var match = CreateMatch(siteResistance: 100);
+        EnterCommand(match);
+        var player = new PlayerId(0);
+        var gang = new GangId(10);
+        Assert.True(match.Submit(new GameCommand(
+            player, gang, GangAction.Influence, CommandTarget.Site(0), Repeat: true)).Accepted);
+        EnterExecution(match);
+
+        match.FinishExecutionPhase();
+        Assert.True(match.Commands.TryGet(gang, out _));
+        match.Sectors[0].Owner = new PlayerId(1);
+        AdvanceToNextPlanning(match);
+
+        Assert.False(match.Commands.TryGet(gang, out _));
+        Assert.Null(match.FindGang(gang)!.QueuedCommand);
+    }
+
+    [Fact]
     public void LaterInfluenceSkipsRollAfterEarlierRosterSlotCompletesSite()
     {
         var match = CreateMatch(siteResistance: 1, siteDefinitionId: 6);
