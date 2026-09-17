@@ -191,7 +191,11 @@ public sealed class CombatResolutionTests
         var data = BundledOriginalData.Load();
         var lowDetect = data.Gangs.OrderBy(gang => gang.Stats.Detect).First().Id;
         var highStealth = data.Gangs.OrderByDescending(gang => gang.Stats.Stealth).First().Id;
-        var match = CreateMatch(playerZeroDefinition: lowDetect, playerOneDefinition: highStealth);
+        var match = CreateMatch(
+            playerZeroDefinition: lowDetect,
+            playerOneDefinition: highStealth,
+            playerZeroName: "SMGHUBBLE");
+        Assert.True(match.CanPlayerDetectGang(new PlayerId(0), new GangId(20)));
         QueueAndEnterCombat(match, GangAction.Hide);
 
         match.FinishExecutionPhase();
@@ -211,7 +215,11 @@ public sealed class CombatResolutionTests
         var data = BundledOriginalData.Load();
         var highDetect = data.Gangs.OrderByDescending(gang => gang.Stats.Detect).First().Id;
         var lowStealth = data.Gangs.OrderBy(gang => gang.Stats.Stealth).First().Id;
-        var match = CreateMatch(playerZeroDefinition: highDetect, playerOneDefinition: lowStealth);
+        var match = CreateMatch(
+            playerZeroDefinition: highDetect,
+            playerOneDefinition: lowStealth,
+            playerZeroName: "ONE",
+            playerOneName: "TWO");
         QueueAndEnterCombat(match, GangAction.Hide);
 
         match.FinishExecutionPhase();
@@ -420,13 +428,15 @@ public sealed class CombatResolutionTests
         short? playerOneMiscellaneous = null,
         short? influencedSiteDefinition = null,
         bool secondPlayerZeroGang = false,
-        bool secondPlayerOneGang = false)
+        bool secondPlayerOneGang = false,
+        string playerZeroName = "SMGHUBBLE",
+        string playerOneName = "SMGHUBBLE")
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
         [
-            new(new PlayerId(0), "ONE", PlayerController.Human),
-            new(new PlayerId(1), "TWO", PlayerController.Computer)
+            new(new PlayerId(0), playerZeroName, PlayerController.Human),
+            new(new PlayerId(1), playerOneName, PlayerController.Computer)
         ];
         var setup = new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups);
         var playerZeroGangs = new List<MatchGangState>

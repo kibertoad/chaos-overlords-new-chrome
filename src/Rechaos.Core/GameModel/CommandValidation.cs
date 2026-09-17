@@ -29,7 +29,8 @@ public enum CommandValidationCode
     SectorInCrackdown,
     SectorAlreadyControlled,
     GangAtFullForce,
-    ActionCannotRepeat
+    ActionCannotRepeat,
+    TargetUndetected
 }
 
 public readonly record struct CommandValidation(CommandValidationCode Code, string Message)
@@ -238,9 +239,12 @@ public static class CommandValidator
             return CommandValidation.Reject(CommandValidationCode.TargetNotFriendly);
         if (rule.GangRelationship == GangTargetRelationship.Enemy && targetGang.Owner == actor.Owner)
             return CommandValidation.Reject(CommandValidationCode.TargetNotEnemy);
-        return rule.SpatialConstraint == SpatialConstraint.SameSector && targetGang.SectorId != actor.SectorId
-            ? CommandValidation.Reject(CommandValidationCode.TargetOutsideSector)
-            : CommandValidation.Valid();
+        if (rule.SpatialConstraint == SpatialConstraint.SameSector && targetGang.SectorId != actor.SectorId)
+            return CommandValidation.Reject(CommandValidationCode.TargetOutsideSector);
+        return rule.Action == GangAction.Attack
+            && !state.CanPlayerDetectGang(actor.Owner, targetGang.Id)
+                ? CommandValidation.Reject(CommandValidationCode.TargetUndetected)
+                : CommandValidation.Valid();
     }
 
     private static CommandValidation ValidateSectorTarget(
@@ -377,7 +381,8 @@ internal static class CommandValidationMessages
             [CommandValidationCode.SectorInCrackdown] = "Police block control attempt.",
             [CommandValidationCode.SectorAlreadyControlled] = "Player already controls sector.",
             [CommandValidationCode.GangAtFullForce] = "Gang already at full Force.",
-            [CommandValidationCode.ActionCannotRepeat] = "Action cannot be recurring."
+            [CommandValidationCode.ActionCannotRepeat] = "Action cannot be recurring.",
+            [CommandValidationCode.TargetUndetected] = "Attack target is hidden."
         };
 
     public static string For(CommandValidationCode code) => Messages.GetValueOrDefault(code, string.Empty);

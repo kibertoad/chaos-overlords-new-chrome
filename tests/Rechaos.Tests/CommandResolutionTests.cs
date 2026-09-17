@@ -211,7 +211,7 @@ public sealed class CommandResolutionTests
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
         [
-            new(new PlayerId(0), "ONE", playerZeroController),
+            new(new PlayerId(0), "SMGHUBBLE", playerZeroController),
             new(new PlayerId(1), "TWO", PlayerController.Computer)
         ];
         var setup = new MatchSetup(

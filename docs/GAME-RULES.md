@@ -348,7 +348,10 @@ claim about original-game behavior.
   greater than 9. Thus negative through 9 adds 1; 10–11 adds 2; 12–13 adds 3;
   and the sequence remains unbounded above 19. Visibility succeeds at the
   resulting strength `>=` effective Stealth. A player always detects its own
-  gang, and Hide does not affect cooperative visibility.
+  gang, and Hide does not affect cooperative visibility. The native Attack
+  picker omits enemy records whose observer-specific visibility byte is zero;
+  authoritative validation likewise rejects an undetected Attack target rather
+  than trusting UI filtering alone.
 - Current exclusions: exact UI refresh timing outside normal planning entry.
 - Confidence: High static evidence for effective-stat fields, strongest-gang
   selection, exact helper arithmetic including negative/high values, active
@@ -356,7 +359,9 @@ claim about original-game behavior.
 - Implementation: `ManualRules.SectorDetectionStrength` and
   `MatchState.CanPlayerDetectGang`.
 - Tests: `ManualRulesTests` covers band arithmetic; `CombatResolutionTests`
-  covers ownership, enemy visibility, and independence from Hide.
+  covers ownership, enemy visibility, independence from Hide, and the distinct
+  individual hidden-target evasion roll; `AttackTargetRosterTests` covers both
+  picker filtering and authoritative rejection.
 
 ### RULE-SITE-STATS-001 — Influenced-site local modifiers
 

@@ -2451,6 +2451,12 @@ active gang records and marks a target visible exactly when effective Stealth
 byte `+20` is less than or equal to that observer-sector strength. Friendly
 active records are marked visible unconditionally.
 
+Attack picker `0x0043b290` calls roster builder `0x0043d132` for a selected
+enemy owner and the acting gang's sector. That builder scans the owner's 81
+records and includes one only when its sector matches and its observer-indexed
+visibility byte at `+12 + observer` is nonzero. Only those included roster slots
+can be written back as the Attack target.
+
 **Interpretation:** The shipped helper arithmetic differs from the manual's
 printed 0–10/11–12/.../19+ capped bands at boundaries, negative values, and
 above 19. Authoritative compatibility uses the executable formula. Ordering
@@ -2466,7 +2472,9 @@ both direct call sites.
 native base/helper calculation, and `MatchState.CanPlayerDetectGang` supplies
 active same-sector effective statistics plus the explicit omniscience rule.
 Boundary tests cover negative helpers, every transition around Detect 10–12,
-the printed cap boundary, and an above-cap value.
+the printed cap boundary, and an above-cap value. Both the Attack picker and
+authoritative command validation exclude undetected targets; the latter also
+protects multiplayer and replay submission paths that bypass presentation.
 
 ### BIN-HIDE-LIFECYCLE-001 - active and recurring action boundary
 

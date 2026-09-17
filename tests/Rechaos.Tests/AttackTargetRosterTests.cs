@@ -52,6 +52,20 @@ public sealed class AttackTargetRosterTests
         Assert.Empty(AttackTargetRoster.Order(state, [command]));
     }
 
+    [Fact]
+    public void AuthoritativeValidationRejectsUndetectedAttackTarget()
+    {
+        var state = CreateMatch(detectable: false);
+        state.FinishUpkeep();
+        var actor = state.FindGang(new GangId(10))!;
+
+        var validation = CommandValidator.Validate(state, new GameCommand(
+            actor.Owner, actor.Id, GangAction.Attack,
+            CommandTarget.Gang(new GangId(20))));
+
+        Assert.Equal(CommandValidationCode.TargetUndetected, validation.Code);
+    }
+
     private static MatchState CreateMatch(bool detectable = true)
     {
         var data = BundledOriginalData.Load();

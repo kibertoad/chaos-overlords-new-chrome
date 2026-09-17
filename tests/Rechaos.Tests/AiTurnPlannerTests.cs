@@ -66,7 +66,7 @@ public sealed class AiTurnPlannerTests
         match.FinishUpkeep();
 
         Assert.False(match.CanPlayerDetectGang(new PlayerId(0), new GangId(20)));
-        Assert.Contains(CommandOptionCatalog.LegalCommands(match, new PlayerId(0), new GangId(10)),
+        Assert.DoesNotContain(CommandOptionCatalog.LegalCommands(match, new PlayerId(0), new GangId(10)),
             command => command.Action == GangAction.Attack);
         Assert.DoesNotContain(AiTurnPlanner.Plan(match, new PlayerId(0)),
             command => command.Action == GangAction.Attack);
