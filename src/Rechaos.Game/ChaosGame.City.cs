@@ -7,20 +7,6 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private static readonly Rectangle CityDone = new(492, 278, 106, 54);
-    private static readonly Rectangle CityGameInfo = new(588, 40, 30, 54);
-    private static readonly Rectangle CityEvents = new(492, 124, 50, 51);
-    private static readonly Rectangle CityComlinkView = new(548, 124, 50, 25);
-    private static readonly Rectangle CityComlinkSend = new(548, 150, 50, 25);
-    private static readonly Rectangle CityCombatSummary = CityConsoleLayout.CombatSummary;
-    private static readonly Rectangle CityFinanceCity = new(548, 176, 50, 32);
-    private static readonly Rectangle CityFinanceSector = new(548, 208, 50, 17);
-    private static readonly Rectangle CityGangs = new(492, 226, 50, 34);
-    private static readonly Rectangle CityHire = new(492, 260, 50, 17);
-    private static readonly Rectangle CityCombatDetail = CityConsoleLayout.CombatDetail;
-    private static readonly Rectangle CityRanking = CityConsoleLayout.Ranking;
-    private static readonly Rectangle CitySearch = new(548, 260, 50, 17);
-
     private void UpdateCity(KeyboardState keyboard)
     {
         if (_state is null) return;
@@ -94,44 +80,80 @@ public sealed partial class ChaosGame
         else
         {
             _citySectorClicks.Cancel();
-            HandleCityConsoleClick(point, ClientScreen.City);
+            BeginCityConsolePress(point, ClientScreen.City);
         }
     }
 
-    private bool HandleCityConsoleClick(Point point, ClientScreen returnScreen)
+    private bool BeginCityConsolePress(Point point, ClientScreen returnScreen)
     {
-        if (!IsCityConsoleControl(point)) return false;
+        if (CityConsoleLayout.HitTest(point) is not { } control) return false;
+        _pressedCityConsoleControl = control;
+        _pressedCityConsoleAction = CityConsoleLayout.ActionAt(point);
+        _pressedCityConsoleReturnScreen = returnScreen;
         PlayGeneralSound(AudioRouting.PointerPushSound());
-        if (CityGameInfo.Contains(point)) OpenManagement(ClientScreen.GameInfo, returnScreen);
-        else if (CityDone.Contains(point)) AdvanceTurn();
-        else if (CityEvents.Contains(point)) OpenEvents(returnScreen);
-        else if (CityComlinkView.Contains(point)) OpenComlinkView(returnScreen);
-        else if (CityComlinkSend.Contains(point)) OpenComlinkSend(returnScreen);
-        else if (CityCombatSummary.Contains(point)) OpenCombatResults(returnScreen);
-        else if (CityFinanceCity.Contains(point)) OpenFinance(FinanceScope.City, returnScreen);
-        else if (CityFinanceSector.Contains(point)) OpenFinance(FinanceScope.Sector, returnScreen);
-        else if (CityGangs.Contains(point)) OpenSectorGangDetails(returnScreen);
-        else if (CityHire.Contains(point)) OpenHire(returnScreen);
-        else if (CityCombatDetail.Contains(point)) OpenCombatDetail(returnScreen);
-        else if (CityRanking.Contains(point)) OpenManagement(ClientScreen.Ranking, returnScreen);
-        else if (CitySearch.Contains(point)) OpenSiteSearch(returnScreen);
         return true;
     }
 
-    private static bool IsCityConsoleControl(Point point) =>
-        CityGameInfo.Contains(point)
-        || CityDone.Contains(point)
-        || CityEvents.Contains(point)
-        || CityComlinkView.Contains(point)
-        || CityComlinkSend.Contains(point)
-        || CityCombatSummary.Contains(point)
-        || CityFinanceCity.Contains(point)
-        || CityFinanceSector.Contains(point)
-        || CityGangs.Contains(point)
-        || CityHire.Contains(point)
-        || CityCombatDetail.Contains(point)
-        || CityRanking.Contains(point)
-        || CitySearch.Contains(point);
+    private void CompleteCityConsolePress(Point point)
+    {
+        var control = _pressedCityConsoleControl;
+        var action = _pressedCityConsoleAction;
+        var returnScreen = _pressedCityConsoleReturnScreen;
+        CancelCityConsolePress();
+        if (control is null || action is null
+            || _screens.Current != returnScreen
+            || CityConsoleLayout.HitTest(point) != control)
+            return;
+
+        switch (action)
+        {
+            case CityConsoleAction.GameInfo:
+                OpenManagement(ClientScreen.GameInfo, returnScreen);
+                break;
+            case CityConsoleAction.Done:
+                AdvanceTurn();
+                break;
+            case CityConsoleAction.Events:
+                OpenEvents(returnScreen);
+                break;
+            case CityConsoleAction.ComlinkView:
+                OpenComlinkView(returnScreen);
+                break;
+            case CityConsoleAction.ComlinkSend:
+                OpenComlinkSend(returnScreen);
+                break;
+            case CityConsoleAction.CombatSummary:
+                OpenCombatResults(returnScreen);
+                break;
+            case CityConsoleAction.CombatDetail:
+                OpenCombatDetail(returnScreen);
+                break;
+            case CityConsoleAction.FinanceCity:
+                OpenFinance(FinanceScope.City, returnScreen);
+                break;
+            case CityConsoleAction.FinanceSector:
+                OpenFinance(FinanceScope.Sector, returnScreen);
+                break;
+            case CityConsoleAction.Gangs:
+                OpenSectorGangDetails(returnScreen);
+                break;
+            case CityConsoleAction.Hire:
+                OpenHire(returnScreen);
+                break;
+            case CityConsoleAction.Ranking:
+                OpenManagement(ClientScreen.Ranking, returnScreen);
+                break;
+            case CityConsoleAction.Search:
+                OpenSiteSearch(returnScreen);
+                break;
+        }
+    }
+
+    private void CancelCityConsolePress()
+    {
+        _pressedCityConsoleControl = null;
+        _pressedCityConsoleAction = null;
+    }
 
     private void OpenManagement(ClientScreen screen, ClientScreen returnScreen)
     {
@@ -259,8 +281,19 @@ public sealed partial class ChaosGame
             ? "ARROWS ENTER/H/SPACE  F5/F9 SAVE  F6/F10 REPLAY"
             : OnlineTurnStatus();
         font.Draw(batch, footer, new Vector2(18, 439), new Color(180, 190, 190), 1);
+        DrawPressedCityConsole(batch);
         DrawStatusConsoleTooltip(batch, pixel, font);
         if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
+    }
+
+    private void DrawPressedCityConsole(SpriteBatch batch)
+    {
+        if (_uiSprites is not null
+            && _pressedCityConsoleControl is { } pressed
+            && _hoverPoint is { } hover
+            && CityConsoleLayout.HitTest(hover) == pressed)
+            batch.Draw(_uiSprites, CityConsoleLayout.Destination(pressed),
+                CityConsoleLayout.PressedSource(pressed), Color.White);
     }
 
     private void DrawStatusConsoleTooltip(SpriteBatch batch, Texture2D pixel, PixelFont font)

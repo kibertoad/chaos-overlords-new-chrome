@@ -144,7 +144,8 @@ cursor feedback remain to be validated.
 - The optional human planning countdown uses the 60-by-3 aperture at
   `(520,336)` on the main control panel. The recreation fills it green over a
   black background and scales the visible width from 60 to zero.
-- The `PX00128` Game Info button at `(588,40,30,54)` opens `PX05021` at
+- The `PX00128` Game Info button uses the exact `(588,41,26,34)` native tile
+  and opens `PX05021` at
   `(104,124,344,209)`. Dynamic fields report the scenario, global AI mentality,
   selected planning limit, and all six names with the manual-defined `HUMAN` or
   `AI` intelligence label. The panel opens automatically for a new game with
@@ -269,15 +270,25 @@ cursor feedback remain to be validated.
   threshold, preserving double-click inspection. Unhired gang information shows
   Force as `??`; the authoritative health value is instantiated on hire.
 
-## `PX00128` provisional control routes
+## `PX00128` exact control routes
 
-The city frame currently routes Events `(492,124,50,51)`, Combat Summary
-`(492,176,50,49)`, and Financial `(548,176,50,49)`. The lower compact rows are
-Gangs `(492,226,50,17)`, Hire `(492,260,50,17)`, Sector `(548,226,50,17)`,
-Ranking `(548,243,50,17)`, and Search `(548,260,50,17)`. These rectangles come
-from bitmap inspection and remain provisional until executable capture confirms
-their exact edges and pressed states.
-Done uses the original panel cell at `(492,278,106,54)` in the recreation;
+The native dispatcher uses six 48-by-48 tiles at `(500,126)`, `(552,126)`,
+`(500,178)`, `(552,178)`, `(500,230)`, and `(552,230)`, followed by Done at
+`(500,282,100,48)` and Game Info at `(588,41,26,34)`. They route Events;
+Comlink; Combat; Financial; Gangs/Hire; Ranking/Search; Done; and Game Info.
+The paired tiles split horizontally, not vertically. Comlink, Combat, Financial,
+and Gangs/Hire allocate 33 pixels to View, Results, City, or Gangs and 15 pixels
+to Send, Detailed, Sector, or Hire. Ranking/Search allocates 25 pixels to Ranking
+and 23 to Search. All rectangles are half-open.
+
+Pressing a tile copies its exact opaque `PX00129` pressed sprite, plays general
+effect slot 2, restores the baked `PX00128` control when the pointer leaves, and
+acts only when released inside the same tile. A paired action is fixed by the
+original press point even if the pointer crosses the internal split while held.
+The recreation follows those edges and semantics on city and detailed-sector
+screens.
+
+Done uses the original 100-by-48 panel cell;
 normal mode resolves the internal phases automatically, while `--debug-phases`
 retains explicit advancement.
 Single-clicking a whole-city sector selects it; a second click on the same
@@ -467,8 +478,8 @@ load, and replay initialization clear the presentation-only archive.
 
 ## Next mapping work
 
-1. Identify the main-city content layers placed inside the black viewport of
-   `PX00128` and validate/complete its provisional right-panel button rectangles.
+1. Identify the remaining main-city content layers placed inside the black
+   viewport of `PX00128`; its right-console hit and pressed geometry is closed.
 2. Finish classifying the separate `PX00144` through `PX00146` setup flows;
    implementing legacy network/setup protocols remains explicitly out of scope.
 3. Map remaining cursor frames, selection/pressed-state sprites and

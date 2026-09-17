@@ -159,6 +159,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int? _draggedHireSlot;
     private int? _draggedSetupPlayerSlot;
     private SetupPushButton? _pressedSetupButton;
+    private CityConsoleControl? _pressedCityConsoleControl;
+    private CityConsoleAction? _pressedCityConsoleAction;
+    private ClientScreen _pressedCityConsoleReturnScreen;
     private short? _draggedHireDefinitionId;
     private Point _hirePressPoint;
     private Point _setupPlayerPressPoint;
@@ -642,6 +645,12 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             else _pressedSetupButton = null;
         }
         else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
+                 && _pressedCityConsoleControl is not null)
+        {
+            if (pointerMapped) CompleteCityConsolePress(virtualPoint);
+            else CancelCityConsolePress();
+        }
+        else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
                  && _draggedSetupPlayerSlot is not null)
         {
             if (pointerMapped && _setupPlayerDragStarted) CompleteSetupPlayerDrag(virtualPoint);
@@ -918,8 +927,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     AcceptAndShow(_managementReturnScreen);
                 break;
             case ClientScreen.Finance:
-                if (CityFinanceCity.Contains(point)) _financeScope = FinanceScope.City;
-                else if (CityFinanceSector.Contains(point)) _financeScope = FinanceScope.Sector;
+                if (CityConsoleLayout.FinanceCity.Contains(point)) _financeScope = FinanceScope.City;
+                else if (CityConsoleLayout.FinanceSector.Contains(point)) _financeScope = FinanceScope.Sector;
                 else if (FinanceLayout.Ok.Contains(point))
                     AcceptAndShow(_managementReturnScreen);
                 break;

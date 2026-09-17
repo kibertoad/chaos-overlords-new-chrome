@@ -199,12 +199,7 @@ public sealed class CitySectorClickTracker
     public void Cancel() => _lastSector = null;
 }
 
-public static class CityConsoleLayout
-{
-    public static Rectangle CombatSummary => new(492, 176, 50, 32);
-    public static Rectangle CombatDetail => new(492, 208, 50, 17);
-    public static Rectangle Ranking => new(548, 226, 50, 34);
-}
+public static partial class CityConsoleLayout;
 
 public static class HandoffLayout
 {

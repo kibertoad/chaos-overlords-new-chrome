@@ -167,6 +167,45 @@ classified.
 
 **Next validation:** Classify the remaining surface-6 rectangles.
 
+### BIN-UI-032 - exact main-console hit, split, and pressed geometry
+
+**Observation:** Main-console dispatcher `0x004718ee` handles pointer input for
+the city and detailed-sector screen states. It tests eight half-open outer
+rectangles and passes cases 0 through 7 to pressed-control helper `0x00419022`:
+Events `(500,126)-(548,174)`, Comlink `(552,126)-(600,174)`, Combat
+`(500,178)-(548,226)`, Finance `(552,178)-(600,226)`, Gangs/Hire
+`(500,230)-(548,278)`, Ranking/Search `(552,230)-(600,278)`, Done
+`(500,282)-(600,330)`, and Game Info `(588,41)-(614,75)`.
+
+The helper copies matching opaque `PX00129` pressed artwork from `(0,512)`,
+`(48,512)`, `(96,512)`, `(144,512)`, `(192,512)`, and `(240,512)`, each
+48 by 48; Done uses `(288,512,100,48)` and Game Info uses
+`(190,386,26,34)`. It plays general-effect slot 2 once, restores the baked
+surface-1 pixels whenever the pointer leaves the same outer rectangle, redraws
+the pressed tile on re-entry, and succeeds only on release inside that tile.
+
+Five 48-pixel tiles select a subroute from the original press x coordinate,
+not from separate vertical rows. Comlink, Combat, Finance, and Gangs/Hire use
+the left 33 pixels and right 15 pixels: View/Send, Results/Detailed, City/Sector,
+and Gangs/Hire respectively. Ranking/Search uses left 25 and right 23 pixels.
+The strict comparisons are x greater than tile-left +32 or +24, so the boundary
+pixel remains in the left route. Events, Done, and Game Info use their complete
+outer rectangles.
+
+**Interpretation:** The former recreation inferred 50-pixel rectangles from
+the visible frame and split paired controls vertically. That both admitted
+border pixels and routed large regions to the wrong action. The client now uses
+the exact native tiles, horizontal subcontrols, original press identity,
+release-inside cancellation, slot-2 press cue, and opaque pressed sprites on
+both city and detailed-sector screens.
+
+**Confidence:** High from the complete dispatcher, complete sole pressed-helper
+switch and input loop, exact rectangle-constructor arguments, known branch
+handlers, and matching `PX00128`/`PX00129` artwork.
+
+**Next validation:** Remaining main-screen static work is content-layer and
+cursor-role classification rather than console hit geometry.
+
 ### BIN-UI-016 - Last Turn Events site-image treatment
 
 **Observation:** Both bitmap stretch wrappers, `FUN_0042773e` and

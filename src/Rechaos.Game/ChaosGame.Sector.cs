@@ -38,7 +38,7 @@ public sealed partial class ChaosGame
             return;
         }
         if (_state is null) return;
-        if (HandleCityConsoleClick(point, ClientScreen.Sector)) return;
+        if (BeginCityConsolePress(point, ClientScreen.Sector)) return;
         var rejectSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
             .FirstOrDefault(slot => HireDockLayout.Reject(slot).Contains(point), -1);
         var hireSlot = Enumerable.Range(0, HireDockLayout.SlotCount)

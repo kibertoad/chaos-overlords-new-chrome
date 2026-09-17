@@ -322,18 +322,6 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
-    public void CityConsoleGivesDetailAndRankingTheirCompleteArtworkButtons()
-    {
-        Assert.Equal(new Rectangle(492, 176, 50, 32), CityConsoleLayout.CombatSummary);
-        Assert.Equal(new Rectangle(492, 208, 50, 17), CityConsoleLayout.CombatDetail);
-        Assert.Equal(new Rectangle(548, 226, 50, 34), CityConsoleLayout.Ranking);
-        Assert.False(CityConsoleLayout.CombatSummary.Intersects(CityConsoleLayout.CombatDetail));
-        Assert.True(CityConsoleLayout.CombatDetail.Contains(new Point(510, 212)));
-        Assert.True(CityConsoleLayout.Ranking.Contains(new Point(560, 233)));
-        Assert.True(CityConsoleLayout.Ranking.Contains(new Point(560, 248)));
-    }
-
-    [Fact]
     public void NextPlayerPortraitFillsTheNativeHandoffAperture()
     {
         Assert.Equal(new Rectangle(266, 148, 108, 164), HandoffLayout.Panel);
