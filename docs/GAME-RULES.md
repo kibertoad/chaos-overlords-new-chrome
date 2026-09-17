@@ -675,22 +675,29 @@ claim about original-game behavior.
   checked integer arithmetic on turns after the initial planning turn. The
   first outer-loop pass skips collection entirely. Runtime affordability rejects equipment and
   Bribe; Snitch remains free and executable in debt. Hiring permits a zero-cost
-  gang even while the balance is negative.
+  gang even while the balance is negative. The native statistics classify each
+  component independently: nonnegative gang Upkeep increases Cash Spent,
+  negative Upkeep increases Cash Earned by its magnitude, positive combined
+  sector Income increases Cash Earned, and zero/negative sector Income takes
+  the Cash Spent branch (with zero adding nothing). Opposite-sign components
+  therefore do not cancel before the endgame statistics are updated.
   The same recomputed byte is the sector Income shown in the city UI and used
   by Control, Chaos, and the original AI; the generator's 3-7 density value
   survives semantically as the base for initial/normal Tolerance.
-- Current exclusions: cash adjustment, special gang/item/site modifiers,
-  integer overflow behavior, and the exact statistics accounting boundary.
+- Current exclusions: cash adjustment, special gang/item/site modifiers, and
+  integer overflow behavior.
 - Confidence: High static evidence for flat sector tax, influenced-site Cash,
-  gang upkeep, scan/recomputation order, and negative-cash restrictions; Medium
-  for the complete statistics boundary; Low for excluded edge cases.
+  gang upkeep, scan/recomputation order, per-component Cash Earned/Cash Spent
+  classification, and negative-cash restrictions; Low for excluded edge cases.
 - Implementation: `EconomyResolver.ResolveUpkeep` and
   `MatchState.FinishUpkeep`; `FinanceProjection` previews the same component
   classes and mirrors the recovered last-slot payout overwrite for multi-item
   Sell.
 - Tests: `EconomyResolutionTests` covers the initial skip, component accounting,
-  persistent debt, eliminated players, ordered events/notifications, and deterministic phase
-  hashes. Command, transaction, and hire tests cover debt restrictions.
+  positive and mixed-sign statistics accounting, the latent negative-Upkeep
+  branch, persistent debt, eliminated players, ordered events/notifications,
+  and deterministic phase hashes. Command, transaction, and hire tests cover
+  debt restrictions.
 - Next experiment: prepare saves around zero projected cash with controlled
   combinations of sectors, positive/negative sites, and gangs, then compare
   Finance/Event panels and post-Upkeep saves.

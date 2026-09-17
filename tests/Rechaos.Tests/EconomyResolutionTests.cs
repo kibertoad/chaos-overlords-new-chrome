@@ -38,6 +38,8 @@ public sealed class EconomyResolutionTests
         Assert.Equal(4, first.Details.NetChange);
         Assert.False(first.Details.IsInDebt);
         Assert.Equal(24, match.Players[0].Cash);
+        Assert.Equal(7, match.Players[0].Statistics.CashEarned);
+        Assert.Equal(3, match.Players[0].Statistics.CashSpent);
 
         Assert.Equal(2, match.LastUpkeepResolutions.Count);
         Assert.Equal([0L, 1L], match.Events.Select(item => item.Sequence));
@@ -130,6 +132,37 @@ public sealed class EconomyResolutionTests
         Assert.Equal(1, SectorIncomeResolver.OperationalIncome(match, match.Sectors[1]));
     }
 
+    [Fact]
+    public void UpkeepStatisticsClassifyEachNativeIncomeAndExpenseSeparately()
+    {
+        var match = CreateMixedSignEconomyMatch();
+        AdvanceToSecondUpkeep(match);
+
+        match.FinishUpkeep();
+
+        var player = match.Players[0];
+        Assert.Equal(21, player.Cash);
+        Assert.Equal(6, player.Statistics.CashEarned);
+        Assert.Equal(5, player.Statistics.CashSpent);
+    }
+
+    [Fact]
+    public void NegativeGangUpkeepUsesTheNativeIncomeBranch()
+    {
+        var source = BundledOriginalData.Load();
+        var gangs = source.Gangs.ToArray();
+        gangs[28] = gangs[28] with { Upkeep = -3 };
+        var data = source with { Gangs = gangs };
+        var match = CreateMatch(playerZeroCash: 20, data: data);
+        AdvanceToSecondUpkeep(match);
+
+        match.FinishUpkeep();
+
+        Assert.Equal(30, match.Players[0].Cash);
+        Assert.Equal(10, match.Players[0].Statistics.CashEarned);
+        Assert.Equal(0, match.Players[0].Statistics.CashSpent);
+    }
+
     private static void AdvanceToSecondUpkeep(MatchState match)
     {
         match.FinishUpkeep();
@@ -143,9 +176,10 @@ public sealed class EconomyResolutionTests
         int playerZeroCash,
         bool playerZeroOwnsSectors = true,
         bool playerZeroInfluencesSite = true,
-        bool eliminatePlayerOne = false)
+        bool eliminatePlayerOne = false,
+        OriginalData? data = null)
     {
-        var data = BundledOriginalData.Load();
+        data ??= BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
         [
             new(new PlayerId(0), "ONE", PlayerController.Human),
@@ -175,5 +209,49 @@ public sealed class EconomyResolutionTests
                 income: id == 0 ? 4 : id == 1 ? 7 : ManualRules.MinimumSectorIncome))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
+    }
+
+    private static MatchState CreateMixedSignEconomyMatch()
+    {
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "ONE", PlayerController.Human),
+            new(new PlayerId(1), "TWO", PlayerController.Computer)
+        ];
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20,
+            [
+                new MatchGangState(new GangId(10), new PlayerId(0), 28, 0, 5)
+            ]),
+            new(setups[1], 10)
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => id switch
+            {
+                0 => new MatchSectorState(id,
+                [
+                    new MatchSiteState(0, 3, 0, new PlayerId(0)),
+                    new MatchSiteState(1, 2, 4),
+                    new MatchSiteState(2, 1, 5)
+                ], owner: new PlayerId(0)),
+                1 => new MatchSectorState(id,
+                [
+                    new MatchSiteState(0, 4, 0, new PlayerId(0)),
+                    new MatchSiteState(1, 8, 0, new PlayerId(0)),
+                    new MatchSiteState(2, 2, 0, new PlayerId(0))
+                ], owner: new PlayerId(0)),
+                _ => new MatchSectorState(id,
+                [
+                    new MatchSiteState(0, 0, 7),
+                    new MatchSiteState(1, 1, 5),
+                    new MatchSiteState(2, 2, 4)
+                ])
+            })
+            .ToArray();
+        return new MatchState(data,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups),
+            players, sectors);
     }
 }

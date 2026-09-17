@@ -50,7 +50,8 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   grouped phase dispatch and result codes; all Instant actions (Bribe, Heal,
   Hide, Influence, Research, and Snitch) now resolve.
 - `GameModel/EconomyResolution.cs`: ordered Upkeep-phase sector/site income,
-  gang upkeep, persistent negative balances, events, and notifications.
+  gang upkeep, native per-component Cash Earned/Spent classification,
+  persistent negative balances, events, and notifications.
 - `GameModel/ToleranceResolver.cs`: income/site-derived normal tolerance and
   one-point Upkeep restoration of temporary Bribe/Snitch changes.
 - `GameModel/Notifications.cs`: bounded presentation-independent mechanical
@@ -413,7 +414,9 @@ moving or terminating the last friendly gang does not neutralize the sector.
 executable's guarded first outer-loop pass. On later turns it resolves every
 active player in stable player-ID order before entering Command. Each result separates flat sector tax, influenced-site
 cash, and active-gang upkeep so reference fixtures can locate the first differing
-component. The original combines tax and site Cash into one recomputed sector
+component. Cash statistics retain the native finer boundary: each gang's signed
+Upkeep and each sector's signed combined Income is classified separately before
+opposite signs can cancel. The original combines tax and site Cash into one recomputed sector
 byte; `SectorIncomeResolver` derives that same operational Income for Upkeep,
 Control, Chaos, AI evaluation, and presentation while `MatchSectorState.Income`
 retains the generated density value needed by tolerance normalization.

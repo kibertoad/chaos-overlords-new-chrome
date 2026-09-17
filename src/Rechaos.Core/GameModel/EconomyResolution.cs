@@ -34,6 +34,7 @@ public static class EconomyResolver
             var forecast = Project(state, player);
             var previousCash = forecast.CurrentCash;
             player.Cash = forecast.ResultCash;
+            RecordStatistics(state, player);
             var details = new EconomyResolutionDetails(
                 previousCash, forecast.SectorIncome, forecast.SiteIncome,
                 forecast.GangUpkeep, forecast.ResultCash);
@@ -45,6 +46,28 @@ public static class EconomyResolver
             results.Add(new UpkeepResolutionResult(player.Id, details, gameEvent));
         }
         return results;
+    }
+
+    private static void RecordStatistics(MatchState state, MatchPlayerState player)
+    {
+        foreach (var gang in player.Gangs.Where(gang => gang.IsActive))
+        {
+            var upkeep = state.Definitions.Gangs
+                .Single(definition => definition.Id == gang.DefinitionId).Upkeep;
+            if (upkeep < 0)
+                player.Statistics.CashEarned = checked(player.Statistics.CashEarned - upkeep);
+            else
+                player.Statistics.CashSpent = checked(player.Statistics.CashSpent + upkeep);
+        }
+
+        foreach (var sector in state.Sectors.Where(sector => sector.Owner == player.Id))
+        {
+            var income = SectorIncomeResolver.OperationalIncome(state, sector);
+            if (income < 1)
+                player.Statistics.CashSpent = checked(player.Statistics.CashSpent - income);
+            else
+                player.Statistics.CashEarned = checked(player.Statistics.CashEarned + income);
+        }
     }
 
     public static EconomyForecast Project(MatchState state, MatchPlayerState player)

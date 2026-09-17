@@ -92,7 +92,9 @@ default; Advanced results must not be used as evidence for Original parity.
   All six rule-changing names, including `SMGMILK`, are refused online.
 - Executable-derived Upkeep and both Finance scopes preserve the flat $1 sector
   tax plus influenced-site Cash that the original stores and reuses as the
-  playable Income byte for Control, Chaos, UI, and AI evaluation.
+  playable Income byte for Control, Chaos, UI, and AI evaluation. Upkeep also
+  updates Cash Earned/Spent at the recovered per-gang and per-sector sign
+  boundary rather than classifying only the final net change.
 - The current AI baseline implements exact fixed-six-player reaction and
   directional-attitude initialization, non-Homicidal recovery, combat/Control
   attitude changes, hostility-filtered attack candidates, and all nine known

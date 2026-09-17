@@ -3004,9 +3004,21 @@ the operational byte is replaced. Because the first pass skips the entire cash
 collection branch, players enter their initial planning turn with setup cash
 unchanged; recurring Upkeep begins on the next outer-loop iteration.
 
+The same loop also supplies the complete Upkeep statistics boundary. For every
+active gang, lines 197-212 subtract signed Upkeep from current cash
+`0x004a25e8`; a negative value adds its magnitude to Cash Earned
+`0x004a27e0`, while zero or positive Upkeep adds directly to Cash Spent
+`0x0049ca78`. For every owned sector, lines 217-229 add its signed combined
+Income byte to current cash; values below one subtract that signed value from
+Cash Spent, while positive values add to Cash Earned. These branches execute
+per gang and per sector, so positive and negative components are classified
+before totals can cancel. Cross-reference inventories confirm the arrays are
+the saved/rendered Cash Earned and Cash Spent fields and locate their other
+resolver writers at successful Chaos/Sell and Bribe/Equip/Hire paths.
+
 **Confidence:** High static evidence for arrays, offsets, initial skip,
 recomputation/write-back, UI and AI consumers, player/gang/sector scan order,
-and arithmetic;
+per-component statistics branches, and arithmetic;
 controlled runtime corroboration remains pending.
 
 **Hire-boundary corroboration:** The outer turn function performs this cash/
