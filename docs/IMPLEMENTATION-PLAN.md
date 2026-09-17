@@ -715,8 +715,9 @@ screen/state.
   Tracks 3-8 advance in order and repeat during gameplay, and Track 9 repeats
   for endgame; application deactivation pauses and activation resumes playback.
   Preserve the recovered 0-10 volume scale and Music level-5 default. Its Options
-  control and safe recreation-native persistence are implemented; determine the
-  original preference-persistence and precise menu restart boundaries. Keep
+  control and safe recreation-native persistence are implemented; the original
+  read-only-HKLM writer and stale query buffer are documented defects rather
+  than compatibility targets. Determine precise menu restart boundaries. Keep
   music independently adjustable. Missing or unreadable music must degrade
   silently to gameplay without music, never stall the turn loop.
 - Preserve the implemented managed logo/intro stream, deterministic cadence,

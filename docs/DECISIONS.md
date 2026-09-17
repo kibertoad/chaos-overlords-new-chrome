@@ -6,6 +6,26 @@ Last updated: 2026-09-17
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
 
+## 2026-09-17 — Correct the original registry persistence defects
+
+- Decision: retain the recreation's validated, atomic, per-user preferences file
+  rather than reproduce the executable's machine-wide registry implementation.
+- Evidence: loader `0x0046439a` and writer `0x00464783` both open
+  `HKLM\SOFTWARE\Stick Man Games\Chaos Overlords\1.0` with `0x20019`
+  (`KEY_READ`). The writer then issues twelve `RegSetValueExA` calls without a
+  handle carrying `KEY_SET_VALUE`; the loader attempts the same for a generated
+  `serialNum`. Every result is ignored. The loader also reuses one DWORD across
+  thirteen unchecked queries, allowing a missing later value to inherit stale
+  data instead of its compiled default.
+- Reason: silent non-persistence and cross-setting contamination are clear API
+  misuse, not game design. Reproducing them would lose user choices and make
+  malformed legacy state affect unrelated settings.
+- Compatibility boundary: original compiled defaults and option semantics remain
+  evidence for recreation defaults, except for separately documented modern
+  choices such as Slide Panels off. Preference writes are reliable and bounded;
+  malformed data falls back per field. The obsolete `serialNum` side effect is
+  excluded from authoritative RNG, as documented in `BIN-RNG-001`.
+
 ## 2026-09-17 — Correct the original AI hire slot/role indexing defect
 
 - Decision: when the AI hire scheduler considers its scenario-specific family-6

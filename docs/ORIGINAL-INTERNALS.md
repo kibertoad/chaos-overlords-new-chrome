@@ -228,14 +228,15 @@ screens, advances/repeats them, and pauses/resumes on focus changes. Playback
 uses the recovered level-5 Music default and exact normalized volume conversion. The
 title and in-game Options overlay exposes all 11 levels, with zero stopping music
 and a later nonzero selection restarting the active program. A bounded,
-versioned recreation-native preferences file remembers the selection safely;
-this does not claim parity with the original persistence mechanism. Playback or
-preference-write failure remains presentation-only and cannot affect
+versioned recreation-native preferences file remembers the selection safely.
+This deliberately corrects the original registry writer described in
+`BIN-OPTIONS-001`, whose read-only handle makes every attempted write fail.
+Playback or preference-write failure remains presentation-only and cannot affect
 deterministic simulation.
 
-**Next validation:** Capture title/setup transitions and whether/how the original
-persists Options levels, then validate playback, focus changes, volume, and track
-transitions on each supported native platform.
+**Next validation:** Capture title/setup transitions, then validate playback,
+focus changes, volume, and track transitions on each supported native platform.
+The original preference-persistence behavior is now statically closed.
 
 ### BIN-SOUND-001 - effect slots, volume and setup cues
 
@@ -520,31 +521,58 @@ interoperability remains out of scope.
 
 ### BIN-OPTIONS-001 - registry keys, initialized defaults, and idle-gang warning
 
-**Observation:** The preference-name table contains `prefsVidDeep`,
-`prefsSlide`, `prefsBaseStats`, `prefsCombat`, `prefsFreeGang`, `commType`,
-`prefsVolumeSFX`, `prefsVolumeCD`, `prefsDiff`, `prefsTimeLimit`,
-`prefsObjective`, and `prefsFullScreen`. The loader at `0x0046439a` maps
-`prefsSlide` to `0x00487840`, `prefsBaseStats` to `0x0048784c`, `prefsCombat`
-to `0x0048785c`, and `prefsFreeGang` to `0x00487860`. Their initialized bytes
-are respectively 1, 0, 1, and 1. Reads of the Slide byte occur directly in the
-panel-open and panel-close functions at `0x0041953e` and `0x004196f5`; the
-Base Stats byte is consumed by gang/statistics presentation paths; and the
-Combat byte is read by the Done/combat path at `0x0046fd80`. That same city
-handler scans all 81 gang slots on Done; an active slot whose action byte is
-zero is idle. When `prefsFreeGang` is enabled and such a slot belongs to the
-active player, the path invokes the two-choice modal at `0x00448718`. Its open
-and close paths use the panel-slide functions above, which play general-effect
-slots 0 and 1. The original Help independently says Done warns about gangs
-without commands unless Warn If Idle Gangs is off.
+**Observation:** Loader `0x0046439a` opens
+`HKLM\SOFTWARE\Stick Man Games\Chaos Overlords\1.0` once with access mask
+`0x20019` (`KEY_READ`) and queries thirteen four-byte values in this order:
+
+| Registry value | Destination | Compiled default |
+|---|---:|---:|
+| `prefsVidDeep` | `0x00487844` | 1 |
+| `prefsSlide` | `0x00487840` | 1 |
+| `prefsBaseStats` | `0x0048784c` | 0 |
+| `prefsCombat` | `0x0048785c` | 1 |
+| `prefsFreeGang` | `0x00487860` | 1 |
+| `commType` | `0x00487884` | 0 |
+| `prefsVolumeSFX` | `0x00487864` | 6 |
+| `prefsVolumeCD` | `0x00487868` | 5 |
+| `prefsDiff` | `0x00487850` | 1 |
+| `prefsTimeLimit` | `0x00487854` | 0 |
+| `prefsObjective` | `0x00487858` | 0 |
+| `prefsFullScreen` | `0x0048786c` | 1 |
+| `serialNum` | `0x00487870` | 0 |
+
+All twelve preference fields are written as `REG_DWORD` by `0x00464783`, but
+that routine opens the same HKLM key with the same `KEY_READ` mask. It never
+requests `KEY_SET_VALUE`, and ignores every `RegSetValueExA` result. Its three
+callers are in the application flow at `0x00460ef9`, `0x00460f40`, and
+`0x0046224a`; none can persist a change through this handle. The loader likewise
+ignores every query result and reuses one DWORD without resetting it between
+names. A missing or malformed later value can therefore consume stale data from
+the preceding query instead of retaining its compiled default. When the final
+effective serial is zero it consumes two bounded RNG calls and attempts to write
+the generated value through the same read-only handle, so that write also fails.
+An installer or external tool may still have pre-populated the machine-wide
+values before launch.
+
+Reads of the Slide byte occur directly in the panel-open and panel-close
+functions at `0x0041953e` and `0x004196f5`; the Base Stats byte is consumed by
+gang/statistics presentation paths; and the Combat byte is read by the
+Done/combat path at `0x0046fd80`. That same city handler scans all 81 gang slots
+on Done; an active slot whose action byte is zero is idle. When `prefsFreeGang`
+is enabled and such a slot belongs to the active player, the path invokes the
+two-choice modal at `0x00448718`. Its open and close paths use the panel-slide
+functions above, which play general-effect slots 0 and 1. The original Help
+independently says Done warns about gangs without commands unless Warn If Idle
+Gangs is off.
 
 **Interpretation:** The original defaults are Slide Panels on, Current rather
 than Base gang statistics, Detailed Combat on, and Warn If Idle Gangs on.
 The warning is a confirmation boundary around finishing planning, not a
 simulation rule; continuing still permits unassigned gangs.
 
-**Confidence:** High from the initialized data, preference loader, direct
-consumer references, bounded Done-path scan, dialog call graph, and matching
-Help description.
+**Confidence:** High from the initialized data, complete ordered load/save API
+calls and access masks, all three writer callers, direct consumer references,
+bounded Done-path scan, dialog call graph, and matching Help description.
 
 **Recreation status:** Options uses the recovered defaults and persists its
 warning toggle, base/current gang-stat display, automatic Detailed Combat
@@ -554,6 +582,8 @@ between windowed and borderless-fullscreen display is persisted in preference
 version 6 without changing compatibility coordinates. Version-4 and version-5
 preferences migrate without losing their earlier selections and safely default
 the new display choice to windowed mode.
+The safe local store deliberately does not reproduce the original read-only-HKLM
+writer or cross-value stale-buffer behavior; see `DECISIONS.md`.
 Finishing planning checks only the active player's living gangs and offers a
 Continue/Go Back modal when any lacks a queued command. Opening and closing the
 modal route the recovered general-effect slots 0 and 1.
@@ -685,13 +715,18 @@ interoperability.
 `SOFTWARE\Stick Man Games\Chaos Overlords\1.0` and the Windows App Paths key for
 `Chaos Overlords.exe`.
 
-**Interpretation:** Preferences and/or installation location are stored in the
-registry under the product key.
+**Interpretation:** Preferences are read from the product key; the separate App
+Paths query locates the installation. The executable's own preference writes
+cannot succeed because it opens the product key read-only.
 
-**Confidence:** Verified strings/imports; Medium interpretation.
+**Confidence:** High for the preference key, complete load/save value inventory,
+access masks, and failure boundary in `BIN-OPTIONS-001`; the App Paths role is
+High from its separate bounded query.
 
-**Next validation:** Inspect registry reads/writes in a disposable reference VM
-while changing one option at a time.
+**Static follow-through:** `BIN-OPTIONS-001` now maps every preference read and
+write, including the original stale-buffer and read-only-handle defects. A VM
+trace can corroborate Windows behavior but is no longer needed to identify the
+schema or persistence boundary.
 
 ## Resource lookup literals
 
@@ -774,11 +809,15 @@ their individual data flow is classified.
 
 The common startup caller `0x00460ccf` invokes this initializer at
 `0x00460cf7`, then preference loader `0x0046439a` at `0x00460d14`. The loader
-reads registry value `serialNum`; only when it is zero, calls at `0x00464726`
-and `0x00464739` draw two inclusive `1..16384` values, combine their zero-based
-forms into a legacy serial number, and persist it. A first run therefore
-consumes six raw RNG values after seeding, while later runs normally consume
-none at this point.
+queries registry value `serialNum`; only when the resulting shared DWORD buffer
+is zero, calls at `0x00464726` and `0x00464739` draw two inclusive `1..16384`
+values and combine their zero-based forms into a legacy serial number. Each
+bounded draw consumes three raw RNG values. The attempted registry write cannot
+succeed because the key was opened with `KEY_READ`, and its result is ignored.
+Moreover, failed queries do not have an isolated default buffer: `serialNum`
+follows `prefsFullScreen` and can inherit stale query data when absent. Startup
+therefore consumes either zero or six raw RNG values according to the effective
+buffer value, not a reliable first-run/later-run distinction.
 
 **Confidence:** High static evidence for the seed source, truncation, zero
 extension, single writer, and process-initialization placement.
@@ -790,8 +829,9 @@ replay/test and multiplayer seeds remain full-width deterministic inputs.
 **Intentional exception:** The recreation does not let an obsolete
 installation-level network serial number perturb authoritative simulation RNG.
 Its explicit seed always denotes the initial simulation stream. Native launch
-fixtures must record whether `serialNum` existed and advance the predicted
-native stream by two bounded calls when it did not.
+fixtures must record the effective registry-query state, especially
+`prefsFullScreen` and `serialNum`, and advance the predicted native stream by
+two bounded calls only when the loader's final shared DWORD is zero.
 
 **Next validation:** Correlate the first generated city against a native launch
 whose low-16-bit seed and prior `serialNum` state are both captured.
@@ -3415,8 +3455,8 @@ Useful static work which remains is narrower:
 2. Bound the original save/load version branches and fixed transfer sizes enough
    to close the still-partial legacy layout; native-save interoperability remains
    intentionally out of scope.
-3. Finish static Options/configuration tracing: registry value names and types,
-   persistence failure behavior, and exact menu-to-menu music restart boundaries.
+3. Finish exact menu-to-menu music restart boundaries; registry names, types,
+   defaults, load order, and the shipped persistence failures are now closed.
 4. Resolve family 11 mode-10/mode-16 late guards and decide the safest explicit
    policy for family 1's recreation-only unavailable-command fallback.
 5. Continue exact UI geometry/hit-map work where it can be derived from draw and
