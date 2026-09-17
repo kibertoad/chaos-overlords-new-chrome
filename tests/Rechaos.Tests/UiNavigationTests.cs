@@ -785,9 +785,9 @@ public sealed class UiNavigationTests
     }
 
     [Theory]
-    [InlineData(GameNotificationKind.HireInsufficientCash, "HIRE FAILED: NOT ENOUGH CASH.")]
-    [InlineData(GameNotificationKind.HireSectorFull, "HIRE FAILED: TARGET SECTOR IS FULL.")]
-    [InlineData(GameNotificationKind.HireGangLimit, "HIRE FAILED: GANG LIMIT REACHED.")]
+    [InlineData(GameNotificationKind.HireInsufficientCash, "INSUFFICIENT CASH TO HIRE.")]
+    [InlineData(GameNotificationKind.HireSectorFull, "UNABLE TO HIRE, SECTOR AT CAPACITY.")]
+    [InlineData(GameNotificationKind.HireGangLimit, "UNABLE TO HIRE, MAX GANGS REACHED.")]
     public void FailedHiresAreExplicitLastTurnReports(
         GameNotificationKind kind,
         string expectedStatus)
@@ -804,9 +804,9 @@ public sealed class UiNavigationTests
 
     [Theory]
     [InlineData(GangAction.Bribe, GameNotificationKind.CommandResult,
-        "BRIBE FAILED: NOT ENOUGH CASH.")]
+        "INSUFFICIENT CASH TO BRIBE.")]
     [InlineData(GangAction.Equip, GameNotificationKind.Equipment,
-        "EQUIP FAILED: NOT ENOUGH CASH.")]
+        "INSUFFICIENT CASH TO EQUIP.")]
     public void CashDependentCommandFailuresAreExplicitLastTurnReports(
         GangAction action,
         GameNotificationKind notificationKind,
@@ -878,7 +878,8 @@ public sealed class UiNavigationTests
 
         Assert.False(NotificationPresentation.IsLastTurnReport(notification, gangLoss));
         Assert.True(NotificationPresentation.IsLastTurnReport(notification, playerLoss));
-        Assert.Equal("PLAYER ELIMINATED.", NotificationPresentation.LastTurnStatus(notification));
+        Assert.Equal("PLAYER HAS BEEN ELIMINATED.",
+            NotificationPresentation.LastTurnStatus(notification));
     }
 
     [Fact]

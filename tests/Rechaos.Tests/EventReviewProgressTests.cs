@@ -98,6 +98,50 @@ public sealed class EventReviewProgressTests
     }
 
     [Fact]
+    public void NativeProjectionKeepsOnlyFirstThirtyTwoReportsFromCompletedTurn()
+    {
+        var reports = Enumerable.Range(0, MatchLimits.LastTurnReportsPerPlayer + 3)
+            .Select(index => new GameNotification(index, 4, TurnPhase.Execution,
+                ExecutionPhase.Chaos, GameNotificationKind.Crackdown, SectorId: index % 64))
+            .Prepend(new GameNotification(100, 3, TurnPhase.Execution,
+                ExecutionPhase.Chaos, GameNotificationKind.Crackdown, SectorId: 63))
+            .ToArray();
+
+        var projected = LastTurnEventProjection.Select(reports, [], completedTurn: 4);
+
+        Assert.Equal(MatchLimits.LastTurnReportsPerPlayer, projected.Count);
+        Assert.Equal(0, projected[0].Sequence);
+        Assert.Equal(MatchLimits.LastTurnReportsPerPlayer - 1, projected[^1].Sequence);
+    }
+
+    [Theory]
+    [InlineData(GangAction.Bribe, CommandResolutionCode.TargetEvaded)]
+    [InlineData(GangAction.Equip, CommandResolutionCode.ItemUnavailable)]
+    [InlineData(GangAction.Move, CommandResolutionCode.InsufficientCash)]
+    public void LastTurnReportsExcludeFailuresOutsideTheNativeCashCases(
+        GangAction action,
+        CommandResolutionCode code)
+    {
+        var gameEvent = new GameEvent(42, 2, TurnPhase.Execution, ExecutionPhase.Instant,
+            GameEventKind.CommandFailed, new PlayerId(0), new GangId(10), action,
+            CommandTarget.None, Resolution: new CommandResolutionDetails(code, [], 0));
+        var notification = new GameNotification(0, 2, TurnPhase.Execution,
+            ExecutionPhase.Instant, GameNotificationKind.CommandResult,
+            new GangId(10), 7, 42);
+
+        Assert.False(NotificationPresentation.IsLastTurnReport(notification, gameEvent));
+    }
+
+    [Fact]
+    public void ObjectiveUpdatesAreNotNativeLastTurnReports()
+    {
+        var notification = new GameNotification(0, 2, TurnPhase.PlayerElimination, null,
+            GameNotificationKind.Objective);
+
+        Assert.False(NotificationPresentation.IsLastTurnReport(notification, null));
+    }
+
+    [Fact]
     public void NativeEventSiteDitherMatchesOriginalBitmapResource146()
     {
         for (var y = 0; y < LastTurnEventPresentation.NativeDitherPatternSize; y++)

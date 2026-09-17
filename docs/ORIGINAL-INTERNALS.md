@@ -92,6 +92,60 @@ presentation option, not the native default.
 **Next validation:** Pixel-compare several native site-event captures with the
 recovered crop, `COLORONCOLOR` projection, and resource-146 mask.
 
+### BIN-EVENT-001 - Last Turn report table, types, and lifetime
+
+**Observation:** The original Last Turn store is a six-player table rooted at
+`0x004aae08`, with player stride `0x140` and exactly 32 ten-byte records per
+player. Each record contains an occupied byte, a two-byte report type, and
+three two-byte arguments. Recorder `0x00477748` appends at the per-player count
+in `0x004abca8`; when the count is already 32 it returns without shifting or
+overwriting anything. Thus the first 32 reports survive and later reports in
+the same resolution are discarded.
+
+Reset wrapper `0x004726c0` clears every occupied byte immediately before it
+enters the whole-turn resolver. The resolver `0x00472775` then zeroes all six
+counts before any report calls. All 12 direct recorder call sites are inside
+that resolver. The UI handler `0x0044f2fc` later scans all 32 occupied bytes for
+the requested player in ascending slot order; it does not merge reports from
+an older resolution.
+
+Compositor `0x0044fd6c` has cases 0 through 9. Its exact Win32 string-table
+labels and statically traced meanings are:
+
+| Type | Original status | Trigger |
+|---:|---|---|
+| 0 | `NO EVENTS.` | Empty/default compositor case; not emitted by the resolver |
+| 1 | `POLICE CRACKDOWN.` | Crackdown created |
+| 2 | `SECTOR CONTROL ATTAINED.` | Sector captured |
+| 3 | `SECTOR CONTROL LOST.` | Previous owner displaced |
+| 4 | `SITE COOPERATION ACHIEVED.` | Influence completed |
+| 5 | `RESEARCH COMPLETED.` | Research completed |
+| 6/1 | `INSUFFICIENT CASH TO BRIBE.` | Bribe cash failure |
+| 6/2 | `INSUFFICIENT CASH TO EQUIP.` | Equip cash failure |
+| 6/4 | `INSUFFICIENT CASH TO HIRE.` | Hire cash failure |
+| 7 | `UNABLE TO HIRE, SECTOR AT CAPACITY.` | Hire sector full |
+| 8 | `UNABLE TO HIRE, MAX GANGS REACHED.` | Player gang limit reached |
+| 9 | `PLAYER HAS BEEN ELIMINATED.` | Player eliminated; recorded for all six slots |
+
+There is no generic command-failure or objective-update report type. Target
+evasion, unavailable items, movement failure, and other rejection reasons do
+not enter Last Turn Events through this table.
+
+**Interpretation:** Last Turn Events is a bounded projection produced anew by
+the immediately completed whole-turn resolution, not the complete mechanical
+notification history. Its overflow policy is keep-first, not a ring buffer.
+
+**Confidence:** High static evidence from table strides, both reset loops, the
+complete recorder and caller inventory, the compositor switch, and executable
+string-table resources 33 through 44. Runtime corroboration remains useful for
+presentation timing, not for type membership or capacity.
+
+**Implementation:** `LastTurnEventProjection` filters only the recovered native
+types from the immediately completed turn, preserves emission order, and keeps
+the first 32. The broader authoritative `NotificationQueue` remains a
+recreation mechanism and is deliberately not misrepresented as the native
+table. Status text now matches the executable strings exactly.
+
 ### BIN-UI-001 - combat animation cadence
 
 **Observation:** `FUN_0042e040` references the four combat-strip resource bases:

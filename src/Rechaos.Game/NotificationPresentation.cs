@@ -7,7 +7,9 @@ public static class NotificationPresentation
     public static bool IsLastTurnReport(GameNotification notification, GameEvent? relatedEvent)
     {
         ArgumentNullException.ThrowIfNull(notification);
-        if (relatedEvent?.Kind == GameEventKind.CommandFailed) return true;
+        if (relatedEvent is { Kind: GameEventKind.CommandFailed, Resolution: { } failure })
+            return failure.Code == CommandResolutionCode.InsufficientCash
+                && relatedEvent.Action is GangAction.Bribe or GangAction.Equip;
         return notification.Kind switch
         {
             GameNotificationKind.Control => relatedEvent?.Resolution?.Successes > 0,
@@ -16,8 +18,7 @@ public static class NotificationPresentation
             GameNotificationKind.Elimination => relatedEvent?.Kind == GameEventKind.PlayerEliminated,
             GameNotificationKind.HireInsufficientCash or GameNotificationKind.HireSectorFull
                 or GameNotificationKind.HireGangLimit => relatedEvent?.Kind == GameEventKind.HireFailed,
-            GameNotificationKind.ControlLost or GameNotificationKind.Crackdown
-                or GameNotificationKind.Objective => true,
+            GameNotificationKind.ControlLost or GameNotificationKind.Crackdown => true,
             _ => false
         };
     }
@@ -32,6 +33,11 @@ public static class NotificationPresentation
         ArgumentNullException.ThrowIfNull(notification);
         if (relatedEvent is { Kind: GameEventKind.CommandFailed, Resolution: { } resolution })
         {
+            if (resolution.Code == CommandResolutionCode.InsufficientCash)
+            {
+                if (relatedEvent.Action == GangAction.Bribe) return "INSUFFICIENT CASH TO BRIBE.";
+                if (relatedEvent.Action == GangAction.Equip) return "INSUFFICIENT CASH TO EQUIP.";
+            }
             var action = SplitWords(relatedEvent.Action.ToString()).ToUpperInvariant();
             var reason = resolution.Code switch
             {
@@ -54,11 +60,10 @@ public static class NotificationPresentation
             GameNotificationKind.Influence => "SITE COOPERATION ACHIEVED.",
             GameNotificationKind.Research => "RESEARCH COMPLETED.",
             GameNotificationKind.Crackdown => "POLICE CRACKDOWN.",
-            GameNotificationKind.Elimination => "PLAYER ELIMINATED.",
-            GameNotificationKind.Objective => "OBJECTIVE STATUS UPDATED.",
-            GameNotificationKind.HireInsufficientCash => "HIRE FAILED: NOT ENOUGH CASH.",
-            GameNotificationKind.HireSectorFull => "HIRE FAILED: TARGET SECTOR IS FULL.",
-            GameNotificationKind.HireGangLimit => "HIRE FAILED: GANG LIMIT REACHED.",
+            GameNotificationKind.Elimination => "PLAYER HAS BEEN ELIMINATED.",
+            GameNotificationKind.HireInsufficientCash => "INSUFFICIENT CASH TO HIRE.",
+            GameNotificationKind.HireSectorFull => "UNABLE TO HIRE, SECTOR AT CAPACITY.",
+            GameNotificationKind.HireGangLimit => "UNABLE TO HIRE, MAX GANGS REACHED.",
             _ => throw new ArgumentOutOfRangeException(nameof(notification))
         };
     }

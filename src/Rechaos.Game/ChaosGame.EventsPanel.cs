@@ -259,20 +259,7 @@ public sealed partial class ChaosGame
     }
 
     private static IReadOnlyList<GameNotification> LastTurnReports(MatchState state, PlayerId playerId)
-    {
-        var reports = new List<GameNotification>();
-        var sectorMilestones = new HashSet<(int Turn, GameNotificationKind Kind, int? Sector)>();
-        foreach (var notification in state.NotificationsFor(playerId))
-        {
-            var related = RelatedEvent(state, notification);
-            if (!NotificationPresentation.IsLastTurnReport(notification, related)) continue;
-            if ((notification.Kind is GameNotificationKind.Control or GameNotificationKind.Influence)
-                && !sectorMilestones.Add((notification.Turn, notification.Kind, notification.SectorId)))
-                continue;
-            reports.Add(notification);
-        }
-        return reports;
-    }
+        => LastTurnEventProjection.For(state, playerId);
 
     private IReadOnlyList<GameNotification> ReviewableReports(MatchState state, PlayerId playerId)
     {
@@ -293,6 +280,49 @@ public sealed partial class ChaosGame
         batch.Draw(pixel, LastTurnEventsLayout.DateValue, Color.Black);
         batch.Draw(pixel, LastTurnEventsLayout.ObjectValue, Color.Black);
         batch.Draw(pixel, LastTurnEventsLayout.StatusValue, Color.Black);
+    }
+}
+
+public static class LastTurnEventProjection
+{
+    public static IReadOnlyList<GameNotification> For(MatchState state, PlayerId playerId)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return Select(
+            state.NotificationsFor(playerId),
+            state.Events,
+            state.Coordinator.Turn - 1);
+    }
+
+    public static IReadOnlyList<GameNotification> Select(
+        IEnumerable<GameNotification> notifications,
+        IReadOnlyList<GameEvent> events,
+        int completedTurn)
+    {
+        ArgumentNullException.ThrowIfNull(notifications);
+        ArgumentNullException.ThrowIfNull(events);
+        if (completedTurn < 1) return [];
+
+        var eventsBySequence = events.ToDictionary(gameEvent => gameEvent.Sequence);
+        var reports = new List<GameNotification>(MatchLimits.LastTurnReportsPerPlayer);
+        var sectorMilestones = new HashSet<(GameNotificationKind Kind, int? Sector)>();
+        foreach (var notification in notifications)
+        {
+            if (notification.Turn != completedTurn) continue;
+            var related = notification.RelatedEventSequence is { } sequence
+                && eventsBySequence.TryGetValue(sequence, out var gameEvent)
+                    ? gameEvent
+                    : null;
+            if (!NotificationPresentation.IsLastTurnReport(notification, related)) continue;
+            if ((notification.Kind is GameNotificationKind.Control or GameNotificationKind.Influence)
+                && !sectorMilestones.Add((notification.Kind, notification.SectorId)))
+                continue;
+            reports.Add(notification);
+            // The original recorder retains the first 32 records and ignores
+            // every later write until the next whole-turn resolution reset.
+            if (reports.Count == MatchLimits.LastTurnReportsPerPlayer) break;
+        }
+        return reports;
     }
 }
 

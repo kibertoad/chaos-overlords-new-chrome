@@ -399,8 +399,12 @@ viewers. Both identities are confirmed by
 their template text, apertures, and the supplied original Combat capture.
 
 `PX05010` is the paged Last Turn Events panel. At the next human-player handoff,
-the recreation opens it automatically when that player has queued notifications
-and otherwise proceeds directly to the city. Its counter and arrow cells page
+the recreation opens it automatically when the immediately completed turn
+produced one of the original ten report types and otherwise proceeds directly
+to the city. The original retains the first 32 such reports per player and
+silently ignores later reports until the next resolution resets the table; the
+recreation applies that keep-first projection without truncating its richer
+mechanical notification history. Its counter and arrow cells page
 one report at a time. The baked counter occupies screen `(138,138,47,7)` inside
 the preserved two-pixel green frame; replacement text uses that same origin and
 baseline so no template glyph pixels survive around it. Its
