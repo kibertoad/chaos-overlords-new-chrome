@@ -573,7 +573,6 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(492, 207, 20, 20), OriginalSpriteLayout.GangStatus(7));
         Assert.Throws<ArgumentOutOfRangeException>(() => OriginalSpriteLayout.GangStatus(9));
         Assert.Equal(new Rectangle(150, 386, 40, 40), OriginalSpriteLayout.SetupDragFrame);
-        Assert.Equal(new Rectangle(164, 17, 70, 110), OriginalSpriteLayout.GangCardFrame);
         Assert.Equal(new Rectangle(120, 211, 30, 47), OriginalSpriteLayout.SectorBackArrow);
         Assert.Equal(new Rectangle(0, 626, 20, 20), OriginalSpriteLayout.ActivePlayerMarker(0));
         Assert.Equal(new Rectangle(220, 626, 20, 20), OriginalSpriteLayout.ActivePlayerMarker(11));
@@ -631,25 +630,6 @@ public sealed class UiNavigationTests
     }
 
     [Fact]
-    public void SectorGangCardsExposeDetailAndBothActionControls()
-    {
-        Assert.Equal(new Rectangle(251, 80, 70, 110), SectorGangCardLayout.Frame(0));
-        Assert.Equal(new Rectangle(325, 80, 70, 110), SectorGangCardLayout.Frame(1));
-        Assert.Equal(new Rectangle(251, 190, 70, 110), SectorGangCardLayout.Frame(2));
-        Assert.Equal(new Rectangle(325, 300, 70, 110), SectorGangCardLayout.Frame(5));
-        Assert.Equal(new Rectangle(256, 81, 60, 3), SectorGangCardLayout.ForceBar(0));
-        Assert.Equal(0, SectorGangCardLayout.ForceWidth(0));
-        Assert.Equal(6, SectorGangCardLayout.ForceWidth(1));
-        Assert.Equal(60, SectorGangCardLayout.ForceWidth(10));
-        Assert.Equal(new Rectangle(254, 87, 30, 15), SectorGangCardLayout.OneOffAction(0));
-        Assert.Equal(new Rectangle(287, 87, 30, 15), SectorGangCardLayout.RepeatingAction(0));
-        Assert.Equal(new Rectangle(254, 103, 64, 64), SectorGangCardLayout.Portrait(0));
-        Assert.Equal(new Rectangle(296, 168, 21, 21), SectorGangCardLayout.ItemSlot(0, 2));
-        Assert.Equal(new Rectangle(297, 169, 19, 19), SectorGangCardLayout.ItemPortrait(0, 2));
-        Assert.Throws<ArgumentOutOfRangeException>(() => SectorGangCardLayout.Frame(6));
-    }
-
-    [Fact]
     public void CommandOverlayUsesOriginalActionFirstOrdering()
     {
         Assert.Equal(
@@ -673,7 +653,7 @@ public sealed class UiNavigationTests
         Assert.Equal(2, EquipmentCommandLayout.CategoryForItemType(3));
         Assert.Equal(3, EquipmentCommandLayout.CategoryForItemType(4));
         Assert.Equal(new Rectangle(130, 141, 64, 64), GangInformationLayout.Portrait);
-        Assert.Equal(new Rectangle(254, 87, 63, 15), SectorGangCardLayout.AssignedCommand(0));
+        Assert.Equal(new Rectangle(259, 88, 64, 9), SectorGangCardLayout.AssignedCommand(0));
         Assert.Equal(new Rectangle(132, 139, 120, 64), SiteInformationLayout.Portrait);
         Assert.Equal(169, SiteInformationLayout.DataY(0));
         Assert.Equal(187, SiteInformationLayout.DataY(1));

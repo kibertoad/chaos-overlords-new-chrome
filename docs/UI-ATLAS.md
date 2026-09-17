@@ -313,14 +313,15 @@ command. Enter remains the keyboard command shortcut.
 
 The detailed view follows the original full-screen composition from the
 reference capture: the 3-by-3 neighborhood begins at `(61,48)`, three 120-by-64
-site portraits stack at `(83,226)`, and up to two visible gang cards begin at
-`(251,80)`. Framed coordinate badges overlap the neighborhood edges. The live
+site portraits stack at `(83,226)`, and the active player's gang cards begin at
+`(254,80)` in two columns with a 76-by-112 stride. Framed coordinate badges overlap the neighborhood edges. The live
 right console, shared top portrait strip, and three-offer Hire dock remain
 visible; only dynamic values are painted over the console's baked labels.
-Each friendly card exposes separate one-off and repeating order controls; both
-use the authoritative legal-command picker and set the existing
-`GameCommand.Repeat` flag appropriately. The repeating control uses the
-reference's vertically stacked double-arrow mark. The thin 60-by-3 track above
+Each friendly card copies the complete native 74-by-110 frame from
+`PX00129 (162,15)`, then overlays its 64-by-9 action strip from y
+`125 + 9*action`; the None strip supplies the one-off and repeating arrows.
+The two controls use the authoritative legal-command picker and set the existing
+`GameCommand.Repeat` flag appropriately. The thin 60-by-3 track above
 the portrait is a red bevel, filled with a matching green bevel in exact
 six-pixel steps per point of current Force. Once an order is assigned, the
 two arrow cells are replaced by one full-width strip naming the queued action.
@@ -328,9 +329,9 @@ Dragging an owned gang card onto an influenceable building in the detailed
 sector queues a recurring Influence command for that exact site.
 Hovering a gang with an assigned Move, Influence, or Attack command outlines
 its destination tile, building portrait, or target gang card respectively.
-The gang-card frame ends at the bottom of its three equipment slots; the next
-eight rows in `PX00000` are separate command-arrow artwork and must not be
-included in the card source rectangle.
+The gang portrait is copied at card offset `(5,20)`, while the three native-size
+20-by-20 equipment portraits are copied at `(5,86)`, `(27,86)`, and `(49,86)`.
+The one-pixel player-color outline surrounds rather than overwrites the frame.
 The first themed overlay preserves the original fifteen-action ordering:
 Attack, Bribe, Chaos, Control, Equip, Give, Heal, Hide, Influence, Move,
 Research, Sell, Snitch, None, and Terminate. Individual equipment and other

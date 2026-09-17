@@ -288,6 +288,14 @@ site frame supplies the matching 100-by-3 red track. Gang-card compositor
 60-by-3 red track embedded in the card frame. The red rows are
 `(255,148,148)`, `(247,0,0)`, and `(148,0,0)`.
 
+The same compositor first copies the complete 74-by-110 card source
+`(162,15)-(236,125)`, overlays the active action's 64-by-9 source at
+`(162,125 + 9*action)`, places the 64-by-64 gang portrait at card offset
+`(5,20)`, and places three optional 20-by-20 equipment portraits at offsets
+`(5,86)`, `(27,86)`, and `(49,86)`. Caller `0x00410770` places cards at
+`x = 254 + 76*(index % 2)` and `y = 80 + 112*(index / 2)`, then draws the
+player-color outline one pixel outside the finished card.
+
 **Interpretation:** Both detailed-sector meters are three-row bevels copied at
 native length. They are not flat fills, site progress is truncated rather than
 rounded, and gang Force advances in exact six-pixel steps. The original draws

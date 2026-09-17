@@ -68,9 +68,9 @@ public sealed partial class ChaosGame
             return;
         }
         var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
-        var visible = SectorGangView.Visible(_state, playerId, _cursor)
-            .OrderBy(gang => gang.Owner == playerId ? 0 : 1)
-            .ThenBy(gang => gang.Id.Value)
+        var visible = _state.FindPlayer(playerId)!.Gangs
+            .Where(gang => gang.IsActive && gang.SectorId == _cursor)
+            .OrderBy(gang => gang.Id.Value)
             .Take(SectorGangCardLayout.VisibleCards).ToArray();
         var index = Enumerable.Range(0, visible.Length)
             .FirstOrDefault(value => SectorGangCardLayout.Frame(value).Contains(point), -1);
@@ -118,9 +118,9 @@ public sealed partial class ChaosGame
             DrawSectorMeter(batch, pixel, control, controlled,
                 SectorDetailLayout.SiteControlColor(controlOwner, viewer));
         }
-        var visibleGangs = SectorGangView.Visible(state, viewer, sector.Id)
-            .OrderBy(gang => gang.Owner == viewer ? 0 : 1)
-            .ThenBy(gang => gang.Id.Value)
+        var visibleGangs = state.FindPlayer(viewer)!.Gangs
+            .Where(gang => gang.IsActive && gang.SectorId == sector.Id)
+            .OrderBy(gang => gang.Id.Value)
             .ToArray();
         foreach (var entry in visibleGangs.Take(SectorGangCardLayout.VisibleCards)
                      .Select((gang, index) => (gang, index)))
@@ -364,38 +364,25 @@ public sealed partial class ChaosGame
             batch.Draw(pixel, frame, new Color(115, 115, 115));
             batch.Draw(pixel, new Rectangle(frame.X + 3, frame.Y + 3, frame.Width - 6, frame.Height - 7), Color.Black);
         }
-        DrawBorder(batch, pixel, frame, PlayerColors[gang.Owner.Value], 2);
+        DrawBorder(batch, pixel, SectorGangCardLayout.OwnerBorder(slot),
+            PlayerColors[gang.Owner.Value], 1);
 
         var force = SectorGangCardLayout.ForceBar(slot);
         DrawSectorMeter(batch, pixel, force, SectorGangCardLayout.ForceWidth(gang.Force),
             new Color(0, 247, 0));
 
-        var controlsEnabled = gang.Owner == viewer;
-        if (gang.QueuedCommand is { } queued)
+        var action = gang.QueuedCommand?.Command.Action ?? GangAction.None;
+        if (_uiSprites is not null && gang.Owner == viewer)
         {
-            var assigned = SectorGangCardLayout.AssignedCommand(slot);
-            batch.Draw(pixel, assigned, new Color(20, 28, 25));
-            DrawBorder(batch, pixel, assigned,
-                controlsEnabled ? PlayerColors[gang.Owner.Value] : Color.Gray, 1);
-            var label = queued.Command.Action.ToString().ToUpperInvariant();
-            var x = assigned.Center.X - label.Length * 3;
-            font.Draw(batch, label, new Vector2(x, assigned.Y + 4),
-                controlsEnabled ? Color.Lime : Color.Gray, 1);
+            batch.Draw(_uiSprites, SectorGangCardLayout.ActionStrip(slot),
+                OriginalSpriteLayout.GangActionStrip(action), Color.White);
         }
-        else
+        else if (_uiSprites is null)
         {
-            var once = SectorGangCardLayout.OneOffAction(slot);
-            var repeat = SectorGangCardLayout.RepeatingAction(slot);
-            batch.Draw(pixel, once, Color.Black);
-            batch.Draw(pixel, repeat, Color.Black);
-            DrawBorder(batch, pixel, once, Color.LightGray, 1);
-            DrawBorder(batch, pixel, repeat, Color.LightGray, 1);
-            DrawDownArrow(batch, pixel, once.Center.X, once.Y + 5,
-                controlsEnabled ? Color.Lime : Color.Gray);
-            DrawDownArrow(batch, pixel, repeat.Center.X, repeat.Y + 3,
-                controlsEnabled ? Color.Lime : Color.Gray, compact: true);
-            DrawDownArrow(batch, pixel, repeat.Center.X, repeat.Y + 9,
-                controlsEnabled ? Color.Lime : Color.Gray, compact: true);
+            var strip = SectorGangCardLayout.ActionStrip(slot);
+            batch.Draw(pixel, strip, Color.Black);
+            var label = action == GangAction.None ? "V  VV" : action.ToString().ToUpperInvariant();
+            font.Draw(batch, label, new Vector2(strip.X + 2, strip.Y + 1), Color.Lime, 1);
         }
 
         var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
@@ -406,11 +393,6 @@ public sealed partial class ChaosGame
             [gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId];
         for (var itemSlot = 0; itemSlot < 3; itemSlot++)
         {
-            // The source frame also contains legacy pixels in this strip. The
-            // live card footer is exclusively the gang's three equipment slots.
-            var item = SectorGangCardLayout.ItemSlot(slot, itemSlot);
-            batch.Draw(pixel, item, Color.Black);
-            DrawBorder(batch, pixel, item, Color.LightGray, 1);
             if (_itemPortraits is not null && equippedItems[itemSlot] is { } itemId)
                 batch.Draw(_itemPortraits, SectorGangCardLayout.ItemPortrait(slot, itemSlot),
                     OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
@@ -449,19 +431,6 @@ public sealed partial class ChaosGame
         batch.Draw(pixel, new Rectangle(bounds.X, bounds.Y, bounds.Width, 1), highlight);
         batch.Draw(pixel, new Rectangle(bounds.X, bounds.Y + 1, bounds.Width, 1), center);
         batch.Draw(pixel, new Rectangle(bounds.X, bounds.Y + 2, bounds.Width, 1), shadow);
-    }
-
-    private static void DrawDownArrow(
-        SpriteBatch batch,
-        Texture2D pixel,
-        int centerX,
-        int top,
-        Color color,
-        bool compact = false)
-    {
-        var widths = compact ? new[] { 7, 5, 3, 1 } : new[] { 9, 7, 5, 3, 1 };
-        for (var row = 0; row < widths.Length; row++)
-            batch.Draw(pixel, new Rectangle(centerX - widths[row] / 2, top + row, widths[row], 1), color);
     }
 
     private static void DrawHorizontalArrow(

@@ -311,9 +311,6 @@ public static partial class OriginalSpriteLayout
     public static Rectangle HiredStamp => new(120, 300, 60, 60);
     public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
-    // The following eight rows in PX00000 are command-arrow artwork, not part
-    // of the gang card. The card ends with its three equipment slots.
-    public static Rectangle GangCardFrame => new(164, 17, 70, 110);
     public static Rectangle SectorBackArrow => new(120, 211, 30, 47);
 
     public static Rectangle ActivePlayerMarker(int frame)
@@ -440,48 +437,6 @@ public static partial class SectorDetailLayout
     {
         if (resistance < 0) throw new ArgumentOutOfRangeException(nameof(resistance));
         return influencedBy ?? (resistance == 0 ? sectorOwner : null);
-    }
-}
-
-public static class SectorGangCardLayout
-{
-    public const int Columns = 2;
-    public const int Rows = 3;
-    public const int VisibleCards = Columns * Rows;
-    public const int Left = 251;
-    public const int Top = 80;
-    public const int ColumnStride = 74;
-    public const int RowStride = 110;
-    public static Rectangle Frame(int slot) => At(slot, 0, 0, 70, 110);
-    public static Rectangle ForceBar(int slot) => At(slot, 5, 1, 60, 3);
-    public static int ForceWidth(int force) => Math.Clamp(force, 0, ManualRules.MaximumForce) * 6;
-    public static Rectangle OneOffAction(int slot) => At(slot, 3, 7, 30, 15);
-    public static Rectangle RepeatingAction(int slot) => At(slot, 36, 7, 30, 15);
-    public static Rectangle AssignedCommand(int slot) => At(slot, 3, 7, 63, 15);
-    public static bool? ActionRepeatAt(int slot, Point point) =>
-        OneOffAction(slot).Contains(point) ? false :
-        RepeatingAction(slot).Contains(point) ? true : null;
-    public static Rectangle Portrait(int slot) => At(slot, 3, 23, 64, 64);
-    public static Rectangle ItemSlot(int slot, int itemSlot)
-    {
-        if (itemSlot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(itemSlot));
-        return At(slot, 3 + itemSlot * 21, 88, 21, 21);
-    }
-
-    public static Rectangle ItemPortrait(int slot, int itemSlot)
-    {
-        var box = ItemSlot(slot, itemSlot);
-        return new Rectangle(box.X + 1, box.Y + 1, box.Width - 2, box.Height - 2);
-    }
-
-    private static Rectangle At(int slot, int x, int y, int width, int height)
-    {
-        if (slot is < 0 or >= VisibleCards) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(
-            Left + slot % Columns * ColumnStride + x,
-            Top + slot / Columns * RowStride + y,
-            width,
-            height);
     }
 }
 
