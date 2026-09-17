@@ -79,6 +79,8 @@ public sealed partial class ChaosGame
         if (gang.Owner != playerId)
         {
             _message = string.Empty;
+            if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
+                OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
             return;
         }
         var ownGangs = _state.FindPlayer(playerId)!.Gangs.Where(candidate => candidate.IsActive).ToArray();

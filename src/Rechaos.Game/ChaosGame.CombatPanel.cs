@@ -71,7 +71,7 @@ public sealed partial class ChaosGame
             batch.Draw(_gangPortraits, CombatPanelLayout.GangPortrait(rightSide),
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
         var damage = gang.Id == clip.Defender ? CombatDamage(gameEvent, clip) : 0;
-        DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide), gang.Force, damage);
+        DrawDetailedCombatForce(batch, pixel, rightSide, gang.Force, damage);
 
         DrawCombatItem(batch, eventWeapon ?? gang.WeaponItemId, CombatPanelLayout.WeaponItem(rightSide));
         DrawCombatItem(batch, gang.ArmorItemId, CombatPanelLayout.ArmorItem(rightSide));
@@ -84,7 +84,7 @@ public sealed partial class ChaosGame
         if (_policeSprites is not null)
             batch.Draw(_policeSprites, CombatPanelLayout.PolicePortrait(rightSide),
                 OriginalSpriteLayout.PolicePatrolCar, Color.White);
-        DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide), ManualRules.MaximumForce, 0);
+        DrawDetailedCombatForce(batch, pixel, rightSide, ManualRules.MaximumForce, 0);
     }
 
     private void DrawCombatItem(SpriteBatch batch, short? itemId, Point center)
@@ -101,19 +101,55 @@ public sealed partial class ChaosGame
         int force,
         int damage = 0)
     {
-        batch.Draw(pixel, bar, Color.DarkRed);
+        DrawBeveledForce(batch, pixel, bar, 0, bar.Width, red: true);
         var width = Math.Clamp(bar.Width * force / ManualRules.MaximumForce, 0, bar.Width);
         if (width > 0)
-            batch.Draw(pixel, new Rectangle(bar.X, bar.Y, width, bar.Height), Color.Lime);
+            DrawBeveledForce(batch, pixel, bar, 0, width, red: false);
 
         var previousForce = Math.Clamp(force + damage, 0, ManualRules.MaximumForce);
         var previousWidth = Math.Clamp(
             bar.Width * previousForce / ManualRules.MaximumForce, width, bar.Width);
         if (previousWidth <= width) return;
         if (_combatAnimationPlayer.ShowsPreDamageForce)
-            batch.Draw(pixel, new Rectangle(bar.X + width, bar.Y, previousWidth - width, bar.Height), Color.Lime);
+            DrawBeveledForce(batch, pixel, bar, width, previousWidth - width, red: false);
         else if (_combatAnimationPlayer.ShowsDamageFlash)
             batch.Draw(pixel, new Rectangle(bar.X + width, bar.Y, previousWidth - width, bar.Height), Color.White);
+    }
+
+    private void DrawDetailedCombatForce(
+        SpriteBatch batch,
+        Texture2D pixel,
+        bool rightSide,
+        int force,
+        int damage)
+    {
+        for (var track = 0; track < 2; track++)
+            DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide, track), force, damage);
+    }
+
+    private static void DrawBeveledForce(
+        SpriteBatch batch,
+        Texture2D pixel,
+        Rectangle bar,
+        int offset,
+        int width,
+        bool red)
+    {
+        if (width <= 0) return;
+        var x = bar.X + offset;
+        for (var row = 0; row < bar.Height; row++)
+        {
+            var color = (red, row) switch
+            {
+                (true, 0) => new Color(255, 148, 148),
+                (true, 1) => new Color(247, 0, 0),
+                (true, _) => new Color(148, 0, 0),
+                (false, 0) => new Color(148, 255, 148),
+                (false, 1) => new Color(0, 247, 0),
+                _ => new Color(0, 140, 0)
+            };
+            batch.Draw(pixel, new Rectangle(x, bar.Y + row, width, 1), color);
+        }
     }
 
     private static int CombatDamage(GameEvent? gameEvent, CombatAnimationClip clip)

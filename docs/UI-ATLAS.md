@@ -414,9 +414,12 @@ by mouse or directional keys before OK confirms the command.
 `PX05014` is the dedicated live Combat comparison panel rather than a flat
 target list. It identifies the sector, places attacker and defender owner/gang
 art side by side, shows equipment and green/red Force tracks, and reserves the
-mirrored lower-center cells for the recovered attack and hit animations. The
-Its sector tile uses local bounds `(31,11,54,52)`, with the code at local
-`(52,66)`. The 64-by-64 frames use inset screen apertures `(254,254)` and `(327,254)` rather
+mirrored lower-center cells for the recovered attack and hit animations. Its
+sector tile uses local bounds `(31,11,54,52)`, with the code at local
+`(52,66)`. Gang portraits use local 64-by-64 destinations `(150,48)` and
+`(223,48)`. Force is rendered as paired beveled 60-by-3 tracks at local y=114
+and y=121, beginning two pixels inside each portrait. The 64-by-64 frames use
+inset screen apertures `(254,254)` and `(327,254)` rather
 than stretching across the wider 67-pixel cells, preserving their green
 dividers. The map art occupies only the fitted 52-pixel-high part of its sector aperture, with
 the code below it, and its single baked Cancel cell is the active hit target.

@@ -368,6 +368,11 @@ backing-buffer rectangle `(left=31,top=155,right=85,bottom=207)` and draws its
 code at `(52,210)`. Relative to the panel's backing-buffer top of 144, those are
 local tile bounds `(31,11,54,52)` and local text point `(52,66)`.
 
+The native capture confirms 64-by-64 gang destinations at local `(150,48)` and
+`(223,48)`. Beneath them, Force is represented by two matching 60-by-3 beveled
+tracks at local y=114 and y=121. Each track uses light, full-intensity, and dark
+rows rather than a flat fill.
+
 **Interpretation:** Combat presentation advances at 6 Hz: 166 milliseconds per
 frame in the original integer timer configuration, or about 1.33 seconds for
 one eight-frame attack/hit clip. Damage removed from each force bar flashes

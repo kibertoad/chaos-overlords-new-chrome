@@ -7,9 +7,14 @@ public static class CombatPanelLayout
 {
     public const int ForceBarHeight = 3;
 
+    private const int LeftCombatantX = 150;
+    private const int RightCombatantX = 223;
     private const int LeftAnimationX = 150;
     private const int RightAnimationX = 223;
     private const int AnimationY = 130;
+    private const int ForceBarY = 114;
+    private const int ForceBarStride = 7;
+    private const int ForceBarWidth = 60;
 
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Sector => SharedPanelLayout.At(31, 11, 54, 52);
@@ -50,10 +55,7 @@ public static class CombatPanelLayout
     }
 
     public static Rectangle GangPortrait(bool right)
-    {
-        var cell = right ? RightGang : LeftGang;
-        return new Rectangle(cell.X + 1, cell.Y + 1, 64, 64);
-    }
+        => SharedPanelLayout.At(right ? RightCombatantX : LeftCombatantX, 48, 64, 64);
 
     public static Rectangle PolicePortrait(bool right)
     {
@@ -79,9 +81,12 @@ public static class CombatPanelLayout
         return new Point(cell.Center.X, cell.Y + 40);
     }
 
-    public static Rectangle ForceBar(bool right) => right
-        ? SharedPanelLayout.At(222, 124, 63, ForceBarHeight)
-        : SharedPanelLayout.At(151, 124, 63, ForceBarHeight);
+    public static Rectangle ForceBar(bool right, int track)
+    {
+        if (track is < 0 or >= 2) throw new ArgumentOutOfRangeException(nameof(track));
+        return SharedPanelLayout.At((right ? RightCombatantX : LeftCombatantX) + 2,
+            ForceBarY + track * ForceBarStride, ForceBarWidth, ForceBarHeight);
+    }
 }
 
 public static class CombatResultsLayout
