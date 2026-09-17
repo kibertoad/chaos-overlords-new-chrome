@@ -11,8 +11,9 @@ public sealed record TurnTransition(
 
 /// <summary>
 /// Headless phase state machine based on the manual-documented phase order.
-/// The original whole-turn resolver's physical passes are recovered; command/hire player
-/// handoff and any still-undocumented action-level tie breaking remain provisional.
+/// The original whole-turn resolver's physical passes and ascending player-slot
+/// planning/hire order are recovered; the explicit public boundaries remain a
+/// deterministic recreation representation of the native monolithic loop.
 /// </summary>
 public sealed class TurnCoordinator
 {

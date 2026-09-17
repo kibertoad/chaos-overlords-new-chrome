@@ -3033,6 +3033,29 @@ recomputation/write-back, UI and AI consumers, player/gang/sector scan order,
 per-component statistics branches, and arithmetic;
 controlled runtime corroboration remains pending.
 
+### BIN-TURN-PLAYER-ORDER-001 - fixed ascending planning slots
+
+**Observation:** After Upkeep preparation, outer turn function `0x0046e766`
+clears six per-player presentation bytes at lines 309-311, then loops
+`local_c` from 0 through 5 at lines 312-348. Eligible controller value 1 calls
+the computer planning path `0x00458fa0`; value 0 calls human handler
+`0x0046fd80`; inactive/elimination states do not enter either ordinary planning
+handler. The alternate result/handoff loop at lines 433-448 likewise scans
+slots 0 through 5. Only after the ordinary planning loop does the function call
+the monolithic whole-turn resolver, whose action and hire passes independently
+scan player slots in the same ascending order.
+
+**Interpretation:** Human/computer mixtures do not reorder a turn: participating
+players plan in fixed player-slot order, eliminated slots are skipped, and all
+deferred resolution follows after the planning scan. The recreation exposes
+Command, Execution, and Hire as explicit deterministic boundaries, but advances
+the same ascending slot sequence and automatically records transitions across
+eliminated slots.
+
+**Confidence:** High static evidence for both outer-loop bounds, controller
+dispatch branches, inactive-state exclusion, and the resolver call boundary;
+recreation turn-flow fixtures cover automatic skips.
+
 **Hire-boundary corroboration:** The outer turn function performs this cash/
 Upkeep scan at the top of each non-initial loop iteration, before entering the
 six player planning handlers. After all planning handlers return, its direct

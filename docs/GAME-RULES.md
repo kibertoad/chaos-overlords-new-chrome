@@ -647,7 +647,11 @@ claim about original-game behavior.
   tie behavior among those participants.
 - Moving or terminating the last friendly gang does not abandon the sector;
   ownership changes only through a separate ownership-changing rule.
-- Current exclusions: original crackdown ordering.
+- Native phase-order detail: a Crackdown created by this turn's Chaos rolls is
+  already active when the later Control scan runs. The original silently omits
+  that sector from Control resolution; the recreation records an explicit
+  failed result for auditability while preserving the same no-capture outcome.
+- Current exclusions: none for mechanical Control/Crackdown ordering.
 - Confidence: High for equation components, recomputed operational sector Income,
   influence loss, zero-margin neutral selection, and cross-player winner/order
   behavior.

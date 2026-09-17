@@ -328,6 +328,10 @@ lag behind resolved state but cannot change it.
 ## Original turn model
 
 One turn contains Upkeep, Command, Execution, Hire, and Player Elimination.
+The original outer loop statically confirms ascending fixed player-slot
+planning across human and computer controllers with inactive slots skipped.
+The recreation exposes more internal boundaries than the monolithic native
+loop, while retaining that slot order and replay-recording every automatic skip.
 Execution resolves all players in Instant, Combat, Transaction, Chaos, Movement,
 and Control order. `TurnStructure` is the current executable specification of
 that ordering. The implemented resolvers use the recovered fixed player/roster
