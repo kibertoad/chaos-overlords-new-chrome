@@ -335,8 +335,8 @@ public sealed partial class ChaosGame
         batch.Draw(pixel, new Rectangle(6, 146, 22, 248), Color.Black);
         for (var y = 150; y < 394; y += 8)
             batch.Draw(pixel, new Rectangle(7, y, 20, 1), new Color(0, 20, 115));
-        if (_uiSprites is not null)
-            batch.Draw(_uiSprites, SectorDetailLayout.Back,
+        if (_uiKeyedSprites is not null)
+            batch.Draw(_uiKeyedSprites, SectorDetailLayout.Back,
                 OriginalSpriteLayout.SectorBackArrow, Color.White);
         else
             font.Draw(batch, "<", new Vector2(8, 410), Color.Lime, 2);

@@ -49,16 +49,17 @@ public static class AssetCatalogGenerator
     {
         var resourceName = Path.GetFileNameWithoutExtension(asset.Path).ToUpperInvariant();
         var keyedCopy = resourceName is "PX00150" or "PX06004";
+        var mixedCopy = resourceName == "PX00129";
         var opaqueBlackCopy = resourceName is "PX00201" or "PX00300" ||
                               resourceName.StartsWith("PX04", StringComparison.Ordinal) ||
                               resourceName.StartsWith("PX07", StringComparison.Ordinal);
 
         if (asset.Path.StartsWith("images/", StringComparison.Ordinal))
-            return ("PX16 presentation image", "Unknown", DescribePx16Copy(keyedCopy, opaqueBlackCopy));
+            return ("PX16 presentation image", "Unknown", DescribePx16Copy(keyedCopy, mixedCopy, opaqueBlackCopy));
         if (asset.Path.StartsWith("images8/", StringComparison.Ordinal))
-            return ("Decoded PX08 presentation image", "Unknown", DescribePx08Copy(keyedCopy, opaqueBlackCopy, decoded: true));
+            return ("Decoded PX08 presentation image", "Unknown", DescribePx08Copy(keyedCopy, mixedCopy, opaqueBlackCopy, decoded: true));
         if (asset.Path.StartsWith("raw/px08/", StringComparison.Ordinal))
-            return ("PX08 indexed image source", "Unknown", DescribePx08Copy(keyedCopy, opaqueBlackCopy, decoded: false));
+            return ("PX08 indexed image source", "Unknown", DescribePx08Copy(keyedCopy, mixedCopy, opaqueBlackCopy, decoded: false));
         if (asset.Path.StartsWith("audio/", StringComparison.Ordinal))
             return ("Sound effect", "Unknown action/UI trigger", "N/A");
         if (asset.Path.StartsWith("music/", StringComparison.Ordinal))
@@ -72,17 +73,19 @@ public static class AssetCatalogGenerator
         return ("Opaque original data", "Unknown", "Unknown");
     }
 
-    private static string DescribePx16Copy(bool keyedCopy, bool opaqueBlackCopy)
+    private static string DescribePx16Copy(bool keyedCopy, bool mixedCopy, bool opaqueBlackCopy)
     {
         if (keyedCopy) return "RGB555; native exact maximum-white key";
+        if (mixedCopy) return "RGB555; native mixed opaque, pattern-mask, and exact-white copies";
         if (opaqueBlackCopy) return "RGB555; native opaque copy (black retained)";
         return "RGB555; color key unresolved";
     }
 
-    private static string DescribePx08Copy(bool keyedCopy, bool opaqueBlackCopy, bool decoded)
+    private static string DescribePx08Copy(bool keyedCopy, bool mixedCopy, bool opaqueBlackCopy, bool decoded)
     {
         var palette = decoded ? "Embedded 256-entry BGRA palette" : "Embedded indexed palette";
         if (keyedCopy) return $"{palette}; native exact white key";
+        if (mixedCopy) return $"{palette}; native mixed opaque, pattern-mask, and exact-white copies";
         if (opaqueBlackCopy) return $"{palette}; native opaque copy (black retained)";
         return decoded
             ? "Embedded 256-entry BGRA palette; transparency unresolved"

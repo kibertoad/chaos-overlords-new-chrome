@@ -127,6 +127,41 @@ and city/combat compositor dataflow. Exact display-driver conversion of the
 **Next validation:** Pixel-compare the two proven white-keyed roles and opaque
 black apertures against native captures when runtime validation is permitted.
 
+### BIN-UI-031 - PX00129 uses role-specific copy modes
+
+**Observation:** Startup loads `PX00129` into surface 6 with
+`FUN_00464108(6, 0x81, ...)`. Calls that use surface 6 do not share one alpha
+policy. For example, `0x00413012` repeatedly calls
+`FUN_00427864(6, 1, ..., 1)` for exact-white keyed UI elements, while
+`0x00457b7b` copies the 32-by-32 Overlord portraits from source x 480 through
+512 with mode 0 for inactive setup slots, then uses ordinary opaque
+`FUN_0042773e` for active slots. Other surface-6 regions likewise include
+opaque copies. Scaling through the wrapper is also opaque regardless of its
+requested mode.
+
+Mode compositor `0x00427e60` selects 1-bit bitmap resource 147, 143, or 146.
+The sole selector `0x00449b20` maps an input below 86 to resource 147, 86
+through 170 to resource 143, and 171 or above to resource 146. Its raster
+operations reduce to `(destination AND pattern) XOR (source AND NOT pattern)`:
+a set pattern bit preserves the destination, while a clear bit copies the
+source. In the inactive-slot path, the fixed `0x2661` setup color selects
+resource 146 before this stencil is applied.
+
+**Interpretation:** `PX00129` cannot be decoded into one globally transparent
+texture. In particular, global white alpha deletes legitimate white font and
+portrait pixels. The recreation now keeps an opaque atlas for fonts,
+portraits, frames, and markers, and a separate exact-white-keyed atlas for the
+mapped `HIRED` stamp and sector-back arrow. Native inactive-slot portrait
+stenciling is still a distinct presentation gap; it must not be approximated
+by white alpha.
+
+**Confidence:** High for the mixed native copy modes and the portrait source
+rectangle; Medium for complete role-to-mode coverage until every surface-6
+call site is classified.
+
+**Next validation:** Classify the remaining surface-6 rectangles and extract
+the embedded 1-bit resource-146 mask used for inactive setup portraits.
+
 ### BIN-UI-016 - Last Turn Events site-image treatment
 
 **Observation:** Both bitmap stretch wrappers, `FUN_0042773e` and

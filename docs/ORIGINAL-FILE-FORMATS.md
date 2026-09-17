@@ -156,8 +156,10 @@ matches. No source pixel has bit 15 set. Channel interpretation is therefore
 **High** confidence. Static executable analysis further establishes an exact
 maximum-white key for `PX00150` and `PX06004`, while black pixels in the
 police, item, rotation, endgame, and combat-animation sheets are copied
-opaquely. Native pixel comparison remains desirable for display-driver
-conversion at the 16-bit key boundary.
+opaquely. Composite sheet `PX00129` uses role-specific opaque, pattern-mask,
+and exact-white copies rather than one sheet-wide alpha policy. Native pixel
+comparison remains desirable for display-driver conversion at the 16-bit key
+boundary.
 
 Known dimension groups (**High**, from exact payload-size arithmetic and the
 reference size map):

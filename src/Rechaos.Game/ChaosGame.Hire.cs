@@ -21,8 +21,8 @@ public sealed partial class ChaosGame
             if (_gangPortraits is not null)
                 batch.Draw(_gangPortraits, portrait,
                     OriginalSpriteLayout.GangPortrait(entry.GangDefinitionId), Color.White);
-            if (entry.Hired && _uiSprites is not null)
-                batch.Draw(_uiSprites,
+            if (entry.Hired && _uiKeyedSprites is not null)
+                batch.Draw(_uiKeyedSprites,
                     new Rectangle(portrait.X + 2, portrait.Y + 2, 60, 60),
                     OriginalSpriteLayout.HiredStamp, Color.White);
             if (!entry.Hired)

@@ -487,7 +487,9 @@ difference is either matched or documented.
   PX08/PX16 imagery as formats or supported source versions change.
 - Preserve the statically recovered copy modes: ordinary PX imagery, including
   black police/item/rotation/endgame/combat pixels, is opaque; only proven
-  mode-1 roles (`PX00150` and `PX06004`) use the maximum-RGB555-white key.
+  dedicated mode-1 resources (`PX00150` and `PX06004`) use the
+  maximum-RGB555-white key, while composite `PX00129` mixes opaque, pattern,
+  and exact-white-key roles and must be treated per source rectangle.
   RGB555 channel layout is established with High-confidence paired-pixel data;
   native capture comparison remains for the display-driver key conversion.
 - Discover exact dimensions for every exceptional image without size guesses.
