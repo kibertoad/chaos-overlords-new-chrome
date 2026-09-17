@@ -228,7 +228,7 @@ public sealed partial class ChaosGame
             ComlinkSendLayout.Message.Location, Color.Lime);
         if (_comlinkStatus.Length > 0)
             font.Draw(batch, _comlinkStatus.Length <= 40 ? _comlinkStatus : _comlinkStatus[..40],
-                new Vector2(196, 306), Color.OrangeRed, 1);
+                new Vector2(SharedPanelLayout.X(92), SharedPanelLayout.Y(181)), Color.OrangeRed, 1);
     }
 
     private static void DrawComlinkPanel(

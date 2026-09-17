@@ -36,15 +36,20 @@ public sealed partial class ChaosGame
         else if (_itemPortraits is not null)
             batch.Draw(_itemPortraits, ItemInformationLayout.CompactPortrait,
                 OriginalSpriteLayout.ItemPortrait(item.Id), Color.White);
-        font.Draw(batch, item.Name, new Vector2(199, 152), Color.Lime, 1);
+        font.Draw(batch, item.Name,
+            new Vector2(SharedPanelLayout.X(95), SharedPanelLayout.Y(27)), Color.Lime, 1);
         DrawPanelValue(font, batch, ItemInformationLayout.TypeLabel(item.Type),
-            ItemInformationLayout.RightValueRight, 152);
+            ItemInformationLayout.RightValueRight, SharedPanelLayout.Y(27));
         foreach (var entry in WrapPanelText(item.Description, ItemInformationLayout.DescriptionColumns).Take(3)
                      .Select((text, row) => (text, row)))
-            font.Draw(batch, entry.text, new Vector2(199, 170 + entry.row * 9), Color.Lime, 1);
+            font.Draw(batch, entry.text,
+                new Vector2(SharedPanelLayout.X(95),
+                    SharedPanelLayout.Y(45 + entry.row * 9)), Color.Lime, 1);
 
-        DrawPanelValue(font, batch, item.Cost, ItemInformationLayout.LeftValueRight, 217);
-        DrawPanelValue(font, batch, item.TechLevel, ItemInformationLayout.RightValueRight, 217);
+        DrawPanelValue(font, batch, item.Cost, ItemInformationLayout.LeftValueRight,
+            SharedPanelLayout.Y(92));
+        DrawPanelValue(font, batch, item.TechLevel, ItemInformationLayout.RightValueRight,
+            SharedPanelLayout.Y(92));
         int[] left =
         [
             item.Stats.Combat, item.Stats.Defense, item.Stats.Chaos, item.Stats.Control,
@@ -67,11 +72,11 @@ public sealed partial class ChaosGame
 
     private static void ClearItemInformationFields(SpriteBatch batch, Texture2D pixel)
     {
-        batch.Draw(pixel, new Rectangle(198, 152, 146, 7), Color.Black);
-        batch.Draw(pixel, new Rectangle(347, 152, 36, 7), Color.Black);
-        batch.Draw(pixel, new Rectangle(198, 170, 185, 25), Color.Black);
-        batch.Draw(pixel, new Rectangle(275, 217, 12, 7), Color.Black);
-        batch.Draw(pixel, new Rectangle(371, 217, 12, 7), Color.Black);
+        batch.Draw(pixel, SharedPanelLayout.At(94, 27, 146, 7), Color.Black);
+        batch.Draw(pixel, SharedPanelLayout.At(243, 27, 36, 7), Color.Black);
+        batch.Draw(pixel, SharedPanelLayout.At(94, 45, 185, 25), Color.Black);
+        batch.Draw(pixel, SharedPanelLayout.At(171, 92, 12, 7), Color.Black);
+        batch.Draw(pixel, SharedPanelLayout.At(267, 92, 12, 7), Color.Black);
         for (var row = 0; row < 7; row++)
         {
             var y = ItemInformationLayout.StatisticY(row);

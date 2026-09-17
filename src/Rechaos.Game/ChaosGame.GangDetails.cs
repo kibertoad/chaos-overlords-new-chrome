@@ -99,7 +99,8 @@ public sealed partial class ChaosGame
         var definitionId = gang?.DefinitionId ?? _gangDetailsDefinitionId;
         if (definitionId is null)
         {
-            font.Draw(batch, "NO ACTIVE GANG", new Vector2(200, 153), Color.White, 1);
+            font.Draw(batch, "NO ACTIVE GANG",
+                new Vector2(SharedPanelLayout.X(96), SharedPanelLayout.Y(28)), Color.White, 1);
         }
         else
         {
@@ -120,13 +121,18 @@ public sealed partial class ChaosGame
                         batch.Draw(_itemPortraits, GangInformationLayout.Equipment(slot),
                             OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
             }
-            font.Draw(batch, definition.Name, new Vector2(202, 153), Color.Lime, 1);
+            font.Draw(batch, definition.Name,
+                new Vector2(SharedPanelLayout.X(98), SharedPanelLayout.Y(28)), Color.Lime, 1);
             foreach (var entry in WrapPanelText(definition.Description, 27).Take(3).Select((text, row) => (text, row)))
-                font.Draw(batch, entry.text, new Vector2(202, 170 + entry.row * 10), Color.Lime, 1);
+                font.Draw(batch, entry.text,
+                    new Vector2(SharedPanelLayout.X(98),
+                        SharedPanelLayout.Y(45 + entry.row * 10)), Color.Lime, 1);
             DrawPanelValue(font, batch, gang is null ? "??" : gang.Force.ToString(),
-                GangInformationLayout.LeftValueRight, 217);
-            DrawPanelValue(font, batch, definition.Upkeep, GangInformationLayout.RightValueRight, 217);
-            DrawPanelValue(font, batch, definition.TechLevel, GangInformationLayout.RightValueRight, 226);
+                GangInformationLayout.LeftValueRight, SharedPanelLayout.Y(92));
+            DrawPanelValue(font, batch, definition.Upkeep, GangInformationLayout.RightValueRight,
+                SharedPanelLayout.Y(92));
+            DrawPanelValue(font, batch, definition.TechLevel, GangInformationLayout.RightValueRight,
+                SharedPanelLayout.Y(101));
             int[] left = [stats.Combat, stats.Defense, stats.Chaos, stats.Control, stats.Heal, stats.Influence, stats.Research];
             int[] right = [stats.Stealth, stats.Detect, stats.Strength, stats.Blade, stats.Range, stats.Fighting, stats.MartialArts];
             for (var index = 0; index < left.Length; index++)
@@ -142,11 +148,11 @@ public sealed partial class ChaosGame
 
     private static void ClearGangInformationFields(SpriteBatch batch, Texture2D pixel)
     {
-        batch.Draw(pixel, new Rectangle(200, 152, 180, 10), Color.Black);
-        batch.Draw(pixel, new Rectangle(200, 169, 186, 37), Color.Black);
-        batch.Draw(pixel, new Rectangle(276, 217, 12, 7), Color.Black);
-        batch.Draw(pixel, new Rectangle(372, 217, 12, 7), Color.Black);
-        batch.Draw(pixel, new Rectangle(372, 226, 12, 7), Color.Black);
+        batch.Draw(pixel, SharedPanelLayout.At(96, 27, 180, 10), Color.Black);
+        batch.Draw(pixel, SharedPanelLayout.At(96, 44, 186, 37), Color.Black);
+        batch.Draw(pixel, SharedPanelLayout.At(172, 92, 12, 7), Color.Black);
+        batch.Draw(pixel, SharedPanelLayout.At(268, 92, 12, 7), Color.Black);
+        batch.Draw(pixel, SharedPanelLayout.At(268, 101, 12, 7), Color.Black);
         for (var row = 0; row < 7; row++)
         {
             var y = GangInformationLayout.StatisticY(row);

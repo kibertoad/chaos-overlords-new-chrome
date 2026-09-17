@@ -8,11 +8,11 @@ public static class MovementLayout
 {
     public const int Columns = 3;
     public const int Rows = 3;
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static Rectangle Neighborhood => new(236, 151, 162, 156);
+    public static Rectangle Neighborhood => SharedPanelLayout.At(132, 26, 162, 156);
 
     public static Rectangle Cell(int column, int row)
     {

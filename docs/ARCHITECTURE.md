@@ -606,7 +606,9 @@ turn one; it is not an error.
   portrait selection, and face-drag movement/exchange between the six color slots.
 - Fresh Siege setup marks the six assigned starting HQ sectors as authoritative
   objective landmarks without consuming RNG. The city projection draws the
-  manual-described pair of gray pylons over each landmark regardless of owner.
+  executable's exact white-keyed `PX00129` pylon pair over each landmark
+  regardless of owner, and uses that same native overlay on Big Man's four
+  central scoring sectors.
 - The client has a title/setup/city router and virtual-coordinate mouse input,
   original next-player privacy handoff, an event/notification viewer whose
   dismissal mutations are replay-recorded, plus a state-driven endgame summary

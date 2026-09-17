@@ -6,32 +6,32 @@ namespace Rechaos.Game;
 
 public static class SectorGangsLayout
 {
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(134, 135, 55, 65);
+    public static Rectangle Panel => SharedPanelLayout.Panel;
+    public static Rectangle Portrait => SharedPanelLayout.At(30, 10, 55, 65);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public const int ValueRight = 432;
+    public static int ValueRight => SharedPanelLayout.X(328);
 
     public static int ValueY(int row)
     {
         if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
         return row switch
         {
-            0 => 173,
-            1 => 182,
-            2 => 192,
-            3 => 201,
-            4 => 210,
-            5 => 219,
-            6 => 229,
-            7 => 238,
-            8 => 247,
-            9 => 256,
-            10 => 265,
-            11 => 275,
-            12 => 284,
-            13 => 293,
-            14 => 302,
-            15 => 311,
+            0 => SharedPanelLayout.Y(48),
+            1 => SharedPanelLayout.Y(57),
+            2 => SharedPanelLayout.Y(67),
+            3 => SharedPanelLayout.Y(76),
+            4 => SharedPanelLayout.Y(85),
+            5 => SharedPanelLayout.Y(94),
+            6 => SharedPanelLayout.Y(104),
+            7 => SharedPanelLayout.Y(113),
+            8 => SharedPanelLayout.Y(122),
+            9 => SharedPanelLayout.Y(131),
+            10 => SharedPanelLayout.Y(140),
+            11 => SharedPanelLayout.Y(150),
+            12 => SharedPanelLayout.Y(159),
+            13 => SharedPanelLayout.Y(168),
+            14 => SharedPanelLayout.Y(177),
+            15 => SharedPanelLayout.Y(186),
             _ => throw new ArgumentOutOfRangeException(nameof(row))
         };
     }
@@ -95,8 +95,9 @@ public sealed partial class ChaosGame
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, SectorGangsLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
-        batch.Draw(pixel, new Rectangle(200, 137, 232, 9), Color.Black);
-        font.Draw(batch, definition.Name, new Vector2(202, 138), Color.Lime, 1);
+        batch.Draw(pixel, SharedPanelLayout.At(96, 12, 232, 9), Color.Black);
+        font.Draw(batch, definition.Name,
+            new Vector2(SharedPanelLayout.X(98), SharedPanelLayout.Y(13)), Color.Lime, 1);
         int[] values =
         [
             definition.TechLevel, definition.Upkeep, stats.Combat, stats.Defense,

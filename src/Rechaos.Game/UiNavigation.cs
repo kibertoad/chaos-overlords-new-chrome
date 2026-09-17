@@ -291,17 +291,16 @@ public static class CityMapLayout
         rectangle.X + 1, rectangle.Y + 1, rectangle.Width - 2, rectangle.Height - 2);
 }
 
-/// <summary>Manual-described pair of gray pylons inside each Siege objective sector.</summary>
-public static class SiegePylonLayout
+/// <summary>Native scenarios and sectors receiving the PX00129 objective-pylon overlay.</summary>
+public static class ObjectiveSectorMarkerPresentation
 {
-    public static IReadOnlyList<Rectangle> ForSector(int sectorId)
+    private static readonly int[] BigManSectors = [27, 28, 35, 36];
+
+    public static bool IsMarked(ScenarioId scenario, int sectorId, bool isImportant)
     {
-        var sector = CityMapLayout.Destination(sectorId);
-        return
-        [
-            new Rectangle(sector.X + 8, sector.Y + 12, 6, 14),
-            new Rectangle(sector.Right - 14, sector.Y + 12, 6, 14)
-        ];
+        _ = CityMapLayout.Source(sectorId);
+        return scenario == ScenarioId.Siege && isImportant
+            || scenario == ScenarioId.BigMan && BigManSectors.Contains(sectorId);
     }
 }
 
@@ -314,6 +313,7 @@ public static class OriginalSpriteLayout
     public static Rectangle IdleGangStatus => new(492, 107, 20, 20);
     public static Rectangle IncomingGangStatus => new(492, 147, 20, 20);
     public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
+    public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
     // The following eight rows in PX00000 are command-arrow artwork, not part
     // of the gang card. The card ends with its three equipment slots.
     public static Rectangle GangCardFrame => new(164, 17, 70, 110);
@@ -543,10 +543,10 @@ public static class EquipmentCommandLayout
 {
     public const int CategoryCount = 4;
     public const int VisibleItemCount = 12;
-    public static Rectangle Panel => new(104, 124, 344, 209);
-    public static Rectangle Portrait => new(130, 142, 64, 64);
-    public static Rectangle Cancel => new(136, 262, 49, 24);
-    public static Rectangle Ok => new(136, 294, 49, 24);
+    public static Rectangle Panel => SharedPanelLayout.Panel;
+    public static Rectangle Portrait => SharedPanelLayout.StandardPortrait;
+    public static Rectangle Cancel => SharedPanelLayout.CommandCancel;
+    public static Rectangle Ok => SharedPanelLayout.CommandOk;
 
     public static bool CanConfirm(int selectedIndex, IReadOnlyCollection<int> visibleCategoryIndices)
     {
@@ -575,7 +575,7 @@ public static class EquipmentCommandLayout
     public static Rectangle Category(int category)
     {
         if (category is < 0 or >= CategoryCount) throw new ArgumentOutOfRangeException(nameof(category));
-        return new Rectangle(207, 141 + category * 36, 34, 34);
+        return SharedPanelLayout.At(103, 16 + category * 36, 34, 34);
     }
 
     public static int CategoryForItemType(int itemType) => itemType switch
@@ -590,54 +590,54 @@ public static class EquipmentCommandLayout
     public static Rectangle ItemRow(int row)
     {
         if (row is < 0 or >= 12) throw new ArgumentOutOfRangeException(nameof(row));
-        return new Rectangle(248, 154 + row * 12, 184, 11);
+        return SharedPanelLayout.At(144, 29 + row * 12, 184, 11);
     }
 }
 
 public static class GangInformationLayout
 {
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public const int LeftValueRight = 287;
-    public const int RightValueRight = 383;
+    public static int LeftValueRight => SharedPanelLayout.X(183);
+    public static int RightValueRight => SharedPanelLayout.X(279);
 
     public static Rectangle Equipment(int slot)
     {
         if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(394, 146 + slot * 64, 40, 40);
+        return SharedPanelLayout.At(290, 21 + slot * 64, 40, 40);
     }
 
     public static int StatisticY(int row) => row switch
     {
-        0 => 244,
-        1 => 253,
-        2 => 271,
-        3 => 280,
-        4 => 289,
-        5 => 298,
-        6 => 307,
+        0 => SharedPanelLayout.Y(119),
+        1 => SharedPanelLayout.Y(128),
+        2 => SharedPanelLayout.Y(146),
+        3 => SharedPanelLayout.Y(155),
+        4 => SharedPanelLayout.Y(164),
+        5 => SharedPanelLayout.Y(173),
+        6 => SharedPanelLayout.Y(182),
         _ => throw new ArgumentOutOfRangeException(nameof(row))
     };
 }
 
 public static class SiteInformationLayout
 {
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(132, 140, 120, 64);
+    public static Rectangle Panel => SharedPanelLayout.Panel;
+    public static Rectangle Portrait => SharedPanelLayout.At(28, 15, 120, 64);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public const int DataValueRight = 383;
-    public const int LeftValueRight = 287;
-    public const int RightValueRight = 383;
+    public static int DataValueRight => SharedPanelLayout.X(279);
+    public static int LeftValueRight => SharedPanelLayout.X(183);
+    public static int RightValueRight => SharedPanelLayout.X(279);
     public static int DataY(int row)
     {
         if (row is < 0 or >= 4) throw new ArgumentOutOfRangeException(nameof(row));
         return row switch
         {
-            0 => 170,
-            1 => 188,
-            2 => 197,
-            3 => 206,
+            0 => SharedPanelLayout.Y(45),
+            1 => SharedPanelLayout.Y(63),
+            2 => SharedPanelLayout.Y(72),
+            3 => SharedPanelLayout.Y(81),
             _ => throw new ArgumentOutOfRangeException(nameof(row))
         };
     }
@@ -646,13 +646,13 @@ public static class SiteInformationLayout
         if (row is < 0 or >= 7) throw new ArgumentOutOfRangeException(nameof(row));
         return row switch
         {
-            0 => 245,
-            1 => 254,
-            2 => 272,
-            3 => 281,
-            4 => 290,
-            5 => 299,
-            6 => 308,
+            0 => SharedPanelLayout.Y(120),
+            1 => SharedPanelLayout.Y(129),
+            2 => SharedPanelLayout.Y(147),
+            3 => SharedPanelLayout.Y(156),
+            4 => SharedPanelLayout.Y(165),
+            5 => SharedPanelLayout.Y(174),
+            6 => SharedPanelLayout.Y(183),
             _ => throw new ArgumentOutOfRangeException(nameof(row))
         };
     }
@@ -660,13 +660,13 @@ public static class SiteInformationLayout
 
 public static class ItemInformationLayout
 {
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(138, 142, 48, 48);
-    public static Rectangle CompactPortrait => new(152, 156, 20, 20);
+    public static Rectangle Panel => SharedPanelLayout.Panel;
+    public static Rectangle Portrait => SharedPanelLayout.At(34, 17, 48, 48);
+    public static Rectangle CompactPortrait => SharedPanelLayout.At(48, 31, 20, 20);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
     public const int DescriptionColumns = 29;
-    public const int LeftValueRight = 287;
-    public const int RightValueRight = 383;
+    public static int LeftValueRight => SharedPanelLayout.X(183);
+    public static int RightValueRight => SharedPanelLayout.X(279);
     public static int StatisticY(int row) => GangInformationLayout.StatisticY(row);
 
     public static string TypeLabel(int itemType) => itemType switch
@@ -682,31 +682,31 @@ public static class ItemInformationLayout
 
 public static class ComlinkViewLayout
 {
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Page => new(133, 134, 59, 13);
-    public static Rectangle Previous => new(134, 158, 26, 22);
-    public static Rectangle Next => new(162, 158, 26, 22);
-    public static Rectangle Date => new(198, 145, 238, 7);
-    public static Rectangle SenderPortrait => new(215, 171, 64, 64);
-    public static Rectangle SenderName => new(285, 171, 151, 7);
-    public static Rectangle Message => new(198, 248, 238, 34);
-    public static Rectangle Ok => new(134, 294, 56, 22);
+    public static Rectangle Panel => SharedPanelLayout.Panel;
+    public static Rectangle Page => SharedPanelLayout.At(29, 9, 59, 13);
+    public static Rectangle Previous => SharedPanelLayout.At(30, 33, 26, 22);
+    public static Rectangle Next => SharedPanelLayout.At(58, 33, 26, 22);
+    public static Rectangle Date => SharedPanelLayout.At(94, 20, 238, 7);
+    public static Rectangle SenderPortrait => SharedPanelLayout.At(111, 46, 64, 64);
+    public static Rectangle SenderName => SharedPanelLayout.At(181, 46, 151, 7);
+    public static Rectangle Message => SharedPanelLayout.At(94, 123, 238, 34);
+    public static Rectangle Ok => SharedPanelLayout.At(30, 169, 56, 22);
 }
 
 public static class ComlinkSendLayout
 {
     public const int MessageColumns = 40;
     public const int MessageRows = 4;
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Message => new(196, 258, 240, 36);
-    public static Rectangle Cancel => new(134, 263, 56, 22);
-    public static Rectangle Ok => new(134, 296, 56, 22);
+    public static Rectangle Panel => SharedPanelLayout.Panel;
+    public static Rectangle Message => SharedPanelLayout.At(92, 133, 240, 36);
+    public static Rectangle Cancel => SharedPanelLayout.At(30, 138, 56, 22);
+    public static Rectangle Ok => SharedPanelLayout.At(30, 171, 56, 22);
 
     public static Rectangle Recipient(int slot)
     {
         if (slot is < 0 or >= MatchLimits.PlayerCount)
             throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(196 + slot / 3 * 128, 143 + slot % 3 * 33, 56, 32);
+        return SharedPanelLayout.At(92 + slot / 3 * 128, 18 + slot % 3 * 33, 56, 32);
     }
 
     public static Rectangle RecipientPortrait(int slot)
@@ -718,16 +718,16 @@ public static class ComlinkSendLayout
 
 public static class InfluenceCommandLayout
 {
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 
     public static Rectangle Site(int slot) => slot switch
     {
-        0 => new Rectangle(209, 141, 120, 64),
-        1 => new Rectangle(312, 198, 120, 64),
-        2 => new Rectangle(209, 255, 120, 64),
+        0 => SharedPanelLayout.At(105, 16, 120, 64),
+        1 => SharedPanelLayout.At(208, 73, 120, 64),
+        2 => SharedPanelLayout.At(105, 130, 120, 64),
         _ => throw new ArgumentOutOfRangeException(nameof(slot))
     };
 }
@@ -735,22 +735,22 @@ public static class InfluenceCommandLayout
 public static class AttackCommandLayout
 {
     public const int VisibleTargets = 6;
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle ActorPortrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static Rectangle ActorForceBar => new(130, 228, 64, 3);
+    public static Rectangle ActorForceBar => SharedPanelLayout.At(26, 103, 64, 3);
 
     public static Rectangle ActorItem(int slot)
     {
         if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(130 + slot * 22, 207, 20, 20);
+        return SharedPanelLayout.At(26 + slot * 22, 82, 20, 20);
     }
 
     public static Rectangle Opponent(int slot)
     {
         if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(202, 141 + slot * 37, 32, 32);
+        return SharedPanelLayout.At(98, 16 + slot * 37, 32, 32);
     }
 
     public static Rectangle TargetCard(int targetSlot)
@@ -763,7 +763,8 @@ public static class AttackCommandLayout
     {
         if (targetSlot is < 0 or >= VisibleTargets)
             throw new ArgumentOutOfRangeException(nameof(targetSlot));
-        return new Rectangle(240 + targetSlot % 3 * 66, 141 + targetSlot / 3 * 90, 64, 64);
+        return SharedPanelLayout.At(136 + targetSlot % 3 * 66,
+            16 + targetSlot / 3 * 90, 64, 64);
     }
 
     public static Rectangle TargetForceBar(int targetSlot)

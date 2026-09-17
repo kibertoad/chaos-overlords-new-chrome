@@ -154,7 +154,7 @@ cursor feedback remain to be validated.
   `(520,336)` on the main control panel. The recreation fills it green over a
   black background and scales the visible width from 60 to zero.
 - The `PX00128` Game Info button uses the exact `(588,41,26,34)` native tile
-  and opens `PX05021` at
+  and opens `PX05021` at the native shared-panel rectangle
   `(104,124,344,209)`. Dynamic fields report the scenario, global AI mentality,
   selected planning limit, and all six names with the manual-defined `HUMAN` or
   `AI` intelligence label. The panel opens automatically for a new game with
@@ -179,6 +179,10 @@ cursor feedback remain to be validated.
   only each owned cell's one-pixel-inset interior with the corresponding
   `PX10001` through `PX10006` artwork. This retains one stable set of grid lines
   instead of overwriting them with 64 independently composited cell borders.
+- The city then exact-white-keys `PX00129` source `(344,15,54,52)` over each
+  Siege landmark and over Big Man sectors 27, 28, 35, and 36. The crop contains
+  the original pair of gray pylons and exactly covers the native 54-by-52 city
+  cell; the prior procedural approximation and missing Big Man markers are gone.
 - The upper-right status console shows current Cash followed by the signed
   whole-city Financial projection. Hover text explains Score, Cash, Sector,
   Income, Tolerance, Support, and Chaos. In particular, sector Income is the
@@ -346,7 +350,9 @@ influencer, its display inherits the sector owner before choosing the fill.
 Hire console button overlays it on the live city, with three 32-by-32 gang
 portraits and their sixteen comparison values. Hiring itself remains the
 original drag-from-dock interaction; the comparison panel's OK control closes
-the overlay. The panel uses the shared `(104,124)` management-panel destination;
+the overlay. The panel uses the native shared `(104,124)` management-panel
+destination. All descendants use panel-local coordinates so background,
+content, clearing rectangles, and hit regions remain aligned as one unit.
 its portrait cells begin at source `(164,14)` with a 40-pixel pitch, and its
 right-aligned value columns end at source x 185, 225, and 265. The sixteen rows
 follow the baked irregular 9/10-pixel label baselines rather than a uniform
@@ -487,8 +493,9 @@ load, and replay initialization clear the presentation-only archive.
 
 ## Next mapping work
 
-1. Identify the remaining main-city content layers placed inside the black
-   viewport of `PX00128`; its right-console hit and pressed geometry is closed.
+1. Identify any remaining main-city content layers outside the closed ownership,
+   objective-pylon, site, gang-status, and selection compositions; its
+   right-console hit and pressed geometry is closed.
 2. Finish classifying the separate `PX00144` through `PX00146` setup flows;
    implementing legacy network/setup protocols remains explicitly out of scope.
 3. Map remaining cursor frames, selection/pressed-state sprites and

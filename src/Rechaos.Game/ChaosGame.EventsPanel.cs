@@ -183,14 +183,15 @@ public sealed partial class ChaosGame
     {
         if (notification is null)
         {
-            font.Draw(batch, "NO EVENTS TO REPORT", new Vector2(253, 221), Color.Lime, 1);
+            font.Draw(batch, "NO EVENTS TO REPORT",
+                new Vector2(SharedPanelLayout.X(149), SharedPanelLayout.Y(96)), Color.Lime, 1);
             return;
         }
 
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var reportCount = ReviewableReports(state, playerId).Count;
         font.Draw(batch, $"{_eventCursor + 1:00} OF {reportCount:00}",
-            new Vector2(138, 138), Color.Lime, 1);
+            new Vector2(SharedPanelLayout.X(34), SharedPanelLayout.Y(13)), Color.Lime, 1);
         DrawEventArtworkForeground(batch, state, notification);
         font.Draw(batch, MatchDate(notification.Turn),
             new Vector2(LastTurnEventsLayout.DateValue.X, LastTurnEventsLayout.DateValue.Y),

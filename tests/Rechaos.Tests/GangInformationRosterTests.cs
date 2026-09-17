@@ -29,9 +29,9 @@ public sealed class GangInformationRosterTests
     [Fact]
     public void LiveGangEquipmentUsesThreeOriginalInformationCells()
     {
-        Assert.Equal(new Rectangle(394, 146, 40, 40), GangInformationLayout.Equipment(0));
-        Assert.Equal(new Rectangle(394, 210, 40, 40), GangInformationLayout.Equipment(1));
-        Assert.Equal(new Rectangle(394, 274, 40, 40), GangInformationLayout.Equipment(2));
+        Assert.Equal(new Rectangle(394, 145, 40, 40), GangInformationLayout.Equipment(0));
+        Assert.Equal(new Rectangle(394, 209, 40, 40), GangInformationLayout.Equipment(1));
+        Assert.Equal(new Rectangle(394, 273, 40, 40), GangInformationLayout.Equipment(2));
         Assert.Throws<ArgumentOutOfRangeException>(() => GangInformationLayout.Equipment(3));
     }
 }

@@ -11,9 +11,9 @@ public sealed class EquipmentSellUiTests
     public void LayoutMatchesOriginalEquipmentToSellPanel()
     {
         Assert.Equal(new Rectangle(104, 124, 344, 209), EquipmentSellLayout.Panel);
-        Assert.Equal(new Rectangle(130, 142, 64, 64), EquipmentSellLayout.Portrait);
-        Assert.Equal(new Rectangle(212, 141, 220, 51), EquipmentSellLayout.ItemRow(0));
-        Assert.Equal(new Rectangle(212, 269, 220, 51), EquipmentSellLayout.ItemRow(2));
+        Assert.Equal(new Rectangle(130, 141, 64, 64), EquipmentSellLayout.Portrait);
+        Assert.Equal(new Rectangle(212, 140, 220, 51), EquipmentSellLayout.ItemRow(0));
+        Assert.Equal(new Rectangle(212, 268, 220, 51), EquipmentSellLayout.ItemRow(2));
         Assert.Equal(EquipmentCommandLayout.Cancel, EquipmentSellLayout.Cancel);
         Assert.Equal(EquipmentCommandLayout.Ok, EquipmentSellLayout.Ok);
         Assert.Throws<ArgumentOutOfRangeException>(() => EquipmentSellLayout.ItemRow(3));

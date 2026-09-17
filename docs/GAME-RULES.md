@@ -847,12 +847,13 @@ claim about original-game behavior.
   resolution, a one-human match records `PlayerEliminated` immediately when that
   human is no longer active; a hot-seat match continues after an elimination
   only while at least two Overlords remain active.
-- Current exclusions: tie-break presentation beyond stable slot order, exact
-  Siege pylon artwork, and award edge-case parity.
+- Current exclusions: tie-break presentation beyond stable slot order and award
+  edge-case parity.
 - Confidence: High static evidence for end-boundary timing, thresholds,
   all-scenario scores, competition standings, active/inactive display order,
   durations, weights, Big Man accumulation, Eliminate cleanup/order, and Siege
-  setup mapping; Low for special objective presentation edges.
+  setup mapping and exact Siege/Big Man pylon presentation; Low for remaining
+  special objective presentation edges.
 - Implementation: `MatchOutcomeEvaluator`, scenario-specific elimination and
   Big Man accrual in `MatchState.FinishPlayerElimination`, `MatchState.Outcome`,
   and the canonical state hash.
@@ -865,7 +866,8 @@ claim about original-game behavior.
   order and Eliminate cleanup/neutralization with preserved retired equipment.
   `OriginalCityGeneratorTests` covers fresh
   Siege landmark assignment and one-important-sector-per-player starting state;
-  `UiNavigationTests` bounds the paired pylon layout inside every city tile.
+  `UiNavigationTests` covers the exact pylon crop and both scenarios' marked
+  sector sets.
 - Next experiment: capture the last two turns of each timed scenario and
   simultaneous-threshold states for objective scenarios, then compare event,
   ranking, tie, and next-screen behavior.

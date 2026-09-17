@@ -65,7 +65,8 @@ public sealed partial class ChaosGame
         if (_sitePortraits is not null)
             batch.Draw(_sitePortraits, SiteInformationLayout.Portrait,
                 OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
-        font.Draw(batch, definition.Name, new Vector2(263, 153), Color.Lime, 1);
+        font.Draw(batch, definition.Name,
+            new Vector2(SharedPanelLayout.X(159), SharedPanelLayout.Y(28)), Color.Lime, 1);
 
         int[] data =
         [
@@ -101,7 +102,7 @@ public sealed partial class ChaosGame
 
     private static void ClearSiteInformationFields(SpriteBatch batch, Texture2D pixel)
     {
-        batch.Draw(pixel, new Rectangle(262, 152, 121, 10), Color.Black);
+        batch.Draw(pixel, SharedPanelLayout.At(158, 27, 121, 10), Color.Black);
         for (var row = 0; row < 4; row++)
             batch.Draw(pixel, new Rectangle(371, SiteInformationLayout.DataY(row), 12, 7), Color.Black);
         for (var row = 0; row < 7; row++)

@@ -5,25 +5,25 @@ namespace Rechaos.Game;
 
 public static class GameInformationLayout
 {
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public const int ValueLeft = 204;
-    public const int PlayerNameLeft = 216;
-    public const int IntelligenceRight = 384;
-    public const int ObjectiveY = 152;
-    public const int AiMentalityY = 170;
-    public const int TurnTimeLimitY = 188;
+    public static int ValueLeft => SharedPanelLayout.X(100);
+    public static int PlayerNameLeft => SharedPanelLayout.X(112);
+    public static int IntelligenceRight => SharedPanelLayout.X(280);
+    public static int ObjectiveY => SharedPanelLayout.Y(27);
+    public static int AiMentalityY => SharedPanelLayout.Y(45);
+    public static int TurnTimeLimitY => SharedPanelLayout.Y(63);
 
     public static Rectangle PlayerColor(int player)
     {
         ValidatePlayer(player);
-        return new Rectangle(204, PlayerY(player), 5, 7);
+        return new Rectangle(SharedPanelLayout.X(100), PlayerY(player), 5, 7);
     }
 
     public static int PlayerY(int player)
     {
         ValidatePlayer(player);
-        return 215 + player * OriginalFontLayout.LineHeight;
+        return SharedPanelLayout.Y(90 + player * OriginalFontLayout.LineHeight);
     }
 
     private static void ValidatePlayer(int player)

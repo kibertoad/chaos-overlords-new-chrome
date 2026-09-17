@@ -18,19 +18,19 @@ public static class HireReservationWarning
 
 public static class HireComparisonLayout
 {
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 
     public static Rectangle Portrait(int slot)
     {
         ValidateSlot(slot);
-        return new Rectangle(268 + slot * 40, 139, 32, 32);
+        return SharedPanelLayout.At(164 + slot * 40, 14, 32, 32);
     }
 
     public static int StatRight(int slot)
     {
         ValidateSlot(slot);
-        return 289 + slot * 40;
+        return SharedPanelLayout.X(185 + slot * 40);
     }
 
     public static Rectangle ValueCell(int slot, int row) =>
@@ -47,22 +47,22 @@ public static class HireComparisonLayout
         if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
         return row switch
         {
-            0 => 173,
-            1 => 182,
-            2 => 192,
-            3 => 201,
-            4 => 210,
-            5 => 219,
-            6 => 229,
-            7 => 238,
-            8 => 247,
-            9 => 256,
-            10 => 265,
-            11 => 275,
-            12 => 284,
-            13 => 293,
-            14 => 302,
-            15 => 311,
+            0 => SharedPanelLayout.Y(48),
+            1 => SharedPanelLayout.Y(57),
+            2 => SharedPanelLayout.Y(67),
+            3 => SharedPanelLayout.Y(76),
+            4 => SharedPanelLayout.Y(85),
+            5 => SharedPanelLayout.Y(94),
+            6 => SharedPanelLayout.Y(104),
+            7 => SharedPanelLayout.Y(113),
+            8 => SharedPanelLayout.Y(122),
+            9 => SharedPanelLayout.Y(131),
+            10 => SharedPanelLayout.Y(140),
+            11 => SharedPanelLayout.Y(150),
+            12 => SharedPanelLayout.Y(159),
+            13 => SharedPanelLayout.Y(168),
+            14 => SharedPanelLayout.Y(177),
+            15 => SharedPanelLayout.Y(186),
             _ => throw new ArgumentOutOfRangeException(nameof(row))
         };
     }

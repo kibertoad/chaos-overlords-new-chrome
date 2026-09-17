@@ -11,15 +11,15 @@ public sealed class GameInformationUiTests
     public void LayoutMatchesScenarioInformationTemplate()
     {
         Assert.Equal(new Rectangle(104, 124, 344, 209), GameInformationLayout.Panel);
-        Assert.Equal(new Rectangle(136, 294, 49, 24), GameInformationLayout.Ok);
+        Assert.Equal(new Rectangle(136, 293, 49, 24), GameInformationLayout.Ok);
         Assert.Equal(204, GameInformationLayout.ValueLeft);
         Assert.Equal(216, GameInformationLayout.PlayerNameLeft);
-        Assert.Equal([152, 170, 188],
+        Assert.Equal([151, 169, 187],
             [GameInformationLayout.ObjectiveY, GameInformationLayout.AiMentalityY,
                 GameInformationLayout.TurnTimeLimitY]);
-        Assert.Equal(new Rectangle(204, 215, 5, 7), GameInformationLayout.PlayerColor(0));
-        Assert.Equal(new Rectangle(204, 260, 5, 7), GameInformationLayout.PlayerColor(5));
-        Assert.Equal([215, 224, 233, 242, 251, 260],
+        Assert.Equal(new Rectangle(204, 214, 5, 7), GameInformationLayout.PlayerColor(0));
+        Assert.Equal(new Rectangle(204, 259, 5, 7), GameInformationLayout.PlayerColor(5));
+        Assert.Equal([214, 223, 232, 241, 250, 259],
             Enumerable.Range(0, MatchLimits.PlayerCount).Select(GameInformationLayout.PlayerY));
         Assert.Throws<ArgumentOutOfRangeException>(() => GameInformationLayout.PlayerY(6));
     }

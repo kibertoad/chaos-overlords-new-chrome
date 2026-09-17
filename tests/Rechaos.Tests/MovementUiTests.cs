@@ -10,9 +10,9 @@ public sealed class MovementUiTests
     public void LayoutUsesExactNativeThreeByThreeSectorTiles()
     {
         Assert.Equal(new Rectangle(104, 124, 344, 209), MovementLayout.Panel);
-        Assert.Equal(new Rectangle(236, 151, 162, 156), MovementLayout.Neighborhood);
-        Assert.Equal(new Rectangle(236, 151, 54, 52), MovementLayout.Cell(0, 0));
-        Assert.Equal(new Rectangle(344, 255, 54, 52), MovementLayout.Cell(2, 2));
+        Assert.Equal(new Rectangle(236, 150, 162, 156), MovementLayout.Neighborhood);
+        Assert.Equal(new Rectangle(236, 150, 54, 52), MovementLayout.Cell(0, 0));
+        Assert.Equal(new Rectangle(344, 254, 54, 52), MovementLayout.Cell(2, 2));
         Assert.Equal(EquipmentCommandLayout.Cancel, MovementLayout.Cancel);
         Assert.Equal(EquipmentCommandLayout.Ok, MovementLayout.Ok);
     }

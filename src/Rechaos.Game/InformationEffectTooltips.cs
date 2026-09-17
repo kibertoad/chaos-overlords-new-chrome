@@ -47,12 +47,12 @@ public static class InformationEffectTooltips
 
     public static IReadOnlyList<string> GangAt(Point point)
     {
-        if (Field(198, 217, 90).Contains(point))
+        if (Field(SharedPanelLayout.X(94), SharedPanelLayout.Y(92), 90).Contains(point))
             return ["FORCE", "CURRENT HEALTH AND THE BASE FOR MOST ACTION DICE.",
                 "A GANG IS ELIMINATED WHEN FORCE REACHES ZERO."];
-        if (Field(294, 217, 90).Contains(point))
+        if (Field(SharedPanelLayout.X(190), SharedPanelLayout.Y(92), 90).Contains(point))
             return ["UPKEEP", "CASH PAID FOR THIS GANG DURING EACH UPKEEP."];
-        if (Field(294, 226, 90).Contains(point))
+        if (Field(SharedPanelLayout.X(190), SharedPanelLayout.Y(101), 90).Contains(point))
             return ["TECH LEVEL", "LIMITS WHICH ITEMS THIS GANG CAN USE OR RESEARCH."];
         return StatisticAt(point, GangInformationLayout.StatisticY,
             "GANG STAT; EQUIPMENT AND OWNED LOCAL SITES CAN MODIFY IT.");
@@ -75,9 +75,9 @@ public static class InformationEffectTooltips
 
     public static IReadOnlyList<string> ItemAt(Point point)
     {
-        if (Field(198, 217, 90).Contains(point))
+        if (Field(SharedPanelLayout.X(94), SharedPanelLayout.Y(92), 90).Contains(point))
             return ["COST", "BASE PURCHASE COST; AN INFLUENCED FACTORY MAY REDUCE IT."];
-        if (Field(294, 217, 90).Contains(point))
+        if (Field(SharedPanelLayout.X(190), SharedPanelLayout.Y(92), 90).Contains(point))
             return ["TECH LEVEL", "THE CARRIER MUST HAVE AT LEAST THIS TECH LEVEL."];
         return StatisticAt(point, ItemInformationLayout.StatisticY,
             "WHILE EQUIPPED, MODIFIES THE GANG CARRYING THIS ITEM.");

@@ -538,8 +538,9 @@ Last updated: 2026-09-13
   to the authoritative adjacent-sector command options.
 - Fresh Siege matches now designate all six assigned starting HQ sectors as
   important, matching the manual's setup rule, and the city renders two gray
-  pylons in each objective tile. This closes the unwinnable generated-Siege gap;
-  exact original pylon art remains a visual-capture task.
+  pylons in each objective tile. Static renderer analysis later replaced the
+  approximation with the exact white-keyed `PX00129` pylon sprite and established
+  that Big Man uses the same overlay on sectors 27, 28, 35, and 36.
 
 ## Reference environment
 

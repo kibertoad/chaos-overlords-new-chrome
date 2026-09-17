@@ -5,8 +5,8 @@ namespace Rechaos.Game;
 
 public static class PlayerRankingLayout
 {
-    private static readonly int[] PortraitX = [200, 241, 282, 322, 362, 402];
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    private static readonly int[] PortraitLocalX = [96, 137, 178, 218, 258, 298];
+    public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 
     public static Rectangle Portrait(int player, int standing)
@@ -15,7 +15,7 @@ public static class PlayerRankingLayout
             throw new ArgumentOutOfRangeException(nameof(player));
         if (standing is < 0 or >= MatchLimits.PlayerCount)
             throw new ArgumentOutOfRangeException(nameof(standing));
-        return new Rectangle(PortraitX[player], 143 + standing * 28, 32, 32);
+        return SharedPanelLayout.At(PortraitLocalX[player], 18 + standing * 28, 32, 32);
     }
 }
 

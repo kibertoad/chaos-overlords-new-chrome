@@ -42,7 +42,8 @@ public sealed partial class ChaosGame
         var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
         if (layer is not null)
             batch.Draw(layer, CombatPanelLayout.Sector, CityMapLayout.Source(sectorId), Color.White);
-        font.Draw(batch, SectorCode(sectorId), new Vector2(148, 191), Color.Lime, 1);
+        font.Draw(batch, SectorCode(sectorId),
+            new Vector2(SharedPanelLayout.X(44), SharedPanelLayout.Y(66)), Color.Lime, 1);
     }
 
     private void DrawCombatant(

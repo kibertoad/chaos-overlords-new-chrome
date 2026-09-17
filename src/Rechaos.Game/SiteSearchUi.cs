@@ -9,16 +9,16 @@ public static class SiteSearchLayout
     public const int RowsPerColumn = 11;
     public const int MaximumSites = ColumnCount * RowsPerColumn;
 
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle All => new(137, 141, 49, 22);
-    public static Rectangle None => new(137, 174, 49, 22);
-    public static Rectangle Ok => new(137, 294, 49, 22);
+    public static Rectangle Panel => SharedPanelLayout.Panel;
+    public static Rectangle All => SharedPanelLayout.At(33, 16, 49, 22);
+    public static Rectangle None => SharedPanelLayout.At(33, 49, 49, 22);
+    public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
 
     public static Rectangle Site(int index)
     {
         if (index is < 0 or >= MaximumSites) throw new ArgumentOutOfRangeException(nameof(index));
-        return new Rectangle(200 + index / RowsPerColumn * 119,
-            143 + index % RowsPerColumn * 16, 115, 14);
+        return SharedPanelLayout.At(96 + index / RowsPerColumn * 119,
+            18 + index % RowsPerColumn * 16, 115, 14);
     }
 }
 

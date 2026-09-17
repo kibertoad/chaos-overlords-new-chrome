@@ -6,7 +6,7 @@ namespace Rechaos.Game;
 
 public static class EquipmentGiveLayout
 {
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
+    public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
@@ -14,7 +14,7 @@ public static class EquipmentGiveLayout
     public static Rectangle Item(int slot)
     {
         if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(208, 141 + slot * 64, 50, 51);
+        return SharedPanelLayout.At(104, 16 + slot * 64, 50, 51);
     }
 
     public static int InformationY(int slot) => Item(slot).Y + 19;

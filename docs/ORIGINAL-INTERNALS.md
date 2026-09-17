@@ -178,8 +178,8 @@ reproduced without executing the original.
 texture. In particular, global white alpha deletes legitimate white font and
 portrait pixels. The recreation now keeps an opaque atlas for fonts,
 portraits, and opaque frames; a separate exact-white-keyed atlas for the
-mapped `HIRED` stamp, sector-back arrow, gang-status markers, and setup drag
-frame. The recreation records and tests the exact resource-146 stencil but
+mapped `HIRED` stamp, sector-back arrow, gang-status markers, setup drag
+frame, and objective-sector pylons. The recreation records and tests the exact resource-146 stencil but
 does not apply it to local setup: that effect belongs to the unsupported
 legacy `PX00146` flow, while local player-card scaling is opaque.
 
@@ -230,6 +230,39 @@ handlers, and matching `PX00128`/`PX00129` artwork.
 
 **Next validation:** Remaining main-screen static work is content-layer and
 cursor-role classification rather than console hit geometry.
+
+### BIN-UI-033 - exact Siege and Big Man objective-sector pylons
+
+**Observation:** Complete city compositor `0x004123cc` first copies the neutral
+map, replaces owned 52-by-50 interiors from the six ownership sheets, and then
+tests gameplay scenario IDs 6 (**Siege**) and 8 (**Big Man**). For Siege it
+compares every sector with the six dwords at `0x00494818`; initializer
+`0x00439563` writes the fixed HQ candidates 9, 12, 30, 33, 51, and 54 there,
+and setup permutation helper `0x00476726` assigns those same sectors to the six
+players. For Big Man it tests literal sector IDs 27, 28, 35, and 36.
+
+Both branches construct the same source rectangle with the executable's
+top/left/bottom/right helper arguments `(15,344,67,398)`, which is ordinary
+atlas rectangle `(344,15,54,52)`. The pixels are the two gray pylon structures
+on exact-white background. Destination construction places the sprite over the
+complete 54-by-52 city cell at `(4 + 53*column, 3 + 51*row)` on the map surface;
+the later map placement adds screen offset `(2,44)`. Source and destination
+dimensions match, so `FUN_00427864(6,2,...,1)` takes its unscaled mode-1 path
+and removes exact white rather than falling through to an opaque stretch.
+
+**Interpretation:** The pylons are one native objective marker shared by Siege
+landmarks and Big Man's four scoring sectors. They are not procedural shapes,
+and Big Man does not leave its special sectors visually unmarked. The
+recreation now draws this exact keyed crop in both scenarios and removes its
+former approximate Siege-only geometry.
+
+**Confidence:** High from the complete renderer branches, fixed-sector table
+writer and consumers, literal center-sector tests, rectangle-helper layout,
+equal source/destination dimensions, keyed-copy mode, and visible atlas pixels.
+
+**Next validation:** Golden-screen comparison remains useful corroboration;
+the sprite identity, marked sector sets, copy mode, and placement are closed
+statically.
 
 ### BIN-UI-016 - Last Turn Events site-image treatment
 
@@ -789,8 +822,12 @@ edge. The rectangle helper at `0x00425edf` packs its arguments as
 `(top, left, bottom, right)`, confirmed by the `BitBlt` coordinate extraction
 at `0x0042773e`; this also matches the decoded `PX050xx` dimensions. Their
 primary form travels 344 pixels from source-buffer x=0 into screen x=104..448.
-Its destination is exactly `(top=124,left=104,bottom=333,right=448)`, so the
-recreation's shared 344-by-209 panel rectangle now starts at `(104,124)`.
+Its destination is exactly `(top=124,left=104,bottom=333,right=448)`. The
+recreation now uses that native destination through one shared panel-local
+coordinate system: background, baked-field clearing, dynamic content, buttons,
+and hit regions all derive from origin `(104,124)`. This atomic migration avoids
+the exposed placeholder strokes and displaced borders caused by moving only the
+background while leaving descendants on the older y=125 basis.
 An alternate form reads a 320-pixel source region beginning at buffer x=344
 and moves it toward the same right-edge destination. Exhaustive literal-argument
 classification identifies six open/close caller pairs using that form:

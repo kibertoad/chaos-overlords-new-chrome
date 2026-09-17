@@ -121,7 +121,8 @@ public sealed partial class ChaosGame
         ClearCombatResultPage(batch, pixel);
         if (pages.Count == 0)
         {
-            font.Draw(batch, "NO COMBAT RESULTS", new Vector2(219, 225), Color.Lime, 1);
+            font.Draw(batch, "NO COMBAT RESULTS",
+                new Vector2(SharedPanelLayout.X(115), SharedPanelLayout.Y(100)), Color.Lime, 1);
             return;
         }
 
@@ -129,7 +130,7 @@ public sealed partial class ChaosGame
         var page = pages[_combatSummaryCursor];
         EnsureCombatResultSelection(state, viewer, page);
         font.Draw(batch, $"{_combatSummaryCursor + 1:00} OF {pages.Count:00}",
-            new Vector2(136, 138), Color.Lime, 1);
+            new Vector2(SharedPanelLayout.X(32), SharedPanelLayout.Y(13)), Color.Lime, 1);
 
         DrawCombatResultSector(batch, font, state, page.SectorId);
         DrawCombatResultForces(batch, pixel, state, page.ForcesFor(viewer), enemy: false);
@@ -151,7 +152,8 @@ public sealed partial class ChaosGame
         var layer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(sector.Owner)];
         if (layer is not null)
             batch.Draw(layer, CombatResultsLayout.Sector, CityMapLayout.Source(sectorId), Color.White);
-        font.Draw(batch, SectorCode(sectorId), new Vector2(148, 247), Color.Lime, 1);
+        font.Draw(batch, SectorCode(sectorId),
+            new Vector2(SharedPanelLayout.X(44), SharedPanelLayout.Y(122)), Color.Lime, 1);
     }
 
     private void DrawCombatResultForces(
@@ -263,7 +265,7 @@ public sealed partial class ChaosGame
         .FirstOrDefault(result => result.Event.Sequence == _combatSummaryEventSequence)?.Event;
 
     private static void ClearCombatResultPage(SpriteBatch batch, Texture2D pixel)
-        => batch.Draw(pixel, new Rectangle(133, 136, 58, 12), Color.Black);
+        => batch.Draw(pixel, SharedPanelLayout.At(29, 11, 58, 12), Color.Black);
 }
 
 public static class CombatResultProjection

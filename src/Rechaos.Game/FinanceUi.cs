@@ -12,22 +12,22 @@ public enum FinanceScope
 public static class FinanceLayout
 {
     public const int RowCount = 8;
-    public const int ValueRight = 393;
-    public const int ContractCountLeft = 293;
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Portrait => new(130, 143, 64, 64);
+    public static int ValueRight => SharedPanelLayout.X(289);
+    public static int ContractCountLeft => SharedPanelLayout.X(189);
+    public static Rectangle Panel => SharedPanelLayout.Panel;
+    public static Rectangle Portrait => SharedPanelLayout.At(26, 18, 64, 64);
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 
     public static int ValueY(int row) => row switch
     {
-        0 => 152,
-        1 => 161,
-        2 => 179,
-        3 => 197,
-        4 => 215,
-        5 => 224,
-        6 => 242,
-        7 => 269,
+        0 => SharedPanelLayout.Y(27),
+        1 => SharedPanelLayout.Y(36),
+        2 => SharedPanelLayout.Y(54),
+        3 => SharedPanelLayout.Y(72),
+        4 => SharedPanelLayout.Y(90),
+        5 => SharedPanelLayout.Y(99),
+        6 => SharedPanelLayout.Y(117),
+        7 => SharedPanelLayout.Y(144),
         _ => throw new ArgumentOutOfRangeException(nameof(row))
     };
 }
