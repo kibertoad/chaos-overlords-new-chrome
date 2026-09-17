@@ -95,8 +95,12 @@ public sealed class CommandResolutionTests
 
         match.FinishExecutionPhase();
 
+        var gang = match.FindGang(new GangId(10))!;
+        var baseHeal = match.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Stats.Heal;
+        var effectiveHeal = EffectiveStatisticsCalculator.ForGang(match, gang).Heal;
         var resolution = match.Events[^1].Resolution!;
-        Assert.Equal(11, resolution.Rolls.Count);
+        Assert.NotEqual(baseHeal, effectiveHeal);
+        Assert.Equal(ManualRules.HealDiceCount(effectiveHeal), resolution.Rolls.Count);
         Assert.All(resolution.Rolls, roll => Assert.InRange(roll, 1, 6));
         Assert.Equal(
             OriginalResolutionRules.CountSuccesses(resolution.Rolls, 5),
@@ -105,6 +109,25 @@ public sealed class CommandResolutionTests
         Assert.Equal(Math.Min(ManualRules.MaximumForce, 5 + resolution.Successes), resolution.ResultValue);
         Assert.Equal(resolution.ResultValue, match.FindGang(new GangId(10))!.Force);
         Assert.Equal(resolution.Rolls.Count * 3, match.Random.ConsumptionCount);
+    }
+
+    [Fact]
+    public void HealPoolIncludesControlledCompletedSiteModifier()
+    {
+        var data = BundledOriginalData.Load();
+        var site = data.Sites.First(value => value.Stats.Heal > 0);
+        var withoutSite = CreateMatch(cash: 10, healingGang: true);
+        var withSite = CreateMatch(
+            cash: 10, healingGang: true, influencedSiteDefinition: site.Id);
+        QueueAndEnterExecution(withoutSite, GangAction.Heal);
+        QueueAndEnterExecution(withSite, GangAction.Heal);
+
+        withoutSite.FinishExecutionPhase();
+        withSite.FinishExecutionPhase();
+
+        Assert.Equal(
+            withoutSite.Events[^1].Resolution!.Rolls.Count + site.Stats.Heal,
+            withSite.Events[^1].Resolution!.Rolls.Count);
     }
 
     [Fact]
@@ -182,7 +205,8 @@ public sealed class CommandResolutionTests
         int cash,
         bool healingGang = false,
         PlayerController playerZeroController = PlayerController.Human,
-        AiDifficulty difficulty = AiDifficulty.Criminal)
+        AiDifficulty difficulty = AiDifficulty.Criminal,
+        short? influencedSiteDefinition = null)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
@@ -206,10 +230,15 @@ public sealed class CommandResolutionTests
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
-                new MatchSiteState(0, 0, 7),
+                new MatchSiteState(0,
+                    id == 0 && influencedSiteDefinition is { } site ? site : (short)0,
+                    id == 0 && influencedSiteDefinition is not null ? 0 : 7,
+                    id == 0 && influencedSiteDefinition is not null ? new PlayerId(0) : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
-            ]))
+            ], owner: id == 0 && influencedSiteDefinition is not null
+                ? new PlayerId(0)
+                : null))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
     }

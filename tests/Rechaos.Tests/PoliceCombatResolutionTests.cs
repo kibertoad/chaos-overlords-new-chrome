@@ -147,7 +147,8 @@ public sealed class PoliceCombatResolutionTests
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
-                new MatchSiteState(0, id == 0 && stealthBoostingSite ? (short)17 : (short)0, 7,
+                new MatchSiteState(0, id == 0 && stealthBoostingSite ? (short)17 : (short)0,
+                    id == 0 && stealthBoostingSite ? 0 : 7,
                     id == 0 && stealthBoostingSite ? new PlayerId(0) : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)

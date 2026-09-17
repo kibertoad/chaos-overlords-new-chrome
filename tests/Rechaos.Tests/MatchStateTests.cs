@@ -84,6 +84,25 @@ public sealed class MatchStateTests
     }
 
     [Fact]
+    public void MatchRejectsInfluencedSiteWithRemainingResistance()
+    {
+        var data = BundledOriginalData.Load();
+        var setup = Setup();
+        var sectors = Sectors();
+        sectors[0] = new MatchSectorState(0,
+        [
+            new MatchSiteState(0, 0, 1, new PlayerId(0)),
+            new MatchSiteState(1, 1, 5),
+            new MatchSiteState(2, 2, 4)
+        ], owner: new PlayerId(0));
+
+        var error = Assert.Throws<ArgumentException>(() =>
+            new MatchState(data, setup, Players(setup), sectors));
+
+        Assert.Contains("no remaining resistance", error.Message);
+    }
+
+    [Fact]
     public void RejectedCommandDoesNotMutateQueueOrEventLog()
     {
         var match = CreateMatch();

@@ -41,6 +41,28 @@ public sealed class ResearchResolutionTests
     }
 
     [Fact]
+    public void ResearchPoolIncludesEquippedItemModifier()
+    {
+        var data = BundledOriginalData.Load();
+        var item = data.Items.First(value => value.Type != 99 && value.Stats.Research > 0);
+        var researchTarget = ResearchableItem(data);
+        var withoutItem = CreateMatch(
+            researchProgress: new Dictionary<short, int> { [researchTarget] = 100 });
+        var withItem = CreateMatch(
+            researchProgress: new Dictionary<short, int> { [researchTarget] = 100 },
+            equippedItem: item.Id);
+        QueueAndEnterExecution(withoutItem, researchTarget);
+        QueueAndEnterExecution(withItem, researchTarget);
+
+        withoutItem.FinishExecutionPhase();
+        withItem.FinishExecutionPhase();
+
+        Assert.Equal(
+            withoutItem.Events[^1].Resolution!.Rolls.Count + item.Stats.Research,
+            withItem.Events[^1].Resolution!.Rolls.Count);
+    }
+
+    [Fact]
     public void ResearchCompletionMovesItemToCompletedSet()
     {
         var data = BundledOriginalData.Load();
@@ -269,7 +291,8 @@ public sealed class ResearchResolutionTests
         bool specialSiteInfluenced = true,
         bool includeSecondResearchGang = false,
         PlayerController playerZeroController = PlayerController.Human,
-        AiDifficulty difficulty = AiDifficulty.Criminal)
+        AiDifficulty difficulty = AiDifficulty.Criminal,
+        short? equippedItem = null)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] playerSetups =
@@ -282,9 +305,22 @@ public sealed class ResearchResolutionTests
         var researchGang = gangDefinitionId is { } definitionId
             ? data.Gangs.Single(gang => gang.Id == definitionId)
             : data.Gangs.OrderByDescending(gang => gang.Stats.Research).First();
+        short? weapon = null;
+        short? armor = null;
+        short? miscellaneous = null;
+        if (equippedItem is { } equipped)
+        {
+            switch (EquipmentRules.SlotFor(data.Items[equipped]))
+            {
+                case EquipmentSlot.Weapon: weapon = equipped; break;
+                case EquipmentSlot.Armor: armor = equipped; break;
+                case EquipmentSlot.Miscellaneous: miscellaneous = equipped; break;
+            }
+        }
         var playerZeroGangs = new List<MatchGangState>
         {
-            new(new GangId(10), new PlayerId(0), researchGang.Id, 0, 10)
+            new(new GangId(10), new PlayerId(0), researchGang.Id, 0, 10,
+                weapon, armor, miscellaneous)
         };
         if (includeSecondResearchGang)
             playerZeroGangs.Add(new MatchGangState(
@@ -302,7 +338,9 @@ public sealed class ResearchResolutionTests
             [
                 new MatchSiteState(0, 0, 7),
                 new MatchSiteState(1, specialSiteDefinition ?? 1,
-                    id == 0 && specialSiteDefinition.HasValue && !specialSiteInfluenced ? 1 : 5,
+                    id == 0 && specialSiteDefinition.HasValue
+                        ? specialSiteInfluenced ? 0 : 1
+                        : 5,
                     id == 0 && specialSiteDefinition.HasValue && specialSiteInfluenced
                         ? new PlayerId(0) : null),
                 new MatchSiteState(2, 2, 4)

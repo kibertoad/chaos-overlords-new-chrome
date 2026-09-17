@@ -124,7 +124,9 @@ public sealed class OriginalAiFamilySevenRulesTests
                     Enumerable.Range(0, MatchLimits.SitesPerSector)
                         .Select(slot => new MatchSiteState(
                             slot, definitions[slot],
-                            id == 0 && sourceResistance is not null
+                            id == 0 && definitions[slot] == 4
+                                ? 0
+                                : id == 0 && sourceResistance is not null
                                 ? sourceResistance[slot]
                                 : data.Sites.Single(site => site.Id == definitions[slot]).Resistance,
                             id == 0 && definitions[slot] == 4 ? player : null))

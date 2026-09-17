@@ -107,7 +107,7 @@ controlled reference observation confirms its execution timing and edge cases.
 
 - Source: `MANUAL-GOG-1`; Influence command, dice, site resistance, and site
   benefit descriptions, plus `BIN-RNG-002`, `BIN-RNG-003`, and
-  `BIN-INSTANT-001`.
+  `BIN-INSTANT-001` and `BIN-EFFECTIVE-STATS-001`.
 - Observed statement: participating gangs contribute total Force plus Influence;
   successes reduce site resistance; reaching zero influences the site and grants
   its listed benefits.
@@ -120,11 +120,12 @@ controlled reference observation confirms its execution timing and edge cases.
   Influence. There is no separate site-takeover action or persistent native
   influencer field: changing the sector owner clears all three sites' progress,
   after which the new owner may influence them again from full resistance.
-- Current exclusions: site special behavior and exact influenced-site modifier
-  composition in the dice pool.
+- Current exclusions: special-site behaviors beyond their separately recovered
+  Research-cap and Factory effects.
 - Confidence: High for the base pool, success threshold, resistance reduction,
-  Support value, per-gang scheduling, completion guard, and delayed benefit
-  boundary, completed-site rejection, and ownership-change reset.
+  effective-stat aggregation, Support value, per-gang scheduling, completion
+  guard and delayed benefit boundary, completed-site rejection, and
+  ownership-change reset.
 - Implementation: `CommandResolver.ResolvePhase`,
   `CommandResolver.ResolveInfluence`, `ManualRules.InfluenceDiceCount`, and
   `ManualRules.ApplyInfluenceProgress`; validation requires player ownership of
@@ -139,40 +140,45 @@ controlled reference observation confirms its execution timing and edge cases.
 
 ### RULE-HEAL-001 — Heal dice and force restoration
 
-- Source: `MANUAL-GOG-1`; Heal command description, plus `BIN-RNG-002` and
-  `BIN-RNG-003` for random-number generation. Exact manual scan page location
-  still needs transcription.
+- Source: `MANUAL-GOG-1`; Heal command description, `BIN-EFFECTIVE-STATS-001`
+  and `BIN-AI-007` for the shipped pool, plus `BIN-RNG-002` and `BIN-RNG-003`
+  for random-number generation. Exact manual scan page location still needs
+  transcription.
 - Observed statement: Heal rolls a base four dice plus Heal skill; each roll of
   4-6 restores one Force, capped at 10.
-- Interpretation: calculate gang-definition plus equipped-item Heal modifiers,
-  roll `max(0, 4 + Heal)` six-sided dice, count results at least four, and add
+- Interpretation: calculate effective Heal from the gang definition, all three
+  equipped items, and every completed site in a sector controlled by the gang's
+  player; roll `max(0, 4 + Heal)` six-sided dice, count successes at the
+  difficulty-band threshold (5+ normally, 4+ for expert Computers), and add
   successes to Force with a maximum of ten. Heal cannot be assigned at maximum
   Force; the native turn-start scan clears a repeating Heal order at Force ten.
-- Current exclusions: influenced-site and other contextual stat modifiers are
-  not applied until their ownership/scope is verified.
-- Confidence: High for dice threshold and Force cap; Medium for dice-pool and
-  equipment aggregation; High for the recovered RNG step/range wrapper and
-  accepted-setup-to-city order; Low for the clock-derived state at Begin and
-  complete later-match RNG call order.
+- Confidence: High static evidence for the pool, base/equipment/site
+  aggregation, ownership scope, thresholds, Force cap, and repeat cleanup;
+  High for the recovered RNG step/range wrapper and accepted-setup-to-city
+  order; Low for the clock-derived state at Begin and complete later-match RNG
+  call order.
 - Implementation: `EffectiveStatisticsCalculator`, `DiceRoller`,
   `CommandResolver.ResolveHeal`, and `ManualRules.RestoreForce`.
 - Tests: deterministic roll/event/hash replay, effective Heal equipment, dice
   bounds, RNG consumption, and Force cap tests in `CommandResolutionTests`,
   `DeterminismTests`, and `ManualRulesTests`.
-- Next experiment: execute Heal from an identical save across base/item/site
-  modifiers and correlate visible rolls plus Force deltas with predicted RNG.
+- Next experiment: execute Heal from an identical save and correlate the
+  visible rolls and Force delta with the predicted later-match RNG stream.
 
 ### RULE-RESEARCH-001 — Research dice and persistent progress
 
-- Source: `MANUAL-GOG-1`; Research command and item-table descriptions, plus
-  `BIN-RNG-002` and `BIN-RNG-003` for random-number generation. Exact manual
-  scan page locations still need transcription.
+- Source: `MANUAL-GOG-1`; Research command and item-table descriptions,
+  `BIN-EFFECTIVE-STATS-001`, `BIN-AI-007`, `BIN-RESEARCH-000`, and
+  `BIN-RESEARCH-001`, plus `BIN-RNG-002` and `BIN-RNG-003` for random-number
+  generation. Exact manual scan page locations still need transcription.
 - Observed statement: Research rolls dice equal to the gang's Force plus its
   Research skill; each success reduces the item's remaining research number.
-- Interpretation: calculate gang-definition plus equipped-item Research
-  modifiers, roll `max(0, Force + Research)` six-sided dice, count results at
-  least four, persist unfinished progress, and mark the item researched at zero.
-  The native turn-start scan clears a repeating Research order on completion.
+- Interpretation: calculate effective Research from the gang definition, all
+  three equipped items, and every completed site in a sector controlled by the
+  gang's player; roll `max(0, Force + Research)` six-sided dice, apply the
+  difficulty-band pool/threshold adjustment, persist unfinished progress, and
+  mark the item researched at zero. The native turn-start scan clears a
+  repeating Research order on completion.
 - Tech restrictions: a gang cannot research above its own Tech. Without a local
   influenced special research site the ceiling is Tech 5; an influenced Science
   Center raises it to 8 and a Research Lab to 10. A sector must be controlled
@@ -183,11 +189,11 @@ controlled reference observation confirms its execution timing and edge cases.
   items start complete. Armageddon zeroes the complete array. The recreation
   omits inaccessible type-99 padding records from authoritative researched IDs.
   Runtime confirmation of special-site timing remains open.
-- Confidence: High for initialization, the formula, completion threshold, fixed
-  roster order, suppression of later rolls after same-phase completion, and the
-  accepted-setup-to-city RNG order; Medium for equipment aggregation and
-  repeat-command rejection; Low for the clock-derived state at Begin and
-  complete later-match RNG call order.
+- Confidence: High static evidence for initialization, the pool,
+  base/equipment/site aggregation, ownership scope, difficulty adjustments,
+  completion threshold, fixed roster order, later-roll suppression, and repeat
+  cleanup; High for the accepted-setup-to-city RNG order; Low for the
+  clock-derived state at Begin and complete later-match RNG call order.
 - Implementation: `MatchPlayerState.RemainingResearch`,
   `MatchPlayerState.ApplyResearch`, `ManualRules.ResearchDiceCount`, and
   `CommandResolver.ResolveResearch`; `SpecialSiteRules.ResearchTechLimit`
@@ -197,9 +203,9 @@ controlled reference observation confirms its execution timing and edge cases.
   progress, completion, later-roster roll suppression, repeat rejection, state
   invariants, RNG consumption, notifications, deterministic phase hashes, and a
   newly influenced Science Center not changing a concurrent Research pool.
-- Next experiment: execute Research from identical saves across gang/item/site
-  modifiers, tech-level boundaries, and near-completion values, then compare
-  rolls, unlock state, repeat behavior, and save deltas.
+- Next experiment: execute Research from identical saves at tech-level and
+  near-completion boundaries, then correlate rolls, unlock state, and save
+  deltas with the predicted later-match RNG stream.
 
 ### RULE-BRIBE-001 — Bribe tolerance adjustment
 

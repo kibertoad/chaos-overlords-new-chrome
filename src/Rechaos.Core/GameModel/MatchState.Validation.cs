@@ -91,6 +91,11 @@ public sealed partial class MatchState
             throw new ArgumentException(
                 "An influenced site must belong to the player controlling its sector.",
                 nameof(sectors));
+        if (sectors.SelectMany(sector => sector.Sites)
+            .Any(site => site.InfluencedBy is not null && site.Resistance != 0))
+            throw new ArgumentException(
+                "An influenced site must have no remaining resistance.",
+                nameof(sectors));
     }
 
     private static IEnumerable<short> EquippedItemIds(MatchGangState gang)

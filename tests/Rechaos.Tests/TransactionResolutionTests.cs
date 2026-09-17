@@ -507,7 +507,7 @@ public sealed class TransactionResolutionTests
             .Select(id => new MatchSectorState(id,
             [
                 new MatchSiteState(0, id == 0 && (influencedFactory || availableFactory) ? (short)15 : (short)0,
-                    id == 0 && availableFactory ? 1 : 7,
+                    id == 0 && influencedFactory ? 0 : id == 0 && availableFactory ? 1 : 7,
                     id == 0 && influencedFactory ? new PlayerId(0) : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)

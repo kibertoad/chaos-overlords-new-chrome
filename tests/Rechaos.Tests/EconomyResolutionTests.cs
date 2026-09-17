@@ -165,7 +165,8 @@ public sealed class EconomyResolutionTests
             .Select(id => new MatchSectorState(
                 id,
                 [
-                    new MatchSiteState(0, id == 0 ? (short)3 : (short)0, 7,
+                    new MatchSiteState(0, id == 0 ? (short)3 : (short)0,
+                        id == 0 && playerZeroInfluencesSite ? 0 : 7,
                         id == 0 && playerZeroInfluencesSite ? new PlayerId(0) : null),
                     new MatchSiteState(1, 1, 5),
                     new MatchSiteState(2, 2, 4)

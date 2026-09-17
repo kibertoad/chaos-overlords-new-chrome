@@ -2323,6 +2323,54 @@ hashes, native saves, and replays.
 threshold, reaction, recovery ordering, and family-11 weapon replacement
 cooldown through the first complete turns.
 
+### BIN-EFFECTIVE-STATS-001 - gang, equipment, and controlled-site aggregation
+
+**Observation:** Turn-start function `0x0046e766` first rebuilds every 36-byte
+sector record through `0x004782c5`. That helper scans the sector's three site
+definition/progress pairs. For every site whose progress has reached its base
+Resistance, it accumulates the site's Support, Cash, Tolerance, all fourteen
+stat modifiers, and special-site flag into the sector record. The normal path
+then scans all six players and all 81 gang slots and calls `0x0047781f` for
+every active gang before planning begins.
+
+Helper `0x0047781f` reconstructs each of the gang's fourteen effective-stat
+bytes independently. Each byte starts with the corresponding field from the
+156-byte gang-definition record, then adds the same field from each of the
+three equipped item IDs that is not `-1`, using the 166-byte item-record
+stride. It adds the matching sector aggregate only when the gang's player is
+the current owner of the gang's sector. The rebuilt 32-byte gang record is
+written back immediately. This same sequence also runs after a completed turn
+when the match continues.
+
+The whole-turn resolver `0x00472775` copies that rebuilt gang record before
+dispatch. Its Heal case reads effective Heal and passes `Heal + 4` directly to
+the common dice helper. Its Research case reads effective Research and passes
+`Force + Research`, subject only to the per-player difficulty adjustment
+documented in `BIN-AI-007`. Thus item and completed-site modifiers are part of
+the shipped action pools rather than display-only values. A site completed
+during the current Instant pass is absent from the already-built sector and
+gang records, so it cannot affect another action until the following planning
+boundary.
+
+The executable stores site progress and derives completed benefits for the
+sector owner; it has no independent site-owner field. The recreation's
+explicit `InfluencedBy` field is therefore valid only with zero remaining
+Resistance and a matching sector owner. Authoritative construction now rejects
+positive-Resistance influenced sites, while zero-Resistance sites with no
+influencer remain valid as pending completions (and for the Headquarters
+special case).
+
+**Confidence:** High static evidence for all fourteen fields, gang/item/site
+source strides, three equipment slots, completion and sector-owner gates,
+turn-start ordering, Heal and Research consumers, and the recreation
+representation invariant.
+
+**Recreation status:** `EffectiveStatisticsCalculator` performs the same base,
+three-item, and controlled completed-site aggregation. Focused tests cover Heal
+equipment/site pools, Research equipment aggregation and site-stat activation,
+ownership scope, delayed same-Instant activation, and invalid influenced-site
+state.
+
 ### BIN-AI-007 - per-player difficulty resolution band
 
 **Observation:** new-match initialization also fills a six-entry integer table

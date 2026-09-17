@@ -453,7 +453,8 @@ public sealed class CombatResolutionTests
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
-                new MatchSiteState(0, id == 0 && influencedSiteDefinition is { } site ? site : (short)0, 7,
+                new MatchSiteState(0, id == 0 && influencedSiteDefinition is { } site ? site : (short)0,
+                    id == 0 && influencedSiteDefinition is not null ? 0 : 7,
                     id == 0 && influencedSiteDefinition is not null ? new PlayerId(0) : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)

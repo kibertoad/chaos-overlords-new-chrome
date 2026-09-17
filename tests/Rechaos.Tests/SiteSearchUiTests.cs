@@ -37,6 +37,7 @@ public sealed class SiteSearchUiTests
         var state = CreateMatch();
         var player = new PlayerId(0);
         var controlled = state.Sectors[0].Sites[0];
+        controlled.Resistance = 0;
         controlled.InfluencedBy = player;
         var selected = state.Sectors.SelectMany(sector => sector.Sites)
             .First(site => site != controlled && site.DefinitionId != controlled.DefinitionId);
