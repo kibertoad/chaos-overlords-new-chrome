@@ -407,6 +407,9 @@ a separate player/roster-ordered Move pass. Move enforces the six-friendly-gang
 capacity both during submission and again during resolution. Control ownership
 changes are atomic with former-owner influenced-site cleanup, Support adjustment, and
 Overthrow statistics so phase hashes cannot observe a partially captured sector.
+Candidate selection intentionally includes only players with a Control command;
+the original scans six zero-initialized player cells and can award a
+negative-defense sector to a nonparticipant, which is treated as a shipped bug.
 The binary owner-write inventory also makes ownership independent of garrison:
 moving or terminating the last friendly gang does not neutralize the sector.
 

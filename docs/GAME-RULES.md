@@ -638,10 +638,16 @@ claim about original-game behavior.
   Snitch, and Terminate are absent from the recurring-action picker; core
   validation rejects a repeated form submitted through any other path. The
   native sector-wide recurring menu is narrower still and omits Research.
+  The shipped winner scan has a clear negative-defense bug: it compares all
+  six player slots after initializing nonparticipants to zero strength. When
+  combined sector Income, defending strength, and Support is negative, a
+  player who issued no Control command can tie or beat the real challenger and
+  receive the sector. The recreation deliberately limits candidates to players
+  with an actual Control command while preserving the recovered arithmetic and
+  tie behavior among those participants.
 - Moving or terminating the last friendly gang does not abandon the sector;
   ownership changes only through a separate ownership-changing rule.
-- Current exclusions: original crackdown ordering and negative-total edge
-  behavior.
+- Current exclusions: original crackdown ordering.
 - Confidence: High for equation components, recomputed operational sector Income,
   influence loss, zero-margin neutral selection, and cross-player winner/order
   behavior.
@@ -654,7 +660,8 @@ claim about original-game behavior.
   ownership after Move/Terminate, a single phase-opening
   defense for several owned-sector challengers,
   execution-time Crackdown rejection, overthrow/statistics, influence reset,
-  deterministic hashes, and the one-off/recurring Hide lifecycle;
+  deterministic hashes, the intentional nonparticipant negative-defense bug
+  correction, and the one-off/recurring Hide lifecycle;
   `ManualRulesTests` covers equation arithmetic.
 
 ## Upkeep economy

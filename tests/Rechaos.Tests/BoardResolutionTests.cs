@@ -349,6 +349,24 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
+    public void NegativeDefenseCannotAwardControlToPlayerWithoutCommand()
+    {
+        var match = CreateNegativeControlDefenseMatch();
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Control(0, 10)).Accepted);
+        foreach (var player in match.Players) match.FinishCommand(player.Id);
+        EnterControlFromExecution(match);
+
+        match.FinishExecutionPhase();
+
+        Assert.Equal(new PlayerId(0), match.Sectors[0].Owner);
+        var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
+        Assert.Equal(0, resolution.AttackValue);
+        Assert.Equal(-1, resolution.DefenseValue);
+        Assert.Null(resolution.ChanceRoll);
+    }
+
+    [Fact]
     public void NeutralControlConflictHonorsCrackdownStartedAfterSubmission()
     {
         var match = CreateMatch(
@@ -629,6 +647,41 @@ public sealed class BoardResolutionTests
             ], owner: id == 0 ? new PlayerId(0) : null, income: 2))
             .ToArray();
         return new MatchState(data, setup, players, sectors);
+    }
+
+    private static MatchState CreateNegativeControlDefenseMatch()
+    {
+        var data = BundledOriginalData.Load();
+        MatchPlayerSetup[] setups =
+        [
+            new(new PlayerId(0), "ACTOR", PlayerController.Human),
+            new(new PlayerId(1), "OWNER", PlayerController.Computer),
+            new(new PlayerId(2), "IDLE", PlayerController.Computer)
+        ];
+        MatchPlayerState[] players =
+        [
+            new(setups[0], 20, [Gang(10, 0, 0, 1)]),
+            new(setups[1], 20, support: 1),
+            new(setups[2], 20)
+        ];
+        var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
+            .Select(id => id == 0
+                ? new MatchSectorState(id,
+                [
+                    new MatchSiteState(0, 4, 0, new PlayerId(1)),
+                    new MatchSiteState(1, 8, 0, new PlayerId(1)),
+                    new MatchSiteState(2, 21, 0, new PlayerId(1))
+                ], owner: new PlayerId(1))
+                : new MatchSectorState(id,
+                [
+                    new MatchSiteState(0, 0, 7),
+                    new MatchSiteState(1, 1, 5),
+                    new MatchSiteState(2, 2, 4)
+                ]))
+            .ToArray();
+        return new MatchState(data,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, setups),
+            players, sectors);
     }
 
     private static MatchState CreateMatch(

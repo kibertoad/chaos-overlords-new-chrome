@@ -2957,9 +2957,21 @@ zero-margin challengers each have probability `1 / (n + 1)` and the remaining
 outcome leaves ownership unchanged. Every random selection consumes the usual
 three raw RNG values.
 
+**Intentional exception:** The candidate scan at lines 778-793 does not test
+whether a player issued Control. All six strength cells start at zero, and only
+actual commands add to them. Ordinarily positive defense leaves nonparticipants
+below the leading candidates, but if sector Income plus defending strength plus
+Support is negative, every zero-strength nonparticipant has a positive margin
+and can tie or beat the real challenger. A selected nonparticipant is then
+written directly to the owner byte at lines 801-813. This is a clear shipped
+bug: the recreation considers only players represented by actual Control
+commands. A distinct-site fixture using Research Lab, Science Center, and
+Headquarters produces total defense -1 and proves an idle player is never
+awarded ownership in the corrected model.
+
 **Confidence:** High static evidence for board/player/roster scan order,
 initialization, comparison behavior, candidate order, one-based RNG call,
-neutral sentinel, and capture predicate. The manual independently corroborates
+neutral sentinel, nonparticipant bug, and capture predicate. The manual independently corroborates
 the single-player zero-margin probability; multi-player runtime capture remains useful.
 
 The same focused owner-field audit establishes retained control of an empty
