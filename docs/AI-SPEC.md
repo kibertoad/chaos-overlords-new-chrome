@@ -237,6 +237,9 @@ explicit M6 gap rather than an unmeasured claim.
    previous-Attack, and cooldown gates. Its blocks-of-six mode-10 formation
    anchors and mode-16 followers are also live; their separate per-gang
    formation-sector shorts are authoritative, hashed, saved, and replayed.
+   Both modes apply the common unavailable-sector filter, but—as the native
+   selector's planning-family guard requires—neither applies the strict-Control
+   destination filter reserved for families 0 and 1.
    Family 3's complete recovered handler is live. Its cash-site core handles
    previous None, Control, Equip, Heal, Influence, and Snitch. It heals below Force 8 at effective Heal
    `-3` or better, otherwise retains or selects the first strict maximum

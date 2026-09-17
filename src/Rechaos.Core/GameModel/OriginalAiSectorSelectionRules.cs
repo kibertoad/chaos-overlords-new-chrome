@@ -80,6 +80,9 @@ internal static class OriginalAiSectorSelectionRules
         for (var sectorId = 0; sectorId < MatchLimits.SectorCount; sectorId++)
         {
             if (sectorDisabled[sectorId]) scores[sectorId] = 0;
+            // The native late filter reads the acting planning record's family byte
+            // at +0 and applies selector 0x2c only to literal families 0 and 1.
+            // Family 11's mode-10 anchors and mode-16 followers deliberately bypass it.
             if (family is 0 or 1
                 && sectorOwners[sectorId] != player.Value
                 && !canSoloControl(sectorId))

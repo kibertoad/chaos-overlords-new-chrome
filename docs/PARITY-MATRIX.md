@@ -105,6 +105,11 @@ and completed-positive-Stealth mode-9 routing. The handler preserves the
 original's separate probe and destination calls, including two independent tie
 draws, then chooses Chaos or Hide according to same-sector previous Chaos.
 
+Family 11's mode-10 anchors and mode-16 followers use the exact all-81-slot,
+every-sixth-family-11 grouping and stored leader destination. Both formation
+modes apply unavailable-sector removal and bypass the strict-Control late
+filter, which the native selector reserves for planning families 0 and 1.
+
 Family 12 is live with its no-visible-opponent weapon/armor/miscellaneous
 priority, raw-cost weapon/armor cooldowns, Force-10 Heal gate, and encoded
 current-sector movement. That encoded mode is deliberately cleared by the

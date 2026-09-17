@@ -103,7 +103,9 @@ default; Advanced results must not be used as evidence for Original parity.
 - Family 11's exact weapon/armor/miscellaneous Equip priority, replacement
   cooldowns, Heal gate, and first-visible-local-opponent Attack are live and
   replay-wired. Its modes 10 and 16, blocks-of-six formation anchor/follower
-  Move paths, are live with authoritative per-gang formation-sector state.
+  Move paths, are live with authoritative per-gang formation-sector state and
+  the exact common unavailable-sector but family-0/1-only strict-Control late
+  filters.
 
 - Family 2's complete aggressive territorial handler is live, including its
   armor-before-weapon equipment order, conditional Heal, hostile target loop,

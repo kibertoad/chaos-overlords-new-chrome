@@ -102,6 +102,25 @@ public sealed class OriginalAiSectorSelectionRulesTests
             mode: 16, family: 11, formationSectorId: 4));
     }
 
+    [Theory]
+    [InlineData(10)]
+    [InlineData(16)]
+    public void FamilyElevenFormationModesBypassLateSoloControlFilter(int mode)
+    {
+        var facts = new Facts(source: 27);
+        facts.Owners[28] = 1;
+
+        var selected = facts.Select(
+            mode,
+            family: 11,
+            canSoloControl: _ => throw new InvalidOperationException(
+                "Family 11 must not query the families-zero-and-one Control filter."),
+            hasHumanPlayers: mode == 10 ? false : null,
+            formationSectorId: mode == 16 ? 28 : null);
+
+        Assert.Equal(28, selected);
+    }
+
     [Fact]
     public void ModeEightSumsPositiveUnfinishedSiteCashInOwnedSectors()
     {

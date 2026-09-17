@@ -1773,7 +1773,9 @@ Influence in the same sector, preventing duplicate continuity assignments.
 Mode 10 changes its owner test according to the human-player count. With no
 human players it scores every non-neutral sector not owned by the active
 player `+1`; with at least one human player it scores every human-owned sector
-`+1`. This test does not consult the directional attitude table. Mode 11
+`+1`. The mode-specific admission test does not consult the directional
+attitude table, but the common block at `0x004098d4..0x004099ad` subsequently
+multiplies an admitted hostile human-owned sector by five. Mode 11
 gives `+1` to the sector returned by selector `0x5a` for the active player.
 Modes 12 and 14 restrict selection to Big Man's central sectors 27, 28, 35,
 and 36; modes 13 and 15 restrict it to Eliminate's six headquarters candidates
@@ -1784,10 +1786,23 @@ owned by the active player. Instruction-level inspection at
 hostile human-owned objective receives `+5` inside the mode case and is then
 multiplied by five again in the common post-switch block, for an effective
 weight of 25. Every other admitted objective receives `+1`.
-Mode 16 gives `+1` to the sector returned by selector `0x77`; that selector
-groups planning-family-11 records in blocks of six and returns the stored
-anchor sector for the block containing the active gang. A mode above `0x3f`
+Mode 16 gives `+1` to the sector returned by selector `0x77`. Its case at
+`0x004045bb..0x0040465b` scans all 81 planning slots in ascending order,
+without testing whether the gang is active, counts only records whose family
+byte is 11, makes ordinals 0, 6, 12, and so on block leaders, and returns the
+first auxiliary short of the most recent leader when it reaches the acting
+slot. Selector `0x76` at `0x00404539..0x004045b6` independently returns one
+only when the acting slot itself is such a leader. A mode above `0x3f`
 directly adds `+1` to sector `mode - 0x40`.
+
+The post-score loop at `0x004099f8..0x00409b6c` first clears every sector whose
+unavailable byte at sector-record offset `+15` is nonzero. Its second filter
+reads the acting planning record's family byte at offset `+0`: only literal
+families 0 and 1 call selector `0x2c`, and a non-owned destination is cleared
+when that gang cannot strictly Control it. Family 11 therefore applies the
+unavailable-sector filter to modes 10 and 16 but deliberately bypasses the
+strict-Control filter. This closes the former uncertainty around their late
+guards.
 
 All 48 direct references to `0x00408642` have also been enumerated. The static
 mode arguments map to the recovered family handlers as follows:
@@ -2284,15 +2299,13 @@ inspected here.
 mode-0 directions, modes 1 through 5 weights, site-field offsets, human-player
 count, per-player sector gang counts, unique-leader selector, mode-6 weights and owner
 branches, fixed sector sets, direct call inventory, maximum-score tie
-randomization, and x-then-y step return. Medium for the player-order
-predicates, family-11 anchor, dynamic call arguments, and late candidate
-filtering due to decompiler control-flow folding. Mode 10 and mode 16's
-remaining family-11 guards are not yet fully labeled.
+randomization, x-then-y step return, family-11 leader/anchor grouping, and the
+family-gated late candidate filters. Medium remains only for the player-order
+predicates and dynamic call arguments.
 
-**Next validation:** reproduce the now-live objective routes and attacks plus
-the mode-16 follower route as fixed original decisions, then validate the
-complete recovered family inventory with controlled runtime traces before
-claiming parity.
+**Next validation:** validate the complete recovered family inventory with
+controlled runtime traces before claiming runtime parity; the remaining
+mode-10/mode-16 uncertainty is no longer a static-analysis item.
 
 ### BIN-AI-006 - directional attitude and hostility matrix
 
@@ -2355,7 +2368,9 @@ cost cooldown. The following analogous opportunities use selectors `0x64` and
 
 After those Equip and Heal opportunities, the handler reads the owner of its
 current sector. In an active-player-owned sector it always writes **Move** and
-calls mode 10.
+calls mode 10 at `0x00420e7b`. The subsequent write at `0x00420eea` leaves the
+first auxiliary short equal to the current sector rather than replacing it
+with the chosen destination.
 
 In any other sector, selector `0xac(active player, current sector, 0)` scans
 other players in ascending slot order and their gangs in ascending slot order.
@@ -2365,12 +2380,14 @@ whose raw gang-state byte at record offset `-1` from the sector field is zero.
 The handler writes **Attack** against that decoded player/gang whenever the
 result is nonnegative. If no such target exists, selector `0x76` determines
 formation leadership: considering only family-11 gangs in ascending gang-slot
-order, ordinals 0, 6, 12, and so on return 1. Those anchors write **Move** with
-mode 10 and replace their stored formation-sector short with the chosen
-destination. Other family-11 gangs write **Move** with mode 16 and retain their
-current-sector short. Selector `0x77` finds the corresponding block anchor and
-returns its stored formation-sector short, so mode 16 awards that sector `+1`
-and feeds it through the common ring/path selection.
+order—including inactive slots whose planning family remains 11—ordinals 0,
+6, 12, and so on return 1. Those anchors write **Move** with mode 10 at
+`0x00421085` and replace their stored formation-sector short with the chosen
+destination. Other family-11 gangs write **Move** with mode 16 at `0x00421157`
+and retain their current-sector short. Selector `0x77` finds the corresponding
+block anchor and returns its stored formation-sector short, so mode 16 awards
+that sector `+1` and feeds it through the common ring/path selection. Neither
+path is subjected to the selector's family-0/1 strict-Control late filter.
 
 Thus mode 10 is not a generic hostile-target rule: with humans present it seeks
 human-owned territory regardless of attitude, and with no humans it seeks any
@@ -2395,8 +2412,9 @@ uses negative hostility in attack targeting.
 **Confidence:** High for matrix dimensions and direction, `[-10,+10]` bounds,
 initial values, mentality-gated per-turn recovery, reaction range/immutability, combat and
 Control decrements, negative-hostility target gating, controller classification,
-and mode-10 target ownership. Medium for mode-16 group semantics. Low only for
-the original public/internal name of the reaction value.
+mode-10 target ownership, mode-16 group semantics, and both formation modes'
+late filters. Low only for the original public/internal name of the reaction
+value.
 
 The exact new-match order is now bounded. For non-Homicidal games the six
 reaction draws are the only RNG calls between entry to `0x0046dc10` and city
@@ -3459,8 +3477,9 @@ Useful static work which remains is narrower:
    intentionally out of scope.
 3. Finish exact menu-to-menu music restart boundaries; registry names, types,
    defaults, load order, and the shipped persistence failures are now closed.
-4. Resolve family 11 mode-10/mode-16 late guards and decide the safest explicit
-   policy for family 1's recreation-only unavailable-command fallback.
+4. Decide the safest explicit policy for family 1's recreation-only
+   unavailable-command fallback; family 11's mode-10/mode-16 late guards are
+   now closed.
 5. Continue exact UI geometry/hit-map work where it can be derived from draw and
    pointer call arguments, including setup name/drop fields and remaining panels.
 6. Match the linker/runtime fingerprints against a known compiler signature only
