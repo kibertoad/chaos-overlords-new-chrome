@@ -2363,6 +2363,29 @@ per-gang Influence pools, immediate progress mutation, clamping, completion
 guard, definition-field reference inventory, and delayed benefit boundary.
 Runtime seed correlation remains pending.
 
+### BIN-RESEARCH-000 - initial progress and Armageddon completion
+
+**Observation:** Fresh-game initializer `0x0046dc10` owns the only setup writes
+to the 384-byte item-major/player-minor Research array at `0x004a2608`. For
+ordinary scenarios it scans all 64 item records and all six player slots and
+copies byte `0x004a5f84 + item * 0xa6` into each player's entry. The loaded
+`ITEMS` record is 166 (`0xa6`) bytes and its research-difficulty word begins at
+offset `0x7c`; the byte copied here is its low byte. When active scenario dword
+`0x004abbe8` is 9 (Armageddon), the alternate branch writes zero to all 64 by 6
+entries instead. Neither branch calls the RNG.
+
+The resolver's Research case and the item-selection consumers read the same
+`item * 6 + player` bytes. A zero value is therefore already complete: ordinary
+matches begin with precisely the real zero-difficulty technologies available,
+while Armageddon begins with every item-table entry complete. The executable
+also zeroes type-99 padding entries because it blindly covers all 64 records.
+The recreation deliberately excludes padding IDs from its researched-item set;
+they are not technologies and cannot be selected, so this avoids invalid
+authoritative state without changing observable mechanics.
+
+**Confidence:** High static evidence for array address and layout, loop bounds,
+source field/stride, scenario branch, zero semantics, and absence of RNG.
+
 ### BIN-RESEARCH-001 - same-phase completion suppresses later rolls
 
 **Observation:** Case 11 in the Instant switch at `0x00472775`, lines 186-208,

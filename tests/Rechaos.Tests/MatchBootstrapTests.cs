@@ -58,6 +58,7 @@ public sealed class MatchBootstrapTests
         {
             Assert.Equal(MatchBootstrap.ArmageddonStartingCash, player.Cash);
             Assert.Equal(realItemCount, player.ResearchedItems.Count);
+            Assert.All(player.ResearchedItems, item => Assert.NotEqual(99, data.Items[item].Type));
             Assert.All(player.ResearchedItems, item => Assert.Equal(0, player.RemainingResearch(data, item)));
         });
     }

@@ -59,6 +59,10 @@ public static class MatchBootstrap
                 throw new ArgumentException("A player's starting sector must contain a Headquarters site.", nameof(sectors));
         }
 
+        // Original initializer 0x0046dc10 copies every ITEMS research-difficulty byte into the
+        // 64-by-6 progress table, or zeroes the entire table for Armageddon. Type-99 records are
+        // padding rather than technologies, so authoritative recreation state deliberately omits
+        // them while preserving the observable result for every real item.
         var startingResearch = definitions.Items
             .Select((item, index) => (item, index))
             .Where(entry => entry.item.Type != 99

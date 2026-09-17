@@ -176,10 +176,13 @@ controlled reference observation confirms its execution timing and edge cases.
   Center raises it to 8 and a Research Lab to 10. A sector must be controlled
   before its sites can be influenced, and authoritative match state rejects an
   influencer who is not the current sector owner.
-- Current exclusions: the exact behavior of zero-difficulty items and runtime
-  confirmation of special-site timing.
-- Confidence: High for the formula, completion threshold, fixed roster order,
-  and suppression of later rolls after same-phase completion; Medium for
+- Initializer boundary: ordinary setup copies every item definition's Research
+  Difficulty into each player's remaining-progress array, so zero-difficulty
+  items start complete. Armageddon zeroes the complete array. The recreation
+  omits inaccessible type-99 padding records from authoritative researched IDs.
+  Runtime confirmation of special-site timing remains open.
+- Confidence: High for initialization, the formula, completion threshold, fixed
+  roster order, and suppression of later rolls after same-phase completion; Medium for
   equipment aggregation and repeat-command rejection; Low for initial seed and
   complete RNG call order.
 - Implementation: `MatchPlayerState.RemainingResearch`,
@@ -372,7 +375,8 @@ claim about original-game behavior.
 - Interpretation: zero-research-difficulty items are immediately available;
   other items require completed player research. Successful purchase replaces
   and loses the previous same-slot item and records cash spent.
-- Initial unlock set: ordinary scenarios begin with the seven non-placeholder
+- Initial unlock set: the static initializer confirms that ordinary scenarios
+  begin with the seven non-placeholder
   zero-difficulty technologies already researched: Metal Pipe (0), Combat Knife
   (1), Combat Pistol (12), Leathers (24), Shock Pads (25), Cool Hats (39), and
   Boom Boxes (40). Melee and ranged weapons are separate browser categories,
@@ -381,8 +385,8 @@ claim about original-game behavior.
 - Factory rule: an influenced Factory in the acting gang's controlled sector
   reduces purchase price to `Cost - trunc(Cost / 3)`. This is a one-third
   discount rounded toward the full price; for example, an $11 Katana costs $8.
-- Confidence: High for cost, categories, research, tech gates, the decoded
-  zero-difficulty set, Factory division/rounding, controlled/influenced locality,
+- Confidence: High for cost, categories, research, tech gates, the statically
+  verified zero-difficulty initialization, Factory division/rounding, controlled/influenced locality,
   fixed player/roster-slot resolution order, and same-slot replacement; Medium
   for repeat commands.
 - Implementation: `EquipmentRules`, `SpecialSiteRules.EquipmentCost`,
