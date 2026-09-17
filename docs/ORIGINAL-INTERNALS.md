@@ -2431,6 +2431,43 @@ complete retaliation-eligibility predicate.
 **Next validation:** capture fixed original traces at bands 0, 1, and 2 for
 every affected action, including Hide and both Martial Arts branches.
 
+### BIN-DETECT-001 - cooperative sector visibility aggregation
+
+**Observation:** Visibility rebuild `0x0046fa11` runs once from each of the
+computer- and human-planning entry paths in outer turn function `0x0046e766`.
+For each observer it initializes 64 sector strengths to -32000 (or 1000 for the
+`SMGHUBBLE` modifier), then scans that observer's 81 gang slots. Active records
+are those whose sector byte `+2` is not 100. A strict-greater comparison selects
+the first highest effective Detect byte `+21` in each occupied sector as the
+base and remembers that gang slot.
+
+A second 81-slot scan adds every other active gang as a helper. Each helper
+always contributes 1. When its signed Detect is greater than 9, it additionally
+contributes `(Detect - 8) / 2` using signed integer truncation. The exact helper
+sequence is therefore: all values through 9 add 1, 10–11 add 2, 12–13 add 3,
+14–15 add 4, 16–17 add 5, 18–19 add 6, and higher pairs continue without a cap.
+Negative helpers still add 1. Finally, the routine scans every other player's
+active gang records and marks a target visible exactly when effective Stealth
+byte `+20` is less than or equal to that observer-sector strength. Friendly
+active records are marked visible unconditionally.
+
+**Interpretation:** The shipped helper arithmetic differs from the manual's
+printed 0–10/11–12/.../19+ capped bands at boundaries, negative values, and
+above 19. Authoritative compatibility uses the executable formula. Ordering
+only chooses which equal-best gang is excluded from helper treatment; because
+equal values contribute identically, roster order cannot change the aggregate.
+Hide is not read by this routine and does not affect cooperative visibility.
+
+**Confidence:** High from the complete compact function, signed byte loads,
+loop bounds, exact branch/division arithmetic, field offsets, threshold, and
+both direct call sites.
+
+**Recreation status:** `ManualRules.SectorDetectionStrength` implements the
+native base/helper calculation, and `MatchState.CanPlayerDetectGang` supplies
+active same-sector effective statistics plus the explicit omniscience rule.
+Boundary tests cover negative helpers, every transition around Detect 10–12,
+the printed cap boundary, and an above-cap value.
+
 ### BIN-HIDE-LIFECYCLE-001 - active and recurring action boundary
 
 **Observation:** Each 32-byte public gang record stores its active action at
@@ -3144,8 +3181,9 @@ gang records are ordinary persisted state.
 `SMGHUBBLE` sets per-player byte `0x004ab588`. Visibility rebuild routine
 `0x0046fa11` normally initializes each of that viewer's 64 sector-detection
 entries to -32000, but initializes all of them to 1000 when the byte is set. It
-then folds in the viewer's active-gang Detect values and marks every opposing
-active gang visible when its Stealth is no greater than the sector value. The
+then folds in the viewer's active-gang Detect values using the exact algorithm
+documented in `BIN-DETECT-001` and marks every opposing active gang visible when
+its Stealth is no greater than the sector value. The
 six-byte modifier array is transferred by save writer/reader references
 `0x00463b5b` and `0x00464060`.
 

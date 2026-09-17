@@ -180,16 +180,8 @@ public static class ManualRules
         return total;
     }
 
-    private static int DetectionAssist(int detect) => detect switch
-    {
-        < 0 => 0,
-        <= 10 => 1,
-        <= 12 => 2,
-        <= 14 => 3,
-        <= 16 => 4,
-        <= 18 => 5,
-        _ => 6
-    };
+    private static int DetectionAssist(int detect) =>
+        detect > 9 ? checked((detect - 8) / 2 + 1) : 1;
 
     public static int ControlStrength(IEnumerable<(int Force, int Control)> gangs)
     {

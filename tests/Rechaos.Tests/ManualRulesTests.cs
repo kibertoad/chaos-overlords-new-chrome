@@ -156,7 +156,19 @@ public sealed class ManualRulesTests
 
     [Fact]
     public void SectorDetectionUsesBestGangAndBandBonusFromEachHelper() =>
-        Assert.Equal(24, ManualRules.SectorDetectionStrength([12, 19, 14, -3]));
+        Assert.Equal(27, ManualRules.SectorDetectionStrength([12, 19, 14, -3]));
+
+    [Theory]
+    [InlineData(-20, 1)]
+    [InlineData(9, 1)]
+    [InlineData(10, 2)]
+    [InlineData(11, 2)]
+    [InlineData(12, 3)]
+    [InlineData(18, 6)]
+    [InlineData(20, 7)]
+    public void SectorDetectionUsesExecutableAssistBands(int helperDetect, int expectedAssist) =>
+        Assert.Equal(100 + expectedAssist,
+            ManualRules.SectorDetectionStrength([100, helperDetect]));
 
     [Theory]
     [InlineData(2, 1)]

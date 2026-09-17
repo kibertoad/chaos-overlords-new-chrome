@@ -338,18 +338,21 @@ claim about original-game behavior.
 ### RULE-DETECT-001 — Cooperative sector visibility
 
 - Source: `MANUAL-GOG-1`, numbered page 47.
-- Observed statement: compare an enemy gang's Stealth with the highest friendly
-  Detect in its sector. Every additional friendly gang contributes +1 at Detect
-  0–10, +2 at 11–12, +3 at 13–14, +4 at 15–16, +5 at 17–18, and +6 at 19 or
-  more. If one friendly gang can see the enemy, all friendly gangs there can.
-- Interpretation: active same-sector gangs contribute effective Detect through
-  `SectorDetectionStrength`; visibility succeeds at `Detect >= Stealth`. Negative
-  Detect helpers contribute zero because the manual defines no negative band.
-  A player always detects its own gang, and Hide does not affect visibility.
-- Current exclusions: stale knowledge after movement, UI information masking,
-  exact behavior below zero, and binary confirmation of site/item modifiers.
-- Confidence: High for the table and threshold; Medium for negative values and
-  visibility-query timing.
+- Observed statement: the manual says to compare an enemy gang's Stealth with
+  the highest friendly Detect in its sector, adding +1 at Detect 0–10, +2 at
+  11–12, +3 at 13–14, +4 at 15–16, +5 at 17–18, and +6 at 19 or more for each
+  additional friendly gang. If one friendly gang can see the enemy, all friendly
+  gangs there can. The executable's rebuild differs at the helper boundaries.
+- Interpretation: take the highest effective Detect as the sector base. Every
+  other active same-sector gang adds 1, plus `(Detect - 8) / 2` when Detect is
+  greater than 9. Thus negative through 9 adds 1; 10–11 adds 2; 12–13 adds 3;
+  and the sequence remains unbounded above 19. Visibility succeeds at the
+  resulting strength `>=` effective Stealth. A player always detects its own
+  gang, and Hide does not affect cooperative visibility.
+- Current exclusions: exact UI refresh timing outside normal planning entry.
+- Confidence: High static evidence for effective-stat fields, strongest-gang
+  selection, exact helper arithmetic including negative/high values, active
+  roster filtering, threshold, and the two turn-loop rebuild call sites.
 - Implementation: `ManualRules.SectorDetectionStrength` and
   `MatchState.CanPlayerDetectGang`.
 - Tests: `ManualRulesTests` covers band arithmetic; `CombatResolutionTests`
