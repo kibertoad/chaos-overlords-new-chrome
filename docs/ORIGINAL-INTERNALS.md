@@ -355,11 +355,26 @@ exits. During initialization,
 `FUN_00460ccf` calls `FUN_004327dc(0, 6)`. The timer helper configures
 `timeSetEvent` with an integer period of `1000 / rate` milliseconds.
 
+For phases 3 through 10, `FUN_00430c23` copies each 64-by-64 source frame into
+backing-buffer rectangles `(left=150,top=274,right=214,bottom=338)` and
+`(223,274,287,338)`. The shared panel occupies backing-buffer y=144..353 and is
+then copied to screen `(104,124,448,333)`, producing exact screen animation
+apertures `(254,254,64,64)` and `(327,254,64,64)`. These are inset within the
+wider 67-by-64 action cells; stretching a frame across a complete cell erases
+the embedded green dividers.
+
+The detailed-combat setup in `FUN_0042e040` copies the sector tile into the
+backing-buffer rectangle `(left=31,top=155,right=85,bottom=207)` and draws its
+code at `(52,210)`. Relative to the panel's backing-buffer top of 144, those are
+local tile bounds `(31,11,54,52)` and local text point `(52,66)`.
+
 **Interpretation:** Combat presentation advances at 6 Hz: 166 milliseconds per
 frame in the original integer timer configuration, or about 1.33 seconds for
 one eight-frame attack/hit clip. Damage removed from each force bar flashes
 white twice before settling into the missing-force color, followed by a
 five-tick result hold.
+The recreation therefore keeps the action-cell bounds for panel structure but
+draws and clears animation pixels only inside the two exact 64-by-64 apertures.
 
 **Confidence:** High static evidence. The recovered timer setup, timer-slot use,
 and frame-phase sequence agree; behavioral observation also identified the

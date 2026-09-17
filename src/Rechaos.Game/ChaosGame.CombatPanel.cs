@@ -43,7 +43,7 @@ public sealed partial class ChaosGame
         if (layer is not null)
             batch.Draw(layer, CombatPanelLayout.Sector, CityMapLayout.Source(sectorId), Color.White);
         font.Draw(batch, SectorCode(sectorId),
-            new Vector2(SharedPanelLayout.X(44), SharedPanelLayout.Y(66)), Color.Lime, 1);
+            CombatPanelLayout.SectorCodeText.ToVector2(), Color.Lime, 1);
     }
 
     private void DrawCombatant(
@@ -62,41 +62,35 @@ public sealed partial class ChaosGame
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, CombatPanelLayout.HeaderPortrait(rightSide),
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
-        var header = rightSide ? CombatPanelLayout.RightHeader : CombatPanelLayout.LeftHeader;
         var name = player.Setup.Name.ToUpperInvariant();
         if (name.Length > 10) name = name[..10];
-        font.Draw(batch, name, new Vector2(header.X + 52, header.Y + 4),
+        font.Draw(batch, name, CombatPanelLayout.HeaderName(rightSide).ToVector2(),
             PlayerColors[gang.Owner.Value], 1);
 
-        var gangCell = rightSide ? CombatPanelLayout.RightGang : CombatPanelLayout.LeftGang;
         if (_gangPortraits is not null)
-            batch.Draw(_gangPortraits, new Rectangle(gangCell.X + 1, gangCell.Y + 1, 64, 64),
+            batch.Draw(_gangPortraits, CombatPanelLayout.GangPortrait(rightSide),
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
         var damage = gang.Id == clip.Defender ? CombatDamage(gameEvent, clip) : 0;
         DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide), gang.Force, damage);
 
-        var weaponCell = rightSide ? CombatPanelLayout.RightWeapon : CombatPanelLayout.LeftWeapon;
-        DrawCombatItem(batch, eventWeapon ?? gang.WeaponItemId, weaponCell.Center.X, weaponCell.Y + 27);
-        var equipmentCell = rightSide ? CombatPanelLayout.RightEquipment : CombatPanelLayout.LeftEquipment;
-        DrawCombatItem(batch, gang.ArmorItemId, equipmentCell.Center.X, equipmentCell.Y + 13);
-        DrawCombatItem(batch, gang.MiscellaneousItemId, equipmentCell.Center.X, equipmentCell.Y + 40);
+        DrawCombatItem(batch, eventWeapon ?? gang.WeaponItemId, CombatPanelLayout.WeaponItem(rightSide));
+        DrawCombatItem(batch, gang.ArmorItemId, CombatPanelLayout.ArmorItem(rightSide));
+        DrawCombatItem(batch, gang.MiscellaneousItemId, CombatPanelLayout.MiscellaneousItem(rightSide));
     }
 
     private void DrawPoliceCombatant(SpriteBatch batch, Texture2D pixel, PixelFont font, bool rightSide)
     {
-        var header = rightSide ? CombatPanelLayout.RightHeader : CombatPanelLayout.LeftHeader;
-        font.Draw(batch, "POLICE", new Vector2(header.X + 8, header.Y + 4), Color.LightBlue, 1);
-        var gangCell = rightSide ? CombatPanelLayout.RightGang : CombatPanelLayout.LeftGang;
+        font.Draw(batch, "POLICE", CombatPanelLayout.PoliceName(rightSide).ToVector2(), Color.LightBlue, 1);
         if (_policeSprites is not null)
-            batch.Draw(_policeSprites, new Rectangle(gangCell.X + 8, gangCell.Y + 8, 48, 64),
+            batch.Draw(_policeSprites, CombatPanelLayout.PolicePortrait(rightSide),
                 OriginalSpriteLayout.PolicePatrolCar, Color.White);
         DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide), ManualRules.MaximumForce, 0);
     }
 
-    private void DrawCombatItem(SpriteBatch batch, short? itemId, int centerX, int centerY)
+    private void DrawCombatItem(SpriteBatch batch, short? itemId, Point center)
     {
         if (_itemPortraits is null || itemId is not { } resolved) return;
-        batch.Draw(_itemPortraits, new Rectangle(centerX - 15, centerY - 15, 30, 30),
+        batch.Draw(_itemPortraits, new Rectangle(center.X - 15, center.Y - 15, 30, 30),
             OriginalSpriteLayout.ItemPortrait(resolved), Color.White);
     }
 
@@ -133,8 +127,8 @@ public sealed partial class ChaosGame
     private void DrawCombatFrames(SpriteBatch batch, Texture2D pixel, CombatAnimationClip clip)
     {
         var frame = CombatAnimationRouting.FrameSource(_combatAnimationPlayer.Frame);
-        var attackDestination = clip.Reversed ? CombatPanelLayout.RightAction : CombatPanelLayout.LeftAction;
-        var hitDestination = clip.Reversed ? CombatPanelLayout.LeftAction : CombatPanelLayout.RightAction;
+        var attackDestination = CombatPanelLayout.Animation(right: clip.Reversed);
+        var hitDestination = CombatPanelLayout.Animation(right: !clip.Reversed);
         batch.Draw(pixel, attackDestination, Color.Black);
         batch.Draw(pixel, hitDestination, Color.Black);
         if (clip.HitAnimation is { } hit && _combatAnimationTextures.TryGetValue(

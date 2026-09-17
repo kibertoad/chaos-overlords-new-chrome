@@ -415,17 +415,23 @@ by mouse or directional keys before OK confirms the command.
 target list. It identifies the sector, places attacker and defender owner/gang
 art side by side, shows equipment and green/red Force tracks, and reserves the
 mirrored lower-center cells for the recovered attack and hit animations. The
-map art occupies only the fitted 52-pixel-high part of its sector aperture, with
+Its sector tile uses local bounds `(31,11,54,52)`, with the code at local
+`(52,66)`. The 64-by-64 frames use inset screen apertures `(254,254)` and `(327,254)` rather
+than stretching across the wider 67-pixel cells, preserving their green
+dividers. The map art occupies only the fitted 52-pixel-high part of its sector aperture, with
 the code below it, and its single baked Cancel cell is the active hit target.
 `PX05012` is the separate paged Combat Results panel behind the right-console
 Combat Summary control. It pages affected sectors in board order rather than
 individual notifications. Each side is a two-by-three force grid backed by the
 original six-entry player/sector result row, while the center column preserves
 all five other players in player-ID order and dims those without a result in the
-current sector. Renderer `0x00453a8d` establishes force-grid local x origins
-103 and 246 at global y 173, with 44-pixel columns and 52-pixel rows; the fixed
-opponent strip begins at local x 202. The sector aperture uses a fitted
-52-pixel map tile with its code beneath. A viewer also sees fights between other players when one of the
+current sector. Renderer `0x00453a8d` establishes force-grid local origins
+`(103,29)` and `(246,29)` after translating backing-buffer y=173 into the panel,
+with 40-by-40 portraits, 44-pixel columns, and 52-pixel rows. The fixed opponent
+strip uses local x=202, 32-by-32 portraits, and a 36-pixel pitch. The page text
+starts at local `(34,13)`. The sector aperture is the exact local
+`(31,67,54,52)` native copy, with its code centered below at local x=52. A
+viewer also sees fights between other players when one of the
 viewer's active gangs occupies that sector. Police uses the recovered police
 art. Its Detail control replays the selected resolved event through `PX05014`,
 regardless of the automatic Detailed Combat preference. Escape or the panel's

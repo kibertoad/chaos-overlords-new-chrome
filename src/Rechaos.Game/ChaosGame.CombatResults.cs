@@ -122,7 +122,7 @@ public sealed partial class ChaosGame
         if (pages.Count == 0)
         {
             font.Draw(batch, "NO COMBAT RESULTS",
-                new Vector2(SharedPanelLayout.X(115), SharedPanelLayout.Y(100)), Color.Lime, 1);
+                CombatResultsLayout.EmptyText.ToVector2(), Color.Lime, 1);
             return;
         }
 
@@ -130,7 +130,7 @@ public sealed partial class ChaosGame
         var page = pages[_combatSummaryCursor];
         EnsureCombatResultSelection(state, viewer, page);
         font.Draw(batch, $"{_combatSummaryCursor + 1:00} OF {pages.Count:00}",
-            new Vector2(SharedPanelLayout.X(32), SharedPanelLayout.Y(13)), Color.Lime, 1);
+            CombatResultsLayout.PageText.ToVector2(), Color.Lime, 1);
 
         DrawCombatResultSector(batch, font, state, page.SectorId);
         DrawCombatResultForces(batch, pixel, state, page.ForcesFor(viewer), enemy: false);
@@ -153,7 +153,7 @@ public sealed partial class ChaosGame
         if (layer is not null)
             batch.Draw(layer, CombatResultsLayout.Sector, CityMapLayout.Source(sectorId), Color.White);
         font.Draw(batch, SectorCode(sectorId),
-            new Vector2(SharedPanelLayout.X(44), SharedPanelLayout.Y(122)), Color.Lime, 1);
+            CombatResultsLayout.SectorCodeText.ToVector2(), Color.Lime, 1);
     }
 
     private void DrawCombatResultForces(
@@ -174,8 +174,7 @@ public sealed partial class ChaosGame
                     OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
             DrawBorder(batch, pixel, cell, PlayerColors[gang.Owner.Value],
                 force.Event.Sequence == _combatSummaryEventSequence ? 2 : 1);
-            DrawCombatForce(batch, pixel,
-                new Rectangle(cell.X, cell.Bottom - 3, cell.Width, 3), gang.Force);
+            DrawCombatForce(batch, pixel, CombatResultsLayout.ForceBar(cell), gang.Force);
         }
     }
 
@@ -186,7 +185,7 @@ public sealed partial class ChaosGame
             batch.Draw(_policeSprites, panel,
                 OriginalSpriteLayout.PolicePatrolCar, Color.White);
         DrawBorder(batch, pixel, panel, Color.LightBlue, 2);
-        DrawCombatForce(batch, pixel, new Rectangle(panel.X, panel.Bottom - 3, panel.Width, 3),
+        DrawCombatForce(batch, pixel, CombatResultsLayout.ForceBar(panel),
             ManualRules.MaximumForce);
     }
 
@@ -198,7 +197,8 @@ public sealed partial class ChaosGame
         CombatResultPage page)
     {
         var owners = state.Players.Select(player => player.Id)
-            .Where(player => player != viewer).OrderBy(player => player.Value).Take(5).ToArray();
+            .Where(player => player != viewer).OrderBy(player => player.Value)
+            .Take(CombatResultsLayout.OpponentSlots).ToArray();
         for (var slot = 0; slot < owners.Length; slot++)
         {
             var player = state.FindPlayer(owners[slot])!;
@@ -221,7 +221,8 @@ public sealed partial class ChaosGame
         _combatSummaryCursor = Math.Clamp(_combatSummaryCursor, 0, pages.Count - 1);
         var page = pages[_combatSummaryCursor];
         var opponents = _state.Players.Select(player => player.Id)
-            .Where(player => player != viewer).OrderBy(player => player.Value).Take(5).ToArray();
+            .Where(player => player != viewer).OrderBy(player => player.Value)
+            .Take(CombatResultsLayout.OpponentSlots).ToArray();
         for (var slot = 0; slot < opponents.Length; slot++)
         {
             if (!CombatResultsLayout.Opponent(slot).Contains(point)) continue;
@@ -265,7 +266,7 @@ public sealed partial class ChaosGame
         .FirstOrDefault(result => result.Event.Sequence == _combatSummaryEventSequence)?.Event;
 
     private static void ClearCombatResultPage(SpriteBatch batch, Texture2D pixel)
-        => batch.Draw(pixel, SharedPanelLayout.At(29, 11, 58, 12), Color.Black);
+        => batch.Draw(pixel, CombatResultsLayout.Page, Color.Black);
 }
 
 public static class CombatResultProjection
