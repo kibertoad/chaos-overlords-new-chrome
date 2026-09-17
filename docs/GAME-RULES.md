@@ -155,8 +155,8 @@ controlled reference observation confirms its execution timing and edge cases.
 - Confidence: High static evidence for the pool, base/equipment/site
   aggregation, ownership scope, thresholds, Force cap, and repeat cleanup;
   High for the recovered RNG step/range wrapper and accepted-setup-to-city
-  order; Low for the clock-derived state at Begin and complete later-match RNG
-  call order.
+  order; Low only for correlating a particular native launch's clock-derived
+  state and subsequent dynamic branch path with a recreation fixture.
 - Implementation: `EffectiveStatisticsCalculator`, `DiceRoller`,
   `CommandResolver.ResolveHeal`, and `ManualRules.RestoreForce`.
 - Tests: deterministic roll/event/hash replay, effective Heal equipment, dice

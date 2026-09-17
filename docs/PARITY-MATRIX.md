@@ -11,8 +11,8 @@ the intended behavior has been inspected but not yet confirmed in the binary.
 | PX08 | 207 RLE8 and 7 uncompressed indexed graphics | Implemented | Strict decoder, full 214-file extraction and payload checks; High | Compare palettes/pixels with PX16 and reference rendering |
 | Tables | 22 sites, 90 gangs, 64 items | Parity verified (values only) | Source/payload hashes, Verified | Semantic field-use fixtures |
 | Turn phases | Upkeep, Command, Execution, Hire, Elimination | Headless coordinator implemented with explicit deterministic boundaries around the native monolithic turn loop | Manual phase names High; static outer loop and whole-turn resolver High for ascending fixed player-slot planning, inactive-slot skips, and deferred resolution | Runtime presentation-boundary corroboration |
-| Execution phases | Instant, Combat, Transaction, Chaos, Movement, Control | Headless coordinator implemented with the recovered physical split: Chaos rolls/Crackdown creation after Instant and before Combat, delayed Chaos payout after Transactions, then Terminate, Move, and Control | Static whole-turn resolver pass ordering, High; public boundaries Manual, High | Runtime corroboration and remaining action-level tie cases |
-| Action IDs | None plus 14 original commands | Data-driven validation, typed queue, and headless resolution implemented for every command | Table/save notes + manual, High; resolver edge cases/order Low | Binary fixtures for every command and reference-derived edge costs |
+| Execution phases | Instant, Combat, Transaction, Chaos, Movement, Control | Headless coordinator implemented with the recovered physical split: Chaos rolls/Crackdown creation after Instant and before Combat, delayed Chaos payout after Transactions, then Terminate, Move, and Control | Static whole-turn resolver pass ordering and all per-phase schedulers High; public boundaries Manual, High | Runtime corroboration |
+| Action IDs | None plus 14 original commands | Data-driven validation, typed queue, and headless resolution implemented for every command | Table/save notes and manual plus static assignment, terminal-switch, and whole-turn resolver inventories High for IDs, phase membership, and native schedulers; action-specific confidence is recorded below | Runtime corroboration for the explicitly listed message/presentation edges |
 | City | 8x8 sectors, three sites each | Recovered 32x32 density field, exact income/tolerance rounding, uniform 0..20 proposal draws, staged duplicate/stat-balance rejection, and Armageddon exclusions | Static executable control flow and accepted-setup-to-city RNG order, High; fixed recreation seed vectors protect call order, but original runtime fixture remains pending | Capture an original initial-city fixture and its process RNG context |
 | Players | One-to-six local humans; six participating slots after omitted local slots become Computers on Begin | Setup starts with Kill 'Em All selected and one human; Add/Remove changes the configured human count, names use the manual-specified 10-character field, selectable portraits exclude empty marker 15, and face drag moves into an empty color or exchanges two human colors; fresh-match factory normalizes sparse human slots and completes omissions in ascending order with bounded unique portrait 0..14 draws, resource names, Computer controllers, and pre-AI/city RNG ordering | Five identical frames from the first bounded original-runtime capture verify the fresh Kill 'Em All selection; Help workflow and static setup state machine `0x0040e0a0` High; fixed contiguous/sparse recreation vectors, remaining runtime fixture fields pending | Sanitize the captured setup observation and finish exact setup alignment |
 | Gang capacity | 80 usable hire slots per player, six friendly per sector | Implemented | Static hire resolver proves ascending reuse and a strict first-80-slot bound despite 81-record native storage; static Move prepass proves the six-gang projected-count bound, High | Runtime boundary corroboration |
@@ -117,8 +117,10 @@ are covered.
 
 ## Current blockers to parity claims
 
-- The raw RNG and bounded wrapper match recovered binary control flow, but
-  initial seeding and complete call order remain unknown.
+- The raw RNG, bounded wrapper, once-per-process low-16-bit uptime seed, all 61
+  direct wrapper calls, and accepted-Begin pre-city ordering are statically
+  recovered. Native stream correlation still requires the launch seed and
+  whether missing `serialNum` consumed two bounded calls during startup.
 - City generation and HQ placement match the verified static path, including
   their internal RNG ordering, but still lack an original runtime seed fixture.
   Empty local slots now consume recovered unique portrait/name draws before AI
@@ -126,23 +128,23 @@ are covered.
   runtime fixture.
 - Hire slot selection and refill ordering match the recovered static control
   flow, including action replacement/toggling and resolution-time payment, but
-  runtime corroboration and initial RNG seeding/call order remain pending;
+  runtime corroboration and launch-specific RNG correlation remain pending;
   recovered persistent-anchor AI placement is wired while actual placement is
   deferred to the Hire phase.
 - The client now drives the authoritative phase coordinator and replay recorder,
   but several original management workflows, hit regions, and visual layers are
   still incomplete or only provisionally mapped.
-- Command replacement gets a new sequence number for replay. Instant,
-  Transaction, Chaos, and Movement now use recovered player/roster schedulers;
-  unresolved per-phase tie-breakers retain explicit submission sequence and are
-  still provisional.
+- Command replacement gets a recreation sequence number for authenticated
+  replay, but all six execution subphases use their recovered native scheduler:
+  player/roster scans, phase snapshots, grouped sector barriers, board order,
+  Control tie draws, and simultaneous Move-capacity normalization as applicable.
 - AI Mentality's global, query selector, reaction/attitude state, sector Combat
   + Defense advantage hostility pass, and all nine resolution-band consumers
   are recovered and integrated; family 1's post-equipment equipment/cooldown/
   nearby-danger gate and owner/cash/Mentality/Tolerance continuation are live,
-  including exact Equip and Move targets. Exact remaining-family planner
-  outcomes and scoring weights remain incomplete. Police
-  message edges, equipment,
+  including exact Equip and Move targets. Every dispatched family handler is
+  live; family 1's unavailable-command fallback and complete outer-policy trace
+  parity remain provisional. Police message edges, equipment,
   objective timing, and audiovisual triggers retain the
   specific parity gaps listed above.
 

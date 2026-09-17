@@ -479,8 +479,10 @@ The setup client supplies a transient ordered sparse `MatchSetup` when a human
 has moved to a non-contiguous color slot; the factory fills missing IDs in
 ascending order and returns the ordinary contiguous six-player setup before any
 authoritative state is constructed.
-Original seed and the remaining pre-city call context remain provisional pending
-a reference fixture.
+The original seed derivation and accepted-Begin pre-city call order are
+statically recovered. A native fixture must still provide the launch's actual
+low-16-bit uptime value and whether persistent `serialNum` creation consumed
+its two startup bounded calls before that setup path.
 
 ## State ownership target
 
@@ -519,9 +521,12 @@ iteration, locale, filesystem ordering, rendering frames, audio playback, or
 platform floating-point differences. Collections that affect decisions use a
 defined order. The headless model reproduces the recovered Visual C++ 1998 raw
 RNG step and the game's three-sample inclusive-range wrapper. Generated city,
-headquarters and hire offers consume that explicit stream. Initial seeding and
-the complete call-site order remain provisional; presentation effects must use
-a separate cosmetic stream.
+headquarters and hire offers consume that explicit stream. The once-per-process
+seed and all 61 direct bounded-wrapper call sites are statically classified.
+Exact native-stream correlation remains fixture-dependent because the seed is
+`timeGetTime() & 0xffff` and a missing registry `serialNum` advances the stream
+by two bounded calls during startup; presentation effects must use a separate
+cosmetic stream.
 
 State hashes are computed from a versioned canonical little-endian binary
 encoding after transitions made through `MatchState`. The encoding includes
@@ -596,9 +601,9 @@ turn one; it is not an error.
   recovered density/site generator, fixed HQ
   candidates, Right Hands setup and deferred initial offers; omitted local slots
   are completed as Computers with the recovered pre-city portrait/name RNG, and
-  original seed selection remains provisional. Local setup begins with one
-  human and supports Add/Remove, 10-character names, portrait selection, and
-  face-drag movement/exchange between the six color slots.
+  original seed selection uses the recovered low-16-bit uptime-clock rule. Local
+  setup begins with one human and supports Add/Remove, 10-character names,
+  portrait selection, and face-drag movement/exchange between the six color slots.
 - Fresh Siege setup marks the six assigned starting HQ sectors as authoritative
   objective landmarks without consuming RNG. The city projection draws the
   manual-described pair of gray pylons over each landmark regardless of owner.
