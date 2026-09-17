@@ -558,8 +558,19 @@ Finishing planning checks only the active player's living gangs and offers a
 Continue/Go Back modal when any lacks a queued command. Opening and closing the
 modal route the recovered general-effect slots 0 and 1.
 
-**Next validation:** Capture the original modal wording, button order, and
-whether keyboard shortcuts choose a default response.
+The panel's wording is baked into `PX05020`: `SYSTEM WARNING:`, `IDLE GANG
+DETECTED`, and `AT LEAST ONE OF YOUR GANGS HAS NOTHING TO DO. ARE YOU SURE YOU
+WANT TO END YOUR TURN?` The Cancel button is above OK. Handler `0x00448718`
+loads resource 5020, draws it at `(104,124,344,209)`, and hit-tests panel-local
+Cancel `(33,137)-(82,159)` before OK `(33,169)-(82,191)` using Win32-exclusive
+right/bottom bounds. Keyboard event type 2 confirms on virtual key `0x0d`
+(Enter) or legacy `0x2b` (`VK_EXECUTE`) and cancels only on `0x1b` (Escape).
+It contains no Y, N, or Backspace shortcut. The recreation now follows those
+bindings and exact pointer rectangles; its missing-asset fallback reproduces
+the complete baked wording.
+
+**Confidence:** High from the complete handler, exact instruction comparisons,
+rectangle-helper layout, `PtInRect` wrapper, and decoded `PX05020` pixels.
 
 #### Panel-slide geometry and speed calibration
 
@@ -3404,15 +3415,15 @@ Useful static work which remains is narrower:
 2. Bound the original save/load version branches and fixed transfer sizes enough
    to close the still-partial legacy layout; native-save interoperability remains
    intentionally out of scope.
-3. Recover the idle-gang confirmation's exact string-table wording, button order,
-   and keyboard/default-button behavior.
-4. Finish static Options/configuration tracing: registry value names and types,
+3. Finish static Options/configuration tracing: registry value names and types,
    persistence failure behavior, and exact menu-to-menu music restart boundaries.
-5. Resolve family 11 mode-10/mode-16 late guards and decide the safest explicit
+4. Resolve family 11 mode-10/mode-16 late guards and decide the safest explicit
    policy for family 1's recreation-only unavailable-command fallback.
-6. Continue exact UI geometry/hit-map work where it can be derived from draw and
-   pointer call arguments, including setup name/drop fields and remaining panels.
-7. Match the linker/runtime fingerprints against a known compiler signature only
+5. Continue exact UI geometry/hit-map work where it can be derived from draw and
+   pointer call arguments, including the shared panel's statically observed
+   `(104,124)` destination versus older `(104,125)` capture-derived layouts,
+   setup name/drop fields, and remaining panels.
+6. Match the linker/runtime fingerprints against a known compiler signature only
    if this becomes useful to interpret generated-code artifacts; it is not a
    gameplay-parity dependency.
 

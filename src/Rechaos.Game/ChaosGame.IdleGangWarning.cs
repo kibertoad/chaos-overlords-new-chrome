@@ -7,9 +7,10 @@ namespace Rechaos.Game;
 
 public static class IdleGangWarningLayout
 {
-    public static Rectangle Panel => EquipmentCommandLayout.Panel;
-    public static Rectangle Cancel => EquipmentCommandLayout.Cancel;
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
+    // Native handler 0x00448718 draws and hit-tests PX05020 from (104,124).
+    public static Rectangle Panel => new(104, 124, 344, 209);
+    public static Rectangle Cancel => new(137, 261, 49, 22);
+    public static Rectangle Ok => new(137, 293, 49, 22);
 }
 
 public static class IdleGangWarningPolicy
@@ -19,6 +20,23 @@ public static class IdleGangWarningPolicy
         ArgumentNullException.ThrowIfNull(gangs);
         return enabled && gangs.Any(gang => gang.IsActive && gang.QueuedCommand is null);
     }
+
+    public static IdleGangWarningChoice KeyboardChoice(
+        KeyboardState current,
+        KeyboardState previous)
+    {
+        bool Pressed(Keys key) => current.IsKeyDown(key) && !previous.IsKeyDown(key);
+
+        if (Pressed(Keys.Enter) || Pressed(Keys.Execute)) return IdleGangWarningChoice.Confirm;
+        return Pressed(Keys.Escape) ? IdleGangWarningChoice.Cancel : IdleGangWarningChoice.None;
+    }
+}
+
+public enum IdleGangWarningChoice
+{
+    None,
+    Confirm,
+    Cancel
 }
 
 public sealed partial class ChaosGame
@@ -40,11 +58,15 @@ public sealed partial class ChaosGame
 
     private void UpdateIdleGangWarning(KeyboardState keyboard)
     {
-        if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Y))
-            ConfirmIdleGangWarning();
-        else if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Back)
-                 || Pressed(keyboard, Keys.N))
-            CancelIdleGangWarning();
+        switch (IdleGangWarningPolicy.KeyboardChoice(keyboard, _previousKeyboard))
+        {
+            case IdleGangWarningChoice.Confirm:
+                ConfirmIdleGangWarning();
+                break;
+            case IdleGangWarningChoice.Cancel:
+                CancelIdleGangWarning();
+                break;
+        }
     }
 
     private void HandleIdleGangWarningClick(Point point)
@@ -84,8 +106,11 @@ public sealed partial class ChaosGame
         {
             batch.Draw(pixel, IdleGangWarningLayout.Panel, new Color(10, 23, 25, 252));
             DrawBorder(batch, pixel, IdleGangWarningLayout.Panel, new Color(80, 180, 130), 2);
-            font.Draw(batch, "SYSTEM WARNING: IDLE GANG DETECTED",
-                new Vector2(150, 179), Color.Lime, 1);
+            font.Draw(batch, "SYSTEM WARNING:", new Vector2(270, 171), Color.Red, 1);
+            font.Draw(batch, "IDLE GANG DETECTED", new Vector2(239, 196), Color.Lime, 1);
+            font.Draw(batch, "AT LEAST ONE OF YOUR GANGS HAS", new Vector2(222, 224), Color.Lime, 1);
+            font.Draw(batch, "NOTHING TO DO. ARE YOU SURE YOU", new Vector2(218, 233), Color.Lime, 1);
+            font.Draw(batch, "WANT TO END YOUR TURN?", new Vector2(246, 242), Color.Lime, 1);
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Cancel, "CANCEL", false);
             DrawButton(batch, pixel, font, IdleGangWarningLayout.Ok, "OK", true);
         }

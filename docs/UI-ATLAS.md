@@ -140,8 +140,11 @@ cursor feedback remain to be validated.
   `AI` intelligence label. The panel opens automatically for a new game with
   multiple local humans and after loading a live saved game.
 - The idle-gang end-turn check now uses the baked `PX05020` System Warning at
-  `(104,125,344,209)`. Its original Cancel control returns to planning and its
-  OK control confirms the ordinary end-turn path.
+  the statically recovered `(104,124,344,209)`. Its upper Cancel control returns
+  to planning and its lower OK control confirms the ordinary end-turn path. The
+  baked text asks whether to end the turn because at least one gang has nothing
+  to do; Enter/legacy Execute confirms and Escape cancels, with no native Y/N
+  shortcut.
 - The split Financial City/Sector control selects `PX05008` or `PX05019` at
   `(104,125,344,209)`. Both fill the template's 64-by-64 active-Overlord
   aperture at `(130,143)` and render a read-only projection of current/pending

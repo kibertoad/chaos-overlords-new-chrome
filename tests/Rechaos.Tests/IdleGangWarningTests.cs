@@ -1,4 +1,5 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
 using Xunit;
@@ -41,9 +42,36 @@ public sealed class IdleGangWarningTests
     [Fact]
     public void WarningButtonsAreDistinctAndInsideTheModal()
     {
-        Assert.Equal(new Rectangle(104, 125, 344, 209), IdleGangWarningLayout.Panel);
-        Assert.Equal(new Rectangle(136, 262, 49, 24), IdleGangWarningLayout.Cancel);
-        Assert.Equal(new Rectangle(136, 294, 49, 24), IdleGangWarningLayout.Ok);
+        Assert.Equal(new Rectangle(104, 124, 344, 209), IdleGangWarningLayout.Panel);
+        Assert.Equal(new Rectangle(137, 261, 49, 22), IdleGangWarningLayout.Cancel);
+        Assert.Equal(new Rectangle(137, 293, 49, 22), IdleGangWarningLayout.Ok);
         Assert.False(IdleGangWarningLayout.Cancel.Intersects(IdleGangWarningLayout.Ok));
+    }
+
+    [Theory]
+    [InlineData(Keys.Enter)]
+    [InlineData(Keys.Execute)]
+    public void NativeConfirmationKeysAreAccepted(Keys key) =>
+        Assert.Equal(IdleGangWarningChoice.Confirm,
+            IdleGangWarningPolicy.KeyboardChoice(new KeyboardState(key), default));
+
+    [Theory]
+    [InlineData(Keys.Y)]
+    [InlineData(Keys.N)]
+    [InlineData(Keys.Back)]
+    [InlineData(Keys.Escape)]
+    public void OtherKeysDoNotConfirm(Keys key) =>
+        Assert.NotEqual(IdleGangWarningChoice.Confirm,
+            IdleGangWarningPolicy.KeyboardChoice(new KeyboardState(key), default));
+
+    [Fact]
+    public void OnlyEscapeCancels()
+    {
+        Assert.Equal(IdleGangWarningChoice.Cancel,
+            IdleGangWarningPolicy.KeyboardChoice(new KeyboardState(Keys.Escape), default));
+        Assert.Equal(IdleGangWarningChoice.None,
+            IdleGangWarningPolicy.KeyboardChoice(new KeyboardState(Keys.Back), default));
+        Assert.Equal(IdleGangWarningChoice.None,
+            IdleGangWarningPolicy.KeyboardChoice(new KeyboardState(Keys.N), default));
     }
 }
