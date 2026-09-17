@@ -305,8 +305,8 @@ public sealed partial class ChaosGame
 
     private void DrawGangStatusMarker(SpriteBatch batch, int sectorId, Rectangle source)
     {
-        if (_uiSprites is not null)
-            batch.Draw(_uiSprites, GangStatusMarkerLayout.Destination(sectorId), source, Color.White);
+        if (_uiKeyedSprites is not null)
+            batch.Draw(_uiKeyedSprites, GangStatusMarkerLayout.Destination(sectorId), source, Color.White);
     }
 
     private static void DrawSiegePylons(SpriteBatch batch, Texture2D pixel, int sectorId)

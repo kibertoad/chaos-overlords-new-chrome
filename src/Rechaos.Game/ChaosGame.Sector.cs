@@ -184,8 +184,9 @@ public sealed partial class ChaosGame
         if (overMap)
         {
             var marker = SectorDetailLayout.Marker(_cursor, dropSector);
-            if (marker is { } destination && _uiSprites is not null)
-                batch.Draw(_uiSprites, destination, OriginalSpriteLayout.IncomingGangStatus, Color.White);
+            if (marker is { } destination && _uiKeyedSprites is not null)
+                batch.Draw(_uiKeyedSprites, destination,
+                    OriginalSpriteLayout.IncomingGangStatus, Color.White);
             for (var column = 0; column < SectorDetailLayout.Columns; column++)
             for (var row = 0; row < SectorDetailLayout.Rows; row++)
                 if (SectorDetailLayout.SectorAt(_cursor, column, row) == dropSector)
@@ -496,7 +497,8 @@ public sealed partial class ChaosGame
 
     private void DrawGangStatusMarker(SpriteBatch batch, Rectangle destination, Rectangle source)
     {
-        if (_uiSprites is not null) batch.Draw(_uiSprites, destination, source, Color.White);
+        if (_uiKeyedSprites is not null)
+            batch.Draw(_uiKeyedSprites, destination, source, Color.White);
     }
 
     private static void DrawSectorCoordinateBadge(

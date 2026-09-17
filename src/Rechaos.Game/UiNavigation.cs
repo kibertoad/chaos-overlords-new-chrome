@@ -313,6 +313,7 @@ public static class OriginalSpriteLayout
     public static Rectangle AssignedGangStatus => new(492, 67, 20, 20);
     public static Rectangle IdleGangStatus => new(492, 107, 20, 20);
     public static Rectangle IncomingGangStatus => new(492, 147, 20, 20);
+    public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
     // The following eight rows in PX00000 are command-arrow artwork, not part
     // of the gang card. The card ends with its three equipment slots.
     public static Rectangle GangCardFrame => new(164, 17, 70, 110);

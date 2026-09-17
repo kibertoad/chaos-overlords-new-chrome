@@ -566,6 +566,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(492, 67, 20, 20), OriginalSpriteLayout.AssignedGangStatus);
         Assert.Equal(new Rectangle(492, 107, 20, 20), OriginalSpriteLayout.IdleGangStatus);
         Assert.Equal(new Rectangle(492, 147, 20, 20), OriginalSpriteLayout.IncomingGangStatus);
+        Assert.Equal(new Rectangle(150, 386, 40, 40), OriginalSpriteLayout.SetupDragFrame);
         Assert.Equal(new Rectangle(164, 17, 70, 110), OriginalSpriteLayout.GangCardFrame);
         Assert.Equal(new Rectangle(120, 211, 30, 47), OriginalSpriteLayout.SectorBackArrow);
         Assert.Equal(new Rectangle(0, 626, 20, 20), OriginalSpriteLayout.ActivePlayerMarker(0));

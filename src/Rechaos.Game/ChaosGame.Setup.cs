@@ -436,6 +436,9 @@ public sealed partial class ChaosGame
             var token = PlayerPortraitLayout.SetupDragToken(_dragPoint);
             batch.Draw(_uiSprites, token,
                 OriginalSpriteLayout.OverlordPortrait(_playerPortraits[dragged]), Color.White);
+            if (_uiKeyedSprites is not null)
+                batch.Draw(_uiKeyedSprites, token,
+                    OriginalSpriteLayout.SetupDragFrame, Color.White);
             if (Enumerable.Range(0, MatchLimits.PlayerCount).FirstOrDefault(
                     index => PlayerPortraitLayout.SetupHit(index).Contains(_dragPoint), -1) is { } target
                 && target >= 0)

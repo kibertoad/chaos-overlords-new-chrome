@@ -139,6 +139,22 @@ policy. For example, `0x00413012` repeatedly calls
 opaque copies. Scaling through the wrapper is also opaque regardless of its
 requested mode.
 
+A direct-call census finds 131 calls to opaque `FUN_0042773e` and 66 calls to
+`FUN_00427864` whose immediately preceding first argument is literal surface
+6. Auditing the 26 functions containing the latter calls classifies 64 as
+mode 1 and two as mode 0. This is a conservative direct-call inventory rather
+than a whole-program count: helpers that receive their source surface as a
+parameter are not attributed to surface 6 by the literal scan.
+
+Gang-status compositor `0x00412bf7` builds a 20-by-20 source at x 492 and
+y `67 + state * 20`, then uses `FUN_00427864(6, 2, ..., 1)` at both of its
+copy sites. The assigned, idle, and incoming frames used by the recreation are
+therefore exact-white keyed, not opaque. Setup drag helper `0x0040f72e` first
+scales the selected 32-by-32 Overlord portrait opaquely into a 40-by-40 scratch
+cell, then overlays source `(150,386)-(190,426)` from surface 6 with mode 1
+before copying the composed token to the pointer. The static setup renderer at
+`0x0040ee8a` supplies the second proven mode-0 portrait path.
+
 Mode compositor `0x00427e60` selects 1-bit bitmap resource 147, 143, or 146.
 The sole selector `0x00449b20` maps an input below 86 to resource 147, 86
 through 170 to resource 143, and 171 or above to resource 146. Its raster
@@ -156,16 +172,17 @@ reproduced without executing the original.
 **Interpretation:** `PX00129` cannot be decoded into one globally transparent
 texture. In particular, global white alpha deletes legitimate white font and
 portrait pixels. The recreation now keeps an opaque atlas for fonts,
-portraits, frames, and markers, a separate exact-white-keyed atlas for the
-mapped `HIRED` stamp and sector-back arrow, and the exact resource-146 stencil
-for inactive setup portraits.
+portraits, and opaque frames; a separate exact-white-keyed atlas for the
+mapped `HIRED` stamp, sector-back arrow, gang-status markers, and setup drag
+frame; and the exact resource-146 stencil for inactive setup portraits.
 
 **Confidence:** High for the mixed native copy modes, portrait source
-rectangle, mode-0 Boolean operation, selector bands, and embedded masks;
-Medium for complete role-to-mode coverage until every surface-6 call site is
-classified.
+rectangle, status-marker and drag-frame roles, mode-0 Boolean operation,
+selector bands, and embedded masks; Medium for complete role-to-mode coverage
+until parameterized surface-6 call paths are classified.
 
-**Next validation:** Classify the remaining surface-6 rectangles.
+**Next validation:** Trace parameterized surface-6 helpers and pixel-compare
+the classified keyed/pattern roles when runtime captures are permitted.
 
 ### BIN-UI-032 - exact main-console hit, split, and pressed geometry
 

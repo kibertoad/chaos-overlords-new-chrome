@@ -130,12 +130,18 @@ cursor feedback remain to be validated.
   the original 10-character uppercase editor; empty
   confirmation restores `PLAYER#n`. Dragging a face to an empty cell changes its
   color slot; dropping on another human exchanges their name/portrait identities.
-  Portrait 15 remains display-only.
+  Portrait 15 remains display-only. During a drag, the selected portrait is
+  scaled opaquely into a 40-by-40 token and exact-white-keyed source
+  `(150,386,40,40)` from `PX00129` is composited over it, matching helper
+  `0x0040f72e`.
 - The city and detailed-sector top bar places each 32-by-32 Overlord portrait
   at `(16 + 72n,4)`. During a player-owned phase, the adjacent
   `(48 + 72n,4,20,20)` status cell plays the twelve-frame red rotation strip at
   `PX00129` source y 626; this is the original active-player marker rather than
   a new border effect.
+- City and detailed-sector gang-status markers use the 20-by-20 `PX00129`
+  frames at x 492 and y 67/107/147 through the executable's exact-white-keyed
+  compositor. Their white background is not part of the marker.
 - AI difficulty is the setup screen's single global **AI Mentality** selection,
   not a per-player field. The four baked rows select Goon, Criminal, Crime Lord,
   or Homicidal Maniac; hover-only thematic tooltips explain the behavioral
