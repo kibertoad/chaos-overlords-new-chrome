@@ -150,8 +150,9 @@ controlled reference observation confirms its execution timing and edge cases.
 - Current exclusions: influenced-site and other contextual stat modifiers are
   not applied until their ownership/scope is verified.
 - Confidence: High for dice threshold and Force cap; Medium for dice-pool and
-  equipment aggregation; High for the recovered RNG step/range wrapper; Low for
-  initial seed and complete RNG call order.
+  equipment aggregation; High for the recovered RNG step/range wrapper and
+  accepted-setup-to-city order; Low for the clock-derived state at Begin and
+  complete later-match RNG call order.
 - Implementation: `EffectiveStatisticsCalculator`, `DiceRoller`,
   `CommandResolver.ResolveHeal`, and `ManualRules.RestoreForce`.
 - Tests: deterministic roll/event/hash replay, effective Heal equipment, dice
@@ -182,9 +183,10 @@ controlled reference observation confirms its execution timing and edge cases.
   omits inaccessible type-99 padding records from authoritative researched IDs.
   Runtime confirmation of special-site timing remains open.
 - Confidence: High for initialization, the formula, completion threshold, fixed
-  roster order, and suppression of later rolls after same-phase completion; Medium for
-  equipment aggregation and repeat-command rejection; Low for initial seed and
-  complete RNG call order.
+  roster order, suppression of later rolls after same-phase completion, and the
+  accepted-setup-to-city RNG order; Medium for equipment aggregation and
+  repeat-command rejection; Low for the clock-derived state at Begin and
+  complete later-match RNG call order.
 - Implementation: `MatchPlayerState.RemainingResearch`,
   `MatchPlayerState.ApplyResearch`, `ManualRules.ResearchDiceCount`, and
   `CommandResolver.ResolveResearch`; `SpecialSiteRules.ResearchTechLimit`

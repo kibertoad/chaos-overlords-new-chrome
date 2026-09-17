@@ -207,9 +207,11 @@ public static class OriginalMatchFactory
         ArgumentNullException.ThrowIfNull(setup);
         var random = new DeterministicRandom(setup.InitialSeed);
 
-        // Local Begin turns every unconfigured slot into a computer player.
-        // Its portrait rejection draws happen before every other fresh-game RNG
-        // consumer, and the default name is the Win32 string for that portrait.
+        // From the RNG state at accepted local Begin, the original turns every
+        // unconfigured slot into a computer player. Its portrait rejection
+        // draws happen before every other fresh-game RNG consumer, and the
+        // default name is the Win32 string for that portrait. InitialSeed does
+        // not attempt to reconstruct earlier same-process RNG history.
         setup = CompleteLocalPlayers(setup, random);
 
         // The original initializes AI reactions and attitudes immediately before

@@ -743,8 +743,8 @@ multiplayer. `NextInclusive` also preserves the native below-one clamp and its
 three raw draws; the recreation-only zero-based `NextInt` API retains strict
 positive-bound validation.
 
-**Next validation:** Classify all callers of `0x0045d227`; correlate a controlled
-dice sequence with predicted outputs.
+**Next validation:** Classify the remaining in-match callers of `0x0045d227`;
+correlate a controlled dice sequence with predicted outputs.
 
 Ghidra reports direct calls to `0x0045d227` from 21 containing functions and 61
 call sites. This establishes broad reuse but does not yet assign gameplay
@@ -770,6 +770,53 @@ but field identities and action constants are not yet fully labeled.
 **Next validation:** inspect the remaining RNG callers for writes to the gang
 Force field and for paired full/halved success loops, then correlate the result
 with a controlled original-game combat observation.
+
+### BIN-RNG-005 - accepted local setup through initial city
+
+**Observation:** Local setup handler `0x0040e0a0` accepts Begin, scans player
+slots 0 through 5, and calls `0x00468c8e` only for an empty slot. That helper
+draws bounded `1..15`, subtracts one, and retries while any slot already has the
+portrait. After the handler returns true, its sole caller `0x00460ccf` loads a
+status string and toggles UI state before calling outer match function
+`0x0046e766` with the fresh-game flag. The intervening helpers and the outer
+function's pre-fresh calls have no direct-call path to bounded RNG wrapper
+`0x0045d227` within the checked eight-level call graph.
+
+Inside fresh initializer `0x0046dc10`, the first RNG site is `0x0046dc83`: one
+bounded `1..4` reaction draw for each of the six players, unless Homicidal
+Maniac skips all six. It then calls city generator `0x00475fe1`, whose RNG paths
+are the 40 density-center X/Y pairs followed by sector/site proposal draws, and
+finally calls HQ permutation routine `0x00476726`. The bounded call-path report
+finds exactly those direct/transitive wrapper paths from `0x0046dc10` before
+the function returns. The offer filler remains later in `0x0046e766`.
+
+The portrait helper's other caller is network/setup function `0x004677f0`; the
+ordinary local path above does not pass through it. Interactive local setup
+starts player zero at portrait zero, while configured human portrait changes
+are explicit UI state rather than hidden random selections.
+
+**Interpretation:** Given the RNG state at accepted local Begin, the original
+pre-city stream is fully ordered: omitted-player portrait attempts, six
+reaction draws (or zero at Homicidal), density centers, site proposals, and HQ
+permutation. Rejection attempts consume normally at each stage. This does not
+make the once-per-process seed equivalent to the state at Begin: an earlier
+match or another RNG-using workflow in the same process can already have
+advanced the original stream.
+
+**Confidence:** High static evidence for the accepted-local-setup call chain,
+consumer order, bounds, skips, and absence of an intervening bounded-RNG path.
+The exact original state at Begin and city output still require a runtime
+fixture because the seed is clock-derived and process-global.
+
+**Implementation:** `OriginalMatchFactory.Create` treats `InitialSeed` as its
+entry state, completes omitted slots in ascending order, then initializes AI,
+generates the city, and assigns HQs in this recovered order. Fixed seed vectors
+lock the recreation's complete setup result and final RNG state. Configured
+human portraits are inputs and therefore do not replay prior UI interactions.
+
+**Next validation:** capture the original RNG state context or an initial-city
+fixture at accepted Begin; static analysis cannot recover a particular
+clock-derived seed or prior process history.
 
 ### BIN-AI-001 - per-gang command dispatcher and action handlers
 

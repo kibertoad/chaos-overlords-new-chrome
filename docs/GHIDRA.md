@@ -153,6 +153,13 @@ setup (bounded by the previous call) contains one of those values. Use it to
 distinguish a known resource ID from unrelated occurrences of the same small
 integer, then confirm the actual argument position in the emitted context.
 
+`ReportCallPaths.java` accepts a start-function address, a target-function
+address, and a maximum depth from 1 through 12. It reports only bounded direct
+call paths between those two selected functions, with fixed edge and result
+limits. Use it to rule a known helper in or out of a narrow transitive call
+chain; it is not a substitute for control-flow inspection of the relevant call
+sites.
+
 ## Evidence discipline
 
 - Record executable hash, Ghidra version, virtual address, call relationship,
