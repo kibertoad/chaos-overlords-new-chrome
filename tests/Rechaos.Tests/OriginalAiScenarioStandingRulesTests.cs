@@ -42,6 +42,21 @@ public sealed class OriginalAiScenarioStandingRulesTests
         Assert.Equal(26, OriginalAiScenarioStandingRules.Score(match, match.Players[0]));
     }
 
+    [Fact]
+    public void BigManUsesAccumulatedPointsWithoutRescoringCurrentCenterControl()
+    {
+        var match = CreateMatch(ScenarioId.BigMan, firstCash: 0, secondCash: 0);
+        match.Players[0].BigManPoints = 39;
+        match.Players[1].BigManPoints = 3;
+        match.Sectors[27].Owner = new PlayerId(1);
+        match.Sectors[28].Owner = new PlayerId(1);
+
+        Assert.Equal(39, OriginalAiScenarioStandingRules.Score(match, match.Players[0]));
+        Assert.Equal(3, OriginalAiScenarioStandingRules.Score(match, match.Players[1]));
+        Assert.Equal([0, 1, 255, 255, 255, 255],
+            OriginalAiScenarioStandingRules.Build(match));
+    }
+
     private static MatchState CreateMatch(
         ScenarioId scenario,
         int firstCash,

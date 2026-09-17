@@ -843,7 +843,7 @@ public sealed partial class MatchState
                 {
                     Commands.Cancel(gang.Id);
                     gang.QueuedCommand = null;
-                    if (gang.IsActive) RemoveGang(gang);
+                    if (gang.IsActive) RetireGangForEliminate(gang);
                 }
                 foreach (var sector in Sectors.Where(sector => sector.Owner == player.Id)) sector.Owner = null;
             }
@@ -886,13 +886,12 @@ public sealed partial class MatchState
         }
     }
 
-    private static void RemoveGang(MatchGangState gang)
+    private static void RetireGangForEliminate(MatchGangState gang)
     {
+        // Native Eliminate cleanup writes only inactive sector 100. Force zero is this
+        // model's inactive marker; retain equipment so the retired record stays inspectable.
         gang.Force = 0;
         gang.Hidden = false;
-        gang.WeaponItemId = null;
-        gang.ArmorItemId = null;
-        gang.MiscellaneousItemId = null;
     }
 
     private GameEvent AppendEliminationEvent(PlayerId player, EliminationDetails elimination)

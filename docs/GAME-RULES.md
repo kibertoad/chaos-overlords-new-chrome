@@ -780,20 +780,24 @@ claim about original-game behavior.
   the active ranking unranked in player-slot order. Fixed inactive slots retain
   the executable's -32,000 score sentinel during rank counting. Objective
   ranking uses the executable's scenario table: sectors for Big 40/Armageddon,
-  owned HQ sectors for Eliminate, current center-sector control for Big Man, and the common
+  owned HQ sectors for Eliminate, accumulated points for Big Man, and the common
   inactive-player count for Kill 'Em All/Siege. Dominance divides its weighted
   numerator by ten before ranking. Big Man points are awarded in player-ID order
-  at this boundary before its victory check. Eliminate cleanup also clears equipment,
-  pending hires, and the eliminated player's site influence. After elimination
+  at this boundary before its victory check. Native Eliminate cleanup retires
+  every gang by writing sector 100 but leaves inaccessible stale record payloads,
+  including equipment; the recreation preserves those item fields for parity and
+  final-state inspection while using Force zero and clearing live queue/Hidden
+  state to represent native sector-100 inactivity. It also clears pending hires
+  and derived site influence. After elimination
   resolution, a one-human match records `PlayerEliminated` immediately when that
   human is no longer active; a hot-seat match continues after an elimination
   only while at least two Overlords remain active.
-- Current exclusions: tie-break presentation beyond stable slot order,
-  exact Siege pylon artwork, exact Eliminate
-  cleanup timing, and award edge-case parity.
+- Current exclusions: tie-break presentation beyond stable slot order, exact
+  Siege pylon artwork, and award edge-case parity.
 - Confidence: High static evidence for end-boundary timing, thresholds,
   all-scenario scores, competition standings, active/inactive display order,
-  durations, weights, and Siege setup mapping; Low for special objective edges.
+  durations, weights, Big Man accumulation, Eliminate cleanup/order, and Siege
+  setup mapping; Low for special objective presentation edges.
 - Implementation: `MatchOutcomeEvaluator`, scenario-specific elimination and
   Big Man accrual in `MatchState.FinishPlayerElimination`, `MatchState.Outcome`,
   and the canonical state hash.
@@ -802,8 +806,9 @@ claim about original-game behavior.
   hot-seat play, Eliminate's Right Hands distinction, exact timed
   boundary ties/standings, objective standings, and outcome hashing;
   `EndgameRankingTests` covers recovered all-scenario scores, competition ties,
-  and inactive ordering; `ScenarioLifecycleTests` covers Big Man accrual/event order and
-  Eliminate cleanup/neutralization. `OriginalCityGeneratorTests` covers fresh
+  and inactive ordering; `ScenarioLifecycleTests` covers Big Man accrual/event
+  order and Eliminate cleanup/neutralization with preserved retired equipment.
+  `OriginalCityGeneratorTests` covers fresh
   Siege landmark assignment and one-important-sector-per-player starting state;
   `UiNavigationTests` bounds the paired pylon layout inside every city tile.
 - Next experiment: capture the last two turns of each timed scenario and

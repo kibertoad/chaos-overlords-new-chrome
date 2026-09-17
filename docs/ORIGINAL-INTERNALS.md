@@ -1582,8 +1582,11 @@ Armageddon; accumulated current Support for Acceptance; and the duration-scaled
 Dominance numerator followed by signed integer division by ten. Kill 'Em All
 and Siege give every active player the same count of inactive player slots.
 Eliminate counts ownership of the six generated Headquarters sectors, while
-Big Man counts current ownership of sectors 27, 28, 35, and 36. These scores and
-the exact zero-based competition standings are now isolated in
+Big Man is the deliberate exception to the scorer's normal reset: it retains
+each player's prior score and adds one for each currently owned sector among
+27, 28, 35, and 36. Its score is therefore the accumulated objective total,
+not a fresh projection of current center control. These scores and the exact
+zero-based competition standings are now isolated in
 `OriginalAiScenarioStandingRules` and feed live mode-6 movement.
 
 The same table is not AI-private. End-turn evaluator `0x00476857` calls
@@ -1599,6 +1602,40 @@ ties use competition standings, and eliminated players are displayed after the
 ranked active players. The six fixed inactive score sentinels remain `-32000`
 while standings are counted, so an extreme active score below that value can
 retain an unusually low numeric place even though inactive rows render last.
+
+### BIN-ENDTURN-001 - elimination cleanup, reports, and objective order
+
+**Observation:** The sole writer that clears player-active bytes is
+`0x00476f3b`, called exactly once at line 936 near the end of whole-turn resolver
+`0x00472775`. In scenario 7 (**Eliminate**), it scans players in slot order. If
+roster slot zero no longer contains the active Right Hands record, it scans all
+64 sectors, writing owner `-1` and zeroing all three site-progress bytes wherever
+that player owned the sector, then scans all 81 gang records and writes only
+inactive sector sentinel 100. It does not erase Force, definition, equipment,
+or the remaining raw record fields.
+
+The helper then applies the ordinary elimination predicate to every scenario:
+a player stays active if it owns any sector or has any gang whose sector is not
+100. Back in the resolver, lines 933-944 compare pre/post active bytes and append
+type-9 elimination reports for all six recipients, player order first and
+recipient order second. Only then does line 945 call end evaluator `0x00476857`.
+That evaluator rebuilds scenario standings, tests the one-survivor rule, and
+then tests the scenario-specific end condition. In Big Man, scorer `0x0047712a`
+retains the persistent score instead of clearing it, adds current ownership of
+the four center sectors, and the evaluator ends the match at score 40 or above.
+
+**Interpretation:** Eliminate bulk retirement is not combat death. Its stale
+inactive record payload is neither recoverable nor credited back to inventory,
+and normal roster-slot reuse resets it. The recreation has no sector-100 gang
+state, so it represents the same terminal state with Force zero and clears live
+queue/Hidden state, but preserves the three equipment fields for native parity
+and final-state inspection. The Force/queue representation difference has no
+playable effect; accumulated Big Man score, by contrast, is visible in AI,
+ranking, and victory decisions and is preserved exactly.
+
+**Confidence:** High static evidence from the unique active-byte writer, sole
+call site, complete compact helper, end-of-resolver window, report loops, and
+complete compact objective evaluator.
 
 ### BIN-AWARDS-001 - thresholds, priority, ties, and visible slots
 

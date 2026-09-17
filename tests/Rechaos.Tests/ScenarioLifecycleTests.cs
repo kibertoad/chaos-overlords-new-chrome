@@ -32,11 +32,12 @@ public sealed class ScenarioLifecycleTests
         Assert.All(eliminated.Gangs, gang =>
         {
             Assert.Equal(0, gang.Force);
-            Assert.Null(gang.WeaponItemId);
-            Assert.Null(gang.ArmorItemId);
-            Assert.Null(gang.MiscellaneousItemId);
             Assert.Null(gang.QueuedCommand);
         });
+        var retiredGang = eliminated.Gangs.Single(gang => gang.Id == new GangId(21));
+        Assert.Equal((short)0, retiredGang.WeaponItemId);
+        Assert.Equal((short)24, retiredGang.ArmorItemId);
+        Assert.Equal((short)38, retiredGang.MiscellaneousItemId);
         Assert.DoesNotContain(match.Commands.ExecutionPlan(), queued => queued.Command.Player == eliminated.Id);
         Assert.DoesNotContain(match.Sectors, sector => sector.Owner == eliminated.Id);
         Assert.DoesNotContain(match.Sectors.SelectMany(sector => sector.Sites),

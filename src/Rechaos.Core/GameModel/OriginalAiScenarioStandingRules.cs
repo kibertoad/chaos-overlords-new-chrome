@@ -1,8 +1,8 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Scenario scores and zero-based competition standings rebuilt by the original
-/// routine at 0x0047712a before AI planning.
+/// Scenario scores and zero-based competition standings updated by the original
+/// routine at 0x0047712a before AI planning and end-turn evaluation.
 /// </summary>
 internal static class OriginalAiScenarioStandingRules
 {
@@ -63,8 +63,7 @@ internal static class OriginalAiScenarioStandingRules
                     candidate.Status == PlayerStatus.Active),
             ScenarioId.Eliminate => OriginalCityGenerator.HeadquartersCandidates.Count(
                 sectorId => state.Sectors[sectorId].Owner == player.Id),
-            ScenarioId.BigMan => new[] { 27, 28, 35, 36 }.Count(
-                sectorId => state.Sectors[sectorId].Owner == player.Id),
+            ScenarioId.BigMan => player.BigManPoints,
             _ => throw new ArgumentOutOfRangeException()
         };
 
