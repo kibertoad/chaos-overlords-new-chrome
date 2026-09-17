@@ -782,15 +782,69 @@ deactivation behavior, and whether modal dialogs perceptibly pause the timer.
 **Observation:** The executable imports `CreateFileA`, `ReadFile`, `WriteFile`,
 `GetFileSize`, `SetFilePointer`, `FlushFileBuffers`, `GetOpenFileNameA`, and
 `GetSaveFileNameA`. Embedded strings include `Save Files (*.SAV)`, `Please
-specify save name`, and `Old Version of Saved Game.`
+specify save name`, and `Old Version of Saved Game.` Save dialog function
+`0x0042b27a` creates/truncates the selected `.SAV`; Open dialog function
+`0x0042afdd` selects an existing file. `0x0042ac7a` opens the tracked slot and
+falls back from read/write to read-only access, while `0x0042ade9` closes it.
+Wrappers `0x0042ae85` and `0x0042af31` return the byte counts produced by
+`ReadFile` and `WriteFile` respectively.
 
-**Interpretation:** Save/load is implemented with direct Win32 file I/O and a
-version/magic branch consistent with the two documented save variants.
+Load function `0x0046381a` and save function `0x00463cc5` expose the complete
+top-level transfer envelope. The first DWORD is one of these little-endian
+ASCII markers:
 
-**Confidence:** Verified observations; High interpretation.
+| On-disk marker | Header DWORD | Payload | Exact file size | Load result |
+|---|---:|---|---:|---:|
+| `S40W` | `0x57303453` | 44 fixed state blocks | 45,305 (`0xB0F9`) | 1 |
+| `N40W` | `0x5730344e` | The same 44 blocks plus six DWORD mappings | 45,329 (`0xB111`) | 2 |
+| `M10W` | `0x5730314d` | One 12-byte auxiliary block only | 16 (`0x10`) | 3 |
 
-**Next validation:** Locate string references, identify read/write functions,
-and match their fixed transfer sizes against the save-layout document.
+The 44 shared blocks total 45,297 bytes (`0xB0F1`) and are transferred in this
+exact address/size order:
+
+```text
+498da8:3cc0  4a08e8:0900  4abbf0:0018  4a5f00:0006
+4ab638:0018  49ca68:0004  4abbe8:0004  4a5ef8:0004
+4a25e8:0018  4abbc0:0012  4a27c8:0012  4a2608:0180
+4abbe0:0006  48a250:1e60  482108:0006  482110:0018
+48db48:0798  482158:0006  48e2f8:0018  482128:0018
+482140:0018  4a2790:0018  4abcc0:0100  4aae08:0780
+4a8888:2580  4a11e8:12fc  494830:0002  4a2588:0048
+4a27a8:0018  4a5ed8:0018  4a25d0:0018  49ca78:0018
+4ab620:0018  4a27e0:0018  4ab590:0090  4ab650:0018
+4a2600:0006  4a2570:0018  4abc58:0006  preferences:0001x3
+4ab588:0006  4a5ef0:0006
+```
+
+The preference bytes are written from live globals `0x00487850`,
+`0x00487854`, and `0x00487858`; load stages them at `0x0049833c`,
+`0x00498340`, and `0x00498300` before copying them back only after the trailer
+marker succeeds. `N40W` then transfers the extra 24-byte block at `0x00498968`.
+That block is populated as six DWORD participant mappings when legacy network
+mode flag `0x00487b58` is enabled. Both full forms end with an exact copy of
+their header marker. This is a structural sentinel, not a checksum: all 46/47
+individual read or write return values are ignored. An invalid header or
+trailer beeps through `0x00449c8e`; caller `0x004637b8` presents the old-version
+message only when the load result is zero.
+
+**Interpretation:** `S40W` is the standalone full-state envelope and `N40W` is
+its legacy-network extension. `M10W` is an accepted auxiliary stub, not another
+full-state layout; its downstream purpose remains unnamed because its sole
+12-byte destination has no independent references. The exact envelope is now
+closed, but field-by-field semantic naming and original-save interoperability
+remain unnecessary for validating recreation state.
+
+**Confidence:** High from the complete read/write bodies, exact transfer-size
+sum, marker branches, I/O wrappers, network-mode writers, and sole caller.
+
+**Recreation exception:** The original can partially mutate globals on a short
+or failed read because it never checks the returned byte counts. The recreation
+deliberately does not reproduce that unsafe behavior: its unrelated native JSON
+format is bounded, versioned, hashed, and validated before reconstruction.
+
+**Next validation:** None for the fixed transfer envelope. Runtime-created
+original saves would only corroborate bytes and are outside the interoperability
+scope.
 
 ### BIN-API-004 - legacy networking
 
@@ -3564,27 +3618,27 @@ against known toolchain signatures.
 The first nine items in the former queue are complete: data-table loading, the
 full action-phase dispatcher, PRNG and dice reduction, core resolvers, all
 scenarios, city/HQ generation, and every live AI family now have address-level
-findings and linked implementation/parity notes above. The broad PX/SND/MV
-formatter and resource mapping is also implemented, but a smaller native
-rendering tail remains below.
+findings and linked implementation/parity notes above. The native PX loader,
+header repair, indexed palette path, opaque/stretch, pattern, exact-white key,
+and proven mixed-copy resource handling are also closed. A smaller semantic
+rectangle/UI tail remains below.
 
 Useful static work which remains is narrower:
 
-1. Finish the native PX loader/blitter inventory, especially palette conversion,
-   transparency/color-key selection, and the remaining semantic image roles.
-2. Bound the original save/load version branches and fixed transfer sizes enough
-   to close the still-partial legacy layout; native-save interoperability remains
-   intentionally out of scope.
-3. Finish exact menu-to-menu music restart boundaries; registry names, types,
+1. Resolve remaining semantic PX rectangle roles where callers can distinguish
+   them; the loader, palette conversion, copy modes, color keys, and embedded
+   pattern masks are closed.
+2. Finish exact menu-to-menu music restart boundaries; registry names, types,
    defaults, load order, and the shipped persistence failures are now closed.
-4. Continue the outer AI-policy trace only where it can strengthen the already
-   bounded family dispatch; family 1's unavailable-command policy and family
-   11's mode-10/mode-16 late guards are now closed.
-5. Continue exact UI geometry/hit-map work where it can be derived from draw and
+3. Continue exact UI geometry/hit-map work where it can be derived from draw and
    pointer call arguments, including setup name/drop fields and remaining panels.
-6. Match the linker/runtime fingerprints against a known compiler signature only
+4. Match the linker/runtime fingerprints against a known compiler signature only
    if this becomes useful to interpret generated-code artifacts; it is not a
    gameplay-parity dependency.
+
+The fixed original save/load envelope is closed above. Every live AI family,
+including family 1's unavailable-command policy and family 11's late guards,
+is closed statically; reopen those areas only if a new contradiction appears.
 
 Runtime captures listed elsewhere are corroboration work and deliberately are
 not included in this static queue. Every completed static item must add its

@@ -1,11 +1,17 @@
 # Recreation-native save format
 
 Status: implemented format version 23
-Last updated: 2026-09-13
+Last updated: 2026-09-17
 
 This format belongs to the recreation. It is deliberately separate from the
-two partially mapped original *Chaos Overlords* save variants and makes no
-claim of binary compatibility with either of them.
+original *Chaos Overlords* fixed-memory save envelopes and makes no claim of
+binary compatibility with them. Static analysis bounds the original standalone
+`S40W` form at 45,305 bytes and its six-DWORD legacy-network `N40W` extension at
+45,329 bytes; both repeat their header marker as a trailer but ignore every
+individual Win32 I/O byte count. `ORIGINAL-INTERNALS.md` records the exact block
+sequence. Those facts inform state research only: this recreation uses a safe,
+portable, independently versioned document rather than reproducing the
+original's address-shaped layout or partial-read behavior.
 
 ## Container and limits
 
