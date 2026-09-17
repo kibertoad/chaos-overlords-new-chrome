@@ -7,6 +7,13 @@ namespace Rechaos.Core.GameModel;
 /// </summary>
 internal static class OriginalAiHireRoleRules
 {
+    // The shipped executable compares selector 0x8f (the previous hire role) with
+    // the number of the schedule slot that produces role 4. Those slot numbers
+    // differ by scenario (6, 5, 2, 10, and 5), even though every branch is the
+    // same "do not immediately select another family-6 hire" guard. Comparing
+    // with role 4 is the deliberate clean-room bug fix recorded in DECISIONS.md.
+    private const int Family6HireRole = 4;
+
     public static int CalculateHireGangLimit(
         ScenarioId scenario,
         int activeGangCount,
@@ -118,7 +125,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family5Count < 1
             || inputs.Family7Count < 1
-            || inputs.PreviousRole == 6;
+            || inputs.PreviousRole == Family6HireRole;
         if (!changesSix)
         {
             slot = 6;
@@ -207,7 +214,7 @@ internal static class OriginalAiHireRoleRules
         var changesFive = !inputs.HasVisibleHostileSector
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
-            || inputs.PreviousRole == 5;
+            || inputs.PreviousRole == Family6HireRole;
         if (!changesFive)
         {
             slot = 5;
@@ -247,8 +254,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
             || inputs.Family7Count < 1
-            // Dead: no role is 5. See OriginalAiHireAdjustmentInputs.PreviousRole.
-            || inputs.PreviousRole == 5;
+            || inputs.PreviousRole == Family6HireRole;
         if (!changesFive)
         {
             slot = 5;
@@ -289,7 +295,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family5Count < 1
             || inputs.Family7Count < 1
-            || inputs.PreviousRole == 2;
+            || inputs.PreviousRole == Family6HireRole;
         if (!changesTwo)
         {
             slot = 2;
@@ -329,8 +335,7 @@ internal static class OriginalAiHireRoleRules
             || inputs.HasFamily6CoveringFirstHostileSector
             || inputs.Family3Count < 1
             || inputs.Family7Count < 1
-            // Dead: no role is 10. See OriginalAiHireAdjustmentInputs.PreviousRole.
-            || inputs.PreviousRole == 10;
+            || inputs.PreviousRole == Family6HireRole;
         if (!changesTen)
         {
             slot = 10;
@@ -413,13 +418,10 @@ internal readonly record struct OriginalAiHireRoleSelection(int RankingMode, int
 /// <param name="PreviousRole">
 /// The hire role this player picked last turn, 0 to 6.
 /// <para>
-/// Every scenario's adjustment block compares this against the index of the schedule slot it
-/// guards, and those indices are not roles: Dominance tests 10 and Greed tests 5, neither of which
-/// any role can be, so both disjuncts are dead and the guard that should stop the AI repeating a
-/// family-6 hire never fires. The sibling scenarios test 6, 2 and 5, which a role can be, so they
-/// behave as though the comparison were meant for a role. Whether the original read a persisted
-/// slot here or a role has not been established from the binary, so this is left as the
-/// instruction-verified transcription rather than guessed into a different behaviour.
+/// Selector <c>0x8f</c> is statically verified to read the prior role. The shipped
+/// planner incorrectly compares it with the scenario-specific schedule-slot number whose result is
+/// role 4. This recreation deliberately compares with role 4 instead, preventing consecutive
+/// family-6 hires without reproducing that original indexing defect.
 /// </para>
 /// </param>
 internal readonly record struct OriginalAiHireAdjustmentInputs(

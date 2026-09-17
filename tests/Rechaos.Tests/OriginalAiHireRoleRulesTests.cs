@@ -626,6 +626,50 @@ public sealed class OriginalAiHireRoleRulesTests
     }
 
     [Theory]
+    [InlineData(ScenarioId.Greed, 0, 0, 1)]
+    [InlineData(ScenarioId.Power, 0, 0, 0)]
+    [InlineData(ScenarioId.Acceptance, 0, 0, 1)]
+    [InlineData(ScenarioId.Dominance, 0, 0, 1)]
+    [InlineData(ScenarioId.Armageddon, 0, 0, 0)]
+    public void PriorFamilySixRoleSuppressesTheScenarioSpecificFamilySixSlot(
+        ScenarioId scenario,
+        int turn,
+        int expectedMode,
+        int expectedRole)
+    {
+        var inputs = PowerInputs(
+            hasVisibleHostileSector: true,
+            hasFamily6CoveringFirstHostileSector: false,
+            family2Count: 1,
+            family3Count: 1,
+            previousRole: 4);
+
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(expectedMode, expectedRole),
+            OriginalAiHireRoleRules.SelectAdjusted(scenario, turn, inputs));
+    }
+
+    [Theory]
+    [InlineData(ScenarioId.Greed)]
+    [InlineData(ScenarioId.Power)]
+    [InlineData(ScenarioId.Acceptance)]
+    [InlineData(ScenarioId.Dominance)]
+    [InlineData(ScenarioId.Armageddon)]
+    public void DifferentPriorRoleStillPermitsTheFamilySixSlot(ScenarioId scenario)
+    {
+        var inputs = PowerInputs(
+            hasVisibleHostileSector: true,
+            hasFamily6CoveringFirstHostileSector: false,
+            family2Count: 1,
+            family3Count: 1,
+            previousRole: 3);
+
+        Assert.Equal(
+            new OriginalAiHireRoleSelection(3, 4),
+            OriginalAiHireRoleRules.SelectAdjusted(scenario, turn: 0, inputs));
+    }
+
+    [Theory]
     [InlineData(ScenarioId.Greed, 5, 2, 2)]
     [InlineData(ScenarioId.Power, 6, 3, 3)]
     [InlineData(ScenarioId.Acceptance, 2, 3, 3)]

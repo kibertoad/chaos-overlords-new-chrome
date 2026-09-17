@@ -966,6 +966,20 @@ one whose current sector or cached destination matches that sector, otherwise
 `-1`. The adjustment input now names these as visible-hostile-sector presence
 and family-6 coverage rather than retaining raw selector numbers.
 
+Selector `0x8f` is now closed as well. Its case in `0x00402d70` returns the
+per-player dword at `0x00482160`; `0x00458fa0` copies the current hire role from
+`0x00482128` into that array before computing the next role. It therefore means
+**previous hire role**, not previous schedule slot. The five family-6 scheduling
+blocks nevertheless compare it with their scenario-specific special slot number:
+Power/Kill 'Em All/Big 40 use 6, Greed and Armageddon use 5, Acceptance uses 2,
+and Dominance uses 10. Every one of those slots ultimately writes hire role 4,
+which the family table maps to family 6. Dominance's comparison can never be true
+for a role bounded to 0..6, and the other constants suppress unrelated prior
+roles by numerical coincidence. This is a shipped slot-versus-role indexing bug,
+not an unknown field interpretation. The recreation deliberately compares the
+previous role with 4 in all five blocks, preserving the apparent no-consecutive-
+family-6 intent without reproducing the defect. See `DECISIONS.md`.
+
 The remaining Greed-only byte read is also semantic. The scenario scorer at
 `0x0047712a` stores, for each active player, the count of players with a
 strictly greater scenario score at `0x004abc08 + player`; tied leaders therefore
@@ -977,8 +991,10 @@ that exact condition as `HasHigherScoringPlayer`.
 **Confidence:** Verified for scenario order, periods, every ranking-mode call,
 every hire-role write, shared scenario bodies, constants, retained factor, x87
 comparison direction, equality boundaries, adjustment ordering, and the
-Greed-only scenario-standing predicate, plus the complete hire-limit inputs,
-multipliers, cash boundary, and cap.
+Greed-only scenario-standing predicate, selector `0x8f`'s previous-role storage,
+plus the complete hire-limit inputs, multipliers, cash boundary, and cap. The
+role-4 comparison is a documented recreation correction rather than a claim
+about the shipped instruction stream.
 
 The recreation's `AiPlanningState` now preserves the verified six current-role
 words, six previous-role words, and six-by-81 family slots in canonical hashes,

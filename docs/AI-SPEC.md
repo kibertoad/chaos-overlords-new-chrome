@@ -386,6 +386,13 @@ explicit M6 gap rather than an unmeasured claim.
    selection and its persisted anchor are statically recovered in
    `BIN-AI-003C`, covered by pure kernels, and wired into live planning. The
    encoded anchors are authoritative and persisted.
+   Selector `0x8f` is verified as the previous hire role, exposing a shipped
+   slot-versus-role indexing error in five family-6 scheduling guards. Each guard
+   compares that role with its scenario's special schedule-slot number even
+   though all five slots produce role 4 and therefore family 6; Dominance even
+   compares the bounded 0..6 role with 10. The recreation's documented clean-room
+   exception compares with role 4, preventing consecutive family-6 hires without
+   preserving the original defect.
    Static analysis now recovers the exact three-generation per-gang action
    tuples, active-slot rollover, duplicate cleanup, dispatch/anchor ordering,
    reset/reuse behavior and first-plan flags.

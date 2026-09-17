@@ -1,10 +1,31 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-13
+Last updated: 2026-09-17
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
+
+## 2026-09-17 — Correct the original AI hire slot/role indexing defect
+
+- Decision: when the AI hire scheduler considers its scenario-specific family-6
+  slot, compare the previous hire role with role 4 in every scenario instead of
+  copying the executable's comparisons with slot numbers 6, 5, 2, 10, and 5.
+- Evidence: selector `0x8f` in `0x00402d70` reads `0x00482160`, and planner
+  `0x00458fa0` fills that location from current-role array `0x00482128` before
+  choosing the next role. Each guarded special slot writes role 4, which the
+  recovered scenario/family table maps to family 6. Dominance's original
+  comparison with 10 is impossible for the verified 0..6 role domain; the other
+  values can only suppress unrelated roles by numerical coincidence.
+- Reason: this is a clear slot-versus-role indexing defect rather than ambiguous
+  game design. Preserving it would create arbitrary scenario-dependent repeated
+  family-6 hiring. The corrected comparison implements the common apparent
+  intent—do not immediately choose another family-6 hire—while leaving all
+  schedule tables, quotas, availability tests, ranking, and RNG behavior intact.
+- Compatibility boundary: the `Original` policy deliberately differs from the
+  shipped executable at this guard. Static evidence and tests preserve both the
+  original finding and the exact recreation exception; no claim of bit-for-bit
+  AI decision parity includes this bug.
 
 ## 2026-09-10 — Save compatibility scope
 
