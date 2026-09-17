@@ -41,20 +41,6 @@ public sealed partial class ChaosGame
             LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, true));
     }
 
-    private Texture2D? LoadPatternMaskedTexture(string fileName, int patternResourceId)
-    {
-        var texture = LoadTexture(fileName);
-        if (texture is null) return null;
-        var colors = new Color[texture.Width * texture.Height];
-        texture.GetData(colors);
-        for (var y = 0; y < texture.Height; y++)
-        for (var x = 0; x < texture.Width; x++)
-            if (OriginalPatternMask.PreservesDestination(patternResourceId, x, y))
-                colors[y * texture.Width + x] = Color.Transparent;
-        texture.SetData(colors);
-        return texture;
-    }
-
     private void LoadCombatAnimationTexture(string fileName)
     {
         var texture = LoadTexture(fileName);

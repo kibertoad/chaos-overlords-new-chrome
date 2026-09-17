@@ -43,6 +43,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _titleBackground;
     private Texture2D? _setupBackground;
     private Texture2D? _setupControls;
+    private Texture2D? _setupKeyedControls;
     private Texture2D? _cityBackground;
     private readonly Texture2D?[] _cityOwnershipLayers = new Texture2D?[MatchLimits.PlayerCount + 1];
     private Texture2D? _gameInfoBackground;
@@ -79,7 +80,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _policeSprites;
     private Texture2D? _uiSprites;
     private Texture2D? _uiKeyedSprites;
-    private Texture2D? _uiInactivePatternSprites;
     private PixelFont? _font;
     private readonly Dictionary<short, SoundEffect> _combatSounds = [];
     private readonly Dictionary<int, SoundEffect> _generalSounds = [];
@@ -110,6 +110,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         .Select(LocalSetupPolicy.DefaultPlayerName).ToArray();
     private readonly SetupPlayerNameEditor _setupNameEditor = new();
     private readonly LocalSetupRoster _localSetupRoster = new();
+    private int _selectedSetupPlayerSlot;
     private int? _editingPlayerName;
     private string _setupOriginalName = string.Empty;
     private ScenarioId _selectedScenario = SetupScenarioButtons.DefaultScenario;
@@ -278,6 +279,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _titleBackground = LoadTexture("PX00130.bmp");
         _setupBackground = LoadTexture("PX00143.bmp");
         _setupControls = LoadTexture("PX00140.bmp");
+        _setupKeyedControls = LoadTexture("PX00140.bmp", transparentWhite: true);
         _cityBackground = LoadTexture("PX00128.bmp");
         for (var index = 0; index < _cityOwnershipLayers.Length; index++)
             _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
@@ -322,8 +324,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _policeSprites = LoadTexture("PX00300.bmp");
         _uiSprites = LoadTexture("PX00129.bmp");
         _uiKeyedSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
-        _uiInactivePatternSprites = LoadPatternMaskedTexture(
-            "PX00129.bmp", OriginalPatternMask.Sparse);
         _font = _uiSprites is null
             ? throw new InvalidDataException("PX00129 is required for the original UI font.")
             : new PixelFont(GraphicsDevice, _uiSprites);

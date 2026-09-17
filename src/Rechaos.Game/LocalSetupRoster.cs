@@ -29,11 +29,11 @@ public sealed class LocalSetupRoster
         return null;
     }
 
-    public int? RemoveLastHuman()
+    public int? RemoveHuman(int slot)
     {
-        if (_humanSlots.Count == LocalSetupPolicy.DefaultHumanPlayerCount) return null;
-        var slot = _humanSlots[^1];
-        _humanSlots.RemoveAt(_humanSlots.Count - 1);
+        if (_humanSlots.Count == LocalSetupPolicy.DefaultHumanPlayerCount || !IsHuman(slot))
+            return null;
+        _humanSlots.Remove(slot);
         return slot;
     }
 

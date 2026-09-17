@@ -217,6 +217,8 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(468, 375, 92, 45), SetupButtonLayout.Back);
         Assert.Equal(new Rectangle(220, 0, 92, 24),
             SetupButtonLayout.PressedSource(SetupPushButton.AddPlayer));
+        Assert.Equal(new Rectangle(220, 138, 64, 62),
+            SetupPlayerCardArtLayout.ArrowOverlaySource);
         Assert.Equal(new Rectangle(220, 93, 92, 45),
             SetupButtonLayout.PressedSource(SetupPushButton.Back));
         Assert.Equal(SetupButtonLayout.Start,
@@ -572,6 +574,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(0, 626, 20, 20), OriginalSpriteLayout.ActivePlayerMarker(0));
         Assert.Equal(new Rectangle(220, 626, 20, 20), OriginalSpriteLayout.ActivePlayerMarker(11));
         Assert.Equal(new Rectangle(480, 480, 32, 32), OriginalSpriteLayout.OverlordPortrait(15));
+        Assert.Equal(new Rectangle(480, 480, 32, 30), SetupPlayerCardArtLayout.PortraitSource(15));
         Assert.Equal(new Rectangle(0, 0, 120, 64), OriginalSpriteLayout.SitePortrait(0));
         Assert.Equal(new Rectangle(0, 21 * 64, 120, 64), OriginalSpriteLayout.SitePortrait(21));
         Assert.Equal(new Rectangle(0, 0, 64, 64), OriginalSpriteLayout.GangPortrait(0));
@@ -722,6 +725,10 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(408, 4, 20, 20), PlayerPortraitLayout.CityActiveMarker(5));
         Assert.Equal(new Rectangle(397, 89, 64, 64), PlayerPortraitLayout.SetupLarge(0));
         Assert.Equal(new Rectangle(480, 163, 64, 64), PlayerPortraitLayout.SetupLarge(3));
+        Assert.Equal(new Rectangle(397, 92, 64, 60),
+            SetupPlayerCardArtLayout.PortraitDestination(0));
+        Assert.Equal(new Rectangle(480, 166, 64, 60),
+            SetupPlayerCardArtLayout.PortraitDestination(3));
         Assert.Equal(new Rectangle(399, 257, 12, 18), PlayerPortraitLayout.Previous(4));
         Assert.Equal(new Rectangle(530, 257, 12, 18), PlayerPortraitLayout.Next(5));
         Assert.Equal(new Rectangle(480, 301, 64, 8), PlayerPortraitLayout.Name(5));

@@ -108,7 +108,7 @@ public sealed partial class ChaosGame
     {
         var changed = delta switch
         {
-            > 0 => _localSetupRoster.AddHuman() is not null,
+            > 0 => AddSetupHuman(),
             < 0 => RemoveSetupHuman(),
             _ => false
         };
@@ -117,10 +117,18 @@ public sealed partial class ChaosGame
             PlayGeneralSound(slot);
     }
 
+    private bool AddSetupHuman()
+    {
+        if (_localSetupRoster.AddHuman() is not { } added) return false;
+        _selectedSetupPlayerSlot = added;
+        return true;
+    }
+
     private bool RemoveSetupHuman()
     {
-        if (_localSetupRoster.RemoveLastHuman() is not { } removed) return false;
+        if (_localSetupRoster.RemoveHuman(_selectedSetupPlayerSlot) is not { } removed) return false;
         if (_editingPlayerName == removed) FinishSetupNameEdit(cancel: true);
+        _selectedSetupPlayerSlot = _localSetupRoster.HumanSlots.Max();
         return true;
     }
 
@@ -265,7 +273,9 @@ public sealed partial class ChaosGame
             PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
             _message = string.Empty;
         }
-        else if (result == LocalSetupMoveResult.Invalid)
+        if (result != LocalSetupMoveResult.Invalid)
+            _selectedSetupPlayerSlot = target;
+        else
         {
             PlayGeneralSound(GeneralSoundSlot.RejectedInput);
             _message = string.Empty;
@@ -281,13 +291,22 @@ public sealed partial class ChaosGame
             return;
         }
 
-        var point = _setupPlayerPressPoint;
-        if (PlayerPortraitLayout.NextHit(player).Contains(point))
-            CyclePortrait(player, 1);
-        else if (PlayerPortraitLayout.PreviousHit(player).Contains(point))
-            CyclePortrait(player, -1);
-        else if (PlayerPortraitLayout.NameHit(player).Contains(point))
-            BeginSetupNameEdit(player);
+        switch (PlayerPortraitLayout.ClickAction(
+                    _selectedSetupPlayerSlot, player, _setupPlayerPressPoint))
+        {
+            case SetupPlayerCardClick.Select:
+                _selectedSetupPlayerSlot = player;
+                break;
+            case SetupPlayerCardClick.PreviousPortrait:
+                CyclePortrait(player, -1);
+                break;
+            case SetupPlayerCardClick.NextPortrait:
+                CyclePortrait(player, 1);
+                break;
+            case SetupPlayerCardClick.EditName:
+                BeginSetupNameEdit(player);
+                break;
+        }
         CancelSetupPlayerDrag();
     }
 
@@ -403,9 +422,8 @@ public sealed partial class ChaosGame
             var active = _configuringOnlineLobby
                 ? index < onlinePlayers.Length
                 : _localSetupRoster.IsHuman(index);
-            var atlas = active ? _uiSprites : _uiInactivePatternSprites;
-            if (atlas is not null)
-                batch.Draw(atlas, PlayerPortraitLayout.SetupTop(index),
+            if (_uiSprites is not null)
+                batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
                     OriginalSpriteLayout.OverlordPortrait(
                         active ? _playerPortraits[index] : PlayerPortraitLayout.Count - 1),
                     Color.White);
@@ -415,14 +433,23 @@ public sealed partial class ChaosGame
             : _localSetupRoster.HumanSlots;
         foreach (var index in shownHumans)
         {
-            var portrait = PlayerPortraitLayout.SetupLarge(index);
+            var portrait = SetupPlayerCardArtLayout.PortraitDestination(index);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, portrait,
-                    OriginalSpriteLayout.OverlordPortrait(_playerPortraits[index]), Color.White);
-            if (!_configuringOnlineLobby)
+                    SetupPlayerCardArtLayout.PortraitSource(_playerPortraits[index]), Color.White);
+            if (!_configuringOnlineLobby && index == _selectedSetupPlayerSlot)
             {
-                DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Previous(index), left: true, Color.Lime);
-                DrawHorizontalArrow(batch, pixel, PlayerPortraitLayout.Next(index), left: false, Color.Lime);
+                if (_setupKeyedControls is not null)
+                    batch.Draw(_setupKeyedControls,
+                        new Rectangle(portrait.X, portrait.Y, 64, 62),
+                        SetupPlayerCardArtLayout.ArrowOverlaySource, Color.White);
+                else
+                {
+                    DrawHorizontalArrow(batch, pixel,
+                        PlayerPortraitLayout.Previous(index), left: true, Color.Lime);
+                    DrawHorizontalArrow(batch, pixel,
+                        PlayerPortraitLayout.Next(index), left: false, Color.Lime);
+                }
             }
             var label = _configuringOnlineLobby ? onlinePlayers[index].DisplayName : _editingPlayerName == index
                 ? _setupNameEditor.Text + ((int)(_inputTime.TotalMilliseconds / 350) % 2 == 0 ? "_" : "")

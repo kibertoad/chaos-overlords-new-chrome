@@ -1,6 +1,16 @@
 using Microsoft.Xna.Framework;
+using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
+
+public enum SetupPlayerCardClick : byte
+{
+    None,
+    Select,
+    PreviousPortrait,
+    NextPortrait,
+    EditName
+}
 
 public static partial class PlayerPortraitLayout
 {
@@ -30,5 +40,18 @@ public static partial class PlayerPortraitLayout
     {
         var center = ClampSetupDragPoint(point);
         return new Rectangle(center.X - 20, center.Y - 20, 40, 40);
+    }
+
+    public static SetupPlayerCardClick ClickAction(int selectedPlayer, int pressedPlayer, Point point)
+    {
+        if (selectedPlayer is < 0 or >= MatchLimits.PlayerCount)
+            throw new ArgumentOutOfRangeException(nameof(selectedPlayer));
+        if (pressedPlayer is < 0 or >= MatchLimits.PlayerCount)
+            throw new ArgumentOutOfRangeException(nameof(pressedPlayer));
+        if (pressedPlayer != selectedPlayer) return SetupPlayerCardClick.Select;
+        if (NextHit(pressedPlayer).Contains(point)) return SetupPlayerCardClick.NextPortrait;
+        if (PreviousHit(pressedPlayer).Contains(point)) return SetupPlayerCardClick.PreviousPortrait;
+        if (NameHit(pressedPlayer).Contains(point)) return SetupPlayerCardClick.EditName;
+        return SetupPlayerCardClick.None;
     }
 }

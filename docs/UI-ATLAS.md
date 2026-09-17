@@ -78,13 +78,14 @@ height 23. Selection lights the narrow indicator well at the face's right edge;
 the original UI does not outline the whole button. Objective scenarios leave
 the duration indicators dark because those modes do not use a time limit.
 
-The six top-strip portrait apertures are 32 by 32 at `(360 + 36n,38)`.
-The editable player cards draw in two columns at x 397 and 480 and three rows
-at y 89, 163 and 237. Each face is 64 by 64; its visible portrait arrows are
-12 by 18 at face-relative `(2,20)` and `(50,20)`, and its visible 64-by-8 name
-field begins immediately below the face. These draw coordinates follow the
-black apertures in `PX00143` and the arrow/name construction mask at `(220,138)`
-in `PX00140`.
+The six top-strip portrait apertures are 32 by 32 at `(360 + 36n,38)` and use
+opaque copies, including empty portrait 15. The editable player-card faces
+occupy two columns at x 397 and 480 and three rows at y 89, 163 and 237. Native
+portrait pixels begin three rows into each face: source `(32n,480,32,30)` is
+scaled opaquely to 64 by 60 at y 92, 166, or 240. Only the selected card gets
+the 64-by-62 exact-white-keyed arrow overlay from `(220,138)` in `PX00140`;
+its visible arrows land at face-relative `(2,20)` and `(50,20)`. The visible
+64-by-8 name field begins immediately below the face.
 
 Native input is deliberately broader. Handler `0x0040e0a0` places 64-by-68
 interaction cells at x 397/480 and y 94/168/242. Within each cell, the left
@@ -115,10 +116,10 @@ cursor feedback remain to be validated.
 - Extracted RGB555 bitmaps are loaded from the installed asset pack; they are
   not embedded in source or redistributed.
 - `PX00129` contains sixteen 32-by-32 overlord portraits across source row
-  y=480. Setup renders these in the top strip and scales the selected portrait
-  into the exact 64-by-64 aperture in each visible local-player card; green
-  left/right arrows overlay the face and cycle that
-  player's portrait. Static setup analysis now identifies portrait 15 as the
+  y=480. Setup renders these opaquely in the top strip and scales the first 30
+  source rows into each occupied card's exact 64-by-60 portrait destination.
+  Exact keyed arrows appear only on the selected card and cycle that player's
+  portrait after selection. Static setup analysis identifies portrait 15 as the
   empty-slot marker, not an active Overlord portrait. On original local Begin,
   every empty slot becomes a Computer and receives a unique bounded draw from
   portraits 0 through 14 before city generation. The client now treats its
@@ -130,6 +131,8 @@ cursor feedback remain to be validated.
   the original 10-character uppercase editor; empty
   confirmation restores `PLAYER#n`. Dragging a face to an empty cell changes its
   color slot; dropping on another human exchanges their name/portrait identities.
+  Add selects the new slot, Remove deletes the selected slot, and a first click
+  on another occupied card selects it without activating an arrow or name field.
   Portrait 15 remains display-only. During a drag, the selected portrait is
   scaled opaquely into a 40-by-40 token and exact-white-keyed source
   `(150,386,40,40)` from `PX00129` is composited over it, matching helper

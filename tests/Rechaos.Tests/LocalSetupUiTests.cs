@@ -62,6 +62,19 @@ public sealed class LocalSetupUiTests
     }
 
     [Fact]
+    public void FirstClickSelectsAnotherCardBeforeItsSubcontrolsAct()
+    {
+        var nextOnPlayerOne = new Point(533, 100);
+
+        Assert.Equal(SetupPlayerCardClick.Select,
+            PlayerPortraitLayout.ClickAction(0, 1, nextOnPlayerOne));
+        Assert.Equal(SetupPlayerCardClick.NextPortrait,
+            PlayerPortraitLayout.ClickAction(1, 1, nextOnPlayerOne));
+        Assert.Equal(SetupPlayerCardClick.EditName,
+            PlayerPortraitLayout.ClickAction(1, 1, new Point(490, 155)));
+    }
+
+    [Fact]
     public void SharedOriginalTextInputMapsLettersDigitsAndPunctuation()
     {
         Assert.True(OriginalTextInput.TryCharacter(Keys.A, shift: false, out var letter));
@@ -85,8 +98,10 @@ public sealed class LocalSetupUiTests
         Assert.Equal([0, 1, 2], roster.HumanSlots);
         Assert.Equal(LocalSetupMoveResult.MovedToEmptyColor, roster.MoveHuman(0, 5));
         Assert.Equal([5, 1, 2], roster.HumanSlots);
-        Assert.Equal(2, roster.RemoveLastHuman());
+        Assert.Equal(2, roster.RemoveHuman(2));
         Assert.Equal([5, 1], roster.HumanSlots);
         Assert.Equal(LocalSetupMoveResult.Invalid, roster.MoveHuman(0, 3));
+        Assert.Equal(1, roster.RemoveHuman(1));
+        Assert.Null(roster.RemoveHuman(5));
     }
 }

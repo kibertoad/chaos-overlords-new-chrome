@@ -133,18 +133,20 @@ black apertures against native captures when runtime validation is permitted.
 `FUN_00464108(6, 0x81, ...)`. Calls that use surface 6 do not share one alpha
 policy. For example, `0x00413012` repeatedly calls
 `FUN_00427864(6, 1, ..., 1)` for exact-white keyed UI elements, while
-`0x00457b7b` copies the 32-by-32 Overlord portraits from source x 480 through
-512 with mode 0 for inactive setup slots, then uses ordinary opaque
-`FUN_0042773e` for active slots. Other surface-6 regions likewise include
-opaque copies. Scaling through the wrapper is also opaque regardless of its
-requested mode.
+`0x00457b7b` copies the 32-by-32 Overlord portraits from source y 480 through
+512 with mode 0 for inactive seats on the separate `PX00146` setup flow, then
+uses ordinary opaque `FUN_0042773e` for active seats. Other surface-6 regions
+likewise include opaque copies. Scaling through the wrapper is opaque
+regardless of its requested mode.
 
-A direct-call census finds 131 calls to opaque `FUN_0042773e` and 66 calls to
-`FUN_00427864` whose immediately preceding first argument is literal surface
-6. Auditing the 26 functions containing the latter calls classifies 64 as
-mode 1 and two as mode 0. This is a conservative direct-call inventory rather
-than a whole-program count: helpers that receive their source surface as a
-parameter are not attributed to surface 6 by the literal scan.
+A complete call census finds 502 direct calls to opaque `FUN_0042773e`: 501
+push a literal source surface, including 131 surface-6 calls. Its sole
+non-literal caller is one-second startup blit benchmark `0x00432954`, whose
+only caller supplies surface 1 to surface 0. All 77 direct calls to
+`FUN_00427864` push literal source surfaces; 66 use surface 6. Auditing the 26
+functions containing those 66 calls classifies 64 as mode 1 and two as mode 0.
+There is therefore no unaccounted parameterized surface-6 path through either
+wrapper.
 
 Gang-status compositor `0x00412bf7` builds a 20-by-20 source at x 492 and
 y `67 + state * 20`, then uses `FUN_00427864(6, 2, ..., 1)` at both of its
@@ -153,15 +155,18 @@ therefore exact-white keyed, not opaque. Setup drag helper `0x0040f72e` first
 scales the selected 32-by-32 Overlord portrait opaquely into a 40-by-40 scratch
 cell, then overlays source `(150,386)-(190,426)` from surface 6 with mode 1
 before copying the composed token to the pointer. The static setup renderer at
-`0x0040ee8a` supplies the second proven mode-0 portrait path.
+`0x0040ee8a` supplies the second mode-0 request, but its 32-by-30 source is
+scaled to 64 by 60, so the wrapper deliberately takes its opaque scaling path
+and never applies the requested pattern. The twelve 20-by-20 active-player
+frames at source y 626 likewise use opaque `FUN_0042773e`.
 
 Mode compositor `0x00427e60` selects 1-bit bitmap resource 147, 143, or 146.
 The sole selector `0x00449b20` maps an input below 86 to resource 147, 86
 through 170 to resource 143, and 171 or above to resource 146. Its raster
 operations reduce to `(destination AND pattern) XOR (source AND NOT pattern)`:
 a set pattern bit preserves the destination, while a clear bit copies the
-source. In the inactive-slot path, the fixed `0x2661` setup color selects
-resource 146 before this stencil is applied.
+source. In the unscaled `PX00146` inactive-seat path, fixed color `0x2661`
+selects resource 146 before this stencil is applied.
 
 The executable resources themselves are 8-by-8, 1-bit DIBs with a black/white
 palette. Read as top-down rows, resource 143 alternates `0x55/0xaa` (32 set
@@ -174,15 +179,18 @@ texture. In particular, global white alpha deletes legitimate white font and
 portrait pixels. The recreation now keeps an opaque atlas for fonts,
 portraits, and opaque frames; a separate exact-white-keyed atlas for the
 mapped `HIRED` stamp, sector-back arrow, gang-status markers, and setup drag
-frame; and the exact resource-146 stencil for inactive setup portraits.
+frame. The recreation records and tests the exact resource-146 stencil but
+does not apply it to local setup: that effect belongs to the unsupported
+legacy `PX00146` flow, while local player-card scaling is opaque.
 
 **Confidence:** High for the mixed native copy modes, portrait source
 rectangle, status-marker and drag-frame roles, mode-0 Boolean operation,
-selector bands, and embedded masks; Medium for complete role-to-mode coverage
-until parameterized surface-6 call paths are classified.
+selector bands, embedded masks, and complete source-surface call attribution;
+Medium for semantic naming of every rectangle not yet used by the recreation.
 
-**Next validation:** Trace parameterized surface-6 helpers and pixel-compare
-the classified keyed/pattern roles when runtime captures are permitted.
+**Next validation:** Name the remaining unused surface-6 rectangles and
+pixel-compare the classified keyed/pattern roles when runtime captures are
+permitted.
 
 ### BIN-UI-032 - exact main-console hit, split, and pressed geometry
 
@@ -3629,17 +3637,37 @@ card rectangles. A valid destination swaps the complete type, portrait, and
 leaves the roster unchanged. A click action is selected from the original press
 point only when the drag helper reports that no drag began.
 
+Global selected-card index `0x004854c4` starts at zero. A click on another
+occupied card only selects and redraws it; arrow/name actions occur only when
+the pressed card was already selected. Add selects the newly occupied slot.
+Remove deletes the selected slot and selects the highest remaining occupied
+slot. A successful drag selects its destination after moving or exchanging the
+complete identity record.
+
+Renderer `0x0040ee8a` copies every 32-by-32 top-strip portrait opaquely. For
+each occupied local card it takes source `(32 * portrait,480,32,30)` and scales
+it opaquely to `(cardX,cardY + 3,64,60)`. Only the selected card then receives
+the exact-white-keyed `PX00140` arrow overlay from `(220,138,64,62)` at that
+same destination origin. The non-selected branch requests mode 0, but because
+its source and destination sizes differ the wrapper's opaque scaling branch
+precedes and bypasses mode selection.
+
 **Interpretation:** Bitmap apertures describe drawing, not input. The former
 recreation reused the smaller visible glyph rectangles for input, began setup
 drags only after four pixels of absolute motion, used a 48-pixel token, and did
-not permit a drag to begin over arrow/name bands. The input layout now follows
-the recovered handler while retaining the measured draw rectangles.
+not permit a drag to begin over arrow/name bands. It also acted on every card's
+subcontrols immediately, drew arrows on every card, stretched all 32 portrait
+rows over the full face, and incorrectly applied the `PX00146` inactive-seat
+stencil to empty local top slots. The input and compositor now follow the
+recovered selected-card state, source/destination rectangles, and keyed arrow
+overlay.
 
 **Confidence:** High from the complete local handler, the drag helper's sole
 caller and bounded loop, the two portrait helpers, and the name editor.
 
-**Next validation:** Native cursor imagery and drag feedback remain visual
-capture work; card hit testing and drag/drop mechanics are statically closed.
+**Next validation:** Native cursor imagery and drag-target feedback remain
+visual capture work; card selection, hit testing, composition, and drag/drop
+mechanics are statically closed.
 
 ### BIN-HIRE-001 - initial and replacement offers
 
