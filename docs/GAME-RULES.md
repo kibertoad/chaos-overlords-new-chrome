@@ -595,15 +595,28 @@ claim about original-game behavior.
 - Observed statement: Move relocates a gang to an adjacent sector during the
   Movement phase. The structural limit is six friendly gangs per sector.
 - Interpretation: move to any of the eight neighboring sectors, including a
-  diagonal neighbor, rejecting a target already at friendly capacity; commands
-  that compete for the final slot resolve
-  in ascending player/roster-slot order and later commands fail without moving.
-- Confidence: High for adjacency, capacity, phase precedence, and final-slot
-  ordering.
-- Implementation: movement validation and `CommandResolver.ResolveMove`.
+  diagonal neighbor, rejecting a target already at friendly capacity when the
+  command is assigned. After all Terminate commands, the executable normalizes
+  each player's complete Move set before changing any sector bytes. It counts
+  non-movers at their current sectors and movers at their proposed destinations,
+  selects the highest-numbered over-capacity sector, and rewrites the first
+  qualifying mover in ascending roster order back to its source. It repeats
+  until every projected count is at most six. A rewritten command then resolves
+  as a successful no-op rather than a failed Move, so when two otherwise legal
+  moves compete for one remaining slot the later roster slot moves and the
+  earlier one stays. The helper's defensive saturated-cycle branch routes a
+  previously rewritten no-op through selector mode 0: a uniform all-sector draw
+  followed by the usual horizontal-then-vertical capacity-checked one-step move.
+- Confidence: High static evidence for adjacency, submission capacity, phase
+  precedence, projected-count construction, highest-sector selection, roster
+  rewrite direction, repeated normalization, mode-0 fallback, and final Move
+  application.
+- Implementation: movement validation and
+  `CommandResolver.ResolveMovementPhase`/`NormalizeMoveDestinations`.
 - Tests: `BoardResolutionTests` covers movement events, capacity at submission,
-  reversed-submission runtime contention, roster result order, Terminate
-  precedence, and notifications.
+  reversed-submission runtime contention, native earlier-roster cancellation,
+  successful no-op results, Terminate precedence, and notifications;
+  `OriginalAiSectorSelectionRulesTests` covers mode-0 fallback RNG and routing.
 
 ### RULE-CONTROL-001 — Cooperative sector control comparison
 

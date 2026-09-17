@@ -410,7 +410,12 @@ stale-record behavior and preserving final-state inspection.
 
 Movement resolution runs a complete player/roster-ordered Terminate pass before
 a separate player/roster-ordered Move pass. Move enforces the six-friendly-gang
-capacity both during submission and again during resolution. Control ownership
+capacity during submission. Before applying any one player's moves, the native
+prepass projects all of their destinations simultaneously and repeatedly rewrites
+the first roster-ordered move into the highest-numbered overcrowded sector back
+to its source; a rewritten move is a successful no-op, not a failure. The
+recreation performs that normalization before its roster-ordered mutations, so
+contention cannot accidentally become sequential first-mover priority. Control ownership
 changes are atomic with former-owner influenced-site cleanup, Support adjustment, and
 Overthrow statistics so phase hashes cannot observe a partially captured sector.
 Candidate selection intentionally includes only players with a Control command;

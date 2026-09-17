@@ -388,12 +388,25 @@ public sealed class OriginalAiSectorSelectionRulesTests
     }
 
     [Fact]
+    public void ModeZeroUsesAllSectorTieAndOneStepCapacityRouting()
+    {
+        const int source = 20;
+        const int seed = 41;
+        var facts = new Facts(source, seed: seed);
+        var expected = ZeroMaximumStep(
+            source, facts.GangCounts, new DeterministicRandom(seed));
+
+        Assert.Equal(expected, facts.Select(mode: 0, family: AiPlanningState.UnusedFamily));
+        Assert.Equal(3, facts.Random.ConsumptionCount);
+    }
+
+    [Fact]
     public void MalformedShapesAndSelectorValuesAreRejected()
     {
         var facts = new Facts(source: 27);
         facts.Owners[28] = 1;
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 0, family: 2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => facts.Select(mode: 11, family: 2));
         Assert.Throws<ArgumentNullException>(() => OriginalAiSectorSelectionRules.Select(
             6, 27, new PlayerId(0), 2,
             facts.Owners, facts.Disabled, facts.GangCounts,

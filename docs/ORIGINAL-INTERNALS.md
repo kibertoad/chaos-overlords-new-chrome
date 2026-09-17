@@ -2930,18 +2930,40 @@ single Sell credit. Runtime corroboration remains useful.
 passes. Lines 678-701 scan player slots 0 through 5 and each player's 81 roster
 slots, resolving action 14 (**Terminate**). Only after that pass finishes do
 lines 702-725 repeat the same player/roster scan and resolve action 10
-(**Move**) from its stored destination sector.
+(**Move**) from its stored destination sector. At the start of each player's
+Move pass, line 703 calls `0x00476a94`.
+
+That helper repeatedly rebuilds two 64-entry count arrays. Every active
+non-mover increments its current-sector count; every active action-10 record
+increments its proposed-destination count and is appended to an ascending
+roster-slot list. Its sector scan retains the last total above six, making the
+highest-numbered overcrowded sector the next one repaired. It first finds the
+earliest mover into that sector whose source's projected total is below six and
+rewrites the destination to that source. If no such mover exists, it rewrites
+the earliest mover into the sector anyway. When that record is already a
+rewritten source no-op, the helper instead calls sector selector `0x00408642`
+with literal mode 0. Mode 0 assigns no positive weights: it consumes one
+bounded draw over all 64 tied sectors and applies the common x-then-y one-step
+capacity routing. The count/rewrite loop restarts until no projected sector
+exceeds six. The outer resolver then copies every remaining action-10
+destination without another capacity test.
 
 **Interpretation:** Every Terminate resolves before any Move, regardless of
 command submission order. Within each pass, results follow ascending player
-slot and persistent roster slot. Competing Moves therefore fill a destination's
-last friendly capacity slot in roster order. Terminate changes only the copied
-gang record's sector byte to inactive sentinel 100; it does not erase equipment
-or other stale payload before copying the record back.
+slot and persistent roster slot. Competing Moves do not use sequential
+first-mover priority. When otherwise legal moves overfill a destination, the
+earliest qualifying roster slot is rewritten first and becomes a resolved
+no-op, leaving later roster slots to move. Multiple overcrowded sectors are
+repaired from highest sector ID down, with a complete recount after every
+rewrite. Terminate changes only the copied gang record's sector byte to inactive
+sentinel 100; it does not erase equipment or other stale payload before copying
+the record back.
 
 **Confidence:** High static evidence for pass precedence, action identities,
-loop bounds, player/roster ordering, Move target decoding, and Terminate's exact
-record mutation. Runtime corroboration remains useful.
+loop bounds, player/roster ordering, simultaneous projected counts,
+repair-sector and mover selection, mode-0 fallback/RNG behavior, final Move
+target decoding, and Terminate's exact record mutation. Runtime corroboration
+remains useful.
 
 ### BIN-CONTROL-001 - cross-player winner and zero-margin neutral candidate
 

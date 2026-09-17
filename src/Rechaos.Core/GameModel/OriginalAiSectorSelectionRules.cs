@@ -271,7 +271,7 @@ internal static class OriginalAiSectorSelectionRules
         Func<int, bool>? hasPriorInfluence,
         Func<int, int>? completedSiteScore)
     {
-        if (mode is not (>= 1 and <= 10 or >= 12 and <= 16
+        if (mode is not (>= 0 and <= 10 or >= 12 and <= 16
                 or >= 0x40 and < 0x80))
             throw new ArgumentOutOfRangeException(nameof(mode));
         if (sourceSectorId is < 0 or >= MatchLimits.SectorCount)

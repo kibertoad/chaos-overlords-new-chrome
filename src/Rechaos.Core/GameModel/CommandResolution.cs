@@ -442,12 +442,91 @@ public static partial class CommandResolver
 
     private static IReadOnlyList<CommandResolutionResult> ResolveMovementPhase(
         MatchState state,
-        IReadOnlyList<QueuedCommand> commands) => commands
-        .OrderBy(queued => queued.Command.Action == GangAction.Terminate ? 0 : 1)
-        .ThenBy(queued => queued.Command.Player.Value)
-        .ThenBy(queued => GangSlot(state, queued.Command))
-        .Select(queued => Resolve(state, queued))
-        .ToArray();
+        IReadOnlyList<QueuedCommand> commands)
+    {
+        var ordered = commands
+            .OrderBy(queued => queued.Command.Action == GangAction.Terminate ? 0 : 1)
+            .ThenBy(queued => queued.Command.Player.Value)
+            .ThenBy(queued => GangSlot(state, queued.Command))
+            .ToArray();
+        var results = new List<CommandResolutionResult>(ordered.Length);
+
+        foreach (var queued in ordered.Where(queued => queued.Command.Action == GangAction.Terminate))
+            results.Add(Resolve(state, queued));
+
+        foreach (var playerMoves in ordered
+                     .Where(queued => queued.Command.Action == GangAction.Move)
+                     .GroupBy(queued => queued.Command.Player))
+        {
+            foreach (var queued in NormalizeMoveDestinations(state, playerMoves.ToArray()))
+                results.Add(ResolveMove(state, queued.Command));
+        }
+        return results;
+    }
+
+    private static IReadOnlyList<QueuedCommand> NormalizeMoveDestinations(
+        MatchState state,
+        IReadOnlyList<QueuedCommand> moves)
+    {
+        if (moves.Count == 0) return [];
+        var player = state.FindPlayer(moves[0].Command.Player)!;
+        var normalized = moves.ToArray();
+
+        while (true)
+        {
+            var destinations = normalized.ToDictionary(
+                queued => queued.Command.Gang,
+                queued => queued.Command.Target.Id);
+            var projectedCounts = new int[MatchLimits.SectorCount];
+            foreach (var gang in player.Gangs.Where(gang => gang.IsActive))
+                projectedCounts[destinations.GetValueOrDefault(gang.Id, gang.SectorId)]++;
+
+            var overcrowdedSector = Enumerable.Range(0, MatchLimits.SectorCount)
+                .LastOrDefault(
+                    sectorId => projectedCounts[sectorId] > MatchLimits.FriendlyGangsPerSector,
+                    -1);
+            if (overcrowdedSector < 0) return normalized;
+
+            var moveIndex = Array.FindIndex(normalized, queued =>
+            {
+                if (queued.Command.Target.Id != overcrowdedSector) return false;
+                var gang = state.FindGang(queued.Command.Gang)!;
+                return projectedCounts[gang.SectorId] < MatchLimits.FriendlyGangsPerSector;
+            });
+            if (moveIndex < 0)
+                moveIndex = Array.FindIndex(normalized,
+                    queued => queued.Command.Target.Id == overcrowdedSector);
+
+            var selected = normalized[moveIndex];
+            var selectedGang = state.FindGang(selected.Command.Gang)!;
+            var replacement = selectedGang.SectorId;
+            if (selected.Command.Target.Id == replacement)
+            {
+                var currentCounts = Enumerable.Range(0, MatchLimits.SectorCount)
+                    .Select(sectorId => player.Gangs.Count(gang =>
+                        gang.IsActive && gang.SectorId == sectorId))
+                    .ToArray();
+                replacement = OriginalAiSectorSelectionRules.Select(
+                    mode: 0,
+                    sourceSectorId: selectedGang.SectorId,
+                    player: player.Id,
+                    family: AiPlanningState.UnusedFamily,
+                    state.Sectors.Select(sector => sector.Owner?.Value ?? -1).ToArray(),
+                    state.Sectors.Select(sector => sector.CrackdownActive).ToArray(),
+                    currentCounts,
+                    canSoloControl: _ => true,
+                    hasPriorChaos: _ => false,
+                    isHostileOwner: _ => false,
+                    isHumanOwner: _ => false,
+                    Enumerable.Range(0, MatchLimits.PlayerCount).ToArray(),
+                    state.Random);
+            }
+            normalized[moveIndex] = selected with
+            {
+                Command = selected.Command with { Target = CommandTarget.Sector(replacement) }
+            };
+        }
+    }
 
     private static IReadOnlyList<CommandResolutionResult> ResolveChaosPhase(
         MatchState state,

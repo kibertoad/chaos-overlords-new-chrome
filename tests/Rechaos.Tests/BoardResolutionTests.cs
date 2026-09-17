@@ -71,7 +71,7 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
-    public void SimultaneousFriendlyMovesRespectCapacityInRosterOrder()
+    public void SimultaneousFriendlyMovesCancelEarlierRosterDestinationFirst()
     {
         var gangs = new List<MatchGangState>
         {
@@ -91,11 +91,14 @@ public sealed class BoardResolutionTests
 
         match.FinishExecutionPhase();
 
-        Assert.Equal(1, match.FindGang(new GangId(10))!.SectorId);
-        Assert.Equal(0, match.FindGang(new GangId(11))!.SectorId);
+        Assert.Equal(0, match.FindGang(new GangId(10))!.SectorId);
+        Assert.Equal(1, match.FindGang(new GangId(11))!.SectorId);
         Assert.Equal(
-            [CommandResolutionCode.Resolved, CommandResolutionCode.DestinationFull],
+            [CommandResolutionCode.Resolved, CommandResolutionCode.Resolved],
             match.LastPhaseResolutions.Select(result => result.Code));
+        Assert.Equal(
+            [0, 1],
+            match.LastPhaseResolutions.Select(result => result.Command.Target.Id));
     }
 
     [Fact]
