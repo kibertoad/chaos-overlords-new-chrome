@@ -23,13 +23,13 @@ public sealed class MatchStateTests
     {
         GangAction[] repeatable =
         [
-            GangAction.Bribe, GangAction.Chaos, GangAction.Control, GangAction.Heal,
-            GangAction.Hide, GangAction.Influence, GangAction.Research, GangAction.Snitch
+            GangAction.Chaos, GangAction.Control, GangAction.Heal,
+            GangAction.Hide, GangAction.Influence, GangAction.Research
         ];
         GangAction[] oneOff =
         [
-            GangAction.Attack, GangAction.Equip, GangAction.Give,
-            GangAction.Move, GangAction.Sell, GangAction.Terminate
+            GangAction.Attack, GangAction.Bribe, GangAction.Equip, GangAction.Give,
+            GangAction.Move, GangAction.Sell, GangAction.Snitch, GangAction.Terminate
         ];
 
         Assert.All(repeatable, action => Assert.True(CommandRules.CanRepeat(action)));
@@ -40,6 +40,20 @@ public sealed class MatchStateTests
         var validation = CommandValidator.Validate(match, new GameCommand(
             new PlayerId(0), new GangId(10), GangAction.Attack,
             CommandTarget.Gang(new GangId(20)), Repeat: true));
+
+        Assert.Equal(CommandValidationCode.ActionCannotRepeat, validation.Code);
+    }
+
+    [Theory]
+    [InlineData(GangAction.Bribe)]
+    [InlineData(GangAction.Snitch)]
+    public void InstantToleranceActionsCannotBeAssignedAsRecurring(GangAction action)
+    {
+        var match = CreateMatch();
+        match.Coordinator.FinishUpkeep();
+
+        var validation = CommandValidator.Validate(match, new GameCommand(
+            new PlayerId(0), new GangId(10), action, CommandTarget.None, Repeat: true));
 
         Assert.Equal(CommandValidationCode.ActionCannotRepeat, validation.Code);
     }
@@ -134,6 +148,34 @@ public sealed class MatchStateTests
         var gang = match.FindGang(new GangId(10))!;
         Assert.Equal(GangAction.Hide, gang.QueuedCommand!.Command.Action);
         Assert.True(gang.QueuedCommand.Command.Repeat);
+    }
+
+    [Fact]
+    public void OneOffAndRecurringReplacementsOverwriteTheCompletePriorAssignment()
+    {
+        var match = CreateMatch();
+        match.Coordinator.FinishUpkeep();
+        var player = new PlayerId(0);
+        var gangId = new GangId(10);
+        match.Sectors[0].Owner = player;
+
+        Assert.True(match.Submit(new GameCommand(
+            player, gangId, GangAction.Influence, CommandTarget.Site(0), Repeat: true)).Accepted);
+        Assert.True(match.Submit(new GameCommand(
+            player, gangId, GangAction.Chaos, CommandTarget.None)).Accepted);
+
+        var oneOff = match.FindGang(gangId)!.QueuedCommand!.Command;
+        Assert.Equal(GangAction.Chaos, oneOff.Action);
+        Assert.Equal(CommandTarget.None, oneOff.Target);
+        Assert.False(oneOff.Repeat);
+
+        Assert.True(match.Submit(new GameCommand(
+            player, gangId, GangAction.Influence, CommandTarget.Site(0), Repeat: true)).Accepted);
+
+        var recurring = match.FindGang(gangId)!.QueuedCommand!.Command;
+        Assert.Equal(GangAction.Influence, recurring.Action);
+        Assert.Equal(CommandTarget.Site(0), recurring.Target);
+        Assert.True(recurring.Repeat);
     }
 
     [Fact]

@@ -74,14 +74,12 @@ public static class CommandRules
 {
     private static readonly IReadOnlySet<GangAction> RepeatableActions = new HashSet<GangAction>
     {
-        GangAction.Bribe,
         GangAction.Chaos,
         GangAction.Control,
         GangAction.Heal,
         GangAction.Hide,
         GangAction.Influence,
-        GangAction.Research,
-        GangAction.Snitch
+        GangAction.Research
     };
 
     public static readonly IReadOnlyDictionary<GangAction, CommandRule> ByAction = new CommandRule[]

@@ -477,14 +477,10 @@ public sealed class UiNavigationTests
     {
         var actions = CommandOverlayLayout.ActionsFor(recurring: true);
 
-        Assert.Contains(GangAction.None, actions);
-        Assert.Contains(GangAction.Research, actions);
-        Assert.DoesNotContain(GangAction.Attack, actions);
-        Assert.DoesNotContain(GangAction.Equip, actions);
-        Assert.DoesNotContain(GangAction.Give, actions);
-        Assert.DoesNotContain(GangAction.Move, actions);
-        Assert.DoesNotContain(GangAction.Sell, actions);
-        Assert.DoesNotContain(GangAction.Terminate, actions);
+        Assert.Equal([
+            GangAction.Chaos, GangAction.Control, GangAction.Heal, GangAction.Hide,
+            GangAction.Influence, GangAction.Research, GangAction.None
+        ], actions);
         Assert.Equal(CommandOverlayLayout.Actions, CommandOverlayLayout.ActionsFor(recurring: false));
     }
 

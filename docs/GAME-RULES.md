@@ -618,10 +618,12 @@ claim about original-game behavior.
   when its target reaches zero resistance or the acting player loses sector
   ownership. These predicates run before Crackdown duration and pending-site
   updates at the following turn start. The
-  repeatable actions are Bribe, Chaos, Control, Heal, Hide, Influence, Research,
-  and Snitch. Attack, Equip, Give, Move, Sell, and Terminate are one-off actions
-  and are absent from the recurring-action picker; core validation rejects a
-  repeated form submitted through any other path.
+  individual-gang recurring actions are Chaos, Control, Heal, Hide, Influence,
+  and Research. Bribe and Snitch are one-off despite having no turn-start
+  terminal case in the executable. Attack, Bribe, Equip, Give, Move, Sell,
+  Snitch, and Terminate are absent from the recurring-action picker; core
+  validation rejects a repeated form submitted through any other path. The
+  native sector-wide recurring menu is narrower still and omits Research.
 - Moving or terminating the last friendly gang does not abandon the sector;
   ownership changes only through a separate ownership-changing rule.
 - Current exclusions: original crackdown ordering and negative-total edge

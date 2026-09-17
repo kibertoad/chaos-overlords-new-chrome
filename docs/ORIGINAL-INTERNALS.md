@@ -2462,6 +2462,38 @@ expiry from recurring retention and verify immediate replacement/cancellation.
 **Next validation:** capture the targetability transition in a fixed native
 hot-seat turn before and after replacing recurring Hide.
 
+### BIN-COMMAND-ASSIGN-001 - recurring menus and replacement writes
+
+**Observation:** The complete reference inventory for recurring action byte
+`0x00498db2` finds human assignment writes only in individual-gang handler
+`0x00414d8c` and sector-wide handler `0x0041462f`. The individual recurring
+submenu maps exactly to Chaos (3), Control (4), Heal (7), Hide (8), Influence
+(9), Research (11), and None (0). The sector-wide recurring submenu maps to the
+same set except Research is absent. Neither recurring menu offers Bribe (2) or
+Snitch (13).
+
+The individual handler writes a selected recurring action and target to `+10`
+and `+11`, then writes the same action to active field `+7`. Selecting None
+zeros `+10`. Its direct one-off path zeros recurring action and target except
+for its explicit recurring Influence shortcut. The sector-wide handler starts
+its recurring value at zero; ordinary selections therefore overwrite active
+action/target while clearing recurrence, whereas recurring selections write the
+selected action to both active and recurring fields for each eligible gang.
+
+**Interpretation:** A new assignment replaces the complete prior assignment;
+it does not inherit the old repeat flag or target. Bribe and Snitch are ordinary
+one-off actions even though raw recurring values 2 and 13 would survive the
+turn-start terminal switch if introduced outside these human assignment paths.
+The recreation rejects those UI-unreachable recurring forms rather than
+promoting stale/raw-state behavior into a supported command.
+
+**Confidence:** High from the exhaustive recurring-byte reference inventory,
+both bounded assignment handlers, and their active/recurring target writes.
+
+**Recreation status:** authoritative validation and the individual recurring
+picker expose the recovered six actions. Queue replacement and cancellation
+overwrite or clear the prior action, target, and repeat state atomically.
+
 ### BIN-REPEAT-001 - turn-start terminal recurring-command cleanup
 
 **Observation:** Before copying recurring action `+10` to active action `+7`,
@@ -2478,10 +2510,11 @@ actions:
 
 After that switch, every recurring action clears when the gang's sector byte is
 the inactive sentinel 100. The surviving recurring action and target are then
-copied into the active fields. Bribe, Chaos, Hide, and Snitch have no terminal
-case in this loop and therefore continue until explicitly replaced/cancelled or
-the gang becomes inactive. The cleanup runs before the same outer function's
-Crackdown-duration update and pre-planning site-benefit rebuild.
+copied into the active fields. Chaos and Hide have no terminal case and continue
+until explicitly replaced/cancelled or the gang becomes inactive. Bribe and
+Snitch also lack terminal cases, but the native human assignment menus cannot
+place either value in the recurring field. The cleanup runs before the same
+outer function's Crackdown-duration update and pre-planning site-benefit rebuild.
 
 **Interpretation:** A Control order that becomes illegal because police appeared
 after submission fails during resolution but does not wait out the police; it is

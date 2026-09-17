@@ -252,9 +252,11 @@ Last updated: 2026-09-13
   legacy Thousands of Colors row explicitly explains that the modern renderer
   is always above 16-bit and that no changeable retro-color mode is currently
   planned; Slide Panels explains the global immediate-display behavior when off.
-- Recurring commands are now limited in both the picker and authoritative
-  validation to Bribe, Chaos, Control, Heal, Hide, Influence, Research, and
-  Snitch. Attack, Equip, Give, Move, Sell, and Terminate remain one-off actions.
+- Recurring commands are limited in both the individual-gang picker and
+  authoritative validation to Chaos, Control, Heal, Hide, Influence, and
+  Research. Bribe and Snitch are one-off along with Attack, Equip, Give, Move,
+  Sell, and Terminate. The native sector-wide recurring menu is narrower still:
+  it omits Research.
 - City Financial, Comlink View, and Gangs in Sector dynamic fields now follow
   their original template baselines and apertures. Research selection paints an
   active OK state for a valid item and shows accumulated/required progress.
