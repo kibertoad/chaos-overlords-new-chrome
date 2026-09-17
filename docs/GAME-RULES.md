@@ -192,8 +192,9 @@ controlled reference observation confirms its execution timing and edge cases.
 - Confidence: High static evidence for initialization, the pool,
   base/equipment/site aggregation, ownership scope, difficulty adjustments,
   completion threshold, fixed roster order, later-roll suppression, and repeat
-  cleanup; High for the accepted-setup-to-city RNG order; Low for the
-  clock-derived state at Begin and complete later-match RNG call order.
+  cleanup; High for the accepted-setup-to-city RNG order and complete direct
+  RNG-wrapper caller ownership; Low for the clock-derived state at Begin and
+  original-runtime stream correlation.
 - Implementation: `MatchPlayerState.RemainingResearch`,
   `MatchPlayerState.ApplyResearch`, `ManualRules.ResearchDiceCount`, and
   `CommandResolver.ResolveResearch`; `SpecialSiteRules.ResearchTechLimit`

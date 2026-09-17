@@ -751,6 +751,14 @@ from `timeGetTime() & 0xffff`, producing an unsigned seed from 0 through 65,535.
 The other clock consumers remain presentation/network/timing candidates until
 their individual data flow is classified.
 
+The common startup caller `0x00460ccf` invokes this initializer at
+`0x00460cf7`, then preference loader `0x0046439a` at `0x00460d14`. The loader
+reads registry value `serialNum`; only when it is zero, calls at `0x00464726`
+and `0x00464739` draw two inclusive `1..16384` values, combine their zero-based
+forms into a legacy serial number, and persist it. A first run therefore
+consumes six raw RNG values after seeding, while later runs normally consume
+none at this point.
+
 **Confidence:** High static evidence for the seed source, truncation, zero
 extension, single writer, and process-initialization placement.
 
@@ -758,8 +766,14 @@ extension, single writer, and process-initialization placement.
 process-uptime millisecond clock when `ChaosGame` is constructed. Explicit
 replay/test and multiplayer seeds remain full-width deterministic inputs.
 
-**Next validation:** Classify any pre-match calls to the bounded gameplay RNG
-wrapper and correlate the first generated city against a native launch.
+**Intentional exception:** The recreation does not let an obsolete
+installation-level network serial number perturb authoritative simulation RNG.
+Its explicit seed always denotes the initial simulation stream. Native launch
+fixtures must record whether `serialNum` existed and advance the predicted
+native stream by two bounded calls when it did not.
+
+**Next validation:** Correlate the first generated city against a native launch
+whose low-16-bit seed and prior `serialNum` state are both captured.
 
 ### BIN-RNG-002 - runtime random step
 
@@ -785,9 +799,8 @@ returns the chosen value modulo the clamped input plus one.
 **Interpretation:** Gameplay requests an inclusive random integer from one
 through the input and consumes exactly three raw RNG values for each request.
 
-**Confidence:** High for control flow, constants, range, and consumption count.
-Complete wrapper call-site ownership and runtime output correlation remain
-unknown.
+**Confidence:** High for control flow, constants, range, consumption count, and
+complete direct call-site ownership. Runtime output correlation remains open.
 
 **Implementation:** `DeterministicRandom.NextRaw` and `NextInclusive` reproduce
 these address-level facts. `DeterministicRandom.SeedFromTimerMilliseconds`
@@ -797,33 +810,34 @@ multiplayer. `NextInclusive` also preserves the native below-one clamp and its
 three raw draws; the recreation-only zero-based `NextInt` API retains strict
 positive-bound validation.
 
-**Next validation:** Classify the remaining in-match callers of `0x0045d227`;
-correlate a controlled dice sequence with predicted outputs.
+Ghidra reports exactly 61 direct calls to `0x0045d227` in 24 containing
+functions. All are now classified: 46 calls in 15 recovered AI dispatcher,
+family, sector-target, and placement functions; 13 calls in eight simulation
+functions covering setup portraits/reactions, city/site/HQ generation, hire
+refill/Force, shared dice, and the whole-turn resolver; and the two conditional
+startup `serialNum` calls above. No unknown direct gameplay wrapper caller
+remains.
 
-Ghidra reports direct calls to `0x0045d227` from 21 containing functions and 61
-call sites. This establishes broad reuse but does not yet assign gameplay
-semantics to individual callers. The checked-in focused-report script now emits
-incoming call addresses to support that mapping without storing bulk decompiler
-output.
+**Next validation:** correlate a controlled dice sequence with predicted
+outputs; static call ownership is complete.
 
-### BIN-RNG-004 - three callers classified as command selection, not combat
+### BIN-RNG-004 - AI planning callers
 
-**Observation:** Focused Ghidra 12.1.3 summaries of RNG-wrapper callers
-`0x00401000`, `0x0040abc0`, `0x00428ef0`, and `0x00436c70` show large action-selection
-switches, repeated bounded attempts to choose targets, and writes to per-gang
-command/target slots. All three are reached from `0x00432da0`; none directly
-applies Force damage or exhibits the manual's attack/retaliation arithmetic.
+**Observation:** The 46 direct wrapper calls in the AI group are confined to
+dispatcher `0x00432da0`, shared sector/placement helpers `0x00408642` and
+`0x00408214`, and the twelve recovered family-handler containers documented in
+the AI sections below. Their action-selection branches, target pools, retry
+loops, and persistent state writes have now been bounded individually. None is
+an unclassified Combat or board-resolution caller.
 
-**Interpretation:** These functions belong to AI command planning or validation,
-not the Combat resolver. They should be excluded from the next formula search;
-their shared caller `0x00432da0` is a promising AI dispatcher candidate.
+**Interpretation:** Original-AI random consumption remains part of the same
+global deterministic stream, but it is distinct from the whole-turn resolver's
+dice and tie-break calls. The recreation keeps that separation while sharing
+one serialized RNG state.
 
-**Confidence:** Medium. The command-slot interpretation is structurally strong,
-but field identities and action constants are not yet fully labeled.
-
-**Next validation:** inspect the remaining RNG callers for writes to the gang
-Force field and for paired full/halved success loops, then correlate the result
-with a controlled original-game combat observation.
+**Confidence:** High static evidence from the exhaustive incoming-reference
+inventory and completed family/helper analyses. Fixed original-runtime AI
+traces remain the missing black-box corroboration.
 
 ### BIN-RNG-005 - accepted local setup through initial city
 
