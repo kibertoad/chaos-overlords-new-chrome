@@ -297,12 +297,26 @@ and interruption behavior rather than ownership of these path literals.
 for the length of its final track with `MCI_STATUS`, then issues an
 `MCI_PLAY` request with `FROM`, `TO`, and `NOTIFY`. The selector at
 `0x004642bd` maps mode 0 to the inclusive range 2-2, mode 1 to 9-9, and mode 2
-to 3-8. Mode 0 is selected by the application/menu flow at `0x00460ccf`, mode
-2 by fresh-game setup at `0x0046e766`, and mode 1 by the endgame/award screens
-at `0x0042b9e0` and `0x0042c3f5`. The main event pump at `0x00462579` invokes
-the current selector again when MCI reports that playback has stopped. Its
-deactivation and activation branches call pause `0x00458c10` and resume
-`0x00458c5f`; shutdown closes the MCI device through `0x00458f3e`.
+to 3-8. The complete 11-call selector inventory is:
+
+- mode 0 at `0x004615d5` for initial title entry and at `0x004617ba`,
+  `0x00461a33`, `0x00461be9`, `0x00461ed6`, and `0x00462098` after returning
+  from the local/network/load game paths to the title application loop;
+- mode 2 at `0x0046eb22` on entry to the outer game/turn function and at
+  `0x0046f5ce` when a per-player endgame screen returns to a later active human;
+- mode 1 at `0x0042b9f9` and `0x0042c40e`, on entry to the two endgame/award
+  presentation functions; and
+- the current mode at `0x00462ae8`, when the main event pump observes that MCI
+  playback has stopped.
+
+There are no selector calls on Title-to-Setup, Setup-to-Title, Options, Help,
+or ordinary in-game panel transitions. Selector `0x004642bd` stops through
+`0x00464385` only when its requested mode differs from `0x00487878`, records
+the new nonnegative mode, and then starts that mode's range whenever music is
+enabled. Thus the event-pump call repeats Track 2 or 9 and restarts the 3-8
+range after Track 8. Deactivation and activation branches call pause
+`0x00458c10` and resume `0x00458c5f`; shutdown closes the MCI device through
+`0x00458f3e`.
 The Options-application helper at `0x004652a0` treats byte `0x00487868` as a
 0-10 music level. Zero clears the music-enabled flag and stops playback;
 nonzero levels call `0x00458e68`, which writes `level * 25 * 256` to both
@@ -317,9 +331,10 @@ pauses music and regaining focus resumes it. The GOG-local `winmm.dll` adapts
 these original CD-audio calls to the supplied Ogg files; the executable itself
 still expresses the original physical-track policy.
 
-**Confidence:** High static evidence for track ranges, ordering, repeat and
-focus behavior. Medium for the precise menu-to-menu restart boundaries until a
-controlled runtime capture is available.
+**Confidence:** High static evidence for the exhaustive selector-call
+inventory, track ranges, ordering, repeat, focus behavior, and precise
+menu/program restart boundaries. Native audible timing and driver behavior
+remain runtime-only.
 
 **Recreation status:** `SoundtrackCatalog` encodes the three track programs and
 `ChaosGame.Media.cs` switches them for title/setup, gameplay and endgame
@@ -333,8 +348,9 @@ This deliberately corrects the original registry writer described in
 Playback or preference-write failure remains presentation-only and cannot affect
 deterministic simulation.
 
-**Next validation:** Capture title/setup transitions, then validate playback,
-focus changes, volume, and track transitions on each supported native platform.
+**Next validation:** Validate playback, focus changes, volume, and track
+transitions on each supported native platform. Static menu ownership and
+restart boundaries are closed.
 The original preference-persistence behavior is now statically closed.
 
 ### BIN-SOUND-001 - effect slots, volume and setup cues
@@ -3628,17 +3644,17 @@ Useful static work which remains is narrower:
 1. Resolve remaining semantic PX rectangle roles where callers can distinguish
    them; the loader, palette conversion, copy modes, color keys, and embedded
    pattern masks are closed.
-2. Finish exact menu-to-menu music restart boundaries; registry names, types,
-   defaults, load order, and the shipped persistence failures are now closed.
-3. Continue exact UI geometry/hit-map work where it can be derived from draw and
+2. Continue exact UI geometry/hit-map work where it can be derived from draw and
    pointer call arguments, including setup name/drop fields and remaining panels.
-4. Match the linker/runtime fingerprints against a known compiler signature only
+3. Match the linker/runtime fingerprints against a known compiler signature only
    if this becomes useful to interpret generated-code artifacts; it is not a
    gameplay-parity dependency.
 
 The fixed original save/load envelope is closed above. Every live AI family,
 including family 1's unavailable-command policy and family 11's late guards,
 is closed statically; reopen those areas only if a new contradiction appears.
+The complete soundtrack-selector inventory also closes static menu/program
+restart boundaries; remaining playback checks require native runtime evidence.
 
 Runtime captures listed elsewhere are corroboration work and deliberately are
 not included in this static queue. Every completed static item must add its
