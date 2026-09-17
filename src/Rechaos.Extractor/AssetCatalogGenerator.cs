@@ -42,17 +42,23 @@ public static class AssetCatalogGenerator
                 .Append(classification.Palette).Append(" | `")
                 .Append(asset.Sha256).AppendLine("` |");
         }
-        return builder.ToString();
+        return builder.ToString().ReplaceLineEndings("\n");
     }
 
     private static (string Role, string Owner, string Palette) Classify(ExtractedAsset asset)
     {
+        var resourceName = Path.GetFileNameWithoutExtension(asset.Path).ToUpperInvariant();
+        var keyedCopy = resourceName is "PX00150" or "PX06004";
+        var opaqueBlackCopy = resourceName is "PX00201" or "PX00300" ||
+                              resourceName.StartsWith("PX04", StringComparison.Ordinal) ||
+                              resourceName.StartsWith("PX07", StringComparison.Ordinal);
+
         if (asset.Path.StartsWith("images/", StringComparison.Ordinal))
-            return ("PX16 presentation image", "Unknown", "RGB555; color key unresolved");
+            return ("PX16 presentation image", "Unknown", DescribePx16Copy(keyedCopy, opaqueBlackCopy));
         if (asset.Path.StartsWith("images8/", StringComparison.Ordinal))
-            return ("Decoded PX08 presentation image", "Unknown", "Embedded 256-entry BGRA palette; transparency unresolved");
+            return ("Decoded PX08 presentation image", "Unknown", DescribePx08Copy(keyedCopy, opaqueBlackCopy, decoded: true));
         if (asset.Path.StartsWith("raw/px08/", StringComparison.Ordinal))
-            return ("PX08 indexed image source", "Unknown", "Palette and transparency unresolved");
+            return ("PX08 indexed image source", "Unknown", DescribePx08Copy(keyedCopy, opaqueBlackCopy, decoded: false));
         if (asset.Path.StartsWith("audio/", StringComparison.Ordinal))
             return ("Sound effect", "Unknown action/UI trigger", "N/A");
         if (asset.Path.StartsWith("music/", StringComparison.Ordinal))
@@ -64,6 +70,23 @@ public static class AssetCatalogGenerator
         if (asset.Path.StartsWith("help/", StringComparison.Ordinal))
             return ("Original WinHelp resource", "Local extraction input; not used at runtime", "Format-dependent");
         return ("Opaque original data", "Unknown", "Unknown");
+    }
+
+    private static string DescribePx16Copy(bool keyedCopy, bool opaqueBlackCopy)
+    {
+        if (keyedCopy) return "RGB555; native exact maximum-white key";
+        if (opaqueBlackCopy) return "RGB555; native opaque copy (black retained)";
+        return "RGB555; color key unresolved";
+    }
+
+    private static string DescribePx08Copy(bool keyedCopy, bool opaqueBlackCopy, bool decoded)
+    {
+        var palette = decoded ? "Embedded 256-entry BGRA palette" : "Embedded indexed palette";
+        if (keyedCopy) return $"{palette}; native exact white key";
+        if (opaqueBlackCopy) return $"{palette}; native opaque copy (black retained)";
+        return decoded
+            ? "Embedded 256-entry BGRA palette; transparency unresolved"
+            : "Palette and transparency unresolved";
     }
 
     private static string DescribeConversion(ExtractedAsset asset)

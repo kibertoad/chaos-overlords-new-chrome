@@ -65,8 +65,67 @@ selected within this platform layer.
 
 **Confidence:** Verified imports; Medium architecture interpretation.
 
-**Next validation:** Find cross-references from the literal PX paths and palette
-APIs, then map the load/convert/blit functions and color-key behavior.
+### BIN-API-002 - PX loading, palette, and copy modes
+
+**Observation:** Startup `0x00460ccf` probes both
+`data\PX08\px00128` and `data\PX16\px00128`. The result selects an 8- or
+16-bit global depth before normal image loading begins. Numeric loader
+`0x00464155` starts with `data\PX08\PX00000`, replaces `08` with `16` at
+16-bit depth, writes the requested five-digit resource number, and delegates
+to `0x004273d5` with caller-supplied dimensions.
+
+`0x004273d5` reads the 14-byte BMP file header and 40-byte DIB header, supplies
+the caller's width and height plus one plane, retains the file's bit depth and
+compression, and reads a color table only below 16 bits. It uploads indexed
+pixels with `SetDIBits` color-use 0 (`DIB_RGB_COLORS`) and 16-bit pixels with
+color-use 1 (`DIB_PAL_COLORS`); the latter unusual flag is harmless for a
+direct-color DIB. It then copies the temporary surface to the requested one.
+The older resource-or-file loader `0x00426f77` follows the same header repair
+and upload sequence.
+
+Palette loader `0x004282aa` reads the selected `data\CLT00000` file into a
+256-entry logical palette. Entries 10 through 245 come from the CLT payload
+and are marked explicit/no-collapse; the first and last ten preserve reserved
+system entries. It selects and realizes that palette in the surface DC and,
+when DirectDraw palette objects exist, mirrors it to the DirectDraw surface.
+
+Copy wrapper `0x0042773e` uses `SRCCOPY`; when source and destination sizes
+differ it first selects `COLORONCOLOR` and performs an opaque `StretchBlt`.
+Wrapper `0x00427864` has three unscaled modes: 0 applies a resource-selected
+pattern mask, 1 invokes keyed mask compositor `0x00427a09`, and every other
+value is opaque `SRCCOPY`. A scaled copy bypasses all three modes and is always
+opaque `COLORONCOLOR`.
+
+The sole color comparison in the imported GDI path is `SetBkColor` inside
+`0x00427a09`. Its exact key is `RGB(255,255,255)` at 8-bit depth and
+`RGB(255,252,255)` at 16-bit depth, the GDI representation used for maximum
+RGB555 white. No `TransparentBlt`, `MaskBlt`, `AlphaBlend`, or second
+`SetBkColor` caller exists. Mode 1 is statically bound to the `PX00150` city
+markers at `0x00412ac4` and the `PX06004` Last Turn illustration inside
+`0x0044fd6c`. By contrast, the original loads `PX00300`, `PX04xxx`, and the
+compact item/art sheets into scratch surfaces and copies their black pixels
+opaquely with `0x0042773e`; black is not a native transparency key.
+
+The complete city renderer `0x004123cc` loads ownership layers and `PX00150`,
+but has no read of police duration, no `PX00300` load, and no patrol-car copy.
+The sole constant `PX00300` load is in combat compositor `0x0042f98b`, where
+its police cells are copied opaquely. A city/sector Crackdown-car overlay is
+therefore a recreation invention, not original presentation.
+
+**Interpretation:** Repaired PX16 pixels can be passed through without a
+palette conversion step. Alpha is a recreation-side representation only for
+the two proven exact-white keyed roles; broad per-sheet black alpha and map
+Crackdown overlays alter native pixels. The recreation accepts both 248 and
+255 as a decoded maximum five-bit channel because BMP decoders expand RGB555
+maximums either by shifting or bit replication; this still identifies only
+packed RGB555 value `0x7fff`.
+
+**Confidence:** High static evidence from complete loader, palette, copy, mask,
+and city/combat compositor dataflow. Exact display-driver conversion of the
+16-bit white key remains runtime-dependent.
+
+**Next validation:** Pixel-compare the two proven white-keyed roles and opaque
+black apertures against native captures when runtime validation is permitted.
 
 ### BIN-UI-016 - Last Turn Events site-image treatment
 

@@ -34,7 +34,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00200` | Endgame awards/statistics frame | High from visible labels |
 | `PX00201` | Endgame award icons (fist, skull, chicken, dollar, safe), colored player-number rows, statistics labels, and pressed Awards/Stats/Done controls | High from visible content and the original Help Endgame topic |
 | `PX00202`, `PX00203` | Single-player victory and elimination splashes with one Overlord portrait aperture | High from visible text and geometry; hot-seat sequencing unresolved |
-| `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; patrol-car cell `(116,0,48,64)` | High for sheet contents, Medium for patrol-car crop |
+| `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; combat uses opaque cells from this sheet | High from sheet inspection and the native combat compositor |
 | `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
 | `PX05009` | Gangs in Sector browser with one gang portrait and Tech Level, Upkeep, and fourteen stat rows | High from visible labels and main-console workflow |
 | `PX05013` | Equipment to Sell panel with acting-gang portrait, three independently selectable equipment rows, original-price half-value proceeds, Cancel and OK | High from visible labels and original manual Sell workflow |
@@ -164,8 +164,9 @@ cursor feedback remain to be validated.
   Income, Tolerance, Support, and Chaos. In particular, sector Income is the
   value added to each participating gang's Chaos dice, not passive cash;
   ordinary control contributes the separate `$1` Sector Tax.
-- Active Crackdown sectors overlay the color-keyed patrol-car slice from
-  `PX00300`; pure black is treated as transparent for this sprite sheet.
+- Crackdown state has no city or sector-map sprite in the original renderer.
+  `PX00300` is loaded by the combat compositor and copied opaquely into black
+  combat apertures; its black pixels are content, not a transparency key.
 - Sector detail uses `PX02000` source `(0, siteId*64, 120, 64)`; gang detail
   and hiring use `PX03000` source `((gangId%10)*64, (gangId/10)*64, 64, 64)`.
 - Sector detail also shows up to ten friendly or detected enemy portraits from

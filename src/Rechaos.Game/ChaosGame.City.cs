@@ -178,12 +178,6 @@ public sealed partial class ChaosGame
                     : new Color(24, 37, 39));
             if (state.Setup.Scenario == ScenarioId.Siege && sector.IsImportant)
                 DrawSiegePylons(batch, pixel, index);
-            if (sector.CrackdownActive && _policeSprites is not null)
-                batch.Draw(
-                    _policeSprites,
-                    new Rectangle(destination.X + 14, destination.Y + 10, 27, 32),
-                    OriginalSpriteLayout.PolicePatrolCar,
-                    Color.White);
         }
         foreach (var marker in CitySiteMarkerProjection.Project(
                      state, player.Id, _siteSearchSelections.For(player.Id)))

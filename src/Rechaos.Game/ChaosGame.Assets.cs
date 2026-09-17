@@ -11,19 +11,19 @@ public sealed partial class ChaosGame
 {
     private Texture2D? LoadTexture(
         string fileName,
-        bool transparentBlack = false,
         bool transparentWhite = false)
     {
         var path = Path.Combine(_assetRoot, "images", fileName);
         if (!File.Exists(path)) return null;
         using var stream = File.OpenRead(path);
         var texture = Texture2D.FromStream(GraphicsDevice, stream);
-        if (!transparentBlack && !transparentWhite) return texture;
+        if (!transparentWhite) return texture;
         var colors = new Color[texture.Width * texture.Height];
         texture.GetData(colors);
         for (var index = 0; index < colors.Length; index++)
-            if ((transparentBlack && colors[index].R == 0 && colors[index].G == 0 && colors[index].B == 0)
-                || (transparentWhite && colors[index].R >= 248 && colors[index].G >= 248 && colors[index].B >= 248))
+            // Native mode-1 copies key the maximum RGB555 white. Depending on
+            // the BMP decoder, a maximum five-bit channel expands to 248 or 255.
+            if (colors[index].R >= 248 && colors[index].G >= 248 && colors[index].B >= 248)
                 colors[index] = Color.Transparent;
         texture.SetData(colors);
         return texture;
@@ -32,18 +32,18 @@ public sealed partial class ChaosGame
     private void LoadCombatAnimationTextures()
     {
         for (short animation = 0; animation <= 27; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, false), transparentBlack: true);
+            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, false));
         for (short animation = 0; animation <= 28; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, true), transparentBlack: true);
+            LoadCombatAnimationTexture(CombatAnimationRouting.AttackFile(animation, true));
         for (short animation = 0; animation <= 19; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, false), transparentBlack: false);
+            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, false));
         for (short animation = 0; animation <= 20; animation++)
-            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, true), transparentBlack: false);
+            LoadCombatAnimationTexture(CombatAnimationRouting.HitFile(animation, true));
     }
 
-    private void LoadCombatAnimationTexture(string fileName, bool transparentBlack)
+    private void LoadCombatAnimationTexture(string fileName)
     {
-        var texture = LoadTexture(fileName, transparentBlack: transparentBlack);
+        var texture = LoadTexture(fileName);
         if (texture is not null) _combatAnimationTextures[fileName] = texture;
     }
 

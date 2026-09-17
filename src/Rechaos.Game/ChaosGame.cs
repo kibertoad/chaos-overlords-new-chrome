@@ -277,7 +277,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         for (var index = 0; index < _cityOwnershipLayers.Length; index++)
             _cityOwnershipLayers[index] = LoadTexture($"PX1000{index}.bmp");
         _endgameBackground = LoadTexture("PX00200.bmp");
-        _endgameSprites = LoadTexture("PX00201.bmp", transparentBlack: true);
+        _endgameSprites = LoadTexture("PX00201.bmp");
         _victoryBackground = LoadTexture("PX00202.bmp");
         _eliminationBackground = LoadTexture("PX00203.bmp");
         _gameInfoBackground = LoadTexture("PX05021.bmp");
@@ -311,10 +311,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _siteMarkerSprites = LoadTexture("PX00150.bmp", transparentWhite: true);
         _sitePortraits = LoadTexture("PX02000.bmp");
         _gangPortraits = LoadTexture("PX03000.bmp");
-        _itemPortraits = LoadTexture("PX04999.bmp", transparentBlack: true);
+        _itemPortraits = LoadTexture("PX04999.bmp");
         for (var itemId = 0; itemId < _itemRotationTextures.Length; itemId++)
-            _itemRotationTextures[itemId] = LoadTexture($"PX04{itemId:000}.bmp", transparentBlack: true);
-        _policeSprites = LoadTexture("PX00300.bmp", transparentBlack: true);
+            _itemRotationTextures[itemId] = LoadTexture($"PX04{itemId:000}.bmp");
+        _policeSprites = LoadTexture("PX00300.bmp");
         _uiSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
         _font = _uiSprites is null
             ? throw new InvalidDataException("PX00129 is required for the original UI font.")

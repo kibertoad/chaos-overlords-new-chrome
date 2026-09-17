@@ -465,10 +465,6 @@ public sealed partial class ChaosGame
                 batch.Draw(layer, destination, CityMapLayout.Source(sectorId), Color.White);
             else
                 batch.Draw(pixel, destination, new Color(24, 37, 39));
-            if (sector.CrackdownActive && _policeSprites is not null)
-                batch.Draw(_policeSprites,
-                    new Rectangle(destination.X + 14, destination.Y + 10, 27, 32),
-                    OriginalSpriteLayout.PolicePatrolCar, Color.White);
             DrawBorder(batch, pixel, destination,
                 column == 1 && row == 1 ? Color.White : new Color(0, 150, 45),
                 column == 1 && row == 1 ? 2 : 1);

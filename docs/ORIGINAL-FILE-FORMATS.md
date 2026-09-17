@@ -153,8 +153,11 @@ untouched. **Verified.** Comparison of all 12,065,806 paired PX08/PX16 pixels
 strongly identifies RGB555: total absolute RGB error is 111,862,509 for RGB555
 versus 744,334,623 for RGB565, with 7,413,122 versus 6,230,106 exact quantized
 matches. No source pixel has bit 15 set. Channel interpretation is therefore
-**High** confidence; transparency/color-key behavior still needs reference
-observation.
+**High** confidence. Static executable analysis further establishes an exact
+maximum-white key for `PX00150` and `PX06004`, while black pixels in the
+police, item, rotation, endgame, and combat-animation sheets are copied
+opaquely. Native pixel comparison remains desirable for display-driver
+conversion at the 16-bit key boundary.
 
 Known dimension groups (**High**, from exact payload-size arithmetic and the
 reference size map):
