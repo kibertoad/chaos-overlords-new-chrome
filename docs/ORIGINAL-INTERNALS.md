@@ -184,8 +184,12 @@ or sound; their presence does not prove simulation timing.
 
 **Confidence:** Verified imports; Medium API-role interpretation; Low timer role.
 
-**Next validation:** Cross-reference `data\snd00000`, `Data\mvIntro`,
-`Data\mvLogos`, and `A:\CHAOS\CDTrack` literals.
+**Static follow-through:** The sound loader, all 110 calls to its gated playback
+wrapper, and the CD-track selector/lifecycle are mapped in `BIN-SOUND-001` and
+`BIN-MUSIC-001` below. The two movie files have also been structurally decoded
+as the supported Smacker-v2 inputs documented in `ORIGINAL-FILE-FORMATS.md` and
+`AUDIO-VIDEO.md`. Remaining media questions concern native presentation timing
+and interruption behavior rather than ownership of these path literals.
 
 ### BIN-MUSIC-001 - CD track programs and lifecycle
 
@@ -925,16 +929,20 @@ split using quotient and remainder by `0x51` (81).
 
 **Interpretation:** The first byte is an AI strategy/action-family selector,
 the handler switch maps it to command planners, and the two projections are
-closely related per-gang planned-command records. Division by 81 encodes a
-player/sector or owner/sector pair. Exact field names and the correspondence
-between family values and public command IDs are not yet established.
+the original per-gang planning record and live gang-state projection. Division
+by 81 encodes a player/sector or owner/sector pair. The later bounded handler
+analyses identify every dispatched family, public command write, and target
+encoding.
 
-**Confidence:** Verified for addresses, call site, strides, switch values,
-handler mapping, mirrored writes, and division constant; Medium for record and
-target semantics; Low for public action-name mapping.
+**Confidence:** High for addresses, call site, strides, switch values, handler
+mapping, mirrored writes, division constant, record semantics, public actions,
+and target encodings. The supporting evidence is completed in `BIN-AI-003`
+through `BIN-AI-005` and the family-specific sections below.
 
-**Next validation:** analyze `0x00458fa0`, label the state-query selectors used
-by `0x00432da0`, and correlate each handler with controlled queued commands.
+**Static follow-through:** `0x00458fa0`, the relevant `0x00432da0` selectors,
+all fourteen dispatched handlers, and all public command/target writes are now
+bounded. Controlled original-runtime traces remain corroboration, not a gap in
+the static mapping.
 
 ### BIN-AI-002 - scenario-sensitive family selection
 
@@ -965,13 +973,16 @@ preserve the current family. `OriginalAiFamilyRules` implements this table and
 side-effect flag in isolation. The same function separately compares the
 scenario global with values 6, 7, and 8 after family dispatch.
 
-**Confidence:** Verified for selector storage, scenario identity/order, table
-values, preserve behavior, mode-4 copy, and global comparisons. The semantic
-names of hire roles 0 through 6 remain unknown.
+**Confidence:** High for selector storage, scenario identity/order, table
+values, preserve behavior, mode-4 copy, and global comparisons. Hire roles 0
+through 6 are internal schedule indices rather than named public concepts; their
+complete scenario schedules, adjustment rules, ranking modes, and family
+effects define their semantics in `BIN-AI-003B`.
 
-**Next validation:** recover the outer planner's family-count adjustments before
-it writes the `0x7c` hire-role word, then represent planning records in
-`MatchState`.
+**Static follow-through:** The outer planner's complete family-count,
+affordability, standing, prior-role, and late-turn adjustments are recovered
+below. `AiPlanningState` persists the six role pairs and all six-by-81 family
+records in hashes, saves, and replays.
 
 ### BIN-AI-003 - outer AI planning pass and command history
 
@@ -994,20 +1005,21 @@ hire role to `0x00482128`. The function also iterates
 64 entries in a separate sector-sized pass before dispatching gangs.
 
 **Interpretation:** `0x00458fa0` is the outer AI planning pass. The +2..+4 and
-+5..+7 triples are previous/current command projections, +8..+10 is the newly
-planned triple, decimal 100 marks an unused gang slot, and +12/+14 are two
-countdowns. The post-dispatch ten-way switch is objective strategy, while the
-64-entry pass prepares sector-level priorities. These field meanings remain
-provisional until save deltas or controlled commands identify them.
++5..+7 triples are older/previous command projections, +8..+10 is the newly
+planned triple, decimal 100 marks an unused gang slot, and +12/+14 are the
+weapon/armor replacement cooldowns. The post-dispatch ten-way switch is the
+scenario-specific hiring strategy, while the 64-entry pass prepares sector
+weights. Save/load references and complete handler dataflow establish these
+field meanings without requiring runtime deltas.
 
-**Confidence:** Verified for callers, loop bounds, addresses, strides, copies,
-clears, decrements, sentinel, dispatcher call coverage, and the hire-role
-schedule; High that this is an outer AI planner; Medium for command-history and
-countdown semantics.
+**Confidence:** High for callers, loop bounds, addresses, strides, copies,
+clears, decrements, sentinel, dispatcher call coverage, command-history fields,
+equipment cooldowns, and the complete hire-role schedule.
 
-**Next validation:** correlate the three byte triples and two words against a
-saved recurring and one-off command, then trace the four-valued global setup
-selection independently of the ten-way scenario selector.
+**Static follow-through:** The three action/target generations, both cooldowns,
+and their save/load paths are mapped in `BIN-AI-004` and the family sections.
+The independent four-valued setup selection is AI Mentality, whose staging,
+persistence, and consumers are also bounded in `BIN-AI-004`.
 
 ### BIN-AI-003B - base hire-role schedule
 
@@ -1187,9 +1199,10 @@ the snub as a separate authoritative mutation.
 directions, the cash-200 override, post-selection affordability, and no-fallback
 behavior, plus the failed-hire rejection formula and tie direction.
 
-**Next validation:** recover the scenario-specific role selection in
-`0x00458fa0`, then use its chosen role to integrate this selector with live AI
-hiring.
+**Static follow-through:** `BIN-AI-003B` now supplies every scenario-specific
+role schedule and adjustment in `0x00458fa0`; the live post-command hiring pass
+uses the resulting ranking mode, preserves failed-offer rejection, and records
+the authoritative mutation for replay.
 
 ### BIN-AI-003C - AI hire destination and persistent placement anchor
 
@@ -1535,14 +1548,14 @@ setup staging/serialization. Family handler 1 uses it to redirect cash-qualified
 crime behavior between human and non-human owners and between Chaos, Snitch,
 and Move. A player-pair scoring pass also changes paths by mentality.
 
-**Confidence:** Verified for resource IDs, address, display expression, query
+**Confidence:** High for resource IDs, address, display expression, query
 selector, all six write classifications, all eight genuine consumer call sites,
 cash/Tolerance/owner/human-owner selector meanings, command-byte mappings,
 comparison constants, pair counters, integer ratio, observer-to-target write
-direction, and resulting raw record writes; High for the global's identity,
-persistence/setup flow, selector meanings, effective-stat labels, the complete
-three-generation action-history lifecycle and serialization, and the bounded
-decisions above; Low for the complete planner policy and its target enumeration.
+direction, resulting raw record writes, the global's identity and persistence,
+effective-stat labels, the three-generation action-history lifecycle, and the
+complete target enumerators. Only family 1's recreation-only response when a
+recovered choice is rejected by modern validation remains provisional.
 
 The resolver at `0x00472775` establishes the complete public-command decoding
 of those two bytes. Attack uses target player and that player's roster slot.
@@ -1554,12 +1567,13 @@ target leave both bytes zero. Direct family-handler writes independently
 confirm the Move, Equip, Attack, Influence, and Research cases; resolver lines
 151-207, 346-352, 557-616, and 713-715 provide bounded decode evidence.
 
-**Next validation:** identify the remaining sector/gang target enumerators and
-earlier guards feeding each command-continuity gate. The disassembly-derived
-cash 50/51, Force 8/9, effective-Heal -3/-4, Crackdown on/off, and Tolerance 3/4
-vectors are executable regression tests. Capture controlled original-turn
-decisions for the still-isolated branches and corroborate the two live
-continuation branches before replacing more recreation policy.
+**Static follow-through:** The shared sector selector, site selectors, visible-
+gang pools, objective targeting, family-11 formation routing, and every handler's
+earlier guards are now bounded below and represented by executable regression
+vectors. The remaining implementation question is the recreation-only fallback
+when family 1's exact selected command cannot be submitted; the original
+handler has no corresponding rejected-command path. Controlled original-turn
+traces remain useful corroboration for the recovered decisions.
 
 ### BIN-AI-005 - shared weighted sector selector
 
@@ -3232,7 +3246,9 @@ their portrait-selection RNG before AI state and city generation.
 
 **Confidence:** High static evidence for types, ascending fill order, portrait
 range, duplicate rejection, resource-name mapping, and placement before city
-generation. Initial RNG seeding and a runtime setup fixture remain pending.
+generation. A runtime setup fixture with captured seed and prior `serialNum`
+state remains pending; `BIN-RNG-001` and `BIN-RNG-005` now recover the seed and
+accepted-Begin call order statically.
 
 The original Help further specifies the interactive local-player side of this
 state machine: setup begins with one local human; Add introduces another local
@@ -3372,18 +3388,35 @@ linked runtime is plausible.
 **Confidence:** Medium. Linker fingerprints and startup code still need matching
 against known toolchain signatures.
 
-## Priority static-analysis queue
+## Remaining static-analysis queue
 
-1. Xrefs to save/version strings and fixed file transfer sizes.
-2. Xrefs to `data\Sites`, `data\Gangs`, and `data\Items`; map load destinations.
-3. Phase dispatcher using action IDs 0-14 and execution ordering.
-4. `GetTickCount`/`timeGetTime` xrefs and candidate PRNG recurrence.
-5. Dice range reduction and success-count loop.
-6. Control, influence, chaos, heal, combat, stealth, and crackdown resolvers.
-7. Scenario setup/scoring/victory table and turn limits.
-8. City/site distribution and HQ placement.
-9. AI command-selection entry points and difficulty branches.
-10. PX/SND/MV formatters and semantic resource-ID tables.
+The first nine items in the former queue are complete: data-table loading, the
+full action-phase dispatcher, PRNG and dice reduction, core resolvers, all
+scenarios, city/HQ generation, and every live AI family now have address-level
+findings and linked implementation/parity notes above. The broad PX/SND/MV
+formatter and resource mapping is also implemented, but a smaller native
+rendering tail remains below.
 
-Every completed item must add address-level findings here, black-box fixtures in
-the validation ledger, and a linked parity-matrix update.
+Useful static work which remains is narrower:
+
+1. Finish the native PX loader/blitter inventory, especially palette conversion,
+   transparency/color-key selection, and the remaining semantic image roles.
+2. Bound the original save/load version branches and fixed transfer sizes enough
+   to close the still-partial legacy layout; native-save interoperability remains
+   intentionally out of scope.
+3. Recover the idle-gang confirmation's exact string-table wording, button order,
+   and keyboard/default-button behavior.
+4. Finish static Options/configuration tracing: registry value names and types,
+   persistence failure behavior, and exact menu-to-menu music restart boundaries.
+5. Resolve family 11 mode-10/mode-16 late guards and decide the safest explicit
+   policy for family 1's recreation-only unavailable-command fallback.
+6. Continue exact UI geometry/hit-map work where it can be derived from draw and
+   pointer call arguments, including setup name/drop fields and remaining panels.
+7. Match the linker/runtime fingerprints against a known compiler signature only
+   if this becomes useful to interpret generated-code artifacts; it is not a
+   gameplay-parity dependency.
+
+Runtime captures listed elsewhere are corroboration work and deliberately are
+not included in this static queue. Every completed static item must add its
+address-level findings here, focused regression coverage where behavior changes,
+and a linked parity-matrix update.
