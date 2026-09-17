@@ -253,7 +253,7 @@ public sealed partial class ChaosGame
             return;
         }
         var target = Enumerable.Range(0, MatchLimits.PlayerCount)
-            .FirstOrDefault(index => PlayerPortraitLayout.SetupLarge(index).Contains(point), -1);
+            .FirstOrDefault(index => PlayerPortraitLayout.SetupHit(index).Contains(point), -1);
         var result = _localSetupRoster.MoveHuman(source, target);
         if (result is LocalSetupMoveResult.MovedToEmptyColor
             or LocalSetupMoveResult.ExchangedHumanColors)
@@ -270,6 +270,24 @@ public sealed partial class ChaosGame
             PlayGeneralSound(GeneralSoundSlot.RejectedInput);
             _message = string.Empty;
         }
+        CancelSetupPlayerDrag();
+    }
+
+    private void CompleteSetupPlayerClick()
+    {
+        if (_draggedSetupPlayerSlot is not { } player)
+        {
+            CancelSetupPlayerDrag();
+            return;
+        }
+
+        var point = _setupPlayerPressPoint;
+        if (PlayerPortraitLayout.NextHit(player).Contains(point))
+            CyclePortrait(player, 1);
+        else if (PlayerPortraitLayout.PreviousHit(player).Contains(point))
+            CyclePortrait(player, -1);
+        else if (PlayerPortraitLayout.NameHit(player).Contains(point))
+            BeginSetupNameEdit(player);
         CancelSetupPlayerDrag();
     }
 
@@ -415,11 +433,11 @@ public sealed partial class ChaosGame
         if (_setupPlayerDragStarted && _draggedSetupPlayerSlot is { } dragged
             && _uiSprites is not null)
         {
-            var token = new Rectangle(_dragPoint.X - 24, _dragPoint.Y - 24, 48, 48);
+            var token = PlayerPortraitLayout.SetupDragToken(_dragPoint);
             batch.Draw(_uiSprites, token,
                 OriginalSpriteLayout.OverlordPortrait(_playerPortraits[dragged]), Color.White);
             if (Enumerable.Range(0, MatchLimits.PlayerCount).FirstOrDefault(
-                    index => PlayerPortraitLayout.SetupLarge(index).Contains(_dragPoint), -1) is { } target
+                    index => PlayerPortraitLayout.SetupHit(index).Contains(_dragPoint), -1) is { } target
                 && target >= 0)
                 DrawBorder(batch, pixel, PlayerPortraitLayout.SetupLarge(target), Color.Lime, 2);
         }

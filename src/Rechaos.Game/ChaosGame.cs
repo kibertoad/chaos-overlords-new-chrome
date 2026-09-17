@@ -614,8 +614,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             _dragPoint = virtualPoint;
             if (_previousMouse.LeftButton == ButtonState.Released) HandleClick(virtualPoint);
             else if (_draggedSetupPlayerSlot is not null && !_setupPlayerDragStarted
-                     && (Math.Abs(virtualPoint.X - _setupPlayerPressPoint.X) >= 4
-                         || Math.Abs(virtualPoint.Y - _setupPlayerPressPoint.Y) >= 4))
+                     && PlayerPortraitLayout.SetupDragMoved(
+                         _setupPlayerPressPoint, virtualPoint))
             {
                 _setupPlayerDragStarted = true;
                 _message = string.Empty;
@@ -645,6 +645,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                  && _draggedSetupPlayerSlot is not null)
         {
             if (pointerMapped && _setupPlayerDragStarted) CompleteSetupPlayerDrag(virtualPoint);
+            else if (pointerMapped) CompleteSetupPlayerClick();
             else CancelSetupPlayerDrag();
         }
         else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
@@ -848,29 +849,21 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     rectangle => rectangle.Contains(point));
                 var setupButton = SetupButtonLayout.HitTest(point);
                 var playerName = (_configuringOnlineLobby ? [] : _localSetupRoster.HumanSlots)
-                    .FirstOrDefault(index => PlayerPortraitLayout.Name(index).Contains(point), -1);
-                var previousPortrait = (_configuringOnlineLobby ? [] : _localSetupRoster.HumanSlots)
-                    .FirstOrDefault(index => PlayerPortraitLayout.Previous(index).Contains(point), -1);
-                var nextPortrait = (_configuringOnlineLobby ? [] : _localSetupRoster.HumanSlots)
-                    .FirstOrDefault(index => PlayerPortraitLayout.Next(index).Contains(point), -1);
-                var draggedPlayer = (_configuringOnlineLobby ? [] : _localSetupRoster.HumanSlots)
-                    .FirstOrDefault(index => PlayerPortraitLayout.SetupLarge(index).Contains(point), -1);
+                    .FirstOrDefault(index => PlayerPortraitLayout.NameHit(index).Contains(point), -1);
+                var setupPlayer = (_configuringOnlineLobby ? [] : _localSetupRoster.HumanSlots)
+                    .FirstOrDefault(index => PlayerPortraitLayout.SetupHit(index).Contains(point), -1);
                 if (_editingPlayerName is not null
                     && (setupButton is not null || playerName != _editingPlayerName))
                     FinishSetupNameEdit(cancel: false);
                 if (setupButton is { } button)
                     BeginSetupButton(button);
-                else if (playerName >= 0)
-                    BeginSetupNameEdit(playerName);
                 else if (scenario >= 0)
                     SelectSetupScenarioButton(scenario);
                 else if (duration >= 0)
                     SelectSetupDurationButton(duration);
                 else if (planningTimeLimit >= 0)
                     SelectPlanningTimeLimit((PlanningTimeLimit)planningTimeLimit);
-                else if (previousPortrait >= 0) CyclePortrait(previousPortrait, -1);
-                else if (nextPortrait >= 0) CyclePortrait(nextPortrait, 1);
-                else if (draggedPlayer >= 0) BeginSetupPlayerDrag(draggedPlayer, point);
+                else if (setupPlayer >= 0) BeginSetupPlayerDrag(setupPlayer, point);
                 else
                 {
                     var mentality = Array.FindIndex(SetupAiMentalities, rectangle => rectangle.Contains(point));

@@ -79,11 +79,21 @@ the original UI does not outline the whole button. Objective scenarios leave
 the duration indicators dark because those modes do not use a time limit.
 
 The six top-strip portrait apertures are 32 by 32 at `(360 + 36n,38)`.
-The editable player cards form two columns at x 397 and 480 and three rows at
-y 89, 163 and 237. Each face is 64 by 64; its portrait arrows use 12-by-18 hit
-areas at face-relative `(2,20)` and `(50,20)`, and its 64-by-8 name field begins
-immediately below the face. These coordinates follow the black apertures in
-`PX00143` and the arrow/name construction mask at `(220,138)` in `PX00140`.
+The editable player cards draw in two columns at x 397 and 480 and three rows
+at y 89, 163 and 237. Each face is 64 by 64; its visible portrait arrows are
+12 by 18 at face-relative `(2,20)` and `(50,20)`, and its visible 64-by-8 name
+field begins immediately below the face. These draw coordinates follow the
+black apertures in `PX00143` and the arrow/name construction mask at `(220,138)`
+in `PX00140`.
+
+Native input is deliberately broader. Handler `0x0040e0a0` places 64-by-68
+interaction cells at x 397/480 and y 94/168/242. Within each cell, the left
+16-by-58 band decrements the portrait, the right 15-by-58 band at relative x 49
+increments it, and the bottom 64-by-10 band at relative y 58 edits the name.
+The whole cell can initiate a drag: leaving the initial half-open -2..+1 box
+starts a 40-by-40 token whose center is clamped to x 20..620/y 20..440, and
+release over any interaction cell moves to an empty color or exchanges complete
+human identities. Draw and hit rectangles therefore must not be conflated.
 
 The four push-button rectangles are verified against the destination rectangles
 in original helper `0x0040eb5f`; the scenario, duration, mentality, planning,
@@ -116,8 +126,8 @@ cursor feedback remain to be validated.
   completes omitted slots at Begin through the original-compatible fresh-match
   factory. Add/Remove changes that human count: there is no separate per-slot
   Human/AI switch, because every omitted color slot becomes an AI at Begin.
-  Clicking the bounded name field below a visible face opens the original
-  10-character uppercase editor; empty
+  Clicking the recovered ten-pixel name hit band around the visible field opens
+  the original 10-character uppercase editor; empty
   confirmation restores `PLAYER#n`. Dragging a face to an empty cell changes its
   color slot; dropping on another human exchanges their name/portrait identities.
   Portrait 15 remains display-only.
@@ -461,6 +471,7 @@ load, and replay initialization clear the presentation-only archive.
    `PX00128` and validate/complete its provisional right-panel button rectangles.
 2. Finish classifying the separate `PX00144` through `PX00146` setup flows;
    implementing legacy network/setup protocols remains explicitly out of scope.
-3. Map remaining cursor frames, selection/pressed-state sprites and transparency.
+3. Map remaining cursor frames, selection/pressed-state sprites and
+   transparency; setup card hit/drag geometry is closed.
 4. Capture reference screenshots for title, every setup configuration and the
    initial city, then add masked native-resolution golden comparisons.

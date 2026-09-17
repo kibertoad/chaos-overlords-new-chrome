@@ -827,7 +827,7 @@ public static class DifficultyPresentation
     };
 }
 
-public static class PlayerPortraitLayout
+public static partial class PlayerPortraitLayout
 {
     public const int Count = 16;
     public const int SelectableCount = 15;

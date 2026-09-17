@@ -3550,6 +3550,41 @@ persisted exact player name rather than adding a redundant flag.
 Force, loadouts, sector placement, visibility baseline, and persistence; runtime
 corroboration remains pending.
 
+### BIN-SETUP-005 - exact local player-card interaction geometry
+
+**Observation:** Full local-setup handler `0x0040e0a0` constructs six card
+origins at `(397,94)`, `(480,94)`, `(397,168)`, `(480,168)`, `(397,242)`, and
+`(480,242)`, then tests a 64-by-68 half-open rectangle at each origin. Within
+an occupied human card, vertical offset below 58 enables the portrait controls:
+horizontal offset below 16 calls decrement helper `0x00468d87`, while offset
+strictly greater than 48 calls increment helper `0x00468cfc`. Vertical offset
+58 through 67 calls the ten-character name editor at `0x0040f63d`. Therefore
+the native hit regions are 16-by-58 on the left, 15-by-58 on the right, and
+64-by-10 along the bottom; they intentionally exceed the visible 12-by-18
+arrows and 64-by-8 text baseline.
+
+Before applying those click actions, sole-call drag helper `0x0040f72e` waits
+while the pointer stays in the half-open four-pixel box from initial offset -2
+through +1. Leaving that box while the button remains down begins a drag. The
+helper draws a 40-by-40 portrait token centered at the pointer, clamps its
+center to x 20..620 and y 20..440, and on release tests the same six 64-by-68
+card rectangles. A valid destination swaps the complete type, portrait, and
+12-byte Pascal-name record, including an empty slot; release outside every card
+leaves the roster unchanged. A click action is selected from the original press
+point only when the drag helper reports that no drag began.
+
+**Interpretation:** Bitmap apertures describe drawing, not input. The former
+recreation reused the smaller visible glyph rectangles for input, began setup
+drags only after four pixels of absolute motion, used a 48-pixel token, and did
+not permit a drag to begin over arrow/name bands. The input layout now follows
+the recovered handler while retaining the measured draw rectangles.
+
+**Confidence:** High from the complete local handler, the drag helper's sole
+caller and bounded loop, the two portrait helpers, and the name editor.
+
+**Next validation:** Native cursor imagery and drag feedback remain visual
+capture work; card hit testing and drag/drop mechanics are statically closed.
+
 ### BIN-HIRE-001 - initial and replacement offers
 
 **Observation:** `0x0046e766` initializes each player's three fixed offer bytes
@@ -3645,7 +3680,8 @@ Useful static work which remains is narrower:
    them; the loader, palette conversion, copy modes, color keys, and embedded
    pattern masks are closed.
 2. Continue exact UI geometry/hit-map work where it can be derived from draw and
-   pointer call arguments, including setup name/drop fields and remaining panels.
+   pointer call arguments for remaining panels. Full local-setup card, arrow,
+   name, drag-threshold, token, clamp, and drop geometry is closed.
 3. Match the linker/runtime fingerprints against a known compiler signature only
    if this becomes useful to interpret generated-code artifacts; it is not a
    gameplay-parity dependency.

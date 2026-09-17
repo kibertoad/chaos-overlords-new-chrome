@@ -36,11 +36,29 @@ public sealed class LocalSetupUiTests
     }
 
     [Fact]
-    public void NameHitRegionsFollowEachRecoveredPortraitCell()
+    public void SetupHitRegionsFollowTheNativeInteractionCells()
     {
-        Assert.Equal(new Rectangle(397, 153, 64, 8), PlayerPortraitLayout.Name(0));
-        Assert.Equal(new Rectangle(480, 301, 64, 8), PlayerPortraitLayout.Name(5));
-        Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.Name(6));
+        Assert.Equal(new Rectangle(397, 94, 64, 68), PlayerPortraitLayout.SetupHit(0));
+        Assert.Equal(new Rectangle(480, 242, 64, 68), PlayerPortraitLayout.SetupHit(5));
+        Assert.Equal(new Rectangle(397, 94, 16, 58), PlayerPortraitLayout.PreviousHit(0));
+        Assert.Equal(new Rectangle(446, 94, 15, 58), PlayerPortraitLayout.NextHit(0));
+        Assert.Equal(new Rectangle(397, 152, 64, 10), PlayerPortraitLayout.NameHit(0));
+        Assert.Equal(new Rectangle(480, 300, 64, 10), PlayerPortraitLayout.NameHit(5));
+        Assert.Throws<ArgumentOutOfRangeException>(() => PlayerPortraitLayout.NameHit(6));
+    }
+
+    [Fact]
+    public void SetupDragUsesTheNativeFourPixelBoxAndFortyPixelToken()
+    {
+        var pressed = new Point(400, 100);
+        Assert.False(PlayerPortraitLayout.SetupDragMoved(pressed, pressed));
+        Assert.False(PlayerPortraitLayout.SetupDragMoved(pressed, new Point(398, 98)));
+        Assert.True(PlayerPortraitLayout.SetupDragMoved(pressed, new Point(402, 100)));
+        Assert.True(PlayerPortraitLayout.SetupDragMoved(pressed, new Point(397, 100)));
+        Assert.Equal(new Rectangle(0, 0, 40, 40),
+            PlayerPortraitLayout.SetupDragToken(Point.Zero));
+        Assert.Equal(new Rectangle(600, 420, 40, 40),
+            PlayerPortraitLayout.SetupDragToken(new Point(639, 459)));
     }
 
     [Fact]
