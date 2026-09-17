@@ -3,8 +3,10 @@ namespace Rechaos.Core.GameModel;
 public static partial class AiTurnPlanner
 {
     /// <summary>
-    /// Recreation-native ranking retained only for callers without a usable
-    /// recovered family command. These weights are not original-game evidence.
+    /// Recreation-native ranking retained only for callers without a prepared
+    /// recovered family record. A prepared native decision never falls through
+    /// here merely because modern command validation cannot project it.
+    /// These weights are not original-game evidence.
     /// </summary>
     private static GameCommand? SelectProvisionalFallbackCommand(
         MatchState state,

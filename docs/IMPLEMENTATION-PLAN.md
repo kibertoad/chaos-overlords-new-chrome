@@ -107,6 +107,11 @@ default; Advanced results must not be used as evidence for Original parity.
   the exact common unavailable-sector but family-0/1-only strict-Control late
   filters.
 
+- Prepared Original-family decisions never fall through to recreation-native
+  scoring. If the modern validator cannot project an exact tuple, the planner
+  submits no replacement while retaining the recovered planning action/target
+  for continuation, persistence, and replay.
+
 - Family 2's complete aggressive territorial handler is live, including its
   armor-before-weapon equipment order, conditional Heal, hostile target loop,
   exact scenario-standing mode-6 movement, both pair/visibility Control gates,

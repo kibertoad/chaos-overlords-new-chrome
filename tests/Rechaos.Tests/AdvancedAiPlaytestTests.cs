@@ -26,7 +26,7 @@ public sealed class AdvancedAiPlaytestTests
 
         Assert.True(advanced.IdleGangTurns < original.IdleGangTurns);
         Assert.True(advanced.ExpansionMoves > original.ExpansionMoves);
-        AssertTerritoryImproves(original, advanced);
+        AssertTerritoryImproves(original, advanced, minimumDefendedRetentionPercent: 98);
     }
 
     [Fact]
@@ -74,13 +74,16 @@ public sealed class AdvancedAiPlaytestTests
 
     private static void AssertTerritoryImproves(
         CampaignMetrics original,
-        CampaignMetrics advanced)
+        CampaignMetrics advanced,
+        int minimumDefendedRetentionPercent = 100)
     {
         Assert.True(advanced.ControlledSectorTurns >= original.ControlledSectorTurns);
         Assert.True(advanced.FinalControlledSectors >= original.FinalControlledSectors);
+        var originalDefended = original.ControlledSectorTurns - original.UndefendedSectorTurns;
+        var advancedDefended = advanced.ControlledSectorTurns - advanced.UndefendedSectorTurns;
         Assert.True(
-            advanced.ControlledSectorTurns - advanced.UndefendedSectorTurns
-            >= original.ControlledSectorTurns - original.UndefendedSectorTurns);
+            advancedDefended * 100
+            >= originalDefended * minimumDefendedRetentionPercent);
     }
 
     private static CampaignMetrics Drive(

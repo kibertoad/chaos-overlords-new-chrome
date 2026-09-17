@@ -578,6 +578,22 @@ public sealed class AiTurnPlannerTests
     }
 
     [Fact]
+    public void PreparedRecoveredMoveToSourceDoesNotInvokeProvisionalFallback()
+    {
+        var match = CreateMatch();
+        var player = new PlayerId(0);
+        match.FinishUpkeep();
+        match.AiPlanning.BeginPlanning(player);
+        match.AiPlanning.SetFamily(player, 0, 1);
+        match.AiPlanning.SetPlannedAction(
+            player, 0, GangAction.Move, new AiActionTarget(0, 0));
+
+        Assert.Empty(AiTurnPlanner.Plan(match, player));
+        Assert.Equal(GangAction.Move, match.AiPlanning.PlannedAction(player, 0));
+        Assert.Equal(new AiActionTarget(0, 0), match.AiPlanning.PlannedTarget(player, 0));
+    }
+
+    [Fact]
     public void ModeFiveTieConsumesOneBoundedDrawDuringReplayablePreparationOnly()
     {
         var data = BundledOriginalData.Load();

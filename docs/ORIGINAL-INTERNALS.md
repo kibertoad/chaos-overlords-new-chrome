@@ -1591,9 +1591,8 @@ under the common Force-below-9/effective-Heal-at-least-`-3` gate. Otherwise it
 queries selector `0x2c` for the acting gang's current sector, writes Control
 when that strict solo-control predicate succeeds, and writes Move with a mode-5
 destination when it fails. `OriginalAiFamilyOneRules.SelectHealContinuation`
-and the live planner preserve this branch. Its complete mode-5 target selection
-is live; only the recreation fallback when the selected command is unavailable
-remains provisional.
+and the live planner preserve this branch and its complete mode-5 target
+selection.
 
 **Interpretation:** `0x00487850` is the original match-global, zero-based AI
 Mentality setting, seeded from a persisted preference and then carried through
@@ -1607,8 +1606,9 @@ cash/Tolerance/owner/human-owner selector meanings, command-byte mappings,
 comparison constants, pair counters, integer ratio, observer-to-target write
 direction, resulting raw record writes, the global's identity and persistence,
 effective-stat labels, the three-generation action-history lifecycle, and the
-complete target enumerators. Only family 1's recreation-only response when a
-recovered choice is rejected by modern validation remains provisional.
+complete target enumerators. A prepared recovered tuple rejected by modern
+validation now remains unsubstituted, matching the native handler's absence of
+any rejected-command policy.
 
 The resolver at `0x00472775` establishes the complete public-command decoding
 of those two bytes. Attack uses target player and that player's roster slot.
@@ -1623,10 +1623,11 @@ confirm the Move, Equip, Attack, Influence, and Research cases; resolver lines
 **Static follow-through:** The shared sector selector, site selectors, visible-
 gang pools, objective targeting, family-11 formation routing, and every handler's
 earlier guards are now bounded below and represented by executable regression
-vectors. The remaining implementation question is the recreation-only fallback
-when family 1's exact selected command cannot be submitted; the original
-handler has no corresponding rejected-command path. Controlled original-turn
-traces remain useful corroboration for the recovered decisions.
+vectors. Native handlers write their tuples directly and have no corresponding
+rejected-command path. Original policy therefore preserves an exact prepared
+tuple but submits nothing when modern validation cannot represent it, rather
+than invoking recreation-only scoring. Controlled original-turn traces remain
+useful corroboration for the recovered decisions.
 
 ### BIN-AI-005 - shared weighted sector selector
 
@@ -3477,9 +3478,9 @@ Useful static work which remains is narrower:
    intentionally out of scope.
 3. Finish exact menu-to-menu music restart boundaries; registry names, types,
    defaults, load order, and the shipped persistence failures are now closed.
-4. Decide the safest explicit policy for family 1's recreation-only
-   unavailable-command fallback; family 11's mode-10/mode-16 late guards are
-   now closed.
+4. Continue the outer AI-policy trace only where it can strengthen the already
+   bounded family dispatch; family 1's unavailable-command policy and family
+   11's mode-10/mode-16 late guards are now closed.
 5. Continue exact UI geometry/hit-map work where it can be derived from draw and
    pointer call arguments, including setup name/drop fields and remaining panels.
 6. Match the linker/runtime fingerprints against a known compiler signature only

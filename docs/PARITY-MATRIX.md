@@ -72,8 +72,9 @@ Heal/Control fallbacks are live and replay-verified. On-objective weapon/armor
 equipment and cooldowns, maximum-Chaos miscellaneous Equip, highest-Support
 unfinished-site Influence, and the five-draw owned-visible Attack branch are
 also live. Static inspection confirms neither handler assigns Research.
-Only unavailable-command fallback remains
-provisional for the live family-1 paths.
+When modern validation cannot project an exact prepared native tuple, Original
+policy submits no replacement command; recovered families never fall through
+to recreation-scored fallback behavior.
 
 Family 3 now uses its complete recovered handler. Cash-site decisions after
 previous None, Control, Equip, Heal, Influence, and Snitch include the
@@ -148,8 +149,8 @@ are covered.
   are recovered and integrated; family 1's post-equipment equipment/cooldown/
   nearby-danger gate and owner/cash/Mentality/Tolerance continuation are live,
   including exact Equip and Move targets. Every dispatched family handler is
-  live; family 1's unavailable-command fallback and complete outer-policy trace
-  parity remain provisional. Police message edges, equipment,
+  live; family 1's unavailable-command policy is closed while complete outer-
+  policy trace parity remains provisional. Police message edges, equipment,
   objective timing, and audiovisual triggers retain the
   specific parity gaps listed above.
 

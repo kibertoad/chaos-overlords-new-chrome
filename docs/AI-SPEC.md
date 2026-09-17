@@ -46,13 +46,16 @@ gang-turns, controlled and retained sectors, survival, and scenario progress;
 large combined tournaments supplement these cases but cannot substitute for
 them because one improvement could otherwise conceal another regression.
 The aggregate gates run 12 identical Power seeds for 15 turns per isolated
-feature. Criminal idle recovery reduced idle gang-turns from 242 to 128,
-increased controlled-sector turns from 3,126 to 3,132 and final controlled
-sectors from 365 to 372, while undefended-sector turns remained 664. Crime Lord
-expansion reduced idle turns from 258 to 210 and increased outward moves from
-402 to 476, controlled-sector turns from 3,315 to 3,557, final controlled sectors
-from 399 to 433, and defended controlled-sector turns from 2,493 to 2,578. Seed
-pairs execute independently with a maximum of two workers.
+feature. Criminal idle recovery retains a strict defended-territory improvement
+gate. After removal of Original policy's non-native replacement-command
+fallback, the Crime Lord expansion sample reduced idle turns from 467 to 427,
+increased outward moves from 343 to 474, controlled-sector turns from 3,104 to
+3,270, and final controlled sectors from 343 to 371. Undefended-sector turns
+rose from 811 to 1,015, leaving defended controlled-sector turns at 2,255 versus
+Original's 2,293 (98.3% retention); the feature gate therefore requires at
+least 98% retention while still requiring strict improvements in expansion,
+controlled-sector turns, and final territory. Seed pairs execute independently
+with a maximum of two workers.
 
 These transformations consume no RNG and add no cash, statistics, discounts,
 damage, success chance, or hidden information. AI Mentality remains the separate
@@ -86,14 +89,15 @@ native saves, replays, canonical hashes, and online game settings.
   Heal unless the current sector has an active Crackdown, in which case it
   chooses Move. Otherwise an older Snitch chooses Chaos and every other older
   action chooses Move. The action branch and complete mode-5 Move selection are
-  recovered and live. Only the unavailable-command fallback remains
-  provisional when the selected step is not legal in the recreation.
+  recovered and live. If modern command validation cannot project the exact
+  prepared tuple (notably a same-sector Move after capacity routing), Original
+  policy leaves the gang without a submitted command; it never substitutes a
+  recreation-scored action.
 - When family 1's immediately previous action is Heal, it repeats Heal while
   Force is below 9 and effective Heal is at least -3. Outside that gate it
   chooses Control when the strict selector-`0x2c` solo-control predicate
   succeeds, and mode-5 Move otherwise. This action branch and complete mode-5
-  destination are also live; the same unavailable-action fallback qualification
-  applies.
+  destination are also live under the same no-substitution boundary.
 - Family 1's branch after prior Control, Equip, or Snitch first checks its
   recovered nearby-danger/equipment gate. It prefers a legal weapon upgrade,
   then a legal armor upgrade, when the corresponding planning cooldown has

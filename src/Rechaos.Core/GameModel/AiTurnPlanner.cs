@@ -45,7 +45,7 @@ public static partial class AiTurnPlanner
             var choice = SelectRecoveredFamilyCommand(
                 state, player, gang, entry.slot, options);
             if (choice is null
-                && PreservesPreparedNoAction(state, playerId, entry.slot))
+                && PreservesRecoveredPreparation(state, playerId, entry.slot))
                 continue;
             choice ??= SelectProvisionalFallbackCommand(
                 state, player, gang, options);
@@ -87,13 +87,12 @@ public static partial class AiTurnPlanner
             .FirstOrDefault();
     }
 
-    private static bool PreservesPreparedNoAction(
+    private static bool PreservesRecoveredPreparation(
         MatchState state,
         PlayerId playerId,
         int gangSlot) =>
         state.AiPlanning.HasPlanned(playerId)
-        && state.AiPlanning.Family(playerId, gangSlot) is 0 or 3 or 4 or 5 or 12 or 13 or 14
-        && state.AiPlanning.PlannedAction(playerId, gangSlot) == GangAction.None;
+        && state.AiPlanning.Family(playerId, gangSlot) != AiPlanningState.UnusedFamily;
 
     private static void PrepareFamilyElevenCommand(
         MatchState state,

@@ -6,6 +6,27 @@ Last updated: 2026-09-17
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
 
+## 2026-09-17 — Do not substitute rejected recovered AI commands
+
+- Decision: once Original-policy preparation has produced a recovered family
+  action and target, failure to find an equivalent modern legal command leaves
+  that gang without a submitted command. It must not fall through to the
+  recreation-native scalar scorer.
+- Evidence: native family handlers write directly into the 16-byte planning
+  records consumed by the resolver and contain no validator-rejection or
+  alternate-command branch. The shared sector selector can legitimately return
+  the source sector when capacity blocks every routed step, producing a native
+  same-sector Move that the recreation's player-facing adjacency validator does
+  not expose.
+- Reason: inventing a different legal action changes strategy, RNG-independent
+  outcomes, and later action history without original evidence. Retaining the
+  exact prepared tuple while submitting nothing preserves its continuation and
+  replay state without weakening validation for player commands.
+- Compatibility boundary: this is a projection boundary, not a claim that the
+  native game left the gang idle internally. The original retained and resolved
+  its raw tuple; the recreation records that tuple in AI planning state but
+  omits an unrepresentable command from the modern queue.
+
 ## 2026-09-17 — Correct the original registry persistence defects
 
 - Decision: retain the recreation's validated, atomic, per-user preferences file
