@@ -135,7 +135,7 @@ cursor feedback remain to be validated.
   `(520,336)` on the main control panel. The recreation fills it green over a
   black background and scales the visible width from 60 to zero.
 - The `PX00128` Game Info button at `(588,40,30,54)` opens `PX05021` at
-  `(104,125,344,209)`. Dynamic fields report the scenario, global AI mentality,
+  `(104,124,344,209)`. Dynamic fields report the scenario, global AI mentality,
   selected planning limit, and all six names with the manual-defined `HUMAN` or
   `AI` intelligence label. The panel opens automatically for a new game with
   multiple local humans and after loading a live saved game.
@@ -146,12 +146,12 @@ cursor feedback remain to be validated.
   to do; Enter/legacy Execute confirms and Escape cancels, with no native Y/N
   shortcut.
 - The split Financial City/Sector control selects `PX05008` or `PX05019` at
-  `(104,125,344,209)`. Both fill the template's 64-by-64 active-Overlord
+  `(104,124,344,209)`. Both fill the template's 64-by-64 active-Overlord
   aperture at `(130,143)` and render a read-only projection of current/pending
   upkeep, contracts and headcount, equipment, bribes, tax, influenced-site
   cash, estimated Chaos and the resulting cash adjustment. Costs are red and
   income is green as specified by the manual.
-- Ranking opens `PX05011` at `(104,125,344,209)`. Each active player's
+- Ranking opens `PX05011` at `(104,124,344,209)`. Each active player's
   32-by-32 portrait is centered on its fixed color rail; the recovered
   all-scenario score table determines a zero-based competition standing and
   tied players share a height. Eliminated players are omitted.
@@ -315,7 +315,7 @@ influencer, its display inherits the sector owner before choosing the fill.
 Hire console button overlays it on the live city, with three 32-by-32 gang
 portraits and their sixteen comparison values. Hiring itself remains the
 original drag-from-dock interaction; the comparison panel's OK control closes
-the overlay. The panel uses the shared `(104,125)` management-panel destination;
+the overlay. The panel uses the shared `(104,124)` management-panel destination;
 its portrait cells begin at source `(164,14)` with a 40-pixel pitch, and its
 right-aligned value columns end at source x 185, 225, and 265. The sixteen rows
 follow the baked irregular 9/10-pixel label baselines rather than a uniform

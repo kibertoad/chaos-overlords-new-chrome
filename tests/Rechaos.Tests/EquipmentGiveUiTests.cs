@@ -10,7 +10,7 @@ public sealed class EquipmentGiveUiTests
     [Fact]
     public void LayoutMatchesOriginalEquipmentToGivePanel()
     {
-        Assert.Equal(new Rectangle(104, 125, 344, 209), EquipmentGiveLayout.Panel);
+        Assert.Equal(new Rectangle(104, 124, 344, 209), EquipmentGiveLayout.Panel);
         Assert.Equal(new Rectangle(130, 142, 64, 64), EquipmentGiveLayout.Portrait);
         Assert.Equal(new Rectangle(208, 141, 50, 51), EquipmentGiveLayout.Item(0));
         Assert.Equal(new Rectangle(208, 269, 50, 51), EquipmentGiveLayout.Item(2));

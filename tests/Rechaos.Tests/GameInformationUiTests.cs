@@ -10,7 +10,7 @@ public sealed class GameInformationUiTests
     [Fact]
     public void LayoutMatchesScenarioInformationTemplate()
     {
-        Assert.Equal(new Rectangle(104, 125, 344, 209), GameInformationLayout.Panel);
+        Assert.Equal(new Rectangle(104, 124, 344, 209), GameInformationLayout.Panel);
         Assert.Equal(new Rectangle(136, 294, 49, 24), GameInformationLayout.Ok);
         Assert.Equal(204, GameInformationLayout.ValueLeft);
         Assert.Equal(216, GameInformationLayout.PlayerNameLeft);

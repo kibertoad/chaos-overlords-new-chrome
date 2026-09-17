@@ -661,7 +661,7 @@ public sealed class UiNavigationTests
         Assert.True(CommandOverlayLayout.OpensTargetPicker(GangAction.Move));
         Assert.False(CommandOverlayLayout.OpensTargetPicker(GangAction.Chaos));
         Assert.Equal(new Rectangle(256, 70, 158, 22), CommandOverlayLayout.ActionRow(0));
-        Assert.Equal(new Rectangle(104, 125, 344, 209), EquipmentCommandLayout.Panel);
+        Assert.Equal(new Rectangle(104, 124, 344, 209), EquipmentCommandLayout.Panel);
         Assert.Equal(new Rectangle(248, 154, 184, 11), EquipmentCommandLayout.ItemRow(0));
         Assert.Equal(new Rectangle(207, 141, 34, 34), EquipmentCommandLayout.Category(0));
         Assert.Equal(new Rectangle(207, 249, 34, 34), EquipmentCommandLayout.Category(3));
@@ -963,7 +963,7 @@ public sealed class UiNavigationTests
     [Fact]
     public void HireComparisonMatchesOriginalThreeColumnPanel()
     {
-        Assert.Equal(new Rectangle(104, 125, 344, 209), HireComparisonLayout.Panel);
+        Assert.Equal(new Rectangle(104, 124, 344, 209), HireComparisonLayout.Panel);
         Assert.Equal(EquipmentCommandLayout.Ok, HireComparisonLayout.Ok);
         Assert.Equal(new Rectangle(348, 139, 32, 32), HireComparisonLayout.Portrait(2));
         Assert.Equal(369, HireComparisonLayout.StatRight(2));

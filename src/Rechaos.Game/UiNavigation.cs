@@ -547,7 +547,7 @@ public static class EquipmentCommandLayout
 {
     public const int CategoryCount = 4;
     public const int VisibleItemCount = 12;
-    public static Rectangle Panel => new(104, 125, 344, 209);
+    public static Rectangle Panel => new(104, 124, 344, 209);
     public static Rectangle Portrait => new(130, 142, 64, 64);
     public static Rectangle Cancel => new(136, 262, 49, 24);
     public static Rectangle Ok => new(136, 294, 49, 24);

@@ -610,6 +610,8 @@ edge. The rectangle helper at `0x00425edf` packs its arguments as
 `(top, left, bottom, right)`, confirmed by the `BitBlt` coordinate extraction
 at `0x0042773e`; this also matches the decoded `PX050xx` dimensions. Their
 primary form travels 344 pixels from source-buffer x=0 into screen x=104..448.
+Its destination is exactly `(top=124,left=104,bottom=333,right=448)`, so the
+recreation's shared 344-by-209 panel rectangle now starts at `(104,124)`.
 An alternate form reads a 320-pixel source region beginning at buffer x=344
 and moves it toward the same right-edge destination. Exhaustive literal-argument
 classification identifies six open/close caller pairs using that form:
@@ -3460,9 +3462,7 @@ Useful static work which remains is narrower:
 4. Resolve family 11 mode-10/mode-16 late guards and decide the safest explicit
    policy for family 1's recreation-only unavailable-command fallback.
 5. Continue exact UI geometry/hit-map work where it can be derived from draw and
-   pointer call arguments, including the shared panel's statically observed
-   `(104,124)` destination versus older `(104,125)` capture-derived layouts,
-   setup name/drop fields, and remaining panels.
+   pointer call arguments, including setup name/drop fields and remaining panels.
 6. Match the linker/runtime fingerprints against a known compiler signature only
    if this becomes useful to interpret generated-code artifacts; it is not a
    gameplay-parity dependency.

@@ -10,7 +10,7 @@ public sealed class ComlinkUiTests
     [Fact]
     public void PanelsUseRecoveredOriginalArtworkGeometry()
     {
-        Assert.Equal(new Rectangle(104, 125, 344, 209), ComlinkViewLayout.Panel);
+        Assert.Equal(new Rectangle(104, 124, 344, 209), ComlinkViewLayout.Panel);
         Assert.Equal(ComlinkViewLayout.Panel, ComlinkSendLayout.Panel);
         Assert.Equal(new Rectangle(215, 171, 64, 64), ComlinkViewLayout.SenderPortrait);
         Assert.Equal(new Rectangle(198, 248, 238, 34), ComlinkViewLayout.Message);
