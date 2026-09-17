@@ -381,13 +381,17 @@ public sealed partial class ChaosGame
                 .Take(MatchLimits.PlayerCount).ToArray() ?? []
             : [];
         for (var index = 0; index < MatchLimits.PlayerCount; index++)
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
+        {
+            var active = _configuringOnlineLobby
+                ? index < onlinePlayers.Length
+                : _localSetupRoster.IsHuman(index);
+            var atlas = active ? _uiSprites : _uiInactivePatternSprites;
+            if (atlas is not null)
+                batch.Draw(atlas, PlayerPortraitLayout.SetupTop(index),
                     OriginalSpriteLayout.OverlordPortrait(
-                        (_configuringOnlineLobby ? index < onlinePlayers.Length : _localSetupRoster.IsHuman(index))
-                            ? _playerPortraits[index]
-                            : PlayerPortraitLayout.Count - 1),
+                        active ? _playerPortraits[index] : PlayerPortraitLayout.Count - 1),
                     Color.White);
+        }
         var shownHumans = _configuringOnlineLobby
             ? Enumerable.Range(0, onlinePlayers.Length)
             : _localSetupRoster.HumanSlots;

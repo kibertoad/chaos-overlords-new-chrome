@@ -147,20 +147,25 @@ a set pattern bit preserves the destination, while a clear bit copies the
 source. In the inactive-slot path, the fixed `0x2661` setup color selects
 resource 146 before this stencil is applied.
 
+The executable resources themselves are 8-by-8, 1-bit DIBs with a black/white
+palette. Read as top-down rows, resource 143 alternates `0x55/0xaa` (32 set
+bits), resource 146 alternates `0x88/0x22` (16 set bits), and resource 147
+alternates `0xdd/0x77` (48 set bits). These exact masks can therefore be
+reproduced without executing the original.
+
 **Interpretation:** `PX00129` cannot be decoded into one globally transparent
 texture. In particular, global white alpha deletes legitimate white font and
 portrait pixels. The recreation now keeps an opaque atlas for fonts,
-portraits, frames, and markers, and a separate exact-white-keyed atlas for the
-mapped `HIRED` stamp and sector-back arrow. Native inactive-slot portrait
-stenciling is still a distinct presentation gap; it must not be approximated
-by white alpha.
+portraits, frames, and markers, a separate exact-white-keyed atlas for the
+mapped `HIRED` stamp and sector-back arrow, and the exact resource-146 stencil
+for inactive setup portraits.
 
-**Confidence:** High for the mixed native copy modes and the portrait source
-rectangle; Medium for complete role-to-mode coverage until every surface-6
-call site is classified.
+**Confidence:** High for the mixed native copy modes, portrait source
+rectangle, mode-0 Boolean operation, selector bands, and embedded masks;
+Medium for complete role-to-mode coverage until every surface-6 call site is
+classified.
 
-**Next validation:** Classify the remaining surface-6 rectangles and extract
-the embedded 1-bit resource-146 mask used for inactive setup portraits.
+**Next validation:** Classify the remaining surface-6 rectangles.
 
 ### BIN-UI-016 - Last Turn Events site-image treatment
 

@@ -79,6 +79,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Texture2D? _policeSprites;
     private Texture2D? _uiSprites;
     private Texture2D? _uiKeyedSprites;
+    private Texture2D? _uiInactivePatternSprites;
     private PixelFont? _font;
     private readonly Dictionary<short, SoundEffect> _combatSounds = [];
     private readonly Dictionary<int, SoundEffect> _generalSounds = [];
@@ -318,6 +319,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _policeSprites = LoadTexture("PX00300.bmp");
         _uiSprites = LoadTexture("PX00129.bmp");
         _uiKeyedSprites = LoadTexture("PX00129.bmp", transparentWhite: true);
+        _uiInactivePatternSprites = LoadPatternMaskedTexture(
+            "PX00129.bmp", OriginalPatternMask.Sparse);
         _font = _uiSprites is null
             ? throw new InvalidDataException("PX00129 is required for the original UI font.")
             : new PixelFont(GraphicsDevice, _uiSprites);

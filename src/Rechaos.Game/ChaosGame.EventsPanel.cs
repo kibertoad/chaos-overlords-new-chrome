@@ -426,11 +426,7 @@ public static class LastTurnEventPresentation
     }
 
     public static bool NativeDitherKeepsPixel(int x, int y)
-    {
-        if (x < 0) throw new ArgumentOutOfRangeException(nameof(x));
-        if (y < 0) throw new ArgumentOutOfRangeException(nameof(y));
-        return (x & 3) == ((y & 1) << 1);
-    }
+        => OriginalPatternMask.PreservesDestination(OriginalPatternMask.Sparse, x, y);
 
     public static Texture2D CreateEventSiteDitherOverlay(GraphicsDevice graphicsDevice)
     {
