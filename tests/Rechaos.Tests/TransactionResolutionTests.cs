@@ -399,11 +399,14 @@ public sealed class TransactionResolutionTests
     }
 
     [Fact]
-    public void TerminateRemovesGangAndAllEquipmentDuringMovement()
+    public void TerminateRetiresGangButRetainsEquipmentRecordDuringMovement()
     {
         var data = BundledOriginalData.Load();
         var weapon = ResearchedWeapon(data);
         var match = CreateMatch(cash: 100, actorWeapon: weapon);
+        var gang = match.FindGang(new GangId(10))!;
+        gang.ArmorItemId = 24;
+        gang.MiscellaneousItemId = 38;
         EnterCommand(match);
         Assert.True(match.Submit(new GameCommand(
             new PlayerId(0), new GangId(10), GangAction.Terminate, CommandTarget.None)).Accepted);
@@ -417,12 +420,11 @@ public sealed class TransactionResolutionTests
 
         match.FinishExecutionPhase();
 
-        var gang = match.FindGang(new GangId(10))!;
         Assert.Equal(0, gang.Force);
         Assert.False(gang.Hidden);
-        Assert.Null(gang.WeaponItemId);
-        Assert.Null(gang.ArmorItemId);
-        Assert.Null(gang.MiscellaneousItemId);
+        Assert.Equal(weapon, gang.WeaponItemId);
+        Assert.Equal((short)24, gang.ArmorItemId);
+        Assert.Equal((short)38, gang.MiscellaneousItemId);
         Assert.Equal(GameNotificationKind.Elimination,
             match.NotificationsFor(new PlayerId(0))[^1].Kind);
     }

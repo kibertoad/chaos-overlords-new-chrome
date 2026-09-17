@@ -234,7 +234,9 @@ confirmed against controlled runs of the original executable.
   player's three current hire choices are distinct.
 - Cash is updated by income minus upkeep. If projected cash is negative the
   player ends with zero, cannot equip, and may hire only zero-cost gangs.
-- A gang at force zero is eliminated and loses all equipment.
+- A gang at force zero is eliminated and its equipment becomes inaccessible;
+  the item IDs remain on the inactive record because the executable does not
+  erase them on combat death, police death, Terminate, or Eliminate retirement.
 
 #### Exact phase order from the manual
 

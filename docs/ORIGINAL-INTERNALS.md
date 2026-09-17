@@ -1624,14 +1624,15 @@ then tests the scenario-specific end condition. In Big Man, scorer `0x0047712a`
 retains the persistent score instead of clearing it, adds current ownership of
 the four center sectors, and the evaluator ends the match at score 40 or above.
 
-**Interpretation:** Eliminate bulk retirement is not combat death. Its stale
-inactive record payload is neither recoverable nor credited back to inventory,
-and normal roster-slot reuse resets it. The recreation has no sector-100 gang
-state, so it represents the same terminal state with Force zero and clears live
-queue/Hidden state, but preserves the three equipment fields for native parity
-and final-state inspection. The Force/queue representation difference has no
-playable effect; accumulated Big Man score, by contrast, is visible in AI,
-ranking, and victory decisions and is preserved exactly.
+**Interpretation:** Eliminate bulk retirement differs from combat death in its
+trigger, reporting, and casualty accounting, but both leave stale equipment in
+inactive records. That payload is neither recoverable nor credited back to
+inventory, and normal roster-slot reuse resets it. The recreation has no
+sector-100 gang state, so it represents the same terminal state with Force zero
+and clears live queue/Hidden state, but preserves the three equipment fields for
+native parity and final-state inspection. The Force/queue representation
+difference has no playable effect; accumulated Big Man score, by contrast, is
+visible in AI, ranking, and victory decisions and is preserved exactly.
 
 **Confidence:** High static evidence from the unique active-byte writer, sole
 call site, complete compact helper, end-of-resolver window, report loops, and
@@ -2530,6 +2531,39 @@ terminal checks. Successful Control, Heal, Influence, and Research may still be
 released immediately after resolution as an unobservable internal optimization;
 the next planning state is identical.
 
+### BIN-GANG-RETIRE-001 - death and Terminate preserve inactive record payload
+
+**Observation:** After player attacks and police damage have accumulated against
+phase-start snapshots, whole-turn resolver `0x00472775` applies damage in its
+player/81-slot loop at decompiler lines 530-540. When resulting Force is below
+one, line 537 writes only sector byte `+2` (`0x00498daa`) to inactive sentinel
+100 and line 538 increments the owner's casualty statistic. The preceding
+combat-report copy records Force and all three equipment bytes, but this death
+branch contains no writes to weapon `+4`, armor `+5`, or miscellaneous `+6`.
+
+The separate Terminate pass at lines 678-701 copies the complete 32-byte record,
+tests action 14, changes only the copied sector byte to 100, and copies all eight
+dwords back. It therefore preserves every other raw field, including equipment.
+This matches Eliminate-scenario bulk retirement helper `0x00476f3b`, which also
+writes only sector 100. Normal hire insertion later copies a complete new gang
+record into an inactive slot, replacing rather than recovering that payload.
+
+**Interpretation:** Equipment on a dead or terminated native gang is stale,
+inaccessible record state—not returned inventory and not a usable stash. The
+manual's statement that Terminate removes its items is true at the gameplay
+level but not a literal erasure of the record. The recreation keeps the three
+item IDs for parity and final-state inspection while using Force zero and
+clearing live queue/Hidden state to represent native inactivity safely.
+
+**Confidence:** High from the bounded post-damage and Terminate loops, exact
+field writes, full-record copy boundaries, Eliminate helper, and hire overwrite
+path.
+
+**Recreation status:** combat death, police death, Terminate, and Eliminate bulk
+retirement all retain inaccessible equipment fields. Regression tests cover all
+four paths; active-gang predicates prevent the stale items from contributing to
+simulation state.
+
 ### BIN-COMBAT-ORDER-001 - player/roster attack and police rolls
 
 **Observation:** The action-1 (**Attack**) block in `0x00472775` is nested in
@@ -2842,11 +2876,13 @@ lines 702-725 repeat the same player/roster scan and resolve action 10
 **Interpretation:** Every Terminate resolves before any Move, regardless of
 command submission order. Within each pass, results follow ascending player
 slot and persistent roster slot. Competing Moves therefore fill a destination's
-last friendly capacity slot in roster order.
+last friendly capacity slot in roster order. Terminate changes only the copied
+gang record's sector byte to inactive sentinel 100; it does not erase equipment
+or other stale payload before copying the record back.
 
 **Confidence:** High static evidence for pass precedence, action identities,
-loop bounds, player/roster ordering, and Move target decoding. Runtime
-corroboration remains useful.
+loop bounds, player/roster ordering, Move target decoding, and Terminate's exact
+record mutation. Runtime corroboration remains useful.
 
 ### BIN-CONTROL-001 - cross-player winner and zero-margin neutral candidate
 

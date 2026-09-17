@@ -360,6 +360,8 @@ public static partial class CommandResolver
     /// sector capture — and the player cannot cancel it either, because cancellation refuses an
     /// eliminated gang. A retired queue entry is also what keeps a hire that reuses the dead gang's
     /// roster slot from leaving an order behind for a gang id that no longer resolves.
+    /// The native resolver marks the record inactive without clearing its three equipment bytes.
+    /// Keep those inaccessible values for parity and post-match inspection.
     /// </remarks>
     private static void EliminateGang(MatchState state, MatchGangState gang)
     {
@@ -367,9 +369,6 @@ public static partial class CommandResolver
         gang.QueuedCommand = null;
         gang.Force = 0;
         gang.Hidden = false;
-        gang.WeaponItemId = null;
-        gang.ArmorItemId = null;
-        gang.MiscellaneousItemId = null;
     }
 
     private sealed record CombatSnapshot(

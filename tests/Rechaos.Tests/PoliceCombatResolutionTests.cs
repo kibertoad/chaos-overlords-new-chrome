@@ -81,7 +81,7 @@ public sealed class PoliceCombatResolutionTests
     }
 
     [Fact]
-    public void PoliceDamageEliminatesGangAndClearsEquipment()
+    public void PoliceDamageEliminatesGangAndRetainsEquipment()
     {
         var data = BundledOriginalData.Load();
         var vulnerableDefinition = data.Gangs.OrderBy(gang => gang.Stats.Defense).First().Id;
@@ -96,9 +96,9 @@ public sealed class PoliceCombatResolutionTests
         Assert.True(result.Details.Successes > 0);
         var gang = match.FindGang(new GangId(10))!;
         Assert.Equal(0, gang.Force);
-        Assert.Null(gang.WeaponItemId);
-        Assert.Null(gang.ArmorItemId);
-        Assert.Null(gang.MiscellaneousItemId);
+        Assert.Equal((short)0, gang.WeaponItemId);
+        Assert.Equal((short)24, gang.ArmorItemId);
+        Assert.Equal((short)38, gang.MiscellaneousItemId);
         Assert.Equal(1, match.Players[0].Statistics.Casualties);
         Assert.Contains(match.NotificationsFor(new PlayerId(0)), notification =>
             notification.Kind == GameNotificationKind.Police && notification.Gang == gang.Id);

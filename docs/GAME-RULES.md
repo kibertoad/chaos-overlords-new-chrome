@@ -303,10 +303,12 @@ claim about original-game behavior.
   retaliation, rather than creating a second attack/retaliation pair.
   Consequently, a gang eliminated by one result still completes
   attacks and retaliation calculated from its phase-start Force. Force is
-  floored at zero; elimination clears equipment and Hidden state. Every opening
-  attack credits its full computed damage to Damage Inflicted, even when that
-  damage exceeds the target's Force or concurrent attacks collectively overkill
-  it. Retaliation is not credited to Damage Inflicted.
+  floored at zero. The executable marks a dead gang inactive without erasing
+  its equipment bytes; the recreation retains those inaccessible values for
+  parity and final-state inspection while clearing Hidden and live orders.
+  Every opening attack credits its full computed damage to Damage Inflicted,
+  even when that damage exceeds the target's Force or concurrent attacks
+  collectively overkill it. Retaliation is not credited to Damage Inflicted.
 - Hidden target behavior: a target that became Hidden during Instant receives
   an individual Detect-versus-Stealth percentage roll. Evasion produces an
   ordered `TargetEvaded` result; a successful hit prevents retaliation.
@@ -326,7 +328,7 @@ claim about original-game behavior.
 - Tests: `CombatResolutionTests` covers effective attack/defense pools,
   retaliation, phase-start simultaneity, Martial Arts, hidden targets,
   reciprocal-order coalescing, reversed-submission roster order,
-  elimination/equipment loss, full overkill credit from multiple attacks,
+  elimination/equipment retention, full overkill credit from multiple attacks,
   statistics, RNG consumption, notifications, and hashes; `ManualRulesTests`
   covers the formulas.
 - Next experiment: reproduce a fixed unarmed matchup from the FAQ, then repeat
@@ -448,15 +450,18 @@ claim about original-game behavior.
 - Source: `MANUAL-GOG-1` and `BIN-MOVEMENT-001`; Terminate description
   and command sequence on numbered
   pages 44–45.
-- Observed statement: Terminate removes the gang from play and all items it
-  possesses; it executes during Movement.
-- Interpretation: set Force to zero, clear Hidden and all three equipment slots,
-  and emit an elimination notification. Resolve the complete player/roster
-  Terminate pass before any Move.
-- Confidence: High for gang/item removal, phase, and scheduling; Low for
-  statistics and notification presentation.
+- Observed statement: the manual says Terminate removes the gang from play and
+  all items it possesses; it executes during Movement. The executable instead
+  changes only the copied gang record's sector to inactive sentinel 100, leaving
+  its equipment bytes as inaccessible stale state.
+- Interpretation: set Force to zero and clear Hidden/live orders in the
+  recreation, but retain all three equipment fields for native parity and
+  final-state inspection. Resolve the complete player/roster Terminate pass
+  before any Move and emit an elimination notification.
+- Confidence: High for retirement field mutation, retained equipment, phase,
+  and scheduling; Low for statistics and notification presentation.
 - Implementation: `CommandResolver.ResolveTerminate`.
-- Tests: `TransactionResolutionTests.TerminateRemovesGangAndAllEquipmentDuringMovement`
+- Tests: `TransactionResolutionTests.TerminateRetiresGangButRetainsEquipmentRecordDuringMovement`
   and `BoardResolutionTests.TerminatePassPrecedesMovePassRegardlessOfSubmissionOrder`.
 
 ## Movement and sector control
@@ -529,7 +534,7 @@ claim about original-game behavior.
   `max(0, Police Force 5 + Police Combat 20 - effective Defense)` dice at 5+
   and apply one damage per success. Police attacks do not retaliate or credit a
   player's damage statistic. Gang-command and police damage are accumulated
-  against the same phase-start snapshots before casualties and equipment loss
+  against the same phase-start snapshots before casualties and gang retirement
   are applied. Control is rejected at submission while a crackdown is already
   active and fails without changing ownership if police arrive before the
   later Control subphase.
@@ -565,10 +570,11 @@ claim about original-game behavior.
   exact visible and Hide detection boundaries, effective Stealth/Defense,
   exact police attack-pool boundaries, deterministic RNG consumption/hashes,
   notifications, casualties,
-  and equipment loss. `ChaosResolutionTests` covers duration, extension,
-  five-turn history boundaries, neutralization and cleanup. `BoardResolutionTests`
-  covers submission-time and execution-time Control lockout without ownership
-  mutation; save/replay tests cover migration and multi-turn continuation.
+  and retained inactive equipment. `ChaosResolutionTests` covers duration,
+  extension, five-turn history boundaries, neutralization and cleanup.
+  `BoardResolutionTests` covers submission-time and execution-time Control
+  lockout without ownership mutation; save/replay tests cover migration and
+  multi-turn continuation.
 - Next experiment: capture otherwise identical pre-Combat saves spanning
   visible Stealth 3/4/22/23, hidden Stealth 0/18/19, and Defense 24/25, with
   and without a player Attack command, then compare notifications and RNG deltas.

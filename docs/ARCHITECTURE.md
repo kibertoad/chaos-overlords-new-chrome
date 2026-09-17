@@ -396,8 +396,10 @@ The Transaction resolver treats equipment as gang-owned: Equip purchases
 directly into one of three slots, Give moves an equipped item between friendly
 gangs, and Sell removes an equipped item for cash. The player inventory map is
 validated state reserved for future acquisition workflows; it is not silently
-used as a shop or overflow stash. Terminate clears all gang-owned equipment in
-the Movement phase.
+used as a shop or overflow stash. Combat death, police death, Terminate, and
+Eliminate-scenario bulk retirement make equipment inaccessible with the gang
+but retain the three item IDs in inactive state, matching the executable's
+stale-record behavior and preserving final-state inspection.
 
 Movement resolution runs a complete player/roster-ordered Terminate pass before
 a separate player/roster-ordered Move pass. Move enforces the six-friendly-gang

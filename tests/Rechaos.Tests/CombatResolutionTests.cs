@@ -259,7 +259,7 @@ public sealed class CombatResolutionTests
     }
 
     [Fact]
-    public void CombatEliminationClearsEquipmentAndRecordsCasualty()
+    public void CombatEliminationRetainsEquipmentAndRecordsCasualty()
     {
         var data = BundledOriginalData.Load();
         var attackerDefinition = data.Gangs
@@ -295,9 +295,9 @@ public sealed class CombatResolutionTests
         Assert.Equal((short)weapon, resolution.ItemId);
         Assert.Equal((short)0, resolution.RetaliationItemId);
         Assert.Equal(0, target.Force);
-        Assert.Null(target.WeaponItemId);
-        Assert.Null(target.ArmorItemId);
-        Assert.Null(target.MiscellaneousItemId);
+        Assert.Equal((short)0, target.WeaponItemId);
+        Assert.Equal((short)24, target.ArmorItemId);
+        Assert.Equal((short)38, target.MiscellaneousItemId);
         Assert.Equal(retaliationDice, resolution.RetaliationRolls!.Count);
         Assert.Equal(1, match.Players[1].Statistics.Casualties);
         Assert.Contains(match.NotificationsFor(new PlayerId(1)),
