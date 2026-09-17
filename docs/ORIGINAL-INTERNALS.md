@@ -566,7 +566,14 @@ edge. The rectangle helper at `0x00425edf` packs its arguments as
 at `0x0042773e`; this also matches the decoded `PX050xx` dimensions. Their
 primary form travels 344 pixels from source-buffer x=0 into screen x=104..448.
 An alternate form reads a 320-pixel source region beginning at buffer x=344
-and moves it toward the same right-edge destination.
+and moves it toward the same right-edge destination. Exhaustive literal-argument
+classification identifies six open/close caller pairs using that form:
+`0x0044b699` loads Item Information `PX05001`, `0x0044c476` loads Site
+Information `PX05002`, `0x0044d1bb` loads City/Sector Financial
+`PX05008`/`PX05019`, `0x004546c5` loads Hire comparison `PX05016`,
+`0x0045519d` loads Game Info `PX05021`, and `0x00455b6b` loads Gangs in Sector
+`PX05022`. The other seventeen caller pairs pass zero and use the primary
+344-pixel form.
 Both calculate a step from the startup blit benchmark at `0x00432954`. That
 benchmark counts identical copies for just over one second. The transition
 divides the count by four, divides its travel by that result, and clamps the
@@ -577,9 +584,8 @@ opening and slot 1 before closing; disabled mode skips intermediate copies and
 still presents the final state.
 
 The recreation now uses a bounded 250 ms time-based horizontal entrance over
-the primary 344-pixel travel. It intentionally avoids the original startup-speed
-dependency. Runtime capture must still identify the visible role of the four
-callers that use the adjacent-buffer 320-pixel form and validate close
+the recovered per-screen 344- or 320-pixel travel. It intentionally avoids the
+original startup-speed dependency. Runtime capture must still validate close
 timing/interruption behavior.
 
 #### Planning timer

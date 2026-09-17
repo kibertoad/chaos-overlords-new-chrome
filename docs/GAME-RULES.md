@@ -377,7 +377,8 @@ claim about original-game behavior.
   rule. Match construction/load rejects neutral-sector influence or an
   influencer different from the sector owner.
   Protection/upkeep behavior and exact negative-stat clamping remain excluded.
-- Confidence: High for ownership and local scope; Medium for aggregation order.
+- Confidence: High static evidence for ownership, local scope, three-site scan
+  order, all fourteen fields, and gang/equipment/site aggregation order.
 - Tests: `CombatResolutionTests.InfluencedSiteStatisticsApplyOnlyToOwnersGangsInThatSector`
   plus existing Heal, Research, Influence, Chaos, Control, and Combat tests that
   all consume the shared effective-stat path.

@@ -4,13 +4,16 @@ public sealed class PanelSlideTransition
 {
     public static readonly TimeSpan Duration = TimeSpan.FromMilliseconds(250);
     public const int StartOffset = 344;
+    public const int AlternateStartOffset = 320;
     private ClientScreen? _screen;
     private TimeSpan _started;
+    private int _startOffset;
 
     public void Begin(ClientScreen screen, TimeSpan now)
     {
         if (now < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(now));
         _screen = IsPanel(screen) ? screen : null;
+        _startOffset = StartOffsetFor(screen);
         _started = now;
     }
 
@@ -18,6 +21,7 @@ public sealed class PanelSlideTransition
     {
         if (now < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(now));
         _screen = ShouldAnimate(previous, current) ? current : null;
+        _startOffset = StartOffsetFor(current);
         _started = now;
     }
 
@@ -30,7 +34,7 @@ public sealed class PanelSlideTransition
             _screen = null;
             return 0;
         }
-        return (int)Math.Round(StartOffset * (1 - progress));
+        return (int)Math.Round(_startOffset * (1 - progress));
     }
 
     public int Offset(ClientScreen screen, TimeSpan now, bool enabled)
@@ -52,6 +56,12 @@ public sealed class PanelSlideTransition
 
         return true;
     }
+
+    public static int StartOffsetFor(ClientScreen screen) => screen is
+        ClientScreen.GameInfo or ClientScreen.Hire or ClientScreen.SectorGangs
+            or ClientScreen.Site or ClientScreen.ItemInformation or ClientScreen.Finance
+        ? AlternateStartOffset
+        : StartOffset;
 
     public static bool IsPanel(ClientScreen screen) => screen is
         ClientScreen.Options or ClientScreen.Help or ClientScreen.GameInfo or ClientScreen.Commands
