@@ -214,6 +214,23 @@ public sealed class InstantResolutionTests
     }
 
     [Fact]
+    public void CompletedSiteWithoutAssignedInfluencerRejectsInfluenceCommand()
+    {
+        var match = CreateMatch(siteResistance: 1);
+        EnterCommand(match);
+        var site = match.FindSite(0)!;
+        site.Resistance = 0;
+        site.InfluencedBy = null;
+
+        var result = match.Submit(new GameCommand(
+            new PlayerId(0), new GangId(10), GangAction.Influence, CommandTarget.Site(0)));
+
+        Assert.False(result.Accepted);
+        Assert.Equal(CommandValidationCode.SiteAlreadyInfluenced, result.Validation.Code);
+        Assert.False(match.Commands.TryGet(new GangId(10), out _));
+    }
+
+    [Fact]
     public void InfluenceRequiresPlayerToControlTargetSector()
     {
         var match = CreateMatch(siteResistance: 7, playerControlsSector: false);

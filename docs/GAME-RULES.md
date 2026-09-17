@@ -116,25 +116,26 @@ controlled reference observation confirms its execution timing and edge cases.
   `max(0, Force + effective Influence)` dice and immediately persists its
   successes against the remaining resistance. At zero, later queued Influence
   commands skip their roll, but ownership and benefits activate only in the
-  next pre-planning sector rebuild.
-- Current exclusions: cross-player simultaneous contests, already-influenced
-  takeovers, site special behavior, and
-  influenced-site modifiers in the dice pool. The recreation currently rejects
-  commands against an already-influenced site until takeover rules are verified.
+  next pre-planning sector rebuild. A completed site cannot be selected for
+  Influence. There is no separate site-takeover action or persistent native
+  influencer field: changing the sector owner clears all three sites' progress,
+  after which the new owner may influence them again from full resistance.
+- Current exclusions: site special behavior and exact influenced-site modifier
+  composition in the dice pool.
 - Confidence: High for the base pool, success threshold, resistance reduction,
   Support value, per-gang scheduling, completion guard, and delayed benefit
-  boundary; Low for takeover behavior.
+  boundary, completed-site rejection, and ownership-change reset.
 - Implementation: `CommandResolver.ResolvePhase`,
   `CommandResolver.ResolveInfluence`, `ManualRules.InfluenceDiceCount`, and
   `ManualRules.ApplyInfluenceProgress`; validation requires player ownership of
-  the target sector.
+  the target sector and positive remaining resistance.
 - Tests: `InstantResolutionTests` covers separate roster-ordered rolls,
   cumulative partial progress, post-completion RNG suppression,
   completion/Support, target rejection, notifications, deterministic replay,
   and phase hashes.
-- Next experiment: queue one and multiple gangs for the same site, then opposing
-  players for the same site, and diff resistance, ownership, Support, RNG, and
-  event ordering.
+- Next experiment: capture one and multiple gangs influencing the same site and
+  a post-overthrow reinfluence, then diff resistance, Support, RNG, and event
+  ordering.
 
 ### RULE-HEAL-001 — Heal dice and force restoration
 

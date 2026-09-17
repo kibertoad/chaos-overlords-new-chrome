@@ -149,7 +149,8 @@ public static class CommandValidator
             var sector = state.Sectors[command.Target.Id / MatchLimits.SitesPerSector];
             if (sector.Owner != command.Player)
                 return CommandValidation.Reject(CommandValidationCode.SectorNotControlled);
-            if (state.FindSite(command.Target.Id)!.InfluencedBy is not null)
+            var site = state.FindSite(command.Target.Id)!;
+            if (site.Resistance == 0 || site.InfluencedBy is not null)
                 return CommandValidation.Reject(CommandValidationCode.SiteAlreadyInfluenced);
         }
         if (command.Action == GangAction.Move

@@ -2485,6 +2485,25 @@ not submission order. Friendly Influence is cumulative rather than pooled:
 each gang consumes its own roll stream and mutates the site before the next
 gang acts. A gang encountered after completion consumes no Influence RNG.
 
+The `PX05005` Influence picker is handled by `0x0043f692`, the sole code site
+that requests resource ID 5005. For each of the sector's three definition/
+progress pairs at `+7/+8`, `+9/+10`, and `+11/+12`, it enables selection only
+when the definition's base Resistance differs from current progress. Completed
+sites therefore have no selectable command path. The native 36-byte sector
+record contains one owner byte and these definition/progress pairs; it has no
+per-site influencer identity.
+
+The Control pass in the same resolver changes owner only at lines 801-821.
+Whenever the selected owner differs, it writes the new sector owner and zeros
+all three site-progress bytes before recording attained/lost-control reports.
+The separate neutralization branch at lines 313-319 likewise writes owner
+`-1` and zeros every progress byte. Consequently the original has no direct
+takeover of an already cooperative site: sector capture first removes all site
+cooperation, and the new owner must build progress again from zero. The
+recreation represents native completed progress as zero remaining Resistance
+and keeps an explicit derived `InfluencedBy` identity, but enforces the same
+completed-site rejection and ownership-change reset.
+
 The site Tolerance definition field at `0x004ab684` has only two code
 references: AI selector evaluation in `0x00402d70` and sector recomputation
 helper `0x004782c5`. It is not consumed by the Influence action block. The same
@@ -2496,7 +2515,8 @@ benefits become active at the following pre-planning rebuild.
 
 **Confidence:** High static evidence for action dispatch, scan order,
 per-gang Influence pools, immediate progress mutation, clamping, completion
-guard, definition-field reference inventory, and delayed benefit boundary.
+guard, picker eligibility, absence of a site-owner field, ownership-change
+reset, definition-field reference inventory, and delayed benefit boundary.
 Runtime seed correlation remains pending.
 
 ### BIN-RESEARCH-000 - initial progress and Armageddon completion
