@@ -4,9 +4,16 @@ namespace Rechaos.Game;
 
 public static class GangStatusMarkerPresentation
 {
-    public static Rectangle Source(bool hasIdleGang) => hasIdleGang
-        ? OriginalSpriteLayout.IdleGangStatus
-        : OriginalSpriteLayout.AssignedGangStatus;
+    public static Rectangle Source(
+        bool hasIdleGang,
+        bool hasDetectedEnemyGang,
+        bool hasPendingHire)
+    {
+        var state = (hasDetectedEnemyGang ? 1 : 0)
+            + (hasIdleGang ? 2 : 0)
+            + (hasPendingHire ? 4 : 0);
+        return OriginalSpriteLayout.GangStatus(state);
+    }
 }
 
 public static class LastTurnEventsLayout

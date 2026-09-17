@@ -531,6 +531,33 @@ public sealed class BoardResolutionTests
     }
 
     [Fact]
+    public void OverthrowImmediatelyTransfersZeroResistanceHeadquartersBenefit()
+    {
+        var data = BundledOriginalData.Load();
+        var strong = data.Gangs.OrderByDescending(gang => gang.Stats.Control).First().Id;
+        var weak = data.Gangs.OrderBy(gang => gang.Stats.Control).First().Id;
+        var match = CreateMatch(
+            [Gang(10, 0, 0, 10, strong), Gang(11, 0, 0, 10, strong)],
+            [Gang(20, 1, 0, 1, weak)],
+            owner: new PlayerId(1),
+            headquarters: true);
+        Queue(match, Control(0, 10));
+        Assert.True(match.Submit(Control(0, 11)).Accepted);
+        FinishCommands(match);
+        EnterControlFromExecution(match);
+
+        match.FinishExecutionPhase();
+
+        var sector = match.Sectors[0];
+        var headquarters = sector.Sites[0];
+        Assert.Equal(new PlayerId(0), sector.Owner);
+        Assert.Equal(MatchBootstrap.HeadquartersDefinitionId, headquarters.DefinitionId);
+        Assert.Equal(0, headquarters.Resistance);
+        Assert.Null(headquarters.InfluencedBy);
+        Assert.Equal(new PlayerId(0), SiteControlRules.Controller(sector, headquarters));
+    }
+
+    [Fact]
     public void OneOffHiddenStateExpiresAtFollowingUpkeep()
     {
         var match = CreateMatch([Gang(10, 0, 0, 5)], [Gang(20, 1, 3, 5)]);
@@ -695,7 +722,8 @@ public sealed class BoardResolutionTests
         int playerOneSupport = 0,
         bool filledHirePool = false,
         bool crackdownActive = false,
-        int income = 2)
+        int income = 2,
+        bool headquarters = false)
     {
         var data = BundledOriginalData.Load();
         MatchPlayerSetup[] setups =
@@ -713,7 +741,10 @@ public sealed class BoardResolutionTests
         var sectors = Enumerable.Range(0, MatchLimits.SectorCount)
             .Select(id => new MatchSectorState(id,
             [
-                new MatchSiteState(0, 0, id == 0 && influencedBy is not null ? 0 : 7,
+                new MatchSiteState(0, headquarters && id == 0
+                        ? MatchBootstrap.HeadquartersDefinitionId
+                        : (short)0,
+                    headquarters && id == 0 ? 0 : id == 0 && influencedBy is not null ? 0 : 7,
                     id == 0 ? influencedBy : null),
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)

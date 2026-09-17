@@ -304,14 +304,11 @@ public static class ObjectiveSectorMarkerPresentation
     }
 }
 
-public static class OriginalSpriteLayout
+public static partial class OriginalSpriteLayout
 {
     public const int ActivePlayerMarkerFrameCount = 12;
     public static Rectangle PolicePatrolCar => new(116, 0, 48, 64);
     public static Rectangle HiredStamp => new(120, 300, 60, 60);
-    public static Rectangle AssignedGangStatus => new(492, 67, 20, 20);
-    public static Rectangle IdleGangStatus => new(492, 107, 20, 20);
-    public static Rectangle IncomingGangStatus => new(492, 147, 20, 20);
     public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
     // The following eight rows in PX00000 are command-arrow artwork, not part
@@ -360,7 +357,7 @@ public static class GangStatusMarkerLayout
     }
 }
 
-public static class SectorDetailLayout
+public static partial class SectorDetailLayout
 {
     public const int Left = 61;
     public const int Top = 48;
@@ -428,13 +425,13 @@ public static class SectorDetailLayout
     public static Rectangle SiteControlBar(int slot)
     {
         var portrait = SitePortrait(slot);
-        return new Rectangle(portrait.X + 2, portrait.Bottom - 5, portrait.Width - 4, 4);
+        return new Rectangle(portrait.X + 10, portrait.Y + 59, 100, 3);
     }
 
     public static Color SiteControlColor(PlayerId? influencedBy, PlayerId viewer) =>
         influencedBy is { } owner && owner != viewer
             ? new Color(190, 0, 220)
-            : Color.Lime;
+            : new Color(0, 247, 0);
 
     public static PlayerId? SiteControlOwner(
         PlayerId? influencedBy,
@@ -456,7 +453,8 @@ public static class SectorGangCardLayout
     public const int ColumnStride = 74;
     public const int RowStride = 110;
     public static Rectangle Frame(int slot) => At(slot, 0, 0, 70, 110);
-    public static Rectangle ForceBar(int slot) => At(slot, 3, 2, 64, 3);
+    public static Rectangle ForceBar(int slot) => At(slot, 5, 1, 60, 3);
+    public static int ForceWidth(int force) => Math.Clamp(force, 0, ManualRules.MaximumForce) * 6;
     public static Rectangle OneOffAction(int slot) => At(slot, 3, 7, 30, 15);
     public static Rectangle RepeatingAction(int slot) => At(slot, 36, 7, 30, 15);
     public static Rectangle AssignedCommand(int slot) => At(slot, 3, 7, 63, 15);

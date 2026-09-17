@@ -38,12 +38,10 @@ public static class CombatAnimationRouting
             && gameEvent.Gang is { } policeTarget
             && gameEvent.PoliceAttack is { } police)
         {
-            return police.Detected
-                ? [new CombatAnimationClip(gameEvent.Sequence, null, policeTarget,
-                    PoliceAttackAnimation, PoliceHitAnimation, Reversed: true, Police: true,
-                    Sound: AudioRouting.PoliceSound)]
-                : [new CombatAnimationClip(gameEvent.Sequence, null, policeTarget,
-                    EvadedAnimation, null, Reversed: true, Police: true)];
+            if (!police.Detected) return [];
+            return [new CombatAnimationClip(gameEvent.Sequence, null, policeTarget,
+                PoliceAttackAnimation, HitAnimation(PoliceHitAnimation, police.Damage),
+                Reversed: true, Police: true, Sound: AudioRouting.PoliceSound)];
         }
         if (gameEvent.Action != GangAction.Attack
             || gameEvent.Gang is not { } attacker
@@ -54,10 +52,10 @@ public static class CombatAnimationRouting
         var defender = new GangId(gameEvent.Target.Id);
         if (resolution.Code == CommandResolutionCode.TargetEvaded)
             return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
-                EvadedAnimation, null, Reversed: false)];
+                EvadedAnimation, 0, Reversed: false)];
         if (resolution.Code != CommandResolutionCode.Resolved) return [];
 
-        var attack = AnimationPair(state, attacker, resolution.ItemId);
+        var attack = AnimationPair(state, attacker, resolution.ItemId, resolution.Damage);
         var clips = new List<CombatAnimationClip>(2)
         {
             new(gameEvent.Sequence, attacker, defender, attack.Attack, attack.Hit,
@@ -66,7 +64,8 @@ public static class CombatAnimationRouting
         };
         if (resolution.RetaliationRolls is { Count: > 0 })
         {
-            var retaliation = AnimationPair(state, defender, resolution.RetaliationItemId);
+            var retaliation = AnimationPair(
+                state, defender, resolution.RetaliationItemId, resolution.RetaliationDamage);
             clips.Add(new CombatAnimationClip(
                 gameEvent.Sequence, defender, attacker,
                 retaliation.Attack, retaliation.Hit, Reversed: true,
@@ -97,29 +96,27 @@ public static class CombatAnimationRouting
     private static (short Attack, short Hit) AnimationPair(
         MatchState state,
         GangId gangId,
-        short? itemId)
+        short? itemId,
+        int damage)
     {
         if (itemId is { } equipped)
         {
             if (equipped < 0 || equipped >= state.Definitions.Items.Count)
                 throw new ArgumentOutOfRangeException(nameof(itemId));
             var item = state.Definitions.Items[equipped];
-            return (item.AttackAnimation, item.HitAnimation);
+            return (item.AttackAnimation, HitAnimation(item.HitAnimation, damage));
         }
         var gang = state.FindGang(gangId)
             ?? throw new ArgumentOutOfRangeException(nameof(gangId));
         var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
-        var animation = UnarmedAnimation(definition);
-        return (animation, animation);
+        var martialArts = definition.Stats.MartialArts > 0;
+        return (
+            martialArts ? (short)1 : (short)0,
+            HitAnimation(martialArts ? (short)18 : (short)2, damage));
     }
 
-    private static short UnarmedAnimation(GangDefinition gang)
-    {
-        if (gang.Stats.MartialArts > gang.Stats.Fighting
-            && gang.Stats.MartialArts > gang.Stats.Strength)
-            return 2;
-        return gang.Stats.Fighting > gang.Stats.Strength ? (short)1 : (short)0;
-    }
+    private static short HitAnimation(short animation, int damage) =>
+        damage > 0 ? animation : (short)1;
 
     private static void ValidateAttack(short animation, bool reversed)
     {

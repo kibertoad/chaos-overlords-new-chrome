@@ -15,7 +15,9 @@ public sealed class CombatAnimationTests
             CommandResolutionCode.Resolved, [], 0,
             ItemId: 0,
             RetaliationRolls: [4],
-            RetaliationItemId: 1));
+            RetaliationItemId: 1,
+            Damage: 1,
+            RetaliationDamage: 1));
 
         var clips = CombatAnimationRouting.ForEvent(state, gameEvent);
 
@@ -31,13 +33,13 @@ public sealed class CombatAnimationTests
     }
 
     [Fact]
-    public void EvasionAndDetectedPoliceUseRecoveredExtraSheets()
+    public void EvasionAndDetectedPoliceUseRecoveredPairedSheets()
     {
         var state = CreateState();
         var evaded = Assert.Single(CombatAnimationRouting.ForEvent(state,
             AttackEvent(new CommandResolutionDetails(CommandResolutionCode.TargetEvaded, [], 0))));
         Assert.Equal(CombatAnimationRouting.EvadedAnimation, evaded.AttackAnimation);
-        Assert.Null(evaded.HitAnimation);
+        Assert.Equal((short)0, evaded.HitAnimation);
         Assert.Null(evaded.Sound);
 
         var policeEvent = new GameEvent(
@@ -54,19 +56,54 @@ public sealed class CombatAnimationTests
     }
 
     [Theory]
-    [InlineData((short)0, (short)0)]
-    [InlineData((short)25, (short)1)]
-    [InlineData((short)54, (short)2)]
-    public void UnarmedStyleSelectsStrengthFightingOrMartialArtsSheet(
+    [InlineData((short)0, (short)0, (short)2)]
+    [InlineData((short)54, (short)1, (short)18)]
+    public void UnarmedStyleSelectsOrdinaryOrMartialArtsPair(
         short gangDefinition,
-        short expectedAnimation)
+        short expectedAttack,
+        short expectedHit)
     {
         var clip = Assert.Single(CombatAnimationRouting.ForEvent(
             CreateState(gangDefinition),
-            AttackEvent(new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0))));
+            AttackEvent(new CommandResolutionDetails(
+                CommandResolutionCode.Resolved, [], 0, Damage: 1))));
 
-        Assert.Equal(expectedAnimation, clip.AttackAnimation);
-        Assert.Equal(expectedAnimation, clip.HitAnimation);
+        Assert.Equal(expectedAttack, clip.AttackAnimation);
+        Assert.Equal(expectedHit, clip.HitAnimation);
+    }
+
+    [Fact]
+    public void ZeroDamageUsesNoDamageHitSheetForWeaponsUnarmedAndPolice()
+    {
+        var state = CreateState();
+        var weapon = Assert.Single(CombatAnimationRouting.ForEvent(state,
+            AttackEvent(new CommandResolutionDetails(
+                CommandResolutionCode.Resolved, [], 0, ItemId: 0, Damage: 0))));
+        var unarmed = Assert.Single(CombatAnimationRouting.ForEvent(state,
+            AttackEvent(new CommandResolutionDetails(
+                CommandResolutionCode.Resolved, [], 0, Damage: 0))));
+        var police = Assert.Single(CombatAnimationRouting.ForEvent(state, new GameEvent(
+            2, 1, TurnPhase.Execution, ExecutionPhase.Combat,
+            GameEventKind.PoliceAttackResolved, new PlayerId(1), new GangId(20),
+            GangAction.None, CommandTarget.Sector(0),
+            PoliceAttack: new PoliceAttackResolutionDetails(0, 100, 1, true, 20, 0, [], 0, 0, 10, 10))));
+
+        Assert.Equal((short)1, weapon.HitAnimation);
+        Assert.Equal((short)1, unarmed.HitAnimation);
+        Assert.Equal((short)1, police.HitAnimation);
+    }
+
+    [Fact]
+    public void UndetectedPoliceHasNoDetailedCombatPresentation()
+    {
+        var state = CreateState();
+        var policeEvent = new GameEvent(
+            2, 1, TurnPhase.Execution, ExecutionPhase.Combat,
+            GameEventKind.PoliceAttackResolved, new PlayerId(1), new GangId(20),
+            GangAction.None, CommandTarget.Sector(0),
+            PoliceAttack: new PoliceAttackResolutionDetails(0, 0, 20, false, 20, 0, [], 0, 0, 10, 10));
+
+        Assert.Empty(CombatAnimationRouting.ForEvent(state, policeEvent));
     }
 
     [Fact]

@@ -218,18 +218,25 @@ public sealed partial class ChaosGame
         DrawBorder(batch, pixel, CityMapLayout.Destination(_cursor), Color.Gold, 2);
         var activeGangsBySector = player.Gangs.Where(gang => gang.IsActive)
             .GroupBy(gang => gang.SectorId).ToArray();
+        var pendingHireSectors = player.PendingHires
+            .Select(pending => pending.TargetSectorId).ToHashSet();
         foreach (var gangs in activeGangsBySector)
             DrawGangStatusMarker(batch, gangs.Key,
-                GangStatusMarkerPresentation.Source(
-                    gangs.Any(gang => gang.QueuedCommand is null)));
+                GangStatusSource(state, player.Id, gangs.Key, gangs,
+                    pendingHireSectors.Contains(gangs.Key)));
         var occupiedGangSectors = activeGangsBySector.Select(gangs => gangs.Key).ToHashSet();
-        foreach (var pending in player.PendingHires.Where(
-                     pending => !occupiedGangSectors.Contains(pending.TargetSectorId)))
-            DrawGangStatusMarker(batch, pending.TargetSectorId, OriginalSpriteLayout.IncomingGangStatus);
+        foreach (var pendingSector in pendingHireSectors.Where(
+                     pendingSector => !occupiedGangSectors.Contains(pendingSector)))
+            DrawGangStatusMarker(batch, pendingSector, OriginalSpriteLayout.IncomingGangStatus);
         if (_draggedHireDefinitionId is not null
             && CityMapLayout.TrySectorAt(_dragPoint, out var dropSector))
         {
-            DrawGangStatusMarker(batch, dropSector, OriginalSpriteLayout.IncomingGangStatus);
+            var friendlyGangs = player.Gangs.Where(
+                gang => gang.IsActive && gang.SectorId == dropSector).ToArray();
+            var source = friendlyGangs.Length == 0
+                ? OriginalSpriteLayout.IncomingGangStatus
+                : GangStatusSource(state, player.Id, dropSector, friendlyGangs, hasPendingHire: true);
+            DrawGangStatusMarker(batch, dropSector, source);
             DrawBorder(batch, pixel, CityMapLayout.Destination(dropSector),
                 state.Sectors[dropSector].Owner == player.Id ? Color.Lime : Color.OrangeRed, 2);
         }
@@ -310,6 +317,24 @@ public sealed partial class ChaosGame
     {
         if (_uiKeyedSprites is not null)
             batch.Draw(_uiKeyedSprites, GangStatusMarkerLayout.Destination(sectorId), source, Color.White);
+    }
+
+    private static Rectangle GangStatusSource(
+        MatchState state,
+        PlayerId viewer,
+        int sectorId,
+        IEnumerable<MatchGangState> friendlyGangs,
+        bool hasPendingHire)
+    {
+        var hasIdleGang = friendlyGangs.Any(gang => gang.QueuedCommand is null);
+        var hasDetectedEnemyGang = state.Players
+            .Where(player => player.Id != viewer)
+            .SelectMany(player => player.Gangs)
+            .Any(gang => gang.IsActive
+                && gang.SectorId == sectorId
+                && state.CanPlayerDetectGang(viewer, gang.Id));
+        return GangStatusMarkerPresentation.Source(
+            hasIdleGang, hasDetectedEnemyGang, hasPendingHire);
     }
 
     private void MoveCursor(int dx, int dy)

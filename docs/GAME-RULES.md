@@ -120,6 +120,10 @@ controlled reference observation confirms its execution timing and edge cases.
   Influence. There is no separate site-takeover action or persistent native
   influencer field: changing the sector owner clears all three sites' progress,
   after which the new owner may influence them again from full resistance.
+  Headquarters is the zero-Resistance exception: clearing its native progress
+  to zero also leaves it complete, and because completed benefits derive from
+  the current sector owner, an overthrow immediately transfers Headquarters
+  control to the new owner without a separate Influence action.
 - Current exclusions: special-site behaviors beyond their separately recovered
   Research-cap and Factory effects.
 - Confidence: High for the base pool, success threshold, resistance reduction,

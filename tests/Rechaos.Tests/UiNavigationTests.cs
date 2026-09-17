@@ -566,8 +566,12 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(116, 0, 48, 64), OriginalSpriteLayout.PolicePatrolCar);
         Assert.Equal(new Rectangle(120, 300, 60, 60), OriginalSpriteLayout.HiredStamp);
         Assert.Equal(new Rectangle(492, 67, 20, 20), OriginalSpriteLayout.AssignedGangStatus);
+        Assert.Equal(new Rectangle(492, 87, 20, 20), OriginalSpriteLayout.ContestedAssignedGangStatus);
         Assert.Equal(new Rectangle(492, 107, 20, 20), OriginalSpriteLayout.IdleGangStatus);
-        Assert.Equal(new Rectangle(492, 147, 20, 20), OriginalSpriteLayout.IncomingGangStatus);
+        Assert.Equal(new Rectangle(492, 127, 20, 20), OriginalSpriteLayout.ContestedIdleGangStatus);
+        Assert.Equal(new Rectangle(492, 227, 20, 20), OriginalSpriteLayout.IncomingGangStatus);
+        Assert.Equal(new Rectangle(492, 207, 20, 20), OriginalSpriteLayout.GangStatus(7));
+        Assert.Throws<ArgumentOutOfRangeException>(() => OriginalSpriteLayout.GangStatus(9));
         Assert.Equal(new Rectangle(150, 386, 40, 40), OriginalSpriteLayout.SetupDragFrame);
         Assert.Equal(new Rectangle(164, 17, 70, 110), OriginalSpriteLayout.GangCardFrame);
         Assert.Equal(new Rectangle(120, 211, 30, 47), OriginalSpriteLayout.SectorBackArrow);
@@ -609,10 +613,10 @@ public sealed class UiNavigationTests
         Assert.Null(SectorDetailLayout.Marker(27, 29));
         Assert.Equal(new Rectangle(83, 358, 120, 64), SectorDetailLayout.SitePortrait(2));
         Assert.Equal(new Rectangle(32, 42, 406, 418), SectorDetailLayout.Workspace);
-        Assert.Equal(new Rectangle(85, 417, 116, 4), SectorDetailLayout.SiteControlBar(2));
-        Assert.Equal(Color.Lime,
+        Assert.Equal(new Rectangle(93, 417, 100, 3), SectorDetailLayout.SiteControlBar(2));
+        Assert.Equal(new Color(0, 247, 0),
             SectorDetailLayout.SiteControlColor(null, new PlayerId(0)));
-        Assert.Equal(Color.Lime,
+        Assert.Equal(new Color(0, 247, 0),
             SectorDetailLayout.SiteControlColor(new PlayerId(0), new PlayerId(0)));
         Assert.Equal(new Color(190, 0, 220),
             SectorDetailLayout.SiteControlColor(new PlayerId(1), new PlayerId(0)));
@@ -620,6 +624,9 @@ public sealed class UiNavigationTests
             influencedBy: null, sectorOwner: new PlayerId(1), resistance: 0));
         Assert.Null(SectorDetailLayout.SiteControlOwner(
             influencedBy: null, sectorOwner: new PlayerId(1), resistance: 4));
+        Assert.Equal(0, SectorDetailLayout.SiteControlWidth(10, 10));
+        Assert.Equal(30, SectorDetailLayout.SiteControlWidth(10, 7));
+        Assert.Equal(100, SectorDetailLayout.SiteControlWidth(0, 0));
         Assert.Equal(new Rectangle(4, 394, 28, 66), SectorDetailLayout.Back);
     }
 
@@ -630,7 +637,10 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(325, 80, 70, 110), SectorGangCardLayout.Frame(1));
         Assert.Equal(new Rectangle(251, 190, 70, 110), SectorGangCardLayout.Frame(2));
         Assert.Equal(new Rectangle(325, 300, 70, 110), SectorGangCardLayout.Frame(5));
-        Assert.Equal(new Rectangle(254, 82, 64, 3), SectorGangCardLayout.ForceBar(0));
+        Assert.Equal(new Rectangle(256, 81, 60, 3), SectorGangCardLayout.ForceBar(0));
+        Assert.Equal(0, SectorGangCardLayout.ForceWidth(0));
+        Assert.Equal(6, SectorGangCardLayout.ForceWidth(1));
+        Assert.Equal(60, SectorGangCardLayout.ForceWidth(10));
         Assert.Equal(new Rectangle(254, 87, 30, 15), SectorGangCardLayout.OneOffAction(0));
         Assert.Equal(new Rectangle(287, 87, 30, 15), SectorGangCardLayout.RepeatingAction(0));
         Assert.Equal(new Rectangle(254, 103, 64, 64), SectorGangCardLayout.Portrait(0));

@@ -185,7 +185,9 @@ Last updated: 2026-09-13
   three-row card grid. Handoff prepares replacement hire offers before any
   automatic reports, so every new dock portrait is visible without a first
   click. The one-off command list starts below its heading rather than under it.
-- Enemy-controlled site progress uses the recreation's intentional purple fill.
+- Enemy-controlled site progress uses the recreation's intentional violet
+  highlight/center/shadow bevel; friendly and empty site tracks now use the
+  original three-row green/red bevel and exact 100-pixel percentage arithmetic.
   A zero-resistance Headquarters with no explicit site influencer inherits its
   sector owner for this presentation, fixing the otherwise-green enemy HQ edge.
 - Alt+Enter now toggles fullscreen alongside F11 and consumes Enter so it cannot

@@ -25,7 +25,7 @@ original-game capture confirms the screen and interaction state.
 
 | Resource | Mapping | Confidence |
 |---|---|---|
-| `PX00129` | Main UI composite sheet: original font strip `(0,0,354,7)` containing six-pixel ASCII cells from space through `Z`, action names, player bars, arrows, buttons, portraits, message controls and command icons; diagonal `HIRED` stamp `(120,300,60,60)`; assigned `(492,67,20,20)`, idle/question `(492,107,20,20)`, and incoming-hire `(492,147,20,20)` gang-status markers | High from pixel inspection, visible content, user captures, and native surface-6 copy calls; the sheet mixes opaque, pattern-mask, and exact-white-key roles rather than one alpha policy |
+| `PX00129` | Main UI composite sheet: original font strip `(0,0,354,7)` containing six-pixel ASCII cells from space through `Z`, action names, player bars, arrows, buttons, portraits, message controls and command icons; diagonal `HIRED` stamp `(120,300,60,60)`; eight composable gang-status frames at `(492,67 + 20n,20,20)` for assigned/idle, uncontested/contested, and ordinary/incoming combinations, plus incoming-only `(492,227,20,20)` | High from pixel inspection, visible content, user captures, and native surface-6 copy calls; the sheet mixes opaque, pattern-mask, and exact-white-key roles rather than one alpha policy |
 | `PX00132` | Next-player/Ready handoff panel; active Overlord fills the measured 80x77 portrait aperture | High from visible labels and border pixels |
 | `PX00137`, `PX00139` | Empty and filled horizontal meter frames | Medium |
 | `PX00138` | Circular action/command icons | High from repeated command imagery |
@@ -47,7 +47,7 @@ original-game capture confirms the screen and interaction state.
 | `PX05024` | Search: Sites panel with ALL, NONE, and OK controls plus a two-column aperture sized for all 22 site types | High from visible identity, geometry, and the complete native handler |
 | `PX02000` | 22 vertically stacked site portraits, 120x64 each | High from dimensions and definition coverage |
 | `PX03000` | 10x9 gang portrait grid, 64x64 each, covering all 90 definitions | High from dimensions and definition coverage |
-| `PX07000`-`PX07027`, `PX07200`-`PX07228` | Eight-frame 64x64 attacker overlays facing opposite directions; index 27 is target-evasion/question art and right-facing index 28 is the police car | High from frame inspection and item-table indices |
+| `PX07000`-`PX07027`, `PX07200`-`PX07228` | Eight-frame 64x64 attacker overlays facing opposite directions; unarmed uses 0 normally or 1 for any positive base Martial Arts, index 27 is target-evasion/question art, and right-facing index 28 is the police car | High from frame inspection, item-table indices, and detailed-combat loader branches |
 | `PX07100`-`PX07119`, `PX07300`-`PX07320` | Eight-frame 64x64 hit/background layers facing opposite directions; right-facing index 20 is the police beam impact | High from composited frame inspection and item-table indices |
 | `PX05000`-`PX05024` | Gang-information panel family | Medium from visible template fields |
 | `PX10000`-`PX10006` | Neutral plus six player-colored 8x8 city layers; the grid starts at `(4,3)` and its 54x52 sector crops share borders on a 53x51 stride | High from dimensions, grid, and color inspection |
@@ -143,8 +143,10 @@ cursor feedback remain to be validated.
   `PX00129` source y 626; this is the original active-player marker rather than
   a new border effect.
 - City and detailed-sector gang-status markers use the 20-by-20 `PX00129`
-  frames at x 492 and y 67/107/147 through the executable's exact-white-keyed
-  compositor. Their white background is not part of the marker.
+  frames at x 492 and y 67 through 227 through the executable's exact-white-keyed
+  compositor. Their white background is not part of the marker. The original
+  combines detectable-enemy presence, idle status, and an overlapping incoming
+  hire into one of eight frames; a hire without a friendly gang uses frame nine.
 - AI difficulty is the setup screen's single global **AI Mentality** selection,
   not a per-player field. The four baked rows select Goon, Criminal, Crime Lord,
   or Homicidal Maniac; hover-only thematic tooltips explain the behavioral
@@ -227,10 +229,11 @@ cursor feedback remain to be validated.
   user-supplied original-game capture and footage at 03:57.
 - Each sector containing the active player's gangs displays the original
   idle/question or assigned 20-by-20 status marker. The whole-city map projects every sector containing
-  an active gang (assigned wins when a sector contains mixed command states),
-  matching the detailed-sector minimap. A pending or actively dragged hire uses the red-edged
-  incoming marker at the prospective sector; incoming state wins if markers
-  overlap. All three mappings were confirmed against user-supplied captures.
+  an active gang (idle wins when a sector contains mixed command states),
+  matching the detailed-sector minimap. Detectable enemy presence changes its
+  circle from green to red without exposing undetected gangs. A pending or
+  actively dragged hire uses the incoming-only marker in an empty sector or the
+  corresponding combined incoming frame where friendly gangs already exist.
 - Whole-city and detailed-sector views are distinct. The detailed Sector screen
   preserves the shared overlord strip at y=0, starts its selected-sector content
   at y=48, and renders the selected sector at the center of a native-size 3-by-3 crop of the
@@ -317,8 +320,9 @@ visible; only dynamic values are painted over the console's baked labels.
 Each friendly card exposes separate one-off and repeating order controls; both
 use the authoritative legal-command picker and set the existing
 `GameCommand.Repeat` flag appropriately. The repeating control uses the
-reference's vertically stacked double-arrow mark. The thin track above the
-portrait is red, filled green in proportion to current Force. Once an order is assigned, the
+reference's vertically stacked double-arrow mark. The thin 60-by-3 track above
+the portrait is a red bevel, filled with a matching green bevel in exact
+six-pixel steps per point of current Force. Once an order is assigned, the
 two arrow cells are replaced by one full-width strip naming the queued action.
 Dragging an owned gang card onto an influenceable building in the detailed
 sector queues a recurring Influence command for that exact site.
@@ -337,12 +341,13 @@ opponent portrait displays that player's eligible gangs simultaneously in a
 three-column, two-row grid; clicking a gang selects that exact target and the
 active green OK button confirms it. Raw global gang-id ordering and click-to-
 cycle behavior are not used.
-Each detailed-sector building has a red control track filled green in proportion
-to reduced resistance; the starting Headquarters is fully green while neutral
-buildings begin red. A building already influenced by an opponent uses purple
-instead of green for its completed control track, while its portrait border
-continues to identify the influencing player's color. This purple fill is a
-deliberate recreation readability improvement, not an original rendering claim.
+Each detailed-sector building has a 100-by-3 red beveled control track filled
+with the matching green bevel by integer-truncated completion percentage; the
+starting Headquarters is fully green while neutral buildings begin red. A
+building already influenced by an opponent uses a highlight/center/shadow
+violet bevel instead of green, while its portrait border continues to identify
+the influencing player's color. This violet fill is a deliberate recreation
+readability improvement, not an original rendering claim.
 Because the starting Headquarters has zero resistance but no explicit site
 influencer, its display inherits the sector owner before choosing the fill.
 

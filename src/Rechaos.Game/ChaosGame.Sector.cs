@@ -113,15 +113,10 @@ public sealed partial class ChaosGame
             DrawBorder(batch, pixel, portrait,
                 controlOwner is { } influencedBy ? PlayerColors[influencedBy.Value] : Color.Gray, 1);
             var control = SectorDetailLayout.SiteControlBar(site.Slot);
-            batch.Draw(pixel, control, Color.Red);
-            var controlled = definition.Resistance == 0
-                ? control.Width
-                : (int)Math.Round(control.Width
-                    * (definition.Resistance - Math.Clamp(site.Resistance, 0, definition.Resistance))
-                    / (double)definition.Resistance);
-            if (controlled > 0)
-                batch.Draw(pixel, new Rectangle(control.X, control.Y, controlled, control.Height),
-                    SectorDetailLayout.SiteControlColor(controlOwner, viewer));
+            var controlled = SectorDetailLayout.SiteControlWidth(
+                definition.Resistance, site.Resistance);
+            DrawSectorMeter(batch, pixel, control, controlled,
+                SectorDetailLayout.SiteControlColor(controlOwner, viewer));
         }
         var visibleGangs = SectorGangView.Visible(state, viewer, sector.Id)
             .OrderBy(gang => gang.Owner == viewer ? 0 : 1)
@@ -187,8 +182,15 @@ public sealed partial class ChaosGame
         {
             var marker = SectorDetailLayout.Marker(_cursor, dropSector);
             if (marker is { } destination && _uiKeyedSprites is not null)
-                batch.Draw(_uiKeyedSprites, destination,
-                    OriginalSpriteLayout.IncomingGangStatus, Color.White);
+            {
+                var friendlyGangs = state.FindPlayer(playerId)!.Gangs.Where(
+                    gang => gang.IsActive && gang.SectorId == dropSector).ToArray();
+                var source = friendlyGangs.Length == 0
+                    ? OriginalSpriteLayout.IncomingGangStatus
+                    : GangStatusSource(
+                        state, playerId, dropSector, friendlyGangs, hasPendingHire: true);
+                batch.Draw(_uiKeyedSprites, destination, source, Color.White);
+            }
             for (var column = 0; column < SectorDetailLayout.Columns; column++)
             for (var row = 0; row < SectorDetailLayout.Rows; row++)
                 if (SectorDetailLayout.SectorAt(_cursor, column, row) == dropSector)
@@ -365,11 +367,8 @@ public sealed partial class ChaosGame
         DrawBorder(batch, pixel, frame, PlayerColors[gang.Owner.Value], 2);
 
         var force = SectorGangCardLayout.ForceBar(slot);
-        batch.Draw(pixel, force, Color.Red);
-        var forceWidth = Math.Clamp((force.Width * gang.Force + 9) / 10, 0, force.Width);
-        if (forceWidth > 0)
-            batch.Draw(pixel, new Rectangle(force.X, force.Y, forceWidth, force.Height),
-                Color.Lime);
+        DrawSectorMeter(batch, pixel, force, SectorGangCardLayout.ForceWidth(gang.Force),
+            new Color(0, 247, 0));
 
         var controlsEnabled = gang.Owner == viewer;
         if (gang.QueuedCommand is { } queued)
@@ -416,6 +415,40 @@ public sealed partial class ChaosGame
                 batch.Draw(_itemPortraits, SectorGangCardLayout.ItemPortrait(slot, itemSlot),
                     OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
         }
+    }
+
+    private static void DrawSectorMeter(
+        SpriteBatch batch,
+        Texture2D pixel,
+        Rectangle track,
+        int filledWidth,
+        Color fill)
+    {
+        if (track.Height != 3) throw new ArgumentException("A native meter must be three pixels high.", nameof(track));
+        DrawMeterRows(batch, pixel, track,
+            new Color(255, 148, 148), new Color(247, 0, 0), new Color(148, 0, 0));
+        var width = Math.Clamp(filledWidth, 0, track.Width);
+        if (width == 0) return;
+        var filled = new Rectangle(track.X, track.Y, width, track.Height);
+        if (fill == new Color(190, 0, 220))
+            DrawMeterRows(batch, pixel, filled,
+                new Color(255, 148, 255), fill, new Color(108, 0, 125));
+        else
+            DrawMeterRows(batch, pixel, filled,
+                new Color(148, 255, 148), new Color(0, 247, 0), new Color(0, 140, 0));
+    }
+
+    private static void DrawMeterRows(
+        SpriteBatch batch,
+        Texture2D pixel,
+        Rectangle bounds,
+        Color highlight,
+        Color center,
+        Color shadow)
+    {
+        batch.Draw(pixel, new Rectangle(bounds.X, bounds.Y, bounds.Width, 1), highlight);
+        batch.Draw(pixel, new Rectangle(bounds.X, bounds.Y + 1, bounds.Width, 1), center);
+        batch.Draw(pixel, new Rectangle(bounds.X, bounds.Y + 2, bounds.Width, 1), shadow);
     }
 
     private static void DrawDownArrow(
@@ -485,15 +518,17 @@ public sealed partial class ChaosGame
         var player = state.FindPlayer(playerId)!;
         var activeGangsBySector = player.Gangs.Where(gang => gang.IsActive)
             .GroupBy(gang => gang.SectorId).ToArray();
+        var pendingHireSectors = player.PendingHires
+            .Select(pending => pending.TargetSectorId).ToHashSet();
         foreach (var gangs in activeGangsBySector)
             if (SectorDetailLayout.Marker(_cursor, gangs.Key) is { } gangMarker)
                 DrawGangStatusMarker(batch, gangMarker,
-                    GangStatusMarkerPresentation.Source(
-                        gangs.Any(gang => gang.QueuedCommand is null)));
+                    GangStatusSource(state, playerId, gangs.Key, gangs,
+                        pendingHireSectors.Contains(gangs.Key)));
         var occupiedGangSectors = activeGangsBySector.Select(gangs => gangs.Key).ToHashSet();
-        foreach (var pending in player.PendingHires.Where(
-                     pending => !occupiedGangSectors.Contains(pending.TargetSectorId)))
-            if (SectorDetailLayout.Marker(_cursor, pending.TargetSectorId) is { } hireMarker)
+        foreach (var pendingSector in pendingHireSectors.Where(
+                     pendingSector => !occupiedGangSectors.Contains(pendingSector)))
+            if (SectorDetailLayout.Marker(_cursor, pendingSector) is { } hireMarker)
                 DrawGangStatusMarker(batch, hireMarker, OriginalSpriteLayout.IncomingGangStatus);
     }
 

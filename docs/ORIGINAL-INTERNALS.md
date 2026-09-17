@@ -160,6 +160,18 @@ scaled to 64 by 60, so the wrapper deliberately takes its opaque scaling path
 and never applies the requested pattern. The twelve 20-by-20 active-player
 frames at source y 626 likewise use opaque `FUN_0042773e`.
 
+The marker state is a three-bit composition while the active player has a gang
+in the sector: detectable opposing-player presence contributes 1, an active
+gang with action byte zero contributes 2, and a pending hire targeting the
+sector contributes 4. This selects all eight frames at y 67 through 207. A
+pending hire without an existing friendly gang uses the ninth frame at y 227.
+Presence builder `0x004123cc` clears the 64-by-6 table and sets an owner/sector
+entry only for an active gang whose visibility byte for the current player is
+nonzero, so an undetected enemy does not disclose itself by turning the marker
+red. Atlas pixels use dark green `(0,156,0)` for the uncontested circle, dark
+red `(156,0,0)` for its contested counterpart, yellow `(247,247,0)` for the
+idle question mark, and brighter reds for the incoming-hire decoration.
+
 Mode compositor `0x00427e60` selects 1-bit bitmap resource 147, 143, or 146.
 The sole selector `0x00449b20` maps an input below 86 to resource 147, 86
 through 170 to resource 143, and 171 or above to resource 146. Its raster
@@ -263,6 +275,28 @@ equal source/destination dimensions, keyed-copy mode, and visible atlas pixels.
 **Next validation:** Golden-screen comparison remains useful corroboration;
 the sprite identity, marked sector sets, copy mode, and placement are closed
 statically.
+
+### BIN-UI-034 - detailed-sector site and gang meters
+
+**Observation:** Detailed-sector compositor `0x00410770` calculates each site
+percentage as integer `progress * 100 / base Resistance`, with the
+zero-Resistance case fixed at 100. It copies exactly that many pixels from the
+100-by-3 green strip at `PX00129` `(354,0)`, whose rows are light green
+`(148,255,148)`, green `(0,247,0)`, and dark green `(0,140,0)`. The underlying
+site frame supplies the matching 100-by-3 red track. Gang-card compositor
+`0x00410130` copies `Force * 6` pixels from the same green strip over the
+60-by-3 red track embedded in the card frame. The red rows are
+`(255,148,148)`, `(247,0,0)`, and `(148,0,0)`.
+
+**Interpretation:** Both detailed-sector meters are three-row bevels copied at
+native length. They are not flat fills, site progress is truncated rather than
+rounded, and gang Force advances in exact six-pixel steps. The original draws
+site progress only for the active sector owner. The recreation retains its
+requested violet enemy-site progress as an intentional visibility extension,
+but applies the same highlight/center/shadow structure.
+
+**Confidence:** High from the complete site and gang compositors, exact source
+and destination rectangles, arithmetic branches, and decoded `PX00129` pixels.
 
 ### BIN-UI-016 - Last Turn Events site-image treatment
 
@@ -588,6 +622,19 @@ undetected police attacks have no presentation. The evasion sentinel does not
 load a valid attack sound. The timeline at `0x00430c23` calls the gated slot-5
 wrapper immediately before advancing frames, and the presenter unloads slot 5
 after that combatant's sequence.
+
+The same `0x0042e040` branches recover the exact paired animation mapping.
+For a normal-direction unarmed attack, base Martial Arts greater than zero
+selects attacker strip `PX07001` and recipient strip `PX07118`; otherwise it
+selects `PX07000` and `PX07102`. This is a positive-Martial-Arts test, not a
+comparison between Strength, Fighting, and Martial Arts. An evaded hidden
+target selects attacker strip `PX07027` together with recipient strip
+`PX07100`; omitting that second strip leaves the target aperture black. For
+both unarmed and equipped attacks, zero damage overrides the normal recipient
+strip with `PX07101`. The mirrored retaliation path applies the same rules to
+`PX072xx`/`PX073xx`. Detected police selects `PX07228` with `PX07320` on
+damage or `PX07301` on zero damage, while the undetected branch never enters
+the presenter.
 
 **Interpretation:** Slots 0 and 1 are the Slide Panels entry and exit cues.
 Slot 2 is the general push-button press cue; slots 3 and 4
