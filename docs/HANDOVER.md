@@ -116,8 +116,9 @@ Last updated: 2026-09-13
 - Upkeep and both Finance panels preserve the executable's actual sector cash:
   flat $1 tax plus influenced-site Cash. Static caller tracing confirmed that
   the original combines these in a recomputed byte before playable turns;
-  generated density Income is not recurring sector tax. The guarded first
-  outer-loop pass now also leaves setup cash unchanged before initial planning.
+  generated Income is a separate field and is not recurring sector tax. The
+  guarded first outer-loop pass now also leaves setup cash unchanged before
+  initial planning.
 - Fresh local setup now implements every recovered rule-changing exact name.
   `SMGSPANK` adds five Force-10 Right Hands; `SMGKICKASS` adds five Force-10
   GROUND ZERO gangs with the recovered top-tier weapon, armor, and miscellaneous
@@ -498,10 +499,10 @@ Last updated: 2026-09-13
   turn to both slots after neutralizing control, and only then does the resolver
   draw and add 3-5 police turns. Inclusive-boundary, reacquisition, cleanup, and
   duplicate-slot save round-trip fixtures cover the recovered behavior.
-- Control and Chaos now use the executable's recomputed operational Income:
-  `$1` sector tax plus influenced-site Cash, rather than the one-time 3-7
-  density value. Regression fixtures keep those values different. Chaos adds
-  operational Income separately to every participating gang's pool, rolls
+- Correction: later static analysis separated the executable's generated
+  3-7 **Income** byte from its recomputed `$1` plus influenced-site **Cash**
+  byte. Control and Chaos use generated Income; the current recreation and its
+  regression fixtures incorrectly use Cash. Chaos otherwise rolls
   gangs in fixed player/roster-slot order, then groups successes by player and sector.
   Uncontrolled half income is divided once after that aggregation; reversed
   submission and RNG-state fixtures guard the recovered ordering.

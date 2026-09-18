@@ -430,10 +430,11 @@ active player in stable player-ID order before entering Command. Each result sep
 cash, and active-gang upkeep so reference fixtures can locate the first differing
 component. Cash statistics retain the native finer boundary: each gang's signed
 Upkeep and each sector's signed combined Income is classified separately before
-opposite signs can cancel. The original combines tax and site Cash into one recomputed sector
-byte; `SectorIncomeResolver` derives that same operational Income for Upkeep,
-Control, Chaos, AI evaluation, and presentation while `MatchSectorState.Income`
-retains the generated density value needed by tolerance normalization.
+opposite signs can cancel. The original combines tax and site Cash into one
+recomputed sector Cash byte; `SectorIncomeResolver` derives that value for
+Upkeep. It is distinct from the generated sector Income byte used by Control
+and Chaos. The recreation currently uses the recomputed Cash value for those
+consumers and for the Income display, which is a documented parity defect.
 Unverified special modifiers remain outside this slice.
 
 Hiring uses the same deferred boundary as the manual: during the player's

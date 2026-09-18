@@ -489,13 +489,13 @@ claim about original-game behavior.
   controlled sector and counts toward crackdown; activity outside a controlled
   sector earns half as much. When total Chaos exceeds Tolerance, a crackdown
   prevents all Chaos income in that sector.
-- Interpretation: reset the prior turn's sector Chaos during Upkeep, then group
-  one player's Chaos commands by sector. Each participating gang contributes
-  `operational sector Income + Force + Chaos` dice and rolls in fixed
+- Interpretation: group one player's Chaos commands by sector. Each
+  participating gang contributes `generated sector Income + Force + Chaos`
+  dice and rolls in fixed
   player-slot then persistent roster-slot order, independent of submission order or intervening
-  sectors. Before playable turns the executable replaces the generated 3-7
-  density value with operational Income `1 + completed-site Cash`. Accumulate every
-  player's successes into `MatchSectorState.Chaos` before paying anybody. A
+  sectors. Accumulate every player's successes in resolver-local player/sector
+  storage before paying anybody; the executable has no persistent sector-Chaos
+  accumulator. A
   sector already in crackdown, or crossing the strict `Chaos > Tolerance`
   threshold during this phase, pays no group; otherwise controlled groups earn
   all successes and uncontrolled groups earn `floor(group successes / 2)` after
@@ -508,22 +508,28 @@ claim about original-game behavior.
   until the Chaos boundary.
 - Current exclusions: exact original message wording and controlled runtime
   corroboration.
-- Confidence: High for the per-gang pool, operational-Income recomputation, control
+- Confidence: High for the per-gang pool, generated Income field, control
   multiplier, roster RNG order, grouped half payout, and suppression rule;
   Medium for notification presentation.
 - Implementation: `CommandResolver.ResolveChaosPhase`,
   `ManualRules.ChaosDiceCount`, `ManualRules.ChaosIncome`, and
   `ManualRules.TriggersCrackdown`.
-- Tests: `ChaosResolutionTests` covers turn-start reset, pooling, recomputed
-  operational Income versus generated density, fixed player/roster RNG order,
+- Tests: current `ChaosResolutionTests` covers turn-start reset, pooling,
+  fixed player/roster RNG order,
   grouped payout,
   statistics, sector-wide
   cross-player aggregation, existing/new crackdown behavior, notifications,
   RNG consumption, and phase hashes; `ManualRulesTests` covers arithmetic and
   the strict threshold.
-- Next experiment: run controlled and uncontrolled identical saves at Chaos
-  values immediately below/equal/above Tolerance, including two players in one
-  sector, then compare cash, Chaos, police creation, RNG, and next-turn reset.
+- Known recreation mismatch: `CommandResolver` currently substitutes
+  `SectorIncomeResolver.OperationalIncome` (the original owner Cash yield) for
+  generated Income and writes successes into `MatchSectorState.Chaos`.
+  `ChaosResolutionTests.ChaosUsesRecomputedSectorTaxAndInfluencedSiteCash`
+  codifies that incorrect substitution. The city UI also replaces the original
+  owner-only **CASH** row with this normally zero temporary Chaos value.
+- Next experiment: after correcting those mismatches, run controlled and
+  uncontrolled identical saves immediately below/equal/above Tolerance and
+  compare cash, police creation, and RNG state.
 
 ### RULE-POLICE-001 — Crackdown detection and combat
 
@@ -670,14 +676,15 @@ claim about original-game behavior.
   already active when the later Control scan runs. The original silently omits
   that sector from Control resolution; the recreation records an explicit
   failed result for auditability while preserving the same no-capture outcome.
-- Current exclusions: none for mechanical Control/Crackdown ordering.
-- Confidence: High for equation components, recomputed operational sector Income,
+- Current exclusions: the recreation currently substitutes recomputed owner
+  Cash for the original generated Income field in the Control defense.
+- Confidence: High for equation components, generated sector Income,
   influence loss, zero-margin neutral selection, and cross-player winner/order
   behavior.
 - Implementation: `ManualRules.ControlStrength`, `ManualRules.ControlMargin`,
   grouped `CommandResolver.ResolveControl`, and site-reset handling.
 - Tests: `BoardResolutionTests` covers neutral capture, board/roster ordering,
-  pooled strength, operational Income versus generated density, defended
+  pooled strength, the currently incorrect owner-Cash substitution, defended
   failure, recorded deterministic zero-margin chance, positive and zero-margin
   cross-player ties, unique-highest neutral conflicts, retained empty-sector
   ownership after Move/Terminate, a single phase-opening
@@ -711,9 +718,9 @@ claim about original-game behavior.
   sector Income increases Cash Earned, and zero/negative sector Income takes
   the Cash Spent branch (with zero adding nothing). Opposite-sign components
   therefore do not cancel before the endgame statistics are updated.
-  The same recomputed byte is the sector Income shown in the city UI and used
-  by Control, Chaos, and the original AI; the generator's 3-7 density value
-  survives semantically as the base for initial/normal Tolerance.
+  The recomputed byte is the owner-only sector Cash row shown in the city UI.
+  It is distinct from the generated 3-7 sector Income byte used by Control and
+  Chaos and displayed on the Income row.
 - Current exclusions: cash adjustment, special gang/item/site modifiers, and
   integer overflow behavior.
 - Confidence: High static evidence for flat sector tax, influenced-site Cash,
@@ -780,7 +787,8 @@ claim about original-game behavior.
   $1,500; the setup-only flag is transient and cash itself persists. Original
   local Begin also completes all empty slots as Computers before city generation;
   each receives a unique portrait 0..14 and its resource-defined name. Exact
-  uppercase `SMGISLANDS` subsequently sets neutral non-HQ sectors to Chaos 100.
+  uppercase `SMGISLANDS` subsequently gives neutral non-HQ sectors permanent
+  Crackdown duration 100.
   Three other exact uppercase names alter the player's opening state:
   `SMGSPANK` adds five more Force-10 Right Hands in the HQ; `SMGKICKASS` adds
   five Force-10 GROUND ZERO gangs equipped with PLASMA GENERATOR, BATTLE SUIT,

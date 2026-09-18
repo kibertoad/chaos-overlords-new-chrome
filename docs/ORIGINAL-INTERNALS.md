@@ -3262,8 +3262,10 @@ gate, global clamp value, and clamp placement after all Instant actions.
 
 **Observation:** The action-3 (**Chaos**) pass in `0x00472775` scans player
 slots 0 through 5 and each player's 81 gang slots in ascending order. Lines
-245-265 calculate and roll each participating gang separately, store its
-success count by gang slot, and add that count to a player-by-sector aggregate.
+245-265 calculate each participating gang's pool from the persistent sector
+Income byte at `0x004a08ec + sector * 0x24`, current Force, and effective Chaos.
+They roll each gang separately, store its success count by gang slot, and add
+that count to a player-by-sector aggregate.
 After all rolls, the sector pass at lines 268-327 evaluates Crackdown totals and
 zeroes participating gang results when the sector triggers.
 
@@ -3286,11 +3288,39 @@ in one sector still share the final success result and payout. Uncontrolled
 income is `trunc(total successes / 2)`, preserving an odd success contributed
 across multiple gangs rather than rounding each gang independently. A new
 Crackdown exists before the same turn's police scan, while its income remains
-suppressed and all surviving Chaos income waits until after Transactions.
+suppressed and all surviving Chaos income waits until after Transactions. The
+success arrays are resolver-local state: the pass does not write a persistent
+sector-Chaos value. In particular, the pool's sector component is the generated
+3-7 Income byte, not the separate owner Cash byte recomputed from controlled
+sites.
 
 **Confidence:** High static evidence for scan order, per-gang rolls/storage,
 player-sector aggregation, Crackdown suppression, ownership comparison, and
 single post-aggregation division. Runtime seed correlation remains pending.
+
+### BIN-UI-035 - sector Income and owner-only Cash rows
+
+**Observation:** The city and detailed-sector field renderer `0x004120ef`
+reads the 36-byte sector record rooted at `0x004a08e8`. It renders offset `+4`
+(`0x004a08ec`) on the **INCOME** row, offset `+5` on **TOLERANCE**, and offset
+`+6` on **SUPPORT** only when the selected sector owner equals the active
+player. Its final row reads offset `+3` (`0x004a08eb`) under the artwork's
+literal **CASH** label, again returning zero for a non-owner.
+
+The pre-planning sector rebuild helper `0x004782c5` preserves offset `+4`, sets
+offset `+3` to the base sector tax of 1, and adds the Cash field of each
+completed site. The later Upkeep scan in `0x0046e766`, lines 216-230, adds that
+same signed offset-`+3` byte once to the owning player's cash and statistics.
+The action-3 pass independently consumes offset `+4` for Chaos dice.
+
+**Interpretation:** Income and Cash are distinct original fields. Income is the
+generated 3-7 sector value used by Chaos and Control. Cash is the owner-visible
+and owner-collected `1 + completed-site Cash` value. The shipped panel has no
+sector-Chaos row; Chaos successes exist only in the whole-turn resolver's
+temporary arrays.
+
+**Confidence:** High static evidence from all four renderer reads, the
+rebuild helper, the Upkeep owner scan, and the independent Chaos-pool read.
 
 ### BIN-POLICE-001 - occurrence window, neutralization, and duration order
 
@@ -3696,19 +3726,21 @@ identity into an empty color or exchanges two human colors; the transient sparse
 setup is normalized into ascending slots before recovered empty-slot completion.
 Exact name/drop-field coordinates still require native capture.
 
-### BIN-SETUP-003 - `SMGISLANDS` neutral-sector Chaos override
+### BIN-SETUP-003 - `SMGISLANDS` permanent neutral-sector Crackdown
 
 **Observation:** The same exact, case-sensitive fresh-name scan sets transient
 byte `0x004abc10` for `SMGISLANDS`. After city generation, assignment of all six
 HQ owners, and creation of all six Right Hands gangs, `0x0046dc10` scans sectors
 0 through 63 once for each flagged player. Every sector whose owner byte is -1
-receives Chaos byte 100; owned HQ sectors are unchanged. The flag is cleared at
-fresh setup/teardown and has no save/load references, while sector Chaos is
-ordinary persisted state.
+receives byte 100 at sector offset `+0xf` (`0x004a08f7`); owned HQ sectors are
+unchanged. The whole-turn resolver reads this same byte as police duration and
+decrements only positive values below the permanent sentinel 100. The flag is
+cleared at fresh setup/teardown and has no save/load references.
 
-**Interpretation:** `SMGISLANDS` starts every neutral non-HQ sector at Chaos 100.
-The recreation applies it after its six-participant local setup lifecycle, so all
-six HQ candidates are already owned and remain at their generated Chaos value.
+**Interpretation:** `SMGISLANDS` starts every neutral non-HQ sector under a
+permanent Crackdown. It does not initialize a sector-Chaos value. The override
+runs after the six HQ candidates become owned, so those starting sectors remain
+unaffected.
 
 **Confidence:** High static evidence for the exact trigger, ordering, owner
 predicate, value, and transient lifetime; runtime corroboration remains pending.
