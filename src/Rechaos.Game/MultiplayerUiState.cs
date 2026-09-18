@@ -250,6 +250,15 @@ internal sealed class MultiplayerUiState
     /// and leave the player believing they ordered something they did not.
     /// </remarks>
     internal bool PlanningIsOpen => Stage == MultiplayerStage.Playing;
+
+    /// <summary>Whether the player's turn is sent and only the other seats are still awaited.</summary>
+    /// <remarks>
+    /// The turn is no longer theirs to change, but the state it was planned against is still the
+    /// state every client will resolve from, so it remains worth reading while the wait runs. The
+    /// interface uses this to keep the read-only views open without reopening
+    /// <see cref="PlanningIsOpen"/>, which is the narrower question every mutation asks.
+    /// </remarks>
+    internal bool PlanningIsSubmitted => Stage == MultiplayerStage.WaitingForSeal;
 }
 
 internal sealed record TakeoverVotePrompt(
