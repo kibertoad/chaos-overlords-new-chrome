@@ -47,6 +47,42 @@ communication between the game client and coordination server—including reques
 schemas, routes, authentication, event streams, serialization, or protocol behavior—increment both
 versions in the same change. Never update only one side.
 
+The protocol version decides one thing only: whether a client and a server can talk to each other.
+It is settled by the handshake before any match data moves, and it is never the reason a stored
+match is refused. Whether a match can still be played is the session version below.
+
+## Multiplayer session version
+
+Keep `MULTIPLAYER_SESSION_VERSION` in
+`multiplayer/packages/contracts/src/protocol.ts` and `MultiplayerSessionVersion.Current` in
+`src/Rechaos.Multiplayer/Protocol/MultiplayerSessionVersion.cs` equal, and increment both in the
+same change or neither. It describes the session as it is stored—the match row, its turns, its
+orders and its snapshots—and every match carries the version it was created under for the whole of
+its life. A client resumes a match only when the stored session version is the one it plays, so a
+bump retires every match in progress: players lose the seats they are holding, and the previous
+sessions browser marks those rows `INCOMPATIBLE` instead of rejoining them.
+
+Bump the session version when a build could no longer correctly carry on a match an older build
+started:
+
+- the deterministic rules or the resolution of a turn change, so replaying the same sealed orders
+  reaches a different state;
+- the order document's schema or the meaning of an op changes;
+- the settings a city is generated from, the seeding, or the seat assignment change;
+- the state hash is computed differently, or the native save format stops round-tripping;
+- a stored field's meaning changes, rather than a new one being added.
+
+Leave it alone for everything else, including changes that do move the protocol version: a new
+endpoint or field, a renamed or reshaped request or response, authentication, the event stream,
+serialization, retention or any other server-side behavior that leaves the match a client resumes
+identical. A session version that shadowed the protocol version would throw away live matches for
+wire changes that never touched them.
+
+Two things follow a bump. Both mirrors move in the same change, and the protocol rule above still
+applies on its own terms, so a change that alters the wire as well moves both numbers. No migration
+is written for the stored sessions: the server holds them as opaque history and only a client can
+read one, so a match from an older session version is refused rather than reinterpreted.
+
 ## Post-commit orphan-process audit
 
 After every commit in this repository, inspect running processes for orphaned

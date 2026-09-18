@@ -43,7 +43,8 @@ public static class Program
                 new MatchSettings("SMOKE CITY", 2, 0, MatchVisibility.Private, settings.ToWire()),
                 "ADA",
                 Password: null,
-                MultiplayerProtocolVersion.Current),
+                MultiplayerProtocolVersion.Current,
+                MultiplayerSessionVersion.Current),
             CancellationToken.None);
         Console.WriteLine($"hosted {host.Match.Id} with code {host.JoinCode}");
 

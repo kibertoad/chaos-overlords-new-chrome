@@ -26,7 +26,7 @@ import {
   slotSchema,
   turnNumberSchema,
 } from './primitives'
-import { protocolVersionSchema } from './protocol'
+import { protocolVersionSchema, sessionVersionSchema } from './protocol'
 import { matchSettingsSchema } from './settings'
 
 /**
@@ -48,8 +48,10 @@ export const createMatchRequestSchema = strictObject({
   settings: matchSettingsSchema,
   hostDisplayName: displayNameInputSchema,
   password: optional(passwordSchema),
-  /** Protocol that created this session. Omitted legacy requests predate version negotiation. */
+  /** Wire protocol of the creating client. Omitted legacy requests predate version negotiation. */
   protocolVersion: optional(protocolVersionSchema),
+  /** Session shape the creating client plays. Omitted legacy requests are session version 1. */
+  sessionVersion: optional(sessionVersionSchema),
 })
 
 export const joinMatchRequestSchema = strictObject({
@@ -104,8 +106,10 @@ export const turnReportRequestSchema = strictObject({
 export const uploadSnapshotRequestSchema = strictObject({
   turn: turnNumberSchema,
   formatVersion: formatVersionSchema,
-  /** Protocol that produced this snapshot. Omitted legacy requests are protocol version 1. */
+  /** Wire protocol that produced this snapshot. Omitted legacy requests are protocol version 1. */
   protocolVersion: optional(protocolVersionSchema),
+  /** Session shape these bytes belong to. Omitted legacy requests are session version 1. */
+  sessionVersion: optional(sessionVersionSchema),
   stateHash: sha256HexSchema,
   /** The client's native snapshot, base64-encoded. The server stores it without decoding it. */
   body: base64BodySchema,

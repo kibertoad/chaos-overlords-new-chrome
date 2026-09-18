@@ -142,10 +142,14 @@ public sealed partial class ChaosGame
                 x + row, y + (open ? 2 - row : row), 5 - row * 2, 1), Color.Gold);
     }
 
+    /// <summary>The colour of a session this build cannot play.</summary>
+    private static readonly Color IncompatibleSession = new(220, 120, 90);
+
     private void DrawOnlineHistory(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         DrawOnlinePanel(batch, pixel, font, "UNFINISHED SESSIONS");
         var sessions = RecoverableOnlineSessions;
+        var selected = SelectedOnlineRecovery;
         var offset = Math.Clamp(_online.RecoverySelection - 5, 0, Math.Max(0, sessions.Count - 6));
         for (var row = 0; row < Math.Min(6, sessions.Count - offset); row++)
         {
@@ -157,15 +161,35 @@ public sealed partial class ChaosGame
                 : new Color(4, 10, 9));
             DrawBorder(batch, pixel, bounds,
                 index == _online.RecoverySelection ? Color.Gold : new Color(70, 90, 88), 1);
-            var role = recovery.IsHost ? "HOST" : "PLAYER";
-            font.Draw(batch, $"{recovery.DisplayName}  {recovery.JoinCode}  {role}",
-                new Vector2(bounds.X + 7, bounds.Y + 9), Color.White, 1);
+            DrawHistoryRow(batch, font, bounds, recovery);
         }
-        DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN", sessions.Count > 0);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN",
+            selected is { CanResume: true });
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK", true);
-        DrawCentered(font, batch, "UP/DOWN SELECT  ENTER REJOINS", 424,
-            new Color(150, 165, 165), 1);
+        DrawCentered(font, batch, OnlineHistoryPresentation.Footer(selected), 424,
+            selected is { IsCompatible: false } ? IncompatibleSession : new Color(150, 165, 165), 1);
         DrawCentered(font, batch, _online.Status, 440, Color.Gold, 1);
+    }
+
+    /// <summary>The membership on one row, with the reason beside it when it cannot be taken.</summary>
+    /// <remarks>
+    /// The note is right-aligned and the membership is fitted to what is left of the row, so a
+    /// display name at its full length runs out of room rather than running through the words.
+    /// </remarks>
+    private static void DrawHistoryRow(
+        SpriteBatch batch, PixelFont font, Rectangle bounds, MultiplayerRecovery recovery)
+    {
+        var note = OnlineHistoryPresentation.Note(recovery);
+        var noteWidth = note is null ? 0 : note.Length * OriginalFontLayout.CellWidth + 6;
+        var label = Fitted(
+            OnlineHistoryPresentation.Row(recovery),
+            new Rectangle(bounds.X, bounds.Y, bounds.Width - noteWidth, bounds.Height));
+        font.Draw(batch, label, new Vector2(bounds.X + 7, bounds.Y + 9),
+            recovery.IsCompatible ? Color.White : new Color(150, 165, 165), 1);
+        if (note is null) return;
+        font.Draw(batch, note,
+            new Vector2(bounds.Right - 9 - note.Length * OriginalFontLayout.CellWidth, bounds.Y + 9),
+            IncompatibleSession, 1);
     }
 
     private void DrawLateJoinSeats(SpriteBatch batch, Texture2D pixel, PixelFont font)

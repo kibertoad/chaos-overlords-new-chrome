@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Game;
 
@@ -15,11 +16,24 @@ public sealed record MultiplayerRecovery(
     bool IsHost,
     bool CleanExit,
     bool Completed,
-    string Password = "")
+    string Password = "",
+    int SessionVersion = MultiplayerSessionVersion.Initial)
 {
     public const int CurrentFormatVersion = 1;
-    public bool ShouldSuggestReconnect => !CleanExit && !Completed;
+
+    /// <summary>Whether this build plays the session this seat belongs to.</summary>
+    /// <remarks>
+    /// The membership stays worth keeping either way — the seat is still held, and the browser
+    /// says why it cannot be taken — so this is asked beside <see cref="CanReconnect"/> rather
+    /// than folded into it.
+    /// </remarks>
+    public bool IsCompatible => MultiplayerSessionVersion.CanResume(SessionVersion);
+
+    public bool ShouldSuggestReconnect => !CleanExit && !Completed && IsCompatible;
     public bool CanReconnect => !Completed;
+
+    /// <summary>The seat is still live and this build can carry the match on.</summary>
+    public bool CanResume => CanReconnect && IsCompatible;
 }
 
 /// <summary>
@@ -39,6 +53,14 @@ public sealed record MultiplayerRecovery(
 /// the reason to keep it is that the player who resumes has to be able to read it out again.
 /// A file from a build that did not write it has none, which reads back as a session without one.
 /// </para>
+/// <para>
+/// <see cref="SessionVersion"/> is kept so the browser can say that a seat cannot be taken before
+/// the game dials the server for it. It is additive in both directions, which is why it does not
+/// move <see cref="MultiplayerRecoveryHistory.CurrentFormatVersion"/>: a build that does not know
+/// the field ignores it and keeps its reconnects, and a build that does reads a file without one
+/// as <see cref="MultiplayerSessionVersion.Initial"/>, the only version that can have been stored
+/// before the field existed. The file is a hint either way — the match view settles it.
+/// </para>
 /// </remarks>
 internal sealed record PersistedRecovery(
     int FormatVersion,
@@ -52,7 +74,8 @@ internal sealed record PersistedRecovery(
     bool Completed,
     string? Token = null,
     string? ProtectedToken = null,
-    string? Password = null);
+    string? Password = null,
+    int? SessionVersion = null);
 
 internal sealed record MultiplayerRecoveryHistory(
     int FormatVersion,
@@ -185,7 +208,8 @@ public static class MultiplayerRecoveryStore
             recovery.Completed,
             Token: sealedToken is null ? recovery.Token : null,
             ProtectedToken: sealedToken,
-            Password: recovery.Password.Length > 0 ? recovery.Password : null);
+            Password: recovery.Password.Length > 0 ? recovery.Password : null,
+            SessionVersion: recovery.SessionVersion);
     }
 
     private static MultiplayerRecovery? Revive(PersistedRecovery stored)
@@ -208,7 +232,8 @@ public static class MultiplayerRecoveryStore
             stored.IsHost,
             stored.CleanExit,
             stored.Completed,
-            stored.Password ?? string.Empty);
+            stored.Password ?? string.Empty,
+            stored.SessionVersion ?? MultiplayerSessionVersion.Initial);
     }
 
     /// <summary>
@@ -260,7 +285,8 @@ public static class MultiplayerRecoveryStore
             Token.Length: > 0 and <= 512,
             JoinCode.Length: > 0 and <= 32,
             DisplayName.Length: > 0 and <= 32,
-            Password.Length: <= 128
+            Password.Length: <= 128,
+            SessionVersion: >= 0
         }
         && recovery.Server.Length <= 256
         && Uri.TryCreate(recovery.Server, UriKind.Absolute, out var server)

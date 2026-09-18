@@ -12,6 +12,24 @@ public sealed partial class ChaosGame
     private IReadOnlyList<MultiplayerRecovery> RecoverableOnlineSessions =>
         _multiplayerRecoveries.Where(recovery => recovery.CanReconnect).ToArray();
 
+    /// <summary>
+    /// The row the browser is on, or null when there is nothing to browse.
+    /// </summary>
+    /// <remarks>
+    /// A session this build cannot play is on the list rather than filtered out of it, so the
+    /// player is told why the seat they are holding cannot be taken instead of watching it vanish.
+    /// </remarks>
+    private MultiplayerRecovery? SelectedOnlineRecovery
+    {
+        get
+        {
+            var sessions = RecoverableOnlineSessions;
+            return sessions.Count == 0
+                ? null
+                : sessions[Math.Clamp(_online.RecoverySelection, 0, sessions.Count - 1)];
+        }
+    }
+
     private void OpenOnlineHistory()
     {
         if (RecoverableOnlineSessions.Count == 0) return;

@@ -60,6 +60,7 @@ export class LobbyService {
     const match = await this.createWithFreshJoinCode({
       id: matchId,
       protocolVersion: request.protocolVersion ?? 1,
+      sessionVersion: request.sessionVersion ?? 1,
       status: 'lobby',
       settings: request.settings,
       hostPlayerId: hostId,

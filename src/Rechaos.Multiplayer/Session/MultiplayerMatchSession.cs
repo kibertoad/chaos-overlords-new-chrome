@@ -161,7 +161,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(options);
         var view = options.View;
-        RequireCurrentProtocol(view.ProtocolVersion, "match");
+        RequireResumableSession(view.SessionVersion, "match");
         var seed = view.Seed
             ?? throw new MultiplayerProtocolException("the match has started without a seed");
         var self = view.Players.FirstOrDefault(player => player.Id == options.OwnPlayerId)
@@ -564,6 +564,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                     // save format's — not the replay format's, which says nothing about these bytes.
                     NativeSaveSerializer.CurrentFormatVersion,
                     MultiplayerProtocolVersion.Current,
+                    MultiplayerSessionVersion.Current,
                     ours,
                     MatchStateClone.ToBase64(_replay.State),
                     SummarizeSeats(_replay.State)),
@@ -628,7 +629,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// </remarks>
     private MatchState ReadVerifiedSnapshot(SnapshotView snapshot)
     {
-        RequireCurrentProtocol(snapshot.ProtocolVersion, "snapshot");
+        RequireResumableSession(snapshot.SessionVersion, "snapshot");
         if (snapshot.FormatVersion > NativeSaveSerializer.CurrentFormatVersion)
         {
             throw new MultiplayerProtocolException(
@@ -655,12 +656,22 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         return restored;
     }
 
-    private static void RequireCurrentProtocol(long actual, string source)
+    /// <summary>
+    /// Refuses a session this build cannot play on.
+    /// </summary>
+    /// <remarks>
+    /// The session version is asked, not the protocol version. The protocol was already settled by
+    /// the handshake, and it says nothing about the match: a session created by a client that spoke
+    /// an older protocol is played here unchanged, as long as the stored session is the shape this
+    /// build knows how to carry on. What would break is a session whose rules, orders or state
+    /// hashing are not the ones here, and that is exactly what the session version names.
+    /// </remarks>
+    private static void RequireResumableSession(long actual, string source)
     {
-        if (actual == MultiplayerProtocolVersion.Current) return;
+        if (actual == MultiplayerSessionVersion.Current) return;
         throw new MultiplayerProtocolException(
-            $"the {source} uses multiplayer protocol {actual}, but this build requires "
-            + MultiplayerProtocolVersion.Current);
+            $"the {source} is session version {actual}, but this build plays "
+            + MultiplayerSessionVersion.Current);
     }
 
     private Task ReportAsync(int turn, string stateHash, CancellationToken cancellationToken) =>
@@ -695,7 +706,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         var detail = await CallAsync(
             token => _match.GetAsync(token), _pumpLane, cancellationToken).ConfigureAwait(false);
         var view = detail.Match;
-        RequireCurrentProtocol(view.ProtocolVersion, "match");
+        RequireResumableSession(view.SessionVersion, "match");
         // Follow the roster's word on who hosts; the promoted client repairs desyncs.
         _isHost = string.Equals(view.HostPlayerId, PlayerId, StringComparison.Ordinal);
         _awaitedSeats = view.Players.Count(player => player.Slot >= 0 && IsAwaitedHuman(player));

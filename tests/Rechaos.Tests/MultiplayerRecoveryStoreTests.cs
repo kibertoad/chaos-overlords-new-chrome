@@ -1,4 +1,5 @@
 using Rechaos.Game;
+using Rechaos.Multiplayer.Protocol;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -160,6 +161,60 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         }));
 
         Assert.Equal(string.Empty, Assert.Single(MultiplayerRecoveryStore.LoadAll(Path())).Password);
+    }
+
+    /// <summary>
+    /// The session version rides with the membership so the browser can say a seat cannot be
+    /// taken without dialing the server for it first.
+    /// </summary>
+    [Fact]
+    public void SessionVersionIsKeptWithTheMembership()
+    {
+        var recovery = Recovery(CleanExit: false, Completed: false) with
+        {
+            SessionVersion = MultiplayerSessionVersion.Current + 1
+        };
+
+        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+
+        var loaded = MultiplayerRecoveryStore.Load(Path())!;
+        Assert.Equal(recovery, loaded);
+        Assert.False(loaded.IsCompatible);
+        Assert.False(loaded.CanResume);
+        // Still held: the seat is the player's, and the browser owes them the reason it cannot be
+        // taken rather than dropping the row.
+        Assert.True(loaded.CanReconnect);
+        Assert.False(loaded.ShouldSuggestReconnect);
+    }
+
+    /// <summary>A file from a build that wrote no session version is the first one.</summary>
+    [Fact]
+    public void MembershipWithoutAStoredSessionVersionIsTheInitialOne()
+    {
+        File.WriteAllText(Path(), System.Text.Json.JsonSerializer.Serialize(new
+        {
+            FormatVersion = 3,
+            Sessions = new[]
+            {
+                new
+                {
+                    FormatVersion = MultiplayerRecovery.CurrentFormatVersion,
+                    Server = "https://games.example.test/",
+                    MatchId = "match-1",
+                    PlayerId = "player-1",
+                    JoinCode = "CODE1234",
+                    DisplayName = "ADA",
+                    IsHost = true,
+                    CleanExit = false,
+                    Completed = false,
+                    Token = "cop_secret"
+                }
+            }
+        }));
+
+        var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.Equal(MultiplayerSessionVersion.Initial, loaded.SessionVersion);
+        Assert.True(loaded.CanResume);
     }
 
     [Fact]

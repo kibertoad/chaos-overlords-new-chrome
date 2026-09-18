@@ -104,6 +104,24 @@ a handler reads `c.req.valid(...)` rather than parsing again; the TypeScript cli
 from the same `pathResolver` the route pattern is derived from; and the C# client's records are
 generated from the same valibot schemas (see "Two languages, one contract").
 
+### Two versions: one for talking, one for playing
+
+`POST /protocol/handshake` is the first call a game makes, and the only thing
+`MULTIPLAYER_PROTOCOL_VERSION` decides: whether this build and this server can exchange anything at
+all. It moves whenever the wire moves — a route, a schema, the event stream, authentication — and a
+mismatch is refused there, before any match data crosses.
+
+`MULTIPLAYER_SESSION_VERSION` answers the other question. It describes the session as it is stored
+— the match row, its turns, its orders and its snapshots — and it is what a client checks before
+picking a match up: the match view and every snapshot carry the version they were written under,
+and a client plays them only when that is the version it knows. The server stores both numbers and
+judges neither; it holds the session as opaque history, which is why the two are not one number.
+
+Keeping them apart is what lets a wire change ship without ending the matches already being played.
+A client on protocol 6 resumes a match created by a client on protocol 5, because the session it
+would carry on is the same session; what it refuses is a session whose rules, orders or state
+hashing are not the ones it plays. `AGENTS.md` says when each number moves.
+
 ### Lobby
 
 | Call | Who | Effect |
@@ -506,11 +524,14 @@ harmless no-ops. The announced sealed-set digest is checked against the fetched 
 recomputed. Only after pairing the state with the caller's current whole-document submission does
 the stream resume from the refreshed `lastEventSeq`.
 
-The desktop client writes the server, match id, player id, join code, session password, and
-membership token to an atomic local recovery record as soon as it takes a seat. A normal shutdown
+The desktop client writes the server, match id, player id, join code, session password, session
+version, and membership token to an atomic local recovery record as soon as it takes a seat. A normal shutdown
 marks that record clean; an unclean exit leaves it resumable, so the next launch points the player
-to a Reconnect action. Terminal online errors are shown on the title screen and name that recovery
-path when the saved membership may still be valid. A completed match or an explicit Leave retires
+to a Reconnect action. The previous-sessions browser lists a seat whose session version this build
+does not play with `INCOMPATIBLE` beside it and refuses to rejoin it, rather than dropping the row
+or spending a round trip on a refusal the match view would answer with anyway. Terminal online
+errors are shown on the title screen and name that recovery path when the saved membership may
+still be valid. A completed match or an explicit Leave retires
 the recovery record, and a retired record is dropped rather than written back: the token is a full
 capability for that seat, so keeping a spent one on disk buys nothing. On Windows the token is
 sealed with DPAPI to the current user account, so another account on the same machine cannot read

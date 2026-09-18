@@ -29,6 +29,13 @@
       "when": 1789768804446,
       "tag": "0003_opposite_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1789774796768,
+      "tag": "0004_flashy_zombie",
+      "breakpoints": true
     }
   ]
 }

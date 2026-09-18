@@ -59,7 +59,7 @@ public sealed partial class ChaosGame
         var message = OnlineFailureMessage(reason);
         EndOnlineMatch(message);
         OpenOnline();
-        _online.Status = _multiplayerRecoveries.Any(recovery => recovery.CanReconnect)
+        _online.Status = _multiplayerRecoveries.Any(recovery => recovery.CanResume)
             ? "CLOSE THIS MESSAGE, THEN OPEN PREVIOUS SESSIONS TO RECONNECT"
             : "THE ONLINE SESSION COULD NOT CONTINUE";
         _online.ConnectionError = message;
