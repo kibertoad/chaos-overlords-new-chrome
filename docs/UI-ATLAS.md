@@ -344,6 +344,9 @@ The first themed overlay preserves the original fifteen-action ordering:
 Attack, Bribe, Chaos, Control, Equip, Give, Heal, Hide, Influence, Move,
 Research, Sell, Snitch, None, and Terminate. Individual equipment and other
 targets appear only in a second target overlay, never as top-level actions.
+Resting the pointer on one of those fifteen rows for two seconds opens a hover
+tooltip describing that order; the delay keeps the list readable while the
+cursor merely passes over it, and the target overlay has no such tooltip.
 The Attack target-acquisition roster includes only detectable enemy gangs in
 the acting gang's sector and groups them by ascending player slot. Selecting an
 opponent portrait displays that player's eligible gangs simultaneously in a

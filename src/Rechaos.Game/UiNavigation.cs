@@ -229,6 +229,41 @@ public sealed class IndexedDoubleClickTracker
     public void Cancel() => _lastIndex = null;
 }
 
+/// <summary>
+/// Tracks how long the pointer has rested on one hover region so a tooltip can wait out
+/// a dwell delay instead of appearing the moment the cursor crosses a row.
+/// </summary>
+public sealed class HoverDwellTracker
+{
+    public static readonly TimeSpan Delay = TimeSpan.FromSeconds(2);
+
+    private int? _region;
+    private TimeSpan _enteredAt;
+
+    /// <summary>The region the pointer has rested on for at least <see cref="Delay"/>, if any.</summary>
+    public int? SettledRegion { get; private set; }
+
+    /// <summary>Records the region under the pointer; null whenever no region is hovered.</summary>
+    public void Update(int? region, TimeSpan timestamp)
+    {
+        if (region is < 0) throw new ArgumentOutOfRangeException(nameof(region));
+        if (timestamp < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timestamp));
+        if (region != _region || timestamp < _enteredAt)
+        {
+            _region = region;
+            _enteredAt = timestamp;
+        }
+
+        SettledRegion = region is not null && timestamp - _enteredAt >= Delay ? region : null;
+    }
+
+    public void Cancel()
+    {
+        _region = null;
+        SettledRegion = null;
+    }
+}
+
 /// <summary>Native layout of the 8x8 sector cells in the PX10000-PX10006 city layers.</summary>
 public static class CityMapLayout
 {
