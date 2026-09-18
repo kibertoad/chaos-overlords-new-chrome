@@ -8,6 +8,21 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    /// <summary>
+    /// The opponent whose gangs the Sector workspace lists instead of the viewer's own. Cleared
+    /// when the screen is opened afresh or the selected sector changes, so the workspace always
+    /// starts on the viewer's own gangs.
+    /// </summary>
+    private PlayerId? _sectorGangCardOwner;
+
+    /// <summary>Opens the Sector workspace on the selected sector and the viewer's own gangs.</summary>
+    private void OpenSectorDetails()
+    {
+        _sectorGangCardOwner = null;
+        _message = string.Empty;
+        _screens.Show(ClientScreen.Sector);
+    }
+
     private void UpdateSector(KeyboardState keyboard)
     {
         if (_idleGangWarningOpen)
@@ -17,12 +32,37 @@ public sealed partial class ChaosGame
         }
         var column = _cursor % 8;
         var row = _cursor / 8;
+        var previousCursor = _cursor;
         if (Pressed(keyboard, Keys.Left) && column > 0) _cursor--;
         if (Pressed(keyboard, Keys.Right) && column < 7) _cursor++;
         if (Pressed(keyboard, Keys.Up) && row > 0) _cursor -= 8;
         if (Pressed(keyboard, Keys.Down) && row < 7) _cursor += 8;
+        if (_cursor != previousCursor) _sectorGangCardOwner = null;
         if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
             _screens.Show(ClientScreen.City);
+    }
+
+    /// <summary>
+    /// The gangs the Sector workspace lists. A borrowed opponent roster falls back to the viewer's
+    /// own gangs once the opponent no longer keeps a detectable gang in the selected sector.
+    /// </summary>
+    private IReadOnlyList<MatchGangState> SectorCardGangs(MatchState state, PlayerId viewer)
+    {
+        if (_sectorGangCardOwner is { } owner && owner != viewer
+            && SectorOpponentGangs.InSector(state, viewer, owner, _cursor) is { Count: > 0 } borrowed)
+            return borrowed;
+        return SectorOpponentGangs.InSector(state, viewer, viewer, _cursor);
+    }
+
+    /// <summary>
+    /// Points the workspace at an overlord's gangs. The viewer's own portrait — and any opponent
+    /// whose gangs stay hidden — restores the viewer's own roster.
+    /// </summary>
+    private void SelectSectorGangCardOwner(MatchState state, PlayerId viewer, PlayerId owner)
+    {
+        _message = string.Empty;
+        _sectorGangCardOwner =
+            SectorOpponentGangs.Detectable(state, viewer, owner, _cursor) ? owner : null;
     }
 
     private void HandleSectorClick(Point point)
@@ -38,6 +78,12 @@ public sealed partial class ChaosGame
             return;
         }
         if (_state is null) return;
+        var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        if (SectorOpponentGangs.PortraitAt(_state, point) is { } portraitOwner)
+        {
+            SelectSectorGangCardOwner(_state, playerId, portraitOwner);
+            return;
+        }
         if (BeginCityConsolePress(point, ClientScreen.Sector)) return;
         var rejectSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
             .FirstOrDefault(slot => HireDockLayout.Reject(slot).Contains(point), -1);
@@ -55,6 +101,7 @@ public sealed partial class ChaosGame
         }
         if (SectorDetailLayout.TrySectorAt(point, _cursor, out var selectedSector))
         {
+            if (selectedSector != _cursor) _sectorGangCardOwner = null;
             _cursor = selectedSector;
             _message = string.Empty;
             return;
@@ -67,10 +114,7 @@ public sealed partial class ChaosGame
                 OpenSiteDetails(_cursor, siteSlot, ClientScreen.Sector);
             return;
         }
-        var playerId = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
-        var visible = _state.FindPlayer(playerId)!.Gangs
-            .Where(gang => gang.IsActive && gang.SectorId == _cursor)
-            .OrderBy(gang => gang.Id.Value)
+        var visible = SectorCardGangs(_state, playerId)
             .Take(SectorGangCardLayout.VisibleCards).ToArray();
         var index = Enumerable.Range(0, visible.Length)
             .FirstOrDefault(value => SectorGangCardLayout.Frame(value).Contains(point), -1);
@@ -101,6 +145,7 @@ public sealed partial class ChaosGame
         DrawSectorSideRail(batch, pixel, font);
         var sector = state.Sectors[_cursor];
         var viewer = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        DrawSectorOpponentGangPresence(batch, pixel, font, state, viewer);
         DrawSectorNeighborhood(batch, pixel, font, state);
         foreach (var site in sector.Sites)
         {
@@ -118,17 +163,14 @@ public sealed partial class ChaosGame
             DrawSectorMeter(batch, pixel, control, controlled,
                 SectorDetailLayout.SiteControlColor(controlOwner, viewer));
         }
-        var visibleGangs = state.FindPlayer(viewer)!.Gangs
-            .Where(gang => gang.IsActive && gang.SectorId == sector.Id)
-            .OrderBy(gang => gang.Id.Value)
-            .ToArray();
+        var visibleGangs = SectorCardGangs(state, viewer);
         foreach (var entry in visibleGangs.Take(SectorGangCardLayout.VisibleCards)
                      .Select((gang, index) => (gang, index)))
             DrawSectorGangCard(batch, pixel, font, state, viewer, entry.gang, entry.index);
-        if (visibleGangs.Length > SectorGangCardLayout.VisibleCards)
-            font.Draw(batch, $"+{visibleGangs.Length - SectorGangCardLayout.VisibleCards}",
+        if (visibleGangs.Count > SectorGangCardLayout.VisibleCards)
+            font.Draw(batch, $"+{visibleGangs.Count - SectorGangCardLayout.VisibleCards}",
                 new Vector2(397, 123), Color.White, 1);
-        DrawQueuedCommandTargetHighlight(batch, pixel, visibleGangs);
+        DrawQueuedCommandTargetHighlight(batch, pixel, viewer, visibleGangs);
         DrawGangMoveDrag(batch, pixel, state);
         DrawSectorHireDrag(batch, pixel, state);
         // The Sector workspace covers the left side of right-edge tooltips drawn by
@@ -137,16 +179,44 @@ public sealed partial class ChaosGame
         if (_idleGangWarningOpen) DrawIdleGangWarning(batch, pixel, font);
     }
 
+    /// <summary>
+    /// Flags every opponent holding gangs the viewer can see in the selected sector, and marks the
+    /// one whose gangs the cards are currently listing.
+    /// </summary>
+    private void DrawSectorOpponentGangPresence(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        MatchState state,
+        PlayerId viewer)
+    {
+        foreach (var opponent in state.Setup.Players)
+        {
+            if (!SectorOpponentGangs.Detectable(state, viewer, opponent.Id, _cursor)) continue;
+            var banner = PlayerPortraitLayout.CityGangPresence(opponent.Id.Value);
+            batch.Draw(pixel, banner, Color.Black);
+            font.Draw(batch, PlayerPortraitLayout.GangPresenceLabel,
+                new Vector2(banner.X, banner.Y), new Color(247, 0, 0), 1);
+            if (_sectorGangCardOwner == opponent.Id)
+                DrawBorder(batch, pixel, PlayerPortraitLayout.CityTop(opponent.Id.Value),
+                    new Color(247, 0, 0), 1);
+        }
+    }
+
     private void DrawQueuedCommandTargetHighlight(
         SpriteBatch batch,
         Texture2D pixel,
+        PlayerId viewer,
         IReadOnlyList<MatchGangState> visibleGangs)
     {
         if (_hoverPoint is not { } point) return;
         var hoveredSlot = Enumerable.Range(0,
                 Math.Min(visibleGangs.Count, SectorGangCardLayout.VisibleCards))
             .FirstOrDefault(slot => SectorGangCardLayout.Frame(slot).Contains(point), -1);
-        if (hoveredSlot < 0 || visibleGangs[hoveredSlot].QueuedCommand is not { } queued) return;
+        // An opponent's orders stay their own business: the cards hide their action strip, so the
+        // workspace must not betray the same order by highlighting what it targets.
+        if (hoveredSlot < 0 || visibleGangs[hoveredSlot].Owner != viewer
+            || visibleGangs[hoveredSlot].QueuedCommand is not { } queued) return;
 
         switch (queued.Command.Action)
         {

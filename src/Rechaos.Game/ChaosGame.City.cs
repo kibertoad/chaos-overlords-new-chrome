@@ -22,7 +22,7 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Enter)) QueueBoardCommand();
         if (Pressed(keyboard, Keys.C)) OpenCommands();
         if (Pressed(keyboard, Keys.G)) CycleGang(1);
-        if (Pressed(keyboard, Keys.I)) _screens.Show(ClientScreen.Sector);
+        if (Pressed(keyboard, Keys.I)) OpenSectorDetails();
         if (Pressed(keyboard, Keys.F)) OpenFinance(FinanceScope.City, ClientScreen.City);
         if (Pressed(keyboard, Keys.R)) _screens.Show(ClientScreen.Ranking);
         if (Pressed(keyboard, Keys.T)) OpenItems();
@@ -71,11 +71,7 @@ public sealed partial class ChaosGame
         {
             _cursor = selected;
             _message = string.Empty;
-            if (_citySectorClicks.Register(selected, _inputTime))
-            {
-                _screens.Show(ClientScreen.Sector);
-                _message = string.Empty;
-            }
+            if (_citySectorClicks.Register(selected, _inputTime)) OpenSectorDetails();
         }
         else
         {

@@ -29,6 +29,15 @@ public static partial class PlayerPortraitLayout
     public static Rectangle NameHit(int player) =>
         Player(player, 397, 152, 83, 64, 10, rowStride: 74);
 
+    // The Sector workspace lets the city portrait row choose whose gangs the cards list, so the
+    // interaction cell spans the portrait and the "GANGS" strip drawn beneath it.
+    public static Rectangle CityPortraitHit(int player)
+    {
+        var portrait = CityTop(player);
+        return new Rectangle(portrait.X, portrait.Y, portrait.Width,
+            CityGangPresence(player).Bottom - portrait.Y);
+    }
+
     public static bool SetupDragMoved(Point pressed, Point current) =>
         current.X < pressed.X - 2 || current.X >= pressed.X + 2
         || current.Y < pressed.Y - 2 || current.Y >= pressed.Y + 2;
