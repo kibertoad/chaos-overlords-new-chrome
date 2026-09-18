@@ -5,6 +5,7 @@ import {
   createMemoryBlobStore,
 } from '@chaos-overlords/bug-reports'
 import { defineHttpConformance } from '@chaos-overlords/conformance'
+import { MULTIPLAYER_PROTOCOL_VERSION } from '@chaos-overlords/contracts'
 import { createKernel, RateLimiter, sha256Hex } from '@chaos-overlords/kernel'
 import {
   InMemoryStorage,
@@ -97,6 +98,30 @@ describe('server app over in-memory storage', () => {
       clock.advance(60_000)
       await kernel.turns.sweep()
     },
+  })
+
+  it.each([
+    [MULTIPLAYER_PROTOCOL_VERSION - 1, 'Update your game to connect to this server.'],
+    [MULTIPLAYER_PROTOCOL_VERSION + 1, 'This server is outdated and needs an update.'],
+  ])('refuses protocol version %s with an actionable mismatch', async (clientVersion, action) => {
+    const response = await app.request('/api/v1/handshake', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ protocolVersion: clientVersion }),
+    })
+
+    expect(response.status).toBe(409)
+    expect(await response.json()).toMatchObject({
+      error: {
+        code: 'conflict',
+        message: `Protocol version mismatch: client version ${clientVersion}, server version ${MULTIPLAYER_PROTOCOL_VERSION}. ${action}`,
+        details: {
+          reason: 'protocol_version_mismatch',
+          clientVersion,
+          serverVersion: MULTIPLAYER_PROTOCOL_VERSION,
+        },
+      },
+    })
   })
 
   it('rate-limits the unauthenticated doors per client address', async () => {

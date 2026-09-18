@@ -78,24 +78,30 @@ public sealed class MultiplayerClient
     private readonly HttpClient _http;
     private readonly MultiplayerClientOptions _options;
     private readonly string? _token;
+    private readonly HandshakeState _handshake;
 
     public MultiplayerClient(HttpClient http, MultiplayerClientOptions options)
-        : this(http, options, token: null)
+        : this(http, options, token: null, new HandshakeState())
     {
     }
 
-    private MultiplayerClient(HttpClient http, MultiplayerClientOptions options, string? token)
+    private MultiplayerClient(
+        HttpClient http,
+        MultiplayerClientOptions options,
+        string? token,
+        HandshakeState handshake)
     {
         _http = http ?? throw new ArgumentNullException(nameof(http));
         _options = options ?? throw new ArgumentNullException(nameof(options));
         _token = token;
+        _handshake = handshake;
     }
 
     /// <summary>The same client, sending a player's bearer token on every call.</summary>
     public MultiplayerClient WithToken(string token)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(token);
-        return new MultiplayerClient(_http, _options, token);
+        return new MultiplayerClient(_http, _options, token, _handshake);
     }
 
     /// <summary>Public lobbies, when the server enables listing.</summary>
@@ -139,6 +145,7 @@ public sealed class MultiplayerClient
         CancellationToken cancellationToken,
         bool exactRoundTrip = false)
     {
+        await EnsureHandshakeAsync(cancellationToken).ConfigureAwait(false);
         using var request = new HttpRequestMessage(method, Absolute(path));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         Authorize(request);
@@ -206,6 +213,7 @@ public sealed class MultiplayerClient
         int afterSeq,
         CancellationToken cancellationToken)
     {
+        await EnsureHandshakeAsync(cancellationToken).ConfigureAwait(false);
         using var request = new HttpRequestMessage(HttpMethod.Get, Absolute(path));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
         request.Headers.TryAddWithoutValidation("Last-Event-ID", afterSeq.ToString(
@@ -241,6 +249,48 @@ public sealed class MultiplayerClient
         }
     }
 
+    private async Task EnsureHandshakeAsync(CancellationToken cancellationToken)
+    {
+        if (_handshake.Complete) return;
+        await _handshake.Gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (_handshake.Complete) return;
+            using var request = new HttpRequestMessage(HttpMethod.Post, Absolute(ApiRoutes.Handshake));
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            request.Content = new StringContent(
+                WireJson.Write(new HandshakeRequest(MultiplayerProtocolVersion.Current)),
+                Encoding.UTF8,
+                "application/json");
+            using var timeout = Deadline(cancellationToken);
+            using var response = await SendWithDeadlineAsync(
+                request, HttpCompletionOption.ResponseContentRead, timeout, cancellationToken)
+                .ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw await MultiplayerApiException
+                    .FromResponseAsync(response, cancellationToken).ConfigureAwait(false);
+            }
+            var payload = await response.Content.ReadAsStringAsync(cancellationToken)
+                .ConfigureAwait(false);
+            var handshake = WireJson.Read<HandshakeResponse>(payload);
+            if (handshake.ProtocolVersion != MultiplayerProtocolVersion.Current)
+            {
+                var action = MultiplayerProtocolVersion.Current < handshake.ProtocolVersion
+                    ? "Update your game to connect to this server."
+                    : "This server is outdated and needs an update.";
+                throw new MultiplayerProtocolException(
+                    $"protocol version mismatch: client version {MultiplayerProtocolVersion.Current}, "
+                    + $"server version {handshake.ProtocolVersion}. {action}");
+            }
+            _handshake.Complete = true;
+        }
+        finally
+        {
+            _handshake.Gate.Release();
+        }
+    }
+
     private CancellationTokenSource Deadline(CancellationToken cancellationToken)
     {
         var source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -248,6 +298,12 @@ public sealed class MultiplayerClient
         if (timeout > TimeSpan.Zero) source.CancelAfter(timeout);
         return source;
     }
+}
+
+internal sealed class HandshakeState
+{
+    internal SemaphoreSlim Gate { get; } = new(1, 1);
+    internal volatile bool Complete;
 }
 
 /// <summary>The absence of a body, for the calls that answer 204.</summary>

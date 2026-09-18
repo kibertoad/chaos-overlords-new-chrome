@@ -80,6 +80,7 @@ const INPUTS = [
   'errors.ts',
   'events.ts',
   'orders.ts',
+  'protocol.ts',
   'schemas.ts',
   'views.ts',
 ].map((file) => join(multiplayerRoot, 'packages', 'contracts', 'src', file))

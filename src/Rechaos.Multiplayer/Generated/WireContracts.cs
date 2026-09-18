@@ -469,6 +469,14 @@ public sealed record OrderDocument(
     [property: JsonPropertyName("ops")] IReadOnlyList<OrderOp> Ops
 );
 
+public sealed record HandshakeRequest(
+    [property: JsonPropertyName("protocolVersion")] long ProtocolVersion
+);
+
+public sealed record HandshakeResponse(
+    [property: JsonPropertyName("protocolVersion")] long ProtocolVersion
+);
+
 public sealed record CreateMatchRequest(
     [property: JsonPropertyName("settings")] MatchSettings Settings,
     [property: JsonPropertyName("hostDisplayName")] string HostDisplayName,

@@ -26,6 +26,15 @@ smaller relevant scope. Run with `-IncludeLongRunningTests` or otherwise execute
 the full suite only when the user explicitly requests it or when a specific
 change to long-running coverage provides a documented exceptional reason.
 
+## Multiplayer protocol version
+
+Keep `MULTIPLAYER_PROTOCOL_VERSION` in
+`multiplayer/packages/contracts/src/protocol.ts` and `MultiplayerProtocolVersion.Current` in
+`src/Rechaos.Multiplayer/Protocol/MultiplayerProtocolVersion.cs` equal. Whenever a change can affect
+communication between the game client and coordination server—including request or response
+schemas, routes, authentication, event streams, serialization, or protocol behavior—increment both
+versions in the same change. Never update only one side.
+
 ## Post-commit orphan-process audit
 
 After every commit in this repository, inspect running processes for orphaned

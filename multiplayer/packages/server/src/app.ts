@@ -14,6 +14,7 @@ import type { AppEnv } from './http/types'
 import { registerBugReportRoutes } from './routes/bugReports'
 import { registerEventRoutes } from './routes/events'
 import { registerMemberLobbyRoutes, registerPublicLobbyRoutes } from './routes/lobby'
+import { registerProtocolRoutes } from './routes/protocol'
 import { registerSnapshotRoutes } from './routes/snapshots'
 import { registerTurnRoutes } from './routes/turns'
 
@@ -48,6 +49,11 @@ export function createApp(container: ServerContainer): Hono<AppEnv> {
  */
 function apiRoutes(): Hono<AppEnv> {
   const api = new Hono<AppEnv>()
+
+  // The unauthenticated handshake parses a body before any player identity exists, so it needs the
+  // same address budget and small-body cap as the lobby doors it protects.
+  api.use('/handshake', rateLimited, bodyLimit({ maxSize: SMALL_BODY }))
+  registerProtocolRoutes(api)
 
   // The doors a stranger can knock on, throttled per client address.
   api.use('/matches', rateLimited, bodyLimit({ maxSize: LIMITS.gameSettingsBytes + SMALL_BODY }))

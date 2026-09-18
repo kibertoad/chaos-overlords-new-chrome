@@ -13,6 +13,8 @@ namespace Rechaos.Multiplayer.Generated;
 /// <summary>Every route the server mounts, as "METHOD /pattern".</summary>
 public static class RouteTemplates
 {
+    /// <summary><c>POST /handshake</c></summary>
+    public const string Handshake = "POST /handshake";
     /// <summary><c>GET /matches</c></summary>
     public const string ListLobbies = "GET /matches";
     /// <summary><c>POST /matches</c></summary>
@@ -59,6 +61,7 @@ public static class RouteTemplates
     /// <summary>All of them, for a test that asserts the client covers the surface.</summary>
     public static IReadOnlyList<string> All { get; } =
     [
+        Handshake,
         ListLobbies,
         CreateMatch,
         JoinMatch,

@@ -22,6 +22,7 @@ public static class ApiRoutes
 {
     /// <summary>The prefix every route sits under.</summary>
     public const string Prefix = "/api/v1";
+    public const string Handshake = "/handshake";
 
     public const string Matches = "/matches";
     public const string JoinMatch = "/matches/join";

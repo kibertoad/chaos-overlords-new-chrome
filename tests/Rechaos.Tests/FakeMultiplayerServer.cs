@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Tests;
@@ -36,6 +37,14 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
     internal IReadOnlyList<Recorded> Requests
     {
         get { lock (_gate) return [.. _requests]; }
+    }
+
+    public FakeMultiplayerServer()
+    {
+        Answer(
+            HttpMethod.Post,
+            "/handshake",
+            new HandshakeResponse(MultiplayerProtocolVersion.Current));
     }
 
     /// <summary>What to answer every time this route is called.</summary>

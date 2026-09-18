@@ -20,6 +20,7 @@ public sealed class MultiplayerApiRouteTests
     /// <summary>The template each builder produces, with the sample ids put back as `:params`.</summary>
     private static readonly (string Template, string Built)[] Routes =
     [
+        (RouteTemplates.Handshake, $"POST {ApiRoutes.Handshake}"),
         (RouteTemplates.ListLobbies, $"GET {ApiRoutes.Matches}"),
         (RouteTemplates.CreateMatch, $"POST {ApiRoutes.Matches}"),
         (RouteTemplates.JoinMatch, $"POST {ApiRoutes.JoinMatch}"),
@@ -94,7 +95,8 @@ public sealed class MultiplayerApiRouteTests
 
         await match.StartAsync(CancellationToken.None);
 
-        Assert.Equal(expected, Assert.Single(server.Requests).Path);
+        Assert.Equal(expected, Assert.Single(server.Requests, request =>
+            request.Path.EndsWith("/start", StringComparison.Ordinal)).Path);
     }
 
     private static string AsTemplate(string built) => built

@@ -5,6 +5,7 @@ import { bugReportReceiptSchema, submitBugReportRequestSchema } from './bug-repo
 import { errorEnvelopeSchema } from './errors'
 import { eventPageSchema, matchEventSchema } from './events'
 import { resourceIdSchema, turnPathParamSchema } from './primitives'
+import { handshakeRequestSchema, handshakeResponseSchema } from './protocol'
 import { eventsQuerySchema } from './queries'
 import {
   createMatchRequestSchema,
@@ -67,6 +68,18 @@ const matchParams = withObjectKeys(object({ matchId: resourceIdSchema }))
 const turnParams = withObjectKeys(object({ matchId: resourceIdSchema, turn: turnPathParamSchema }))
 const kickParams = withObjectKeys(object({ matchId: resourceIdSchema, playerId: resourceIdSchema }))
 const takeoverVoteParams = kickParams
+
+// ---------------------------------------------------------------------------
+// Protocol handshake
+// ---------------------------------------------------------------------------
+
+export const handshakeContract = defineApiContract({
+  method: 'post',
+  pathResolver: () => '/handshake',
+  requestBodySchema: handshakeRequestSchema,
+  responsesByStatusCode: { 200: handshakeResponseSchema, ...REFUSALS },
+  summary: 'Verify that the game and coordination server speak the same protocol version.',
+})
 
 // ---------------------------------------------------------------------------
 // Lobby
@@ -286,6 +299,7 @@ export const submitBugReportContract = defineApiContract({
 
 /** Every contract, for a client that wants to enumerate the surface. */
 export const API_CONTRACTS = {
+  handshake: handshakeContract,
   listLobbies: listLobbiesContract,
   createMatch: createMatchContract,
   joinMatch: joinMatchContract,
