@@ -54,6 +54,8 @@ public sealed partial class MultiplayerSessionTests
         Assert.Equal(3, resumed.State.Coordinator.Turn);
         Assert.Equal(TurnPhase.Command, resumed.State.Coordinator.Phase);
         Assert.True(resumed.Submission.Ready);
+        // The planning copy arrives built, with the draft already replayed onto it.
+        Assert.Equal(0, Assert.IsType<SpeculativeTurn>(resumed.Turn).Orders.Count);
         Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/1/orders"));
         Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/2/orders"));
         Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/3/orders/mine"));
@@ -307,7 +309,7 @@ public sealed partial class MultiplayerSessionTests
         await WaitFor<MultiplayerNotice.MatchUpdated>(session);
 
         Assert.True(session.IsHost);
-        var ours = MatchStateHasher.ComputeSha256(session.InitialState);
+        var ours = MatchStateHasher.ComputeSha256(session.Bootstrap.State);
         server.Events.Write(Frame(9, "turn.desynced", Desync(ours)));
         var desynced = await WaitFor<MultiplayerNotice.Desynced>(session);
 
@@ -584,7 +586,7 @@ public sealed partial class MultiplayerSessionTests
         var (session, server, http) = Running();
         using var _ = http;
         await using var __ = session;
-        var ours = MatchStateHasher.ComputeSha256(session.InitialState);
+        var ours = MatchStateHasher.ComputeSha256(session.Bootstrap.State);
         await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
 
         server.Events.Write(Frame(8, "turn.desynced", Desync(ours)));
@@ -875,7 +877,7 @@ public sealed partial class MultiplayerSessionTests
         var (session, server, http) = Running();
         using var _ = http;
         await using var __ = session;
-        var gang = session.InitialState.Players[0].Gangs[0].Id;
+        var gang = session.Bootstrap.State.Players[0].Gangs[0].Id;
         var builder = new OrderDocumentBuilder(new PlayerId(0));
         builder.Cancel(new PlayerId(0), gang);
 
@@ -941,7 +943,7 @@ public sealed partial class MultiplayerSessionTests
 
         Assert.Equal(
             DateTimeOffset.Parse("2026-09-10T12:05:00.000Z", System.Globalization.CultureInfo.InvariantCulture),
-            session.InitialDeadline);
+            session.Bootstrap.Deadline);
     }
 
     /// <summary>A match with no turn timer has no deadline, rather than a nonsense one.</summary>
@@ -952,7 +954,7 @@ public sealed partial class MultiplayerSessionTests
         using var _unused = http;
         await using var __ = session;
 
-        Assert.Null(session.InitialDeadline);
+        Assert.Null(session.Bootstrap.Deadline);
     }
 
     /// <summary>A roster that does not seat this client is refused before a city is generated.</summary>

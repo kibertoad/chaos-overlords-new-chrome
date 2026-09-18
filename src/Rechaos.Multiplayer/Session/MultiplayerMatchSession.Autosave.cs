@@ -27,6 +27,7 @@ public sealed partial class MultiplayerMatchSession
                     MatchStateClone.ToBase64(_replay.State),
                     SummarizeSeats(_replay.State)),
                 token),
+            _pumpLane,
             cancellationToken);
     }
 

@@ -172,4 +172,112 @@ public sealed class MultiplayerEventStreamTests
         Assert.Throws<MultiplayerProtocolException>(
             () => WireJson.ReadExact<OrderDocument>("{\"version\":1}"));
     }
+
+    /// <summary>A byte order mark and CRLF line endings are the format's business, not a frame's.</summary>
+    [Fact]
+    public async Task ToleratesAByteOrderMarkAndCrLf()
+    {
+        var events = await ReadAsync(
+            "\uFEFF" + Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\"}", "3").Replace("\n", "\r\n"));
+
+        Assert.Equal(3, Assert.Single(events).Seq);
+    }
+
+    /// <summary>An id that is not a number cannot be resumed from, so the frame is refused.</summary>
+    [Fact]
+    public async Task RefusesAFrameIdThatIsNotANumber()
+    {
+        var failure = await Assert.ThrowsAsync<MultiplayerProtocolException>(
+            () => ReadAsync(Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\"}", "abc")));
+
+        Assert.Contains("'abc'", failure.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A body that carries nothing for longer than the idle deadline is given up on as dead.
+    /// </summary>
+    /// <remarks>
+    /// The deadline is measured from the last byte: a keepalive resets it, so a healthy stream
+    /// between turns is never mistaken for a dead one.
+    /// </remarks>
+    [Fact]
+    public async Task GivesUpOnABodyThatCarriesNothingForTooLong()
+    {
+        using var body = new PushStream();
+        body.Write(": keepalive\n\n");
+        await using var frames = EventStreamParser
+            .ReadFramesAsync(body, TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken)
+            .GetAsyncEnumerator(TestContext.Current.CancellationToken);
+
+        Assert.True(await frames.MoveNextAsync());
+        Assert.True(frames.Current.IsKeepalive);
+        var idle = await Assert.ThrowsAsync<EventStreamIdleException>(async () => await frames.MoveNextAsync());
+
+        Assert.True(TransientFailure.IsTransient(idle));
+    }
+
+    /// <summary>
+    /// A server that accepts the stream and closes it is not a connection, and reconnecting to it
+    /// forever would never surface the failure.
+    /// </summary>
+    [Fact]
+    public async Task ExhaustsTheRetryBudgetWhenTheServerAcceptsAndCloses()
+    {
+        using var server = new FakeMultiplayerServer { CloseStreamOnOpen = true };
+        using var http = new HttpClient(server);
+        var connected = 0;
+        var stream = new MatchEventStream(
+            Handle(http),
+            new RetryPolicy(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(2), MaxAttempts: 3),
+            onConnected: () => connected++);
+
+        await Assert.ThrowsAsync<RetryExhaustedException>(async () =>
+        {
+            await foreach (var _ in stream.ReadAsync(0, TestContext.Current.CancellationToken))
+            {
+            }
+        });
+
+        Assert.Equal(0, connected);
+        Assert.Equal(3, server.CallsTo(HttpMethod.Get, "/stream"));
+    }
+
+    /// <summary>A connection is reported once its first frame arrives, and a keepalive is a frame.</summary>
+    [Fact]
+    public async Task ReportsAConnectionOnlyOnceItsFirstFrameArrives()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        using var stop = new CancellationTokenSource();
+        var connected = 0;
+        var stream = new MatchEventStream(Handle(http), onConnected: () => connected++);
+        await using var events = stream.ReadAsync(0, stop.Token).GetAsyncEnumerator(stop.Token);
+
+        var moving = events.MoveNextAsync();
+        await Until(() => server.CallsTo(HttpMethod.Get, "/stream") == 1);
+        Assert.Equal(0, connected);
+        server.Events.Write(": keepalive\n\n");
+        await Until(() => connected == 1);
+        server.Events.Write(Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\"}", "3"));
+
+        Assert.True(await moving);
+        Assert.Equal(3, events.Current.Seq);
+        Assert.Equal(1, connected);
+        await stop.CancelAsync();
+    }
+
+    private static MatchHandle Handle(HttpClient http) =>
+        new MultiplayerClient(http, new MultiplayerClientOptions(new Uri("http://server.test")))
+            .WithToken("cop_test")
+            .Match("m1");
+
+    private static async Task Until(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (!condition())
+        {
+            if (DateTime.UtcNow > deadline) throw new TimeoutException("the condition did not hold in time");
+            await Task.Delay(15, TestContext.Current.CancellationToken);
+        }
+    }
 }

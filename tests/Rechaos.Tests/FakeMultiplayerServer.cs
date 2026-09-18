@@ -28,11 +28,36 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
     private readonly Dictionary<string, Queue<Reply>> _queued = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Reply> _standing = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Queue<TaskCompletionSource>> _blocks = new(StringComparer.Ordinal);
-    private readonly PushStream _events = new();
+    private readonly List<PushStream> _connections = [];
     private readonly Lock _gate = new();
+    private PushStream _events = new();
 
-    /// <summary>The event stream's body, which a test writes frames into.</summary>
-    internal PushStream Events => _events;
+    /// <summary>
+    /// The event stream's body, which a test writes frames into.
+    /// </summary>
+    /// <remarks>
+    /// One body per connection. A body the client has let go of — because it dropped the connection
+    /// itself, or because a test ended it — is not handed out again: the next request for the
+    /// stream gets a fresh one, as a server would give it, so a test can drive a reconnect and then
+    /// keep writing.
+    /// </remarks>
+    internal PushStream Events
+    {
+        get { lock (_gate) return _events; }
+    }
+
+    /// <summary>
+    /// When set, every stream request is accepted and closed at once, before a single frame.
+    /// </summary>
+    internal bool CloseStreamOnOpen { get; set; }
+
+    /// <summary>Ends the connection being read, as a server dropping it would.</summary>
+    internal void DropStream()
+    {
+        PushStream current;
+        lock (_gate) current = _events;
+        current.End();
+    }
 
     /// <summary>Every request the client has made, in order.</summary>
     internal IReadOnlyList<Recorded> Requests
@@ -130,7 +155,11 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
         var lastEventId = request.Headers.TryGetValues("Last-Event-ID", out var values)
             ? values.SingleOrDefault()
             : null;
-        lock (_gate) _requests.Add(new Recorded(request.Method, path, body, lastEventId));
+        lock (_gate)
+        {
+            _requests.Add(new Recorded(
+                request.Method, path, body, lastEventId, request.RequestUri.Query));
+        }
 
         if (path.EndsWith("/stream", StringComparison.Ordinal))
         {
@@ -152,7 +181,14 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
     /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
-        if (disposing) _events.Dispose();
+        if (disposing)
+        {
+            lock (_gate)
+            {
+                _events.Dispose();
+                foreach (var connection in _connections) connection.Dispose();
+            }
+        }
         base.Dispose(disposing);
     }
 
@@ -194,9 +230,20 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
 
     private HttpResponseMessage Streaming()
     {
+        PushStream body;
+        lock (_gate)
+        {
+            if (_events.Ended)
+            {
+                _connections.Add(_events);
+                _events = new PushStream();
+            }
+            body = _events;
+            if (CloseStreamOnOpen) body.End();
+        }
         var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StreamContent(_events),
+            Content = new StreamContent(body),
         };
         response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
             "text/event-stream");
@@ -214,11 +261,13 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
     private sealed record Reply(HttpStatusCode Status, string Body);
 
     /// <summary>One request the client made.</summary>
+    /// <param name="Query">The query string, with its leading <c>?</c>, or empty.</param>
     internal sealed record Recorded(
         HttpMethod Method,
         string Path,
         string Body,
-        string? LastEventId);
+        string? LastEventId,
+        string Query);
 }
 
 /// <summary>
@@ -256,6 +305,12 @@ internal sealed class PushStream : Stream
             _ended = true;
         }
         _available.Release();
+    }
+
+    /// <summary>Whether the body has been ended, by the test or by the client letting go of it.</summary>
+    internal bool Ended
+    {
+        get { lock (_gate) return _ended; }
     }
 
     public override bool CanRead => true;

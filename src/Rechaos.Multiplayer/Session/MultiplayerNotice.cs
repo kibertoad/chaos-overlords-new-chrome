@@ -36,13 +36,24 @@ public abstract record MultiplayerNotice
     public sealed record TakeoverVoteClosed(string PlayerId, bool ComputerControl) : MultiplayerNotice;
 
     /// <summary>
-    /// A restarted session reconstructed the authoritative state and recovered this seat's current
-    /// whole-document submission, if one exists.
+    /// The session reconstructed the authoritative state — at startup, or after the live stream
+    /// proved to have skipped something — and recovered this seat's current whole-document
+    /// submission, if one exists.
     /// </summary>
+    /// <param name="Match">The match as the server described it at the moment of reconstruction.</param>
+    /// <param name="State">A copy of the reconstructed state; the interface owns it outright.</param>
+    /// <param name="Submission">What the server holds for this seat on the open turn.</param>
+    /// <param name="Turn">
+    /// The planning copy for the open turn, with the saved draft already replayed onto it, or null
+    /// when the match is over. Built by the session because building it is also what proves the
+    /// draft still applies: a draft that does not is a protocol failure, and it is refused as one
+    /// rather than thrown on the game thread.
+    /// </param>
     public sealed record Resumed(
         MatchView Match,
         MatchState State,
-        OwnSubmissionView Submission) : MultiplayerNotice;
+        OwnSubmissionView Submission,
+        SpeculativeTurn? Turn) : MultiplayerNotice;
 
     /// <summary>
     /// A turn resolved on every client that has reported so far, and here is the state after it.

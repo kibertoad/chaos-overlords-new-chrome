@@ -36,15 +36,30 @@ public sealed class OrderDocumentBuilder(PlayerId player)
     /// <summary>How many ops the turn's document currently holds.</summary>
     public int Count => _ops.Count;
 
+    /// <summary>
+    /// Goes up by one on every change, so a caller can tell whether there is anything new to
+    /// build without building it.
+    /// </summary>
+    /// <remarks>
+    /// The game loop asks every frame whether the draft on the server is stale. Building and
+    /// hashing the document to answer "no" sixty times a second is work for nothing; comparing
+    /// two integers is not.
+    /// </remarks>
+    public int Version { get; private set; }
+
     /// <summary>Forgets everything recorded, for the start of a new turn.</summary>
-    public void Clear() => _ops.Clear();
+    public void Clear()
+    {
+        _ops.Clear();
+        Version++;
+    }
 
     /// <summary>Records a queued command. Mirrors <c>MatchState.Submit</c>.</summary>
     public void Submit(GameCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
         RequireOwnSlot(command.Player);
-        _ops.Add(new SubmitCommandOp(
+        Record(new SubmitCommandOp(
             command.Player.Value,
             command.Gang.Value,
             (int)command.Action,
@@ -57,32 +72,38 @@ public sealed class OrderDocumentBuilder(PlayerId player)
     public void Cancel(PlayerId player, GangId gang)
     {
         RequireOwnSlot(player);
-        _ops.Add(new CancelCommandOp(player.Value, gang.Value));
+        Record(new CancelCommandOp(player.Value, gang.Value));
     }
 
     /// <summary>Records a queued hire. Mirrors <c>MatchState.QueueHire</c>.</summary>
     public void QueueHire(PlayerId player, short gangDefinitionId, int sectorId)
     {
         RequireOwnSlot(player);
-        _ops.Add(new QueueHireOp(player.Value, gangDefinitionId, sectorId));
+        Record(new QueueHireOp(player.Value, gangDefinitionId, sectorId));
     }
 
     /// <summary>Records a snubbed offer. Mirrors <c>MatchState.SnubHireOffer</c>.</summary>
     public void SnubHireOffer(PlayerId player, short gangDefinitionId)
     {
         RequireOwnSlot(player);
-        _ops.Add(new SnubHireOfferOp(player.Value, gangDefinitionId));
+        Record(new SnubHireOfferOp(player.Value, gangDefinitionId));
     }
 
     /// <summary>Records a dismissed notification. Mirrors <c>MatchState.TryDismissNotification</c>.</summary>
     public void DismissNotification(PlayerId player)
     {
         RequireOwnSlot(player);
-        _ops.Add(new DismissNotificationOp(player.Value));
+        Record(new DismissNotificationOp(player.Value));
     }
 
     /// <summary>The document as it stands, ready to submit.</summary>
     public OrderDocument Build() => new(OrderDocumentSchemaVersion, _ops.ToArray());
+
+    private void Record(OrderOp op)
+    {
+        _ops.Add(op);
+        Version++;
+    }
 
     /// <summary>The only document version the server accepts.</summary>
     public const int OrderDocumentSchemaVersion = 1;

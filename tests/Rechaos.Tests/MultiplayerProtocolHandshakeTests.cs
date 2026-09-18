@@ -32,13 +32,18 @@ public sealed class MultiplayerProtocolHandshakeTests
             StringComparison.Ordinal);
     }
 
+    /// <param name="versionOffset">
+    /// How far the server is from this build, relative to <see cref="MultiplayerProtocolVersion.Current"/>:
+    /// a literal would silently become "the same version" the day the protocol reached it.
+    /// </param>
     [Theory]
-    [InlineData(0, "SERVER IS OUTDATED")]
-    [InlineData(5, "UPDATE YOUR GAME")]
+    [InlineData(-1, "SERVER IS OUTDATED")]
+    [InlineData(+1, "UPDATE YOUR GAME")]
     public async Task DisplaysBothVersionsAndTheRequiredUpdate(
-        int serverVersion,
+        int versionOffset,
         string expectedAction)
     {
+        var serverVersion = MultiplayerProtocolVersion.Current + versionOffset;
         var cancellationToken = TestContext.Current.CancellationToken;
         using var server = new FakeMultiplayerServer();
         using var http = new HttpClient(server);

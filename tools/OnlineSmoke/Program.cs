@@ -63,8 +63,8 @@ public static class Program
         await using var guestSession = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
             guestMatch, definitions, started, guest.Player.Id, started.LastEventSeq));
 
-        var hostState = hostSession.InitialState;
-        var guestState = guestSession.InitialState;
+        var hostState = hostSession.Bootstrap.State;
+        var guestState = guestSession.Bootstrap.State;
         Require(
             MatchStateHasher.ComputeSha256(hostState) == MatchStateHasher.ComputeSha256(guestState),
             "the two clients bootstrapped different cities");
