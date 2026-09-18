@@ -2,7 +2,14 @@
   "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    "includes": ["**", "!**/dist", "!**/node_modules", "!**/.wrangler", "!**/migrations/meta"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/.wrangler",
+      "!**/migrations/**/meta/*_snapshot.json",
+      "!**/migrations/**/meta/_journal.json"
+    ]
   },
   "formatter": {
     "enabled": true,

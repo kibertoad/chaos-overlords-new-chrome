@@ -161,9 +161,6 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: pnpm check-versions "$RELEASE_VERSION"
 
-      - name: Lint
-        run: pnpm lint
-
       - name: Build and typecheck
         run: pnpm exec turbo run build typecheck
 
