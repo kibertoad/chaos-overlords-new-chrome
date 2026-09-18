@@ -37,11 +37,19 @@ function Invoke-CodeSignTool {
         [string[]] $Arguments
     )
 
-    $output = @(& $java '-Xmx1024M' '-jar' $jar @Arguments 2>&1)
-    $exitCode = $LASTEXITCODE
-    $output | ForEach-Object { Write-Host $_ }
+    Push-Location -LiteralPath $toolRoot
+    try {
+        $output = @(& $java '-Xmx1024M' '-jar' $jar @Arguments 2>&1)
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        Pop-Location
+    }
 
-    $reportedFailure = $output | Where-Object {
+    $outputText = @($output | ForEach-Object { $_.ToString() })
+    $outputText | ForEach-Object { Write-Host $_ }
+
+    $reportedFailure = $outputText | Where-Object {
         $_ -match '(?i)\b(error|exception)\b|missing required option|unmatched argument'
     }
     if ($exitCode -ne 0 -or $reportedFailure) {
