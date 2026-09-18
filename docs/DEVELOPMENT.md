@@ -61,6 +61,12 @@ Installed copies of the game are not stopped. See [VALIDATION.md](VALIDATION.md)
 for the explicit 53-case long-running/full-suite modes and build-server cleanup
 option.
 
+The repository's version lives in `version.txt` as a single `x.y.z` line. Every
+assembly is stamped from it, the title screen and every report print it, and a
+build fails on anything else in the file. The release workflow writes it, so a
+local checkout only needs editing when a package has to carry a different
+number; see [RELEASING.md](RELEASING.md).
+
 ## Repository projects
 
 - `Rechaos.Core`: original-data parsers and platform-independent game state.

@@ -1,5 +1,8 @@
+; version.txt is the only place the released version is written down, and
+; tools/Build-WindowsInstaller.ps1 passes it in. A default here would name an
+; installer after a version the game inside it does not report.
 #ifndef MyAppVersion
-  #define MyAppVersion "0.1.0"
+  #error MyAppVersion is not defined; compile through tools/Build-WindowsInstaller.ps1.
 #endif
 
 #define MyAppName "Chaos Overlords: New Chrome"
