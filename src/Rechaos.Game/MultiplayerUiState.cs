@@ -159,6 +159,12 @@ internal sealed class MultiplayerUiState
     /// <summary>The last thing that went wrong, for the player to read.</summary>
     internal string Status { get; set; } = string.Empty;
 
+    /// <summary>The complete failed online request shown by the modal and copied verbatim.</summary>
+    internal string ConnectionError { get; set; } = string.Empty;
+
+    /// <summary>Feedback from the error modal's clipboard action.</summary>
+    internal string ConnectionErrorCopyStatus { get; set; } = string.Empty;
+
     /// <summary>The result of the selected service's lightweight health check.</summary>
     internal string ServerStatus { get; set; } = string.Empty;
 
@@ -199,6 +205,8 @@ internal sealed class MultiplayerUiState
         ReconnectAttempt = 0;
         SentOrderDigest = null;
         BootstrapFailed = false;
+        ConnectionError = string.Empty;
+        ConnectionErrorCopyStatus = string.Empty;
         ServerStatus = string.Empty;
         TakeoverVotes.Clear();
         Password.Set(string.Empty);

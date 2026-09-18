@@ -1,4 +1,5 @@
 import {
+  type ApiContract,
   type CreateMatchRequest,
   createMatchContract,
   type EventPage,
@@ -21,6 +22,7 @@ import {
   ownSubmissionContract,
   rejoinMatchContract,
   reportTurnContract,
+  resolveResponseEntry,
   type SealedOrdersView,
   type SnapshotView,
   type SubmitOrdersRequest,
@@ -35,6 +37,7 @@ import {
   type UploadSnapshotRequest,
   updateMatchSettingsContract,
   uploadSnapshotContract,
+  validate,
 } from '@chaos-overlords/contracts'
 import { MultiplayerApiError } from './errors'
 import { parseEventStream } from './sse'
@@ -100,23 +103,19 @@ export class MultiplayerClient {
   }
 
   listLobbies(): Promise<LobbyList> {
-    return this.call(listLobbiesContract.method, listLobbiesContract.pathResolver())
+    return this.call(listLobbiesContract, listLobbiesContract.pathResolver())
   }
 
   createMatch(request: CreateMatchRequest): Promise<MembershipView> {
-    return this.call(createMatchContract.method, createMatchContract.pathResolver(), request)
+    return this.call(createMatchContract, createMatchContract.pathResolver(), request)
   }
 
   join(request: JoinMatchRequest): Promise<MembershipView> {
-    return this.call(joinMatchContract.method, joinMatchContract.pathResolver(), request)
+    return this.call(joinMatchContract, joinMatchContract.pathResolver(), request)
   }
 
   joinRunning(request: JoinRunningMatchRequest): Promise<MembershipView> {
-    return this.call(
-      joinRunningMatchContract.method,
-      joinRunningMatchContract.pathResolver(),
-      request,
-    )
+    return this.call(joinRunningMatchContract, joinRunningMatchContract.pathResolver(), request)
   }
 
   match(matchId: string): MatchHandle {
@@ -124,21 +123,32 @@ export class MultiplayerClient {
   }
 
   /** @internal */
-  async call<T>(method: string, path: string, body?: unknown): Promise<T> {
+  async call<T>(contract: ApiContract, path: string, body?: unknown): Promise<T> {
     const headers: Record<string, string> = { Accept: 'application/json' }
     if (this.token) headers.Authorization = `Bearer ${this.token}`
     if (body !== undefined) headers['Content-Type'] = 'application/json'
-    const init: RequestInit = { method: method.toUpperCase(), headers }
+    const init: RequestInit = { method: contract.method.toUpperCase(), headers }
     if (body !== undefined) init.body = JSON.stringify(body)
     if (this.requestTimeoutMs > 0) init.signal = AbortSignal.timeout(this.requestTimeoutMs)
     const response = await this.fetchImpl(`${this.baseUrl}${API}${path}`, init)
     if (!response.ok) throw await MultiplayerApiError.fromResponse(response)
-    if (response.status === 204) return undefined as T
-    return (await response.json()) as T
+    const responseKind = resolveResponseEntry(
+      contract.responsesByStatusCode,
+      response.status,
+      response.headers.get('content-type') ?? undefined,
+      true,
+    )
+    if (!responseKind) throw new Error(`server response is not declared by the contract`)
+    if (responseKind.kind === 'noContent') return undefined as T
+    if (responseKind.kind !== 'json') {
+      throw new Error(`expected a JSON contract response, received ${responseKind.kind}`)
+    }
+    return (await validate(responseKind.schema, await response.json())) as T
   }
 
   /** @internal */
   async openStream(
+    contract: ApiContract,
     path: string,
     after: number,
     signal: AbortSignal | undefined,
@@ -152,6 +162,14 @@ export class MultiplayerClient {
     if (signal) init.signal = signal
     const response = await this.fetchImpl(`${this.baseUrl}${API}${path}`, init)
     if (!response.ok) throw await MultiplayerApiError.fromResponse(response)
+    const responseKind = resolveResponseEntry(
+      contract.responsesByStatusCode,
+      response.status,
+      response.headers.get('content-type') ?? undefined,
+      true,
+    )
+    if (responseKind?.kind !== 'sse')
+      throw new Error('server response is not the contracted stream')
     if (!response.body) throw new Error('event stream response has no body')
     return response
   }
@@ -165,28 +183,28 @@ export class MatchHandle {
 
   get(): Promise<MatchDetail> {
     return this.client.call(
-      getMatchContract.method,
+      getMatchContract,
       getMatchContract.pathResolver({ matchId: this.matchId }),
     )
   }
 
   start(): Promise<void> {
     return this.client.call(
-      startMatchContract.method,
+      startMatchContract,
       startMatchContract.pathResolver({ matchId: this.matchId }),
     )
   }
 
   rejoin(): Promise<void> {
     return this.client.call(
-      rejoinMatchContract.method,
+      rejoinMatchContract,
       rejoinMatchContract.pathResolver({ matchId: this.matchId }),
     )
   }
 
   updateSettings(settings: MatchSettings): Promise<void> {
     return this.client.call(
-      updateMatchSettingsContract.method,
+      updateMatchSettingsContract,
       updateMatchSettingsContract.pathResolver({ matchId: this.matchId }),
       settings,
     )
@@ -194,21 +212,21 @@ export class MatchHandle {
 
   leave(): Promise<void> {
     return this.client.call(
-      leaveMatchContract.method,
+      leaveMatchContract,
       leaveMatchContract.pathResolver({ matchId: this.matchId }),
     )
   }
 
   kick(playerId: string): Promise<void> {
     return this.client.call(
-      kickPlayerContract.method,
+      kickPlayerContract,
       kickPlayerContract.pathResolver({ matchId: this.matchId, playerId }),
     )
   }
 
   voteOnTakeover(playerId: string, request: TakeoverVoteRequest): Promise<void> {
     return this.client.call(
-      takeoverVoteContract.method,
+      takeoverVoteContract,
       takeoverVoteContract.pathResolver({ matchId: this.matchId, playerId }),
       request,
     )
@@ -216,7 +234,7 @@ export class MatchHandle {
 
   submitOrders(turn: number, request: SubmitOrdersRequest): Promise<OwnSubmissionView> {
     return this.client.call(
-      submitOrdersContract.method,
+      submitOrdersContract,
       submitOrdersContract.pathResolver({ matchId: this.matchId, turn }),
       request,
     )
@@ -224,21 +242,21 @@ export class MatchHandle {
 
   mySubmission(turn: number): Promise<OwnSubmissionView> {
     return this.client.call(
-      ownSubmissionContract.method,
+      ownSubmissionContract,
       ownSubmissionContract.pathResolver({ matchId: this.matchId, turn }),
     )
   }
 
   sealedOrders(turn: number): Promise<SealedOrdersView> {
     return this.client.call(
-      sealedOrdersContract.method,
+      sealedOrdersContract,
       sealedOrdersContract.pathResolver({ matchId: this.matchId, turn }),
     )
   }
 
   report(turn: number, request: TurnReportRequest): Promise<void> {
     return this.client.call(
-      reportTurnContract.method,
+      reportTurnContract,
       reportTurnContract.pathResolver({ matchId: this.matchId, turn }),
       request,
     )
@@ -246,7 +264,7 @@ export class MatchHandle {
 
   uploadSnapshot(request: UploadSnapshotRequest): Promise<void> {
     return this.client.call(
-      uploadSnapshotContract.method,
+      uploadSnapshotContract,
       uploadSnapshotContract.pathResolver({ matchId: this.matchId }),
       request,
     )
@@ -254,26 +272,27 @@ export class MatchHandle {
 
   latestSnapshot(): Promise<SnapshotView> {
     return this.client.call(
-      latestSnapshotContract.method,
+      latestSnapshotContract,
       latestSnapshotContract.pathResolver({ matchId: this.matchId }),
     )
   }
 
   snapshot(turn: number): Promise<SnapshotView> {
     return this.client.call(
-      snapshotContract.method,
+      snapshotContract,
       snapshotContract.pathResolver({ matchId: this.matchId, turn }),
     )
   }
 
   events(after = 0, limit = 200): Promise<EventPage> {
     const path = listEventsContract.pathResolver({ matchId: this.matchId })
-    return this.client.call(listEventsContract.method, `${path}?after=${after}&limit=${limit}`)
+    return this.client.call(listEventsContract, `${path}?after=${after}&limit=${limit}`)
   }
 
   /** One connection's worth of events; ends when the server closes it. */
   async *streamOnce(options: StreamOptions = {}): AsyncGenerator<MatchEvent> {
     const response = await this.client.openStream(
+      streamEventsContract,
       streamEventsContract.pathResolver({ matchId: this.matchId }),
       options.after ?? 0,
       options.signal,

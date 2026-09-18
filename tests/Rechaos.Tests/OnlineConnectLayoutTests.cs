@@ -43,6 +43,16 @@ public sealed class OnlineConnectLayoutTests
         Assert.True(OnlineConnectLayout.PublicChoice.Intersects(OnlineConnectLayout.JoinCode));
     }
 
+    [Fact]
+    public void ConnectionErrorActionsStayInsideTheCenteredModal()
+    {
+        var panel = OnlineConnectLayout.ErrorPanel;
+        Assert.Equal(320, panel.Center.X);
+        Assert.True(panel.Contains(OnlineConnectLayout.CopyError));
+        Assert.True(panel.Contains(OnlineConnectLayout.DismissError));
+        Assert.False(OnlineConnectLayout.CopyError.Intersects(OnlineConnectLayout.DismissError));
+    }
+
     /// <summary>
     /// Every captioned control on the connect screen leaves room for its caption.
     /// </summary>

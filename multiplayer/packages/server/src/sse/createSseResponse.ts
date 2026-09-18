@@ -1,5 +1,6 @@
-import { SSE_HEARTBEAT_COMMENT } from '@chaos-overlords/contracts'
+import { matchEventSchema, SSE_HEARTBEAT_COMMENT } from '@chaos-overlords/contracts'
 import type { PersistedEvent } from '@chaos-overlords/kernel'
+import { validateSync } from '@toad-contracts/core'
 
 export interface EventStreamSource {
   /** Persisted events after `afterSeq`, ascending, at most one page. */
@@ -159,5 +160,6 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
 }
 
 export function formatEvent(event: PersistedEvent): string {
-  return `id: ${event.seq}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`
+  const validated = validateSync(matchEventSchema, event)
+  return `id: ${validated.seq}\nevent: ${validated.type}\ndata: ${JSON.stringify(validated)}\n\n`
 }

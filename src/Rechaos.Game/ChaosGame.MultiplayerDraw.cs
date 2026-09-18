@@ -409,6 +409,11 @@ public sealed partial class ChaosGame
     /// <summary>Modal progress and diagnostics while the session reconnects in the background.</summary>
     private void DrawReconnectPopup(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
+        if (_screens.Current == ClientScreen.Online && _online.ConnectionError.Length > 0)
+        {
+            DrawOnlineErrorPopup(batch, pixel, font);
+            return;
+        }
         if (_session is null || _online.IsConnected) return;
         batch.Draw(pixel, new Rectangle(0, 0, 640, 460), new Color(0, 0, 0, 190));
         var panel = new Rectangle(82, 82, 476, 316);
@@ -428,6 +433,31 @@ public sealed partial class ChaosGame
             font.Draw(batch, line, new Vector2(104, 184 + index * 22), Color.White, 1);
         }
         DrawButton(batch, pixel, font, StopReconnectButton, "STOP RETRYING", true);
+    }
+
+    /// <summary>A modal error that keeps the complete diagnostic available without overflowing.</summary>
+    private void DrawOnlineErrorPopup(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        if (_screens.Current != ClientScreen.Online || _online.ConnectionError.Length == 0) return;
+        batch.Draw(pixel, new Rectangle(0, 0, 640, 460), new Color(0, 0, 0, 200));
+        var panel = OnlineConnectLayout.ErrorPanel;
+        batch.Draw(pixel, panel, new Color(12, 22, 20));
+        DrawBorder(batch, pixel, panel, Color.Gold, 2);
+        DrawCentered(font, batch, "COULD NOT CONNECT", 94, Color.Gold, 2);
+        DrawCentered(font, batch, "THE ONLINE REQUEST FAILED. DETAILS:", 126, Color.White, 1);
+
+        var lines = BugReportTextEditor.Wrap(_online.ConnectionError, 74);
+        const int visibleRows = 9;
+        for (var index = 0; index < Math.Min(visibleRows, lines.Count); index++)
+        {
+            var line = index == visibleRows - 1 && lines.Count > visibleRows
+                ? lines[index][..Math.Min(lines[index].Length, 71)] + "..."
+                : lines[index];
+            DrawCentered(font, batch, line, 152 + index * 18, new Color(205, 215, 212), 1);
+        }
+        DrawCentered(font, batch, _online.ConnectionErrorCopyStatus, 320, Color.Lime, 1);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.CopyError, "COPY FULL ERROR", true);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.DismissError, "CLOSE", false);
     }
 
     private void DrawReconnectPopupOverCurrentFrame(Viewport viewport)

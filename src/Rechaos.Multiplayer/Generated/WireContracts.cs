@@ -470,18 +470,18 @@ public sealed record OrderDocument(
 );
 
 public sealed record HandshakeRequest(
-    [property: JsonPropertyName("protocolVersion")] long ProtocolVersion
+    [property: JsonPropertyName("protocolVersion")] int ProtocolVersion
 );
 
 public sealed record HandshakeResponse(
-    [property: JsonPropertyName("protocolVersion")] long ProtocolVersion
+    [property: JsonPropertyName("protocolVersion")] int ProtocolVersion
 );
 
 public sealed record CreateMatchRequest(
     [property: JsonPropertyName("settings")] MatchSettings Settings,
     [property: JsonPropertyName("hostDisplayName")] string HostDisplayName,
     [property: JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Password,
-    [property: JsonPropertyName("protocolVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? ProtocolVersion
+    [property: JsonPropertyName("protocolVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ProtocolVersion
 );
 
 public sealed record JoinMatchRequest(
@@ -531,7 +531,7 @@ public sealed record TurnReportRequest(
 public sealed record UploadSnapshotRequest(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("formatVersion")] int FormatVersion,
-    [property: JsonPropertyName("protocolVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? ProtocolVersion,
+    [property: JsonPropertyName("protocolVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ProtocolVersion,
     [property: JsonPropertyName("stateHash")] string StateHash,
     [property: JsonPropertyName("body")] string Body,
     [property: JsonPropertyName("seatSummaries")] IReadOnlyList<AiSeatSummary> SeatSummaries
@@ -601,7 +601,7 @@ public sealed record TurnView(
 
 public sealed record MatchView(
     [property: JsonPropertyName("id")] string Id,
-    [property: JsonPropertyName("protocolVersion")] long ProtocolVersion,
+    [property: JsonPropertyName("protocolVersion")] int ProtocolVersion,
     [property: JsonPropertyName("status")] MatchStatus Status,
     [property: JsonPropertyName("settings")] MatchSettings Settings,
     [property: JsonPropertyName("hostPlayerId")] string HostPlayerId,
@@ -665,7 +665,7 @@ public sealed record SealedOrdersView(
 public sealed record SnapshotView(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("formatVersion")] int FormatVersion,
-    [property: JsonPropertyName("protocolVersion")] long ProtocolVersion,
+    [property: JsonPropertyName("protocolVersion")] int ProtocolVersion,
     [property: JsonPropertyName("stateHash")] string StateHash,
     [property: JsonPropertyName("uploadedByPlayerId")] string UploadedByPlayerId,
     [property: JsonPropertyName("uploadedAt")] string UploadedAt,

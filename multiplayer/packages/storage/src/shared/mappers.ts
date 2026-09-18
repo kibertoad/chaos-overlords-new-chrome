@@ -100,7 +100,7 @@ export interface EventRow {
 
 export const toMatch = (row: MatchRow): Match => ({
   id: row.id,
-  protocolVersion: row.protocolVersion,
+  protocolVersion: databaseProtocolVersion(row.protocolVersion, 'matches.protocol_version'),
   status: row.status as MatchStatus,
   settings: row.settings as MatchSettings,
   hostPlayerId: row.hostPlayerId,
@@ -151,7 +151,10 @@ export const toTurnOrders = (row: TurnOrdersRow): TurnOrders => ({
 
 export const toTurnReport = (row: TurnReportRow): TurnReport => ({ ...row })
 
-export const toSnapshot = (row: SnapshotRow): Snapshot => ({ ...row })
+export const toSnapshot = (row: SnapshotRow): Snapshot => ({
+  ...row,
+  protocolVersion: databaseProtocolVersion(row.protocolVersion, 'snapshots.protocol_version'),
+})
 
 export const toEvent = (row: EventRow): PersistedEvent =>
   ({
@@ -163,3 +166,23 @@ export const toEvent = (row: EventRow): PersistedEvent =>
   }) as PersistedEvent
 
 export const firstOrNull = <T>(rows: T[]): T | null => rows[0] ?? null
+
+/**
+ * Normalizes a protocol version at the database boundary, before it can leak into a JSON response.
+ *
+ * Drizzle's static row type describes the schema, but database drivers are still runtime inputs:
+ * some expose numeric columns as decimal strings. The public contract deliberately does not accept
+ * that representation, so adapters turn it into the one JavaScript number the valibot schema and
+ * generated C# record agree on. Invalid or unsafe values fail here instead of reaching a client.
+ */
+function databaseProtocolVersion(value: unknown, column: string): number {
+  const number =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && /^(0|[1-9]\d*)$/.test(value)
+        ? Number(value)
+        : Number.NaN
+  if (!Number.isInteger(number) || number < 0 || number > 2_147_483_647)
+    throw new TypeError(`${column} is not a signed 32-bit protocol version`)
+  return number
+}

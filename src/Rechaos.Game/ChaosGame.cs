@@ -827,7 +827,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     }
     private void HandleClick(Point point)
     {
-        if (HandleReconnectPopupClick(point)) return;
+        if (HandleOnlineErrorPopupClick(point) || HandleReconnectPopupClick(point)) return;
         if (_gameMenuOpen)
         {
             HandleGameMenuClick(point);

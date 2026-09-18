@@ -1,4 +1,10 @@
-import { type ErrorCode, type ErrorEnvelope, STATUS_BY_CODE } from '@chaos-overlords/contracts'
+import {
+  type ErrorCode,
+  type ErrorEnvelope,
+  errorEnvelopeSchema,
+  STATUS_BY_CODE,
+  validateSync,
+} from '@chaos-overlords/contracts'
 import { isDomainError } from '@chaos-overlords/kernel'
 import { SchemaValidationError } from '@toad-contracts/core'
 import type { Context } from 'hono'
@@ -62,5 +68,5 @@ function respond(
   requestId: string,
 ): Response {
   const body: ErrorEnvelope = { error: { code, message, details, requestId } }
-  return c.json(body, STATUS_BY_CODE[code] as 400)
+  return c.json(validateSync(errorEnvelopeSchema, body), STATUS_BY_CODE[code] as 400)
 }

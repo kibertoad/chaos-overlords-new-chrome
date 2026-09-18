@@ -1,4 +1,9 @@
-import type { ErrorCode, ErrorEnvelope } from '@chaos-overlords/contracts'
+import {
+  type ErrorCode,
+  type ErrorEnvelope,
+  errorEnvelopeSchema,
+  validateSync,
+} from '@chaos-overlords/contracts'
 
 export class MultiplayerApiError extends Error {
   constructor(
@@ -16,7 +21,7 @@ export class MultiplayerApiError extends Error {
   static async fromResponse(response: Response): Promise<MultiplayerApiError> {
     let envelope: Partial<ErrorEnvelope> = {}
     try {
-      envelope = (await response.json()) as ErrorEnvelope
+      envelope = validateSync(errorEnvelopeSchema, await response.json())
     } catch {
       // A non-JSON body (a proxy page, an empty 502) still yields a typed error.
     }

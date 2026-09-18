@@ -50,6 +50,9 @@ public static class OnlineConnectLayout
     public static Rectangle DiscoveryBack => new(330, 382, 190, 30);
     public const int ServerStatusY = 416;
     public const int StatusY = 436;
+    public static Rectangle ErrorPanel => new(60, 72, 520, 316);
+    public static Rectangle CopyError => new(104, 338, 204, 30);
+    public static Rectangle DismissError => new(332, 338, 204, 30);
 
     /// <summary>The height of one row of an open filter dropdown.</summary>
     public const int DiscoveryOptionHeight = 18;

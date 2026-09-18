@@ -1,4 +1,4 @@
-import type { MatchEvent } from '@chaos-overlords/contracts'
+import { type MatchEvent, matchEventSchema, validateSync } from '@chaos-overlords/contracts'
 
 /**
  * Parse an SSE body into match events. Frames are separated by a blank line; `data:` carries the
@@ -59,7 +59,7 @@ function parseFrame(frame: string): MatchEvent | null {
     else if (line.startsWith('id:')) id = line.slice(3).trim()
   }
   if (data.length === 0) return null
-  const event = JSON.parse(data.join('\n')) as MatchEvent
+  const event = validateSync(matchEventSchema, JSON.parse(data.join('\n')))
   if (id !== undefined && Number(id) !== event.seq) {
     throw new Error(`event stream frame id ${id} disagrees with its payload seq ${event.seq}`)
   }

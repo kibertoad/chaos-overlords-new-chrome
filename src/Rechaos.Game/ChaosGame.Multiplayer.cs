@@ -55,6 +55,12 @@ public sealed partial class ChaosGame
     private void UpdateOnline(KeyboardState keyboard)
     {
         PumpServerProbe();
+        if (_online.ConnectionError.Length > 0)
+        {
+            if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Enter))
+                DismissOnlineError();
+            return;
+        }
         if (Pressed(keyboard, Keys.Tab)) FocusNextOnlineField();
         if (_online.Stage == MultiplayerStage.History)
         {
@@ -501,7 +507,9 @@ public sealed partial class ChaosGame
                 return;
             case LobbyNotice.Failed failed:
                 if (_online.Stage == MultiplayerStage.Busy) _online.Stage = MultiplayerStage.Connect;
-                _online.Status = failed.Reason;
+                _online.Status = string.Empty;
+                _online.ConnectionError = failed.Reason;
+                _online.ConnectionErrorCopyStatus = string.Empty;
                 return;
             default:
                 return;
@@ -805,6 +813,29 @@ public sealed partial class ChaosGame
         else if (OnlineConnectLayout.Continue.Contains(point)) ContinueOnline();
         else if (OnlineConnectLayout.Back.Contains(point)) EndOnlineMatch(string.Empty);
         else FocusOnlineField(point);
+    }
+
+    private bool HandleOnlineErrorPopupClick(Point point)
+    {
+        if (_screens.Current != ClientScreen.Online || _online.ConnectionError.Length == 0)
+            return false;
+        if (OnlineConnectLayout.CopyError.Contains(point))
+        {
+            _online.ConnectionErrorCopyStatus = DesktopClipboard.TrySetText(_online.ConnectionError)
+                ? "FULL ERROR COPIED"
+                : "COULD NOT ACCESS THE CLIPBOARD";
+        }
+        else if (OnlineConnectLayout.DismissError.Contains(point))
+        {
+            DismissOnlineError();
+        }
+        return true;
+    }
+
+    private void DismissOnlineError()
+    {
+        _online.ConnectionError = string.Empty;
+        _online.ConnectionErrorCopyStatus = string.Empty;
     }
 
     private void HandleOnlineDiscoveryClick(Point point)

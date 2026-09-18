@@ -1,4 +1,5 @@
-import { type InferOutput, integer, minValue, number, pipe, strictObject } from 'valibot'
+import { type InferOutput, integer, maxValue, minValue, number, pipe, strictObject } from 'valibot'
+import { notNegativeZero } from './primitives'
 
 /**
  * Version of the game/server wire protocol. Increment this for every change that can make one side
@@ -6,7 +7,13 @@ import { type InferOutput, integer, minValue, number, pipe, strictObject } from 
  */
 export const MULTIPLAYER_PROTOCOL_VERSION = 3
 
-export const protocolVersionSchema = pipe(number(), integer(), minValue(0))
+export const protocolVersionSchema = pipe(
+  number(),
+  integer(),
+  minValue(0),
+  maxValue(2_147_483_647),
+  notNegativeZero,
+)
 
 export const handshakeRequestSchema = strictObject({
   protocolVersion: protocolVersionSchema,

@@ -16,8 +16,8 @@ const eventAt = (seq: number) => ({
   seq,
   matchId: 'm',
   type: 'turn.opened',
-  payload: { turn: seq },
-  createdAt: 'x',
+  payload: { turn: seq, deadlineAt: null },
+  createdAt: '2026-09-18T12:00:00.000Z',
 })
 const frameOf = (seq: number, newline = '\n') =>
   `id: ${seq}${newline}event: turn.opened${newline}data: ${JSON.stringify(eventAt(seq))}${newline}${newline}`
@@ -28,8 +28,8 @@ describe('parseEventStream', () => {
       seq: 3,
       matchId: 'm',
       type: 'turn.opened',
-      payload: { turn: 1 },
-      createdAt: 'x',
+      payload: { turn: 1, deadlineAt: null },
+      createdAt: '2026-09-18T12:00:00.000Z',
     }
     const text = `: connected\n\n: keepalive\n\nid: 3\nevent: turn.opened\ndata: ${JSON.stringify(event)}\n\n`
     const chunks = [text.slice(0, 20), text.slice(20, 60), text.slice(60)]
@@ -80,7 +80,7 @@ describe('isFatalStreamError', () => {
 
 describe('parseEventStream framing', () => {
   const frame = (id: number, seq: number) =>
-    `id: ${id}\nevent: turn.opened\ndata: ${JSON.stringify({ seq, matchId: 'm', type: 'turn.opened', payload: {}, createdAt: 'now' })}\n\n`
+    `id: ${id}\nevent: turn.opened\ndata: ${JSON.stringify({ seq, matchId: 'm', type: 'turn.opened', payload: { turn: 1, deadlineAt: null }, createdAt: '2026-09-18T12:00:00.000Z' })}\n\n`
 
   const bodyOf = (text: string) =>
     new ReadableStream<Uint8Array>({
@@ -101,5 +101,14 @@ describe('parseEventStream framing', () => {
         // consume
       }
     }).rejects.toThrow(/disagrees/)
+  })
+
+  it('refuses an event whose JSON does not satisfy the shared event contract', async () => {
+    const malformed = `id: 4\nevent: turn.opened\ndata: ${JSON.stringify({ ...eventAt(4), payload: { turn: '4', deadlineAt: null } })}\n\n`
+    await expect(async () => {
+      for await (const _ of parseEventStream(bodyOf(malformed))) {
+        // consume
+      }
+    }).rejects.toThrow()
   })
 })

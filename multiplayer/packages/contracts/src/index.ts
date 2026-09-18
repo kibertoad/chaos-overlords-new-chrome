@@ -1,3 +1,9 @@
+export {
+  type ApiContract,
+  resolveResponseEntry,
+  validate,
+  validateSync,
+} from '@toad-contracts/core'
 export * from './bug-reports'
 export * from './contracts'
 export * from './errors'

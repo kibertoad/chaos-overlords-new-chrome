@@ -10,6 +10,7 @@ import {
   rateLimited,
   requestId,
 } from './http/middleware'
+import { validateContractResponse } from './http/responseValidation'
 import type { AppEnv } from './http/types'
 import { registerBugReportRoutes } from './routes/bugReports'
 import { registerEventRoutes } from './routes/events'
@@ -49,6 +50,11 @@ export function createApp(container: ServerContainer): Hono<AppEnv> {
  */
 function apiRoutes(): Hono<AppEnv> {
   const api = new Hono<AppEnv>()
+
+  // Run outside every contract route, then validate the completed successful response after its
+  // handler has produced it. This closes the runtime gap left by TypeScript-only
+  // handler checking: storage values and JSON columns are not trustworthy merely because typed.
+  api.use('*', validateContractResponse)
 
   // The unauthenticated handshake parses a body before any player identity exists, so it needs the
   // same address budget and small-body cap as the lobby doors it protects.
