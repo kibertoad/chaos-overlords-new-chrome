@@ -107,6 +107,20 @@ public sealed class CombatAnimationTests
     }
 
     [Fact]
+    public void EventGangMissingFromCurrentStateDoesNotCrashCombatPresentation()
+    {
+        var state = CreateState();
+        var gameEvent = AttackEvent(new CommandResolutionDetails(
+            CommandResolutionCode.Resolved, [], 0, Damage: 10)) with
+        {
+            Gang = new GangId(999),
+        };
+
+        Assert.Empty(CombatAnimationRouting.ForEvent(state, gameEvent));
+        Assert.Null(AudioRouting.CombatSound(state, gameEvent));
+    }
+
+    [Fact]
     public void FileGroupsAndFrameCoordinatesMatchRecoveredStrips()
     {
         Assert.Equal(166, CombatAnimationRouting.FrameMilliseconds);

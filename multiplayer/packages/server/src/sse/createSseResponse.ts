@@ -36,8 +36,10 @@ const STREAM_HIGH_WATER_MARK = 32
  * A server-sent event stream over a persisted, sequence-numbered log.
  *
  * The log is the truth and the wake-up is only a hint: every wake drains the log from the last
- * delivered sequence, so a notification lost between persist and fan-out costs latency, never an
- * event, and `Last-Event-ID` resumes exactly. One drain runs at a time per connection.
+ * delivered sequence, while every heartbeat also performs a catch-up drain. A notification lost
+ * between persist and fan-out therefore costs at most one heartbeat rather than waiting for some
+ * unrelated later event, and `Last-Event-ID` resumes exactly. One drain runs at a time per
+ * connection.
  *
  * The drain respects backpressure. `enqueue` on a stream nobody is reading never refuses, it just
  * buffers, so a consumer that has stopped reading (a suspended phone, a half-open TCP connection)
@@ -113,10 +115,12 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
         const unsubscribe = source.subscribe(wake, () => {
           shutdown()
         })
-        const heartbeat = setInterval(
-          () => send(`: ${SSE_HEARTBEAT_COMMENT}\n\n`),
-          options.heartbeatMs,
-        )
+        const heartbeat = setInterval(() => {
+          send(`: ${SSE_HEARTBEAT_COMMENT}\n\n`)
+          // Fan-out is deliberately best-effort. Re-read the durable log even when the socket is
+          // healthy so a failed or process-local notification cannot strand this client forever.
+          wake()
+        }, options.heartbeatMs)
         shutdown = () => {
           if (closed) return
           closed = true

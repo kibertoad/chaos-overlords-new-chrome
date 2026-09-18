@@ -156,6 +156,18 @@ internal sealed class MultiplayerUiState
     /// <summary>Digest of the last draft queued for the server, or null before the first change.</summary>
     internal string? SentOrderDigest { get; set; }
 
+    /// <summary>Whether the ready document is still waiting for the server's HTTP acknowledgement.</summary>
+    internal bool ReadySubmissionPending { get; set; }
+
+    /// <summary>Whether the server explicitly acknowledged this turn's ready document.</summary>
+    internal bool ReadySubmissionAcknowledged { get; set; }
+
+    /// <summary>When an acknowledged all-ready turn first failed to produce its sealed successor.</summary>
+    internal DateTimeOffset? ResolutionExpectedSince { get; set; }
+
+    /// <summary>A refused submission for the turn still shown on the city screen.</summary>
+    internal string TurnSyncError { get; set; } = string.Empty;
+
     /// <summary>The last thing that went wrong, for the player to read.</summary>
     internal string Status { get; set; } = string.Empty;
 
@@ -204,6 +216,10 @@ internal sealed class MultiplayerUiState
         ReconnectLog.Clear();
         ReconnectAttempt = 0;
         SentOrderDigest = null;
+        ReadySubmissionPending = false;
+        ReadySubmissionAcknowledged = false;
+        ResolutionExpectedSince = null;
+        TurnSyncError = string.Empty;
         BootstrapFailed = false;
         ConnectionError = string.Empty;
         ConnectionErrorCopyStatus = string.Empty;

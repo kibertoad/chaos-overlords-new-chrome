@@ -60,7 +60,12 @@ public abstract record MultiplayerNotice
     /// True when this client is the host and is therefore the one that has to upload the snapshot
     /// everyone else converges on.
     /// </param>
-    public sealed record Desynced(int Turn, bool IsHostRepair) : MultiplayerNotice;
+    /// <param name="Details">Short hashes reported by each client, suitable for diagnostics.</param>
+    public sealed record Desynced(
+        int Turn,
+        bool IsHost,
+        bool IsHostRepair,
+        string Details) : MultiplayerNotice;
 
     /// <summary>A repaired state arrived and was adopted; this client is back in step.</summary>
     public sealed record Resynced(int Turn, MatchState State, string StateHash) : MultiplayerNotice;

@@ -50,6 +50,12 @@ public static class CombatAnimationRouting
             return [];
 
         var defender = new GangId(gameEvent.Target.Id);
+        // Presentation can encounter an event whose gang is absent from the state being drawn: a
+        // restored history may outlive a retired roster slot, and a client-side divergence can pair
+        // an event with the wrong state before the desync repair arrives. The identifier was not
+        // randomly generated; it is simply unusable in this state. Detailed combat is optional, so
+        // omit the clip instead of turning an existing synchronization problem into a game crash.
+        if (state.FindGang(attacker) is null || state.FindGang(defender) is null) return [];
         if (resolution.Code == CommandResolutionCode.TargetEvaded)
             return [new CombatAnimationClip(gameEvent.Sequence, attacker, defender,
                 EvadedAnimation, 0, Reversed: false)];

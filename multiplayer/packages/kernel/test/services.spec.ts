@@ -332,6 +332,12 @@ describe('multiplayer kernel', () => {
     expect(sealed.orderSetHash).toMatch(/^[0-9a-f]{64}$/)
     const refreshed = await principalOf(guest.token)
     expect(refreshed.match.currentTurn).toBe(2)
+    // Losing the final HTTP response must not turn a safe retry into a false refusal. The exact
+    // document is already durable and is acknowledged even though its first call advanced the turn.
+    await expect(submit(refreshed, 1, 3, true)).resolves.toMatchObject({
+      turn: 1,
+      ready: true,
+    })
     await expect(submit(refreshed, 1, 9, true)).rejects.toMatchObject({
       details: { reason: 'not_current_turn' },
     })
@@ -428,7 +434,9 @@ describe('multiplayer kernel', () => {
   })
 
   it('seals on the deadline through the scheduler and the sweeper, only once', async () => {
-    const { host } = await startedMatch(60)
+    const { host, guest } = await startedMatch(60)
+    await submit(await principalOf(host.token), 1, 1, false)
+    await submit(await principalOf(guest.token), 1, 2, false)
     expect(scheduler.scheduled).toEqual([
       { matchId: host.match.id, turn: 1, dueAt: new Date(clock.now().getTime() + 60_000) },
     ])
@@ -448,6 +456,7 @@ describe('multiplayer kernel', () => {
 
     expect((await storage.players.get(guest.player.id))?.status).toBe('takeoverPending')
     expect(notifier.events.map((event) => event.type)).toContain('match.takeoverVoteRequested')
+    expect((await storage.turns.get(host.match.id, 2))?.deadlineAt).toBeNull()
     await kernel.lobby.voteOnTakeover(await principalOf(host.token), guest.player.id, {
       decision: 'wait',
     })
@@ -456,6 +465,34 @@ describe('multiplayer kernel', () => {
     await submit(await principalOf(guest.token), 2, 2, false)
     expect((await storage.players.get(guest.player.id))?.status).toBe('active')
     expect(notifier.events.map((event) => event.type)).toContain('match.takeoverVoteCancelled')
+    expect((await storage.turns.get(host.match.id, 2))?.deadlineAt).toEqual(
+      new Date(clock.now().getTime() + 60_000),
+    )
+    expect(notifier.events.some((event) =>
+      event.type === 'turn.deadlineExtended' &&
+      event.payload.turn === 2 &&
+      event.payload.deadlineAt !== null,
+    )).toBe(true)
+  })
+
+  it('pauses an open turn clock for a departure vote and restarts it after takeover', async () => {
+    const { host, guest } = await startedMatch(60)
+    await kernel.lobby.leave(await principalOf(guest.token))
+
+    expect((await storage.turns.get(host.match.id, 1))?.deadlineAt).toBeNull()
+    expect(notifier.events.some((event) =>
+      event.type === 'turn.deadlineExtended' && event.payload.deadlineAt === null,
+    )).toBe(true)
+
+    clock.advance(120_000)
+    expect(await kernel.turns.sweep()).toEqual({ sealed: 0, repaired: 0 })
+    await kernel.lobby.voteOnTakeover(await principalOf(host.token), guest.player.id, {
+      decision: 'computer',
+    })
+
+    expect((await storage.turns.get(host.match.id, 1))?.deadlineAt).toEqual(
+      new Date(clock.now().getTime() + 60_000),
+    )
   })
 
   it('requires every present player to approve computer control exactly once', async () => {

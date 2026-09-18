@@ -711,7 +711,14 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         var turn = desynced.Payload.Turn;
         var ours = MatchStateHasher.ComputeSha256(_replay.State);
         var canRepair = IsHost && desynced.Payload.CandidateStateHashes.Contains(ours, StringComparer.Ordinal);
-        _notices.Enqueue(new MultiplayerNotice.Desynced(turn, canRepair));
+        var details = string.Join(", ", desynced.Payload.Reports
+            .OrderBy(report => report.PlayerId, StringComparer.Ordinal)
+            .Select(report => $"{report.PlayerId}:{ShortHash(report.StateHash)}"));
+        _notices.Enqueue(new MultiplayerNotice.Desynced(
+            turn,
+            IsHost,
+            canRepair,
+            $"LOCAL {ShortHash(ours)}  REPORTS {details}"));
         if (!canRepair) return;
         await CallAsync(
             token => _match.UploadSnapshotAsync(
@@ -726,6 +733,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                     SummarizeSeats(_replay.State)),
                 token),
             cancellationToken).ConfigureAwait(false);
+
+        static string ShortHash(string hash) => hash[..Math.Min(12, hash.Length)];
     }
 
     /// <summary>

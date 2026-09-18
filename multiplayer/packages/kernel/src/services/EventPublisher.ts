@@ -11,7 +11,8 @@ import type { KernelDeps } from './deps'
  * "write the row" would publish a hole that a monotonic cursor then skips forever.
  *
  * Fan-out is only a wake-up hint. It happens after the event is durable and its failure is logged,
- * never propagated: the next drain of the log delivers the event anyway.
+ * never propagated: the stream's heartbeat catch-up (or its next ordinary drain) delivers the
+ * event anyway.
  */
 export class EventPublisher {
   constructor(

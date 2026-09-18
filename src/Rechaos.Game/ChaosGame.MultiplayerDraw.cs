@@ -384,10 +384,17 @@ public sealed partial class ChaosGame
     {
         if (!_online.IsConnected)
             return $"RECONNECTING TO THE SERVER  ATTEMPT {_online.ReconnectAttempt}";
+        if (_online.TurnSyncError.Length > 0)
+            return $"TURN SYNC ERROR  {_online.TurnSyncError}";
         return _online.Stage switch
         {
             MultiplayerStage.WaitingForSeal =>
-                $"WAITING FOR THE OTHER PLAYERS {OnlineSeatTally()} {OnlineCountdown()}",
+                _online.ReadySubmissionPending
+                    ? "SENDING FINISHED TURN  AWAITING SERVER ACKNOWLEDGEMENT"
+                    : _online.SeatedSeats > 0 && _online.ReadySeats >= _online.SeatedSeats
+                        ? $"SERVER ACKNOWLEDGED  ALL PLAYERS READY {OnlineSeatTally()}"
+                        : $"SERVER ACKNOWLEDGED  WAITING FOR OTHER PLAYERS "
+                            + $"{OnlineSeatTally()} {OnlineCountdown()}",
             MultiplayerStage.Desynced => "MATCH PAUSED  REPAIRING A DESYNC",
             MultiplayerStage.Finished => "MATCH COMPLETE",
             MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineCountdown()}",
@@ -443,8 +450,13 @@ public sealed partial class ChaosGame
         var panel = OnlineConnectLayout.ErrorPanel;
         batch.Draw(pixel, panel, new Color(12, 22, 20));
         DrawBorder(batch, pixel, panel, Color.Gold, 2);
-        DrawCentered(font, batch, "COULD NOT CONNECT", 94, Color.Gold, 2);
-        DrawCentered(font, batch, "THE ONLINE REQUEST FAILED. DETAILS:", 126, Color.White, 1);
+        var matchStopped = _online.ConnectionError.StartsWith(
+            "ONLINE MATCH STOPPED", StringComparison.Ordinal);
+        DrawCentered(font, batch, matchStopped ? "ONLINE MATCH ERROR" : "COULD NOT CONNECT",
+            94, Color.Gold, 2);
+        DrawCentered(font, batch,
+            matchStopped ? "THE MATCH COULD NOT CONTINUE. DETAILS:" : "THE ONLINE REQUEST FAILED. DETAILS:",
+            126, Color.White, 1);
 
         var lines = BugReportTextEditor.Wrap(_online.ConnectionError, 74);
         const int visibleRows = 9;

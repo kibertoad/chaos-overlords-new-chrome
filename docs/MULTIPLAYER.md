@@ -44,7 +44,9 @@ so every client bootstraps the same city.
 
 A departure or a timed turn with no submitted document opens a takeover vote. Every currently
 present player must choose `USE AI` before control changes; any `WAIT` choice keeps the seat human,
-and there is no server-side timeout that approves takeover implicitly. A player who reconnects
+and there is no server-side timeout that approves takeover implicitly. While any such prompt is
+open, the open turn has no deadline, so time spent in the modal cannot consume planning time. The
+clock restarts when the last prompt closes. A player who reconnects
 atomically returns to `active`, cancels a pending absence vote, and reclaims their seat from AI when
 necessary. `match.playerTakenOver`, `match.playerReturned`, and `match.latePlayerJoined` place both
 directions of a controller transfer at an exact event-log position, so every client records the same
@@ -77,8 +79,9 @@ lower one is committed too. A counter handed out before the write could leave a 
 moving forward would skip forever.
 
 The fan-out (an in-process hub on Node, a per-match Durable Object on Cloudflare) is only a wake-up
-hint: every wake drains the log from the last delivered sequence, so a lost notification costs
-latency, never an event, and a reconnecting client resumes from the last `seq` it saw. Delivery is
+hint: every wake and heartbeat drains the log from the last delivered sequence, so a lost
+notification costs at most one heartbeat, never an event, and a reconnecting client resumes from
+the last `seq` it saw. Delivery is
 therefore at least once — a resume, or a seal finished by the repair sweep, can repeat a fact a
 client already holds — so every client handler must be idempotent. Events name facts and carry
 references, not payloads: a sealed order set is fetched once over REST with `Cache-Control:
@@ -116,7 +119,7 @@ generated from the same valibot schemas (see "Two languages, one contract").
 
 | Call | Who | Effect |
 |---|---|---|
-| `PUT /matches/:id/turns/:n/orders` | member | Replaces the caller's order document for the open turn and sets `ready`. The write is one statement conditional on the turn still being open, so an order landing after the seal is refused (`409 turn_not_open`), never silently folded in. When `ready` completes the roster, the turn seals in the same call. |
+| `PUT /matches/:id/turns/:n/orders` | member | Replaces the caller's order document for the open turn and sets `ready`. The write is one statement conditional on the turn still being open, so a new order landing after the seal is refused (`409 turn_not_open`), never silently folded in. An exact retry of the persisted document is acknowledged even after the turn advances, covering a lost success response. When `ready` completes the roster, the turn seals in the same call. |
 | `GET /matches/:id/turns/:n/orders/mine` | member | The caller's own submission (for a reconnecting client). |
 | `GET /matches/:id/turns/:n/orders` | member | The sealed set: the documents of the players the seal froze, in slot order, plus `orderSetHash`. Refused while open (`409 turn_open`). |
 | `POST /matches/:id/turns/:n/report` | member | `{ stateHash, finished }` after applying the sealed turn locally. |
@@ -167,6 +170,11 @@ after submitting but before the seal is absent from both, and one who leaves aft
 both. A slot absent from the set contributes no human document. The first wholly missed timed turn
 marks an otherwise active seat `takeoverPending` and opens a vote. It remains idle and human while
 players wait; only a later `match.playerTakenOver` makes it computer-planned.
+
+An open takeover vote also pauses the current turn clock. The server clears its deadline and emits
+`turn.deadlineExtended` with a null deadline; after the last vote closes it starts a fresh full clock
+and emits the replacement deadline. A stale scheduler callback sees the cleared or replacement
+deadline and cannot seal the turn early.
 
 A desync pauses the match (`match.status = desynced`): the open turn stays open but cannot seal
 until every unsettled turn is confirmed. The host uploads the snapshot of the disputed turn;
@@ -436,8 +444,8 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    as an exceptional repair (the same state as a quick-save), declaring the **native save** format
    version — the replay format's says nothing about those bytes. Every other client refuses a version
    newer than it reads, and otherwise loads it, recomputes the hash and re-reports.
-6. On `turn.deadlineExtended`, replace the countdown for that turn: the match resumed after a
-   desync pause and the turn's clock restarted.
+6. On `turn.deadlineExtended`, replace the countdown for that turn. A null deadline pauses it for an
+   absence vote; a later timestamp restarts it after that vote or a desync pause closes.
 7. On reconnect, fetch the match, load the latest snapshot if the local state is behind, then read
    the durable event log gaplessly through the refreshed `lastEventSeq`. Replay approved takeover and seal
    events in order, skipping seals already represented by the snapshot, before restoring the current
@@ -454,7 +462,11 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    HTTP status/request id, stream closure, or network exception and lets the player stop early. If
    the window expires, the terminal error reports the attempt count, elapsed time, and last failure.
    A refusal that will keep being refused (a revoked token, a body the server will never accept) or a
-   payload that cannot be made sense of still ends immediately.
+   payload that cannot be made sense of still ends immediately. The city screen distinguishes an
+   in-flight ready submission from one explicitly acknowledged by the server. If the server has
+   acknowledged every required seat but no sealed successor arrives within 30 seconds, the client
+   writes the turn and tally to diagnostics and offers reconnection; it never leaves that state
+   looking like an opponent is still deciding.
 9. Read responses tolerantly and requests strictly. The server is deployed separately, self-hosted
    ones especially, so a client must skip a response field it has never heard of and one the server
    left out, or a single additive release locks out every client built before it. The exception is a
@@ -546,7 +558,7 @@ dock a player plans against the dock the sealed turn grants.
   authenticated simultaneous operation and wants its own determinism run rather than a local
   interface mutation.
 - The turn timer is a whole-match setting; per-turn extensions are not offered beyond the restart
-  that follows a desync pause.
+  that follows a desync pause or the closing of an absence vote.
 - **Desync recovery is decided by a count of reports, and the host breaks ties.** The snapshot the
   host uploads becomes the state every other client must match, so it may only claim a hash more
   active players reported than any other. A genuine tie leaves nothing to count and the host breaks
@@ -562,6 +574,6 @@ dock a player plans against the dock the sealed turn grants.
   member could take it at that moment and then kick the real host, whose token a kick revokes for
   good.
 - An event is published after it is durable, so a process dying mid-publish can lose the
-  notification but never the event. A process dying between persisting an event and its successor
-  simply has no successor: clients reconcile from the match view on reconnect, which is always
-  authoritative.
+  notification but never the event. The stream heartbeat rechecks the durable log even while its
+  connection remains healthy. A process dying between persisting an event and its successor simply
+  has no successor: clients reconcile from the match view on reconnect, which is always authoritative.

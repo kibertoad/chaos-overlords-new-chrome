@@ -13,6 +13,7 @@ namespace Rechaos.Game;
 public sealed partial class ChaosGame
 {
     private static readonly TimeSpan LobbyPollInterval = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan OnlineResolutionGrace = TimeSpan.FromSeconds(30);
 
     private readonly MultiplayerUiState _online = new();
     /// <summary>
@@ -373,6 +374,10 @@ public sealed partial class ChaosGame
             ? MultiplayerStage.WaitingForSeal
             : MultiplayerStage.Playing;
         _online.SentOrderDigest = submission?.OrdersHash;
+        _online.ReadySubmissionPending = false;
+        _online.ReadySubmissionAcknowledged = submission?.Ready == true;
+        _online.ResolutionExpectedSince = null;
+        _online.TurnSyncError = string.Empty;
         _online.ReadySeats = 0;
         _selectedGangIndex = 0;
         _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
@@ -412,39 +417,6 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void CloseOnlinePlanning() => _actions = null;
 
-    /// <summary>Sends what the player planned and marks them ready; the turn seals on the last one.</summary>
-    private void SubmitOnlineTurn()
-    {
-        if (_session is null || _actions?.OnlineTurn is not { } turn) return;
-        if (!_online.PlanningIsOpen) return;
-        var document = turn.Build();
-        _session.QueueOrders(_online.PlanningTurn, document, ready: true);
-        _online.SentOrderDigest = OrderDigest.OfDocument(document);
-        _online.Stage = MultiplayerStage.WaitingForSeal;
-        CloseOnlinePlanning();
-        _message = "WAITING FOR THE OTHER PLAYERS";
-    }
-
-    /// <summary>
-    /// Sends the turn so far, without saying the player is done.
-    /// </summary>
-    /// <remarks>
-    /// So that a turn the clock seals seals with what the player had planned. The server replaces the
-    /// document it holds, so a draft is never additive and never has to be reconciled with the one
-    /// that follows it; sending nothing at all would make a missed deadline cost the player their
-    /// whole turn.
-    /// </remarks>
-    private void SendOnlineDraft()
-    {
-        if (_session is null || !_online.PlanningIsOpen) return;
-        if (_actions?.OnlineTurn is not { } turn) return;
-        var document = turn.Build();
-        var digest = OrderDigest.OfDocument(document);
-        if (string.Equals(digest, _online.SentOrderDigest, StringComparison.Ordinal)) return;
-        _online.SentOrderDigest = digest;
-        _session.QueueOrders(_online.PlanningTurn, document, ready: false);
-    }
-
     /// <summary>
     /// Drains what the sessions have to say, on the game thread.
     /// </summary>
@@ -456,6 +428,7 @@ public sealed partial class ChaosGame
     {
         while (_lobby?.TryDequeueNotice(out var lobbyNotice) == true) Apply(lobbyNotice);
         while (_session?.TryDequeueNotice(out var notice) == true) Apply(notice);
+        CheckOnlineResolutionWatchdog();
     }
 
     private void Apply(LobbyNotice notice)
@@ -561,9 +534,26 @@ public sealed partial class ChaosGame
                 return;
             case MultiplayerNotice.Desynced desynced:
                 _online.Stage = MultiplayerStage.Desynced;
+                CloseOnlinePlanning();
+                _online.TurnSyncError = desynced.IsHostRepair
+                    ? $"DESYNC TURN {desynced.Turn}  AUTOMATIC REPAIR IN PROGRESS"
+                    : $"DESYNC TURN {desynced.Turn}  WAITING FOR HOST REPAIR";
                 _message = desynced.IsHostRepair
                     ? $"DESYNC ON TURN {desynced.Turn}  SENDING A SNAPSHOT"
                     : $"DESYNC ON TURN {desynced.Turn}  WAITING FOR THE HOST";
+                _diagnostics?.Write("multiplayer.desync", new Dictionary<string, string?>
+                {
+                    ["turn"] = desynced.Turn.ToString(CultureInfo.InvariantCulture),
+                    ["details"] = desynced.Details,
+                    ["hostRepair"] = desynced.IsHostRepair.ToString(),
+                });
+                if (desynced.IsHost && !desynced.IsHostRepair)
+                {
+                    ShowOnlineMatchFailure(
+                        $"DESYNC ON TURN {desynced.Turn}. THIS HOST'S STATE IS NOT AN "
+                        + $"ALLOWED REPAIR CANDIDATE. {desynced.Details}. RECONNECT FROM "
+                        + "PREVIOUS SESSIONS TO REBUILD FROM THE AUTHORITATIVE HISTORY.");
+                }
                 return;
             case MultiplayerNotice.MatchUpdated updated:
                 _online.Match = updated.Match;
@@ -588,15 +578,40 @@ public sealed partial class ChaosGame
                 if (readiness.Turn != _online.PlanningTurn) return;
                 _online.ReadySeats = readiness.Ready;
                 _online.SeatedSeats = readiness.Seated;
+                UpdateOnlineResolutionExpectation();
                 return;
             case MultiplayerNotice.OrdersAccepted accepted:
                 // A draft needs no announcement; the submission that ends a turn already said so.
-                if (accepted.Ready) _message = "ORDERS SENT  WAITING FOR THE OTHER PLAYERS";
+                _online.TurnSyncError = string.Empty;
+                if (accepted.Ready && accepted.Turn == _online.PlanningTurn)
+                {
+                    _online.ReadySubmissionPending = false;
+                    _online.ReadySubmissionAcknowledged = true;
+                    _message = "SERVER ACKNOWLEDGED FINISHED TURN";
+                    _diagnostics?.Write("multiplayer.orders.acknowledged",
+                        new Dictionary<string, string?>
+                        {
+                            ["turn"] = accepted.Turn.ToString(CultureInfo.InvariantCulture),
+                        });
+                    UpdateOnlineResolutionExpectation();
+                }
                 return;
             case MultiplayerNotice.OrdersRefused refused:
                 // Not fatal. The turn may have sealed while the player was still planning it, which
                 // costs them that turn and nothing else.
                 _message = refused.Reason.ToUpperInvariant();
+                _online.TurnSyncError = refused.Reason.ToUpperInvariant();
+                if (refused.Turn == _online.PlanningTurn)
+                {
+                    _online.ReadySubmissionPending = false;
+                    _online.ResolutionExpectedSince = null;
+                }
+                _diagnostics?.Write("multiplayer.orders.refused",
+                    new Dictionary<string, string?>
+                    {
+                        ["turn"] = refused.Turn.ToString(CultureInfo.InvariantCulture),
+                        ["reason"] = refused.Reason,
+                    });
                 if (_online.Stage == MultiplayerStage.WaitingForSeal)
                     _online.Status = refused.Reason.ToUpperInvariant();
                 return;
@@ -607,9 +622,11 @@ public sealed partial class ChaosGame
                     _online.ReconnectLog.Clear();
                     _online.ReconnectAttempt = 0;
                     _message = string.Empty;
+                    UpdateOnlineResolutionExpectation();
                 }
                 else if (connection.Detail is { } detail)
                 {
+                    _online.ResolutionExpectedSince = null;
                     _online.ReconnectAttempt = Math.Max(1, connection.Attempt);
                     var entry = $"ATTEMPT {Math.Max(1, connection.Attempt)}  {detail}";
                     _online.ReconnectLog.Add(entry.ToUpperInvariant());
@@ -639,7 +656,7 @@ public sealed partial class ChaosGame
                     ["reason"] = failed.Reason,
                     ["error"] = RuntimeDiagnostics.ExceptionType(failed.Error),
                 });
-                EndOnlineMatch(OnlineFailureMessage(failed.Reason));
+                ShowOnlineMatchFailure(failed.Reason);
                 return;
             default:
                 return;
@@ -939,14 +956,6 @@ public sealed partial class ChaosGame
     {
         if (_activeMultiplayerRecovery is not { } recovery) return;
         UpdateOnlineRecovery(recovery with { CleanExit = true, Completed = true });
-    }
-
-    private string OnlineFailureMessage(string reason)
-    {
-        var message = $"ONLINE MATCH STOPPED: {reason.ToUpperInvariant()}";
-        return _activeMultiplayerRecovery is { Completed: false }
-            ? $"{message}  OPEN ONLINE AND RECONNECT"
-            : message;
     }
 
     private void UpdateOnlineRecovery(MultiplayerRecovery recovery)

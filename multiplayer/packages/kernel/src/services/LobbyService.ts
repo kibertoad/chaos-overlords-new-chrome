@@ -269,6 +269,7 @@ export class LobbyService {
       })
     }
     await this.turns.reevaluate(match.id)
+    await this.turns.resumeAfterTakeoverVotes(match.id)
   }
 
   async updateSettings(principal: Principal, settings: MatchSettings): Promise<void> {
@@ -362,6 +363,7 @@ export class LobbyService {
       }
     }
     await this.turns.reevaluate(match.id)
+    await this.turns.resumeAfterTakeoverVotes(match.id)
   }
 
   async start(principal: Principal): Promise<void> {
@@ -448,6 +450,7 @@ export class LobbyService {
       type: 'match.takeoverVoteRequested',
       payload: { playerId: target.id, turn: match.currentTurn },
     })
+    await this.turns.pauseForTakeoverVote(match.id)
     if (target.id === match.hostPlayerId) {
       const successor = remaining[0] as Player
       await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {

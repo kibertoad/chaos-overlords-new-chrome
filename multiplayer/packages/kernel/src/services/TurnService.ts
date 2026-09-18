@@ -45,16 +45,24 @@ export class TurnService {
     if (player.status !== 'active' && player.status !== 'takeoverPending') {
       throw new ForbiddenError('You are no longer part of this match', { reason: 'not_active' })
     }
+    assertOwnOps(request, player.slot)
+    const ordersHash = await hashOrderDocument(request.orders)
     if (number !== match.currentTurn) {
+      // The document may have been committed and sealed while its success response was lost. The
+      // endpoint is a replacement, not an append, so an identical retry is an acknowledgement of
+      // that durable row even after currentTurn advances. A different document remains a stale
+      // write and is refused.
+      const persisted = await this.deps.storage.turns.getOrders(match.id, number, player.id)
+      if (persisted?.ordersHash === ordersHash && persisted.ready === request.ready) {
+        return { turn: number, orders: request.orders, ready: request.ready, ordersHash }
+      }
       throw new ConflictError(`Turn ${match.currentTurn} is the open turn`, {
         reason: 'not_current_turn',
         currentTurn: match.currentTurn,
       })
     }
-    assertOwnOps(request, player.slot)
     await this.restorePendingPlayer(player.id, match.id)
     const previous = await this.deps.storage.turns.getOrders(match.id, number, player.id)
-    const ordersHash = await hashOrderDocument(request.orders)
     const accepted = await this.deps.storage.turns.submitOrders(match.id, number, player.id, {
       orders: request.orders,
       ordersHash,
@@ -64,7 +72,10 @@ export class TurnService {
     if (!accepted) {
       throw new ConflictError('The turn is no longer accepting orders', { reason: 'turn_not_open' })
     }
-    if (previous?.ready !== request.ready) {
+    if (previous?.ready !== request.ready || (request.ready && previous?.ready === true)) {
+      // Re-publishing the same ready value is deliberate. If a process stopped after storing the
+      // row but before publishing its first event, the idempotent HTTP retry repairs the event too.
+      // Consumers treat readiness as a set, so the duplicate is harmless when the first did land.
       await this.publisher.publish(match.id, {
         type: 'turn.readiness',
         payload: { turn: number, playerId: player.id, ready: request.ready },
@@ -171,8 +182,16 @@ export class TurnService {
    */
   async openTurn(match: Match, number: number): Promise<boolean> {
     const openedAt = this.deps.clock.now()
-    const deadlineAt = turnDeadline(openedAt, match.settings.turnTimerSeconds)
-    const players = humanParticipants(await this.deps.storage.players.listByMatch(match.id))
+    const roster = await this.deps.storage.players.listByMatch(match.id)
+    const players = humanParticipants(roster)
+    // An absence decision owns the screen on every remaining client. Starting the successor's
+    // clock behind that modal would spend planning time nobody can use, so an open vote opens the
+    // turn paused. The clock is restarted when the last absent seat returns or becomes computer
+    // controlled.
+    const hasAbsenceVote = await this.hasOpenTakeoverVotes(match.id)
+    const deadlineAt = hasAbsenceVote
+      ? null
+      : turnDeadline(openedAt, match.settings.turnTimerSeconds)
     const created = await this.deps.storage.turns.open(
       {
         matchId: match.id,
@@ -288,6 +307,67 @@ export class TurnService {
         type: 'match.takeoverVoteCancelled',
         payload: { playerId },
       })
+      await this.resumeAfterTakeoverVotes(matchId)
+    }
+  }
+
+  /** Pause the open turn while players decide what to do with an absent human seat. */
+  async pauseForTakeoverVote(matchId: string): Promise<void> {
+    const match = await this.deps.storage.matches.get(matchId)
+    if (!match || (match.status !== 'running' && match.status !== 'desynced')) return
+    const turn = await this.deps.storage.turns.get(matchId, match.currentTurn)
+    if (turn?.status !== 'open' || turn.deadlineAt === null) return
+    if (!(await this.deps.storage.turns.rescheduleDeadline(matchId, match.currentTurn, null))) return
+    await this.publisher.publish(matchId, {
+      type: 'turn.deadlineExtended',
+      payload: { turn: match.currentTurn, deadlineAt: null },
+    })
+  }
+
+  /** Restart a full turn clock after the final outstanding absence vote closes. */
+  async resumeAfterTakeoverVotes(matchId: string): Promise<void> {
+    const match = await this.deps.storage.matches.get(matchId)
+    if (!match || match.status !== 'running' || match.settings.turnTimerSeconds === 0) return
+    if (await this.hasOpenTakeoverVotes(matchId)) return
+    const turn = await this.deps.storage.turns.get(matchId, match.currentTurn)
+    if (turn?.status !== 'open' || turn.deadlineAt !== null) return
+    const deadlineAt = turnDeadline(this.deps.clock.now(), match.settings.turnTimerSeconds)
+    if (
+      deadlineAt === null ||
+      !(await this.deps.storage.turns.rescheduleDeadline(matchId, match.currentTurn, deadlineAt))
+    ) {
+      return
+    }
+    await this.publisher.publish(matchId, {
+      type: 'turn.deadlineExtended',
+      payload: { turn: match.currentTurn, deadlineAt: deadlineAt.toISOString() },
+    })
+    await this.deps.scheduler.schedule({ matchId, turn: match.currentTurn, dueAt: deadlineAt })
+  }
+
+  /** Reconstruct the durable set of vote prompts that clients still have open. */
+  private async hasOpenTakeoverVotes(matchId: string): Promise<boolean> {
+    const pending = new Set<string>()
+    let after = 0
+    for (;;) {
+      const page = await this.deps.storage.events.listAfter(matchId, after, 200)
+      if (page.length === 0) return pending.size > 0
+      for (const event of page) {
+        after = event.seq
+        switch (event.type) {
+          case 'match.takeoverVoteRequested':
+            pending.add(event.payload.playerId)
+            break
+          case 'match.takeoverVoteCancelled':
+          case 'match.playerTakenOver':
+          case 'match.playerReturned':
+            pending.delete(event.payload.playerId)
+            break
+          default:
+            break
+        }
+      }
+      if (page.length < 200) return pending.size > 0
     }
   }
 

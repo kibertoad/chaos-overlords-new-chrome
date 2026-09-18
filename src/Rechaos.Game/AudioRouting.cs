@@ -74,6 +74,7 @@ public static class AudioRouting
             || gameEvent.Gang is not { } gangId)
             return null;
         var itemId = gameEvent.Resolution.ItemId ?? state.FindGang(gangId)?.WeaponItemId;
+        if (itemId is null && state.FindGang(gangId) is null) return null;
         return GangAttackSound(state, gangId, itemId);
     }
 

@@ -15,7 +15,7 @@ const PAGE_SIZE = 200
  * How many streams may be open at once, and against what.
  *
  * A stream is not a request: it lives until the client closes it, it holds a heartbeat timer and a
- * wake listener, and every event published to its match costs it one `listAfter` query. The
+ * wake listener, and every event or heartbeat costs it one `listAfter` query. The
  * per-player rate limit counts the opening call and nothing after it, so without these one
  * authenticated member could hold thousands of streams and turn each published event into thousands
  * of database reads and thousands of response writes — the whole match stops sealing for everybody.

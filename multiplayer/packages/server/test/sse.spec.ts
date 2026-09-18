@@ -30,6 +30,34 @@ function logOf(total: number) {
 }
 
 describe('createSseResponse backpressure', () => {
+  it('recovers a durable event whose fan-out wake was lost', async () => {
+    const durable: PersistedEvent[] = []
+    const source: EventStreamSource = {
+      listAfter: async (afterSeq) => durable.filter((item) => item.seq > afterSeq),
+      // Deliberately discard the wake callback, as a failed cross-process notification would.
+      subscribe: () => () => {},
+    }
+    const controller = new AbortController()
+    const response = createSseResponse(source, {
+      afterSeq: 0,
+      heartbeatMs: 10,
+      signal: controller.signal,
+    })
+    const reader = (response.body as ReadableStream<Uint8Array>).getReader()
+    const decoder = new TextDecoder()
+    await reader.read() // connected comment and initial empty catch-up
+    durable.push(event(1))
+
+    let text = ''
+    for (let i = 0; i < 10 && !text.includes('id: 1'); i += 1) {
+      const frame = await reader.read()
+      if (frame.value) text += decoder.decode(frame.value)
+    }
+    expect(text).toContain('id: 1')
+    controller.abort()
+    await reader.cancel().catch(() => {})
+  })
+
   /**
    * `enqueue` never refuses; it buffers. A consumer that has stopped reading — a suspended phone, a
    * half-open TCP connection — would otherwise pull an entire event log into this process's memory,

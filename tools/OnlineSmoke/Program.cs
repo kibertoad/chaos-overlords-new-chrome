@@ -157,7 +157,8 @@ public static class Program
                         throw new InvalidOperationException(
                             $"the session failed: {failed.Reason} ({failed.Error})");
                     case MultiplayerNotice.Desynced desynced:
-                        throw new InvalidOperationException($"desynced on turn {desynced.Turn}");
+                        throw new InvalidOperationException(
+                            $"desynced on turn {desynced.Turn}: {desynced.Details}");
                     default:
                         break;
                 }
