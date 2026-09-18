@@ -104,8 +104,8 @@ public sealed class PlayerControlTransferTests
         var definitions = BundledOriginalData.Load();
         IReadOnlyList<PlayerView> roster =
         [
-            new("p1", 0, "ADA", WirePlayerStatus.Active, IsHost: true),
-            new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: false)
+            new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false)
         ];
         var settings = new MultiplayerGameSettings(
             ScenarioId.Greed, GameDuration.SixMonths,

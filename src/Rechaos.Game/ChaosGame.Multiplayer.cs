@@ -101,10 +101,12 @@ public sealed partial class ChaosGame
             else if (Pressed(keyboard, Keys.Enter)) ConfirmLateJoin();
             return;
         }
-        if (Pressed(keyboard, Keys.Enter) && _online.Stage == MultiplayerStage.Connect)
-        {
-            ContinueOnline();
-        }
+        if (_online.Stage != MultiplayerStage.Connect) return;
+        // The face is the one control on the form that is neither a field nor a button, so the
+        // arrow keys can turn it whichever field currently owns the caret.
+        if (Pressed(keyboard, Keys.Left)) CycleOnlinePortrait(-1);
+        if (Pressed(keyboard, Keys.Right)) CycleOnlinePortrait(1);
+        if (Pressed(keyboard, Keys.Enter)) ContinueOnline();
     }
 
     /// <summary>Routes typed characters to whichever text field currently owns focus.</summary>
@@ -192,6 +194,7 @@ public sealed partial class ChaosGame
                 _online.PublicListing ? MatchVisibility.Public : MatchVisibility.Private,
                 settings.ToWire()),
             _online.DisplayName.Value.Trim(),
+            _online.Portrait,
             password,
             MultiplayerProtocolVersion.Current));
     }
@@ -211,7 +214,8 @@ public sealed partial class ChaosGame
         var password = OptionalPassword();
         _online.PasswordShown = password ?? string.Empty;
         _lobby!.Join(new JoinMatchRequest(
-            _online.JoinCode.Value.Trim(), _online.DisplayName.Value.Trim(), password));
+            _online.JoinCode.Value.Trim(), _online.DisplayName.Value.Trim(),
+            _online.Portrait, password));
     }
 
     private void ResumeSelectedOnlineMatch()
@@ -781,6 +785,9 @@ public sealed partial class ChaosGame
             && OnlineConnectLayout.PublicChoice.Contains(point)) SelectOnlineListing(publicly: true);
         else if (_online.Role == OnlineConnectRole.Host
             && OnlineConnectLayout.PrivateChoice.Contains(point)) SelectOnlineListing(publicly: false);
+        else if (OnlineConnectLayout.PortraitPrevious.Contains(point)) CycleOnlinePortrait(-1);
+        else if (OnlineConnectLayout.PortraitNext.Contains(point)
+            || OnlineConnectLayout.Portrait.Contains(point)) CycleOnlinePortrait(1);
         else if (OnlineConnectLayout.Discover.Contains(point)) OpenOnlineDiscovery();
         else if (OnlineConnectLayout.Reconnect.Contains(point)) OpenOnlineHistory();
         else if (OnlineConnectLayout.Continue.Contains(point)) ContinueOnline();

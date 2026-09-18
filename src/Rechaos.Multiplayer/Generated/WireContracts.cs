@@ -480,6 +480,7 @@ public sealed record HandshakeResponse(
 public sealed record CreateMatchRequest(
     [property: JsonPropertyName("settings")] MatchSettings Settings,
     [property: JsonPropertyName("hostDisplayName")] string HostDisplayName,
+    [property: JsonPropertyName("hostPortraitId"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? HostPortraitId,
     [property: JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Password,
     [property: JsonPropertyName("protocolVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ProtocolVersion
 );
@@ -487,12 +488,14 @@ public sealed record CreateMatchRequest(
 public sealed record JoinMatchRequest(
     [property: JsonPropertyName("joinCode")] string JoinCode,
     [property: JsonPropertyName("displayName")] string DisplayName,
+    [property: JsonPropertyName("portraitId"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? PortraitId,
     [property: JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Password
 );
 
 public sealed record JoinRunningMatchRequest(
     [property: JsonPropertyName("match")] string Match,
     [property: JsonPropertyName("displayName")] string DisplayName,
+    [property: JsonPropertyName("portraitId"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? PortraitId,
     [property: JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Password,
     [property: JsonPropertyName("slot")] int Slot
 );
@@ -584,6 +587,7 @@ public sealed record PlayerView(
     [property: JsonPropertyName("id")] string Id,
     [property: JsonPropertyName("slot")] int Slot,
     [property: JsonPropertyName("displayName")] string DisplayName,
+    [property: JsonPropertyName("portraitId")] int PortraitId,
     [property: JsonPropertyName("status")] PlayerStatus Status,
     [property: JsonPropertyName("isHost")] bool IsHost
 );

@@ -17,6 +17,7 @@ export function toPlayerView(player: Player, hostPlayerId: string): PlayerView {
     id: player.id,
     slot: player.slot,
     displayName: player.displayName,
+    portraitId: player.portraitId,
     status: player.status,
     isHost: player.id === hostPlayerId,
   }

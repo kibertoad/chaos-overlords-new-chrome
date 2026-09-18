@@ -91,6 +91,16 @@ internal sealed class MultiplayerUiState
     internal bool PublicListing { get; set; }
     internal bool AllowLateJoin { get; set; }
 
+    /// <summary>
+    /// The overlord face this player takes into the session they create or join.
+    /// </summary>
+    /// <remarks>
+    /// Sent once, with the request that claims the seat, and never changed afterwards: the roster is
+    /// what every client generates its city from, and the setup a city was generated from is part of
+    /// the state hash a turn is settled on, so a face that moved mid-match would read as a desync.
+    /// </remarks>
+    internal short Portrait { get; set; }
+
     internal TextField Server { get; } = new(
         "SERVER", 96, GamePreferences.DefaultCustomMultiplayerServer);
     internal TextField DisplayName { get; } = new("NAME", 32, "PLAYER");
@@ -204,6 +214,7 @@ internal sealed class MultiplayerUiState
         JoinedInProgress = false;
         Listings = [];
         Role = OnlineConnectRole.Host;
+        Portrait = 0;
         Match = null;
         JoinCodeShown = string.Empty;
         PasswordShown = string.Empty;

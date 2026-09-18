@@ -42,13 +42,15 @@ public static class Program
             new CreateMatchRequest(
                 new MatchSettings("SMOKE CITY", 2, 0, MatchVisibility.Private, settings.ToWire()),
                 "ADA",
+                HostPortraitId: 0,
                 Password: null,
                 MultiplayerProtocolVersion.Current),
             CancellationToken.None);
         Console.WriteLine($"hosted {host.Match.Id} with code {host.JoinCode}");
 
         var guest = await anonymous.JoinAsync(
-            new JoinMatchRequest(host.JoinCode, "GRACE", Password: null), CancellationToken.None);
+            new JoinMatchRequest(host.JoinCode, "GRACE", PortraitId: 1, Password: null),
+            CancellationToken.None);
         Console.WriteLine($"joined as {guest.Player.Id}");
 
         var hostMatch = anonymous.WithToken(host.Token).Match(host.Match.Id);

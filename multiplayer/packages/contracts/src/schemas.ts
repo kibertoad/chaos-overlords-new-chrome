@@ -21,6 +21,7 @@ import {
   formatVersionSchema,
   joinCodeInputSchema,
   passwordSchema,
+  portraitIdSchema,
   resourceIdSchema,
   sha256HexSchema,
   slotSchema,
@@ -47,6 +48,8 @@ import { matchSettingsSchema } from './settings'
 export const createMatchRequestSchema = strictObject({
   settings: matchSettingsSchema,
   hostDisplayName: displayNameInputSchema,
+  /** The face the host plays under. Omitted by clients that predate the choice; they get the first. */
+  hostPortraitId: optional(portraitIdSchema),
   password: optional(passwordSchema),
   /** Protocol that created this session. Omitted legacy requests predate version negotiation. */
   protocolVersion: optional(protocolVersionSchema),
@@ -55,12 +58,23 @@ export const createMatchRequestSchema = strictObject({
 export const joinMatchRequestSchema = strictObject({
   joinCode: joinCodeInputSchema,
   displayName: displayNameInputSchema,
+  /** The face this player plays under. Omitted by clients that predate the choice. */
+  portraitId: optional(portraitIdSchema),
   password: optional(passwordSchema),
 })
 
 export const joinRunningMatchRequestSchema = strictObject({
   match: resourceIdSchema,
   displayName: displayNameInputSchema,
+  /**
+   * The face the seat already wears, which a latecomer inherits rather than chooses.
+   *
+   * The match was generated before this player existed, and every client generated that seat's
+   * overlord from the host's `gameSettings` portraits. The seat's face is therefore already part of
+   * a state every client has hashed, so a latecomer who brought their own would be handing a
+   * different setup to any client that still bootstraps the match from the roster.
+   */
+  portraitId: optional(portraitIdSchema),
   password: optional(passwordSchema),
   slot: slotSchema,
 })

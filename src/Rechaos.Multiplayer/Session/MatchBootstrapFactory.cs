@@ -12,7 +12,8 @@ namespace Rechaos.Multiplayer.Session;
 /// The server does not simulate, so this is where a match actually begins: the seed it drew, the
 /// settings the host chose, and the seating it froze are the whole input, and the generator is
 /// deterministic over them. Anything a client added of its own — a locally chosen name, a portrait
-/// it preferred — would be a divergence on turn one.
+/// it preferred — would be a divergence on turn one. A player's own name and face are not that:
+/// they were chosen when the seat was claimed and come back to every client on the same roster.
 /// </remarks>
 public static class MatchBootstrapFactory
 {
@@ -36,12 +37,13 @@ public static class MatchBootstrapFactory
         var setups = new MatchPlayerSetup[MatchLimits.PlayerCount];
         for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
         {
-            var portrait = settings.Portraits[slot];
             setups[slot] = seated.TryGetValue(slot, out var player)
                 ? new MatchPlayerSetup(
-                    new PlayerId(slot), SeatName(player, slot), PlayerController.Human, portrait)
+                    new PlayerId(slot), SeatName(player, slot), PlayerController.Human,
+                    SeatPortrait(player))
                 : new MatchPlayerSetup(
-                    new PlayerId(slot), DerivedSeatName(slot), PlayerController.Computer, portrait);
+                    new PlayerId(slot), DerivedSeatName(slot), PlayerController.Computer,
+                    settings.Portraits[slot]);
         }
         return new MatchSetup(
             settings.Scenario, settings.Duration, seed, setups, settings.AiMentality,
@@ -107,6 +109,31 @@ public static class MatchBootstrapFactory
         ReservedPlayerNames.IsReserved(player.DisplayName)
             ? DerivedSeatName(slot)
             : player.DisplayName;
+
+    /// <summary>
+    /// The face a seated player's overlord wears.
+    /// </summary>
+    /// <remarks>
+    /// The one they chose when they created or joined the session, which every client reads off the
+    /// same roster. An unclaimed seat has no chooser, so it keeps the face the host's settings gave
+    /// it — and a latecomer taking such a seat over sends that same face back, because the match was
+    /// already generated with it.
+    /// <para>
+    /// A face outside the original atlas is a server this build cannot play against rather than one
+    /// to quietly substitute: the setup is hashed into every turn verdict, so a client that picked
+    /// its own replacement would be playing a city of its own.
+    /// </para>
+    /// </remarks>
+    private static short SeatPortrait(PlayerView player)
+    {
+        if (player.PortraitId is < 0 or >= MultiplayerGameSettings.PortraitCount)
+        {
+            throw new MultiplayerProtocolException(
+                $"the roster seats slot {player.Slot} under portrait {player.PortraitId}, "
+                + "which the original atlas does not have");
+        }
+        return (short)player.PortraitId;
+    }
 
     /// <summary>
     /// The name a seat plays under when it has no name of its own.
