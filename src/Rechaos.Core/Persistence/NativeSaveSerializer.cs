@@ -9,7 +9,7 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 23;
+    public const int CurrentFormatVersion = 24;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -232,6 +232,7 @@ public static class NativeSaveSerializer
             20 => MatchStateHasher.ComputeVersionTwentyThreeSha256(state),
             21 => MatchStateHasher.ComputeVersionTwentyFourSha256(state),
             22 => MatchStateHasher.ComputeVersionTwentyFiveSha256(state),
+            23 => MatchStateHasher.ComputeVersionTwentySixSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
         if (verifyStateFingerprint && !CryptographicOperations.FixedTimeEquals(
@@ -512,14 +513,14 @@ public static class NativeSaveSerializer
         sector.Id,
         sector.Owner?.Value,
         sector.Tolerance,
-        sector.Chaos,
         sector.CrackdownActive,
         sector.IsImportant,
         sector.Sites.Select(site => new SiteDocument(
             site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy?.Value)).ToArray(),
         sector.Income,
         sector.CrackdownTurnsRemaining,
-        sector.CrackdownHistory.ToArray());
+        sector.CrackdownHistory.ToArray(),
+        Chaos: null);
 
     private static MatchSectorState RestoreSector(
         SectorDocument sector,
@@ -533,7 +534,9 @@ public static class NativeSaveSerializer
             site.InfluencedBy is { } influencedBy ? new PlayerId(influencedBy) : null)).ToArray(),
         sector.Owner is { } owner ? new PlayerId(owner) : null,
         sector.Tolerance,
-        sector.Chaos,
+        formatVersion < 24
+            ? sector.Chaos ?? 0
+            : 0,
         sector.CrackdownActive,
         sector.IsImportant,
         formatVersion == 1
@@ -664,13 +667,13 @@ internal sealed record SectorDocument(
     int Id,
     int? Owner,
     int Tolerance,
-    int Chaos,
     bool CrackdownActive,
     bool IsImportant,
     IReadOnlyList<SiteDocument> Sites,
     int? Income = null,
     int? CrackdownTurnsRemaining = null,
-    IReadOnlyList<int>? CrackdownHistory = null);
+    IReadOnlyList<int>? CrackdownHistory = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Chaos = null);
 
 internal sealed record SiteDocument(int Slot, short DefinitionId, int Resistance, int? InfluencedBy);
 

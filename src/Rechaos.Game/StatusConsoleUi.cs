@@ -44,7 +44,7 @@ public static class StatusConsoleLayout
     public static Rectangle Scenario => new(476, 0, 108, 10);
     public static Rectangle Score => Entry(ScoreY);
     public static Rectangle Cash => Entry(CashY);
-    public static Rectangle ChaosLabel => new(476, SectorValueY(4) - 1, 44, 9);
+    public static Rectangle CashLabel => new(476, SectorValueY(4) - 1, 44, 9);
     public static Rectangle SectorEntry(int row) => Entry(SectorValueY(row));
 
     private static Rectangle Entry(int y) => new(476, y - 1, 108, 9);
@@ -83,7 +83,10 @@ public static class StatusConsoleTooltip
         if (StatusConsoleLayout.SectorEntry(3).Contains(point))
             return ["SUPPORT", "INFLUENCED-SITE SUPPORT ADDED AGAINST ENEMY CONTROL."];
         if (StatusConsoleLayout.SectorEntry(4).Contains(point))
-            return ["CHAOS", "CHAOS SUCCESSES ACCUMULATED IN THIS SECTOR THIS TURN."];
+            return [
+                "SECTOR CASH",
+                "OWNER-ONLY UPKEEP: $1 TAX PLUS COMPLETED-SITE CASH."
+            ];
         return [];
     }
 
@@ -95,6 +98,9 @@ public static class StatusConsolePresentation
 {
     public static string Cash(int current, int projectedChange) =>
         $"{current} {projectedChange:+#;-#;0}";
+
+    public static int SectorCash(PlayerId? owner, PlayerId activePlayer, int cash) =>
+        owner == activePlayer ? cash : 0;
 }
 
 public static class HoverTooltipLayout

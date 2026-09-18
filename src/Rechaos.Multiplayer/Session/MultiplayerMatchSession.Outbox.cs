@@ -19,6 +19,7 @@ public sealed partial class MultiplayerMatchSession
     private readonly HashSet<int> _locallyReadyTurns = [];
 
     private PendingOrders? _pending;
+    private CancellationTokenSource? _inFlightOrders;
 
     /// <summary>
     /// Queues this player's order document for a turn, to be sent off the caller's thread.
@@ -45,6 +46,9 @@ public sealed partial class MultiplayerMatchSession
             var carriedReady = _locallyReadyTurns.Contains(turn)
                 || (_pending is { } pending && pending.Turn == turn && pending.Ready);
             _pending = new PendingOrders(turn, document, carriedReady);
+            // A whole-document replacement makes the older request disposable. In particular, do
+            // not spend the reconnect window retrying a stale draft while a newer one waits.
+            _inFlightOrders?.Cancel();
         }
         _outboxSignal.Release();
     }
@@ -86,10 +90,17 @@ public sealed partial class MultiplayerMatchSession
             {
                 await _outboxSignal.WaitAsync(cancellationToken).ConfigureAwait(false);
                 PendingOrders? next;
+                CancellationTokenSource? requestCancellation = null;
                 lock (_outboxGate)
                 {
                     next = _pending;
                     _pending = null;
+                    if (next is not null)
+                    {
+                        requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                            cancellationToken);
+                        _inFlightOrders = requestCancellation;
+                    }
                 }
                 if (next is null) continue;
                 try
@@ -97,8 +108,14 @@ public sealed partial class MultiplayerMatchSession
                     await CallAsync(
                         token => _match.SubmitOrdersAsync(
                             next.Turn, new SubmitOrdersRequest(next.Document, next.Ready), token),
-                        cancellationToken).ConfigureAwait(false);
+                        requestCancellation!.Token).ConfigureAwait(false);
                     _notices.Enqueue(new MultiplayerNotice.OrdersAccepted(next.Turn, next.Ready));
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested
+                    && requestCancellation!.IsCancellationRequested)
+                {
+                    // QueueOrders replaced this document. The latest pending document is the only
+                    // one worth sending, and its signal is already waiting for the next loop.
                 }
                 catch (Exception exception) when (exception is MultiplayerApiException
                     or MultiplayerProtocolException)
@@ -108,16 +125,21 @@ public sealed partial class MultiplayerMatchSession
                     _notices.Enqueue(
                         new MultiplayerNotice.OrdersRefused(next.Turn, Describe(exception)));
                 }
-                catch (Exception exception) when (exception is MultiplayerTimeoutException
-                    or HttpRequestException or IOException)
+                catch (RetryExhaustedException exception)
                 {
-                    // Nobody refused anything: the request never got an answer. Throwing the
-                    // document away here would lose a fully planned turn to a few seconds of bad
-                    // connectivity, with no way to resubmit it — planning is already closed by the
-                    // time this runs. Keep it and try again until the server answers or the turn
-                    // seals, which comes back as a refusal above.
-                    Report(connected: false, Describe(exception));
-                    Requeue(next);
+                    // The call retained and retried this whole document for five minutes. Surface
+                    // the terminal diagnostics instead of silently abandoning a submitted turn.
+                    _notices.Enqueue(new MultiplayerNotice.Failed(Describe(exception), exception));
+                    return;
+                }
+                finally
+                {
+                    lock (_outboxGate)
+                    {
+                        if (ReferenceEquals(_inFlightOrders, requestCancellation))
+                            _inFlightOrders = null;
+                    }
+                    requestCancellation?.Dispose();
                 }
             }
         }
@@ -125,26 +147,6 @@ public sealed partial class MultiplayerMatchSession
         {
             // Ordinary shutdown.
         }
-    }
-
-    /// <summary>
-    /// Puts a document that never reached the server back at the front of the outbox.
-    /// </summary>
-    /// <remarks>
-    /// Unless the interface has queued another in the meantime: only the latest document counts,
-    /// and a newer one has in it everything this one had.
-    /// </remarks>
-    private void Requeue(PendingOrders orders)
-    {
-        lock (_outboxGate)
-        {
-            if (_pending is not null) return;
-            _pending = orders with
-            {
-                Ready = orders.Ready || _locallyReadyTurns.Contains(orders.Turn),
-            };
-        }
-        _outboxSignal.Release();
     }
 
     /// <summary>An order document waiting to be sent, and whether it completes the player's turn.</summary>

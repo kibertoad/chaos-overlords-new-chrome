@@ -70,7 +70,7 @@ public sealed class UiNavigationTests
     public void StatusConsoleValuesFollowTemplateRows()
     {
         Assert.Equal(579, StatusConsoleLayout.ValueRight);
-        Assert.Equal(new Rectangle(476, 95, 44, 9), StatusConsoleLayout.ChaosLabel);
+        Assert.Equal(new Rectangle(476, 95, 44, 9), StatusConsoleLayout.CashLabel);
         Assert.Equal([60, 69, 78, 87, 96],
             Enumerable.Range(0, 5).Select(StatusConsoleLayout.SectorValueY));
     }
@@ -99,6 +99,13 @@ public sealed class UiNavigationTests
         Assert.Contains("CHAOS DICE", income);
         Assert.Contains("NOT PASSIVE CASH", income);
         Assert.Contains("$1 SECTOR TAX", income);
+        var sectorCash = string.Join(' ', StatusConsoleTooltip.At(
+            StatusConsoleLayout.SectorEntry(4).Center));
+        Assert.Contains("OWNER-ONLY", sectorCash);
+        Assert.Equal(7, StatusConsolePresentation.SectorCash(
+            new PlayerId(1), new PlayerId(1), 7));
+        Assert.Equal(0, StatusConsolePresentation.SectorCash(
+            new PlayerId(1), new PlayerId(0), 7));
         Assert.Equal("12 +1", StatusConsolePresentation.Cash(12, 1));
         Assert.Equal("12 -3", StatusConsolePresentation.Cash(12, -3));
         Assert.Equal("12 0", StatusConsolePresentation.Cash(12, 0));

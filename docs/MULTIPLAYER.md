@@ -416,9 +416,10 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    player names, two clients that bootstrapped either side of a departure disagree from the first
    upkeep.
 3. During Command, record the player's authoritative operations as the order document; `PUT` it
-   whenever it changes, with `ready: true` when the player presses Done. Sending it periodically with
-   `ready: false` costs one small request and is worth it: the document is a whole-document replace,
-   so a turn the clock seals then seals with what the player had planned rather than with nothing.
+   whenever its digest changes, with `ready: true` when the player presses Done. A `ready: false`
+   draft means a turn the clock seals still uses what the player planned. The outbox retains only
+   the newest pending whole-document replacement while one request is in flight, so rapid edits
+   cannot build a backlog of obsolete drafts.
 4. On `turn.sealed`, fetch the sealed set and verify both the digest announced by that exact event
    and the set's internally recomputed digest: SHA-256 over `slot:ordersHash`
    lines joined by `\n` in slot order, each `ordersHash` being SHA-256 of that player's canonical
@@ -440,13 +441,20 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
 7. On reconnect, fetch the match, load the latest snapshot if the local state is behind, then read
    the durable event log gaplessly through the refreshed `lastEventSeq`. Replay approved takeover and seal
    events in order, skipping seals already represented by the snapshot, before restoring the current
-   draft and resuming the stream. A token that answers 401 means the membership was revoked — the
-   player left or was kicked.
-8. Retry, rather than ending the match. Every call a received fact leads to is idempotent — the reads
+   draft and resuming the stream. Historical confirmation hashes are checked after each reconstructed
+   turn, so a cash or other rules divergence is refused at its first authoritative boundary instead
+   of being shown as a plausible restored state. A token that answers 401 means the membership was
+   revoked — the player left or was kicked.
+8. Retry transient failures for up to five minutes rather than ending the match immediately. Every call a received fact leads to is idempotent — the reads
    plainly so, and the two writes by definition, since a report restates a hash the server already
    holds and an order document replaces what was held — so a server having a bad moment costs latency
-   and nothing else. Only a refusal that will keep being refused (a revoked token, a body the server
-   will never accept) or a payload that cannot be made sense of ends a session.
+   and nothing else. Draft submissions are whole-document replacements: an unsent older draft is
+   discarded, and queuing a newer draft cancels retries of the superseded in-flight document so
+   only the latest plan consumes server work. While retrying, the client shows a modal attempt log with the concrete timeout,
+   HTTP status/request id, stream closure, or network exception and lets the player stop early. If
+   the window expires, the terminal error reports the attempt count, elapsed time, and last failure.
+   A refusal that will keep being refused (a revoked token, a body the server will never accept) or a
+   payload that cannot be made sense of still ends immediately.
 9. Read responses tolerantly and requests strictly. The server is deployed separately, self-hosted
    ones especially, so a client must skip a response field it has never heard of and one the server
    left out, or a single additive release locks out every client built before it. The exception is a

@@ -114,7 +114,10 @@ public abstract record MultiplayerNotice
     /// </remarks>
     /// <param name="IsConnected">Whether the last attempt reached the server.</param>
     /// <param name="Detail">What went wrong, when it did not.</param>
-    public sealed record ConnectionChanged(bool IsConnected, string? Detail) : MultiplayerNotice;
+    public sealed record ConnectionChanged(
+        bool IsConnected,
+        string? Detail,
+        int Attempt = 0) : MultiplayerNotice;
 
     /// <summary>
     /// The session stopped and will not recover on its own.

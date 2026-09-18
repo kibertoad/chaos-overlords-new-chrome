@@ -1,15 +1,13 @@
 namespace Rechaos.Core.GameModel;
 
 /// <summary>
-/// Rebuilds the sector Income byte used during playable turns. The original
-/// city generator's 3-7 value is retained on <see cref="MatchSectorState"/> as
-/// the density-derived tolerance baseline; before planning, the executable
-/// replaces the operational Income byte with one dollar of sector tax plus
-/// the Cash values of completed sites.
+/// Rebuilds the owner-only sector Cash byte used by Upkeep and the city UI.
+/// This is distinct from the generated 3-7 <see cref="MatchSectorState.Income"/>
+/// value consumed by Chaos and Control.
 /// </summary>
 public static class SectorIncomeResolver
 {
-    public static int OperationalIncome(MatchState state, MatchSectorState sector)
+    public static int SectorCash(MatchState state, MatchSectorState sector)
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sector);

@@ -62,7 +62,7 @@ public static class EconomyResolver
 
         foreach (var sector in state.Sectors.Where(sector => sector.Owner == player.Id))
         {
-            var income = SectorIncomeResolver.OperationalIncome(state, sector);
+            var income = SectorIncomeResolver.SectorCash(state, sector);
             if (income < 1)
                 player.Statistics.CashSpent = checked(player.Statistics.CashSpent - income);
             else

@@ -17,6 +17,7 @@ import {
   tokenSchema,
   turnNumberSchema,
 } from './primitives'
+import { protocolVersionSchema } from './protocol'
 import { aiSeatSummarySchema } from './schemas'
 import { matchSettingsSchema } from './settings'
 
@@ -69,6 +70,8 @@ export const turnViewSchema = strictObject({
 
 export const matchViewSchema = strictObject({
   id: resourceIdSchema,
+  /** Protocol whose deterministic game rules created this match. */
+  protocolVersion: protocolVersionSchema,
   status: matchStatusSchema,
   settings: matchSettingsSchema,
   hostPlayerId: resourceIdSchema,
@@ -142,6 +145,8 @@ export const sealedOrdersViewSchema = strictObject({
 export const snapshotViewSchema = strictObject({
   turn: turnNumberSchema,
   formatVersion: formatVersionSchema,
+  /** Protocol whose deterministic game rules produced this snapshot. */
+  protocolVersion: protocolVersionSchema,
   stateHash: sha256HexSchema,
   uploadedByPlayerId: resourceIdSchema,
   uploadedAt: isoTimestampSchema,

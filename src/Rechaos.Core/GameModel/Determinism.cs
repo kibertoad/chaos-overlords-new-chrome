@@ -70,7 +70,7 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 26;
+    private const int FormatVersion = 27;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
@@ -234,6 +234,18 @@ public static class MatchStateHasher
             includeQuaternaryTargets: true, includeEventHistory: true,
             includePhaseHistory: true, includeComlinkReadSequences: true);
 
+    internal static string ComputeVersionTwentySixSha256(MatchState state) =>
+        ComputeSha256(state, 26, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
+            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
+            includeAiFormationSectors: true, includeAiCoverageSectors: true,
+            includeComlink: true, includeTertiaryTargets: true,
+            includeQuaternaryTargets: true, includeEventHistory: true,
+            includePhaseHistory: true, includeComlinkReadSequences: true,
+            includeAiPolicy: true);
+
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
@@ -244,7 +256,7 @@ public static class MatchStateHasher
             includeComlink: true, includeTertiaryTargets: true,
             includeQuaternaryTargets: true, includeEventHistory: true,
             includePhaseHistory: true, includeComlinkReadSequences: true,
-            includeAiPolicy: true);
+            includeAiPolicy: true, includeSectorChaos: false);
 
     private static string ComputeSha256(
         MatchState state,
@@ -271,7 +283,8 @@ public static class MatchStateHasher
         bool includeEventHistory = false,
         bool includePhaseHistory = false,
         bool includeComlinkReadSequences = false,
-        bool includeAiPolicy = false)
+        bool includeAiPolicy = false,
+        bool includeSectorChaos = true)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -382,7 +395,8 @@ public static class MatchStateHasher
                     includeMaximumHireForce);
             writer.Write(state.Sectors.Count);
             foreach (var sector in state.Sectors.OrderBy(item => item.Id))
-                WriteSector(writer, sector, includeSectorIncome, includeCrackdownDuration, includeCrackdownHistory);
+                WriteSector(writer, sector, includeSectorIncome, includeCrackdownDuration,
+                    includeCrackdownHistory, includeSectorChaos);
 
             var commands = state.Commands.ExecutionPlan().OrderBy(item => item.Sequence).ToArray();
             writer.Write(state.Commands.NextSequence);
@@ -515,9 +529,11 @@ public static class MatchStateHasher
         MatchSectorState sector,
         bool includeIncome,
         bool includeCrackdownDuration,
-        bool includeCrackdownHistory)
+        bool includeCrackdownHistory,
+        bool includeChaos)
     {
-        writer.Write(sector.Id); WriteNullableInt(writer, sector.Owner?.Value); writer.Write(sector.Tolerance); writer.Write(sector.Chaos);
+        writer.Write(sector.Id); WriteNullableInt(writer, sector.Owner?.Value); writer.Write(sector.Tolerance);
+        if (includeChaos) writer.Write(sector.LegacyChaos);
         writer.Write(sector.CrackdownActive); writer.Write(sector.IsImportant); writer.Write(sector.Sites.Count);
         foreach (var site in sector.Sites.OrderBy(item => item.Slot))
         {

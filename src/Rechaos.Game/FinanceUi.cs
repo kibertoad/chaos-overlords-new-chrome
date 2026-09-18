@@ -123,7 +123,7 @@ public sealed record FinanceProjection(
             var dice = group.Sum(command =>
             {
                 var gang = state.FindGang(command.Gang)!;
-                var pool = SectorIncomeResolver.OperationalIncome(state, sector) + gang.Force
+                var pool = sector.Income + gang.Force
                     + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos;
                 return player.Setup.Controller == PlayerController.Computer
                     && state.Setup.AiMentality == AiDifficulty.Goon

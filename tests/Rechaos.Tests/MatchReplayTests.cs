@@ -413,7 +413,7 @@ public sealed class MatchReplayTests
             5 => MatchStateHasher.ComputeVersionSixSha256(initial),
             7 => MatchStateHasher.ComputeVersionTenSha256(initial),
             17 => MatchStateHasher.ComputeVersionNineteenSha256(initial),
-            25 or 26 => MatchStateHasher.ComputeSha256(initial),
+            25 or 26 => MatchStateHasher.ComputeVersionTwentySixSha256(initial),
             _ => throw new InvalidOperationException("Test case needs its legacy hash projection.")
         };
         var recorder = new MatchReplayRecorder(initial);

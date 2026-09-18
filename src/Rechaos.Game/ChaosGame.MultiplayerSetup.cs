@@ -9,7 +9,7 @@ public sealed partial class ChaosGame
 {
     private void OpenOnlineSetup()
     {
-        if (!_online.IsHost || _online.Match is null) return;
+        if (!CanConfigureOnlineLobby()) return;
         _configuringOnlineLobby = true;
         _screens.Show(ClientScreen.Setup);
     }
@@ -18,7 +18,7 @@ public sealed partial class ChaosGame
     {
         if (!_configuringOnlineLobby) return;
         _configuringOnlineLobby = false;
-        PushLobbySettings();
+        if (CanConfigureOnlineLobby()) PushLobbySettings();
         _screens.Show(ClientScreen.Lobby);
     }
 
@@ -46,8 +46,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void PushLobbySettings()
     {
-        if (!_online.IsHost || _lobby is null || _online.Match is not { } match) return;
-        if (match.Status != MatchStatus.Lobby) return;
+        if (!CanConfigureOnlineLobby() || _lobby is null || _online.Match is not { } match) return;
         var game = new MultiplayerGameSettings(
             _selectedScenario, _selectedDuration, _selectedAiMentality, _playerPortraits,
             _defaultAiPolicy, _online.AllowLateJoin);
@@ -141,6 +140,7 @@ public sealed partial class ChaosGame
     {
         if (!_online.SessionName.IsFocused) return;
         _online.SessionName.IsFocused = false;
+        if (!CanConfigureOnlineLobby()) return;
         if (string.Equals(_online.SessionName.Value.Trim(),
                 _online.Match?.Settings.Name, StringComparison.Ordinal))
             return;
@@ -149,6 +149,7 @@ public sealed partial class ChaosGame
 
     private void ChangeLobbyListing(bool publicly)
     {
+        if (!CanConfigureOnlineLobby()) return;
         if (_online.PublicListing == publicly) return;
         _online.PublicListing = publicly;
         PushLobbySettings();
@@ -156,6 +157,7 @@ public sealed partial class ChaosGame
 
     private void ChangeLobbyLateJoin(bool allowed)
     {
+        if (!CanConfigureOnlineLobby()) return;
         if (_online.AllowLateJoin == allowed) return;
         _online.AllowLateJoin = allowed;
         PushLobbySettings();
@@ -171,6 +173,11 @@ public sealed partial class ChaosGame
         <= 120 => PlanningTimeLimit.TwoMinutes,
         _ => PlanningTimeLimit.FiveMinutes,
     };
+
+    private bool CanConfigureOnlineLobby() =>
+        _online.Match is { } match
+        && OnlineConnectPolicy.CanConfigureLobby(
+            _online.IsHost, match.Status, _online.JoinedInProgress);
 }
 
 /// <summary>What the setup screen held before a lobby's settings were read into it.</summary>

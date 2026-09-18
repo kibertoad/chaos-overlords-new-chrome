@@ -370,7 +370,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         // Before the planning timer, so a turn that resolved on the server is adopted even on the
         // frame the local clock would otherwise have taken over the loop.
         PumpOnlineNotices();
-        SendOnlineDraft(gameTime);
+        SendOnlineDraft();
         var rightClicked = PointerButtonEdges.Pressed(
             mouse.RightButton, _previousMouse.RightButton);
         if (!_gameMenuOpen && UpdatePlanningTimer(gameTime.TotalGameTime))
@@ -711,17 +711,20 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 DrawCombatPanel(_batch, _pixel, _font, _state);
             DrawPlanningTimer(_batch, _pixel);
             DrawGameMenu(_batch, _pixel, _font);
+            DrawReconnectPopup(_batch, _pixel, _font);
             _batch.End();
             base.Draw(gameTime);
             return;
         }
         if (!_gameMenuOpen && DrawSeparatedSlidingPanel(viewport, slideOffset))
         {
+            DrawReconnectPopupOverCurrentFrame(viewport);
             base.Draw(gameTime);
             return;
         }
         if (DrawFilteredLastTurnEvents(viewport, slideOffset))
         {
+            DrawReconnectPopupOverCurrentFrame(viewport);
             base.Draw(gameTime);
             return;
         }
@@ -818,12 +821,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         DrawPlanningTimer(_batch, _pixel);
         DrawTakeoverVote(_batch, _pixel, _font);
         DrawGameMenu(_batch, _pixel, _font);
+        DrawReconnectPopup(_batch, _pixel, _font);
         _batch.End();
         base.Draw(gameTime);
     }
-
     private void HandleClick(Point point)
     {
+        if (HandleReconnectPopupClick(point)) return;
         if (_gameMenuOpen)
         {
             HandleGameMenuClick(point);

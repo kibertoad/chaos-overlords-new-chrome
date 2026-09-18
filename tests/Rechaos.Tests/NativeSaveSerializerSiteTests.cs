@@ -7,6 +7,16 @@ namespace Rechaos.Tests;
 public sealed partial class NativeSaveSerializerTests
 {
     [Fact]
+    public void CurrentSaveDoesNotPersistSyntheticSectorChaos()
+    {
+        using var document = JsonDocument.Parse(SaveBytes(CreateMatch()));
+
+        Assert.All(
+            document.RootElement.GetProperty("sectors").EnumerateArray(),
+            sector => Assert.False(sector.TryGetProperty("chaos", out _)));
+    }
+
+    [Fact]
     public void RoundTripPreservesPendingSiteCompletionUntilNextPlanningBoundary()
     {
         var original = CreateMatch();

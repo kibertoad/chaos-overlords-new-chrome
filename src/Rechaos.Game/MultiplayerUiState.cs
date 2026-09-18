@@ -149,18 +149,12 @@ internal sealed class MultiplayerUiState
     /// </remarks>
     internal bool IsConnected { get; set; } = true;
 
-    /// <summary>
-    /// How many ops had been sent to the server the last time a draft went out.
-    /// </summary>
-    /// <remarks>
-    /// The order document is a whole-document replace, so a draft costs one small request and saves a
-    /// player's planning from a deadline they did not notice. Counting ops is enough to know whether
-    /// anything has changed since: the document only ever grows within a turn.
-    /// </remarks>
-    internal int SentOpCount { get; set; }
+    /// <summary>Recent automatic reconnect attempts, newest last, for the modal status log.</summary>
+    internal List<string> ReconnectLog { get; } = [];
+    internal int ReconnectAttempt { get; set; }
 
-    /// <summary>Time left before the next draft of the open turn is sent.</summary>
-    internal TimeSpan DraftDue { get; set; }
+    /// <summary>Digest of the last draft queued for the server, or null before the first change.</summary>
+    internal string? SentOrderDigest { get; set; }
 
     /// <summary>The last thing that went wrong, for the player to read.</summary>
     internal string Status { get; set; } = string.Empty;
@@ -201,8 +195,9 @@ internal sealed class MultiplayerUiState
         ReadySeats = 0;
         SeatedSeats = 0;
         IsConnected = true;
-        SentOpCount = 0;
-        DraftDue = TimeSpan.Zero;
+        ReconnectLog.Clear();
+        ReconnectAttempt = 0;
+        SentOrderDigest = null;
         BootstrapFailed = false;
         ServerStatus = string.Empty;
         TakeoverVotes.Clear();

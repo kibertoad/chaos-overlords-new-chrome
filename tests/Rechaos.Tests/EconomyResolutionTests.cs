@@ -122,14 +122,14 @@ public sealed class EconomyResolutionTests
     }
 
     [Fact]
-    public void OperationalIncomeReplacesGeneratedDensityWithTaxAndCompletedSiteCash()
+    public void SectorCashCombinesTaxAndCompletedSiteCashWithoutReplacingIncome()
     {
         var match = CreateMatch(20);
 
         Assert.Equal(4, match.Sectors[0].Income);
-        Assert.Equal(6, SectorIncomeResolver.OperationalIncome(match, match.Sectors[0]));
+        Assert.Equal(6, SectorIncomeResolver.SectorCash(match, match.Sectors[0]));
         Assert.Equal(7, match.Sectors[1].Income);
-        Assert.Equal(1, SectorIncomeResolver.OperationalIncome(match, match.Sectors[1]));
+        Assert.Equal(1, SectorIncomeResolver.SectorCash(match, match.Sectors[1]));
     }
 
     [Fact]

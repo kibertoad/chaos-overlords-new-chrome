@@ -293,7 +293,7 @@ public sealed class MatchReplayRecorder
 public static class MatchReplaySerializer
 {
     // 26 adds the recorded departed-seat controller handover.
-    public const int CurrentFormatVersion = 27;
+    public const int CurrentFormatVersion = 28;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -656,7 +656,8 @@ public static class MatchReplaySerializer
         }
         string[] candidateHashes = replayVersion switch
         {
-            >= 25 => [MatchStateHasher.ComputeSha256(state)],
+            >= 28 => [MatchStateHasher.ComputeSha256(state)],
+            >= 25 => [MatchStateHasher.ComputeVersionTwentySixSha256(state)],
             24 => [MatchStateHasher.ComputeVersionTwentyFiveSha256(state)],
             23 => [MatchStateHasher.ComputeVersionTwentyFourSha256(state)],
             22 => [MatchStateHasher.ComputeVersionTwentyThreeSha256(state)],

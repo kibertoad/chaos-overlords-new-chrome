@@ -34,7 +34,7 @@ public sealed class MultiplayerProtocolHandshakeTests
 
     [Theory]
     [InlineData(0, "SERVER IS OUTDATED")]
-    [InlineData(3, "UPDATE YOUR GAME")]
+    [InlineData(4, "UPDATE YOUR GAME")]
     public async Task DisplaysBothVersionsAndTheRequiredUpdate(
         int serverVersion,
         string expectedAction)

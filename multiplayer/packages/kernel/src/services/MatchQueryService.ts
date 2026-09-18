@@ -35,6 +35,7 @@ export class MatchQueryService {
     ])
     return {
       id: match.id,
+      protocolVersion: match.protocolVersion,
       status: match.status,
       settings: match.settings,
       hostPlayerId: match.hostPlayerId,

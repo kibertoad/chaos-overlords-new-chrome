@@ -585,13 +585,7 @@ public static partial class CommandResolver
         var sectorSuccesses = groups
             .GroupBy(group => group.Sector.Id)
             .ToDictionary(group => group.Key, group => group.Sum(value => value.Successes));
-        var sectorBefore = sectorSuccesses.Keys.ToDictionary(id => id, id => state.Sectors[id].Chaos);
         var triggered = new HashSet<int>();
-        foreach (var (sectorId, successes) in sectorSuccesses.OrderBy(value => value.Key))
-        {
-            var sector = state.Sectors[sectorId];
-            sector.Chaos = checked(sector.Chaos + successes);
-        }
         var crackdownChaos = groups
             .GroupBy(group => group.Sector.Id)
             .ToDictionary(group => group.Key, group => group.Sum(value =>
@@ -630,7 +624,7 @@ public static partial class CommandResolver
             var result = Complete(state, participant.Command, GameEventKind.CommandResolved,
                 new CommandResolutionDetails(
                     CommandResolutionCode.Resolved, group.Rolls, group.Successes,
-                    sectorBefore[group.Sector.Id], group.Sector.Chaos,
+                    0, sectorSuccesses[group.Sector.Id],
                     CashDelta: paidGroups.Add(key) ? payouts[key] : 0,
                     AttackValue: group.DiceCount, DefenseValue: group.Sector.Tolerance),
                 GameNotificationKind.Chaos,
@@ -877,8 +871,7 @@ public static partial class CommandResolver
         return results;
     }
 
-    private static int SectorIncome(MatchState state, MatchSectorState sector) =>
-        SectorIncomeResolver.OperationalIncome(state, sector);
+    private static int SectorIncome(MatchState state, MatchSectorState sector) => sector.Income;
 
     private static CommandResolutionResult ResolveHeal(
         MatchState state,

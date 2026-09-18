@@ -24,6 +24,16 @@ public sealed partial class ChaosGame
         PrepareCurrentHireOffers();
         StartPlanningTimer(_inputTime);
         UpdateComlinkAlert(_inputTime, enteringPlanning: true);
+        ShowTurnReportsOrCity();
+    }
+
+    private void ShowTurnReportsOrCity()
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId)
+        {
+            _screens.Show(ClientScreen.City);
+            return;
+        }
         var reports = LastTurnReports(_state, playerId);
         var hasCombat = VisibleCombatResults(_state, playerId).Count > 0;
         if (reports.Count == 0)

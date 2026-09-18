@@ -10,6 +10,8 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private static readonly Rectangle StopReconnectButton = new(222, 354, 196, 28);
+
     private static readonly Rectangle TakeoverVoteWait = new(164, 300, 140, 32);
     private static readonly Rectangle TakeoverVoteComputer = new(336, 300, 140, 32);
 
@@ -288,8 +290,9 @@ public sealed partial class ChaosGame
         }
         DrawLobbySettings(batch, pixel, font, match);
         DrawButton(batch, pixel, font, OnlineLobbyLayout.CopyCode, "COPY CODE", true);
-        DrawButton(batch, pixel, font, OnlineLobbyLayout.Setup, "GAME RULES", _online.IsHost);
-        DrawButton(batch, pixel, font, OnlineLobbyLayout.Start, "START", _online.IsHost);
+        var configurable = CanConfigureOnlineLobby();
+        DrawButton(batch, pixel, font, OnlineLobbyLayout.Setup, "GAME RULES", configurable);
+        DrawButton(batch, pixel, font, OnlineLobbyLayout.Start, "START", configurable);
         DrawButton(batch, pixel, font, OnlineLobbyLayout.Leave, "LEAVE", true);
         DrawCentered(font, batch, _online.Status, 424, Color.Gold, 1);
     }
@@ -305,7 +308,7 @@ public sealed partial class ChaosGame
     private void DrawLobbySettings(
         SpriteBatch batch, Texture2D pixel, PixelFont font, MatchView match)
     {
-        if (_online.IsHost)
+        if (CanConfigureOnlineLobby())
             DrawField(batch, pixel, font, OnlineLobbyLayout.SessionName, _online.SessionName);
         else
             DrawDisabledField(batch, pixel, font, OnlineLobbyLayout.SessionName, "SESSION NAME",
@@ -379,7 +382,8 @@ public sealed partial class ChaosGame
     /// </remarks>
     private string OnlineTurnStatus()
     {
-        if (!_online.IsConnected) return $"RECONNECTING TO THE SERVER  {OnlineSeatTally()}";
+        if (!_online.IsConnected)
+            return $"RECONNECTING TO THE SERVER  ATTEMPT {_online.ReconnectAttempt}";
         return _online.Stage switch
         {
             MultiplayerStage.WaitingForSeal =>
@@ -401,6 +405,42 @@ public sealed partial class ChaosGame
     /// </remarks>
     private string OnlineSeatTally() =>
         _online.SeatedSeats > 0 ? $"{_online.ReadySeats}/{_online.SeatedSeats}" : string.Empty;
+
+    /// <summary>Modal progress and diagnostics while the session reconnects in the background.</summary>
+    private void DrawReconnectPopup(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        if (_session is null || _online.IsConnected) return;
+        batch.Draw(pixel, new Rectangle(0, 0, 640, 460), new Color(0, 0, 0, 190));
+        var panel = new Rectangle(82, 82, 476, 316);
+        batch.Draw(pixel, panel, new Color(12, 22, 20));
+        DrawBorder(batch, pixel, panel, Color.Gold, 2);
+        DrawCentered(font, batch, "CONNECTION LOST  RECONNECTING", 102, Color.Gold, 1);
+        font.Draw(batch, "AUTOMATIC RETRIES CONTINUE FOR UP TO FIVE MINUTES.",
+            new Vector2(104, 132), Color.White, 1);
+        font.Draw(batch, "RECENT ATTEMPTS", new Vector2(104, 162), new Color(150, 165, 165), 1);
+        IReadOnlyList<string> lines = _online.ReconnectLog.Count == 0
+            ? ["WAITING FOR THE NEXT ATTEMPT"]
+            : _online.ReconnectLog;
+        for (var index = 0; index < lines.Count; index++)
+        {
+            var line = lines[index];
+            if (line.Length > 66) line = line[..63] + "...";
+            font.Draw(batch, line, new Vector2(104, 184 + index * 22), Color.White, 1);
+        }
+        DrawButton(batch, pixel, font, StopReconnectButton, "STOP RETRYING", true);
+    }
+
+    private void DrawReconnectPopupOverCurrentFrame(Viewport viewport)
+    {
+        if (_batch is null || _pixel is null || _font is null
+            || _session is null || _online.IsConnected)
+            return;
+        _batch.Begin(
+            samplerState: SamplerState.PointClamp,
+            transformMatrix: VirtualInput.Transform(viewport));
+        DrawReconnectPopup(_batch, _pixel, _font);
+        _batch.End();
+    }
 
     private void DrawTakeoverVote(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {

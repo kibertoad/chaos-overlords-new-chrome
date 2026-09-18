@@ -11,8 +11,6 @@ public static class CrackdownResolver
     public static void ResolveUpkeep(MatchState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        foreach (var sector in state.Sectors.OrderBy(sector => sector.Id))
-            sector.Chaos = 0;
     }
 
     public static void FinishCombat(MatchState state)

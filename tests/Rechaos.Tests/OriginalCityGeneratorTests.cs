@@ -247,10 +247,10 @@ public sealed class OriginalCityGeneratorTests
 
         Assert.Equal(MatchLimits.PlayerCount, enabled.Sectors.Count(sector => sector.Owner is not null));
         Assert.All(enabled.Sectors.Where(sector => sector.Owner is not null),
-            sector => Assert.Equal(0, sector.Chaos));
+            sector => Assert.Equal(0, sector.CrackdownTurnsRemaining));
         Assert.All(enabled.Sectors.Where(sector => sector.Owner is null),
-            sector => Assert.Equal(100, sector.Chaos));
-        Assert.All(wrongCase.Sectors, sector => Assert.Equal(0, sector.Chaos));
+            sector => Assert.Equal(100, sector.CrackdownTurnsRemaining));
+        Assert.All(wrongCase.Sectors, sector => Assert.Equal(0, sector.CrackdownTurnsRemaining));
     }
 
     [Fact]

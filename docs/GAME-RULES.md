@@ -521,13 +521,11 @@ claim about original-game behavior.
   cross-player aggregation, existing/new crackdown behavior, notifications,
   RNG consumption, and phase hashes; `ManualRulesTests` covers arithmetic and
   the strict threshold.
-- Known recreation mismatch: `CommandResolver` currently substitutes
-  `SectorIncomeResolver.OperationalIncome` (the original owner Cash yield) for
-  generated Income and writes successes into `MatchSectorState.Chaos`.
-  `ChaosResolutionTests.ChaosUsesRecomputedSectorTaxAndInfluencedSiteCash`
-  codifies that incorrect substitution. The city UI also replaces the original
-  owner-only **CASH** row with this normally zero temporary Chaos value.
-- Next experiment: after correcting those mismatches, run controlled and
+- Recreation status: Chaos and Control consume generated sector Income, Chaos
+  successes remain resolver-local, and the city shows the original owner-only
+  **CASH** row computed from tax and influenced sites. No synthetic sector-Chaos
+  state is saved or hashed.
+- Next experiment: run controlled and
   uncontrolled identical saves immediately below/equal/above Tolerance and
   compare cash, police creation, and RNG state.
 
@@ -676,15 +674,14 @@ claim about original-game behavior.
   already active when the later Control scan runs. The original silently omits
   that sector from Control resolution; the recreation records an explicit
   failed result for auditability while preserving the same no-capture outcome.
-- Current exclusions: the recreation currently substitutes recomputed owner
-  Cash for the original generated Income field in the Control defense.
+- Current exclusions: controlled runtime tie corroboration.
 - Confidence: High for equation components, generated sector Income,
   influence loss, zero-margin neutral selection, and cross-player winner/order
   behavior.
 - Implementation: `ManualRules.ControlStrength`, `ManualRules.ControlMargin`,
   grouped `CommandResolver.ResolveControl`, and site-reset handling.
 - Tests: `BoardResolutionTests` covers neutral capture, board/roster ordering,
-  pooled strength, the currently incorrect owner-Cash substitution, defended
+  pooled strength, generated-Income defense, defended
   failure, recorded deterministic zero-margin chance, positive and zero-margin
   cross-player ties, unique-highest neutral conflicts, retained empty-sector
   ownership after Move/Terminate, a single phase-opening

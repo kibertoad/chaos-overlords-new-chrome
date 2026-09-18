@@ -14,17 +14,6 @@ public sealed partial class ChaosGame
 {
     private static readonly TimeSpan LobbyPollInterval = TimeSpan.FromSeconds(1);
 
-    /// <summary>
-    /// How often an unfinished turn's plan is sent to the server as a draft.
-    /// </summary>
-    /// <remarks>
-    /// The document is a whole-document replace, so a draft costs one small request and means a turn
-    /// that seals on the clock seals with what the player had actually planned rather than with
-    /// nothing. Ten seconds is short enough that little is ever lost and long enough that a player
-    /// reordering six gangs does not send six requests.
-    /// </remarks>
-    private static readonly TimeSpan DraftInterval = TimeSpan.FromSeconds(10);
-
     private readonly MultiplayerUiState _online = new();
     /// <summary>
     /// The one client every online call goes through, bounded so a hostile server cannot answer with
@@ -237,7 +226,7 @@ public sealed partial class ChaosGame
         _online.PasswordShown = recovery.Password;
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "RECONNECTING TO THE INTERRUPTED MATCH";
-        _online.JoinedInProgress = false;
+        _online.JoinedInProgress = true;
         _lobby.Resume(recovery.MatchId, recovery.PlayerId, recovery.Token, recovery.JoinCode);
     }
 
@@ -261,7 +250,7 @@ public sealed partial class ChaosGame
 
     private void StartHostedMatch()
     {
-        if (!_online.IsHost || _lobby is null || _online.Match is null) return;
+        if (!CanConfigureOnlineLobby() || _lobby is null) return;
         _lobby.Start();
     }
 
@@ -377,8 +366,7 @@ public sealed partial class ChaosGame
         _online.Stage = submission?.Ready == true
             ? MultiplayerStage.WaitingForSeal
             : MultiplayerStage.Playing;
-        _online.SentOpCount = turn.Orders.Count;
-        _online.DraftDue = DraftInterval;
+        _online.SentOrderDigest = submission?.OrdersHash;
         _online.ReadySeats = 0;
         _selectedGangIndex = 0;
         _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
@@ -423,8 +411,9 @@ public sealed partial class ChaosGame
     {
         if (_session is null || _actions?.OnlineTurn is not { } turn) return;
         if (!_online.PlanningIsOpen) return;
-        _session.QueueOrders(_online.PlanningTurn, turn.Build(), ready: true);
-        _online.SentOpCount = turn.Orders.Count;
+        var document = turn.Build();
+        _session.QueueOrders(_online.PlanningTurn, document, ready: true);
+        _online.SentOrderDigest = OrderDigest.OfDocument(document);
         _online.Stage = MultiplayerStage.WaitingForSeal;
         CloseOnlinePlanning();
         _message = "WAITING FOR THE OTHER PLAYERS";
@@ -439,16 +428,15 @@ public sealed partial class ChaosGame
     /// that follows it; sending nothing at all would make a missed deadline cost the player their
     /// whole turn.
     /// </remarks>
-    private void SendOnlineDraft(GameTime gameTime)
+    private void SendOnlineDraft()
     {
         if (_session is null || !_online.PlanningIsOpen) return;
         if (_actions?.OnlineTurn is not { } turn) return;
-        _online.DraftDue -= gameTime.ElapsedGameTime;
-        if (_online.DraftDue > TimeSpan.Zero) return;
-        _online.DraftDue = DraftInterval;
-        if (turn.Orders.Count == _online.SentOpCount) return;
-        _online.SentOpCount = turn.Orders.Count;
-        _session.QueueOrders(_online.PlanningTurn, turn.Build(), ready: false);
+        var document = turn.Build();
+        var digest = OrderDigest.OfDocument(document);
+        if (string.Equals(digest, _online.SentOrderDigest, StringComparison.Ordinal)) return;
+        _online.SentOrderDigest = digest;
+        _session.QueueOrders(_online.PlanningTurn, document, ready: false);
     }
 
     /// <summary>
@@ -480,13 +468,20 @@ public sealed partial class ChaosGame
                     EndOnlineMatch("THE SAVED ONLINE MATCH HAS ALREADY ENDED");
                     return;
                 }
+                if (seated.Membership.Match.Status is MatchStatus.Running or MatchStatus.Desynced)
+                {
+                    _online.JoinedInProgress = true;
+                    _online.Stage = MultiplayerStage.Busy;
+                    _online.Status = "RESTORING THE MATCH";
+                    _screens.Show(ClientScreen.Online);
+                    StartOnlineMatch(seated.Membership.Match);
+                    return;
+                }
                 _online.Stage = MultiplayerStage.Lobby;
                 _online.Status = _online.IsHost
                     ? "READ OUT THE JOIN CODE"
                     : "WAITING FOR THE HOST";
                 _screens.Show(ClientScreen.Lobby);
-                if (seated.Membership.Match.Status == MatchStatus.Running)
-                    StartOnlineMatch(seated.Membership.Match);
                 return;
             case LobbyNotice.Updated updated:
                 _online.Match = updated.Match;
@@ -546,7 +541,7 @@ public sealed partial class ChaosGame
                 {
                     _message = "NEW TURN READY  PLAY AGAIN";
                     PlayGeneralSound(AudioRouting.OnlineTurnReadySound());
-                    _screens.Show(ClientScreen.City);
+                    ShowTurnReportsOrCity();
                 }
                 return;
             case MultiplayerNotice.Resynced resynced:
@@ -599,8 +594,20 @@ public sealed partial class ChaosGame
                 return;
             case MultiplayerNotice.ConnectionChanged connection:
                 _online.IsConnected = connection.IsConnected;
-                if (!connection.IsConnected && connection.Detail is { } detail)
-                    _message = detail.ToUpperInvariant();
+                if (connection.IsConnected)
+                {
+                    _online.ReconnectLog.Clear();
+                    _online.ReconnectAttempt = 0;
+                    _message = string.Empty;
+                }
+                else if (connection.Detail is { } detail)
+                {
+                    _online.ReconnectAttempt = Math.Max(1, connection.Attempt);
+                    var entry = $"ATTEMPT {Math.Max(1, connection.Attempt)}  {detail}";
+                    _online.ReconnectLog.Add(entry.ToUpperInvariant());
+                    while (_online.ReconnectLog.Count > 6) _online.ReconnectLog.RemoveAt(0);
+                    _message = "CONNECTION LOST  AUTOMATICALLY RECONNECTING";
+                }
                 return;
             case MultiplayerNotice.MatchFinished:
                 // The outcome usually arrives first, with the turn that produced it. This is the
@@ -665,6 +672,14 @@ public sealed partial class ChaosGame
                 ? "VOTED TO WAIT FOR THE PLAYER"
                 : "VOTED TO USE COMPUTER CONTROL";
         }
+        return true;
+    }
+
+    private bool HandleReconnectPopupClick(Point point)
+    {
+        if (_session is null || _online.IsConnected) return false;
+        if (StopReconnectButton.Contains(point))
+            EndOnlineMatch("AUTOMATIC RECONNECT CANCELLED");
         return true;
     }
 
@@ -830,7 +845,7 @@ public sealed partial class ChaosGame
 
     private void HandleLobbyClick(Point point)
     {
-        if (_online.IsHost && OnlineLobbyLayout.SessionName.Contains(point))
+        if (CanConfigureOnlineLobby() && OnlineLobbyLayout.SessionName.Contains(point))
         {
             _online.SessionName.IsFocused = true;
             return;
@@ -842,7 +857,7 @@ public sealed partial class ChaosGame
         else if (OnlineLobbyLayout.Setup.Contains(point)) OpenOnlineSetup();
         else if (OnlineLobbyLayout.Start.Contains(point)) StartHostedMatch();
         else if (OnlineLobbyLayout.Leave.Contains(point)) LeaveOnlineMatch();
-        else if (!_online.IsHost) return;
+        else if (!CanConfigureOnlineLobby()) return;
         else if (OnlineLobbyLayout.PublicChoice.Contains(point)) ChangeLobbyListing(publicly: true);
         else if (OnlineLobbyLayout.PrivateChoice.Contains(point)) ChangeLobbyListing(publicly: false);
         else if (OnlineLobbyLayout.LateJoinAllowed.Contains(point)) ChangeLobbyLateJoin(allowed: true);

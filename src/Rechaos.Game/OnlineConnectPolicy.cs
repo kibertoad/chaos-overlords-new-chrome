@@ -1,3 +1,5 @@
+using Rechaos.Multiplayer.Generated;
+
 namespace Rechaos.Game;
 
 /// <summary>Which of the connect screen's controls the choices already made on it leave in use.</summary>
@@ -14,4 +16,11 @@ public static class OnlineConnectPolicy
     /// </remarks>
     public static bool PasswordApplies(bool hosting, bool listedPublicly) =>
         !hosting || listedPublicly;
+
+    /// <summary>Whether this client may alter or start the lobby it is looking at.</summary>
+    public static bool CanConfigureLobby(
+        bool isHost,
+        MatchStatus status,
+        bool joinedInProgress) =>
+        isHost && status == MatchStatus.Lobby && !joinedInProgress;
 }

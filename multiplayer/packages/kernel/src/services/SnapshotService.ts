@@ -171,6 +171,7 @@ function toView(snapshot: Snapshot): SnapshotView {
   return {
     turn: snapshot.turn,
     formatVersion: snapshot.formatVersion,
+    protocolVersion: snapshot.protocolVersion,
     stateHash: snapshot.stateHash,
     uploadedByPlayerId: snapshot.uploadedByPlayerId,
     uploadedAt: snapshot.uploadedAt.toISOString(),

@@ -102,7 +102,7 @@ public static class OriginalCityGenerator
                 site.Slot == 0 ? 0 : site.Resistance,
                 site.Slot == 0 ? null : site.InfluencedBy)).ToArray();
             sectors[sectorId] = new MatchSectorState(
-                sector.Id, sites, tolerance: sector.Tolerance, chaos: sector.Chaos,
+                sector.Id, sites, tolerance: sector.Tolerance, chaos: sector.LegacyChaos,
                 crackdownActive: sector.CrackdownActive, isImportant: sector.IsImportant,
                 income: sector.Income, crackdownTurnsRemaining: sector.CrackdownTurnsRemaining,
                 crackdownHistory: sector.CrackdownHistory);
@@ -139,7 +139,7 @@ public static class OriginalCityGenerator
                     site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy)).ToArray(),
                 sector.Owner,
                 sector.Tolerance,
-                sector.Chaos,
+                sector.LegacyChaos,
                 sector.CrackdownActive,
                 isImportant: true,
                 sector.Income,
@@ -228,7 +228,7 @@ public static class OriginalMatchFactory
         AddNameModifierStartingGangs(bootstrapped);
         if (setup.Players.Any(player => OriginalSetupNameRules.EnablesIslands(player.Name)))
             foreach (var sector in bootstrapped.Sectors.Where(sector => sector.Owner is null))
-                sector.Chaos = 100;
+                sector.CrackdownTurnsRemaining = 100;
         return new MatchState(
             definitions, setup, bootstrapped.Players, bootstrapped.Sectors, random, aiStrategy);
     }

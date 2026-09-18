@@ -218,7 +218,7 @@ public sealed class MatchSectorState
         Sites = sites.OrderBy(site => site.Slot).ToArray();
         Owner = owner;
         Tolerance = tolerance;
-        Chaos = chaos;
+        LegacyChaos = chaos;
         CrackdownTurnsRemaining = crackdownActive
             ? Math.Max(ManualRules.MinimumCrackdownTurns, crackdownTurnsRemaining)
             : 0;
@@ -231,7 +231,9 @@ public sealed class MatchSectorState
     public IReadOnlyList<MatchSiteState> Sites { get; }
     public PlayerId? Owner { get; internal set; }
     public int Tolerance { get; internal set; }
-    public int Chaos { get; internal set; }
+    // Retained only so pre-v24 saves/replays can verify their historical fingerprints.
+    // The original executable has no persistent sector-Chaos accumulator.
+    internal int LegacyChaos { get; }
     public bool CrackdownActive
     {
         get => CrackdownTurnsRemaining > 0;

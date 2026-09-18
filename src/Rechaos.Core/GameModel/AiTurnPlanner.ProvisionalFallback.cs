@@ -115,7 +115,7 @@ public static partial class AiTurnPlanner
         ScenarioId.Siege when sector.IsImportant => 600,
         ScenarioId.BigMan when sector.Id is 27 or 28 or 35 or 36 => 600,
         ScenarioId.Greed or ScenarioId.Dominance =>
-            SectorIncomeResolver.OperationalIncome(state, sector) * 20,
+            sector.Income * 20,
         _ => 0
     };
 
@@ -150,7 +150,7 @@ public static partial class AiTurnPlanner
         if (scenario == ScenarioId.BigMan && sectorId is 27 or 28 or 35 or 36) value += 300;
         if (scenario == ScenarioId.Eliminate
             && OriginalCityGenerator.HeadquartersCandidates.Contains(sectorId)) value += 300;
-        return value + SectorIncomeResolver.OperationalIncome(state, sector) * 10;
+        return value + sector.Income * 10;
     }
 
     private static bool IsObservableFallbackAttack(

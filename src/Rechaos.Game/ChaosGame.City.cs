@@ -261,11 +261,13 @@ public sealed partial class ChaosGame
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(2));
         DrawPanelValue(font, batch, SectorSupport(state, player.Id, selectedSector),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(3));
-        batch.Draw(pixel, StatusConsoleLayout.ChaosLabel, Color.Black);
-        font.Draw(batch, "CHAOS",
+        batch.Draw(pixel, StatusConsoleLayout.CashLabel, Color.Black);
+        font.Draw(batch, "CASH",
             new Vector2(StatusConsoleLayout.LabelLeft, StatusConsoleLayout.SectorValueY(4)),
             Color.Lime, 1);
-        DrawPanelValue(font, batch, selectedSector.Chaos,
+        DrawPanelValue(font, batch,
+            StatusConsolePresentation.SectorCash(
+                selectedSector.Owner, player.Id, SectorIncomeResolver.SectorCash(state, selectedSector)),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(4));
         font.Draw(batch, CityStatusMessage.Clip(_message),
             new Vector2(438, 354), Color.Gold, 1);
@@ -371,8 +373,7 @@ public sealed partial class ChaosGame
         ReportInputResult(result.Accepted, result.Validation.Message);
     }
 
-    private static int SectorIncome(MatchState state, MatchSectorState sector) =>
-        SectorIncomeResolver.OperationalIncome(state, sector);
+    private static int SectorIncome(MatchState state, MatchSectorState sector) => sector.Income;
 
     private static string SectorCode(int sectorId) =>
         $"{(char)('A' + sectorId % MatchLimits.BoardWidth)}{sectorId / MatchLimits.BoardWidth + 1}";

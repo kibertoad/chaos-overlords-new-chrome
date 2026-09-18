@@ -3,30 +3,36 @@ namespace Rechaos.Multiplayer.Http;
 /// <summary>How hard a failed attempt is retried before the caller gives up on it.</summary>
 /// <param name="InitialDelay">First delay; it doubles up to <paramref name="MaxDelay"/>.</param>
 /// <param name="MaxDelay">The ceiling on the backoff window.</param>
-/// <param name="MaxAttempts">Attempts before the failure is raised, or 0 for "keep trying".</param>
-public sealed record RetryPolicy(TimeSpan InitialDelay, TimeSpan MaxDelay, int MaxAttempts)
+/// <param name="MaxAttempts">Attempts before the failure is raised, or 0 for no count limit.</param>
+/// <param name="MaxElapsed">Retry window, or null for no time limit.</param>
+public sealed record RetryPolicy(
+    TimeSpan InitialDelay,
+    TimeSpan MaxDelay,
+    int MaxAttempts,
+    TimeSpan? MaxElapsed = null)
 {
     /// <summary>
-    /// The event stream: reconnect forever.
+    /// The event stream: reconnect transient failures for five minutes.
     /// </summary>
     /// <remarks>
-    /// A match lasts as long as its players do, and a stream that gave up would leave a client
-    /// silently missing turns with nothing on screen to say so. Giving up is the caller's decision,
-    /// made by cancelling.
+    /// Five minutes covers a server restart or ordinary connection outage without leaving a client
+    /// silently missing turns forever. The interface also lets the player cancel this wait early.
     /// </remarks>
     public static RetryPolicy Stream { get; } =
-        new(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(30), MaxAttempts: 0);
+        new(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(15), MaxAttempts: 0,
+            MaxElapsed: TimeSpan.FromMinutes(5));
 
     /// <summary>
-    /// One protocol call: a few quick attempts, then raise.
+    /// One idempotent protocol call: keep trying transient failures for five minutes.
     /// </summary>
     /// <remarks>
-    /// These sit between receiving a fact and acting on it, so the match is waiting on them. Five
-    /// attempts over roughly ten seconds rides out a restart or a dropped connection without
-    /// leaving a player staring at a turn that never resolves.
+    /// These sit between receiving a fact and acting on it, so the match is waiting on them. A
+    /// server restart or temporary network outage must not end the session after a few seconds;
+    /// five minutes gives the connection time to return while still surfacing a prolonged outage.
     /// </remarks>
     public static RetryPolicy Call { get; } =
-        new(TimeSpan.FromMilliseconds(400), TimeSpan.FromSeconds(4), MaxAttempts: 5);
+        new(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(15), MaxAttempts: 0,
+            MaxElapsed: TimeSpan.FromMinutes(5));
 
     /// <summary>
     /// Exponential with full jitter, so every client of a restarting server picks a different
@@ -40,7 +46,9 @@ public sealed record RetryPolicy(TimeSpan InitialDelay, TimeSpan MaxDelay, int M
     }
 
     /// <summary>Whether <paramref name="attempt"/> may be followed by another one.</summary>
-    internal bool AllowsAnother(int attempt) => MaxAttempts <= 0 || attempt < MaxAttempts;
+    internal bool AllowsAnother(int attempt, TimeSpan elapsed) =>
+        (MaxAttempts <= 0 || attempt < MaxAttempts)
+        && (MaxElapsed is null || elapsed < MaxElapsed.Value);
 }
 
 /// <summary>
@@ -71,9 +79,8 @@ public static class TransientFailure
     /// draws that line once for both callers.
     /// </para>
     /// <para>
-    /// A protocol failure counts as transient because the frame or body that could not be read is
-    /// one frame or body: the resume point is the last thing that did read, so trying again
-    /// re-requests it rather than skipping it.
+    /// A protocol failure is permanent for this build: retrying the same malformed or incompatible
+    /// body for five minutes cannot make it readable and would hide the useful diagnosis.
     /// </para>
     /// <para>
     /// A cancellation never does. A request that outran its own deadline arrives here as
@@ -86,7 +93,6 @@ public static class TransientFailure
         MultiplayerApiException api => !api.EndsTheStream,
         MultiplayerTimeoutException => true,
         HttpRequestException or IOException => true,
-        Protocol.MultiplayerProtocolException => true,
         _ => false,
     };
 
@@ -105,6 +111,7 @@ public static class TransientFailure
     {
         ArgumentNullException.ThrowIfNull(call);
         ArgumentNullException.ThrowIfNull(policy);
+        var started = System.Diagnostics.Stopwatch.StartNew();
         for (var attempt = 1; ; attempt++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -112,14 +119,30 @@ public static class TransientFailure
             {
                 return await call(cancellationToken).ConfigureAwait(false);
             }
-            catch (Exception exception)
-                when (IsTransient(exception) && policy.AllowsAnother(attempt))
+            catch (Exception exception) when (IsTransient(exception))
             {
+                if (!policy.AllowsAnother(attempt, started.Elapsed))
+                    throw new RetryExhaustedException(attempt, started.Elapsed, exception);
                 onRetry?.Invoke(exception, attempt);
                 await Task.Delay(policy.Backoff(attempt), cancellationToken).ConfigureAwait(false);
             }
         }
     }
+}
+
+/// <summary>A transient operation still failed after its complete reconnect window.</summary>
+public sealed class RetryExhaustedException(
+    int attempts,
+    TimeSpan elapsed,
+    Exception lastError)
+    : Exception(
+        $"automatic reconnect failed after {attempts} attempts over {elapsed.TotalMinutes:0.#} minutes: "
+        + lastError.Message,
+        lastError)
+{
+    public int Attempts { get; } = attempts;
+    public TimeSpan Elapsed { get; } = elapsed;
+    public Exception LastError { get; } = lastError;
 }
 
 /// <summary>

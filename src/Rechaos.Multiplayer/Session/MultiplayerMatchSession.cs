@@ -142,6 +142,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(options);
         var view = options.View;
+        RequireCurrentProtocol(view.ProtocolVersion, "match");
         var seed = view.Seed
             ?? throw new MultiplayerProtocolException("the match has started without a seed");
         var self = view.Players.FirstOrDefault(player => player.Id == options.OwnPlayerId)
@@ -245,8 +246,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         var stream = new MatchEventStream(
             _match,
             RetryPolicy.Stream,
-            onReconnect: (exception, _) => Report(connected: false, Describe(exception)),
-            onConnected: () => Report(connected: true, detail: null));
+            onReconnect: (exception, attempt) =>
+                Report(connected: false, Describe(exception), attempt),
+            onConnected: () => Report(connected: true, detail: null, attempt: 0));
         try
         {
             if (_uploadInitialSnapshot)
@@ -282,6 +284,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             var detail = await CallAsync(
                 token => _match.GetAsync(token), cancellationToken).ConfigureAwait(false);
             var view = detail.Match;
+            RequireCurrentProtocol(view.ProtocolVersion, "match");
             if (view.Status == MatchStatus.Abandoned)
             {
                 _notices.Enqueue(new MultiplayerNotice.MatchAbandoned());
@@ -434,6 +437,28 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                     sealedTurn.Payload.OrderSetHash,
                     cancellationToken).ConfigureAwait(false);
                 return;
+            case TurnConfirmedEvent confirmed:
+                VerifyHistoricalConfirmation(confirmed);
+                return;
+        }
+    }
+
+    private void VerifyHistoricalConfirmation(TurnConfirmedEvent confirmed)
+    {
+        var resolvedTurn = _replay.State.Coordinator.Turn - 1;
+        if (confirmed.Payload.Turn < resolvedTurn) return;
+        if (confirmed.Payload.Turn > resolvedTurn)
+        {
+            throw new MultiplayerProtocolException(
+                $"the event history confirmed turn {confirmed.Payload.Turn} while the "
+                + $"reconstructed match had resolved only turn {resolvedTurn}");
+        }
+        var actual = MatchStateHasher.ComputeSha256(_replay.State);
+        if (!string.Equals(actual, confirmed.Payload.StateHash, StringComparison.Ordinal))
+        {
+            throw new MultiplayerProtocolException(
+                $"the reconstructed state for confirmed turn {confirmed.Payload.Turn} does not "
+                + "match the server hash; the match was produced by incompatible game rules");
         }
     }
 
@@ -485,6 +510,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// </remarks>
     private void AdoptResumeSnapshot(SnapshotView snapshot, int currentTurn)
     {
+        RequireCurrentProtocol(snapshot.ProtocolVersion, "snapshot");
         if (snapshot.Turn < 0 || snapshot.Turn >= currentTurn)
         {
             throw new MultiplayerProtocolException(
@@ -715,6 +741,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     {
         var snapshot = await CallAsync(
             token => _match.SnapshotAsync(turn, token), cancellationToken).ConfigureAwait(false);
+        RequireCurrentProtocol(snapshot.ProtocolVersion, "snapshot");
         if (snapshot.FormatVersion > NativeSaveSerializer.CurrentFormatVersion)
         {
             // Said plainly rather than discovered as a decoding failure: the repair was written by a
@@ -756,6 +783,14 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 $"the repair for turn {turn} is not a match this build can read: {exception.Message}",
                 exception);
         }
+    }
+
+    private static void RequireCurrentProtocol(long actual, string source)
+    {
+        if (actual == MultiplayerProtocolVersion.Current) return;
+        throw new MultiplayerProtocolException(
+            $"the {source} uses multiplayer protocol {actual}, but this build requires "
+            + MultiplayerProtocolVersion.Current);
     }
 
     private Task ReportAsync(int turn, string stateHash, CancellationToken cancellationToken) =>
@@ -815,14 +850,19 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// what was held rather than adding to it. That is what makes retrying safe, and retrying is what
     /// keeps a restarted server from ending a match that was otherwise going fine.
     /// </remarks>
-    private Task<T> CallAsync<T>(
+    private async Task<T> CallAsync<T>(
         Func<CancellationToken, Task<T>> call,
-        CancellationToken cancellationToken) =>
-        TransientFailure.CallAsync(
+        CancellationToken cancellationToken)
+    {
+        var result = await TransientFailure.CallAsync(
             call,
             RetryPolicy.Call,
-            onRetry: (exception, _) => Report(connected: false, Describe(exception)),
-            cancellationToken);
+            onRetry: (exception, attempt) =>
+                Report(connected: false, Describe(exception), attempt),
+            cancellationToken).ConfigureAwait(false);
+        Report(connected: true, detail: null, attempt: 0);
+        return result;
+    }
 
     /// <summary>
     /// Tells the interface whether the server is answering, on a change and not otherwise.
@@ -832,11 +872,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// as long as the player leaves it to, and one notice per attempt would be a queue the game
     /// thread drains instead of drawing.
     /// </remarks>
-    private void Report(bool connected, string? detail)
+    private void Report(bool connected, string? detail, int attempt)
     {
         var was = Interlocked.Exchange(ref _connected, connected ? 1 : 0);
-        if (was == (connected ? 1 : 0)) return;
-        _notices.Enqueue(new MultiplayerNotice.ConnectionChanged(connected, detail));
+        if (connected && was == 1) return;
+        _notices.Enqueue(new MultiplayerNotice.ConnectionChanged(connected, detail, attempt));
     }
 
     /// <summary>
@@ -912,10 +952,18 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             "You are no longer in this match.",
         MultiplayerApiException { Reason: "turn_not_open" } =>
             "That turn has already sealed.",
-        MultiplayerApiException api => $"The server refused: {api.Message}",
+        MultiplayerApiException api =>
+            $"Server returned HTTP {(int)api.Status}: {api.Message}"
+            + (api.RequestId is null ? string.Empty : $" (request {api.RequestId})"),
+        RetryExhaustedException exhausted =>
+            $"Automatic reconnect failed after {exhausted.Attempts} attempts over "
+            + $"{exhausted.Elapsed.TotalMinutes:0.#} minutes. Last error: "
+            + Describe(exhausted.LastError),
         MultiplayerProtocolException protocol => protocol.Message,
         MultiplayerTimeoutException timeout => timeout.Message,
-        _ => "The connection to the match was lost.",
+        HttpRequestException request => $"Network request failed: {request.Message}",
+        IOException io => $"Connection stream failed: {io.Message}",
+        _ => $"{exception.GetType().Name}: {exception.Message}",
     };
 
     private sealed record PendingTakeoverVote(string PlayerId, int Turn)

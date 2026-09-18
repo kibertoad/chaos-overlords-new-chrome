@@ -79,6 +79,7 @@ public sealed partial class MultiplayerSessionTests
         var snapshot = new SnapshotView(
             1,
             NativeSaveSerializer.CurrentFormatVersion,
+            MultiplayerProtocolVersion.Current,
             MatchStateHasher.ComputeSha256(replay.State),
             "p1",
             "2026-09-10T12:04:00.000Z",
@@ -184,6 +185,7 @@ public sealed partial class MultiplayerSessionTests
         var snapshot = new SnapshotView(
             0,
             NativeSaveSerializer.CurrentFormatVersion,
+            MultiplayerProtocolVersion.Current,
             MatchStateHasher.ComputeSha256(bootstrap.State),
             "p1",
             "2026-09-10T11:59:30.000Z",
@@ -228,6 +230,7 @@ public sealed partial class MultiplayerSessionTests
         var snapshot = new SnapshotView(
             0,
             NativeSaveSerializer.CurrentFormatVersion,
+            MultiplayerProtocolVersion.Current,
             MatchStateHasher.ComputeSha256(bootstrap.State),
             "p1",
             "2026-09-10T11:59:30.000Z",
@@ -632,6 +635,7 @@ public sealed partial class MultiplayerSessionTests
         server.Answer(HttpMethod.Get, "/snapshots/3", new SnapshotView(
             3,
             NativeSaveSerializer.CurrentFormatVersion + 1,
+            MultiplayerProtocolVersion.Current,
             new string('a', 64),
             "p1",
             "2026-09-10T12:00:00.000Z",
@@ -653,6 +657,7 @@ public sealed partial class MultiplayerSessionTests
         server.Answer(HttpMethod.Get, "/snapshots/3", new SnapshotView(
             3,
             NativeSaveSerializer.CurrentFormatVersion,
+            MultiplayerProtocolVersion.Current,
             new string('a', 64),
             "p1",
             "2026-09-10T12:00:00.000Z",

@@ -40,14 +40,18 @@ public sealed class MatchEventStream(
     {
         var after = afterSeq;
         var attempt = 0;
+        var outage = new System.Diagnostics.Stopwatch();
+        Exception? lastFailure = null;
         while (!cancellationToken.IsCancellationRequested)
         {
-            var connection = await ConnectAsync(after, attempt + 1, cancellationToken)
+            var connected = await ConnectAsync(after, cancellationToken)
                 .ConfigureAwait(false);
-            if (connection is not null)
+            if (connected.Connection is not null)
             {
                 onConnected?.Invoke();
-                await using var reader = connection;
+                attempt = 0;
+                outage.Reset();
+                await using var reader = connected.Connection;
                 await using var events = reader
                     .EventsAsync(cancellationToken).GetAsyncEnumerator(cancellationToken);
                 while (true)
@@ -58,17 +62,35 @@ public sealed class MatchEventStream(
                     var (moved, failure) = await StepAsync(events).ConfigureAwait(false);
                     if (failure is not null)
                     {
+                        lastFailure = failure;
                         onReconnect?.Invoke(failure, attempt + 1);
+                        outage.Start();
                         break;
                     }
-                    if (!moved) break;
+                    if (!moved)
+                    {
+                        lastFailure = new IOException("the server closed the event stream");
+                        onReconnect?.Invoke(lastFailure, attempt + 1);
+                        outage.Start();
+                        break;
+                    }
                     after = Math.Max(after, events.Current.Seq);
-                    attempt = 0;
                     yield return events.Current;
                 }
             }
+            else if (connected.Failure is { } failure)
+            {
+                lastFailure = failure;
+                onReconnect?.Invoke(failure, attempt + 1);
+                if (!outage.IsRunning) outage.Start();
+            }
             if (cancellationToken.IsCancellationRequested) yield break;
             attempt++;
+            if (!_policy.AllowsAnother(attempt, outage.Elapsed))
+                throw new RetryExhaustedException(
+                    attempt,
+                    outage.Elapsed,
+                    lastFailure ?? new IOException("the server event stream did not reconnect"));
             await Task.Delay(_policy.Backoff(attempt), cancellationToken).ConfigureAwait(false);
         }
     }
@@ -95,20 +117,18 @@ public sealed class MatchEventStream(
     /// <c>try</c> with a <c>catch</c>: the failure that ends the stream has to be raised here,
     /// where nothing is being yielded.
     /// </remarks>
-    private async Task<Connection?> ConnectAsync(
+    private async Task<(Connection? Connection, Exception? Failure)> ConnectAsync(
         int after,
-        int attempt,
         CancellationToken cancellationToken)
     {
         try
         {
             var response = await match.OpenStreamAsync(after, cancellationToken).ConfigureAwait(false);
-            return new Connection(response);
+            return (new Connection(response), null);
         }
         catch (Exception exception) when (TransientFailure.IsTransient(exception))
         {
-            onReconnect?.Invoke(exception, attempt);
-            return null;
+            return (null, exception);
         }
     }
 

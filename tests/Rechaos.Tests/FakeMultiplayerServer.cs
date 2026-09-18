@@ -27,6 +27,7 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
     private readonly List<Recorded> _requests = [];
     private readonly Dictionary<string, Queue<Reply>> _queued = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Reply> _standing = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Queue<TaskCompletionSource>> _blocks = new(StringComparer.Ordinal);
     private readonly PushStream _events = new();
     private readonly Lock _gate = new();
 
@@ -77,6 +78,23 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
         }
     }
 
+    /// <summary>Blocks the next matching request until released, while still honoring cancellation.</summary>
+    internal TaskCompletionSource BlockOnce(HttpMethod method, string pathSuffix)
+    {
+        var block = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_gate)
+        {
+            var key = Key(method, pathSuffix);
+            if (!_blocks.TryGetValue(key, out var queue))
+            {
+                queue = new Queue<TaskCompletionSource>();
+                _blocks[key] = queue;
+            }
+            queue.Enqueue(block);
+        }
+        return block;
+    }
+
     /// <summary>How many times a route has been called.</summary>
     internal int CallsTo(HttpMethod method, string pathSuffix)
     {
@@ -119,6 +137,10 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
             return Streaming();
         }
 
+        var block = NextBlock(request.Method, path);
+        if (block is not null)
+            await block.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+
         var reply = Next(request.Method, path);
         if (reply is null)
         {
@@ -146,6 +168,18 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
             foreach (var (key, reply) in _standing)
             {
                 if (Matches(key, method, path)) return reply;
+            }
+            return null;
+        }
+    }
+
+    private TaskCompletionSource? NextBlock(HttpMethod method, string path)
+    {
+        lock (_gate)
+        {
+            foreach (var (key, queue) in _blocks)
+            {
+                if (Matches(key, method, path) && queue.Count > 0) return queue.Dequeue();
             }
             return null;
         }

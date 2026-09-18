@@ -8,16 +8,6 @@ namespace Rechaos.Tests;
 public sealed class ChaosResolutionTests
 {
     [Fact]
-    public void UpkeepClearsPreviousTurnsChaosBeforeCommands()
-    {
-        var match = CreateMatch(initialChaos: 17);
-
-        match.FinishUpkeep();
-
-        Assert.Equal(0, match.Sectors[0].Chaos);
-    }
-
-    [Fact]
     public void NewCrackdownRetainsTwoToFourFuturePoliceCombatPhasesAfterImmediateCombat()
     {
         var match = CreateMatch(tolerance: 0);
@@ -165,7 +155,7 @@ public sealed class ChaosResolutionTests
             match.LastPhaseResolutions.Sum(result => result.Event!.Resolution!.CashDelta));
         Assert.Equal(cashBefore + first.Successes, match.Players[0].Cash);
         Assert.Equal(first.Successes, match.Players[0].Statistics.CashEarned);
-        Assert.Equal(first.Successes, match.Sectors[0].Chaos);
+        Assert.Equal(first.Successes, first.ResultValue);
         Assert.Equal(expectedDice * 3, match.Random.ConsumptionCount);
         Assert.All(match.LastPhaseResolutions,
             result => Assert.Equal(GameNotificationKind.Chaos,
@@ -189,8 +179,7 @@ public sealed class ChaosResolutionTests
         foreach (var gangId in new[] { new GangId(10), new GangId(11) })
         {
             var gang = match.FindGang(gangId)!;
-            var pool = SectorIncomeResolver.OperationalIncome(
-                    match, match.Sectors[gang.SectorId]) + gang.Force
+            var pool = match.Sectors[gang.SectorId].Income + gang.Force
                 + EffectiveStatisticsCalculator.ForGang(match, gang).Chaos;
             var dice = OriginalResolutionRules.ActionPool(band, GangAction.Chaos, pool);
             expectedRolls.AddRange(DiceRoller.RollD6(expectedRandom, dice));
@@ -223,7 +212,7 @@ public sealed class ChaosResolutionTests
         var chaosEvent = Assert.Single(match.Events, gameEvent =>
             gameEvent.Turn == 1 && gameEvent.ExecutionPhase == ExecutionPhase.Chaos);
         Assert.True(chaosEvent.Resolution!.Successes > 0);
-        Assert.Equal(chaosEvent.Resolution.Successes, match.Sectors[0].Chaos);
+        Assert.Equal(chaosEvent.Resolution.Successes, chaosEvent.Resolution.ResultValue);
         Assert.Equal(cashBefore, match.Players[0].Cash);
         Assert.All(match.NotificationsFor(new PlayerId(0)).Where(notification =>
                 notification.Kind == GameNotificationKind.Chaos),
@@ -315,13 +304,13 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
-    public void ChaosUsesRecomputedSectorTaxAndInfluencedSiteCash()
+    public void ChaosUsesGeneratedSectorIncomeRatherThanOwnerCash()
     {
         var match = CreateMatch(tolerance: 40, income: 7);
         var gang = match.FindGang(new GangId(10))!;
         var sector = match.Sectors[0];
-        var operationalIncome = SectorIncomeResolver.OperationalIncome(match, sector);
-        Assert.NotEqual(sector.Income, operationalIncome);
+        var sectorCash = SectorIncomeResolver.SectorCash(match, sector);
+        Assert.NotEqual(sector.Income, sectorCash);
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
 
         match.FinishExecutionPhase();
@@ -329,11 +318,11 @@ public sealed class ChaosResolutionTests
         var band = OriginalResolutionRules.Band(match, new PlayerId(0));
         var statistics = EffectiveStatisticsCalculator.ForGang(match, gang);
         var expectedDice = OriginalResolutionRules.ActionPool(
-            band, GangAction.Chaos, operationalIncome + gang.Force + statistics.Chaos);
-        var generatedDice = OriginalResolutionRules.ActionPool(
             band, GangAction.Chaos, sector.Income + gang.Force + statistics.Chaos);
+        var cashDice = OriginalResolutionRules.ActionPool(
+            band, GangAction.Chaos, sectorCash + gang.Force + statistics.Chaos);
         var resolution = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!;
-        Assert.NotEqual(generatedDice, expectedDice);
+        Assert.NotEqual(cashDice, expectedDice);
         Assert.Equal(expectedDice, resolution.AttackValue);
         Assert.Equal(expectedDice, resolution.Rolls.Count);
     }
@@ -350,7 +339,8 @@ public sealed class ChaosResolutionTests
         Assert.Equal(2, match.LastPhaseResolutions.Count);
         var totalSuccesses = match.LastPhaseResolutions.Sum(result => result.Event!.Resolution!.Successes);
         Assert.True(totalSuccesses > 0);
-        Assert.Equal(totalSuccesses, match.Sectors[0].Chaos);
+        Assert.All(match.LastPhaseResolutions,
+            result => Assert.Equal(totalSuccesses, result.Event!.Resolution!.ResultValue));
         Assert.True(match.Sectors[0].CrackdownActive);
         Assert.Equal(cashBefore, match.Players.Select(player => player.Cash));
         Assert.All(match.Players, player => Assert.Contains(
@@ -359,7 +349,7 @@ public sealed class ChaosResolutionTests
     }
 
     [Fact]
-    public void ExistingCrackdownSuppressesIncomeWhileChaosStillAccumulates()
+    public void ExistingCrackdownSuppressesIncomeWhileChaosStillRolls()
     {
         var match = CreateMatch(tolerance: 40, crackdownActive: true);
         QueueChaosAndEnterPhase(match, includeSecondPlayer: false);
@@ -369,7 +359,8 @@ public sealed class ChaosResolutionTests
 
         var successes = Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.Successes;
         Assert.Equal(cashBefore, match.Players[0].Cash);
-        Assert.Equal(successes, match.Sectors[0].Chaos);
+        Assert.Equal(successes,
+            Assert.Single(match.LastPhaseResolutions).Event!.Resolution!.ResultValue);
         Assert.DoesNotContain(match.NotificationsFor(new PlayerId(0)),
             notification => notification.Kind == GameNotificationKind.Crackdown);
     }
@@ -429,7 +420,7 @@ public sealed class ChaosResolutionTests
         new(new PlayerId(player), new GangId(gang), GangAction.Chaos, CommandTarget.None);
 
     private static int SectorIncome(MatchState match, int sectorId) =>
-        SectorIncomeResolver.OperationalIncome(match, match.Sectors[sectorId]);
+        match.Sectors[sectorId].Income;
 
     private static void AdvanceCoordinatorTurn(MatchState match)
     {
@@ -455,7 +446,6 @@ public sealed class ChaosResolutionTests
         PlayerId? owner = null,
         int tolerance = 20,
         bool crackdownActive = false,
-        int initialChaos = 0,
         int income = 2)
     {
         var data = BundledOriginalData.Load();
@@ -485,7 +475,6 @@ public sealed class ChaosResolutionTests
                 new MatchSiteState(1, 1, 5),
                 new MatchSiteState(2, 2, 4)
             ], id == 0 ? owner : null, id == 0 ? tolerance : 20,
-                chaos: id == 0 ? initialChaos : 0,
                 crackdownActive: id == 0 && crackdownActive,
                 income: id == 0 ? income : 2))
             .ToArray();

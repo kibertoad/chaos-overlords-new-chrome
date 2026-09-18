@@ -601,6 +601,7 @@ public sealed record TurnView(
 
 public sealed record MatchView(
     [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("protocolVersion")] long ProtocolVersion,
     [property: JsonPropertyName("status")] MatchStatus Status,
     [property: JsonPropertyName("settings")] MatchSettings Settings,
     [property: JsonPropertyName("hostPlayerId")] string HostPlayerId,
@@ -664,6 +665,7 @@ public sealed record SealedOrdersView(
 public sealed record SnapshotView(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("formatVersion")] int FormatVersion,
+    [property: JsonPropertyName("protocolVersion")] long ProtocolVersion,
     [property: JsonPropertyName("stateHash")] string StateHash,
     [property: JsonPropertyName("uploadedByPlayerId")] string UploadedByPlayerId,
     [property: JsonPropertyName("uploadedAt")] string UploadedAt,

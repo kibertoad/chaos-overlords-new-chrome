@@ -104,8 +104,9 @@ public sealed class AiTurnPlannerTests
     {
         var data = BundledOriginalData.Load();
         var definition = data.Gangs.First(candidate =>
-            ManualRules.ControlledSectorTax - candidate.Stats.Control is >= 1 and < ManualRules.MaximumForce);
-        var equalForce = ManualRules.ControlledSectorTax - definition.Stats.Control;
+            ManualRules.MinimumSectorIncome - candidate.Stats.Control
+                is >= 1 and < ManualRules.MaximumForce);
+        var equalForce = ManualRules.MinimumSectorIncome - definition.Stats.Control;
         var equal = CreateNeutralControlMatch(data, definition.Id, equalForce);
         var advantage = CreateNeutralControlMatch(data, definition.Id, equalForce + 1);
         equal.FinishUpkeep();
