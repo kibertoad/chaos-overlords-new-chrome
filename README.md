@@ -105,6 +105,9 @@ presentation-only conveniences that make the original systems easier to read:
   the box is unticked — an anonymized, replayable journal of the whole match, so
   a deterministic bug arrives as something that can be reproduced rather than
   described.
+- The title screen names the build it is, and the same version travels with
+  every bug report, crash log, and support ZIP, so a report can be matched to
+  the installer it came from.
 - Windowed and borderless-fullscreen modes can be toggled globally with F11 or
   Alt+Enter, and foreground panel motion can be disabled without changing game
   rules or deterministic state.

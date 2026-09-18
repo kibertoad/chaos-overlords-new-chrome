@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Rechaos.Core;
 
 namespace Rechaos.Game;
 
@@ -48,7 +49,7 @@ public sealed class RuntimeDiagnostics : IDisposable
             var diagnostics = new RuntimeDiagnostics(logDirectory, path, writer);
             diagnostics.Write("application.started", new Dictionary<string, string?>
             {
-                ["version"] = typeof(RuntimeDiagnostics).Assembly.GetName().Version?.ToString() ?? "unknown",
+                ["version"] = GameVersion.Current,
                 ["platform"] = Environment.OSVersion.Platform.ToString()
             });
             Prune(logDirectory, "session-*.jsonl", MaximumSessionLogs);
@@ -101,7 +102,7 @@ public sealed class RuntimeDiagnostics : IDisposable
             var path = CreateUniquePath(LogDirectory, "crash", ".log");
             var report = new StringBuilder()
                 .AppendLine($"Timestamp (UTC): {DateTimeOffset.UtcNow:O}")
-                .AppendLine($"Version: {typeof(RuntimeDiagnostics).Assembly.GetName().Version}")
+                .AppendLine($"Version: {GameVersion.Current}")
                 .AppendLine($"Origin: {Limit(origin)}")
                 .AppendLine($"Session log: {Path.GetFileName(SessionLogPath)}")
                 .AppendLine()
