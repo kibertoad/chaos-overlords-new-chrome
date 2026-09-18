@@ -31,6 +31,10 @@ public static class SealedTurnApplier
     /// <param name="replay">The recorder every mutation is routed through.</param>
     /// <param name="sealedOrders">The set the server froze, in slot order.</param>
     /// <returns>The canonical state hash to report.</returns>
+    /// <exception cref="MultiplayerProtocolException">
+    /// The set is for another turn than the one the match is on, or carries something this build
+    /// cannot apply.
+    /// </exception>
     /// <remarks>
     /// <para>
     /// Which seats the computer plays is read out of the match being applied, not passed in. It is
@@ -56,6 +60,14 @@ public static class SealedTurnApplier
         {
             throw new InvalidOperationException(
                 $"A sealed turn is applied during Command, not {state.Coordinator.Phase}.");
+        }
+        if (sealedOrders.Turn != state.Coordinator.Turn)
+        {
+            // Applying turn N's orders to turn M's state would be a desync nobody reported: every
+            // hash after it would be wrong, and the server would never be told why.
+            throw new MultiplayerProtocolException(
+                $"the sealed set is for turn {sealedOrders.Turn}, but the match is on turn "
+                + state.Coordinator.Turn);
         }
 
         var bySlot = DocumentsBySlot(sealedOrders, state.Setup.Players.Count);
@@ -124,32 +136,30 @@ public static class SealedTurnApplier
             switch (op)
             {
                 case SubmitCommandOp submit:
-                    replay.Submit(new GameCommand(
-                        player,
-                        new GangId(submit.Gang),
-                        (GangAction)submit.Action,
-                        FromWire(submit.Target),
-                        submit.Repeat,
-                        submit.SecondaryTarget is { } secondary ? FromWire(secondary) : null));
+                    replay.Submit(OrderOpDecoder.Command(submit, player, Document));
                     break;
                 case CancelCommandOp cancel:
                     replay.Cancel(player, new GangId(cancel.Gang));
                     break;
                 case QueueHireOp hire:
-                    replay.QueueHire(player, checked((short)hire.GangDefinitionId), hire.SectorId);
+                    replay.QueueHire(
+                        player, OrderOpDecoder.GangDefinitionId(hire.GangDefinitionId, Document), hire.SectorId);
                     break;
                 case SnubHireOfferOp snub:
-                    replay.SnubHireOffer(player, checked((short)snub.GangDefinitionId));
+                    replay.SnubHireOffer(
+                        player, OrderOpDecoder.GangDefinitionId(snub.GangDefinitionId, Document));
                     break;
                 case DismissNotificationOp:
                     replay.TryDismissNotification(player, out _);
                     break;
                 default:
-                    throw new InvalidOperationException(
-                        $"The sealed set carries an op this client cannot apply: {op.Op}.");
+                    throw OrderOpDecoder.Unsupported(op, Document);
             }
         }
     }
+
+    /// <summary>What a refusal names, so a player is told which payload could not be read.</summary>
+    private const string Document = "the sealed set";
 
     /// <summary>
     /// A computer player's turn, planned identically on every client from the shared state.
@@ -168,15 +178,4 @@ public static class SealedTurnApplier
         if (hiring.Choice is { } choice) replay.QueueHire(player, choice.GangDefinitionId, choice.SectorId);
         else if (hiring.RejectedGangDefinitionId is { } rejected) replay.SnubHireOffer(player, rejected);
     }
-
-    private static Core.GameModel.CommandTarget FromWire(Generated.CommandTarget target) => target switch
-    {
-        NoneTarget => Core.GameModel.CommandTarget.None,
-        GangTarget gang => Core.GameModel.CommandTarget.Gang(new GangId(gang.Id)),
-        SectorTarget sector => Core.GameModel.CommandTarget.Sector(sector.Id),
-        SiteTarget site => Core.GameModel.CommandTarget.Site(site.Id),
-        ItemTarget item => Core.GameModel.CommandTarget.Item(item.Id),
-        _ => throw new InvalidOperationException(
-            $"The sealed set carries a target kind this client cannot apply: {target.Kind}."),
-    };
 }

@@ -1,4 +1,4 @@
-import { listEventsContract, streamEventsContract } from '@chaos-overlords/contracts'
+import { INT32_MAX, listEventsContract, streamEventsContract } from '@chaos-overlords/contracts'
 import type { Hono } from 'hono'
 import { requireMember } from '../http/guards'
 import { buildHonoRoute } from '../http/routes'
@@ -32,12 +32,17 @@ export function registerEventRoutes(api: Hono<AppEnv>): void {
  *
  * The stream reads these itself rather than through a query schema because a browser's own
  * `EventSource` sets the header and nothing else, and a resume point that failed validation should
- * restart the stream from the beginning rather than refuse the connection.
+ * restart the stream from the beginning rather than refuse the connection. The bound is the one
+ * the REST read applies: a value past it is not a sequence number, and on Postgres it would fail
+ * inside the drain after the 200 went out, which a client reads as a retryable stream error and
+ * repeats with the same value forever.
  */
 function resumePoint(lastEventId: string | undefined, after: string | undefined): number {
   for (const candidate of [lastEventId, after]) {
     const parsed = Number(candidate)
-    if (candidate !== undefined && Number.isInteger(parsed) && parsed >= 0) return parsed
+    if (candidate !== undefined && Number.isInteger(parsed) && parsed >= 0 && parsed <= INT32_MAX) {
+      return parsed
+    }
   }
   return 0
 }

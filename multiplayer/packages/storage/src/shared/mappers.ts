@@ -11,6 +11,9 @@ import type {
   Player,
   SealedSlot,
   Snapshot,
+  SnapshotSummary,
+  TakeoverDecision,
+  TakeoverVote,
   Turn,
   TurnOrders,
   TurnReport,
@@ -154,6 +157,24 @@ export const toTurnReport = (row: TurnReportRow): TurnReport => ({ ...row })
 export const toSnapshot = (row: SnapshotRow): Snapshot => ({
   ...row,
   protocolVersion: databaseProtocolVersion(row.protocolVersion, 'snapshots.protocol_version'),
+})
+
+export const toSnapshotSummary = (row: Omit<SnapshotRow, 'body'>): SnapshotSummary => ({
+  ...row,
+  protocolVersion: databaseProtocolVersion(row.protocolVersion, 'snapshots.protocol_version'),
+})
+
+export interface TakeoverVoteRow {
+  matchId: string
+  targetPlayerId: string
+  voterPlayerId: string
+  decision: string
+  castAt: Date
+}
+
+export const toTakeoverVote = (row: TakeoverVoteRow): TakeoverVote => ({
+  ...row,
+  decision: row.decision as TakeoverDecision,
 })
 
 export const toEvent = (row: EventRow): PersistedEvent =>

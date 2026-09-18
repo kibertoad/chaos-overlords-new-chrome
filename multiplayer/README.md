@@ -60,7 +60,7 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `PORT`, `HOST` | `8787`, `0.0.0.0` | Listen address. |
 | `DATABASE_URL` | `sqlite:./chaos-overlords.db` | `sqlite:<path>`, `sqlite::memory:`, or `postgres://…`. |
 | `PUBLIC_LISTING` | `false` | Serve `GET /api/v1/matches` so clients can browse public lobbies. |
-| `RATE_LIMIT_PER_MINUTE` | `30` | Create/join attempts per client address per minute. |
+| `RATE_LIMIT_PER_MINUTE` | `30` | Create/join attempts per client address per minute. Every per-minute budget is at least `1`: `0` is refused at startup rather than admitting one call a minute. |
 | `MEMBER_RATE_LIMIT_PER_MINUTE` | `240` | Authenticated calls per player per minute. |
 | `UPLOAD_RATE_LIMIT_PER_MINUTE` | `10` | Snapshot uploads per player per minute (a snapshot can be a megabyte). |
 | `RETENTION_DAYS` | `30` | Delete finished, abandoned and never-started matches older than this, with everything they own. `0` keeps every match forever. |
@@ -71,9 +71,10 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 | `BUG_REPORT_DAILY_STATE_MB` | `512` | Attached journal megabytes accepted per rolling day across every reporter. Over budget, the report is still filed and only its journal is dropped. `0` lifts the ceiling. |
 | `BUG_REPORT_BLOB_DIR` | *(unset)* | Directory for compressed match journals. Unset keeps archives under 256 KiB in the database row and drops larger ones (a `sqlite::memory:` bug report database gets an in-memory store instead, since it has no file to outlive). |
 | `BUG_REPORT_RATE_LIMIT_PER_MINUTE` | `5` | Bug reports accepted per client address per minute. Its own budget, not the lobby's. |
-| `SWEEP_INTERVAL_MS` | `15000` | How often the safety net runs: expired turn deadlines, interrupted seals, retention (the timers are the precise path for a deadline). |
+| `SWEEP_INTERVAL_MS` | `15000` | How often the safety net runs: expired turn deadlines, interrupted seals, retention (the timers are the precise path for a deadline). At least `1000`; a pass still running when the next is due is not overlapped. |
 | `SHUTDOWN_GRACE_MS` | `5000` | How long open event streams may delay shutdown before they are cut. |
 | `MAX_EVENT_STREAMS` | `512` | Event streams this process holds at once, across every match; further opens answer 429. A stream lives until its client closes it and costs one read per published event, so this is what stops one member from holding thousands. Raise it and the file descriptor limit together. |
+| `CORS_ORIGINS` | *(none)* | Comma-separated browser origins allowed to call the API. The game is not a browser and needs none; a web front end using `@chaos-overlords/client` lists its origin here, which also permits the preflighted `Authorization` and `Last-Event-ID` headers. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. |
 
 Put TLS in front of it (Caddy, nginx, a tunnel): player tokens are bearer credentials.
@@ -86,6 +87,11 @@ and the server reads the chain from the right: with `1` it takes the entry the s
 wrote and ignores the rest. Set it too high and the server reads an address the client chose, at
 which point the rate limits stop binding — they are the only guard on the join-code door, the
 password door and multi-megabyte bug-report uploads.
+
+Set it too low — the usual mistake is leaving it at `0` behind Caddy or nginx — and every player
+shares the proxy's own address and with it one budget: one stranger's thirty bad tokens lock
+everybody out of create and join for a minute. The server logs a warning the first time a
+forwarded header arrives while `TRUST_PROXY` is unset.
 
 Configure the proxy to overwrite or strip `X-Forwarded-For` and `CF-Connecting-IP` on the way in if
 it can. `CF-Connecting-IP` is trusted only by the Cloudflare runtime, where Cloudflare sets it;

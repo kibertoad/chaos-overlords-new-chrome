@@ -298,15 +298,15 @@ public sealed partial class ChaosGame
             return;
         }
         _online.Match = view;
-        _online.DeadlineAt = _session.InitialDeadline;
+        _online.DeadlineAt = _session.Bootstrap.Deadline;
         _online.SeatedSeats = view.Players.Count(player => player.Slot >= 0);
-        ResetMatchPresentation(_session.InitialState);
+        ResetMatchPresentation(_session.Bootstrap.State);
         if (_session.IsRestoring)
         {
             _online.Status = "RESTORING THE MATCH";
             return;
         }
-        if (!AdoptOnlineState(_session.InitialState)) return;
+        if (!AdoptOnlineState(_session.Bootstrap.State)) return;
         _message = string.Empty;
         _screens.Show(ClientScreen.City);
     }
@@ -348,9 +348,17 @@ public sealed partial class ChaosGame
     /// "adopted, the match is over".
     /// </para>
     /// </remarks>
+    /// <param name="authoritative">The state as the session last settled it; the interface owns this copy.</param>
+    /// <param name="submission">What the server holds for this seat on the open turn, on a restore.</param>
+    /// <param name="restored">
+    /// The planning copy the session already built on a restore, with the saved draft replayed
+    /// onto it. Built there rather than here because building it is what proves the draft still
+    /// applies, and a draft that does not is a protocol failure rather than a crash on this thread.
+    /// </param>
     private bool AdoptOnlineState(
         MatchState authoritative,
-        OwnSubmissionView? submission = null)
+        OwnSubmissionView? submission = null,
+        SpeculativeTurn? restored = null)
     {
         if (_definitions is null || _session is null) return false;
         if (authoritative.Outcome is not null)
@@ -364,9 +372,7 @@ public sealed partial class ChaosGame
             _message = _online.Status;
             return false;
         }
-        var turn = submission?.Orders is { } document
-            ? SpeculativeTurn.Restore(authoritative, _definitions, _session.Slot, document)
-            : SpeculativeTurn.For(authoritative, _definitions, _session.Slot);
+        var turn = restored ?? SpeculativeTurn.For(authoritative, _definitions, _session.Slot);
         _actions = new MatchActions(turn);
         _state = turn.State;
         _online.PlanningTurn = authoritative.Coordinator.Turn;
@@ -374,6 +380,8 @@ public sealed partial class ChaosGame
             ? MultiplayerStage.WaitingForSeal
             : MultiplayerStage.Playing;
         _online.SentOrderDigest = submission?.OrdersHash;
+        // A restored draft is already the document the server holds; a fresh turn has sent nothing.
+        _sentOrderVersion = submission?.Orders is null ? UnsentOrders : turn.Orders.Version;
         _online.ReadySubmissionPending = false;
         _online.ReadySubmissionAcknowledged = submission?.Ready == true;
         _online.ResolutionExpectedSince = null;
@@ -509,7 +517,7 @@ public sealed partial class ChaosGame
                     player => player.Slot >= 0
                         && player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending);
                 _online.Status = string.Empty;
-                if (AdoptOnlineState(resumed.State, resumed.Submission))
+                if (AdoptOnlineState(resumed.State, resumed.Submission, resumed.Turn))
                 {
                     _message = resumed.Submission.Ready
                         ? "ORDERS RESTORED  WAITING FOR THE OTHER PLAYERS"
@@ -673,7 +681,8 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void LeaveOnlineMatch()
     {
-        Forget(_lobby?.LeaveAsync(), "multiplayer.leave.failed");
+        _pendingLeave = _lobby?.LeaveAsync();
+        Forget(_pendingLeave, "multiplayer.leave.failed");
         if (_activeMultiplayerRecovery is { Completed: false } recovery)
             UpdateOnlineRecovery(recovery with { CleanExit = true });
         EndOnlineMatch("LEFT THE MATCH");
@@ -738,59 +747,6 @@ public sealed partial class ChaosGame
         _online.Status = status;
         _message = status;
         _screens.Show(ClientScreen.Title);
-    }
-
-    /// <summary>
-    /// Lets go of everything the online flow holds, as the window closes.
-    /// </summary>
-    /// <remarks>
-    /// The sessions are given a moment to wind down rather than abandoned, because the last thing a
-    /// player's own client can do for their opponents is stop the match waiting on a seat nobody is
-    /// sitting in. It is a courtesy with a deadline, not a guarantee: the server's turn timer is what
-    /// actually keeps a match moving when a client vanishes.
-    /// </remarks>
-    private void ReleaseOnlineResources()
-    {
-        if ((_session is not null || _lobby?.Handle is not null)
-            && _activeMultiplayerRecovery is { Completed: false } recovery)
-        {
-            UpdateOnlineRecovery(recovery with { CleanExit = true });
-        }
-        _serverProbeCancellation?.Cancel();
-        _serverProbeCancellation?.Dispose();
-        _serverProbeCancellation = null;
-        _serverProbe = null;
-        var stopping = new[] { _session?.StopAsync(), _lobby?.StopAsync() }
-            .OfType<Task>()
-            .ToArray();
-        _session = null;
-        _lobby = null;
-        try
-        {
-            Task.WaitAll(stopping, ShutdownGrace);
-        }
-        catch (AggregateException)
-        {
-            // Nothing to do about a session that failed on the way out.
-        }
-        _http.Dispose();
-    }
-
-    /// <summary>How long a closing window waits for the sessions to let go.</summary>
-    private static readonly TimeSpan ShutdownGrace = TimeSpan.FromSeconds(2);
-
-    /// <summary>Lets a shutdown finish on its own, logging it if it does not.</summary>
-    private void Forget(Task? task, string diagnostic)
-    {
-        if (task is null) return;
-        _ = task.ContinueWith(
-            finished => _diagnostics?.Write(diagnostic, new Dictionary<string, string?>
-            {
-                ["error"] = RuntimeDiagnostics.ExceptionType(finished.Exception),
-            }),
-            CancellationToken.None,
-            TaskContinuationOptions.OnlyOnFaulted,
-            TaskScheduler.Default);
     }
 
     private void HandleOnlineClick(Point point)

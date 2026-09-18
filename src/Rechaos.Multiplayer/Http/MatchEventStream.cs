@@ -1,5 +1,4 @@
 using Rechaos.Multiplayer.Generated;
-using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Multiplayer.Http;
 
@@ -16,14 +15,38 @@ namespace Rechaos.Multiplayer.Http;
 /// Delivery is at least once. A resume, or a seal the repair sweep finished, repeats a fact the
 /// client may already hold, so every handler must be idempotent.
 /// </para>
+/// <para>
+/// A connection counts as made when its first frame arrives, not when the server accepts it. A
+/// server that accepts and then closes, or accepts and then says nothing, would otherwise reset the
+/// retry budget on every attempt and be reconnected to forever; and the interface would be told the
+/// connection was back before anything had come down it.
+/// </para>
 /// </remarks>
+/// <param name="match">The token-bound handle the stream is opened through.</param>
+/// <param name="policy">How long to keep reconnecting; <see cref="RetryPolicy.Stream"/> by default.</param>
+/// <param name="onReconnect">Told about each failure that will be retried, with the attempt number.</param>
+/// <param name="onConnected">Told when a connection has proven itself by delivering a frame.</param>
+/// <param name="idleTimeout">
+/// How long a connection may carry nothing before it is dropped and reopened, or null for
+/// <see cref="DefaultIdleTimeout"/>. The server heartbeats every <see cref="ServerHeartbeat"/>.
+/// </param>
 public sealed class MatchEventStream(
     MatchHandle match,
     RetryPolicy? policy = null,
     Action<Exception, int>? onReconnect = null,
-    Action? onConnected = null)
+    Action? onConnected = null,
+    TimeSpan? idleTimeout = null)
 {
+    /// <summary>How often the server writes a keepalive comment into an open stream.</summary>
+    public static readonly TimeSpan ServerHeartbeat = TimeSpan.FromSeconds(20);
+
+    /// <summary>
+    /// Two and a half heartbeats: one may be late and one may be lost before silence means anything.
+    /// </summary>
+    public static readonly TimeSpan DefaultIdleTimeout = ServerHeartbeat * 2.5;
+
     private readonly RetryPolicy _policy = policy ?? RetryPolicy.Stream;
+    private readonly TimeSpan _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
 
     /// <summary>
     /// Events from <paramref name="afterSeq"/> onwards, reconnecting until cancelled.
@@ -44,38 +67,38 @@ public sealed class MatchEventStream(
         Exception? lastFailure = null;
         while (!cancellationToken.IsCancellationRequested)
         {
-            var connected = await ConnectAsync(after, cancellationToken)
-                .ConfigureAwait(false);
+            var connected = await ConnectAsync(after, cancellationToken).ConfigureAwait(false);
             if (connected.Connection is not null)
             {
-                onConnected?.Invoke();
-                attempt = 0;
-                outage.Reset();
                 await using var reader = connected.Connection;
-                await using var events = reader
-                    .EventsAsync(cancellationToken).GetAsyncEnumerator(cancellationToken);
+                await using var frames = reader
+                    .FramesAsync(_idleTimeout, cancellationToken).GetAsyncEnumerator(cancellationToken);
+                var proven = false;
                 while (true)
                 {
                     // `MoveNextAsync` is stepped by hand rather than looped with `await foreach`
                     // because a `yield return` cannot sit inside a `try` that has a `catch`, and a
                     // connection that drops mid-stream is the ordinary case this has to recover.
-                    var (moved, failure) = await StepAsync(events).ConfigureAwait(false);
+                    var (moved, failure) = await StepAsync(frames).ConfigureAwait(false);
+                    if (!moved) failure ??= new IOException("the server closed the event stream");
                     if (failure is not null)
                     {
                         lastFailure = failure;
                         onReconnect?.Invoke(failure, attempt + 1);
-                        outage.Start();
+                        if (!outage.IsRunning) outage.Start();
                         break;
                     }
-                    if (!moved)
+                    if (!proven)
                     {
-                        lastFailure = new IOException("the server closed the event stream");
-                        onReconnect?.Invoke(lastFailure, attempt + 1);
-                        outage.Start();
-                        break;
+                        // The first frame, keepalive or event, is what makes this a connection.
+                        proven = true;
+                        attempt = 0;
+                        outage.Reset();
+                        onConnected?.Invoke();
                     }
-                    after = Math.Max(after, events.Current.Seq);
-                    yield return events.Current;
+                    if (frames.Current.Event is not { } @event) continue;
+                    after = Math.Max(after, @event.Seq);
+                    yield return @event;
                 }
             }
             else if (connected.Failure is { } failure)
@@ -97,11 +120,11 @@ public sealed class MatchEventStream(
 
     /// <summary>One step of the enumerator, with a retryable failure returned rather than thrown.</summary>
     private static async Task<(bool Moved, Exception? Failure)> StepAsync(
-        IAsyncEnumerator<MatchEvent> events)
+        IAsyncEnumerator<EventStreamFrame> frames)
     {
         try
         {
-            return (await events.MoveNextAsync().ConfigureAwait(false), null);
+            return (await frames.MoveNextAsync().ConfigureAwait(false), null);
         }
         catch (Exception exception) when (TransientFailure.IsTransient(exception))
         {
@@ -134,15 +157,16 @@ public sealed class MatchEventStream(
 
     private sealed class Connection(HttpResponseMessage response) : IAsyncDisposable
     {
-        public async IAsyncEnumerable<MatchEvent> EventsAsync(
+        public async IAsyncEnumerable<EventStreamFrame> FramesAsync(
+            TimeSpan idleTimeout,
             [System.Runtime.CompilerServices.EnumeratorCancellation]
             CancellationToken cancellationToken)
         {
             var body = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            await foreach (var @event in EventStreamParser
-                .ReadAsync(body, cancellationToken).ConfigureAwait(false))
+            await foreach (var frame in EventStreamParser
+                .ReadFramesAsync(body, idleTimeout, cancellationToken).ConfigureAwait(false))
             {
-                yield return @event;
+                yield return frame;
             }
         }
 

@@ -31,7 +31,7 @@ namespace Rechaos.Multiplayer.Session;
 /// </remarks>
 /// <example>
 /// <code>
-/// var turn = SpeculativeTurn.For(session.InitialState, definitions, session.Slot);
+/// var turn = SpeculativeTurn.For(session.Bootstrap.State, definitions, session.Slot);
 /// turn.Submit(command);                       // shows at once, and is recorded
 /// await session.SubmitOrdersAsync(1, turn.Orders.Build(), ready: true, token);
 /// </code>
@@ -132,21 +132,16 @@ public sealed class SpeculativeTurn
             }
             var accepted = operation switch
             {
-                SubmitCommandOp submit => turn.Submit(new GameCommand(
-                    turn.Player,
-                    new GangId(submit.Gang),
-                    (GangAction)submit.Action,
-                    FromWire(submit.Target),
-                    submit.Repeat,
-                    submit.SecondaryTarget is { } secondary ? FromWire(secondary) : null)).Accepted,
+                SubmitCommandOp submit =>
+                    turn.Submit(OrderOpDecoder.Command(submit, turn.Player, Document)).Accepted,
                 CancelCommandOp cancel => turn.Cancel(new GangId(cancel.Gang)).Accepted,
                 QueueHireOp hire => turn.QueueHire(
-                    checked((short)hire.GangDefinitionId), hire.SectorId).Accepted,
+                    OrderOpDecoder.GangDefinitionId(hire.GangDefinitionId, Document),
+                    hire.SectorId).Accepted,
                 SnubHireOfferOp snub => turn.SnubHireOffer(
-                    checked((short)snub.GangDefinitionId)).Accepted,
+                    OrderOpDecoder.GangDefinitionId(snub.GangDefinitionId, Document)).Accepted,
                 DismissNotificationOp => turn.DismissNotification(),
-                _ => throw new MultiplayerProtocolException(
-                    $"the saved draft carries an operation this client cannot apply: {operation.Op}"),
+                _ => throw OrderOpDecoder.Unsupported(operation, Document),
             };
             if (!accepted)
             {
@@ -201,14 +196,6 @@ public sealed class SpeculativeTurn
     /// <summary>The document to submit for this turn.</summary>
     public OrderDocument Build() => Orders.Build();
 
-    private static Core.GameModel.CommandTarget FromWire(Generated.CommandTarget target) => target switch
-    {
-        NoneTarget => Core.GameModel.CommandTarget.None,
-        GangTarget gang => Core.GameModel.CommandTarget.Gang(new GangId(gang.Id)),
-        SectorTarget sector => Core.GameModel.CommandTarget.Sector(sector.Id),
-        SiteTarget site => Core.GameModel.CommandTarget.Site(site.Id),
-        ItemTarget item => Core.GameModel.CommandTarget.Item(item.Id),
-        _ => throw new MultiplayerProtocolException(
-            $"the saved draft carries a target kind this client cannot apply: {target.Kind}"),
-    };
+    /// <summary>What a refusal names, so a player is told which payload could not be read.</summary>
+    private const string Document = "the saved draft";
 }

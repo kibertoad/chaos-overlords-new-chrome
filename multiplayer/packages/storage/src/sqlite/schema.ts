@@ -139,3 +139,37 @@ export const matchEvents = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.matchId, table.seq] })],
 )
+
+/**
+ * An absent human seat that the present players have been asked to decide on. One row per open
+ * prompt; it is inserted when the seat goes quiet and deleted when the seat returns or becomes
+ * computer controlled. The open-turn clock is paused while any row exists for the match, so the
+ * kernel asks this table rather than replaying the event log for every turn it opens.
+ */
+export const takeoverPrompts = sqliteTable(
+  'takeover_prompts',
+  {
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
+    playerId: text('player_id').notNull(),
+    turn: integer('turn').notNull(),
+    openedAt: integer('opened_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.matchId, table.playerId] })],
+)
+
+/** The latest choice of each voter on an open prompt; discarded with the prompt. */
+export const takeoverVotes = sqliteTable(
+  'takeover_votes',
+  {
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
+    targetPlayerId: text('target_player_id').notNull(),
+    voterPlayerId: text('voter_player_id').notNull(),
+    decision: text('decision').notNull(),
+    castAt: integer('cast_at', { mode: 'timestamp_ms' }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.matchId, table.targetPlayerId, table.voterPlayerId] })],
+)

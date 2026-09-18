@@ -13,7 +13,13 @@ const UNIQUE_MESSAGES = [
   'duplicate key value violates unique constraint',
 ]
 const POSTGRES_UNIQUE_VIOLATION = '23505'
-const SQLITE_CONSTRAINT_PREFIX = 'SQLITE_CONSTRAINT'
+/**
+ * Only the two SQLite codes that mean "a row with that key exists". `SQLITE_CONSTRAINT` covers
+ * foreign-key, not-null and check failures too, and reading those as "taken" turned a turn opened
+ * on a match retention had just deleted into a quiet "already exists" on Node while D1, which
+ * reports the same failure by message, threw. The two runtimes now refuse it the same way.
+ */
+const SQLITE_UNIQUE_CODES = ['SQLITE_CONSTRAINT_UNIQUE', 'SQLITE_CONSTRAINT_PRIMARYKEY']
 const MAX_CAUSE_DEPTH = 5
 
 /** Attempts an append makes at claiming the next sequence number before giving up. */
@@ -25,7 +31,7 @@ export function isUniqueViolation(error: unknown): boolean {
     if (typeof current !== 'object' || current === null) return false
     const { code, message } = current as { code?: unknown; message?: unknown }
     if (code === POSTGRES_UNIQUE_VIOLATION) return true
-    if (typeof code === 'string' && code.startsWith(SQLITE_CONSTRAINT_PREFIX)) return true
+    if (typeof code === 'string' && SQLITE_UNIQUE_CODES.includes(code)) return true
     if (typeof message === 'string' && UNIQUE_MESSAGES.some((needle) => message.includes(needle))) {
       return true
     }

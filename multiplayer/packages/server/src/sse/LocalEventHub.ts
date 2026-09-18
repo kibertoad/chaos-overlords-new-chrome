@@ -128,24 +128,27 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
    *
    * The process cap is checked first: it is the one that protects everyone else's matches, and a
    * refusal is cheaper than closing somebody's live stream to make room for a caller this cap is
-   * about to turn away anyway.
+   * about to turn away anyway. The caller's own stale streams go next, BEFORE the match cap is
+   * read: a full match is exactly the state a reconnecting player finds when every seat holds its
+   * quota, and refusing them there would turn the one legitimate reconnect into a 429.
    */
   private makeRoom(matchId: string, playerId: string): void {
-    const set = this.listeners.get(matchId)
     if (this.open_ >= this.limits.perProcess) {
       throw new RateLimitedError('This server is holding as many event streams as it can', {
         reason: 'too_many_streams',
         scope: 'process',
       })
     }
-    if ((set?.size ?? 0) >= this.limits.perMatch) {
+    const set = this.listeners.get(matchId)
+    if (set) {
+      const mine = [...set].filter((subscription) => subscription.playerId === playerId)
+      for (const stale of mine.slice(0, mine.length - this.limits.perPlayer + 1)) stale.close()
+    }
+    if ((this.listeners.get(matchId)?.size ?? 0) >= this.limits.perMatch) {
       throw new RateLimitedError('This match is holding as many event streams as it can', {
         reason: 'too_many_streams',
         scope: 'match',
       })
     }
-    if (!set) return
-    const mine = [...set].filter((subscription) => subscription.playerId === playerId)
-    for (const stale of mine.slice(0, mine.length - this.limits.perPlayer + 1)) stale.close()
   }
 }

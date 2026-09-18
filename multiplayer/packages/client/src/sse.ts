@@ -14,16 +14,35 @@ import { type MatchEvent, matchEventSchema, validateSync } from '@chaos-overlord
  * Leaving the loop early (a `break` in the consumer, or an error) cancels the body rather than only
  * releasing the lock, so the underlying connection is closed instead of being left to a collector.
  */
+export interface ParseOptions {
+  /**
+   * Give up on a connection that has carried nothing, not even a keepalive, for this long. A
+   * half-open TCP connection (a suspended laptop, a NAT entry that expired, a network switch)
+   * delivers no error and no end; without a deadline the read waits for the operating system's
+   * keepalive, which is tens of minutes away, while the player misses every seal. `0` disables it.
+   */
+  idleTimeoutMs?: number
+}
+
+export class StreamIdleError extends Error {
+  constructor(idleMs: number) {
+    super(`event stream carried nothing for ${idleMs} ms`)
+    this.name = 'StreamIdleError'
+  }
+}
+
 export async function* parseEventStream(
   body: ReadableStream<Uint8Array>,
+  options: ParseOptions = {},
 ): AsyncGenerator<MatchEvent> {
   const reader = body.getReader()
   const decoder = new TextDecoder()
+  const idleMs = options.idleTimeoutMs ?? 0
   let buffer = ''
   let drained = false
   try {
     while (true) {
-      const { value, done } = await reader.read()
+      const { value, done } = await readWithDeadline(reader, idleMs)
       if (done) {
         drained = true
         break
@@ -47,6 +66,23 @@ export async function* parseEventStream(
       buffer = buffer.slice(match.index + match[0].length)
       yield frame
     }
+  }
+}
+
+/** One read, abandoned (and the connection with it) when the idle deadline passes first. */
+async function readWithDeadline(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  idleMs: number,
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+  if (idleMs <= 0) return reader.read()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new StreamIdleError(idleMs)), idleMs)
+  })
+  try {
+    return await Promise.race([reader.read(), deadline])
+  } finally {
+    clearTimeout(timer)
   }
 }
 

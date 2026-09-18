@@ -65,9 +65,13 @@ export function buildContainer(env: Env): ServerContainer {
         // The object refuses an over-cap stream with a bare 429; turning it back into the domain
         // error here is what gets the caller the same envelope every other refusal has.
         if (response.status === 429) {
-          throw new RateLimitedError('This match is holding as many event streams as it can', {
-            reason: 'too_many_streams',
-          })
+          const scope = response.headers.get('X-Stream-Refusal') === 'process' ? 'process' : 'match'
+          throw new RateLimitedError(
+            scope === 'process'
+              ? 'This server is holding as many event streams as it can'
+              : 'This match is holding as many event streams as it can',
+            { reason: 'too_many_streams', scope },
+          )
         }
         return new Response(response.body as ReadableStream<Uint8Array> | null, {
           status: response.status,

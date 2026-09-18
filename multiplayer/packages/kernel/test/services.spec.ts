@@ -468,11 +468,14 @@ describe('multiplayer kernel', () => {
     expect((await storage.turns.get(host.match.id, 2))?.deadlineAt).toEqual(
       new Date(clock.now().getTime() + 60_000),
     )
-    expect(notifier.events.some((event) =>
-      event.type === 'turn.deadlineExtended' &&
-      event.payload.turn === 2 &&
-      event.payload.deadlineAt !== null,
-    )).toBe(true)
+    expect(
+      notifier.events.some(
+        (event) =>
+          event.type === 'turn.deadlineExtended' &&
+          event.payload.turn === 2 &&
+          event.payload.deadlineAt !== null,
+      ),
+    ).toBe(true)
   })
 
   it('pauses an open turn clock for a departure vote and restarts it after takeover', async () => {
@@ -480,9 +483,11 @@ describe('multiplayer kernel', () => {
     await kernel.lobby.leave(await principalOf(guest.token))
 
     expect((await storage.turns.get(host.match.id, 1))?.deadlineAt).toBeNull()
-    expect(notifier.events.some((event) =>
-      event.type === 'turn.deadlineExtended' && event.payload.deadlineAt === null,
-    )).toBe(true)
+    expect(
+      notifier.events.some(
+        (event) => event.type === 'turn.deadlineExtended' && event.payload.deadlineAt === null,
+      ),
+    ).toBe(true)
 
     clock.advance(120_000)
     expect(await kernel.turns.sweep()).toEqual({ sealed: 0, repaired: 0 })
@@ -1134,6 +1139,126 @@ describe('multiplayer kernel', () => {
    * The other way a match can be left with nothing to play: the status changed and the process died
    * before turn 1 existed. Same repair, driven from the match rather than from a turn row.
    */
+  it('lets a returning player decide the seats that went quiet while nobody was present', async () => {
+    const { host, guest } = await startedMatch()
+    await kernel.lobby.leave(await principalOf(guest.token))
+    // Nobody is present when the host goes, so no vote was ever opened for that seat.
+    await kernel.lobby.leave(await principalOf(host.token))
+    expect(await storage.takeovers.listOpenPrompts(host.match.id)).toEqual([guest.player.id])
+
+    await kernel.lobby.rejoin(await principalOf(guest.token))
+    // The returning player is asked about the absent host, and nothing about themselves.
+    expect(await storage.takeovers.listOpenPrompts(host.match.id)).toEqual([host.player.id])
+    expect(
+      notifier.events
+        .filter((event) => event.type === 'match.takeoverVoteRequested')
+        .map((event) => event.payload.playerId),
+    ).toEqual([guest.player.id, host.player.id])
+    await kernel.lobby.voteOnTakeover(await principalOf(guest.token), host.player.id, {
+      decision: 'computer',
+    })
+    expect((await storage.players.get(host.player.id))?.status).toBe('computer')
+    expect(await storage.takeovers.hasOpenPrompts(host.match.id)).toBe(false)
+  })
+
+  it('opens the vote a seat never had when somebody votes on it', async () => {
+    const { host, guest, third } = await startedMatchOfThree()
+    await kernel.lobby.leave(await principalOf(guest.token))
+    // A prompt opened before this server kept them durably: nothing on file, seat still absent.
+    await storage.takeovers.closePrompt(host.match.id, guest.player.id)
+    await kernel.lobby.voteOnTakeover(await principalOf(host.token), guest.player.id, {
+      decision: 'computer',
+    })
+    expect(await storage.takeovers.listOpenPrompts(host.match.id)).toEqual([guest.player.id])
+    await kernel.lobby.voteOnTakeover(await principalOf(third.token), guest.player.id, {
+      decision: 'computer',
+    })
+    expect((await storage.players.get(guest.player.id))?.status).toBe('computer')
+    // An active seat is never put to a vote, with or without a prompt.
+    await expect(
+      kernel.lobby.voteOnTakeover(await principalOf(host.token), third.player.id, {
+        decision: 'computer',
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'takeover_not_pending' } })
+  })
+
+  it('waits for a seat that merely missed a deadline before confirming its turn', async () => {
+    const { host, guest } = await startedMatch(60)
+    await submit(await principalOf(host.token), 1, 1, true)
+    clock.advance(60_000)
+    await kernel.turns.sweep()
+    expect((await storage.players.get(guest.player.id))?.status).toBe('takeoverPending')
+
+    await kernel.turns.report(await principalOf(host.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+    // The absent seat's client still applies the sealed turn; its report is part of the verdict.
+    expect((await storage.turns.get(host.match.id, 1))?.status).toBe('sealed')
+    await kernel.turns.report(await principalOf(guest.token), 1, {
+      stateHash: HASH_B,
+      finished: false,
+    })
+    expect((await storage.turns.get(host.match.id, 1))?.status).toBe('desynced')
+    expect((await storage.players.get(guest.player.id))?.status).toBe('active')
+  })
+
+  it('stores nothing when a snapshot is refused for its seat summaries', async () => {
+    const host = await kernel.lobby.createMatch({
+      settings: {
+        name: 'Fat Settings',
+        maxPlayers: 2,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: { filler: 'x'.repeat(8 * 1024 - 64) },
+      },
+      hostDisplayName: 'Host',
+    })
+    await kernel.lobby.start(await principalOf(host.token))
+    await expect(
+      kernel.snapshots.upload(await principalOf(host.token), {
+        turn: 0,
+        formatVersion: 1,
+        stateHash: HASH_A,
+        body: 'AAAA',
+        seatSummaries: [{ slot: 1, gangs: 1, sites: 1, sectors: 1 }],
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'game_settings_too_large' } })
+    // A refused upload must not leave a snapshot behind that the caller was told was rejected.
+    expect(await storage.snapshots.getLatest(host.match.id)).toBeNull()
+  })
+
+  it('seats and announces a match whose start died before either', async () => {
+    const created = await kernel.lobby.createMatch({
+      settings: {
+        name: 'x',
+        maxPlayers: 2,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Host',
+    })
+    const guest = await kernel.lobby.join({ joinCode: created.joinCode, displayName: 'G' })
+    await storage.matches.transition(created.match.id, ['lobby'], {
+      status: 'running',
+      seed: 7,
+      currentTurn: 0,
+      updatedAt: clock.now(),
+    })
+    expect(await kernel.turns.sweep()).toEqual({ sealed: 0, repaired: 1 })
+    const roster = await storage.players.listByMatch(created.match.id)
+    expect(roster.map((player) => [player.id, player.slot])).toEqual([
+      [created.player.id, 0],
+      [guest.player.id, 1],
+    ])
+    const started = notifier.events.filter((event) => event.type === 'match.started')
+    expect(started).toHaveLength(1)
+    expect(started[0]?.payload).toMatchObject({ seed: 7 })
+    expect(await kernel.turns.sweep()).toEqual({ sealed: 0, repaired: 0 })
+    expect(notifier.events.filter((event) => event.type === 'match.started')).toHaveLength(1)
+  })
+
   it('opens turn 1 for a match whose start was interrupted', async () => {
     const created = await kernel.lobby.createMatch({
       settings: {

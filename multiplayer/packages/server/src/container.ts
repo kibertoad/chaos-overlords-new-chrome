@@ -8,6 +8,12 @@ export interface ServerConfig {
   publicListing: boolean
   /** Interval between SSE keepalive comments. */
   sseHeartbeatMs: number
+  /**
+   * Origins a browser client may call from, or none. The game is not a browser and sends no
+   * `Origin`, so nothing is opened by default; a web front end lists its origins here, which
+   * allows the preflighted `Authorization` and `Last-Event-ID` headers the TypeScript client sends.
+   */
+  corsOrigins: readonly string[]
 }
 
 /**
@@ -52,6 +58,7 @@ export interface ServerContainer {
 export const DEFAULT_SERVER_CONFIG: ServerConfig = {
   publicListing: false,
   sseHeartbeatMs: 20_000,
+  corsOrigins: [],
 }
 
 /** Per-minute budgets. Generous for play, far below what a retry loop would spend. */

@@ -5,7 +5,7 @@ import { notNegativeZero } from './primitives'
  * Version of the game/server wire protocol. Increment this for every change that can make one side
  * unable to communicate correctly with the other. The C# mirror is MultiplayerProtocolVersion.
  */
-export const MULTIPLAYER_PROTOCOL_VERSION = 4
+export const MULTIPLAYER_PROTOCOL_VERSION = 5
 
 export const protocolVersionSchema = pipe(
   number(),

@@ -7,10 +7,11 @@ import {
 import { activePlayers, humanParticipants, type Match, type SealedSlot } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../domain/errors'
 import { hashOrderDocument, hashOrderSet } from '../logic/crypto'
-import { allActiveReady, evaluateConsensus, turnDeadline } from '../logic/turn-logic'
+import { allActiveReady, assignSlots, evaluateConsensus, turnDeadline } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
+import { toPlayerView } from './MatchQueryService'
 import { mergeSeatSummaries } from './SnapshotService'
 
 export type SealTrigger = 'ready' | 'deadline'
@@ -98,7 +99,7 @@ export class TurnService {
     } else {
       const [players, orders] = await Promise.all([
         this.deps.storage.players.listByMatch(matchId),
-        this.deps.storage.turns.listOrders(matchId, number),
+        this.deps.storage.turns.listOrderSummaries(matchId, number),
       ])
       if (!allActiveReady(players, orders)) return false
     }
@@ -126,24 +127,26 @@ export class TurnService {
       // what `start` leaves behind when it dies between the status change and opening turn 1.
       // There is no seal to finish, only the missing turn to open — `currentTurn` names it, except
       // at 0, which is the lobby's value and means turn 1 was never reached.
+      if (number <= FIRST_TURN) await this.repairInterruptedStart(match)
       return this.openTurn(match, Math.max(number, FIRST_TURN))
     }
     let advanced = false
     if (turn.orderSetHash === null || turn.sealedSlots === null) {
       const [orders, players] = await Promise.all([
-        this.deps.storage.turns.listOrders(match.id, number),
+        this.deps.storage.turns.listOrderSummaries(match.id, number),
         this.deps.storage.players.listByMatch(match.id),
       ])
+      const submitted = new Set(
+        orders.filter((row) => row.ordersHash !== null).map((row) => row.playerId),
+      )
       for (const player of activePlayers(players)) {
-        const row = orders.find((candidate) => candidate.playerId === player.id)
-        if (row?.ordersHash !== null) continue
+        // A seat with no row at all (a late joiner seated after this turn opened) was never
+        // asked for orders, so it is not absent; only a row that stayed empty is.
+        if (submitted.has(player.id) || !orders.some((row) => row.playerId === player.id)) continue
         if (
           await this.deps.storage.players.transitionStatus(player.id, ['active'], 'takeoverPending')
         ) {
-          await this.publisher.publish(match.id, {
-            type: 'match.takeoverVoteRequested',
-            payload: { playerId: player.id, turn: number },
-          })
+          await this.openTakeoverPrompt(match.id, player.id, number)
         }
       }
       const currentPlayers = await this.deps.storage.players.listByMatch(match.id)
@@ -176,6 +179,42 @@ export class TurnService {
   }
 
   /**
+   * Finish a `start` that died after running the match but before seating it and announcing it.
+   * Seating is what the roster's slots are read from on every client, and `match.started` is what
+   * makes them bootstrap at all; without both the sweep would open turn 1 for a match nobody can
+   * play. Both steps are idempotent: seats are assigned only while one is still unassigned, and
+   * the announcement only when the log does not already carry it.
+   */
+  private async repairInterruptedStart(match: Match): Promise<void> {
+    if (match.seed === null) return
+    const roster = await this.deps.storage.players.listByMatch(match.id)
+    if (activePlayers(roster).some((player) => player.slot < 0)) {
+      await this.deps.storage.players.assignSlots(assignSlots(roster, match.hostPlayerId))
+    }
+    if (await this.hasEvent(match.id, 'match.started')) return
+    const seated = await this.deps.storage.players.listByMatch(match.id)
+    this.deps.logger.warn('finished an interrupted start', { matchId: match.id })
+    await this.publisher.publish(match.id, {
+      type: 'match.started',
+      payload: {
+        seed: match.seed,
+        players: activePlayers(seated).map((player) => toPlayerView(player, match.hostPlayerId)),
+      },
+    })
+  }
+
+  /** Whether the log carries an event of `type`. Only read on repair paths, where the log is short. */
+  private async hasEvent(matchId: string, type: string): Promise<boolean> {
+    let after = 0
+    for (;;) {
+      const page = await this.deps.storage.events.listAfter(matchId, after, 200)
+      if (page.some((event) => event.type === type)) return true
+      if (page.length < 200) return false
+      after = page[page.length - 1]?.seq ?? after
+    }
+  }
+
+  /**
    * Opens turn `number` for every active player and arms its deadline. Idempotent: the insert is
    * refused if the turn already exists, and only the caller that created it announces it. Returns
    * whether this call created the turn.
@@ -188,7 +227,7 @@ export class TurnService {
     // clock behind that modal would spend planning time nobody can use, so an open vote opens the
     // turn paused. The clock is restarted when the last absent seat returns or becomes computer
     // controlled.
-    const hasAbsenceVote = await this.hasOpenTakeoverVotes(match.id)
+    const hasAbsenceVote = await this.deps.storage.takeovers.hasOpenPrompts(match.id)
     const deadlineAt = hasAbsenceVote
       ? null
       : turnDeadline(openedAt, match.settings.turnTimerSeconds)
@@ -303,6 +342,7 @@ export class TurnService {
   /** Authenticated turn activity wins the race with an AI vote and restores the human seat. */
   private async restorePendingPlayer(playerId: string, matchId: string): Promise<void> {
     if (await this.deps.storage.players.transitionStatus(playerId, ['takeoverPending'], 'active')) {
+      await this.deps.storage.takeovers.closePrompt(matchId, playerId)
       await this.publisher.publish(matchId, {
         type: 'match.takeoverVoteCancelled',
         payload: { playerId },
@@ -311,13 +351,35 @@ export class TurnService {
     }
   }
 
+  /**
+   * Ask the present players what to do with an absent human seat. The prompt is durable state
+   * (see `TakeoverRepository`) and announced exactly once: a second request for a seat whose
+   * prompt is already open changes nothing, so a repeated seal step or a rejoin that re-asks about
+   * every absent seat cannot double the modal on anyone's screen.
+   */
+  async openTakeoverPrompt(matchId: string, playerId: string, turn: number): Promise<boolean> {
+    const opened = await this.deps.storage.takeovers.openPrompt(
+      matchId,
+      playerId,
+      turn,
+      this.deps.clock.now(),
+    )
+    if (!opened) return false
+    await this.publisher.publish(matchId, {
+      type: 'match.takeoverVoteRequested',
+      payload: { playerId, turn },
+    })
+    return true
+  }
+
   /** Pause the open turn while players decide what to do with an absent human seat. */
   async pauseForTakeoverVote(matchId: string): Promise<void> {
     const match = await this.deps.storage.matches.get(matchId)
     if (!match || (match.status !== 'running' && match.status !== 'desynced')) return
     const turn = await this.deps.storage.turns.get(matchId, match.currentTurn)
     if (turn?.status !== 'open' || turn.deadlineAt === null) return
-    if (!(await this.deps.storage.turns.rescheduleDeadline(matchId, match.currentTurn, null))) return
+    if (!(await this.deps.storage.turns.rescheduleDeadline(matchId, match.currentTurn, null)))
+      return
     await this.publisher.publish(matchId, {
       type: 'turn.deadlineExtended',
       payload: { turn: match.currentTurn, deadlineAt: null },
@@ -328,7 +390,7 @@ export class TurnService {
   async resumeAfterTakeoverVotes(matchId: string): Promise<void> {
     const match = await this.deps.storage.matches.get(matchId)
     if (!match || match.status !== 'running' || match.settings.turnTimerSeconds === 0) return
-    if (await this.hasOpenTakeoverVotes(matchId)) return
+    if (await this.deps.storage.takeovers.hasOpenPrompts(matchId)) return
     const turn = await this.deps.storage.turns.get(matchId, match.currentTurn)
     if (turn?.status !== 'open' || turn.deadlineAt !== null) return
     const deadlineAt = turnDeadline(this.deps.clock.now(), match.settings.turnTimerSeconds)
@@ -343,32 +405,6 @@ export class TurnService {
       payload: { turn: match.currentTurn, deadlineAt: deadlineAt.toISOString() },
     })
     await this.deps.scheduler.schedule({ matchId, turn: match.currentTurn, dueAt: deadlineAt })
-  }
-
-  /** Reconstruct the durable set of vote prompts that clients still have open. */
-  private async hasOpenTakeoverVotes(matchId: string): Promise<boolean> {
-    const pending = new Set<string>()
-    let after = 0
-    for (;;) {
-      const page = await this.deps.storage.events.listAfter(matchId, after, 200)
-      if (page.length === 0) return pending.size > 0
-      for (const event of page) {
-        after = event.seq
-        switch (event.type) {
-          case 'match.takeoverVoteRequested':
-            pending.add(event.payload.playerId)
-            break
-          case 'match.takeoverVoteCancelled':
-          case 'match.playerTakenOver':
-          case 'match.playerReturned':
-            pending.delete(event.payload.playerId)
-            break
-          default:
-            break
-        }
-      }
-      if (page.length < 200) return pending.size > 0
-    }
   }
 
   /** Re-run the verdict of every unconfirmed turn and the auto-seal of the open one. */

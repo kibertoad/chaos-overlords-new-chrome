@@ -65,11 +65,36 @@ export interface StreamOptions {
   maxReconnectDelayMs?: number
   /** Called for each dropped connection, so a caller can surface "reconnecting" to the player. */
   onReconnect?: (error: unknown, attempt: number) => void
+  /**
+   * A connection that carries nothing, not even the server's keepalive comment, for this long is
+   * dropped and reconnected. The default is two and a half server heartbeats; `0` disables it.
+   */
+  idleTimeoutMs?: number
+  /**
+   * How long the stream may keep failing to deliver anything before it gives up. The clock starts
+   * at the first failure and is reset by the first event of a connection, not by the connection
+   * itself: a server that accepts and then closes at once is still an outage. `0` retries forever.
+   */
+  maxOutageMs?: number
+}
+
+export class StreamOutageError extends Error {
+  constructor(
+    readonly attempts: number,
+    readonly outageMs: number,
+    override readonly cause: unknown,
+  ) {
+    super(`event stream delivered nothing for ${outageMs} ms across ${attempts} attempts`)
+    this.name = 'StreamOutageError'
+  }
 }
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 15_000
 const DEFAULT_RECONNECT_DELAY_MS = 1_000
 const DEFAULT_MAX_RECONNECT_DELAY_MS = 30_000
+/** Two and a half of the server's 20-second heartbeats. */
+const DEFAULT_STREAM_IDLE_TIMEOUT_MS = 50_000
+const DEFAULT_MAX_OUTAGE_MS = 5 * 60_000
 
 const API = '/api/v1'
 
@@ -297,7 +322,9 @@ export class MatchHandle {
       options.after ?? 0,
       options.signal,
     )
-    yield* parseEventStream(response.body as ReadableStream<Uint8Array>)
+    yield* parseEventStream(response.body as ReadableStream<Uint8Array>, {
+      idleTimeoutMs: options.idleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS,
+    })
   }
 
   /**
@@ -310,25 +337,43 @@ export class MatchHandle {
    * forever. A refusal that is *about* this attempt rather than about the membership — being rate
    * limited, a timeout — is retried: it is the reconnect loop itself that spends the rate limit
    * budget, so treating 429 as fatal would make the recovery path destroy the thing it recovers.
+   *
+   * Every other failure — a dropped socket, a mangled frame, a proxy answering with HTML, a
+   * connection that went silent — is retried within `maxOutageMs`, after which the stream ends
+   * with a `StreamOutageError` naming the last failure. The outage clock is reset only by an
+   * event actually arriving, so a server that accepts the connection and closes it at once cannot
+   * keep the loop alive forever.
    */
   async *stream(options: StreamOptions = {}): AsyncGenerator<MatchEvent> {
     let after = options.after ?? 0
     let attempt = 0
+    let outageStartedAt: number | null = null
     const base = options.reconnectDelayMs ?? DEFAULT_RECONNECT_DELAY_MS
     const ceiling = options.maxReconnectDelayMs ?? DEFAULT_MAX_RECONNECT_DELAY_MS
+    const maxOutageMs = options.maxOutageMs ?? DEFAULT_MAX_OUTAGE_MS
     while (!options.signal?.aborted) {
+      // A connection the server closes cleanly without delivering anything is a failure of the
+      // same kind as a dropped one for the purposes of the budget: nothing arrived.
+      let failure: unknown = new Error('the server closed the event stream')
       try {
         for await (const event of this.streamOnce({ ...options, after })) {
           after = Math.max(after, event.seq)
           attempt = 0
+          outageStartedAt = null
           yield event
         }
       } catch (error) {
         if (options.signal?.aborted) return
         if (error instanceof MultiplayerApiError && isFatalStreamError(error.status)) throw error
-        options.onReconnect?.(error, attempt + 1)
+        failure = error
       }
       if (options.signal?.aborted) return
+      const now = Date.now()
+      outageStartedAt ??= now
+      if (maxOutageMs > 0 && now - outageStartedAt >= maxOutageMs) {
+        throw new StreamOutageError(attempt + 1, now - outageStartedAt, failure)
+      }
+      options.onReconnect?.(failure, attempt + 1)
       attempt += 1
       await sleep(backoff(base, ceiling, attempt), options.signal)
     }

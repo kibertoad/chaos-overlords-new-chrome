@@ -89,6 +89,12 @@ export interface TurnOrders {
   submittedAt: Date | null
 }
 
+/** `TurnOrders` without the document: what a seal decision and a match view actually read. */
+export type OrderSummary = Pick<
+  TurnOrders,
+  'matchId' | 'turn' | 'playerId' | 'ordersHash' | 'ready'
+>
+
 export interface TurnReport {
   matchId: string
   turn: number
@@ -109,6 +115,19 @@ export interface Snapshot {
   uploadedAt: Date
   /** Base64 of the client's native snapshot bytes; the server never decodes it. */
   body: string
+}
+
+/** A snapshot row without its body. */
+export type SnapshotSummary = Omit<Snapshot, 'body'>
+
+export type TakeoverDecision = 'computer' | 'wait'
+
+export interface TakeoverVote {
+  matchId: string
+  targetPlayerId: string
+  voterPlayerId: string
+  decision: TakeoverDecision
+  castAt: Date
 }
 
 export type PersistedEvent = MatchEvent

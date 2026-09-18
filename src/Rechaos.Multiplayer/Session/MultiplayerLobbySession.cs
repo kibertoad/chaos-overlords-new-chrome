@@ -54,8 +54,11 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     private readonly MultiplayerClient _anonymous;
     private readonly ConcurrentQueue<LobbyNotice> _notices = new();
     private readonly CancellationTokenSource _stopping = new();
+    private readonly Lock _disposalGate = new();
     private MatchHandle? _handle;
     private Task _current = Task.CompletedTask;
+    private Task _leaving = Task.CompletedTask;
+    private Task? _disposal;
     private int _busy;
 
     /// <summary>A session pointed at one server.</summary>
@@ -172,15 +175,19 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     /// <para>
     /// Best effort all the same: the caller should not wait on it. The seat is gone from the player's
     /// point of view the moment they ask, and the server's turn timer is what moves a match on past a
-    /// client that vanished without saying so.
+    /// client that vanished without saying so. The session does remember it, though, so that
+    /// <see cref="DisposeAsync"/> lets it finish before the client it is on is torn down.
     /// </para>
     /// </remarks>
     public Task LeaveAsync()
     {
         var handle = _handle;
         _handle = null;
+        if (handle is null) return Task.CompletedTask;
         // The client's own request deadline bounds this; the session's token deliberately does not.
-        return handle is null ? Task.CompletedTask : handle.LeaveAsync(CancellationToken.None);
+        var leaving = handle.LeaveAsync(CancellationToken.None);
+        _leaving = leaving;
+        return leaving;
     }
 
     /// <summary>
@@ -188,16 +195,19 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     /// </summary>
     /// <remarks>
     /// For a caller that must not block. The task owns what the session holds, so somebody has to
-    /// observe it — but not the thread that asked for the stop.
+    /// observe it — but not the thread that asked for the stop. Calling either this or
+    /// <see cref="DisposeAsync"/> more than once answers the same wind-down.
     /// </remarks>
-    public Task StopAsync()
-    {
-        _stopping.Cancel();
-        return DisposeAsync().AsTask();
-    }
+    public Task StopAsync() => DisposeAsync().AsTask();
 
     /// <inheritdoc />
-    public async ValueTask DisposeAsync()
+    public ValueTask DisposeAsync()
+    {
+        lock (_disposalGate) _disposal ??= DisposeCoreAsync();
+        return new ValueTask(_disposal);
+    }
+
+    private async Task DisposeCoreAsync()
     {
         await _stopping.CancelAsync().ConfigureAwait(false);
         try
@@ -207,6 +217,18 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         catch (OperationCanceledException)
         {
             // Stopping mid-call is how a lobby is left.
+        }
+        try
+        {
+            // Bounded by the request deadline the client puts on every call, and waited for so
+            // that the seat is actually given up before the caller disposes the client under it.
+            await _leaving.ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is MultiplayerApiException
+            or MultiplayerProtocolException or MultiplayerTimeoutException
+            or HttpRequestException or IOException)
+        {
+            // A leave that did not get through is the server's turn timer's problem now.
         }
         _stopping.Dispose();
     }
@@ -254,28 +276,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         }
     }
 
-    /// <summary>
-    /// Text a player can act on, rather than an exception's own words.
-    /// </summary>
-    /// <remarks>
-    /// The reason, not the status, is what this branches on: several refusals share a status and mean
-    /// different things, and the server's message is written for a developer reading a log.
-    /// </remarks>
-    private static string Describe(Exception exception) => exception switch
-    {
-        MultiplayerApiException { Reason: "invalid_token" or "revoked" } =>
-            "THAT MEMBERSHIP IS NO LONGER VALID",
-        MultiplayerApiException { Reason: "unknown_match" } => "NO MATCH WITH THAT CODE",
-        MultiplayerApiException { Reason: "match_full" } => "THAT LOBBY IS FULL",
-        MultiplayerApiException { Reason: "host_only" } => "ONLY THE HOST CAN DO THAT",
-        MultiplayerApiException { Reason: "invalid_password" } => "WRONG PASSWORD",
-        MultiplayerApiException { Reason: "match_started" } => "THAT MATCH HAS ALREADY STARTED",
-        // A reserved display name is not in this list because it never reaches the server from this
-        // client: the name is refused before a request is built, which is the only way to say which
-        // field is wrong. The server refuses it too, as a contract violation like any other.
-        MultiplayerApiException api => api.Message.ToUpperInvariant(),
-        MultiplayerTimeoutException => "THE SERVER DID NOT ANSWER",
-        MultiplayerProtocolException protocol => protocol.Message.ToUpperInvariant(),
-        _ => "COULD NOT REACH THE SERVER",
-    };
+    /// <summary>The shared map, upper-cased for this screen.</summary>
+    private static string Describe(Exception exception) =>
+        MultiplayerFailureText.Describe(exception).ToUpperInvariant();
 }

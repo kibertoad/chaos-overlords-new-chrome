@@ -1,7 +1,7 @@
 # Multiplayer
 
 Status: implemented server, game client wired
-Last updated: 2026-09-14
+Last updated: 2026-09-18
 
 Online play for *Chaos Overlords: New Chrome* runs through a coordination server that any player
 can host and that can also run as a central public service. The server code lives under
@@ -46,7 +46,12 @@ A departure or a timed turn with no submitted document opens a takeover vote. Ev
 present player must choose `USE AI` before control changes; any `WAIT` choice keeps the seat human,
 and there is no server-side timeout that approves takeover implicitly. While any such prompt is
 open, the open turn has no deadline, so time spent in the modal cannot consume planning time. The
-clock restarts when the last prompt closes. A player who reconnects
+clock restarts when the last prompt closes. Open prompts and their votes are rows of their own
+(`takeover_prompts`, `takeover_votes`), not a replay of the event log: opening a turn and judging a
+vote each cost one indexed read however long the match has run. A seat that goes quiet while nobody
+is present to ask is put to the first player who returns, and a vote cast on an absent seat nobody
+was ever asked about opens the question itself, so no seat can be left idle for the rest of the
+match with no way to hand it to the computer. A player who reconnects
 atomically returns to `active`, cancels a pending absence vote, and reclaims their seat from AI when
 necessary. `match.playerTakenOver`, `match.playerReturned`, and `match.latePlayerJoined` place both
 directions of a controller transfer at an exact event-log position, so every client records the same
@@ -103,7 +108,7 @@ generated from the same valibot schemas (see "Two languages, one contract").
 
 | Call | Who | Effect |
 |---|---|---|
-| `POST /matches` | anyone | Creates a lobby. Returns the host's token, the 8-character join code and the match view. `settings.gameSettings` is an opaque object the server stores for clients (scenario, portraits, difficulty); the server reads only `name`, `maxPlayers`, `turnTimerSeconds`, `visibility`. An optional `password` gates joining. |
+| `POST /matches` | anyone | Creates a lobby. Returns the host's token, the 8-character join code and the match view. `settings.gameSettings` is an object the server stores for clients (scenario, portraits, difficulty) and reads two keys of: `allowLateJoin` gates the late-join door, and `seatSummaries` is written back from the host's snapshot uploads and hash reports for the public listing. Everything else in it is opaque. The server also reads `name`, `maxPlayers`, `turnTimerSeconds`, `visibility`. An optional `password` gates joining. |
 | `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings and available late-join seats with current gang, site, and sector counts. |
 | `POST /matches/join` | anyone | Joins by code (and password). Returns that player's token. Capacity is a single atomic seat claim. |
 | `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. |
@@ -176,6 +181,13 @@ An open takeover vote also pauses the current turn clock. The server clears its 
 and emits the replacement deadline. A stale scheduler callback sees the cleared or replacement
 deadline and cannot seal the turn early.
 
+The verdict counts every human seat, including one that merely missed a timed deadline
+(`takeoverPending`): its client still applies the sealed turn, so its report is waited for like any
+other, and the wait costs nothing the match was not already paying, since an open absence vote
+pauses the clock. Confirming without it would refuse its later report as `turn_confirmed` and leave
+a genuine divergence undetected. The vote that makes the seat computer controlled re-runs the
+verdict without it.
+
 A desync pauses the match (`match.status = desynced`): the open turn stays open but cannot seal
 until every unsettled turn is confirmed. The host uploads the snapshot of the disputed turn;
 clients load it, re-report, and the match resumes. Because orders are refused for the whole pause,
@@ -188,7 +200,9 @@ timer, two reports landing together, an alarm firing twice: each produces exactl
 verdict. There are no transactions anywhere, because D1 offers none. Sealing is consequently a
 compare-and-swap followed by steps that are each conditional on the last, so a process that dies
 mid-seal leaves a state the sweep can finish rather than a match with nothing to play: it looks for
-a live match whose current turn is no longer open and completes it.
+a live match whose current turn is no longer open and completes it. A start that died after running
+the match but before seating it or announcing it is finished the same way: the sweep seats whoever
+is still unseated and publishes `match.started` if the log does not carry it, then opens turn 1.
 
 ### Timer
 
@@ -278,7 +292,8 @@ bootstrap plus only the exceptional desync repairs.
   makes every roster decision a guess.
 - **Event streams are bounded.** A stream is not a request: it lives until the client closes it and
   every event published to its match costs it one read. So they are capped per player (the oldest
-  goes to make room for a reconnect), per match, and per process, and the last two refuse with 429.
+  goes to make room for a reconnect, before the match cap is read, so a reconnect into a full match
+  succeeds), per match, and per process, and the last two refuse with 429.
   Without that one member could hold thousands of streams and turn every sealed turn into thousands
   of database reads for everybody.
 - **Secrecy of orders until the seal** is the property the design guarantees: nobody, the host
@@ -292,6 +307,9 @@ bootstrap plus only the exceptional desync repairs.
   member is a cost too — order documents are a quarter of a megabyte and snapshots four times that.
   The windows are per process, which is what a self-hosted server needs; a public deployment puts its
   platform's rate limiting in front as the real gate.
+- **A refused request is described, not echoed.** A validation failure names the field and the
+  rule; the value the client sent (a mistyped password, an order document) is never written back
+  into the response or, through it, into a proxy log.
 - **Bounded input everywhere**: body limits per route, a bounded op count, an opaque settings blob
   capped at 8 KiB and bounded in nesting depth as well as bytes, snapshots capped at 1 MiB of
   base64 whose alphabet, padding and length are checked even though the server never decodes them.
@@ -453,7 +471,12 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    turn, so a cash or other rules divergence is refused at its first authoritative boundary instead
    of being shown as a plausible restored state. A token that answers 401 means the membership was
    revoked — the player left or was kicked.
-8. Retry transient failures for up to five minutes rather than ending the match immediately. Every call a received fact leads to is idempotent — the reads
+8. Drop and reconnect a stream that carries nothing, not even the server's 20-second keepalive, for
+   two and a half heartbeats: a half-open connection (a suspended laptop, an expired NAT entry)
+   delivers neither an error nor an end, and without that deadline every seal after it is missed
+   until the operating system notices. Reconnect attempts count against one outage window that
+   only an arriving event resets; a server that accepts the connection and closes it at once is
+   an outage like any other. Retry transient failures for up to five minutes rather than ending the match immediately. Every call a received fact leads to is idempotent — the reads
    plainly so, and the two writes by definition, since a report restates a hash the server already
    holds and an order document replaces what was held — so a server having a bad moment costs latency
    and nothing else. Draft submissions are whole-document replacements: an unsent older draft is

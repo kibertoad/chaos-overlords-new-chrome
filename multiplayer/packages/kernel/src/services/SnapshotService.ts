@@ -55,6 +55,9 @@ export class SnapshotService {
     // Bootstrap has no reports to corroborate. A repair does: only a hash the active players
     // reported most often can become the state every client is asked to adopt.
     await this.requireCorroboration(match.id, request.turn, request.stateHash)
+    // Judged before anything is written: a refusal after the row landed would leave a stored
+    // snapshot the caller was told was rejected, with no `snapshot.available` and no verdict.
+    const gameSettings = mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries)
     const snapshot: Snapshot = {
       matchId: match.id,
       turn: request.turn,
@@ -66,11 +69,7 @@ export class SnapshotService {
       body: request.body,
     }
     await this.deps.storage.snapshots.put(snapshot)
-    await this.deps.storage.matches.updateRuntimeGameSettings(
-      match.id,
-      mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries),
-      this.deps.clock.now(),
-    )
+    await this.publishSeatSummaries(match.id, gameSettings)
     await this.pruneOldSnapshots(match.id)
     if (match.status === 'desynced') {
       await this.publisher.publish(match.id, {
@@ -83,6 +82,22 @@ export class SnapshotService {
         },
       })
       await this.turns.settle(match.id, request.turn)
+    }
+  }
+
+  /**
+   * Late-join hints are optional metadata; the snapshot the players are waiting on is not. A
+   * transient failure of this write is logged and never fails the upload that already succeeded.
+   */
+  private async publishSeatSummaries(matchId: string, gameSettings: GameSettings): Promise<void> {
+    try {
+      await this.deps.storage.matches.updateRuntimeGameSettings(
+        matchId,
+        gameSettings,
+        this.deps.clock.now(),
+      )
+    } catch (error) {
+      this.deps.logger.warn('could not publish seat summaries', { matchId, error: String(error) })
     }
   }
 

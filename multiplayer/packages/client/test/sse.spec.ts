@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseEventStream } from '../src'
+import { MultiplayerClient, parseEventStream, StreamIdleError, StreamOutageError } from '../src'
 import { isFatalStreamError } from '../src/client'
 
 function bodyOf(chunks: string[]): ReadableStream<Uint8Array> {
@@ -60,6 +60,113 @@ describe('parseEventStream', () => {
     }
     // Releasing the lock alone would leave the connection open until a collector noticed.
     expect(cancelled).toBe(true)
+  })
+})
+
+describe('parseEventStream idle deadline', () => {
+  /**
+   * A half-open connection delivers neither an error nor an end. Without a deadline the read
+   * waits on the operating system's keepalive, tens of minutes away, while every seal is missed.
+   */
+  it('abandons a connection that carries nothing for the idle window', async () => {
+    let cancelled = false
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(frameOf(1)))
+        // ...and then nothing, ever.
+      },
+      cancel() {
+        cancelled = true
+      },
+    })
+    const seen: number[] = []
+    await expect(async () => {
+      for await (const event of parseEventStream(body, { idleTimeoutMs: 30 })) {
+        seen.push(event.seq)
+      }
+    }).rejects.toBeInstanceOf(StreamIdleError)
+    expect(seen).toEqual([1])
+    expect(cancelled).toBe(true)
+  })
+
+  it('counts a keepalive comment as activity', async () => {
+    const encoder = new TextEncoder()
+    const body = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        for (let i = 0; i < 4; i += 1) {
+          await new Promise((resolve) => setTimeout(resolve, 15))
+          controller.enqueue(encoder.encode(': keepalive\n\n'))
+        }
+        controller.enqueue(encoder.encode(frameOf(1)))
+        controller.close()
+      },
+    })
+    const seen: number[] = []
+    for await (const event of parseEventStream(body, { idleTimeoutMs: 40 })) seen.push(event.seq)
+    expect(seen).toEqual([1])
+  })
+})
+
+describe('MatchHandle.stream outage budget', () => {
+  const sseResponse = (text: string) =>
+    new Response(text, { status: 200, headers: { 'content-type': 'text/event-stream' } })
+
+  /**
+   * A server that accepts the connection and closes it at once is still an outage: the budget is
+   * reset by an event arriving, never by the connection alone, so the loop cannot live forever.
+   */
+  it('gives up after the outage window when connections deliver nothing', async () => {
+    let connections = 0
+    const client = new MultiplayerClient({
+      baseUrl: 'https://example.invalid',
+      token: 'cop_x',
+      fetch: async () => {
+        connections += 1
+        return sseResponse(': connected\n\n')
+      },
+    })
+    const reconnects: number[] = []
+    await expect(async () => {
+      for await (const _ of client.match('m').stream({
+        reconnectDelayMs: 5,
+        maxReconnectDelayMs: 5,
+        maxOutageMs: 60,
+        onReconnect: (_error, attempt) => reconnects.push(attempt),
+      })) {
+        // consume
+      }
+    }).rejects.toBeInstanceOf(StreamOutageError)
+    expect(connections).toBeGreaterThan(1)
+    expect(reconnects.length).toBeGreaterThan(0)
+  })
+
+  it('resets the outage clock when an event arrives, and resumes after its seq', async () => {
+    const afters: string[] = []
+    let connections = 0
+    const client = new MultiplayerClient({
+      baseUrl: 'https://example.invalid',
+      token: 'cop_x',
+      fetch: async (_input, init) => {
+        connections += 1
+        afters.push(
+          String((init?.headers as Record<string, string> | undefined)?.['Last-Event-ID']),
+        )
+        if (connections <= 2) return sseResponse(frameOf(connections))
+        return sseResponse(': connected\n\n')
+      },
+    })
+    const seen: number[] = []
+    await expect(async () => {
+      for await (const event of client.match('m').stream({
+        reconnectDelayMs: 5,
+        maxReconnectDelayMs: 5,
+        maxOutageMs: 60,
+      })) {
+        seen.push(event.seq)
+      }
+    }).rejects.toBeInstanceOf(StreamOutageError)
+    expect(seen).toEqual([1, 2])
+    expect(afters.slice(0, 3)).toEqual(['0', '1', '2'])
   })
 })
 

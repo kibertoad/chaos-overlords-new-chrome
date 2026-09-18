@@ -6,12 +6,39 @@ using Rechaos.Multiplayer.Protocol;
 namespace Rechaos.Multiplayer.Http;
 
 /// <summary>
+/// One frame off the event stream: an event, or a keepalive that carried none.
+/// </summary>
+/// <remarks>
+/// Keepalives are surfaced rather than swallowed because they are the proof that a connection is
+/// alive. A reader that only ever saw events could not tell a healthy stream between turns from a
+/// socket the network has quietly forgotten about.
+/// </remarks>
+public readonly record struct EventStreamFrame(MatchEvent? Event)
+{
+    public static EventStreamFrame Keepalive => default;
+
+    public bool IsKeepalive => Event is null;
+}
+
+/// <summary>The stream went quiet for longer than the server's heartbeat allows.</summary>
+/// <remarks>
+/// An <see cref="IOException"/> so that the reconnect loop treats it like any other dropped
+/// connection: resume from the last sequence seen, rather than end the match.
+/// </remarks>
+public sealed class EventStreamIdleException(TimeSpan idle, Exception? inner = null)
+    : IOException($"the event stream carried nothing for {idle.TotalSeconds:0.#}s", inner)
+{
+    public TimeSpan Idle { get; } = idle;
+}
+
+/// <summary>
 /// Reads server-sent events off a response body into match events.
 /// </summary>
 /// <remarks>
 /// Frames are separated by a blank line; <c>data:</c> carries the JSON event and <c>id:</c> its
-/// sequence number. Comment lines (the keepalive) are skipped. Either line ending is allowed, as
-/// the event-stream format says.
+/// sequence number. Comment lines (the keepalive) end a frame with nothing in it. Either line
+/// ending is allowed, as the event-stream format says, and a byte order mark in front of the first
+/// line is skipped rather than read as the start of a field name.
 /// </remarks>
 public static class EventStreamParser
 {
@@ -21,17 +48,50 @@ public static class EventStreamParser
         [System.Runtime.CompilerServices.EnumeratorCancellation]
         CancellationToken cancellationToken)
     {
+        await foreach (var frame in ReadFramesAsync(body, idleTimeout: null, cancellationToken)
+            .ConfigureAwait(false))
+        {
+            if (frame.Event is { } @event) yield return @event;
+        }
+    }
+
+    /// <summary>
+    /// Every frame from one connection's body, keepalives included, until the server closes it.
+    /// </summary>
+    /// <param name="body">The response body, read line by line and never buffered whole.</param>
+    /// <param name="idleTimeout">
+    /// How long the body may carry nothing before the connection is given up on as dead, or null
+    /// to wait forever. The server heartbeats on a fixed interval, so silence well past it means the
+    /// socket is gone even though nothing has said so.
+    /// </param>
+    /// <param name="cancellationToken">The caller's own stop, which is never reported as idleness.</param>
+    /// <exception cref="EventStreamIdleException">Nothing arrived within <paramref name="idleTimeout"/>.</exception>
+    public static async IAsyncEnumerable<EventStreamFrame> ReadFramesAsync(
+        Stream body,
+        TimeSpan? idleTimeout,
+        [System.Runtime.CompilerServices.EnumeratorCancellation]
+        CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(body);
         using var reader = new StreamReader(body, Encoding.UTF8, detectEncodingFromByteOrderMarks: false);
+        // One linked source, re-armed after every line: `CancelAfter` restarts the countdown, so
+        // the deadline is always measured from the last byte rather than from the connection.
+        using var idle = idleTimeout is { } ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken) : null;
         var frame = new StringBuilder();
+        var firstLine = true;
         while (true)
         {
-            var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            var line = await ReadLineAsync(reader, idle, idleTimeout, cancellationToken).ConfigureAwait(false);
             if (line is null)
             {
                 // The connection ended. A frame with no blank line after it was cut mid-write, and
                 // delivering half an event is worse than resuming from the last complete one.
                 yield break;
+            }
+            if (firstLine)
+            {
+                firstLine = false;
+                if (line.Length > 0 && line[0] == '﻿') line = line[1..];
             }
             if (line.Length > 0)
             {
@@ -47,7 +107,26 @@ public static class EventStreamParser
             }
             var parsed = ParseFrame(frame.ToString());
             frame.Clear();
-            if (parsed is not null) yield return parsed;
+            yield return new EventStreamFrame(parsed);
+        }
+    }
+
+    /// <summary>One line, with the idle deadline told apart from the caller's cancellation.</summary>
+    private static async Task<string?> ReadLineAsync(
+        StreamReader reader,
+        CancellationTokenSource? idle,
+        TimeSpan? idleTimeout,
+        CancellationToken cancellationToken)
+    {
+        if (idle is null) return await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+        idle.CancelAfter(idleTimeout!.Value);
+        try
+        {
+            return await reader.ReadLineAsync(idle.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new EventStreamIdleException(idleTimeout.Value, exception);
         }
     }
 
@@ -68,7 +147,8 @@ public static class EventStreamParser
     /// The <c>id:</c> field is reconciled with the <c>seq</c> inside the JSON rather than ignored.
     /// Both are written from the same number, so a disagreement means the frame was mangled in
     /// transit or the server is not the one this client thinks it is. Resuming from the wrong
-    /// number would skip events in silence, so the frame is refused instead.
+    /// number would skip events in silence, so the frame is refused instead — and so is an id that
+    /// is not a number at all, for the same reason.
     /// </remarks>
     internal static MatchEvent? ParseFrame(string frame)
     {
@@ -92,9 +172,14 @@ public static class EventStreamParser
         if (!sawData) return null;
 
         var @event = WireJson.Read<MatchEvent>(data.ToString());
-        if (id is not null
-            && int.TryParse(id, NumberStyles.Integer, CultureInfo.InvariantCulture, out var framed)
-            && framed != @event.Seq)
+        // An empty id is the format's way of saying "no id", and is left alone.
+        if (string.IsNullOrEmpty(id)) return @event;
+        if (!int.TryParse(id, NumberStyles.Integer, CultureInfo.InvariantCulture, out var framed))
+        {
+            throw new MultiplayerProtocolException(
+                $"event stream frame id '{id}' is not a sequence number");
+        }
+        if (framed != @event.Seq)
         {
             throw new MultiplayerProtocolException(
                 $"event stream frame id {framed} disagrees with its payload seq {@event.Seq}");

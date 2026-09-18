@@ -72,7 +72,25 @@ public sealed partial class MultiplayerMatchSession
         return CallAsync(
             token => _match.SubmitOrdersAsync(
                 turn, new SubmitOrdersRequest(document, ready), token),
+            lane: null,
             cancellationToken);
+    }
+
+    /// <summary>The outbox's whole life, ending the session if it cannot go on.</summary>
+    private async Task RunOutboxAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await DrainOutboxAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Ordinary shutdown, or the pump failed first and stopped the session.
+        }
+        catch (Exception exception)
+        {
+            Fail(exception);
+        }
     }
 
     /// <summary>
@@ -81,71 +99,66 @@ public sealed partial class MultiplayerMatchSession
     /// <remarks>
     /// A refusal is reported and forgotten rather than ending the session: a turn that sealed while
     /// the player was still typing is an ordinary race, and the next turn is still theirs to play.
+    /// A revoked membership is the exception — the seat is gone, and no document will ever be
+    /// taken from it again — and ends the session the way it would had the pump met it.
     /// </remarks>
     private async Task DrainOutboxAsync(CancellationToken cancellationToken)
     {
-        try
+        while (true)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            await _outboxSignal.WaitAsync(cancellationToken).ConfigureAwait(false);
+            PendingOrders? next;
+            CancellationTokenSource? requestCancellation = null;
+            lock (_outboxGate)
             {
-                await _outboxSignal.WaitAsync(cancellationToken).ConfigureAwait(false);
-                PendingOrders? next;
-                CancellationTokenSource? requestCancellation = null;
-                lock (_outboxGate)
+                next = _pending;
+                _pending = null;
+                if (next is not null)
                 {
-                    next = _pending;
-                    _pending = null;
-                    if (next is not null)
-                    {
-                        requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-                            cancellationToken);
-                        _inFlightOrders = requestCancellation;
-                    }
-                }
-                if (next is null) continue;
-                try
-                {
-                    await CallAsync(
-                        token => _match.SubmitOrdersAsync(
-                            next.Turn, new SubmitOrdersRequest(next.Document, next.Ready), token),
-                        requestCancellation!.Token).ConfigureAwait(false);
-                    _notices.Enqueue(new MultiplayerNotice.OrdersAccepted(next.Turn, next.Ready));
-                }
-                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested
-                    && requestCancellation!.IsCancellationRequested)
-                {
-                    // QueueOrders replaced this document. The latest pending document is the only
-                    // one worth sending, and its signal is already waiting for the next loop.
-                }
-                catch (Exception exception) when (exception is MultiplayerApiException
-                    or MultiplayerProtocolException)
-                {
-                    // The server had its say. A turn that sealed while the player was still
-                    // planning is the ordinary case, and re-sending would be refused again.
-                    _notices.Enqueue(
-                        new MultiplayerNotice.OrdersRefused(next.Turn, Describe(exception)));
-                }
-                catch (RetryExhaustedException exception)
-                {
-                    // The call retained and retried this whole document for five minutes. Surface
-                    // the terminal diagnostics instead of silently abandoning a submitted turn.
-                    _notices.Enqueue(new MultiplayerNotice.Failed(Describe(exception), exception));
-                    return;
-                }
-                finally
-                {
-                    lock (_outboxGate)
-                    {
-                        if (ReferenceEquals(_inFlightOrders, requestCancellation))
-                            _inFlightOrders = null;
-                    }
-                    requestCancellation?.Dispose();
+                    requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                        cancellationToken);
+                    _inFlightOrders = requestCancellation;
                 }
             }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            // Ordinary shutdown.
+            if (next is null) continue;
+            try
+            {
+                await CallAsync(
+                    token => _match.SubmitOrdersAsync(
+                        next.Turn, new SubmitOrdersRequest(next.Document, next.Ready), token),
+                    _outboxLane,
+                    requestCancellation!.Token).ConfigureAwait(false);
+                _notices.Enqueue(new MultiplayerNotice.OrdersAccepted(next.Turn, next.Ready));
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested
+                && requestCancellation!.IsCancellationRequested)
+            {
+                // QueueOrders replaced this document. The latest pending document is the only
+                // one worth sending, and its signal is already waiting for the next loop. Whatever
+                // this one had reported about its attempts describes nothing still being tried.
+                _outboxLane.Recovered();
+            }
+            catch (MultiplayerApiException exception) when (MultiplayerFailureText.IsMembershipRevoked(exception))
+            {
+                throw;
+            }
+            catch (Exception exception) when (exception is MultiplayerApiException
+                or MultiplayerProtocolException)
+            {
+                // The server had its say. A turn that sealed while the player was still
+                // planning is the ordinary case, and re-sending would be refused again.
+                _notices.Enqueue(
+                    new MultiplayerNotice.OrdersRefused(next.Turn, Describe(exception)));
+            }
+            finally
+            {
+                lock (_outboxGate)
+                {
+                    if (ReferenceEquals(_inFlightOrders, requestCancellation))
+                        _inFlightOrders = null;
+                }
+                requestCancellation?.Dispose();
+            }
         }
     }
 

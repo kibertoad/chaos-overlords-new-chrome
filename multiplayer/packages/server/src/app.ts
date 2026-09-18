@@ -1,6 +1,7 @@
 import { BUG_REPORT_LIMITS, LIMITS } from '@chaos-overlords/contracts'
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
+import { cors } from 'hono/cors'
 import type { ServerContainer } from './container'
 import { handleError } from './http/errorHandler'
 import {
@@ -32,6 +33,17 @@ export function createApp(container: ServerContainer): Hono<AppEnv> {
     await next()
   })
   app.use('*', requestId)
+  if (container.config.corsOrigins.length > 0) {
+    app.use(
+      '*',
+      cors({
+        origin: [...container.config.corsOrigins],
+        allowHeaders: ['Authorization', 'Content-Type', 'Last-Event-ID'],
+        exposeHeaders: ['X-Request-Id'],
+        maxAge: 600,
+      }),
+    )
+  }
 
   app.get('/health', (c) => c.json({ ok: true }))
   app.route(API_PREFIX, apiRoutes())
