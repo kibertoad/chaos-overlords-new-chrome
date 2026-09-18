@@ -11,11 +11,15 @@ a new design over HTTP.
 The game offers the official central service at `https://chaos-overlords.dinorefurb.com` and a
 custom/self-hosted choice. Opening the Online screen probes the selected service's unversioned
 `GET /health` route and reports whether it is available before the player tries to host or join.
-Hosts give each match a name and choose whether it is publicly discoverable or join-code-only. The
-Online screen browses public waiting and ongoing matches and filters them by status, scenario, and
-AI difficulty. Code-only matches remain absent from discovery. A host still receives an
-eight-character code and can copy it to the system clipboard; joiners have a bounded Paste button
-that reads at most the eight supported characters without disturbing the player-name field.
+Hosts give each match a name and choose whether it is publicly discoverable or join-code-only;
+publicly discoverable is the default, and a server lists those matches unless its operator turned
+`PUBLIC_LISTING` off. The Online screen browses public waiting and ongoing matches and filters them
+by status, scenario, and AI difficulty. An unfiltered browse shows every match the server returned,
+including one whose settings blob this build cannot read — that session is listed without its
+scenario and mentality rather than hidden, and only a scenario or AI filter drops it. Code-only
+matches remain absent from discovery. A host still receives an eight-character code and can copy it
+to the system clipboard; joiners have a bounded Paste button that reads at most the eight supported
+characters without disturbing the player-name field.
 
 ## What the server is, and is not
 
@@ -109,7 +113,7 @@ generated from the same valibot schemas (see "Two languages, one contract").
 | Call | Who | Effect |
 |---|---|---|
 | `POST /matches` | anyone | Creates a lobby. Returns the host's token, the 8-character join code and the match view. `settings.gameSettings` is an object the server stores for clients (scenario, portraits, difficulty) and reads two keys of: `allowLateJoin` gates the late-join door, and `seatSummaries` is written back from the host's snapshot uploads and hash reports for the public listing. Everything else in it is opaque. The server also reads `name`, `maxPlayers`, `turnTimerSeconds`, `visibility`. An optional `password` gates joining. |
-| `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings and available late-join seats with current gang, site, and sector counts. |
+| `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings and available late-join seats with current gang, site, and sector counts. Served unless the deployment set `PUBLIC_LISTING=false`, which answers 404 `listing_disabled` instead. |
 | `POST /matches/join` | anyone | Joins by code (and password). Returns that player's token. Capacity is a single atomic seat claim. |
 | `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. |
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. |

@@ -17,7 +17,7 @@ compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-PUBLIC_LISTING = "false"
+PUBLIC_LISTING = "true"
 RATE_LIMIT_PER_MINUTE = "30"
 MEMBER_RATE_LIMIT_PER_MINUTE = "240"
 UPLOAD_RATE_LIMIT_PER_MINUTE = "10"
