@@ -246,8 +246,13 @@ cursor feedback remain to be validated.
   tile recenters the detail view.
 - Dragging a friendly gang portrait past the same four-pixel threshold used by
   Hire creates a 36-by-28 scaled-art token and highlights only validator-legal
-  neighboring minimap sectors. Dropping queues a one-off Move command;
-  stationary clicks retain gang selection and double-click inspection.
+  minimap sectors. Dropping on a neighbor queues a one-off Move command, while
+  dropping on the centered sector the gang already occupies queues a recurring
+  Control command; that center tile is highlighted, and the drop is accepted,
+  only while the validator allows Control, so a sector the player already owns
+  or one under Crackdown reports its reason instead. A queued Control also
+  draws the white target frame around the center tile when its gang card is
+  hovered. Stationary clicks retain gang selection and double-click inspection.
 - Hire dragging remains active over the detailed-sector screen. A drop on its
   workspace reserves the recruit for the centered sector, while a drop on the
   visible minimap uses the indicated controlled sector. The drag token and
