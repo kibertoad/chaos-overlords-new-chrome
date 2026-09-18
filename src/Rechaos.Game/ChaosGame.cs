@@ -430,7 +430,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         else
         {
-            if (!_idleGangWarningOpen)
+            // A printable key belongs exclusively to the field showing the caret. In particular,
+            // typing an O in an online name or join code must not open Options before the window's
+            // TextInput event can deliver that character to the field.
+            if (!_idleGangWarningOpen && !TextInputHasFocus())
             {
                 if (Pressed(keyboard, Keys.F1)) OpenHelp();
                 else if (Pressed(keyboard, Keys.O)) OpenOptions();

@@ -26,6 +26,18 @@ smaller relevant scope. Run with `-IncludeLongRunningTests` or otherwise execute
 the full suite only when the user explicitly requests it or when a specific
 change to long-running coverage provides a documented exceptional reason.
 
+On Windows, the PowerShell execution policy may reject repository scripts and
+the `pnpm.ps1` command wrapper. Invoke the fast gate explicitly with:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\Invoke-Validation.ps1
+```
+
+Pass validation arguments after the script path when needed. Run pnpm-based
+validators through `pnpm.cmd` (for example,
+`pnpm.cmd --filter @chaos-overlords/contracts test:run`) so PowerShell does not
+select the blocked `pnpm.ps1` wrapper.
+
 ## Multiplayer protocol version
 
 Keep `MULTIPLAYER_PROTOCOL_VERSION` in

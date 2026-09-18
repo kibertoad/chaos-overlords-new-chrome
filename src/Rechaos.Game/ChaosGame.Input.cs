@@ -2,6 +2,24 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    /// <summary>Whether a visible text editor currently owns keyboard input.</summary>
+    private bool TextInputHasFocus()
+    {
+        if (_gameMenuOpen)
+            return (_bugReportOpen && _bugReportFocus == BugReportFocus.Message)
+                   || (_saveBrowserMode != SaveBrowserMode.None && _editingSaveName);
+
+        return _screens.Current switch
+        {
+            ClientScreen.Setup => _editingPlayerName is not null,
+            ClientScreen.Online => _online.Stage == MultiplayerStage.Connect
+                                   && OnlineFields.Any(field => field.IsFocused),
+            ClientScreen.Lobby => _online.IsHost && _online.SessionName.IsFocused,
+            ClientScreen.ComlinkSend => true,
+            _ => false
+        };
+    }
+
     private void CancelCurrentInteraction()
     {
         if (_idleGangWarningOpen)

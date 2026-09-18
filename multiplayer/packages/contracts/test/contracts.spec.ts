@@ -31,6 +31,7 @@ describe('API_CONTRACTS', () => {
     expect([...routes].sort()).toEqual(
       [
         'GET /matches',
+        'POST /handshake',
         'POST /matches',
         'POST /matches/join',
         'POST /matches/join-running',
