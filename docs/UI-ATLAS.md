@@ -195,9 +195,12 @@ cursor feedback remain to be validated.
   combat apertures; its black pixels are content, not a transparency key.
 - Sector detail uses `PX02000` source `(0, siteId*64, 120, 64)`; gang detail
   and hiring use `PX03000` source `((gangId%10)*64, (gangId/10)*64, 64, 64)`.
-- Sector detail also shows up to ten friendly or detected enemy portraits from
-  `PX03000` in owner colors. Friendly portraits are mouse-selectable and open
-  that gang's information panel; enemy portraits remain read-only.
+- Sector detail shows only the active player's gangs, using at most six native
+  74-by-110 cards in a two-column by three-row grid. Detected enemies are not
+  added to this roster: they can turn the sector's gang-status marker red and
+  appear in the separate Attack picker while remaining absent from Sector
+  detail. This friendly-only behavior is confirmed by the complete original
+  `0x00410770` compositor and an original 1.1 runtime observation.
 - The main control panel's Gangs/Sector half uses `PX05009`, selects only active
   friendly gangs in the current sector, refuses an empty roster, and keeps arrow
   navigation within that stable ID-ordered roster. It reports Tech Level,

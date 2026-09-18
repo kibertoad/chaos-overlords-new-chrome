@@ -296,15 +296,32 @@ The same compositor first copies the complete 74-by-110 card source
 `x = 254 + 76*(index % 2)` and `y = 80 + 112*(index / 2)`, then draws the
 player-color outline one pixel outside the finished card.
 
+The gang-card roster is friendly-only. Every ordinary caller passes the active
+player at `0x004abc84` as `0x00410770`'s second argument. The compositor clears
+six card-slot entries at `0x004abc68`, then scans only that player's 81 gang
+records at `0x00498da8 + player * 0xa20`. It renders records whose active sector
+byte at `+2` matches the selected sector and whose active-player visibility byte
+at `+12 + activePlayer` is nonzero, preserving roster-slot order. Because the
+scan never visits another owner's record block, detected enemy gangs do not
+appear among the detailed-sector cards. Enemy visibility instead affects the
+red contested status marker and the separate Attack picker roster described in
+`BIN-DETECT-001`.
+
 **Interpretation:** Both detailed-sector meters are three-row bevels copied at
 native length. They are not flat fills, site progress is truncated rather than
 rounded, and gang Force advances in exact six-pixel steps. The original draws
 site progress only for the active sector owner. The recreation retains its
 requested violet enemy-site progress as an intentional visibility extension,
-but applies the same highlight/center/shadow structure.
+but applies the same highlight/center/shadow structure. The detailed-sector
+gang cards are not a visibility roster: they show at most six active-player
+gangs in native roster order. A red marker or an Attack target can therefore
+legitimately identify detectable opposition that is absent from these cards.
 
-**Confidence:** High from the complete site and gang compositors, exact source
-and destination rectangles, arithmetic branches, and decoded `PX00129` pixels.
+**Confidence:** High from the complete site and gang compositors, all ordinary
+`0x00410770` call sites and their active-player argument, exact record-block and
+visibility-byte addressing, source and destination rectangles, arithmetic
+branches, and decoded `PX00129` pixels. The friendly-only roster was also
+confirmed in an original 1.1 runtime observation.
 
 ### BIN-UI-016 - Last Turn Events site-image treatment
 
