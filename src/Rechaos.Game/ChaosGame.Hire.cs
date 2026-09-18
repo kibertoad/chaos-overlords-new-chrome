@@ -88,9 +88,23 @@ public sealed partial class ChaosGame
         definition.Stats.Fighting, definition.Stats.MartialArts
     ];
 
+    /// <summary>
+    /// What the dock in front of the player allows, which a submitted online turn narrows.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="MatchActions"/> is the lock on changing a match, and online it is taken away the
+    /// moment the turn goes to the server. That leaves the offers themselves readable, which is what
+    /// this distinguishes: the browsing paths ask for anything but
+    /// <see cref="HireDockAccess.Closed"/>, and the hiring and snubbing paths ask for the handle.
+    /// </remarks>
+    private HireDockAccess HireAccess => HireDockPolicy.Access(
+        _state is not null,
+        _actions is not null,
+        _session is not null && _online.PlanningIsSubmitted);
+
     private void OpenHire(ClientScreen returnScreen = ClientScreen.City)
     {
-        if (_state is null || _actions is null
+        if (_state is null || HireAccess == HireDockAccess.Closed
             || _state.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)
             || _state.Coordinator.ActivePlayer is not { } playerId)
         {
@@ -124,7 +138,8 @@ public sealed partial class ChaosGame
 
     private void BeginHireDrag(int slot, Point point)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null
+        if (_state?.Coordinator.ActivePlayer is not { } playerId
+            || HireAccess == HireDockAccess.Closed
             || _state.Coordinator.Phase != TurnPhase.Command)
         {
             RejectInput("HIRING REQUIRES A PLANNING TURN");
@@ -162,10 +177,15 @@ public sealed partial class ChaosGame
         var slot = _draggedHireSlot;
         _draggedHireDefinitionId = null;
         _draggedHireSlot = null;
-        if (definitionId is null || slot is null || _state?.Coordinator.ActivePlayer is not { } playerId
-            || _actions is null)
-            return;
         _hireDragStarted = false;
+        if (definitionId is null || slot is null
+            || _state?.Coordinator.ActivePlayer is not { } playerId)
+            return;
+        if (_actions is null)
+        {
+            RejectInput(OnlinePlanningClosed);
+            return;
+        }
         bool hasSector;
         int sectorId;
         if (_screens.Current == ClientScreen.Sector)
@@ -216,7 +236,12 @@ public sealed partial class ChaosGame
 
     private void QueueSelectedHireOffer()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
+        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_actions is null)
+        {
+            RejectInput(OnlinePlanningClosed);
+            return;
+        }
         var player = _state.FindPlayer(playerId)!;
         _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
         if (_hireCursor < 0) return;
@@ -246,7 +271,12 @@ public sealed partial class ChaosGame
 
     private void SnubSelectedHireOffer()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
+        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        if (_actions is null)
+        {
+            RejectInput(OnlinePlanningClosed);
+            return;
+        }
         var player = _state.FindPlayer(playerId)!;
         _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
         if (_hireCursor < 0) return;
@@ -258,8 +288,13 @@ public sealed partial class ChaosGame
 
     private void SnubHireDockOffer(int slot, bool pointerButton = false)
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _actions is null) return;
+        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
         if (pointerButton) PlayGeneralSound(AudioRouting.PointerPushSound());
+        if (_actions is null)
+        {
+            ReportHireDockResult(false, OnlinePlanningClosed, pointerButton);
+            return;
+        }
         PrepareCurrentHireOffers();
         var entry = CurrentHireDock(_state.FindPlayer(playerId)!)[slot];
         if (entry is null)
@@ -268,13 +303,23 @@ public sealed partial class ChaosGame
             return;
         }
         var result = _actions.SnubHireOffer(playerId, entry.GangDefinitionId);
+        ReportHireDockResult(result.Accepted, result.Validation.Message, pointerButton);
+    }
+
+    /// <summary>Answers a dock action in whichever voice the control that asked speaks.</summary>
+    /// <remarks>
+    /// The dock's reject button is a pointer control with its own result sounds, so an answer it
+    /// triggered has to use those rather than the keyboard's, which would land on top of the push
+    /// the button has already played.
+    /// </remarks>
+    private void ReportHireDockResult(bool accepted, string rejectionMessage, bool pointerButton)
+    {
         if (!pointerButton)
         {
-            ReportInputResult(result.Accepted, result.Validation.Message);
+            ReportInputResult(accepted, rejectionMessage);
             return;
         }
-        _message = result.Accepted ? string.Empty : CityStatusMessage.Error(result.Validation.Message);
-        if (AudioRouting.PointerPushResultSound(result.Accepted) is { } sound)
-            PlayGeneralSound(sound);
+        _message = accepted ? string.Empty : CityStatusMessage.Error(rejectionMessage);
+        if (AudioRouting.PointerPushResultSound(accepted) is { } sound) PlayGeneralSound(sound);
     }
 }
