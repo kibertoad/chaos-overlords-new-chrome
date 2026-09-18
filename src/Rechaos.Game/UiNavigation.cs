@@ -834,6 +834,27 @@ public static partial class PlayerPortraitLayout
         Validate(player);
         return new Rectangle(48 + player * 72, 4, 20, 20);
     }
+
+    /// <summary>
+    /// Where a caption of <paramref name="columns"/> characters goes under a top-bar portrait.
+    /// </summary>
+    /// <remarks>
+    /// The eight rows between the portraits and the top of the map at y 44 are all the space the
+    /// top bar has, so a caption takes one glyph row of it and is centred on the portrait it
+    /// belongs to rather than on the wider cell the portrait shares with the active-player marker.
+    /// </remarks>
+    public static Rectangle CityCaption(int player, int columns)
+    {
+        if (columns <= 0) throw new ArgumentOutOfRangeException(nameof(columns));
+        var portrait = CityTop(player);
+        var width = columns * OriginalFontLayout.CellWidth;
+        return new Rectangle(
+            portrait.X + (portrait.Width - width) / 2,
+            portrait.Bottom + 1,
+            width,
+            OriginalFontLayout.GlyphHeight);
+    }
+
     public static Rectangle SetupLarge(int player) => Player(player, 397, 89, 83, 64, 64, rowStride: 74);
     public static Rectangle Previous(int player) => Player(player, 399, 109, 83, 12, 18, rowStride: 74);
     public static Rectangle Next(int player) => Player(player, 447, 109, 83, 12, 18, rowStride: 74);

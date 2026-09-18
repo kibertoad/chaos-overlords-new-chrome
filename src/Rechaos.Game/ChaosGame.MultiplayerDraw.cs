@@ -397,6 +397,33 @@ public sealed partial class ChaosGame
     private static int SeatedPlayerCount(MatchView match) => match.Players.Count(Seated);
 
     /// <summary>
+    /// Marks every opponent still drafting this turn, under their portrait on the city top bar.
+    /// </summary>
+    /// <remarks>
+    /// Drawn on black because the eight rows under the portraits are background art, which lime
+    /// text alone is not reliably legible over. Offline there is nobody to wait for, and once the
+    /// match is paused by a desync or over altogether nobody is drafting anything, so the captions
+    /// go with the turn they describe rather than lingering as a state that cannot change.
+    /// </remarks>
+    private void DrawOpponentPlanning(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        if (_session is null) return;
+        var turnIsOpen = _online.Stage
+            is MultiplayerStage.Playing or MultiplayerStage.WaitingForSeal;
+        for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
+        {
+            if (!OpponentPlanningPresentation.IsDrafting(
+                    slot, _session.Slot, turnIsOpen, _online.AwaitedSlots, _online.ReadySlots))
+                continue;
+            var caption = PlayerPortraitLayout.CityCaption(
+                slot, OpponentPlanningPresentation.WaitingCaption.Length);
+            batch.Draw(pixel, caption, Color.Black);
+            font.Draw(batch, OpponentPlanningPresentation.WaitingCaption,
+                new Vector2(caption.X, caption.Y), OpponentPlanningPresentation.WaitingColor, 1);
+        }
+    }
+
+    /// <summary>
     /// The countdown for the open turn, or an empty string when the match has no timer.
     /// </summary>
     /// <remarks>

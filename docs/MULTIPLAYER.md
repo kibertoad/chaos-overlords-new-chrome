@@ -428,6 +428,13 @@ in-flight order replacement says `ready: true`, later drafts for that same turn
 continue sending `true` until the server seals it; document replacement must
 not retract readiness merely because the earlier request has left the outbox.
 
+Readiness reaches the interface as the seats that have finished, not as a count
+of them. The city top bar marks every opponent the turn is still waiting on with
+a green `WAIT` under their portrait, so "waiting for the other players" says
+which ones; the footer's tally is the same fact counted. A seat the turn does not
+seal against — a computer empire, a player who left, or one voted onto computer
+control — is never marked, and neither is the player's own.
+
 ## Client integration contract
 
 What the C# client has to do. `multiplayer/packages/client` is the reference and
