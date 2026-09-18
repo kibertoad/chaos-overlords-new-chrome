@@ -248,8 +248,8 @@ each. There is deliberately no per-address daily counter — on an unauthenticat
 itself unbounded memory, and the byte budget plus retention bound the thing worth bounding.
 
 Node runs every sweep in its periodic pass and Cloudflare invokes the same ones from cron. Snapshot
-storage is independently bounded to the newest five snapshots per match, so per-turn autosaves do
-not grow without limit.
+storage is independently bounded to the newest five snapshots per match: normally that is one
+bootstrap plus only the exceptional desync repairs.
 
 ## Security model
 
@@ -429,11 +429,12 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    out of the state rather than a roster fetched beside it — the state is the one answer every client
    is already guaranteed to agree on, and a slot the AI plans on one client and not another is a
    desync on the turn *after* the one that caused it.
-5. After every `turn.confirmed`, the host uploads the native snapshot for that turn as a rolling
-   server autosave. On `turn.desynced`, the host uploads the same kind of snapshot as a repair (the same bytes as a
-   quick-save), declaring the **native save** format version — the replay format's says nothing about
-   those bytes. Every other client refuses a version newer than it reads, and otherwise loads it,
-   recomputes the hash and re-reports.
+5. The server retains each sealed order set as the turn increment; ordinary confirmed turns do not
+   upload the whole state again. The host includes the small public seat summary in its state-hash
+   report for late-join selection. On `turn.desynced`, the host uploads a compressed native snapshot
+   as an exceptional repair (the same state as a quick-save), declaring the **native save** format
+   version — the replay format's says nothing about those bytes. Every other client refuses a version
+   newer than it reads, and otherwise loads it, recomputes the hash and re-reports.
 6. On `turn.deadlineExtended`, replace the countdown for that turn: the match resumed after a
    desync pause and the turn's clock restarted.
 7. On reconnect, fetch the match, load the latest snapshot if the local state is behind, then read
@@ -515,7 +516,7 @@ dock a player plans against the dock the sealed turn grants.
   Durable Object is the worked example) before it is safe. The `GET /events?after=` fallback is the
   one path that does work under it, because it reads the log directly.
 - **Late joining is offered, and narrowly.** A host may set `allowLateJoin`, and once the match
-  has an autosaved turn a newcomer can take a slot that never belonged to a human. A public match
+  has its bootstrap snapshot a newcomer can take a slot that never belonged to a human. A public match
   can be named by its id or its join code; a `private` one only by its code, because the id rides
   every event, the client's recovery file and any log line. The door reads the host's
   `maxPlayers`, so the lobby's limit is the running match's limit too.

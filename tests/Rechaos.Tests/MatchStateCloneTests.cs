@@ -1,0 +1,82 @@
+using Rechaos.Core.Assets;
+using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
+using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Session;
+using Xunit;
+using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
+
+namespace Rechaos.Tests;
+
+public sealed class MatchStateCloneTests
+{
+    [Fact]
+    public void OnlineSnapshotIsCompressedAndRoundTrips()
+    {
+        var definitions = BundledOriginalData.Load();
+        var state = State(definitions);
+        using var raw = new MemoryStream();
+        NativeSaveSerializer.Save(raw, state);
+
+        var body = MatchStateClone.ToBase64(state);
+        var encoded = Convert.FromBase64String(body);
+        var restored = MatchStateClone.FromBase64(body, definitions);
+
+        Assert.Equal("RCHS", System.Text.Encoding.ASCII.GetString(encoded, 0, 4));
+        Assert.True(encoded.Length < raw.Length / 2);
+        Assert.Equal(MatchStateHasher.ComputeSha256(state), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    public void OnlineSnapshotStillReadsLegacyUncompressedBody()
+    {
+        var definitions = BundledOriginalData.Load();
+        var state = State(definitions);
+        using var raw = new MemoryStream();
+        NativeSaveSerializer.Save(raw, state);
+
+        var restored = MatchStateClone.FromBase64(
+            Convert.ToBase64String(raw.ToArray()), definitions);
+
+        Assert.Equal(MatchStateHasher.ComputeSha256(state), MatchStateHasher.ComputeSha256(restored));
+    }
+
+    [Fact]
+    [Trait("Category", "LongRunning")]
+    public void HundredTurnExceptionalSnapshotFitsTheWireLimitWhenCompressed()
+    {
+        var definitions = BundledOriginalData.Load();
+        var result = HeadlessMatchRunner.Run(
+            definitions,
+            new HeadlessMatchOptions(
+                ScenarioId.Power,
+                GameDuration.FourYears,
+                4093,
+                ThroughTurn: 100),
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        var body = MatchStateClone.ToBase64(result.State);
+
+        Assert.True(result.State.Coordinator.Turn > 100);
+        Assert.NotEmpty(result.State.Events);
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(body) < 1024 * 1024);
+        Assert.Equal(
+            result.StateHash,
+            MatchStateHasher.ComputeSha256(MatchStateClone.FromBase64(body, definitions)));
+    }
+
+    private static MatchState State(OriginalData definitions)
+    {
+        var settings = new MultiplayerGameSettings(
+            ScenarioId.Greed,
+            GameDuration.SixMonths,
+            AiDifficulty.Criminal,
+            [0, 1, 2, 3, 4, 5]);
+        PlayerView[] roster =
+        [
+            new("p1", 0, "ADA", WirePlayerStatus.Active, IsHost: true),
+            new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: false),
+        ];
+        return MatchBootstrapFactory.Create(definitions, 1996, settings, roster);
+    }
+}

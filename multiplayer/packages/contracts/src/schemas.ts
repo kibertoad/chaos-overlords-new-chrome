@@ -73,18 +73,29 @@ export const takeoverVoteRequestSchema = strictObject({
   decision: picklist(['computer', 'wait']),
 })
 
-export const turnReportRequestSchema = strictObject({
-  /** Canonical state hash after the client applied the sealed turn. */
-  stateHash: sha256HexSchema,
-  /** The client observed a completed match after this turn. */
-  finished: boolean(),
-})
-
 export const aiSeatSummarySchema = strictObject({
   slot: slotSchema,
   gangs: pipe(number(), integer(), minValue(0), maxValue(256)),
   sites: pipe(number(), integer(), minValue(0), maxValue(512)),
   sectors: pipe(number(), integer(), minValue(0), maxValue(64)),
+})
+
+export const turnReportRequestSchema = strictObject({
+  /** Canonical state hash after the client applied the sealed turn. */
+  stateHash: sha256HexSchema,
+  /** The client observed a completed match after this turn. */
+  finished: boolean(),
+  /** Current public seat facts. Only the host's copy is published for late-join selection. */
+  seatSummaries: optional(
+    pipe(
+      array(aiSeatSummarySchema),
+      maxLength(LIMITS.maxPlayers),
+      check(
+        (summaries) => new Set(summaries.map((summary) => summary.slot)).size === summaries.length,
+        'seatSummaries may not name a slot twice',
+      ),
+    ),
+  ),
 })
 
 export const uploadSnapshotRequestSchema = strictObject({

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Rechaos.Core.GameModel;
 using Rechaos.Multiplayer.Protocol;
 
@@ -35,6 +36,13 @@ public sealed record MultiplayerGameSettings(
     AiPolicyMode AiPolicy = AiPolicyMode.Original,
     bool AllowLateJoin = false)
 {
+    private static JsonSerializerOptions ReadOptions { get; } = new(WireJson.Options)
+    {
+        // The coordinator enriches this opaque blob with runtime-only facts such as
+        // `seatSummaries`. They are not game setup and must not make a resumable match unreadable.
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+    };
+
     /// <summary>The blob the host sends and every client reads back.</summary>
     public IReadOnlyDictionary<string, JsonElement> ToWire() =>
         JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
@@ -56,7 +64,7 @@ public sealed record MultiplayerGameSettings(
     {
         ArgumentNullException.ThrowIfNull(blob);
         var wire = JsonSerializer.Deserialize<Wire>(
-            JsonSerializer.Serialize(blob, WireJson.Options), WireJson.Options)
+            JsonSerializer.Serialize(blob, WireJson.Options), ReadOptions)
             ?? throw new MultiplayerProtocolException("the match carries no game settings");
         return new MultiplayerGameSettings(
             Defined<ScenarioId>(wire.Scenario, nameof(wire.Scenario)),

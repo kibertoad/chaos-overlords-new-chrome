@@ -11,6 +11,7 @@ import { allActiveReady, evaluateConsensus, turnDeadline } from '../logic/turn-l
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
+import { mergeSeatSummaries } from './SnapshotService'
 
 export type SealTrigger = 'ready' | 'deadline'
 
@@ -244,9 +245,8 @@ export class TurnService {
       throw new ConflictError('The turn has not been sealed yet', { reason: 'turn_open' })
     }
     // A confirmed turn is settled consensus and its reports are the record of how it settled.
-    // `settle` ignores a confirmed turn, so a late report could not change the verdict — but it would
-    // change `authoritativeCandidates` for that turn, which is what a later autosave upload of the
-    // same turn is held to. Freezing the reports here is what keeps that check meaning something.
+    // `settle` ignores a confirmed turn, so accepting a late report could not change the verdict;
+    // refusing it keeps the evidence that produced that verdict immutable.
     if (turn.status === 'confirmed') {
       throw new ConflictError('That turn is already confirmed', { reason: 'turn_confirmed' })
     }
@@ -259,6 +259,25 @@ export class TurnService {
       finished: request.finished,
       reportedAt: this.deps.clock.now(),
     })
+    // The order set is the turn increment the server retains. Publishing these few derived counters
+    // with the host's report keeps late-join selection current without uploading another full save.
+    if (player.id === match.hostPlayerId && request.seatSummaries !== undefined) {
+      try {
+        await this.deps.storage.matches.updateRuntimeGameSettings(
+          match.id,
+          mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries),
+          this.deps.clock.now(),
+        )
+      } catch (error) {
+        // Late-join hints are optional metadata. A full settings blob or a transient metadata write
+        // must not discard the authoritative hash report and strand every player at the barrier.
+        this.deps.logger.warn('could not publish seat summaries', {
+          matchId: match.id,
+          turn: number,
+          error: String(error),
+        })
+      }
+    }
     await this.settle(match.id, number)
   }
 

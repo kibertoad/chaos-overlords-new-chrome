@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
@@ -137,6 +138,27 @@ public sealed class AiPolicyTests
             .ToDictionary();
         Assert.Equal(AiPolicyMode.Original,
             MultiplayerGameSettings.FromWire(legacy).AiPolicy);
+    }
+
+    [Fact]
+    public void OnlineSettingsIgnoreRuntimeSeatSummariesAddedByTheServer()
+    {
+        var settings = new MultiplayerGameSettings(
+            ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal,
+            [0, 1, 2, 3, 4, 5], AiPolicyMode.Advanced);
+        var enriched = settings.ToWire().ToDictionary();
+        enriched["seatSummaries"] = JsonSerializer.SerializeToElement(new[]
+        {
+            new { slot = 3, gangs = 4, sites = 5, sectors = 6 },
+        });
+
+        var restored = MultiplayerGameSettings.FromWire(enriched);
+        Assert.Equal(settings.Scenario, restored.Scenario);
+        Assert.Equal(settings.Duration, restored.Duration);
+        Assert.Equal(settings.AiMentality, restored.AiMentality);
+        Assert.Equal(settings.Portraits, restored.Portraits);
+        Assert.Equal(settings.AiPolicy, restored.AiPolicy);
+        Assert.Equal(settings.AllowLateJoin, restored.AllowLateJoin);
     }
 
     [Fact]

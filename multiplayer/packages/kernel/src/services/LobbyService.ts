@@ -171,7 +171,7 @@ export class LobbyService {
       })
     }
     if (!(await this.deps.storage.snapshots.getLatest(match.id))) {
-      throw new ConflictError('Late join is available after the first autosaved turn', {
+      throw new ConflictError('Late join is available after the bootstrap snapshot is uploaded', {
         reason: 'late_join_not_ready',
       })
     }

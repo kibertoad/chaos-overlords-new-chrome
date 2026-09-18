@@ -314,6 +314,32 @@ describe('multiplayer kernel', () => {
     expect(types.at(-1)).toBe('match.statusChanged')
   })
 
+  it('publishes current seat summaries from the host turn report without another snapshot', async () => {
+    const { host, guest } = await startedMatch()
+    await submit(await principalOf(host.token), 1, 1, true)
+    await submit(await principalOf(guest.token), 1, 2, true)
+    const summaries = [{ slot: 3, gangs: 4, sites: 5, sectors: 6 }]
+
+    await kernel.turns.report(await principalOf(guest.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+      seatSummaries: [{ slot: 2, gangs: 1, sites: 1, sectors: 1 }],
+    })
+    expect((await storage.matches.get(host.match.id))?.settings.gameSettings.seatSummaries).toBe(
+      undefined,
+    )
+    await kernel.turns.report(await principalOf(host.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+      seatSummaries: summaries,
+    })
+
+    expect((await storage.matches.get(host.match.id))?.settings.gameSettings.seatSummaries).toEqual(
+      summaries,
+    )
+    expect(await storage.snapshots.getLatest(host.match.id)).toBeNull()
+  })
+
   it('flags a desync, pauses the match, and recovers through the host snapshot', async () => {
     const { host, guest } = await startedMatch()
     await submit(await principalOf(host.token), 1, 1, true)
@@ -497,7 +523,7 @@ describe('multiplayer kernel', () => {
     expect(streams.closed).toHaveLength(1)
   })
 
-  it('refuses a report on a confirmed turn and pins a later autosave to the settled hash', async () => {
+  it('refuses a report and a routine full snapshot after a turn is confirmed', async () => {
     const { host, guest } = await startedMatch()
     for (const token of [host.token, guest.token]) {
       await submit(await principalOf(token), 1, 1, true)
@@ -505,14 +531,12 @@ describe('multiplayer kernel', () => {
     for (const token of [host.token, guest.token]) {
       await kernel.turns.report(await principalOf(token), 1, { stateHash: HASH_A, finished: false })
     }
-    // The verdict is in. A later report could not change it, but it would change the corroboration
-    // set that a rolling autosave of the same turn is judged against.
+    // The verdict is in; a later report cannot change it or rewrite its evidence.
     await expect(
       kernel.turns.report(await principalOf(host.token), 1, { stateHash: HASH_B, finished: false }),
     ).rejects.toMatchObject({ details: { reason: 'turn_confirmed' } })
 
-    // And with every reporter gone, corroboration has nothing left to count — so the hash the turn
-    // confirmed on is what the upload is held to.
+    // Ordinary recovery replays the stored order sets, so a full upload is not accepted here.
     await kernel.lobby.leave(await principalOf(guest.token))
     await expect(
       kernel.snapshots.upload(await principalOf(host.token), {
@@ -522,7 +546,7 @@ describe('multiplayer kernel', () => {
         body: 'AAAA',
         seatSummaries: [],
       }),
-    ).rejects.toMatchObject({ details: { reason: 'turn_confirmed', stateHash: HASH_A } })
+    ).rejects.toMatchObject({ details: { reason: 'snapshot_not_required' } })
   })
 
   /**
@@ -531,7 +555,7 @@ describe('multiplayer kernel', () => {
    * it answers `pending` — so a snapshot accepted here would put the turn's desync verdict out of
    * reach for good and leave it unsettled, which is what a desync pause waits on to lift.
    */
-  it('refuses a snapshot for a turn whose reports are still being counted', async () => {
+  it('refuses a full snapshot while a turn is still collecting reports', async () => {
     const { host, guest } = await startedMatch()
     for (const token of [host.token, guest.token]) {
       await submit(await principalOf(token), 1, 1, true)
@@ -549,7 +573,7 @@ describe('multiplayer kernel', () => {
         body: 'AAAA',
         seatSummaries: [],
       }),
-    ).rejects.toMatchObject({ details: { reason: 'turn_unsettled' } })
+    ).rejects.toMatchObject({ details: { reason: 'snapshot_not_required' } })
 
     // The disagreement is still free to surface.
     await kernel.turns.report(await principalOf(guest.token), 1, {
@@ -808,7 +832,7 @@ describe('multiplayer kernel', () => {
     expect(recovered.player.displayName).toBe('G')
   })
 
-  it('refuses a snapshot that contradicts a confirmed turn, and allows the same bytes again', async () => {
+  it('refuses routine full snapshots even when they match a confirmed turn', async () => {
     const { host, guest } = await startedMatch()
     for (const token of [host.token, guest.token]) {
       await submit(await principalOf(token), 1, 1, true)
@@ -827,10 +851,13 @@ describe('multiplayer kernel', () => {
         body: 'AAAA',
         seatSummaries: [],
       })
-    // The same bytes again are fine (a reconnecting client may need them); a different state hash
-    // would contradict consensus the match already reached.
-    await expect(upload(HASH_A)).resolves.toBeUndefined()
-    await expect(upload(HASH_B)).rejects.toMatchObject({ details: { reason: 'turn_confirmed' } })
+    // Neither matching nor contradictory bytes belong on the normal confirmed-turn path.
+    await expect(upload(HASH_A)).rejects.toMatchObject({
+      details: { reason: 'snapshot_not_required' },
+    })
+    await expect(upload(HASH_B)).rejects.toMatchObject({
+      details: { reason: 'snapshot_not_required' },
+    })
   })
 
   it('a host leaving the lobby abandons it; a guest leaving frees the seat', async () => {
@@ -976,7 +1003,7 @@ describe('multiplayer kernel', () => {
     expect((await storage.snapshots.getLatest(hostP.match.id))?.turn).toBe(7)
   })
 
-  it('stores a confirmed-turn autosave without announcing a desync repair', async () => {
+  it('does not store a confirmed-turn full snapshot', async () => {
     const { host, guest } = await startedMatch()
     await submit(await principalOf(host.token), 1, 1, true)
     await submit(await principalOf(guest.token), 1, 2, true)
@@ -989,16 +1016,18 @@ describe('multiplayer kernel', () => {
       finished: false,
     })
 
-    await kernel.snapshots.upload(await principalOf(host.token), {
-      turn: 1,
-      formatVersion: 23,
-      stateHash: HASH_A,
-      body: 'AUTOSAVE',
-      seatSummaries: [],
+    await expect(
+      kernel.snapshots.upload(await principalOf(host.token), {
+        turn: 1,
+        formatVersion: 23,
+        stateHash: HASH_A,
+        body: 'AUTOSAVE',
+        seatSummaries: [],
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'snapshot_not_required' } })
+    await expect(kernel.snapshots.latest(host.match.id)).rejects.toMatchObject({
+      details: { reason: 'no_snapshot' },
     })
-
-    expect((await kernel.snapshots.latest(host.match.id)).body).toBe('AUTOSAVE')
-    expect(notifier.events.map((event) => event.type)).not.toContain('snapshot.available')
   })
 
   /**

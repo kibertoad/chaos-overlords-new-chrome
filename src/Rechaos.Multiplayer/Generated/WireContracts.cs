@@ -514,16 +514,17 @@ public sealed record TakeoverVoteRequest(
     [property: JsonPropertyName("decision")] TakeoverVoteRequestDecision Decision
 );
 
-public sealed record TurnReportRequest(
-    [property: JsonPropertyName("stateHash")] string StateHash,
-    [property: JsonPropertyName("finished")] bool Finished
-);
-
 public sealed record AiSeatSummary(
     [property: JsonPropertyName("slot")] int Slot,
     [property: JsonPropertyName("gangs")] int Gangs,
     [property: JsonPropertyName("sites")] int Sites,
     [property: JsonPropertyName("sectors")] int Sectors
+);
+
+public sealed record TurnReportRequest(
+    [property: JsonPropertyName("stateHash")] string StateHash,
+    [property: JsonPropertyName("finished")] bool Finished,
+    [property: JsonPropertyName("seatSummaries"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<AiSeatSummary>? SeatSummaries
 );
 
 public sealed record UploadSnapshotRequest(

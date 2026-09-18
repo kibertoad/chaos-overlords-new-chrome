@@ -36,8 +36,11 @@ export class SnapshotService {
     if (player.id !== match.hostPlayerId) {
       throw new ForbiddenError('Only the host uploads snapshots', { reason: 'host_only' })
     }
-    if (match.status !== 'running' && match.status !== 'desynced' && match.status !== 'finished') {
-      throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
+    const isBootstrap = request.turn === 0 && match.status === 'running' && match.currentTurn === 1
+    if (!isBootstrap && match.status !== 'desynced') {
+      throw new ConflictError('Full snapshots are only accepted for bootstrap or desync repair', {
+        reason: 'snapshot_not_required',
+      })
     }
     if (request.turn > match.currentTurn) {
       throw new ConflictError('Cannot snapshot a turn that has not opened', {
@@ -49,34 +52,8 @@ export class SnapshotService {
         reason: 'turn_open',
       })
     }
-    // A confirmed turn's state hash is settled consensus. Re-uploading the same bytes is fine (a
-    // reconnecting client may need them); contradicting it is not, or the snapshot clients bootstrap
-    // from would disagree with the turn they already agreed on.
-    //
-    // The verdict's own hash is the thing to hold it to, not the snapshot beside it: a turn that
-    // confirmed on unanimity alone has no snapshot yet, and the corroboration check below cannot
-    // stand in for one, because it counts the reports of the players who are active NOW and every
-    // reporter may have left since.
-    const turn = await this.deps.storage.turns.get(match.id, request.turn)
-    // A sealed turn is one whose reports are still being counted. `settle` judges every report
-    // against a snapshot for that turn when there is one, and anything short of unanimity on it
-    // answers `pending` — so a snapshot accepted here would make the turn's desync verdict
-    // unreachable for good, leave the match running on divergent state and leave the turn
-    // permanently unsettled, which is what a later desync pause waits on to lift. The shipping
-    // client only uploads once a turn is confirmed or desynced; this is the door being shut.
-    if (turn?.status === 'sealed') {
-      throw new ConflictError('That turn has not settled yet', { reason: 'turn_unsettled' })
-    }
-    if (turn?.status === 'confirmed') {
-      const settled =
-        turn.stateHash ?? (await this.deps.storage.snapshots.get(match.id, request.turn))?.stateHash
-      if (settled != null && settled !== request.stateHash) {
-        throw new ConflictError('Turn already confirmed with a different state hash', {
-          reason: 'turn_confirmed',
-          stateHash: settled,
-        })
-      }
-    }
+    // Bootstrap has no reports to corroborate. A repair does: only a hash the active players
+    // reported most often can become the state every client is asked to adopt.
     await this.requireCorroboration(match.id, request.turn, request.stateHash)
     const snapshot: Snapshot = {
       matchId: match.id,
@@ -94,8 +71,6 @@ export class SnapshotService {
       this.deps.clock.now(),
     )
     await this.pruneOldSnapshots(match.id)
-    // Confirmed-turn uploads are rolling autosaves. Only a desync repair asks live clients to
-    // replace their state; announcing an ordinary autosave would make every client re-report it.
     if (match.status === 'desynced') {
       await this.publisher.publish(match.id, {
         type: 'snapshot.available',
@@ -177,7 +152,7 @@ export class SnapshotService {
  * already bounded to one entry per seat by `uploadSnapshotRequestSchema`, so reaching this is a host
  * that filled the settings almost to the cap before starting.
  */
-function mergeSeatSummaries(
+export function mergeSeatSummaries(
   gameSettings: GameSettings,
   seatSummaries: UploadSnapshotRequest['seatSummaries'],
 ): GameSettings {

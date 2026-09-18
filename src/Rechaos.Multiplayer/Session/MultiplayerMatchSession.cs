@@ -46,7 +46,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
 
     /// <summary>Seats that have said they are done with <see cref="_readinessTurn"/>.</summary>
     private readonly HashSet<string> _readyPlayerIds = new(StringComparer.Ordinal);
-    private readonly Dictionary<int, UploadSnapshotRequest> _pendingAutosaves = [];
 
     private MatchReplayRecorder _replay;
     private Task? _pump;
@@ -300,7 +299,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             }
 
             // Turn 1 included. The host uploads a bootstrap snapshot for turn 0, and that row is the
-            // latest one until a confirmed turn has been autosaved — so a client that skipped it on
+            // recovery baseline until a desync requires a newer one — so a client that skipped it on
             // turn 1 either refused the only snapshot there was, or bootstrapped a city of its own
             // next to everyone else's.
             var snapshot = await LatestSnapshotOrNullAsync(cancellationToken).ConfigureAwait(false);
@@ -482,7 +481,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// <remarks>
     /// Turn 0 is the host's bootstrap snapshot, taken before a single turn was played. It restores
     /// like any other — the state it holds is the one every client generates for turn 1 — and it is
-    /// the only snapshot a match has until the first turn is confirmed.
+    /// the baseline every ordinary reconnect replays the server's sealed order sets from.
     /// </remarks>
     private void AdoptResumeSnapshot(SnapshotView snapshot, int currentTurn)
     {
@@ -528,9 +527,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                         cancellationToken)
                     .ConfigureAwait(false);
                 return;
-            case TurnConfirmedEvent confirmed:
-                await AutosaveConfirmedTurnAsync(confirmed, cancellationToken)
-                    .ConfigureAwait(false);
+            case TurnConfirmedEvent:
                 return;
             case TurnDesyncedEvent desynced:
                 await HandleDesyncAsync(desynced, cancellationToken).ConfigureAwait(false);
@@ -622,15 +619,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         var stateHash = await FetchAndApplySealedTurnAsync(
                 turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
-        if (IsHost)
-        {
-            _pendingAutosaves[turn] = new UploadSnapshotRequest(
-                turn,
-                NativeSaveSerializer.CurrentFormatVersion,
-                stateHash,
-                MatchStateClone.ToBase64(_replay.State),
-                SummarizeSeats(_replay.State));
-        }
         await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
             turn, MatchStateClone.Of(_replay.State, _definitions), stateHash));
@@ -773,7 +761,10 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         CallAsync(
             token => _match.ReportAsync(
                 turn,
-                new TurnReportRequest(stateHash, _replay.State.Outcome is not null),
+                new TurnReportRequest(
+                    stateHash,
+                    _replay.State.Outcome is not null,
+                    IsHost ? SummarizeSeats(_replay.State) : null),
                 token),
             cancellationToken);
 

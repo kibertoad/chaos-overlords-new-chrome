@@ -170,8 +170,8 @@ public sealed partial class MultiplayerSessionTests
     /// A reconnect whose only snapshot is the bootstrap one resumes from it.
     /// </summary>
     /// <remarks>
-    /// The host uploads a snapshot for turn 0 before a turn has been played, and it stays the
-    /// latest one until a confirmed turn is autosaved. Refusing it left a host that crashed during
+    /// The host uploads a snapshot for turn 0 before a turn has been played, and it remains the
+    /// ordinary recovery baseline. Refusing it left a host that crashed during
     /// turn 1 unable to rejoin its own match at all: every retry read the same row.
     /// </remarks>
     [Fact]
@@ -450,7 +450,7 @@ public sealed partial class MultiplayerSessionTests
     }
 
     [Fact]
-    public async Task HostAutosavesEveryConfirmedTurnToTheServer()
+    public async Task ConfirmedTurnDoesNotUploadAnotherFullSnapshot()
     {
         var (session, server, http) = Running();
         using var _ = http;
@@ -464,11 +464,11 @@ public sealed partial class MultiplayerSessionTests
             "turn.confirmed",
             $$"""{"turn":1,"stateHash":"{{resolved.StateHash}}"}"""));
 
-        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 2, "the autosave");
-        var upload = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/snapshots"),
-            body => body.Contains("\"turn\":1", StringComparison.Ordinal));
-        Assert.Contains("\"turn\":1", upload, StringComparison.Ordinal);
-        Assert.Contains(resolved.StateHash, upload, StringComparison.Ordinal);
+        await Until(() => server.CallsTo(HttpMethod.Post, "/turns/1/report") == 1, "the report");
+        await Task.Delay(100, TestContext.Current.CancellationToken);
+        Assert.Equal(1, server.CallsTo(HttpMethod.Post, "/snapshots"));
+        var report = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/turns/1/report"));
+        Assert.Contains("\"seatSummaries\"", report, StringComparison.Ordinal);
     }
 
     /// <summary>

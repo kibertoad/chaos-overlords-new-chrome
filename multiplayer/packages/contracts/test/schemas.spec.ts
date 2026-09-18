@@ -5,6 +5,7 @@ import {
   joinMatchRequestSchema,
   LIMITS,
   matchSettingsSchema,
+  turnReportRequestSchema,
   uploadSnapshotRequestSchema,
 } from '../src'
 
@@ -63,6 +64,24 @@ describe('uploadSnapshotRequestSchema', () => {
     expect(withSummaries([0, 1, 2, 3, 4, 5].map(summary))).toBe(true)
     expect(withSummaries([0, 1, 2, 3, 4, 5, 5].map(summary))).toBe(false)
     expect(withSummaries([summary(2), summary(2)])).toBe(false)
+  })
+})
+
+describe('turnReportRequestSchema', () => {
+  it('accepts an omitted summary and bounds a supplied one like a snapshot summary', () => {
+    const base = { stateHash: 'a'.repeat(64), finished: false }
+    const summary = (slot: number) => ({ slot, gangs: 1, sites: 1, sectors: 1 })
+    expect(safeParse(turnReportRequestSchema, base).success).toBe(true)
+    expect(
+      safeParse(turnReportRequestSchema, {
+        ...base,
+        seatSummaries: [0, 1, 2, 3, 4, 5].map(summary),
+      }).success,
+    ).toBe(true)
+    expect(
+      safeParse(turnReportRequestSchema, { ...base, seatSummaries: [summary(2), summary(2)] })
+        .success,
+    ).toBe(false)
   })
 })
 
