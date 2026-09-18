@@ -53,6 +53,9 @@ internal enum OnlineConnectRole
 /// </remarks>
 internal sealed class MultiplayerUiState
 {
+    /// <summary>The seat roster before the server has said anything about one.</summary>
+    internal static readonly IReadOnlySet<int> NoSeats = new HashSet<int>();
+
     internal Dictionary<string, TakeoverVotePrompt> TakeoverVotes { get; } = new(StringComparer.Ordinal);
 
     internal TakeoverVotePrompt? CurrentTakeoverVote => TakeoverVotes.Values
@@ -133,11 +136,17 @@ internal sealed class MultiplayerUiState
     /// <summary>When the open turn seals regardless of readiness, or null without a timer.</summary>
     internal DateTimeOffset? DeadlineAt { get; set; }
 
-    /// <summary>Seats that have finished planning the open turn, and how many there are to wait on.</summary>
-    internal int ReadySeats { get; set; }
+    /// <summary>The seats that have finished planning the open turn.</summary>
+    internal IReadOnlySet<int> ReadySlots { get; set; } = NoSeats;
+
+    /// <summary>The seats the server waits on before it seals on readiness alone.</summary>
+    internal IReadOnlySet<int> AwaitedSlots { get; set; } = NoSeats;
+
+    /// <summary>How many seats have finished planning the open turn.</summary>
+    internal int ReadySeats => ReadySlots.Count;
 
     /// <summary>How many seats the server waits on before it seals on readiness alone.</summary>
-    internal int SeatedSeats { get; set; }
+    internal int SeatedSeats => AwaitedSlots.Count;
 
     /// <summary>
     /// Whether the server is answering.
@@ -210,8 +219,8 @@ internal sealed class MultiplayerUiState
         IsHost = false;
         PlanningTurn = 0;
         DeadlineAt = null;
-        ReadySeats = 0;
-        SeatedSeats = 0;
+        ReadySlots = NoSeats;
+        AwaitedSlots = NoSeats;
         IsConnected = true;
         ReconnectLog.Clear();
         ReconnectAttempt = 0;

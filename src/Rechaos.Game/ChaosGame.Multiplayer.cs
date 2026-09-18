@@ -299,7 +299,7 @@ public sealed partial class ChaosGame
         }
         _online.Match = view;
         _online.DeadlineAt = _session.Bootstrap.Deadline;
-        _online.SeatedSeats = view.Players.Count(player => player.Slot >= 0);
+        _online.AwaitedSlots = AwaitedSeats(view.Players);
         ResetMatchPresentation(_session.Bootstrap.State);
         if (_session.IsRestoring)
         {
@@ -310,6 +310,22 @@ public sealed partial class ChaosGame
         _message = string.Empty;
         _screens.Show(ClientScreen.City);
     }
+
+    /// <summary>
+    /// The seats the turn waits on, as the server's roster describes them.
+    /// </summary>
+    /// <remarks>
+    /// The same rule the session applies to the event stream, for the two moments the interface
+    /// holds a roster before any readiness has been reported. A seat that left or was handed to the
+    /// computer is no longer waited on; a temporarily absent one still is, until its takeover vote
+    /// says otherwise.
+    /// </remarks>
+    private static IReadOnlySet<int> AwaitedSeats(IEnumerable<PlayerView> players) =>
+        players
+            .Where(player => player.Slot is >= 0 and < MatchLimits.PlayerCount
+                && player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending)
+            .Select(player => player.Slot)
+            .ToHashSet();
 
     /// <summary>
     /// Forgets what the previous match left on screen.
@@ -386,7 +402,7 @@ public sealed partial class ChaosGame
         _online.ReadySubmissionAcknowledged = submission?.Ready == true;
         _online.ResolutionExpectedSince = null;
         _online.TurnSyncError = string.Empty;
-        _online.ReadySeats = 0;
+        _online.ReadySlots = MultiplayerUiState.NoSeats;
         _selectedGangIndex = 0;
         _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
             .FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
@@ -513,9 +529,7 @@ public sealed partial class ChaosGame
                         ? parsed
                         : null;
                 ResetMatchPresentation(resumed.State);
-                _online.SeatedSeats = resumed.Match.Players.Count(
-                    player => player.Slot >= 0
-                        && player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending);
+                _online.AwaitedSlots = AwaitedSeats(resumed.Match.Players);
                 _online.Status = string.Empty;
                 if (AdoptOnlineState(resumed.State, resumed.Submission, resumed.Turn))
                 {
@@ -584,8 +598,8 @@ public sealed partial class ChaosGame
                 return;
             case MultiplayerNotice.ReadinessChanged readiness:
                 if (readiness.Turn != _online.PlanningTurn) return;
-                _online.ReadySeats = readiness.Ready;
-                _online.SeatedSeats = readiness.Seated;
+                _online.ReadySlots = readiness.ReadySlots;
+                _online.AwaitedSlots = readiness.AwaitedSlots;
                 UpdateOnlineResolutionExpectation();
                 return;
             case MultiplayerNotice.OrdersAccepted accepted:
