@@ -11,13 +11,26 @@ than one three-part version, and the packaging scripts refuse a `-Version` that
 disagrees with it, so an installer cannot be named after a version the game
 inside it does not report.
 
-The release workflow writes the requested tag to `version.txt` on `main` before
-anything is built, and every release job builds from that commit, so releasing
-`0.2.0` both stamps and publishes `0.2.0` without a separate bump. Recording the
-version needs the workflow to be able to commit to `main`; when branch
-protection forbids that, bump `version.txt` in an ordinary pull request first
-and the workflow will find the number already recorded and build from `main`
-as it stands.
+Nobody types the next number. The release workflow is asked for a release
+*kind* — `patch`, `minor`, or `major` — and works the number out at release
+time from the `version.txt` that `main` carries just then: a patch release after
+`0.8.8` is `0.8.9`, a minor one `0.9.0`, a major one `1.0.0`. It writes that
+number back to `version.txt` on `main` before anything is built and every
+release job builds from that commit, so one run both stamps and publishes the
+same version. To see what the next release would be called without starting one:
+
+```powershell
+./tools/Get-NextVersion.ps1 -Bump patch
+```
+
+Two cases are not a plain bump. A version recorded in `version.txt` that carries
+no tag never shipped — an earlier run recorded it and then failed, or branch
+protection forced the bump to be landed by hand in an ordinary pull request —
+so the workflow publishes *that* version rather than a number past it, and the
+release kind is ignored for that run; the log says so. And a `version.txt` that
+has fallen behind a version already tagged stops the release outright, because
+counting on from it would land on a number that is taken: correct `version.txt`
+on `main` first.
 
 A packaged build states its own version on Linux and macOS:
 
@@ -74,10 +87,12 @@ before installation.
 
 ## GitHub release workflow
 
-Run the manual-only `Release installers` workflow, enter a tag such as `0.1.0`,
-and select `windows`, `no-mac-x64`, or `all`. The workflow first records the
-entered version in `version.txt` on `main` and builds every installer from that
-commit, which is also the commit the release tag ends up pointing at. The
+Run the manual-only `Release installers` workflow, choose how far the version
+advances — `patch` (the default), `minor`, or `major` — and select `windows`,
+`no-mac-x64`, or `all`. The workflow settles the version as described above,
+records it in `version.txt` on `main`, and builds every installer from that
+commit, which is also the commit the release tag ends up pointing at. Releases
+run one at a time, since two started together would compute the same number. The
 default builds Windows x64 only; `no-mac-x64` adds Linux x64 and macOS arm64,
 while `all` also adds macOS x64.
 Each preset requires all of its selected artifacts.
