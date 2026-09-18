@@ -10,12 +10,13 @@ namespace Rechaos.Tests;
 public sealed class GameMenuLayoutTests
 {
     [Fact]
-    public void GameMenuProvidesSaveLoadReportBugAndConfirmedMainMenuExit()
+    public void GameMenuProvidesSaveLoadOptionsReportBugAndConfirmedMainMenuExit()
     {
         Assert.Equal(new Rectangle(226, 162, 188, 32), GameMenuLayout.Save);
         Assert.Equal(new Rectangle(226, 200, 188, 32), GameMenuLayout.Load);
-        Assert.Equal(new Rectangle(226, 238, 188, 32), GameMenuLayout.ReportBug);
-        Assert.Equal(new Rectangle(226, 290, 188, 42), GameMenuLayout.QuitToMainMenu);
+        Assert.Equal(new Rectangle(226, 238, 188, 32), GameMenuLayout.Options);
+        Assert.Equal(new Rectangle(226, 276, 188, 32), GameMenuLayout.ReportBug);
+        Assert.Equal(new Rectangle(226, 314, 188, 42), GameMenuLayout.QuitToMainMenu);
         Assert.Equal(9, SaveSlotCatalog.SlotCount);
         Assert.Equal(new Rectangle(58, 344, 524, 35), GameMenuLayout.SlotRow(8));
         Assert.True(GameMenuLayout.Panel.Contains(GameMenuLayout.Resume));
@@ -31,10 +32,11 @@ public sealed class GameMenuLayoutTests
         Rectangle[] entries =
         [
             GameMenuLayout.Resume, GameMenuLayout.Save, GameMenuLayout.Load,
-            GameMenuLayout.ReportBug, GameMenuLayout.QuitToMainMenu
+            GameMenuLayout.Options, GameMenuLayout.ReportBug, GameMenuLayout.QuitToMainMenu
         ];
 
         Assert.Equal(GameMenuLayout.EntryCount, entries.Length);
+        Assert.Equal(GameMenuLayout.Options, entries[GameMenuLayout.OptionsIndex]);
         Assert.Equal(GameMenuLayout.ReportBug, entries[GameMenuLayout.ReportBugIndex]);
         foreach (var entry in entries) Assert.True(GameMenuLayout.Panel.Contains(entry));
         for (var index = 1; index < entries.Length; index++)
@@ -48,7 +50,7 @@ public sealed class GameMenuLayoutTests
     [Fact]
     public void SessionLinesSitUnderTheMenuButtonsInsideAPanelThatFitsThem()
     {
-        Assert.Equal(new Rectangle(176, 84, 288, 272), GameMenuLayout.Panel);
+        Assert.Equal(new Rectangle(176, 68, 288, 310), GameMenuLayout.Panel);
         Assert.Equal(GameMenuLayout.Panel, GameMenuLayout.PanelWith(lines: 0, columns: 0));
 
         // "PASSWORD  " and the longest password the connect screen accepts.

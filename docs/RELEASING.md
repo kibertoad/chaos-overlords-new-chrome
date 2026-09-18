@@ -39,6 +39,12 @@ Run the manual-only `Release installers` workflow, enter a tag such as `0.1.0`,
 and select `windows`, `no-mac-x64`, or `all`. The default builds Windows x64 only;
 `no-mac-x64` adds Linux x64 and macOS arm64, while `all` also adds macOS x64.
 Each preset requires all of its selected artifacts.
+The separate `signed release` choice is `no`, `all`, or `windows only`, with
+`windows only` as the default. Signing
+is applied only to installers selected by the installer preset; choosing `all`
+never adds a skipped installer. Windows Authenticode signing is currently the
+only configured platform signer, so both non-`no` choices sign the selected
+Windows installer while Linux and macOS remain unsigned.
 The workflow creates the tag and GitHub Release only after tests and all selected
 builds succeed. It runs the fast validation tier; the repeated long-running AI
 campaign matrix is exercised by the daily `Nightly observable AI campaigns`
@@ -47,7 +53,7 @@ to assemble the release are retained in Actions for one day; the durable downloa
 copies are the assets attached to the resulting GitHub Release. The release workflow
 has no scheduled or push trigger.
 
-The Windows release job uses the `release-signing` GitHub environment and
+When signing is requested, the Windows release job uses the `release-signing` GitHub environment and
 SSL.com eSigner to Authenticode-sign the project executables before Inno Setup
 packages them, then signs the completed installer. Configure these environment
 secrets before running a release:

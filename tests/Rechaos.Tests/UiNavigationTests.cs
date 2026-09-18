@@ -412,7 +412,7 @@ public sealed class UiNavigationTests
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.DetailedCombat));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.SlidePanels));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.EventSiteImages));
-        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.AdvancedAiDefault));
+        Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.AdvancedAi));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ExportDiagnostics));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.ColorDepth));
         Assert.True(OptionsLayout.Panel.Contains(OptionsLayout.Done));
@@ -430,7 +430,7 @@ public sealed class UiNavigationTests
             OptionsLayout.SlidePanels,
             OptionsLayout.WarnIfIdleGangs,
             OptionsLayout.EventSiteImages,
-            OptionsLayout.AdvancedAiDefault,
+            OptionsLayout.AdvancedAi,
             OptionsLayout.ExportDiagnostics,
             OptionsLayout.ColorDepth,
             OptionsLayout.Done
@@ -452,7 +452,7 @@ public sealed class UiNavigationTests
         Assert.Contains("NATIVE STRETCH AND ORDERED DITHER",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.EventSiteImages.Center)));
         Assert.Contains("DOES NOT CHANGE A MATCH ALREADY IN PROGRESS",
-            string.Join(' ', OptionsTooltip.At(OptionsLayout.AdvancedAiDefault.Center)));
+            string.Join(' ', OptionsTooltip.At(OptionsLayout.AdvancedAi.Center)));
         var diagnosticsTooltip = string.Join(' ',
             OptionsTooltip.At(OptionsLayout.ExportDiagnostics.Center));
         Assert.Contains("DOES NOT INCLUDE REPLAYABLE MATCH STATE", diagnosticsTooltip);

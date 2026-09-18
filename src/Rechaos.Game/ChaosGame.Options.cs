@@ -24,7 +24,7 @@ public static class OptionsLayout
     public static Rectangle SlidePanels => new(150, 230, 340, 26);
     public static Rectangle WarnIfIdleGangs => new(150, 258, 340, 26);
     public static Rectangle EventSiteImages => new(150, 286, 340, 26);
-    public static Rectangle AdvancedAiDefault => new(150, 314, 340, 26);
+    public static Rectangle AdvancedAi => new(150, 314, 340, 26);
     public static Rectangle ExportDiagnostics => new(150, 342, 340, 26);
     public static Rectangle ColorDepth => new(150, 370, 340, 16);
 }
@@ -51,9 +51,9 @@ public static class OptionsTooltip
                 "ORIGINAL USES THE NATIVE STRETCH AND ORDERED DITHER.",
                 "SMOOTH USES LINEAR FILTERING FOR A CLEANER ENLARGEMENT."
             ];
-        if (OptionsLayout.AdvancedAiDefault.Contains(point))
+        if (OptionsLayout.AdvancedAi.Contains(point))
             return [
-                "ADVANCED AI DEFAULT",
+                "ADVANCED AI",
                 "SETS THE INITIAL AI POLICY FOR FUTURE NEW MATCHES.",
                 "NEW MATCHES STORE THIS CHOICE AS PART OF THEIR GAME RULES.",
                 "IT DOES NOT CHANGE A MATCH ALREADY IN PROGRESS OR A LOADED SAVE."
@@ -86,6 +86,7 @@ public static class OptionsTooltip
 public sealed partial class ChaosGame
 {
     private ClientScreen _optionsReturnScreen = ClientScreen.Title;
+    private bool _optionsReturnToGameMenu;
     private string _optionsReturnMessage = string.Empty;
     private int _optionsRow;
     private int _soundEffectVolumeLevel = AudioRouting.DefaultEffectVolumeLevel;
@@ -99,6 +100,7 @@ public sealed partial class ChaosGame
 
     private void OpenOptions()
     {
+        _optionsReturnToGameMenu = false;
         _optionsReturnScreen = _screens.Current;
         _optionsReturnMessage = _message;
         _optionsRow = 0;
@@ -107,10 +109,19 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
+    private void OpenOptionsFromGameMenu()
+    {
+        _gameMenuOpen = false;
+        OpenOptions();
+        _optionsReturnToGameMenu = true;
+    }
+
     private void CloseOptions()
     {
         _screens.Show(_optionsReturnScreen);
         _message = _optionsReturnMessage;
+        if (_optionsReturnToGameMenu) _gameMenuOpen = true;
+        _optionsReturnToGameMenu = false;
     }
 
     private void UpdateOptions(KeyboardState keyboard)
@@ -169,10 +180,10 @@ public sealed partial class ChaosGame
             _optionsRow = 6;
             ToggleEventSiteImageFilter();
         }
-        else if (OptionsLayout.AdvancedAiDefault.Contains(point))
+        else if (OptionsLayout.AdvancedAi.Contains(point))
         {
             _optionsRow = 7;
-            ToggleAdvancedAiDefault();
+            ToggleAdvancedAi();
         }
         else if (OptionsLayout.ExportDiagnostics.Contains(point))
         {
@@ -203,7 +214,7 @@ public sealed partial class ChaosGame
         else if (_optionsRow == 4) ToggleSlidePanels();
         else if (_optionsRow == 5) ToggleIdleGangWarning();
         else if (_optionsRow == 6) ToggleEventSiteImageFilter();
-        else if (_optionsRow == 7) ToggleAdvancedAiDefault();
+        else if (_optionsRow == 7) ToggleAdvancedAi();
         else if (_optionsRow == 8) ExportDiagnostics();
     }
 
@@ -276,7 +287,7 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
-    private void ToggleAdvancedAiDefault()
+    private void ToggleAdvancedAi()
     {
         _defaultAiPolicy = _defaultAiPolicy == AiPolicyMode.Original
             ? AiPolicyMode.Advanced
@@ -284,6 +295,9 @@ public sealed partial class ChaosGame
         SavePreferences();
         PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
         _message = string.Empty;
+        _optionsStatus = _state is null
+            ? string.Empty
+            : "APPLIES TO THE NEXT NEW GAME ONLY";
     }
 
     private void ExportDiagnostics()
@@ -374,8 +388,8 @@ public sealed partial class ChaosGame
             $"WARN IF IDLE GANGS: {(_warnIfIdleGangs ? "ON" : "OFF")}", 5);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.EventSiteImages,
             $"EVENT SITE IMAGES: {(_smoothEventSiteImages ? "SMOOTH" : "ORIGINAL")}", 6);
-        DrawOptionToggle(batch, pixel, font, OptionsLayout.AdvancedAiDefault,
-            $"ADVANCED AI DEFAULT: {(_defaultAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", 7);
+        DrawOptionToggle(batch, pixel, font, OptionsLayout.AdvancedAi,
+            $"ADVANCED AI: {(_defaultAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", 7);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ExportDiagnostics,
             "EXPORT DIAGNOSTICS", 8);
         DrawCentered(font, batch, "THOUSANDS OF COLORS: ALWAYS ON", 373,

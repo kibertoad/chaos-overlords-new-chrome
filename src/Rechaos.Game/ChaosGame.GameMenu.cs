@@ -21,25 +21,29 @@ public static class GameMenuLayout
     {
         var width = Math.Max(288, Math.Max(0, columns) * 6 + 32);
         return new Rectangle(
-            (VirtualInput.Width - width) / 2, 84, width, 272 + Math.Max(0, lines) * SessionLineHeight);
+            (VirtualInput.Width - width) / 2, 68, width, 310 + Math.Max(0, lines) * SessionLineHeight);
     }
 
     /// <summary>The top of the nth session line, below the last button.</summary>
-    public static int SessionLine(int index) => 340 + Math.Max(0, index) * SessionLineHeight;
+    public static int SessionLine(int index) => 364 + Math.Max(0, index) * SessionLineHeight;
 
     private const int SessionLineHeight = 16;
 
     public static Rectangle Resume => new(226, 124, 188, 32);
     public static Rectangle Save => new(226, 162, 188, 32);
     public static Rectangle Load => new(226, 200, 188, 32);
-    public static Rectangle ReportBug => new(226, 238, 188, 32);
-    public static Rectangle QuitToMainMenu => new(226, 290, 188, 42);
+    public static Rectangle Options => new(226, 238, 188, 32);
+    public static Rectangle ReportBug => new(226, 276, 188, 32);
+    public static Rectangle QuitToMainMenu => new(226, 314, 188, 42);
 
     /// <summary>Entries in the order they are drawn, which is the order the cursor walks.</summary>
-    public const int EntryCount = 5;
+    public const int EntryCount = 6;
+
+    /// <summary>The Options entry's position in keyboard navigation.</summary>
+    public const int OptionsIndex = 3;
 
     /// <summary>Where the cursor rests when the bug report panel closes.</summary>
-    public const int ReportBugIndex = 3;
+    public const int ReportBugIndex = 4;
 
     public static Rectangle ConfirmQuit => new(206, 284, 108, 34);
     public static Rectangle CancelQuit => new(326, 284, 108, 34);
@@ -184,6 +188,7 @@ public sealed partial class ChaosGame
             case 0: CloseGameMenu(); break;
             case 1: OpenSaveBrowser(saving: true); break;
             case 2: OpenSaveBrowser(saving: false); break;
+            case GameMenuLayout.OptionsIndex: OpenOptionsFromGameMenu(); break;
             case GameMenuLayout.ReportBugIndex: OpenBugReport(); break;
             default: OpenQuitToMainMenuConfirmation(); break;
         }
@@ -256,6 +261,7 @@ public sealed partial class ChaosGame
         if (GameMenuLayout.Resume.Contains(point)) CloseGameMenu();
         else if (GameMenuLayout.Save.Contains(point)) OpenSaveBrowser(saving: true);
         else if (GameMenuLayout.Load.Contains(point)) OpenSaveBrowser(saving: false);
+        else if (GameMenuLayout.Options.Contains(point)) OpenOptionsFromGameMenu();
         else if (GameMenuLayout.ReportBug.Contains(point)) OpenBugReport();
         else if (GameMenuLayout.QuitToMainMenu.Contains(point)) OpenQuitToMainMenuConfirmation();
     }
@@ -338,11 +344,12 @@ public sealed partial class ChaosGame
             DrawButton(batch, pixel, font, GameMenuLayout.CancelQuit, "CANCEL", _gameMenuCursor == 1);
             return;
         }
-        DrawCentered(font, batch, "GAME MENU", 98, Color.Gold, 2);
+        DrawCentered(font, batch, "GAME MENU", 82, Color.Gold, 2);
         var buttons = new[]
         {
             (GameMenuLayout.Resume, "RESUME"), (GameMenuLayout.Save, "SAVE GAME"),
-            (GameMenuLayout.Load, "LOAD GAME"), (GameMenuLayout.ReportBug, "REPORT BUG"),
+            (GameMenuLayout.Load, "LOAD GAME"), (GameMenuLayout.Options, "OPTIONS"),
+            (GameMenuLayout.ReportBug, "REPORT BUG"),
             (GameMenuLayout.QuitToMainMenu, "QUIT TO MAIN MENU")
         };
         for (var index = 0; index < buttons.Length; index++)
