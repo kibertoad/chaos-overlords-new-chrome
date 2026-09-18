@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rechaos.Core.GameModel;
@@ -161,8 +162,15 @@ public sealed partial class ChaosGame
             DrawBorder(batch, pixel, bounds,
                 index == _online.RecoverySelection ? Color.Gold : new Color(70, 90, 88), 1);
             var role = recovery.IsHost ? "HOST" : "PLAYER";
-            font.Draw(batch, $"{recovery.DisplayName}  {recovery.JoinCode}  {role}",
-                new Vector2(bounds.X + 7, bounds.Y + 9), Color.White, 1);
+            var lastPlayed = LastPlayedLabel(recovery);
+            var detail = new Color(150, 165, 165);
+            font.Draw(batch, Fitted(SessionLabel(recovery), RowRoom(bounds, role)),
+                new Vector2(bounds.X + 7, bounds.Y + 6), Color.White, 1);
+            DrawRightAligned(font, batch, role, bounds.Right - 7, bounds.Y + 6, detail);
+            font.Draw(batch,
+                Fitted($"{recovery.DisplayName}  {recovery.JoinCode}", RowRoom(bounds, lastPlayed)),
+                new Vector2(bounds.X + 7, bounds.Y + 17), detail, 1);
+            DrawRightAligned(font, batch, lastPlayed, bounds.Right - 7, bounds.Y + 17, detail);
         }
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN", sessions.Count > 0);
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK", true);
@@ -197,11 +205,39 @@ public sealed partial class ChaosGame
         new(bounds.X, bounds.Y - OnlineConnectLayout.CaptionOffset);
 
     /// <summary>As much of a value as fits inside the box it is drawn in.</summary>
-    private static string Fitted(string value, Rectangle bounds)
+    private static string Fitted(string value, Rectangle bounds) => Fitted(value, bounds.Width - 10);
+
+    /// <summary>As much of a value as fits in a given width, in whole glyphs.</summary>
+    private static string Fitted(string value, int width)
     {
-        var columns = (bounds.Width - 10) / OriginalFontLayout.CellWidth;
+        var columns = Math.Max(0, width) / OriginalFontLayout.CellWidth;
         return value.Length > columns ? value[..columns] : value;
     }
+
+    /// <summary>
+    /// What a session row's left-hand text may take up without running into its right-hand column.
+    /// </summary>
+    /// <remarks>Seven pixels of padding at each edge, and seven more between the two columns.</remarks>
+    private static int RowRoom(Rectangle bounds, string rightHandText) =>
+        bounds.Width - 21 - rightHandText.Length * OriginalFontLayout.CellWidth;
+
+    /// <summary>The match's own name, or a stand-in where the record was written before one was kept.</summary>
+    private static string SessionLabel(MultiplayerRecovery recovery) =>
+        recovery.SessionName.Length > 0 ? recovery.SessionName : "UNNAMED SESSION";
+
+    /// <summary>
+    /// When the seat last had turn data stored, read in the player's own time zone.
+    /// </summary>
+    /// <remarks>
+    /// Formatted invariantly rather than by the current culture: the font draws
+    /// <see cref="OriginalFontLayout.FirstCharacter"/> through
+    /// <see cref="OriginalFontLayout.LastCharacter"/> and nothing else, so a culture whose default
+    /// calendar or digits fall outside that range would draw the row as blanks.
+    /// </remarks>
+    private static string LastPlayedLabel(MultiplayerRecovery recovery) =>
+        recovery.LastUpdatedAt is { } updated
+            ? updated.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+            : "TIME UNKNOWN";
 
     /// <summary>Draws a field's place while the choices on the screen leave it out of use.</summary>
     private static void DrawDisabledField(

@@ -511,7 +511,11 @@ recomputed. Only after pairing the state with the caller's current whole-documen
 the stream resume from the refreshed `lastEventSeq`.
 
 The desktop client writes the server, match id, player id, join code, session password, and
-membership token to an atomic local recovery record as soon as it takes a seat. A normal shutdown
+membership token to an atomic local recovery record as soon as it takes a seat. It writes the
+match's own name beside them, which reaches every member on the wire rather than only the host who
+typed it, and stamps the record each time the client adopts a turn's authoritative state. That is
+what the list of unfinished sessions is read by: each row names the game and says when it was last
+played, so a player with seats in more than one match can tell them apart. A normal shutdown
 marks that record clean; an unclean exit leaves it resumable, so the next launch points the player
 to a Reconnect action. Terminal online errors are shown on the title screen and name that recovery
 path when the saved membership may still be valid. A completed match or an explicit Leave retires

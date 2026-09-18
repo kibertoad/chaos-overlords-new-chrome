@@ -246,8 +246,13 @@ cursor feedback remain to be validated.
   tile recenters the detail view.
 - Dragging a friendly gang portrait past the same four-pixel threshold used by
   Hire creates a 36-by-28 scaled-art token and highlights only validator-legal
-  neighboring minimap sectors. Dropping queues a one-off Move command;
-  stationary clicks retain gang selection and double-click inspection.
+  minimap sectors. Dropping on a neighbor queues a one-off Move command, while
+  dropping on the centered sector the gang already occupies queues a recurring
+  Control command; that center tile is highlighted, and the drop is accepted,
+  only while the validator allows Control, so a sector the player already owns
+  or one under Crackdown reports its reason instead. A queued Control also
+  draws the white target frame around the center tile when its gang card is
+  hovered. Stationary clicks retain gang selection and double-click inspection.
 - Hire dragging remains active over the detailed-sector screen. A drop on its
   workspace reserves the recruit for the centered sector, while a drop on the
   visible minimap uses the indicated controlled sector. The drag token and
@@ -339,6 +344,9 @@ The first themed overlay preserves the original fifteen-action ordering:
 Attack, Bribe, Chaos, Control, Equip, Give, Heal, Hide, Influence, Move,
 Research, Sell, Snitch, None, and Terminate. Individual equipment and other
 targets appear only in a second target overlay, never as top-level actions.
+Resting the pointer on one of those fifteen rows for two seconds opens a hover
+tooltip describing that order; the delay keeps the list readable while the
+cursor merely passes over it, and the target overlay has no such tooltip.
 The Attack target-acquisition roster includes only detectable enemy gangs in
 the acting gang's sector and groups them by ascending player slot. Selecting an
 opponent portrait displays that player's eligible gangs simultaneously in a

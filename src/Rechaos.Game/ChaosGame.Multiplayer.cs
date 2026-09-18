@@ -391,6 +391,7 @@ public sealed partial class ChaosGame
         _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
             .FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
         if (submission?.Ready == true) CloseOnlinePlanning();
+        TouchOnlineRecovery();
         return true;
     }
 
@@ -901,11 +902,29 @@ public sealed partial class ChaosGame
             membership.Player.IsHost,
             CleanExit: false,
             Completed: false,
-            _online.PasswordShown);
+            _online.PasswordShown,
+            membership.Match.Settings.Name,
+            DateTimeOffset.UtcNow);
         _activeMultiplayerRecovery = recovery;
         _multiplayerRecoveries.RemoveAll(item => SameMembership(item, recovery));
         _multiplayerRecoveries.Insert(0, recovery);
         SaveOnlineRecoveries();
+    }
+
+    /// <summary>
+    /// Stamps the seat with the moment its turn data was last stored.
+    /// </summary>
+    /// <remarks>
+    /// What the list of unfinished sessions is read by, next to the match's name: two matches a
+    /// player still has a seat in are told apart by which one they were last playing. Called where
+    /// authoritative state is adopted rather than where a turn is sent, because that is the point
+    /// the client has the turn's data to keep; a clean exit and a retirement both carry the stamp
+    /// forward untouched, since neither advances the match.
+    /// </remarks>
+    private void TouchOnlineRecovery()
+    {
+        if (_activeMultiplayerRecovery is not { Completed: false } recovery) return;
+        UpdateOnlineRecovery(recovery with { LastUpdatedAt = DateTimeOffset.UtcNow });
     }
 
     private void CompleteOnlineRecovery()
