@@ -91,7 +91,7 @@ public sealed partial class ChaosGame
         for (var row = 0; row < Math.Min(5, listings.Count - offset); row++)
         {
             var index = offset + row;
-            var listing = listings[index];
+            var (listing, settings) = listings[index];
             var bounds = OnlineConnectLayout.DiscoveryRow(row);
             batch.Draw(pixel, bounds, index == _online.DiscoverySelection
                 ? new Color(30, 62, 55) : new Color(4, 10, 9));
@@ -100,10 +100,13 @@ public sealed partial class ChaosGame
             var phase = listing.Status == MatchStatus.Lobby ? "WAITING" : "ONGOING";
             font.Draw(batch, $"{listing.Name}  {phase}  {listing.PlayerCount}/{listing.MaxPlayers}",
                 new Vector2(bounds.X + 6, bounds.Y + 6), Color.White, 1);
-            var settings = MultiplayerGameSettings.FromWire(listing.Settings.GameSettings);
+            // A session this build cannot read the settings of is still listed, so the second line
+            // says so rather than naming a scenario and a mentality that were never read.
             font.Draw(batch,
-                $"{ScenarioCatalog.Get(settings.Scenario).Name}  " +
-                $"{DifficultyPresentation.Label(settings.AiMentality)}",
+                settings is { } known
+                    ? $"{ScenarioCatalog.Get(known.Scenario).Name}  " +
+                        $"{DifficultyPresentation.Label(known.AiMentality)}"
+                    : "SETTINGS THIS VERSION OF THE GAME CANNOT READ",
                 new Vector2(bounds.X + 6, bounds.Y + 19), new Color(150, 165, 165), 1);
         }
         DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryJoin, "JOIN", listings.Count > 0);

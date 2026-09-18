@@ -39,21 +39,38 @@ public sealed partial class ChaosGame
         _online.Stage = MultiplayerStage.Connect;
     }
 
-    private IReadOnlyList<LobbyListing> FilteredOnlineListings() =>
+    /// <summary>
+    /// Reads each listed session's settings blob once, as the list arrives.
+    /// </summary>
+    /// <remarks>
+    /// The discovery screen filters and draws its rows every frame, and both want the scenario and
+    /// the mentality inside the blob. Parsing it here keeps that off the frame and gives the two a
+    /// single answer, including for a blob this build cannot read: it becomes a listing with no
+    /// settings rather than one that quietly disappears.
+    /// </remarks>
+    private static IReadOnlyList<DiscoveredListing> Describe(IReadOnlyList<LobbyListing> listings)
+    {
+        var described = new DiscoveredListing[listings.Count];
+        for (var index = 0; index < listings.Count; index++)
+        {
+            var listing = listings[index];
+            MultiplayerGameSettings? settings;
+            try { settings = MultiplayerGameSettings.FromWire(listing.Settings.GameSettings); }
+            catch (MultiplayerProtocolException) { settings = null; }
+            described[index] = new DiscoveredListing(listing, settings);
+        }
+        return described;
+    }
+
+    private IReadOnlyList<DiscoveredListing> FilteredOnlineListings() =>
         _online.Listings.Where(MatchesDiscoveryFilters).ToArray();
 
-    private bool MatchesDiscoveryFilters(LobbyListing listing)
-    {
-        if (_online.DiscoveryStatusFilter == 1 && listing.Status != MatchStatus.Lobby) return false;
-        if (_online.DiscoveryStatusFilter == 2 && listing.Status != MatchStatus.Running) return false;
-        MultiplayerGameSettings settings;
-        try { settings = MultiplayerGameSettings.FromWire(listing.Settings.GameSettings); }
-        catch (MultiplayerProtocolException) { return false; }
-        return (_online.DiscoveryScenarioFilter < 0
-                || (int)settings.Scenario == _online.DiscoveryScenarioFilter)
-            && (_online.DiscoveryAiFilter < 0
-                || (int)settings.AiMentality == _online.DiscoveryAiFilter);
-    }
+    private bool MatchesDiscoveryFilters(DiscoveredListing entry) => DiscoveryFilters.Matches(
+        _online.DiscoveryStatusFilter,
+        _online.DiscoveryScenarioFilter,
+        _online.DiscoveryAiFilter,
+        entry.Listing.Status,
+        entry.Settings);
 
     private int DiscoveryFilterValue(int filter) => filter switch
     {
@@ -119,7 +136,8 @@ public sealed partial class ChaosGame
     {
         var listings = FilteredOnlineListings();
         if (listings.Count == 0 || !RequireUsableName() || _lobby is null) return;
-        var listing = listings[Math.Clamp(_online.DiscoverySelection, 0, listings.Count - 1)];
+        var listing = listings[
+            Math.Clamp(_online.DiscoverySelection, 0, listings.Count - 1)].Listing;
         if (listing.Status == MatchStatus.Lobby)
         {
             var password = OptionalPassword();
@@ -169,3 +187,11 @@ public sealed partial class ChaosGame
             _online.Stage = MultiplayerStage.Discover;
     }
 }
+
+/// <summary>
+/// A listed public session and the settings it carries, or null settings when this build cannot
+/// read the blob the host wrote.
+/// </summary>
+internal readonly record struct DiscoveredListing(
+    LobbyListing Listing,
+    MultiplayerGameSettings? Settings);

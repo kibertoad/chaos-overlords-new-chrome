@@ -480,7 +480,7 @@ public sealed partial class ChaosGame
                     StartOnlineMatch(updated.Match);
                 return;
             case LobbyNotice.Listed listed:
-                _online.Listings = listed.Matches;
+                _online.Listings = Describe(listed.Matches);
                 _online.DiscoverySelection = 0;
                 _online.Stage = MultiplayerStage.Discover;
                 _online.Status = listed.Matches.Count == 0

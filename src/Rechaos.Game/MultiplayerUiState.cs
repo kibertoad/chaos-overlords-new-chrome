@@ -84,11 +84,21 @@ internal sealed class MultiplayerUiState
     /// seats itself where every peer seated a computer player.
     /// </remarks>
     internal bool JoinedInProgress { get; set; }
-    internal IReadOnlyList<LobbyListing> Listings { get; set; } = [];
+    /// <summary>The public sessions the last browse found, with their settings already read.</summary>
+    internal IReadOnlyList<DiscoveredListing> Listings { get; set; } = [];
 
     internal OnlineServiceMode Service { get; set; } = OnlineServiceMode.Central;
     internal OnlineConnectRole Role { get; set; } = OnlineConnectRole.Host;
-    internal bool PublicListing { get; set; }
+    /// <summary>
+    /// Whether a hosted session is listed for anyone to browse, rather than gated by its join code.
+    /// </summary>
+    /// <remarks>
+    /// Listed by default: a session nobody can find is one that only friends told the code can
+    /// join, and a lobby browser with nothing in it is what a private default leaves every player
+    /// who opens it. A host who wants a code-only session says so on the same screen, before the
+    /// lobby is opened, and can change it in the lobby afterwards.
+    /// </remarks>
+    internal bool PublicListing { get; set; } = true;
     internal bool AllowLateJoin { get; set; }
 
     internal TextField Server { get; } = new(
@@ -203,6 +213,9 @@ internal sealed class MultiplayerUiState
         PendingLateJoin = null;
         JoinedInProgress = false;
         Listings = [];
+        // Back to being discoverable: a lobby this client joined may have been code-only, and its
+        // choice was adopted onto the screens that host the next one.
+        PublicListing = true;
         Role = OnlineConnectRole.Host;
         Match = null;
         JoinCodeShown = string.Empty;

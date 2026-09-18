@@ -59,7 +59,7 @@ DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm --filter @chaos-ov
 |---|---|---|
 | `PORT`, `HOST` | `8787`, `0.0.0.0` | Listen address. |
 | `DATABASE_URL` | `sqlite:./chaos-overlords.db` | `sqlite:<path>`, `sqlite::memory:`, or `postgres://…`. |
-| `PUBLIC_LISTING` | `false` | Serve `GET /api/v1/matches` so clients can browse public lobbies. |
+| `PUBLIC_LISTING` | `true` | Serve `GET /api/v1/matches` so clients can browse public lobbies. Only matches whose host chose public visibility are ever listed; `false` turns the route off entirely and the game's Browse screen finds nothing on this server. |
 | `RATE_LIMIT_PER_MINUTE` | `30` | Create/join attempts per client address per minute. Every per-minute budget is at least `1`: `0` is refused at startup rather than admitting one call a minute. |
 | `MEMBER_RATE_LIMIT_PER_MINUTE` | `240` | Authenticated calls per player per minute. |
 | `UPLOAD_RATE_LIMIT_PER_MINUTE` | `10` | Snapshot uploads per player per minute (a snapshot can be a megabyte). |

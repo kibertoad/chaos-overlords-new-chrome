@@ -25,6 +25,13 @@ export interface NodeConfig {
    * Cloudflare uses an R2 bucket instead of this. See `BugReportService`.
    */
   bugReportBlobDirectory: string
+  /**
+   * Serve `GET /api/v1/matches`, the list the game's Browse screen reads. On by default.
+   *
+   * Only matches whose host chose to be publicly discoverable are ever in it; a join-code lobby is
+   * never listed either way. Set `PUBLIC_LISTING=false` on a server that should not answer the
+   * route at all.
+   */
   publicListing: boolean
   logLevel: 'debug' | 'info' | 'warn' | 'error'
   /** How often the safety-net sweep looks for expired turns and interrupted seals. */
@@ -87,7 +94,8 @@ export interface NodeConfig {
 
 /**
  * Reads the environment once. Every knob has a self-hosting default: an operator can run the
- * server with no configuration at all and get a SQLite file, a private lobby list and port 8787.
+ * server with no configuration at all and get a SQLite file, a browsable list of the matches whose
+ * hosts chose to be discoverable, and port 8787.
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
   return {
@@ -96,7 +104,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
     databaseUrl: env.DATABASE_URL ?? 'sqlite:./chaos-overlords.db',
     bugReportDatabaseUrl: env.BUG_REPORT_DATABASE_URL ?? '',
     bugReportBlobDirectory: env.BUG_REPORT_BLOB_DIR ?? '',
-    publicListing: flag(env.PUBLIC_LISTING, false),
+    publicListing: flag(env.PUBLIC_LISTING, true),
     logLevel: level(env.LOG_LEVEL),
     sweepIntervalMs: integer(env.SWEEP_INTERVAL_MS, 15_000, MIN_SWEEP_INTERVAL_MS),
     rateLimitPerMinute: integer(env.RATE_LIMIT_PER_MINUTE, 30, 1),
