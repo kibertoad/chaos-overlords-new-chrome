@@ -453,6 +453,8 @@ public sealed class UiNavigationTests
             string.Join(' ', OptionsTooltip.At(OptionsLayout.EventSiteImages.Center)));
         Assert.Contains("DOES NOT CHANGE A MATCH ALREADY IN PROGRESS",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.AdvancedAi.Center)));
+        Assert.Contains("FALLBACK COMMANDS FOR GANGS ORIGINAL AI LEAVES IDLE",
+            string.Join(' ', OptionsTooltip.At(OptionsLayout.AdvancedAi.Center)));
         var diagnosticsTooltip = string.Join(' ',
             OptionsTooltip.At(OptionsLayout.ExportDiagnostics.Center));
         Assert.Contains("DOES NOT INCLUDE REPLAYABLE MATCH STATE", diagnosticsTooltip);

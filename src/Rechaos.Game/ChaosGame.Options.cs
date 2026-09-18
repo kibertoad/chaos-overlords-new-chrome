@@ -54,8 +54,9 @@ public static class OptionsTooltip
         if (OptionsLayout.AdvancedAi.Contains(point))
             return [
                 "ADVANCED AI",
+                "ADDS USEFUL FALLBACK COMMANDS FOR GANGS ORIGINAL AI LEAVES IDLE.",
+                "AT HIGHER DIFFICULTIES, HEALTHY GANGS MAY ALSO EXPAND.",
                 "SETS THE INITIAL AI POLICY FOR FUTURE NEW MATCHES.",
-                "NEW MATCHES STORE THIS CHOICE AS PART OF THEIR GAME RULES.",
                 "IT DOES NOT CHANGE A MATCH ALREADY IN PROGRESS OR A LOADED SAVE."
             ];
         if (OptionsLayout.ExportDiagnostics.Contains(point))
