@@ -125,7 +125,8 @@ jobs:
         shell: pwsh
         run: |
           $testRoot = Join-Path $env:RUNNER_TEMP 'ChaosOverlordsNewChrome-installer-test'
-          $setup = Start-Process -FilePath 'artifacts/ChaosOverlords-NewChrome-Setup-0.1.0.exe' `
+          $version = ./tools/Get-GameVersion.ps1
+          $setup = Start-Process -FilePath "artifacts/ChaosOverlords-NewChrome-Setup-$version.exe" `
             -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/NOIMPORT=1', "/DIR=`"$testRoot`"") `
             -Wait -PassThru -WindowStyle Hidden
           if ($setup.ExitCode -ne 0) { throw "Installer returned $($setup.ExitCode)." }
@@ -162,7 +163,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ChaosOverlords-NewChrome-Setup
-          path: artifacts/ChaosOverlords-NewChrome-Setup-0.1.0.exe
+          path: artifacts/ChaosOverlords-NewChrome-Setup-*.exe
           if-no-files-found: error
           retention-days: 1
 
@@ -195,9 +196,11 @@ jobs:
         shell: pwsh
         run: |
           $testRoot = Join-Path $env:RUNNER_TEMP 'chaos-overlords-deb-test'
-          dpkg-deb --info artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-0.1.0.deb
+          $version = ./tools/Get-GameVersion.ps1
+          $package = "artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-$version.deb"
+          dpkg-deb --info $package
           if ($LASTEXITCODE -ne 0) { throw 'Debian package metadata is invalid.' }
-          dpkg-deb --extract artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-0.1.0.deb $testRoot
+          dpkg-deb --extract $package $testRoot
           if ($LASTEXITCODE -ne 0) { throw 'Debian package extraction failed.' }
           & (Join-Path $testRoot 'opt/chaos-overlords-new-chrome/Game/Rechaos.Game') --smoke-test
           if ($LASTEXITCODE -ne 0) { throw 'Installed Debian game smoke test failed.' }
@@ -206,7 +209,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ChaosOverlords-NewChrome-linux-x64-Setup
-          path: artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-0.1.0.deb
+          path: artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-*.deb
           if-no-files-found: error
           retention-days: 1
 
@@ -252,7 +255,8 @@ jobs:
         env:
           TARGET_RUNTIME: ${{ matrix.runtime }}
         run: |
-          $package = "artifacts/ChaosOverlords-NewChrome-$env:TARGET_RUNTIME-Setup-0.1.0.pkg"
+          $version = ./tools/Get-GameVersion.ps1
+          $package = "artifacts/ChaosOverlords-NewChrome-$env:TARGET_RUNTIME-Setup-$version.pkg"
           $expanded = Join-Path $env:RUNNER_TEMP "chaos-overlords-$env:TARGET_RUNTIME-pkg"
           pkgutil --expand-full $package $expanded
           if ($LASTEXITCODE -ne 0) { throw 'macOS package expansion failed.' }
@@ -264,6 +268,6 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ChaosOverlords-NewChrome-${{ matrix.runtime }}-Setup
-          path: artifacts/ChaosOverlords-NewChrome-${{ matrix.runtime }}-Setup-0.1.0.pkg
+          path: artifacts/ChaosOverlords-NewChrome-${{ matrix.runtime }}-Setup-*.pkg
           if-no-files-found: error
           retention-days: 1

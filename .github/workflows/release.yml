@@ -37,9 +37,9 @@ jobs:
     name: Validate release
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write # Required to record the release version on main before anything is built.
     outputs:
-      commit: ${{ steps.version.outputs.commit }}
+      commit: ${{ steps.record.outputs.commit }}
       tag: ${{ steps.version.outputs.tag }}
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -61,11 +61,40 @@ jobs:
           }
           $existing = git ls-remote --tags origin "refs/tags/$env:RELEASE_TAG"
           if ($existing) { throw "Tag '$env:RELEASE_TAG' already exists." }
-          $commit = git rev-parse HEAD
-          if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve the release commit.' }
-          "commit=$commit" >> $env:GITHUB_OUTPUT
           "tag=$env:RELEASE_TAG" >> $env:GITHUB_OUTPUT
           "version=$($Matches[1])" >> $env:GITHUB_OUTPUT
+
+      # The build stamps version.txt onto every assembly, so main has to carry the released
+      # version before the installers are built from this commit. The checkout keeps no push
+      # credentials on purpose; the contents API commits the one line instead.
+      - name: Record the release version on main
+        id: record
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $recorded = (Get-Content -LiteralPath 'version.txt' -Raw).Trim()
+          if ($recorded -eq $env:RELEASE_VERSION) {
+            $commit = git rev-parse HEAD
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve the release commit.' }
+            Write-Host "main already records $env:RELEASE_VERSION."
+            "commit=$commit" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          $existing = gh api "repos/$env:GITHUB_REPOSITORY/contents/version.txt?ref=main" |
+            ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to read version.txt from main.' }
+          $content = [Convert]::ToBase64String(
+            [Text.Encoding]::UTF8.GetBytes("$env:RELEASE_VERSION`n"))
+          $updated = gh api --method PUT "repos/$env:GITHUB_REPOSITORY/contents/version.txt" `
+            -f "message=Release $env:RELEASE_VERSION" `
+            -f "content=$content" `
+            -f "sha=$($existing.sha)" `
+            -f 'branch=main' | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw "Unable to record version $env:RELEASE_VERSION on main." }
+          Write-Host "Recorded $env:RELEASE_VERSION on main as $($updated.commit.sha)."
+          "commit=$($updated.commit.sha)" >> $env:GITHUB_OUTPUT
 
   test:
     name: Test release commit
@@ -280,6 +309,10 @@ jobs:
             -ArgumentList '--platform-smoke-test' -WorkingDirectory $link.WorkingDirectory `
             -Wait -PassThru -WindowStyle Hidden
           if ($game.ExitCode -ne 0) { throw "Packaged game returned $($game.ExitCode)." }
+          $installedVersion = (Get-Item -LiteralPath $link.TargetPath).VersionInfo.ProductVersion
+          if ($installedVersion -ne $env:RELEASE_VERSION) {
+            throw "Installed game is stamped '$installedVersion', not $env:RELEASE_VERSION."
+          }
           $uninstall = Start-Process -FilePath (Join-Path $testRoot 'unins000.exe') `
             -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') `
             -Wait -PassThru -WindowStyle Hidden

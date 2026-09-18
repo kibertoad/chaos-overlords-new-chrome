@@ -1,3 +1,7 @@
 # This embedded payload has a recorded byte-level provenance hash. Keep its
 # checkout bytes identical on Windows, Linux, and macOS.
 /src/Rechaos.Core/GameData/original-data.json text eol=lf
+
+# The release process rewrites this file through the GitHub contents API, which
+# writes LF. Keeping the checkout bytes identical avoids a line-ending diff.
+/version.txt text eol=lf

@@ -172,7 +172,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private Point _gangPressPoint;
     private bool _gangDragStarted;
     private Point _dragPoint;
-    private Point? _hoverPoint;
     private string _message = string.Empty;
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
@@ -611,7 +610,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             var offset = _panelSlideTransition.Offset(_screens.Current, gameTime.TotalGameTime);
             virtualPoint = new Point(virtualPoint.X - offset, virtualPoint.Y);
         }
-        _hoverPoint = pointerMapped ? virtualPoint : null;
+        UpdateHoverPoint(pointerMapped ? virtualPoint : null);
         var wheelDelta = mouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
         if (pointerMapped && _screens.Current == ClientScreen.Help && wheelDelta != 0)
             HandleHelpScroll(virtualPoint, wheelDelta);

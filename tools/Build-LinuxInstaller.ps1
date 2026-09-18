@@ -1,14 +1,20 @@
 [CmdletBinding()]
 param(
-    [string] $Version = '0.1.0'
+    [string] $Version
 )
 
 $ErrorActionPreference = 'Stop'
-if ($Version -notmatch '^\d+\.\d+\.\d+$') {
-    throw "Invalid installer version '$Version'; expected x.y.z."
+$repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
+$stampedVersion = & (Join-Path $PSScriptRoot 'Get-GameVersion.ps1') -RepositoryRoot $repositoryRoot
+if (-not $Version) {
+    $Version = $stampedVersion
+}
+elseif ($Version -ne $stampedVersion) {
+    throw ("Requested installer version '$Version' does not match version.txt " +
+        "('$stampedVersion'); the packaged game would report '$stampedVersion'. " +
+        'Update version.txt first.')
 }
 
-$repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $artifactsRoot = [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'artifacts'))
 $portableRoot = Join-Path $artifactsRoot 'ChaosOverlordsNewChrome-linux-x64'
 & (Join-Path $PSScriptRoot 'Publish-Portable.ps1') -Runtime linux-x64 `

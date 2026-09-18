@@ -1,3 +1,4 @@
+using Rechaos.Core;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
@@ -107,7 +108,7 @@ public static class BugReportComposer
         ArgumentNullException.ThrowIfNull(message);
         var request = new SubmitBugReportRequest(
             message.Trim(),
-            new BugReportBuild(BuildVersion(), Platform()),
+            new BugReportBuild(GameVersion.Current, Platform()),
             journal?.Context,
             null);
         if (!includeState || journal is null)
@@ -185,9 +186,6 @@ public static class BugReportComposer
 
     private static int HumanSeats(MatchState state) =>
         state.Setup.Players.Count(player => player.Controller == PlayerController.Human);
-
-    private static string BuildVersion() =>
-        typeof(BugReportComposer).Assembly.GetName().Version?.ToString() ?? "unknown";
 
     /// <summary>
     /// The platform family, and nothing beneath it.

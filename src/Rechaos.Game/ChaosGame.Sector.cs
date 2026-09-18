@@ -156,6 +156,10 @@ public sealed partial class ChaosGame
                     if (SectorDetailLayout.SectorAt(_cursor, column, row) == queued.Command.Target.Id)
                         DrawBorder(batch, pixel, SectorDetailLayout.Cell(column, row), Color.White, 2);
                 break;
+            case GangAction.Control:
+                // Control always works the gang's own sector, which the 3-by-3 crop centers.
+                DrawBorder(batch, pixel, SectorDetailLayout.Cell(1, 1), Color.White, 2);
+                break;
             case GangAction.Influence:
                 if (queued.Command.Target.Id / MatchLimits.SitesPerSector == _cursor)
                     DrawBorder(batch, pixel,
@@ -274,15 +278,13 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
-        var legal = CommandOptionCatalog.LegalCommands(_state, gang.Owner, gang.Id)
-            .FirstOrDefault(command => command.Action == GangAction.Move
-                && command.Target == CommandTarget.Sector(sectorId));
-        if (legal is null)
+        var legalCommands = CommandOptionCatalog.LegalCommands(_state, gang.Owner, gang.Id);
+        if (SectorMapGangDrop.Resolve(legalCommands, gang.SectorId, sectorId) is not { } dropped)
         {
-            RejectInput("MOVE REQUIRES NEIGHBOR SECTOR");
+            RejectInput(SectorMapGangDrop.Rejection(_state, gang, sectorId));
             return;
         }
-        var result = _actions.Submit(legal with { Repeat = false });
+        var result = _actions.Submit(dropped);
         ReportInputResult(result.Accepted, result.Validation.Message);
     }
 
@@ -297,16 +299,13 @@ public sealed partial class ChaosGame
     {
         if (!_gangDragStarted || _draggedGangId is not { } gangId || state.FindGang(gangId) is not { } gang)
             return;
-        var legalSectors = CommandOptionCatalog.LegalCommands(state, gang.Owner, gang.Id)
-            .Where(command => command.Action == GangAction.Move)
-            .Select(command => command.Target.Id)
-            .ToHashSet();
+        var legalCommands = CommandOptionCatalog.LegalCommands(state, gang.Owner, gang.Id);
+        var legalSectors = SectorMapGangDrop.Destinations(legalCommands, gang.SectorId);
         var visibleGangs = SectorGangView.Visible(state, gang.Owner, _cursor).ToArray();
         if (SectorGangDropTarget.EnemyAt(visibleGangs, gang.Owner, _dragPoint) is { } enemyId)
         {
-            var canAttack = CommandOptionCatalog.LegalCommands(state, gang.Owner, gang.Id)
-                .Any(command => command.Action == GangAction.Attack
-                    && command.Target == CommandTarget.Gang(enemyId));
+            var canAttack = legalCommands.Any(command => command.Action == GangAction.Attack
+                && command.Target == CommandTarget.Gang(enemyId));
             var displayed = visibleGangs
                 .OrderBy(candidate => candidate.Owner == gang.Owner ? 0 : 1)
                 .ThenBy(candidate => candidate.Id.Value)

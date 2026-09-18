@@ -20,6 +20,14 @@ public sealed partial class ChaosGame
         font.Draw(batch, text, new Vector2((VirtualInput.Width - width) / 2, y), color, scale);
     }
 
+    /// <summary>Text whose right edge, rather than its left, is the position given.</summary>
+    private static void DrawRightAligned(
+        PixelFont font, SpriteBatch batch, string text, int right, int y, Color color)
+    {
+        var width = text.Length * OriginalFontLayout.CellWidth;
+        font.Draw(batch, text, new Vector2(right - width, y), color, 1);
+    }
+
     private static void DrawButton(
         SpriteBatch batch, Texture2D pixel, PixelFont font,
         Rectangle rectangle, string text, bool prominent)
