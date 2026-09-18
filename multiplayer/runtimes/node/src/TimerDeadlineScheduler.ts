@@ -56,8 +56,16 @@ export function startSweeper(
   logger: Logger,
   bugReports?: BugReportService,
 ): () => void {
+  // One pass at a time. `setInterval` fires whether or not the previous pass finished, and a slow
+  // database would stack passes that each re-read the same expired turns and the same retention
+  // batch; a pass still running when the interval fires simply skips that beat.
+  let running = false
   const tick = () => {
-    void sweep(kernel, logger, bugReports)
+    if (running) return
+    running = true
+    void sweep(kernel, logger, bugReports).finally(() => {
+      running = false
+    })
   }
   const timer = setInterval(tick, intervalMs)
   timer.unref()

@@ -57,6 +57,23 @@ function defineFacadeSuite(name: string, databaseUrl: string | undefined): void 
   })
 }
 
+describe('node runtime configuration', () => {
+  it('refuses budgets and intervals that would admit one call or spin', () => {
+    expect(() => loadConfig({ RATE_LIMIT_PER_MINUTE: '0' })).toThrow(/at least 1/)
+    expect(() => loadConfig({ MEMBER_RATE_LIMIT_PER_MINUTE: '0' })).toThrow(/at least 1/)
+    expect(() => loadConfig({ SWEEP_INTERVAL_MS: '0' })).toThrow(/at least 1000/)
+    expect(() => loadConfig({ MAX_EVENT_STREAMS: '0' })).toThrow(/at least 1/)
+    expect(loadConfig({ RETENTION_DAYS: '0' }).retentionDays).toBe(0)
+  })
+
+  it('reads browser origins as a trimmed list, none by default', () => {
+    expect(loadConfig({}).corsOrigins).toEqual([])
+    expect(
+      loadConfig({ CORS_ORIGINS: ' https://a.example, https://b.example ,' }).corsOrigins,
+    ).toEqual(['https://a.example', 'https://b.example'])
+  })
+})
+
 defineFacadeSuite('node runtime over sqlite', 'sqlite::memory:')
 defineFacadeSuite('node runtime over postgres', process.env.TEST_DATABASE_URL)
 

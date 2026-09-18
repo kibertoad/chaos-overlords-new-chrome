@@ -260,6 +260,101 @@ export function defineHttpConformance(harness: HttpConformanceHarness): void {
       expect(detail.match.status).toBe('running')
     })
 
+    it('lets a former member rejoin and puts the seats that went quiet to them', async () => {
+      const { host, guest } = await lobbyOfTwo()
+      await host.api.start()
+      await guest.api.leave()
+      // Nobody is present when the host goes, so no vote could be opened for that seat then.
+      await host.api.leave()
+      await guest.api.rejoin()
+      const detail = await guest.api.get()
+      expect(detail.match.hostPlayerId).toBe(guest.player.id)
+      expect(detail.match.players.find((p) => p.id === guest.player.id)?.status).toBe('active')
+      const { events } = await guest.api.events(0)
+      expect(
+        events
+          .filter((event) => event.type === 'match.takeoverVoteRequested')
+          .map((event) => (event.payload as { playerId: string }).playerId),
+      ).toEqual([guest.player.id, host.player.id])
+      // One present player is the whole electorate: their vote makes the seat computer controlled.
+      await guest.api.voteOnTakeover(host.player.id, { decision: 'computer' })
+      expect(
+        (await guest.api.get()).match.players.find((p) => p.id === host.player.id)?.status,
+      ).toBe('computer')
+      await expect(
+        guest.api.voteOnTakeover(host.player.id, { decision: 'computer' }),
+      ).rejects.toMatchObject({ status: 409, reason: 'takeover_not_pending' })
+    })
+
+    it('seats a late joiner in a never-human slot once the bootstrap snapshot exists', async () => {
+      const anonymous = client()
+      const host = await anonymous.createMatch({
+        settings: { ...settings, gameSettings: { allowLateJoin: true } },
+        hostDisplayName: 'Ada',
+      })
+      const hostApi = anonymous.withToken(host.token).match(host.match.id)
+      await hostApi.start()
+      await expect(
+        anonymous.joinRunning({ match: host.match.id, slot: 1, displayName: 'Late' }),
+      ).rejects.toMatchObject({ status: 409, reason: 'late_join_not_ready' })
+      await hostApi.uploadSnapshot({
+        turn: 0,
+        formatVersion: 1,
+        stateHash: HASH_A,
+        body: 'c2F2ZQ==',
+        seatSummaries: [{ slot: 1, gangs: 2, sites: 3, sectors: 4 }],
+      })
+      if (harness.publicListing) {
+        const listed = (await anonymous.listLobbies()).matches.find((l) => l.id === host.match.id)
+        expect(listed?.availableSlots).toContain(1)
+        expect(listed?.availableSeatSummaries).toContainEqual({
+          slot: 1,
+          gangs: 2,
+          sites: 3,
+          sectors: 4,
+        })
+      }
+      await expect(
+        anonymous.joinRunning({ match: host.match.id, slot: 0, displayName: 'Late' }),
+      ).rejects.toMatchObject({ status: 409, reason: 'seat_reserved' })
+      const late = await anonymous.joinRunning({
+        match: host.match.id,
+        slot: 1,
+        displayName: 'Late',
+      })
+      expect(late.player.slot).toBe(1)
+      const lateApi = anonymous.withToken(late.token).match(host.match.id)
+      // Seated into the open turn: the newcomer can submit to it straight away.
+      expect((await lateApi.submitOrders(1, { orders: orders(1, 1), ready: false })).ready).toBe(
+        false,
+      )
+      await expect(
+        anonymous.joinRunning({ match: host.match.id, slot: 1, displayName: 'Later' }),
+      ).rejects.toMatchObject({ status: 409, reason: 'seat_reserved' })
+    })
+
+    it('names the refused field without echoing what was sent, and caps every body', async () => {
+      const response = await harness.fetch('http://conformance/api/v1/matches/join', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ joinCode: 'ABCDEFGH', displayName: '', password: 'hunter2' }),
+      })
+      expect(response.status).toBe(422)
+      const body = await response.json()
+      expect(body.error.details.reason).toBe('invalid_request')
+      const issues = body.error.details.issues as Array<{ message: string; path: string[] }>
+      expect(issues.some((issue) => issue.path.join('.') === 'displayName')).toBe(true)
+      expect(JSON.stringify(body)).not.toContain('hunter2')
+
+      const oversized = await harness.fetch('http://conformance/api/v1/matches/join', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'x'.repeat(20 * 1024) }),
+      })
+      expect(oversized.status).toBe(413)
+      expect((await oversized.json()).error.code).toBe('payload_too_large')
+    })
+
     it.skipIf(!harness.expireDeadlines)('seals a turn when its timer expires', async () => {
       const { host, guest } = await lobbyOfTwo(60)
       await host.api.start()

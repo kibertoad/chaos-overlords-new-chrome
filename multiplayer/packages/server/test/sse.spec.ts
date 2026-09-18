@@ -116,6 +116,37 @@ describe('createSseResponse backpressure', () => {
     await reader.cancel().catch(() => {})
   })
 
+  /**
+   * A read that fails (a database blip) must end the whole stream: heartbeat stopped, subscription
+   * released, so the caps see the slot free and nothing keeps enqueueing into a dead controller.
+   */
+  it('ends the stream and releases its subscription when a read fails', async () => {
+    let unsubscribed = 0
+    const source: EventStreamSource = {
+      listAfter: async () => {
+        throw new Error('database unavailable')
+      },
+      subscribe: () => () => {
+        unsubscribed += 1
+      },
+    }
+    const response = createSseResponse(source, {
+      afterSeq: 0,
+      heartbeatMs: 10,
+      signal: new AbortController().signal,
+    })
+    const reader = (response.body as ReadableStream<Uint8Array>).getReader()
+    await expect(
+      (async () => {
+        for (let i = 0; i < 20; i += 1) if ((await reader.read()).done) return
+      })(),
+    ).rejects.toThrow(/database unavailable/)
+    await settle()
+    expect(unsubscribed).toBe(1)
+    // Heartbeats after the failure must not throw inside their timer; give a few a chance to run.
+    await settle()
+  })
+
   /** A drain parked on backpressure must observe the shutdown, not sit on the log forever. */
   it('releases a parked drain when the stream closes', async () => {
     const { source, reads } = logOf(10_000)

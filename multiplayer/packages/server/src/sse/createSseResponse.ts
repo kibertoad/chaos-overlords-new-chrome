@@ -97,7 +97,16 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
             } while (wakeAgain && !closed)
           })()
             .catch((error) => {
-              if (!closed) controller.error(error)
+              // A failed read (a database blip) ends this stream as a whole. Erroring the
+              // controller alone left the heartbeat enqueueing into a dead stream and the
+              // subscription counted against every cap until the socket happened to close.
+              if (closed) return
+              try {
+                controller.error(error)
+              } catch {
+                // Already closed by the consumer.
+              }
+              shutdown()
             })
             .finally(() => {
               draining = null

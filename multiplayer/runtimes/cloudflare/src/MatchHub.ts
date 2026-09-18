@@ -57,7 +57,10 @@ export class MatchHub {
           // reach. A bare status crosses back instead and the Worker rethrows it as the domain
           // error, so the envelope still has exactly one producer.
           if (!isDomainError(error)) throw error
-          return new Response(null, { status: 429, headers: { 'X-Stream-Refusal': error.code } })
+          return new Response(null, {
+            status: 429,
+            headers: { 'X-Stream-Refusal': String(error.details?.scope ?? 'match') },
+          })
         }
       }
       case HUB_PATHS.disconnect: {
@@ -89,5 +92,28 @@ export class MatchHub {
     })
     const sealed = await kernel.turns.trySeal(pending.matchId, pending.turn, 'deadline')
     workerLogger.info('deadline alarm handled', { ...pending, sealed })
+    await this.forgetSpentDeadline(pending)
+  }
+
+  /**
+   * Drop the pending deadline once nothing is left to fire for. A seal on readiness, a finished
+   * match and a match retention deleted all leave the alarm armed for a turn that is no longer
+   * open; each such alarm builds a kernel and reads the match for nothing, and the key kept every
+   * timed match's object in storage forever. A seal that just ran has already replaced the key
+   * with the next turn's deadline, which is why the key is re-read rather than deleted outright.
+   */
+  private async forgetSpentDeadline(fired: PendingDeadline): Promise<void> {
+    const current = await this.state.storage.get<PendingDeadline>(DEADLINE_KEY)
+    if (!current || current.matchId !== fired.matchId || current.turn !== fired.turn) return
+    const storage = createSqliteStorage(drizzle(this.env.DB, { schema: sqliteSchema }))
+    const [match, turn] = await Promise.all([
+      storage.matches.get(fired.matchId),
+      storage.turns.get(fired.matchId, fired.turn),
+    ])
+    const stillDue =
+      match?.status === 'running' && turn?.status === 'open' && turn.deadlineAt !== null
+    if (stillDue) return
+    await this.state.storage.delete(DEADLINE_KEY)
+    await this.state.storage.deleteAlarm()
   }
 }

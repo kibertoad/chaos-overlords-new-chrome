@@ -149,3 +149,32 @@ export const matchEvents = pgTable(
   },
   (table) => [primaryKey({ columns: [table.matchId, table.seq] })],
 )
+
+/** See the SQLite schema: one row per open absence prompt of a match. */
+export const takeoverPrompts = pgTable(
+  'takeover_prompts',
+  {
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
+    playerId: text('player_id').notNull(),
+    turn: integer('turn').notNull(),
+    openedAt: stamp('opened_at').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.matchId, table.playerId] })],
+)
+
+/** The latest choice of each voter on an open prompt; discarded with the prompt. */
+export const takeoverVotes = pgTable(
+  'takeover_votes',
+  {
+    matchId: text('match_id')
+      .notNull()
+      .references(() => matches.id, { onDelete: 'cascade' }),
+    targetPlayerId: text('target_player_id').notNull(),
+    voterPlayerId: text('voter_player_id').notNull(),
+    decision: text('decision').notNull(),
+    castAt: stamp('cast_at').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.matchId, table.targetPlayerId, table.voterPlayerId] })],
+)

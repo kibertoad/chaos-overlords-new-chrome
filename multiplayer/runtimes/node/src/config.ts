@@ -81,6 +81,8 @@ export interface NodeConfig {
    * are not configurable; they follow from the six seats and from what a reconnect needs.
    */
   maxEventStreams: number
+  /** `CORS_ORIGINS`: browser origins allowed to call the API, comma separated. None by default. */
+  corsOrigins: string[]
 }
 
 /**
@@ -96,27 +98,48 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): NodeConfig {
     bugReportBlobDirectory: env.BUG_REPORT_BLOB_DIR ?? '',
     publicListing: flag(env.PUBLIC_LISTING, false),
     logLevel: level(env.LOG_LEVEL),
-    sweepIntervalMs: integer(env.SWEEP_INTERVAL_MS, 15_000),
-    rateLimitPerMinute: integer(env.RATE_LIMIT_PER_MINUTE, 30),
-    memberRateLimitPerMinute: integer(env.MEMBER_RATE_LIMIT_PER_MINUTE, 240),
-    uploadRateLimitPerMinute: integer(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10),
-    bugReportRateLimitPerMinute: integer(env.BUG_REPORT_RATE_LIMIT_PER_MINUTE, 5),
+    sweepIntervalMs: integer(env.SWEEP_INTERVAL_MS, 15_000, MIN_SWEEP_INTERVAL_MS),
+    rateLimitPerMinute: integer(env.RATE_LIMIT_PER_MINUTE, 30, 1),
+    memberRateLimitPerMinute: integer(env.MEMBER_RATE_LIMIT_PER_MINUTE, 240, 1),
+    uploadRateLimitPerMinute: integer(env.UPLOAD_RATE_LIMIT_PER_MINUTE, 10, 1),
+    bugReportRateLimitPerMinute: integer(env.BUG_REPORT_RATE_LIMIT_PER_MINUTE, 5, 1),
     retentionDays: integer(env.RETENTION_DAYS, 30),
     abandonedRetentionDays: integer(env.ABANDONED_RETENTION_DAYS, 90),
     bugReportRetentionDays: integer(env.BUG_REPORT_RETENTION_DAYS, 90),
     bugReportDailyStateMb: integer(env.BUG_REPORT_DAILY_STATE_MB, 512),
     trustedProxyHops: proxyHops(env.TRUST_PROXY),
     shutdownGraceMs: integer(env.SHUTDOWN_GRACE_MS, 5_000),
-    maxEventStreams: integer(env.MAX_EVENT_STREAMS, DEFAULT_EVENT_HUB_LIMITS.perProcess),
+    maxEventStreams: integer(env.MAX_EVENT_STREAMS, DEFAULT_EVENT_HUB_LIMITS.perProcess, 1),
+    corsOrigins: list(env.CORS_ORIGINS),
   }
 }
 
-function integer(raw: string | undefined, fallback: number): number {
+/**
+ * The floor under the sweep: `0` would be a hot loop over the database, and anything under a
+ * second has nothing to find that the previous pass did not.
+ */
+const MIN_SWEEP_INTERVAL_MS = 1_000
+
+/**
+ * A rate limit of `0` is not "unlimited" and not "closed" — the limiter admits one call per
+ * window and refuses the rest, which nobody means — so every budget has a floor of one, and the
+ * refusal names it rather than letting a misconfiguration run.
+ */
+function integer(raw: string | undefined, fallback: number, minimum = 0): number {
   if (raw === undefined || raw === '') return fallback
   const value = Number(raw)
-  if (!Number.isInteger(value) || value < 0)
-    throw new Error(`Expected a non-negative integer, got "${raw}"`)
+  if (!Number.isInteger(value) || value < minimum) {
+    throw new Error(`Expected an integer of at least ${minimum}, got "${raw}"`)
+  }
   return value
+}
+
+/** A comma-separated list, trimmed, with empty entries dropped. */
+function list(raw: string | undefined): string[] {
+  return (raw ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
 }
 
 /**

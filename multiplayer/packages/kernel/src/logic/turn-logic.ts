@@ -1,10 +1,16 @@
-import type { Player, TurnOrders, TurnReport } from '../domain/entities'
+import {
+  humanParticipants,
+  type Player,
+  type TurnOrders,
+  type TurnReport,
+} from '../domain/entities'
 
 /** Every human seat still being waited on has marked ready. An empty roster is never "ready". */
-export function allActiveReady(players: readonly Player[], orders: readonly TurnOrders[]): boolean {
-  const active = players.filter(
-    (player) => player.status === 'active' || player.status === 'takeoverPending',
-  )
+export function allActiveReady(
+  players: readonly Player[],
+  orders: ReadonlyArray<Pick<TurnOrders, 'playerId' | 'ready'>>,
+): boolean {
+  const active = humanParticipants(players)
   if (active.length === 0) return false
   const readyIds = new Set(orders.filter((row) => row.ready).map((row) => row.playerId))
   return active.every((player) => readyIds.has(player.id))
@@ -37,7 +43,7 @@ export function authoritativeCandidates(
   players: readonly Player[],
   reports: readonly TurnReport[],
 ): string[] {
-  const active = new Set(players.filter((player) => player.status === 'active').map((p) => p.id))
+  const active = new Set(humanParticipants(players).map((p) => p.id))
   const counts = new Map<string, number>()
   for (const report of reports) {
     if (!active.has(report.playerId)) continue
@@ -52,19 +58,26 @@ export function authoritativeCandidates(
 }
 
 /**
- * Compare the post-turn state hashes the active players reported.
+ * Compare the post-turn state hashes the human seats reported.
  *
  * Without an authoritative hash: once everyone has reported, unanimous agreement confirms the
  * turn and any disagreement flags a desync. With one (the host uploaded a snapshot for this
  * turn), a report is counted only when it matches it, so stragglers reloading the snapshot can
  * converge without tripping a second desync.
+ *
+ * A seat that merely missed one timed deadline (`takeoverPending`) is still a human seat whose
+ * client applies every sealed turn, so its report is waited for like any other: confirming without
+ * it would refuse its later, possibly disagreeing, report as `turn_confirmed` and leave a genuine
+ * divergence undetected. The wait costs nothing the match was not already paying — an open
+ * absence vote pauses the turn clock — and the vote that makes the seat computer controlled
+ * re-runs the verdict without it.
  */
 export function evaluateConsensus(
   players: readonly Player[],
   reports: readonly TurnReport[],
   authoritativeHash: string | null,
 ): Consensus {
-  const active = players.filter((player) => player.status === 'active')
+  const active = humanParticipants(players)
   if (active.length === 0) return { kind: 'pending' }
   const byPlayer = new Map(reports.map((report) => [report.playerId, report]))
   const activeReports = active.map((player) => byPlayer.get(player.id))

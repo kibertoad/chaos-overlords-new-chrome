@@ -22,6 +22,13 @@
       "when": 1789756760428,
       "tag": "0002_clean_shinobi_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1789768804446,
+      "tag": "0003_opposite_serpent_society",
+      "breakpoints": true
     }
   ]
 }

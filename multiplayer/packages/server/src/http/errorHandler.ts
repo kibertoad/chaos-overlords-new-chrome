@@ -25,7 +25,7 @@ export function handleError(error: Error, c: Context<AppEnv>): Response {
       c,
       'validation_failed',
       'Request failed contract validation',
-      { reason: 'invalid_request', issues: error.issues },
+      { reason: 'invalid_request', issues: error.issues.map(describeIssue) },
       requestId,
     )
   }
@@ -38,6 +38,25 @@ export function handleError(error: Error, c: Context<AppEnv>): Response {
     error: error.stack ?? String(error),
   })
   return respond(c, 'internal', 'Internal server error', { reason: 'internal' }, requestId)
+}
+
+/**
+ * What a client is told about a refused field: where and why, never what it sent.
+ *
+ * A validator's issue carries the offending input beside the message (valibot's `input` and
+ * `received`, and the value at every step of the path). Echoing it would put a mistyped password
+ * or a whole order document into the response and into any proxy log on the way.
+ */
+function describeIssue(issue: SchemaValidationError['issues'][number]): {
+  message: string
+  path: string[]
+} {
+  const path = (issue.path ?? []).map((segment: unknown) =>
+    String(
+      typeof segment === 'object' && segment !== null && 'key' in segment ? segment.key : segment,
+    ),
+  )
+  return { message: issue.message, path }
 }
 
 /**

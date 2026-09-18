@@ -28,6 +28,8 @@ const HOST_JOIN_ORDER = 0
 
 /** Host statuses that mean the seat is genuinely empty and the role may move. */
 const VACANT_HOST_STATUSES: ReadonlyArray<Player['status']> = ['left', 'kicked', 'computer']
+/** A human seat nobody is playing: the ones an absence vote can hand to the computer. */
+const ABSENT_HUMAN_STATUSES: ReadonlyArray<Player['status']> = ['takeoverPending', 'left', 'kicked']
 
 export interface LobbyServiceOptions {
   /** Generates the player/match ids; defaults to `crypto.randomUUID`. */
@@ -171,7 +173,7 @@ export class LobbyService {
         reason: 'late_join_disabled',
       })
     }
-    if (!(await this.deps.storage.snapshots.getLatest(match.id))) {
+    if (!(await this.deps.storage.snapshots.getLatestSummary(match.id))) {
       throw new ConflictError('Late join is available after the bootstrap snapshot is uploaded', {
         reason: 'late_join_not_ready',
       })
@@ -247,11 +249,20 @@ export class LobbyService {
       // `open` is idempotent and tops up missing participant rows even when the turn already exists.
       await this.deps.storage.turns.open(openTurn, [player.id])
     }
+    await this.deps.storage.takeovers.closePrompt(match.id, player.id)
     await this.publisher.publish(match.id, {
       type: 'match.playerReturned',
       payload: { playerId: player.id, replacedComputer },
     })
     const players = await this.deps.storage.players.listByMatch(match.id)
+    // A seat that went quiet while nobody was present to ask was never put to a vote (see
+    // `remove`), and one whose vote closed with the last present player leaving has no prompt
+    // either. The returning player is present now, so every absent human seat is put to them; a
+    // prompt that is already open is left exactly as it is.
+    for (const absent of players) {
+      if (absent.id === player.id || !ABSENT_HUMAN_STATUSES.includes(absent.status)) continue
+      await this.turns.openTakeoverPrompt(match.id, absent.id, match.currentTurn)
+    }
     const currentHost = players.find((candidate) => candidate.id === match.hostPlayerId)
     // Only a host who is gone is replaced. `takeoverPending` is set on a player who is still
     // connected and merely missed one timed deadline, so treating it as absence would hand the role
@@ -326,10 +337,38 @@ export class LobbyService {
     if (!target || target.matchId !== match.id) {
       throw new NotFoundError('No such player in this match', { reason: 'unknown_player' })
     }
-    if (!['takeoverPending', 'left', 'kicked'].includes(target.status)) {
+    if (!ABSENT_HUMAN_STATUSES.includes(target.status)) {
       throw new ConflictError('That player is not awaiting a takeover vote', {
         reason: 'takeover_not_pending',
       })
+    }
+    const now = this.deps.clock.now()
+    if (
+      !(await this.deps.storage.takeovers.castVote(
+        match.id,
+        target.id,
+        player.id,
+        request.decision,
+        now,
+      ))
+    ) {
+      // The seat is absent but nobody asked about it yet: it went quiet before this table existed,
+      // or while nobody was present to ask. The vote itself opens the question, so the seat can
+      // still be decided rather than left idle for the rest of the match.
+      await this.turns.openTakeoverPrompt(match.id, target.id, match.currentTurn)
+      if (
+        !(await this.deps.storage.takeovers.castVote(
+          match.id,
+          target.id,
+          player.id,
+          request.decision,
+          now,
+        ))
+      ) {
+        throw new ConflictError('That player is not awaiting a takeover vote', {
+          reason: 'takeover_not_pending',
+        })
+      }
     }
     await this.publisher.publish(match.id, {
       type: 'match.takeoverVoteCast',
@@ -337,7 +376,12 @@ export class LobbyService {
     })
     if (request.decision === 'wait') return
 
-    const votes = await this.currentTakeoverVotes(match.id, target.id)
+    const votes = new Map(
+      (await this.deps.storage.takeovers.listVotes(match.id, target.id)).map((vote) => [
+        vote.voterPlayerId,
+        vote.decision,
+      ]),
+    )
     const voters = activePlayers(await this.deps.storage.players.listByMatch(match.id))
     if (voters.length === 0 || voters.some((voter) => votes.get(voter.id) !== 'computer')) return
     if (
@@ -345,6 +389,7 @@ export class LobbyService {
     ) {
       return
     }
+    await this.deps.storage.takeovers.closePrompt(match.id, target.id)
     await this.publisher.publish(match.id, {
       type: 'match.playerTakenOver',
       payload: { playerId: target.id },
@@ -439,17 +484,14 @@ export class LobbyService {
     })
     // A seat that was already absent changes no tally and holds no host role: whatever vote or
     // succession its absence called for ran when it went quiet, and it is not a seat any turn is
-    // waiting on now.
-    if (!wasActive) return
+    // waiting on now. Nor does a match that is over have anything left to vote on.
+    if (!wasActive || (match.status !== 'running' && match.status !== 'desynced')) return
     const remaining = activePlayers(await this.deps.storage.players.listByMatch(match.id))
     if (remaining.length === 0) {
       // Keep the durable match available. The first former member to rejoin becomes host.
       return
     }
-    await this.publisher.publish(match.id, {
-      type: 'match.takeoverVoteRequested',
-      payload: { playerId: target.id, turn: match.currentTurn },
-    })
+    await this.turns.openTakeoverPrompt(match.id, target.id, match.currentTurn)
     await this.turns.pauseForTakeoverVote(match.id)
     if (target.id === match.hostPlayerId) {
       const successor = remaining[0] as Player
@@ -505,44 +547,6 @@ export class LobbyService {
       throw new ConflictError('Somebody in this match already plays under that name', {
         reason: 'display_name_taken',
       })
-    }
-  }
-
-  private async currentTakeoverVotes(
-    matchId: string,
-    targetPlayerId: string,
-  ): Promise<Map<string, 'computer' | 'wait'>> {
-    const votes = new Map<string, 'computer' | 'wait'>()
-    let requested = false
-    let after = 0
-    for (;;) {
-      const page = await this.deps.storage.events.listAfter(matchId, after, 200)
-      if (page.length === 0) return votes
-      for (const event of page) {
-        after = event.seq
-        if (
-          event.type === 'match.takeoverVoteRequested' &&
-          event.payload.playerId === targetPlayerId
-        ) {
-          requested = true
-          votes.clear()
-        } else if (
-          (event.type === 'match.takeoverVoteCancelled' ||
-            event.type === 'match.playerTakenOver' ||
-            event.type === 'match.playerReturned') &&
-          event.payload.playerId === targetPlayerId
-        ) {
-          requested = false
-          votes.clear()
-        } else if (
-          requested &&
-          event.type === 'match.takeoverVoteCast' &&
-          event.payload.playerId === targetPlayerId
-        ) {
-          votes.set(event.payload.voterPlayerId, event.payload.decision)
-        }
-      }
-      if (page.length < 200) return votes
     }
   }
 

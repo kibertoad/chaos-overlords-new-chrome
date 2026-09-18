@@ -54,7 +54,7 @@ export class MatchQueryService {
     const turn = await this.storage.turns.get(matchId, number)
     if (!turn) return null
     const [orders, reports] = await Promise.all([
-      this.storage.turns.listOrders(matchId, number),
+      this.storage.turns.listOrderSummaries(matchId, number),
       this.storage.turns.listReports(matchId, number),
     ])
     return {
@@ -81,7 +81,7 @@ export class MatchQueryService {
         }
         if (listing.settings.gameSettings.allowLateJoin !== true)
           return { ...current, availableSlots: [], availableSeatSummaries: [] }
-        if (!(await this.storage.snapshots.getLatest(listing.id)))
+        if (!(await this.storage.snapshots.getLatestSummary(listing.id)))
           return { ...current, availableSlots: [], availableSeatSummaries: [] }
         // `joinRunning` counts every seat a human has ever held against the host's own limit, so a
         // listing that ignored it advertised seats that every join answers `match_full` for.

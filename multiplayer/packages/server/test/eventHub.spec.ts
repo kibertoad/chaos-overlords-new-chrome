@@ -80,6 +80,27 @@ describe('LocalEventHub stream caps', () => {
     for (const stream of held) stream.abort()
   })
 
+  /**
+   * A full match is exactly what a reconnecting player finds when every seat holds its quota. The
+   * caller's own stale stream goes before the match ceiling is read, so the reconnect succeeds.
+   */
+  it('lets a player reconnect into a full match by replacing their own stale stream', async () => {
+    const hub = hubOf({ perPlayer: 1, perMatch: 2, perProcess: 10 })
+    const stale = await open(hub, 'm', 'p1')
+    const other = await open(hub, 'm', 'p2')
+    expect(hub.connectionCount('m')).toBe(2)
+
+    const fresh = await open(hub, 'm', 'p1')
+    expect(await stale.ended()).toBe(true)
+    expect(hub.connectionCount('m')).toBe(2)
+    // A genuinely new member of a full match is still refused.
+    await expect(
+      hub.open({ matchId: 'm', playerId: 'p3', afterSeq: 0, signal: new AbortController().signal }),
+    ).rejects.toMatchObject({ details: { reason: 'too_many_streams', scope: 'match' } })
+    fresh.abort()
+    other.abort()
+  })
+
   it('hangs up every stream of one membership and leaves the others alone', async () => {
     const hub = hubOf({ perPlayer: 3, perMatch: 10, perProcess: 10 })
     const kickedFirst = await open(hub, 'm', 'kicked')

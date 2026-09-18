@@ -65,6 +65,7 @@ export async function buildNodeRuntime(
   })
 
   let scheduler: TimerDeadlineScheduler | undefined
+  let warnedAboutProxy = false
   const kernel = createKernel(
     {
       storage: opened.storage,
@@ -78,7 +79,10 @@ export async function buildNodeRuntime(
       retention: {
         maxAgeMs: config.retentionDays * DAY_MS,
         abandonedLiveMaxAgeMs: config.abandonedRetentionDays * DAY_MS,
-        batchSize: 50,
+        // Retention runs on the request thread when the driver is synchronous, and a match is
+        // everything it owns: up to five megabytes of snapshot and its whole event log. Smaller
+        // batches every sweep bound how long one pass can hold every stream and request still.
+        batchSize: opened.dialect === 'sqlite' ? 10 : 50,
       },
     },
   )
@@ -97,14 +101,29 @@ export async function buildNodeRuntime(
       upload: perMinute(config.uploadRateLimitPerMinute),
       bugReport: perMinute(config.bugReportRateLimitPerMinute),
     },
-    config: { ...DEFAULT_SERVER_CONFIG, publicListing: config.publicListing },
+    config: {
+      ...DEFAULT_SERVER_CONFIG,
+      publicListing: config.publicListing,
+      corsOrigins: config.corsOrigins,
+    },
     // The socket address unless an operator has said how many proxies sit in front. It is the one
     // value a client cannot choose, so it is the default; `defaultClientAddress` explains what the
     // hop count buys and what getting it wrong costs.
-    clientAddress: (c) =>
-      config.trustedProxyHops > 0
-        ? defaultClientAddress(c, { hops: config.trustedProxyHops - 1 })
-        : (getConnInfo(c).remote.address ?? 'unknown'),
+    clientAddress: (c) => {
+      if (config.trustedProxyHops > 0) {
+        return defaultClientAddress(c, { hops: config.trustedProxyHops - 1 })
+      }
+      // Every caller behind an unannounced proxy shares the proxy's address, and with it one
+      // rate-limit budget: one stranger's bad tokens lock everybody out of create and join. Say so
+      // once, the first time a forwarded header arrives, rather than leaving it to be found.
+      if (!warnedAboutProxy && c.req.header('x-forwarded-for') !== undefined) {
+        warnedAboutProxy = true
+        logger.warn(
+          'X-Forwarded-For received but TRUST_PROXY is unset: every client shares one address',
+        )
+      }
+      return getConnInfo(c).remote.address ?? 'unknown'
+    },
   }
   const app = createApp(container)
   logger.info('runtime ready', {

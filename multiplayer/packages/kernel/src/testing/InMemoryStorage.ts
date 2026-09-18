@@ -4,6 +4,7 @@ import type {
   PersistedEvent,
   Player,
   Snapshot,
+  TakeoverVote,
   Turn,
   TurnOrders,
   TurnReport,
@@ -14,6 +15,7 @@ import type {
   MultiplayerStorage,
   PlayerRepository,
   SnapshotRepository,
+  TakeoverRepository,
   TurnRepository,
 } from '../ports/storage'
 
@@ -32,6 +34,8 @@ export class InMemoryStorage implements MultiplayerStorage {
   private readonly reportRows = new Map<string, TurnReport>()
   private readonly snapshotRows = new Map<string, Snapshot>()
   private readonly eventRows = new Map<string, PersistedEvent[]>()
+  private readonly promptRows = new Map<string, { matchId: string; playerId: string }>()
+  private readonly voteRows = new Map<string, TakeoverVote>()
 
   readonly matches: MatchRepository = {
     create: async (match) => {
@@ -222,6 +226,17 @@ export class InMemoryStorage implements MultiplayerStorage {
         .filter((row) => row.matchId === matchId && row.turn === number)
         .sort((a, b) => a.playerId.localeCompare(b.playerId))
         .map((row) => ({ ...row })),
+    listOrderSummaries: async (matchId, number) =>
+      [...this.orderRows.values()]
+        .filter((row) => row.matchId === matchId && row.turn === number)
+        .sort((a, b) => a.playerId.localeCompare(b.playerId))
+        .map(({ matchId, turn, playerId, ordersHash, ready }) => ({
+          matchId,
+          turn,
+          playerId,
+          ordersHash,
+          ready,
+        })),
     transition: async (matchId, number, from, patch) => {
       const turn = this.turnRows.get(turnKey(matchId, number))
       if (!turn || !from.includes(turn.status)) return false
@@ -292,6 +307,52 @@ export class InMemoryStorage implements MultiplayerStorage {
           .filter((snapshot) => snapshot.matchId === matchId)
           .sort((a, b) => b.turn - a.turn)[0],
       ),
+    getLatestSummary: async (matchId) => {
+      const latest = [...this.snapshotRows.values()]
+        .filter((snapshot) => snapshot.matchId === matchId)
+        .sort((a, b) => b.turn - a.turn)[0]
+      if (!latest) return null
+      const { body: _body, ...summary } = latest
+      return structuredClone(summary)
+    },
+  }
+
+  readonly takeovers: TakeoverRepository = {
+    openPrompt: async (matchId, playerId) => {
+      const key = promptKey(matchId, playerId)
+      if (this.promptRows.has(key)) return false
+      this.promptRows.set(key, { matchId, playerId })
+      return true
+    },
+    closePrompt: async (matchId, playerId) => {
+      for (const [key, vote] of this.voteRows) {
+        if (vote.matchId === matchId && vote.targetPlayerId === playerId) this.voteRows.delete(key)
+      }
+      this.promptRows.delete(promptKey(matchId, playerId))
+    },
+    hasOpenPrompts: async (matchId) =>
+      [...this.promptRows.values()].some((prompt) => prompt.matchId === matchId),
+    listOpenPrompts: async (matchId) =>
+      [...this.promptRows.values()]
+        .filter((prompt) => prompt.matchId === matchId)
+        .map((prompt) => prompt.playerId)
+        .sort(),
+    castVote: async (matchId, targetPlayerId, voterPlayerId, decision, castAt) => {
+      if (!this.promptRows.has(promptKey(matchId, targetPlayerId))) return false
+      this.voteRows.set(`${promptKey(matchId, targetPlayerId)}:${voterPlayerId}`, {
+        matchId,
+        targetPlayerId,
+        voterPlayerId,
+        decision,
+        castAt,
+      })
+      return true
+    },
+    listVotes: async (matchId, targetPlayerId) =>
+      [...this.voteRows.values()]
+        .filter((vote) => vote.matchId === matchId && vote.targetPlayerId === targetPlayerId)
+        .sort((a, b) => a.voterPlayerId.localeCompare(b.voterPlayerId))
+        .map((vote) => ({ ...vote })),
   }
 
   readonly events: EventRepository = {
@@ -329,6 +390,12 @@ export class InMemoryStorage implements MultiplayerStorage {
     for (const [key, row] of this.snapshotRows) {
       if (row.matchId === matchId) this.snapshotRows.delete(key)
     }
+    for (const [key, row] of this.promptRows) {
+      if (row.matchId === matchId) this.promptRows.delete(key)
+    }
+    for (const [key, row] of this.voteRows) {
+      if (row.matchId === matchId) this.voteRows.delete(key)
+    }
   }
 
   /** Test hook: the match statuses on file, for assertions that bypass the services. */
@@ -339,6 +406,10 @@ export class InMemoryStorage implements MultiplayerStorage {
 
 function turnKey(matchId: string, number: number): string {
   return `${matchId}:${number}`
+}
+
+function promptKey(matchId: string, playerId: string): string {
+  return `${matchId}:${playerId}`
 }
 
 function orderKey(matchId: string, number: number, playerId: string): string {

@@ -7,5 +7,5 @@ namespace Rechaos.Multiplayer.Protocol;
 /// </remarks>
 public static class MultiplayerProtocolVersion
 {
-    public const int Current = 4;
+    public const int Current = 5;
 }

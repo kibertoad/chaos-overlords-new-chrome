@@ -7,10 +7,14 @@ import type {
 } from '@chaos-overlords/contracts'
 import type {
   Match,
+  OrderSummary,
   PersistedEvent,
   Player,
   SealedSlot,
   Snapshot,
+  SnapshotSummary,
+  TakeoverDecision,
+  TakeoverVote,
   Turn,
   TurnOrders,
   TurnReport,
@@ -132,6 +136,12 @@ export interface TurnRepository {
   ): Promise<boolean>
   getOrders(matchId: string, number: number, playerId: string): Promise<TurnOrders | null>
   listOrders(matchId: string, number: number): Promise<TurnOrders[]>
+  /**
+   * The readiness and digest of every row of a turn, WITHOUT the documents. The seal decision,
+   * the digest of the sealed set and the match view need only these; loading a quarter-megabyte
+   * document per player to read a flag is what this projection avoids.
+   */
+  listOrderSummaries(matchId: string, number: number): Promise<OrderSummary[]>
   transition(
     matchId: string,
     number: number,
@@ -166,6 +176,8 @@ export interface SnapshotRepository {
   put(snapshot: Snapshot): Promise<void>
   get(matchId: string, turn: number): Promise<Snapshot | null>
   getLatest(matchId: string): Promise<Snapshot | null>
+  /** The newest snapshot's metadata without its body, which is a megabyte a caller checking for existence never reads. */
+  getLatestSummary(matchId: string): Promise<SnapshotSummary | null>
   /**
    * Keep only the `keep` newest turns' snapshots of a match, dropping the rest. Returns how many
    * went. Retention collects whole terminated matches; this bounds what a single LIVE match holds,
@@ -187,10 +199,41 @@ export interface EventRepository {
   lastSeq(matchId: string): Promise<number>
 }
 
+/**
+ * Absence prompts and their votes, as durable state rather than a replay of the event log.
+ *
+ * A prompt is open from the moment a human seat goes quiet (a departure, a kick, a wholly missed
+ * timed turn) until the seat returns or is voted to the computer. The open-turn clock is paused
+ * while a match has any, and every vote is judged against the prompts on file, so both questions
+ * are one indexed read instead of a scan of every event the match ever logged.
+ */
+export interface TakeoverRepository {
+  /** Opens a prompt for the seat; false when one is already open, so a caller can announce only the first. */
+  openPrompt(matchId: string, playerId: string, turn: number, openedAt: Date): Promise<boolean>
+  /** Closes the prompt and discards its votes. A no-op when none is open. */
+  closePrompt(matchId: string, playerId: string): Promise<void>
+  hasOpenPrompts(matchId: string): Promise<boolean>
+  /** Player ids with an open prompt, in a stable order. */
+  listOpenPrompts(matchId: string): Promise<string[]>
+  /**
+   * Records or replaces one voter's choice on an open prompt, in ONE statement conditional on the
+   * prompt being open. False when it is not, so a vote can never outlive the prompt it answers.
+   */
+  castVote(
+    matchId: string,
+    targetPlayerId: string,
+    voterPlayerId: string,
+    decision: TakeoverDecision,
+    castAt: Date,
+  ): Promise<boolean>
+  listVotes(matchId: string, targetPlayerId: string): Promise<TakeoverVote[]>
+}
+
 export interface MultiplayerStorage {
   matches: MatchRepository
   players: PlayerRepository
   turns: TurnRepository
+  takeovers: TakeoverRepository
   snapshots: SnapshotRepository
   events: EventRepository
 }

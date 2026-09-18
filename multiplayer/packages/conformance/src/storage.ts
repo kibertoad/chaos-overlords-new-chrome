@@ -516,6 +516,162 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       ])
     })
 
+    it('late-seats a never-human slot once, and refuses a slot any human ever held', async () => {
+      const match = matchFixture({
+        status: 'running',
+        settings: { ...matchFixture().settings, maxPlayers: 4 },
+      })
+      await storage.matches.create(match)
+      const seated = playerFixture(match, { slot: 0 })
+      await storage.matches.transition(match.id, ['running'], {
+        status: 'lobby',
+        updatedAt: new Date(),
+      })
+      await storage.players.create(seated)
+      await storage.matches.transition(match.id, ['lobby'], {
+        status: 'running',
+        updatedAt: new Date(),
+      })
+      await storage.players.setStatus(seated.id, 'left')
+      // A seat that was human once, even one its owner has left, is reserved for that owner.
+      expect(await storage.players.createLate(playerFixture(match, { slot: 0 }))).toBe(false)
+      const late = playerFixture(match, { slot: 2 })
+      expect(await storage.players.createLate(late)).toBe(true)
+      // The deterministic late id makes a second claim of the same seat a no-op, not a throw.
+      expect(await storage.players.createLate({ ...late, tokenHash: uid('hash') })).toBe(false)
+      expect(await storage.players.createLate(playerFixture(match, { slot: 2 }))).toBe(false)
+      const lobby = matchFixture({ status: 'lobby' })
+      await storage.matches.create(lobby)
+      expect(await storage.players.createLate(playerFixture(lobby, { slot: 1 }))).toBe(false)
+      expect((await storage.players.listByMatch(match.id)).map((p) => p.id)).toEqual([
+        seated.id,
+        late.id,
+      ])
+    })
+
+    /** Exactly one of a return and a takeover racing for the same seat may win. */
+    it('transitions a player status only from the expected ones', async () => {
+      const match = matchFixture()
+      await storage.matches.create(match)
+      const player = playerFixture(match, { status: 'takeoverPending' })
+      await storage.players.create(player)
+      expect(
+        await storage.players.transitionStatus(player.id, ['left', 'computer'], 'active'),
+      ).toBe(false)
+      expect(await storage.players.transitionStatus(player.id, ['takeoverPending'], 'active')).toBe(
+        true,
+      )
+      expect(
+        await storage.players.transitionStatus(player.id, ['takeoverPending'], 'computer'),
+      ).toBe(false)
+      expect((await storage.players.get(player.id))?.status).toBe('active')
+      expect(await storage.players.transitionStatus(uid('missing'), ['active'], 'left')).toBe(false)
+    })
+
+    it('updates lobby settings only in the lobby and never below the seated count', async () => {
+      const match = matchFixture({ seatCount: 2 })
+      await storage.matches.create(match)
+      const settings = {
+        ...match.settings,
+        name: 'Renamed',
+        maxPlayers: 3,
+        visibility: 'private' as const,
+      }
+      expect(await storage.matches.updateSettings(match.id, settings, new Date())).toBe(true)
+      expect((await storage.matches.get(match.id))?.settings).toEqual(settings)
+      expect(
+        await storage.matches.updateSettings(match.id, { ...settings, maxPlayers: 1 }, new Date()),
+      ).toBe(false)
+      expect((await storage.matches.get(match.id))?.settings.maxPlayers).toBe(3)
+      // Renamed and private: the lobby list reads the copied columns, not only the blob.
+      expect((await storage.matches.listPublicLobbies(50)).some((l) => l.id === match.id)).toBe(
+        false,
+      )
+      await storage.matches.transition(match.id, ['lobby'], {
+        status: 'running',
+        updatedAt: new Date(),
+      })
+      expect(await storage.matches.updateSettings(match.id, settings, new Date())).toBe(false)
+    })
+
+    it('summarises order rows without their documents', async () => {
+      const match = matchFixture({ status: 'running', currentTurn: 1 })
+      await storage.matches.create(match)
+      const [a, b] = [playerFixture(match), playerFixture(match)]
+      await storage.turns.open(turnFixture(match, 1), [a.id, b.id])
+      const orders = { schemaVersion: 1 as const, ops: [] }
+      await storage.turns.submitOrders(match.id, 1, a.id, {
+        orders,
+        ordersHash: 'a'.repeat(64),
+        ready: true,
+        submittedAt: new Date(),
+      })
+      const summaries = await storage.turns.listOrderSummaries(match.id, 1)
+      expect(summaries.map((row) => [row.playerId, row.ordersHash, row.ready]).sort()).toEqual(
+        [
+          [a.id, 'a'.repeat(64), true],
+          [b.id, null, false],
+        ].sort(),
+      )
+      for (const row of summaries) expect(row).not.toHaveProperty('orders')
+      expect(await storage.turns.listOrderSummaries(match.id, 2)).toEqual([])
+    })
+
+    it('keeps one absence prompt per seat and judges votes against it', async () => {
+      const match = matchFixture({ status: 'running', currentTurn: 3 })
+      await storage.matches.create(match)
+      const other = matchFixture({ status: 'running', currentTurn: 1 })
+      await storage.matches.create(other)
+      const at = new Date('2026-03-01T12:00:00.000Z')
+      expect(await storage.takeovers.hasOpenPrompts(match.id)).toBe(false)
+      // No prompt, no vote: a choice can never outlive or precede the question it answers.
+      expect(await storage.takeovers.castVote(match.id, 'absent', 'voter', 'computer', at)).toBe(
+        false,
+      )
+      expect(await storage.takeovers.openPrompt(match.id, 'absent', 3, at)).toBe(true)
+      expect(await storage.takeovers.openPrompt(match.id, 'absent', 4, at)).toBe(false)
+      expect(await storage.takeovers.openPrompt(match.id, 'another', 3, at)).toBe(true)
+      expect(await storage.takeovers.hasOpenPrompts(match.id)).toBe(true)
+      expect(await storage.takeovers.hasOpenPrompts(other.id)).toBe(false)
+      expect(await storage.takeovers.listOpenPrompts(match.id)).toEqual(['absent', 'another'])
+      expect(await storage.takeovers.castVote(match.id, 'absent', 'voter', 'wait', at)).toBe(true)
+      const later = new Date('2026-03-01T12:01:00.000Z')
+      expect(await storage.takeovers.castVote(match.id, 'absent', 'voter', 'computer', later)).toBe(
+        true,
+      )
+      expect(await storage.takeovers.castVote(match.id, 'absent', 'second', 'wait', later)).toBe(
+        true,
+      )
+      expect(await storage.takeovers.listVotes(match.id, 'absent')).toEqual([
+        {
+          matchId: match.id,
+          targetPlayerId: 'absent',
+          voterPlayerId: 'second',
+          decision: 'wait',
+          castAt: later,
+        },
+        {
+          matchId: match.id,
+          targetPlayerId: 'absent',
+          voterPlayerId: 'voter',
+          decision: 'computer',
+          castAt: later,
+        },
+      ])
+      expect(await storage.takeovers.listVotes(match.id, 'another')).toEqual([])
+      await storage.takeovers.closePrompt(match.id, 'absent')
+      expect(await storage.takeovers.listOpenPrompts(match.id)).toEqual(['another'])
+      expect(await storage.takeovers.listVotes(match.id, 'absent')).toEqual([])
+      // Reopening starts from a clean slate: the old votes went with the old prompt.
+      expect(await storage.takeovers.openPrompt(match.id, 'absent', 5, later)).toBe(true)
+      expect(await storage.takeovers.listVotes(match.id, 'absent')).toEqual([])
+      await expect(storage.takeovers.closePrompt(match.id, 'never-opened')).resolves.toBeUndefined()
+      // Retention takes the prompts and votes with the match.
+      await storage.matches.transition(match.id, ['running'], { status: 'finished', updatedAt: at })
+      await storage.matches.deleteInactive(['finished'], new Date('2027-01-01T00:00:00.000Z'), 10)
+      expect(await storage.takeovers.hasOpenPrompts(match.id)).toBe(false)
+    })
+
     it('stores snapshots per turn, replacing on re-upload, and serves the latest', async () => {
       const match = matchFixture()
       await storage.matches.create(match)
@@ -535,6 +691,9 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect((await storage.snapshots.getLatest(match.id))?.protocolVersion).toBe(2)
       expect((await storage.snapshots.get(match.id, 1))?.body).toBe('QUJD')
       expect(await storage.snapshots.get(match.id, 9)).toBeNull()
+      const { body: _body, ...summary } = { ...base, turn: 2 }
+      expect(await storage.snapshots.getLatestSummary(match.id)).toEqual(summary)
+      expect(await storage.snapshots.getLatestSummary(uid('missing'))).toBeNull()
     })
 
     /**
