@@ -120,6 +120,48 @@ describe('multiplayer kernel', () => {
     expect(started.match.settings.turnTimerSeconds).toBe(120)
   })
 
+  it('persists protocol provenance and defaults omitted legacy metadata to version 1', async () => {
+    const create = (name: string, protocolVersion?: number) =>
+      kernel.lobby.createMatch({
+        settings: {
+          name,
+          maxPlayers: 2,
+          turnTimerSeconds: 0,
+          visibility: 'private',
+          gameSettings: {},
+        },
+        hostDisplayName: 'Host',
+        protocolVersion,
+      })
+
+    const legacy = await create('Legacy')
+    expect((await principalOf(legacy.token)).match.protocolVersion).toBe(1)
+
+    const current = await create('Current', 2)
+    const currentPrincipal = await principalOf(current.token)
+    expect(currentPrincipal.match.protocolVersion).toBe(2)
+    await kernel.lobby.start(currentPrincipal)
+    await kernel.snapshots.upload(await principalOf(current.token), {
+      turn: 0,
+      formatVersion: 1,
+      protocolVersion: 2,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+    expect((await storage.snapshots.get(current.match.id, 0))?.protocolVersion).toBe(2)
+
+    await kernel.lobby.start(await principalOf(legacy.token))
+    await kernel.snapshots.upload(await principalOf(legacy.token), {
+      turn: 0,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+    expect((await storage.snapshots.get(legacy.match.id, 0))?.protocolVersion).toBe(1)
+  })
+
   it('allows late joining only into a never-human computer slot', async () => {
     const host = await kernel.lobby.createMatch({
       settings: {
@@ -987,6 +1029,7 @@ describe('multiplayer kernel', () => {
         matchId: hostP.match.id,
         turn,
         formatVersion: 1,
+        protocolVersion: 1,
         stateHash: HASH_A,
         uploadedByPlayerId: hostP.player.id,
         uploadedAt: clock.now(),

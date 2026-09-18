@@ -196,7 +196,8 @@ public sealed partial class ChaosGame
                 _online.PublicListing ? MatchVisibility.Public : MatchVisibility.Private,
                 settings.ToWire()),
             _online.DisplayName.Value.Trim(),
-            password));
+            password,
+            MultiplayerProtocolVersion.Current));
     }
 
     private void BeginJoin()

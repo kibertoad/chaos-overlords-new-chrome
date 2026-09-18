@@ -3,6 +3,7 @@ using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Http;
+using Rechaos.Multiplayer.Protocol;
 using Rechaos.Multiplayer.Session;
 using CoreTarget = Rechaos.Core.GameModel.CommandTarget;
 using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
@@ -41,7 +42,8 @@ public static class Program
             new CreateMatchRequest(
                 new MatchSettings("SMOKE CITY", 2, 0, MatchVisibility.Private, settings.ToWire()),
                 "ADA",
-                Password: null),
+                Password: null,
+                MultiplayerProtocolVersion.Current),
             CancellationToken.None);
         Console.WriteLine($"hosted {host.Match.Id} with code {host.JoinCode}");
 

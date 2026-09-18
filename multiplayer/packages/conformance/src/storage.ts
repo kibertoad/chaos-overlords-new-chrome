@@ -17,6 +17,7 @@ function matchFixture(overrides: Partial<Match> = {}): Match {
   const now = new Date('2026-03-01T10:00:00.000Z')
   return {
     id,
+    protocolVersion: 2,
     status: 'lobby',
     settings: {
       name: 'Conformance',
@@ -174,6 +175,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         matchId: doomed.id,
         turn: 1,
         formatVersion: 1,
+        protocolVersion: 2,
         stateHash: 'a'.repeat(64),
         uploadedByPlayerId: player.id,
         uploadedAt: ancient,
@@ -520,6 +522,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       const base = {
         matchId: match.id,
         formatVersion: 3,
+        protocolVersion: 2,
         stateHash: 'c'.repeat(64),
         uploadedByPlayerId: 'h',
         uploadedAt: new Date('2026-03-01T15:00:00.000Z'),
@@ -529,6 +532,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       await storage.snapshots.put({ ...base, turn: 2, body: 'REVG' })
       await storage.snapshots.put({ ...base, turn: 2, body: 'R0hJ' })
       expect((await storage.snapshots.getLatest(match.id))?.body).toBe('R0hJ')
+      expect((await storage.snapshots.getLatest(match.id))?.protocolVersion).toBe(2)
       expect((await storage.snapshots.get(match.id, 1))?.body).toBe('QUJD')
       expect(await storage.snapshots.get(match.id, 9)).toBeNull()
     })
@@ -544,6 +548,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       await storage.matches.create(other)
       const base = {
         formatVersion: 1,
+        protocolVersion: 2,
         stateHash: 'c'.repeat(64),
         uploadedByPlayerId: 'h',
         uploadedAt: new Date('2026-03-01T15:00:00.000Z'),

@@ -23,6 +23,7 @@ import type {
  */
 export interface MatchRow {
   id: string
+  protocolVersion: number
   status: string
   settings: unknown
   hostPlayerId: string
@@ -82,6 +83,7 @@ export interface SnapshotRow {
   matchId: string
   turn: number
   formatVersion: number
+  protocolVersion: number
   stateHash: string
   uploadedByPlayerId: string
   uploadedAt: Date
@@ -98,6 +100,7 @@ export interface EventRow {
 
 export const toMatch = (row: MatchRow): Match => ({
   id: row.id,
+  protocolVersion: row.protocolVersion,
   status: row.status as MatchStatus,
   settings: row.settings as MatchSettings,
   hostPlayerId: row.hostPlayerId,
@@ -113,6 +116,7 @@ export const toMatch = (row: MatchRow): Match => ({
 
 export const toMatchInsert = (match: Match) => ({
   id: match.id,
+  protocolVersion: match.protocolVersion,
   status: match.status,
   name: match.settings.name,
   visibility: match.settings.visibility,

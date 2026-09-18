@@ -15,6 +15,13 @@
       "when": 1789380380023,
       "tag": "0001_slow_gamora",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789756764133,
+      "tag": "0002_magical_cargill",
+      "breakpoints": true
     }
   ]
 }

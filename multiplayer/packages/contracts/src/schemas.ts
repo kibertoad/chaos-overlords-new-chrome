@@ -26,6 +26,7 @@ import {
   slotSchema,
   turnNumberSchema,
 } from './primitives'
+import { protocolVersionSchema } from './protocol'
 import { matchSettingsSchema } from './settings'
 
 /**
@@ -47,6 +48,8 @@ export const createMatchRequestSchema = strictObject({
   settings: matchSettingsSchema,
   hostDisplayName: displayNameInputSchema,
   password: optional(passwordSchema),
+  /** Protocol that created this session. Omitted legacy requests predate version negotiation. */
+  protocolVersion: optional(protocolVersionSchema),
 })
 
 export const joinMatchRequestSchema = strictObject({
@@ -101,6 +104,8 @@ export const turnReportRequestSchema = strictObject({
 export const uploadSnapshotRequestSchema = strictObject({
   turn: turnNumberSchema,
   formatVersion: formatVersionSchema,
+  /** Protocol that produced this snapshot. Omitted legacy requests are protocol version 1. */
+  protocolVersion: optional(protocolVersionSchema),
   stateHash: sha256HexSchema,
   /** The client's native snapshot, base64-encoded. The server stores it without decoding it. */
   body: base64BodySchema,

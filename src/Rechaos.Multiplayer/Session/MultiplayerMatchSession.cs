@@ -694,6 +694,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                     // The body is a native save, so the version that describes it is the native
                     // save format's — not the replay format's, which says nothing about these bytes.
                     NativeSaveSerializer.CurrentFormatVersion,
+                    MultiplayerProtocolVersion.Current,
                     ours,
                     MatchStateClone.ToBase64(_replay.State),
                     SummarizeSeats(_replay.State)),

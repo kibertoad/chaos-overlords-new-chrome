@@ -9,6 +9,8 @@ import type {
 
 export interface Match {
   id: string
+  /** Wire protocol used by the client that created this session. */
+  protocolVersion: number
   status: MatchStatus
   settings: MatchSettings
   hostPlayerId: string
@@ -100,6 +102,8 @@ export interface Snapshot {
   matchId: string
   turn: number
   formatVersion: number
+  /** Wire protocol used by the client that serialized this snapshot. */
+  protocolVersion: number
   stateHash: string
   uploadedByPlayerId: string
   uploadedAt: Date

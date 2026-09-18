@@ -1,6 +1,7 @@
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Multiplayer.Session;
 
@@ -21,6 +22,7 @@ public sealed partial class MultiplayerMatchSession
                 new UploadSnapshotRequest(
                     0,
                     NativeSaveSerializer.CurrentFormatVersion,
+                    MultiplayerProtocolVersion.Current,
                     stateHash,
                     MatchStateClone.ToBase64(_replay.State),
                     SummarizeSeats(_replay.State)),

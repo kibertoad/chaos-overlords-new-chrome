@@ -480,7 +480,8 @@ public sealed record HandshakeResponse(
 public sealed record CreateMatchRequest(
     [property: JsonPropertyName("settings")] MatchSettings Settings,
     [property: JsonPropertyName("hostDisplayName")] string HostDisplayName,
-    [property: JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Password
+    [property: JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Password,
+    [property: JsonPropertyName("protocolVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? ProtocolVersion
 );
 
 public sealed record JoinMatchRequest(
@@ -530,6 +531,7 @@ public sealed record TurnReportRequest(
 public sealed record UploadSnapshotRequest(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("formatVersion")] int FormatVersion,
+    [property: JsonPropertyName("protocolVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? ProtocolVersion,
     [property: JsonPropertyName("stateHash")] string StateHash,
     [property: JsonPropertyName("body")] string Body,
     [property: JsonPropertyName("seatSummaries")] IReadOnlyList<AiSeatSummary> SeatSummaries

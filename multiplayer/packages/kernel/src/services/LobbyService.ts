@@ -57,6 +57,7 @@ export class LobbyService {
     const passwordHash = request.password ? await hashPassword(request.password) : null
     const match = await this.createWithFreshJoinCode({
       id: matchId,
+      protocolVersion: request.protocolVersion ?? 1,
       status: 'lobby',
       settings: request.settings,
       hostPlayerId: hostId,

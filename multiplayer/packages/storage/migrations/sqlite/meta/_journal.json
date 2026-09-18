@@ -15,6 +15,13 @@
       "when": 1789380379533,
       "tag": "0001_sticky_umar",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789756760428,
+      "tag": "0002_clean_shinobi_shaw",
+      "breakpoints": true
     }
   ]
 }

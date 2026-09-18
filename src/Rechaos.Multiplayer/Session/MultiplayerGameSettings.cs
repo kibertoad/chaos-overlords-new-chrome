@@ -25,7 +25,7 @@ namespace Rechaos.Multiplayer.Session;
 /// <example>
 /// <code>
 /// var settings = new MultiplayerGameSettings(ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, portraits);
-/// var request = new CreateMatchRequest(new MatchSettings(name, 4, 0, MatchVisibility.Private, settings.ToWire()), "Ada", null);
+/// var request = new CreateMatchRequest(new MatchSettings(name, 4, 0, MatchVisibility.Private, settings.ToWire()), "Ada", null, MultiplayerProtocolVersion.Current);
 /// </code>
 /// </example>
 public sealed record MultiplayerGameSettings(

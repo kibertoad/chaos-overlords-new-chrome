@@ -59,6 +59,7 @@ export class SnapshotService {
       matchId: match.id,
       turn: request.turn,
       formatVersion: request.formatVersion,
+      protocolVersion: request.protocolVersion ?? 1,
       stateHash: request.stateHash,
       uploadedByPlayerId: player.id,
       uploadedAt: this.deps.clock.now(),
