@@ -631,7 +631,7 @@ slot 4 in the handlers for Hire (`PX05000`/`PX05016`), Item and Site Information
 (`PX05003`-`PX05007`), City/Sector Financial (`PX05008`/`PX05019`), Last Turn
 Events, Player Ranking, Combat Results and Detailed Combat
 (`PX05010`-`PX05014`), Give (`PX05015`), incoming/outgoing Comlink
-(`PX05017`, `PX05018`, and `PX05023`), Gangs in Sector (`PX05022`), and Search:
+(`PX05017`, `PX05018`, and `PX05023`), Gang Definition Information (`PX05022`), and Search:
 Sites (`PX05024`). These are conditional failure branches inside the panel
 handlers, not panel-open sounds. Valid confirmation/cancellation paths instead
 enter shared keyboard helper `0x00418ccc` or pointer helper `0x00418821`; both
@@ -1144,8 +1144,8 @@ classification identifies six open/close caller pairs using that form:
 `0x0044b699` loads Item Information `PX05001`, `0x0044c476` loads Site
 Information `PX05002`, `0x0044d1bb` loads City/Sector Financial
 `PX05008`/`PX05019`, `0x004546c5` loads Hire comparison `PX05016`,
-`0x0045519d` loads Game Info `PX05021`, and `0x00455b6b` loads Gangs in Sector
-`PX05022`. The other seventeen caller pairs pass zero and use the primary
+`0x0045519d` loads Game Info `PX05021`, and `0x00455b6b` loads Gang Definition
+Information `PX05022`. The other seventeen caller pairs pass zero and use the primary
 344-pixel form. The Hire handler makes the distinction explicit: it first loads
 the 344-by-209 image into `(top=144,left=344,bottom=353,right=688)`, then
 calls the nonzero slide mode. That mode copies only source x=344..664 to screen

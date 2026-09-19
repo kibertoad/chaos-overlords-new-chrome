@@ -570,7 +570,10 @@ the stream resume from the refreshed `lastEventSeq`.
 The desktop client writes the server, match id, player id, join code, session password, and
 session version, and membership token to an atomic local recovery record as soon as it takes a seat. It writes the
 match's own name beside them, which reaches every member on the wire rather than only the host who
-typed it, and stamps the record each time the client adopts a turn's authoritative state. That is
+typed it, and stamps the record each time the client adopts a turn's authoritative state. A terminal
+failure also retains its safe correlation context beside that membership: stage, local operation,
+HTTP status/reason, request id, planning turn, and last applied event sequence. It intentionally
+does not retain the response body, credentials, player names, settings, or order contents. That is
 what the list of unfinished sessions is read by: each row names the game and says when it was last
 played, so a player with seats in more than one match can tell them apart. A normal shutdown
 marks that record clean; an unclean exit leaves it resumable, so the next launch points the player
