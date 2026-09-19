@@ -33,12 +33,12 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.N)) OpenComlinkSend(ClientScreen.City);
         if (Pressed(keyboard, Keys.J)) OpenManagement(ClientScreen.GameInfo, ClientScreen.City);
         if (Pressed(keyboard, Keys.Space)) AdvanceTurn();
-        if (Pressed(keyboard, Keys.F5)) OpenSaveBrowser(saving: true);
-        if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false);
-        // Replays belong to a locally authoritative match. Slot saves may still capture an online
-        // match as a labelled offline snapshot, while replaying speculative online state may not.
+        // Saves and replays belong to a locally authoritative match. The multiplayer server keeps
+        // the match history after every turn, so it is resumed through Online instead.
         if (_session is null)
         {
+            if (Pressed(keyboard, Keys.F5)) OpenSaveBrowser(saving: true);
+            if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false);
             if (Pressed(keyboard, Keys.F6)) SaveReplay();
             if (Pressed(keyboard, Keys.F10)) LoadReplay();
         }

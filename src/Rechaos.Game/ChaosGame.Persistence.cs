@@ -10,6 +10,7 @@ public sealed partial class ChaosGame
 
     private SaveSlotSummary? SaveGameToSlot(int slot, string name)
     {
+        if (_session is not null) return null;
         if (_state is null) return null;
         try
         {
@@ -27,12 +28,12 @@ public sealed partial class ChaosGame
 
     private bool LoadGameFromSlot(int slot)
     {
+        if (_session is not null) return false;
         if (_definitions is null) return false;
         try
         {
             var summary = _saveSlots[slot];
             var loaded = SaveSlotCatalog.Load(_saveDirectory, slot, _definitions);
-            if (_session is not null) EndOnlineMatch("LOADED SAVED GAME");
             // The save is the match; the companion journal, when the slot has one that belongs to
             // it, is only how it got there — the history from the first turn, which is what lets a
             // bug report filed after a load reproduce the whole session rather than the tail of it.
