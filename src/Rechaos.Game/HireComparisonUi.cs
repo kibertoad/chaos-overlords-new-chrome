@@ -37,12 +37,6 @@ public static class HireComparisonLayout
     public static Rectangle ValueCell(int slot, int row) =>
         new(StatRight(slot) - 12, StatY(row), 12, 7);
 
-    public static string FormatValue(int row, short value)
-    {
-        if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
-        return row == 0 ? value.ToString("D2") : value.ToString();
-    }
-
     public static int StatY(int row)
     {
         if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
@@ -66,16 +60,6 @@ public static class HireComparisonLayout
             15 => Panel.Y + 186,
             _ => throw new ArgumentOutOfRangeException(nameof(row))
         };
-    }
-
-    public static bool IsBestValue(int row, short value, IEnumerable<short> comparison)
-    {
-        ArgumentNullException.ThrowIfNull(comparison);
-        if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
-        var values = comparison.ToArray();
-        if (values.Length == 0)
-            throw new ArgumentException("At least one value is required.", nameof(comparison));
-        return row == 1 ? value == values.Min() : value == values.Max();
     }
 
     private static void ValidateSlot(int slot)

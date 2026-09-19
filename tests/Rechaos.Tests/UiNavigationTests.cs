@@ -982,17 +982,11 @@ public sealed class UiNavigationTests
         Assert.Equal(394, HireComparisonLayout.StatRight(2));
         Assert.Equal(310, HireComparisonLayout.StatY(15));
         Assert.Equal(new Rectangle(382, 172, 12, 7), HireComparisonLayout.ValueCell(2, 0));
-        Assert.Equal("05", HireComparisonLayout.FormatValue(0, 5));
-        Assert.Equal("-2", HireComparisonLayout.FormatValue(4, -2));
         Assert.Contains("ATTACK DICE", InformationEffectTooltips.HireAt(
             new Point(244, HireComparisonLayout.StatY(12)))[1]);
         Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.Portrait(3));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.StatRight(-1));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.StatY(16));
-        Assert.True(HireComparisonLayout.IsBestValue(0, 10, [10, 5, 10]));
-        Assert.False(HireComparisonLayout.IsBestValue(0, 5, [10, 5, 10]));
-        Assert.True(HireComparisonLayout.IsBestValue(1, 2, [2, 4, 7]));
-        Assert.False(HireComparisonLayout.IsBestValue(1, 7, [2, 4, 7]));
     }
 
 }

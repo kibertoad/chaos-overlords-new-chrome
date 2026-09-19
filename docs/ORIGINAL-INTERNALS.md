@@ -3929,6 +3929,31 @@ fields.
 including resource destination, portrait/title/numeric coordinates, all
 literal helper calls, and close branch.
 
+### BIN-HIRE-COMPARISON-001 - fixed-width signed values in the three-offer panel
+
+**Observation:** The Hire comparison renderer `0x004546c5` calls the same
+numeric helper at `0x004142e7` for every inspected offer statistic. Each call
+passes literal width two and a signed word value; for example, the consecutive
+calls at `0x00454a85`, `0x00454ace`, and `0x00454b17` read adjacent signed
+word fields before passing that width. The renderer proceeds directly to the
+next value's destination calculation after each call. It does not compare the
+three offers or select a separate best-value palette.
+
+**Interpretation:** Hire comparison values use the native two-cell rule: a
+one-digit positive value occupies the right cell, while a negative value uses
+the red numeric glyph row and renders its absolute digits without an ASCII
+minus sign. The previously added green/red best-offer comparison tint and
+zero-padded Tech Level were not native behavior.
+
+**Static follow-through:** The recreation shares
+`NativeTwoCellNumberPresentation` with the Gang, Item, and Site panels for all
+sixteen Hire rows. It keeps the recovered 12-by-7 field clears, but no longer
+derives a color from the other offers.
+
+**Confidence:** High for the fixed-width, signed rendering and absence of a
+comparison branch from bounded call-site contexts in complete renderer
+`0x004546c5`; native capture remains useful only for final palette comparison.
+
 ### BIN-GAME-INFO-001 - alternate panel crop and field origins
 
 **Observation:** Game Information handler `0x0045519d` loads `PX05021` into
@@ -3989,7 +4014,7 @@ is evidence that the cleared/drawn field began at the wrong pixel origin.
 
 **Confidence:** High static evidence from the complete `PX05000` and
 `PX05022` renderers (`0x00449e80`, `0x00455b6b`), their bounded helper-call
-contexts, and fixed-width number helper `0x00414187`; verified decoded panel
+contexts, and fixed-width number helper `0x004142e7`; verified decoded panel
 art confirms each placeholder field is two glyph cells wide.
 
 ### BIN-MOVEMENT-001 - Terminate pass before roster-ordered Move
