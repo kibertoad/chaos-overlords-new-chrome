@@ -20,7 +20,7 @@ const eventAt = (seq: number) => ({
   createdAt: '2026-09-18T12:00:00.000Z',
 })
 const frameOf = (seq: number, newline = '\n') =>
-  `id: ${seq}${newline}event: turn.opened${newline}data: ${JSON.stringify(eventAt(seq))}${newline}${newline}`
+  `id: ${seq}${newline}event: message${newline}data: ${JSON.stringify(eventAt(seq))}${newline}${newline}`
 
 describe('parseEventStream', () => {
   it('reassembles frames split across chunks and skips keepalives', async () => {
@@ -31,7 +31,7 @@ describe('parseEventStream', () => {
       payload: { turn: 1, deadlineAt: null },
       createdAt: '2026-09-18T12:00:00.000Z',
     }
-    const text = `: connected\n\n: keepalive\n\nid: 3\nevent: turn.opened\ndata: ${JSON.stringify(event)}\n\n`
+    const text = `: connected\n\n: keepalive\n\nid: 3\nevent: message\ndata: ${JSON.stringify(event)}\n\n`
     const chunks = [text.slice(0, 20), text.slice(20, 60), text.slice(60)]
     const seen = []
     for await (const parsed of parseEventStream(bodyOf(chunks))) seen.push(parsed)
@@ -187,7 +187,7 @@ describe('isFatalStreamError', () => {
 
 describe('parseEventStream framing', () => {
   const frame = (id: number, seq: number) =>
-    `id: ${id}\nevent: turn.opened\ndata: ${JSON.stringify({ seq, matchId: 'm', type: 'turn.opened', payload: { turn: 1, deadlineAt: null }, createdAt: '2026-09-18T12:00:00.000Z' })}\n\n`
+    `id: ${id}\nevent: message\ndata: ${JSON.stringify({ seq, matchId: 'm', type: 'turn.opened', payload: { turn: 1, deadlineAt: null }, createdAt: '2026-09-18T12:00:00.000Z' })}\n\n`
 
   const bodyOf = (text: string) =>
     new ReadableStream<Uint8Array>({
@@ -210,8 +210,30 @@ describe('parseEventStream framing', () => {
     }).rejects.toThrow(/disagrees/)
   })
 
+  /**
+   * The handshake has already agreed a protocol version, so a frame under another name is a mangled
+   * or foreign one rather than a newer server — and reading its payload as a match event anyway
+   * would move the resume cursor on something this client cannot claim to understand.
+   */
+  it('refuses a frame named anything but the contracted event name', async () => {
+    const renamed = frameOf(5).replace('event: message', 'event: turn.opened')
+    await expect(async () => {
+      for await (const _ of parseEventStream(bodyOf(renamed))) {
+        // consume
+      }
+    }).rejects.toThrow(/not the contracted 'message'/)
+  })
+
+  /** No name at all means `message`, as the event-stream format says. */
+  it('accepts a frame that names no event', async () => {
+    const unnamed = frameOf(6).replace('event: message\n', '')
+    const seen = []
+    for await (const parsed of parseEventStream(bodyOf(unnamed))) seen.push(parsed)
+    expect(seen).toEqual([eventAt(6)])
+  })
+
   it('refuses an event whose JSON does not satisfy the shared event contract', async () => {
-    const malformed = `id: 4\nevent: turn.opened\ndata: ${JSON.stringify({ ...eventAt(4), payload: { turn: '4', deadlineAt: null } })}\n\n`
+    const malformed = `id: 4\nevent: message\ndata: ${JSON.stringify({ ...eventAt(4), payload: { turn: '4', deadlineAt: null } })}\n\n`
     await expect(async () => {
       for await (const _ of parseEventStream(bodyOf(malformed))) {
         // consume

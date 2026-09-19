@@ -3,7 +3,7 @@ import { ContractNoBody, defineApiContract, withObjectKeys } from '@toad-contrac
 import { object } from 'valibot'
 import { bugReportReceiptSchema, submitBugReportRequestSchema } from './bug-reports'
 import { errorEnvelopeSchema } from './errors'
-import { eventPageSchema, matchEventSchema } from './events'
+import { eventPageSchema, MATCH_EVENT_SSE_NAME, matchEventSchema } from './events'
 import { resourceIdSchema, turnPathParamSchema } from './primitives'
 import { handshakeRequestSchema, handshakeResponseSchema } from './protocol'
 import { eventsQuerySchema } from './queries'
@@ -262,16 +262,18 @@ export const listEventsContract = defineApiContract({
  * The same log as server-sent events.
  *
  * Every frame carries the same `matchEventSchema` body regardless of its `type`, so the stream is
- * declared under the one `message` event name rather than one per match event: an `EventSource`
- * listening for `message` is what a browser client writes, and the discriminator inside the payload
- * is what everything downstream branches on anyway.
+ * declared under the one {@link MATCH_EVENT_SSE_NAME} event rather than one per match event: an
+ * `EventSource` listening for `message` is what a browser client writes, and the discriminator
+ * inside the payload is what everything downstream branches on anyway. The server frames its events
+ * under the same constant and both clients refuse a frame named anything else, so the name on the
+ * wire cannot drift from the name declared here.
  */
 export const streamEventsContract = defineApiContract({
   method: 'get',
   requestPathParamsSchema: matchParams,
   pathResolver: ({ matchId }) => `/matches/${matchId}/stream`,
   responsesByStatusCode: {
-    200: sseResponse({ message: matchEventSchema }),
+    200: sseResponse({ [MATCH_EVENT_SSE_NAME]: matchEventSchema }),
     ...REFUSALS,
   },
   summary: 'The event log as a resumable SSE stream.',

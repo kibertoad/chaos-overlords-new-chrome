@@ -35,13 +35,24 @@ public sealed class EventStreamIdleException(TimeSpan idle, Exception? inner = n
 /// Reads server-sent events off a response body into match events.
 /// </summary>
 /// <remarks>
-/// Frames are separated by a blank line; <c>data:</c> carries the JSON event and <c>id:</c> its
-/// sequence number. Comment lines (the keepalive) end a frame with nothing in it. Either line
-/// ending is allowed, as the event-stream format says, and a byte order mark in front of the first
-/// line is skipped rather than read as the start of a field name.
+/// Frames are separated by a blank line; <c>data:</c> carries the JSON event, <c>id:</c> its
+/// sequence number and <c>event:</c> its name. Comment lines (the keepalive) end a frame with
+/// nothing in it. Either line ending is allowed, as the event-stream format says, and a byte order
+/// mark in front of the first line is skipped rather than read as the start of a field name.
 /// </remarks>
 public static class EventStreamParser
 {
+    /// <summary>
+    /// The one event name the stream contract declares, mirroring <c>MATCH_EVENT_SSE_NAME</c> in
+    /// <c>@chaos-overlords/contracts</c>.
+    /// </summary>
+    /// <remarks>
+    /// Every frame carries the same envelope whatever its <c>type</c>, so the stream is one named
+    /// event rather than one per match event type, and <c>message</c> is the name a stock
+    /// <c>EventSource</c> delivers to its default handler.
+    /// </remarks>
+    internal const string EventName = "message";
+
     /// <summary>Match events from one connection's body, until the server closes it.</summary>
     public static async IAsyncEnumerable<MatchEvent> ReadAsync(
         Stream body,
@@ -149,11 +160,18 @@ public static class EventStreamParser
     /// transit or the server is not the one this client thinks it is. Resuming from the wrong
     /// number would skip events in silence, so the frame is refused instead — and so is an id that
     /// is not a number at all, for the same reason.
+    /// <para>
+    /// The <c>event:</c> name is held to <see cref="EventName"/> the same way. The handshake has
+    /// already established that both sides speak the same protocol version, so a frame under any
+    /// other name is a mangled or foreign one rather than a newer server being polite. An absent
+    /// name means <c>message</c>, as the event-stream format says.
+    /// </para>
     /// </remarks>
     internal static MatchEvent? ParseFrame(string frame)
     {
         var data = new StringBuilder();
         string? id = null;
+        string? name = null;
         var sawData = false;
         foreach (var line in frame.Split('\n'))
         {
@@ -168,8 +186,17 @@ public static class EventStreamParser
             {
                 id = line.AsSpan(3).Trim().ToString();
             }
+            else if (line.StartsWith("event:", StringComparison.Ordinal))
+            {
+                name = line.AsSpan(6).Trim().ToString();
+            }
         }
         if (!sawData) return null;
+        if (name is not null && !string.Equals(name, EventName, StringComparison.Ordinal))
+        {
+            throw new MultiplayerProtocolException(
+                $"event stream frame is named '{name}', not the contracted '{EventName}'");
+        }
 
         var @event = WireJson.Read<MatchEvent>(data.ToString());
         // An empty id is the format's way of saying "no id", and is left alone.

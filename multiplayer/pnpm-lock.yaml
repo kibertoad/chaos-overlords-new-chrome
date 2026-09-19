@@ -56,7 +56,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))
 
   packages/client:
     dependencies:
@@ -69,7 +69,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))
 
   packages/conformance:
     dependencies:
@@ -88,16 +88,16 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))
 
   packages/contracts:
     dependencies:
       '@toad-contracts/core':
-        specifier: 0.4.0
-        version: 0.4.0
+        specifier: 1.0.0
+        version: 1.0.0
       '@toad-contracts/valibot':
-        specifier: 0.5.0
-        version: 0.5.0(valibot@1.5.0(typescript@5.9.3))
+        specifier: 1.0.0
+        version: 1.0.0(valibot@1.5.0(typescript@5.9.3))
       valibot:
         specifier: ^1.4.0
         version: 1.5.0(typescript@5.9.3)
@@ -107,7 +107,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))
 
   packages/kernel:
     dependencies:
@@ -123,7 +123,7 @@ importers:
         version: 1.5.0(typescript@5.9.3)
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))
 
   packages/server:
     dependencies:
@@ -137,11 +137,11 @@ importers:
         specifier: workspace:*
         version: link:../kernel
       '@toad-contracts/core':
-        specifier: 0.4.0
-        version: 0.4.0
+        specifier: 1.0.0
+        version: 1.0.0
       '@toad-contracts/hono':
-        specifier: 0.3.2
-        version: 0.3.2(hono@4.13.7)
+        specifier: 1.0.0
+        version: 1.0.0(hono@4.13.7)
       hono:
         specifier: ^4.13.7
         version: 4.13.7
@@ -154,7 +154,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))
 
   packages/storage:
     dependencies:
@@ -197,7 +197,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))
 
   runtimes/cloudflare:
     dependencies:
@@ -231,7 +231,7 @@ importers:
         version: link:../../packages/conformance
       '@cloudflare/vitest-pool-workers':
         specifier: ^0.22.0
-        version: 0.22.0(@cloudflare/workers-types@5.20260910.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13)))
+        version: 0.22.0(@cloudflare/workers-types@5.20260910.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6)))
       '@cloudflare/workers-types':
         specifier: ^5.20260910.1
         version: 5.20260910.1
@@ -240,7 +240,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))
       wrangler:
         specifier: ^4.131.0
         version: 4.131.0(@cloudflare/workers-types@5.20260910.1)(@types/node@22.20.2)
@@ -289,7 +289,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.11
-        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
+        version: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))
 
 packages:
 
@@ -1512,16 +1512,16 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@toad-contracts/core@0.4.0':
-    resolution: {integrity: sha512-5wyHoGMPN/X/J1woRk279jFoup2B+kmbyW1MF+BbdqD5aEQJtqWI9WWyoZLYIczhi02c4Yap1unonfcQz7GAyw==}
+  '@toad-contracts/core@1.0.0':
+    resolution: {integrity: sha512-x+nETb0h1brV9DZqOrVcxw9Eo8+p0mHaM8ri2ziMZqCF0lG3qr+RjPdK72yF1zullcLEjxy1EaLz7HObfJNFuQ==}
 
-  '@toad-contracts/hono@0.3.2':
-    resolution: {integrity: sha512-rARlCsEHaCkRXOXZ0NYgqLONwACu3x9MTQYzbeSIEe4kkxP+U92UitoOlIho1YzP0pEG5y/bBcEQytD+cwWyfg==}
+  '@toad-contracts/hono@1.0.0':
+    resolution: {integrity: sha512-Mp/+Rv2moIwcfx3lGipTtVrfdHDHMvcEFKO0xzzSGAfWLTJWRoJ8zE41MnLRGQbDZqDPLJCoyrxgef+x3rEIMw==}
     peerDependencies:
       hono: '>=4.0.0'
 
-  '@toad-contracts/valibot@0.5.0':
-    resolution: {integrity: sha512-Zi9+YlyPzUz9Vcf/NLtQTkenR16YnD4ipl3Uwr+/den6wYnfrJ+V8Pxdcwe/3akpIdZuP7cz/5R7E0/Khaz1/Q==}
+  '@toad-contracts/valibot@1.0.0':
+    resolution: {integrity: sha512-fqpbBzeroyjH5y3pxD9jhuZxMr2pVx0mdPtp1HhAdJ4xPfHEkuLjTYpI6AX0fTEDaTXoS9sd1WnbU00luTRo7g==}
     peerDependencies:
       valibot: '>=1.0.0'
 
@@ -2266,14 +2266,14 @@ snapshots:
     optionalDependencies:
       workerd: 1.20260910.1
 
-  '@cloudflare/vitest-pool-workers@0.22.0(@cloudflare/workers-types@5.20260910.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13)))':
+  '@cloudflare/vitest-pool-workers@0.22.0(@cloudflare/workers-types@5.20260910.1)(@vitest/runner@4.1.11)(@vitest/snapshot@4.1.11)(vitest@4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6)))':
     dependencies:
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
       cjs-module-lexer: 1.2.3
       esbuild: 0.28.1
       miniflare: 5.20260815.0-alpha
-      vitest: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
+      vitest: 4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))
       wrangler: 4.124.0(@cloudflare/workers-types@5.20260910.1)
       zod: 4.4.3
     transitivePeerDependencies:
@@ -2928,19 +2928,19 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@toad-contracts/core@0.4.0':
+  '@toad-contracts/core@1.0.0':
     dependencies:
       '@standard-schema/spec': 1.1.0
 
-  '@toad-contracts/hono@0.3.2(hono@4.13.7)':
+  '@toad-contracts/hono@1.0.0(hono@4.13.7)':
     dependencies:
       '@standard-schema/spec': 1.1.0
-      '@toad-contracts/core': 0.4.0
+      '@toad-contracts/core': 1.0.0
       hono: 4.13.7
 
-  '@toad-contracts/valibot@0.5.0(valibot@1.5.0(typescript@5.9.3))':
+  '@toad-contracts/valibot@1.0.0(valibot@1.5.0(typescript@5.9.3))':
     dependencies:
-      '@toad-contracts/core': 0.4.0
+      '@toad-contracts/core': 1.0.0
       valibot: 1.5.0(typescript@5.9.3)
 
   '@turbo/darwin-64@2.10.12':
@@ -2997,13 +2997,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.1
 
-  '@vitest/mocker@4.1.11(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))':
+  '@vitest/mocker@4.1.11(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))':
     dependencies:
       '@vitest/spy': 4.1.11
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13)
+      vite: 8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6)
 
   '@vitest/pretty-format@4.1.11':
     dependencies:
@@ -3505,7 +3505,7 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
-  vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13):
+  vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -3516,12 +3516,12 @@ snapshots:
       '@types/node': 22.20.2
       esbuild: 0.28.2
       fsevents: 2.3.3
-      tsx: 4.23.13
+      tsx: 4.20.6
 
-  vitest@4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13)):
+  vitest@4.1.11(@types/node@22.20.2)(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6)):
     dependencies:
       '@vitest/expect': 4.1.11
-      '@vitest/mocker': 4.1.11(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13))
+      '@vitest/mocker': 4.1.11(vite@8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6))
       '@vitest/pretty-format': 4.1.11
       '@vitest/runner': 4.1.11
       '@vitest/snapshot': 4.1.11
@@ -3538,7 +3538,7 @@ snapshots:
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.1
-      vite: 8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.23.13)
+      vite: 8.3.0(@types/node@22.20.2)(esbuild@0.28.2)(tsx@4.20.6)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.20.2
