@@ -33,6 +33,20 @@ public sealed class GameplayTurnFlowTests
     }
 
     [Fact]
+    public void HotSeatEliminationPresentationAcknowledgesEachCrossedSeatOnlyOnce()
+    {
+        var presented = new HashSet<PlayerId>();
+
+        Assert.Equal([new PlayerId(2), new PlayerId(4)],
+            HotSeatEliminationPresentation.QueueUnpresented(
+                [new PlayerId(2), new PlayerId(4)], presented));
+        Assert.Empty(HotSeatEliminationPresentation.QueueUnpresented(
+            [new PlayerId(2), new PlayerId(4)], presented));
+        Assert.Equal([new PlayerId(5)], HotSeatEliminationPresentation.QueueUnpresented(
+            [new PlayerId(4), new PlayerId(5)], presented));
+    }
+
+    [Fact]
     public void NormalFlowStopsOnlyForPlayerPlanningAndResolvesInternalPhases()
     {
         var definitions = BundledOriginalData.Load();

@@ -42,6 +42,7 @@ public sealed partial class ChaosGame
             _actions = new MatchActions(
                 SaveSlotCatalog.LoadJournal(_saveDirectory, slot, loaded)
                 ?? new MatchReplayRecorder(loaded));
+            ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);
@@ -90,6 +91,7 @@ public sealed partial class ChaosGame
                 _replayPath, _state.Definitions);
             _state = result.State;
             _actions = new MatchActions(new MatchReplayRecorder(_state));
+            ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
             _cursor = Math.Clamp(_cursor, 0, _state.Sectors.Count - 1);

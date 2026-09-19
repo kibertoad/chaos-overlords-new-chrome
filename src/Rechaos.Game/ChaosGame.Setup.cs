@@ -345,6 +345,7 @@ public sealed partial class ChaosGame
         });
         _state = OriginalMatchFactory.Create(_definitions, setup);
         _actions = new MatchActions(new MatchReplayRecorder(_state));
+        ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: false);
         if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
         if (!_debugPhaseStepping) PrepareCurrentHireOffers();
         _cursor = _state.Players[0].Gangs[0].SectorId;

@@ -9,9 +9,23 @@ public sealed partial class ChaosGame
     private void QueueHotSeatEliminations(PlanningAdvance advance)
     {
         if (_session is not null || _state is not { Outcome: null } state) return;
-        foreach (var playerId in advance.CrossedEliminatedPlayers)
-            if (state.FindPlayer(playerId)?.Setup.Controller == PlayerController.Human)
-                _pendingHotSeatEliminations.Enqueue(playerId);
+        var humans = advance.CrossedEliminatedPlayers.Where(playerId =>
+            state.FindPlayer(playerId)?.Setup.Controller == PlayerController.Human);
+        foreach (var playerId in HotSeatEliminationPresentation.QueueUnpresented(
+                     humans, _presentedHotSeatEliminations))
+            _pendingHotSeatEliminations.Enqueue(playerId);
+    }
+
+    private void ResetHotSeatEliminationPresentation(bool acknowledgeExistingEliminations)
+    {
+        _pendingHotSeatEliminations.Clear();
+        _presentedHotSeatEliminations.Clear();
+        _eliminationHandoffPlayer = null;
+        if (!acknowledgeExistingEliminations || _state is null) return;
+        foreach (var player in _state.Players.Where(player =>
+                     player.Setup.Controller == PlayerController.Human
+                     && player.Status == PlayerStatus.Eliminated))
+            _presentedHotSeatEliminations.Add(player.Id);
     }
 
     private bool ShowPendingHotSeatElimination()
@@ -68,5 +82,24 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         DrawBorder(batch, pixel, EndgameNoticeLayout.Portrait, PlayerColors[playerId.Value], 1);
         font.Draw(batch, "PRESS ENTER OR CLICK TO CONTINUE", new Vector2(66, 438), Color.White, 1);
+    }
+}
+
+/// <summary>
+/// Keeps an eliminated local seat's private presentation one-shot while the coordinator continues
+/// to cross its permanently retired command slot on later rounds.
+/// </summary>
+public static class HotSeatEliminationPresentation
+{
+    public static IReadOnlyList<PlayerId> QueueUnpresented(
+        IEnumerable<PlayerId> crossedEliminatedPlayers,
+        ISet<PlayerId> presentedPlayers)
+    {
+        ArgumentNullException.ThrowIfNull(crossedEliminatedPlayers);
+        ArgumentNullException.ThrowIfNull(presentedPlayers);
+        var queued = new List<PlayerId>();
+        foreach (var playerId in crossedEliminatedPlayers)
+            if (presentedPlayers.Add(playerId)) queued.Add(playerId);
+        return queued;
     }
 }
