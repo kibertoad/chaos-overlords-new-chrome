@@ -1,4 +1,8 @@
-import { matchEventSchema, SSE_HEARTBEAT_COMMENT } from '@chaos-overlords/contracts'
+import {
+  MATCH_EVENT_SSE_NAME,
+  matchEventSchema,
+  SSE_HEARTBEAT_COMMENT,
+} from '@chaos-overlords/contracts'
 import type { PersistedEvent } from '@chaos-overlords/kernel'
 import { validateSync } from '@toad-contracts/core'
 
@@ -172,7 +176,18 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
   })
 }
 
+/**
+ * One frame: the sequence number as its `id`, the contract's single event name, and the validated
+ * event as JSON.
+ *
+ * The name is the one the contract declares rather than the event's own `type`. A frame named after
+ * its type is a *named* event, which a stock `EventSource` delivers only to a listener registered
+ * for that exact name and never to `onmessage` — so the browser client the contract describes would
+ * hold an open stream and see nothing. Both of this repo's clients branch on the `type` inside the
+ * payload, which is unaffected.
+ */
 export function formatEvent(event: PersistedEvent): string {
   const validated = validateSync(matchEventSchema, event)
-  return `id: ${validated.seq}\nevent: ${validated.type}\ndata: ${JSON.stringify(validated)}\n\n`
+  const data = JSON.stringify(validated)
+  return `id: ${validated.seq}\nevent: ${MATCH_EVENT_SSE_NAME}\ndata: ${data}\n\n`
 }

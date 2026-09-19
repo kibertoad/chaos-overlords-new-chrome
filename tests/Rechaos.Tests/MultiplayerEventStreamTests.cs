@@ -83,6 +83,31 @@ public sealed class MultiplayerEventStreamTests
             () => ReadAsync(Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\"}", "4")));
     }
 
+    /// <summary>
+    /// The stream declares one event name, and the server frames every event under it. A frame
+    /// named anything else is mangled or foreign, and reading its payload as a match event anyway
+    /// would move the resume cursor on something this client cannot claim to understand.
+    /// </summary>
+    [Fact]
+    public async Task RefusesAFrameNamedAnythingButTheContractedEventName()
+    {
+        var renamed = "event: turn.opened\n"
+            + Frame("turn.opened", "{\"turn\":2,\"deadlineAt\":null}");
+
+        await Assert.ThrowsAsync<MultiplayerProtocolException>(() => ReadAsync(renamed));
+    }
+
+    /// <summary>The contracted name is read, and a frame that names no event still means it.</summary>
+    [Theory]
+    [InlineData("event: message\n")]
+    [InlineData("")]
+    public async Task AcceptsTheContractedEventNameAndItsAbsence(string name)
+    {
+        var events = await ReadAsync(name + Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\"}"));
+
+        Assert.IsType<LobbyHostChangedEvent>(Assert.Single(events));
+    }
+
     /// <summary>An event this build does not know about is a protocol failure, not a silent skip.</summary>
     [Fact]
     public async Task RefusesAnEventTypeItCannotApply()

@@ -1,6 +1,7 @@
+import { MATCH_EVENT_SSE_NAME } from '@chaos-overlords/contracts'
 import type { PersistedEvent } from '@chaos-overlords/kernel'
 import { describe, expect, it } from 'vitest'
-import { createSseResponse, type EventStreamSource } from '../src'
+import { createSseResponse, type EventStreamSource, formatEvent } from '../src'
 
 const event = (seq: number): PersistedEvent =>
   ({
@@ -168,5 +169,27 @@ describe('createSseResponse backpressure', () => {
     for (let i = 0; i < 200 && !done; i += 1) done = (await reader.read()).done
     expect(done).toBe(true)
     expect(reads.length).toBe(afterAbort)
+  })
+})
+
+describe('formatEvent', () => {
+  /**
+   * A frame named after the event's own `type` is a *named* SSE event, which a stock `EventSource`
+   * delivers only to a listener registered for that exact name — never to `onmessage`. The contract
+   * declares one name for the whole stream, and this is the frame that has to carry it.
+   */
+  it('frames every event under the one name the contract declares', () => {
+    const frame = formatEvent(event(7))
+    expect(frame).toContain(`event: ${MATCH_EVENT_SSE_NAME}`)
+    expect(frame).not.toContain('event: turn.opened')
+    expect(frame.startsWith('id: 7\n')).toBe(true)
+    expect(frame.endsWith('\n\n')).toBe(true)
+  })
+
+  it('carries the validated event as the frame data', () => {
+    const data = formatEvent(event(2))
+      .split('\n')
+      .find((line) => line.startsWith('data: '))
+    expect(JSON.parse(data?.slice(6) ?? '')).toEqual(event(2))
   })
 })

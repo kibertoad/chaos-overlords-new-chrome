@@ -1,4 +1,4 @@
-import { mapApiContractToPath } from '@toad-contracts/core'
+import { getSseSchemaByEventName, mapApiContractToPath } from '@toad-contracts/core'
 import { safeParse } from 'valibot'
 import { describe, expect, it } from 'vitest'
 import {
@@ -9,11 +9,13 @@ import {
   gangDefinitionIdSchema,
   itemIdSchema,
   LIMITS,
+  MATCH_EVENT_SSE_NAME,
   matchEventSchema,
   sealedOrdersContract,
   sectorIdSchema,
   siteIdSchema,
   slotSchema,
+  streamEventsContract,
 } from '../src'
 
 describe('API_CONTRACTS', () => {
@@ -22,6 +24,16 @@ describe('API_CONTRACTS', () => {
       '/matches/m1/turns/7/orders',
     )
     expect(mapApiContractToPath(sealedOrdersContract)).toBe('/matches/:matchId/turns/:turn/orders')
+  })
+
+  /**
+   * The stream declares exactly one event name, and it is the constant both the server's framing
+   * and the clients' parsing read. A second name here would be a frame no client accepts.
+   */
+  it('declares its SSE stream under the one event name the wire uses', () => {
+    expect(Object.keys(getSseSchemaByEventName(streamEventsContract) ?? {})).toEqual([
+      MATCH_EVENT_SSE_NAME,
+    ])
   })
 
   it('covers every route the server serves, each with the error envelope', () => {

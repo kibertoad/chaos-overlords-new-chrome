@@ -156,7 +156,7 @@ hashing are not the ones it plays. `AGENTS.md` says when each number moves.
 | `POST /matches/:id/snapshots` | host | A base64 native snapshot for a sealed turn, with its `stateHash`. |
 | `GET /matches/:id/snapshots/latest`, `/:turn` | member | Snapshot bodies for resync or reconnect. |
 | `GET /matches/:id/events?after=N` | member | The log, paged. |
-| `GET /matches/:id/stream` | member | The same log as SSE; `Last-Event-ID` or `?after=` resumes. |
+| `GET /matches/:id/stream` | member | The same log as SSE; `Last-Event-ID` or `?after=` resumes. Every frame is `id:` the sequence number, `event: message`, and `data:` the event JSON — one event name for the whole stream, so a browser's stock `EventSource` reads it from `onmessage` and branches on the `type` inside the payload. A `: keepalive` comment every 20 seconds is the only other frame. |
 
 The order document is `{ schemaVersion: 1, ops: [...] }`, where each op is one of the five
 operations the core's replay recorder accepts as player intent, in the core's own vocabulary:

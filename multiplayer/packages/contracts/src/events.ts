@@ -230,3 +230,14 @@ export type MatchEventBody = MatchEvent extends infer TEvent
 
 /** The SSE stream also emits a keepalive comment; this is the one non-event frame. */
 export const SSE_HEARTBEAT_COMMENT = 'keepalive'
+
+/**
+ * The SSE event name every frame carries, and the one name `streamEventsContract` declares.
+ *
+ * Every frame has the same `matchEventSchema` body whatever its `type`, so the stream is one named
+ * event rather than one per match event type: `message` is the name a stock `EventSource` delivers
+ * to `onmessage`, and the discriminator inside the payload is what everything downstream branches
+ * on anyway. Naming frames after their `type` instead would make exactly that browser client —
+ * the one the contract promises — receive nothing, since a named event never fires `message`.
+ */
+export const MATCH_EVENT_SSE_NAME = 'message'
