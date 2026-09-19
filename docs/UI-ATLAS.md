@@ -31,9 +31,9 @@ original-game capture confirms the screen and interaction state.
 | `PX00138` | Circular action/command icons | High from repeated command imagery |
 | `PX00140` | Compact setup-control sheet matching `PX00143` labels | High |
 | `PX00150` | Twenty-two 20x14 city site markers in two 11-item rows and controlled/uncontrolled states; pure white is transparent | High from the complete native city marker renderer and original 1.1 captures |
-| `PX00200` | Endgame awards/statistics frame | High from visible labels |
+| `PX00200` | Endgame awards/statistics frame, composited at `(106,25)` over the preserved city screen | High from visible labels and native compositor destination |
 | `PX00201` | Endgame award icons (fist, skull, chicken, dollar, safe), colored player-number rows, statistics labels, and pressed Awards/Stats/Done controls | High from visible content and the original Help Endgame topic |
-| `PX00202`, `PX00203` | `PX00202` is the final single-human victory splash; `PX00203` is the private elimination splash, including a locally eliminated player during an ongoing hot-seat game | High static renderer/caller evidence and visible geometry; recreation routes mid-match `PX00203` through the native slot walk, pending runtime geometry capture |
+| `PX00202`, `PX00203` | `PX00202` is the final single-human victory splash; `PX00203` is the private elimination splash, including a locally eliminated player during an ongoing hot-seat game. Both overlay the endgame frame at `(110,30)`, with the named 64-by-64 Overlord at `(126,54)`. | High static renderer/caller and compositor evidence; recreation routes mid-match `PX00203` through the native slot walk |
 | `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; combat uses opaque cells from this sheet | High from sheet inspection and the native combat compositor |
 | `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
 | `PX05009` | Gangs in Sector compact roster with up to six 32-by-32 gang columns, each carrying Tech Level, Upkeep, and fourteen stat rows | High from visible labels, main-console workflow, and recovered handler geometry |

@@ -73,6 +73,7 @@ public sealed partial class ChaosGame
 
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        DrawEndgameBackground(batch, pixel);
         if (_eliminationBackground is not null)
             batch.Draw(_eliminationBackground, EndgameNoticeLayout.Panel, Color.White);
         else
@@ -81,7 +82,7 @@ public sealed partial class ChaosGame
             batch.Draw(_uiSprites, EndgameNoticeLayout.Portrait,
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         DrawBorder(batch, pixel, EndgameNoticeLayout.Portrait, PlayerColors[playerId.Value], 1);
-        font.Draw(batch, "PRESS ENTER OR CLICK TO CONTINUE", new Vector2(66, 438), Color.White, 1);
+        DrawEndgameNoticeName(batch, font, playerId, player.Setup.Name);
     }
 }
 

@@ -4385,8 +4385,11 @@ slots 0 through 5, and when it reaches an unretired local elimination it shows
 and resumes the scan for later slots. Immediately afterwards it requests
 music-selector mode 2 (`0x004642bd`), the established gameplay Track 3-8
 program, rather than notifying a later player. It is not a popup at resolution
-time and is not silently skipped. That presenter loads `PX00203`, composites
-the eliminated Overlord portrait, and blocks for its visible continue control.
+time and is not silently skipped. That presenter first preserves the existing
+city screen, lays `PX00200` at `(x=106, y=25)`, then lays `PX00203` at
+`(x=110, y=30)`, centers the eliminated player's name at `(158, 46)`, and
+composites the 64-by-64 Overlord portrait at `(126, 54)`. It blocks for its
+visible continue control.
 Single-local play bypasses the handoff gate but still reaches this elimination
 presenter when it loses.
 
@@ -4419,12 +4422,13 @@ non-blocking/skippable behavior remains an explicit modern safety correction
 for the known native detailed-combat freeze. The hot-seat coordinator now
 reports eliminated command slots in native order, and the UI presents each
 eliminated human as `PX00132` handoff, `PX00203`, then the later slot, while
-completed multi-local games continue to shared awards. The existing handoff
-portrait, Ready press cue, per-viewer combat state, and unread-Comlink delay
-remain in place.
+completed multi-local games continue to shared awards. The shared results
+frame and both private cards now use the recovered native composition
+coordinates and player-name placement. The existing handoff portrait, Ready
+press cue, per-viewer combat state, and unread-Comlink delay remain in place.
 
 **Next validation:** Capture a multi-local elimination followed by another
-human turn to corroborate `PX00203` geometry and later-slot timing, and capture
+human turn to corroborate `PX00203` timing and later-slot timing, and capture
 Simple and Detailed handoffs containing both a combat result and an event
 report to corroborate modal completion and timing.
 

@@ -59,11 +59,15 @@ public sealed class EndgameNoticePresentationTests
     [Fact]
     public void EndgameAtlasLayoutProvidesSixRowsFiveAwardsAndExactControls()
     {
-        Assert.Equal(new Rectangle(0, 50, 428, 410), EndgameLayout.Panel);
-        Assert.Equal(new Rectangle(320, 50, 50, 56), EndgameLayout.Awards);
-        Assert.Equal(new Rectangle(372, 50, 52, 56), EndgameLayout.Stats);
-        Assert.Equal(new Rectangle(320, 402, 104, 58), EndgameLayout.Done);
-        Assert.Equal(new Rectangle(4, 382, 64, 64), EndgameLayout.Portrait(5));
+        Assert.Equal(new Rectangle(106, 25, 428, 410), EndgameLayout.Panel);
+        Assert.Equal(new Rectangle(426, 33, 50, 56), EndgameLayout.Awards);
+        Assert.Equal(new Rectangle(478, 33, 52, 56), EndgameLayout.Stats);
+        Assert.Equal(new Rectangle(426, 377, 104, 58), EndgameLayout.Done);
+        Assert.Equal(new Rectangle(132, 360, 64, 64), EndgameLayout.Portrait(5));
+        Assert.Equal(new Rectangle(110, 30, 312, 393), EndgameNoticeLayout.Panel);
+        Assert.Equal(new Rectangle(126, 54, 64, 64), EndgameNoticeLayout.Portrait);
+        Assert.Equal(158, EndgameNoticeLayout.NameCenterX);
+        Assert.Equal(46, EndgameNoticeLayout.NameY);
         Assert.Equal(new Rectangle(200, 0, 50, 48),
             EndgameLayout.AwardSource(EndgameAward.Safe));
         Assert.Throws<ArgumentOutOfRangeException>(() => EndgameLayout.Portrait(6));

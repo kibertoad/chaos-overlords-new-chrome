@@ -42,6 +42,7 @@ public sealed partial class ChaosGame
     {
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
+        DrawEndgameBackground(batch, pixel);
         if (_showEndgameNotice && EndgameNoticePresentation.For(state) is { } notice)
         {
             var background = notice.Kind == EndgameNoticeKind.Victory
@@ -56,14 +57,9 @@ public sealed partial class ChaosGame
                     OriginalSpriteLayout.OverlordPortrait(notice.PortraitId), Color.White);
             DrawBorder(batch, pixel, EndgameNoticeLayout.Portrait,
                 PlayerColors[notice.Player.Value], 1);
-            font.Draw(batch, "PRESS ENTER OR CLICK TO CONTINUE",
-                new Vector2(66, 438), Color.White, 1);
+            DrawEndgameNoticeName(batch, font, notice.Player, state.FindPlayer(notice.Player)!.Setup.Name);
             return;
         }
-        if (_endgameBackground is not null)
-            batch.Draw(_endgameBackground, new Rectangle(0, 50, 428, 410), Color.White);
-        else
-            batch.Draw(pixel, new Rectangle(0, 50, 428, 410), new Color(0, 0, 0, 230));
 
         var outcome = state.Outcome!;
         var rows = EndgamePresentation.Rows(state);
@@ -83,6 +79,26 @@ public sealed partial class ChaosGame
         }
         DrawSelectionLight(batch, pixel, OriginalSelectionLightLayout.EndgameTab(
             _showEndgameStats ? EndgameLayout.Stats : EndgameLayout.Awards));
+    }
+
+    /// <summary>
+    /// The original results overlay is first laid over the preserved city screen, then any private
+    /// victory or elimination card is laid over that. Its legacy destination was supplied as
+    /// top, left, bottom, right = (25, 106, 435, 534), rather than as image coordinates.
+    /// </summary>
+    private void DrawEndgameBackground(SpriteBatch batch, Texture2D pixel)
+    {
+        if (_endgameBackground is not null)
+            batch.Draw(_endgameBackground, EndgameLayout.Panel, Color.White);
+        else
+            batch.Draw(pixel, EndgameLayout.Panel, new Color(0, 0, 0, 230));
+    }
+
+    private static void DrawEndgameNoticeName(
+        SpriteBatch batch, PixelFont font, PlayerId playerId, string name)
+    {
+        var x = EndgameNoticeLayout.NameCenterX - name.Length * OriginalFontLayout.CellWidth / 2;
+        font.Draw(batch, name, new Vector2(x, EndgameNoticeLayout.NameY), PlayerColors[playerId.Value], 1);
     }
 
     private void DrawEndgameAwards(
@@ -188,8 +204,10 @@ public static class EndgameNoticePresentation
 
 public static class EndgameNoticeLayout
 {
-    public static Rectangle Panel => new(0, 67, 312, 393);
-    public static Rectangle Portrait => new(15, 80, 64, 76);
+    public const int NameCenterX = 158;
+    public const int NameY = 46;
+    public static Rectangle Panel => new(110, 30, 312, 393);
+    public static Rectangle Portrait => new(126, 54, 64, 64);
 }
 
 public sealed record EndgamePlayerRow(PlayerId Player, string Label);
@@ -240,22 +258,22 @@ public static class EndgamePresentation
 public static class EndgameLayout
 {
     public const int PlayerRows = MatchLimits.PlayerCount;
-    public const int StatisticValueRight = 314;
-    public static Rectangle Panel => new(0, 50, 428, 410);
-    public static Rectangle Awards => new(320, 50, 50, 56);
-    public static Rectangle Stats => new(372, 50, 52, 56);
-    public static Rectangle Done => new(320, 402, 104, 58);
+    public const int StatisticValueRight = 421;
+    public static Rectangle Panel => new(106, 25, 428, 410);
+    public static Rectangle Awards => new(426, 33, 50, 56);
+    public static Rectangle Stats => new(478, 33, 52, 56);
+    public static Rectangle Done => new(426, 377, 104, 58);
 
     public static Rectangle Portrait(int row)
     {
         ValidateRow(row);
-        return new Rectangle(4, 52 + row * 66, 64, 64);
+        return new Rectangle(132, 30 + row * 66, 64, 64);
     }
 
     public static Vector2 Name(int row)
     {
         ValidateRow(row);
-        return new Vector2(72, 58 + row * 66);
+        return new Vector2(197, 38 + row * 66);
     }
 
     public static Rectangle Award(int row, int index)
@@ -263,7 +281,7 @@ public static class EndgameLayout
         ValidateRow(row);
         if (index is < 0 or >= EndgamePresentation.VisibleAwardsPerPlayer)
             throw new ArgumentOutOfRangeException(nameof(index));
-        return new Rectangle(158 + index * 31, 69 + row * 66, 29, 28);
+        return new Rectangle(268 + index * 50, 38 + row * 66, 48, 48);
     }
 
     public static Rectangle AwardSource(EndgameAward award) => award switch
@@ -280,7 +298,7 @@ public static class EndgameLayout
     {
         ValidateRow(row);
         if (statistic is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(statistic));
-        return new Vector2(158, 57 + row * 66 + statistic * 11);
+        return new Vector2(268, 38 + row * 66 + statistic * 11);
     }
 
     private static void ValidateRow(int row)
