@@ -14,6 +14,14 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);**/bin/**;**/obj/**</DefaultItemExcludes>
   </PropertyGroup>
 
+  <!-- Validation creates this per-run root outside the checkout. Keeping every project's
+       intermediates and binaries there prevents stale or access-controlled local obj files
+       from participating in the build. -->
+  <PropertyGroup Condition="'$(ValidationArtifactsRoot)' != ''">
+    <BaseIntermediateOutputPath>$(ValidationArtifactsRoot)$(MSBuildProjectName)\obj\</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(ValidationArtifactsRoot)$(MSBuildProjectName)\bin\</BaseOutputPath>
+  </PropertyGroup>
+
   <!-- One version for every assembly in the repository, taken from the file the release process
        writes. The release workflow puts the requested tag in version.txt, pushes it, and builds
        every installer from that commit, so the version the game shows is the version on the box.
