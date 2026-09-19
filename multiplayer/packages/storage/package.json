@@ -1,6 +1,6 @@
 {
   "name": "@chaos-overlords/storage",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Drizzle schemas and repository implementations of the kernel storage ports: one SQLite dialect shared by better-sqlite3 and Cloudflare D1, and a Postgres dialect.",
   "keywords": [
     "chaos-overlords",

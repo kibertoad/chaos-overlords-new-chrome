@@ -1,6 +1,6 @@
 {
   "name": "@chaos-overlords/client",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "TypeScript client for the multiplayer server: typed REST calls and a resumable SSE event iterator. The reference for the game's C# client.",
   "keywords": [
     "chaos-overlords",
