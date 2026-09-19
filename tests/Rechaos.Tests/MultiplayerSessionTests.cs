@@ -813,10 +813,7 @@ public sealed partial class MultiplayerSessionTests
         server.Events.Write(Frame(10, "match.takeoverVoteCast",
             """{"playerId":"p2","voterPlayerId":"p1","decision":"computer"}"""));
         server.Events.Write(Frame(11, "match.playerTakenOver", """{"playerId":"p2"}"""));
-        server.Events.Write(SealedFrame(12, 1).Replace(
-            SealedOrders(1).OrderSetHash,
-            SealedOrdersForSlots(1, 0).OrderSetHash,
-            StringComparison.Ordinal));
+        server.Events.Write(SealedFrameForSlots(12, 1, 0));
         var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session);
 
         var definitions = BundledOriginalData.Load();

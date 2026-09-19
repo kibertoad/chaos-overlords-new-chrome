@@ -356,6 +356,13 @@ export class TurnService {
    * (see `TakeoverRepository`) and announced exactly once: a second request for a seat whose
    * prompt is already open changes nothing, so a repeated seal step or a rejoin that re-asks about
    * every absent seat cannot double the modal on anyone's screen.
+   *
+   * Opening a prompt always stops the open turn's clock, because the decision owns the screen on
+   * every remaining client and time spent behind that modal is time nobody can plan in. The pause
+   * belongs here rather than at the call sites: a prompt raised by a rejoin re-asking about the
+   * seats it finds absent, or by a vote on a seat that went quiet before anyone was present to ask,
+   * is exactly as blocking as one raised by a kick, and each of those used to leave the countdown
+   * running. `openTurn` applies the same rule to a turn opening while a prompt is already up.
    */
   async openTakeoverPrompt(matchId: string, playerId: string, turn: number): Promise<boolean> {
     const opened = await this.deps.storage.takeovers.openPrompt(
@@ -369,11 +376,19 @@ export class TurnService {
       type: 'match.takeoverVoteRequested',
       payload: { playerId, turn },
     })
+    await this.pauseForTakeoverVote(matchId)
     return true
   }
 
-  /** Pause the open turn while players decide what to do with an absent human seat. */
-  async pauseForTakeoverVote(matchId: string): Promise<void> {
+  /**
+   * Pause the open turn while players decide what to do with an absent human seat.
+   *
+   * Only `openTakeoverPrompt` calls this, so every prompt pauses and none has to remember to. It is
+   * a no-op when there is no open turn to stop — during a seal, where the turn the absence was
+   * noticed on is already sealed and its successor opens paused instead — and when the clock is
+   * stopped already, so a second absent seat neither double-publishes nor disturbs the first pause.
+   */
+  private async pauseForTakeoverVote(matchId: string): Promise<void> {
     const match = await this.deps.storage.matches.get(matchId)
     if (!match || (match.status !== 'running' && match.status !== 'desynced')) return
     const turn = await this.deps.storage.turns.get(matchId, match.currentTurn)

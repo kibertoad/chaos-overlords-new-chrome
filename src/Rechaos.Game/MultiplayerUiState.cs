@@ -56,12 +56,65 @@ internal sealed class MultiplayerUiState
     /// <summary>The seat roster before the server has said anything about one.</summary>
     internal static readonly IReadOnlySet<int> NoSeats = new HashSet<int>();
 
-    internal Dictionary<string, TakeoverVotePrompt> TakeoverVotes { get; } = new(StringComparer.Ordinal);
+    /// <summary>
+    /// The absence votes the server has open, by the seat each one is about.
+    /// </summary>
+    /// <remarks>
+    /// Private, and reached only through <see cref="RecordTakeoverVote"/>,
+    /// <see cref="CloseTakeoverVote"/> and <see cref="ConcludeMatch"/>, so that the one thing that
+    /// has to stay true of it cannot be broken from outside: every prompt in here is a question the
+    /// player can still answer. The two views the interface draws from —
+    /// <see cref="CurrentTakeoverVote"/> and <see cref="OwnTakeoverVote"/> — are then correct by
+    /// construction rather than by each reader remembering to ask whether the match is still on.
+    /// </remarks>
+    private readonly Dictionary<string, TakeoverVotePrompt> _takeoverVotes =
+        new(StringComparer.Ordinal);
 
-    internal TakeoverVotePrompt? CurrentTakeoverVote => TakeoverVotes.Values
-        .OrderBy(vote => vote.Turn)
-        .ThenBy(vote => vote.PlayerId, StringComparer.Ordinal)
-        .FirstOrDefault();
+    /// <summary>This client's own player id in the running match, or empty when there is none.</summary>
+    internal string SelfPlayerId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The absence the player is being asked to vote on, if any.
+    /// </summary>
+    /// <remarks>
+    /// Never the player's own seat — see <see cref="TakeoverVotePolicy.SeatToVoteOn"/>, which is
+    /// where that rule and its reasons live. What their own absence means for them is said on the
+    /// turn status line instead; see <see cref="OwnTakeoverVote"/>.
+    /// </remarks>
+    internal TakeoverVotePrompt? CurrentTakeoverVote =>
+        TakeoverVotePolicy.SeatToVoteOn(
+                _takeoverVotes.Values.Select(vote => (vote.PlayerId, vote.Turn)), SelfPlayerId)
+            is { } playerId && _takeoverVotes.TryGetValue(playerId, out var prompt)
+            ? prompt
+            : null;
+
+    /// <summary>The open vote about this client's own seat, when the player missed a deadline.</summary>
+    internal TakeoverVotePrompt? OwnTakeoverVote =>
+        SelfPlayerId.Length > 0 && _takeoverVotes.TryGetValue(SelfPlayerId, out var vote)
+            ? vote
+            : null;
+
+    /// <summary>
+    /// Takes note of an absence vote the server has opened or retallied.
+    /// </summary>
+    /// <remarks>
+    /// Dropped once the match is over. Delivery is at least once and the log is not ordered against
+    /// the match ending, so the announcement of a vote — or of one more player casting theirs — can
+    /// arrive after the outcome has: a player who runs out of time on the turn that decides the
+    /// match is marked absent by that very seal. There is nothing left for such a vote to decide,
+    /// and the server refuses one cast on a match that is not running, so drawing it would put a
+    /// modal with two dead buttons over the endgame and no way to dismiss it.
+    /// </remarks>
+    internal void RecordTakeoverVote(TakeoverVotePrompt prompt)
+    {
+        ArgumentNullException.ThrowIfNull(prompt);
+        if (Stage == MultiplayerStage.Finished) return;
+        _takeoverVotes[prompt.PlayerId] = prompt;
+    }
+
+    /// <summary>Forgets the vote about a seat, once the server has settled it.</summary>
+    internal void CloseTakeoverVote(string playerId) => _takeoverVotes.Remove(playerId);
+
     internal MultiplayerStage Stage { get; set; } = MultiplayerStage.Connect;
     internal int RecoverySelection { get; set; }
     internal int DiscoverySelection { get; set; }
@@ -220,6 +273,24 @@ internal sealed class MultiplayerUiState
     /// </remarks>
     internal bool BootstrapFailed { get; set; }
 
+    /// <summary>
+    /// Settles the interface on a match that has ended.
+    /// </summary>
+    /// <remarks>
+    /// The three things that stop being true the moment a match is over, in one place, so that no
+    /// path which ends a match can carry one of them into the endgame. Nothing will seal, so there
+    /// is no clock; and no absence vote can be answered, so none is still being asked. A prompt left
+    /// standing over the endgame owned the keyboard and the mouse for a modal whose buttons the
+    /// server had already begun refusing, which left the player unable to get past the endgame at
+    /// all.
+    /// </remarks>
+    internal void ConcludeMatch()
+    {
+        Stage = MultiplayerStage.Finished;
+        DeadlineAt = null;
+        _takeoverVotes.Clear();
+    }
+
     /// <summary>Forgets everything a finished match leaves behind, so nothing outlives it.</summary>
     internal void Reset()
     {
@@ -257,7 +328,8 @@ internal sealed class MultiplayerUiState
         ConnectionError = string.Empty;
         ConnectionErrorCopyStatus = string.Empty;
         ServerStatus = string.Empty;
-        TakeoverVotes.Clear();
+        _takeoverVotes.Clear();
+        SelfPlayerId = string.Empty;
         Password.Set(string.Empty);
         JoinCode.Set(string.Empty);
         SessionName.Set(string.Empty);

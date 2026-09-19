@@ -95,10 +95,20 @@ public sealed partial class MultiplayerSessionTests
         $"id: {seq}\ndata: {{\"seq\":{seq},\"matchId\":\"{MatchId}\","
         + $"\"createdAt\":\"2026-09-10T12:00:00.000Z\",\"type\":\"{type}\",\"payload\":{payload}}}\n\n";
 
-    private static string SealedFrame(int seq, int turn) => Frame(
+    private static string SealedFrame(int seq, int turn) => SealedFrameForSlots(seq, turn, 0, 1);
+
+    /// <summary>
+    /// A seal announcing the set that exactly <paramref name="slots"/> submitted for.
+    /// </summary>
+    /// <remarks>
+    /// The digest has to be the one the matching set hashes to, or the session refuses the set
+    /// before it ever applies it — so a test about a seat that submitted nothing says which seats
+    /// did here, rather than announcing one set and serving another.
+    /// </remarks>
+    private static string SealedFrameForSlots(int seq, int turn, params int[] slots) => Frame(
         seq,
         "turn.sealed",
-        $$"""{"turn":{{turn}},"orderSetHash":"{{SealedOrders(turn).OrderSetHash}}"}""");
+        $$"""{"turn":{{turn}},"orderSetHash":"{{SealedOrdersForSlots(turn, slots).OrderSetHash}}"}""");
 
     private static IReadOnlyList<MatchEvent> HistoricalEvents(MatchView view)
     {

@@ -50,7 +50,10 @@ A departure or a timed turn with no submitted document opens a takeover vote. Ev
 present player must choose `USE AI` before control changes; any `WAIT` choice keeps the seat human,
 and there is no server-side timeout that approves takeover implicitly. While any such prompt is
 open, the open turn has no deadline, so time spent in the modal cannot consume planning time. The
-clock restarts when the last prompt closes. Open prompts and their votes are rows of their own
+clock restarts when the last prompt closes. Opening a prompt is what stops the clock, wherever the
+prompt comes from — a departure, a seal that found an empty seat, a returning player being asked
+about the seats they find absent, or a vote that opens the question itself — so no path can leave a
+countdown running behind a modal nobody can plan through. Open prompts and their votes are rows of their own
 (`takeover_prompts`, `takeover_votes`), not a replay of the event log: opening a turn and judging a
 vote each cost one indexed read however long the match has run. A seat that goes quiet while nobody
 is present to ask is put to the first player who returns, and a vote cast on an absent seat nobody
@@ -197,6 +200,15 @@ after submitting but before the seal is absent from both, and one who leaves aft
 both. A slot absent from the set contributes no human document. The first wholly missed timed turn
 marks an otherwise active seat `takeoverPending` and opens a vote. It remains idle and human while
 players wait; only a later `match.playerTakenOver` makes it computer-planned.
+
+The vote is put to everyone but the seat it is about. A player who merely let one timed turn pass is
+still at their keyboard, is marked absent only until their client reports that turn, and cannot vote
+on themselves — the server refuses a vote from a seat that is not active — so a client shows them
+their own pending absence on the turn status line rather than as a modal that would name them and
+take the input they need to get back into the match. A transfer is also ignored once the state
+carries an outcome: the match is over, a finished match is not the clean Command boundary control
+transfers at, and the decision is read from state every client has already agreed on, so all of them
+ignore exactly the same transfers.
 
 An open takeover vote also pauses the current turn clock. The server clears its deadline and emits
 `turn.deadlineExtended` with a null deadline; after the last vote closes it starts a fresh full clock
@@ -506,7 +518,13 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    version — the replay format's says nothing about those bytes. Every other client refuses a version
    newer than it reads, and otherwise loads it, recomputes the hash and re-reports.
 6. On `turn.deadlineExtended`, replace the countdown for that turn. A null deadline pauses it for an
-   absence vote; a later timestamp restarts it after that vote or a desync pause closes.
+   absence vote; a later timestamp restarts it after that vote or a desync pause closes. Show that
+   countdown and warn against it — the client runs no planning clock of its own online, so the
+   server's deadline is the only one there is, and a player hears the last ten seconds and the last
+   second of it as they would in a hot-seat match. Each warning sounds once per deadline, and a
+   restarted clock is a new deadline that warns again. A turn that seals while the player was still
+   planning says so: the sealed set names the seats it carried, which is the only honest answer to
+   whether the draft they were still editing reached the server in time.
 7. On reconnect, fetch the match, load the latest snapshot if the local state is behind, then read
    the durable event log gaplessly through the refreshed `lastEventSeq`. Replay approved takeover and seal
    events in order, skipping seals already represented by the snapshot, before restoring the current
