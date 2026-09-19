@@ -539,8 +539,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         AcceptAndShow(_managementReturnScreen);
                     break;
                 case ClientScreen.Finance:
-                    if (Pressed(keyboard, Keys.Left)) _financeScope = FinanceScope.City;
-                    if (Pressed(keyboard, Keys.Right)) _financeScope = FinanceScope.Sector;
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                         AcceptAndShow(_managementReturnScreen);
                     break;
@@ -563,7 +561,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.D1)) ToggleGiveSelection(0);
                     if (Pressed(keyboard, Keys.D2)) ToggleGiveSelection(1);
                     if (Pressed(keyboard, Keys.D3)) ToggleGiveSelection(2);
-                    if (Pressed(keyboard, Keys.Enter)) OpenGiveTargets();
+                    if (Pressed(keyboard, Keys.Up)) MoveGiveCursor(-1);
+                    if (Pressed(keyboard, Keys.Down)) MoveGiveCursor(1);
+                    if (Pressed(keyboard, Keys.Enter)) QueueSelectedGive();
                     if (Pressed(keyboard, Keys.Back))
                         AcceptAndInvoke(CloseGiveEquipment);
                     break;
@@ -801,9 +801,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Give when _state is not null:
                 DrawGiveEquipment(_batch, _pixel, _font, _state);
                 break;
-            case ClientScreen.GiveTarget when _state is not null:
-                DrawGiveTargets(_batch, _pixel, _font, _state);
-                break;
             case ClientScreen.Sell when _state is not null:
                 DrawSellEquipment(_batch, _pixel, _font, _state);
                 break;
@@ -916,9 +913,14 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     AcceptAndInvoke(CloseSectorGangs);
                 break;
             case ClientScreen.Gang:
-                if (EquipmentCommandLayout.Ok.Contains(point))
+            {
+                var gangOk = _gangDetailsInstanceId is null
+                    ? GangDefinitionInformationLayout.Ok
+                    : GangInformationLayout.Ok;
+                if (gangOk.Contains(point))
                     AcceptAndInvoke(CloseGangDetails);
                 break;
+            }
             case ClientScreen.Site:
                 if (SiteInformationLayout.Ok.Contains(point))
                     AcceptAndInvoke(CloseSiteDetails);
@@ -932,9 +934,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     AcceptAndShow(_managementReturnScreen);
                 break;
             case ClientScreen.Finance:
-                if (CityConsoleLayout.FinanceCity.Contains(point)) _financeScope = FinanceScope.City;
-                else if (CityConsoleLayout.FinanceSector.Contains(point)) _financeScope = FinanceScope.Sector;
-                else if (FinanceLayout.Ok.Contains(point))
+                if (FinanceLayout.Ok.Contains(point))
                     AcceptAndShow(_managementReturnScreen);
                 break;
             case ClientScreen.Ranking:
@@ -952,9 +952,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Give:
                 HandleGiveEquipmentClick(point);
-                break;
-            case ClientScreen.GiveTarget:
-                HandleGiveClick(point);
                 break;
             case ClientScreen.Sell:
                 HandleSellClick(point);

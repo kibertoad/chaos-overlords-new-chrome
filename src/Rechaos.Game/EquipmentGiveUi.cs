@@ -17,6 +17,27 @@ public static class EquipmentGiveLayout
         return SharedPanelLayout.At(104, 16 + slot * 64, 50, 51);
     }
 
+    /// <summary>
+    /// Native Give handler 0x00445a4f's half-open item-selection target.
+    /// The target intentionally includes the one-pixel frame around the
+    /// smaller artwork aperture returned by <see cref="Item"/>.
+    /// </summary>
+    public static Rectangle ItemHit(int slot)
+    {
+        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
+        return SharedPanelLayout.At(103, 15 + slot * 64, 52, 52);
+    }
+
+    /// <summary>
+    /// Native Give handler 0x00445a4f's half-open recipient target. The
+    /// dialog presents at most five eligible friendly gangs in roster order.
+    /// </summary>
+    public static Rectangle RecipientHit(int slot)
+    {
+        if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));
+        return SharedPanelLayout.At(209, 16 + slot * 36, 32, 32);
+    }
+
     public static int InformationY(int slot) => Item(slot).Y + 19;
 }
 
@@ -66,6 +87,8 @@ public sealed partial class ChaosGame
         _giveGang = gang.Id;
         _giveReturnScreen = returnScreen;
         _giveRepeats = repeat;
+        _giveOptions = [];
+        _giveCursor = -1;
         _screens.Show(ClientScreen.Give);
     }
 
@@ -76,6 +99,7 @@ public sealed partial class ChaosGame
         var gang = _state.FindGang(gangId);
         if (gang is null || GiveEquippedItems(gang)[slot] is null) return;
         _giveSelections[slot] = !_giveSelections[slot];
+        RefreshGiveRecipients();
     }
 
     private void HandleGiveEquipmentClick(Point point)
@@ -85,13 +109,19 @@ public sealed partial class ChaosGame
             AcceptInput();
             CloseGiveEquipment();
         }
-        else if (EquipmentGiveLayout.Ok.Contains(point)) OpenGiveTargets();
+        else if (EquipmentGiveLayout.Ok.Contains(point)) QueueSelectedGive();
         else
         {
             for (var slot = 0; slot < 3; slot++)
-                if (EquipmentGiveLayout.Item(slot).Contains(point))
+                if (EquipmentGiveLayout.ItemHit(slot).Contains(point))
                 {
                     ToggleGiveSelection(slot);
+                    return;
+                }
+            for (var slot = 0; slot < _giveOptions.Count && slot < 5; slot++)
+                if (EquipmentGiveLayout.RecipientHit(slot).Contains(point))
+                {
+                    _giveCursor = slot;
                     return;
                 }
         }
@@ -130,6 +160,20 @@ public sealed partial class ChaosGame
             font.Draw(batch, item.Name, new Vector2(270, EquipmentGiveLayout.InformationY(slot)),
                 Color.Lime, 1);
             if (_giveSelections[slot]) DrawBorder(batch, pixel, aperture, Color.White, 2);
+        }
+
+        foreach (var entry in _giveOptions.Take(5).Select((command, slot) => (command, slot)))
+        {
+            var recipient = state.FindGang(new GangId(entry.command.Target.Id));
+            if (recipient is null) continue;
+            var target = EquipmentGiveLayout.RecipientHit(entry.slot);
+            if (_gangPortraits is not null)
+                batch.Draw(_gangPortraits, target,
+                    OriginalSpriteLayout.GangPortrait(recipient.DefinitionId), Color.White);
+            if (_giveCursor == entry.slot) DrawBorder(batch, pixel, target, Color.White, 2);
+            var name = state.Definitions.Gangs.Single(value => value.Id == recipient.DefinitionId).Name;
+            font.Draw(batch, name[..Math.Min(15, name.Length)],
+                new Vector2(target.Right + 3, target.Y + 12), Color.Lime, 1);
         }
     }
 

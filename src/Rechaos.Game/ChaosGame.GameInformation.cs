@@ -18,7 +18,8 @@ public sealed partial class ChaosGame
             DrawBoard(batch, pixel, font, state);
 
         if (_gameInfoBackground is not null)
-            batch.Draw(_gameInfoBackground, GameInformationLayout.Panel, Color.White);
+            batch.Draw(_gameInfoBackground, GameInformationLayout.Panel,
+                GameInformationLayout.BackgroundSource, Color.White);
         else
             batch.Draw(pixel, GameInformationLayout.Panel, new Color(0, 0, 0, 245));
 
@@ -59,7 +60,8 @@ public sealed partial class ChaosGame
         {
             var y = GameInformationLayout.PlayerY(player);
             batch.Draw(pixel, new Rectangle(GameInformationLayout.PlayerNameLeft, y, 90, 7), Color.Black);
-            batch.Draw(pixel, new Rectangle(348, y, 36, OriginalFontLayout.GlyphHeight), Color.Black);
+            batch.Draw(pixel, new Rectangle(GameInformationLayout.IntelligenceRight - 36, y, 36,
+                OriginalFontLayout.GlyphHeight), Color.Black);
         }
     }
 }

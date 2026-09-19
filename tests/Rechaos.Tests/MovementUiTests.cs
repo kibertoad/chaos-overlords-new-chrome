@@ -13,6 +13,9 @@ public sealed class MovementUiTests
         Assert.Equal(new Rectangle(236, 150, 162, 156), MovementLayout.Neighborhood);
         Assert.Equal(new Rectangle(236, 150, 54, 52), MovementLayout.Cell(0, 0));
         Assert.Equal(new Rectangle(344, 254, 54, 52), MovementLayout.Cell(2, 2));
+        Assert.True(MovementLayout.IsDestinationCell(0, 0));
+        Assert.False(MovementLayout.IsDestinationCell(1, 1));
+        Assert.True(MovementLayout.IsDestinationCell(2, 2));
         Assert.Equal(EquipmentCommandLayout.Cancel, MovementLayout.Cancel);
         Assert.Equal(EquipmentCommandLayout.Ok, MovementLayout.Ok);
     }
@@ -39,5 +42,6 @@ public sealed class MovementUiTests
         Assert.Equal(1, MovementLayout.SectorAt(0, 2, 1));
         Assert.Equal(8, MovementLayout.SectorAt(0, 1, 2));
         Assert.Throws<ArgumentOutOfRangeException>(() => MovementLayout.Cell(3, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => MovementLayout.IsDestinationCell(0, 3));
     }
 }

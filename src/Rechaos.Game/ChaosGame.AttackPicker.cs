@@ -32,7 +32,7 @@ public sealed partial class ChaosGame
         var targets = AttackTargetIndicesForSelectedOwner(_state);
         for (var slot = 0; slot < Math.Min(targets.Count, AttackCommandLayout.VisibleTargets); slot++)
         {
-            if (!AttackCommandLayout.TargetCard(slot).Contains(point)) continue;
+            if (!AttackCommandLayout.TargetHit(slot).Contains(point)) continue;
             _commandTargetCursor = targets[slot];
             return;
         }

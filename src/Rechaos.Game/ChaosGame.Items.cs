@@ -12,8 +12,6 @@ public sealed partial class ChaosGame
     private static readonly Rectangle ItemsGive = new(218, 414, 96, 28);
     private static readonly Rectangle ItemsSell = new(322, 414, 96, 28);
     private static readonly Rectangle ItemsBack = new(426, 414, 96, 28);
-    private static readonly Rectangle GiveQueue = new(218, 414, 96, 28);
-    private static readonly Rectangle GiveBack = new(322, 414, 96, 28);
 
     private void OpenItems()
     {
@@ -47,20 +45,34 @@ public sealed partial class ChaosGame
         else if (ItemsBack.Contains(point)) _screens.Show(ClientScreen.City);
     }
 
-    private void OpenGiveTargets()
+    private void RefreshGiveRecipients()
     {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId || _giveGang is not { } gangId) return;
+        if (_state?.Coordinator.ActivePlayer is not { } playerId || _giveGang is not { } gangId)
+        {
+            _giveOptions = [];
+            _giveCursor = -1;
+            return;
+        }
         var player = _state.FindPlayer(playerId)!;
         var gang = _state.FindGang(gangId);
-        if (gang is null) return;
+        if (gang is null)
+        {
+            _giveOptions = [];
+            _giveCursor = -1;
+            return;
+        }
         var equipped = GiveEquippedItems(gang);
         var selected = Enumerable.Range(0, 3)
             .Where(slot => _giveSelections[slot] && equipped[slot].HasValue)
             .Select(slot => equipped[slot]!.Value)
             .ToArray();
+        var selectedRecipient = _giveCursor >= 0 && _giveCursor < _giveOptions.Count
+            ? _giveOptions[_giveCursor].Target.Id
+            : -1;
         if (selected.Length == 0)
         {
-            RejectInput("NO EQUIPMENT SELECTED");
+            _giveOptions = [];
+            _giveCursor = -1;
             return;
         }
 
@@ -71,36 +83,38 @@ public sealed partial class ChaosGame
             .Select(candidate => EquipmentGiveSelection.CreateCommand(
                 playerId, gang.Id, candidate.Id, selected, _giveRepeats))
             .Where(command => CommandValidator.Validate(_state, command).IsValid)
+            .Take(5)
             .ToArray();
-        _giveCursor = 0;
-        if (_giveOptions.Count == 0)
-        {
-            RejectInput("NO LEGAL EQUIPMENT RECIPIENT");
-            return;
-        }
-        AcceptInput();
-        _screens.Show(ClientScreen.GiveTarget);
+        _giveCursor = _giveOptions
+            .Select((command, index) => (command, index))
+            .FirstOrDefault(entry => entry.command.Target.Id == selectedRecipient, (null!, -1)).index;
     }
 
     private void MoveGiveCursor(int delta)
     {
-        if (_giveOptions.Count > 0) _giveCursor = Mod(_giveCursor + delta, _giveOptions.Count);
-    }
-
-    private void HandleGiveClick(Point point)
-    {
-        if (point.X is >= 14 and < 418 && point.Y is >= 110 and < 390)
-        {
-            var index = (point.Y - 110) / 56;
-            if (index < _giveOptions.Count) _giveCursor = index;
-        }
-        else if (GiveQueue.Contains(point)) QueueSelectedGive();
-        else if (GiveBack.Contains(point)) _screens.Show(ClientScreen.Give);
+        if (_giveOptions.Count == 0) return;
+        if (_giveCursor < 0)
+            _giveCursor = delta < 0 ? _giveOptions.Count - 1 : 0;
+        else
+            _giveCursor = Mod(_giveCursor + delta, _giveOptions.Count);
     }
 
     private void QueueSelectedGive()
     {
-        if (_giveOptions.Count == 0 || _actions is null) return;
+        RefreshGiveRecipients();
+        if (_giveOptions.Count == 0)
+        {
+            RejectInput(_giveSelections.Any(selected => selected)
+                ? "NO LEGAL EQUIPMENT RECIPIENT"
+                : "NO EQUIPMENT SELECTED");
+            return;
+        }
+        if (_giveCursor < 0)
+        {
+            RejectInput("NO EQUIPMENT RECIPIENT SELECTED");
+            return;
+        }
+        if (_actions is null) return;
         var command = _giveOptions[_giveCursor];
         var result = _actions.Submit(command);
         ReportInputResult(result.Accepted, result.Validation.Message);
@@ -191,44 +205,6 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, ItemsGive, "GIVE", false);
         DrawButton(batch, pixel, font, ItemsSell, "SELL", false);
         DrawButton(batch, pixel, font, ItemsBack, "BACK", false);
-    }
-
-    private void DrawGiveTargets(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
-    {
-        if (_cityBackground is not null)
-            batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
-        batch.Draw(pixel, new Rectangle(8, 48, 420, 402), new Color(0, 0, 0, 240));
-        font.Draw(batch, "GIVE EQUIPMENT", new Vector2(18, 60), Color.Gold, 2);
-        if (_giveOptions.Count == 0)
-        {
-            font.Draw(batch, "NO LEGAL RECIPIENT", new Vector2(18, 92), Color.White, 1);
-        }
-        else
-        {
-            var selected = _giveOptions[Math.Clamp(_giveCursor, 0, _giveOptions.Count - 1)];
-            var actor = state.FindGang(selected.Gang)!;
-            var items = selected.GiveTargets().Select(target => state.Definitions.Items[target.Id]).ToArray();
-            var actorName = state.Definitions.Gangs.Single(value => value.Id == actor.DefinitionId).Name;
-            font.Draw(batch, $"{actorName} GIVES {items.Length} ITEM{(items.Length == 1 ? string.Empty : "S")}",
-                new Vector2(18, 86), Color.White, 1);
-            foreach (var entry in _giveOptions.Take(5).Select((command, index) => (command, index)))
-            {
-                var recipient = state.FindGang(new GangId(entry.command.Target.Id))!;
-                var definition = state.Definitions.Gangs.Single(value => value.Id == recipient.DefinitionId);
-                var y = 116 + entry.index * 56;
-                if (entry.index == _giveCursor)
-                    batch.Draw(pixel, new Rectangle(14, y - 6, 404, 50), new Color(72, 54, 18));
-                if (_gangPortraits is not null)
-                    batch.Draw(_gangPortraits, new Rectangle(20, y - 5, 42, 42),
-                        OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
-                font.Draw(batch, definition.Name, new Vector2(78, y), Color.White, 1);
-                font.Draw(batch, $"FORCE {recipient.Force}  SECTOR {recipient.SectorId + 1}",
-                    new Vector2(78, y + 16), new Color(180, 230, 170), 1);
-            }
-        }
-        font.Draw(batch, "UP/DOWN RECIPIENT  ENTER GIVE", new Vector2(18, 395), Color.White, 1);
-        DrawButton(batch, pixel, font, GiveQueue, "GIVE", false);
-        DrawButton(batch, pixel, font, GiveBack, "BACK", false);
     }
 
     private static ItemDefinition[] RealItems(MatchState state) =>

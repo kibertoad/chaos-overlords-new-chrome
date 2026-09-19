@@ -10,15 +10,17 @@ public static class SiteSearchLayout
     public const int MaximumSites = ColumnCount * RowsPerColumn;
 
     public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle All => SharedPanelLayout.At(33, 16, 49, 22);
-    public static Rectangle None => SharedPanelLayout.At(33, 49, 49, 22);
+    public static Rectangle All => SharedPanelLayout.At(33, 16, 49, 23);
+    public static Rectangle None => SharedPanelLayout.At(33, 48, 49, 23);
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
 
     public static Rectangle Site(int index)
     {
         if (index is < 0 or >= MaximumSites) throw new ArgumentOutOfRangeException(nameof(index));
-        return SharedPanelLayout.At(96 + index / RowsPerColumn * 119,
-            18 + index % RowsPerColumn * 16, 115, 14);
+        // Native Search handler 0x00448e32 constructs these exact half-open
+        // targets with Point(102 + 116 * column, 22 + 15 * row), 114, 15.
+        return SharedPanelLayout.At(102 + index / RowsPerColumn * 116,
+            22 + index % RowsPerColumn * 15, 114, 15);
     }
 }
 

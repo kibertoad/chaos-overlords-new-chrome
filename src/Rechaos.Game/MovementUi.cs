@@ -25,6 +25,16 @@ public static class MovementLayout
             CityMapLayout.TileHeight);
     }
 
+    /// <summary>
+    /// Native Move handler 0x004413ef maps the 3-by-3 neighborhood in row
+    /// order but excludes its center before it considers a destination.
+    /// </summary>
+    public static bool IsDestinationCell(int column, int row)
+    {
+        _ = Cell(column, row);
+        return column != 1 || row != 1;
+    }
+
     public static int SectorAt(int centerSector, int column, int row)
     {
         if (centerSector is < 0 or >= MatchLimits.SectorCount)
@@ -67,6 +77,7 @@ public sealed partial class ChaosGame
         for (var column = 0; column < MovementLayout.Columns; column++)
         for (var row = 0; row < MovementLayout.Rows; row++)
         {
+            if (!MovementLayout.IsDestinationCell(column, row)) continue;
             if (!MovementLayout.Cell(column, row).Contains(point)) continue;
             SelectMovementSector(MovementLayout.SectorAt(actor.SectorId, column, row));
             return;

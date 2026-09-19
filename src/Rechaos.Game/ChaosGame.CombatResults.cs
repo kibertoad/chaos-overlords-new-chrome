@@ -36,11 +36,6 @@ public sealed partial class ChaosGame
             _screens.Show(_managementReturnScreen);
             return;
         }
-        if (CombatResultsLayout.Detail.Contains(point))
-        {
-            ReplaySelectedCombatDetail();
-            return;
-        }
         if (CombatResultsLayout.Previous.Contains(point)) MoveCombatSummary(-1);
         else if (CombatResultsLayout.Next.Contains(point)) MoveCombatSummary(1);
         else SelectCombatSummaryEntry(point);
@@ -139,7 +134,7 @@ public sealed partial class ChaosGame
         else if (_combatSummaryOpponent is { } opponent)
             DrawCombatResultForces(batch, pixel, state, page.ForcesFor(opponent), enemy: true);
         DrawCombatResultOpponents(batch, pixel, state, viewer, page);
-        DrawButton(batch, pixel, font, CombatResultsLayout.Detail, "DETAIL", true);
+        DrawButton(batch, pixel, font, CombatResultsLayout.Ok, "OK", true);
     }
 
     private static IReadOnlyList<GameEvent> VisibleCombatResults(MatchState state, PlayerId viewer) =>
@@ -223,23 +218,20 @@ public sealed partial class ChaosGame
         var opponents = _state.Players.Select(player => player.Id)
             .Where(player => player != viewer).OrderBy(player => player.Value)
             .Take(CombatResultsLayout.OpponentSlots).ToArray();
-        for (var slot = 0; slot < opponents.Length; slot++)
+        for (var opponentSlot = 0; opponentSlot < opponents.Length; opponentSlot++)
         {
-            if (!CombatResultsLayout.Opponent(slot).Contains(point)) continue;
-            var forces = page.ForcesFor(opponents[slot]);
-            if (forces.Count == 0 || _combatSummaryOpponent == opponents[slot]) return;
+            if (!CombatResultsLayout.Opponent(opponentSlot).Contains(point)) continue;
+            var forces = page.ForcesFor(opponents[opponentSlot]);
+            if (forces.Count == 0 || _combatSummaryOpponent == opponents[opponentSlot]) return;
             AcceptInput();
-            _combatSummaryOpponent = opponents[slot];
+            _combatSummaryOpponent = opponents[opponentSlot];
             _combatSummaryEventSequence = forces[0].Event.Sequence;
             return;
         }
         var viewerForces = page.ForcesFor(viewer);
-        for (var slot = 0; slot < viewerForces.Count; slot++)
-        {
-            if (!CombatResultsLayout.Force(slot, enemy: false).Contains(point)) continue;
+        var forceSlot = CombatResultsLayout.FriendlyForceSlotAt(point);
+        if (forceSlot is { } slot && slot < viewerForces.Count)
             _combatSummaryEventSequence = viewerForces[slot].Event.Sequence;
-            return;
-        }
     }
 
     private void EnsureCombatResultSelection(MatchState state, PlayerId viewer, CombatResultPage page)

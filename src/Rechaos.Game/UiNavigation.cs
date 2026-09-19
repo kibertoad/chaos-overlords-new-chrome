@@ -527,61 +527,6 @@ public static class CommandOverlayLayout
         : Actions;
 }
 
-public static class EquipmentCommandLayout
-{
-    public const int CategoryCount = 4;
-    public const int VisibleItemCount = 12;
-    public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle Portrait => SharedPanelLayout.StandardPortrait;
-    public static Rectangle Cancel => SharedPanelLayout.CommandCancel;
-    public static Rectangle Ok => SharedPanelLayout.CommandOk;
-
-    public static bool CanConfirm(int selectedIndex, IReadOnlyCollection<int> visibleCategoryIndices)
-    {
-        ArgumentNullException.ThrowIfNull(visibleCategoryIndices);
-        return visibleCategoryIndices.Contains(selectedIndex);
-    }
-
-    public static string ResearchProgress(int difficulty, int remaining)
-    {
-        if (difficulty <= 0) throw new ArgumentOutOfRangeException(nameof(difficulty));
-        if (remaining is < 0 || remaining > difficulty)
-            throw new ArgumentOutOfRangeException(nameof(remaining));
-        return $"{difficulty - remaining}/{difficulty}";
-    }
-
-    public static int FirstVisibleItem(int itemCount, int selectedPosition)
-    {
-        if (itemCount < 0) throw new ArgumentOutOfRangeException(nameof(itemCount));
-        if (itemCount == 0) return 0;
-        if (selectedPosition is < 0 || selectedPosition >= itemCount)
-            throw new ArgumentOutOfRangeException(nameof(selectedPosition));
-        return itemCount <= VisibleItemCount
-            ? 0
-            : Math.Clamp(selectedPosition - 5, 0, itemCount - VisibleItemCount);
-    }
-    public static Rectangle Category(int category)
-    {
-        if (category is < 0 or >= CategoryCount) throw new ArgumentOutOfRangeException(nameof(category));
-        return SharedPanelLayout.At(103, 16 + category * 36, 34, 34);
-    }
-
-    public static int CategoryForItemType(int itemType) => itemType switch
-    {
-        0 or 1 => 0,
-        2 => 1,
-        3 => 2,
-        4 => 3,
-        _ => throw new ArgumentOutOfRangeException(nameof(itemType))
-    };
-
-    public static Rectangle ItemRow(int row)
-    {
-        if (row is < 0 or >= 12) throw new ArgumentOutOfRangeException(nameof(row));
-        return SharedPanelLayout.At(144, 29 + row * 12, 184, 11);
-    }
-}
-
 public static class GangInformationLayout
 {
     public static Rectangle Panel => SharedPanelLayout.Panel;
@@ -672,35 +617,68 @@ public static class ComlinkViewLayout
 {
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Page => SharedPanelLayout.At(29, 9, 59, 13);
-    public static Rectangle Previous => SharedPanelLayout.At(30, 33, 26, 22);
-    public static Rectangle Next => SharedPanelLayout.At(58, 33, 26, 22);
+    // Native view handler 0x0045d61a uses half-open panel-local rectangles
+    // (31,33)-(57,56), (59,33)-(85,56), and (33,169)-(82,191).
+    public static Rectangle Previous => SharedPanelLayout.At(31, 33, 26, 23);
+    public static Rectangle Next => SharedPanelLayout.At(59, 33, 26, 23);
     public static Rectangle Date => SharedPanelLayout.At(94, 20, 238, 7);
     public static Rectangle SenderPortrait => SharedPanelLayout.At(111, 46, 64, 64);
     public static Rectangle SenderName => SharedPanelLayout.At(181, 46, 151, 7);
     public static Rectangle Message => SharedPanelLayout.At(94, 123, 238, 34);
-    public static Rectangle Ok => SharedPanelLayout.At(30, 169, 56, 22);
+    public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
 }
 
 public static class ComlinkSendLayout
 {
     public const int MessageColumns = 40;
     public const int MessageRows = 4;
+    public const int TextRowStride = 8;
     public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle Message => SharedPanelLayout.At(92, 133, 240, 36);
-    public static Rectangle Cancel => SharedPanelLayout.At(30, 138, 56, 22);
-    public static Rectangle Ok => SharedPanelLayout.At(30, 171, 56, 22);
+    public static Point TextOrigin => new(199, 256);
+    public static Rectangle Message => new(TextOrigin.X, TextOrigin.Y,
+        MessageColumns * OriginalFontLayout.CellWidth,
+        (MessageRows - 1) * TextRowStride + OriginalFontLayout.GlyphHeight);
+    public static Rectangle Cancel => SharedPanelLayout.At(33, 137, 49, 22);
+    public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
 
     public static Rectangle Recipient(int slot)
     {
         if (slot is < 0 or >= MatchLimits.PlayerCount)
             throw new ArgumentOutOfRangeException(nameof(slot));
-        return SharedPanelLayout.At(92 + slot / 3 * 128, 18 + slot % 3 * 33, 56, 32);
+        // Send renderer 0x0045fdf1 fills a 105-by-34 backing tile. The
+        // panel-buffer points (97/218, 163/197/231) translate to these final
+        // screen coordinates as the 344-pixel form enters from the right.
+        return new Rectangle(201 + slot / 3 * 121, 143 + slot % 3 * 34, 105, 34);
+    }
+
+    /// <summary>
+    /// Native Send handler 0x0045eab1's half-open recipient click target.
+    /// This intentionally includes each recipient's name/text region rather
+    /// than only the smaller portrait cell returned by <see cref="Recipient"/>.
+    /// </summary>
+    public static Rectangle RecipientHit(int slot)
+    {
+        if (slot is < 0 or >= MatchLimits.PlayerCount)
+            throw new ArgumentOutOfRangeException(nameof(slot));
+        return SharedPanelLayout.At(98 + slot / 3 * 121, 20 + slot % 3 * 34, 100, 32);
     }
 
     public static Rectangle RecipientPortrait(int slot)
     {
         var cell = Recipient(slot);
-        return new Rectangle(cell.X + 8, cell.Y, 32, 32);
+        return new Rectangle(cell.X + 9, cell.Y + 1, 32, 32);
+    }
+
+    public static Rectangle RecipientAccent(int slot)
+    {
+        var cell = Recipient(slot);
+        return new Rectangle(cell.X + 2, cell.Y + 2, 7, 30);
+    }
+
+    public static Point RecipientNameOrigin(int slot)
+    {
+        var cell = Recipient(slot);
+        return new Point(cell.X + 42, cell.Y + 2);
     }
 }
 
@@ -716,6 +694,18 @@ public static class InfluenceCommandLayout
         0 => SharedPanelLayout.At(105, 16, 120, 64),
         1 => SharedPanelLayout.At(208, 73, 120, 64),
         2 => SharedPanelLayout.At(105, 130, 120, 64),
+        _ => throw new ArgumentOutOfRangeException(nameof(slot))
+    };
+
+    /// <summary>
+    /// Native Influence handler 0x0043f692's half-open site selection targets.
+    /// These differ slightly from the staggered card artwork apertures.
+    /// </summary>
+    public static Rectangle SiteHit(int slot) => slot switch
+    {
+        0 => SharedPanelLayout.At(106, 17, 120, 64),
+        1 => SharedPanelLayout.At(208, 73, 120, 64),
+        2 => SharedPanelLayout.At(106, 127, 120, 64),
         _ => throw new ArgumentOutOfRangeException(nameof(slot))
     };
 }
@@ -738,13 +728,28 @@ public static class AttackCommandLayout
     public static Rectangle Opponent(int slot)
     {
         if (slot is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(slot));
-        return SharedPanelLayout.At(98, 16 + slot * 37, 32, 32);
+        return SharedPanelLayout.At(98, 16 + slot * 36, 32, 32);
     }
 
     public static Rectangle TargetCard(int targetSlot)
     {
         var portrait = TargetPortrait(targetSlot);
         return new Rectangle(portrait.X, portrait.Y, 64, 90);
+    }
+
+    /// <summary>
+    /// Native Attack handler 0x0043b290 partitions one six-cell target region
+    /// for pointer selection; its regions are wider than the gang-card art.
+    /// </summary>
+    public static Rectangle TargetHit(int targetSlot)
+    {
+        if (targetSlot is < 0 or >= VisibleTargets)
+            throw new ArgumentOutOfRangeException(nameof(targetSlot));
+        var column = targetSlot % 3;
+        var row = targetSlot / 3;
+        var x = column switch { 0 => 135, 1 => 202, _ => 270 };
+        var width = column switch { 0 => 67, 1 => 68, _ => 67 };
+        return SharedPanelLayout.At(x, 16 + row * 89, width, row == 0 ? 89 : 88);
     }
 
     public static Rectangle TargetPortrait(int targetSlot)

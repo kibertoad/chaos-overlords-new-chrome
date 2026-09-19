@@ -5,7 +5,7 @@ namespace Rechaos.Game;
 
 public static class PlayerRankingLayout
 {
-    private static readonly int[] PortraitLocalX = [96, 137, 178, 218, 258, 298];
+    private static readonly int[] PortraitLocalX = [98, 138, 178, 218, 258, 298];
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
 

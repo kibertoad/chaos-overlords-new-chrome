@@ -12,7 +12,7 @@ public sealed class PlayerRankingUiTests
     public void PortraitsFollowSixOriginalColorRailsAndStandingHeights()
     {
         Assert.Equal(new Rectangle(104, 124, 344, 209), PlayerRankingLayout.Panel);
-        Assert.Equal(new Rectangle(200, 142, 32, 32), PlayerRankingLayout.Portrait(0, 0));
+        Assert.Equal(new Rectangle(202, 142, 32, 32), PlayerRankingLayout.Portrait(0, 0));
         Assert.Equal(new Rectangle(402, 282, 32, 32), PlayerRankingLayout.Portrait(5, 5));
         Assert.Throws<ArgumentOutOfRangeException>(() => PlayerRankingLayout.Portrait(6, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() => PlayerRankingLayout.Portrait(0, 6));

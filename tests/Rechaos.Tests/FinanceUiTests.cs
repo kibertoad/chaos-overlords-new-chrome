@@ -12,9 +12,10 @@ public sealed class FinanceUiTests
     [Fact]
     public void LayoutMatchesSectorFinancialTemplate()
     {
-        Assert.Equal(new Rectangle(104, 124, 344, 209), FinanceLayout.Panel);
-        Assert.Equal(new Rectangle(130, 142, 64, 64), FinanceLayout.Portrait);
-        Assert.Equal(new Rectangle(136, 293, 49, 24), FinanceLayout.Ok);
+        Assert.Equal(new Rectangle(128, 124, 320, 209), FinanceLayout.Panel);
+        Assert.Equal(new Rectangle(0, 0, 320, 209), FinanceLayout.BackgroundSource);
+        Assert.Equal(new Rectangle(154, 141, 64, 64), FinanceLayout.Portrait);
+        Assert.Equal(new Rectangle(161, 293, 49, 22), FinanceLayout.Ok);
         Assert.Equal([151, 160, 178, 196, 214, 223, 241, 268],
             Enumerable.Range(0, FinanceLayout.RowCount).Select(FinanceLayout.ValueY));
         Assert.Throws<ArgumentOutOfRangeException>(() => FinanceLayout.ValueY(8));

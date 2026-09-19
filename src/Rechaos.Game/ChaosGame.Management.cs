@@ -18,7 +18,7 @@ public sealed partial class ChaosGame
             ? _cityFinanceBackground
             : _sectorFinanceBackground;
         if (background is not null)
-            batch.Draw(background, FinanceLayout.Panel, Color.White);
+            batch.Draw(background, FinanceLayout.Panel, FinanceLayout.BackgroundSource, Color.White);
         else
             batch.Draw(pixel, FinanceLayout.Panel, new Color(0, 0, 0, 245));
         int? sectorId = _financeScope == FinanceScope.Sector ? _cursor : null;

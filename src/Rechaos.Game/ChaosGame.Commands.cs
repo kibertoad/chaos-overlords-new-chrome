@@ -103,7 +103,7 @@ public sealed partial class ChaosGame
                 }
                 for (var slot = 0; slot < MatchLimits.SitesPerSector; slot++)
                 {
-                    if (!InfluenceCommandLayout.Site(slot).Contains(point)) continue;
+                    if (!InfluenceCommandLayout.SiteHit(slot).Contains(point)) continue;
                     var actor = _state is null || _commandTargetOptions.Count == 0
                         ? null
                         : _state.FindGang(_commandTargetOptions[0].Gang);
@@ -137,7 +137,7 @@ public sealed partial class ChaosGame
                 }
                 for (var category = 0; category < EquipmentCommandLayout.CategoryCount; category++)
                 {
-                    if (!EquipmentCommandLayout.Category(category).Contains(point)) continue;
+                    if (!EquipmentCommandLayout.CategoryHit(category).Contains(point)) continue;
                     SelectEquipmentCategory(category);
                     return;
                 }
@@ -147,8 +147,10 @@ public sealed partial class ChaosGame
                 var itemFirst = EquipmentCommandLayout.FirstVisibleItem(indices.Count, position);
                 var itemVisible = Math.Min(
                     EquipmentCommandLayout.VisibleItemCount, indices.Count - itemFirst);
-                var itemRow = Enumerable.Range(0, Math.Max(0, itemVisible))
-                    .FirstOrDefault(row => EquipmentCommandLayout.ItemRow(row).Contains(point), -1);
+                var itemRow = _commandTargetOptions[0].Action == GangAction.Research
+                    ? EquipmentCommandLayout.ResearchItemRowAt(point)
+                    : EquipmentCommandLayout.ItemRowAt(point);
+                if (itemRow >= itemVisible) itemRow = -1;
                 if (itemRow >= 0)
                 {
                     _commandTargetCursor = indices[itemFirst + itemRow];

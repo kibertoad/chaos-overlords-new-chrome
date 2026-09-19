@@ -29,9 +29,31 @@ public sealed partial class ChaosGame
         if (!ComlinkAvailable()) return;
         _managementReturnScreen = returnScreen;
         var inbox = _state.ComlinkFor(playerId);
-        _comlinkCursor = Math.Max(0, inbox.Count - 1);
+        if (inbox.Count == 0)
+        {
+            PlayGeneralSound(GeneralSoundSlot.RejectedInput);
+            return;
+        }
+
+        _comlinkCursor = InitialComlinkViewCursor(inbox, _comlinkCursor);
         MarkDisplayedComlinkRead(playerId, inbox);
         _screens.Show(ClientScreen.ComlinkView);
+    }
+
+    /// <summary>
+    /// Selects the opening page using original View handler <c>0x0045d61a</c>'s
+    /// ascending first-unread scan, retaining the existing page after all
+    /// retained records have been acknowledged.
+    /// </summary>
+    internal static int InitialComlinkViewCursor(ComlinkInbox inbox, int currentCursor)
+    {
+        ArgumentNullException.ThrowIfNull(inbox);
+        if (inbox.Count == 0) return 0;
+        for (var index = 0; index < inbox.Count; index++)
+        {
+            if (!inbox.IsRead(inbox.Messages[index].Sequence)) return index;
+        }
+        return Math.Clamp(currentCursor, 0, inbox.Count - 1);
     }
 
     private void OpenComlinkSend(ClientScreen returnScreen)
@@ -47,9 +69,9 @@ public sealed partial class ChaosGame
 
     private void UpdateComlinkView(KeyboardState keyboard)
     {
-        if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveComlinkCursor(-1);
-        if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveComlinkCursor(1);
-        if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Back))
+        if (Pressed(keyboard, Keys.Left)) MoveComlinkCursor(-1);
+        if (Pressed(keyboard, Keys.Right)) MoveComlinkCursor(1);
+        if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Execute))
         {
             AcceptInput();
             CloseComlink();
@@ -64,7 +86,9 @@ public sealed partial class ChaosGame
             CloseComlink();
             return;
         }
-        if (Pressed(keyboard, Keys.Enter))
+        // Original Send handler 0x0045eab1 submits on Execute. Enter moves its
+        // four-row editor cursor, so it must never dispatch a message here.
+        if (Pressed(keyboard, Keys.Execute))
         {
             SendComlink();
             return;
@@ -72,6 +96,36 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Back))
         {
             _comlinkEditor.Backspace();
+            _comlinkStatus = string.Empty;
+            return;
+        }
+        if (Pressed(keyboard, Keys.Enter))
+        {
+            _comlinkEditor.MoveNextRow();
+            _comlinkStatus = string.Empty;
+            return;
+        }
+        if (Pressed(keyboard, Keys.Left))
+        {
+            _comlinkEditor.MoveLeft();
+            _comlinkStatus = string.Empty;
+            return;
+        }
+        if (Pressed(keyboard, Keys.Up))
+        {
+            _comlinkEditor.MoveUp();
+            _comlinkStatus = string.Empty;
+            return;
+        }
+        if (Pressed(keyboard, Keys.Right))
+        {
+            _comlinkEditor.MoveRight();
+            _comlinkStatus = string.Empty;
+            return;
+        }
+        if (Pressed(keyboard, Keys.Down))
+        {
+            _comlinkEditor.MoveDown();
             _comlinkStatus = string.Empty;
             return;
         }
@@ -102,7 +156,7 @@ public sealed partial class ChaosGame
     private void HandleComlinkSendClick(Point point)
     {
         var recipient = Enumerable.Range(0, MatchLimits.PlayerCount)
-            .FirstOrDefault(slot => ComlinkSendLayout.Recipient(slot).Contains(point), -1);
+            .FirstOrDefault(slot => ComlinkSendLayout.RecipientHit(slot).Contains(point), -1);
         if (recipient >= 0)
         {
             if (EligibleComlinkRecipient(recipient))
@@ -213,19 +267,25 @@ public sealed partial class ChaosGame
         for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
         {
             var cell = ComlinkSendLayout.Recipient(slot);
-            batch.Draw(pixel, cell, Color.Black);
             var player = state.Players.FirstOrDefault(value => value.Id.Value == slot);
-            if (player is null || !EligibleComlinkRecipient(slot)) continue;
-            batch.Draw(pixel, new Rectangle(cell.X, cell.Y, 7, cell.Height), PlayerColors[slot]);
+            var eligible = EligibleComlinkRecipient(slot);
+            batch.Draw(pixel, cell, _comlinkRecipients[slot] ? Color.Lime : Color.Black);
+            if (player is null) continue;
+            var foreground = _comlinkRecipients[slot] ? Color.Black
+                : eligible ? Color.Lime : Color.DarkGray;
+            var accent = eligible ? PlayerColors[slot] : Color.DarkGray;
+            batch.Draw(pixel, ComlinkSendLayout.RecipientAccent(slot), accent);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, ComlinkSendLayout.RecipientPortrait(slot),
-                    OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
-            font.Draw(batch, _comlinkRecipients[slot] ? "1" : "0",
-                new Vector2(cell.Right - 8, cell.Y + 12), Color.Lime, 1);
+                    OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId),
+                    eligible ? Color.White : Color.DarkGray);
+            var name = player.Setup.Name.Length <= 10 ? player.Setup.Name : player.Setup.Name[..10];
+            font.Draw(batch, name,
+                ComlinkSendLayout.RecipientNameOrigin(slot).ToVector2(), foreground, 1);
         }
         batch.Draw(pixel, ComlinkSendLayout.Message, Color.Black);
         DrawComlinkLines(batch, font, _comlinkEditor.DisplayLines(),
-            ComlinkSendLayout.Message.Location, Color.Lime);
+            ComlinkSendLayout.TextOrigin, Color.Lime, ComlinkSendLayout.TextRowStride);
         if (_comlinkStatus.Length > 0)
             font.Draw(batch, _comlinkStatus.Length <= 40 ? _comlinkStatus : _comlinkStatus[..40],
                 new Vector2(SharedPanelLayout.X(92), SharedPanelLayout.Y(181)), Color.OrangeRed, 1);
@@ -239,10 +299,11 @@ public sealed partial class ChaosGame
     }
 
     private static void DrawComlinkLines(
-        SpriteBatch batch, PixelFont font, IReadOnlyList<string> lines, Point origin, Color color)
+        SpriteBatch batch, PixelFont font, IReadOnlyList<string> lines, Point origin, Color color,
+        int rowStride = OriginalFontLayout.LineHeight)
     {
         for (var row = 0; row < lines.Count; row++)
-            font.Draw(batch, lines[row], new Vector2(origin.X, origin.Y + row * 9), color, 1);
+            font.Draw(batch, lines[row], new Vector2(origin.X, origin.Y + row * rowStride), color, 1);
     }
 
 }

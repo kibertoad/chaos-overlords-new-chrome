@@ -98,6 +98,9 @@ presentation-only conveniences that make the original systems easier to read:
 - Command pickers name their valid gang, sector, site, and item targets. In the
   detailed-sector view, hovering an assigned gang highlights its queued Move,
   Influence, or Attack target directly on the board, building, or gang card.
+- The mouse-facing Give panel keeps its recovered original item and recipient
+  cells, while Up/Down cycles eligible recipients as an additional keyboard
+  navigation shortcut.
 - Research lists accumulated progress beside its required total, and report
   panels retain unread/page progress so information is not silently consumed.
 - Nine named save slots show when and how each match was played; Escape pauses

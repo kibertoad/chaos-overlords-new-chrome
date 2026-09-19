@@ -14,9 +14,12 @@ public sealed class EquipmentGiveUiTests
         Assert.Equal(new Rectangle(130, 141, 64, 64), EquipmentGiveLayout.Portrait);
         Assert.Equal(new Rectangle(208, 140, 50, 51), EquipmentGiveLayout.Item(0));
         Assert.Equal(new Rectangle(208, 268, 50, 51), EquipmentGiveLayout.Item(2));
+        Assert.Equal(new Rectangle(313, 140, 32, 32), EquipmentGiveLayout.RecipientHit(0));
+        Assert.Equal(new Rectangle(313, 284, 32, 32), EquipmentGiveLayout.RecipientHit(4));
         Assert.Equal(EquipmentCommandLayout.Cancel, EquipmentGiveLayout.Cancel);
         Assert.Equal(EquipmentCommandLayout.Ok, EquipmentGiveLayout.Ok);
         Assert.Throws<ArgumentOutOfRangeException>(() => EquipmentGiveLayout.Item(3));
+        Assert.Throws<ArgumentOutOfRangeException>(() => EquipmentGiveLayout.RecipientHit(5));
     }
 
     [Fact]

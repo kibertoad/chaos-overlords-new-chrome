@@ -86,28 +86,11 @@ public sealed partial class ChaosGame
     {
         if (LastTurnEventsLayout.Previous.Contains(point)) MoveEventCursor(-1);
         else if (LastTurnEventsLayout.Next.Contains(point)) MoveEventCursor(1);
-        else if (LastTurnEventsLayout.Delete.Contains(point))
-        {
-            AcceptInput();
-            DeleteEvents();
-        }
         else if (LastTurnEventsLayout.Ok.Contains(point))
         {
             AcceptInput();
             CloseEvents();
         }
-    }
-
-    private void DeleteEvents()
-    {
-        if (_state?.Coordinator.ActivePlayer is { } playerId && _actions is not null)
-        {
-            var count = _state.NotificationsFor(playerId).Count;
-            for (var index = 0; index < count; index++)
-                _actions.DismissNotification(playerId);
-            _lastTurnEventArchive.Remove(playerId);
-        }
-        CloseEvents();
     }
 
     private void MoveEventCursor(int delta)

@@ -12,11 +12,12 @@ public enum FinanceScope
 public static class FinanceLayout
 {
     public const int RowCount = 8;
-    public static int ValueRight => SharedPanelLayout.X(289);
-    public static int ContractCountLeft => SharedPanelLayout.X(189);
-    public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle Portrait => SharedPanelLayout.At(26, 18, 64, 64);
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
+    public static int ValueRight => 394;
+    public static int ContractCountLeft => 316;
+    public static Rectangle Panel => new(128, 124, 320, 209);
+    public static Rectangle BackgroundSource => new(0, 0, 320, 209);
+    public static Rectangle Portrait => new(154, 141, 64, 64);
+    public static Rectangle Ok => new(161, 293, 49, 22);
 
     public static int ValueY(int row) => row switch
     {

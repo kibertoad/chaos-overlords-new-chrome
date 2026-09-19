@@ -2,31 +2,86 @@ using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
+/// <summary>
+/// Original Comlink Send composition field: a fixed 4-by-40 character grid.
+/// </summary>
+/// <remarks>
+/// Handler <c>0x0045eab1</c> stores and overwrites individual cells rather
+/// than inserting into an append-only string. Its cursor wraps horizontally,
+/// then clamps at the first and last row. The outgoing message trims only
+/// trailing blank cells; interior blanks remain significant.
+/// </remarks>
 public sealed class ComlinkTextEditor
 {
-    public string Text { get; private set; } = string.Empty;
-    public bool IsFull => Text.Length == MatchLimits.ComlinkMessageCharacters;
+    private readonly char[] _cells = Enumerable.Repeat(' ', MatchLimits.ComlinkMessageCharacters).ToArray();
+
+    public int Column { get; private set; }
+    public int Row { get; private set; }
+    public bool IsFull => _cells.All(character => character != ' ');
+    public string Text => new string(_cells).TrimEnd();
 
     public bool TryAppend(char character)
     {
         character = char.ToUpperInvariant(character);
-        if (IsFull || character is < OriginalFontLayout.FirstCharacter
+        if (character is < OriginalFontLayout.FirstCharacter
             or > OriginalFontLayout.LastCharacter)
             return false;
-        Text += character;
+
+        _cells[CellIndex] = character;
+        MoveRight();
         return true;
     }
 
     public bool Backspace()
     {
-        if (Text.Length == 0) return false;
-        Text = Text[..^1];
+        MoveLeft();
+        _cells[CellIndex] = ' ';
         return true;
     }
 
-    public void Clear() => Text = string.Empty;
+    public void MoveLeft()
+    {
+        Column--;
+        NormalizeCursor();
+    }
 
-    public IReadOnlyList<string> DisplayLines() => DisplayLines(Text);
+    public void MoveUp()
+    {
+        Row--;
+        NormalizeCursor();
+    }
+
+    public void MoveRight()
+    {
+        Column++;
+        NormalizeCursor();
+    }
+
+    public void MoveDown()
+    {
+        Row++;
+        NormalizeCursor();
+    }
+
+    public void MoveNextRow()
+    {
+        Column = 0;
+        Row++;
+        NormalizeCursor();
+    }
+
+    public void Clear()
+    {
+        Array.Fill(_cells, ' ');
+        Column = 0;
+        Row = 0;
+    }
+
+    public IReadOnlyList<string> DisplayLines() =>
+        Enumerable.Range(0, ComlinkSendLayout.MessageRows)
+            .Select(row => new string(_cells, row * ComlinkSendLayout.MessageColumns,
+                ComlinkSendLayout.MessageColumns))
+            .ToArray();
 
     public static IReadOnlyList<string> DisplayLines(string text)
     {
@@ -41,5 +96,22 @@ public sealed class ComlinkTextEditor
                     text.Length - start));
         }
         return lines;
+    }
+
+    private int CellIndex => Row * ComlinkSendLayout.MessageColumns + Column;
+
+    private void NormalizeCursor()
+    {
+        if (Column < 0)
+        {
+            Column = ComlinkSendLayout.MessageColumns - 1;
+            Row--;
+        }
+        else if (Column >= ComlinkSendLayout.MessageColumns)
+        {
+            Column = 0;
+            Row++;
+        }
+        Row = Math.Clamp(Row, 0, ComlinkSendLayout.MessageRows - 1);
     }
 }

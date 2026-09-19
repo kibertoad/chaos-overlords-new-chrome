@@ -106,13 +106,12 @@ public static class CombatResultsLayout
 
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Page => SharedPanelLayout.At(29, 11, 58, 12);
-    public static Rectangle Previous => SharedPanelLayout.At(31, 36, 25, 20);
-    public static Rectangle Next => SharedPanelLayout.At(59, 36, 25, 20);
+    public static Rectangle Previous => SharedPanelLayout.At(31, 33, 26, 23);
+    public static Rectangle Next => SharedPanelLayout.At(59, 33, 26, 23);
     public static Rectangle Sector => SharedPanelLayout.At(31, 67, 54, 52);
     public static Rectangle FriendlyPanel => SharedPanelLayout.At(98, 16, 94, 179);
     public static Rectangle EnemyPanel => SharedPanelLayout.At(240, 16, 94, 179);
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static Rectangle Detail => EquipmentCommandLayout.Cancel;
+    public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
     public static Point PageText => new(SharedPanelLayout.X(34), SharedPanelLayout.Y(13));
     public static Point SectorCodeText => new(SharedPanelLayout.X(52), SharedPanelLayout.Y(122));
     public static Point EmptyText => new(SharedPanelLayout.X(115), SharedPanelLayout.Y(100));
@@ -137,5 +136,17 @@ public static class CombatResultsLayout
         if (slot is < 0 or >= OpponentSlots) throw new ArgumentOutOfRangeException(nameof(slot));
         return SharedPanelLayout.At(OpponentX, OpponentY + slot * OpponentStride,
             OpponentSize, OpponentSize);
+    }
+
+    public static int? FriendlyForceSlotAt(Point point)
+    {
+        var localX = point.X - SharedPanelLayout.Left;
+        var localY = point.Y - SharedPanelLayout.Top;
+        if (localX is < 101 or >= 189 || localY is < 27 or >= 183) return null;
+
+        var slot = localX > 144 ? 1 : 0;
+        if (localY > 78) slot += 2;
+        if (localY > 130) slot += 2;
+        return slot;
     }
 }

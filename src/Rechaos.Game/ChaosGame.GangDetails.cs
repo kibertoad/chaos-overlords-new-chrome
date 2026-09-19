@@ -87,12 +87,18 @@ public sealed partial class ChaosGame
         PixelFont font,
         MatchState state)
     {
-        var panel = GangInformationLayout.Panel;
-        var background = _gangDetailsInstanceId is null
+        var definitionOnly = _gangDetailsInstanceId is null;
+        var panel = definitionOnly ? GangDefinitionInformationLayout.Panel : GangInformationLayout.Panel;
+        var background = definitionOnly
             ? _gangDefinitionInfoBackground
             : _gangInfoBackground;
         if (background is not null)
-            batch.Draw(background, panel, Color.White);
+        {
+            if (definitionOnly)
+                batch.Draw(background, panel, GangDefinitionInformationLayout.BackgroundSource, Color.White);
+            else
+                batch.Draw(background, panel, Color.White);
+        }
         else
             batch.Draw(pixel, panel, new Color(0, 0, 0, 245));
         var gang = _gangDetailsInstanceId is { } instanceId ? state.FindGang(instanceId) : null;
@@ -100,7 +106,8 @@ public sealed partial class ChaosGame
         if (definitionId is null)
         {
             font.Draw(batch, "NO ACTIVE GANG",
-                new Vector2(SharedPanelLayout.X(96), SharedPanelLayout.Y(28)), Color.White, 1);
+                new Vector2(definitionOnly ? GangDefinitionInformationLayout.NameLeft : SharedPanelLayout.X(96),
+                    definitionOnly ? GangDefinitionInformationLayout.NameY : SharedPanelLayout.Y(28)), Color.White, 1);
         }
         else
         {
@@ -108,9 +115,11 @@ public sealed partial class ChaosGame
             var stats = gang is null || _showBaseStatistics
                 ? EffectiveStatistics.From(definition.Stats)
                 : EffectiveStatisticsCalculator.ForGang(state, gang);
-            ClearGangInformationFields(batch, pixel);
+            ClearGangInformationFields(batch, pixel, definitionOnly);
             if (_gangPortraits is not null)
-                batch.Draw(_gangPortraits, GangInformationLayout.Portrait,
+                batch.Draw(_gangPortraits, definitionOnly
+                    ? GangDefinitionInformationLayout.Portrait
+                    : GangInformationLayout.Portrait,
                     OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
             if (gang is not null && _itemPortraits is not null)
             {
@@ -122,45 +131,67 @@ public sealed partial class ChaosGame
                             OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
             }
             font.Draw(batch, definition.Name,
-                new Vector2(SharedPanelLayout.X(98), SharedPanelLayout.Y(28)), Color.Lime, 1);
-            foreach (var entry in WrapPanelText(definition.Description, 27).Take(3).Select((text, row) => (text, row)))
+                new Vector2(definitionOnly ? GangDefinitionInformationLayout.NameLeft : SharedPanelLayout.X(98),
+                    definitionOnly ? GangDefinitionInformationLayout.NameY : SharedPanelLayout.Y(28)), Color.Lime, 1);
+            var descriptionColumns = definitionOnly ? 30 : 27;
+            foreach (var entry in WrapPanelText(definition.Description, descriptionColumns).Take(3)
+                         .Select((text, row) => (text, row)))
                 font.Draw(batch, entry.text,
-                    new Vector2(SharedPanelLayout.X(98),
-                        SharedPanelLayout.Y(45 + entry.row * 10)), Color.Lime, 1);
+                    new Vector2(definitionOnly ? GangDefinitionInformationLayout.DescriptionLeft : SharedPanelLayout.X(98),
+                        definitionOnly ? GangDefinitionInformationLayout.DescriptionY(entry.row)
+                            : SharedPanelLayout.Y(45 + entry.row * 10)), Color.Lime, 1);
             DrawPanelValue(font, batch, gang is null ? "??" : gang.Force.ToString(),
-                GangInformationLayout.LeftValueRight, SharedPanelLayout.Y(92));
-            DrawPanelValue(font, batch, definition.Upkeep, GangInformationLayout.RightValueRight,
-                SharedPanelLayout.Y(92));
-            DrawPanelValue(font, batch, definition.TechLevel, GangInformationLayout.RightValueRight,
-                SharedPanelLayout.Y(101));
+                definitionOnly ? GangDefinitionInformationLayout.LeftValueRight : GangInformationLayout.LeftValueRight,
+                definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92));
+            DrawPanelValue(font, batch, definition.Upkeep,
+                definitionOnly ? GangDefinitionInformationLayout.RightValueRight : GangInformationLayout.RightValueRight,
+                definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92));
+            DrawPanelValue(font, batch, definition.TechLevel,
+                definitionOnly ? GangDefinitionInformationLayout.RightValueRight : GangInformationLayout.RightValueRight,
+                definitionOnly ? GangDefinitionInformationLayout.TechLevelY : SharedPanelLayout.Y(101));
             int[] left = [stats.Combat, stats.Defense, stats.Chaos, stats.Control, stats.Heal, stats.Influence, stats.Research];
             int[] right = [stats.Stealth, stats.Detect, stats.Strength, stats.Blade, stats.Range, stats.Fighting, stats.MartialArts];
             for (var index = 0; index < left.Length; index++)
             {
-                var y = GangInformationLayout.StatisticY(index);
-                DrawPanelValue(font, batch, left[index], GangInformationLayout.LeftValueRight, y);
-                DrawPanelValue(font, batch, right[index], GangInformationLayout.RightValueRight, y);
+                var y = definitionOnly ? GangDefinitionInformationLayout.StatisticY(index)
+                    : GangInformationLayout.StatisticY(index);
+                DrawPanelValue(font, batch, left[index], definitionOnly
+                    ? GangDefinitionInformationLayout.LeftValueRight : GangInformationLayout.LeftValueRight, y);
+                DrawPanelValue(font, batch, right[index], definitionOnly
+                    ? GangDefinitionInformationLayout.RightValueRight : GangInformationLayout.RightValueRight, y);
             }
         }
         if (_hoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.GangAt(hover));
     }
 
-    private static void ClearGangInformationFields(SpriteBatch batch, Texture2D pixel)
+    private static void ClearGangInformationFields(
+        SpriteBatch batch, Texture2D pixel, bool definitionOnly)
     {
-        batch.Draw(pixel, SharedPanelLayout.At(96, 27, 180, 10), Color.Black);
-        batch.Draw(pixel, SharedPanelLayout.At(96, 44, 186, 37), Color.Black);
-        batch.Draw(pixel, SharedPanelLayout.At(172, 92, 12, 7), Color.Black);
-        batch.Draw(pixel, SharedPanelLayout.At(268, 92, 12, 7), Color.Black);
-        batch.Draw(pixel, SharedPanelLayout.At(268, 101, 12, 7), Color.Black);
+        var nameLeft = definitionOnly ? GangDefinitionInformationLayout.NameLeft : SharedPanelLayout.X(96);
+        var nameY = definitionOnly ? GangDefinitionInformationLayout.NameY : SharedPanelLayout.Y(27);
+        var descriptionLeft = definitionOnly ? GangDefinitionInformationLayout.DescriptionLeft : SharedPanelLayout.X(96);
+        var descriptionY = definitionOnly ? GangDefinitionInformationLayout.DescriptionY(0) : SharedPanelLayout.Y(44);
+        var leftValueRight = definitionOnly ? GangDefinitionInformationLayout.LeftValueRight
+            : GangInformationLayout.LeftValueRight;
+        var rightValueRight = definitionOnly ? GangDefinitionInformationLayout.RightValueRight
+            : GangInformationLayout.RightValueRight;
+        var forceY = definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92);
+        var techLevelY = definitionOnly ? GangDefinitionInformationLayout.TechLevelY : SharedPanelLayout.Y(101);
+        batch.Draw(pixel, new Rectangle(nameLeft, nameY, 180, 10), Color.Black);
+        batch.Draw(pixel, new Rectangle(descriptionLeft, descriptionY, 186, 37), Color.Black);
+        batch.Draw(pixel, new Rectangle(leftValueRight - 12, forceY, 12, 7), Color.Black);
+        batch.Draw(pixel, new Rectangle(rightValueRight - 12, forceY, 12, 7), Color.Black);
+        batch.Draw(pixel, new Rectangle(rightValueRight - 12, techLevelY, 12, 7), Color.Black);
         for (var row = 0; row < 7; row++)
         {
-            var y = GangInformationLayout.StatisticY(row);
+            var y = definitionOnly ? GangDefinitionInformationLayout.StatisticY(row)
+                : GangInformationLayout.StatisticY(row);
             // PX05000 reserves exactly two six-pixel glyph cells for each value.
             // Keep the adjacent green dividers intact: widening these masks makes
             // their surviving pixels look like punctuation beside the new value.
-            batch.Draw(pixel, new Rectangle(276, y, 12, 7), Color.Black);
-            batch.Draw(pixel, new Rectangle(372, y, 12, 7), Color.Black);
+            batch.Draw(pixel, new Rectangle(leftValueRight - 12, y, 12, 7), Color.Black);
+            batch.Draw(pixel, new Rectangle(rightValueRight - 12, y, 12, 7), Color.Black);
         }
     }
 

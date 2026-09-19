@@ -14,27 +14,89 @@ public sealed class ComlinkUiTests
         Assert.Equal(ComlinkViewLayout.Panel, ComlinkSendLayout.Panel);
         Assert.Equal(new Rectangle(215, 170, 64, 64), ComlinkViewLayout.SenderPortrait);
         Assert.Equal(new Rectangle(198, 247, 238, 34), ComlinkViewLayout.Message);
-        Assert.Equal(new Rectangle(196, 257, 240, 36), ComlinkSendLayout.Message);
-        Assert.Equal(new Rectangle(196, 142, 56, 32), ComlinkSendLayout.Recipient(0));
-        Assert.Equal(new Rectangle(324, 208, 56, 32), ComlinkSendLayout.Recipient(5));
+        Assert.Equal(new Rectangle(135, 157, 26, 23), ComlinkViewLayout.Previous);
+        Assert.Equal(new Rectangle(163, 157, 26, 23), ComlinkViewLayout.Next);
+        Assert.Equal(new Rectangle(137, 293, 49, 22), ComlinkViewLayout.Ok);
+        Assert.Equal(new Point(199, 256), ComlinkSendLayout.TextOrigin);
+        Assert.Equal(new Rectangle(199, 256, 240, 31), ComlinkSendLayout.Message);
+        Assert.Equal(8, ComlinkSendLayout.TextRowStride);
+        Assert.Equal(new Rectangle(137, 261, 49, 22), ComlinkSendLayout.Cancel);
+        Assert.Equal(new Rectangle(137, 293, 49, 22), ComlinkSendLayout.Ok);
+        Assert.Equal(new Rectangle(201, 143, 105, 34), ComlinkSendLayout.Recipient(0));
+        Assert.Equal(new Rectangle(322, 211, 105, 34), ComlinkSendLayout.Recipient(5));
+        Assert.Equal(new Rectangle(202, 144, 100, 32), ComlinkSendLayout.RecipientHit(0));
+        Assert.Equal(new Rectangle(323, 212, 100, 32), ComlinkSendLayout.RecipientHit(5));
+        Assert.Equal(new Rectangle(203, 145, 7, 30), ComlinkSendLayout.RecipientAccent(0));
+        Assert.Equal(new Rectangle(210, 144, 32, 32), ComlinkSendLayout.RecipientPortrait(0));
+        Assert.Equal(new Point(243, 145), ComlinkSendLayout.RecipientNameOrigin(0));
         Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.Recipient(6));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.RecipientHit(6));
     }
 
     [Fact]
-    public void EditorUsesFourRecoveredFortyCharacterRows()
+    public void EditorUsesRecoveredFourByFortyOverwriteCursor()
     {
         var editor = new ComlinkTextEditor();
-        for (var index = 0; index < MatchLimits.ComlinkMessageCharacters; index++)
-            Assert.True(editor.TryAppend((char)('a' + index % 26)));
+        Assert.True(editor.TryAppend('a'));
+        Assert.True(editor.TryAppend('b'));
+        editor.MoveLeft();
+        Assert.True(editor.TryAppend('z'));
+        Assert.Equal("AZ", editor.Text);
+        Assert.Equal(2, editor.Column);
+        Assert.Equal(0, editor.Row);
 
-        Assert.True(editor.IsFull);
-        Assert.False(editor.TryAppend('X'));
-        Assert.All(editor.DisplayLines(), line => Assert.Equal(40, line.Length));
-        Assert.StartsWith("ABC", editor.Text);
+        editor.MoveNextRow();
+        Assert.Equal(0, editor.Column);
+        Assert.Equal(1, editor.Row);
+        Assert.True(editor.TryAppend('q'));
+        Assert.Equal('Q', editor.DisplayLines()[1][0]);
+
+        editor.MoveUp();
+        editor.MoveLeft();
         Assert.True(editor.Backspace());
-        Assert.False(editor.IsFull);
-        Assert.True(editor.TryAppend('?'));
+        Assert.Equal(' ', editor.DisplayLines()[0][39]);
+        Assert.Equal("AZ" + new string(' ', 38) + "Q", editor.Text);
         Assert.False(editor.TryAppend('~'));
+    }
+
+    [Fact]
+    public void EditorWrapsColumnsAndClampsRowsLikeOriginalHandler()
+    {
+        var editor = new ComlinkTextEditor();
+        for (var index = 0; index < ComlinkSendLayout.MessageColumns; index++)
+            Assert.True(editor.TryAppend('X'));
+        Assert.Equal(0, editor.Column);
+        Assert.Equal(1, editor.Row);
+
+        editor.MoveUp();
+        editor.MoveLeft();
+        Assert.Equal(39, editor.Column);
+        Assert.Equal(0, editor.Row);
+
+        editor.MoveNextRow();
+        editor.MoveNextRow();
+        editor.MoveNextRow();
+        editor.MoveNextRow();
+        Assert.Equal(0, editor.Column);
+        Assert.Equal(3, editor.Row);
+    }
+
+    [Fact]
+    public void ViewStartsAtFirstUnreadMessageAndOtherwiseKeepsBoundedPage()
+    {
+        var inbox = new ComlinkInbox();
+        inbox.Receive(1, new PlayerId(0), "FIRST");
+        inbox.Receive(1, new PlayerId(1), "SECOND");
+        inbox.Receive(1, new PlayerId(2), "THIRD");
+        inbox.MarkRead(0);
+
+        Assert.Equal(1, ChaosGame.InitialComlinkViewCursor(inbox, 2));
+
+        inbox.MarkRead(1);
+        inbox.MarkRead(2);
+        Assert.Equal(2, ChaosGame.InitialComlinkViewCursor(inbox, 2));
+        Assert.Equal(2, ChaosGame.InitialComlinkViewCursor(inbox, 99));
+        Assert.Equal(0, ChaosGame.InitialComlinkViewCursor(new ComlinkInbox(), 99));
     }
 
     [Fact]

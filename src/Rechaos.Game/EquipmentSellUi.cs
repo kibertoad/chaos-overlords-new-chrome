@@ -18,6 +18,16 @@ public static class EquipmentSellLayout
         return SharedPanelLayout.At(108, 16 + slot * 64, 220, 51);
     }
 
+    /// <summary>
+    /// Native Sell handler 0x00443bbd's half-open item-toggle target. It is
+    /// narrower than the row artwork, which also reserves a price column.
+    /// </summary>
+    public static Rectangle ItemHit(int slot)
+    {
+        if (slot is < 0 or >= 3) throw new ArgumentOutOfRangeException(nameof(slot));
+        return SharedPanelLayout.At(111, 15 + slot * 64, 190, 52);
+    }
+
     public static int NameY(int slot) => ItemRow(slot).Y + 13;
     public static int PriceY(int slot) => ItemRow(slot).Y + 37;
 }
@@ -89,7 +99,7 @@ public sealed partial class ChaosGame
         else
         {
             for (var slot = 0; slot < 3; slot++)
-                if (EquipmentSellLayout.ItemRow(slot).Contains(point))
+                if (EquipmentSellLayout.ItemHit(slot).Contains(point))
                 {
                     ToggleSellSelection(slot);
                     return;

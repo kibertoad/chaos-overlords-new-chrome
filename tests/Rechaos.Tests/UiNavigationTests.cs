@@ -42,7 +42,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(130, 141, 64, 64), AttackCommandLayout.ActorPortrait);
         Assert.Equal(new Rectangle(240, 140, 64, 64), AttackCommandLayout.TargetPortrait(0));
         Assert.Equal(new Rectangle(202, 140, 32, 32), AttackCommandLayout.Opponent(0));
-        Assert.Equal(new Rectangle(202, 288, 32, 32), AttackCommandLayout.Opponent(4));
+        Assert.Equal(new Rectangle(202, 284, 32, 32), AttackCommandLayout.Opponent(4));
         Assert.Equal(new Rectangle(130, 206, 20, 20), AttackCommandLayout.ActorItem(0));
         Assert.Equal(new Rectangle(284, 206, 20, 20), AttackCommandLayout.TargetItem(0, 2));
         Assert.Equal(new Rectangle(0, 240, 20, 20), OriginalSpriteLayout.ItemPortrait(12));
@@ -64,6 +64,16 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(209, 140, 120, 64), InfluenceCommandLayout.Site(0));
         Assert.Equal(new Rectangle(312, 197, 120, 64), InfluenceCommandLayout.Site(1));
         Assert.Equal(new Rectangle(209, 254, 120, 64), InfluenceCommandLayout.Site(2));
+    }
+
+    [Fact]
+    public void GivePickerUsesNativeItemSelectionTargets()
+    {
+        Assert.Equal(new Rectangle(207, 139, 52, 52), EquipmentGiveLayout.ItemHit(0));
+        Assert.Equal(new Rectangle(207, 203, 52, 52), EquipmentGiveLayout.ItemHit(1));
+        Assert.Equal(new Rectangle(207, 267, 52, 52), EquipmentGiveLayout.ItemHit(2));
+        Assert.Equal(new Rectangle(208, 140, 50, 51), EquipmentGiveLayout.Item(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => EquipmentGiveLayout.ItemHit(3));
     }
 
     [Fact]
@@ -653,7 +663,7 @@ public sealed class UiNavigationTests
         Assert.False(CommandOverlayLayout.OpensTargetPicker(GangAction.Chaos));
         Assert.Equal(new Rectangle(256, 70, 158, 22), CommandOverlayLayout.ActionRow(0));
         Assert.Equal(new Rectangle(104, 124, 344, 209), EquipmentCommandLayout.Panel);
-        Assert.Equal(new Rectangle(248, 153, 184, 11), EquipmentCommandLayout.ItemRow(0));
+        Assert.Equal(new Rectangle(251, 149, 181, 9), EquipmentCommandLayout.ItemRow(0));
         Assert.Equal(new Rectangle(207, 140, 34, 34), EquipmentCommandLayout.Category(0));
         Assert.Equal(new Rectangle(207, 248, 34, 34), EquipmentCommandLayout.Category(3));
         Assert.Equal(0, EquipmentCommandLayout.CategoryForItemType(0));
@@ -696,13 +706,11 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(306, 284, 32, 32), CombatResultsLayout.Opponent(4));
         Assert.Equal(new Point(138, 137), CombatResultsLayout.PageText);
         Assert.Equal(new Point(156, 246), CombatResultsLayout.SectorCodeText);
-        Assert.Equal(EquipmentCommandLayout.Cancel, CombatResultsLayout.Detail);
         Assert.Equal(EquipmentCommandLayout.Panel, LastTurnEventsLayout.Panel);
         Assert.Equal(new Rectangle(138, 137, 47, 7), LastTurnEventsLayout.Page);
         Assert.Equal(new Rectangle(198, 132, 242, 158), LastTurnEventsLayout.Artwork);
         Assert.Equal(new Rectangle(296, 186, 48, 48), LastTurnEventsLayout.ResearchItem);
-        Assert.Equal(new Rectangle(135, 150, 25, 21), LastTurnEventsLayout.Previous);
-        Assert.Equal(EquipmentCommandLayout.Cancel, LastTurnEventsLayout.Delete);
+        Assert.Equal(new Rectangle(135, 157, 26, 23), LastTurnEventsLayout.Previous);
         Assert.Equal(new Rectangle(225, 298, 43, 7), LastTurnEventsLayout.DateValue);
         Assert.Equal(new Rectangle(305, 298, 135, 7), LastTurnEventsLayout.ObjectValue);
         Assert.Equal(new Rectangle(239, 307, 201, 7), LastTurnEventsLayout.StatusValue);
@@ -917,8 +925,8 @@ public sealed class UiNavigationTests
         var rows = Enumerable.Range(0, SiteSearchLayout.MaximumSites)
             .Select(SiteSearchLayout.Site).ToArray();
 
-        Assert.Equal(new Rectangle(200, 142, 115, 14), rows[0]);
-        Assert.Equal(new Rectangle(319, 302, 115, 14), rows[^1]);
+        Assert.Equal(new Rectangle(206, 146, 114, 15), rows[0]);
+        Assert.Equal(new Rectangle(322, 296, 114, 15), rows[^1]);
         Assert.All(rows.SelectMany((left, index) => rows.Skip(index + 1)
             .Select(right => (left, right))), pair => Assert.False(pair.left.Intersects(pair.right)));
         Assert.Throws<ArgumentOutOfRangeException>(() => SiteSearchLayout.Site(22));

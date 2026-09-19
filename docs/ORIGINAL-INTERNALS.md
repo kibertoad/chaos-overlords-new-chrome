@@ -775,6 +775,42 @@ native-save load, and replay load because they are not authoritative state.
 **Next validation:** Capture native Search and city golden screens to validate
 palette transparency and pointer timing.
 
+### BIN-SEARCH-002 - exact Search panel controls and row targets
+
+**Observation:** Complete Search handler `0x00448e32`, reached from main-console
+dispatcher `0x004718ee`, loads `PX05024`, initializes its display from the
+active player's 22 bytes, and opens the standard panel. It treats these
+panel-local rectangles as half-open:
+
+| Control | Rectangle | Effect |
+|---|---|---|
+| ALL | `(33,16)-(82,39)` | Sets all 22 bytes to one, redraws the whole checklist. |
+| NONE | `(33,48)-(82,71)` | Clears all 22 bytes, redraws the whole checklist. |
+| Done | `(33,169)-(82,191)` | Uses the shared press/release helper and closes. |
+| Site `n` | `(102 + 116*(n/11), 22 + 15*(n%11))` to `+ (114,15)` | Toggles just byte `n`; a double-click instead opens Site Information. |
+
+ALL and NONE use distinct shared pressed-control sprites 4 and 5. The handler
+constrains pointer input to `(104,124)-(448,333)` before translating it to
+panel-local coordinates. Enter and Execute activate Done; right-click and all
+other keyboard navigation behavior are not native Search-handler branches.
+
+**Interpretation:** The previous recreation placed each row six pixels too far
+left, four pixels too high, and made it one pixel too wide/short; it also used
+an incorrect column/row pitch. The two native columns have a 116-pixel origin
+stride and their rows have a 15-pixel pitch. ALL and NONE are 23 pixels high,
+not generic 22-pixel command buttons.
+
+**Confidence:** High from the complete handler, literal rectangle/point/size
+arguments, per-byte mutation loop, direct double-click Site Information call,
+and shared pressed-control call sites.
+
+**Recreation status:** Search now uses the exact ALL/NONE and all 22 row hit
+targets, with focused layout regression coverage. The recreation retains its
+documented modern keyboard navigation; mouse behavior is native.
+
+**Next validation:** Golden-screen and interaction captures for palette/cursor
+treatment and click timing.
+
 ### BIN-COMLINK-001 - per-player message queue capacity and overflow
 
 **Observation:** The Comlink recorder at `0x0045d2f0` stores one 166-byte record
@@ -822,6 +858,141 @@ unread blink.
 **Next validation:** Compare the routed panels against a native golden-screen
 capture and recover the remaining legacy record fields; network transport
 interoperability remains out of scope.
+
+### BIN-COMLINK-002 - View navigation and hit geometry
+
+**Observation:** View handler `0x0045d61a`, reached only from the left Comlink
+half in main-console dispatcher `0x004718ee`, opens `PX05017` and copies it to
+the standard panel destination. It reads the active player's count at
+`0x004981e0 + player * 4`; before opening, it scans the 16 records at
+`0x0049ca90 + player * 0xa60` in ascending storage order and selects the first
+occupied record whose read byte is clear. If none is unread, it preserves the
+existing cursor. An empty inbox plays general-effect slot 4 and returns without
+opening the panel.
+
+For a nonempty inbox, virtual keys Left (`0x25`) and Right (`0x27`) invoke the
+bounded page helper, respectively refusing the first and last page with
+slot 4. Enter (`0x0d`) and Execute (`0x2b`) invoke the standard pressed-control
+helper over the dismiss rectangle. Pointer releases are first constrained to
+the panel `(104,124)-(448,333)`, then translated to panel-local coordinates.
+The half-open controls are Previous `(31,33)-(57,56)`, Next `(59,33)-(85,56)`,
+and dismiss `(33,169)-(82,191)`. Each page change redraws the native dynamic
+region `(104,124)-(448,333)` after rerendering the message. There is no Up,
+Down, or Backspace navigation branch in this handler.
+
+**Interpretation:** View starts at the oldest unread retained message, not
+unconditionally at the newest record. Its arrows are 26-by-23 controls with a
+two-pixel gap, and the 49-by-22 dismiss hit box is not the broader shared
+command button inferred from nearby panels. The recreation now uses these exact
+half-open bounds and the native Left/Right/Enter/Execute navigation set; its
+global Escape/right-click panel return remains a documented modern navigation
+convenience outside the original handler.
+
+**Confidence:** High from the complete handler, its sole caller, literal
+rectangle construction, virtual-key comparisons, cursor boundary branches, and
+the already recovered Comlink record table.
+
+**Recreation status:** Exact View hit geometry and keyboard navigation are
+implemented and covered by `ComlinkUiTests`.
+
+**Next validation:** Compare the rendered text/portrait fields and page-change
+cadence with a native golden-screen capture; legacy record fields and transport
+remain separate questions.
+
+### BIN-COMLINK-003 - Send eligibility, controls, and composition cursor
+
+**Observation:** Send handler `0x0045eab1`, the other Comlink branch from
+`0x004718ee`, loads `PX05018` (or its alternate network template). It derives
+six eligibility bytes from the enabled/player-controller arrays, clears the
+active player, and refuses entry with general-effect slot 4 when no other human
+recipient is eligible. Its six half-open, panel-local recipient controls are
+`(98,20)-(198,52)`, `(98,54)-(198,86)`, `(98,88)-(198,120)`,
+`(219,20)-(319,52)`, `(219,54)-(319,86)`, and `(219,88)-(319,120)`.
+Eligible clicks toggle an independent selector byte; ineligible clicks reject.
+
+The Cancel control is `(33,137)-(82,159)` and Send is `(33,169)-(82,191)`.
+Only virtual key Execute (`0x2b`) invokes Send; it rejects an empty recipient
+selection. Enter (`0x0d`) sets the text cursor to column zero of the next row,
+Backspace (`0x08`) deletes at the current cursor, and Left/Up/Right/Down move a
+clamped four-row, 40-column cursor. Printable ASCII is uppercased before its
+`0x20..0x5a` acceptance check. Cell writer `0x004600d2` paints each 6-by-7
+glyph at `(199 + 6 * column,256 + 8 * row)`. Caret helper `0x0046023c` redraws
+the focused cell from the ordinary `PX00129` glyph row at y=0 or the matching
+inverse glyph row at y=441. Send begins with the normal row; each third consumed
+timer-0 event toggles this source row. The window-message callback
+`0x004327c0` and direct signal helper `0x00432926` each raise one of the four
+bytes at `0x00494810`; test/clear helpers `0x004328be`/`0x004328f8` make every
+consumer observe a pending event once. The Send loop starts by signalling timer
+0 and only advances its three-event counter when it consumes that flag. Static
+control flow does not establish the OS timer's wall-clock period.
+
+**Interpretation:** Recipient selection is a 100-by-32 name-and-portrait target,
+inset by one pixel within a 105-by-34 tile; it is not the narrower visual
+portrait cell. Renderer `0x0045fdf1` paints every player card, including the
+active player and computer/inactive cards, then uses the eligibility byte only
+for its dimmed presentation and click rejection. Its backing color changes from
+black to green when the selector byte is set. Enter is an editor navigation key,
+not a message-submit shortcut. The original's composition is a fixed 4x40
+editable grid rather than an append-only text field.
+
+**Confidence:** High from the complete handler, literal rectangle construction,
+eligibility/recipient loops, virtual-key switch, character-range branch, and
+the `PX05018` resource call.
+
+**Recreation status:** Send recipient hit testing now uses the exact wide native
+rectangles, and only Execute can submit via keyboard. The text field is now the
+recovered 4x40 overwrite grid: uppercase/range filtering, cursor-position
+editing, Enter/arrow movement, horizontal wrap, row clamping, and Backspace
+all follow the handler. Its normal glyph origin and 8-pixel row stride are also
+exact. Recipient cards now use the recovered 105-by-34 backing/portrait/name
+projection while eligibility remains authoritative. Inverse-caret artwork and
+timer-event blink cadence remain presentation work.
+
+**Next validation:** Route the inverse caret artwork through the managed atlas,
+model its timer-event blink cadence, and compare its rendered field/recipient
+tiles with a native golden-screen capture.
+
+### BIN-COMLINK-004 - View record fields and projection
+
+**Observation:** View projection helper `0x0045e04d` receives the active player
+and retained-record count from `0x0045d61a`. It first sets byte `+1` of the
+selected 166-byte record and then scans all 16 record read bytes to update the
+global unread indicator. It copies the complete record from
+`0x0049ca90 + player * 0xa60 + cursor * 0xa6` before formatting it. The copied
+layout is:
+
+| Offset | Size | Meaning | Evidence |
+|---:|---:|---|---|
+| `+0` | 1 | Occupied flag | View's unread-start scan tests it before byte `+1`; recorder appends/compacts complete records. |
+| `+1` | 1 | Read/acknowledged flag | View sets it and all 16 rows are scanned for an unread record. |
+| `+2` | 2 | Zero-based message turn | View formats `2050 + turn / 52` and `turn % 52 + 1`. |
+| `+4` | 1 | Sender player slot | View indexes the 12-byte player-name table and active portrait/color tables with it. |
+| `+5` | 160 | Message text | View copies four consecutive 40-byte rows and renders each separately. |
+| `+165` | 1 | View-unconsumed tail | Completes the fixed 166-byte copy; it has no independent View consumer. |
+
+The page header is rendered from the one-based selected record number and
+record count. View selects the sender's fixed 10-character player name and
+32-by-32 portrait/color record, then projects the four message rows. Its date
+formula matches the city clock: record turn zero is `2050.01`.
+
+**Interpretation:** The original Comlink record is a complete self-contained
+view snapshot. It has no timestamp, recipient list, or wire packet ID in the
+View-consumed portion; the only presentation state per record is its read bit.
+The recreation's authoritative inbox already carries the equivalent occupied
+queue position, read set, turn, sender, and bounded 160-character text rather
+than exposing this native memory layout.
+
+**Confidence:** High from the complete View renderer, the bounded recorder
+`0x0045d2f0`, exact `0xa6` stride, four literal `0x28` row copies, and the
+date/name/portrait table consumers.
+
+**Recreation status:** Field semantics are represented and persisted in the
+recreation-native Comlink inbox. The native in-memory arrangement remains
+documentation only, as legacy save and transport interoperability are outside
+scope.
+
+**Next validation:** Golden-screen compare the View field locations, button
+states, and palette treatment; no further static record-field recovery remains.
 
 ### BIN-OPTIONS-001 - registry keys, initialized defaults, and idle-gang warning
 
@@ -2053,6 +2224,21 @@ ranked active players. The six fixed inactive score sentinels remain `-32000`
 while standings are counted, so an extreme active score below that value can
 retain an unusually low numeric place even though inactive rows render last.
 
+### BIN-RANKING-001 - player-rail portrait positions
+
+**Observation:** `PX05011` handler `0x004518d9` iterates the six player slots
+and copies a portrait only when that slot's standing byte is not `-1`. Its
+portrait destinations use local rail x values 98, 138, 178, 218, 258, and 298,
+with a 32-by-32 aperture and vertical position determined by the standing.
+
+**Interpretation:** Eliminated slots do not receive a ranking-panel portrait;
+the post-ranked inactive ordering used by endgame award processing is a
+separate presentation concern. The recreation uses the recovered rails while
+retaining competition-standing vertical placement for active players.
+
+**Confidence:** High static evidence for slot predicate, rail coordinates,
+aperture, and standing-driven placement from `0x004518d9`.
+
 ### BIN-ENDTURN-001 - elimination cleanup, reports, and objective order
 
 **Observation:** The sole writer that clears player-active bytes is
@@ -3184,6 +3370,45 @@ guard, picker eligibility, absence of a site-owner field, ownership-change
 reset, definition-field reference inventory, and delayed benefit boundary.
 Runtime seed correlation remains pending.
 
+### BIN-INFLUENCE-001 - Influence picker targets and detail entry
+
+**Observation:** The `PX05005` handler `0x0043f692` uses three guarded,
+half-open panel-local selection rectangles: site 0 `(106,17)-(226,81)`, site 1
+`(208,73)-(328,137)`, and site 2 `(106,127)-(226,191)`. These are not all
+identical to the staggered site-card artwork apertures. A normal click selects
+only an unfinished site; Cancel abandons the picker, while confirmation rejects
+an unset selection. The handler's double-click branch uses the same guarded
+targets and opens details for the clicked eligible site.
+
+**Interpretation:** Site-card rendering and selection geometry are deliberately
+separate. The exact target map must be used for both single-click selection and
+double-click detail entry, preserving completed-site inertness.
+
+**Confidence:** High static evidence for all three target bounds, completed-site
+guards, control branches, and double-click detail path from `0x0043f692`.
+Runtime capture remains useful for selection-border presentation.
+
+### BIN-ATTACK-001 - Attack picker selector and target hit map
+
+**Observation:** Interactive Attack selection is handled by `0x0043b290`; the
+other `PX05003` resource user, `0x0043d132`, has no pointer-processing path.
+The handler tests five enabled opponent portraits at `(98,16 + 36*n)` with
+32-by-32 bounds. It separately partitions the target area
+`(135,16)-(337,193)` by X boundaries 202 and 270 and Y boundary 105, yielding
+six half-open regions: widths 67, 68, 67 in the first row and heights 89 then
+88. Disabled opponent/target entries remain inert. Changing opponent resets
+the selected target; confirmation requires both selections. The common Cancel
+control exits the picker.
+
+**Interpretation:** The attack input map is not the gang-card artwork map:
+portrait buttons use a 36-pixel vertical pitch and targets use a complete,
+slightly uneven 3-by-2 partition that includes surrounding card whitespace.
+
+**Confidence:** High static evidence for both resource users, interactive
+ownership, all selector/target bounds, enabled guards, selection reset, and
+confirmation predicate from `0x0043b290`. Runtime capture remains useful for
+pressed-state and reticle presentation.
+
 ### BIN-RESEARCH-000 - initial progress and Armageddon completion
 
 **Observation:** Fresh-game initializer `0x0046dc10` owns the only setup writes
@@ -3408,6 +3633,195 @@ combined-value intent.
 pending-array lifecycle/application, selection-mask order, item clearing, and
 single Sell credit. Runtime corroboration remains useful.
 
+### BIN-EQUIP-003 - Give item-selection hit targets
+
+**Observation:** The `PX05015` Give handler at `0x00445a4f` first translates
+pointer input into its shared panel-local coordinates. Its three item-toggle
+checks use the half-open rectangles `(103,15)-(155,67)`,
+`(103,79)-(155,131)`, and `(103,143)-(155,195)`. These surround the smaller
+portrait apertures by one pixel. The same handler presents up to five eligible
+friendly recipients in roster order at `(209,16 + 36*n)-(241,48 + 36*n)` and
+accepts Enter/Execute only when at least one eligible item and a recipient have
+been selected; Escape and the Cancel control abandon the dialog.
+
+**Interpretation:** The selection targets are fixed 52-by-52 cells with a
+64-pixel vertical pitch. Artwork sizing must not be substituted for input
+geometry: the visual item aperture is slightly smaller than its selectable
+cell. Recipient selection belongs to that same panel rather than a second
+target-picker screen. The recreation follows that interaction; Up/Down
+recipient cycling is retained as an explicit keyboard-navigation quality-of-life
+addition.
+
+**Confidence:** High static evidence for the three bounds, pitch, control
+branches, and confirmation predicate from `0x00445a4f`; native interactive
+capture remains useful for pressed-state presentation.
+
+### BIN-EQUIP-004 - Sell item-toggle hit targets
+
+**Observation:** The adjacent `PX05013` Sell handler at `0x00443bbd` follows
+the shared panel pointer translation and tests three half-open item rectangles:
+`(111,15)-(301,67)`, `(111,79)-(301,131)`, and
+`(111,143)-(301,195)`. Each toggles the corresponding equipped fixed slot only
+when it is populated. Its Cancel and confirmation controls use the common
+panel-local positions; confirmation rejects an empty item mask.
+
+**Interpretation:** Sell's three interaction rows are fixed 190-by-52 cells
+with a 64-pixel pitch. They do not cover the full-width rendered label and
+price row, so wide artwork must not widen the click target.
+
+**Confidence:** High static evidence for all item bounds, slot guards, toggle
+behavior, and confirmation branch from `0x00443bbd`; native interactive
+capture remains useful for pressed-state presentation.
+
+### BIN-EQUIP-005 - Equip and Research category/list targets
+
+**Observation:** The `PX05004` Equip handler at `0x0043dad9` translates
+pointer input into panel-local coordinates. Its four category checks are the
+half-open 32-by-32 cells `(104,16)-(136,48)`,
+`(104,52)-(136,84)`, `(104,88)-(136,120)`, and `(104,124)-(136,156)`.
+Selecting a category clears the current choice and rebuilds the list through
+`0x0043f136`. That helper clears sixteen fixed list entries before examining
+the 64 catalog records; the original extracted catalog has at most fifteen
+records in any resulting category. The item-list pointer region is
+`(148,26)-(328,169)`, and the handler derives its row directly as
+`floor((y - 26) / 9)`. Its list-render helper `0x0043efe5` uses the same
+nine-pixel cadence.
+
+The separate `PX05007` Research handler at `0x004427fa` uses the same shared
+entry table and calculates the clicked row from that same 26-pixel baseline,
+but its accepted pointer rectangle is `(148,19)-(328,162)`. Thus its first
+row includes the seven pixels above the rendered list baseline while its final
+row ends at the same relative list position.
+
+**Interpretation:** This is a fixed sixteen-row list, not a scrolling
+twelve-row projection. The category artwork can remain slightly larger than
+the hit cells, but input must use the inset 32-by-32 rectangles. Equip and
+Research have intentionally distinct list hit boxes even though they render at
+the same nine-pixel cadence. The recreation retains its existing keyboard
+navigation.
+
+**Confidence:** High static evidence for category/list bounds, reset/rebuild,
+sixteen-entry backing table, and row calculation from `0x0043dad9`,
+`0x0043f136`, `0x0043efe5`, and `0x004427fa`; native interactive capture
+remains useful for pressed-state presentation.
+
+### BIN-FINANCE-001 - alternate Financial panel destination and close face
+
+**Observation:** The City/Sector Financial handler at `0x0044d1bb` loads
+`PX05008` through resource id `0x1390` and follows the alternate 320-pixel
+panel route. Its off-screen render coordinates use source left 344, which is
+copied to final screen x=128 through x=448 at y=124. The player portrait is
+drawn at source `(370,161)-(434,225)`, yielding final `(154,141)-(218,205)`.
+The value column at source x=610 yields final right edge 394, with final rows
+at y 151, 160, 178, 196, 214, 223, 241, and 268. The handler translates
+pointer coordinates from the same 128-pixel left edge and tests its close face
+as `(161,293)-(210,315)`.
+
+**Interpretation:** Financial panels are an explicit exception to the normal
+344-by-209 shared panel destination: they draw the native 320-by-209 source
+area at `(128,124)`. The City/Sector choice is made before opening the panel;
+the modal's recovered pointer branch closes only through its own face, so the
+recreation does not expose the city-console split controls inside Finance.
+
+**Confidence:** High static evidence for the resource, alternate-path source
+and destination relationship, portrait/value coordinates, pointer translation,
+and close rectangle from `0x0044d1bb`; a native capture remains useful for
+color and pressed-state presentation.
+
+### BIN-SECTOR-GANGS-001 - compact all-gangs sector roster
+
+**Observation:** The `PX05009` Gangs in Sector handler at `0x0044e6ed` scans
+all 81 roster records for active gangs in the selected sector. It advances one
+display index for every match and draws each portrait into a 32-by-32 cell at
+`(144 + 32*n,158)-(176 + 32*n,190)`. It then writes Tech Level, Upkeep, and
+fourteen statistic values in that same column at x=`154 + 32*n`, with rows
+192, 201, 211, 220, 229, 238, 248, 257, 266, 275, 284, 294, 303, 312, 321,
+and 330. The six-gang sector capacity bounds the rendered columns to six.
+
+**Interpretation:** `PX05009` is a simultaneous compact sector roster, not a
+one-gang detail browser. The recreation renders every active gang in its
+fixed-width card column while retaining keyboard selection as a non-destructive
+quality-of-life shortcut for the city/sector workflow.
+
+**Confidence:** High static evidence for roster scan, card dimensions/pitch,
+all sixteen value rows, and ordering from `0x0044e6ed`; native capture remains
+useful for confirming color treatment and over-cap corruption behavior.
+
+### BIN-COMBAT-RESULTS-001 - results pager, selection map, and bottom control
+
+**Observation:** The `PX05012` Combat Results handler at `0x00451f80`
+translates pointer input through shared panel origin `(104,124)`. Its previous
+and next arrows are the half-open local rectangles `(31,33)-(57,56)` and
+`(59,33)-(85,56)`. The five other-player portrait targets are
+`(202,16 + 36*n)-(234,48 + 36*n)`, for `n=0..4`, and accept only players with
+a populated result row. The viewer-force selector is not six separate
+40-by-40 portrait hits: one local `(101,27)-(189,183)` region maps x greater
+than 144 to the right column and y greater than 78 and 130 to the second and
+third rows. Its bottom confirmation face is `(33,169)-(82,191)`.
+
+**Interpretation:** The native page arrows use 26-by-23 pointer targets even
+though their presentation is smaller. The broad force selector assigns one of
+six packed result slots, including its gutters, while other-player selection
+remains exact 32-by-32 portrait cells. `PX05012` has no in-panel Detail
+control; the bottom face exits the panel, while the separate console Detailed
+Combat route opens `PX05014`.
+
+**Confidence:** High static evidence for all input bounds, row/column
+thresholds, slot-population guards, bounded pager branches, and bottom-control
+exit from complete handler `0x00451f80`; native capture remains useful for
+pressed-state presentation.
+
+### BIN-EVENTS-002 - Last Turn Events pager and exit control
+
+**Observation:** The complete `PX05010` handler `0x0044f2fc` translates a
+pointer inside the shared panel and tests only three controls: previous local
+`(31,33)-(57,56)`, next `(59,33)-(85,56)`, and bottom exit
+`(33,169)-(82,191)`. It applies the same bounded page behavior as Combat
+Results and Comlink View: first/last boundary attempts play slot 4, while a
+legal step uses helper `0x00451602` and slot 3. Enter and Execute activate the
+bottom exit face. No Delete rectangle or report-clearing pointer branch occurs
+in this handler.
+
+**Interpretation:** Last Turn Events has one 49-by-22 bottom control, not a
+generic Cancel/Delete pair. Reports remain available until the normal review
+completion lifecycle processes them; the recreation does not add a destructive
+per-panel delete path.
+
+**Confidence:** High static evidence for all three rectangles, keyboard and
+pointer branches, sound outcomes, and absence of a Delete branch from complete
+handler `0x0044f2fc`; native capture remains useful for pressed-state
+presentation.
+
+### BIN-GAME-INFO-001 - alternate panel crop and field origins
+
+**Observation:** Game Information handler `0x0045519d` loads `PX05021` into
+the alternate backing area and its close transition copies source
+`(344,144)-(664,353)` to final screen `(128,124)-(448,333)`. Its pointer
+translation uses that 128-pixel destination left edge and tests the bottom face
+as local `(33,169)-(82,191)`, or screen `(161,293)-(210,315)`. Dynamic text
+is written at backing x=444 for the three header values, x=456 for player names, and right-aligned to backing x=624 for intelligence; these map to screen x=228, x=240, and right edge 408. Header y values map to 151, 169, and 187, while the six player rows map to y=214 + 9*n.
+
+**Interpretation:** `PX05021` is a 320-by-209 alternate panel, not the normal
+344-pixel shared template. Its source crop must be retained when drawing the
+imported panel rather than stretching it, and all dynamic x origins move 24
+pixels right from the former shared-template approximation.
+
+**Confidence:** High static evidence for alternate source/destination rectangles, close target, field origins, alignment, and row stride from complete handler `0x0045519d`; native capture remains useful for palette and text clipping.
+
+### BIN-GANG-DEFINITION-001 - `PX05022` alternate definition panel
+
+**Observation:** The definition-information handler `0x00455b6b` loads
+`PX05022` into the alternate backing region and closes by copying source
+`(344,144)-(664,353)` to `(128,124)-(448,333)`. It copies the 64-by-64 gang
+portrait to backing `(370,161)-(434,225)`, yielding screen `(154,141)-(218,205)`. Name text is written at backing `(444,171)`, followed by three 30-character description rows at y=189, 198, and 207. The force/current-value column ends at backing x=516; upkeep, Tech Level, and the right statistics column end at x=612. These map to screen x=300 and x=396. Statistics use screen rows 243, 252, 270, 279, 288, 297, and 306. Both keyboard confirmation and the sole pointer exit face use local `(33,169)-(82,191)`.
+
+**Interpretation:** Hire-offer definition inspection is not the normal
+`PX05000` live-gang panel. It has no instance equipment, uses 30-character
+description rows, and must preserve the alternate 320-pixel crop and its
+24-pixel rightward field shift.
+
+**Confidence:** High static evidence for resource identity, crop/destination, portrait, all recovered text/value origins, description length, statistic rows, and exit control from complete handler `0x00455b6b`; native capture remains useful for palette and label clipping.
+
 ### BIN-MOVEMENT-001 - Terminate pass before roster-ordered Move
 
 **Observation:** The whole-turn resolver `0x00472775` has two distinct movement
@@ -3448,6 +3862,27 @@ loop bounds, player/roster ordering, simultaneous projected counts,
 repair-sector and mover selection, mode-0 fallback/RNG behavior, final Move
 target decoding, and Terminate's exact record mutation. Runtime corroboration
 remains useful.
+
+### BIN-MOVEMENT-002 - Move panel neighborhood target mapping
+
+**Observation:** The `PX05006` Move handler at `0x004413ef` accepts a pointer
+inside the shared panel and then tests the panel-local neighborhood rectangle
+`(132,26)-(294,182)`. It subtracts that origin and maps the resulting point
+into three 54-pixel columns and three 52-pixel rows. The native index is
+`column + 3 * row`; index 4 (the actor's center sector) is explicitly excluded,
+and out-of-city cells are disabled before any destination write. Cancel and
+confirmation use the common shared-panel controls; confirmation rejects when
+no valid destination was selected.
+
+**Interpretation:** `PX05006` is an exact 3-by-3 162-by-156 neighborhood
+target, not nine independently sized art apertures. Its eight legal cells map
+directly to the surrounding sector offsets in row-major order; the center is
+display-only and must remain inert.
+
+**Confidence:** High static evidence for the panel, neighborhood bounds, cell
+pitch, row-major mapping, center exclusion, invalid-edge guard, and control
+branches from `0x004413ef`. Runtime capture remains useful for selection-border
+presentation.
 
 ### BIN-CONTROL-001 - cross-player winner and zero-margin neutral candidate
 

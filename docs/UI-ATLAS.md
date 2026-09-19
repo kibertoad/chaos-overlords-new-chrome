@@ -36,7 +36,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00202`, `PX00203` | Single-player victory and elimination splashes with one Overlord portrait aperture | High from visible text and geometry; hot-seat sequencing unresolved |
 | `PX00300` | Police portrait, weapon, patrol car, donut and header sprites; combat uses opaque cells from this sheet | High from sheet inspection and the native combat compositor |
 | `PX05008`, `PX05019` | City Financial and Sector Financial panels sharing account rows for upkeep, contracts, equipment, officials, tax, protection, estimated Chaos and adjustment | High from visible labels and original WinHelp Finance topic |
-| `PX05009` | Gangs in Sector browser with one gang portrait and Tech Level, Upkeep, and fourteen stat rows | High from visible labels and main-console workflow |
+| `PX05009` | Gangs in Sector compact roster with up to six 32-by-32 gang columns, each carrying Tech Level, Upkeep, and fourteen stat rows | High from visible labels, main-console workflow, and recovered handler geometry |
 | `PX05013` | Equipment to Sell panel with acting-gang portrait, three independently selectable equipment rows, original-price half-value proceeds, Cancel and OK | High from visible labels and original manual Sell workflow |
 | `PX05015` | Equipment to Give panel with acting-gang portrait and three independently selectable item apertures | High from visible label and original manual Give workflow |
 | `PX05006` | Movement destination panel with acting-gang portrait and native-tile 3x3 sector neighborhood | High from visible label, exact geometry and original manual Move workflow |
@@ -158,8 +158,8 @@ cursor feedback remain to be validated.
   `(520,336)` on the main control panel. The recreation fills it green over a
   black background and scales the visible width from 60 to zero.
 - The `PX00128` Game Info button uses the exact `(588,41,26,34)` native tile
-  and opens `PX05021` at the native shared-panel rectangle
-  `(104,124,344,209)`. Dynamic fields report the scenario, global AI mentality,
+  and opens `PX05021` at the native alternate-panel rectangle
+  `(128,124,320,209)`. Dynamic fields report the scenario, global AI mentality,
   selected planning limit, and all six names with the manual-defined `HUMAN` or
   `AI` intelligence label. The panel opens automatically for a new game with
   multiple local humans and after loading a live saved game.
@@ -170,8 +170,8 @@ cursor feedback remain to be validated.
   to do; Enter/legacy Execute confirms and Escape cancels, with no native Y/N
   shortcut.
 - The split Financial City/Sector control selects `PX05008` or `PX05019` at
-  `(104,124,344,209)`. Both fill the template's 64-by-64 active-Overlord
-  aperture at `(130,143)` and render a read-only projection of current/pending
+  `(128,124,320,209)`. Both fill the alternate-template's 64-by-64 active-
+  Overlord aperture at `(154,141)` and render a read-only projection of current/pending
   upkeep, contracts and headcount, equipment, bribes, tax, influenced-site
   cash, estimated Chaos and the resulting cash adjustment. Costs are red and
   income is green as specified by the manual.
@@ -209,7 +209,9 @@ cursor feedback remain to be validated.
   Upkeep, and all fourteen current/base-option statistics. Direct live gang
   details use `PX05000` and fill its three right-side
   weapon/armor/miscellaneous cells from `PX04999`; a hire offer has no instance
-  equipment and therefore uses the clean `PX05022` form.
+  equipment and therefore uses the clean `PX05022` form. `PX05022` uses the
+  alternate `(128,124,320,209)` crop: its gang portrait is `(154,141,64,64)`,
+  its name/description begin at x=228, and its value columns end at x=300/396.
 - Search uses `PX05024` and presents all 22 site definitions in two columns.
   ALL, NONE, and individual mouse/keyboard toggles update the active player's
   presentation filter. The city always shows controlled sites and additionally
@@ -278,11 +280,11 @@ cursor feedback remain to be validated.
   five final ticks.
 - `PX05015` is the original Equipment to Give panel. Its three item apertures
   correspond to weapon, armor and miscellaneous slots and independently toggle
-  the exact items included in one Give command. OK advances to the recreation's
-  recipient list, which reuses `PX03000` portraits and contains only friendly
-  same-sector gangs able to accept every selected item's tech level. The
-  recipient-list layout remains provisional pending identification of its
-  original presentation.
+  the exact items included in one Give command. The same panel presents up to
+  five eligible friendly recipients in roster order through 32-by-32 cells at
+  local `(209,16 + 36*n)`, rather than opening a recipient-list screen; Execute
+  is enabled only once both an item and a recipient are selected. The
+  recreation retains Up/Down recipient cycling as its documented QoL shortcut.
 - `PX05004` and `PX05007` are the original Equipment to Purchase and Equipment
   to Research overlays. Equip and Research route legal item choices through
   these panels over the live detailed-sector view. Both open on the first of
@@ -455,10 +457,10 @@ starts at local `(34,13)`. The sector aperture is the exact local
 `(31,67,54,52)` native copy, with its code centered below at local x=52. A
 viewer also sees fights between other players when one of the
 viewer's active gangs occupies that sector. Police uses the recovered police
-art. Its Detail control replays the selected resolved event through `PX05014`,
-regardless of the automatic Detailed Combat preference. Escape or the panel's
-Cancel control clears the bounded presentation queue without touching match
-state. At handoff, only visible combat from the immediately completed turn is
+art. The native handler has no in-panel Detail replay control: Detailed Combat
+uses the separate right-console route. Its one bottom face is local
+`(33,169)-(82,191)` and exits the bounded presentation queue without touching
+match state. At handoff, only visible combat from the immediately completed turn is
 eligible. Last Turn Events opens first
 when both exist, and Detailed animation capture waits until the handoff/event
 privacy panels have closed. Each hot-seat player has an independent presentation
@@ -473,7 +475,9 @@ to the city. The original retains the first 32 such reports per player and
 silently ignores later reports until the next resolution resets the table; the
 recreation applies that keep-first projection without truncating its richer
 mechanical notification history. Its counter and arrow cells page
-one report at a time. The baked counter occupies screen `(138,138,47,7)` inside
+one report at a time; their native pointer targets are local `(31,33)-(57,56)`
+and `(59,33)-(85,56)`. The only bottom control is the local
+`(33,169)-(82,191)` exit face—there is no DELETE control. The baked counter occupies screen `(138,138,47,7)` inside
 the preserved two-pixel green frame; replacement text uses that same origin and
 baseline so no template glyph pixels survive around it. Its
 `(198,133,242,158)` aperture uses the dedicated
