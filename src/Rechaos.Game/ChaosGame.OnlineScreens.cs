@@ -221,9 +221,11 @@ public sealed partial class ChaosGame
             DrawListingRow(batch, font, bounds, listings[index]);
         }
         DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryJoin, "JOIN",
-            listings.Count > 0 ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
+            CanCallOnlineLobby(listings.Count)
+                ? ButtonEmphasis.Primary
+                : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryRefresh, "REFRESH",
-            ButtonEmphasis.Secondary);
+            CanCallOnlineLobby() ? ButtonEmphasis.Secondary : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryBack, "BACK",
             ButtonEmphasis.Secondary);
         DrawDiscoveryFilterMenu(batch, pixel, font);
@@ -355,7 +357,7 @@ public sealed partial class ChaosGame
                 "THIS GAME HAS NO SEAT TO TAKE OVER", "EVERY EMPIRE IN IT HAS HAD A PLAYER");
         }
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "TAKE OVER",
-            seats.Count > 0 ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
+            CanCallOnlineLobby(seats.Count) ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK",
             ButtonEmphasis.Secondary);
     }
@@ -399,11 +401,11 @@ public sealed partial class ChaosGame
         font.Draw(batch, "JOIN CODE",
             new Vector2(OnlineLobbyLayout.RosterLeft, OnlineLobbyLayout.JoinCodeCaptionY),
             OnlineSecondaryText, 1);
-        font.Draw(batch, code.Length > 0 ? code : "--------",
+        font.Draw(batch, HasLobbyJoinCode ? code : "--------",
             new Vector2(OnlineLobbyLayout.RosterLeft, OnlineLobbyLayout.JoinCodeY),
-            code.Length > 0 ? Color.Gold : OnlineMutedText, 2);
+            HasLobbyJoinCode ? Color.Gold : OnlineMutedText, 2);
         DrawButton(batch, pixel, font, OnlineLobbyLayout.CopyCode, "COPY",
-            code.Length > 0 ? ButtonEmphasis.Secondary : ButtonEmphasis.Disabled);
+            HasLobbyJoinCode ? ButtonEmphasis.Secondary : ButtonEmphasis.Disabled);
     }
 
     /// <summary>
@@ -495,13 +497,25 @@ public sealed partial class ChaosGame
     /// <remarks>
     /// Taken from this client's own setup choices, which a seated player has had the lobby's
     /// settings written into and a host holds because they are the ones who chose them. See
-    /// <see cref="AdoptLobbySettings"/>.
+    /// <see cref="AdoptLobbySettings"/>, which leaves them alone when the host wrote a settings
+    /// document this build cannot read — so the summary says it cannot read it rather than
+    /// presenting this client's own local setup as what everybody is about to play.
     /// </remarks>
     private void DrawLobbySummary(SpriteBatch batch, PixelFont font)
     {
         font.Draw(batch, "WHAT YOU WILL PLAY",
             new Vector2(OnlineLobbyLayout.SettingsLeft, OnlineLobbyLayout.SummaryCaptionY),
             OnlineSecondaryText, 1);
+        if (!_online.LobbySettingsReadable)
+        {
+            for (var line = 0; line < OnlineLobbySummary.Unreadable.Count; line++)
+            {
+                var bounds = OnlineLobbyLayout.SummaryRow(line);
+                font.Draw(batch, OnlineLobbySummary.Unreadable[line],
+                    new Vector2(bounds.X, bounds.Y), OnlineMutedText, 1);
+            }
+            return;
+        }
         var rows = OnlineLobbySummary.Rows(
             _selectedScenario, _selectedDuration, _selectedAiMentality, _selectedPlanningTimeLimit);
         for (var index = 0; index < rows.Count; index++)

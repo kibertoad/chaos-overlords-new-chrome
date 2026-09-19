@@ -1,7 +1,7 @@
 # Development handover
 
 Status: active at a validated local checkpoint
-Last updated: 2026-09-13
+Last updated: 2026-09-19
 
 ## Repository state
 
@@ -47,6 +47,23 @@ Last updated: 2026-09-13
   stale. The lobby leads with the join code, and now tells everyone seated what
   they are about to play — scenario, length, opponents and turn timer — rather
   than keeping it behind a button only the host can press.
+
+- The four controls that flow added, or moved, now agree with what they do. A
+  lobby session runs one call at a time and drops the second, so `REFRESH`,
+  `JOIN` and `TAKE OVER` are drawn live only while there is no call in flight
+  (`OnlineConnectPolicy.CanCallLobby`, which drawing and clicking both read):
+  `JOIN` pressed over a `REFRESH` used to announce `JOINING LOBBY` and never
+  send, leaving the player reading it until the browse it had been dropped for
+  answered. That answer no longer moves the screen either — a browse reply
+  settles the browser and nothing else, where it used to force the stage and
+  evict a player who had walked into the seat picker meanwhile. The seat picker
+  stopped claiming `JoinedInProgress` before the server seats anyone; the
+  membership that arrives says whether the match was already running, and a
+  refused call clears it. `WHAT YOU WILL PLAY` says it cannot read the host's
+  settings rather than drawing this client's own local setup in their place,
+  which is what the fields still hold when the blob will not parse. `COPY`
+  refuses an empty join code instead of copying nothing and reporting
+  `JOIN CODE COPIED`.
 
 - A submitted online turn now leaves the hire dock readable while the other seats are still
   planning. The offers and the Hire comparison panel open, and a dock portrait still opens the gang

@@ -94,8 +94,12 @@ public sealed partial class ChaosGame
         }
         catch (MultiplayerProtocolException)
         {
+            // Said out loud rather than left implied: the fields below still hold this client's own
+            // local setup, and the lobby summary reads them.
+            _online.LobbySettingsReadable = false;
             return;
         }
+        _online.LobbySettingsReadable = true;
         _selectedScenario = settings.Scenario;
         _selectedDuration = settings.Duration;
         _selectedAiMentality = settings.AiMentality;

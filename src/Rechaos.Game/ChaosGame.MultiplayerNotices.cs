@@ -88,13 +88,22 @@ public sealed partial class ChaosGame
             case LobbyNotice.Listed listed:
                 _online.Listings = Describe(listed.Matches);
                 _online.DiscoverySelection = 0;
-                _online.Stage = MultiplayerStage.Discover;
+                // Only the browser is the answer's to move. A browse is a round trip, and the
+                // player is free to spend it: taking a seat, or walking into the seat picker for a
+                // running game. Forcing the stage here evicted them from whatever they had opened
+                // in the meantime, and overwrote what that screen was telling them.
+                if (_online.Stage != MultiplayerStage.Discover) return;
                 _online.Status = listed.Matches.Count == 0
                     ? "NO PUBLIC SESSIONS FOUND"
                     : string.Empty;
                 return;
             case LobbyNotice.Failed failed:
-                if (_online.Stage == MultiplayerStage.Busy) _online.Stage = MultiplayerStage.Connect;
+                if (_online.Stage == MultiplayerStage.Busy)
+                {
+                    _online.Stage = MultiplayerStage.Connect;
+                    // A call that failed seated nobody, so the seat's own flags go with it.
+                    _online.JoinedInProgress = false;
+                }
                 _online.Status = string.Empty;
                 _online.ConnectionError = failed.Reason;
                 _online.ConnectionErrorCopyStatus = string.Empty;

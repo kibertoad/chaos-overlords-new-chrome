@@ -41,6 +41,28 @@ public sealed class OnlineLobbySummaryTests
         }
     }
 
+    /// <summary>
+    /// The stand-in for a settings blob this build cannot read fits where the rows would be.
+    /// </summary>
+    /// <remarks>
+    /// It is drawn from the left of a summary row, one line per row, so a line too wide for the
+    /// column would run out through the panel's border. There are four rows to spend.
+    /// </remarks>
+    [Fact]
+    public void TheUnreadableNoticeFitsTheRowsItStandsIn()
+    {
+        var row = OnlineLobbySummary.Rows(
+            ScenarioId.KillEmAll, GameDuration.TwoYears,
+            AiDifficulty.CrimeLord, PlanningTimeLimit.None).Count;
+        Assert.InRange(OnlineLobbySummary.Unreadable.Count, 1, row);
+        foreach (var line in OnlineLobbySummary.Unreadable)
+        {
+            var used = line.Length * OriginalFontLayout.CellWidth;
+            var width = OnlineLobbyLayout.SummaryRow(0).Width;
+            Assert.True(used <= width, $"{line} needs {used} of {width}");
+        }
+    }
+
     public static TheoryData<ScenarioId, GameDuration, AiDifficulty, PlanningTimeLimit>
         EverySetting()
     {

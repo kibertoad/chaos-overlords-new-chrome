@@ -666,8 +666,19 @@ public sealed partial class ChaosGame
         else PollLobby(gameTime);
     }
 
+    /// <summary>
+    /// Whether there is a join code to read out, which drawing and clicking both ask.
+    /// </summary>
+    /// <remarks>
+    /// COPY is drawn disabled until the server has answered with a code, but ran all the same when
+    /// pressed: it put an empty string on the clipboard and reported JOIN CODE COPIED, sending the
+    /// host off to paste nothing to the people waiting on it.
+    /// </remarks>
+    private bool HasLobbyJoinCode => _online.JoinCodeShown.Length > 0;
+
     private void CopyLobbyJoinCode()
     {
+        if (!HasLobbyJoinCode) return;
         _online.Status = DesktopClipboard.TrySetText(_online.JoinCodeShown)
             ? "JOIN CODE COPIED"
             : "COULD NOT COPY JOIN CODE";
