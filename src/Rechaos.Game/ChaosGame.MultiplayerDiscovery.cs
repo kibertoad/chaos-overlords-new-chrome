@@ -40,6 +40,17 @@ public sealed partial class ChaosGame
 
     private void CloseOnlineHistory() => _online.Stage = MultiplayerStage.Connect;
 
+    /// <summary>
+    /// Whether a control that makes a lobby call is on offer, given what it acts on.
+    /// </summary>
+    /// <remarks>
+    /// The screens' reading of <see cref="OnlineConnectPolicy.CanCallLobby"/>, where the rule and
+    /// its reasons live. Drawing and clicking both come through here, so no button is drawn live
+    /// that would drop the press, and none is drawn disabled that would still act on it.
+    /// </remarks>
+    private bool CanCallOnlineLobby(int subjects = 1) => OnlineConnectPolicy.CanCallLobby(
+        _lobby is not null, _lobby?.IsBusy == true, subjects);
+
     private void OpenOnlineDiscovery()
     {
         if (!TryBeginLobby()) return;
@@ -47,6 +58,23 @@ public sealed partial class ChaosGame
         CloseDiscoveryFilterMenu();
         _online.Status = "FINDING PUBLIC SESSIONS";
         _lobby!.Browse();
+    }
+
+    /// <summary>
+    /// Asks the server for the list again.
+    /// </summary>
+    /// <remarks>
+    /// The list arrives once, when the screen opens, and nothing refreshes it: a player watching for
+    /// a friend's lobby to appear had to leave the screen and come back. The notice that carries the
+    /// answer puts the selection back at the top and reports an empty result, so there is nothing to
+    /// do here but ask and say that it was asked.
+    /// </remarks>
+    private void RefreshOnlineDiscovery()
+    {
+        if (_lobby is not { } lobby || !CanCallOnlineLobby()) return;
+        CloseDiscoveryFilterMenu();
+        _online.Status = "FINDING PUBLIC SESSIONS";
+        lobby.Browse();
     }
 
     private void CloseOnlineDiscovery()
@@ -153,7 +181,8 @@ public sealed partial class ChaosGame
     private void JoinSelectedOnlineListing()
     {
         var listings = FilteredOnlineListings();
-        if (listings.Count == 0 || !RequireUsableName() || _lobby is null) return;
+        if (_lobby is not { } lobby || !CanCallOnlineLobby(listings.Count)
+            || !RequireUsableName()) return;
         var listing = listings[
             Math.Clamp(_online.DiscoverySelection, 0, listings.Count - 1)].Listing;
         if (listing.Status == MatchStatus.Lobby)
@@ -162,7 +191,7 @@ public sealed partial class ChaosGame
             _online.PasswordShown = password ?? string.Empty;
             _online.Stage = MultiplayerStage.Busy;
             _online.Status = "JOINING LOBBY";
-            _lobby.Join(new JoinMatchRequest(
+            lobby.Join(new JoinMatchRequest(
                 listing.JoinCode, _online.DisplayName.Value.Trim(),
                 _online.Portrait, password));
         }
@@ -183,15 +212,18 @@ public sealed partial class ChaosGame
     private void ConfirmLateJoin()
     {
         var listing = _online.PendingLateJoin;
-        if (listing is null || listing.AvailableSeatSummaries.Count == 0 || _lobby is null) return;
+        if (listing is null || _lobby is not { } lobby
+            || !CanCallOnlineLobby(listing.AvailableSeatSummaries.Count)) return;
         var seat = listing.AvailableSeatSummaries[
             Math.Clamp(_online.LateJoinSeatSelection, 0, listing.AvailableSeatSummaries.Count - 1)];
         var password = OptionalPassword();
         _online.PasswordShown = password ?? string.Empty;
         _online.Stage = MultiplayerStage.Busy;
         _online.Status = "JOINING GAME";
-        _online.JoinedInProgress = true;
-        _lobby.JoinRunning(new JoinRunningMatchRequest(
+        // Not JoinedInProgress yet: the seat is only taken when the server says it is, and the
+        // membership that says so carries the match status the flag is read from. Setting it here
+        // left it standing on a client whose join was refused, or who backed out of this screen.
+        lobby.JoinRunning(new JoinRunningMatchRequest(
             listing.Id, _online.DisplayName.Value.Trim(),
             SeatPortrait(listing, seat.Slot), password, seat.Slot));
     }
@@ -221,9 +253,10 @@ public sealed partial class ChaosGame
     private void HandleLateJoinSeatClick(Point point)
     {
         var seats = _online.PendingLateJoin?.AvailableSeatSummaries ?? [];
-        for (var row = 0; row < Math.Min(6, seats.Count); row++)
-            if (OnlineConnectLayout.HistoryRow(row).Contains(point))
-                _online.LateJoinSeatSelection = row;
+        var window = ListScrollWindow.Of(
+            seats.Count, _online.LateJoinSeatSelection, OnlineScreenLayout.ListRows);
+        if (RowClicked(point, OnlineConnectLayout.HistoryRow, window) is { } seat)
+            _online.LateJoinSeatSelection = seat;
         if (OnlineConnectLayout.HistoryRejoin.Contains(point)) ConfirmLateJoin();
         else if (OnlineConnectLayout.HistoryBack.Contains(point))
             _online.Stage = MultiplayerStage.Discover;

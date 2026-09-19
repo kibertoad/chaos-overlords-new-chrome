@@ -169,7 +169,7 @@ internal sealed class MultiplayerUiState
 
     internal TextField Server { get; } = new(
         "SERVER", 96, GamePreferences.DefaultCustomMultiplayerServer);
-    internal TextField DisplayName { get; } = new("NAME", 32, "PLAYER");
+    internal TextField DisplayName { get; } = new("YOUR NAME", 32, "PLAYER");
     /// <summary>Empty until the lobby is made: the host is given a name, and renames it there.</summary>
     internal TextField SessionName { get; } = new("SESSION NAME", 64);
     internal TextField JoinCode { get; } = new("JOIN CODE", 8);
@@ -185,6 +185,17 @@ internal sealed class MultiplayerUiState
 
     /// <summary>The lobby as the server last described it, or null before there is one.</summary>
     internal MatchView? Match { get; set; }
+
+    /// <summary>
+    /// Whether this build could read the game settings the lobby carries.
+    /// </summary>
+    /// <remarks>
+    /// A blob this build cannot parse is left alone rather than guessed at, so the setup fields
+    /// the lobby summary reads still hold this client's own local choices. Without this the lobby
+    /// would answer "what you will play" with one player's last single-player setup, stated as
+    /// everybody's — the one wrong answer worse than no answer at all.
+    /// </remarks>
+    internal bool LobbySettingsReadable { get; set; } = true;
 
     /// <summary>The code the host reads out; empty until there is a lobby.</summary>
     internal string JoinCodeShown { get; set; } = string.Empty;
@@ -309,6 +320,7 @@ internal sealed class MultiplayerUiState
         Role = OnlineConnectRole.Host;
         Portrait = 0;
         Match = null;
+        LobbySettingsReadable = true;
         JoinCodeShown = string.Empty;
         PasswordShown = string.Empty;
         IsHost = false;

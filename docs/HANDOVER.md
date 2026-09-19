@@ -1,7 +1,7 @@
 # Development handover
 
 Status: active at a validated local checkpoint
-Last updated: 2026-09-13
+Last updated: 2026-09-19
 
 ## Repository state
 
@@ -26,6 +26,44 @@ Last updated: 2026-09-13
   migration/versioning machinery for post-1.0 compatibility.
 
 ## Latest playable work
+
+- The Online screens were laid out again as one flow. Every screen — connect,
+  browse, unfinished sessions, the seat picker and the lobby — now stands in one
+  frame (`OnlineScreenLayout`): the same panel, the same title and rule, the same
+  reserved status line, and the same row of actions in the same place, so walking
+  between them moves nothing the eye has already found. The connect form reads in
+  the order the questions matter — what you want to do, who you are, which
+  session, its password, and last which server — and every group carries a caption
+  saying what it asks; the role and service pairs had none at all. The tab order
+  follows the screen rather than leading with the server. `BROWSE GAMES` and
+  `UNFINISHED SESSIONS` moved out of the action row, which now holds only the
+  form's own action and the way back, and buttons are drawn from a three-state
+  `ButtonEmphasis` so that a disabled action no longer looks like an unchosen
+  option. Both statuses that used to be written through the panel's bottom border
+  are inside it. The lists say how many entries they have and which they are
+  showing, say so when they are empty, share one `ListScrollWindow` between the
+  rows they draw and the rows they can be clicked on, and the browser gained a
+  `REFRESH` button (and F5) for a list that previously arrived once and went
+  stale. The lobby leads with the join code, and now tells everyone seated what
+  they are about to play — scenario, length, opponents and turn timer — rather
+  than keeping it behind a button only the host can press.
+
+- The four controls that flow added, or moved, now agree with what they do. A
+  lobby session runs one call at a time and drops the second, so `REFRESH`,
+  `JOIN` and `TAKE OVER` are drawn live only while there is no call in flight
+  (`OnlineConnectPolicy.CanCallLobby`, which drawing and clicking both read):
+  `JOIN` pressed over a `REFRESH` used to announce `JOINING LOBBY` and never
+  send, leaving the player reading it until the browse it had been dropped for
+  answered. That answer no longer moves the screen either — a browse reply
+  settles the browser and nothing else, where it used to force the stage and
+  evict a player who had walked into the seat picker meanwhile. The seat picker
+  stopped claiming `JoinedInProgress` before the server seats anyone; the
+  membership that arrives says whether the match was already running, and a
+  refused call clears it. `WHAT YOU WILL PLAY` says it cannot read the host's
+  settings rather than drawing this client's own local setup in their place,
+  which is what the fields still hold when the blob will not parse. `COPY`
+  refuses an empty join code instead of copying nothing and reporting
+  `JOIN CODE COPIED`.
 
 - A submitted online turn now leaves the hire dock readable while the other seats are still
   planning. The offers and the Hire comparison panel open, and a dock portrait still opens the gang

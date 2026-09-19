@@ -57,7 +57,7 @@ public sealed class DiscoveryFiltersTests
     {
         var button = OnlineConnectLayout.DiscoveryFilter(filter);
         var menu = OnlineConnectLayout.DiscoveryFilterMenu(filter);
-        var panel = new Rectangle(100, 72, 440, 372);
+        var panel = OnlineScreenLayout.Panel;
         Assert.Equal(button.X, menu.X);
         Assert.Equal(button.Bottom, menu.Y);
         Assert.Equal(button.Width, menu.Width);

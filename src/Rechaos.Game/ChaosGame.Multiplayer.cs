@@ -86,6 +86,7 @@ public sealed partial class ChaosGame
             }
             var count = FilteredOnlineListings().Count;
             if (Pressed(keyboard, Keys.Escape)) CloseOnlineDiscovery();
+            else if (Pressed(keyboard, Keys.F5)) RefreshOnlineDiscovery();
             else if (count > 0 && Pressed(keyboard, Keys.Up))
                 _online.DiscoverySelection = Mod(_online.DiscoverySelection - 1, count);
             else if (count > 0 && Pressed(keyboard, Keys.Down))
@@ -595,24 +596,39 @@ public sealed partial class ChaosGame
         else if (OnlineConnectLayout.DiscoveryAi.Contains(point))
             OpenDiscoveryFilterMenu(DiscoveryFilters.Ai);
         else if (OnlineConnectLayout.DiscoveryJoin.Contains(point)) JoinSelectedOnlineListing();
+        else if (OnlineConnectLayout.DiscoveryRefresh.Contains(point)) RefreshOnlineDiscovery();
         else if (OnlineConnectLayout.DiscoveryBack.Contains(point)) CloseOnlineDiscovery();
-        else
-        {
-            var listings = FilteredOnlineListings();
-            var offset = Math.Clamp(_online.DiscoverySelection - 4, 0, Math.Max(0, listings.Count - 5));
-            for (var row = 0; row < Math.Min(5, listings.Count - offset); row++)
-                if (OnlineConnectLayout.DiscoveryRow(row).Contains(point))
-                    _online.DiscoverySelection = offset + row;
-        }
+        else if (RowClicked(point, OnlineConnectLayout.DiscoveryRow,
+                     DiscoveredListingWindow()) is { } listing)
+            _online.DiscoverySelection = listing;
+    }
+
+    /// <summary>The window of listings the browser is showing, which drawing and clicking both read.</summary>
+    private ListScrollWindow DiscoveredListingWindow() => ListScrollWindow.Of(
+        FilteredOnlineListings().Count, _online.DiscoverySelection, OnlineScreenLayout.ListRows);
+
+    /// <summary>
+    /// The entry a click landed on, or null when it landed somewhere else.
+    /// </summary>
+    /// <remarks>
+    /// The rows a screen draws and the rows it can be clicked on are the same rows, so both ask the
+    /// window rather than each recomputing the scroll offset. They had drifted apart once already:
+    /// the browser drew five rows and read a click on the sixth as a click on the fifth.
+    /// </remarks>
+    private static int? RowClicked(
+        Point point, Func<int, Rectangle> row, ListScrollWindow window)
+    {
+        for (var index = 0; index < window.VisibleRows; index++)
+            if (row(index).Contains(point)) return window.IndexAt(index);
+        return null;
     }
 
     private void HandleOnlineHistoryClick(Point point)
     {
-        var sessions = RecoverableOnlineSessions;
-        var offset = Math.Clamp(_online.RecoverySelection - 5, 0, Math.Max(0, sessions.Count - 6));
-        for (var row = 0; row < Math.Min(6, sessions.Count - offset); row++)
-            if (OnlineConnectLayout.HistoryRow(row).Contains(point))
-                _online.RecoverySelection = offset + row;
+        var window = ListScrollWindow.Of(
+            RecoverableOnlineSessions.Count, _online.RecoverySelection, OnlineScreenLayout.ListRows);
+        if (RowClicked(point, OnlineConnectLayout.HistoryRow, window) is { } session)
+            _online.RecoverySelection = session;
         if (OnlineConnectLayout.HistoryRejoin.Contains(point)) ResumeSelectedOnlineMatch();
         else if (OnlineConnectLayout.HistoryBack.Contains(point)) CloseOnlineHistory();
     }
@@ -650,8 +666,19 @@ public sealed partial class ChaosGame
         else PollLobby(gameTime);
     }
 
+    /// <summary>
+    /// Whether there is a join code to read out, which drawing and clicking both ask.
+    /// </summary>
+    /// <remarks>
+    /// COPY is drawn disabled until the server has answered with a code, but ran all the same when
+    /// pressed: it put an empty string on the clipboard and reported JOIN CODE COPIED, sending the
+    /// host off to paste nothing to the people waiting on it.
+    /// </remarks>
+    private bool HasLobbyJoinCode => _online.JoinCodeShown.Length > 0;
+
     private void CopyLobbyJoinCode()
     {
+        if (!HasLobbyJoinCode) return;
         _online.Status = DesktopClipboard.TrySetText(_online.JoinCodeShown)
             ? "JOIN CODE COPIED"
             : "COULD NOT COPY JOIN CODE";
