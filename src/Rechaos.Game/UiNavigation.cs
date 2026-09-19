@@ -817,6 +817,9 @@ public static partial class PlayerPortraitLayout
     public const int Count = 16;
     public const int SelectableCount = 15;
 
+    /// <summary>The label the Sector workspace flags a gang-holding opponent with.</summary>
+    public const string GangPresenceLabel = "GANGS";
+
     public static Rectangle SetupTop(int player)
     {
         Validate(player);
@@ -833,6 +836,20 @@ public static partial class PlayerPortraitLayout
     {
         Validate(player);
         return new Rectangle(48 + player * 72, 4, 20, 20);
+    }
+
+    /// <summary>
+    /// The strip under a city-row portrait carrying <see cref="GangPresenceLabel"/>. One glyph row
+    /// starting a pixel into the portrait stops exactly on the Sector workspace's top edge.
+    /// </summary>
+    public static Rectangle CityGangPresence(int player)
+    {
+        var portrait = CityTop(player);
+        return new Rectangle(
+            portrait.X + 1,
+            portrait.Bottom - 1,
+            GangPresenceLabel.Length * OriginalFontLayout.CellWidth,
+            OriginalFontLayout.GlyphHeight);
     }
 
     /// <summary>
