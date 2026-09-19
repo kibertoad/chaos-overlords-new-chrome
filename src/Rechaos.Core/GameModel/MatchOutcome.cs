@@ -67,8 +67,9 @@ internal static class MatchOutcomeValidator
 }
 
 /// <summary>
-/// Projects authoritative match state into the manual-defined scenario rules.
-/// End-boundary timing and simultaneous winner treatment remain provisional.
+/// Projects authoritative match state into the recovered scenario rules after
+/// player elimination and Big Man accrual. Objective qualifiers retain every
+/// active simultaneous winner; a sole active Overlord takes precedence.
 /// </summary>
 public static class MatchOutcomeEvaluator
 {
