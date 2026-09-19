@@ -204,6 +204,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             });
         _screens.Changed += (previous, current) =>
         {
+            if (!KeepsGangSelection(current)) _gangSelection.Clear();
             _citySectorClicks.Cancel();
             _sectorSiteClicks.Cancel();
             _sectorGangClicks.Cancel();
@@ -353,6 +354,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _inputTime = gameTime.TotalGameTime;
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();
+        _multiSelectModifier = keyboard.IsKeyDown(Keys.LeftControl)
+            || keyboard.IsKeyDown(Keys.RightControl);
         var altEnter = Pressed(keyboard, Keys.Enter)
             && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
         if (Pressed(keyboard, Keys.F11) || altEnter) ToggleFullscreen();

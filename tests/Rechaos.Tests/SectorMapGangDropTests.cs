@@ -10,49 +10,48 @@ public sealed class SectorMapGangDropTests
     private const int GangSector = 9;
 
     [Fact]
-    public void DroppingOnTheOccupiedSectorQueuesRecurringControl()
+    public void DroppingOnTheOccupiedSectorMeansRecurringControl()
     {
         var match = CreateMatch(ownedByPlayer: false);
         var gang = match.Players[0].Gangs[0];
-        var legal = CommandOptionCatalog.LegalCommands(match, gang.Owner, gang.Id);
 
-        var command = SectorMapGangDrop.Resolve(legal, gang.SectorId, GangSector);
+        var intent = SectorMapGangDrop.Intent(gang.SectorId, GangSector);
 
-        Assert.NotNull(command);
-        Assert.Equal(GangAction.Control, command!.Action);
-        Assert.Equal(CommandTarget.None, command.Target);
-        Assert.True(command.Repeat);
-        Assert.True(match.Submit(command).Accepted);
+        Assert.Equal(GangAction.Control, intent.Action);
+        Assert.Equal(CommandTarget.None, intent.Target);
+        Assert.True(intent.Repeat);
+        Assert.True(match.Submit(Command(gang, intent)).Accepted);
     }
 
     [Fact]
-    public void DroppingOnANeighborStillQueuesAOneOffMove()
+    public void DroppingOnANeighborStillMeansAOneOffMove()
     {
         var match = CreateMatch(ownedByPlayer: false);
         var gang = match.Players[0].Gangs[0];
-        var legal = CommandOptionCatalog.LegalCommands(match, gang.Owner, gang.Id);
 
-        var command = SectorMapGangDrop.Resolve(legal, gang.SectorId, GangSector + 1);
+        var intent = SectorMapGangDrop.Intent(gang.SectorId, GangSector + 1);
 
-        Assert.NotNull(command);
-        Assert.Equal(GangAction.Move, command!.Action);
-        Assert.Equal(CommandTarget.Sector(GangSector + 1), command.Target);
-        Assert.False(command.Repeat);
-        Assert.True(match.Submit(command).Accepted);
+        Assert.Equal(GangAction.Move, intent.Action);
+        Assert.Equal(CommandTarget.Sector(GangSector + 1), intent.Target);
+        Assert.False(intent.Repeat);
+        Assert.True(match.Submit(Command(gang, intent)).Accepted);
     }
 
     [Fact]
-    public void DistantAndIllegalDropsResolveToNothing()
+    public void DistantAndIllegalDropsAreRefusedByTheRules()
     {
         var match = CreateMatch(ownedByPlayer: false);
         var gang = match.Players[0].Gangs[0];
-        var legal = CommandOptionCatalog.LegalCommands(match, gang.Owner, gang.Id);
+        var owned = CreateMatch(ownedByPlayer: true);
 
-        Assert.Null(SectorMapGangDrop.Resolve(legal, gang.SectorId, GangSector + 2));
-        Assert.Null(SectorMapGangDrop.Resolve([], gang.SectorId, GangSector));
-        Assert.Throws<ArgumentNullException>(() =>
-            SectorMapGangDrop.Resolve(null!, gang.SectorId, GangSector));
+        Assert.False(match.Submit(
+            Command(gang, SectorMapGangDrop.Intent(gang.SectorId, GangSector + 2))).Accepted);
+        Assert.False(owned.Submit(Command(owned.Players[0].Gangs[0],
+            SectorMapGangDrop.Intent(GangSector, GangSector))).Accepted);
     }
+
+    private static GameCommand Command(MatchGangState gang, BulkCommandIntent intent) =>
+        new(gang.Owner, gang.Id, intent.Action, intent.Target, intent.Repeat);
 
     [Fact]
     public void ControlJoinsTheHighlightedDestinationsOnlyWhileItIsLegal()

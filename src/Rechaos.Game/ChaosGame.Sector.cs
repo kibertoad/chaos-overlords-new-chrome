@@ -19,6 +19,7 @@ public sealed partial class ChaosGame
     private void OpenSectorDetails()
     {
         _sectorGangCardOwner = null;
+        _gangSelection.Clear();
         _message = string.Empty;
         _screens.Show(ClientScreen.Sector);
     }
@@ -38,6 +39,7 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Up) && row > 0) _cursor -= 8;
         if (Pressed(keyboard, Keys.Down) && row < 7) _cursor += 8;
         if (_cursor != previousCursor) _sectorGangCardOwner = null;
+        _gangSelection.KeepOnly(_cursor);
         if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
             _screens.Show(ClientScreen.City);
     }
@@ -63,6 +65,9 @@ public sealed partial class ChaosGame
         _message = string.Empty;
         _sectorGangCardOwner =
             SectorOpponentGangs.Detectable(state, viewer, owner, _cursor) ? owner : null;
+        // Borrowing an opponent's cards puts the player's own gangs out of sight, and a pick
+        // nobody can see is a pick nobody meant to keep.
+        if (_sectorGangCardOwner is not null) _gangSelection.Clear();
     }
 
     private void HandleSectorClick(Point point)
@@ -103,6 +108,7 @@ public sealed partial class ChaosGame
         {
             if (selectedSector != _cursor) _sectorGangCardOwner = null;
             _cursor = selectedSector;
+            _gangSelection.KeepOnly(_cursor);
             _message = string.Empty;
             return;
         }
@@ -129,9 +135,17 @@ public sealed partial class ChaosGame
         }
         var ownGangs = _state.FindPlayer(playerId)!.Gangs.Where(candidate => candidate.IsActive).ToArray();
         _selectedGangIndex = Array.FindIndex(ownGangs, candidate => candidate.Id == gang.Id);
+        if (_multiSelectModifier)
+        {
+            ToggleGangSelection(gang);
+            return;
+        }
         var repeat = SectorGangCardLayout.ActionRepeatAt(index, point);
         if (repeat is { } selectedRepeat)
-            OpenCommands(selectedRepeat, ClientScreen.Sector);
+        {
+            if (IsSelectedForBulkCommand(gang)) OpenBulkCommands(selectedRepeat);
+            else OpenCommands(selectedRepeat, ClientScreen.Sector);
+        }
         else if (SectorGangCardLayout.Portrait(index).Contains(point))
             BeginGangDrag(gang, point);
         else if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
@@ -311,17 +325,9 @@ public sealed partial class ChaosGame
         var visibleGangs = SectorGangView.Visible(_state, playerId, _cursor).ToArray();
         if (SectorGangDropTarget.EnemyAt(visibleGangs, gang.Owner, point) is { } enemyId)
         {
-            var attackTarget = CommandTarget.Gang(enemyId);
-            var attack = CommandOptionCatalog.LegalCommands(_state, gang.Owner, gang.Id)
-                .FirstOrDefault(command => command.Action == GangAction.Attack
-                    && command.Target == attackTarget);
-            if (attack is null)
-            {
-                RejectInput("GANG CANNOT BE ATTACKED");
-                return;
-            }
-            var attackResult = _actions.Submit(attack with { Repeat = false });
-            ReportInputResult(attackResult.Accepted, attackResult.Validation.Message);
+            DropGangCommand(gang,
+                new BulkCommandIntent(GangAction.Attack, CommandTarget.Gang(enemyId), Repeat: false),
+                "GANG CANNOT BE ATTACKED");
             return;
         }
         var siteSlot = Enumerable.Range(0, MatchLimits.SitesPerSector)
@@ -329,18 +335,11 @@ public sealed partial class ChaosGame
         if (siteSlot >= 0)
         {
             var target = CommandTarget.Site(_cursor * MatchLimits.SitesPerSector + siteSlot);
-            var influence = CommandOptionCatalog.LegalCommands(_state, gang.Owner, gang.Id)
-                .FirstOrDefault(command => command.Action == GangAction.Influence
-                    && command.Target == target);
-            if (influence is null)
-            {
-                RejectInput(_state.Sectors[_cursor].Owner != gang.Owner
+            DropGangCommand(gang,
+                new BulkCommandIntent(GangAction.Influence, target, Repeat: true),
+                _state.Sectors[_cursor].Owner != gang.Owner
                     ? "CONTROL SECTOR TO INFLUENCE"
                     : "BUILDING CANNOT BE INFLUENCED");
-                return;
-            }
-            var influenceResult = _actions.Submit(influence with { Repeat = true });
-            ReportInputResult(influenceResult.Accepted, influenceResult.Validation.Message);
             return;
         }
         if (!SectorDetailLayout.TrySectorAt(point, _cursor, out var sectorId))
@@ -348,13 +347,30 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
-        var legalCommands = CommandOptionCatalog.LegalCommands(_state, gang.Owner, gang.Id);
-        if (SectorMapGangDrop.Resolve(legalCommands, gang.SectorId, sectorId) is not { } dropped)
+        DropGangCommand(gang, SectorMapGangDrop.Intent(gang.SectorId, sectorId),
+            SectorMapGangDrop.Rejection(_state, gang, sectorId));
+    }
+
+    /// <summary>
+    /// Carries a finished drag out: for the gang dragged alone, or for the whole ctrl-picked
+    /// selection when the gang dragged is one of them.
+    /// </summary>
+    private void DropGangCommand(MatchGangState gang, BulkCommandIntent intent, string rejection)
+    {
+        if (_state is null || _actions is null) return;
+        if (IsSelectedForBulkCommand(gang))
         {
-            RejectInput(SectorMapGangDrop.Rejection(_state, gang, sectorId));
+            ApplyBulkCommand(gang.Owner, intent, rejection);
             return;
         }
-        var result = _actions.Submit(dropped);
+        var command = new GameCommand(
+            gang.Owner, gang.Id, intent.Action, intent.Target, intent.Repeat);
+        if (!CommandValidator.Validate(_state, command).IsValid)
+        {
+            RejectInput(rejection);
+            return;
+        }
+        var result = _actions.Submit(command);
         ReportInputResult(result.Accepted, result.Validation.Message);
     }
 
@@ -396,7 +412,8 @@ public sealed partial class ChaosGame
         if (_gangPortraits is null) return;
         var token = new Rectangle(_dragPoint.X - 18, _dragPoint.Y - 14, 36, 28);
         batch.Draw(_gangPortraits, token, OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
-        DrawBorder(batch, pixel, token, PlayerColors[gang.Owner.Value], 1);
+        DrawBorder(batch, pixel, token,
+            IsSelectedForBulkCommand(gang) ? Color.Gold : PlayerColors[gang.Owner.Value], 1);
     }
 
     private void DrawSectorSideRail(SpriteBatch batch, Texture2D pixel, PixelFont font)
@@ -435,6 +452,8 @@ public sealed partial class ChaosGame
         }
         DrawBorder(batch, pixel, SectorGangCardLayout.OwnerBorder(slot),
             PlayerColors[gang.Owner.Value], 1);
+        if (gang.Owner == viewer && _gangSelection.Contains(gang.Id))
+            DrawBorder(batch, pixel, SectorGangCardLayout.SelectionBorder(slot), Color.Gold, 2);
 
         var force = SectorGangCardLayout.ForceBar(slot);
         DrawSectorMeter(batch, pixel, force, SectorGangCardLayout.ForceWidth(gang.Force),

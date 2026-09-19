@@ -4,27 +4,20 @@ namespace Rechaos.Game;
 
 /// <summary>
 /// Interprets a friendly gang dragged onto the detailed sector view's 3-by-3 minimap.
-/// A neighboring tile queues a one-off Move, while the tile the gang already occupies
-/// queues a recurring Control so the gang keeps working the sector until it falls.
+/// A neighboring tile means a one-off Move, while the tile the gang already occupies
+/// means a recurring Control so the gang keeps working the sector until it falls.
 /// </summary>
 public static class SectorMapGangDrop
 {
-    public static GameCommand? Resolve(
-        IReadOnlyList<GameCommand> legalCommands,
-        int gangSectorId,
-        int dropSectorId)
-    {
-        ArgumentNullException.ThrowIfNull(legalCommands);
-        if (dropSectorId == gangSectorId)
-            return legalCommands.FirstOrDefault(command => command.Action == GangAction.Control)
-                is { } control
-                ? control with { Repeat = true }
-                : null;
-        return legalCommands.FirstOrDefault(command => command.Action == GangAction.Move
-            && command.Target == CommandTarget.Sector(dropSectorId)) is { } move
-            ? move with { Repeat = false }
-            : null;
-    }
+    /// <summary>
+    /// What the drop asks for. It reads the map alone: whether the rules allow it is the
+    /// validator's answer, and the same drop may be legal for some of a selection and not others.
+    /// </summary>
+    public static BulkCommandIntent Intent(int gangSectorId, int dropSectorId) =>
+        dropSectorId == gangSectorId
+            ? new BulkCommandIntent(GangAction.Control, CommandTarget.None, Repeat: true)
+            : new BulkCommandIntent(
+                GangAction.Move, CommandTarget.Sector(dropSectorId), Repeat: false);
 
     /// <summary>Sectors the drag may legally drop on, for destination highlighting.</summary>
     public static IReadOnlySet<int> Destinations(

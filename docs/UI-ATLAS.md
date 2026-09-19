@@ -1,7 +1,7 @@
 # Original UI atlas
 
 Status: partial, active mapping
-Last updated: 2026-09-11
+Last updated: 2026-09-19
 
 This file assigns presentation resources from the verified extracted asset pack
 to visible workflows. Coordinates use the original 640 by 460 virtual canvas.
@@ -348,6 +348,19 @@ Dragging an owned gang card onto an influenceable building in the detailed
 sector queues a recurring Influence command for that exact site.
 Hovering a gang with an assigned Move, Influence, or Attack command outlines
 its destination tile, building portrait, or target gang card respectively.
+Ctrl-clicking a friendly gang card picks it, outlined in gold inside its own
+frame, and ctrl-clicking it again takes it back out. With more than one card
+picked, either arrow on any picked card opens the command overlay for the whole
+selection, listing only the orders a selection may be given — Attack, Control,
+Heal, Hide, Influence, and Move, less the ones that cannot repeat when the
+recurring arrow was used — and dragging any picked card gives the selection the
+order that drop would have given the one gang. The order goes to every picked
+gang the rules allow and to no others: a destination with room for two takes two
+of five, and only gangs below full Force are sent to Heal. The status console
+then reports how much of the selection took the order. A selection belongs to
+one sector and one turn, so showing another sector, borrowing an opponent's
+roster, leaving the workspace, giving the order, or ending the turn all clear
+it. The original ordered one gang at a time and has no such affordance.
 The gang portrait is copied at card offset `(5,20)`, while the three native-size
 20-by-20 equipment portraits are copied at `(5,86)`, `(27,86)`, and `(49,86)`.
 The one-pixel player-color outline surrounds rather than overwrites the frame.

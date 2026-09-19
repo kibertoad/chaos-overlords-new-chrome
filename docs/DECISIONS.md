@@ -1,10 +1,40 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-18
+Last updated: 2026-09-19
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
+
+## 2026-09-19 — Order a ctrl-picked selection of gangs at once
+
+- Decision: the Sector workspace's gang cards take a ctrl-click as a pick. With
+  more than one gang picked, an arrow on any picked card orders the whole
+  selection, and dragging any picked card gives the selection the order that
+  drop would have given the one gang. A bulk order is drawn from an allowlist —
+  Attack, Control, Heal, Hide, Influence, Move — and is carried out by every
+  picked gang the rules allow, skipping the rest rather than failing whole. The
+  selection is per sector and per turn: another sector, a borrowed opponent
+  roster, leaving the workspace, the order itself, or the end of the turn clear
+  it.
+- Evidence: the original issued one order per gang and carried no multi-select
+  affordance on the sector screen, so no native layout or handler constrains
+  this addition.
+- Reason: a player moving six gangs out of a falling sector, or healing whoever
+  is hurt, is giving one decision six times. The allowlist is what stays
+  unambiguous in bulk: equipping, researching, giving and selling read a single
+  gang's inventory and purse, and bribing, snitching, raising chaos or
+  terminating a whole selection in one click is a mistake nobody wants to make
+  at speed. Partial execution follows from the same principle — the selection
+  is a wish, not a promise, so a sector with room for two takes two and says so
+  rather than refusing all six.
+- Compatibility boundary: recreation-only input. Every picked gang goes through
+  `CommandValidator` and queues its own ordinary `GameCommand`, so what reaches
+  the queue is indistinguishable from the same orders given one at a time, and
+  replays, saves, and the multiplayer protocol are unaffected. Move counts the
+  selection against the destination's capacity before it queues, because the
+  validator only refuses a sector that is already full and the surplus would
+  otherwise be turned back during resolution.
 
 ## 2026-09-18 — Scope the Sector workspace's opponent gang view to detection
 
