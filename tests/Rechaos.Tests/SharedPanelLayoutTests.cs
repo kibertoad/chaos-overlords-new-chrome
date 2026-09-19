@@ -18,7 +18,6 @@ public sealed class SharedPanelLayoutTests
         Rectangle[] panels =
         [
             EquipmentCommandLayout.Panel, GangInformationLayout.Panel,
-            SiteInformationLayout.Panel,
             ComlinkViewLayout.Panel, ComlinkSendLayout.Panel,
             CombatPanelLayout.Panel, CombatResultsLayout.Panel,
             LastTurnEventsLayout.Panel, MovementLayout.Panel, PlayerRankingLayout.Panel,
@@ -26,12 +25,13 @@ public sealed class SharedPanelLayoutTests
         ];
         Assert.All(panels, panel => Assert.Equal(SharedPanelLayout.Panel, panel));
         Assert.Equal(new Rectangle(128, 124, 320, 209), FinanceLayout.Panel);
+        Assert.Equal(new Rectangle(128, 124, 320, 209), SiteInformationLayout.Panel);
         Assert.Equal(new Rectangle(128, 124, 320, 209), HireComparisonLayout.Panel);
         Assert.Equal(new Rectangle(128, 124, 320, 209), GameInformationLayout.Panel);
         Assert.Equal(new Rectangle(128, 124, 320, 209), GangDefinitionInformationLayout.Panel);
         Assert.Equal(new Rectangle(128, 124, 320, 209), ItemInformationLayout.Panel);
         Assert.Equal(SharedPanelLayout.Y(119), GangInformationLayout.StatisticY(0));
-        Assert.Equal(SharedPanelLayout.Y(120), SiteInformationLayout.StatisticY(0));
+        Assert.Equal(244, SiteInformationLayout.StatisticY(0));
         Assert.Equal(SharedPanelLayout.At(29, 11, 58, 12), CombatResultsLayout.Page);
         Assert.Equal(SharedPanelLayout.At(34, 13, 47, 7), LastTurnEventsLayout.Page);
     }

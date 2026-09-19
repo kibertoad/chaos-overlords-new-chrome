@@ -3903,6 +3903,32 @@ right-aligned red `2`, and the table's `-12` values fill the two red cells with
 including literal backing/destination rectangles, text destinations, fixed
 numeric helper widths, frame-wrap branch, and exit control.
 
+### BIN-SITE-INFO-001 - `PX05002` alternate Site Information panel
+
+**Observation:** Site Information handler `0x0044c476` loads `PX05002` into
+surface 7 at backing `(344,144)-(688,353)`, then uses the alternate 320-pixel
+slide crop. Its final screen rectangle is `(128,124)-(448,333)`. The site
+portrait is copied from backing `(372,159)-(492,223)`, yielding screen
+`(156,139)-(276,203)`. The title is written at backing `(504,171)`, or screen
+`(288,151)`. Resistance, Tolerance, Support, and Cash use the two-cell helper
+at backing x=612, screen x=396, on rows 169, 187, 196, and 205. The fourteen
+statistics use screen x=300/396 and y=244, 253, 271, 280, 289, 298, and 307.
+The sole close face is the shared alternate target `(161,293)-(210,315)`.
+
+**Interpretation:** `PX05002` is not a shared 344-pixel panel. Every dynamic
+Site Information field shifts right into the alternate crop, and its signed
+values use the same bounded two-cell numeric helper as Item and Gang
+Information.
+
+**Static follow-through:** The recreation now renders/clicks `PX05002` through
+the alternate geometry, aligns tooltip hit regions with the shifted labels,
+and shares the native two-cell numeric presentation with Gang and sector-roster
+fields.
+
+**Confidence:** High from the complete renderer/input handler `0x0044c476`,
+including resource destination, portrait/title/numeric coordinates, all
+literal helper calls, and close branch.
+
 ### BIN-GAME-INFO-001 - alternate panel crop and field origins
 
 **Observation:** Game Information handler `0x0045519d` loads `PX05021` into

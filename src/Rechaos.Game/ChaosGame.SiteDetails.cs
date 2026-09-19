@@ -46,7 +46,8 @@ public sealed partial class ChaosGame
             DrawSectorDetails(batch, pixel, font, state);
 
         if (_siteInfoBackground is not null)
-            batch.Draw(_siteInfoBackground, SiteInformationLayout.Panel, Color.White);
+            batch.Draw(_siteInfoBackground, SiteInformationLayout.Panel,
+                SiteInformationLayout.BackgroundSource, Color.White);
         else
             batch.Draw(pixel, SiteInformationLayout.Panel, new Color(0, 0, 0, 245));
         MatchSiteState? site = null;
@@ -66,7 +67,7 @@ public sealed partial class ChaosGame
             batch.Draw(_sitePortraits, SiteInformationLayout.Portrait,
                 OriginalSpriteLayout.SitePortrait(definition.Id), Color.White);
         font.Draw(batch, definition.Name,
-            new Vector2(SharedPanelLayout.X(159), SharedPanelLayout.Y(28)), Color.Lime, 1);
+            new Vector2(SiteInformationLayout.NameLeft, 151), Color.Lime, 1);
 
         int[] data =
         [
@@ -76,7 +77,7 @@ public sealed partial class ChaosGame
             definition.Cash
         ];
         for (var row = 0; row < data.Length; row++)
-            DrawPanelValue(font, batch, data[row], SiteInformationLayout.DataValueRight,
+            DrawNativeTwoCellValue(font, batch, data[row], SiteInformationLayout.DataValueLeft,
                 SiteInformationLayout.DataY(row));
         int[] left =
         [
@@ -93,8 +94,8 @@ public sealed partial class ChaosGame
         for (var row = 0; row < left.Length; row++)
         {
             var y = SiteInformationLayout.StatisticY(row);
-            DrawPanelValue(font, batch, left[row], SiteInformationLayout.LeftValueRight, y);
-            DrawPanelValue(font, batch, right[row], SiteInformationLayout.RightValueRight, y);
+            DrawNativeTwoCellValue(font, batch, left[row], SiteInformationLayout.LeftValueLeft, y);
+            DrawNativeTwoCellValue(font, batch, right[row], SiteInformationLayout.RightValueLeft, y);
         }
         if (_hoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.SiteAt(hover));
@@ -102,14 +103,15 @@ public sealed partial class ChaosGame
 
     private static void ClearSiteInformationFields(SpriteBatch batch, Texture2D pixel)
     {
-        batch.Draw(pixel, SharedPanelLayout.At(158, 27, 121, 10), Color.Black);
+        batch.Draw(pixel, new Rectangle(SiteInformationLayout.NameLeft, 151, 121, 10), Color.Black);
         for (var row = 0; row < 4; row++)
-            batch.Draw(pixel, new Rectangle(371, SiteInformationLayout.DataY(row), 12, 7), Color.Black);
+            batch.Draw(pixel, GangInformationLayout.ValueField(
+                SiteInformationLayout.DataValueLeft, SiteInformationLayout.DataY(row)), Color.Black);
         for (var row = 0; row < 7; row++)
         {
             var y = SiteInformationLayout.StatisticY(row);
-            batch.Draw(pixel, new Rectangle(275, y, 12, 7), Color.Black);
-            batch.Draw(pixel, new Rectangle(371, y, 12, 7), Color.Black);
+            batch.Draw(pixel, GangInformationLayout.ValueField(SiteInformationLayout.LeftValueLeft, y), Color.Black);
+            batch.Draw(pixel, GangInformationLayout.ValueField(SiteInformationLayout.RightValueLeft, y), Color.Black);
         }
     }
 }

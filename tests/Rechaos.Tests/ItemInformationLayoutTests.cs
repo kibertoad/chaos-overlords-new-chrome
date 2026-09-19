@@ -42,13 +42,13 @@ public sealed class ItemInformationLayoutTests
     [Fact]
     public void FormatsNegativeModifiersWithinTheNativeTwoCellField()
     {
-        Assert.Equal(new ItemInformationLayout.NumericValue("2", true),
-            ItemInformationLayout.FormatNumericValue(-2));
-        Assert.Equal(new ItemInformationLayout.NumericValue("12", true),
-            ItemInformationLayout.FormatNumericValue(-12));
-        Assert.Equal(new ItemInformationLayout.NumericValue("45", false),
-            ItemInformationLayout.FormatNumericValue(45));
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value("2", true),
+            NativeTwoCellNumberPresentation.Format(-2));
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value("12", true),
+            NativeTwoCellNumberPresentation.Format(-12));
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value("45", false),
+            NativeTwoCellNumberPresentation.Format(45));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            ItemInformationLayout.FormatNumericValue(100));
+            NativeTwoCellNumberPresentation.Format(100));
     }
 }

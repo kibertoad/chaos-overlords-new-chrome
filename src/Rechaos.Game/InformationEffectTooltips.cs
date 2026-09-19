@@ -66,17 +66,19 @@ public static class InformationEffectTooltips
 
     public static IReadOnlyList<string> SiteAt(Point point)
     {
-        if (Field(262, SiteInformationLayout.DataY(0), 122).Contains(point))
+        if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(0), 122).Contains(point))
             return ["RESISTANCE", "INFLUENCE SUCCESSES REDUCE THIS VALUE.",
                 "AT ZERO, THE ACTING PLAYER INFLUENCES THE SITE."];
-        if (Field(262, SiteInformationLayout.DataY(1), 122).Contains(point))
+        if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(1), 122).Contains(point))
             return ["TOLERANCE", "WHEN INFLUENCED, ADDED TO THE SECTOR'S NORMAL TOLERANCE."];
-        if (Field(262, SiteInformationLayout.DataY(2), 122).Contains(point))
+        if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(2), 122).Contains(point))
             return ["SUPPORT", "WHEN INFLUENCED, ADDED AGAINST HOSTILE CONTROL ATTEMPTS."];
-        if (Field(262, SiteInformationLayout.DataY(3), 122).Contains(point))
+        if (Field(SiteInformationLayout.DataLabelLeft, SiteInformationLayout.DataY(3), 122).Contains(point))
             return ["CASH", "WHEN INFLUENCED, PAID TO THE SITE OWNER EACH UPKEEP."];
         return StatisticAt(point, SiteInformationLayout.StatisticY,
-            "WHILE INFLUENCED, MODIFIES THE OWNER'S GANGS IN THIS SECTOR.");
+            "WHILE INFLUENCED, MODIFIES THE OWNER'S GANGS IN THIS SECTOR.",
+            leftLabelLeft: SiteInformationLayout.LeftStatisticLabelLeft,
+            rightLabelLeft: SiteInformationLayout.RightStatisticLabelLeft);
     }
 
     public static IReadOnlyList<string> ItemAt(Point point)
@@ -112,14 +114,16 @@ public static class InformationEffectTooltips
         Point point,
         Func<int, int> statisticY,
         string scope,
-        Func<InformationEffect, IReadOnlyList<string>>? modifiers = null)
+        Func<InformationEffect, IReadOnlyList<string>>? modifiers = null,
+        int leftLabelLeft = 198,
+        int rightLabelLeft = 294)
     {
         for (var row = 0; row < LeftEffects.Length; row++)
         {
             var y = statisticY(row);
-            if (Field(198, y, 90).Contains(point))
+            if (Field(leftLabelLeft, y, 90).Contains(point))
                 return Describe(LeftEffects[row], scope, modifiers);
-            if (Field(294, y, 90).Contains(point))
+            if (Field(rightLabelLeft, y, 90).Contains(point))
                 return Describe(RightEffects[row], scope, modifiers);
         }
         return [];

@@ -133,7 +133,7 @@ public sealed class UiNavigationTests
             var gangRight = InformationEffectTooltips.GangAt(
                 new Point(320, GangInformationLayout.StatisticY(row)));
             var siteLeft = InformationEffectTooltips.SiteAt(
-                new Point(220, SiteInformationLayout.StatisticY(row)));
+                new Point(244, SiteInformationLayout.StatisticY(row)));
             var itemRight = InformationEffectTooltips.ItemAt(
                 new Point(320, ItemInformationLayout.StatisticY(row)));
 
@@ -673,7 +673,7 @@ public sealed class UiNavigationTests
         Assert.Equal(3, EquipmentCommandLayout.CategoryForItemType(4));
         Assert.Equal(new Rectangle(130, 141, 64, 64), GangInformationLayout.Portrait);
         Assert.Equal(new Rectangle(259, 88, 64, 9), SectorGangCardLayout.AssignedCommand(0));
-        Assert.Equal(new Rectangle(132, 139, 120, 64), SiteInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(156, 139, 120, 64), SiteInformationLayout.Portrait);
         Assert.Equal(169, SiteInformationLayout.DataY(0));
         Assert.Equal(187, SiteInformationLayout.DataY(1));
         Assert.Equal(244, SiteInformationLayout.StatisticY(0));

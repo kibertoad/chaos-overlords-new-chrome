@@ -92,7 +92,7 @@ public sealed partial class ChaosGame
 
     private static void DrawItemPanelValue(PixelFont font, SpriteBatch batch, int value, int left, int y)
     {
-        var display = ItemInformationLayout.FormatNumericValue(value);
+        var display = NativeTwoCellNumberPresentation.Format(value);
         font.Draw(batch, display.Digits,
             new Vector2(GangInformationLayout.ValueTextLeft(left, display.Digits), y),
             display.IsNegative ? Color.Red : Color.Lime, 1);

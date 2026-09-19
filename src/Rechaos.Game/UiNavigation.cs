@@ -572,21 +572,27 @@ public static class GangInformationLayout
 
 public static class SiteInformationLayout
 {
-    public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle Portrait => SharedPanelLayout.At(28, 15, 120, 64);
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static int DataValueRight => SharedPanelLayout.X(279);
-    public static int LeftValueRight => SharedPanelLayout.X(183);
-    public static int RightValueRight => SharedPanelLayout.X(279);
+    // Native handler 0x0044c476 uses the alternate PX05002 slide form.
+    public static Rectangle Panel => new(128, 124, 320, 209);
+    public static Rectangle BackgroundSource => new(0, 0, 320, 209);
+    public static Rectangle Portrait => new(156, 139, 120, 64);
+    public static Rectangle Ok => new(161, 293, 49, 22);
+    public static int NameLeft => 288;
+    public static int DataValueLeft => 396;
+    public static int LeftValueLeft => 300;
+    public static int RightValueLeft => 396;
+    public static int DataLabelLeft => 286;
+    public static int LeftStatisticLabelLeft => 222;
+    public static int RightStatisticLabelLeft => 318;
     public static int DataY(int row)
     {
         if (row is < 0 or >= 4) throw new ArgumentOutOfRangeException(nameof(row));
         return row switch
         {
-            0 => SharedPanelLayout.Y(45),
-            1 => SharedPanelLayout.Y(63),
-            2 => SharedPanelLayout.Y(72),
-            3 => SharedPanelLayout.Y(81),
+            0 => 169,
+            1 => 187,
+            2 => 196,
+            3 => 205,
             _ => throw new ArgumentOutOfRangeException(nameof(row))
         };
     }
@@ -595,13 +601,13 @@ public static class SiteInformationLayout
         if (row is < 0 or >= 7) throw new ArgumentOutOfRangeException(nameof(row));
         return row switch
         {
-            0 => SharedPanelLayout.Y(120),
-            1 => SharedPanelLayout.Y(129),
-            2 => SharedPanelLayout.Y(147),
-            3 => SharedPanelLayout.Y(156),
-            4 => SharedPanelLayout.Y(165),
-            5 => SharedPanelLayout.Y(174),
-            6 => SharedPanelLayout.Y(183),
+            0 => 244,
+            1 => 253,
+            2 => 271,
+            3 => 280,
+            4 => 289,
+            5 => 298,
+            6 => 307,
             _ => throw new ArgumentOutOfRangeException(nameof(row))
         };
     }

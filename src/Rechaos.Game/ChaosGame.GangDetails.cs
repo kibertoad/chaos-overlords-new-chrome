@@ -156,13 +156,17 @@ public sealed partial class ChaosGame
                     new Vector2(definitionOnly ? GangDefinitionInformationLayout.DescriptionLeft : SharedPanelLayout.X(98),
                         definitionOnly ? GangDefinitionInformationLayout.DescriptionY(entry.row)
                             : SharedPanelLayout.Y(45 + entry.row * 10)), Color.Lime, 1);
-            DrawGangPanelValue(font, batch, gang is null ? "??" : gang.Force.ToString(),
-                definitionOnly ? GangDefinitionInformationLayout.LeftValueLeft : GangInformationLayout.LeftValueLeft,
-                definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92));
-            DrawGangPanelValue(font, batch, -definition.Upkeep,
+            var forceLeft = definitionOnly ? GangDefinitionInformationLayout.LeftValueLeft
+                : GangInformationLayout.LeftValueLeft;
+            var forceY = definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92);
+            if (gang is null)
+                DrawGangPanelValue(font, batch, "??", forceLeft, forceY);
+            else
+                DrawNativeTwoCellValue(font, batch, gang.Force, forceLeft, forceY);
+            DrawNativeTwoCellValue(font, batch, -definition.Upkeep,
                 definitionOnly ? GangDefinitionInformationLayout.RightValueLeft : GangInformationLayout.RightValueLeft,
                 definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92));
-            DrawGangPanelValue(font, batch, definition.TechLevel,
+            DrawNativeTwoCellValue(font, batch, definition.TechLevel,
                 definitionOnly ? GangDefinitionInformationLayout.RightValueLeft : GangInformationLayout.RightValueLeft,
                 definitionOnly ? GangDefinitionInformationLayout.TechLevelY : SharedPanelLayout.Y(101));
             int[] left = [stats.Combat, stats.Defense, stats.Chaos, stats.Control, stats.Heal, stats.Influence, stats.Research];
@@ -171,9 +175,9 @@ public sealed partial class ChaosGame
             {
                 var y = definitionOnly ? GangDefinitionInformationLayout.StatisticY(index)
                     : GangInformationLayout.StatisticY(index);
-                DrawGangPanelValue(font, batch, left[index], definitionOnly
+                DrawNativeTwoCellValue(font, batch, left[index], definitionOnly
                     ? GangDefinitionInformationLayout.LeftValueLeft : GangInformationLayout.LeftValueLeft, y);
-                DrawGangPanelValue(font, batch, right[index], definitionOnly
+                DrawNativeTwoCellValue(font, batch, right[index], definitionOnly
                     ? GangDefinitionInformationLayout.RightValueLeft : GangInformationLayout.RightValueLeft, y);
             }
         }
@@ -250,8 +254,14 @@ public sealed partial class ChaosGame
         PixelFont font, SpriteBatch batch, string text, int right, int y, Color color) =>
         font.Draw(batch, text, new Vector2(right - text.Length * 6, y), color, 1);
 
-    private static void DrawGangPanelValue(PixelFont font, SpriteBatch batch, int value, int left, int y) =>
-        DrawGangPanelValue(font, batch, value.ToString(), left, y);
+    private static void DrawNativeTwoCellValue(
+        PixelFont font, SpriteBatch batch, int value, int left, int y)
+    {
+        var display = NativeTwoCellNumberPresentation.Format(value);
+        font.Draw(batch, display.Digits,
+            new Vector2(GangInformationLayout.ValueTextLeft(left, display.Digits), y),
+            display.IsNegative ? Color.Red : Color.Lime, 1);
+    }
 
     private static void DrawGangPanelValue(
         PixelFont font, SpriteBatch batch, string text, int left, int y)
