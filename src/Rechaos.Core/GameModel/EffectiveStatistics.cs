@@ -41,6 +41,21 @@ public readonly record struct EffectiveStatistics(
         MartialArts + value.MartialArts);
 }
 
+/// <summary>Where a modifier applied to a gang's statistics comes from.</summary>
+public enum GangModifierSource
+{
+    Weapon,
+    Armor,
+    Miscellaneous,
+    Site
+}
+
+/// <summary>One named contribution to a gang's effective statistics.</summary>
+public readonly record struct GangStatisticsModifier(
+    GangModifierSource Source,
+    string Name,
+    Statistics Stats);
+
 /// <summary>
 /// Calculates definition, equipped-item modifiers, and local influenced-site
 /// modifiers for the influencing player's gangs.
@@ -53,19 +68,57 @@ public static class EffectiveStatisticsCalculator
         ArgumentNullException.ThrowIfNull(gang);
         var definition = state.Definitions.Gangs.Single(item => item.Id == gang.DefinitionId);
         var result = EffectiveStatistics.From(definition.Stats);
-        foreach (var itemId in EquippedItems(gang))
+        foreach (var (_, itemId) in EquippedItems(gang))
             result = result.Add(state.Definitions.Items[itemId].Stats);
-        foreach (var site in state.Sectors[gang.SectorId].Sites.Where(site => site.InfluencedBy == gang.Owner))
-            result = result.Add(state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Stats);
+        foreach (var site in InfluencedSites(state, gang))
+            result = result.Add(DefinitionOf(state, site).Stats);
         return result;
     }
 
-    private static IEnumerable<short> EquippedItems(MatchGangState gang)
+    /// <summary>
+    /// Names every contribution behind <see cref="ForGang"/>, in the order it is applied, so the
+    /// interface can explain where an effective statistic comes from. The resolution path stays on
+    /// <see cref="ForGang"/>: this allocates the descriptions that only a reader needs.
+    /// </summary>
+    public static IReadOnlyList<GangStatisticsModifier> ModifiersForGang(
+        MatchState state,
+        MatchGangState gang)
     {
-        if (gang.WeaponItemId is { } weapon) yield return weapon;
-        if (gang.ArmorItemId is { } armor) yield return armor;
-        if (gang.MiscellaneousItemId is { } miscellaneous) yield return miscellaneous;
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(gang);
+        var modifiers = new List<GangStatisticsModifier>();
+        foreach (var (source, itemId) in EquippedItems(gang))
+        {
+            var item = state.Definitions.Items[itemId];
+            modifiers.Add(new GangStatisticsModifier(source, item.Name, item.Stats));
+        }
+        foreach (var site in InfluencedSites(state, gang))
+        {
+            var definition = DefinitionOf(state, site);
+            modifiers.Add(new GangStatisticsModifier(
+                GangModifierSource.Site, definition.Name, definition.Stats));
+        }
+        return modifiers;
     }
+
+    private static IEnumerable<(GangModifierSource Source, short ItemId)> EquippedItems(
+        MatchGangState gang)
+    {
+        if (gang.WeaponItemId is { } weapon)
+            yield return (GangModifierSource.Weapon, weapon);
+        if (gang.ArmorItemId is { } armor)
+            yield return (GangModifierSource.Armor, armor);
+        if (gang.MiscellaneousItemId is { } miscellaneous)
+            yield return (GangModifierSource.Miscellaneous, miscellaneous);
+    }
+
+    private static IEnumerable<MatchSiteState> InfluencedSites(
+        MatchState state,
+        MatchGangState gang) =>
+        state.Sectors[gang.SectorId].Sites.Where(site => site.InfluencedBy == gang.Owner);
+
+    private static SiteDefinition DefinitionOf(MatchState state, MatchSiteState site) =>
+        state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId);
 }
 
 public static class DiceRoller

@@ -45,7 +45,13 @@ public static class InformationEffectTooltips
         InformationEffect.Fighting, InformationEffect.MartialArts
     ];
 
-    public static IReadOnlyList<string> GangAt(Point point)
+    /// <param name="modifiers">
+    /// Optional per-statistic breakdown appended to a hovered statistic, used by live gangs to
+    /// name the equipment and influenced sites behind the displayed value.
+    /// </param>
+    public static IReadOnlyList<string> GangAt(
+        Point point,
+        Func<InformationEffect, IReadOnlyList<string>>? modifiers = null)
     {
         if (Field(SharedPanelLayout.X(94), SharedPanelLayout.Y(92), 90).Contains(point))
             return ["FORCE", "CURRENT HEALTH AND THE BASE FOR MOST ACTION DICE.",
@@ -55,7 +61,7 @@ public static class InformationEffectTooltips
         if (Field(SharedPanelLayout.X(190), SharedPanelLayout.Y(101), 90).Contains(point))
             return ["TECH LEVEL", "LIMITS WHICH ITEMS THIS GANG CAN USE OR RESEARCH."];
         return StatisticAt(point, GangInformationLayout.StatisticY,
-            "GANG STAT; EQUIPMENT AND OWNED LOCAL SITES CAN MODIFY IT.");
+            "GANG STAT; EQUIPMENT AND OWNED LOCAL SITES CAN MODIFY IT.", modifiers);
     }
 
     public static IReadOnlyList<string> SiteAt(Point point)
@@ -104,17 +110,29 @@ public static class InformationEffectTooltips
     private static IReadOnlyList<string> StatisticAt(
         Point point,
         Func<int, int> statisticY,
-        string scope)
+        string scope,
+        Func<InformationEffect, IReadOnlyList<string>>? modifiers = null)
     {
         for (var row = 0; row < LeftEffects.Length; row++)
         {
             var y = statisticY(row);
             if (Field(198, y, 90).Contains(point))
-                return Describe(LeftEffects[row], scope);
+                return Describe(LeftEffects[row], scope, modifiers);
             if (Field(294, y, 90).Contains(point))
-                return Describe(RightEffects[row], scope);
+                return Describe(RightEffects[row], scope, modifiers);
         }
         return [];
+    }
+
+    private static IReadOnlyList<string> Describe(
+        InformationEffect effect,
+        string scope,
+        Func<InformationEffect, IReadOnlyList<string>>? modifiers)
+    {
+        var description = Describe(effect, scope);
+        if (modifiers is null) return description;
+        var breakdown = modifiers(effect);
+        return breakdown.Count == 0 ? description : [.. description, .. breakdown];
     }
 
     private static Rectangle Field(int x, int y, int width) => new(x, y - 1, width, 9);

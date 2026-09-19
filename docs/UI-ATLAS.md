@@ -224,6 +224,13 @@ cursor feedback remain to be validated.
   a 56-by-56 owner-colored frame, keeping the item list and statistics visible.
 - Gang Information places its 64-by-64 portrait at `(67,90)`, aligned to the
   inner aperture of the `PX05000` template drawn at `(42,74)`.
+- Hovering one of the fourteen statistics of a live gang appends a breakdown to
+  the effect tooltip: the definition's own `BASE` value, one signed line per
+  equipped weapon, armor or miscellaneous item and per locally influenced site
+  that moves that statistic, and the resulting `TOTAL`. Sources that leave the
+  hovered statistic alone are omitted, and a statistic nothing modifies keeps
+  the plain description. A hire offer inspected through `PX05022` has no
+  instance and therefore no breakdown.
 - The city Hire dock uses three 66-pixel cells beginning at `(438,370)`, with
   64-by-64 `PX03000` portraits at x 439, 505, and 571. Dragging an available
   portrait shows a 36-by-36 token and highlights valid controlled-sector drops;

@@ -162,7 +162,10 @@ public sealed partial class ChaosGame
             }
         }
         if (_hoverPoint is { } hover)
-            DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.GangAt(hover));
+            DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.GangAt(hover,
+                gang is null
+                    ? null
+                    : effect => GangStatisticModifierTooltip.Lines(effect, state, gang)));
     }
 
     private static void ClearGangInformationFields(
