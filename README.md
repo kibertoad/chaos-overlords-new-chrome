@@ -171,7 +171,7 @@ asynchronously, but every client still applies them in the same sealed order.
 | Windowed/fullscreen display | F11 or Alt+Enter | Use either shortcut from any screen; the choice is remembered between launches |
 | Planning timer (setup) | L | Click None, 30 Seconds, 2 Minutes, or 5 Minutes |
 | Help | F1 | Click Help on the title screen; point at the topic list or article and use the mouse wheel to scroll it |
-| Online play | Tab between enabled fields; Left/Right turn your overlord face; Enter creates or connects | Select Central/Custom and Host/Join, the arrows beside the face pick it, Paste fills the join code, Reconnect resumes an interrupted membership, and Copy Code copies it from the lobby |
+| Online play | Tab between enabled fields; Left/Right turn your overlord face; Enter creates or connects; F5 refreshes the browser | The form asks what you want to do, who you are, which session, and last which server: pick Host A New Game or Join With A Code, the arrows beside the face pick it, Paste fills the join code, Browse Games and Unfinished Sessions are the other ways in, and Copy copies the join code from the lobby |
 | Save / load | F5 / F9 | Use Save Game or Load Game in the Escape menu and choose one of nine slots |
 | Save / load replay | F6 / F10 | Local games only; records or verifies the recreation replay file |
 | Finish planning | Space | Click the end-turn control |

@@ -2,14 +2,27 @@ using Microsoft.Xna.Framework;
 
 namespace Rechaos.Game;
 
+/// <summary>
+/// The four screens reached from ONLINE PLAY: the connect form, the browser, the unfinished
+/// sessions and the seat picker.
+/// </summary>
+/// <remarks>
+/// They share the frame in <see cref="OnlineScreenLayout"/> and differ only in what fills it. The
+/// form itself reads top to bottom in the order the questions matter: what the player wants to do,
+/// who they are, which session, its password, and last the server — which almost nobody changes and
+/// which used to be the first thing the screen asked for.
+/// </remarks>
 public static class OnlineConnectLayout
 {
-    public static Rectangle Central => new(120, 108, 190, 26);
-    public static Rectangle Custom => new(330, 108, 190, 26);
-    public static Rectangle Server => new(120, 150, 400, 22);
-    public static Rectangle HostRole => new(120, 188, 190, 26);
-    public static Rectangle JoinRole => new(330, 188, 190, 26);
-    public static Rectangle Name => new(120, 226, 330, 22);
+    // The form, group by group. Each group's caption is drawn CaptionOffset above the first control
+    // in it, so the numbers below are also the gaps between the groups.
+
+    /// <summary>Hosting or joining, which decides what the rest of the form asks for.</summary>
+    public static Rectangle HostRole => OnlineScreenLayout.Half(0, 84, 26);
+    public static Rectangle JoinRole => OnlineScreenLayout.Half(1, 84, 26);
+
+    /// <summary>The name and the face this player takes to the table.</summary>
+    public static Rectangle Name => new(120, 132, 330, 24);
 
     /// <summary>
     /// The overlord face this player takes into the session, beside the name they take with it.
@@ -20,49 +33,83 @@ public static class OnlineConnectLayout
     /// have to be sent again and read back by everyone. The name is the other thing a player brings,
     /// so the two are set in the same row, and the name field gives up the width the picker needs.
     /// </remarks>
-    public static Rectangle PortraitPrevious => new(456, 226, 14, 32);
-    public static Rectangle Portrait => new(472, 226, 32, 32);
-    public static Rectangle PortraitNext => new(506, 226, 14, 32);
-    public static Rectangle JoinCode => new(120, 264, 300, 22);
-    public static Rectangle PasteJoinCode => new(428, 260, 92, 30);
-    public static Rectangle Password => new(120, 302, 400, 22);
+    public static Rectangle PortraitPrevious => new(456, 132, 14, 32);
+    public static Rectangle Portrait => new(472, 132, 32, 32);
+    public static Rectangle PortraitNext => new(506, 132, 14, 32);
 
-    /// <summary>
-    /// How far above a control its caption is drawn.
-    /// </summary>
-    /// <remarks>
-    /// One offset for every caption on the screen, whatever it names. A caption is
-    /// <see cref="OriginalFontLayout.GlyphHeight"/> tall, so this also fixes the gap beneath it, and
-    /// the control above has to end clear of the whole strip or its border runs through the words.
-    /// </remarks>
-    public const int CaptionOffset = 12;
+    /// <summary>Which session: a code to join one, or the listing a hosted one gets.</summary>
+    public static Rectangle JoinCode => new(120, 186, 300, 26);
+    public static Rectangle PasteJoinCode => new(428, 186, 92, 26);
 
     /// <summary>
     /// The host's choice of listing, in the row a joining player reads a code into.
     /// </summary>
     /// <remarks>
-    /// A pair, like the service and the role above it, because it is the same kind of choice and the
-    /// screen already teaches that a lit button is the one in force. It is the one lobby setting
-    /// that has to be made here: everything else about the session can be changed in the lobby,
-    /// where there is room to read it, and a password can only be set when the lobby is created.
+    /// A pair, like the role above it, because it is the same kind of choice and the screen already
+    /// teaches that a lit button is the one in force. It is the one lobby setting that has to be
+    /// made here: everything else about the session can be changed in the lobby, where there is
+    /// room to read it, and a password can only be set when the lobby is created.
     /// </remarks>
-    public static Rectangle PublicChoice => new(120, 262, 190, 26);
-    public static Rectangle PrivateChoice => new(330, 262, 190, 26);
-    public static Rectangle Continue => new(120, 340, 190, 30);
-    public static Rectangle Discover => new(330, 340, 190, 30);
-    public static Rectangle Reconnect => new(120, 378, 190, 30);
-    public static Rectangle Back => new(330, 378, 190, 30);
-    public static Rectangle HistoryRejoin => new(120, 382, 190, 30);
-    public static Rectangle HistoryBack => new(330, 382, 190, 30);
-    public static Rectangle HistoryRow(int index) => new(120, 126 + index * 38, 400, 30);
-    public static Rectangle DiscoveryStatus => new(120, 112, 126, 28);
-    public static Rectangle DiscoveryScenario => new(257, 112, 126, 28);
-    public static Rectangle DiscoveryAi => new(394, 112, 126, 28);
-    public static Rectangle DiscoveryRow(int index) => new(120, 154 + index * 42, 400, 34);
-    public static Rectangle DiscoveryJoin => new(120, 382, 190, 30);
-    public static Rectangle DiscoveryBack => new(330, 382, 190, 30);
-    public const int ServerStatusY = 416;
-    public const int StatusY = 436;
+    public static Rectangle PublicChoice => OnlineScreenLayout.Half(0, 186, 26);
+    public static Rectangle PrivateChoice => OnlineScreenLayout.Half(1, 186, 26);
+
+    public static Rectangle Password => new(120, 234, 400, 24);
+
+    /// <summary>
+    /// The server, last on the form and read as one row.
+    /// </summary>
+    /// <remarks>
+    /// Which service on the left and where it is on the right, because the address is what the
+    /// choice selects rather than a separate question. <see cref="Server"/> holds the address
+    /// either way: the custom service makes a field of it, and the central one draws its own
+    /// address there as text, because nobody may edit that and a box only invited the attempt.
+    /// </remarks>
+    public static Rectangle Central => new(120, 280, 92, 26);
+    public static Rectangle Custom => new(216, 280, 92, 26);
+    public static Rectangle Server => new(320, 280, 200, 26);
+
+    /// <summary>
+    /// The line the server's health is reported on, which is the server group's caption line.
+    /// </summary>
+    /// <remarks>
+    /// Right-aligned opposite the word SERVER rather than adrift at the foot of the screen: whether
+    /// the service is answering is a fact about the row beneath it, and a player who has just
+    /// pointed the game at their own machine should not have to hunt for the answer.
+    /// </remarks>
+    public const int ServerStatusY = 280 - OnlineScreenLayout.CaptionOffset;
+
+    /// <summary>The other ways into a game, which are not this form's action.</summary>
+    public static Rectangle Discover => OnlineScreenLayout.Nav(0);
+    public static Rectangle Reconnect => OnlineScreenLayout.Nav(1);
+
+    /// <summary>The form's own action, and the way back to the title screen.</summary>
+    public static Rectangle Continue => OnlineScreenLayout.Action(0);
+    public static Rectangle Back => OnlineScreenLayout.Action(1);
+
+    /// <summary>The unfinished sessions and the seat picker, which are one list and two buttons.</summary>
+    public const int HistoryTop = 92;
+    public static Rectangle HistoryRow(int index) =>
+        OnlineScreenLayout.ListRow(HistoryTop, index);
+
+    /// <summary>The line under the list, for what the selected row cannot do and why.</summary>
+    public const int HistoryNoteY = 350;
+
+    public static Rectangle HistoryRejoin => OnlineScreenLayout.Action(0);
+    public static Rectangle HistoryBack => OnlineScreenLayout.Action(1);
+
+    /// <summary>The browser: three filters, a list, and three buttons on the filters' own columns.</summary>
+    public static Rectangle DiscoveryStatus => OnlineScreenLayout.Third(0, 84, 26);
+    public static Rectangle DiscoveryScenario => OnlineScreenLayout.Third(1, 84, 26);
+    public static Rectangle DiscoveryAi => OnlineScreenLayout.Third(2, 84, 26);
+
+    public const int DiscoveryTop = 122;
+    public static Rectangle DiscoveryRow(int index) =>
+        OnlineScreenLayout.ListRow(DiscoveryTop, index);
+
+    public static Rectangle DiscoveryJoin => OnlineScreenLayout.ThirdAction(0);
+    public static Rectangle DiscoveryRefresh => OnlineScreenLayout.ThirdAction(1);
+    public static Rectangle DiscoveryBack => OnlineScreenLayout.ThirdAction(2);
+
     public static Rectangle ErrorPanel => new(60, 72, 520, 316);
     public static Rectangle CopyError => new(104, 338, 204, 30);
     public static Rectangle DismissError => new(332, 338, 204, 30);
@@ -99,5 +146,12 @@ public static class OnlineConnectLayout
             DiscoveryOptionHeight);
     }
 
-    public static IReadOnlyList<Rectangle> Fields => [Server, Name, JoinCode, Password];
+    /// <summary>
+    /// The form's text fields, in the order they are read and tabbed through.
+    /// </summary>
+    /// <remarks>
+    /// Top to bottom, which is also the order the caret moves in: a tab order that disagrees with
+    /// the screen sends the caret somewhere the eye is not.
+    /// </remarks>
+    public static IReadOnlyList<Rectangle> Fields => [Name, JoinCode, Password, Server];
 }

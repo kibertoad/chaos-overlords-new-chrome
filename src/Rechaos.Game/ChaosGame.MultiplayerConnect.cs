@@ -13,15 +13,23 @@ public sealed partial class ChaosGame
     private bool OnlinePasswordApplies => OnlineConnectPolicy.PasswordApplies(
         _online.Role == OnlineConnectRole.Host, _online.PublicListing);
 
+    /// <summary>
+    /// The fields the form is currently asking for, in the order they are read.
+    /// </summary>
+    /// <remarks>
+    /// Top to bottom, which is also the order TAB moves the caret in and the order
+    /// <see cref="RefocusOnlineForm"/> starts from: a tab order that disagrees with the screen sends
+    /// the caret somewhere the eye is not. The server comes last because it is last on the form, and
+    /// because the name is what a player arriving here actually has to fill in.
+    /// </remarks>
     private TextField[] OnlineFields
     {
         get
         {
-            var fields = new List<TextField>(4);
-            if (_online.Service == OnlineServiceMode.Custom) fields.Add(_online.Server);
-            fields.Add(_online.DisplayName);
+            var fields = new List<TextField>(4) { _online.DisplayName };
             if (_online.Role == OnlineConnectRole.Join) fields.Add(_online.JoinCode);
             if (OnlinePasswordApplies) fields.Add(_online.Password);
+            if (_online.Service == OnlineServiceMode.Custom) fields.Add(_online.Server);
             return [.. fields];
         }
     }
@@ -44,13 +52,15 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void FocusOnlineField(Point point)
     {
-        var hits = new List<(Rectangle Bounds, TextField Field)>(4);
-        if (_online.Service == OnlineServiceMode.Custom)
-            hits.Add((OnlineConnectLayout.Server, _online.Server));
-        hits.Add((OnlineConnectLayout.Name, _online.DisplayName));
+        var hits = new List<(Rectangle Bounds, TextField Field)>(4)
+        {
+            (OnlineConnectLayout.Name, _online.DisplayName)
+        };
         if (_online.Role == OnlineConnectRole.Join)
             hits.Add((OnlineConnectLayout.JoinCode, _online.JoinCode));
         if (OnlinePasswordApplies) hits.Add((OnlineConnectLayout.Password, _online.Password));
+        if (_online.Service == OnlineServiceMode.Custom)
+            hits.Add((OnlineConnectLayout.Server, _online.Server));
         if (!hits.Any(hit => hit.Bounds.Contains(point))) return;
         foreach (var (bounds, field) in hits) field.IsFocused = bounds.Contains(point);
     }

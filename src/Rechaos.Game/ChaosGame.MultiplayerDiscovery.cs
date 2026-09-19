@@ -49,6 +49,23 @@ public sealed partial class ChaosGame
         _lobby!.Browse();
     }
 
+    /// <summary>
+    /// Asks the server for the list again.
+    /// </summary>
+    /// <remarks>
+    /// The list arrives once, when the screen opens, and nothing refreshes it: a player watching for
+    /// a friend's lobby to appear had to leave the screen and come back. The notice that carries the
+    /// answer puts the selection back at the top and reports an empty result, so there is nothing to
+    /// do here but ask and say that it was asked.
+    /// </remarks>
+    private void RefreshOnlineDiscovery()
+    {
+        if (_lobby is null) return;
+        CloseDiscoveryFilterMenu();
+        _online.Status = "FINDING PUBLIC SESSIONS";
+        _lobby.Browse();
+    }
+
     private void CloseOnlineDiscovery()
     {
         Forget(_lobby?.StopAsync(), "multiplayer.discovery.stop.failed");
@@ -221,9 +238,10 @@ public sealed partial class ChaosGame
     private void HandleLateJoinSeatClick(Point point)
     {
         var seats = _online.PendingLateJoin?.AvailableSeatSummaries ?? [];
-        for (var row = 0; row < Math.Min(6, seats.Count); row++)
-            if (OnlineConnectLayout.HistoryRow(row).Contains(point))
-                _online.LateJoinSeatSelection = row;
+        var window = ListScrollWindow.Of(
+            seats.Count, _online.LateJoinSeatSelection, OnlineScreenLayout.ListRows);
+        if (RowClicked(point, OnlineConnectLayout.HistoryRow, window) is { } seat)
+            _online.LateJoinSeatSelection = seat;
         if (OnlineConnectLayout.HistoryRejoin.Contains(point)) ConfirmLateJoin();
         else if (OnlineConnectLayout.HistoryBack.Contains(point))
             _online.Stage = MultiplayerStage.Discover;

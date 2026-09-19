@@ -75,16 +75,19 @@ public static class ScenarioSetupTooltip
 
 public static class DurationSetupTooltip
 {
+    /// <summary>How long a match runs, in the words the setup screen and the lobby both use.</summary>
+    public static string Label(GameDuration duration) => duration switch
+    {
+        GameDuration.SixMonths => "6 MONTHS",
+        GameDuration.OneYear => "1 YEAR",
+        GameDuration.TwoYears => "2 YEARS",
+        GameDuration.FourYears => "4 YEARS",
+        _ => throw new ArgumentOutOfRangeException(nameof(duration))
+    };
+
     public static IReadOnlyList<string> Lines(GameDuration duration)
     {
-        var label = duration switch
-        {
-            GameDuration.SixMonths => "6 MONTHS",
-            GameDuration.OneYear => "1 YEAR",
-            GameDuration.TwoYears => "2 YEARS",
-            GameDuration.FourYears => "4 YEARS",
-            _ => throw new ArgumentOutOfRangeException(nameof(duration))
-        };
+        var label = Label(duration);
         return
         [
             label,

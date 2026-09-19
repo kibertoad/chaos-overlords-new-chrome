@@ -169,7 +169,7 @@ internal sealed class MultiplayerUiState
 
     internal TextField Server { get; } = new(
         "SERVER", 96, GamePreferences.DefaultCustomMultiplayerServer);
-    internal TextField DisplayName { get; } = new("NAME", 32, "PLAYER");
+    internal TextField DisplayName { get; } = new("YOUR NAME", 32, "PLAYER");
     /// <summary>Empty until the lobby is made: the host is given a name, and renames it there.</summary>
     internal TextField SessionName { get; } = new("SESSION NAME", 64);
     internal TextField JoinCode { get; } = new("JOIN CODE", 8);

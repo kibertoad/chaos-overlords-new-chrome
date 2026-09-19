@@ -72,9 +72,9 @@ public sealed partial class ChaosGame
                     return;
                 }
                 _online.Stage = MultiplayerStage.Lobby;
-                _online.Status = _online.IsHost
-                    ? "READ OUT THE JOIN CODE"
-                    : "WAITING FOR THE HOST";
+                // The lobby says what it is waiting for on its own standing line, so the status is
+                // left clear for what happens next: a settings change, or a refusal of one.
+                _online.Status = string.Empty;
                 _screens.Show(ClientScreen.Lobby);
                 return;
             case LobbyNotice.Updated updated:
