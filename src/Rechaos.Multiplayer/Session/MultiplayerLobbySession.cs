@@ -123,6 +123,10 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             if (detail.Match.Status is MatchStatus.Running or MatchStatus.Desynced
                 && player.Status != PlayerStatus.Active)
             {
+                // A former member has a perfectly valid token, but is deliberately absent from the
+                // active roster.  Reclaim that seat before constructing the match session.  In
+                // particular, this is the normal route when everybody left a running match: the
+                // server retains it and the first person back becomes its host.
                 await handle.RejoinAsync(cancellationToken).ConfigureAwait(false);
                 detail = await handle.GetAsync(cancellationToken).ConfigureAwait(false);
                 player = detail.Match.Players.First(candidate => candidate.Id == playerId);

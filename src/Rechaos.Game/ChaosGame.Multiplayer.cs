@@ -26,6 +26,8 @@ public sealed partial class ChaosGame
     private TimeSpan _lobbyPollDue;
     private CancellationTokenSource? _serverProbeCancellation;
     private Task<bool>? _serverProbe;
+    private CancellationTokenSource? _recoveryReconciliationCancellation;
+    private Task<IReadOnlyList<MultiplayerRecovery>>? _recoveryReconciliation;
     private readonly List<MultiplayerRecovery> _multiplayerRecoveries = [];
     private MultiplayerRecovery? _activeMultiplayerRecovery;
     private bool _configuringOnlineLobby;
@@ -50,12 +52,14 @@ public sealed partial class ChaosGame
             field.IsFocused = false;
         OnlineFields[0].IsFocused = true;
         BeginServerProbe();
+        BeginRecoveryReconciliation();
         _screens.Show(ClientScreen.Online);
     }
 
     private void UpdateOnline(KeyboardState keyboard)
     {
         PumpServerProbe();
+        PumpRecoveryReconciliation();
         if (_online.ConnectionError.Length > 0)
         {
             if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Enter))
@@ -752,6 +756,10 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void EndOnlineMatch(string status)
     {
+        _recoveryReconciliationCancellation?.Cancel();
+        _recoveryReconciliationCancellation?.Dispose();
+        _recoveryReconciliationCancellation = null;
+        _recoveryReconciliation = null;
         _serverProbeCancellation?.Cancel();
         _serverProbeCancellation?.Dispose();
         _serverProbeCancellation = null;

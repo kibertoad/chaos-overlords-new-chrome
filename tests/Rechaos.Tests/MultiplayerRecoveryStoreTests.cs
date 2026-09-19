@@ -25,6 +25,22 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task ReconciliationDropsOnlyMembershipsTheServerHasDefinitelyRetired()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        var deleted = Recovery(CleanExit: true, Completed: false) with { MatchId = "deleted" };
+        var unreachable = Recovery(CleanExit: true, Completed: false) with { MatchId = "offline" };
+        server.Answer(HttpMethod.Get, "/matches/deleted", null, System.Net.HttpStatusCode.Unauthorized);
+        server.Answer(HttpMethod.Get, "/matches/offline", null, System.Net.HttpStatusCode.BadGateway);
+
+        var unavailable = await MultiplayerRecoveryReconciliation.FindUnavailableAsync(
+            http, [deleted, unreachable], TestContext.Current.CancellationToken);
+
+        Assert.Equal([deleted], unavailable);
+    }
+
+    [Fact]
     public void CleanExitIsKeptButDoesNotSuggestReconnect()
     {
         var recovery = Recovery(CleanExit: true, Completed: false);
