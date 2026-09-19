@@ -418,6 +418,10 @@ public sealed partial class ChaosGame
         _online.ResolutionExpectedSince = null;
         _online.TurnSyncError = string.Empty;
         _online.ReadySlots = MultiplayerUiState.NoSeats;
+        // The turn on screen is being replaced, so picks made on the old one are spent whether or
+        // not the player submitted it — the authoritative clock can seal a turn out from under them,
+        // and the gangs they picked may have moved since.
+        _gangSelection.Clear();
         _selectedGangIndex = 0;
         _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
             .FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;

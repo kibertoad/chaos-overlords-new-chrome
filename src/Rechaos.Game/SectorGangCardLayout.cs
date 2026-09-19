@@ -15,6 +15,7 @@ public static class SectorGangCardLayout
     private const int FrameWidth = 74;
     private const int FrameHeight = 110;
     private const int OwnerBorderThickness = 1;
+    private const int SelectionInset = 1;
     private const int ContentLeft = 5;
     private const int ForceLeft = 7;
     private const int ForceTop = 3;
@@ -44,6 +45,13 @@ public static class SectorGangCardLayout
             frame.Width + OwnerBorderThickness * 2,
             frame.Height + OwnerBorderThickness * 2);
     }
+
+    /// <summary>
+    /// The band the ctrl-pick highlight paints. It sits inside the card's own bezel, so a picked
+    /// card reads as picked without covering the portrait or hiding whose gang it is.
+    /// </summary>
+    public static Rectangle SelectionBorder(int slot) => At(slot, SelectionInset, SelectionInset,
+        FrameWidth - SelectionInset * 2, FrameHeight - SelectionInset * 2);
 
     public static Rectangle ForceBar(int slot) =>
         At(slot, ForceLeft, ForceTop, ForceTrackWidth, MeterHeight);

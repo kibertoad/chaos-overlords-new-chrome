@@ -10,13 +10,8 @@ public sealed partial class ChaosGame
 
     private void OpenCommands(bool repeat = false, ClientScreen returnScreen = ClientScreen.City)
     {
-        if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
-            || _state.Coordinator.ActivePlayer is not { } playerId)
-        {
-            RejectInput("COMMANDS REQUIRE COMMAND PHASE");
-            return;
-        }
-        var gang = SelectedGang(_state.FindPlayer(playerId)!);
+        if (!CanOpenCommands(out var playerId)) return;
+        var gang = SelectedGang(_state!.FindPlayer(playerId)!);
         if (gang is null)
         {
             RejectInput("NO ACTIVE GANG");
@@ -25,14 +20,50 @@ public sealed partial class ChaosGame
         _commandOptions = CommandOptionCatalog.LegalCommands(_state, playerId, gang.Id)
             .Where(command => !repeat || CommandRules.CanRepeat(command.Action))
             .ToArray();
+        ShowCommandOverlay(repeat, returnScreen, bulk: false);
+    }
+
+    /// <summary>
+    /// Opens the command overlay on the whole ctrl-picked selection, listing only the orders a
+    /// selection may be given at once.
+    /// </summary>
+    private void OpenBulkCommands(bool repeat)
+    {
+        if (!CanOpenCommands(out var playerId)) return;
+        _commandOptions = BulkGangCommands.Options(
+            _state!, playerId, _gangSelection.Gangs, repeat);
+        ShowCommandOverlay(repeat, ClientScreen.Sector, bulk: true);
+    }
+
+    private bool CanOpenCommands(out PlayerId playerId)
+    {
+        if (_state is not null && _state.Coordinator.Phase == TurnPhase.Command
+            && _state.Coordinator.ActivePlayer is { } active)
+        {
+            playerId = active;
+            return true;
+        }
+        RejectInput("COMMANDS REQUIRE COMMAND PHASE");
+        playerId = default;
+        return false;
+    }
+
+    private void ShowCommandOverlay(bool repeat, ClientScreen returnScreen, bool bulk)
+    {
         _commandCursor = 0;
         _commandTargetOptions = [];
         _commandTargetCursor = 0;
         _choosingCommandTarget = false;
         _commandRepeats = repeat;
+        _bulkCommand = bulk;
         _commandReturnScreen = returnScreen;
         _screens.Show(ClientScreen.Commands);
     }
+
+    /// <summary>The orders the overlay lists, which a bulk order shortens to its allowlist.</summary>
+    private IReadOnlyList<GangAction> CommandOverlayActions => _bulkCommand
+        ? BulkGangCommands.ActionsFor(_commandRepeats)
+        : CommandOverlayLayout.ActionsFor(_commandRepeats);
 
     /// <summary>
     /// Feeds the hovered action row to the dwell tracker so the command overlay can explain
@@ -48,7 +79,7 @@ public sealed partial class ChaosGame
     private int? HoveredCommandActionRow() =>
         _screens.Current == ClientScreen.Commands && !_choosingCommandTarget && !_gameMenuOpen
         && _hoverPoint is { } hover
-            ? CommandActionTooltips.RowAt(hover, _commandRepeats)
+            ? CommandActionTooltips.RowAt(hover, CommandOverlayActions)
             : null;
 
     private void MoveCommandCursor(int delta)
@@ -69,8 +100,7 @@ public sealed partial class ChaosGame
         }
         else
         {
-            _commandCursor = Mod(_commandCursor + delta,
-                CommandOverlayLayout.ActionsFor(_commandRepeats).Count);
+            _commandCursor = Mod(_commandCursor + delta, CommandOverlayActions.Count);
         }
     }
 
@@ -172,7 +202,7 @@ public sealed partial class ChaosGame
             else if (!CommandOverlayLayout.TargetPanel.Contains(point)) BackFromCommands();
             return;
         }
-        var actions = CommandOverlayLayout.ActionsFor(_commandRepeats);
+        var actions = CommandOverlayActions;
         var actionIndex = Enumerable.Range(0, actions.Count)
             .FirstOrDefault(index => CommandOverlayLayout.ActionRow(index).Contains(point), -1);
         if (actionIndex >= 0)
@@ -199,7 +229,7 @@ public sealed partial class ChaosGame
             return;
         }
 
-        var action = CommandOverlayLayout.ActionsFor(_commandRepeats)[_commandCursor];
+        var action = CommandOverlayActions[_commandCursor];
         if (action == GangAction.None)
         {
             CancelSelectedCommand();
@@ -239,10 +269,23 @@ public sealed partial class ChaosGame
     private void SubmitCommand(GameCommand selection)
     {
         if (_actions is null) return;
+        if (_bulkCommand)
+        {
+            SubmitBulkCommand(selection.Action, selection.Target);
+            return;
+        }
         var command = selection with { Repeat = _commandRepeats };
         var result = _actions.Submit(command);
         ReportInputResult(result.Accepted, result.Validation.Message);
         if (result.Accepted) _screens.Show(_commandReturnScreen);
+    }
+
+    private void SubmitBulkCommand(GangAction action, CommandTarget target)
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
+        var intent = new BulkCommandIntent(action, target, _commandRepeats);
+        if (ApplyBulkCommand(playerId, intent, BulkGangCommands.Rejection(action)))
+            _screens.Show(_commandReturnScreen);
     }
 
     private void CancelSelectedCommand()
@@ -281,9 +324,10 @@ public sealed partial class ChaosGame
         var panel = CommandOverlayLayout.Panel;
         batch.Draw(pixel, panel, new Color(12, 18, 18, 246));
         DrawBorder(batch, pixel, panel, new Color(0, 190, 65), 2);
-        font.Draw(batch, _commandRepeats ? "RECURRING ACTION" : "ONE-OFF ACTION",
-            new Vector2(panel.X + 8, panel.Y + 5), Color.Gold, 1);
-        var actions = CommandOverlayLayout.ActionsFor(_commandRepeats);
+        var heading = _commandRepeats ? "RECURRING ACTION" : "ONE-OFF ACTION";
+        if (_bulkCommand) heading += $" X{_gangSelection.Count}";
+        font.Draw(batch, heading, new Vector2(panel.X + 8, panel.Y + 5), Color.Gold, 1);
+        var actions = CommandOverlayActions;
         for (var index = 0; index < actions.Count; index++)
         {
             var action = actions[index];

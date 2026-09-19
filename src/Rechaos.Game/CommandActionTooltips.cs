@@ -11,9 +11,16 @@ namespace Rechaos.Game;
 public static class CommandActionTooltips
 {
     /// <summary>The overlay row under <paramref name="point"/>, or null outside the action rows.</summary>
-    public static int? RowAt(Point point, bool recurring)
+    public static int? RowAt(Point point, bool recurring) =>
+        RowAt(point, CommandOverlayLayout.ActionsFor(recurring));
+
+    /// <summary>
+    /// The row under <paramref name="point"/> for an overlay listing <paramref name="actions"/>,
+    /// which a bulk order shortens to the ones a whole selection may be given.
+    /// </summary>
+    public static int? RowAt(Point point, IReadOnlyList<GangAction> actions)
     {
-        var actions = CommandOverlayLayout.ActionsFor(recurring);
+        ArgumentNullException.ThrowIfNull(actions);
         for (var index = 0; index < actions.Count; index++)
             if (CommandOverlayLayout.ActionRow(index).Contains(point)) return index;
         return null;

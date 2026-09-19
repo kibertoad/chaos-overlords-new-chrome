@@ -22,6 +22,8 @@ public sealed partial class ChaosGame
     {
         if (_session is null || _actions?.OnlineTurn is not { } turn) return;
         if (!_online.PlanningIsOpen) return;
+        // The orders are going to the server, so the picks that were waiting to give one are spent.
+        _gangSelection.Clear();
         var document = turn.Build();
         _session.QueueOrders(_online.PlanningTurn, document, ready: true);
         _sentOrderVersion = turn.Orders.Version;
