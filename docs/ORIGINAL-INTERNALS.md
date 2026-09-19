@@ -3864,7 +3864,7 @@ pixels right from the former shared-template approximation.
 **Observation:** The definition-information handler `0x00455b6b` loads
 `PX05022` into the alternate backing region and closes by copying source
 `(344,144)-(664,353)` to `(128,124)-(448,333)`. It copies the 64-by-64 gang
-portrait to backing `(370,161)-(434,225)`, yielding screen `(154,141)-(218,205)`. Name text is written at backing `(444,171)`, followed by three 30-character description rows at y=189, 198, and 207. The force/current-value column ends at backing x=516; upkeep, Tech Level, and the right statistics column end at x=612. These map to screen x=300 and x=396. Statistics use screen rows 243, 252, 270, 279, 288, 297, and 306. Both keyboard confirmation and the sole pointer exit face use local `(33,169)-(82,191)`.
+portrait to backing `(370,161)-(434,225)`, yielding screen `(154,141)-(218,205)`. Name text is written at backing `(444,171)`, followed by three 30-character description rows at y=189, 198, and 207. The force/current-value column begins at backing x=516; upkeep, Tech Level, and the right statistics column begin at x=612. These map to screen x=300 and x=396. Statistics use screen rows 243, 252, 270, 279, 288, 297, and 306. Both keyboard confirmation and the sole pointer exit face use local `(33,169)-(82,191)`.
 
 **Interpretation:** Hire-offer definition inspection is not the normal
 `PX05000` live-gang panel. It has no instance equipment, uses 30-character
@@ -3873,27 +3873,25 @@ description rows, and must preserve the alternate 320-pixel crop and its
 
 **Confidence:** High static evidence for resource identity, crop/destination, portrait, all recovered text/value origins, description length, statistic rows, and exit control from complete handler `0x00455b6b`; native capture remains useful for palette and label clipping.
 
-### BIN-GANG-VALUES-001 - fixed two-cell gang values retain the template zero
+### BIN-GANG-VALUES-001 - fixed two-cell gang values replace template padding
 
 **Observation:** The `PX05000` live-gang handler at `0x00449e80` draws its
 numeric values with the two-character integer helpers at backing x=172 and
-x=268 (screen x=276 and x=372), including all statistic rows. `PX05000`
-already supplies a third `0` glyph immediately after each such field. The
-helper paints both six-by-seven cells, right-aligns a one-character value into
-the second cell, and leaves the template glyph untouched. The same handler
-negates the stored upkeep before rendering it. Its no-instance force branch
-draws the two-character unknown marker in that same two-cell field.
+x=268 (screen x=276 and x=372), including all statistic rows. The helper
+paints both six-by-seven cells and right-aligns a one-character value into the
+second cell. The same handler negates the stored upkeep before rendering it.
+Its no-instance force branch draws the two-character unknown marker in that
+same two-cell field.
 
 **Interpretation:** Gang numeric fields are not generic right-aligned strings.
-They occupy precisely the two cells ending at the recovered inclusive right
-edge, preserving the template's scale zero: `3` displays as `30`, `10` as
-`100`, and a missing Force as `??0`. Rendering a live digit before or over the
-template's three zeros produces the erroneous `300`/`??00` padding and can
-erase adjacent panel pixels.
+They occupy precisely the two cells beginning at the recovered field origin.
+Rendering a live digit before that field leaves the zero placeholders visible,
+producing the erroneous `300`/`??00` padding and can erase adjacent panel
+pixels.
 
 **Confidence:** High static evidence from the complete `PX05000` renderer
 `0x00449e80` and the fixed-width number helper `0x00414187`; panel asset
-inspection confirms the retained third zero.
+inspection confirms each placeholder field is two glyph cells wide.
 
 ### BIN-MOVEMENT-001 - Terminate pass before roster-ordered Move
 

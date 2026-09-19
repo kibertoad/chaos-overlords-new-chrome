@@ -53,8 +53,8 @@ public sealed class UiNavigationTests
     {
         Assert.Equal([243, 252, 270, 279, 288, 297, 306],
             Enumerable.Range(0, 7).Select(GangInformationLayout.StatisticY));
-        Assert.Equal(287, GangInformationLayout.LeftValueRight);
-        Assert.Equal(383, GangInformationLayout.RightValueRight);
+        Assert.Equal(276, GangInformationLayout.LeftValueLeft);
+        Assert.Equal(372, GangInformationLayout.RightValueLeft);
     }
 
     [Fact]

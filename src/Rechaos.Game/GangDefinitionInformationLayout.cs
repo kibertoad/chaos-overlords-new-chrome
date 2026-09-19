@@ -16,8 +16,8 @@ public static class GangDefinitionInformationLayout
         >= 0 and < 3 => 169 + row * OriginalFontLayout.LineHeight,
         _ => throw new ArgumentOutOfRangeException(nameof(row))
     };
-    public static int LeftValueRight => 300;
-    public static int RightValueRight => 396;
+    public static int LeftValueLeft => 300;
+    public static int RightValueLeft => 396;
     public static int ForceY => 216;
     public static int TechLevelY => 225;
     public static int StatisticY(int row) => GangInformationLayout.StatisticY(row);

@@ -533,17 +533,16 @@ public static class GangInformationLayout
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Portrait => EquipmentCommandLayout.Portrait;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public static int LeftValueRight => SharedPanelLayout.X(183);
-    public static int RightValueRight => SharedPanelLayout.X(279);
+    public static int LeftValueLeft => SharedPanelLayout.X(172);
+    public static int RightValueLeft => SharedPanelLayout.X(268);
 
-    // PX05000/PX05022 provide a third, literal zero after each numeric value.
-    // The native renderer overwrites exactly the preceding two glyph cells.
-    public static Rectangle ValueField(int rightInclusive, int y) => new(
-        rightInclusive - (2 * OriginalFontLayout.CellWidth - 1), y,
+    // PX05000/PX05022 reserve exactly two opaque glyph cells for each live value.
+    public static Rectangle ValueField(int left, int y) => new(
+        left, y,
         2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight);
 
-    public static int ValueTextLeft(int rightInclusive, string text) =>
-        rightInclusive + 1 - text.Length * OriginalFontLayout.CellWidth;
+    public static int ValueTextLeft(int left, string text) =>
+        left + (2 - text.Length) * OriginalFontLayout.CellWidth;
 
     public static Rectangle Equipment(int slot)
     {

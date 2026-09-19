@@ -39,10 +39,10 @@ public sealed class GangInformationRosterTests
     public void GangValueFieldsCoverOnlyTheTwoLiveGlyphCells()
     {
         Assert.Equal(new Rectangle(276, 243, 12, 7),
-            GangInformationLayout.ValueField(GangInformationLayout.LeftValueRight, 243));
+            GangInformationLayout.ValueField(GangInformationLayout.LeftValueLeft, 243));
         Assert.Equal(282, GangInformationLayout.ValueTextLeft(
-            GangInformationLayout.LeftValueRight, "3"));
+            GangInformationLayout.LeftValueLeft, "3"));
         Assert.Equal(276, GangInformationLayout.ValueTextLeft(
-            GangInformationLayout.LeftValueRight, "10"));
+            GangInformationLayout.LeftValueLeft, "10"));
     }
 }

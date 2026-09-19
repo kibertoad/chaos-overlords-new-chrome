@@ -17,12 +17,12 @@ public sealed class GangDefinitionInformationLayoutTests
         Assert.Equal(228, GangDefinitionInformationLayout.DescriptionLeft);
         Assert.Equal([169, 178, 187], Enumerable.Range(0, 3)
             .Select(GangDefinitionInformationLayout.DescriptionY));
-        Assert.Equal(300, GangDefinitionInformationLayout.LeftValueRight);
-        Assert.Equal(396, GangDefinitionInformationLayout.RightValueRight);
-        Assert.Equal(new Rectangle(289, 216, 12, 7),
-            GangInformationLayout.ValueField(GangDefinitionInformationLayout.LeftValueRight, 216));
-        Assert.Equal(new Rectangle(385, 216, 12, 7),
-            GangInformationLayout.ValueField(GangDefinitionInformationLayout.RightValueRight, 216));
+        Assert.Equal(300, GangDefinitionInformationLayout.LeftValueLeft);
+        Assert.Equal(396, GangDefinitionInformationLayout.RightValueLeft);
+        Assert.Equal(new Rectangle(300, 216, 12, 7),
+            GangInformationLayout.ValueField(GangDefinitionInformationLayout.LeftValueLeft, 216));
+        Assert.Equal(new Rectangle(396, 216, 12, 7),
+            GangInformationLayout.ValueField(GangDefinitionInformationLayout.RightValueLeft, 216));
         Assert.Equal([243, 252, 270, 279, 288, 297, 306], Enumerable.Range(0, 7)
             .Select(GangDefinitionInformationLayout.StatisticY));
     }
