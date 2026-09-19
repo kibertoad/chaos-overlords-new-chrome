@@ -8,12 +8,17 @@ name: Publish multiplayer packages
 # not exist yet cannot have a trusted publisher. That binding is to this file's name, which is why a
 # release runs from here rather than from a second workflow.
 #
-# Run this workflow with the version to release. It applies that version to every publishable
-# package in its checkout before it validates, packs, and optionally publishes them:
+# Nobody types the next version. This workflow is asked for a release kind - patch, minor or major -
+# and works the number out at release time from the version the publishable package manifests on
+# main record just then, the way the installer release works its number out of `version.txt`
+# (`multiplayer/scripts/release-version.mjs` settles it, and says in the log how). It records that
+# version in every manifest on main before anything is published, and its jobs run from that commit,
+# so one run records, packs, publishes and tags the same version:
 #
-#   mode: rehearse  runs every check and packs each tarball, then stops without touching the registry.
-#   mode: release   runs the same checks, publishes, and only then creates the `multiplayer-vX.Y.Z`
-#                   annotated tag on the commit it published.
+#   mode: rehearse  runs every check and packs each tarball, then stops without touching either the
+#                   registry or main, so a rehearsal never advances the recorded version.
+#   mode: release   records the version on main, runs the same checks, publishes, and only then
+#                   creates the `multiplayer-vX.Y.Z` annotated tag on the commit it published.
 #
 # Pushing a `multiplayer-v*` tag by hand still publishes, which is the escape hatch for a release cut
 # from a commit other than the tip of main. The tag this workflow creates itself does not re-enter
@@ -27,12 +32,17 @@ on:
       - "multiplayer-v*"
   workflow_dispatch:
     inputs:
-      version:
-        description: Version to release, for example 0.2.0
+      bump:
+        description: Which part of the recorded package version the release advances
         required: true
-        type: string
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
       mode:
-        description: Rehearse stops before the registry; release publishes and tags.
+        description: Rehearse stops before the registry; release records the version, publishes and tags.
         required: true
         default: rehearse
         type: choice
@@ -42,8 +52,9 @@ on:
 
 permissions: {}
 
+# Releases run one at a time, since two started together would settle on the same number.
 concurrency:
-  group: multiplayer-publish-${{ inputs.version || github.ref_name }}
+  group: multiplayer-publish-${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
@@ -52,9 +63,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      contents: read
+      contents: write # Required to record the release version in the package manifests on main.
     outputs:
-      commit: ${{ steps.release.outputs.commit }}
+      commit: ${{ steps.record.outputs.commit || steps.release.outputs.commit }}
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
     steps:
@@ -67,35 +78,82 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
           persist-credentials: false
 
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      # A dispatched release is asked for by kind, so the number is settled out of the manifests and
+      # the release tags; the version it settles on is by construction one no tag carries yet, which
+      # is why nothing here re-checks that. A tag push names its version outright, and is the one way
+      # in that may carry a prerelease suffix.
       - name: Resolve release version
         id: release
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
-          INPUT_VERSION: ${{ inputs.version }}
+          RELEASE_BUMP: ${{ inputs.bump }}
         run: |
           if [[ "$GITHUB_EVENT_NAME" == push ]]; then
             version="${GITHUB_REF_NAME#multiplayer-v}"
+            if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "::error::'$version' is not a semantic version." >&2
+              exit 1
+            fi
           else
-            version="$INPUT_VERSION"
-          fi
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::'$version' is not a semantic version." >&2
-            exit 1
-          fi
-          tag="multiplayer-v$version"
-          # On a tag push the tag exists by definition. On a dispatch an existing one means this
-          # version was already cut, and this run would publish under a tag naming another commit.
-          if [[ "$GITHUB_EVENT_NAME" != push ]] &&
-             git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
-            echo "::error::Tag '$tag' already exists." >&2
-            exit 1
+            version="$(node multiplayer/scripts/release-version.mjs "$RELEASE_BUMP")"
           fi
           {
             echo "version=$version"
-            echo "tag=$tag"
+            echo "tag=multiplayer-v$version"
             echo "commit=$(git rev-parse HEAD)"
           } >> "$GITHUB_OUTPUT"
+
+      # The tag ends up on a commit whose manifests already carry the version it names, so the
+      # record lands on main before anything is published. A run that records a version and then
+      # fails leaves main asking for that same version next time round, rather than a number past
+      # it. A rehearsal records nothing, and a tag push has nothing to record: it may be cut from a
+      # commit that is not on main at all. The checkout keeps no push credentials on purpose; the
+      # git data API commits the manifests instead.
+      - name: Record the release version on main
+        id: record
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        # Named explicitly for `pipefail`: the API calls below run inside pipelines, where a failure
+        # anywhere but the last command would otherwise pass for a recorded version.
+        shell: bash
+        run: |
+          # The script names the manifests it rewrote, so the commit carries those and nothing else.
+          changed="$(node multiplayer/scripts/set-version.mjs "$RELEASE_VERSION")"
+          commit="$(git rev-parse HEAD)"
+          if [[ -z "$changed" ]]; then
+            echo "main already records $RELEASE_VERSION."
+          else
+            mapfile -t manifests <<< "$changed"
+            # The contents API writes one file per call, which would put nine commits on main for
+            # one release. The git data API takes every manifest as a single tree instead.
+            tree="$(for file in "${manifests[@]}"; do
+                jq -n --arg path "$file" --rawfile content "$file" \
+                  '{path: $path, mode: "100644", type: "blob", content: $content}'
+              done |
+              jq -s --arg base "$(git rev-parse 'HEAD^{tree}')" '{base_tree: $base, tree: .}' |
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input - --jq '.sha')"
+            commit="$(jq -n \
+              --arg message "Multiplayer packages $RELEASE_VERSION" \
+              --arg tree "$tree" \
+              --arg parent "$commit" \
+              '{message: $message, tree: $tree, parents: [$parent]}' |
+              gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input - --jq '.sha')"
+            # Deliberately not a force update: main having moved on since the checkout fails the
+            # release here, rather than recording a version over somebody else's commit.
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/main" \
+              -f "sha=$commit" --silent
+            echo "Recorded $RELEASE_VERSION on main as $commit."
+          fi
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
   publish:
     name: Verify and publish
@@ -148,13 +206,14 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # Keep version selection in the release form, as the installer workflow does. The bump is
-      # deliberately local to this checkout: release commits do not need nine mechanical manifest
-      # edits, while the tarballs and their rewritten `workspace:*` dependencies still agree.
+      # A dispatched release already recorded this version on main, so for the commit checked out
+      # above this is a no-op that says so. A release cut from a tag applies it here instead, since
+      # that commit need never have carried it, and the tarballs and their rewritten `workspace:*`
+      # dependencies have to agree either way.
       - name: Apply the release version to every package
         env:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-        run: pnpm -r exec npm version "$RELEASE_VERSION" --no-git-tag-version --allow-same-version --ignore-scripts
+        run: node scripts/set-version.mjs "$RELEASE_VERSION"
 
       - name: Check every publishable package is at the release version
         env:
