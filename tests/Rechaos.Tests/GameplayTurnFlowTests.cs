@@ -47,6 +47,27 @@ public sealed class GameplayTurnFlowTests
     }
 
     [Fact]
+    public void PrivateHandoffRequiresTwoActiveHumanSeats()
+    {
+        var definitions = BundledOriginalData.Load();
+        MatchPlayerSetup[] players =
+        [
+            new(new PlayerId(0), "LOCAL", PlayerController.Human),
+            new(new PlayerId(1), "CPU", PlayerController.Computer),
+            new(new PlayerId(2), "ELIMINATED", PlayerController.Human)
+        ];
+        var state = OriginalMatchFactory.Create(definitions,
+            new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
+        state.Players[2].Status = PlayerStatus.Eliminated;
+
+        Assert.False(HotSeatHandoffPresentation.RequiresPrivateHandoff(state));
+
+        state.Players[2].Status = PlayerStatus.Active;
+
+        Assert.True(HotSeatHandoffPresentation.RequiresPrivateHandoff(state));
+    }
+
+    [Fact]
     public void NormalFlowStopsOnlyForPlayerPlanningAndResolvesInternalPhases()
     {
         var definitions = BundledOriginalData.Load();

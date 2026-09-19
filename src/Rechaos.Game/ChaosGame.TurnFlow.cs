@@ -82,7 +82,7 @@ public sealed partial class ChaosGame
         {
             PrepareCurrentHireOffers();
             _selectedGangIndex = 0;
-            _screens.Show(ClientScreen.Handoff);
+            PresentHotSeatPlanningEntry();
         }
     }
 
@@ -203,7 +203,7 @@ public sealed partial class ChaosGame
                  && _state.FindPlayer(nextPlayer)!.Setup.Controller == PlayerController.Human)
         {
             _cursor = _state.FindPlayer(nextPlayer)!.Gangs.FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
-            _screens.Show(ClientScreen.Handoff);
+            PresentHotSeatPlanningEntry();
         }
         else
         {
@@ -224,5 +224,28 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
         DrawCentered(font, batch, player.Setup.Name, HandoffLayout.NameY,
             PlayerColors[playerId.Value], 1);
+    }
+
+    /// <summary>
+    /// Preserves the original privacy gate: the next-player card appears only when at least two
+    /// active local players remain. A one-person game enters planning directly, even when it has
+    /// computer opponents.
+    /// </summary>
+    private void PresentHotSeatPlanningEntry()
+    {
+        if (_state?.Coordinator.ActivePlayer is not { } playerId
+            || _state.FindPlayer(playerId)?.Setup.Controller != PlayerController.Human)
+        {
+            _screens.Show(ClientScreen.City);
+            return;
+        }
+
+        if (HotSeatHandoffPresentation.RequiresPrivateHandoff(_state))
+        {
+            _screens.Show(ClientScreen.Handoff);
+            return;
+        }
+
+        FinishHandoff();
     }
 }

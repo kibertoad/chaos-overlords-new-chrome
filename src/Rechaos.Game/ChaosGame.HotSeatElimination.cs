@@ -51,7 +51,7 @@ public sealed partial class ChaosGame
         if (_state?.Coordinator.ActivePlayer is { } playerId
             && _state.FindPlayer(playerId)?.Setup.Controller == PlayerController.Human)
         {
-            _screens.Show(ClientScreen.Handoff);
+            PresentHotSeatPlanningEntry();
             return;
         }
 
@@ -102,5 +102,19 @@ public static class HotSeatEliminationPresentation
         foreach (var playerId in crossedEliminatedPlayers)
             if (presentedPlayers.Add(playerId)) queued.Add(playerId);
         return queued;
+    }
+}
+
+/// <summary>
+/// Mirrors the original handoff gate. Computer opponents do not make a solo local game private,
+/// and eliminated local seats no longer count.
+/// </summary>
+public static class HotSeatHandoffPresentation
+{
+    public static bool RequiresPrivateHandoff(MatchState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return state.Players.Count(player => player.Status == PlayerStatus.Active
+            && player.Setup.Controller == PlayerController.Human) > 1;
     }
 }

@@ -15,6 +15,14 @@ public sealed partial class ChaosGame
 
     private void FinishHandoff()
     {
+        // An eliminated local player first receives the same private next-player card. Its Ready
+        // control then leads to the original terminal notice instead of opening the succeeding
+        // player's planning turn beneath the departed player's name.
+        if (_eliminationHandoffPlayer is not null)
+        {
+            _screens.Show(ClientScreen.Elimination);
+            return;
+        }
         if (_state?.Coordinator.ActivePlayer is not { } playerId)
         {
             _screens.Show(ClientScreen.City);

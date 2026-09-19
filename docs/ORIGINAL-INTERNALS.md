@@ -4748,8 +4748,10 @@ normal and terminal call paths, and Combat-before-Events order. Exact native
 animation cadence and the terminal-screen artwork timing still require runtime
 capture.
 
-**Recreation status:** Automatic handoff routing now follows Combat-before-
-Events. Simple Combat opens `PX05012` and continues to Last Turn Events only
+**Recreation status:** Automatic handoff routing now follows the native
+active-human gate as well as Combat-before-Events: computer opponents and
+retired local seats do not cause a solo local player to see `PX00132`. Simple
+Combat opens `PX05012` and continues to Last Turn Events only
 when its private panel closes. Detailed Combat starts its bounded recreation
 presentation over the city and then follows the same event chain; its
 non-blocking/skippable behavior remains an explicit modern safety correction
