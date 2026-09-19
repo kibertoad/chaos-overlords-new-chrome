@@ -106,6 +106,15 @@ presentation-only conveniences that make the original systems easier to read:
 - Automatic Detailed Combat remains a bounded, skippable presentation over the
   already-resolved result. This intentionally fixes the original's known
   freeze while leaving combat rolls, state, and replay data unchanged.
+- The default-on idle-gang warning catches an accidental end of planning while
+  an active gang has no assigned order. It is an optional guard only: turning
+  it off restores immediate completion, and neither choice changes simulation
+  rules or saved match state.
+- New local and online matches can optionally use 30-second, two-minute, or
+  five-minute planning clocks instead of no clock. Advanced AI is likewise an
+  explicit, default-off choice: it applies only when a future match is created,
+  leaving active and loaded matches on their stored policy while Original AI
+  remains the compatibility default.
 - Keyboard navigation is available throughout the compatible mouse panels, and
   Escape or a right-click consistently cancels the current transient panel,
   drag, warning, or presentation without changing an unconfirmed command.
