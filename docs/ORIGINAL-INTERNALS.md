@@ -4710,9 +4710,12 @@ presenter `0x00451f80` or Detailed Combat presenter `0x0042e040`, selected by
 the Detailed Combat option. `0x00451f80` silently
 returns for an empty eligible-sector set when called in this automatic mode;
 when results exist, its panel event loop returns before planning continues.
-Only after that call returns does `0x0046fd80` test and open Last Turn Events
-at `0x0044f2fc`. The same function rebuilds unread-Comlink state after those
-private presentations and emits the initial alert only afterwards.
+Only after that call returns does `0x0046fd80` rebuild its complete 32-byte
+Last Turn Events read-state table at `0x00494870` and open Last Turn Events at
+`0x0044f2fc`. Its next branch tests the per-player unread flag and calls
+general-sound slot 6 through `0x00464290`; it is therefore after both blocking
+presenters, not merely after Ready. The same function resets the alert cadence
+counter immediately after that call.
 
 The outer loop's ordered slot walk makes terminal timing precise. It visits
 slots 0 through 5, and when it reaches an unretired local elimination it shows
