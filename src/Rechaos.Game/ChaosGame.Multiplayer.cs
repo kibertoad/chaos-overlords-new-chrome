@@ -271,7 +271,8 @@ public sealed partial class ChaosGame
 
     private void StartHostedMatch()
     {
-        if (!CanConfigureOnlineLobby() || _lobby is null) return;
+        if (!CanConfigureOnlineLobby() || _lobby is null || _lobby.IsBusy) return;
+        _online.Status = "STARTING THE GAME";
         _lobby.Start();
     }
 

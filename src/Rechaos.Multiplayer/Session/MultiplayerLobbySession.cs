@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Net;
+using System.Runtime.CompilerServices;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Protocol;
@@ -26,7 +28,7 @@ public abstract record LobbyNotice
     public sealed record Listed(IReadOnlyList<LobbyListing> Matches) : LobbyNotice;
 
     /// <summary>A call was refused, with text a player can act on.</summary>
-    public sealed record Failed(string Reason) : LobbyNotice;
+    public sealed record Failed(string Reason, Exception? Error = null, string? Operation = null) : LobbyNotice;
 }
 
 /// <summary>
@@ -144,7 +146,25 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     public void Start() => Run(async token =>
     {
         if (_handle is null) return;
-        await _handle.StartAsync(token).ConfigureAwait(false);
+        try
+        {
+            await _handle.StartAsync(token).ConfigureAwait(false);
+        }
+        catch (MultiplayerApiException exception) when (exception.Status == HttpStatusCode.Conflict)
+        {
+            // Starting is a compare-and-swap at the server. The request can lose its response or
+            // race another request from this same host, even though the match did start. The match
+            // read is authoritative: treat that state as success rather than leaving the host on a
+            // misleading error solely because the original transition was no longer available.
+            var detail = await _handle.GetAsync(token).ConfigureAwait(false);
+            if (detail.Match.Status != MatchStatus.Running
+                || detail.Match.Seed is null
+                || detail.Match.CurrentTurn < 1
+                || detail.Match.Players.Any(player => player.Status == PlayerStatus.Active && player.Slot < 0))
+                throw;
+            _notices.Enqueue(new LobbyNotice.Updated(detail.Match));
+            return;
+        }
         _notices.Enqueue(new LobbyNotice.Updated(
             (await _handle.GetAsync(token).ConfigureAwait(false)).Match));
     });
@@ -252,13 +272,15 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     /// The caller is a game loop with no <c>try</c> around it, so an exception escaping here would
     /// close the window rather than tell the player their join code was wrong.
     /// </remarks>
-    private void Run(Func<CancellationToken, Task> operation)
+    private void Run(
+        Func<CancellationToken, Task> operation,
+        [CallerMemberName] string operationName = "")
     {
         if (Interlocked.CompareExchange(ref _busy, 1, 0) != 0) return;
-        _current = RunAsync(operation);
+        _current = RunAsync(operation, operationName);
     }
 
-    private async Task RunAsync(Func<CancellationToken, Task> operation)
+    private async Task RunAsync(Func<CancellationToken, Task> operation, string operationName)
     {
         try
         {
@@ -272,7 +294,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             or MultiplayerProtocolException or MultiplayerTimeoutException
             or HttpRequestException or IOException)
         {
-            _notices.Enqueue(new LobbyNotice.Failed(Describe(exception)));
+            _notices.Enqueue(new LobbyNotice.Failed(Describe(exception), exception, operationName));
         }
         finally
         {

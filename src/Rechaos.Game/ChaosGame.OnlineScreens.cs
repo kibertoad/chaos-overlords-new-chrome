@@ -376,6 +376,7 @@ public sealed partial class ChaosGame
         DrawOnlineFrame(batch, pixel, font, "LOBBY");
         var match = _online.Match;
         var configurable = CanConfigureOnlineLobby();
+        var busy = _lobby?.IsBusy == true;
         DrawLobbyJoinCode(batch, pixel, font);
         if (match is not null)
         {
@@ -390,7 +391,7 @@ public sealed partial class ChaosGame
                     : "WAITING FOR THE HOST TO START THE MATCH",
             OnlineLobbyLayout.WaitingHintY, OnlineSecondaryText, 1);
         DrawButton(batch, pixel, font, OnlineLobbyLayout.Start, "START",
-            configurable ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
+            configurable && !busy ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineLobbyLayout.Leave, "LEAVE",
             ButtonEmphasis.Secondary);
     }

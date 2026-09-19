@@ -33,7 +33,8 @@ public sealed record MultiplayerRecovery(
     string Password = "",
     int SessionVersion = MultiplayerSessionVersion.Initial,
     string SessionName = "",
-    DateTimeOffset? LastUpdatedAt = null)
+    DateTimeOffset? LastUpdatedAt = null,
+    MultiplayerRecoveryFailure? LastFailure = null)
 {
     public const int CurrentFormatVersion = 1;
 
@@ -51,6 +52,24 @@ public sealed record MultiplayerRecovery(
     /// <summary>The seat is still live and this build can carry the match on.</summary>
     public bool CanResume => CanReconnect && IsCompatible;
 }
+
+/// <summary>
+/// The last non-recoverable online failure for a saved membership.
+/// </summary>
+/// <remarks>
+/// This is a deliberately small forensic breadcrumb, not a replay or a transport capture. It
+/// carries only machine-readable protocol context that can be safely included in a diagnostics
+/// export; credentials, player names, match settings and orders never belong here.
+/// </remarks>
+public sealed record MultiplayerRecoveryFailure(
+    DateTimeOffset OccurredAt,
+    string Stage,
+    string? Operation,
+    int? HttpStatus,
+    string? Reason,
+    string? RequestId,
+    int? PlanningTurn,
+    int? LastEventSequence);
 
 /// <summary>
 /// One membership as it sits on disk.
@@ -93,20 +112,21 @@ internal sealed record PersistedRecovery(
     string? Password = null,
     int? SessionVersion = null,
     string? SessionName = null,
-    DateTimeOffset? LastUpdatedAt = null);
+    DateTimeOffset? LastUpdatedAt = null,
+    MultiplayerRecoveryFailure? LastFailure = null);
 
 internal sealed record MultiplayerRecoveryHistory(
     int FormatVersion,
     IReadOnlyList<PersistedRecovery> Sessions)
 {
     /// <summary>
-    /// Version 4 added <see cref="PersistedRecovery.SessionName"/> and
+    /// Version 5 added <see cref="PersistedRecovery.LastFailure"/>; 4 added <see cref="PersistedRecovery.SessionName"/> and
     /// <see cref="PersistedRecovery.LastUpdatedAt"/>; 3 added
     /// <see cref="PersistedRecovery.ProtectedToken"/>; 2 is still read. Every field either version
     /// added is optional, so an older file reads back as a membership that simply knows less about
     /// itself rather than one that cannot be resumed.
     /// </summary>
-    internal const int CurrentFormatVersion = 4;
+    internal const int CurrentFormatVersion = 5;
     internal const int OldestReadableFormatVersion = 2;
 }
 
@@ -235,7 +255,8 @@ public static class MultiplayerRecoveryStore
             Password: recovery.Password.Length > 0 ? recovery.Password : null,
             SessionVersion: recovery.SessionVersion,
             SessionName: recovery.SessionName.Length > 0 ? recovery.SessionName : null,
-            LastUpdatedAt: recovery.LastUpdatedAt);
+            LastUpdatedAt: recovery.LastUpdatedAt,
+            LastFailure: recovery.LastFailure);
     }
 
     private static MultiplayerRecovery? Revive(PersistedRecovery stored)
@@ -261,7 +282,8 @@ public static class MultiplayerRecoveryStore
             stored.Password ?? string.Empty,
             stored.SessionVersion ?? MultiplayerSessionVersion.Initial,
             stored.SessionName ?? string.Empty,
-            stored.LastUpdatedAt);
+            stored.LastUpdatedAt,
+            stored.LastFailure);
     }
 
     /// <summary>
@@ -315,7 +337,16 @@ public static class MultiplayerRecoveryStore
             DisplayName.Length: > 0 and <= 32,
             Password.Length: <= 128,
             SessionVersion: >= 0,
-            SessionName.Length: <= 64
+            SessionName.Length: <= 64,
+            LastFailure: null or
+            {
+                Stage.Length: > 0 and <= 48,
+                Operation: null or { Length: <= 96 },
+                Reason: null or { Length: <= 96 },
+                RequestId: null or { Length: <= 128 },
+                PlanningTurn: null or >= 0,
+                LastEventSequence: null or >= 0
+            }
         }
         && recovery.Server.Length <= 256
         && Uri.TryCreate(recovery.Server, UriKind.Absolute, out var server)

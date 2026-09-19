@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
@@ -67,6 +68,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private Task? _outbox;
     private Task? _disposal;
     private int _failed;
+    private string? _pumpOperation;
+    private string? _outboxOperation;
 
     /// <summary>
     /// The last event sequence applied to the state. Every event at or below it has been acted on.
@@ -162,6 +165,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(options);
         var view = options.View;
         RequireResumableSession(view.SessionVersion, "match");
+        ValidateBootstrapView(view, options.OwnPlayerId);
         var seed = view.Seed
             ?? throw new MultiplayerProtocolException("the match has started without a seed");
         var self = view.Players.FirstOrDefault(player => player.Id == options.OwnPlayerId)
@@ -270,10 +274,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// as the pump — and whichever does, the other is stopped with it. One <see cref="MultiplayerNotice.Failed"/>
     /// reaches the interface: the second loop ends by cancellation, which is not a failure of its own.
     /// </remarks>
-    private void Fail(Exception exception)
+    private void Fail(Exception exception, string? operation)
     {
         if (Interlocked.Exchange(ref _failed, 1) != 0) return;
-        _notices.Enqueue(new MultiplayerNotice.Failed(Describe(exception), exception));
+        _notices.Enqueue(new MultiplayerNotice.Failed(
+            Describe(exception), exception, operation, Volatile.Read(ref _resumeAfterSeq)));
         _stopping.Cancel();
     }
 
@@ -292,7 +297,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         }
         catch (Exception exception)
         {
-            Fail(exception);
+            Fail(exception, Volatile.Read(ref _pumpOperation) ?? "event_stream");
         }
     }
 
@@ -322,6 +327,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         }
         while (true)
         {
+            Volatile.Write(ref _pumpOperation, "event_stream");
             var stream = new MatchEventStream(
                 _match,
                 RetryPolicy.Stream,
@@ -772,8 +778,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private async Task<T> CallAsync<T>(
         Func<CancellationToken, Task<T>> call,
         ConnectionHealth.Lane? lane,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [CallerMemberName] string operation = "")
     {
+        if (ReferenceEquals(lane, _pumpLane)) Volatile.Write(ref _pumpOperation, operation);
+        if (ReferenceEquals(lane, _outboxLane)) Volatile.Write(ref _outboxOperation, operation);
         var result = await TransientFailure.CallAsync(
             call,
             RetryPolicy.Call,
@@ -834,6 +843,43 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             if (player.Slot is >= 0 and < MatchLimits.PlayerCount) slots[player.Id] = player.Slot;
         }
         return slots;
+    }
+
+    /// <summary>
+    /// Refuses a running match whose initial authoritative view contradicts itself before a city is
+    /// generated or the interface is allowed to issue an order against it.
+    /// </summary>
+    /// <remarks>
+    /// This is intentionally a local preflight over an existing <see cref="MatchView"/> rather than
+    /// another start request. The server's compare-and-swap remains the authority that prevents two
+    /// starts; this catches an incomplete response, a stale handover, or a server-side transition
+    /// that was observed halfway through on the client side.
+    /// </remarks>
+    private static void ValidateBootstrapView(MatchView view, string ownPlayerId)
+    {
+        if (view.Status is not (MatchStatus.Running or MatchStatus.Desynced))
+            throw new MultiplayerProtocolException($"a match in state {view.Status} cannot be started");
+        if (view.CurrentTurn < 1)
+            throw new MultiplayerProtocolException(
+                $"a started match cannot be on turn {view.CurrentTurn}");
+        if (view.Turn is not { } turn || turn.Number != view.CurrentTurn)
+            throw new MultiplayerProtocolException(
+                "the match's open turn does not agree with its current turn");
+        if (view.Status == MatchStatus.Running && turn.Status != TurnStatus.Open)
+            throw new MultiplayerProtocolException(
+                $"a running match has a {turn.Status} current turn instead of an open one");
+
+        var seated = view.Players.Where(player => player.Slot is >= 0 and < MatchLimits.PlayerCount)
+            .ToArray();
+        if (seated.Length == 0
+            || seated.Select(player => player.Id).Distinct(StringComparer.Ordinal).Count() != seated.Length
+            || seated.Select(player => player.Slot).Distinct().Count() != seated.Length)
+        {
+            throw new MultiplayerProtocolException("the match roster has duplicate or missing seats");
+        }
+        var self = seated.SingleOrDefault(player => player.Id == ownPlayerId);
+        if (self is null || self.Status is not (WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending))
+            throw new MultiplayerProtocolException("this client does not hold an active roster seat in the match");
     }
 
     private static bool IsAwaitedHuman(PlayerView player) =>

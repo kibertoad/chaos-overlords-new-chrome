@@ -1,6 +1,7 @@
 using System.Globalization;
 using Rechaos.Core.GameModel;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Session;
 using WirePlayerStatus = Rechaos.Multiplayer.Generated.PlayerStatus;
 
@@ -98,6 +99,20 @@ public sealed partial class ChaosGame
                     : string.Empty;
                 return;
             case LobbyNotice.Failed failed:
+            {
+                var lobbyApi = ApiFailure(failed.Error);
+                _diagnostics?.Write("multiplayer.lobby.failed", new Dictionary<string, string?>
+                {
+                    ["reason"] = failed.Reason,
+                    ["error"] = RuntimeDiagnostics.ExceptionType(failed.Error),
+                    ["operation"] = failed.Operation,
+                    ["httpStatus"] = lobbyApi is null
+                        ? null
+                        : ((int)lobbyApi.Status).ToString(CultureInfo.InvariantCulture),
+                    ["apiReason"] = lobbyApi?.Reason,
+                    ["requestId"] = lobbyApi?.RequestId,
+                });
+                RememberOnlineFailure(failed.Error, failed.Operation, lastEventSequence: null);
                 if (_online.Stage == MultiplayerStage.Busy)
                 {
                     _online.Stage = MultiplayerStage.Connect;
@@ -108,6 +123,7 @@ public sealed partial class ChaosGame
                 _online.ConnectionError = failed.Reason;
                 _online.ConnectionErrorCopyStatus = string.Empty;
                 return;
+            }
             default:
                 return;
         }
@@ -289,15 +305,58 @@ public sealed partial class ChaosGame
                 EndOnlineMatch("THE MATCH WAS ABANDONED");
                 return;
             case MultiplayerNotice.Failed failed:
+            {
+                var api = ApiFailure(failed.Error);
                 _diagnostics?.Write("multiplayer.failed", new Dictionary<string, string?>
                 {
                     ["reason"] = failed.Reason,
                     ["error"] = RuntimeDiagnostics.ExceptionType(failed.Error),
+                    ["operation"] = failed.Operation,
+                    ["httpStatus"] = api is null
+                        ? null
+                        : ((int)api.Status).ToString(CultureInfo.InvariantCulture),
+                    ["apiReason"] = api?.Reason,
+                    ["requestId"] = api?.RequestId,
+                    ["turn"] = _online.PlanningTurn.ToString(CultureInfo.InvariantCulture),
+                    ["eventSequence"] = failed.LastEventSequence?.ToString(CultureInfo.InvariantCulture),
                 });
+                RememberOnlineFailure(failed);
                 ShowOnlineMatchFailure(failed.Reason);
                 return;
+            }
             default:
                 return;
         }
     }
+
+    private void RememberOnlineFailure(MultiplayerNotice.Failed failed)
+        => RememberOnlineFailure(failed.Error, failed.Operation, failed.LastEventSequence);
+
+    private void RememberOnlineFailure(
+        Exception? error,
+        string? operation,
+        int? lastEventSequence)
+    {
+        if (_activeMultiplayerRecovery is not { Completed: false } recovery) return;
+        var api = ApiFailure(error);
+        UpdateOnlineRecovery(recovery with
+        {
+            LastFailure = new MultiplayerRecoveryFailure(
+                DateTimeOffset.UtcNow,
+                _online.Stage.ToString(),
+                operation,
+                api is null ? null : (int)api.Status,
+                api?.Reason,
+                api?.RequestId,
+                _online.PlanningTurn,
+                lastEventSequence)
+        });
+    }
+
+    private static MultiplayerApiException? ApiFailure(Exception? exception) => exception switch
+    {
+        MultiplayerApiException api => api,
+        RetryExhaustedException { LastError: MultiplayerApiException api } => api,
+        _ => null,
+    };
 }

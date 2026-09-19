@@ -89,7 +89,7 @@ public sealed partial class MultiplayerMatchSession
         }
         catch (Exception exception)
         {
-            Fail(exception);
+            Fail(exception, Volatile.Read(ref _outboxOperation) ?? "submit_orders");
         }
     }
 

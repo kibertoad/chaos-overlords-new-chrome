@@ -48,6 +48,9 @@ public sealed class MultiplayerApiException : Exception
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(response);
+        var headerRequestId = response.Headers.TryGetValues("X-Request-Id", out var requestIds)
+            ? requestIds.FirstOrDefault()
+            : null;
         var body = await ReadBodyAsync(response, cancellationToken).ConfigureAwait(false);
         try
         {
@@ -65,7 +68,7 @@ public sealed class MultiplayerApiException : Exception
                     error.Code,
                     error.Message,
                     error.Details?.Reason,
-                    error.RequestId);
+                    error.RequestId ?? headerRequestId);
             }
         }
         catch (MultiplayerProtocolException)
@@ -78,7 +81,7 @@ public sealed class MultiplayerApiException : Exception
             ErrorCode.Internal,
             $"HTTP {(int)response.StatusCode}",
             reason: null,
-            requestId: null);
+            requestId: headerRequestId);
     }
 
     private static async Task<string> ReadBodyAsync(

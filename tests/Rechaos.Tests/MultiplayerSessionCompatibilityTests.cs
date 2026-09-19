@@ -202,4 +202,23 @@ public sealed partial class MultiplayerSessionTests
                 handle, BundledOriginalData.Load(), View(), "nobody", ResumeAfterSeq: 0)));
         Assert.Contains("roster", failure.Message, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void RefusesToStartFromAnIncompleteRunningView()
+    {
+        var exception = Assert.Throws<MultiplayerProtocolException>(() => Running(
+            matchView: View() with { Turn = null }));
+
+        Assert.Contains("open turn", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RefusesToStartWhenTheRunningRosterUsesASeatTwice()
+    {
+        var duplicate = Roster[1] with { Slot = Roster[0].Slot };
+        var exception = Assert.Throws<MultiplayerProtocolException>(() => Running(
+            matchView: View() with { Players = [Roster[0], duplicate] }));
+
+        Assert.Contains("roster", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }

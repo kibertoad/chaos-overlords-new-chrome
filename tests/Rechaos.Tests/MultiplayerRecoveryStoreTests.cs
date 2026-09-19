@@ -233,6 +233,23 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         Assert.Equal(LastPlayed, loaded.LastUpdatedAt);
     }
 
+    [Fact]
+    public void LastFailureContextRoundTripsWithoutChangingTheMembership()
+    {
+        var occurred = LastPlayed.AddMinutes(3);
+        var recovery = Recovery(CleanExit: false, Completed: false) with
+        {
+            LastFailure = new MultiplayerRecoveryFailure(
+                occurred, "Playing", "ReportAsync", 409, "turn_open", "edge-409", 2, 17)
+        };
+
+        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+
+        var loaded = Assert.IsType<MultiplayerRecovery>(MultiplayerRecoveryStore.Load(Path()));
+        Assert.Equal(recovery.LastFailure, loaded.LastFailure);
+        Assert.Equal(recovery.Token, loaded.Token);
+    }
+
     /// <summary>
     /// A file from a build that stored neither reads back as a membership that knows less about
     /// itself, not as one that cannot be resumed.

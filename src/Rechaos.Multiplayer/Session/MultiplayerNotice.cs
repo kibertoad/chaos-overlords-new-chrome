@@ -172,5 +172,11 @@ public abstract record MultiplayerNotice
     /// The session stopped and will not recover on its own.
     /// </summary>
     /// <param name="Reason">Text for the player; the exception is for the log.</param>
-    public sealed record Failed(string Reason, Exception? Error) : MultiplayerNotice;
+    /// <param name="Operation">The last protocol operation on the failing worker, if known.</param>
+    /// <param name="LastEventSequence">The most recent event sequence the session applied.</param>
+    public sealed record Failed(
+        string Reason,
+        Exception? Error,
+        string? Operation = null,
+        int? LastEventSequence = null) : MultiplayerNotice;
 }

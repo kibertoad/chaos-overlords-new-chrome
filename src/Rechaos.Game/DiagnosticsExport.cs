@@ -31,7 +31,8 @@ public static class DiagnosticsExport
         "generalSounds", "combatAnimations", "scenario", "duration",
         "configuredPlayers", "computerPlayers", "mentality", "seed", "player",
         "turnBefore", "turnAfter", "turn", "phase", "commands", "file", "origin",
-        "exceptionType", "error", "reason"
+        "exceptionType", "error", "reason", "operation", "httpStatus", "apiReason",
+        "requestId", "eventSequence", "ready", "seated", "hostRepair", "details"
     };
 
     public static DiagnosticsExportResult Create(

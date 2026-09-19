@@ -125,4 +125,26 @@ public sealed class MultiplayerErrorEnvelopeTests
         // not a reason to end a match.
         Assert.False(failure.EndsTheStream);
     }
+
+    /// <summary>
+    /// Edge servers can reject a request before the coordinator has written its JSON envelope. The
+    /// edge request id is still enough to locate that refusal in deployment logs, so do not throw it
+    /// away with the non-envelope body.
+    /// </summary>
+    [Fact]
+    public async Task KeepsTheEdgeRequestIdWhenAConflictHasNoEnvelope()
+    {
+        using var response = new HttpResponseMessage(HttpStatusCode.Conflict)
+        {
+            Content = new StringContent("<html>conflict</html>"),
+        };
+        response.Headers.Add("X-Request-Id", "edge-409");
+
+        var failure = await MultiplayerApiException
+            .FromResponseAsync(response, CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Conflict, failure.Status);
+        Assert.Null(failure.Reason);
+        Assert.Equal("edge-409", failure.RequestId);
+    }
 }
