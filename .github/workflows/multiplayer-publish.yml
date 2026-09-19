@@ -15,10 +15,13 @@ name: Publish multiplayer packages
 # version in every manifest on main before anything is published, and its jobs run from that commit,
 # so one run records, packs, publishes and tags the same version:
 #
-#   mode: rehearse  runs every check and packs each tarball, then stops without touching either the
-#                   registry or main, so a rehearsal never advances the recorded version.
 #   mode: release   records the version on main, runs the same checks, publishes, and only then
 #                   creates the `multiplayer-vX.Y.Z` annotated tag on the commit it published.
+#                   This is what the form offers by default: a dispatch that nobody reconfigured
+#                   is a release, since that is what the form is opened to do.
+#   mode: rehearse  runs every check and packs each tarball, then stops without touching either the
+#                   registry or main, so a rehearsal never advances the recorded version. Ask for
+#                   it to prove a release would pass before cutting one.
 #
 # Pushing a `multiplayer-v*` tag by hand still publishes, which is the escape hatch for a release cut
 # from a commit other than the tip of main. The tag this workflow creates itself does not re-enter
@@ -42,13 +45,13 @@ on:
           - minor
           - major
       mode:
-        description: Rehearse stops before the registry; release records the version, publishes and tags.
+        description: Release records the version, publishes and tags; rehearse stops before the registry.
         required: true
-        default: rehearse
+        default: release
         type: choice
         options:
-          - rehearse
           - release
+          - rehearse
 
 permissions: {}
 
