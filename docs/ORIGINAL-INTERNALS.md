@@ -3887,7 +3887,9 @@ identification/description overlap.
 **Static follow-through:** Item Information now keeps the item's three
 authored fixed 30-character rows instead of word-reflowing them. For example,
 METAL PIPE retains `TITANIUM ALLOY.`, `GOOD FOR BUSTING IN A FEW`, and `HARD
-HEADS.` on its three native screen rows.
+HEADS.` on its three native screen rows. Its numeric clears remain exactly two
+glyph cells wide: extending the clear into a speculative third cell overwrites
+the template's right border.
 
 **Confidence:** High from complete renderer and input handler `0x0044b699`,
 including literal backing/destination rectangles, text destinations, fixed

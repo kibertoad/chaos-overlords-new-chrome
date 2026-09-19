@@ -103,6 +103,5 @@ public sealed partial class ChaosGame
     }
 
     private static void ClearItemValueField(SpriteBatch batch, Texture2D pixel, int left, int y) =>
-        batch.Draw(pixel, new Rectangle(left, y,
-            3 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+        batch.Draw(pixel, GangInformationLayout.ValueField(left, y), Color.Black);
 }
