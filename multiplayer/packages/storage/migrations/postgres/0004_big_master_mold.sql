@@ -1,0 +1,1 @@
+ALTER TABLE "players" ADD COLUMN "portrait_id" integer DEFAULT 0 NOT NULL;

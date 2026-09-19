@@ -145,7 +145,8 @@ public sealed partial class ChaosGame
             _online.Stage = MultiplayerStage.Busy;
             _online.Status = "JOINING LOBBY";
             _lobby.Join(new JoinMatchRequest(
-                listing.JoinCode, _online.DisplayName.Value.Trim(), password));
+                listing.JoinCode, _online.DisplayName.Value.Trim(),
+                _online.Portrait, password));
         }
         else if (listing.AvailableSeatSummaries.Count > 0)
         {
@@ -173,7 +174,30 @@ public sealed partial class ChaosGame
         _online.Status = "JOINING GAME";
         _online.JoinedInProgress = true;
         _lobby.JoinRunning(new JoinRunningMatchRequest(
-            listing.Id, _online.DisplayName.Value.Trim(), password, seat.Slot));
+            listing.Id, _online.DisplayName.Value.Trim(),
+            SeatPortrait(listing, seat.Slot), password, seat.Slot));
+    }
+
+    /// <summary>
+    /// The face the empire being taken over already wears, rather than the one on the form.
+    /// </summary>
+    /// <remarks>
+    /// A latecomer inherits a seat the match was generated with: every client built that overlord
+    /// from the host's settings before this player existed, and the setup a city was generated from
+    /// is hashed into every turn verdict. Bringing their own face would hand a different city to any
+    /// client that still bootstraps this match from the roster. A blob this build cannot read is
+    /// left to the server's default; the join then fails at bootstrap, where it can be explained.
+    /// </remarks>
+    private static int? SeatPortrait(LobbyListing listing, int slot)
+    {
+        try
+        {
+            return MultiplayerGameSettings.FromWire(listing.Settings.GameSettings).Portraits[slot];
+        }
+        catch (MultiplayerProtocolException)
+        {
+            return null;
+        }
     }
 
     private void HandleLateJoinSeatClick(Point point)

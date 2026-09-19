@@ -54,6 +54,60 @@ public sealed class OnlineConnectLayoutTests
     }
 
     /// <summary>
+    /// The face picker shares the name's row without standing on anything.
+    /// </summary>
+    /// <remarks>
+    /// The name gave up the width it needed, so the two have to add up to the same row the rest of
+    /// the form is drawn on: an arrow either side of the face, clear of the name beside it and of
+    /// the join code and paste button that come next.
+    /// </remarks>
+    [Fact]
+    public void TheFacePickerSitsBesideTheNameWithoutCrowdingTheRowsAroundIt()
+    {
+        var face = OnlineConnectLayout.Portrait;
+        Assert.Equal(OnlineConnectLayout.Name.Y, face.Y);
+        Assert.Equal(OnlineConnectLayout.PortraitPrevious.Y, face.Y);
+        Assert.Equal(OnlineConnectLayout.PortraitNext.Y, face.Y);
+        Assert.True(OnlineConnectLayout.Name.Right < OnlineConnectLayout.PortraitPrevious.X);
+        Assert.True(OnlineConnectLayout.PortraitPrevious.Right <= face.X);
+        Assert.True(face.Right <= OnlineConnectLayout.PortraitNext.X);
+        Assert.True(OnlineConnectLayout.PortraitNext.Right <= OnlineConnectLayout.Password.Right);
+        Assert.All(
+            new[]
+            {
+                OnlineConnectLayout.JoinCode, OnlineConnectLayout.PasteJoinCode,
+                OnlineConnectLayout.PublicChoice, OnlineConnectLayout.PrivateChoice,
+                OnlineConnectLayout.Password, OnlineConnectLayout.HostRole,
+                OnlineConnectLayout.JoinRole
+            },
+            other =>
+            {
+                Assert.False(other.Intersects(face));
+                Assert.False(other.Intersects(OnlineConnectLayout.PortraitPrevious));
+                Assert.False(other.Intersects(OnlineConnectLayout.PortraitNext));
+            });
+    }
+
+    /// <summary>
+    /// The lobby roster stacks a face per seat and still leaves the buttons their ground.
+    /// </summary>
+    /// <remarks>
+    /// Six seats, the line counting the computer players that fill the rest, and the buttons under
+    /// them all share one column, so the rows are the thing that has to stay small.
+    /// </remarks>
+    [Fact]
+    public void TheLobbyRosterFitsSixSeatsAndTheLineUnderThem()
+    {
+        var rows = Enumerable.Range(0, 6).Select(OnlineLobbyLayout.RosterPortrait).ToArray();
+        Assert.All(rows.Zip(rows.Skip(1)), pair =>
+            Assert.True(pair.First.Bottom <= pair.Second.Y));
+        // The count of computer players is drawn on the row after the last seat.
+        Assert.True(OnlineLobbyLayout.RosterPortrait(6).Bottom <= OnlineLobbyLayout.CopyCode.Y);
+        Assert.All(rows, row => Assert.False(row.Intersects(OnlineLobbyLayout.SessionName)));
+        Assert.All(rows, row => Assert.False(row.Intersects(OnlineLobbyLayout.Setup)));
+    }
+
+    /// <summary>
     /// Every captioned control on the connect screen leaves room for its caption.
     /// </summary>
     /// <remarks>
@@ -65,14 +119,17 @@ public sealed class OnlineConnectLayoutTests
         AssertCaptionsFit(
             captioned:
             [
-                OnlineConnectLayout.Name, OnlineConnectLayout.JoinCode,
+                OnlineConnectLayout.Name, OnlineConnectLayout.Portrait,
+                OnlineConnectLayout.JoinCode,
                 OnlineConnectLayout.Password, OnlineConnectLayout.PublicChoice
             ],
             everything:
             [
                 OnlineConnectLayout.Central, OnlineConnectLayout.Custom, OnlineConnectLayout.Server,
                 OnlineConnectLayout.HostRole, OnlineConnectLayout.JoinRole,
-                OnlineConnectLayout.Name, OnlineConnectLayout.JoinCode,
+                OnlineConnectLayout.Name, OnlineConnectLayout.Portrait,
+                OnlineConnectLayout.PortraitPrevious, OnlineConnectLayout.PortraitNext,
+                OnlineConnectLayout.JoinCode,
                 OnlineConnectLayout.PasteJoinCode, OnlineConnectLayout.PublicChoice,
                 OnlineConnectLayout.PrivateChoice, OnlineConnectLayout.Password,
                 OnlineConnectLayout.Continue, OnlineConnectLayout.Discover

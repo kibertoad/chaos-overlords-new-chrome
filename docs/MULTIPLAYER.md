@@ -112,10 +112,10 @@ generated from the same valibot schemas (see "Two languages, one contract").
 
 | Call | Who | Effect |
 |---|---|---|
-| `POST /matches` | anyone | Creates a lobby. Returns the host's token, the 8-character join code and the match view. `settings.gameSettings` is an object the server stores for clients (scenario, portraits, difficulty) and reads two keys of: `allowLateJoin` gates the late-join door, and `seatSummaries` is written back from the host's snapshot uploads and hash reports for the public listing. Everything else in it is opaque. The server also reads `name`, `maxPlayers`, `turnTimerSeconds`, `visibility`. An optional `password` gates joining. |
+| `POST /matches` | anyone | Creates a lobby. Returns the host's token, the 8-character join code and the match view. `hostPortraitId` is the overlord face the host sits down under, stored on their roster row. `settings.gameSettings` is an object the server stores for clients (scenario, the portraits that dress the unclaimed seats, difficulty) and reads two keys of: `allowLateJoin` gates the late-join door, and `seatSummaries` is written back from the host's snapshot uploads and hash reports for the public listing. Everything else in it is opaque. The server also reads `name`, `maxPlayers`, `turnTimerSeconds`, `visibility`. An optional `password` gates joining. |
 | `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings and available late-join seats with current gang, site, and sector counts. Served unless the deployment set `PUBLIC_LISTING=false`, which answers 404 `listing_disabled` instead. |
-| `POST /matches/join` | anyone | Joins by code (and password). Returns that player's token. Capacity is a single atomic seat claim. |
-| `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. |
+| `POST /matches/join` | anyone | Joins by code (and password), under the caller's chosen `portraitId`. Returns that player's token. Capacity is a single atomic seat claim. |
+| `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings`: the match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. |
 | `PUT /matches/:id/settings` | host | Updates the named lobby's scenario, AI policy, timer, duration, visibility, and late-join policy before start. |
 | `POST /matches/:id/start` | host | Seats players (host slot 0, then join order), draws the seed, opens turn 1. |
@@ -391,6 +391,19 @@ derived name for any that reach it, deterministically, so a server that let one 
 fair match. `ReservedPlayerNames` in `Rechaos.Core` is the list; the TypeScript copy names it as the
 source of truth.
 
+**Checked because a face is not only a face.** A player chooses their overlord portrait when they
+create or join, and it rides their roster row from there: `playerView.portraitId`, one of the
+original atlas's sixteen. Every client builds its city from that roster, and the setup a city was
+generated from is hashed into every turn verdict, so the face is as load-bearing as the name beside
+it. Three consequences follow, and all three are enforced rather than assumed. A face is set once,
+by the request that claims the seat, and nothing changes it afterwards — a face that moved
+mid-match would read as a desync on every client that had already bootstrapped. A seat nobody
+claimed keeps the portrait the host's `gameSettings` dressed it in, because there is no player to
+ask; a latecomer taking such a seat over sends that same face back rather than their own. And a
+value outside the atlas stops the bootstrap (`MatchBootstrapFactory`) instead of being clamped to
+something drawable: a client that quietly substituted one would be playing a city no peer agrees
+with.
+
 ## Two languages, one contract
 
 The server is TypeScript and the game is .NET, so one of the two mirrors of every wire type has to
@@ -444,7 +457,8 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    Events are at least once: ignore one for a turn already applied, and treat the match view as the
    authority when the two disagree.
 2. On `match.started`, build the match through `OriginalMatchFactory` from `seed` and the seated
-   players using the stored `gameSettings`. The seed is a **signed 32-bit integer**, drawn to fit
+   players using the stored `gameSettings`. Each seated player's overlord wears their own
+   `portraitId` from the roster; the `gameSettings` portraits dress only the seats nobody claimed. The seed is a **signed 32-bit integer**, drawn to fit
    `MatchSetup.InitialSeed`: it can be negative, and a client that deserializes it into anything
    narrower than an `int` will reject half of all matches. Seat by *whether a slot was assigned*, not
    by a player's current status: a slot is handed out once and never reassigned, so "has a slot" says

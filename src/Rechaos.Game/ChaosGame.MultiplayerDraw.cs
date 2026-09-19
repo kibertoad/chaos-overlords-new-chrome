@@ -47,6 +47,7 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, OnlineConnectLayout.JoinRole, "JOIN",
             _online.Role == OnlineConnectRole.Join);
         DrawField(batch, pixel, font, OnlineConnectLayout.Name, _online.DisplayName);
+        DrawOnlinePortraitChoice(batch, pixel, font);
         var busy = _online.Stage == MultiplayerStage.Busy;
         if (_online.Role == OnlineConnectRole.Join)
         {
@@ -74,6 +75,31 @@ public sealed partial class ChaosGame
         DrawCentered(font, batch, _online.ServerStatus, OnlineConnectLayout.ServerStatusY,
             _online.ServerStatus.EndsWith("ONLINE", StringComparison.Ordinal) ? Color.Lime : Color.Gold, 1);
         DrawCentered(font, batch, _online.Status, OnlineConnectLayout.StatusY, Color.Gold, 1);
+    }
+
+    /// <summary>
+    /// Draws the face this player will sit down under, and the arrows that turn it.
+    /// </summary>
+    /// <remarks>
+    /// Beside the name, because the two are the same kind of thing: what the other players at the
+    /// table see of whoever is about to take a seat. The art is the atlas the rest of the game draws
+    /// overlords from, so the face chosen here is the one the city screen shows all match.
+    /// </remarks>
+    private void DrawOnlinePortraitChoice(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        var bounds = OnlineConnectLayout.Portrait;
+        font.Draw(batch, "FACE", CaptionAt(bounds), new Color(150, 165, 165), 1);
+        batch.Draw(pixel, bounds, new Color(4, 10, 9));
+        if (_uiSprites is not null)
+        {
+            batch.Draw(_uiSprites, bounds,
+                OriginalSpriteLayout.OverlordPortrait(_online.Portrait), Color.White);
+        }
+        DrawBorder(batch, pixel, bounds, new Color(70, 90, 88), 1);
+        DrawHorizontalArrow(
+            batch, pixel, OnlineConnectLayout.PortraitPrevious, left: true, Color.Gold);
+        DrawHorizontalArrow(
+            batch, pixel, OnlineConnectLayout.PortraitNext, left: false, Color.Gold);
     }
 
     private void DrawOnlineDiscovery(SpriteBatch batch, Texture2D pixel, PixelFont font)
@@ -317,7 +343,16 @@ public sealed partial class ChaosGame
             var name = player.DisplayName.Length > OnlineLobbyLayout.RosterNameColumns
                 ? player.DisplayName[..OnlineLobbyLayout.RosterNameColumns]
                 : player.DisplayName;
-            font.Draw(batch, $"{name}{suffix}", new Vector2(136, 200 + row * 16), colour, 1);
+            // The face each player chose on their way in, so the roster says who is who by more
+            // than a name: it is the face their overlord wears on every screen once the match runs.
+            var face = OnlineLobbyLayout.RosterPortrait(row);
+            if (_uiSprites is not null)
+            {
+                batch.Draw(_uiSprites, face,
+                    OriginalSpriteLayout.OverlordPortrait(OnlinePortrait(player)), Color.White);
+            }
+            font.Draw(batch, $"{name}{suffix}",
+                new Vector2(face.Right + 6, face.Y + 5), colour, 1);
             row++;
         }
         // Every unseated slot plays as a computer player, which is worth saying before the start.
@@ -325,7 +360,8 @@ public sealed partial class ChaosGame
         if (computers > 0)
         {
             font.Draw(batch, $"{computers} COMPUTERS FILL THE REST",
-                new Vector2(120, 200 + (row + 1) * 16), new Color(150, 165, 165), 1);
+                new Vector2(120, OnlineLobbyLayout.RosterPortrait(row).Y + 5),
+                new Color(150, 165, 165), 1);
         }
         DrawLobbySettings(batch, pixel, font, match);
         DrawButton(batch, pixel, font, OnlineLobbyLayout.CopyCode, "COPY CODE", true);

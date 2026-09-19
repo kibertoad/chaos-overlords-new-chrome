@@ -437,6 +437,13 @@ public sealed partial class ChaosGame
             ? _online.Match?.Players.Where(player => player.Status == Rechaos.Multiplayer.Generated.PlayerStatus.Active)
                 .Take(MatchLimits.PlayerCount).ToArray() ?? []
             : [];
+        // A seated player wears the face they chose on their way in; the portraits stored with the
+        // rules dress the seats nobody claimed, which are the ones the computer will play.
+        var portraits = Enumerable.Range(0, MatchLimits.PlayerCount)
+            .Select(index => _configuringOnlineLobby && index < onlinePlayers.Length
+                ? OnlinePortrait(onlinePlayers[index])
+                : _playerPortraits[index])
+            .ToArray();
         for (var index = 0; index < MatchLimits.PlayerCount; index++)
         {
             var active = _configuringOnlineLobby
@@ -445,7 +452,7 @@ public sealed partial class ChaosGame
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
                     OriginalSpriteLayout.OverlordPortrait(
-                        active ? _playerPortraits[index] : PlayerPortraitLayout.Count - 1),
+                        active ? portraits[index] : PlayerPortraitLayout.Count - 1),
                     Color.White);
         }
         var shownHumans = _configuringOnlineLobby
@@ -456,7 +463,7 @@ public sealed partial class ChaosGame
             var portrait = SetupPlayerCardArtLayout.PortraitDestination(index);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, portrait,
-                    SetupPlayerCardArtLayout.PortraitSource(_playerPortraits[index]), Color.White);
+                    SetupPlayerCardArtLayout.PortraitSource(portraits[index]), Color.White);
             if (!_configuringOnlineLobby && index == _selectedSetupPlayerSlot)
             {
                 if (_setupKeyedControls is not null)

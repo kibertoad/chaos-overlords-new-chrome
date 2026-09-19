@@ -39,6 +39,14 @@ export interface Player {
   joinOrder: number
   displayName: string
   /**
+   * The overlord face this player chose when they created or joined the match.
+   *
+   * Set once and never changed: every client builds its city from the roster, and the setup a city
+   * is generated from is part of the state hash the turn verdict is taken over, so a face that
+   * moved after the match started would read as a desync on any client that bootstrapped before it.
+   */
+  portraitId: number
+  /**
    * SHA-256 of the player's bearer token, or null once the membership is revoked (kicked
    * from a running match). A null hash matches no token, so revocation needs no extra check.
    */
