@@ -4363,6 +4363,39 @@ remains unobserved.
 routed until the native Help menu itself is recovered. Adding an invented title
 button would be a recreation-only UI change rather than a faithful port.
 
+### BIN-UI-MENU-001 - native menu resource and command groups
+
+**Observation:** RT_MENU resource 101 defines the original application menu.
+The command dispatcher represents each 16-bit menu ID as its high and low
+bytes, so `0x8003` reaches the `(0x80,3)` branch above. Its complete authored
+menu is:
+
+- **File:** New Game `0x8101`, Open `0x8102`, Save `0x8103`, End `0x8104`,
+  Host `0x8106`, Join `0x8107`, and Exit `0x8109`.
+- **Options:** Thousands of Colors `0x8401`, Full Screen `0x840b`, Music
+  levels `0x0601..0x060b`, Sound Effects `0x0701..0x070b`, Base Statistics
+  `0x8406`, Detailed Combat `0x8407`, Slide Panels `0x8408`, and Warn if Idle
+  Gangs `0x8409`.
+- **Comm:** Disconnect `0x8501`; legacy None `0x8503`, WinSock `0x8504`,
+  Modem `0x8505`, and Direct Connect `0x8506`.
+- **Help:** Help Topics `0x8001` and About Chaos Overlords `0x8003`.
+
+**Interpretation:** The original window owns a conventional menu bar in
+addition to its 640-by-460 art canvas. File, Options, and Help semantics are
+not title-screen buttons, while Comm is solely a legacy transport selector.
+The menu proves that credits are globally reachable from every supported
+screen, but it does not alter the explicit decision not to carry legacy
+WinSock/modem/direct-connect transports forward.
+
+**Confidence:** High from the complete RT_MENU 101 template and the dispatcher
+branch. Menu-bar pixel geometry and focus behavior remain native-runtime work.
+
+**Recreation status:** Current title, game-menu, Options, and F1 Help routes
+cover the supported actions semantically. The recreation has no native menu-bar
+surface, so About/Credits remains deliberately unrouted rather than appearing
+as a falsely original title control. Modern public lobby and private join-key
+online flows remain the sole supported multiplayer routes.
+
 ### BIN-SETUP-006 - legacy session lobby resources are distinct flows
 
 **Observation:** Title loop `0x00460ccf` directly calls the three unrelated
