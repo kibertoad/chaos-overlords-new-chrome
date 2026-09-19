@@ -177,7 +177,10 @@ public sealed partial class ChaosGame
         if (_editingPlayerName is not null) FinishSetupNameEdit(cancel: false);
         _editingPlayerName = index;
         _setupOriginalName = _playerNames[index];
-        _setupNameEditor.Begin(_playerNames[index]);
+        // The native modal editor begins with an empty buffer. Confirming it without entering a
+        // character leaves the existing 12-byte seat record untouched rather than restoring a
+        // generated default name.
+        _setupNameEditor.Begin(string.Empty);
         _message = string.Empty;
     }
 
@@ -212,10 +215,10 @@ public sealed partial class ChaosGame
     private void FinishSetupNameEdit(bool cancel)
     {
         if (_editingPlayerName is not { } index) return;
-        var entered = _setupNameEditor.Text.Trim();
+        var entered = _setupNameEditor.Text;
         _playerNames[index] = cancel
             ? _setupOriginalName
-            : entered.Length == 0 ? LocalSetupPolicy.DefaultPlayerName(index) : entered;
+            : LocalSetupPolicy.NameAfterModalEntry(_setupOriginalName, entered);
         _editingPlayerName = null;
         _message = string.Empty;
     }

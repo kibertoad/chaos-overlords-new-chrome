@@ -36,6 +36,14 @@ public sealed class LocalSetupUiTests
     }
 
     [Fact]
+    public void EmptyAcceptedModalNameKeepsTheExistingNativeRecord()
+    {
+        Assert.Equal("ORIGINAL", LocalSetupPolicy.NameAfterModalEntry("ORIGINAL", string.Empty));
+        Assert.Equal(" ", LocalSetupPolicy.NameAfterModalEntry("ORIGINAL", " "));
+        Assert.Equal("NEW", LocalSetupPolicy.NameAfterModalEntry("ORIGINAL", "NEW"));
+    }
+
+    [Fact]
     public void SetupHitRegionsFollowTheNativeInteractionCells()
     {
         Assert.Equal(new Rectangle(397, 94, 64, 68), PlayerPortraitLayout.SetupHit(0));
