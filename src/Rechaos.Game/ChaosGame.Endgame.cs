@@ -121,26 +121,30 @@ public sealed partial class ChaosGame
         }
     }
 
-    private static void DrawEndgameStatistics(
+    private void DrawEndgameStatistics(
         SpriteBatch batch,
         PixelFont font,
         MatchPlayerState player,
         int row)
     {
-        (string Label, long Value)[] statistics =
+        if (_endgameSprites is not null)
+            batch.Draw(_endgameSprites, EndgameLayout.StatisticsDestination(row),
+                EndgameLayout.StatisticsSource, Color.White);
+
+        long[] statistics =
         [
-            ("CASH EARNED", player.Statistics.CashEarned),
-            ("CASH SPENT", player.Statistics.CashSpent),
-            ("DAMAGE", player.Statistics.DamageInflicted),
-            ("CASUALTIES", player.Statistics.Casualties),
-            ("OVERTHROWS", player.Statistics.Overthrows)
+            player.Statistics.CashEarned,
+            player.Statistics.CashSpent,
+            player.Statistics.DamageInflicted,
+            player.Statistics.Casualties,
+            player.Statistics.Overthrows
         ];
         for (var index = 0; index < statistics.Length; index++)
         {
-            var position = EndgameLayout.Statistic(row, index);
-            font.Draw(batch, statistics[index].Label, position, Color.Lime, 1);
-            DrawPanelValue(font, batch, statistics[index].Value.ToString(),
-                EndgameLayout.StatisticValueRight, (int)position.Y);
+            var field = EndgameLayout.StatisticValueField(row, index);
+            batch.Draw(_pixel, field, Color.Black);
+            DrawPanelValue(font, batch, statistics[index].ToString(),
+                field.Right, field.Y);
         }
     }
 
@@ -258,7 +262,6 @@ public static class EndgamePresentation
 public static class EndgameLayout
 {
     public const int PlayerRows = MatchLimits.PlayerCount;
-    public const int StatisticValueRight = 421;
     public static Rectangle Panel => new(106, 25, 428, 410);
     // These are input regions, not the full painted button frames. The native pointer helper
     // receives the following top/left/bottom/right rectangles: Awards (33,428,81,476),
@@ -297,11 +300,23 @@ public static class EndgameLayout
         _ => throw new ArgumentOutOfRangeException(nameof(award))
     };
 
-    public static Vector2 Statistic(int row, int statistic)
+    public static Rectangle StatisticsSource => new(96, 112, 160, 64);
+
+    public static Rectangle StatisticsDestination(int row)
+    {
+        ValidateRow(row);
+        return new Rectangle(262, 30 + row * 66, 160, 64);
+    }
+
+    public static Rectangle StatisticValueField(int row, int statistic)
     {
         ValidateRow(row);
         if (statistic is < 0 or >= 5) throw new ArgumentOutOfRangeException(nameof(statistic));
-        return new Vector2(268, 38 + row * 66 + statistic * 11);
+        int[] left = [371, 371, 377, 383, 383];
+        int[] yOffset = [37, 46, 58, 67, 79];
+        int[] digits = [8, 8, 7, 6, 6];
+        return new Rectangle(left[statistic], yOffset[statistic] + row * 66,
+            digits[statistic] * OriginalFontLayout.CellWidth, 7);
     }
 
     private static void ValidateRow(int row)

@@ -4431,6 +4431,12 @@ The native pointer targets for Awards, Stats, and Done are now also recovered;
 Enter/Space presentation navigation remains the separately documented
 compatible-keyboard QoL layer.
 
+The Stats tab copies the opaque `PX00201` `(x=96, y=112, 160x64)` strip to
+`(x=262, y=30 + 66 * displayed-row)`. The five values occupy the original
+fixed-width 8/8/7/6/6 digit fields, all ending at `x=419`, at vertical offsets
+37, 46, 58, 67, and 79. The recreation uses that strip and preserves the
+native field widths rather than redrawing an approximate label grid.
+
 **Next validation:** Capture a multi-local elimination followed by another
 human turn to corroborate `PX00203` timing and later-slot timing, and capture
 Simple and Detailed handoffs containing both a combat result and an event
