@@ -141,6 +141,10 @@ presentation-only conveniences that make the original systems easier to read:
 - F12 captures the finished native window backbuffer as a timestamped PNG in
   the game-local `screenshots` folder; captures remain local and are ignored by
   Git.
+- Online Lobby Appearance in Options switches between the modern lobby and a
+  classic presentation based on the original host-lobby artwork. Both use the
+  same public-listing, private join-key, late-join, and six-seat modern session
+  flow; no legacy transport is enabled.
 - Options can explicitly export a bounded support ZIP to the local application-
   data `Diagnostics` directory. It contains recent client/session events and
   privacy-filtered crash summaries for startup, display, audio, and crash

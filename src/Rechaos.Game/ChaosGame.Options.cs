@@ -27,6 +27,7 @@ public static class OptionsLayout
     public static Rectangle AdvancedAi => new(150, 314, 340, 26);
     public static Rectangle ExportDiagnostics => new(150, 342, 340, 26);
     public static Rectangle ColorDepth => new(150, 370, 340, 16);
+    public static Rectangle OnlineLobbyPresentation => ColorDepth;
 }
 
 public static class OptionsTooltip
@@ -71,9 +72,10 @@ public static class OptionsTooltip
             ];
         if (OptionsLayout.ColorDepth.Contains(point))
             return [
-                "THOUSANDS OF COLORS",
-                "LEGACY COLOR DEPTH; THE MODERN RENDERER IS ALWAYS ABOVE 16-BIT.",
-                "NO CHANGEABLE RETRO COLOR MODE IS CURRENTLY PLANNED."
+                "ONLINE LOBBY APPEARANCE",
+                "MODERN USES THE NEW MULTIPLAYER LAYOUT.",
+                "CLASSIC USES THE ORIGINAL HOST-LOBBY ART WITH MODERN CONTROLS.",
+                "THIS DOES NOT CHANGE THE SERVER, SESSION, OR JOIN KEY."
             ];
         if (OptionsLayout.Done.Contains(point))
             return ["DONE", "RETURNS TO THE GAME; CHANGES ARE SAVED IMMEDIATELY."];
@@ -97,6 +99,7 @@ public sealed partial class ChaosGame
     private bool _slidePanels = OriginalOptionsPolicy.SlidePanelsByDefault;
     private bool _fullscreen = OriginalOptionsPolicy.FullscreenByDefault;
     private bool _smoothEventSiteImages = OriginalOptionsPolicy.SmoothEventSiteImagesByDefault;
+    private OnlineLobbyPresentation _onlineLobbyPresentation = OnlineLobbyPresentation.Modern;
     private string _optionsStatus = string.Empty;
 
     private void OpenOptions()
@@ -128,7 +131,7 @@ public sealed partial class ChaosGame
     private void UpdateOptions(KeyboardState keyboard)
     {
         if (Pressed(keyboard, Keys.Up)) _optionsRow = Math.Max(0, _optionsRow - 1);
-        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(8, _optionsRow + 1);
+        if (Pressed(keyboard, Keys.Down)) _optionsRow = Math.Min(9, _optionsRow + 1);
         if (Pressed(keyboard, Keys.Left)) ChangeSelectedVolume(-1);
         if (Pressed(keyboard, Keys.Right)) ChangeSelectedVolume(1);
         if (_optionsRow >= 2 && Pressed(keyboard, Keys.Space)) ToggleSelectedOption();
@@ -191,8 +194,11 @@ public sealed partial class ChaosGame
             _optionsRow = 8;
             ExportDiagnostics();
         }
-        else if (OptionsLayout.ColorDepth.Contains(point))
-            _optionsStatus = "THOUSANDS OF COLORS IS ALWAYS ENABLED";
+        else if (OptionsLayout.OnlineLobbyPresentation.Contains(point))
+        {
+            _optionsRow = 9;
+            ToggleOnlineLobbyPresentation();
+        }
         else if (OptionsLayout.Done.Contains(point)) CloseOptions();
     }
 
@@ -205,7 +211,7 @@ public sealed partial class ChaosGame
                 _soundEffectVolumeLevel + delta,
                 AudioRouting.MinimumEffectVolumeLevel,
                 AudioRouting.MaximumEffectVolumeLevel));
-        else if (_optionsRow <= 7) ToggleSelectedOption();
+        else if (_optionsRow <= 9) ToggleSelectedOption();
     }
 
     private void ToggleSelectedOption()
@@ -217,6 +223,7 @@ public sealed partial class ChaosGame
         else if (_optionsRow == 6) ToggleEventSiteImageFilter();
         else if (_optionsRow == 7) ToggleAdvancedAi();
         else if (_optionsRow == 8) ExportDiagnostics();
+        else if (_optionsRow == 9) ToggleOnlineLobbyPresentation();
     }
 
     private void ToggleBaseStatistics()
@@ -301,6 +308,16 @@ public sealed partial class ChaosGame
             : "APPLIES TO THE NEXT NEW GAME ONLY";
     }
 
+    private void ToggleOnlineLobbyPresentation()
+    {
+        _onlineLobbyPresentation = _onlineLobbyPresentation == OnlineLobbyPresentation.Modern
+            ? OnlineLobbyPresentation.Classic
+            : OnlineLobbyPresentation.Modern;
+        SavePreferences();
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+        _optionsStatus = "APPLIES WHEN YOU OPEN THE LOBBY";
+    }
+
     private void ExportDiagnostics()
     {
         var result = _diagnostics?.Export();
@@ -337,7 +354,8 @@ public sealed partial class ChaosGame
                 _introMoviesSeen,
                 _localSetupBeforeLobby?.AiPolicy ?? _defaultAiPolicy,
                 _online.Service,
-                _online.Server.Value));
+                _online.Server.Value,
+                _onlineLobbyPresentation));
 
     private void ToggleFullscreen()
     {
@@ -393,8 +411,8 @@ public sealed partial class ChaosGame
             $"ADVANCED AI: {(_defaultAiPolicy == AiPolicyMode.Advanced ? "ON" : "OFF")}", 7);
         DrawOptionToggle(batch, pixel, font, OptionsLayout.ExportDiagnostics,
             "EXPORT DIAGNOSTICS", 8);
-        DrawCentered(font, batch, "THOUSANDS OF COLORS: ALWAYS ON", 373,
-            new Color(185, 195, 195), 1);
+        DrawOptionToggle(batch, pixel, font, OptionsLayout.OnlineLobbyPresentation,
+            $"ONLINE LOBBY: {(_onlineLobbyPresentation == OnlineLobbyPresentation.Classic ? "CLASSIC" : "MODERN")}", 9);
 
         DrawCentered(font, batch,
             string.IsNullOrEmpty(_optionsStatus)

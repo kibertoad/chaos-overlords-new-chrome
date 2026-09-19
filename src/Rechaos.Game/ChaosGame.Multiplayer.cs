@@ -640,7 +640,7 @@ public sealed partial class ChaosGame
 
     private void HandleLobbyClick(Point point)
     {
-        if (CanConfigureOnlineLobby() && OnlineLobbyLayout.SessionName.Contains(point))
+        if (CanConfigureOnlineLobby() && LobbySessionName.Contains(point))
         {
             _online.SessionName.IsFocused = true;
             return;
@@ -648,16 +648,36 @@ public sealed partial class ChaosGame
         // Anywhere else finishes an edit of the name: the setting it belongs to is about to be sent,
         // or the player is leaving the screen the caret was on.
         CommitLobbySessionName();
-        if (OnlineLobbyLayout.CopyCode.Contains(point)) CopyLobbyJoinCode();
-        else if (OnlineLobbyLayout.Setup.Contains(point)) OpenOnlineSetup();
-        else if (OnlineLobbyLayout.Start.Contains(point)) StartHostedMatch();
-        else if (OnlineLobbyLayout.Leave.Contains(point)) LeaveOnlineMatch();
+        if (LobbyCopyCode.Contains(point)) CopyLobbyJoinCode();
+        else if (LobbySetup.Contains(point)) OpenOnlineSetup();
+        else if (LobbyStart.Contains(point)) StartHostedMatch();
+        else if (LobbyLeave.Contains(point)) LeaveOnlineMatch();
         else if (!CanConfigureOnlineLobby()) return;
-        else if (OnlineLobbyLayout.PublicChoice.Contains(point)) ChangeLobbyListing(publicly: true);
-        else if (OnlineLobbyLayout.PrivateChoice.Contains(point)) ChangeLobbyListing(publicly: false);
-        else if (OnlineLobbyLayout.LateJoinAllowed.Contains(point)) ChangeLobbyLateJoin(allowed: true);
-        else if (OnlineLobbyLayout.LateJoinRefused.Contains(point)) ChangeLobbyLateJoin(allowed: false);
+        else if (LobbyPublicChoice.Contains(point)) ChangeLobbyListing(publicly: true);
+        else if (LobbyPrivateChoice.Contains(point)) ChangeLobbyListing(publicly: false);
+        else if (LobbyLateJoinAllowed.Contains(point)) ChangeLobbyLateJoin(allowed: true);
+        else if (LobbyLateJoinRefused.Contains(point)) ChangeLobbyLateJoin(allowed: false);
     }
+
+    private bool UsesClassicLobby => _onlineLobbyPresentation == OnlineLobbyPresentation.Classic;
+    private Rectangle LobbySessionName => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.SessionName : OnlineLobbyLayout.SessionName;
+    private Rectangle LobbyCopyCode => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.CopyCode : OnlineLobbyLayout.CopyCode;
+    private Rectangle LobbySetup => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.Setup : OnlineLobbyLayout.Setup;
+    private Rectangle LobbyStart => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.Start : OnlineLobbyLayout.Start;
+    private Rectangle LobbyLeave => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.Leave : OnlineLobbyLayout.Leave;
+    private Rectangle LobbyPublicChoice => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.PublicChoice : OnlineLobbyLayout.PublicChoice;
+    private Rectangle LobbyPrivateChoice => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.PrivateChoice : OnlineLobbyLayout.PrivateChoice;
+    private Rectangle LobbyLateJoinAllowed => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.LateJoinAllowed : OnlineLobbyLayout.LateJoinAllowed;
+    private Rectangle LobbyLateJoinRefused => UsesClassicLobby
+        ? ClassicOnlineLobbyLayout.LateJoinRefused : OnlineLobbyLayout.LateJoinRefused;
 
     private void UpdateLobby(KeyboardState keyboard, GameTime gameTime)
     {

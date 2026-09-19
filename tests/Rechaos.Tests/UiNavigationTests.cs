@@ -462,7 +462,7 @@ public sealed class UiNavigationTests
             Assert.True(bounds.Right <= VirtualInput.Width);
             Assert.True(bounds.Bottom <= VirtualInput.Height);
         });
-        Assert.Contains("ALWAYS ABOVE 16-BIT",
+        Assert.Contains("ORIGINAL HOST-LOBBY ART",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.ColorDepth.Center)));
         Assert.Contains("IMMEDIATELY",
             string.Join(' ', OptionsTooltip.At(OptionsLayout.SlidePanels.Center)));

@@ -30,6 +30,7 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(OnlineServiceMode.Central, preferences.OnlineService);
         Assert.Equal(GamePreferences.DefaultCustomMultiplayerServer,
             preferences.CustomMultiplayerServer);
+        Assert.Equal(OnlineLobbyPresentation.Modern, preferences.LobbyPresentation);
     }
 
     [Fact]
@@ -38,7 +39,8 @@ public sealed class GamePreferencesStoreTests : IDisposable
         var expected = new GamePreferences(
             GamePreferences.CurrentFormatVersion, 8, 3, false,
             PlanningTimeLimit.TwoMinutes, true, false, false, true, true, true,
-            AiPolicyMode.Advanced, OnlineServiceMode.Custom, "https://games.example.test");
+            AiPolicyMode.Advanced, OnlineServiceMode.Custom, "https://games.example.test",
+            OnlineLobbyPresentation.Classic);
 
         Assert.True(GamePreferencesStore.TrySave(Path(), expected));
 
@@ -168,6 +170,26 @@ public sealed class GamePreferencesStoreTests : IDisposable
         Assert.Equal(AiPolicyMode.Advanced, preferences.DefaultAiPolicy);
     }
 
+    [Fact]
+    public void VersionTenPreferencesMigrateToTheModernLobbyPresentation()
+    {
+        File.WriteAllText(Path(), """
+            {"FormatVersion":10,"MusicVolumeLevel":8,"SoundEffectVolumeLevel":3,
+             "WarnIfIdleGangs":false,"PlanningTimeLimit":2,
+             "ShowBaseStatistics":true,"DetailedCombat":false,"SlidePanels":true,
+             "Fullscreen":true,"SmoothEventSiteImages":true,"IntroMoviesSeen":true,
+             "DefaultAiPolicy":1,"OnlineService":1,
+             "CustomMultiplayerServer":"https://games.example.test"}
+            """);
+
+        var preferences = GamePreferencesStore.LoadOrDefault(Path());
+
+        Assert.Equal(GamePreferences.CurrentFormatVersion, preferences.FormatVersion);
+        Assert.Equal(OnlineServiceMode.Custom, preferences.OnlineService);
+        Assert.Equal("https://games.example.test", preferences.CustomMultiplayerServer);
+        Assert.Equal(OnlineLobbyPresentation.Modern, preferences.LobbyPresentation);
+    }
+
     [Theory]
     [InlineData("not-json")]
     [InlineData("{\"FormatVersion\":1,\"MusicVolumeLevel\":8}")]
@@ -220,6 +242,18 @@ public sealed class GamePreferencesStoreTests : IDisposable
                 GamePreferences.CurrentFormatVersion, 5, 5, true,
                 PlanningTimeLimit.None, false, true, false, false, false, false,
                 AiPolicyMode.Original, service, server)));
+        Assert.False(File.Exists(Path()));
+    }
+
+    [Fact]
+    public void InvalidOnlineLobbyPresentationIsNotWritten()
+    {
+        Assert.False(GamePreferencesStore.TrySave(
+            Path(), new GamePreferences(
+                GamePreferences.CurrentFormatVersion, 5, 5, true,
+                PlanningTimeLimit.None, false, true, false, false, false, false,
+                AiPolicyMode.Original, OnlineServiceMode.Central,
+                GamePreferences.DefaultCustomMultiplayerServer, (OnlineLobbyPresentation)99)));
         Assert.False(File.Exists(Path()));
     }
 

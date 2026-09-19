@@ -373,6 +373,13 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void DrawLobby(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
+        if (_onlineLobbyPresentation == OnlineLobbyPresentation.Classic
+            && ClassicLobbyBackground is not null)
+        {
+            DrawClassicLobby(batch, pixel, font);
+            return;
+        }
+
         DrawOnlineFrame(batch, pixel, font, "LOBBY");
         var match = _online.Match;
         var configurable = CanConfigureOnlineLobby();
@@ -394,6 +401,87 @@ public sealed partial class ChaosGame
             configurable && !busy ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
         DrawButton(batch, pixel, font, OnlineLobbyLayout.Leave, "LEAVE",
             ButtonEmphasis.Secondary);
+    }
+
+    /// <summary>
+    /// The original host-lobby artwork with modern coordination controls mapped onto its authored
+    /// choice and action faces.
+    /// </summary>
+    /// <remarks>
+    /// This is consciously an adapter, not legacy networking. The rendered roster, visibility,
+    /// late-join policy, join key, and actions all come from the same current <see cref="MatchView"/>
+    /// and commands as the modern lobby.
+    /// </remarks>
+    private void DrawClassicLobby(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        batch.Draw(ClassicLobbyBackground!, new Rectangle(0, 0, 640, 460), Color.White);
+        var match = _online.Match;
+        var configurable = CanConfigureOnlineLobby();
+        var busy = _lobby?.IsBusy == true;
+
+        batch.Draw(pixel, ClassicOnlineLobbyLayout.SessionName, new Color(0, 0, 0, 210));
+        font.Draw(batch, "JOIN KEY", new Vector2(86, 38), Color.Gold, 1);
+        font.Draw(batch, HasLobbyJoinCode ? _online.JoinCodeShown : "--------",
+            new Vector2(86, 52), HasLobbyJoinCode ? Color.Lime : OnlineMutedText, 1);
+        var sessionName = match?.Settings.Name ?? _online.SessionName.Value;
+        font.Draw(batch, Fitted(sessionName, new Rectangle(86, 66, 146, 8)),
+            new Vector2(86, 66), Color.White, 1);
+        DrawButton(batch, pixel, font, ClassicOnlineLobbyLayout.CopyCode, "COPY",
+            HasLobbyJoinCode ? ButtonEmphasis.Secondary : ButtonEmphasis.Disabled);
+
+        DrawClassicLobbyChoice(batch, pixel, font, ClassicOnlineLobbyLayout.PublicChoice,
+            "PUBLIC", _online.PublicListing, configurable);
+        DrawClassicLobbyChoice(batch, pixel, font, ClassicOnlineLobbyLayout.PrivateChoice,
+            "PRIVATE", !_online.PublicListing, configurable);
+        DrawClassicLobbyChoice(batch, pixel, font, ClassicOnlineLobbyLayout.LateJoinAllowed,
+            "LATE: YES", _online.AllowLateJoin, configurable);
+        DrawClassicLobbyChoice(batch, pixel, font, ClassicOnlineLobbyLayout.LateJoinRefused,
+            "LATE: NO", !_online.AllowLateJoin, configurable);
+        DrawButton(batch, pixel, font, ClassicOnlineLobbyLayout.Setup, "RULES",
+            configurable ? ButtonEmphasis.Secondary : ButtonEmphasis.Disabled);
+        DrawButton(batch, pixel, font, ClassicOnlineLobbyLayout.Start, "START",
+            configurable && !busy ? ButtonEmphasis.Primary : ButtonEmphasis.Disabled);
+        DrawButton(batch, pixel, font, ClassicOnlineLobbyLayout.Leave, "LEAVE",
+            ButtonEmphasis.Secondary);
+
+        if (match is null)
+        {
+            font.Draw(batch, "WAITING FOR SERVER", new Vector2(392, 148), OnlineMutedText, 1);
+            return;
+        }
+
+        var row = 0;
+        foreach (var player in match.Players.Where(Seated).Take(MatchLimits.PlayerCount))
+        {
+            var face = ClassicOnlineLobbyLayout.RosterPortrait(row);
+            if (_uiSprites is not null)
+                batch.Draw(_uiSprites, face,
+                    OriginalSpriteLayout.OverlordPortrait(OnlinePortrait(player)), Color.White);
+            var colour = player.Slot >= 0 && player.Slot < PlayerColors.Length
+                ? PlayerColors[player.Slot]
+                : Color.White;
+            var label = player.IsHost ? $"{player.DisplayName}*" : player.DisplayName;
+            font.Draw(batch, Fitted(label, new Rectangle(face.Right + 4, face.Y + 4, 132, 8)),
+                new Vector2(face.Right + 4, face.Y + 4), colour, 1);
+            row++;
+        }
+    }
+
+    private static void DrawClassicLobbyChoice(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        Rectangle bounds,
+        string label,
+        bool selected,
+        bool enabled)
+    {
+        batch.Draw(pixel, bounds, new Color(0, 0, 0, 160));
+        DrawBorder(batch, pixel, bounds, selected ? Color.Gold : new Color(80, 120, 110), 1);
+        font.Draw(batch, label,
+            new Vector2(bounds.X + (bounds.Width - label.Length * 6) / 2,
+                bounds.Y + 9),
+            enabled ? (selected ? Color.Gold : Color.White) : OnlineMutedText, 1);
     }
 
     private void DrawLobbyJoinCode(SpriteBatch batch, Texture2D pixel, PixelFont font)

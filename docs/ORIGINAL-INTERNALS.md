@@ -4669,7 +4669,12 @@ calls, resource loads, bounded pointer helpers, host string, connection loops,
 and renderer ownership.
 
 **Recreation status:** The modern online flow is intentionally independent. No
-legacy transport, screen, record encoding, or compatibility claim is added.
+legacy transport, screen record encoding, or compatibility claim is added.
+Options may select a classic lobby presentation: it renders the original
+`PX00144` host-lobby sheet and maps its choice/action faces to the modern
+public/private listing, late-join, join-key copy, rules, start, and leave
+operations. The six-seat roster and every operation still use the modern
+session state; the original four-seat connection lifecycle remains unrouted.
 
 ### BIN-SETUP-007 - legacy transport progress sheets
 

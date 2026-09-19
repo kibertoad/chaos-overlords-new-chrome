@@ -21,6 +21,13 @@ public enum OnlineServiceMode
     Custom
 }
 
+/// <summary>The local presentation used for an otherwise identical online lobby.</summary>
+public enum OnlineLobbyPresentation
+{
+    Modern,
+    Classic
+}
+
 public sealed record GamePreferences(
     int FormatVersion,
     int MusicVolumeLevel,
@@ -35,9 +42,10 @@ public sealed record GamePreferences(
     bool IntroMoviesSeen,
     AiPolicyMode DefaultAiPolicy,
     OnlineServiceMode OnlineService,
-    string CustomMultiplayerServer)
+    string CustomMultiplayerServer,
+    OnlineLobbyPresentation LobbyPresentation = OnlineLobbyPresentation.Modern)
 {
-    public const int CurrentFormatVersion = 10;
+    public const int CurrentFormatVersion = 11;
     public const string DefaultCustomMultiplayerServer = "http://localhost:8787";
 
     /// <summary>Preferences that have never recorded a showing leave the intro owed, so the
@@ -176,6 +184,20 @@ public static class GamePreferencesStore
                         GamePreferences.DefaultCustomMultiplayerServer)
                     : GamePreferences.Default;
             }
+            if (version.GetInt32() == 10)
+            {
+                var legacy = JsonSerializer.Deserialize<VersionTenPreferences>(bytes, JsonOptions);
+                return IsValid(legacy)
+                    ? new GamePreferences(GamePreferences.CurrentFormatVersion,
+                        legacy!.MusicVolumeLevel, legacy.SoundEffectVolumeLevel,
+                        legacy.WarnIfIdleGangs, legacy.PlanningTimeLimit,
+                        legacy.ShowBaseStatistics, legacy.DetailedCombat,
+                        legacy.SlidePanels, legacy.Fullscreen,
+                        legacy.SmoothEventSiteImages, legacy.IntroMoviesSeen,
+                        legacy.DefaultAiPolicy, legacy.OnlineService,
+                        legacy.CustomMultiplayerServer, OnlineLobbyPresentation.Modern)
+                    : GamePreferences.Default;
+            }
             var preferences = JsonSerializer.Deserialize<GamePreferences>(bytes, JsonOptions);
             return IsValid(preferences) ? preferences! : GamePreferences.Default;
         }
@@ -229,6 +251,7 @@ public static class GamePreferencesStore
         } && Enum.IsDefined(preferences.PlanningTimeLimit)
           && Enum.IsDefined(preferences.DefaultAiPolicy)
           && Enum.IsDefined(preferences.OnlineService)
+          && Enum.IsDefined(preferences.LobbyPresentation)
           && IsServerAddress(preferences.CustomMultiplayerServer);
 
     private static bool IsValid(VersionFourPreferences? preferences) =>
@@ -291,6 +314,19 @@ public static class GamePreferencesStore
                 and <= AudioRouting.MaximumEffectVolumeLevel
         } && Enum.IsDefined(preferences.PlanningTimeLimit)
           && Enum.IsDefined(preferences.DefaultAiPolicy);
+
+    private static bool IsValid(VersionTenPreferences? preferences) =>
+        preferences is
+        {
+            FormatVersion: 10,
+            MusicVolumeLevel: >= OriginalSoundtrackPolicy.MinimumVolumeLevel
+                and <= OriginalSoundtrackPolicy.MaximumVolumeLevel,
+            SoundEffectVolumeLevel: >= AudioRouting.MinimumEffectVolumeLevel
+                and <= AudioRouting.MaximumEffectVolumeLevel
+        } && Enum.IsDefined(preferences.PlanningTimeLimit)
+          && Enum.IsDefined(preferences.DefaultAiPolicy)
+          && Enum.IsDefined(preferences.OnlineService)
+          && IsServerAddress(preferences.CustomMultiplayerServer);
 
     private static bool IsServerAddress(string address) =>
         !string.IsNullOrWhiteSpace(address)
@@ -364,4 +400,20 @@ public static class GamePreferencesStore
         bool SmoothEventSiteImages,
         bool IntroMoviesSeen,
         AiPolicyMode DefaultAiPolicy);
+
+    private sealed record VersionTenPreferences(
+        int FormatVersion,
+        int MusicVolumeLevel,
+        int SoundEffectVolumeLevel,
+        bool WarnIfIdleGangs,
+        PlanningTimeLimit PlanningTimeLimit,
+        bool ShowBaseStatistics,
+        bool DetailedCombat,
+        bool SlidePanels,
+        bool Fullscreen,
+        bool SmoothEventSiteImages,
+        bool IntroMoviesSeen,
+        AiPolicyMode DefaultAiPolicy,
+        OnlineServiceMode OnlineService,
+        string CustomMultiplayerServer);
 }

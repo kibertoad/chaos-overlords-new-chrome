@@ -253,6 +253,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         _defaultAiPolicy = preferences.DefaultAiPolicy;
         _online.Service = preferences.OnlineService;
         _online.Server.Set(preferences.CustomMultiplayerServer);
+        _onlineLobbyPresentation = preferences.LobbyPresentation;
         _multiplayerRecoveries.AddRange(MultiplayerRecoveryStore.LoadAll(_multiplayerRecoveryPath));
         if (LatestOnlineRecovery is { } recovery)
         {
