@@ -390,7 +390,7 @@ Last updated: 2026-09-19
 - The main console's original Game Info button now opens the `PX05021`
   Scenario Information panel over either City or Sector. It lists the scenario,
   AI mentality, planning limit, and all six color-coded players with the
-  manual-defined Human/AI intelligence labels. As documented by the original
+  native Human/AI/Eliminated status labels. As documented by the original
   help, it auto-opens when a local multiplayer match starts and whenever a live
   saved game is loaded.
 - Local setup now begins with one human, Add/Remove changes the local-human

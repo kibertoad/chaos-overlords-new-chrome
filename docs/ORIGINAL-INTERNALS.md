@@ -4006,6 +4006,14 @@ translation uses that 128-pixel destination left edge and tests the bottom face
 as local `(33,169)-(82,191)`, or screen `(161,293)-(210,315)`. Dynamic text
 is written at backing x=444 for the three header values, x=456 for player names, and right-aligned to backing x=624 for intelligence; these map to screen x=228, x=240, and right edge 408. Header y values map to 151, 169, and 187, while the six player rows map to y=214 + 9*n.
 
+The renderer's roster pass is fixed, not player-count bounded: it iterates
+`n = 0..5`, reads each 12-byte name record from `0x004a2589 + 12*n`, then
+draws a status label for that same slot. The match-start setup screen likewise
+copies all six configured name records before play. The recreation's local
+bootstrap therefore correctly completes every unclaimed slot as a computer
+player before this panel is available, instead of omitting rows for seats that
+were not manually configured.
+
 The first header is scenario-sensitive. For scenario ids 0 through 3 (Greed,
 Power, Acceptance, and Dominance), the renderer appends the two-byte literal
 opening ` (` from `0x00487768`, selects resource ids `0x36` through `0x39`
