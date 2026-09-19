@@ -3898,11 +3898,8 @@ authored fixed 30-character rows instead of word-reflowing them. For example,
 METAL PIPE retains `TITANIUM ALLOY.`, `GOOD FOR BUSTING IN A FEW`, and `HARD
 HEADS.` on its three native screen rows. Its numeric clears remain exactly two
 glyph cells wide: extending the clear into a speculative third cell overwrites
-the template's right border. The extracted template's two-pixel data-frame
-edge is source `(282,14)-(284,192)`, mapping to final `(410,138)-(412,316)`;
-the recreation restores that exact source sliver after clearing the baked
-placeholder digits, before drawing live values. This keeps a field clear from
-leaving a black seam on the frame under scaled presentation.
+the template's right border. The dynamic-value clear stops before that frame;
+the original panel's source pixels remain the sole owner of its edge.
 
 **Numeric helper detail:** Cost and Tech Level use `0x00414187`; the fourteen
 item modifier fields use `0x004142e7`, with every call passing literal width
