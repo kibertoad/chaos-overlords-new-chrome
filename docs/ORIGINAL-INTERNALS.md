@@ -682,6 +682,17 @@ load a valid attack sound. The timeline at `0x00430c23` calls the gated slot-5
 wrapper immediately before advancing frames, and the presenter unloads slot 5
 after that combatant's sequence.
 
+The final word of each 166-byte `ITEMS` record, previously retained as an
+unnamed value, is the combat portrait-frame index. Its only six direct reads
+are in the two detailed-combat side compositors `0x0042ee46` and `0x0042f98b`.
+For every equipped weapon, armor, and miscellaneous item, they load that
+item's `PX04xxx` 720-by-48 rotation strip and opaque-copy its indexed 48-by-48
+frame into the matching equipment aperture. It is therefore presentation data,
+not an economic or statistic modifier. The recreation names the field
+`CombatPortraitFrame`, preserves its historical `Unknown` JSON property name,
+and uses the recovered frame rather than scaling the compact `PX04999` icon in
+detailed combat.
+
 The same `0x0042e040` branches recover the exact paired animation mapping.
 For a normal-direction unarmed attack, base Martial Arts greater than zero
 selects attacker strip `PX07001` and recipient strip `PX07118`; otherwise it

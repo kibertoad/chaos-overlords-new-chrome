@@ -470,7 +470,7 @@ public static class MatchStateHasher
         {
             writer.Write(item.Id); WriteString(writer, item.Name); WriteString(writer, item.Description); writer.Write(item.Type);
             writer.Write(item.ResearchDifficulty); writer.Write(item.Cost); writer.Write(item.TechLevel); WriteStatistics(writer, item.Stats);
-            writer.Write(item.AttackAnimation); writer.Write(item.HitAnimation); writer.Write(item.Sound); writer.Write(item.Unknown);
+            writer.Write(item.AttackAnimation); writer.Write(item.HitAnimation); writer.Write(item.Sound); writer.Write(item.CombatPortraitFrame);
         }
     }
 

@@ -70,6 +70,8 @@ public static class OriginalDataValidator
                 throw new InvalidDataException($"Weapon item {index} has an invalid media index.");
             if (!isWeapon && (item.AttackAnimation != 0 || item.HitAnimation != 0 || item.Sound != 0))
                 throw new InvalidDataException($"Non-weapon item {index} unexpectedly references combat media.");
+            if (item.CombatPortraitFrame is < 0 or >= 15)
+                throw new InvalidDataException($"Item {index} has an invalid combat portrait frame.");
         }
 
         for (var index = ActualItemCount; index < ItemRecordCount; index++)

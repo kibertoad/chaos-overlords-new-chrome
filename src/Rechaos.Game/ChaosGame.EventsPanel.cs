@@ -504,6 +504,12 @@ public static class ItemRotationPresentation
         if (elapsed < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(elapsed));
         var frame = (int)(elapsed.TotalMilliseconds / FrameDuration.TotalMilliseconds)
             % FrameCount;
+        return Frame(frame);
+    }
+
+    public static Rectangle Frame(int frame)
+    {
+        if (frame is < 0 or >= FrameCount) throw new ArgumentOutOfRangeException(nameof(frame));
         return new Rectangle(frame * 48, 0, 48, 48);
     }
 }

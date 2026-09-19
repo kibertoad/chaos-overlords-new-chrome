@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Rechaos.Core.Assets;
 
 public sealed record OriginalData(
@@ -16,7 +18,8 @@ public sealed record GangDefinition(
 public sealed record ItemDefinition(
     string Name, short Id, string Description, short Type, short ResearchDifficulty,
     short Cost, short TechLevel, Statistics Stats, short AttackAnimation,
-    short HitAnimation, short Sound, short Unknown);
+    short HitAnimation, short Sound,
+    [property: JsonPropertyName("Unknown")] short CombatPortraitFrame);
 
 public sealed record Statistics(
     short Combat, short Defense, short Stealth, short Detect, short Chaos,

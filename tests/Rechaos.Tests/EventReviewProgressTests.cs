@@ -41,6 +41,7 @@ public sealed class EventReviewProgressTests
             ItemRotationPresentation.Frame(TimeSpan.FromMilliseconds(14 * 80)));
         Assert.Equal(new Rectangle(0, 0, 48, 48),
             ItemRotationPresentation.Frame(TimeSpan.FromMilliseconds(15 * 80)));
+        Assert.Equal(new Rectangle(5 * 48, 0, 48, 48), ItemRotationPresentation.Frame(5));
     }
 
     [Fact]

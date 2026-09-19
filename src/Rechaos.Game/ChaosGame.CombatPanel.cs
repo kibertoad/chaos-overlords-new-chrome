@@ -73,9 +73,9 @@ public sealed partial class ChaosGame
         var damage = gang.Id == clip.Defender ? CombatDamage(gameEvent, clip) : 0;
         DrawDetailedCombatForce(batch, pixel, rightSide, gang.Force, damage);
 
-        DrawCombatItem(batch, eventWeapon ?? gang.WeaponItemId, CombatPanelLayout.WeaponItem(rightSide));
-        DrawCombatItem(batch, gang.ArmorItemId, CombatPanelLayout.ArmorItem(rightSide));
-        DrawCombatItem(batch, gang.MiscellaneousItemId, CombatPanelLayout.MiscellaneousItem(rightSide));
+        DrawCombatItem(batch, state, eventWeapon ?? gang.WeaponItemId, CombatPanelLayout.WeaponItem(rightSide));
+        DrawCombatItem(batch, state, gang.ArmorItemId, CombatPanelLayout.ArmorItem(rightSide));
+        DrawCombatItem(batch, state, gang.MiscellaneousItemId, CombatPanelLayout.MiscellaneousItem(rightSide));
     }
 
     private void DrawPoliceCombatant(SpriteBatch batch, Texture2D pixel, PixelFont font, bool rightSide)
@@ -87,11 +87,20 @@ public sealed partial class ChaosGame
         DrawDetailedCombatForce(batch, pixel, rightSide, ManualRules.MaximumForce, 0);
     }
 
-    private void DrawCombatItem(SpriteBatch batch, short? itemId, Point center)
+    private void DrawCombatItem(SpriteBatch batch, MatchState state, short? itemId, Point center)
     {
-        if (_itemPortraits is null || itemId is not { } resolved) return;
-        batch.Draw(_itemPortraits, new Rectangle(center.X - 15, center.Y - 15, 30, 30),
-            OriginalSpriteLayout.ItemPortrait(resolved), Color.White);
+        if (itemId is not { } resolved || resolved < 0 || resolved >= state.Definitions.Items.Count) return;
+        var item = state.Definitions.Items[resolved];
+        if (resolved < _itemRotationTextures.Length && _itemRotationTextures[resolved] is { } rotation)
+        {
+            batch.Draw(rotation, new Rectangle(center.X - 24, center.Y - 24, 48, 48),
+                ItemRotationPresentation.Frame(item.CombatPortraitFrame), Color.White);
+            return;
+        }
+
+        if (_itemPortraits is not null)
+            batch.Draw(_itemPortraits, new Rectangle(center.X - 15, center.Y - 15, 30, 30),
+                OriginalSpriteLayout.ItemPortrait(resolved), Color.White);
     }
 
     private void DrawCombatForce(
