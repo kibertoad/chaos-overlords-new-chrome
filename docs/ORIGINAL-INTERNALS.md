@@ -3777,8 +3777,12 @@ remains useful for pressed-state presentation.
 panel route. Its off-screen render coordinates use source left 344, which is
 copied to final screen x=128 through x=448 at y=124. The player portrait is
 drawn at source `(370,161)-(434,225)`, yielding final `(154,141)-(218,205)`.
-The value column at source x=610 yields final right edge 394, with final rows
-at y 151, 160, 178, 196, 214, 223, 241, and 268. The handler translates
+The value column at source x=610 yields a final **left** edge x=394, with four
+fixed glyph cells on final rows y 151, 160, 178, 196, 214, 223, 241, and 268.
+Each uses baseline helper `0x00414187` at width four. The contract count uses
+one bright cell at x=316 when below ten or two cells otherwise, followed by a
+dynamic closing parenthesis at x=322 or x=328; the opening parenthesis remains
+baked into the template. The handler translates
 pointer coordinates from the same 128-pixel left edge and tests its close face
 as `(161,293)-(210,315)`.
 
@@ -3786,12 +3790,15 @@ as `(161,293)-(210,315)`.
 344-by-209 shared panel destination: they draw the native 320-by-209 source
 area at `(128,124)`. The City/Sector choice is made before opening the panel;
 the modal's recovered pointer branch closes only through its own face, so the
-recreation does not expose the city-console split controls inside Finance.
+recreation does not expose the city-console split controls inside Finance. Its
+values are fields with a left origin, not generic right-aligned strings; using
+x=394 as a right edge shifts every number 24 pixels left and can leave the
+template zeroes exposed.
 
 **Confidence:** High static evidence for the resource, alternate-path source
-and destination relationship, portrait/value coordinates, pointer translation,
-and close rectangle from `0x0044d1bb`; a native capture remains useful for
-color and pressed-state presentation.
+and destination relationship, portrait/value/count geometry, pointer
+translation, and close rectangle from `0x0044d1bb`; a native capture remains
+useful for color and pressed-state presentation.
 
 ### BIN-SECTOR-GANGS-001 - compact all-gangs sector roster
 

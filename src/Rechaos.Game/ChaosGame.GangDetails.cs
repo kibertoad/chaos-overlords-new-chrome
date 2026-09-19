@@ -265,9 +265,16 @@ public sealed partial class ChaosGame
         PixelFont font, SpriteBatch batch, int value, int left, int y,
         NativeTwoCellNumberPresentation.Kind kind = NativeTwoCellNumberPresentation.Kind.Modifier)
     {
-        var display = NativeTwoCellNumberPresentation.Format(value, kind);
+        DrawNativeFixedWidthValue(font, batch, value, left, y, 2, kind);
+    }
+
+    private static void DrawNativeFixedWidthValue(
+        PixelFont font, SpriteBatch batch, int value, int left, int y, int width,
+        NativeTwoCellNumberPresentation.Kind kind = NativeTwoCellNumberPresentation.Kind.Baseline)
+    {
+        var display = NativeTwoCellNumberPresentation.Format(value, kind, width);
         font.Draw(batch, display.Digits,
-            new Vector2(GangInformationLayout.ValueTextLeft(left, display.Digits), y),
+            new Vector2(left + (width - display.Digits.Length) * OriginalFontLayout.CellWidth, y),
             display.IsNegative ? Color.Red : display.IsDim ? new Color(0, 137, 0) : Color.Lime, 1);
     }
 

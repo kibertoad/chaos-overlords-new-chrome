@@ -52,7 +52,11 @@ public sealed class ItemInformationLayoutTests
             NativeTwoCellNumberPresentation.Format(0));
         Assert.Equal(new NativeTwoCellNumberPresentation.Value("0", false, false),
             NativeTwoCellNumberPresentation.Format(0, NativeTwoCellNumberPresentation.Kind.Baseline));
+        Assert.Equal(new NativeTwoCellNumberPresentation.Value("9999", false, false),
+            NativeTwoCellNumberPresentation.Format(9999, NativeTwoCellNumberPresentation.Kind.Baseline, 4));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             NativeTwoCellNumberPresentation.Format(100));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            NativeTwoCellNumberPresentation.Format(10, width: 1));
     }
 }

@@ -12,7 +12,7 @@ public enum FinanceScope
 public static class FinanceLayout
 {
     public const int RowCount = 8;
-    public static int ValueRight => 394;
+    public static int ValueLeft => 394;
     public static int ContractCountLeft => 316;
     public static Rectangle Panel => new(128, 124, 320, 209);
     public static Rectangle BackgroundSource => new(0, 0, 320, 209);
@@ -31,6 +31,18 @@ public static class FinanceLayout
         7 => SharedPanelLayout.Y(144),
         _ => throw new ArgumentOutOfRangeException(nameof(row))
     };
+
+    public static Rectangle ValueField(int row) => new(
+        ValueLeft, ValueY(row), 4 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight);
+
+    public static int ContractCountWidth(int gangCount)
+    {
+        if (gangCount is < 0 or > 99) throw new ArgumentOutOfRangeException(nameof(gangCount));
+        return gangCount < 10 ? 1 : 2;
+    }
+
+    public static int ContractCountCloseLeft(int gangCount) =>
+        ContractCountLeft + ContractCountWidth(gangCount) * OriginalFontLayout.CellWidth;
 }
 
 public sealed record FinanceProjection(
