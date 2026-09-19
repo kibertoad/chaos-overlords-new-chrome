@@ -92,14 +92,10 @@ public sealed partial class ChaosGame
 
     private static void DrawItemPanelValue(PixelFont font, SpriteBatch batch, int value, int left, int y)
     {
-        var text = value.ToString();
-        if (text.Length > 2)
-        {
-            font.Draw(batch, text, new Vector2(left, y), Color.Lime, 1);
-            return;
-        }
-        font.Draw(batch, text,
-            new Vector2(GangInformationLayout.ValueTextLeft(left, text), y), Color.Lime, 1);
+        var display = ItemInformationLayout.FormatNumericValue(value);
+        font.Draw(batch, display.Digits,
+            new Vector2(GangInformationLayout.ValueTextLeft(left, display.Digits), y),
+            display.IsNegative ? Color.Red : Color.Lime, 1);
     }
 
     private static void ClearItemValueField(SpriteBatch batch, Texture2D pixel, int left, int y) =>

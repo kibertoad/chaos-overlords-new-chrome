@@ -4,6 +4,8 @@ namespace Rechaos.Game;
 
 public static class ItemInformationLayout
 {
+    public readonly record struct NumericValue(string Digits, bool IsNegative);
+
     // Native handler 0x0044b699 copies PX05001's 320-pixel alternate crop.
     public static Rectangle Panel => new(128, 124, 320, 209);
     public static Rectangle BackgroundSource => new(0, 0, 320, 209);
@@ -36,6 +38,18 @@ public static class ItemInformationLayout
                 Math.Min(DescriptionColumns, description.Length - offset)).TrimEnd();
         }
         return lines;
+    }
+
+    /// <summary>
+    /// The native two-cell helper conveys a negative value through the red
+    /// numeric glyph row, not an additional ASCII minus-sign cell.
+    /// </summary>
+    public static NumericValue FormatNumericValue(int value)
+    {
+        if (value is < -99 or > 99)
+            throw new ArgumentOutOfRangeException(nameof(value),
+                "Item Information has exactly two native numeric glyph cells.");
+        return new NumericValue(Math.Abs(value).ToString(), value < 0);
     }
 
     public static string TypeLabel(int itemType) => itemType switch

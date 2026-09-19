@@ -3891,6 +3891,14 @@ HEADS.` on its three native screen rows. Its numeric clears remain exactly two
 glyph cells wide: extending the clear into a speculative third cell overwrites
 the template's right border.
 
+**Numeric helper detail:** The exact helper is `0x004142e7`, with every
+`PX05001` call passing literal width two. For a nonzero negative, it first
+negates the value and selects the red numeric row of surface 6 (source y=8),
+then copies each absolute-value digit from the same fixed two-cell walk. It
+does not select an ASCII minus glyph or allocate a third cell: `-2` is a
+right-aligned red `2`, and the table's `-12` values fill the two red cells with
+`12`. The recreation follows that bounded red-row presentation.
+
 **Confidence:** High from complete renderer and input handler `0x0044b699`,
 including literal backing/destination rectangles, text destinations, fixed
 numeric helper widths, frame-wrap branch, and exit control.

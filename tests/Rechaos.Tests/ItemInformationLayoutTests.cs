@@ -38,4 +38,17 @@ public sealed class ItemInformationLayoutTests
             "HARD HEADS."
         ], ItemInformationLayout.DescriptionLines(description));
     }
+
+    [Fact]
+    public void FormatsNegativeModifiersWithinTheNativeTwoCellField()
+    {
+        Assert.Equal(new ItemInformationLayout.NumericValue("2", true),
+            ItemInformationLayout.FormatNumericValue(-2));
+        Assert.Equal(new ItemInformationLayout.NumericValue("12", true),
+            ItemInformationLayout.FormatNumericValue(-12));
+        Assert.Equal(new ItemInformationLayout.NumericValue("45", false),
+            ItemInformationLayout.FormatNumericValue(45));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            ItemInformationLayout.FormatNumericValue(100));
+    }
 }
