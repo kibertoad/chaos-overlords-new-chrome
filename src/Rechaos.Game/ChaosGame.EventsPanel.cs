@@ -209,8 +209,8 @@ public sealed partial class ChaosGame
     {
         if (!_deferComlinkAlertUntilPlanningVisible) return;
         _deferComlinkAlertUntilPlanningVisible = false;
-        StartPlanningTimer(_inputTime);
         UpdateComlinkAlert(_inputTime, enteringPlanning: true);
+        StartPlanningTimer(_inputTime);
     }
 
     private void DrawLastTurnEventsFrame(
