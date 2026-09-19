@@ -17,9 +17,9 @@ original-game capture confirms the screen and interaction state.
 | `PX00130` | Chaos Overlords title/logo | High from visible title | Title screen background |
 | `PX00131` | Limited/demo-version promotion | High from visible text | Not used for full version |
 | `PX00143` | Full local objective/player setup | High from visible labels and load at `0x0040e150` | Setup screen background |
-| `PX00144` | Alternate full objective/player setup flow | Medium from visible layout and isolated load at `0x00467b06` | Unsupported legacy setup flow |
-| `PX00145` | Compact player Add/Remove/Begin/Cancel setup flow | Medium-High from visible layout and isolated load at `0x0040bc2e` | Unsupported legacy setup flow |
-| `PX00146` | Minimal player-strip Begin/Cancel setup flow | Medium from visible layout and isolated load at `0x00457295` | Unsupported legacy setup flow |
+| `PX00144` | Legacy network host lobby: four configurable seats and host-side readiness polling | High from complete `0x004677f0` presenter/handler and its host-address message path | Unsupported legacy network protocol; do not reuse as local setup |
+| `PX00145` | Legacy compact session editor: four configurable seats after a legacy connection opens | High from complete `0x0040b9c0` handler and its distinct connection/setup path | Unsupported legacy network protocol; do not reuse as local setup |
+| `PX00146` | Legacy network participant-ready screen: six-seat strip with Continue/Cancel controls | High from complete `0x00456f80` handler, six-seat renderer, and connection cleanup | Unsupported legacy network protocol; do not reuse as local setup |
 
 ## Composite sheets and panels
 
@@ -107,6 +107,44 @@ draws the helper's exact `PX00140` source tiles: Add `(220,0,92,24)`, Remove
 `(220,24,92,24)`, Begin `(220,48,92,45)`, and Cancel `(220,93,92,45)`; moving
 outside restores the baked `PX00143` control. Disabled rendering and original
 cursor feedback remain to be validated.
+
+## Legacy session setup screens
+
+`PX00144`, `PX00145`, and `PX00146` are three independent legacy-network
+screens reached directly from the title loop; they are not alternate layouts
+selected by local player count, and none is a source for the playable local
+setup compositor.
+
+- `PX00144` is the host lobby. `0x004677f0` loads it into surface 1 after it
+  starts host-side channels and, on a successful setup, presents a `Hosting at
+  IP Address` message. It maintains one initially configured seat and no more
+  than four editable assignments. Its four 64-by-68 card hit cells are at
+  `(397,94)`, `(480,94)`, `(397,168)`, and `(480,168)`. The left and right
+  portrait bands and bottom name band use the same 16/15/10-pixel partition as
+  local setup, but apply to the legacy session records. Four vertical controls
+  occupy `(254,371,24,92)`, `(254,468,24,92)`, `(375,370,45,92)`, and
+  `(375,468,45,92)`; the host path continually polls connection state and
+  refuses its launch action until every assigned legacy participant is ready.
+- `PX00145` is the compact connection/session editor. `0x0040b9c0` first
+  establishes one of three legacy connection modes, then loads `PX00145` into
+  surface 1 and edits up to four assignments at `(251,124)`, `(334,124)`,
+  `(251,198)`, and `(334,198)`. Its corresponding action regions are
+  `(284,225,24,92)`, `(284,322,24,92)`, `(345,224,45,92)`, and
+  `(345,322,45,92)`. Its shared held-button helper restores the baked image on
+  leave and accepts only a release inside; failed minimum/maximum seat
+  operations play the rejection cue.
+- `PX00146` is the participant-ready view. `0x00456f80` loads it into surface
+  1, redraws the unscaled six-seat portrait strip through `0x00457b7b`, and
+  polls the connection records until it can continue or the user cancels. The
+  upper and lower 45-by-92 controls are `(230,224,45,92)` and
+  `(230,322,45,92)`. The upper action continues the legacy path; the lower
+  action closes all twelve tracked connection records before returning. Its
+  pressed artwork is copied from surface 7 while held inside and restored from
+  the baked surface otherwise.
+
+The recreation deliberately replaces these transports with its documented
+server protocol. They remain mapped as original artifacts and must not be
+silently exposed as compatible online modes.
 
 ## Rendering rules recovered so far
 
@@ -553,9 +591,7 @@ load, and replay initialization clear the presentation-only archive.
 1. Identify any remaining main-city content layers outside the closed ownership,
    objective-pylon, site, gang-status, and selection compositions; its
    right-console hit and pressed geometry is closed.
-2. Finish classifying the separate `PX00144` through `PX00146` setup flows;
-   implementing legacy network/setup protocols remains explicitly out of scope.
-3. Map remaining cursor frames, selection/pressed-state sprites and
+2. Map remaining cursor frames, selection/pressed-state sprites and
    transparency; setup card hit/drag geometry is closed.
-4. Capture reference screenshots for title, every setup configuration and the
+3. Capture reference screenshots for title, every setup configuration and the
    initial city, then add masked native-resolution golden comparisons.

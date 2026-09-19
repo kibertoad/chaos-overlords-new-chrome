@@ -4288,6 +4288,49 @@ caller and bounded loop, the two portrait helpers, and the name editor.
 visual capture work; card selection, hit testing, composition, and drag/drop
 mechanics are statically closed.
 
+### BIN-SETUP-006 - legacy session lobby resources are distinct flows
+
+**Observation:** Title loop `0x00460ccf` directly calls the three unrelated
+handlers `0x004677f0`, `0x0040b9c0`, and `0x00456f80`; their only shared
+property is that each owns a legacy network/session path. The first loads
+`PX00144` and starts host-side channels before showing the `Hosting at IP
+Address` message. It starts with one configured assignment, edits no more than
+four, and keeps polling participant state before it allows launch. Its four
+64-by-68 record cells are `(397,94)`, `(480,94)`, `(397,168)`, and `(480,168)`.
+
+`0x0040b9c0` instead negotiates one of three connection modes before it loads
+`PX00145`. It owns a compact four-record editor at `(251,124)`, `(334,124)`,
+`(251,198)`, and `(334,198)`. Both editors keep the broad 16-pixel left,
+15-pixel right, and 10-pixel bottom portrait/name bands recovered for local
+setup, but write legacy assignment state, not local player cards. Their four
+vertical action rectangles differ: `PX00144` uses `(254,371,24,92)`,
+`(254,468,24,92)`, `(375,370,45,92)`, `(375,468,45,92)`; `PX00145` uses
+`(284,225,24,92)`, `(284,322,24,92)`, `(345,224,45,92)`, `(345,322,45,92)`.
+Both call their own four-case held-button helper, copy the pressed image only
+while the pointer remains in that rectangle, and issue the normal slot-2 press
+cue before a rejected seat-count operation emits slot 4.
+
+`0x00456f80` loads `PX00146`, uses the separate unscaled six-seat renderer
+`0x00457b7b`, and continuously processes connection records. Its two controls
+are `(230,224,45,92)` and `(230,322,45,92)`: the upper path continues the
+session, while the lower path closes all twelve tracked connections before
+returning. Helper `0x00457eed` provides their held/release-inside behavior,
+with the normal image coming from surface 1 and pressed image from surface 7.
+
+**Interpretation:** `PX00144` is the legacy host lobby, `PX00145` is a compact
+legacy connection/session editor, and `PX00146` is the legacy participant-ready
+view. They are not player-count variants of one another or of `PX00143`, and their
+layouts must not leak into local setup. Their distinct session setup and
+connection lifecycle corroborate the existing scope decision that original
+transports and wire formats are not recreation compatibility targets.
+
+**Confidence:** High from the complete three handlers, their sole title-loop
+calls, resource loads, bounded pointer helpers, host string, connection loops,
+and renderer ownership.
+
+**Recreation status:** The modern online flow is intentionally independent. No
+legacy transport, screen, record encoding, or compatibility claim is added.
+
 ### BIN-HIRE-001 - initial and replacement offers
 
 **Observation:** `0x0046e766` initializes each player's three fixed offer bytes

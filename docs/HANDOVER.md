@@ -27,6 +27,13 @@ Last updated: 2026-09-19
 
 ## Latest playable work
 
+- Static mapping closes the three visually similar but operationally separate
+  legacy network setup resources. `PX00144` is the host lobby, `PX00145` a
+  compact session editor, and `PX00146` a participant-ready screen; their exact
+  seat cells, held-control geometry, host/connection lifecycle, and renderer
+  ownership are documented. None is a local-player-count variant or a
+  compatibility target for the modern online service.
+
 - The Online screens were laid out again as one flow. Every screen — connect,
   browse, unfinished sessions, the seat picker and the lobby — now stands in one
   frame (`OnlineScreenLayout`): the same panel, the same title and rule, the same
