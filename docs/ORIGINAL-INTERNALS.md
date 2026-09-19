@@ -4703,9 +4703,11 @@ event loop: its sole Ready control uses the slot-2 pressed-control helper at
 `0x00439f7a`, and neither its keyboard nor pointer paths continue until that
 control completes or the outer menu/quit state interrupts it.
 
-Planning entry makes the ordering unambiguous. It first invokes either the
-simple Combat Results presenter `0x00451f80` or Detailed Combat presenter
-`0x0042e040`, selected by the Detailed Combat option. `0x00451f80` silently
+Planning entry makes the ordering unambiguous. Its one-time new-local-game
+flag first opens Game Information `0x0045519d`; this occurs after Ready, not
+before the privacy card. It then invokes either the simple Combat Results
+presenter `0x00451f80` or Detailed Combat presenter `0x0042e040`, selected by
+the Detailed Combat option. `0x00451f80` silently
 returns for an empty eligible-sector set when called in this automatic mode;
 when results exist, its panel event loop returns before planning continues.
 Only after that call returns does `0x0046fd80` test and open Last Turn Events
@@ -4736,8 +4738,9 @@ shared awards are the correct final hot-seat behavior.
 
 **Interpretation:** `PX00132` is a privacy boundary for a locally controlled
 turn, not merely a decorative next-player card. For a normal hot-seat handoff,
-the order is **Ready -> automatic combat (Simple or Detailed) -> Last Turn
-Events -> planning city**. Combat and events remain separate blocking/private
+the order is **Ready -> one-time Game Information (new local game only) ->
+automatic combat (Simple or Detailed) -> Last Turn Events -> planning city**.
+Combat and events remain separate blocking/private
 presentations; events must not be shown first just because both queues are
 nonempty. An eliminated local player also owns their terminal presentation
 before their seat is retired. Final multi-local results do not show individual
@@ -4749,9 +4752,10 @@ animation cadence and the terminal-screen artwork timing still require runtime
 capture.
 
 **Recreation status:** Automatic handoff routing now follows the native
-active-human gate as well as Combat-before-Events: computer opponents and
-retired local seats do not cause a solo local player to see `PX00132`. Simple
-Combat opens `PX05012` and continues to Last Turn Events only
+active-human gate as well as the native start order: computer opponents and
+retired local seats do not cause a solo local player to see `PX00132`, and a
+new local multiplayer game shows Game Information only after that card's
+Ready control. Simple Combat opens `PX05012` and continues to Last Turn Events only
 when its private panel closes. Detailed Combat starts its bounded recreation
 presentation over the city and then follows the same event chain; its
 non-blocking/skippable behavior remains an explicit modern safety correction

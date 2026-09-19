@@ -134,6 +134,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private PlayerId? _combatSummaryOpponent;
     private bool _openEventsAfterCombat;
     private bool _automaticDetailedCombatPresentation;
+    private bool _showGameInfoAtPlanningEntry;
     private readonly Queue<PlayerId> _pendingHotSeatEliminations = [];
     private readonly HashSet<PlayerId> _presentedHotSeatEliminations = [];
     private PlayerId? _eliminationHandoffPlayer;

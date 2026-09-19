@@ -356,10 +356,10 @@ public sealed partial class ChaosGame
         _siteSearchSelections.Reset();
         _lastTurnEventArchive.Clear();
         _managementReturnScreen = ClientScreen.City;
-        _screens.Show(GameInformationPresentation.OpensAtNewGame(_state.Setup)
-            ? ClientScreen.GameInfo
-            : ClientScreen.City);
-        StartPlanningTimer(_inputTime);
+        // The original's outer local-player loop shows the privacy card before it enters the
+        // first planner. The planner itself owns the one-time Game Information presentation.
+        _showGameInfoAtPlanningEntry = GameInformationPresentation.OpensAtNewGame(_state.Setup);
+        PresentHotSeatPlanningEntry();
     }
 
     private void DrawTitle(SpriteBatch batch, Texture2D pixel, PixelFont font)

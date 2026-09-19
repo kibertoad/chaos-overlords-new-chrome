@@ -56,6 +56,7 @@ public sealed partial class ChaosGame
             _combatAnimationPlayer.Clear();
             _siteSearchSelections.Reset();
             _lastTurnEventArchive.Clear();
+            _showGameInfoAtPlanningEntry = false;
             _managementReturnScreen = ClientScreen.City;
             _screens.Show(_state.Outcome is null ? ClientScreen.GameInfo : ClientScreen.Endgame);
             if (_state.Outcome is null) StartPlanningTimer(_inputTime);

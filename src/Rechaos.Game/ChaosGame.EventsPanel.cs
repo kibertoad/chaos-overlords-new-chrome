@@ -32,6 +32,12 @@ public sealed partial class ChaosGame
         PrepareCurrentHireOffers();
         StartPlanningTimer(_inputTime);
         UpdateComlinkAlert(_inputTime, enteringPlanning: true);
+        if (_showGameInfoAtPlanningEntry)
+        {
+            _showGameInfoAtPlanningEntry = false;
+            _screens.Show(ClientScreen.GameInfo);
+            return;
+        }
         ShowTurnReportsOrCity();
     }
 
