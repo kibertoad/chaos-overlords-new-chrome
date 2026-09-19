@@ -36,6 +36,9 @@ public sealed partial class ChaosGame
 
         var item = state.Definitions.Items[itemId];
         ClearItemInformationFields(batch, pixel);
+        if (_itemInfoBackground is not null)
+            batch.Draw(_itemInfoBackground, ItemInformationLayout.DataRightBorder,
+                ItemInformationLayout.DataRightBorderSource, Color.White);
         if (itemId >= 0 && itemId < _itemRotationTextures.Length
             && _itemRotationTextures[itemId] is { } rotation)
             batch.Draw(rotation, ItemInformationLayout.Portrait,

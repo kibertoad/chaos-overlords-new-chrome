@@ -7,6 +7,10 @@ public static class ItemInformationLayout
     // Native handler 0x0044b699 copies PX05001's 320-pixel alternate crop.
     public static Rectangle Panel => new(128, 124, 320, 209);
     public static Rectangle BackgroundSource => new(0, 0, 320, 209);
+    // PX05001's data frame ends immediately after the two-cell right value fields.
+    // Keep this source sliver available when clearing its baked placeholder digits.
+    public static Rectangle DataRightBorderSource => new(282, 14, 2, 178);
+    public static Rectangle DataRightBorder => new(410, 138, 2, 178);
     public static Rectangle Portrait => new(162, 141, 48, 48);
     public static Rectangle CompactPortrait => new(176, 155, 20, 20);
     public static Rectangle Ok => new(161, 293, 49, 22);

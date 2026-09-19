@@ -11,6 +11,8 @@ public sealed class ItemInformationLayoutTests
     {
         Assert.Equal(new Rectangle(128, 124, 320, 209), ItemInformationLayout.Panel);
         Assert.Equal(new Rectangle(0, 0, 320, 209), ItemInformationLayout.BackgroundSource);
+        Assert.Equal(new Rectangle(282, 14, 2, 178), ItemInformationLayout.DataRightBorderSource);
+        Assert.Equal(new Rectangle(410, 138, 2, 178), ItemInformationLayout.DataRightBorder);
         Assert.Equal(new Rectangle(162, 141, 48, 48), ItemInformationLayout.Portrait);
         Assert.Equal(new Rectangle(161, 293, 49, 22), ItemInformationLayout.Ok);
         Assert.Equal(228, ItemInformationLayout.NameLeft);
