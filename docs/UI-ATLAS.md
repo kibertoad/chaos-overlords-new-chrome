@@ -29,7 +29,7 @@ original-game capture confirms the screen and interaction state.
 | `PX00132` | Next-player/Ready handoff panel; active Overlord fills the measured 80x77 portrait aperture | High from visible labels and border pixels |
 | `PX00137` | Centered 220-by-72 legacy transport transfer-progress frame; a three-pixel green `PX00129` strip fills its single bar | High from complete loader/caller and renderer paths; deliberately unsupported legacy transport |
 | `PX00139` | Centered 220-by-72 legacy six-seat synchronization frame; the same three-pixel strip fills one stacked bar per connected slot | High from complete loader/caller and six-slot renderer paths; deliberately unsupported legacy transport |
-| `PX00138` | Circular action/command icons | High from repeated command imagery |
+| `PX00138` | Fifteen-frame 48-by-48 transfer spinner, used only by legacy connection and synchronization progress loops | High from complete resource-load census and bounded frame-copy loops; deliberately unsupported legacy transport |
 | `PX00140` | Compact setup-control sheet matching `PX00143` labels | High |
 | `PX00150` | Twenty-two 20x14 city site markers in two 11-item rows and controlled/uncontrolled states; pure white is transparent | High from the complete native city marker renderer and original 1.1 captures |
 | `PX00200` | Endgame awards/statistics frame, composited at `(106,25)` over the preserved city screen. Native input regions: Awards `(428,33,48,48)`, Stats `(480,33,48,48)`, Done `(428,377,100,48)`. | High from visible labels, native compositor destination, and pointer handler |

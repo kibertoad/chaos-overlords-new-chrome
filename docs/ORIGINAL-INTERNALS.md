@@ -4510,6 +4510,35 @@ the explicitly unsupported transport.
 are deliberately unrouted. The modern multiplayer flow supplies its own safe,
 observable session feedback and never claims legacy wire compatibility.
 
+### BIN-SETUP-008 - legacy transfer spinner animation
+
+**Observation:** Every load of the 720-by-48 `PX00138` sheet occurs beside a
+legacy progress frame: simple transfer paths `0x0040ced0` and `0x0040d72f`
+also load `PX00137`, while connected-session paths `0x0046a7cb` and
+`0x0046d22f` also load `PX00139`. The complete loader census has no other
+caller.
+
+Each path maintains a frame counter from zero through fourteen, wrapping to
+zero. On its timed update it copies the corresponding 48-by-48 source cell
+from `PX00138` into the fixed spinner aperture at `(224,72)-(272,120)`. The
+sheet is therefore a fifteen-frame activity animation, rather than the
+general command-icon artwork previously attributed to it. In the host/client
+synchronization route it continues alongside the six-seat bar renderer;
+neither the normal local whole-turn resolver nor any modern-client route loads
+or advances it.
+
+**Interpretation:** This spinner visualizes work in the original transfer
+protocol. It is not a game-action affordance and is not evidence for a direct
+connection UI in the recreation.
+
+**Confidence:** High from the complete resource-load census, all four bounded
+counter/copy loops, their paired frame resources, and the explicit exclusion
+of the normal local resolver.
+
+**Recreation status:** `PX00138` remains an extracted historical artifact and
+is deliberately unrouted. Modern hosted sessions keep their separate,
+observable startup feedback rather than imitating an unsupported transport.
+
 ### BIN-HOTSEAT-002 - private handoff ordering and terminal-player path
 
 **Observation:** The outer local-game loop at `0x0046e766` counts active local
