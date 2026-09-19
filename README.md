@@ -106,6 +106,12 @@ presentation-only conveniences that make the original systems easier to read:
 - Automatic Detailed Combat remains a bounded, skippable presentation over the
   already-resolved result. This intentionally fixes the original's known
   freeze while leaving combat rolls, state, and replay data unchanged.
+- Keyboard navigation is available throughout the compatible mouse panels, and
+  Escape or a right-click consistently cancels the current transient panel,
+  drag, warning, or presentation without changing an unconfirmed command.
+- Event-site artwork defaults to its recovered original crop and mask, with an
+  optional Smooth view for readers who prefer an unmasked, linearly filtered
+  background; this changes presentation only.
 - Nine named save slots show when and how each match was played; Escape pauses
   into save/load controls before offering a confirmed return to the main menu.
 - Escape also offers Report Bug, which sends a written description and — unless
