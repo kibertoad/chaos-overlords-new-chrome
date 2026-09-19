@@ -22,14 +22,14 @@ on:
           - no-mac-x64
           - all
       signed_release:
-        description: Sign the selected release installers
+        description: Installer platforms to sign; macOS installers are never signed
         required: true
-        default: 'windows only'
+        default: Windows
         type: choice
         options:
-          - 'no'
-          - all
-          - 'windows only'
+          - none
+          - Windows
+          - Windows/Linux
 
 permissions: {}
 
@@ -147,7 +147,7 @@ jobs:
     name: Build Windows x64 installer
     needs: [prepare, test]
     runs-on: windows-latest
-    environment: ${{ inputs.signed_release != 'no' && 'release-signing' || '' }}
+    environment: ${{ inputs.signed_release != 'none' && 'release-signing' || '' }}
     permissions:
       contents: read
     steps:
@@ -158,7 +158,7 @@ jobs:
           persist-credentials: false
 
       - name: Verify eSigner configuration
-        if: ${{ inputs.signed_release != 'no' }}
+        if: ${{ inputs.signed_release != 'none' }}
         shell: pwsh
         env:
           ES_USERNAME: ${{ secrets.ES_USERNAME }}
@@ -207,7 +207,7 @@ jobs:
         run: ./tools/Publish-Windows.ps1 -SkipArchive
 
       - name: Install SSL.com CodeSignTool
-        if: ${{ inputs.signed_release != 'no' }}
+        if: ${{ inputs.signed_release != 'none' }}
         shell: pwsh
         run: |
           # SSL.com's GitHub Action still uses Node 20 and downloads the older CodeSignTool 1.3.0.
@@ -216,7 +216,7 @@ jobs:
           "CODESIGNTOOL_PATH=$toolPath" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Stage executables for signing
-        if: ${{ inputs.signed_release != 'no' }}
+        if: ${{ inputs.signed_release != 'none' }}
         shell: pwsh
         run: |
           $packageRoot = 'artifacts/ChaosOverlordsNewChrome-win-x64'
@@ -231,7 +231,7 @@ jobs:
           $executables | Copy-Item -Destination $signingInput
 
       - name: Sign Windows executables with SSL.com eSigner
-        if: ${{ inputs.signed_release != 'no' }}
+        if: ${{ inputs.signed_release != 'none' }}
         shell: pwsh
         env:
           ES_USERNAME: ${{ secrets.ES_USERNAME }}
@@ -245,7 +245,7 @@ jobs:
             -OutputDirectory (Join-Path $PWD 'artifacts/esigner-output')
 
       - name: Install and verify signed executables
-        if: ${{ inputs.signed_release != 'no' }}
+        if: ${{ inputs.signed_release != 'none' }}
         shell: pwsh
         run: |
           $packageRoot = 'artifacts/ChaosOverlordsNewChrome-win-x64'
@@ -276,7 +276,7 @@ jobs:
         run: ./tools/Build-WindowsInstaller.ps1 -Version $env:RELEASE_VERSION -Compiler "$env:INNO_COMPILER" -SkipPackage
 
       - name: Sign Windows installer with SSL.com eSigner
-        if: ${{ inputs.signed_release != 'no' }}
+        if: ${{ inputs.signed_release != 'none' }}
         shell: pwsh
         env:
           ES_USERNAME: ${{ secrets.ES_USERNAME }}
@@ -290,7 +290,7 @@ jobs:
             -InputFile (Join-Path $PWD "artifacts/ChaosOverlords-NewChrome-Setup-$env:RELEASE_VERSION.exe")
 
       - name: Verify signed installer
-        if: ${{ inputs.signed_release != 'no' }}
+        if: ${{ inputs.signed_release != 'none' }}
         shell: pwsh
         env:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
@@ -320,7 +320,7 @@ jobs:
           if ($link.TargetPath -ne $expectedTarget -or [IO.Path]::GetExtension($link.TargetPath) -ne '.exe') {
             throw "Shortcut target is invalid: '$($link.TargetPath)' (expected '$expectedTarget')."
           }
-          if ($env:SIGNED_RELEASE -ne 'no') {
+          if ($env:SIGNED_RELEASE -ne 'none') {
             $installedSignature = Get-AuthenticodeSignature -LiteralPath $link.TargetPath
             if ($installedSignature.Status -ne 'Valid' -or -not $installedSignature.TimeStamperCertificate) {
               throw "Installed game executable has an invalid or missing timestamped signature: $($installedSignature.Status)."
@@ -357,6 +357,7 @@ jobs:
     needs: [prepare, test]
     if: ${{ inputs.installers != 'windows' }}
     runs-on: ubuntu-latest
+    environment: ${{ inputs.signed_release == 'Windows/Linux' && 'release-signing' || '' }}
     permissions:
       contents: read
     steps:
@@ -365,6 +366,15 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.commit }}
           persist-credentials: false
+
+      - name: Verify OpenPGP configuration
+        if: ${{ inputs.signed_release == 'Windows/Linux' }}
+        shell: pwsh
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
+        run: ./tools/Invoke-GpgSigner.ps1 -TestConfiguration
 
       - name: Set up .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -377,14 +387,33 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: ./tools/Build-LinuxInstaller.ps1 -Version $env:RELEASE_VERSION
 
+      # dpkg and apt ignore signatures embedded in a standalone .deb, so the Linux installer is
+      # signed the way a downloaded file can actually be checked: a detached signature beside it.
+      - name: Sign Linux installer with OpenPGP
+        if: ${{ inputs.signed_release == 'Windows/Linux' }}
+        shell: pwsh
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          ./tools/Invoke-GpgSigner.ps1 -InputFile (Join-Path $PWD `
+            "artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-$env:RELEASE_VERSION.deb")
+
       - name: Upload installer
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-linux-x64
-          path: artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-*.deb
+          path: |
+            artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-*.deb
+            artifacts/ChaosOverlords-NewChrome-linux-x64-Setup-*.deb.asc
           if-no-files-found: error
           retention-days: 1
 
+  # macOS installers are never signed. Apple signing needs a Developer ID Application identity for
+  # the bundle, a Developer ID Installer identity for the .pkg, and notarization; none of those are
+  # configured, and the packaging would have to change first (see docs/RELEASING.md).
   build-macos:
     name: Build macOS ${{ matrix.arch }} installer
     needs: [prepare, test]
@@ -483,13 +512,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           RELEASE_INSTALLERS: ${{ inputs.installers }}
+          RELEASE_SIGNING: ${{ inputs.signed_release }}
         run: |
           mapfile -t assets < <(find release-assets -type f -print | sort)
           expected=1
           if [[ "$RELEASE_INSTALLERS" == no-mac-x64 ]]; then expected=3; fi
           if [[ "$RELEASE_INSTALLERS" == all ]]; then expected=4; fi
+          if [[ "$RELEASE_SIGNING" == "Windows/Linux" && "$RELEASE_INSTALLERS" != windows ]]; then
+            expected=$((expected + 1))
+          fi
           if (( ${#assets[@]} != expected )); then
-            echo "Expected $expected installer(s), found ${#assets[@]}." >&2
+            echo "Expected $expected release asset(s), found ${#assets[@]}." >&2
             exit 1
           fi
           gh release create "$RELEASE_TAG" "${assets[@]}" \
