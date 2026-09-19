@@ -99,7 +99,8 @@ public sealed partial class ChaosGame
             && _state.ComlinkFor(playerId).HasUnread;
         var presentationActive = enteringPlanning || _screens.Current is not (
             ClientScreen.Title or ClientScreen.Setup or ClientScreen.Online
-            or ClientScreen.Lobby or ClientScreen.Handoff or ClientScreen.Endgame);
+            or ClientScreen.Lobby or ClientScreen.Handoff or ClientScreen.Elimination
+            or ClientScreen.Endgame);
         if (_comlinkAlertCadence.Advance(hasUnread, presentationActive, now)
             && AudioRouting.IncomingMessageSound(hasUnread) is { } alert)
             PlayGeneralSound(alert);

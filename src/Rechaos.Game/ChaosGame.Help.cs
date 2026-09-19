@@ -355,7 +355,7 @@ public static class HelpNavigation
         ClientScreen.GameInfo => "Game Info Screen",
         ClientScreen.ComlinkView or ClientScreen.ComlinkSend => "Comm Menu",
         ClientScreen.Finance => "The Inner Sanctum",
-        ClientScreen.Ranking or ClientScreen.Endgame => "Endgame Screen",
+        ClientScreen.Ranking or ClientScreen.Elimination or ClientScreen.Endgame => "Endgame Screen",
         ClientScreen.Events or ClientScreen.CombatSummary or ClientScreen.Search =>
             "Main Control Panel",
         _ => "Introduction"
@@ -378,7 +378,7 @@ public static class HelpNavigation
         ClientScreen.GameInfo => "GIS",
         ClientScreen.ComlinkView or ClientScreen.ComlinkSend => "COMMMENU",
         ClientScreen.Finance or ClientScreen.Handoff => "TIS",
-        ClientScreen.Ranking or ClientScreen.Endgame => "ENDGAME2",
+        ClientScreen.Ranking or ClientScreen.Elimination or ClientScreen.Endgame => "ENDGAME2",
         ClientScreen.Events or ClientScreen.CombatSummary or ClientScreen.Search => "MCP",
         _ => "INTRO"
     };

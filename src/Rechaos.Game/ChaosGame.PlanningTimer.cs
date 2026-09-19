@@ -256,7 +256,7 @@ public sealed partial class ChaosGame
             || _state.FindPlayer(playerId)?.Setup.Controller != PlayerController.Human
             || _screens.Current is ClientScreen.Title or ClientScreen.Setup
                 or ClientScreen.Online or ClientScreen.Lobby
-                or ClientScreen.Handoff or ClientScreen.Endgame)
+                or ClientScreen.Handoff or ClientScreen.Elimination or ClientScreen.Endgame)
         {
             StopPlanningTimer();
             return false;

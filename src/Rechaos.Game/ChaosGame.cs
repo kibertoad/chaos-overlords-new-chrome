@@ -133,6 +133,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private PlayerId? _combatSummaryOpponent;
     private bool _openEventsAfterCombat;
     private bool _automaticDetailedCombatPresentation;
+    private readonly Queue<PlayerId> _pendingHotSeatEliminations = [];
+    private PlayerId? _eliminationHandoffPlayer;
     private int _eventCursor;
     private readonly HashSet<int> _eventViewedPages = [];
     private readonly LastTurnEventArchive _lastTurnEventArchive = new();
@@ -478,6 +480,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))
                         FinishHandoff();
                     break;
+                case ClientScreen.Elimination:
+                    if (Pressed(keyboard, Keys.Enter) || Pressed(keyboard, Keys.Space))
+                        FinishHotSeatEliminationPresentation();
+                    break;
                 case ClientScreen.Events:
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveEventCursor(-1);
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveEventCursor(1);
@@ -743,6 +749,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             case ClientScreen.Handoff when _state is not null:
                 DrawHandoff(_batch, _pixel, _font, _state);
                 break;
+            case ClientScreen.Elimination when _state is not null:
+                DrawHotSeatElimination(_batch, _pixel, _font, _state);
+                break;
             case ClientScreen.ComlinkView when _state is not null:
                 DrawComlinkView(_batch, _pixel, _font, _state);
                 break;
@@ -870,6 +879,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Handoff:
                 HandleHandoffClick(point);
+                break;
+            case ClientScreen.Elimination:
+                HandleHotSeatEliminationClick(point);
                 break;
             case ClientScreen.Events:
                 HandleEventsClick(point);

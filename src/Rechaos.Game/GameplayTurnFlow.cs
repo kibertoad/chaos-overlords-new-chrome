@@ -9,9 +9,18 @@ namespace Rechaos.Game;
 /// </summary>
 public static class GameplayTurnFlow
 {
-    public static void AdvanceToPlanning(MatchReplayRecorder replay)
+    /// <summary>
+    /// Advances to the next planning slot and reports eliminated slots crossed on the way.
+    /// </summary>
+    /// <remarks>
+    /// The report is presentation-only. The recorded transition remains exactly the same; the
+    /// local client uses its order to show the original private eliminated-player presentation
+    /// before continuing to later command slots.
+    /// </remarks>
+    public static PlanningAdvance AdvanceToPlanning(MatchReplayRecorder replay)
     {
         ArgumentNullException.ThrowIfNull(replay);
+        var crossedEliminatedPlayers = new List<PlayerId>();
         while (replay.State.Outcome is null)
         {
             var state = replay.State;
@@ -22,16 +31,19 @@ public static class GameplayTurnFlow
             }
 
             var player = state.Coordinator.ActivePlayer!.Value;
-            if (state.FindPlayer(player)?.Status == PlayerStatus.Active) return;
+            if (state.FindPlayer(player)?.Status == PlayerStatus.Active)
+                return new PlanningAdvance(crossedEliminatedPlayers);
+            crossedEliminatedPlayers.Add(player);
             replay.FinishCommand(player);
         }
+        return new PlanningAdvance(crossedEliminatedPlayers);
     }
 
-    public static void FinishPlanningTurn(MatchReplayRecorder replay, PlayerId player)
+    public static PlanningAdvance FinishPlanningTurn(MatchReplayRecorder replay, PlayerId player)
     {
         ArgumentNullException.ThrowIfNull(replay);
         replay.FinishCommand(player);
-        AdvanceToPlanning(replay);
+        return AdvanceToPlanning(replay);
     }
 
     private static void AdvanceAutomaticPhase(MatchReplayRecorder replay)
@@ -58,3 +70,8 @@ public static class GameplayTurnFlow
         }
     }
 }
+
+/// <summary>
+/// The eliminated command slots crossed by one automatic advance, in native slot order.
+/// </summary>
+public sealed record PlanningAdvance(IReadOnlyList<PlayerId> CrossedEliminatedPlayers);

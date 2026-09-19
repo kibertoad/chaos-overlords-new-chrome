@@ -22,13 +22,14 @@ public sealed class GameplayTurnFlowTests
         state.Players[0].Status = PlayerStatus.Eliminated;
         var replay = new MatchReplayRecorder(state);
 
-        GameplayTurnFlow.AdvanceToPlanning(replay);
+        var advance = GameplayTurnFlow.AdvanceToPlanning(replay);
 
         Assert.Equal(TurnPhase.Command, state.Coordinator.Phase);
         Assert.Equal(new PlayerId(1), state.Coordinator.ActivePlayer);
         Assert.Contains(replay.Steps, operation =>
             operation.Kind == ReplayOperationKind.FinishCommand
             && operation.Player == new PlayerId(0));
+        Assert.Equal([new PlayerId(0)], advance.CrossedEliminatedPlayers);
     }
 
     [Fact]

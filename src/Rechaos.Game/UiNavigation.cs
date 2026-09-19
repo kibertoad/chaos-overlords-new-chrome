@@ -116,6 +116,7 @@ public enum ClientScreen
     CombatSummary,
     Search,
     Handoff,
+    Elimination,
     Endgame
 }
 

@@ -349,8 +349,10 @@ Last updated: 2026-09-19
   before advancing to the awards/statistics screen when victorious. That screen now uses the
   six original portrait rows, `PX00201` award icons, and an Awards/Stats toggle
   exposing Cash Earned, Cash Spent, Damage Inflicted, Casualties, and Overthrows.
-  Hot-seat matches still go directly to shared standings until the original
-  private sequencing is captured.
+  Static mapping now confirms that direct shared standings are the correct final
+  hot-seat result. During an ongoing match, the coordinator now preserves its
+  native slot-order traversal and gives an eliminated local player the private
+  `PX00132`/`PX00203` presentation before continuing to later seats.
 - Endgame awards now use the native builder's priority and inclusive activity
   thresholds: Fist 5 Overthrows, Skull 50 direct Damage, and Chicken 10 Hides,
   followed by most/least Cash Spent. All six player slots and ties participate;

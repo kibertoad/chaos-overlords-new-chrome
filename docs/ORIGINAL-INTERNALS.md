@@ -4379,10 +4379,21 @@ Only after that call returns does `0x0046fd80` test and open Last Turn Events
 at `0x0044f2fc`. The same function rebuilds unread-Comlink state after those
 private presentations and emits the initial alert only afterwards.
 
-The outer loop has a distinct terminal-player branch. A local player marked
-for elimination still receives the `PX00132` handoff in a multi-local game,
-then receives the elimination presentation before the slot is retired; it is
-not silently skipped. Single-local play bypasses the handoff gate.
+The outer loop's ordered slot walk makes terminal timing precise. It visits
+slots 0 through 5, and when it reaches an unretired local elimination it shows
+`PX00132` in a multi-local game, then calls `0x0042c3f5`, retires that slot,
+and only then signals later active slots. It is not a popup at resolution time
+and is not silently skipped. That presenter loads `PX00203`, composites the
+eliminated Overlord portrait, and blocks for its visible continue control.
+Single-local play bypasses the handoff gate but still reaches this elimination
+presenter when it loses.
+
+The final awards controller at `0x0042b9e0` independently counts human
+participants. With exactly one it asks renderer `0x0042ce61` for the
+single-player `PX00202` victory presentation; with multiple local humans the
+same controller renders `PX00200`/`PX00201` shared standings directly. Thus
+the private `PX00203` path is a mid-match/local-elimination path, while direct
+shared awards are the correct final hot-seat behavior.
 
 **Interpretation:** `PX00132` is a privacy boundary for a locally controlled
 turn, not merely a decorative next-player card. For a normal hot-seat handoff,
@@ -4390,7 +4401,8 @@ the order is **Ready -> automatic combat (Simple or Detailed) -> Last Turn
 Events -> planning city**. Combat and events remain separate blocking/private
 presentations; events must not be shown first just because both queues are
 nonempty. An eliminated local player also owns their terminal presentation
-before later local players are considered.
+before their seat is retired. Final multi-local results do not show individual
+victory splashes: they go directly to shared awards/statistics.
 
 **Confidence:** High static evidence for the multi-local gate, Ready control,
 normal and terminal call paths, and Combat-before-Events order. Exact native
@@ -4402,14 +4414,17 @@ Events. Simple Combat opens `PX05012` and continues to Last Turn Events only
 when its private panel closes. Detailed Combat starts its bounded recreation
 presentation over the city and then follows the same event chain; its
 non-blocking/skippable behavior remains an explicit modern safety correction
-for the known native detailed-combat freeze. The existing handoff portrait,
-Ready press cue, per-viewer combat state, and unread-Comlink delay remain in
-place. Terminal local-player sequencing remains open until a native capture
-closes the private elimination-screen details.
+for the known native detailed-combat freeze. The hot-seat coordinator now
+reports eliminated command slots in native order, and the UI presents each
+eliminated human as `PX00132` handoff, `PX00203`, then the later slot, while
+completed multi-local games continue to shared awards. The existing handoff
+portrait, Ready press cue, per-viewer combat state, and unread-Comlink delay
+remain in place.
 
 **Next validation:** Capture a multi-local elimination followed by another
-human turn, and capture Simple and Detailed handoffs containing both a combat
-result and an event report to corroborate modal completion and timing.
+human turn to corroborate `PX00203` geometry and the later-slot notification,
+and capture Simple and Detailed handoffs containing both a combat result and
+an event report to corroborate modal completion and timing.
 
 ### BIN-HIRE-001 - initial and replacement offers
 

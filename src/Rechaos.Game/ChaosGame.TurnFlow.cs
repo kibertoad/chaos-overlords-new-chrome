@@ -46,7 +46,8 @@ public sealed partial class ChaosGame
         }
 
         var previousTurn = _state.Coordinator.Turn;
-        GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
+        var advance = GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
+        QueueHotSeatEliminations(advance);
         _diagnostics?.Write("planning.finished", new Dictionary<string, string?>
         {
             ["player"] = playerId.Value.ToString(),
@@ -54,7 +55,6 @@ public sealed partial class ChaosGame
             ["turnAfter"] = _state.Coordinator.Turn.ToString(),
             ["phase"] = _state.Coordinator.Phase.ToString()
         });
-        PrepareCurrentHireOffers();
         if (_state.Coordinator.Turn != previousTurn)
         {
             try
@@ -74,8 +74,13 @@ public sealed partial class ChaosGame
 
         if (_state.Outcome is not null)
             _screens.Show(ClientScreen.Endgame);
+        else if (ShowPendingHotSeatElimination())
+        {
+            _selectedGangIndex = 0;
+        }
         else
         {
+            PrepareCurrentHireOffers();
             _selectedGangIndex = 0;
             _screens.Show(ClientScreen.Handoff);
         }
@@ -137,7 +142,8 @@ public sealed partial class ChaosGame
         if (_state is null || _actions is null
             || _screens.Current is ClientScreen.Title or ClientScreen.Options or ClientScreen.Help
                 or ClientScreen.Setup or ClientScreen.Online or ClientScreen.Lobby
-                or ClientScreen.Endgame) return;
+                or ClientScreen.Endgame or ClientScreen.Elimination
+            || _eliminationHandoffPlayer is not null) return;
         var acted = false;
         while (_state.Coordinator.ActivePlayer is { } playerId)
         {
@@ -162,7 +168,16 @@ public sealed partial class ChaosGame
                 else if (hiring.RejectedGangDefinitionId is { } rejectedOffer)
                     _actions.HotSeatRecorder.SnubHireOffer(playerId, rejectedOffer);
                 if (_debugPhaseStepping) _actions.HotSeatRecorder.FinishCommand(playerId);
-                else GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
+                else
+                {
+                    var advance = GameplayTurnFlow.FinishPlanningTurn(_actions.HotSeatRecorder, playerId);
+                    QueueHotSeatEliminations(advance);
+                    if (_pendingHotSeatEliminations.Count > 0)
+                    {
+                        acted = true;
+                        break;
+                    }
+                }
             }
             else if (_debugPhaseStepping && _state.Coordinator.Phase == TurnPhase.Hire)
             {
@@ -183,7 +198,8 @@ public sealed partial class ChaosGame
         {
             _screens.Show(ClientScreen.Endgame);
         }
-        else if (_state.Coordinator.ActivePlayer is { } nextPlayer
+        else if (!ShowPendingHotSeatElimination()
+                 && _state.Coordinator.ActivePlayer is { } nextPlayer
                  && _state.FindPlayer(nextPlayer)!.Setup.Controller == PlayerController.Human)
         {
             _cursor = _state.FindPlayer(nextPlayer)!.Gangs.FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
@@ -201,7 +217,7 @@ public sealed partial class ChaosGame
         var panel = HandoffLayout.Panel;
         if (_handoffPanel is not null) batch.Draw(_handoffPanel, panel, Color.White);
         else batch.Draw(pixel, panel, new Color(24, 37, 39));
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = _eliminationHandoffPlayer ?? state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var player = state.FindPlayer(playerId)!;
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, HandoffLayout.Portrait,
