@@ -103,6 +103,9 @@ presentation-only conveniences that make the original systems easier to read:
   navigation shortcut.
 - Research lists accumulated progress beside its required total, and report
   panels retain unread/page progress so information is not silently consumed.
+- Automatic Detailed Combat remains a bounded, skippable presentation over the
+  already-resolved result. This intentionally fixes the original's known
+  freeze while leaving combat rolls, state, and replay data unchanged.
 - Nine named save slots show when and how each match was played; Escape pauses
   into save/load controls before offering a confirmed return to the main menu.
 - Escape also offers Report Bug, which sends a written description and — unless

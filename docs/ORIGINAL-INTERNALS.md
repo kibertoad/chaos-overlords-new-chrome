@@ -4382,9 +4382,11 @@ private presentations and emits the initial alert only afterwards.
 The outer loop's ordered slot walk makes terminal timing precise. It visits
 slots 0 through 5, and when it reaches an unretired local elimination it shows
 `PX00132` in a multi-local game, then calls `0x0042c3f5`, retires that slot,
-and only then signals later active slots. It is not a popup at resolution time
-and is not silently skipped. That presenter loads `PX00203`, composites the
-eliminated Overlord portrait, and blocks for its visible continue control.
+and resumes the scan for later slots. Immediately afterwards it requests
+music-selector mode 2 (`0x004642bd`), the established gameplay Track 3-8
+program, rather than notifying a later player. It is not a popup at resolution
+time and is not silently skipped. That presenter loads `PX00203`, composites
+the eliminated Overlord portrait, and blocks for its visible continue control.
 Single-local play bypasses the handoff gate but still reaches this elimination
 presenter when it loses.
 
@@ -4422,9 +4424,9 @@ portrait, Ready press cue, per-viewer combat state, and unread-Comlink delay
 remain in place.
 
 **Next validation:** Capture a multi-local elimination followed by another
-human turn to corroborate `PX00203` geometry and the later-slot notification,
-and capture Simple and Detailed handoffs containing both a combat result and
-an event report to corroborate modal completion and timing.
+human turn to corroborate `PX00203` geometry and later-slot timing, and capture
+Simple and Detailed handoffs containing both a combat result and an event
+report to corroborate modal completion and timing.
 
 ### BIN-HIRE-001 - initial and replacement offers
 
