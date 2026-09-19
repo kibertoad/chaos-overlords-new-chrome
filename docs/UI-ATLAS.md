@@ -12,7 +12,7 @@ original-game capture confirms the screen and interaction state.
 
 | Resource | Mapping | Confidence | Recreation use |
 |---|---|---|---|
-| `PX00100` | Publisher/developer credits | High from visible text | Not yet routed |
+| `PX00100` | Publisher/developer credits; a blocking full-canvas presenter entered by native control event `(0x80, 3)` | High from visible text and complete presenter `0x00464d53` | The native command surface is not yet routed; do not substitute a title-canvas button |
 | `PX00128` | Main city view and right control-panel frame | High from visible labels | City screen background |
 | `PX00130` | Chaos Overlords title/logo | High from visible title | Title screen background |
 | `PX00131` | Limited/demo-version promotion | High from visible text | Not used for full version |

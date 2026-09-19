@@ -1,7 +1,7 @@
 # Original executable internals research
 
 Status: active clean-room research log
-Last updated: 2026-09-11
+Last updated: 2026-09-19
 Reference executable SHA-256:
 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`
 
@@ -4335,6 +4335,31 @@ caller and bounded loop, the two portrait helpers, and the name editor.
 **Next validation:** Native cursor imagery and drag-target feedback remain
 visual capture work; card selection, hit testing, composition, and drag/drop
 mechanics are statically closed.
+
+### BIN-UI-CREDITS-001 - blocking publisher/developer credits presenter
+
+**Observation:** The native message dispatcher `0x00462579` calls
+`0x00464d53` only for control event `(0x80, 3)`. The presenter first removes
+the normal screen surfaces, loads resource 100 (`PX00100`) into surface 3 with
+the full `(640,460)` size, and copies it opaquely across the complete canvas.
+Its local message loop exits for the normal mouse/key/window termination
+messages (2, 3, 4, 17, and 18); paint messages redraw the same full-canvas
+surface. On exit it reloads surface 3 with resource 3000 and restores the
+previous screen-surface ownership.
+
+**Interpretation:** The publisher/developer image is a dedicated blocking
+credits screen, not a title-background layer or a game-state panel. The
+control-group identifier proves its entry is a native command distinct from
+the title canvas; it does not establish the visible label or geometry of that
+command surface.
+
+**Confidence:** High for the resource, full-canvas composition, blocking
+lifetime, redraw path, and command identity from the sole dispatcher branch
+and complete presenter. The visible native command surface remains unobserved.
+
+**Recreation status:** `PX00100` remains extracted but is deliberately not
+routed until the command surface is recovered. Adding an invented title button
+would be a recreation-only UI change rather than a faithful port.
 
 ### BIN-SETUP-006 - legacy session lobby resources are distinct flows
 
