@@ -6,21 +6,27 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private void OpenItemDetails(short itemId)
+    private void OpenItemDetails(short itemId, ClientScreen returnScreen = ClientScreen.Commands)
     {
         _itemDetailsId = itemId;
+        _itemDetailsReturnScreen = returnScreen;
         _screens.Show(ClientScreen.ItemInformation);
     }
 
     private void CloseItemDetails()
     {
+        var returnScreen = _itemDetailsReturnScreen;
         _itemDetailsId = null;
-        _screens.Show(ClientScreen.Commands);
+        _itemDetailsReturnScreen = ClientScreen.Commands;
+        _screens.Show(returnScreen);
     }
 
     private void DrawItemDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        DrawCommands(batch, pixel, font, state);
+        if (_itemDetailsReturnScreen == ClientScreen.Gang)
+            DrawGangDetails(batch, pixel, font, state);
+        else
+            DrawCommands(batch, pixel, font, state);
         if (_itemInfoBackground is not null)
             batch.Draw(_itemInfoBackground, ItemInformationLayout.Panel, Color.White);
         else

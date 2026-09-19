@@ -550,6 +550,13 @@ public static class GangInformationLayout
         return SharedPanelLayout.At(290, 21 + slot * 64, 40, 40);
     }
 
+    public static int? EquipmentSlotAt(Point point)
+    {
+        for (var slot = 0; slot < 3; slot++)
+            if (Equipment(slot).Contains(point)) return slot;
+        return null;
+    }
+
     public static int StatisticY(int row) => row switch
     {
         0 => SharedPanelLayout.Y(119),

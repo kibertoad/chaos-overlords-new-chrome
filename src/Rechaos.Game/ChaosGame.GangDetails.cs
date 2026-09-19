@@ -18,6 +18,7 @@ public sealed partial class ChaosGame
         _gangDetailsDefinitionId = gang.DefinitionId;
         _gangDetailsReturnScreen = returnScreen;
         _gangDetailsSectorFilter = sectorFilter;
+        _gangEquipmentItemClicks.Cancel();
         _screens.Show(ClientScreen.Gang);
     }
 
@@ -27,6 +28,7 @@ public sealed partial class ChaosGame
         _gangDetailsDefinitionId = definitionId;
         _gangDetailsReturnScreen = returnScreen;
         _gangDetailsSectorFilter = null;
+        _gangEquipmentItemClicks.Cancel();
         _screens.Show(ClientScreen.Gang);
     }
 
@@ -36,6 +38,7 @@ public sealed partial class ChaosGame
         _gangDetailsInstanceId = null;
         _gangDetailsDefinitionId = null;
         _gangDetailsSectorFilter = null;
+        _gangEquipmentItemClicks.Cancel();
         _screens.Show(returnScreen);
     }
 
@@ -56,6 +59,7 @@ public sealed partial class ChaosGame
         var gang = gangs[Mod(current + delta, gangs.Count)];
         _gangDetailsInstanceId = gang.Id;
         _gangDetailsDefinitionId = gang.DefinitionId;
+        _gangEquipmentItemClicks.Cancel();
         _selectedGangIndex = _state.FindPlayer(playerId)!.Gangs
             .Where(candidate => candidate.IsActive)
             .Select((candidate, index) => (candidate, index))
@@ -67,6 +71,20 @@ public sealed partial class ChaosGame
     {
         DrawGangDetailsBackdrop(batch, pixel, font, state);
         DrawGangDetailsPanel(batch, pixel, font, state);
+    }
+
+    private bool HandleGangDetailsEquipmentClick(Point point)
+    {
+        if (_gangDetailsInstanceId is not { } gangId
+            || _state?.FindGang(gangId) is not { } gang
+            || GangInformationLayout.EquipmentSlotAt(point) is not { } slot)
+            return false;
+
+        var itemId = EquippedItem(gang, slot);
+        if (itemId is { } resolved
+            && _gangEquipmentItemClicks.Register(slot, _inputTime))
+            OpenItemDetails(resolved, ClientScreen.Gang);
+        return true;
     }
 
     private void DrawGangDetailsBackdrop(
@@ -123,10 +141,8 @@ public sealed partial class ChaosGame
                     OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
             if (gang is not null && _itemPortraits is not null)
             {
-                short?[] equipment =
-                    [gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId];
-                for (var slot = 0; slot < equipment.Length; slot++)
-                    if (equipment[slot] is { } itemId)
+                for (var slot = 0; slot < 3; slot++)
+                    if (EquippedItem(gang, slot) is { } itemId)
                         batch.Draw(_itemPortraits, GangInformationLayout.Equipment(slot),
                             OriginalSpriteLayout.ItemPortrait(itemId), Color.White);
             }
@@ -213,6 +229,14 @@ public sealed partial class ChaosGame
         }
         if (line.Length > 0) yield return line;
     }
+
+    private static short? EquippedItem(MatchGangState gang, int slot) => slot switch
+    {
+        0 => gang.WeaponItemId,
+        1 => gang.ArmorItemId,
+        2 => gang.MiscellaneousItemId,
+        _ => throw new ArgumentOutOfRangeException(nameof(slot))
+    };
 
     private static void DrawPanelValue(PixelFont font, SpriteBatch batch, int value, int right, int y)
         => DrawPanelValue(font, batch, value.ToString(), right, y);

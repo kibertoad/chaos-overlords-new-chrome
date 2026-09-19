@@ -103,6 +103,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly IndexedDoubleClickTracker _sectorSiteClicks = new();
     private readonly IndexedDoubleClickTracker _influenceSiteClicks = new();
     private readonly IndexedDoubleClickTracker _equipmentItemClicks = new();
+    private readonly IndexedDoubleClickTracker _gangEquipmentItemClicks = new();
     private readonly IndexedDoubleClickTracker _hirePortraitClicks = new();
     private readonly short[] _playerPortraits = Enumerable.Range(0, MatchLimits.PlayerCount)
         .Select(index => checked((short)index)).ToArray();
@@ -192,6 +193,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int? _siteDetailsSlot;
     private short? _siteDetailsDefinitionId;
     private short? _itemDetailsId;
+    private ClientScreen _itemDetailsReturnScreen = ClientScreen.Commands;
 
     public ChaosGame(
         string assetRoot,
@@ -912,6 +914,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.Gang:
             {
+                if (HandleGangDetailsEquipmentClick(point)) break;
                 var gangOk = _gangDetailsInstanceId is null
                     ? GangDefinitionInformationLayout.Ok
                     : GangInformationLayout.Ok;
