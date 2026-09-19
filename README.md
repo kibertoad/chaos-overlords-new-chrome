@@ -90,7 +90,8 @@ presentation-only conveniences that make the original systems easier to read:
   compatible help pack receives a clearly named listed subject for any missing one.
 - Hover tooltips explain the practical effects of city statistics, gang and
   site attributes, item modifiers, every game mode and duration, setup
-  difficulty, and every Options entry.
+  difficulty, and every Options entry. Resting the pointer on a gang command
+  for two seconds explains what that order does before it is queued.
 - The city console shows projected turn cashflow beside current Cash, with
   finance panels breaking down upkeep, purchases, taxes, site income, Chaos,
   and the resulting adjustment.
@@ -105,6 +106,9 @@ presentation-only conveniences that make the original systems easier to read:
   the box is unticked — an anonymized, replayable journal of the whole match, so
   a deterministic bug arrives as something that can be reproduced rather than
   described.
+- The title screen names the build it is, and the same version travels with
+  every bug report, crash log, and support ZIP, so a report can be matched to
+  the installer it came from.
 - Windowed and borderless-fullscreen modes can be toggled globally with F11 or
   Alt+Enter, and foreground panel motion can be disabled without changing game
   rules or deterministic state.

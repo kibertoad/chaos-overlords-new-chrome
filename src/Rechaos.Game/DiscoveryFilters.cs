@@ -1,4 +1,6 @@
 using Rechaos.Core.GameModel;
+using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Session;
 
 namespace Rechaos.Game;
 
@@ -48,4 +50,36 @@ public static class DiscoveryFilters
 
     /// <summary>The value to store when a dropdown row is chosen.</summary>
     public static int ValueOf(int filter, int option) => filter == Status ? option : option - 1;
+
+    /// <summary>
+    /// Whether a listing survives the filters as they currently stand.
+    /// </summary>
+    /// <param name="statusFilter">The stored <see cref="Status"/> value: 0 keeps every state.</param>
+    /// <param name="scenarioFilter">The stored <see cref="Scenario"/> value, or -1 for any.</param>
+    /// <param name="aiFilter">The stored <see cref="Ai"/> value, or -1 for any.</param>
+    /// <param name="status">The state the server listed the session in.</param>
+    /// <param name="settings">
+    /// The session's settings, or null when this build cannot read the blob it carries.
+    /// </param>
+    /// <remarks>
+    /// Unread settings are not a reason to hide a session. A blob written by a build with a
+    /// scenario or a mentality this one does not have still describes a session that can be joined
+    /// — the setup screen leaves such a blob alone and the match reports it properly at start — so
+    /// it only falls out of the list when a filter is actually asking about what it could not read.
+    /// That keeps the unfiltered list what its name says: every public session the server has.
+    /// </remarks>
+    public static bool Matches(
+        int statusFilter,
+        int scenarioFilter,
+        int aiFilter,
+        MatchStatus status,
+        MultiplayerGameSettings? settings)
+    {
+        if (statusFilter == 1 && status != MatchStatus.Lobby) return false;
+        if (statusFilter == 2 && status != MatchStatus.Running) return false;
+        if (scenarioFilter < 0 && aiFilter < 0) return true;
+        if (settings is not { } known) return false;
+        return (scenarioFilter < 0 || (int)known.Scenario == scenarioFilter)
+            && (aiFilter < 0 || (int)known.AiMentality == aiFilter);
+    }
 }

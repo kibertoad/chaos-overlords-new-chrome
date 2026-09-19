@@ -5,6 +5,20 @@ using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Game;
 
+/// <summary>One seat a player can still return to, as the interface reads it.</summary>
+/// <remarks>
+/// <para>
+/// Two of the names here are easy to confuse. <c>DisplayName</c> is the player's own name in that
+/// match; <c>SessionName</c> is the match's own, which is what a list of sessions has to be read by.
+/// The match's name reaches every member on the wire, so it is kept for every member rather than
+/// only for the host who typed it.
+/// </para>
+/// <para>
+/// <c>LastUpdatedAt</c> is when this seat last had turn data stored against it, which is what tells
+/// two unfinished sessions apart when both are still resumable. It is null, and <c>SessionName</c>
+/// empty, in a record written by a build that stored neither.
+/// </para>
+/// </remarks>
 public sealed record MultiplayerRecovery(
     int FormatVersion,
     string Server,
@@ -17,7 +31,9 @@ public sealed record MultiplayerRecovery(
     bool CleanExit,
     bool Completed,
     string Password = "",
-    int SessionVersion = MultiplayerSessionVersion.Initial)
+    int SessionVersion = MultiplayerSessionVersion.Initial,
+    string SessionName = "",
+    DateTimeOffset? LastUpdatedAt = null)
 {
     public const int CurrentFormatVersion = 1;
 
@@ -75,14 +91,22 @@ internal sealed record PersistedRecovery(
     string? Token = null,
     string? ProtectedToken = null,
     string? Password = null,
-    int? SessionVersion = null);
+    int? SessionVersion = null,
+    string? SessionName = null,
+    DateTimeOffset? LastUpdatedAt = null);
 
 internal sealed record MultiplayerRecoveryHistory(
     int FormatVersion,
     IReadOnlyList<PersistedRecovery> Sessions)
 {
-    /// <summary>Version 3 added <see cref="PersistedRecovery.ProtectedToken"/>; 2 is still read.</summary>
-    internal const int CurrentFormatVersion = 3;
+    /// <summary>
+    /// Version 4 added <see cref="PersistedRecovery.SessionName"/> and
+    /// <see cref="PersistedRecovery.LastUpdatedAt"/>; 3 added
+    /// <see cref="PersistedRecovery.ProtectedToken"/>; 2 is still read. Every field either version
+    /// added is optional, so an older file reads back as a membership that simply knows less about
+    /// itself rather than one that cannot be resumed.
+    /// </summary>
+    internal const int CurrentFormatVersion = 4;
     internal const int OldestReadableFormatVersion = 2;
 }
 
@@ -209,7 +233,9 @@ public static class MultiplayerRecoveryStore
             Token: sealedToken is null ? recovery.Token : null,
             ProtectedToken: sealedToken,
             Password: recovery.Password.Length > 0 ? recovery.Password : null,
-            SessionVersion: recovery.SessionVersion);
+            SessionVersion: recovery.SessionVersion,
+            SessionName: recovery.SessionName.Length > 0 ? recovery.SessionName : null,
+            LastUpdatedAt: recovery.LastUpdatedAt);
     }
 
     private static MultiplayerRecovery? Revive(PersistedRecovery stored)
@@ -233,7 +259,9 @@ public static class MultiplayerRecoveryStore
             stored.CleanExit,
             stored.Completed,
             stored.Password ?? string.Empty,
-            stored.SessionVersion ?? MultiplayerSessionVersion.Initial);
+            stored.SessionVersion ?? MultiplayerSessionVersion.Initial,
+            stored.SessionName ?? string.Empty,
+            stored.LastUpdatedAt);
     }
 
     /// <summary>
@@ -286,7 +314,8 @@ public static class MultiplayerRecoveryStore
             JoinCode.Length: > 0 and <= 32,
             DisplayName.Length: > 0 and <= 32,
             Password.Length: <= 128,
-            SessionVersion: >= 0
+            SessionVersion: >= 0,
+            SessionName.Length: <= 64
         }
         && recovery.Server.Length <= 256
         && Uri.TryCreate(recovery.Server, UriKind.Absolute, out var server)

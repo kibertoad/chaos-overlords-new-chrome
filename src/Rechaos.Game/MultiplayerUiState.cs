@@ -53,6 +53,9 @@ internal enum OnlineConnectRole
 /// </remarks>
 internal sealed class MultiplayerUiState
 {
+    /// <summary>The seat roster before the server has said anything about one.</summary>
+    internal static readonly IReadOnlySet<int> NoSeats = new HashSet<int>();
+
     internal Dictionary<string, TakeoverVotePrompt> TakeoverVotes { get; } = new(StringComparer.Ordinal);
 
     internal TakeoverVotePrompt? CurrentTakeoverVote => TakeoverVotes.Values
@@ -84,11 +87,21 @@ internal sealed class MultiplayerUiState
     /// seats itself where every peer seated a computer player.
     /// </remarks>
     internal bool JoinedInProgress { get; set; }
-    internal IReadOnlyList<LobbyListing> Listings { get; set; } = [];
+    /// <summary>The public sessions the last browse found, with their settings already read.</summary>
+    internal IReadOnlyList<DiscoveredListing> Listings { get; set; } = [];
 
     internal OnlineServiceMode Service { get; set; } = OnlineServiceMode.Central;
     internal OnlineConnectRole Role { get; set; } = OnlineConnectRole.Host;
-    internal bool PublicListing { get; set; }
+    /// <summary>
+    /// Whether a hosted session is listed for anyone to browse, rather than gated by its join code.
+    /// </summary>
+    /// <remarks>
+    /// Listed by default: a session nobody can find is one that only friends told the code can
+    /// join, and a lobby browser with nothing in it is what a private default leaves every player
+    /// who opens it. A host who wants a code-only session says so on the same screen, before the
+    /// lobby is opened, and can change it in the lobby afterwards.
+    /// </remarks>
+    internal bool PublicListing { get; set; } = true;
     internal bool AllowLateJoin { get; set; }
 
     internal TextField Server { get; } = new(
@@ -133,11 +146,17 @@ internal sealed class MultiplayerUiState
     /// <summary>When the open turn seals regardless of readiness, or null without a timer.</summary>
     internal DateTimeOffset? DeadlineAt { get; set; }
 
-    /// <summary>Seats that have finished planning the open turn, and how many there are to wait on.</summary>
-    internal int ReadySeats { get; set; }
+    /// <summary>The seats that have finished planning the open turn.</summary>
+    internal IReadOnlySet<int> ReadySlots { get; set; } = NoSeats;
+
+    /// <summary>The seats the server waits on before it seals on readiness alone.</summary>
+    internal IReadOnlySet<int> AwaitedSlots { get; set; } = NoSeats;
+
+    /// <summary>How many seats have finished planning the open turn.</summary>
+    internal int ReadySeats => ReadySlots.Count;
 
     /// <summary>How many seats the server waits on before it seals on readiness alone.</summary>
-    internal int SeatedSeats { get; set; }
+    internal int SeatedSeats => AwaitedSlots.Count;
 
     /// <summary>
     /// Whether the server is answering.
@@ -203,6 +222,9 @@ internal sealed class MultiplayerUiState
         PendingLateJoin = null;
         JoinedInProgress = false;
         Listings = [];
+        // Back to being discoverable: a lobby this client joined may have been code-only, and its
+        // choice was adopted onto the screens that host the next one.
+        PublicListing = true;
         Role = OnlineConnectRole.Host;
         Match = null;
         JoinCodeShown = string.Empty;
@@ -210,8 +232,8 @@ internal sealed class MultiplayerUiState
         IsHost = false;
         PlanningTurn = 0;
         DeadlineAt = null;
-        ReadySeats = 0;
-        SeatedSeats = 0;
+        ReadySlots = NoSeats;
+        AwaitedSlots = NoSeats;
         IsConnected = true;
         ReconnectLog.Clear();
         ReconnectAttempt = 0;
@@ -237,6 +259,15 @@ internal sealed class MultiplayerUiState
     /// and leave the player believing they ordered something they did not.
     /// </remarks>
     internal bool PlanningIsOpen => Stage == MultiplayerStage.Playing;
+
+    /// <summary>Whether the player's turn is sent and only the other seats are still awaited.</summary>
+    /// <remarks>
+    /// The turn is no longer theirs to change, but the state it was planned against is still the
+    /// state every client will resolve from, so it remains worth reading while the wait runs. The
+    /// interface uses this to keep the read-only views open without reopening
+    /// <see cref="PlanningIsOpen"/>, which is the narrower question every mutation asks.
+    /// </remarks>
+    internal bool PlanningIsSubmitted => Stage == MultiplayerStage.WaitingForSeal;
 }
 
 internal sealed record TakeoverVotePrompt(

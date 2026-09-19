@@ -61,6 +61,17 @@ if (Test-Path -LiteralPath (Join-Path $gameOutput 'Assets/manifest.json')) {
 }
 & (Join-Path $gameOutput 'Rechaos.Game.exe') --smoke-test
 if ($LASTEXITCODE -ne 0) { throw 'Packaged game smoke check failed.' }
+
+# The number the game shows is the number on the installer only if the build picked up version.txt.
+# The executable is a Windows subsystem binary and cannot answer --version down a pipe, so its
+# stamped product version is read instead.
+$expectedVersion = & (Join-Path $PSScriptRoot 'Get-GameVersion.ps1') -RepositoryRoot $repositoryRoot
+$packagedGame = Get-Item -LiteralPath (Join-Path $gameOutput 'Rechaos.Game.exe')
+$stampedVersion = $packagedGame.VersionInfo.ProductVersion
+if ($stampedVersion -ne $expectedVersion) {
+    throw "Packaged game is stamped '$stampedVersion'; version.txt holds '$expectedVersion'."
+}
+
 & (Join-Path $gameOutput 'Rechaos.Game.exe') --platform-smoke-test
 if ($LASTEXITCODE -ne 0) { throw 'Packaged game could not initialize its native platform libraries.' }
 foreach ($nativeLibrary in @('SDL2.dll', 'openal.dll')) {

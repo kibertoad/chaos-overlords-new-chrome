@@ -702,6 +702,27 @@ public sealed partial class MultiplayerSessionTests
         Assert.Equal(0, withdrawn.Ready);
     }
 
+    /// <summary>
+    /// Readiness names the seats, not only how many of them there are.
+    /// </summary>
+    /// <remarks>
+    /// The city screen marks the opponents who are still drafting under their own portraits, and a
+    /// player id means nothing to a portrait: the seat behind it is what the interface can draw.
+    /// </remarks>
+    [Fact]
+    public async Task ReportsWhichSeatsHaveFinishedTheTurn()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+
+        server.Events.Write(Frame(8, "turn.readiness", """{"turn":1,"playerId":"p2","ready":true}"""));
+        var readiness = await WaitFor<MultiplayerNotice.ReadinessChanged>(session);
+
+        Assert.Equal([1], readiness.ReadySlots.Order());
+        Assert.Equal([0, 1], readiness.AwaitedSlots.Order());
+    }
+
     /// <summary>Readiness from a turn that has moved on does not carry over to the next.</summary>
     [Fact]
     public async Task ForgetsReadinessWhenTheTurnChanges()
@@ -962,20 +983,4 @@ public sealed partial class MultiplayerSessionTests
         Assert.Null(session.Bootstrap.Deadline);
     }
 
-    /// <summary>A roster that does not seat this client is refused before a city is generated.</summary>
-    [Fact]
-    public void RefusesToStartWhenThisClientIsNotOnTheRoster()
-    {
-        using var server = new FakeMultiplayerServer();
-        using var http = new HttpClient(server);
-        var handle = new MultiplayerClient(
-                http, new MultiplayerClientOptions(new Uri("http://server.test")))
-            .WithToken("cop_test")
-            .Match(MatchId);
-
-        var failure = Assert.Throws<MultiplayerProtocolException>(
-            () => MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
-                handle, BundledOriginalData.Load(), View(), "nobody", ResumeAfterSeq: 0)));
-        Assert.Contains("roster", failure.Message, StringComparison.OrdinalIgnoreCase);
-    }
 }

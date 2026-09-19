@@ -1,4 +1,12 @@
+using Rechaos.Core;
 using Rechaos.Game;
+
+// Answers the question a support thread always opens with, without starting a window.
+if (args.Contains("--version", StringComparer.OrdinalIgnoreCase))
+{
+    Console.WriteLine(GameVersion.Current);
+    return 0;
+}
 
 if (args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase))
 {

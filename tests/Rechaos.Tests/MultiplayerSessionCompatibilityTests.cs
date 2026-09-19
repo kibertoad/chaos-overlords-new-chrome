@@ -3,6 +3,7 @@ using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Protocol;
 using Rechaos.Multiplayer.Session;
 using Xunit;
@@ -183,5 +184,22 @@ public sealed partial class MultiplayerSessionTests
 
         Assert.Contains("confirmed turn 1", failed.Reason, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/1/orders"));
+    }
+
+    /// <summary>A roster that does not seat this client is refused before a city is generated.</summary>
+    [Fact]
+    public void RefusesToStartWhenThisClientIsNotOnTheRoster()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        var handle = new MultiplayerClient(
+                http, new MultiplayerClientOptions(new Uri("http://server.test")))
+            .WithToken("cop_test")
+            .Match(MatchId);
+
+        var failure = Assert.Throws<MultiplayerProtocolException>(
+            () => MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
+                handle, BundledOriginalData.Load(), View(), "nobody", ResumeAfterSeq: 0)));
+        Assert.Contains("roster", failure.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -6,6 +6,9 @@ namespace Rechaos.Tests;
 
 public sealed class MultiplayerRecoveryStoreTests : IDisposable
 {
+    private static readonly DateTimeOffset LastPlayed =
+        new(2026, 4, 17, 21, 5, 0, TimeSpan.FromHours(2));
+
     private readonly DirectoryInfo _directory =
         Directory.CreateTempSubdirectory("rechaos-multiplayer-recovery-");
 
@@ -191,6 +194,46 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     [Fact]
     public void MembershipWithoutAStoredSessionVersionIsTheInitialOne()
     {
+        WriteMembershipWithoutNewRecoveryMetadata();
+
+        var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.Equal(MultiplayerSessionVersion.Initial, loaded.SessionVersion);
+        Assert.True(loaded.CanResume);
+    }
+
+    /// <summary>
+    /// The match's name reaches every member on the wire, not only the host who typed it, so the
+    /// list of unfinished sessions can name the game whichever seat the player held.
+    /// </summary>
+    [Fact]
+    public void SessionNameAndLastUpdateAreKeptForAJoinerToo()
+    {
+        var joiner = Recovery(CleanExit: false, Completed: false) with { IsHost = false };
+
+        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), joiner));
+
+        var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.Equal("NIGHT OF THE LONG KNIVES", loaded.SessionName);
+        Assert.Equal(LastPlayed, loaded.LastUpdatedAt);
+    }
+
+    /// <summary>
+    /// A file from a build that stored neither reads back as a membership that knows less about
+    /// itself, not as one that cannot be resumed.
+    /// </summary>
+    [Fact]
+    public void MembershipWithoutASessionNameOrUpdateTimeKeepsItsSeat()
+    {
+        WriteMembershipWithoutNewRecoveryMetadata();
+
+        var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.Equal(string.Empty, loaded.SessionName);
+        Assert.Null(loaded.LastUpdatedAt);
+        Assert.True(loaded.CanReconnect);
+    }
+
+    private void WriteMembershipWithoutNewRecoveryMetadata()
+    {
         File.WriteAllText(Path(), System.Text.Json.JsonSerializer.Serialize(new
         {
             FormatVersion = 3,
@@ -204,7 +247,7 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
                     PlayerId = "player-1",
                     JoinCode = "CODE1234",
                     DisplayName = "ADA",
-                    IsHost = true,
+                    IsHost = false,
                     CleanExit = false,
                     Completed = false,
                     Token = "cop_secret"
@@ -212,9 +255,6 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
             }
         }));
 
-        var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
-        Assert.Equal(MultiplayerSessionVersion.Initial, loaded.SessionVersion);
-        Assert.True(loaded.CanResume);
     }
 
     [Fact]
@@ -237,7 +277,10 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         "ADA",
         IsHost: true,
         CleanExit,
-        Completed);
+        Completed,
+        Password: string.Empty,
+        SessionName: "NIGHT OF THE LONG KNIVES",
+        LastUpdatedAt: LastPlayed);
 
     private string Path() => System.IO.Path.Combine(_directory.FullName, "recovery.json");
 }

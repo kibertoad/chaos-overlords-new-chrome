@@ -3,7 +3,7 @@ import { defineHttpConformance, defineStorageConformance } from '@chaos-overlord
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
 import { drizzle } from 'drizzle-orm/d1'
 import { describe, expect, it } from 'vitest'
-import { containerFor } from '../src/index'
+import { buildContainer, containerFor } from '../src/index'
 
 describe('D1', () => {
   defineStorageConformance({
@@ -76,6 +76,19 @@ describe('bug reports', () => {
     expect(row?.blob_key).toMatch(/^bug-reports\//)
     const object = await env.BUG_BLOBS?.get(row?.blob_key ?? '')
     expect(new Uint8Array((await object?.arrayBuffer()) ?? new ArrayBuffer(0))).toEqual(bytes)
+  })
+})
+
+describe('worker configuration', () => {
+  /**
+   * A deployment that never set the var still serves the list the game's Browse screen reads; only
+   * an explicit `"false"` turns the route off.
+   */
+  it('serves the public lobby list unless PUBLIC_LISTING says otherwise', () => {
+    const { PUBLIC_LISTING: _unset, ...unconfigured } = env
+    expect(buildContainer(unconfigured).config.publicListing).toBe(true)
+    expect(buildContainer({ ...env, PUBLIC_LISTING: 'true' }).config.publicListing).toBe(true)
+    expect(buildContainer({ ...env, PUBLIC_LISTING: 'false' }).config.publicListing).toBe(false)
   })
 })
 

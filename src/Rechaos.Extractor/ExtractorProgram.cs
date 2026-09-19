@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using Rechaos.Core;
 using Rechaos.Core.Assets;
 
 namespace Rechaos.Extractor;
@@ -252,7 +253,7 @@ public static class ExtractorProgram
         Console.WriteLine("Writing and verifying the imported asset manifest...");
         var manifest = new AssetManifest(FormatVersion, "Chaos Overlords original asset pack", source.Fingerprint,
             DateTimeOffset.UtcNow, files.OrderBy(file => file.Path).ToArray(),
-            typeof(ExtractorProgram).Assembly.GetName().Version?.ToString() ?? "unknown");
+            GameVersion.Current);
         await File.WriteAllTextAsync(Path.Combine(output, "manifest.json"), JsonSerializer.Serialize(manifest, jsonOptions));
         return manifest;
     }
