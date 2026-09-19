@@ -1211,11 +1211,13 @@ approximately 0.117 and 1.189 seconds.
 
 **Recreation status:** Setup exposes the four original choices at the original
 hit regions and safely persists the selection, defaulting to None. A bounded
-presentation-only timer starts when a human accepts the private handoff, remains
-active through planning panels, renders the original percent-quantized 60-by-3
-aperture, and checks the recovered warning slots every sixth fixed update. Expiry
-submits the normal replay-recorded finish-planning operation and deliberately
-bypasses the idle-gang confirmation. The timer itself is absent from Core state,
+presentation-only timer starts only after the automatic private Game
+Information/Combat/Events route has returned the player to the planning city;
+it remains active through player-opened planning panels, renders the original
+percent-quantized 60-by-3 aperture, and checks the recovered warning slots
+every sixth fixed update. Expiry submits the normal replay-recorded
+finish-planning operation and deliberately bypasses the idle-gang confirmation.
+The timer itself is absent from Core state,
 state hashes, snapshots, and replay payloads; only its resulting ordinary
 operation is authoritative.
 
@@ -4773,6 +4775,9 @@ The recreation holds the presentation-only unread-Comlink cadence dormant
 through the automatic Game Information, Combat, and Events route, then starts
 it only when that player reaches the planning city; ordinary manually opened
 panels do not affect an already-active cadence.
+The recovered `0x0041b8bc` timer arm sits after that same slot-6 alert and
+writes `timeGetTime()` only once the automatic route has completed, so the
+recreation arms its optional planning timer at the shared city-entry boundary.
 The native pointer targets for Awards, Stats, and Done are now also recovered;
 Enter/Space presentation navigation remains the separately documented
 compatible-keyboard QoL layer.

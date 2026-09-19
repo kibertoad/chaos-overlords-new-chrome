@@ -30,7 +30,6 @@ public sealed partial class ChaosGame
             return;
         }
         PrepareCurrentHireOffers();
-        StartPlanningTimer(_inputTime);
         _deferComlinkAlertUntilPlanningVisible = true;
         if (_showGameInfoAtPlanningEntry)
         {
@@ -210,6 +209,7 @@ public sealed partial class ChaosGame
     {
         if (!_deferComlinkAlertUntilPlanningVisible) return;
         _deferComlinkAlertUntilPlanningVisible = false;
+        StartPlanningTimer(_inputTime);
         UpdateComlinkAlert(_inputTime, enteringPlanning: true);
     }
 
