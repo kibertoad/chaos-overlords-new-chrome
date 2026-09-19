@@ -185,11 +185,11 @@ public sealed partial class ChaosGame
                 var name = _online.Match?.Players
                     .FirstOrDefault(player => player.Id == changed.PlayerId)?.DisplayName
                     ?? "THE ABSENT PLAYER";
-                _online.TakeoverVotes[changed.PlayerId] = new TakeoverVotePrompt(
-                    changed.PlayerId, name, changed.Turn, changed.Votes);
+                _online.RecordTakeoverVote(new TakeoverVotePrompt(
+                    changed.PlayerId, name, changed.Turn, changed.Votes));
                 return;
             case MultiplayerNotice.TakeoverVoteClosed closed:
-                _online.TakeoverVotes.Remove(closed.PlayerId);
+                _online.CloseTakeoverVote(closed.PlayerId);
                 var ownSeat = string.Equals(
                     closed.PlayerId, _online.SelfPlayerId, StringComparison.Ordinal);
                 _message = (closed.ComputerControl, ownSeat) switch
@@ -268,7 +268,7 @@ public sealed partial class ChaosGame
                 // server's own word for it, and the case where a match ended without one.
                 if (_online.Stage != MultiplayerStage.Finished)
                 {
-                    _online.Stage = MultiplayerStage.Finished;
+                    _online.ConcludeMatch();
                     CloseOnlinePlanning();
                     _message = string.Empty;
                     if (_state?.Outcome is not null) _screens.Show(ClientScreen.Endgame);
@@ -276,7 +276,7 @@ public sealed partial class ChaosGame
                 CompleteOnlineRecovery();
                 return;
             case MultiplayerNotice.MatchAbandoned:
-                _online.Stage = MultiplayerStage.Finished;
+                _online.ConcludeMatch();
                 EndOnlineMatch("THE MATCH WAS ABANDONED");
                 return;
             case MultiplayerNotice.Failed failed:

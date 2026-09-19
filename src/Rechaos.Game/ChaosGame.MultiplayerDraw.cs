@@ -493,10 +493,12 @@ public sealed partial class ChaosGame
     /// that is still running and a turn that is not resolving mean something quite different when the
     /// server has stopped answering, and the player is the one who can do something about it.
     ///
-    /// An open vote on this player's own seat takes the line over for the same reason, and it is
-    /// the only place they are told: the modal that asks everyone else about them is deliberately
-    /// not shown to them (see <see cref="MultiplayerUiState.CurrentTakeoverVote"/>), and without
-    /// this they would be looking at a stopped clock with nothing to explain it.
+    /// An open vote on this player's own seat takes the line over from the stage it is planned in,
+    /// and it is the only place they are told: the modal that asks everyone else about them is
+    /// deliberately not shown to them (see <see cref="MultiplayerUiState.CurrentTakeoverVote"/>),
+    /// and without this they would be looking at a stopped clock with nothing to explain it. It
+    /// gives way in turn to a halt the whole match is under, on the same reasoning: a player owed
+    /// both answers is owed the one that explains why nothing is resolving for anybody.
     /// </remarks>
     private string OnlineTurnStatus()
     {
@@ -504,13 +506,13 @@ public sealed partial class ChaosGame
             return $"RECONNECTING TO THE SERVER  ATTEMPT {_online.ReconnectAttempt}";
         if (_online.TurnSyncError.Length > 0)
             return $"TURN SYNC ERROR  {_online.TurnSyncError}";
-        if (_online.OwnTakeoverVote is { } ownVote)
-        {
-            return $"YOU MISSED TURN {ownVote.Turn}  THE OTHER PLAYERS ARE VOTING ON "
-                + "COMPUTER CONTROL OF YOUR SEAT";
-        }
         return _online.Stage switch
         {
+            MultiplayerStage.Desynced => "MATCH PAUSED  REPAIRING A DESYNC",
+            MultiplayerStage.Finished => "MATCH COMPLETE",
+            _ when _online.OwnTakeoverVote is { } ownVote =>
+                $"YOU MISSED TURN {ownVote.Turn}  THE OTHER PLAYERS ARE VOTING ON "
+                    + "COMPUTER CONTROL OF YOUR SEAT",
             MultiplayerStage.WaitingForSeal =>
                 _online.ReadySubmissionPending
                     ? "SENDING FINISHED TURN  AWAITING SERVER ACKNOWLEDGEMENT"
@@ -518,8 +520,6 @@ public sealed partial class ChaosGame
                         ? $"SERVER ACKNOWLEDGED  ALL PLAYERS READY {OnlineSeatTally()}"
                         : $"SERVER ACKNOWLEDGED  WAITING FOR OTHER PLAYERS "
                             + $"{OnlineSeatTally()} {OnlineCountdown()}",
-            MultiplayerStage.Desynced => "MATCH PAUSED  REPAIRING A DESYNC",
-            MultiplayerStage.Finished => "MATCH COMPLETE",
             MultiplayerStage.Playing => $"TURN {_online.PlanningTurn}  {OnlineCountdown()}",
             _ => string.Empty,
         };

@@ -62,6 +62,13 @@ public sealed partial class ChaosGame
     /// same way: without this the player would keep giving orders to a city they cannot see. The
     /// escape menu is deliberately still reachable — a player who wants to leave a match that is
     /// waiting on somebody else should not have to wait for the vote to close first.
+    /// <para>
+    /// It owns the keyboard on whatever screen the player is on, which is only safe because a
+    /// finished match has no open vote to be asked about: see
+    /// <see cref="MultiplayerUiState.ConcludeMatch"/>. Were one left standing, this would swallow
+    /// the endgame's own keys as well as its clicks, and the player would have no way forward from
+    /// the endgame at all.
+    /// </para>
     /// </remarks>
     private bool TakeoverVoteBlocksInput =>
         _session is not null && _online.CurrentTakeoverVote is not null;

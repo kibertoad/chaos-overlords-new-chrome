@@ -436,8 +436,7 @@ public sealed partial class ChaosGame
     private void ConcludeOnlineMatch(MatchState final)
     {
         _state = final;
-        _online.Stage = MultiplayerStage.Finished;
-        _online.DeadlineAt = null;
+        _online.ConcludeMatch();
         CloseOnlinePlanning();
         _message = string.Empty;
         CompleteOnlineRecovery();

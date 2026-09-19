@@ -27,6 +27,19 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private bool CanTransferControl => _replay.State.Outcome is null;
 
+    /// <summary>
+    /// Who holds a seat, in the copy of the match this session drives.
+    /// </summary>
+    /// <remarks>
+    /// The session hands the interface a fresh clone at each turn boundary and never shares its own
+    /// — see <see cref="MatchStateClone"/> for why — so a seat changing hands, or pointedly not
+    /// changing hands, between boundaries is invisible from outside. A control transfer announced
+    /// after the final turn is exactly that: there is no later boundary for a clone to arrive at,
+    /// which leaves this the only honest way to ask whether the transfer was ignored.
+    /// </remarks>
+    internal PlayerController? ControllerOfSlot(int slot) =>
+        _replay.State.FindPlayer(new PlayerId(slot))?.Setup.Controller;
+
     private void TransferPlayerToComputer(string playerId)
     {
         if (!CanTransferControl) return;

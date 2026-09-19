@@ -81,10 +81,10 @@ public sealed partial class MultiplayerSessionTests
         Assert.True(closed.ComputerControl);
         Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
         // The seat stays as the finished match recorded it: the endgame everyone is looking at is
-        // the state every client confirmed, and a control change after it would only disagree.
-        Assert.Equal(
-            PlayerController.Human,
-            resolved.State.FindPlayer(new PlayerId(1))?.Setup.Controller);
+        // the state every client confirmed, and a control change after it would only disagree. Read
+        // from the session's own copy rather than from the clone the final turn resolved into —
+        // that one was taken before the takeover arrived, so it would say Human either way.
+        Assert.Equal(PlayerController.Human, session.ControllerOfSlot(1));
     }
 
     /// <summary>
