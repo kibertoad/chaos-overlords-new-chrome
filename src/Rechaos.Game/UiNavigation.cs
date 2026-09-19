@@ -235,7 +235,7 @@ public sealed class IndexedDoubleClickTracker
 /// </summary>
 public sealed class HoverDwellTracker
 {
-    public static readonly TimeSpan Delay = TimeSpan.FromSeconds(2);
+    public static readonly TimeSpan Delay = TimeSpan.FromSeconds(1);
 
     private int? _region;
     private TimeSpan _enteredAt;
