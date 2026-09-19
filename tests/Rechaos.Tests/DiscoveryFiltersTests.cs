@@ -1,6 +1,8 @@
 using Microsoft.Xna.Framework;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
+using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Session;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -93,5 +95,60 @@ public sealed class DiscoveryFiltersTests
             Assert.True(
                 OnlineConnectLayout.DiscoveryFilter(filter - 1).Right
                     < OnlineConnectLayout.DiscoveryFilter(filter).X);
+    }
+
+    /// <summary>The settings a session hosted by this build carries.</summary>
+    private static MultiplayerGameSettings Settings(
+        ScenarioId scenario = ScenarioId.KillEmAll,
+        AiDifficulty mentality = AiDifficulty.CrimeLord) =>
+        new(scenario, GameDuration.SixMonths, mentality,
+            [.. Enumerable.Range(0, MatchLimits.PlayerCount).Select(slot => (short)slot)]);
+
+    [Theory]
+    [InlineData(MatchStatus.Lobby)]
+    [InlineData(MatchStatus.Running)]
+    public void TheUnfilteredListKeepsEverySessionTheServerReturned(MatchStatus status)
+    {
+        Assert.True(DiscoveryFilters.Matches(0, -1, -1, status, Settings()));
+        Assert.True(DiscoveryFilters.Matches(0, -1, -1, status, settings: null));
+    }
+
+    [Fact]
+    public void TheStatusFilterKeepsOnlyTheStateItNames()
+    {
+        Assert.True(DiscoveryFilters.Matches(1, -1, -1, MatchStatus.Lobby, Settings()));
+        Assert.False(DiscoveryFilters.Matches(1, -1, -1, MatchStatus.Running, Settings()));
+        Assert.True(DiscoveryFilters.Matches(2, -1, -1, MatchStatus.Running, Settings()));
+        Assert.False(DiscoveryFilters.Matches(2, -1, -1, MatchStatus.Lobby, Settings()));
+    }
+
+    [Fact]
+    public void TheStatusFilterAloneStillKeepsSessionsWhoseSettingsCouldNotBeRead()
+    {
+        Assert.True(DiscoveryFilters.Matches(1, -1, -1, MatchStatus.Lobby, settings: null));
+        Assert.False(DiscoveryFilters.Matches(1, -1, -1, MatchStatus.Running, settings: null));
+    }
+
+    [Fact]
+    public void TheScenarioAndAiFiltersKeepOnlyTheValuesTheyName()
+    {
+        var settings = Settings(ScenarioId.KillEmAll, AiDifficulty.CrimeLord);
+        Assert.True(DiscoveryFilters.Matches(
+            0, (int)ScenarioId.KillEmAll, -1, MatchStatus.Lobby, settings));
+        Assert.False(DiscoveryFilters.Matches(
+            0, (int)ScenarioId.Greed, -1, MatchStatus.Lobby, settings));
+        Assert.True(DiscoveryFilters.Matches(
+            0, -1, (int)AiDifficulty.CrimeLord, MatchStatus.Lobby, settings));
+        Assert.False(DiscoveryFilters.Matches(
+            0, -1, (int)AiDifficulty.Goon, MatchStatus.Lobby, settings));
+    }
+
+    [Fact]
+    public void OnlyAFilterThatAsksAboutTheSettingsDropsASessionThatCouldNotBeRead()
+    {
+        Assert.False(DiscoveryFilters.Matches(
+            0, (int)ScenarioId.KillEmAll, -1, MatchStatus.Lobby, settings: null));
+        Assert.False(DiscoveryFilters.Matches(
+            0, -1, (int)AiDifficulty.CrimeLord, MatchStatus.Lobby, settings: null));
     }
 }

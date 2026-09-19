@@ -17,6 +17,7 @@ export const matches = pgTable(
   {
     id: text('id').primaryKey(),
     protocolVersion: integer('protocol_version').notNull().default(1),
+    sessionVersion: integer('session_version').notNull().default(1),
     status: text('status').notNull(),
     name: text('name').notNull(),
     visibility: text('visibility').notNull(),
@@ -57,6 +58,8 @@ export const players = pgTable(
     slot: integer('slot').notNull().default(-1),
     joinOrder: integer('join_order').notNull().default(0),
     displayName: text('display_name').notNull(),
+    /** Index into the original sixteen-face overlord atlas; defaults to the first for older rows. */
+    portraitId: integer('portrait_id').notNull().default(0),
     /** Null once revoked; SQL equality never matches null, so a revoked token resolves to nobody. */
     tokenHash: text('token_hash').unique(),
     status: text('status').notNull(),
@@ -128,6 +131,7 @@ export const snapshots = pgTable(
     turn: integer('turn').notNull(),
     formatVersion: integer('format_version').notNull(),
     protocolVersion: integer('protocol_version').notNull().default(1),
+    sessionVersion: integer('session_version').notNull().default(1),
     stateHash: text('state_hash').notNull(),
     uploadedByPlayerId: text('uploaded_by_player_id').notNull(),
     uploadedAt: stamp('uploaded_at').notNull(),

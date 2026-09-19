@@ -73,7 +73,8 @@ public sealed partial class ChaosGame
         // waiting in the status line when the player comes back. Clearing it here would mean closing
         // the panel one second early threw away the only answer they were going to get.
         _bugReportOpen = false;
-        _gameMenuCursor = GameMenuLayout.ReportBugIndex;
+        _gameMenuCursor = Array.FindIndex(GameMenuButtons(),
+            button => button.Action == GameMenuAction.ReportBug);
     }
 
     /// <summary>Picks up a finished send, wherever the player has navigated to since.</summary>

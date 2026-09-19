@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Rechaos.Core;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 
@@ -27,6 +28,9 @@ public sealed partial class ChaosGame
     /// straight through the row of buttons underneath it.
     /// </remarks>
     private static readonly Rectangle TitleMessage = new(494, 292, 138, 118);
+
+    /// <summary>How far the version line stays clear of the right edge of the title screen.</summary>
+    private const int TitleVersionMargin = 6;
 
     private const string ObjectiveDurationWarning =
         "OBJECTIVES DISABLE TIME LIMITS";
@@ -377,6 +381,22 @@ public sealed partial class ChaosGame
         DrawTitleMessage(batch, pixel, font);
         DrawCentered(font, batch, "RESTORED BY KIBERTOAD", 430,
             new Color(185, 195, 195), 1);
+        DrawTitleVersion(batch, font);
+    }
+
+    /// <summary>
+    /// Prints the build's version in the corner the credit line leaves free.
+    /// </summary>
+    /// <remarks>
+    /// The title screen is the one place every player passes through, so it is where the number a
+    /// bug report will be filed against has to be readable without opening anything.
+    /// </remarks>
+    private static void DrawTitleVersion(SpriteBatch batch, PixelFont font)
+    {
+        var width = GameVersion.Display.Length * OriginalFontLayout.CellWidth;
+        font.Draw(batch, GameVersion.Display,
+            new Vector2(VirtualInput.Width - width - TitleVersionMargin, 430),
+            new Color(150, 160, 160), 1);
     }
 
     /// <summary>Draws whatever the last screen left to say, wrapped into the margin.</summary>
@@ -417,6 +437,13 @@ public sealed partial class ChaosGame
             ? _online.Match?.Players.Where(player => player.Status == Rechaos.Multiplayer.Generated.PlayerStatus.Active)
                 .Take(MatchLimits.PlayerCount).ToArray() ?? []
             : [];
+        // A seated player wears the face they chose on their way in; the portraits stored with the
+        // rules dress the seats nobody claimed, which are the ones the computer will play.
+        var portraits = Enumerable.Range(0, MatchLimits.PlayerCount)
+            .Select(index => _configuringOnlineLobby && index < onlinePlayers.Length
+                ? OnlinePortrait(onlinePlayers[index])
+                : _playerPortraits[index])
+            .ToArray();
         for (var index = 0; index < MatchLimits.PlayerCount; index++)
         {
             var active = _configuringOnlineLobby
@@ -425,7 +452,7 @@ public sealed partial class ChaosGame
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, PlayerPortraitLayout.SetupTop(index),
                     OriginalSpriteLayout.OverlordPortrait(
-                        active ? _playerPortraits[index] : PlayerPortraitLayout.Count - 1),
+                        active ? portraits[index] : PlayerPortraitLayout.Count - 1),
                     Color.White);
         }
         var shownHumans = _configuringOnlineLobby
@@ -436,7 +463,7 @@ public sealed partial class ChaosGame
             var portrait = SetupPlayerCardArtLayout.PortraitDestination(index);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, portrait,
-                    SetupPlayerCardArtLayout.PortraitSource(_playerPortraits[index]), Color.White);
+                    SetupPlayerCardArtLayout.PortraitSource(portraits[index]), Color.White);
             if (!_configuringOnlineLobby && index == _selectedSetupPlayerSlot)
             {
                 if (_setupKeyedControls is not null)

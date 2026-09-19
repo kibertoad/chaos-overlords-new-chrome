@@ -66,6 +66,12 @@ describe('node runtime configuration', () => {
     expect(loadConfig({ RETENTION_DAYS: '0' }).retentionDays).toBe(0)
   })
 
+  it('serves the public lobby list unless it is explicitly turned off', () => {
+    expect(loadConfig({}).publicListing).toBe(true)
+    expect(loadConfig({ PUBLIC_LISTING: 'false' }).publicListing).toBe(false)
+    expect(loadConfig({ PUBLIC_LISTING: 'true' }).publicListing).toBe(true)
+  })
+
   it('reads browser origins as a trimmed list, none by default', () => {
     expect(loadConfig({}).corsOrigins).toEqual([])
     expect(

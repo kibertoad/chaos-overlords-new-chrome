@@ -229,6 +229,41 @@ public sealed class IndexedDoubleClickTracker
     public void Cancel() => _lastIndex = null;
 }
 
+/// <summary>
+/// Tracks how long the pointer has rested on one hover region so a tooltip can wait out
+/// a dwell delay instead of appearing the moment the cursor crosses a row.
+/// </summary>
+public sealed class HoverDwellTracker
+{
+    public static readonly TimeSpan Delay = TimeSpan.FromSeconds(1);
+
+    private int? _region;
+    private TimeSpan _enteredAt;
+
+    /// <summary>The region the pointer has rested on for at least <see cref="Delay"/>, if any.</summary>
+    public int? SettledRegion { get; private set; }
+
+    /// <summary>Records the region under the pointer; null whenever no region is hovered.</summary>
+    public void Update(int? region, TimeSpan timestamp)
+    {
+        if (region is < 0) throw new ArgumentOutOfRangeException(nameof(region));
+        if (timestamp < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timestamp));
+        if (region != _region || timestamp < _enteredAt)
+        {
+            _region = region;
+            _enteredAt = timestamp;
+        }
+
+        SettledRegion = region is not null && timestamp - _enteredAt >= Delay ? region : null;
+    }
+
+    public void Cancel()
+    {
+        _region = null;
+        SettledRegion = null;
+    }
+}
+
 /// <summary>Native layout of the 8x8 sector cells in the PX10000-PX10006 city layers.</summary>
 public static class CityMapLayout
 {
@@ -782,6 +817,9 @@ public static partial class PlayerPortraitLayout
     public const int Count = 16;
     public const int SelectableCount = 15;
 
+    /// <summary>The label the Sector workspace flags a gang-holding opponent with.</summary>
+    public const string GangPresenceLabel = "GANGS";
+
     public static Rectangle SetupTop(int player)
     {
         Validate(player);
@@ -799,6 +837,41 @@ public static partial class PlayerPortraitLayout
         Validate(player);
         return new Rectangle(48 + player * 72, 4, 20, 20);
     }
+
+    /// <summary>
+    /// The strip under a city-row portrait carrying <see cref="GangPresenceLabel"/>. One glyph row
+    /// starting a pixel into the portrait stops exactly on the Sector workspace's top edge.
+    /// </summary>
+    public static Rectangle CityGangPresence(int player)
+    {
+        var portrait = CityTop(player);
+        return new Rectangle(
+            portrait.X + 1,
+            portrait.Bottom - 1,
+            GangPresenceLabel.Length * OriginalFontLayout.CellWidth,
+            OriginalFontLayout.GlyphHeight);
+    }
+
+    /// <summary>
+    /// Where a caption of <paramref name="columns"/> characters goes under a top-bar portrait.
+    /// </summary>
+    /// <remarks>
+    /// The eight rows between the portraits and the top of the map at y 44 are all the space the
+    /// top bar has, so a caption takes one glyph row of it and is centred on the portrait it
+    /// belongs to rather than on the wider cell the portrait shares with the active-player marker.
+    /// </remarks>
+    public static Rectangle CityCaption(int player, int columns)
+    {
+        if (columns <= 0) throw new ArgumentOutOfRangeException(nameof(columns));
+        var portrait = CityTop(player);
+        var width = columns * OriginalFontLayout.CellWidth;
+        return new Rectangle(
+            portrait.X + (portrait.Width - width) / 2,
+            portrait.Bottom + 1,
+            width,
+            OriginalFontLayout.GlyphHeight);
+    }
+
     public static Rectangle SetupLarge(int player) => Player(player, 397, 89, 83, 64, 64, rowStride: 74);
     public static Rectangle Previous(int player) => Player(player, 399, 109, 83, 12, 18, rowStride: 74);
     public static Rectangle Next(int player) => Player(player, 447, 109, 83, 12, 18, rowStride: 74);
@@ -861,90 +934,5 @@ public static class GangArtLayout
     {
         if (row is < 0 or >= 12) throw new ArgumentOutOfRangeException(nameof(row));
         return new Rectangle(defender ? 42 : 18, 108 + row * 24, 20, 20);
-    }
-}
-
-public sealed record HireDockEntry(short GangDefinitionId, bool Hired);
-
-public static class HireDockLayout
-{
-    public const int SlotCount = 3;
-
-    public static Rectangle Cell(int slot)
-    {
-        ValidateSlot(slot);
-        return new Rectangle(438 + slot * 66, 370, 66, 90);
-    }
-
-    public static Rectangle Portrait(int slot)
-    {
-        ValidateSlot(slot);
-        return new Rectangle(439 + slot * 66, 371, 64, 64);
-    }
-
-    public static Rectangle Reject(int slot)
-    {
-        ValidateSlot(slot);
-        return new Rectangle(471 + slot * 66, 436, 33, 24);
-    }
-
-    public static Rectangle PriceCell(int slot)
-    {
-        ValidateSlot(slot);
-        return new Rectangle(438 + slot * 66, 436, 33, 24);
-    }
-
-    public static Point Price(int slot)
-    {
-        var cell = PriceCell(slot);
-        const int twoGlyphWidth = 11; // 5px glyph + 1px advance + 5px glyph.
-        return new Point(
-            cell.X + (cell.Width - twoGlyphWidth) / 2,
-            cell.Y + 4);
-    }
-
-    public static string PriceText(int amount)
-    {
-        if (amount < 0) throw new ArgumentOutOfRangeException(nameof(amount));
-        return amount < 10 ? $"0{amount}" : amount.ToString();
-    }
-
-    public static IReadOnlyList<HireDockEntry?> Project(
-        IReadOnlyList<HireOfferSlotState> offers,
-        PendingHireState? pending)
-    {
-        ArgumentNullException.ThrowIfNull(offers);
-        if (offers.Count != SlotCount)
-            throw new ArgumentException("Hire dock requires exactly three offer slots.", nameof(offers));
-        var result = new HireDockEntry?[SlotCount];
-        for (var slot = 0; slot < SlotCount; slot++)
-            if (offers[slot].GangDefinitionId is { } definitionId)
-                result[slot] = new HireDockEntry(
-                    definitionId, pending?.OfferSlot == slot);
-        return result;
-    }
-
-    public static int MoveCursor(
-        IReadOnlyList<HireOfferSlotState> offers,
-        int currentSlot,
-        int delta)
-    {
-        ArgumentNullException.ThrowIfNull(offers);
-        if (offers.Count != SlotCount)
-            throw new ArgumentException("Hire dock requires exactly three offer slots.", nameof(offers));
-
-        var available = Enumerable.Range(0, SlotCount)
-            .Where(slot => offers[slot].GangDefinitionId.HasValue)
-            .ToArray();
-        if (available.Length == 0) return -1;
-
-        var index = Array.IndexOf(available, currentSlot);
-        if (index < 0) return delta < 0 ? available[^1] : available[0];
-        return available[(index + delta % available.Length + available.Length) % available.Length];
-    }
-
-    private static void ValidateSlot(int slot)
-    {
-        if (slot is < 0 or >= SlotCount) throw new ArgumentOutOfRangeException(nameof(slot));
     }
 }

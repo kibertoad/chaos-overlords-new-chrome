@@ -9,7 +9,20 @@ public static class OnlineConnectLayout
     public static Rectangle Server => new(120, 150, 400, 22);
     public static Rectangle HostRole => new(120, 188, 190, 26);
     public static Rectangle JoinRole => new(330, 188, 190, 26);
-    public static Rectangle Name => new(120, 226, 400, 22);
+    public static Rectangle Name => new(120, 226, 330, 22);
+
+    /// <summary>
+    /// The overlord face this player takes into the session, beside the name they take with it.
+    /// </summary>
+    /// <remarks>
+    /// Here rather than in the lobby because it is the player's own choice and not the session's:
+    /// the lobby's settings belong to the host, and a face chosen after the seat was claimed would
+    /// have to be sent again and read back by everyone. The name is the other thing a player brings,
+    /// so the two are set in the same row, and the name field gives up the width the picker needs.
+    /// </remarks>
+    public static Rectangle PortraitPrevious => new(456, 226, 14, 32);
+    public static Rectangle Portrait => new(472, 226, 32, 32);
+    public static Rectangle PortraitNext => new(506, 226, 14, 32);
     public static Rectangle JoinCode => new(120, 264, 300, 22);
     public static Rectangle PasteJoinCode => new(428, 260, 92, 30);
     public static Rectangle Password => new(120, 302, 400, 22);

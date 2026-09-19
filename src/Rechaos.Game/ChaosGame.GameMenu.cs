@@ -69,6 +69,16 @@ internal enum SaveBrowserMode
     Load
 }
 
+internal enum GameMenuAction
+{
+    Resume,
+    Save,
+    Load,
+    Options,
+    ReportBug,
+    QuitToMainMenu
+}
+
 public sealed partial class ChaosGame
 {
     private bool _gameMenuOpen;
@@ -107,6 +117,9 @@ public sealed partial class ChaosGame
 
     private void OpenSaveBrowser(bool saving, bool fromTitle = false)
     {
+        // The server owns the durable history of an online match.  A local snapshot could neither
+        // be resumed by the other players nor safely become authoritative again.
+        if (_session is not null) return;
         if (_definitions is null || saving && _state is null) return;
         _gameMenuOpen = true;
         _bugReportOpen = false;
@@ -148,7 +161,7 @@ public sealed partial class ChaosGame
         }
         if (Pressed(keyboard, Keys.Up)) _gameMenuCursor = Math.Max(0, _gameMenuCursor - 1);
         if (Pressed(keyboard, Keys.Down))
-            _gameMenuCursor = Math.Min(GameMenuLayout.EntryCount - 1, _gameMenuCursor + 1);
+            _gameMenuCursor = Math.Min(GameMenuButtons().Length - 1, _gameMenuCursor + 1);
         if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Back)) CloseGameMenu();
         else if (Pressed(keyboard, Keys.Enter)) ActivateGameMenuSelection();
     }
@@ -183,14 +196,20 @@ public sealed partial class ChaosGame
 
     private void ActivateGameMenuSelection()
     {
-        switch (_gameMenuCursor)
+        ActivateGameMenuAction(GameMenuButtons()[_gameMenuCursor].Action);
+    }
+
+    private void ActivateGameMenuAction(GameMenuAction action)
+    {
+        switch (action)
         {
-            case 0: CloseGameMenu(); break;
-            case 1: OpenSaveBrowser(saving: true); break;
-            case 2: OpenSaveBrowser(saving: false); break;
-            case GameMenuLayout.OptionsIndex: OpenOptionsFromGameMenu(); break;
-            case GameMenuLayout.ReportBugIndex: OpenBugReport(); break;
-            default: OpenQuitToMainMenuConfirmation(); break;
+            case GameMenuAction.Resume: CloseGameMenu(); break;
+            case GameMenuAction.Save: OpenSaveBrowser(saving: true); break;
+            case GameMenuAction.Load: OpenSaveBrowser(saving: false); break;
+            case GameMenuAction.Options: OpenOptionsFromGameMenu(); break;
+            case GameMenuAction.ReportBug: OpenBugReport(); break;
+            case GameMenuAction.QuitToMainMenu: OpenQuitToMainMenuConfirmation(); break;
+            default: throw new ArgumentOutOfRangeException(nameof(action));
         }
     }
 
@@ -258,12 +277,12 @@ public sealed partial class ChaosGame
             else if (GameMenuLayout.CancelQuit.Contains(point)) CancelQuitToMainMenu();
             return;
         }
-        if (GameMenuLayout.Resume.Contains(point)) CloseGameMenu();
-        else if (GameMenuLayout.Save.Contains(point)) OpenSaveBrowser(saving: true);
-        else if (GameMenuLayout.Load.Contains(point)) OpenSaveBrowser(saving: false);
-        else if (GameMenuLayout.Options.Contains(point)) OpenOptionsFromGameMenu();
-        else if (GameMenuLayout.ReportBug.Contains(point)) OpenBugReport();
-        else if (GameMenuLayout.QuitToMainMenu.Contains(point)) OpenQuitToMainMenuConfirmation();
+        foreach (var button in GameMenuButtons())
+            if (button.Bounds.Contains(point))
+            {
+                ActivateGameMenuAction(button.Action);
+                return;
+            }
     }
 
     private void HandleSaveBrowserClick(Point point)
@@ -291,7 +310,7 @@ public sealed partial class ChaosGame
     private void CancelQuitToMainMenu()
     {
         _quitToMainMenuConfirmationOpen = false;
-        _gameMenuCursor = GameMenuLayout.EntryCount - 1;
+        _gameMenuCursor = GameMenuButtons().Length - 1;
         _message = string.Empty;
     }
 
@@ -338,22 +357,25 @@ public sealed partial class ChaosGame
         if (_quitToMainMenuConfirmationOpen)
         {
             DrawCentered(font, batch, "QUIT TO MAIN MENU?", 132, Color.Gold, 2);
-            DrawCentered(font, batch, "YOUR CURRENT GAME WILL BE LOST", 190, Color.White, 1);
-            DrawCentered(font, batch, "IF NOT SAVED.", 207, Color.White, 1);
+            if (_session is null)
+            {
+                DrawCentered(font, batch, "YOUR CURRENT GAME WILL BE LOST", 190, Color.White, 1);
+                DrawCentered(font, batch, "IF NOT SAVED.", 207, Color.White, 1);
+            }
+            else
+            {
+                DrawCentered(font, batch, "SERVER SAVES EACH TURN.", 178, Color.White, 1);
+                DrawCentered(font, batch, "RESUME IT LATER FROM ONLINE.", 195, Color.White, 1);
+                DrawCentered(font, batch, "AVAILABLE UNTIL COMPLETED OR EXPIRED.", 212, Color.White, 1);
+            }
             DrawButton(batch, pixel, font, GameMenuLayout.ConfirmQuit, "QUIT", _gameMenuCursor == 0);
             DrawButton(batch, pixel, font, GameMenuLayout.CancelQuit, "CANCEL", _gameMenuCursor == 1);
             return;
         }
         DrawCentered(font, batch, "GAME MENU", 82, Color.Gold, 2);
-        var buttons = new[]
-        {
-            (GameMenuLayout.Resume, "RESUME"), (GameMenuLayout.Save, "SAVE GAME"),
-            (GameMenuLayout.Load, "LOAD GAME"), (GameMenuLayout.Options, "OPTIONS"),
-            (GameMenuLayout.ReportBug, "REPORT BUG"),
-            (GameMenuLayout.QuitToMainMenu, "QUIT TO MAIN MENU")
-        };
+        var buttons = GameMenuButtons();
         for (var index = 0; index < buttons.Length; index++)
-            DrawButton(batch, pixel, font, buttons[index].Item1, buttons[index].Item2,
+            DrawButton(batch, pixel, font, buttons[index].Bounds, buttons[index].Label,
                 _gameMenuCursor == index);
         for (var index = 0; index < session.Count; index++)
             DrawCentered(font, batch, session[index], GameMenuLayout.SessionLine(index),
@@ -378,6 +400,25 @@ public sealed partial class ChaosGame
         if (_online.PasswordShown.Length > 0) lines.Add($"PASSWORD  {_online.PasswordShown}");
         return lines;
     }
+
+    private (Rectangle Bounds, string Label, GameMenuAction Action)[] GameMenuButtons() =>
+        _session is null
+            ?
+            [
+                (GameMenuLayout.Resume, "RESUME", GameMenuAction.Resume),
+                (GameMenuLayout.Save, "SAVE GAME", GameMenuAction.Save),
+                (GameMenuLayout.Load, "LOAD GAME", GameMenuAction.Load),
+                (GameMenuLayout.Options, "OPTIONS", GameMenuAction.Options),
+                (GameMenuLayout.ReportBug, "REPORT BUG", GameMenuAction.ReportBug),
+                (GameMenuLayout.QuitToMainMenu, "QUIT TO MAIN MENU", GameMenuAction.QuitToMainMenu)
+            ]
+            :
+            [
+                (GameMenuLayout.Resume, "RESUME", GameMenuAction.Resume),
+                (GameMenuLayout.Options, "OPTIONS", GameMenuAction.Options),
+                (GameMenuLayout.ReportBug, "REPORT BUG", GameMenuAction.ReportBug),
+                (GameMenuLayout.QuitToMainMenu, "QUIT TO MAIN MENU", GameMenuAction.QuitToMainMenu)
+            ];
 
     private void DrawSaveBrowser(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {

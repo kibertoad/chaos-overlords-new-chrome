@@ -88,7 +88,9 @@ export function buildContainer(env: Env): ServerContainer {
         DEFAULT_RATE_LIMITS.bugReportPerMinute,
       ),
     },
-    config: { ...DEFAULT_SERVER_CONFIG, publicListing: env.PUBLIC_LISTING === 'true' },
+    // Listing is on unless a deployment turns it off: an unset var means the Browse screen works,
+    // rather than every client being told the server lists nothing.
+    config: { ...DEFAULT_SERVER_CONFIG, publicListing: env.PUBLIC_LISTING !== 'false' },
     // `CF-Connecting-IP` is authoritative here and only here: Cloudflare sets it on every request
     // that reaches a Worker and a client cannot forge it through the edge. Off Cloudflare it is a
     // header anyone can write, which is why the default resolver ignores it unless told otherwise.

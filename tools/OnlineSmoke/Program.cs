@@ -40,15 +40,31 @@ public static class Program
             ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, [0, 1, 2, 3, 4, 5]);
         var host = await anonymous.CreateMatchAsync(
             new CreateMatchRequest(
-                new MatchSettings("SMOKE CITY", 2, 0, MatchVisibility.Private, settings.ToWire()),
+                // Public, so the browse below has something to find. Discovery is the one part of
+                // the lobby flow the two-client match cannot exercise from a join code.
+                new MatchSettings("SMOKE CITY", 2, 0, MatchVisibility.Public, settings.ToWire()),
                 "ADA",
+                HostPortraitId: 0,
                 Password: null,
-                MultiplayerProtocolVersion.Current),
+                MultiplayerProtocolVersion.Current,
+                MultiplayerSessionVersion.Current),
             CancellationToken.None);
         Console.WriteLine($"hosted {host.Match.Id} with code {host.JoinCode}");
 
+        var listing = (await anonymous.ListLobbiesAsync(CancellationToken.None))
+            .Matches.FirstOrDefault(entry => entry.Id == host.Match.Id);
+        Require(listing is not null, "the public lobby did not come back from browsing");
+        var browsed = MultiplayerGameSettings.FromWire(listing!.Settings.GameSettings);
+        Require(
+            browsed.Scenario == settings.Scenario && browsed.AiMentality == settings.AiMentality,
+            "browsing returned game settings this client read back as something else");
+        Console.WriteLine(
+            $"browsed {listing.Name} ({listing.PlayerCount}/{listing.MaxPlayers}, "
+            + $"{listing.Status})");
+
         var guest = await anonymous.JoinAsync(
-            new JoinMatchRequest(host.JoinCode, "GRACE", Password: null), CancellationToken.None);
+            new JoinMatchRequest(host.JoinCode, "GRACE", PortraitId: 1, Password: null),
+            CancellationToken.None);
         Console.WriteLine($"joined as {guest.Player.Id}");
 
         var hostMatch = anonymous.WithToken(host.Token).Match(host.Match.Id);

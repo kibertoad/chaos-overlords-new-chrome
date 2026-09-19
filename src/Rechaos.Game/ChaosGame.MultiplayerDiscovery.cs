@@ -12,6 +12,24 @@ public sealed partial class ChaosGame
     private IReadOnlyList<MultiplayerRecovery> RecoverableOnlineSessions =>
         _multiplayerRecoveries.Where(recovery => recovery.CanReconnect).ToArray();
 
+    /// <summary>
+    /// The row the browser is on, or null when there is nothing to browse.
+    /// </summary>
+    /// <remarks>
+    /// A session this build cannot play is on the list rather than filtered out of it, so the
+    /// player is told why the seat they are holding cannot be taken instead of watching it vanish.
+    /// </remarks>
+    private MultiplayerRecovery? SelectedOnlineRecovery
+    {
+        get
+        {
+            var sessions = RecoverableOnlineSessions;
+            return sessions.Count == 0
+                ? null
+                : sessions[Math.Clamp(_online.RecoverySelection, 0, sessions.Count - 1)];
+        }
+    }
+
     private void OpenOnlineHistory()
     {
         if (RecoverableOnlineSessions.Count == 0) return;
@@ -39,21 +57,38 @@ public sealed partial class ChaosGame
         _online.Stage = MultiplayerStage.Connect;
     }
 
-    private IReadOnlyList<LobbyListing> FilteredOnlineListings() =>
+    /// <summary>
+    /// Reads each listed session's settings blob once, as the list arrives.
+    /// </summary>
+    /// <remarks>
+    /// The discovery screen filters and draws its rows every frame, and both want the scenario and
+    /// the mentality inside the blob. Parsing it here keeps that off the frame and gives the two a
+    /// single answer, including for a blob this build cannot read: it becomes a listing with no
+    /// settings rather than one that quietly disappears.
+    /// </remarks>
+    private static IReadOnlyList<DiscoveredListing> Describe(IReadOnlyList<LobbyListing> listings)
+    {
+        var described = new DiscoveredListing[listings.Count];
+        for (var index = 0; index < listings.Count; index++)
+        {
+            var listing = listings[index];
+            MultiplayerGameSettings? settings;
+            try { settings = MultiplayerGameSettings.FromWire(listing.Settings.GameSettings); }
+            catch (MultiplayerProtocolException) { settings = null; }
+            described[index] = new DiscoveredListing(listing, settings);
+        }
+        return described;
+    }
+
+    private IReadOnlyList<DiscoveredListing> FilteredOnlineListings() =>
         _online.Listings.Where(MatchesDiscoveryFilters).ToArray();
 
-    private bool MatchesDiscoveryFilters(LobbyListing listing)
-    {
-        if (_online.DiscoveryStatusFilter == 1 && listing.Status != MatchStatus.Lobby) return false;
-        if (_online.DiscoveryStatusFilter == 2 && listing.Status != MatchStatus.Running) return false;
-        MultiplayerGameSettings settings;
-        try { settings = MultiplayerGameSettings.FromWire(listing.Settings.GameSettings); }
-        catch (MultiplayerProtocolException) { return false; }
-        return (_online.DiscoveryScenarioFilter < 0
-                || (int)settings.Scenario == _online.DiscoveryScenarioFilter)
-            && (_online.DiscoveryAiFilter < 0
-                || (int)settings.AiMentality == _online.DiscoveryAiFilter);
-    }
+    private bool MatchesDiscoveryFilters(DiscoveredListing entry) => DiscoveryFilters.Matches(
+        _online.DiscoveryStatusFilter,
+        _online.DiscoveryScenarioFilter,
+        _online.DiscoveryAiFilter,
+        entry.Listing.Status,
+        entry.Settings);
 
     private int DiscoveryFilterValue(int filter) => filter switch
     {
@@ -119,7 +154,8 @@ public sealed partial class ChaosGame
     {
         var listings = FilteredOnlineListings();
         if (listings.Count == 0 || !RequireUsableName() || _lobby is null) return;
-        var listing = listings[Math.Clamp(_online.DiscoverySelection, 0, listings.Count - 1)];
+        var listing = listings[
+            Math.Clamp(_online.DiscoverySelection, 0, listings.Count - 1)].Listing;
         if (listing.Status == MatchStatus.Lobby)
         {
             var password = OptionalPassword();
@@ -127,7 +163,8 @@ public sealed partial class ChaosGame
             _online.Stage = MultiplayerStage.Busy;
             _online.Status = "JOINING LOBBY";
             _lobby.Join(new JoinMatchRequest(
-                listing.JoinCode, _online.DisplayName.Value.Trim(), password));
+                listing.JoinCode, _online.DisplayName.Value.Trim(),
+                _online.Portrait, password));
         }
         else if (listing.AvailableSeatSummaries.Count > 0)
         {
@@ -155,7 +192,30 @@ public sealed partial class ChaosGame
         _online.Status = "JOINING GAME";
         _online.JoinedInProgress = true;
         _lobby.JoinRunning(new JoinRunningMatchRequest(
-            listing.Id, _online.DisplayName.Value.Trim(), password, seat.Slot));
+            listing.Id, _online.DisplayName.Value.Trim(),
+            SeatPortrait(listing, seat.Slot), password, seat.Slot));
+    }
+
+    /// <summary>
+    /// The face the empire being taken over already wears, rather than the one on the form.
+    /// </summary>
+    /// <remarks>
+    /// A latecomer inherits a seat the match was generated with: every client built that overlord
+    /// from the host's settings before this player existed, and the setup a city was generated from
+    /// is hashed into every turn verdict. Bringing their own face would hand a different city to any
+    /// client that still bootstraps this match from the roster. A blob this build cannot read is
+    /// left to the server's default; the join then fails at bootstrap, where it can be explained.
+    /// </remarks>
+    private static int? SeatPortrait(LobbyListing listing, int slot)
+    {
+        try
+        {
+            return MultiplayerGameSettings.FromWire(listing.Settings.GameSettings).Portraits[slot];
+        }
+        catch (MultiplayerProtocolException)
+        {
+            return null;
+        }
     }
 
     private void HandleLateJoinSeatClick(Point point)
@@ -169,3 +229,11 @@ public sealed partial class ChaosGame
             _online.Stage = MultiplayerStage.Discover;
     }
 }
+
+/// <summary>
+/// A listed public session and the settings it carries, or null settings when this build cannot
+/// read the blob the host wrote.
+/// </summary>
+internal readonly record struct DiscoveredListing(
+    LobbyListing Listing,
+    MultiplayerGameSettings? Settings);

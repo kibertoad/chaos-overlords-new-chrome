@@ -57,7 +57,7 @@ public sealed partial class MultiplayerMatchSession
         else
         {
             _slotsByPlayerId[playerId] = slot;
-            _awaitedSeats++;
+            _awaitedSlots.Add(slot);
         }
         // Through the same guarded path as any other handover: the seat is now in the map, and a
         // late join announced on a match that has already ended has no turn left to take over.

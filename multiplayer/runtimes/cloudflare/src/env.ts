@@ -21,6 +21,7 @@ export interface Env {
    * `BUG_REPORT_LIMITS.inlineStateBytes` are kept.
    */
   BUG_BLOBS?: R2Bucket
+  /** `"false"` stops serving `GET /api/v1/matches`; anything else (unset included) serves it. */
   PUBLIC_LISTING?: string
   RATE_LIMIT_PER_MINUTE?: string
   MEMBER_RATE_LIMIT_PER_MINUTE?: string

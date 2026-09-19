@@ -82,4 +82,13 @@ if ($LASTEXITCODE -ne 0) { throw 'Could not mark packaged executables as executa
 & $gameExecutable --smoke-test
 if ($LASTEXITCODE -ne 0) { throw 'Packaged game smoke check failed.' }
 
+# The number the game prints is the number on the installer only if the build actually picked up
+# version.txt, so the packaged executable is asked before anything is wrapped around it.
+$expectedVersion = & (Join-Path $PSScriptRoot 'Get-GameVersion.ps1') -RepositoryRoot $repositoryRoot
+$reportedVersion = (& $gameExecutable --version | Out-String).Trim()
+if ($LASTEXITCODE -ne 0) { throw 'Packaged game could not report its version.' }
+if ($reportedVersion -ne $expectedVersion) {
+    throw "Packaged game reports version '$reportedVersion'; version.txt holds '$expectedVersion'."
+}
+
 Write-Host "Self-contained $Runtime package verified at $packageRoot"

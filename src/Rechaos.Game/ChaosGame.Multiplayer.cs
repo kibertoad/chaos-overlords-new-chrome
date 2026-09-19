@@ -1,4 +1,3 @@
-using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.GameModel;
@@ -26,6 +25,8 @@ public sealed partial class ChaosGame
     private TimeSpan _lobbyPollDue;
     private CancellationTokenSource? _serverProbeCancellation;
     private Task<bool>? _serverProbe;
+    private CancellationTokenSource? _recoveryReconciliationCancellation;
+    private Task<IReadOnlyList<MultiplayerRecovery>>? _recoveryReconciliation;
     private readonly List<MultiplayerRecovery> _multiplayerRecoveries = [];
     private MultiplayerRecovery? _activeMultiplayerRecovery;
     private bool _configuringOnlineLobby;
@@ -50,12 +51,14 @@ public sealed partial class ChaosGame
             field.IsFocused = false;
         OnlineFields[0].IsFocused = true;
         BeginServerProbe();
+        BeginRecoveryReconciliation();
         _screens.Show(ClientScreen.Online);
     }
 
     private void UpdateOnline(KeyboardState keyboard)
     {
         PumpServerProbe();
+        PumpRecoveryReconciliation();
         if (_online.ConnectionError.Length > 0)
         {
             if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Enter))
@@ -101,10 +104,12 @@ public sealed partial class ChaosGame
             else if (Pressed(keyboard, Keys.Enter)) ConfirmLateJoin();
             return;
         }
-        if (Pressed(keyboard, Keys.Enter) && _online.Stage == MultiplayerStage.Connect)
-        {
-            ContinueOnline();
-        }
+        if (_online.Stage != MultiplayerStage.Connect) return;
+        // The face is the one control on the form that is neither a field nor a button, so the
+        // arrow keys can turn it whichever field currently owns the caret.
+        if (Pressed(keyboard, Keys.Left)) CycleOnlinePortrait(-1);
+        if (Pressed(keyboard, Keys.Right)) CycleOnlinePortrait(1);
+        if (Pressed(keyboard, Keys.Enter)) ContinueOnline();
     }
 
     /// <summary>Routes typed characters to whichever text field currently owns focus.</summary>
@@ -192,8 +197,10 @@ public sealed partial class ChaosGame
                 _online.PublicListing ? MatchVisibility.Public : MatchVisibility.Private,
                 settings.ToWire()),
             _online.DisplayName.Value.Trim(),
+            _online.Portrait,
             password,
-            MultiplayerProtocolVersion.Current));
+            MultiplayerProtocolVersion.Current,
+            MultiplayerSessionVersion.Current));
     }
 
     private void BeginJoin()
@@ -211,14 +218,20 @@ public sealed partial class ChaosGame
         var password = OptionalPassword();
         _online.PasswordShown = password ?? string.Empty;
         _lobby!.Join(new JoinMatchRequest(
-            _online.JoinCode.Value.Trim(), _online.DisplayName.Value.Trim(), password));
+            _online.JoinCode.Value.Trim(), _online.DisplayName.Value.Trim(),
+            _online.Portrait, password));
     }
 
     private void ResumeSelectedOnlineMatch()
     {
-        var sessions = RecoverableOnlineSessions;
-        if (sessions.Count == 0) return;
-        var recovery = sessions[Math.Clamp(_online.RecoverySelection, 0, sessions.Count - 1)];
+        if (SelectedOnlineRecovery is not { } recovery) return;
+        // The match view settles this again on the way in; refusing here only spares the player a
+        // round trip that ends in the same answer, beside the row that caused it.
+        if (!recovery.IsCompatible)
+        {
+            _online.Status = OnlineHistoryPresentation.IncompatibleReason;
+            return;
+        }
         if (!Uri.TryCreate(recovery.Server, UriKind.Absolute, out var server))
         {
             _online.Status = "THE SAVED SERVER ADDRESS IS INVALID";
@@ -300,7 +313,7 @@ public sealed partial class ChaosGame
         _online.Match = view;
         _online.SelfPlayerId = _session.PlayerId;
         _online.DeadlineAt = _session.Bootstrap.Deadline;
-        _online.SeatedSeats = view.Players.Count(player => player.Slot >= 0);
+        _online.AwaitedSlots = AwaitedSeats(view.Players);
         ResetMatchPresentation(_session.Bootstrap.State);
         if (_session.IsRestoring)
         {
@@ -311,6 +324,22 @@ public sealed partial class ChaosGame
         _message = string.Empty;
         _screens.Show(ClientScreen.City);
     }
+
+    /// <summary>
+    /// The seats the turn waits on, as the server's roster describes them.
+    /// </summary>
+    /// <remarks>
+    /// The same rule the session applies to the event stream, for the two moments the interface
+    /// holds a roster before any readiness has been reported. A seat that left or was handed to the
+    /// computer is no longer waited on; a temporarily absent one still is, until its takeover vote
+    /// says otherwise.
+    /// </remarks>
+    private static IReadOnlySet<int> AwaitedSeats(IEnumerable<PlayerView> players) =>
+        players
+            .Where(player => player.Slot is >= 0 and < MatchLimits.PlayerCount
+                && player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending)
+            .Select(player => player.Slot)
+            .ToHashSet();
 
     /// <summary>
     /// Forgets what the previous match left on screen.
@@ -387,11 +416,12 @@ public sealed partial class ChaosGame
         _online.ReadySubmissionAcknowledged = submission?.Ready == true;
         _online.ResolutionExpectedSince = null;
         _online.TurnSyncError = string.Empty;
-        _online.ReadySeats = 0;
+        _online.ReadySlots = MultiplayerUiState.NoSeats;
         _selectedGangIndex = 0;
         _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
             .FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
         if (submission?.Ready == true) CloseOnlinePlanning();
+        TouchOnlineRecovery();
         return true;
     }
 
@@ -425,283 +455,6 @@ public sealed partial class ChaosGame
     /// want to say why.
     /// </remarks>
     private void CloseOnlinePlanning() => _actions = null;
-
-    /// <summary>
-    /// Everything an online match needs of a frame, in the order it needs it.
-    /// </summary>
-    /// <remarks>
-    /// Notices first, so a turn that resolved on the server is adopted before anything reads what
-    /// the player is planning; then the draft, which is what preserves their work when the server's
-    /// clock seals the turn before they finish it; then the countdown they are racing.
-    /// </remarks>
-    private void UpdateOnlineSession()
-    {
-        PumpOnlineNotices();
-        SendOnlineDraft();
-        UpdateOnlineDeadlineWarnings();
-    }
-
-    /// <summary>
-    /// Drains what the sessions have to say, on the game thread.
-    /// </summary>
-    /// <remarks>
-    /// Every notice carries a state the interface owns outright, so adopting one is an assignment
-    /// rather than a lock: the sessions keep their own copies and never hand one over.
-    /// </remarks>
-    private void PumpOnlineNotices()
-    {
-        while (_lobby?.TryDequeueNotice(out var lobbyNotice) == true) Apply(lobbyNotice);
-        while (_session?.TryDequeueNotice(out var notice) == true) Apply(notice);
-        CheckOnlineResolutionWatchdog();
-    }
-
-    private void Apply(LobbyNotice notice)
-    {
-        switch (notice)
-        {
-            case LobbyNotice.Seated seated:
-                _online.IsHost = seated.Membership.Player.IsHost;
-                _online.JoinCodeShown = seated.Membership.JoinCode;
-                _online.Match = seated.Membership.Match;
-                AdoptLobbySettings(seated.Membership.Match);
-                RememberOnlineMembership(seated.Membership);
-                if (seated.Membership.Match.Status is MatchStatus.Finished or MatchStatus.Abandoned)
-                {
-                    CompleteOnlineRecovery();
-                    EndOnlineMatch("THE SAVED ONLINE MATCH HAS ALREADY ENDED");
-                    return;
-                }
-                if (seated.Membership.Match.Status is MatchStatus.Running or MatchStatus.Desynced)
-                {
-                    _online.JoinedInProgress = true;
-                    _online.Stage = MultiplayerStage.Busy;
-                    _online.Status = "RESTORING THE MATCH";
-                    _screens.Show(ClientScreen.Online);
-                    StartOnlineMatch(seated.Membership.Match);
-                    return;
-                }
-                _online.Stage = MultiplayerStage.Lobby;
-                _online.Status = _online.IsHost
-                    ? "READ OUT THE JOIN CODE"
-                    : "WAITING FOR THE HOST";
-                _screens.Show(ClientScreen.Lobby);
-                return;
-            case LobbyNotice.Updated updated:
-                _online.Match = updated.Match;
-                // Not while the host is editing them: the poll that carries a settings change back
-                // is the same poll that would type over the name being written next to it.
-                if (!_online.IsHost) AdoptLobbySettings(updated.Match);
-                if (_session is null && updated.Match.Status == MatchStatus.Running)
-                    StartOnlineMatch(updated.Match);
-                return;
-            case LobbyNotice.Listed listed:
-                _online.Listings = listed.Matches;
-                _online.DiscoverySelection = 0;
-                _online.Stage = MultiplayerStage.Discover;
-                _online.Status = listed.Matches.Count == 0
-                    ? "NO PUBLIC SESSIONS FOUND"
-                    : string.Empty;
-                return;
-            case LobbyNotice.Failed failed:
-                if (_online.Stage == MultiplayerStage.Busy) _online.Stage = MultiplayerStage.Connect;
-                _online.Status = string.Empty;
-                _online.ConnectionError = failed.Reason;
-                _online.ConnectionErrorCopyStatus = string.Empty;
-                return;
-            default:
-                return;
-        }
-    }
-
-    private void Apply(MultiplayerNotice notice)
-    {
-        switch (notice)
-        {
-            case MultiplayerNotice.Resumed resumed:
-                _online.Match = resumed.Match;
-                // The same invariant round-trip parse the session uses on the same ISO-8601 string.
-                // Left to the current culture it can fail where the session's own parse succeeded —
-                // on one whose default calendar is not Gregorian — and drop the countdown.
-                _online.DeadlineAt = resumed.Match.Turn is { DeadlineAt: { } deadlineText }
-                    && DateTimeOffset.TryParse(
-                        deadlineText, CultureInfo.InvariantCulture,
-                        DateTimeStyles.RoundtripKind, out var parsed)
-                        ? parsed
-                        : null;
-                ResetMatchPresentation(resumed.State);
-                _online.SeatedSeats = resumed.Match.Players.Count(
-                    player => player.Slot >= 0
-                        && player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending);
-                _online.Status = string.Empty;
-                if (AdoptOnlineState(resumed.State, resumed.Submission, resumed.Turn))
-                {
-                    _message = resumed.Submission.Ready
-                        ? "ORDERS RESTORED  WAITING FOR THE OTHER PLAYERS"
-                        : "MATCH RESTORED";
-                    _screens.Show(ClientScreen.City);
-                }
-                return;
-            case MultiplayerNotice.TurnResolved resolved:
-                // Read before the adopt, which reopens planning on the turn that follows: the
-                // player was cut off exactly when the seal arrived while the turn was still theirs
-                // to plan. Saying so matters because the two outcomes look identical afterwards —
-                // a new turn either way — and only one of them cost them the orders they were
-                // still giving.
-                var cutOff = _online.Stage == MultiplayerStage.Playing;
-                if (AdoptOnlineState(resolved.State))
-                {
-                    _message = cutOff
-                        ? resolved.IncludedOwnOrders
-                            ? "TIME UP  THE TURN SEALED WITH THE ORDERS YOU HAD SENT"
-                            : "TIME UP  YOUR SEAT GAVE NO ORDERS THIS TURN"
-                        : "NEW TURN READY  PLAY AGAIN";
-                    PlayGeneralSound(AudioRouting.OnlineTurnReadySound());
-                    ShowTurnReportsOrCity();
-                }
-                return;
-            case MultiplayerNotice.Resynced resynced:
-                if (AdoptOnlineState(resynced.State))
-                {
-                    _message = string.Empty;
-                    _screens.Show(ClientScreen.City);
-                }
-                return;
-            case MultiplayerNotice.Desynced desynced:
-                _online.Stage = MultiplayerStage.Desynced;
-                CloseOnlinePlanning();
-                _online.TurnSyncError = desynced.IsHostRepair
-                    ? $"DESYNC TURN {desynced.Turn}  AUTOMATIC REPAIR IN PROGRESS"
-                    : $"DESYNC TURN {desynced.Turn}  WAITING FOR HOST REPAIR";
-                _message = desynced.IsHostRepair
-                    ? $"DESYNC ON TURN {desynced.Turn}  SENDING A SNAPSHOT"
-                    : $"DESYNC ON TURN {desynced.Turn}  WAITING FOR THE HOST";
-                _diagnostics?.Write("multiplayer.desync", new Dictionary<string, string?>
-                {
-                    ["turn"] = desynced.Turn.ToString(CultureInfo.InvariantCulture),
-                    ["details"] = desynced.Details,
-                    ["hostRepair"] = desynced.IsHostRepair.ToString(),
-                });
-                if (desynced.IsHost && !desynced.IsHostRepair)
-                {
-                    ShowOnlineMatchFailure(
-                        $"DESYNC ON TURN {desynced.Turn}. THIS HOST'S STATE IS NOT AN "
-                        + $"ALLOWED REPAIR CANDIDATE. {desynced.Details}. RECONNECT FROM "
-                        + "PREVIOUS SESSIONS TO REBUILD FROM THE AUTHORITATIVE HISTORY.");
-                }
-                return;
-            case MultiplayerNotice.MatchUpdated updated:
-                _online.Match = updated.Match;
-                return;
-            case MultiplayerNotice.TakeoverVoteChanged changed:
-                var name = _online.Match?.Players
-                    .FirstOrDefault(player => player.Id == changed.PlayerId)?.DisplayName
-                    ?? "THE ABSENT PLAYER";
-                _online.TakeoverVotes[changed.PlayerId] = new TakeoverVotePrompt(
-                    changed.PlayerId, name, changed.Turn, changed.Votes);
-                return;
-            case MultiplayerNotice.TakeoverVoteClosed closed:
-                _online.TakeoverVotes.Remove(closed.PlayerId);
-                var ownSeat = string.Equals(
-                    closed.PlayerId, _online.SelfPlayerId, StringComparison.Ordinal);
-                _message = (closed.ComputerControl, ownSeat) switch
-                {
-                    (true, true) => "THE OTHER PLAYERS GAVE YOUR SEAT TO THE COMPUTER",
-                    (true, false) => "PLAYERS APPROVED COMPUTER CONTROL",
-                    (false, true) => "YOU ARE BACK IN THE MATCH  THE VOTE ON YOUR SEAT IS OFF",
-                    (false, false) => "THE PLAYER RETURNED  TAKEOVER VOTE CANCELLED",
-                };
-                return;
-            case MultiplayerNotice.DeadlineChanged deadline:
-                _online.DeadlineAt = deadline.DeadlineAt;
-                return;
-            case MultiplayerNotice.ReadinessChanged readiness:
-                if (readiness.Turn != _online.PlanningTurn) return;
-                _online.ReadySeats = readiness.Ready;
-                _online.SeatedSeats = readiness.Seated;
-                UpdateOnlineResolutionExpectation();
-                return;
-            case MultiplayerNotice.OrdersAccepted accepted:
-                // A draft needs no announcement; the submission that ends a turn already said so.
-                _online.TurnSyncError = string.Empty;
-                if (accepted.Ready && accepted.Turn == _online.PlanningTurn)
-                {
-                    _online.ReadySubmissionPending = false;
-                    _online.ReadySubmissionAcknowledged = true;
-                    _message = "SERVER ACKNOWLEDGED FINISHED TURN";
-                    _diagnostics?.Write("multiplayer.orders.acknowledged",
-                        new Dictionary<string, string?>
-                        {
-                            ["turn"] = accepted.Turn.ToString(CultureInfo.InvariantCulture),
-                        });
-                    UpdateOnlineResolutionExpectation();
-                }
-                return;
-            case MultiplayerNotice.OrdersRefused refused:
-                // Not fatal. The turn may have sealed while the player was still planning it, which
-                // costs them that turn and nothing else.
-                _message = refused.Reason.ToUpperInvariant();
-                _online.TurnSyncError = refused.Reason.ToUpperInvariant();
-                if (refused.Turn == _online.PlanningTurn)
-                {
-                    _online.ReadySubmissionPending = false;
-                    _online.ResolutionExpectedSince = null;
-                }
-                _diagnostics?.Write("multiplayer.orders.refused",
-                    new Dictionary<string, string?>
-                    {
-                        ["turn"] = refused.Turn.ToString(CultureInfo.InvariantCulture),
-                        ["reason"] = refused.Reason,
-                    });
-                if (_online.Stage == MultiplayerStage.WaitingForSeal)
-                    _online.Status = refused.Reason.ToUpperInvariant();
-                return;
-            case MultiplayerNotice.ConnectionChanged connection:
-                _online.IsConnected = connection.IsConnected;
-                if (connection.IsConnected)
-                {
-                    _online.ReconnectLog.Clear();
-                    _online.ReconnectAttempt = 0;
-                    _message = string.Empty;
-                    UpdateOnlineResolutionExpectation();
-                }
-                else if (connection.Detail is { } detail)
-                {
-                    _online.ResolutionExpectedSince = null;
-                    _online.ReconnectAttempt = Math.Max(1, connection.Attempt);
-                    var entry = $"ATTEMPT {Math.Max(1, connection.Attempt)}  {detail}";
-                    _online.ReconnectLog.Add(entry.ToUpperInvariant());
-                    while (_online.ReconnectLog.Count > 6) _online.ReconnectLog.RemoveAt(0);
-                    _message = "CONNECTION LOST  AUTOMATICALLY RECONNECTING";
-                }
-                return;
-            case MultiplayerNotice.MatchFinished:
-                // The outcome usually arrives first, with the turn that produced it. This is the
-                // server's own word for it, and the case where a match ended without one.
-                if (_online.Stage != MultiplayerStage.Finished)
-                {
-                    _online.Stage = MultiplayerStage.Finished;
-                    CloseOnlinePlanning();
-                    _message = string.Empty;
-                    if (_state?.Outcome is not null) _screens.Show(ClientScreen.Endgame);
-                }
-                CompleteOnlineRecovery();
-                return;
-            case MultiplayerNotice.MatchAbandoned:
-                _online.Stage = MultiplayerStage.Finished;
-                EndOnlineMatch("THE MATCH WAS ABANDONED");
-                return;
-            case MultiplayerNotice.Failed failed:
-                _diagnostics?.Write("multiplayer.failed", new Dictionary<string, string?>
-                {
-                    ["reason"] = failed.Reason,
-                    ["error"] = RuntimeDiagnostics.ExceptionType(failed.Error),
-                });
-                ShowOnlineMatchFailure(failed.Reason);
-                return;
-            default:
-                return;
-        }
-    }
 
     /// <summary>
     /// Leaves the match and forgets the token; the seat stops being waited on.
@@ -738,6 +491,10 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void EndOnlineMatch(string status)
     {
+        _recoveryReconciliationCancellation?.Cancel();
+        _recoveryReconciliationCancellation?.Dispose();
+        _recoveryReconciliationCancellation = null;
+        _recoveryReconciliation = null;
         _serverProbeCancellation?.Cancel();
         _serverProbeCancellation?.Dispose();
         _serverProbeCancellation = null;
@@ -792,6 +549,9 @@ public sealed partial class ChaosGame
             && OnlineConnectLayout.PublicChoice.Contains(point)) SelectOnlineListing(publicly: true);
         else if (_online.Role == OnlineConnectRole.Host
             && OnlineConnectLayout.PrivateChoice.Contains(point)) SelectOnlineListing(publicly: false);
+        else if (OnlineConnectLayout.PortraitPrevious.Contains(point)) CycleOnlinePortrait(-1);
+        else if (OnlineConnectLayout.PortraitNext.Contains(point)
+            || OnlineConnectLayout.Portrait.Contains(point)) CycleOnlinePortrait(1);
         else if (OnlineConnectLayout.Discover.Contains(point)) OpenOnlineDiscovery();
         else if (OnlineConnectLayout.Reconnect.Contains(point)) OpenOnlineHistory();
         else if (OnlineConnectLayout.Continue.Contains(point)) ContinueOnline();
@@ -912,11 +672,30 @@ public sealed partial class ChaosGame
             membership.Player.IsHost,
             CleanExit: false,
             Completed: false,
-            _online.PasswordShown);
+            _online.PasswordShown,
+            SessionVersion: membership.Match.SessionVersion,
+            SessionName: membership.Match.Settings.Name,
+            LastUpdatedAt: DateTimeOffset.UtcNow);
         _activeMultiplayerRecovery = recovery;
         _multiplayerRecoveries.RemoveAll(item => SameMembership(item, recovery));
         _multiplayerRecoveries.Insert(0, recovery);
         SaveOnlineRecoveries();
+    }
+
+    /// <summary>
+    /// Stamps the seat with the moment its turn data was last stored.
+    /// </summary>
+    /// <remarks>
+    /// What the list of unfinished sessions is read by, next to the match's name: two matches a
+    /// player still has a seat in are told apart by which one they were last playing. Called where
+    /// authoritative state is adopted rather than where a turn is sent, because that is the point
+    /// the client has the turn's data to keep; a clean exit and a retirement both carry the stamp
+    /// forward untouched, since neither advances the match.
+    /// </remarks>
+    private void TouchOnlineRecovery()
+    {
+        if (_activeMultiplayerRecovery is not { Completed: false } recovery) return;
+        UpdateOnlineRecovery(recovery with { LastUpdatedAt = DateTimeOffset.UtcNow });
     }
 
     private void CompleteOnlineRecovery()

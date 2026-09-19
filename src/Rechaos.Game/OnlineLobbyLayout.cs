@@ -22,6 +22,15 @@ public static class OnlineLobbyLayout
     /// </remarks>
     public const int RosterNameColumns = 20;
 
+    /// <summary>
+    /// The face beside one roster row, with the name drawn to the right of it.
+    /// </summary>
+    /// <remarks>
+    /// Sized to the row rather than the art: six seats, the count line under them and the buttons
+    /// beneath that all share this column, so the face is drawn at half the atlas's 32 pixels.
+    /// </remarks>
+    public static Rectangle RosterPortrait(int row) => new(120, 192 + row * 18, 16, 16);
+
     public static Rectangle CopyCode => new(112, 372, 128, 32);
     public static Rectangle Setup => new(256, 332, 128, 32);
     public static Rectangle Start => new(256, 372, 128, 32);

@@ -6,6 +6,8 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private readonly HoverDwellTracker _commandTooltipDwell = new();
+
     private void OpenCommands(bool repeat = false, ClientScreen returnScreen = ClientScreen.City)
     {
         if (_state is null || _state.Coordinator.Phase != TurnPhase.Command
@@ -31,6 +33,23 @@ public sealed partial class ChaosGame
         _commandReturnScreen = returnScreen;
         _screens.Show(ClientScreen.Commands);
     }
+
+    /// <summary>
+    /// Feeds the hovered action row to the dwell tracker so the command overlay can explain
+    /// an entry once the pointer has rested on it, without reacting to a passing cursor.
+    /// </summary>
+    private void UpdateCommandTooltipDwell()
+    {
+        var hoveredRow = HoveredCommandActionRow();
+        _commandTooltipDwell.Update(hoveredRow, _inputTime);
+        if (hoveredRow is { } row) _commandCursor = row;
+    }
+
+    private int? HoveredCommandActionRow() =>
+        _screens.Current == ClientScreen.Commands && !_choosingCommandTarget && !_gameMenuOpen
+        && _hoverPoint is { } hover
+            ? CommandActionTooltips.RowAt(hover, _commandRepeats)
+            : null;
 
     private void MoveCommandCursor(int delta)
     {
@@ -279,6 +298,10 @@ public sealed partial class ChaosGame
             font.Draw(batch, label, new Vector2(row.X + 5, row.Y + 6),
                 available ? Color.White : new Color(90, 105, 100), 1);
         }
+
+        if (_commandTooltipDwell.SettledRegion is { } settled && settled < actions.Count
+            && _hoverPoint is { } hover)
+            DrawHoverTooltip(batch, pixel, font, hover, CommandActionTooltips.Lines(actions[settled]));
     }
 
     private void DrawCommandTargets(
