@@ -4339,27 +4339,29 @@ mechanics are statically closed.
 ### BIN-UI-CREDITS-001 - blocking publisher/developer credits presenter
 
 **Observation:** The native message dispatcher `0x00462579` calls
-`0x00464d53` only for control event `(0x80, 3)`. The presenter first removes
-the normal screen surfaces, loads resource 100 (`PX00100`) into surface 3 with
-the full `(640,460)` size, and copies it opaquely across the complete canvas.
-Its local message loop exits for the normal mouse/key/window termination
-messages (2, 3, 4, 17, and 18); paint messages redraw the same full-canvas
-surface. On exit it reloads surface 3 with resource 3000 and restores the
-previous screen-surface ownership.
+`0x00464d53` only for control event `(0x80, 3)`. The executable's RT_MENU
+resource 101 gives that event a visible source: its final Help submenu item is
+`&About Chaos Overlords...`, marked `MF_END` (`0x0080`) and assigned command
+`0x8003`. The presenter first removes the normal screen surfaces, loads
+resource 100 (`PX00100`) into surface 3 with the full `(640,460)` size, and
+copies it opaquely across the complete canvas. Its local message loop exits
+for the normal mouse/key/window termination messages (2, 3, 4, 17, and 18);
+paint messages redraw the same full-canvas surface. On exit it reloads surface
+3 with resource 3000 and restores the previous screen-surface ownership.
 
 **Interpretation:** The publisher/developer image is a dedicated blocking
-credits screen, not a title-background layer or a game-state panel. The
-control-group identifier proves its entry is a native command distinct from
-the title canvas; it does not establish the visible label or geometry of that
-command surface.
+credits screen, not a title-background layer or a game-state panel. Its entry
+is the native **Help → About Chaos Overlords...** menu command, distinct from
+the title canvas.
 
-**Confidence:** High for the resource, full-canvas composition, blocking
-lifetime, redraw path, and command identity from the sole dispatcher branch
-and complete presenter. The visible native command surface remains unobserved.
+**Confidence:** High for the resource, visible command label/ID, full-canvas
+composition, blocking lifetime, and redraw path from the RT_MENU bytes, sole
+dispatcher branch, and complete presenter. The native menu's screen geometry
+remains unobserved.
 
 **Recreation status:** `PX00100` remains extracted but is deliberately not
-routed until the command surface is recovered. Adding an invented title button
-would be a recreation-only UI change rather than a faithful port.
+routed until the native Help menu itself is recovered. Adding an invented title
+button would be a recreation-only UI change rather than a faithful port.
 
 ### BIN-SETUP-006 - legacy session lobby resources are distinct flows
 
