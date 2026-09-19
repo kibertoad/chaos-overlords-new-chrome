@@ -4256,7 +4256,11 @@ players plan in fixed player-slot order, eliminated slots are skipped, and all
 deferred resolution follows after the planning scan. The recreation exposes
 Command, Execution, and Hire as explicit deterministic boundaries, but advances
 the same ascending slot sequence and automatically records transitions across
-eliminated slots.
+eliminated slots. Command replacement sequence records only a player's
+submission chronology for replay/persistence; it does not choose resolution
+order. Each mutating phase restores the recovered action-specific player/roster
+scan (with its independently documented Control sector and Movement Terminate
+passes) before consuming RNG or changing state.
 
 **Confidence:** High static evidence for both outer-loop bounds, controller
 dispatch branches, inactive-state exclusion, and the resolver call boundary;
