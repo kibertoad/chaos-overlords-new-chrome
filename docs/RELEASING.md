@@ -63,7 +63,8 @@ only to restate the recorded number; to build a different one, edit
 
 The Linux `.deb` installs launch and import commands. The macOS `.pkg` installs
 an application bundle containing the game, extractor, and asset-import helper.
-Linux and macOS release installers are currently unsigned.
+Locally built installers are unsigned on every platform; release signing happens
+only in the workflow described below.
 
 The Windows installer scans GOG and Windows uninstall records plus common GOG
 paths, accepts a manually selected source, and imports the required assets. Its
@@ -81,12 +82,11 @@ commit, which is also the commit the release tag ends up pointing at. The
 default builds Windows x64 only; `no-mac-x64` adds Linux x64 and macOS arm64,
 while `all` also adds macOS x64.
 Each preset requires all of its selected artifacts.
-The separate `signed release` choice is `no`, `all`, or `windows only`, with
-`windows only` as the default. Signing
-is applied only to installers selected by the installer preset; choosing `all`
-never adds a skipped installer. Windows Authenticode signing is currently the
-only configured platform signer, so both non-`no` choices sign the selected
-Windows installer while Linux and macOS remain unsigned.
+The separate `signed release` choice is `none`, `Windows`, or `Windows/Linux`,
+with `Windows` as the default. Signing applies only to installers the installer
+preset actually selects, so `Windows/Linux` never adds a skipped installer: with
+the default `windows` preset it signs the Windows installer and nothing else.
+macOS installers are never signed under any choice.
 The workflow creates the tag and GitHub Release only after tests and all selected
 builds succeed. It runs the fast validation tier; the repeated long-running AI
 campaign matrix is exercised by the daily `Nightly observable AI campaigns`
@@ -95,10 +95,14 @@ to assemble the release are retained in Actions for one day; the durable downloa
 copies are the assets attached to the resulting GitHub Release. The release workflow
 has no scheduled or push trigger.
 
-When signing is requested, the Windows release job uses the `release-signing` GitHub environment and
-SSL.com eSigner to Authenticode-sign the project executables before Inno Setup
-packages them, then signs the completed installer. Configure these environment
-secrets before running a release:
+Both signing jobs read their secrets from the `release-signing` GitHub
+environment and fail before building when a required secret is missing.
+
+### Windows: Authenticode through SSL.com eSigner
+
+The Windows release job Authenticode-signs the project executables before Inno
+Setup packages them, then signs the completed installer. Configure these
+environment secrets before running a signed release:
 
 - `ES_USERNAME`: SSL.com account username.
 - `ES_PASSWORD`: SSL.com account password.
@@ -109,6 +113,53 @@ The job uses eSigner's production environment, verifies that every signature is
 valid and timestamped, and confirms after installation that the packaged game
 retained its signature. Development installers produced locally or by the
 continuous-integration workflow remain unsigned.
+
+### Linux: detached OpenPGP signature over the `.deb`
+
+`dpkg` and `apt` do not check signatures embedded in a standalone `.deb`, and the
+project publishes installers as release downloads rather than an apt repository,
+so embedding one would prove nothing to whoever downloads the file. The Linux
+release job instead signs the built `.deb` with `tools/Invoke-GpgSigner.ps1` and
+attaches the resulting `.deb.asc` to the release beside it. Configure these
+environment secrets before running a `Windows/Linux` release:
+
+- `GPG_PRIVATE_KEY`: ASCII-armored private signing key, exported with
+  `gpg --armor --export-secret-keys <fingerprint>`.
+- `GPG_PASSPHRASE`: passphrase protecting that key.
+- `GPG_FINGERPRINT`: 40-character fingerprint of the key that must produce the
+  signature. Spaces, lowercase, and a `0x` prefix are accepted.
+
+The signer imports the key into a throwaway `GNUPGHOME` that it deletes
+afterwards, so the runner's own keyring is never touched, and it refuses to
+proceed unless the private key actually holds `GPG_FINGERPRINT`. It then verifies
+its own output through gpg's status interface and fails unless the signature
+resolves to that same key, which is what keeps a release from shipping a
+signature made by some other key that happened to be in the secret.
+
+Publish `GPG_FINGERPRINT` and the matching public key so downloads can be
+checked. Given both files from a release:
+
+```shell
+gpg --verify ChaosOverlords-NewChrome-linux-x64-Setup-0.1.0.deb.asc \
+  ChaosOverlords-NewChrome-linux-x64-Setup-0.1.0.deb
+```
+
+Confirm that the reported primary key fingerprint is the published one; a good
+signature from an unexpected key means nothing.
+
+### macOS: deliberately unsigned
+
+macOS installers are never signed, and the `signed release` choice has no macOS
+option. Signing them is not a matter of adding a step: it needs a Developer ID
+Application identity for the app bundle, a separate Developer ID Installer
+identity for the `.pkg`, notarization credentials, and packaging changes first.
+`Publish-Portable.ps1` builds with `IncludeNativeLibrariesForSelfExtract`, so the
+native libraries are unpacked at run time and are neither signed nor notarized,
+which the hardened runtime required for notarization rejects; and
+`Build-MacInstaller.ps1` places `Rechaos.Extractor` under `Contents/Resources`,
+where `codesign` seals it as data rather than as nested code. Until those are
+addressed, a macOS `.pkg` warns on first open and must be opened from the
+context menu.
 
 ## Continuous integration
 

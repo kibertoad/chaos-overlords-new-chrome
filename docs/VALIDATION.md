@@ -153,8 +153,10 @@ executable. Each macOS gate validates the generated plist, smoke-runs the app
 bundle executable, builds the `.pkg`, expands it again, and confirms the game
 payload. Windows additionally exercises silent install and uninstall. The
 manual release gate signs and verifies Windows executables and the installer
-through SSL.com eSigner; local and continuous-integration packages remain
-unsigned, and signing/notarization for the other platforms is still deferred.
+through SSL.com eSigner, and signs the Linux `.deb` with a detached OpenPGP
+signature that it verifies against the expected key fingerprint before upload;
+local and continuous-integration packages remain unsigned, and macOS signing and
+notarization remain deliberately out of scope.
 
 GitHub Actions dependencies are pinned to immutable commits corresponding to
 their documented latest releases. `.github/workflows/zizmor.yml` uses the
