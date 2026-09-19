@@ -8,7 +8,7 @@ public sealed partial class ChaosGame
 {
     private void HandleEndgameClick(Point point)
     {
-        if (_showEndgameNotice && EndgameNoticeLayout.Panel.Contains(point))
+        if (_showEndgameNotice && EndgameDone.Contains(point))
         {
             PlayGeneralSound(AudioRouting.PointerPushSound());
             AdvanceEndgamePresentation();
@@ -260,9 +260,12 @@ public static class EndgameLayout
     public const int PlayerRows = MatchLimits.PlayerCount;
     public const int StatisticValueRight = 421;
     public static Rectangle Panel => new(106, 25, 428, 410);
-    public static Rectangle Awards => new(426, 33, 50, 56);
-    public static Rectangle Stats => new(478, 33, 52, 56);
-    public static Rectangle Done => new(426, 377, 104, 58);
+    // These are input regions, not the full painted button frames. The native pointer helper
+    // receives the following top/left/bottom/right rectangles: Awards (33,428,81,476),
+    // Stats (33,480,81,528), Done (377,428,425,528).
+    public static Rectangle Awards => new(428, 33, 48, 48);
+    public static Rectangle Stats => new(480, 33, 48, 48);
+    public static Rectangle Done => new(428, 377, 100, 48);
 
     public static Rectangle Portrait(int row)
     {

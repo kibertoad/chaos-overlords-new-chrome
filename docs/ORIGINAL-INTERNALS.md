@@ -4388,8 +4388,9 @@ program, rather than notifying a later player. It is not a popup at resolution
 time and is not silently skipped. That presenter first preserves the existing
 city screen, lays `PX00200` at `(x=106, y=25)`, then lays `PX00203` at
 `(x=110, y=30)`, centers the eliminated player's name at `(158, 46)`, and
-composites the 64-by-64 Overlord portrait at `(126, 54)`. It blocks for its
-visible continue control.
+composites the 64-by-64 Overlord portrait at `(126, 54)`. It blocks until the
+shared `DONE` input rectangle `(x=428..527, y=377..424)` completes; the card
+itself is not a whole-surface continue target.
 Single-local play bypasses the handoff gate but still reaches this elimination
 presenter when it loses.
 
@@ -4426,6 +4427,9 @@ completed multi-local games continue to shared awards. The shared results
 frame and both private cards now use the recovered native composition
 coordinates and player-name placement. The existing handoff portrait, Ready
 press cue, per-viewer combat state, and unread-Comlink delay remain in place.
+The native pointer targets for Awards, Stats, and Done are now also recovered;
+Enter/Space presentation navigation remains the separately documented
+compatible-keyboard QoL layer.
 
 **Next validation:** Capture a multi-local elimination followed by another
 human turn to corroborate `PX00203` timing and later-slot timing, and capture

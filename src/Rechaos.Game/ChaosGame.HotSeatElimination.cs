@@ -38,7 +38,7 @@ public sealed partial class ChaosGame
 
     private void HandleHotSeatEliminationClick(Point point)
     {
-        if (!EndgameNoticeLayout.Panel.Contains(point)) return;
+        if (!EndgameLayout.Done.Contains(point)) return;
         PlayGeneralSound(AudioRouting.PointerPushSound());
         FinishHotSeatEliminationPresentation();
     }

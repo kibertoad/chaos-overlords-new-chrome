@@ -197,7 +197,7 @@ public sealed class UiNavigationTests
             OriginalSelectionLightLayout.AiMentality(3));
         Assert.Equal(new Rectangle(297, 340, 3, 11),
             OriginalSelectionLightLayout.PlanningTime(0));
-        Assert.Equal(new Rectangle(525, 38, 3, 11),
+        Assert.Equal(new Rectangle(523, 38, 3, 11),
             OriginalSelectionLightLayout.EndgameTab(EndgameLayout.Stats));
         Assert.Equal(new Rectangle(541, 129, 3, 11),
             OriginalSelectionLightLayout.CityEvents);
