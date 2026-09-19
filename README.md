@@ -117,7 +117,9 @@ presentation-only conveniences that make the original systems easier to read:
   five-minute planning clocks instead of no clock. Advanced AI is likewise an
   explicit, default-off choice: it applies only when a future match is created,
   leaving active and loaded matches on their stored policy while Original AI
-  remains the compatibility default.
+  remains the compatibility default. Game Information retains the native AI
+  Mentality field and appends the stored `ORIGINAL` or `ADVANCED` policy label
+  so that this deliberate gameplay choice is visible during a match.
 - Keyboard navigation is available throughout the compatible mouse panels, and
   Escape or a right-click consistently cancels the current transient panel,
   drag, warning, or presentation without changing an unconfirmed command.
