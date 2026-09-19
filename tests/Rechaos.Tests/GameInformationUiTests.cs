@@ -33,6 +33,18 @@ public sealed class GameInformationUiTests
         Assert.Equal(label, GameInformationPresentation.Intelligence(controller));
     }
 
+    [Theory]
+    [InlineData(ScenarioId.Greed, GameDuration.SixMonths, "GREED (6 MONTHS)")]
+    [InlineData(ScenarioId.Power, GameDuration.OneYear, "POWER (1 YEAR)")]
+    [InlineData(ScenarioId.Acceptance, GameDuration.TwoYears, "ACCEPTANCE (2 YEARS)")]
+    [InlineData(ScenarioId.Dominance, GameDuration.FourYears, "DOMINANCE (4 YEARS)")]
+    [InlineData(ScenarioId.Siege, GameDuration.FourYears, "SIEGE")]
+    public void ScenarioLabelMatchesNativeTimedObjectivePresentation(
+        ScenarioId scenario, GameDuration duration, string expected)
+    {
+        Assert.Equal(expected, GameInformationPresentation.ScenarioLabel(scenario, duration));
+    }
+
     [Fact]
     public void OnlyLocalMultiplayerAutomaticallyOpensAtNewGame()
     {

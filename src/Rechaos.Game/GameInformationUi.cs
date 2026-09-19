@@ -36,6 +36,18 @@ public static class GameInformationLayout
 
 public static class GameInformationPresentation
 {
+    /// <summary>
+    /// Native Game Information gives timed objectives their selected duration in
+    /// parentheses; objective scenarios have no duration suffix.
+    /// </summary>
+    public static string ScenarioLabel(ScenarioId scenario, GameDuration duration)
+    {
+        var definition = ScenarioCatalog.Get(scenario);
+        return definition.IsTimed
+            ? $"{definition.Name} ({DurationSetupTooltip.Label(duration)})"
+            : definition.Name;
+    }
+
     public static string Intelligence(PlayerController controller) => controller switch
     {
         PlayerController.Human => "HUMAN",

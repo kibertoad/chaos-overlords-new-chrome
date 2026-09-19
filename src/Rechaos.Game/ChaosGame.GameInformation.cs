@@ -24,7 +24,8 @@ public sealed partial class ChaosGame
             batch.Draw(pixel, GameInformationLayout.Panel, new Color(0, 0, 0, 245));
 
         ClearGameInformationFields(batch, pixel);
-        font.Draw(batch, ScenarioCatalog.Get(state.Setup.Scenario).Name,
+        font.Draw(batch, GameInformationPresentation.ScenarioLabel(
+                state.Setup.Scenario, state.Setup.Duration),
             new Vector2(GameInformationLayout.ValueLeft, GameInformationLayout.ObjectiveY),
             Color.Lime, 1);
         font.Draw(batch,

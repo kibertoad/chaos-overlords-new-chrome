@@ -4009,10 +4009,19 @@ translation uses that 128-pixel destination left edge and tests the bottom face
 as local `(33,169)-(82,191)`, or screen `(161,293)-(210,315)`. Dynamic text
 is written at backing x=444 for the three header values, x=456 for player names, and right-aligned to backing x=624 for intelligence; these map to screen x=228, x=240, and right edge 408. Header y values map to 151, 169, and 187, while the six player rows map to y=214 + 9*n.
 
+The first header is scenario-sensitive. For scenario ids 0 through 3 (Greed,
+Power, Acceptance, and Dominance), the renderer appends the two-byte literal
+opening ` (` from `0x00487768`, selects resource ids `0x36` through `0x39`
+from the stored duration values 26, 52, 104, and 208, then appends the closing
+`)`. The same duration strings used by Setup decode as `6 MONTHS`, `1 YEAR`,
+`2 YEARS`, and `4 YEARS`. Scenario ids 4 through 9 write the scenario string
+alone.
+
 **Interpretation:** `PX05021` is a 320-by-209 alternate panel, not the normal
 344-pixel shared template. Its source crop must be retained when drawing the
 imported panel rather than stretching it, and all dynamic x origins move 24
-pixels right from the former shared-template approximation.
+pixels right from the former shared-template approximation. Consequently Game
+Information must display, for example, `GREED (6 MONTHS)` but just `SIEGE`.
 
 **Confidence:** High static evidence for alternate source/destination rectangles, close target, field origins, alignment, and row stride from complete handler `0x0045519d`; native capture remains useful for palette and text clipping.
 
