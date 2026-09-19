@@ -124,6 +124,26 @@ describe('server app over in-memory storage', () => {
     })
   })
 
+  /**
+   * A server whose operator configured nothing is the common case, and the game's Browse screen is
+   * only useful if that server answers the lobby list. Turning it off stays possible; it is no
+   * longer what doing nothing gets you.
+   */
+  it('lists public lobbies on a server that configured nothing, and 404s when turned off', async () => {
+    expect(DEFAULT_SERVER_CONFIG.publicListing).toBe(true)
+    const byDefault = build({ publicListing: DEFAULT_SERVER_CONFIG.publicListing })
+    const listed = await byDefault.app.request('/api/v1/matches')
+    expect(listed.status).toBe(200)
+    expect(await listed.json()).toEqual({ matches: [] })
+
+    const turnedOff = build({ publicListing: false })
+    const refused = await turnedOff.app.request('/api/v1/matches')
+    expect(refused.status).toBe(404)
+    expect(await refused.json()).toMatchObject({
+      error: { details: { reason: 'listing_disabled' } },
+    })
+  })
+
   it('rate-limits the unauthenticated doors per client address', async () => {
     const limited = build({}, { limit: 2, windowMs: 60_000 })
     const body = JSON.stringify({ joinCode: 'ABCDEFGH', displayName: 'x' })

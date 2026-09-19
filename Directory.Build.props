@@ -9,4 +9,19 @@
          not prevent an already-restored offline game from launching. -->
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900</WarningsNotAsErrors>
   </PropertyGroup>
+
+  <!-- One version for every assembly in the repository, taken from the file the release process
+       writes. The release workflow puts the requested tag in version.txt, pushes it, and builds
+       every installer from that commit, so the version the game shows is the version on the box.
+       Directory.Build.targets fails the build when the file is not a single x.y.z line. -->
+  <PropertyGroup>
+    <GameVersionFile>$(MSBuildThisFileDirectory)version.txt</GameVersionFile>
+    <_GameVersionText Condition="Exists('$(GameVersionFile)')"
+                      >$([System.IO.File]::ReadAllText('$(GameVersionFile)').Trim())</_GameVersionText>
+    <Version Condition="'$(_GameVersionText)' != ''">$(_GameVersionText)</Version>
+    <!-- Without this the SDK appends the commit hash, and Windows would show players a product
+         version of "0.1.0+1a2b3c..." while the game reported 0.1.0. The release tag already says
+         which commit a version was built from. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
 </Project>

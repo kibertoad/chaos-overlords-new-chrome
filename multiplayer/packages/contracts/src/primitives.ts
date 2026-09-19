@@ -57,6 +57,22 @@ export const slotSchema = pipe(number(), integer(), minValue(0), maxValue(5), no
 /** A seat as a view reports it: the same range, or -1 for a player still in the lobby. */
 export const seatSchema = pipe(number(), integer(), minValue(-1), maxValue(5), notNegativeZero)
 
+/**
+ * A player's overlord portrait: an index into the original sixteen-face atlas.
+ *
+ * The atlas is fixed art, so the range is the art's and not a limit the server could relax. It is
+ * carried per player rather than only in the opaque `gameSettings` blob because the face is the
+ * player's own choice, made when they create or join, and every client generates its city from the
+ * roster the server hands back — a face one client disagreed about is a desync, not a cosmetic.
+ */
+export const portraitIdSchema = pipe(
+  number(),
+  integer(),
+  minValue(0),
+  maxValue(15),
+  notNegativeZero,
+)
+
 /** A count of players, 0 through the six seats. */
 export const playerCountSchema = pipe(
   number(),

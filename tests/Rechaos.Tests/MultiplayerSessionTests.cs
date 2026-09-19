@@ -240,7 +240,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> withLateJoiner =
         [
             Roster[0],
-            new("late-1", 1, "DAVE", WirePlayerStatus.Active, IsHost: false),
+            new("late-1", 1, "DAVE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
         ];
         var view = View() with { Players = withLateJoiner, LastEventSeq = 2 };
         MatchEvent[] history =
@@ -296,8 +296,8 @@ public sealed partial class MultiplayerSessionTests
         Assert.False(session.IsHost);
         IReadOnlyList<PlayerView> afterPromotion =
         [
-            new("p1", 0, "ADA", WirePlayerStatus.Left, IsHost: false),
-            new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: true),
+            new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Left, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: true),
         ];
         server.Answer(
             HttpMethod.Get,
@@ -323,7 +323,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> afterLeaving =
         [
             Roster[0],
-            new("p2", 1, "GRACE", WirePlayerStatus.Computer, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false),
         ];
         var view = View() with { Players = afterLeaving, LastEventSeq = 6 };
         MatchEvent[] history =
@@ -697,6 +697,27 @@ public sealed partial class MultiplayerSessionTests
         Assert.Equal(0, withdrawn.Ready);
     }
 
+    /// <summary>
+    /// Readiness names the seats, not only how many of them there are.
+    /// </summary>
+    /// <remarks>
+    /// The city screen marks the opponents who are still drafting under their own portraits, and a
+    /// player id means nothing to a portrait: the seat behind it is what the interface can draw.
+    /// </remarks>
+    [Fact]
+    public async Task ReportsWhichSeatsHaveFinishedTheTurn()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+
+        server.Events.Write(Frame(8, "turn.readiness", """{"turn":1,"playerId":"p2","ready":true}"""));
+        var readiness = await WaitFor<MultiplayerNotice.ReadinessChanged>(session);
+
+        Assert.Equal([1], readiness.ReadySlots.Order());
+        Assert.Equal([0, 1], readiness.AwaitedSlots.Order());
+    }
+
     /// <summary>Readiness from a turn that has moved on does not carry over to the next.</summary>
     [Fact]
     public async Task ForgetsReadinessWhenTheTurnChanges()
@@ -731,7 +752,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> afterLeaving =
         [
             Roster[0],
-            new("p2", 1, "GRACE", WirePlayerStatus.Left, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false),
         ];
         server.Answer(
             HttpMethod.Get,
@@ -756,7 +777,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> afterLeaving =
         [
             Roster[0],
-            new("p2", 1, "GRACE", WirePlayerStatus.Left, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false),
         ];
         server.Answer(
             HttpMethod.Get,
@@ -765,7 +786,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> pendingVote =
         [
             Roster[0],
-            new("p2", 1, "GRACE", WirePlayerStatus.TakeoverPending, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.TakeoverPending, IsHost: false),
         ];
         server.Answer(
             HttpMethod.Get,
@@ -774,7 +795,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> computerControlled =
         [
             Roster[0],
-            new("p2", 1, "GRACE", WirePlayerStatus.Computer, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Computer, IsHost: false),
         ];
         server.Answer(
             HttpMethod.Get,
@@ -805,7 +826,7 @@ public sealed partial class MultiplayerSessionTests
         IReadOnlyList<PlayerView> returnedRoster =
         [
             Roster[0],
-            new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
         ];
         server.Answer(
             HttpMethod.Get,

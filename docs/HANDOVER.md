@@ -27,6 +27,13 @@ Last updated: 2026-09-13
 
 ## Latest playable work
 
+- A submitted online turn now leaves the hire dock readable while the other seats are still
+  planning. The offers and the Hire comparison panel open, and a dock portrait still opens the gang
+  it offers, because all of it reads state that was drawn when the turn reached Command and that
+  every client will resolve the sealed turn from. Hiring and snubbing stay refused for that window
+  and now say so — `TURN SENT; WAITING FOR PLAYERS` rather than nothing — since the document the
+  server already holds is the turn.
+
 - Fresh New Game setup now defaults to Kill 'Em All, matching the first stable
   original-runtime capture. Five burst frames agreed byte-for-byte and the
   current user and machine registry contained no `prefsObjective` override.

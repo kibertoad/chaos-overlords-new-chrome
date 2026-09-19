@@ -46,6 +46,7 @@ export interface PlayerRow {
   slot: number
   joinOrder: number
   displayName: string
+  portraitId: number
   tokenHash: string | null
   status: string
   joinedAt: Date

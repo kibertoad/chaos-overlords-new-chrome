@@ -33,7 +33,7 @@ public sealed partial class MultiplayerMatchSession
         else
         {
             _slotsByPlayerId[playerId] = slot;
-            _awaitedSeats++;
+            _awaitedSlots.Add(slot);
         }
         var player = _replay.State.FindPlayer(new PlayerId(slot));
         if (player?.Setup.Controller == PlayerController.Computer)
