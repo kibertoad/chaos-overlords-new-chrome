@@ -36,15 +36,15 @@ public sealed partial class ChaosGame
             new Vector2(GameInformationLayout.ValueLeft, GameInformationLayout.TurnTimeLimitY),
             Color.Lime, 1);
 
-        foreach (var player in state.Setup.Players)
+        foreach (var player in state.Players)
         {
             var row = player.Id.Value;
             var y = GameInformationLayout.PlayerY(row);
             batch.Draw(pixel, GameInformationLayout.PlayerColor(row), PlayerColors[row]);
-            font.Draw(batch, player.Name,
+            font.Draw(batch, player.Setup.Name,
                 new Vector2(GameInformationLayout.PlayerNameLeft, y), Color.Lime, 1);
             DrawPanelValue(font, batch,
-                GameInformationPresentation.Intelligence(player.Controller),
+                GameInformationPresentation.PlayerLabel(player.Setup.Controller, player.Status),
                 GameInformationLayout.IntelligenceRight, y);
         }
     }

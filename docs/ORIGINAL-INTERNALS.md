@@ -4022,7 +4022,9 @@ byte selects ids `0x32` through `0x35`, which decode as `NONE`, `30 SECONDS`,
 file and `LoadStringW` from the shipped executable confirms both tables; the
 duration table is ids `0x36` through `0x39`. The six player-status labels that
 share the next resource block begin `HUMAN`, `AI`, and `ELIMINATED` at ids
-`0x3a`, `0x3b`, and `0x3c` respectively.
+`0x3a`, `0x3b`, and `0x3c` respectively. In each player row, the renderer
+tests the eliminated-state byte first and selects `ELIMINATED` when it is set;
+only an active row then selects `AI` or `HUMAN` from the controller byte.
 
 **Interpretation:** `PX05021` is a 320-by-209 alternate panel, not the normal
 344-pixel shared template. Its source crop must be retained when drawing the
@@ -4032,7 +4034,8 @@ Information must display, for example, `GREED (6 MONTHS)` but just `SIEGE`.
 The independent planning-limit table happens to use the same visible labels as
 the setup control, so `PlanningTimerPolicy.Label` is presentation-compatible
 with the native Game Information field without conflating its stored byte with
-the duration selector.
+the duration selector. An eliminated seat must likewise display `ELIMINATED`,
+regardless of whether its original controller was human or AI.
 
 **Confidence:** High static evidence for alternate source/destination rectangles, close target, field origins, alignment, and row stride from complete handler `0x0045519d`, plus direct resource extraction for all three header tables; native capture remains useful for palette and text clipping.
 

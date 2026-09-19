@@ -55,6 +55,17 @@ public static class GameInformationPresentation
         _ => throw new ArgumentOutOfRangeException(nameof(controller))
     };
 
+    /// <summary>
+    /// Native Game Information gives an eliminated seat precedence over its
+    /// original human/computer controller label.
+    /// </summary>
+    public static string PlayerLabel(PlayerController controller, PlayerStatus status) => status switch
+    {
+        PlayerStatus.Active => Intelligence(controller),
+        PlayerStatus.Eliminated => "ELIMINATED",
+        _ => throw new ArgumentOutOfRangeException(nameof(status))
+    };
+
     public static bool OpensAtNewGame(MatchSetup setup)
     {
         ArgumentNullException.ThrowIfNull(setup);

@@ -34,6 +34,17 @@ public sealed class GameInformationUiTests
     }
 
     [Theory]
+    [InlineData(PlayerController.Human, PlayerStatus.Active, "HUMAN")]
+    [InlineData(PlayerController.Computer, PlayerStatus.Active, "AI")]
+    [InlineData(PlayerController.Human, PlayerStatus.Eliminated, "ELIMINATED")]
+    [InlineData(PlayerController.Computer, PlayerStatus.Eliminated, "ELIMINATED")]
+    public void PlayerLabelGivesEliminationPrecedenceOverController(
+        PlayerController controller, PlayerStatus status, string label)
+    {
+        Assert.Equal(label, GameInformationPresentation.PlayerLabel(controller, status));
+    }
+
+    [Theory]
     [InlineData(ScenarioId.Greed, GameDuration.SixMonths, "GREED (6 MONTHS)")]
     [InlineData(ScenarioId.Power, GameDuration.OneYear, "POWER (1 YEAR)")]
     [InlineData(ScenarioId.Acceptance, GameDuration.TwoYears, "ACCEPTANCE (2 YEARS)")]
