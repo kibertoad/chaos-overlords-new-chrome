@@ -801,8 +801,8 @@ claim about original-game behavior.
   slot. A face dropped on another human exchanges their colors. The resulting
   sparse human slots are preserved as player IDs, then every missing slot is
   filled in ascending order before AI initialization and city generation.
-- Current exclusions: the remaining setup call context, initial hire offers, and
-  an original runtime fixture remain open.
+- Current exclusions: the remaining setup call context and an original runtime
+  fixture remain open.
 - Confidence: High static evidence for ordinary/Armageddon cash, the name
   override, city/HQ generation and Right Hands Force; runtime correlation pending.
 - Implementation: `OriginalMatchFactory.Create`, `MatchBootstrap.Create`, and

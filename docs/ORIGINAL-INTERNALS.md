@@ -4633,7 +4633,9 @@ report to corroborate modal completion and timing.
 
 **Observation:** `0x0046e766` initializes each player's three fixed offer bytes
 at `0x004abbc0` to signed -100 and the matching action bytes at `0x004a27c8` to
--1. `0x004078b8` writes snub action -2 to the selected slot. The resolver at
+-1. The fresh-game loop writes literal `0x9c` and `0xff` for every one of the
+six-by-three slots without drawing an offer. `0x004078b8` writes snub action -2
+to the selected slot. The resolver at
 `0x00472775` scans players 0..5 and slots 0..2, negates that same slot's offer
 for a snub or successful hire, clears its action, and creates a hired gang with
 a bounded `1..5` result plus four. Failed hires clear the action without
