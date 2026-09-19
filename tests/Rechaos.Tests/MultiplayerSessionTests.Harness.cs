@@ -22,8 +22,8 @@ public sealed partial class MultiplayerSessionTests
 
     private static readonly IReadOnlyList<PlayerView> Roster =
     [
-        new("p1", 0, "ADA", WirePlayerStatus.Active, IsHost: true),
-        new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: false),
+        new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
+        new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
     ];
 
     /// <summary>
@@ -65,6 +65,7 @@ public sealed partial class MultiplayerSessionTests
     private static MatchView View(string? deadlineAt = null) => new(
         MatchId,
         MultiplayerProtocolVersion.Current,
+        MultiplayerSessionVersion.Current,
         MatchStatus.Running,
         new MatchSettings("ADA'S CITY", 2, 300, MatchVisibility.Private, GameSettings.ToWire()),
         "p1",

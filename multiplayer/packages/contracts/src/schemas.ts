@@ -21,12 +21,13 @@ import {
   formatVersionSchema,
   joinCodeInputSchema,
   passwordSchema,
+  portraitIdSchema,
   resourceIdSchema,
   sha256HexSchema,
   slotSchema,
   turnNumberSchema,
 } from './primitives'
-import { protocolVersionSchema } from './protocol'
+import { protocolVersionSchema, sessionVersionSchema } from './protocol'
 import { matchSettingsSchema } from './settings'
 
 /**
@@ -47,20 +48,35 @@ import { matchSettingsSchema } from './settings'
 export const createMatchRequestSchema = strictObject({
   settings: matchSettingsSchema,
   hostDisplayName: displayNameInputSchema,
+  /** The face the host plays under. Omitted by clients that predate the choice; they get the first. */
+  hostPortraitId: optional(portraitIdSchema),
   password: optional(passwordSchema),
-  /** Protocol that created this session. Omitted legacy requests predate version negotiation. */
+  /** Wire protocol of the creating client. Omitted legacy requests predate version negotiation. */
   protocolVersion: optional(protocolVersionSchema),
+  /** Session shape the creating client plays. Omitted legacy requests are session version 1. */
+  sessionVersion: optional(sessionVersionSchema),
 })
 
 export const joinMatchRequestSchema = strictObject({
   joinCode: joinCodeInputSchema,
   displayName: displayNameInputSchema,
+  /** The face this player plays under. Omitted by clients that predate the choice. */
+  portraitId: optional(portraitIdSchema),
   password: optional(passwordSchema),
 })
 
 export const joinRunningMatchRequestSchema = strictObject({
   match: resourceIdSchema,
   displayName: displayNameInputSchema,
+  /**
+   * The face the seat already wears, which a latecomer inherits rather than chooses.
+   *
+   * The match was generated before this player existed, and every client generated that seat's
+   * overlord from the host's `gameSettings` portraits. The seat's face is therefore already part of
+   * a state every client has hashed, so a latecomer who brought their own would be handing a
+   * different setup to any client that still bootstraps the match from the roster.
+   */
+  portraitId: optional(portraitIdSchema),
   password: optional(passwordSchema),
   slot: slotSchema,
 })
@@ -104,8 +120,10 @@ export const turnReportRequestSchema = strictObject({
 export const uploadSnapshotRequestSchema = strictObject({
   turn: turnNumberSchema,
   formatVersion: formatVersionSchema,
-  /** Protocol that produced this snapshot. Omitted legacy requests are protocol version 1. */
+  /** Wire protocol that produced this snapshot. Omitted legacy requests are protocol version 1. */
   protocolVersion: optional(protocolVersionSchema),
+  /** Session shape these bytes belong to. Omitted legacy requests are session version 1. */
+  sessionVersion: optional(sessionVersionSchema),
   stateHash: sha256HexSchema,
   /** The client's native snapshot, base64-encoded. The server stores it without decoding it. */
   body: base64BodySchema,

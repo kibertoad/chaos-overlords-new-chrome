@@ -3,10 +3,15 @@ name: Release installers
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: Version tag to create, for example 0.1.0
+      bump:
+        description: Which part of the recorded version the release advances
         required: true
-        type: string
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
       installers:
         description: Installer platforms to build
         required: true
@@ -29,7 +34,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: release-${{ github.workflow }}-${{ inputs.tag }}
+  group: release-${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
@@ -50,19 +55,39 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Validate version tag
+      # The release is asked for by kind, so the number is settled here, out of the version.txt
+      # that main carries right now. A recorded version that carries no tag never shipped — a
+      # release that recorded it and then failed, or one bumped by hand because the workflow
+      # cannot commit to main — so that one is published instead of a number past it.
+      - name: Choose the release version
         id: version
         shell: pwsh
         env:
-          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_BUMP: ${{ inputs.bump }}
         run: |
-          if ($env:RELEASE_TAG -notmatch '^(\d+\.\d+\.\d+)$') {
-            throw "Tag '$env:RELEASE_TAG' must look like 0.1.0."
+          $recorded = ./tools/Get-GameVersion.ps1
+          $remoteTags = git ls-remote --tags origin 'refs/tags/*'
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to list the existing release tags.' }
+          $released = @($remoteTags |
+            ForEach-Object { (($_ -split "`t")[1] -replace '^refs/tags/', '') -replace '\^\{\}$', '' } |
+            Where-Object { $_ -match '^\d+\.\d+\.\d+$' } |
+            Sort-Object -Unique { [version] $_ })
+          $highest = $released | Select-Object -Last 1
+          if ($highest -and [version] $highest -gt [version] $recorded) {
+            throw ("version.txt records $recorded, but $highest is already released. " +
+              'Correct version.txt on main before releasing again.')
           }
-          $existing = git ls-remote --tags origin "refs/tags/$env:RELEASE_TAG"
-          if ($existing) { throw "Tag '$env:RELEASE_TAG' already exists." }
-          "tag=$env:RELEASE_TAG" >> $env:GITHUB_OUTPUT
-          "version=$($Matches[1])" >> $env:GITHUB_OUTPUT
+          if ($released -contains $recorded) {
+            $next = ./tools/Get-NextVersion.ps1 -Bump $env:RELEASE_BUMP -CurrentVersion $recorded
+            Write-Host "Releasing $next, the $env:RELEASE_BUMP release after $recorded."
+          }
+          else {
+            $next = $recorded
+            Write-Host ("version.txt records $recorded and no tag does, so that release never " +
+              "finished; publishing $recorded rather than a new $env:RELEASE_BUMP version.")
+          }
+          "tag=$next" >> $env:GITHUB_OUTPUT
+          "version=$next" >> $env:GITHUB_OUTPUT
 
       # The build stamps version.txt onto every assembly, so main has to carry the released
       # version before the installers are built from this commit. The checkout keeps no push

@@ -47,6 +47,7 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, OnlineConnectLayout.JoinRole, "JOIN",
             _online.Role == OnlineConnectRole.Join);
         DrawField(batch, pixel, font, OnlineConnectLayout.Name, _online.DisplayName);
+        DrawOnlinePortraitChoice(batch, pixel, font);
         var busy = _online.Stage == MultiplayerStage.Busy;
         if (_online.Role == OnlineConnectRole.Join)
         {
@@ -76,6 +77,31 @@ public sealed partial class ChaosGame
         DrawCentered(font, batch, _online.Status, OnlineConnectLayout.StatusY, Color.Gold, 1);
     }
 
+    /// <summary>
+    /// Draws the face this player will sit down under, and the arrows that turn it.
+    /// </summary>
+    /// <remarks>
+    /// Beside the name, because the two are the same kind of thing: what the other players at the
+    /// table see of whoever is about to take a seat. The art is the atlas the rest of the game draws
+    /// overlords from, so the face chosen here is the one the city screen shows all match.
+    /// </remarks>
+    private void DrawOnlinePortraitChoice(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        var bounds = OnlineConnectLayout.Portrait;
+        font.Draw(batch, "FACE", CaptionAt(bounds), new Color(150, 165, 165), 1);
+        batch.Draw(pixel, bounds, new Color(4, 10, 9));
+        if (_uiSprites is not null)
+        {
+            batch.Draw(_uiSprites, bounds,
+                OriginalSpriteLayout.OverlordPortrait(_online.Portrait), Color.White);
+        }
+        DrawBorder(batch, pixel, bounds, new Color(70, 90, 88), 1);
+        DrawHorizontalArrow(
+            batch, pixel, OnlineConnectLayout.PortraitPrevious, left: true, Color.Gold);
+        DrawHorizontalArrow(
+            batch, pixel, OnlineConnectLayout.PortraitNext, left: false, Color.Gold);
+    }
+
     private void DrawOnlineDiscovery(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         DrawOnlinePanel(batch, pixel, font, "BROWSE GAMES");
@@ -91,7 +117,7 @@ public sealed partial class ChaosGame
         for (var row = 0; row < Math.Min(5, listings.Count - offset); row++)
         {
             var index = offset + row;
-            var listing = listings[index];
+            var (listing, settings) = listings[index];
             var bounds = OnlineConnectLayout.DiscoveryRow(row);
             batch.Draw(pixel, bounds, index == _online.DiscoverySelection
                 ? new Color(30, 62, 55) : new Color(4, 10, 9));
@@ -100,10 +126,13 @@ public sealed partial class ChaosGame
             var phase = listing.Status == MatchStatus.Lobby ? "WAITING" : "ONGOING";
             font.Draw(batch, $"{listing.Name}  {phase}  {listing.PlayerCount}/{listing.MaxPlayers}",
                 new Vector2(bounds.X + 6, bounds.Y + 6), Color.White, 1);
-            var settings = MultiplayerGameSettings.FromWire(listing.Settings.GameSettings);
+            // A session this build cannot read the settings of is still listed, so the second line
+            // says so rather than naming a scenario and a mentality that were never read.
             font.Draw(batch,
-                $"{ScenarioCatalog.Get(settings.Scenario).Name}  " +
-                $"{DifficultyPresentation.Label(settings.AiMentality)}",
+                settings is { } known
+                    ? $"{ScenarioCatalog.Get(known.Scenario).Name}  " +
+                        $"{DifficultyPresentation.Label(known.AiMentality)}"
+                    : "SETTINGS THIS VERSION OF THE GAME CANNOT READ",
                 new Vector2(bounds.X + 6, bounds.Y + 19), new Color(150, 165, 165), 1);
         }
         DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryJoin, "JOIN", listings.Count > 0);
@@ -143,10 +172,14 @@ public sealed partial class ChaosGame
                 x + row, y + (open ? 2 - row : row), 5 - row * 2, 1), Color.Gold);
     }
 
+    /// <summary>The colour of a session this build cannot play.</summary>
+    private static readonly Color IncompatibleSession = new(220, 120, 90);
+
     private void DrawOnlineHistory(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         DrawOnlinePanel(batch, pixel, font, "UNFINISHED SESSIONS");
         var sessions = RecoverableOnlineSessions;
+        var selected = SelectedOnlineRecovery;
         var offset = Math.Clamp(_online.RecoverySelection - 5, 0, Math.Max(0, sessions.Count - 6));
         for (var row = 0; row < Math.Min(6, sessions.Count - offset); row++)
         {
@@ -158,22 +191,32 @@ public sealed partial class ChaosGame
                 : new Color(4, 10, 9));
             DrawBorder(batch, pixel, bounds,
                 index == _online.RecoverySelection ? Color.Gold : new Color(70, 90, 88), 1);
-            var role = recovery.IsHost ? "HOST" : "PLAYER";
-            var lastPlayed = LastPlayedLabel(recovery);
-            var detail = new Color(150, 165, 165);
-            font.Draw(batch, Fitted(SessionLabel(recovery), RowRoom(bounds, role)),
-                new Vector2(bounds.X + 7, bounds.Y + 6), Color.White, 1);
-            DrawRightAligned(font, batch, role, bounds.Right - 7, bounds.Y + 6, detail);
-            font.Draw(batch,
-                Fitted($"{recovery.DisplayName}  {recovery.JoinCode}", RowRoom(bounds, lastPlayed)),
-                new Vector2(bounds.X + 7, bounds.Y + 17), detail, 1);
-            DrawRightAligned(font, batch, lastPlayed, bounds.Right - 7, bounds.Y + 17, detail);
+            DrawHistoryRow(batch, font, bounds, recovery);
         }
-        DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN", sessions.Count > 0);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN",
+            selected is { CanResume: true });
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK", true);
-        DrawCentered(font, batch, "UP/DOWN SELECT  ENTER REJOINS", 424,
-            new Color(150, 165, 165), 1);
+        DrawCentered(font, batch, OnlineHistoryPresentation.Footer(selected), 424,
+            selected is { IsCompatible: false } ? IncompatibleSession : new Color(150, 165, 165), 1);
         DrawCentered(font, batch, _online.Status, 440, Color.Gold, 1);
+    }
+
+    /// <summary>The membership on one row, with the reason beside it when it cannot be taken.</summary>
+    private static void DrawHistoryRow(
+        SpriteBatch batch, PixelFont font, Rectangle bounds, MultiplayerRecovery recovery)
+    {
+        var roleOrNote = OnlineHistoryPresentation.Note(recovery)
+            ?? (recovery.IsHost ? "HOST" : "PLAYER");
+        var lastPlayed = LastPlayedLabel(recovery);
+        var detail = new Color(150, 165, 165);
+        font.Draw(batch, Fitted(SessionLabel(recovery), RowRoom(bounds, roleOrNote)),
+            new Vector2(bounds.X + 7, bounds.Y + 6), Color.White, 1);
+        DrawRightAligned(font, batch, roleOrNote, bounds.Right - 7, bounds.Y + 6,
+            recovery.IsCompatible ? detail : IncompatibleSession);
+        font.Draw(batch,
+            Fitted($"{recovery.DisplayName}  {recovery.JoinCode}", RowRoom(bounds, lastPlayed)),
+            new Vector2(bounds.X + 7, bounds.Y + 17), detail, 1);
+        DrawRightAligned(font, batch, lastPlayed, bounds.Right - 7, bounds.Y + 17, detail);
     }
 
     private void DrawLateJoinSeats(SpriteBatch batch, Texture2D pixel, PixelFont font)
@@ -314,7 +357,16 @@ public sealed partial class ChaosGame
             var name = player.DisplayName.Length > OnlineLobbyLayout.RosterNameColumns
                 ? player.DisplayName[..OnlineLobbyLayout.RosterNameColumns]
                 : player.DisplayName;
-            font.Draw(batch, $"{name}{suffix}", new Vector2(136, 200 + row * 16), colour, 1);
+            // The face each player chose on their way in, so the roster says who is who by more
+            // than a name: it is the face their overlord wears on every screen once the match runs.
+            var face = OnlineLobbyLayout.RosterPortrait(row);
+            if (_uiSprites is not null)
+            {
+                batch.Draw(_uiSprites, face,
+                    OriginalSpriteLayout.OverlordPortrait(OnlinePortrait(player)), Color.White);
+            }
+            font.Draw(batch, $"{name}{suffix}",
+                new Vector2(face.Right + 6, face.Y + 5), colour, 1);
             row++;
         }
         // Every unseated slot plays as a computer player, which is worth saying before the start.
@@ -322,7 +374,8 @@ public sealed partial class ChaosGame
         if (computers > 0)
         {
             font.Draw(batch, $"{computers} COMPUTERS FILL THE REST",
-                new Vector2(120, 200 + (row + 1) * 16), new Color(150, 165, 165), 1);
+                new Vector2(120, OnlineLobbyLayout.RosterPortrait(row).Y + 5),
+                new Color(150, 165, 165), 1);
         }
         DrawLobbySettings(batch, pixel, font, match);
         DrawButton(batch, pixel, font, OnlineLobbyLayout.CopyCode, "COPY CODE", true);
@@ -392,6 +445,33 @@ public sealed partial class ChaosGame
     private static bool Seated(PlayerView player) => player.Status == WirePlayerStatus.Active;
 
     private static int SeatedPlayerCount(MatchView match) => match.Players.Count(Seated);
+
+    /// <summary>
+    /// Marks every opponent still drafting this turn, under their portrait on the city top bar.
+    /// </summary>
+    /// <remarks>
+    /// Drawn on black because the eight rows under the portraits are background art, which lime
+    /// text alone is not reliably legible over. Offline there is nobody to wait for, and once the
+    /// match is paused by a desync or over altogether nobody is drafting anything, so the captions
+    /// go with the turn they describe rather than lingering as a state that cannot change.
+    /// </remarks>
+    private void DrawOpponentPlanning(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        if (_session is null) return;
+        var turnIsOpen = _online.Stage
+            is MultiplayerStage.Playing or MultiplayerStage.WaitingForSeal;
+        for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
+        {
+            if (!OpponentPlanningPresentation.IsDrafting(
+                    slot, _session.Slot, turnIsOpen, _online.AwaitedSlots, _online.ReadySlots))
+                continue;
+            var caption = PlayerPortraitLayout.CityCaption(
+                slot, OpponentPlanningPresentation.WaitingCaption.Length);
+            batch.Draw(pixel, caption, Color.Black);
+            font.Draw(batch, OpponentPlanningPresentation.WaitingCaption,
+                new Vector2(caption.X, caption.Y), OpponentPlanningPresentation.WaitingColor, 1);
+        }
+    }
 
     /// <summary>
     /// The countdown for the open turn, or an empty string when the match has no timer.

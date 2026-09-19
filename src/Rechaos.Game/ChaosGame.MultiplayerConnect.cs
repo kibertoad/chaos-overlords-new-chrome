@@ -93,6 +93,23 @@ public sealed partial class ChaosGame
         OnlineFields[0].IsFocused = true;
     }
 
+    /// <summary>
+    /// Turns the player's own overlord face forward or back through the atlas.
+    /// </summary>
+    /// <remarks>
+    /// The same fifteen faces the local setup screen offers, cycled the same way. The sixteenth is
+    /// the one drawn for a seat nobody is in, so it is not a face anybody plays under. The choice is
+    /// only live while the form is, because it rides the request that claims the seat: once the
+    /// seat is claimed the roster is what every client generates its city from.
+    /// </remarks>
+    private void CycleOnlinePortrait(int delta)
+    {
+        if (_online.Stage != MultiplayerStage.Connect) return;
+        _online.Portrait = checked((short)Mod(
+            _online.Portrait + delta, PlayerPortraitLayout.SelectableCount));
+        PlayGeneralSound(GeneralSoundSlot.AcceptedSelection);
+    }
+
     private void PasteJoinCode()
     {
         if (!DesktopClipboard.TryGetText(out var text, maximumCharacters: 8))

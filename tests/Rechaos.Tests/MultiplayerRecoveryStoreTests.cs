@@ -1,4 +1,5 @@
 using Rechaos.Game;
+using Rechaos.Multiplayer.Protocol;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -21,6 +22,22 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         var loaded = Assert.IsType<MultiplayerRecovery>(MultiplayerRecoveryStore.Load(Path()));
         Assert.Equal(expected, loaded);
         Assert.True(loaded.ShouldSuggestReconnect);
+    }
+
+    [Fact]
+    public async Task ReconciliationDropsOnlyMembershipsTheServerHasDefinitelyRetired()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        var deleted = Recovery(CleanExit: true, Completed: false) with { MatchId = "deleted" };
+        var unreachable = Recovery(CleanExit: true, Completed: false) with { MatchId = "offline" };
+        server.Answer(HttpMethod.Get, "/matches/deleted", null, System.Net.HttpStatusCode.Unauthorized);
+        server.Answer(HttpMethod.Get, "/matches/offline", null, System.Net.HttpStatusCode.BadGateway);
+
+        var unavailable = await MultiplayerRecoveryReconciliation.FindUnavailableAsync(
+            http, [deleted, unreachable], TestContext.Current.CancellationToken);
+
+        Assert.Equal([deleted], unavailable);
     }
 
     [Fact]
@@ -166,6 +183,41 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     }
 
     /// <summary>
+    /// The session version rides with the membership so the browser can say a seat cannot be
+    /// taken without dialing the server for it first.
+    /// </summary>
+    [Fact]
+    public void SessionVersionIsKeptWithTheMembership()
+    {
+        var recovery = Recovery(CleanExit: false, Completed: false) with
+        {
+            SessionVersion = MultiplayerSessionVersion.Current + 1
+        };
+
+        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), recovery));
+
+        var loaded = MultiplayerRecoveryStore.Load(Path())!;
+        Assert.Equal(recovery, loaded);
+        Assert.False(loaded.IsCompatible);
+        Assert.False(loaded.CanResume);
+        // Still held: the seat is the player's, and the browser owes them the reason it cannot be
+        // taken rather than dropping the row.
+        Assert.True(loaded.CanReconnect);
+        Assert.False(loaded.ShouldSuggestReconnect);
+    }
+
+    /// <summary>A file from a build that wrote no session version is the first one.</summary>
+    [Fact]
+    public void MembershipWithoutAStoredSessionVersionIsTheInitialOne()
+    {
+        WriteMembershipWithoutNewRecoveryMetadata();
+
+        var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.Equal(MultiplayerSessionVersion.Initial, loaded.SessionVersion);
+        Assert.True(loaded.CanResume);
+    }
+
+    /// <summary>
     /// The match's name reaches every member on the wire, not only the host who typed it, so the
     /// list of unfinished sessions can name the game whichever seat the player held.
     /// </summary>
@@ -188,6 +240,16 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
     [Fact]
     public void MembershipWithoutASessionNameOrUpdateTimeKeepsItsSeat()
     {
+        WriteMembershipWithoutNewRecoveryMetadata();
+
+        var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
+        Assert.Equal(string.Empty, loaded.SessionName);
+        Assert.Null(loaded.LastUpdatedAt);
+        Assert.True(loaded.CanReconnect);
+    }
+
+    private void WriteMembershipWithoutNewRecoveryMetadata()
+    {
         File.WriteAllText(Path(), System.Text.Json.JsonSerializer.Serialize(new
         {
             FormatVersion = 3,
@@ -209,10 +271,6 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
             }
         }));
 
-        var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
-        Assert.Equal(string.Empty, loaded.SessionName);
-        Assert.Null(loaded.LastUpdatedAt);
-        Assert.True(loaded.CanReconnect);
     }
 
     [Fact]

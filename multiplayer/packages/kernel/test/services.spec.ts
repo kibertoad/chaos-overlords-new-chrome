@@ -120,8 +120,8 @@ describe('multiplayer kernel', () => {
     expect(started.match.settings.turnTimerSeconds).toBe(120)
   })
 
-  it('persists protocol provenance and defaults omitted legacy metadata to version 1', async () => {
-    const create = (name: string, protocolVersion?: number) =>
+  it('persists protocol and session provenance, defaulting omitted legacy metadata to 1', async () => {
+    const create = (name: string, protocolVersion?: number, sessionVersion?: number) =>
       kernel.lobby.createMatch({
         settings: {
           name,
@@ -132,24 +132,32 @@ describe('multiplayer kernel', () => {
         },
         hostDisplayName: 'Host',
         protocolVersion,
+        sessionVersion,
       })
 
     const legacy = await create('Legacy')
-    expect((await principalOf(legacy.token)).match.protocolVersion).toBe(1)
+    const legacyMatch = (await principalOf(legacy.token)).match
+    expect(legacyMatch.protocolVersion).toBe(1)
+    expect(legacyMatch.sessionVersion).toBe(1)
 
-    const current = await create('Current', 2)
+    // A newer protocol over the same session shape: the pair is kept apart, not collapsed.
+    const current = await create('Current', 2, 1)
     const currentPrincipal = await principalOf(current.token)
     expect(currentPrincipal.match.protocolVersion).toBe(2)
+    expect(currentPrincipal.match.sessionVersion).toBe(1)
     await kernel.lobby.start(currentPrincipal)
     await kernel.snapshots.upload(await principalOf(current.token), {
       turn: 0,
       formatVersion: 1,
       protocolVersion: 2,
+      sessionVersion: 1,
       stateHash: HASH_A,
       body: 'AAAA',
       seatSummaries: [],
     })
-    expect((await storage.snapshots.get(current.match.id, 0))?.protocolVersion).toBe(2)
+    const currentSnapshot = await storage.snapshots.get(current.match.id, 0)
+    expect(currentSnapshot?.protocolVersion).toBe(2)
+    expect(currentSnapshot?.sessionVersion).toBe(1)
 
     await kernel.lobby.start(await principalOf(legacy.token))
     await kernel.snapshots.upload(await principalOf(legacy.token), {
@@ -159,7 +167,42 @@ describe('multiplayer kernel', () => {
       body: 'AAAA',
       seatSummaries: [],
     })
-    expect((await storage.snapshots.get(legacy.match.id, 0))?.protocolVersion).toBe(1)
+    const legacySnapshot = await storage.snapshots.get(legacy.match.id, 0)
+    expect(legacySnapshot?.protocolVersion).toBe(1)
+    expect(legacySnapshot?.sessionVersion).toBe(1)
+  })
+
+  /**
+   * The face is the one thing a player brings to the roster besides their name, and every client
+   * generates that seat's overlord from it, so it has to survive create, join and the read back.
+   */
+  it('seats each player under the face they chose, and the first face when none was sent', async () => {
+    const host = await kernel.lobby.createMatch({
+      settings: {
+        name: 'Faces',
+        maxPlayers: 3,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Host',
+      hostPortraitId: 7,
+    })
+    const guest = await kernel.lobby.join({
+      joinCode: host.joinCode,
+      displayName: 'Guest',
+      portraitId: 12,
+    })
+    const legacy = await kernel.lobby.join({ joinCode: host.joinCode, displayName: 'Legacy' })
+    expect(host.player.portraitId).toBe(7)
+    expect(guest.player.portraitId).toBe(12)
+    expect(legacy.player.portraitId).toBe(0)
+    const view = await kernel.query.view((await principalOf(guest.token)).match)
+    expect(view.players.map((player) => [player.displayName, player.portraitId])).toEqual([
+      ['Host', 7],
+      ['Guest', 12],
+      ['Legacy', 0],
+    ])
   })
 
   it('allows late joining only into a never-human computer slot', async () => {
@@ -194,9 +237,12 @@ describe('multiplayer kernel', () => {
       match: host.match.id,
       displayName: 'Late',
       slot: 3,
+      // The face that seat has worn since the match was generated, not one the latecomer picked.
+      portraitId: 9,
     })
     expect(joined.player.slot).toBe(3)
     expect(joined.player.status).toBe('active')
+    expect(joined.player.portraitId).toBe(9)
     await expect(
       kernel.lobby.joinRunning({
         match: host.joinCode,
@@ -1072,6 +1118,7 @@ describe('multiplayer kernel', () => {
         turn,
         formatVersion: 1,
         protocolVersion: 1,
+        sessionVersion: 1,
         stateHash: HASH_A,
         uploadedByPlayerId: hostP.player.id,
         uploadedAt: clock.now(),

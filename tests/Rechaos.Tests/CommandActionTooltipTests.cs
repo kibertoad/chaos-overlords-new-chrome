@@ -81,16 +81,16 @@ public sealed class CommandActionTooltipTests
     }
 
     [Fact]
-    public void ATooltipAppearsOnlyAfterTwoSecondsOnTheSameRow()
+    public void ATooltipAppearsOnlyAfterOneSecondOnTheSameRow()
     {
         var dwell = new HoverDwellTracker();
-        Assert.Equal(TimeSpan.FromSeconds(2), HoverDwellTracker.Delay);
+        Assert.Equal(TimeSpan.FromSeconds(1), HoverDwellTracker.Delay);
 
         dwell.Update(3, TimeSpan.FromSeconds(10));
         Assert.Null(dwell.SettledRegion);
-        dwell.Update(3, TimeSpan.FromSeconds(11.9));
+        dwell.Update(3, TimeSpan.FromSeconds(10.9));
         Assert.Null(dwell.SettledRegion);
-        dwell.Update(3, TimeSpan.FromSeconds(12));
+        dwell.Update(3, TimeSpan.FromSeconds(11));
         Assert.Equal(3, dwell.SettledRegion);
         dwell.Update(3, TimeSpan.FromSeconds(20));
         Assert.Equal(3, dwell.SettledRegion);
@@ -106,16 +106,16 @@ public sealed class CommandActionTooltipTests
 
         dwell.Update(4, TimeSpan.FromSeconds(4.1));
         Assert.Null(dwell.SettledRegion);
-        dwell.Update(4, TimeSpan.FromSeconds(5.9));
+        dwell.Update(4, TimeSpan.FromSeconds(5));
         Assert.Null(dwell.SettledRegion);
-        dwell.Update(4, TimeSpan.FromSeconds(6.1));
+        dwell.Update(4, TimeSpan.FromSeconds(5.1));
         Assert.Equal(4, dwell.SettledRegion);
 
         dwell.Update(null, TimeSpan.FromSeconds(6.2));
         Assert.Null(dwell.SettledRegion);
         dwell.Update(4, TimeSpan.FromSeconds(6.3));
         Assert.Null(dwell.SettledRegion);
-        dwell.Update(4, TimeSpan.FromSeconds(8.4));
+        dwell.Update(4, TimeSpan.FromSeconds(7.4));
         Assert.Equal(4, dwell.SettledRegion);
 
         dwell.Cancel();

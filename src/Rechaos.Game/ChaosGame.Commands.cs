@@ -38,8 +38,12 @@ public sealed partial class ChaosGame
     /// Feeds the hovered action row to the dwell tracker so the command overlay can explain
     /// an entry once the pointer has rested on it, without reacting to a passing cursor.
     /// </summary>
-    private void UpdateCommandTooltipDwell() =>
-        _commandTooltipDwell.Update(HoveredCommandActionRow(), _inputTime);
+    private void UpdateCommandTooltipDwell()
+    {
+        var hoveredRow = HoveredCommandActionRow();
+        _commandTooltipDwell.Update(hoveredRow, _inputTime);
+        if (hoveredRow is { } row) _commandCursor = row;
+    }
 
     private int? HoveredCommandActionRow() =>
         _screens.Current == ClientScreen.Commands && !_choosingCommandTarget && !_gameMenuOpen

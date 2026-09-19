@@ -1,10 +1,29 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-17
+Last updated: 2026-09-18
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
+
+## 2026-09-18 — Scope the Sector workspace's opponent gang view to detection
+
+- Decision: the detailed-sector portrait strip marks an opponent with a red
+  `GANGS` banner and lends the gang cards to that opponent's roster only for
+  gangs the viewer already detects. The borrowed roster is per-visit state: the
+  viewer's own portrait, moving the selected sector, or re-entering the screen
+  restores their own gangs, and hovering an opponent's card no longer highlights
+  what its queued command targets.
+- Evidence: the original sector screen listed only the viewing overlord's gangs
+  and carried no portrait-strip affordance for reading another overlord's, so no
+  native layout or handler constrains this addition.
+- Reason: the roster answers the question the sector screen already poses —
+  who else is standing here — without widening what a player knows. Reusing
+  `MatchState.CanPlayerDetectGang` keeps the strip, the cards, and attack
+  targeting on one detection rule, and keeping the enemy action strip and
+  queued-command highlight suppressed keeps orders private.
+- Compatibility boundary: recreation-only presentation. It reads match state and
+  queues nothing, so replays, saves, and the multiplayer protocol are unaffected.
 
 ## 2026-09-17 — Do not substitute rejected recovered AI commands
 

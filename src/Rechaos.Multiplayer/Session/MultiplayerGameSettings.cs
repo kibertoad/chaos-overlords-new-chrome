@@ -25,7 +25,7 @@ namespace Rechaos.Multiplayer.Session;
 /// <example>
 /// <code>
 /// var settings = new MultiplayerGameSettings(ScenarioId.Greed, GameDuration.SixMonths, AiDifficulty.Criminal, portraits);
-/// var request = new CreateMatchRequest(new MatchSettings(name, 4, 0, MatchVisibility.Private, settings.ToWire()), "Ada", null, MultiplayerProtocolVersion.Current);
+/// var request = new CreateMatchRequest(new MatchSettings(name, 4, 0, MatchVisibility.Private, settings.ToWire()), "Ada", null, MultiplayerProtocolVersion.Current, MultiplayerSessionVersion.Current);
 /// </code>
 /// </example>
 public sealed record MultiplayerGameSettings(
@@ -100,7 +100,7 @@ public sealed record MultiplayerGameSettings(
     }
 
     /// <summary>The original overlord portrait atlas holds sixteen faces.</summary>
-    private const short PortraitCount = 16;
+    internal const short PortraitCount = 16;
 
     /// <summary>
     /// Enums travel as their numeric value, not their name.

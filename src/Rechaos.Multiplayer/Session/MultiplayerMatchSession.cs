@@ -75,14 +75,14 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private int _readinessTurn = -1;
 
     /// <summary>
-    /// How many seats the server is still waiting on before readiness alone seals a turn.
+    /// The seats the server is still waiting on before readiness alone seals a turn.
     /// </summary>
     /// <remarks>
     /// Active seats plus temporarily absent seats whose vote still says to wait. Explicit leavers
     /// and approved computer seats are excluded. Kept from the match view, which the pump refreshes whenever the roster
-    /// changes, and only ever read for the line on screen — nothing about the turn depends on it.
+    /// changes, and only ever read for what is on screen — nothing about the turn depends on it.
     /// </remarks>
-    private int _awaitedSeats;
+    private HashSet<int> _awaitedSlots;
 
     private bool _uploadInitialSnapshot;
 
@@ -110,7 +110,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _stoppingToken = _stopping.Token;
         _replay = replay;
         _slotsByPlayerId = slotsByPlayerId;
-        _awaitedSeats = slotsByPlayerId.Count;
+        _awaitedSlots = [.. slotsByPlayerId.Values];
         _resumeAfterSeq = options.ResumeAfterSeq;
         PlayerId = self.Id;
         Slot = self.Slot;
@@ -161,7 +161,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(options);
         var view = options.View;
-        RequireCurrentProtocol(view.ProtocolVersion, "match");
+        RequireResumableSession(view.SessionVersion, "match");
         var seed = view.Seed
             ?? throw new MultiplayerProtocolException("the match has started without a seed");
         var self = view.Players.FirstOrDefault(player => player.Id == options.OwnPlayerId)
@@ -387,8 +387,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                     extended.Payload.Turn, ParseInstant(extended.Payload.DeadlineAt)));
                 return;
             case TurnReadinessEvent readiness:
-                // Whose readiness it is does not matter to the interface, only how many seats are
-                // still being waited on — so the tally is kept here rather than a roster of names.
+                // Kept as the seats behind the names: the interface marks the opponents still
+                // drafting under their portraits, and a player id means nothing to a portrait.
                 NoteReadiness(readiness.Payload.Turn, readiness.Payload.PlayerId, readiness.Payload.Ready);
                 return;
             case MatchStatusChangedEvent status:
@@ -564,6 +564,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                     // save format's — not the replay format's, which says nothing about these bytes.
                     NativeSaveSerializer.CurrentFormatVersion,
                     MultiplayerProtocolVersion.Current,
+                    MultiplayerSessionVersion.Current,
                     ours,
                     MatchStateClone.ToBase64(_replay.State),
                     SummarizeSeats(_replay.State)),
@@ -628,7 +629,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// </remarks>
     private MatchState ReadVerifiedSnapshot(SnapshotView snapshot)
     {
-        RequireCurrentProtocol(snapshot.ProtocolVersion, "snapshot");
+        RequireResumableSession(snapshot.SessionVersion, "snapshot");
         if (snapshot.FormatVersion > NativeSaveSerializer.CurrentFormatVersion)
         {
             throw new MultiplayerProtocolException(
@@ -655,12 +656,22 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         return restored;
     }
 
-    private static void RequireCurrentProtocol(long actual, string source)
+    /// <summary>
+    /// Refuses a session this build cannot play on.
+    /// </summary>
+    /// <remarks>
+    /// The session version is asked, not the protocol version. The protocol was already settled by
+    /// the handshake, and it says nothing about the match: a session created by a client that spoke
+    /// an older protocol is played here unchanged, as long as the stored session is the shape this
+    /// build knows how to carry on. What would break is a session whose rules, orders or state
+    /// hashing are not the ones here, and that is exactly what the session version names.
+    /// </remarks>
+    private static void RequireResumableSession(long actual, string source)
     {
-        if (actual == MultiplayerProtocolVersion.Current) return;
+        if (actual == MultiplayerSessionVersion.Current) return;
         throw new MultiplayerProtocolException(
-            $"the {source} uses multiplayer protocol {actual}, but this build requires "
-            + MultiplayerProtocolVersion.Current);
+            $"the {source} is session version {actual}, but this build plays "
+            + MultiplayerSessionVersion.Current);
     }
 
     private Task ReportAsync(int turn, string stateHash, CancellationToken cancellationToken) =>
@@ -682,9 +693,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         // readiness it had left behind rather than counting it towards a total it is not part of.
         _readyPlayerIds.RemoveWhere(
             ready => !view.Players.Any(player => player.Id == ready && IsAwaitedHuman(player)));
-        // The tally on screen changes when a seat is vacated, not only when somebody toggles
+        // What is on screen changes when a seat is vacated, not only when somebody toggles
         // readiness, so it is said here too — otherwise "READY 2/4" keeps a seat count that is no
-        // longer true until the next player happens to toggle.
+        // longer true, and a vacated seat keeps its WAIT, until the next player happens to toggle.
         PublishReadiness();
         _notices.Enqueue(new MultiplayerNotice.MatchUpdated(view));
     }
@@ -695,26 +706,51 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         var detail = await CallAsync(
             token => _match.GetAsync(token), _pumpLane, cancellationToken).ConfigureAwait(false);
         var view = detail.Match;
-        RequireCurrentProtocol(view.ProtocolVersion, "match");
+        RequireResumableSession(view.SessionVersion, "match");
         // Follow the roster's word on who hosts; the promoted client repairs desyncs.
         _isHost = string.Equals(view.HostPlayerId, PlayerId, StringComparison.Ordinal);
-        _awaitedSeats = view.Players.Count(player => player.Slot >= 0 && IsAwaitedHuman(player));
+        _awaitedSlots = view.Players
+            .Where(player => player.Slot is >= 0 and < MatchLimits.PlayerCount
+                && IsAwaitedHuman(player))
+            .Select(player => player.Slot)
+            .ToHashSet();
         return view;
     }
 
     /// <summary>
-    /// Says how many of the awaited seats have finished the turn being planned.
+    /// Says which of the awaited seats have finished the turn being planned.
     /// </summary>
     /// <remarks>
-    /// Readiness belongs to one turn: a tally kept for an earlier one says nothing about this one,
-    /// so it counts as nobody ready rather than carrying the old count forward.
+    /// Readiness belongs to one turn: a roster kept for an earlier one says nothing about this one,
+    /// so it reports nobody ready rather than carrying the old one forward.
     /// </remarks>
     private void PublishReadiness()
     {
         var turn = _replay.State.Coordinator.Turn;
         _notices.Enqueue(new MultiplayerNotice.ReadinessChanged(
-            turn, _readinessTurn == turn ? _readyPlayerIds.Count : 0, _awaitedSeats));
+            turn, _readinessTurn == turn ? ReadySlots() : [], AwaitedSlots()));
     }
+
+    /// <summary>The seats of the players that have said they are done with the open turn.</summary>
+    private HashSet<int> ReadySlots()
+    {
+        var slots = new HashSet<int>();
+        foreach (var playerId in _readyPlayerIds)
+        {
+            if (_slotsByPlayerId.TryGetValue(playerId, out var slot)) slots.Add(slot);
+        }
+        return slots;
+    }
+
+    /// <summary>
+    /// A copy of the awaited seats, because a notice outlives the roster it was made from.
+    /// </summary>
+    /// <remarks>
+    /// The pump replaces the set whenever the roster changes, and the game thread reads notices
+    /// whenever it next draws; handing out the live set would let a frame see a roster from after
+    /// the tally it is drawn beside.
+    /// </remarks>
+    private HashSet<int> AwaitedSlots() => [.. _awaitedSlots];
 
     /// <summary>
     /// One protocol call, retried while the failure is only this attempt's.
@@ -745,11 +781,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     }
 
     /// <summary>
-    /// Keeps the tally of seats that have said they are done with the open turn.
+    /// Keeps the roster of seats that have said they are done with the open turn.
     /// </summary>
     /// <remarks>
-    /// A turn's readiness is forgotten when a later turn's arrives, so the count never carries over.
-    /// Only seats taken at match start are counted, which is the roster the server waits on.
+    /// A turn's readiness is forgotten when a later turn's arrives, so it never carries over. Only
+    /// seats held by a human player are kept, which is the roster the server waits on.
     /// </remarks>
     private void NoteReadiness(int turn, string playerId, bool ready)
     {
@@ -761,8 +797,10 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         }
         if (ready) _readyPlayerIds.Add(playerId);
         else _readyPlayerIds.Remove(playerId);
-        _notices.Enqueue(new MultiplayerNotice.ReadinessChanged(
-            turn, _readyPlayerIds.Count, _awaitedSeats));
+        // For the turn the event names, not the one this client has replayed to: the server can be
+        // a turn ahead of a client that is still applying the seal before it.
+        _notices.Enqueue(
+            new MultiplayerNotice.ReadinessChanged(turn, ReadySlots(), AwaitedSlots()));
     }
 
     private void HandleStatus(MatchStatus status)

@@ -141,7 +141,9 @@ cursor feedback remain to be validated.
   at `(16 + 72n,4)`. During a player-owned phase, the adjacent
   `(48 + 72n,4,20,20)` status cell plays the twelve-frame red rotation strip at
   `PX00129` source y 626; this is the original active-player marker rather than
-  a new border effect.
+  a new border effect. Online, the recreation writes a green `WAIT` into the
+  eight rows between a portrait and the map at y 44, for each opponent whose turn
+  is still being drafted; the original had no simultaneous turns to report.
 - City and detailed-sector gang-status markers use the 20-by-20 `PX00129`
   frames at x 492 and y 67 through 227 through the executable's exact-white-keyed
   compositor. Their white background is not part of the marker. The original

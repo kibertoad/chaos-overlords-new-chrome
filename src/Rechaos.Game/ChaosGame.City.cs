@@ -22,7 +22,7 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.Enter)) QueueBoardCommand();
         if (Pressed(keyboard, Keys.C)) OpenCommands();
         if (Pressed(keyboard, Keys.G)) CycleGang(1);
-        if (Pressed(keyboard, Keys.I)) _screens.Show(ClientScreen.Sector);
+        if (Pressed(keyboard, Keys.I)) OpenSectorDetails();
         if (Pressed(keyboard, Keys.F)) OpenFinance(FinanceScope.City, ClientScreen.City);
         if (Pressed(keyboard, Keys.R)) _screens.Show(ClientScreen.Ranking);
         if (Pressed(keyboard, Keys.T)) OpenItems();
@@ -33,12 +33,12 @@ public sealed partial class ChaosGame
         if (Pressed(keyboard, Keys.N)) OpenComlinkSend(ClientScreen.City);
         if (Pressed(keyboard, Keys.J)) OpenManagement(ClientScreen.GameInfo, ClientScreen.City);
         if (Pressed(keyboard, Keys.Space)) AdvanceTurn();
-        if (Pressed(keyboard, Keys.F5)) OpenSaveBrowser(saving: true);
-        if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false);
-        // Replays belong to a locally authoritative match. Slot saves may still capture an online
-        // match as a labelled offline snapshot, while replaying speculative online state may not.
+        // Saves and replays belong to a locally authoritative match. The multiplayer server keeps
+        // the match history after every turn, so it is resumed through Online instead.
         if (_session is null)
         {
+            if (Pressed(keyboard, Keys.F5)) OpenSaveBrowser(saving: true);
+            if (Pressed(keyboard, Keys.F9)) OpenSaveBrowser(saving: false);
             if (Pressed(keyboard, Keys.F6)) SaveReplay();
             if (Pressed(keyboard, Keys.F10)) LoadReplay();
         }
@@ -71,11 +71,7 @@ public sealed partial class ChaosGame
         {
             _cursor = selected;
             _message = string.Empty;
-            if (_citySectorClicks.Register(selected, _inputTime))
-            {
-                _screens.Show(ClientScreen.Sector);
-                _message = string.Empty;
-            }
+            if (_citySectorClicks.Register(selected, _inputTime)) OpenSectorDetails();
         }
         else
         {
@@ -181,6 +177,7 @@ public sealed partial class ChaosGame
                     OriginalSpriteLayout.ActivePlayerMarker(
                         ActivePlayerMarkerPresentation.Frame(_inputTime)), Color.White);
         }
+        DrawOpponentPlanning(batch, pixel, font);
         var playerIndex = state.Coordinator.ActivePlayer?.Value ?? 0;
         var player = state.Players[playerIndex];
         var neutralLayer = _cityOwnershipLayers[CityMapLayout.OwnershipSheet(null)];

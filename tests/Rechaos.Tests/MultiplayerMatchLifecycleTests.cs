@@ -27,8 +27,8 @@ public sealed class MultiplayerMatchLifecycleTests
 
     private static readonly IReadOnlyList<PlayerView> Roster =
     [
-        new("p1", 0, "ADA", WirePlayerStatus.Active, IsHost: true),
-        new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: false),
+        new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
+        new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
     ];
 
     private static (MatchReplayRecorder Replay, OriginalData Definitions) NewClient(
@@ -131,7 +131,7 @@ public sealed class MultiplayerMatchLifecycleTests
         IReadOnlyList<PlayerView> afterLeaving =
         [
             Roster[0],
-            new("p2", 1, "GRACE", WirePlayerStatus.Left, IsHost: false),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Left, IsHost: false),
         ];
 
         var atStart = MatchBootstrapFactory.Setup(Seed, Settings, Roster);
@@ -201,7 +201,7 @@ public sealed class MultiplayerMatchLifecycleTests
     {
         IReadOnlyList<PlayerView> cheating =
         [
-            new("p1", 0, "SMGFUNDAGE", WirePlayerStatus.Active, IsHost: true),
+            new("p1", 0, "SMGFUNDAGE", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
             Roster[1],
         ];
 
@@ -209,6 +209,75 @@ public sealed class MultiplayerMatchLifecycleTests
 
         Assert.Equal("PLAYER 1", setup.Players[0].Name);
         Assert.Equal(PlayerController.Human, setup.Players[0].Controller);
+    }
+
+    /// <summary>
+    /// Every seat wears the face its player chose, and an empty one the face the host dressed it in.
+    /// </summary>
+    /// <remarks>
+    /// The whole point of carrying the face on the roster: a player picks it on their way in, and
+    /// the seats nobody claimed are still the host's to dress, because there is nobody to ask.
+    /// </remarks>
+    [Fact]
+    public void SeatsTakeTheirPlayersOwnFaceAndLeaveTheEmptyOnesToTheSettings()
+    {
+        IReadOnlyList<PlayerView> chosen =
+        [
+            new("p1", 0, "ADA", PortraitId: 9, Status: WirePlayerStatus.Active, IsHost: true),
+            new("p2", 1, "GRACE", PortraitId: 14, Status: WirePlayerStatus.Active, IsHost: false),
+        ];
+
+        var setup = MatchBootstrapFactory.Setup(Seed, Settings, chosen);
+
+        Assert.Equal([9, 14, 2, 3, 4, 5], setup.Players.Select(player => player.PortraitId));
+        Assert.Equal(
+            [PlayerController.Human, PlayerController.Human],
+            setup.Players.Take(2).Select(player => player.Controller));
+    }
+
+    /// <summary>
+    /// A face the original atlas does not have stops the match instead of being drawn differently.
+    /// </summary>
+    /// <remarks>
+    /// The setup a city is generated from is hashed into every turn verdict, so a client that
+    /// quietly substituted a face it could draw would be playing a city no peer agrees with. Saying
+    /// so at the bootstrap is the only place it can still be explained to the player.
+    /// </remarks>
+    [Fact]
+    public void RefusesARosterFaceTheOriginalAtlasDoesNotHave()
+    {
+        IReadOnlyList<PlayerView> impossible =
+        [
+            new("p1", 0, "ADA", PortraitId: 16, Status: WirePlayerStatus.Active, IsHost: true),
+            Roster[1],
+        ];
+
+        Assert.Throws<MultiplayerProtocolException>(
+            () => MatchBootstrapFactory.Setup(Seed, Settings, impossible));
+    }
+
+    /// <summary>
+    /// Two players who chose different faces play two different matches, so the choice is deterministic.
+    /// </summary>
+    /// <remarks>
+    /// The face is not decoration: it is part of the setup the state hash is taken over, which is
+    /// what makes it safe to read from the roster and fatal to let one client invent its own.
+    /// </remarks>
+    [Fact]
+    public void TheChosenFaceRidesIntoTheHashEveryClientIsHeldTo()
+    {
+        IReadOnlyList<PlayerView> otherFace =
+        [
+            new("p1", 0, "ADA", PortraitId: 9, Status: WirePlayerStatus.Active, IsHost: true),
+            Roster[1],
+        ];
+
+        var (chosen, _) = NewClient(otherFace);
+        var (dealt, _) = NewClient();
+
+        Assert.NotEqual(
+            MatchStateHasher.ComputeSha256(dealt.State),
+            MatchStateHasher.ComputeSha256(chosen.State));
     }
 
     /// <summary>
@@ -224,12 +293,12 @@ public sealed class MultiplayerMatchLifecycleTests
     {
         IReadOnlyList<PlayerView> cheating =
         [
-            new("p1", 0, "SMGFUNDAGE", WirePlayerStatus.Active, IsHost: true),
+            new("p1", 0, "SMGFUNDAGE", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
             Roster[1],
         ];
         IReadOnlyList<PlayerView> honest =
         [
-            new("p1", 0, "PLAYER 1", WirePlayerStatus.Active, IsHost: true),
+            new("p1", 0, "PLAYER 1", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
             Roster[1],
         ];
 

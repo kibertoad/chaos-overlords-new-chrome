@@ -23,6 +23,7 @@ public sealed partial class MultiplayerMatchSession
                     0,
                     NativeSaveSerializer.CurrentFormatVersion,
                     MultiplayerProtocolVersion.Current,
+                    MultiplayerSessionVersion.Current,
                     stateHash,
                     MatchStateClone.ToBase64(_replay.State),
                     SummarizeSeats(_replay.State)),

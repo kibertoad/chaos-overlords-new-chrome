@@ -7,6 +7,7 @@ describe('database row mappers', () => {
     const match: MatchRow = {
       id: 'match',
       protocolVersion: '3' as unknown as number,
+      sessionVersion: '1' as unknown as number,
       status: 'lobby',
       settings: {
         name: 'Match',
@@ -30,6 +31,7 @@ describe('database row mappers', () => {
       turn: 0,
       formatVersion: 1,
       protocolVersion: '3' as unknown as number,
+      sessionVersion: '1' as unknown as number,
       stateHash: 'a'.repeat(64),
       uploadedByPlayerId: 'host',
       uploadedAt: now,
@@ -37,13 +39,22 @@ describe('database row mappers', () => {
     }
 
     expect(toMatch(match).protocolVersion).toBe(3)
+    expect(toMatch(match).sessionVersion).toBe(1)
     expect(toSnapshot(snapshot).protocolVersion).toBe(3)
+    expect(toSnapshot(snapshot).sessionVersion).toBe(1)
   })
 
   it('refuses an invalid database protocol version instead of emitting it', () => {
     for (const protocolVersion of [null, '', ' 3 ', 'not-a-number', -1, 2_147_483_648]) {
       const row = { protocolVersion } as unknown as MatchRow
       expect(() => toMatch(row)).toThrow(/matches\.protocol_version/)
+    }
+  })
+
+  it('refuses an invalid database session version instead of emitting it', () => {
+    for (const sessionVersion of [null, '', ' 3 ', 'not-a-number', -1, 2_147_483_648]) {
+      const row = { protocolVersion: 1, sessionVersion } as unknown as MatchRow
+      expect(() => toMatch(row)).toThrow(/matches\.session_version/)
     }
   })
 })

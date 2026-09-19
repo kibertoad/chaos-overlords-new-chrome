@@ -41,6 +41,29 @@ describe('joinMatchRequestSchema', () => {
   })
 })
 
+describe('portrait selection', () => {
+  /**
+   * The atlas has sixteen faces and no more, and the index rides into a C# `short` that the game
+   * refuses outside that range. A request carrying a seventeenth face is refused here rather than
+   * seating a player the game then cannot build a city for.
+   */
+  it('takes a face from the original atlas and nothing outside it', () => {
+    const base = { joinCode: 'ABCD2345', displayName: 'Ada' }
+    expect(safeParse(joinMatchRequestSchema, { ...base, portraitId: 0 }).success).toBe(true)
+    expect(safeParse(joinMatchRequestSchema, { ...base, portraitId: 15 }).success).toBe(true)
+    expect(safeParse(joinMatchRequestSchema, { ...base, portraitId: 16 }).success).toBe(false)
+    expect(safeParse(joinMatchRequestSchema, { ...base, portraitId: -1 }).success).toBe(false)
+    expect(safeParse(joinMatchRequestSchema, { ...base, portraitId: 1.5 }).success).toBe(false)
+  })
+
+  /** A client that predates the choice sends no face at all, and is still a legal request. */
+  it('is optional, so an older client still joins', () => {
+    expect(
+      safeParse(joinMatchRequestSchema, { joinCode: 'ABCD2345', displayName: 'Ada' }).success,
+    ).toBe(true)
+  })
+})
+
 describe('uploadSnapshotRequestSchema', () => {
   const base = { turn: 1, formatVersion: 1, stateHash: 'a'.repeat(64), seatSummaries: [] }
 

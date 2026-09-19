@@ -27,6 +27,7 @@ import type {
 export interface MatchRow {
   id: string
   protocolVersion: number
+  sessionVersion: number
   status: string
   settings: unknown
   hostPlayerId: string
@@ -46,6 +47,7 @@ export interface PlayerRow {
   slot: number
   joinOrder: number
   displayName: string
+  portraitId: number
   tokenHash: string | null
   status: string
   joinedAt: Date
@@ -87,6 +89,7 @@ export interface SnapshotRow {
   turn: number
   formatVersion: number
   protocolVersion: number
+  sessionVersion: number
   stateHash: string
   uploadedByPlayerId: string
   uploadedAt: Date
@@ -103,7 +106,8 @@ export interface EventRow {
 
 export const toMatch = (row: MatchRow): Match => ({
   id: row.id,
-  protocolVersion: databaseProtocolVersion(row.protocolVersion, 'matches.protocol_version'),
+  protocolVersion: databaseVersion(row.protocolVersion, 'matches.protocol_version'),
+  sessionVersion: databaseVersion(row.sessionVersion, 'matches.session_version'),
   status: row.status as MatchStatus,
   settings: row.settings as MatchSettings,
   hostPlayerId: row.hostPlayerId,
@@ -120,6 +124,7 @@ export const toMatch = (row: MatchRow): Match => ({
 export const toMatchInsert = (match: Match) => ({
   id: match.id,
   protocolVersion: match.protocolVersion,
+  sessionVersion: match.sessionVersion,
   status: match.status,
   name: match.settings.name,
   visibility: match.settings.visibility,
@@ -156,12 +161,17 @@ export const toTurnReport = (row: TurnReportRow): TurnReport => ({ ...row })
 
 export const toSnapshot = (row: SnapshotRow): Snapshot => ({
   ...row,
-  protocolVersion: databaseProtocolVersion(row.protocolVersion, 'snapshots.protocol_version'),
+  ...snapshotVersions(row),
 })
 
 export const toSnapshotSummary = (row: Omit<SnapshotRow, 'body'>): SnapshotSummary => ({
   ...row,
-  protocolVersion: databaseProtocolVersion(row.protocolVersion, 'snapshots.protocol_version'),
+  ...snapshotVersions(row),
+})
+
+const snapshotVersions = (row: Omit<SnapshotRow, 'body'>) => ({
+  protocolVersion: databaseVersion(row.protocolVersion, 'snapshots.protocol_version'),
+  sessionVersion: databaseVersion(row.sessionVersion, 'snapshots.session_version'),
 })
 
 export interface TakeoverVoteRow {
@@ -189,14 +199,15 @@ export const toEvent = (row: EventRow): PersistedEvent =>
 export const firstOrNull = <T>(rows: T[]): T | null => rows[0] ?? null
 
 /**
- * Normalizes a protocol version at the database boundary, before it can leak into a JSON response.
+ * Normalizes a protocol or session version at the database boundary, before it can leak into a
+ * JSON response.
  *
  * Drizzle's static row type describes the schema, but database drivers are still runtime inputs:
  * some expose numeric columns as decimal strings. The public contract deliberately does not accept
  * that representation, so adapters turn it into the one JavaScript number the valibot schema and
  * generated C# record agree on. Invalid or unsafe values fail here instead of reaching a client.
  */
-function databaseProtocolVersion(value: unknown, column: string): number {
+function databaseVersion(value: unknown, column: string): number {
   const number =
     typeof value === 'number'
       ? value
@@ -204,6 +215,6 @@ function databaseProtocolVersion(value: unknown, column: string): number {
         ? Number(value)
         : Number.NaN
   if (!Number.isInteger(number) || number < 0 || number > 2_147_483_647)
-    throw new TypeError(`${column} is not a signed 32-bit protocol version`)
+    throw new TypeError(`${column} is not a signed 32-bit version`)
   return number
 }

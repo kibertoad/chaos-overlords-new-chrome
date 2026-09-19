@@ -17,6 +17,7 @@ export function toPlayerView(player: Player, hostPlayerId: string): PlayerView {
     id: player.id,
     slot: player.slot,
     displayName: player.displayName,
+    portraitId: player.portraitId,
     status: player.status,
     isHost: player.id === hostPlayerId,
   }
@@ -36,6 +37,7 @@ export class MatchQueryService {
     return {
       id: match.id,
       protocolVersion: match.protocolVersion,
+      sessionVersion: match.sessionVersion,
       status: match.status,
       settings: match.settings,
       hostPlayerId: match.hostPlayerId,

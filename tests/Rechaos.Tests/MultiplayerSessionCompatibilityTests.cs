@@ -3,6 +3,7 @@ using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Protocol;
 using Rechaos.Multiplayer.Session;
 using Xunit;
@@ -104,15 +105,55 @@ public sealed partial class MultiplayerSessionTests
     }
 
     [Fact]
-    public void RefusesToStartAMatchFromAnotherProtocolVersion()
+    public void RefusesToStartAMatchFromAnotherSessionVersion()
     {
         var exception = Assert.Throws<MultiplayerProtocolException>(() => Running(
             matchView: View() with
             {
-                ProtocolVersion = MultiplayerProtocolVersion.Current - 1
+                SessionVersion = MultiplayerSessionVersion.Current + 1
             }));
 
-        Assert.Contains("protocol", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("session version", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// The protocol says whether this build and the server can talk, which the handshake has
+    /// already settled by the time a match is read. A match created by a client that spoke an older
+    /// one is the same stored session, so it is played rather than refused.
+    /// </summary>
+    [Fact]
+    public async Task StartsAMatchCreatedUnderAnOlderProtocolVersion()
+    {
+        var (session, _, http) = Running(
+            matchView: View() with { ProtocolVersion = MultiplayerProtocolVersion.Current - 1 });
+        using var _disposeHttp = http;
+        await using var _disposeSession = session;
+
+        Assert.False(session.IsRestoring);
+        Assert.Equal(1, session.Bootstrap.State.Coordinator.Turn);
+    }
+
+    /// <summary>A repair belonging to another session version is refused before it is decoded.</summary>
+    [Fact]
+    public async Task RefusesARepairFromAnotherSessionVersion()
+    {
+        var (session, server, http) = Running(ownPlayerId: "p2");
+        using var _ = http;
+        await using var __ = session;
+        server.Answer(HttpMethod.Get, "/snapshots/3", new SnapshotView(
+            3,
+            NativeSaveSerializer.CurrentFormatVersion,
+            MultiplayerProtocolVersion.Current,
+            MultiplayerSessionVersion.Current + 1,
+            new string('a', 64),
+            "p1",
+            "2026-09-10T12:00:00.000Z",
+            "QUJD"));
+
+        server.Events.Write(Frame(8, "snapshot.available", """{"turn":3,"stateHash":"aa"}"""));
+        var failed = await WaitFor<MultiplayerNotice.Failed>(session);
+
+        Assert.Contains("session version", failed.Reason, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -143,5 +184,22 @@ public sealed partial class MultiplayerSessionTests
 
         Assert.Contains("confirmed turn 1", failed.Reason, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/1/orders"));
+    }
+
+    /// <summary>A roster that does not seat this client is refused before a city is generated.</summary>
+    [Fact]
+    public void RefusesToStartWhenThisClientIsNotOnTheRoster()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        var handle = new MultiplayerClient(
+                http, new MultiplayerClientOptions(new Uri("http://server.test")))
+            .WithToken("cop_test")
+            .Match(MatchId);
+
+        var failure = Assert.Throws<MultiplayerProtocolException>(
+            () => MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
+                handle, BundledOriginalData.Load(), View(), "nobody", ResumeAfterSeq: 0)));
+        Assert.Contains("roster", failure.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

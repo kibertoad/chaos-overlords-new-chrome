@@ -9,6 +9,7 @@ import {
   joinCodeSchema,
   matchNameSchema,
   playerCountSchema,
+  portraitIdSchema,
   resourceIdSchema,
   seatSchema,
   seedSchema,
@@ -17,7 +18,7 @@ import {
   tokenSchema,
   turnNumberSchema,
 } from './primitives'
-import { protocolVersionSchema } from './protocol'
+import { protocolVersionSchema, sessionVersionSchema } from './protocol'
 import { aiSeatSummarySchema } from './schemas'
 import { matchSettingsSchema } from './settings'
 
@@ -50,6 +51,8 @@ export const playerViewSchema = strictObject({
   /** -1 in the lobby; the seat the match start assigned once running. */
   slot: seatSchema,
   displayName: displayNameSchema,
+  /** The overlord face this player chose; every client generates their seat with it. */
+  portraitId: portraitIdSchema,
   status: playerStatusSchema,
   isHost: boolean(),
 })
@@ -70,8 +73,10 @@ export const turnViewSchema = strictObject({
 
 export const matchViewSchema = strictObject({
   id: resourceIdSchema,
-  /** Protocol whose deterministic game rules created this match. */
+  /** Wire protocol spoken by the client that created this match. */
   protocolVersion: protocolVersionSchema,
+  /** Shape of the stored session: what a client has to understand to resume this match. */
+  sessionVersion: sessionVersionSchema,
   status: matchStatusSchema,
   settings: matchSettingsSchema,
   hostPlayerId: resourceIdSchema,
@@ -145,8 +150,10 @@ export const sealedOrdersViewSchema = strictObject({
 export const snapshotViewSchema = strictObject({
   turn: turnNumberSchema,
   formatVersion: formatVersionSchema,
-  /** Protocol whose deterministic game rules produced this snapshot. */
+  /** Wire protocol spoken by the client that produced this snapshot. */
   protocolVersion: protocolVersionSchema,
+  /** Session version these bytes belong to; a client that reads another one cannot adopt them. */
+  sessionVersion: sessionVersionSchema,
   stateHash: sha256HexSchema,
   uploadedByPlayerId: resourceIdSchema,
   uploadedAt: isoTimestampSchema,
