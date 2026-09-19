@@ -196,11 +196,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     public ChaosGame(
         string assetRoot,
         bool debugPhaseStepping = false,
-        RuntimeDiagnostics? diagnostics = null)
+        RuntimeDiagnostics? diagnostics = null,
+        string? screenshotFolder = null)
     {
         _assetRoot = assetRoot;
         _debugPhaseStepping = debugPhaseStepping;
         _diagnostics = diagnostics;
+        ConfigureScreenshotOutput(screenshotFolder);
         _screens.Changed += (previous, current) => _diagnostics?.Write(
             "screen.changed",
             new Dictionary<string, string?>
@@ -362,6 +364,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         var mouse = Mouse.GetState();
         _multiSelectModifier = keyboard.IsKeyDown(Keys.LeftControl)
             || keyboard.IsKeyDown(Keys.RightControl);
+        if (Pressed(keyboard, Keys.F12)) _screenshotRequested = true;
         var altEnter = Pressed(keyboard, Keys.Enter)
             && (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt));
         if (Pressed(keyboard, Keys.F11) || altEnter) ToggleFullscreen();
@@ -673,7 +676,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (_introMoviesPlaying)
         {
             DrawIntroMovie(_batch);
-            base.Draw(gameTime);
+            CompleteDraw(gameTime);
             return;
         }
         var viewport = GraphicsDevice.Viewport;
@@ -699,19 +702,19 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             DrawGameMenu(_batch, _pixel, _font);
             DrawReconnectPopup(_batch, _pixel, _font);
             _batch.End();
-            base.Draw(gameTime);
+            CompleteDraw(gameTime);
             return;
         }
         if (!_gameMenuOpen && DrawSeparatedSlidingPanel(viewport, slideOffset))
         {
             DrawReconnectPopupOverCurrentFrame(viewport);
-            base.Draw(gameTime);
+            CompleteDraw(gameTime);
             return;
         }
         if (DrawFilteredLastTurnEvents(viewport, slideOffset))
         {
             DrawReconnectPopupOverCurrentFrame(viewport);
-            base.Draw(gameTime);
+            CompleteDraw(gameTime);
             return;
         }
         var transform = Matrix.CreateTranslation(slideOffset, 0, 0)
@@ -809,8 +812,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         DrawGameMenu(_batch, _pixel, _font);
         DrawReconnectPopup(_batch, _pixel, _font);
         _batch.End();
-        base.Draw(gameTime);
+        CompleteDraw(gameTime);
     }
+
     private void HandleClick(Point point)
     {
         if (HandleOnlineErrorPopupClick(point) || HandleReconnectPopupClick(point)) return;

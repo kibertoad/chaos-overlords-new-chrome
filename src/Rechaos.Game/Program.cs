@@ -35,7 +35,8 @@ try
     using var game = new ChaosGame(
         assetRoot,
         args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase),
-        diagnostics);
+        diagnostics,
+        Path.Combine(AppContext.BaseDirectory, "screenshots"));
     if (platformSmokeTest)
         return 0;
     game.Run();

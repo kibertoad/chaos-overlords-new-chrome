@@ -63,3 +63,6 @@ nunit-*.xml
 
 # Local process cleanup audit trail
 orphanCleanupLog.md
+
+# User-captured F12 screenshots
+screenshots/

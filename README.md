@@ -133,6 +133,9 @@ presentation-only conveniences that make the original systems easier to read:
 - Windowed and borderless-fullscreen modes can be toggled globally with F11 or
   Alt+Enter, and foreground panel motion can be disabled without changing game
   rules or deterministic state.
+- F12 captures the finished native window backbuffer as a timestamped PNG in
+  the game-local `screenshots` folder; captures remain local and are ignored by
+  Git.
 - Options can explicitly export a bounded support ZIP to the local application-
   data `Diagnostics` directory. It contains recent client/session events and
   privacy-filtered crash summaries for startup, display, audio, and crash
@@ -187,6 +190,7 @@ asynchronously, but every client still applies them in the same sealed order.
 | Scenario information | J | Click Game Info |
 | Presentation and audio options | O | Click Options, then adjust the available gameplay-presentation, display, and audio choices |
 | Windowed/fullscreen display | F11 or Alt+Enter | Use either shortcut from any screen; the choice is remembered between launches |
+| Save a screenshot | F12 | Writes the finished native window backbuffer as a PNG to the game-local `screenshots` folder |
 | Planning timer (setup) | L | Click None, 30 Seconds, 2 Minutes, or 5 Minutes |
 | Help | F1 | Click Help on the title screen; point at the topic list or article and use the mouse wheel to scroll it |
 | Online play | Tab between enabled fields; Left/Right turn your overlord face; Enter creates or connects; F5 refreshes the browser | The form asks what you want to do, who you are, which session, and last which server: pick Host A New Game or Join With A Code, the arrows beside the face pick it, Paste fills the join code, Browse Games and Unfinished Sessions are the other ways in, and Copy copies the join code from the lobby |
