@@ -15,6 +15,11 @@ public static class CombatPanelLayout
     private const int ForceBarY = 114;
     private const int ForceBarStride = 7;
     private const int ForceBarWidth = 60;
+    private const int LeftItemX = 100;
+    private const int RightItemX = 289;
+    private const int ItemTop = 48;
+    private const int ItemStride = 49;
+    private const int ItemSize = 48;
 
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Sector => SharedPanelLayout.At(31, 11, 54, 52);
@@ -63,22 +68,14 @@ public static class CombatPanelLayout
         return new Rectangle(cell.X + 8, cell.Y + 8, 48, 64);
     }
 
-    public static Point WeaponItem(bool right)
+    public static Rectangle EquipmentItem(bool right, int slot)
     {
-        var cell = right ? RightWeapon : LeftWeapon;
-        return new Point(cell.Center.X, cell.Y + 27);
-    }
-
-    public static Point ArmorItem(bool right)
-    {
-        var cell = right ? RightEquipment : LeftEquipment;
-        return new Point(cell.Center.X, cell.Y + 13);
-    }
-
-    public static Point MiscellaneousItem(bool right)
-    {
-        var cell = right ? RightEquipment : LeftEquipment;
-        return new Point(cell.Center.X, cell.Y + 40);
+        if (slot is < 0 or > 2) throw new ArgumentOutOfRangeException(nameof(slot));
+        return SharedPanelLayout.At(
+            right ? RightItemX : LeftItemX,
+            ItemTop + ItemStride * slot,
+            ItemSize,
+            ItemSize);
     }
 
     public static Rectangle ForceBar(bool right, int track)

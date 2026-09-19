@@ -73,9 +73,9 @@ public sealed partial class ChaosGame
         var damage = gang.Id == clip.Defender ? CombatDamage(gameEvent, clip) : 0;
         DrawDetailedCombatForce(batch, pixel, rightSide, gang.Force, damage);
 
-        DrawCombatItem(batch, state, eventWeapon ?? gang.WeaponItemId, CombatPanelLayout.WeaponItem(rightSide));
-        DrawCombatItem(batch, state, gang.ArmorItemId, CombatPanelLayout.ArmorItem(rightSide));
-        DrawCombatItem(batch, state, gang.MiscellaneousItemId, CombatPanelLayout.MiscellaneousItem(rightSide));
+        DrawCombatItem(batch, state, eventWeapon ?? gang.WeaponItemId, CombatPanelLayout.EquipmentItem(rightSide, 0));
+        DrawCombatItem(batch, state, gang.ArmorItemId, CombatPanelLayout.EquipmentItem(rightSide, 1));
+        DrawCombatItem(batch, state, gang.MiscellaneousItemId, CombatPanelLayout.EquipmentItem(rightSide, 2));
     }
 
     private void DrawPoliceCombatant(SpriteBatch batch, Texture2D pixel, PixelFont font, bool rightSide)
@@ -87,19 +87,19 @@ public sealed partial class ChaosGame
         DrawDetailedCombatForce(batch, pixel, rightSide, ManualRules.MaximumForce, 0);
     }
 
-    private void DrawCombatItem(SpriteBatch batch, MatchState state, short? itemId, Point center)
+    private void DrawCombatItem(SpriteBatch batch, MatchState state, short? itemId, Rectangle aperture)
     {
         if (itemId is not { } resolved || resolved < 0 || resolved >= state.Definitions.Items.Count) return;
         var item = state.Definitions.Items[resolved];
         if (resolved < _itemRotationTextures.Length && _itemRotationTextures[resolved] is { } rotation)
         {
-            batch.Draw(rotation, new Rectangle(center.X - 24, center.Y - 24, 48, 48),
+            batch.Draw(rotation, aperture,
                 ItemRotationPresentation.Frame(item.CombatPortraitFrame), Color.White);
             return;
         }
 
         if (_itemPortraits is not null)
-            batch.Draw(_itemPortraits, new Rectangle(center.X - 15, center.Y - 15, 30, 30),
+            batch.Draw(_itemPortraits, new Rectangle(aperture.Center.X - 15, aperture.Center.Y - 15, 30, 30),
                 OriginalSpriteLayout.ItemPortrait(resolved), Color.White);
     }
 

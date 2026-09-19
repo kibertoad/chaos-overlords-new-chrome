@@ -691,7 +691,10 @@ frame into the matching equipment aperture. It is therefore presentation data,
 not an economic or statistic modifier. The recreation names the field
 `CombatPortraitFrame`, preserves its historical `Unknown` JSON property name,
 and uses the recovered frame rather than scaling the compact `PX04999` icon in
-detailed combat.
+detailed combat. The backing-buffer apertures are `(100,192)`, `(100,241)`,
+`(100,290)` on the left and `(289,192)`, `(289,241)`, `(289,290)` on the right;
+the combat panel buffer begins at y=144, yielding panel-local y positions 48,
+97, and 146.
 
 The same `0x0042e040` branches recover the exact paired animation mapping.
 For a normal-direction unarmed attack, base Martial Arts greater than zero

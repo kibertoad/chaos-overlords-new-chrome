@@ -509,7 +509,9 @@ sector tile uses local bounds `(31,11,54,52)`, with the code at local
 and y=121, beginning two pixels inside each portrait. The 64-by-64 frames use
 inset screen apertures `(254,254)` and `(327,254)` rather
 than stretching across the wider 67-pixel cells, preserving their green
-dividers. The map art occupies only the fitted 52-pixel-high part of its sector aperture, with
+dividers. Each combatant's weapon, armor, and miscellaneous item uses a 48-by-48
+aperture: local origins `(100,48)`, `(100,97)`, `(100,146)` on the left and
+`(289,48)`, `(289,97)`, `(289,146)` on the right. The map art occupies only the fitted 52-pixel-high part of its sector aperture, with
 the code below it, and its single baked Cancel cell is the active hit target.
 `PX05012` is the separate paged Combat Results panel behind the right-console
 Combat Summary control. It pages affected sectors in board order rather than
