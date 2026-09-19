@@ -3969,14 +3969,15 @@ second cell. The same handler negates the stored upkeep before rendering it.
 Its no-instance force branch draws the two-character unknown marker in that
 same two-cell field.
 
-A focused recheck of `0x00414187` and its `PX05000`/`PX05022` call sites
+A focused recheck of `0x004142e7` and its `PX05000`/`PX05022` call sites
 shows that every such numeric call supplies a literal width of two and disables
-leading zeroes. For a one-digit value, the first iteration copies atlas cell
-zero (the opaque blank glyph) over the first destination cell, then the second
-copies the digit. Negative values select the minus-sign source row before that
-same two-cell walk. The verified decoded `PX05022` art contains exactly two
-green `0` glyphs at every numeric field before this overwriting occurs; it does
-not contain a value multiplier or a literal `00` suffix.
+leading zeroes. For a one-digit value, the first iteration copies an opaque
+blank glyph over the first destination cell, then the second copies the digit.
+Negative values select the red digit row and render the absolute-value digits;
+they do not select an ASCII minus glyph or allocate a third cell. The verified
+decoded `PX05022` art contains exactly two green `0` glyphs at every numeric
+field before this overwriting occurs; it does not contain a value multiplier or
+a literal `00` suffix.
 
 **Interpretation:** Gang numeric fields are not generic right-aligned strings.
 They occupy precisely the two cells beginning at the recovered field origin.
