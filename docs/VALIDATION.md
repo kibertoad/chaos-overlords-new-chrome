@@ -154,7 +154,9 @@ bundle executable, builds the `.pkg`, expands it again, and confirms the game
 payload. Windows additionally exercises silent install and uninstall. The
 manual release gate signs and verifies Windows executables and the installer
 through SSL.com eSigner, and signs the Linux `.deb` with a detached OpenPGP
-signature that it verifies against the expected key fingerprint before upload;
+signature after checking the signing configuration up front and before building;
+that signature is verified against the expected key fingerprint, and rejected if
+the key has been revoked or has expired, before upload;
 local and continuous-integration packages remain unsigned, and macOS signing and
 notarization remain deliberately out of scope.
 

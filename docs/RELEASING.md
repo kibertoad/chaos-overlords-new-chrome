@@ -142,14 +142,27 @@ environment secrets before running a `Windows/Linux` release:
   `gpg --armor --export-secret-keys <fingerprint>`.
 - `GPG_PASSPHRASE`: passphrase protecting that key.
 - `GPG_FINGERPRINT`: 40-character fingerprint of the key that must produce the
-  signature. Spaces, lowercase, and a `0x` prefix are accepted.
+  signature. Spaces, lowercase, and a `0x` prefix are accepted; a 16-character
+  long key id is not.
 
-The signer imports the key into a throwaway `GNUPGHOME` that it deletes
-afterwards, so the runner's own keyring is never touched, and it refuses to
-proceed unless the private key actually holds `GPG_FINGERPRINT`. It then verifies
-its own output through gpg's status interface and fails unless the signature
-resolves to that same key, which is what keeps a release from shipping a
-signature made by some other key that happened to be in the secret.
+Before the Linux job builds anything it runs the same signer in
+`-TestConfiguration` mode, so a missing secret, an unavailable gpg, or a key id
+given in place of a full fingerprint fails the release in seconds rather than
+after the publish and the `.deb` have already been built.
+
+The signer imports the key into a throwaway `GNUPGHOME`, so the runner's own
+keyring is never touched, and it refuses to proceed unless the private key
+actually holds `GPG_FINGERPRINT`. It then verifies its own output through gpg's
+status interface, and fails unless the signature both resolves to that same key
+and is one gpg still vouches for. A revoked or expired signing key still
+produces a `VALIDSIG` and still exits 0, so the check additionally requires a
+`GOODSIG` and rejects `REVKEYSIG`, `EXPKEYSIG` and `EXPSIG` by name. Together
+that keeps a release from shipping a signature made by some other key that
+happened to be in the secret, or by a key that has since been withdrawn.
+
+The throwaway home is deleted once the signer finishes. It holds the imported
+private key until then, so a home that cannot be deleted fails the job instead
+of being left behind on a runner that may be reused.
 
 Publish `GPG_FINGERPRINT` and the matching public key so downloads can be
 checked. Given both files from a release:

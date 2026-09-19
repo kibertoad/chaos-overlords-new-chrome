@@ -374,12 +374,7 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
-        run: |
-          $missing = @('GPG_PRIVATE_KEY', 'GPG_PASSPHRASE', 'GPG_FINGERPRINT') |
-            Where-Object { -not [Environment]::GetEnvironmentVariable($_) }
-          if ($missing.Count -ne 0) {
-            throw "Missing release-signing environment secret(s): $($missing -join ', ')."
-          }
+        run: ./tools/Invoke-GpgSigner.ps1 -TestConfiguration
 
       - name: Set up .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
