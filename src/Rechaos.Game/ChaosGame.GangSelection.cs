@@ -13,20 +13,17 @@ public sealed partial class ChaosGame
     private bool _bulkCommand;
 
     /// <summary>
-    /// Whether the Sector workspace is still the screen underneath, so a ctrl-picked selection
-    /// survives a panel opening over it. Anywhere else — the city map, a hand-off, the next turn —
-    /// leaves the workspace behind and takes the selection with it.
+    /// Whether the ctrl-picked selection survives the screen now showing, which
+    /// <see cref="GangSelectionScreens"/> decides from the panels standing open.
     /// </summary>
-    private bool KeepsGangSelection(ClientScreen screen) => screen switch
-    {
-        ClientScreen.Sector => true,
-        ClientScreen.Commands or ClientScreen.ItemInformation =>
-            _commandReturnScreen == ClientScreen.Sector,
-        ClientScreen.Gang => _gangDetailsReturnScreen == ClientScreen.Sector,
-        ClientScreen.Site => _siteDetailsReturnScreen == ClientScreen.Sector,
-        ClientScreen.SectorGangs => _sectorGangReturnScreen == ClientScreen.Sector,
-        _ => false
-    };
+    private bool KeepsGangSelection(ClientScreen screen) =>
+        GangSelectionScreens.Keeps(screen, new PanelReturnScreens
+        {
+            Commands = _commandReturnScreen,
+            GangDetails = _gangDetailsReturnScreen,
+            SiteDetails = _siteDetailsReturnScreen,
+            SectorGangs = _sectorGangReturnScreen
+        });
 
     /// <summary>Adds the gang to the ctrl-picked selection, or takes it back out.</summary>
     private void ToggleGangSelection(MatchGangState gang)

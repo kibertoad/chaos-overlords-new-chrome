@@ -8,6 +8,15 @@ public sealed class GangMultiSelectionTests
 {
     private const int Sector = 9;
 
+    /// <summary>Every panel standing directly on the Sector workspace.</summary>
+    private static PanelReturnScreens OverTheWorkspace => new()
+    {
+        Commands = ClientScreen.Sector,
+        GangDetails = ClientScreen.Sector,
+        SiteDetails = ClientScreen.Sector,
+        SectorGangs = ClientScreen.Sector
+    };
+
     [Fact]
     public void CtrlPickingTheSameGangTwiceTakesItBackOut()
     {
@@ -81,6 +90,73 @@ public sealed class GangMultiSelectionTests
         for (var count = 0; count <= MatchLimits.FriendlyGangsPerSector; count++)
             Assert.True(CityStatusMessage.Fits(GangMultiSelection.Status(count)));
         Assert.Throws<ArgumentOutOfRangeException>(() => GangMultiSelection.Status(-1));
+    }
+
+    [Fact]
+    public void PanelsOpenedOverTheWorkspaceKeepTheSelection()
+    {
+        var returns = OverTheWorkspace;
+
+        Assert.True(GangSelectionScreens.Keeps(ClientScreen.Sector, returns));
+        Assert.True(GangSelectionScreens.Keeps(ClientScreen.Commands, returns));
+        Assert.True(GangSelectionScreens.Keeps(ClientScreen.ItemInformation, returns));
+        Assert.True(GangSelectionScreens.Keeps(ClientScreen.Gang, returns));
+        Assert.True(GangSelectionScreens.Keeps(ClientScreen.Site, returns));
+        Assert.True(GangSelectionScreens.Keeps(ClientScreen.SectorGangs, returns));
+    }
+
+    [Fact]
+    public void SiteDetailsOpenedOverTheCommandOverlayKeepTheSelection()
+    {
+        // The bulk influence picker opens a site on a double-click, leaving the workspace two
+        // panels down; inspecting a site must not lose the picks the order is being given for.
+        var returns = OverTheWorkspace with { SiteDetails = ClientScreen.Commands };
+
+        Assert.True(GangSelectionScreens.Keeps(ClientScreen.Site, returns));
+    }
+
+    [Fact]
+    public void SiteDetailsOpenedOverAnotherScreenForgetTheSelection()
+    {
+        Assert.False(GangSelectionScreens.Keeps(
+            ClientScreen.Site, OverTheWorkspace with { SiteDetails = ClientScreen.Search }));
+        // The overlay itself came from the city map, so nothing in the stack is the workspace.
+        Assert.False(GangSelectionScreens.Keeps(
+            ClientScreen.Site,
+            OverTheWorkspace with
+            {
+                SiteDetails = ClientScreen.Commands,
+                Commands = ClientScreen.City
+            }));
+    }
+
+    [Fact]
+    public void LeavingTheWorkspaceForgetsTheSelection()
+    {
+        var returns = OverTheWorkspace;
+
+        Assert.False(GangSelectionScreens.Keeps(ClientScreen.City, returns));
+        Assert.False(GangSelectionScreens.Keeps(ClientScreen.Handoff, returns));
+        Assert.False(GangSelectionScreens.Keeps(ClientScreen.Hire, returns));
+        Assert.False(GangSelectionScreens.Keeps(ClientScreen.Endgame, returns));
+    }
+
+    [Fact]
+    public void PanelsOpenedOverTheCityMapForgetTheSelection()
+    {
+        var returns = new PanelReturnScreens
+        {
+            Commands = ClientScreen.City,
+            GangDetails = ClientScreen.City,
+            SiteDetails = ClientScreen.City,
+            SectorGangs = ClientScreen.City
+        };
+
+        Assert.False(GangSelectionScreens.Keeps(ClientScreen.Commands, returns));
+        Assert.False(GangSelectionScreens.Keeps(ClientScreen.ItemInformation, returns));
+        Assert.False(GangSelectionScreens.Keeps(ClientScreen.Gang, returns));
+        Assert.False(GangSelectionScreens.Keeps(ClientScreen.Site, returns));
+        Assert.False(GangSelectionScreens.Keeps(ClientScreen.SectorGangs, returns));
     }
 
     [Fact]

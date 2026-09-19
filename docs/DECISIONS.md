@@ -16,7 +16,11 @@ implementation plan.
   picked gang the rules allow, skipping the rest rather than failing whole. The
   selection is per sector and per turn: another sector, a borrowed opponent
   roster, leaving the workspace, the order itself, or the end of the turn clear
-  it.
+  it. Information panels do not count as leaving, however deep they stack — a
+  site inspected from the bulk influence picker stands two panels above the
+  workspace and comes back to the same picks. A turn ends for this purpose
+  whenever the turn on screen is replaced, including an online turn the
+  authoritative clock seals without the player submitting it.
 - Evidence: the original issued one order per gang and carried no multi-select
   affordance on the sector screen, so no native layout or handler constrains
   this addition.

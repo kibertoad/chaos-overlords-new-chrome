@@ -61,3 +61,46 @@ public sealed class GangMultiSelection
         return count == 1 ? "1 GANG SELECTED" : $"{count} GANGS SELECTED";
     }
 }
+
+/// <summary>Where each panel that can stand over the Sector workspace would return to.</summary>
+/// <remarks>
+/// Panels stack — the command overlay opens over the workspace, and site details open over the
+/// overlay when the bulk influence picker takes a double-click on a site — and each panel remembers
+/// only its own return screen. The workspace is therefore found by following that chain down.
+/// </remarks>
+public readonly record struct PanelReturnScreens
+{
+    /// <summary>Where the command overlay, and the item information panel over it, return to.</summary>
+    public ClientScreen Commands { get; init; }
+
+    /// <summary>Where the gang information panel returns to.</summary>
+    public ClientScreen GangDetails { get; init; }
+
+    /// <summary>Where the site information panel returns to.</summary>
+    public ClientScreen SiteDetails { get; init; }
+
+    /// <summary>Where the borrowed sector roster returns to.</summary>
+    public ClientScreen SectorGangs { get; init; }
+}
+
+/// <summary>Which screens leave a ctrl-picked gang selection standing.</summary>
+public static class GangSelectionScreens
+{
+    /// <summary>
+    /// Whether the Sector workspace is still the screen underneath, so a ctrl-picked selection
+    /// survives a panel opening over it. Anywhere else — the city map, a hand-off, the next turn —
+    /// leaves the workspace behind and takes the selection with it.
+    /// </summary>
+    public static bool Keeps(ClientScreen screen, PanelReturnScreens returns) => screen switch
+    {
+        ClientScreen.Sector => true,
+        ClientScreen.Commands or ClientScreen.ItemInformation => ReturnsToSector(returns.Commands),
+        ClientScreen.Gang => ReturnsToSector(returns.GangDetails),
+        ClientScreen.Site => ReturnsToSector(returns.SiteDetails)
+            || (returns.SiteDetails == ClientScreen.Commands && ReturnsToSector(returns.Commands)),
+        ClientScreen.SectorGangs => ReturnsToSector(returns.SectorGangs),
+        _ => false
+    };
+
+    private static bool ReturnsToSector(ClientScreen screen) => screen == ClientScreen.Sector;
+}
