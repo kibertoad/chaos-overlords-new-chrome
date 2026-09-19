@@ -4017,13 +4017,27 @@ from the stored duration values 26, 52, 104, and 208, then appends the closing
 `2 YEARS`, and `4 YEARS`. Scenario ids 4 through 9 write the scenario string
 alone.
 
+The second and third headers each select an independent four-string resource
+table. The AI-mentality byte selects ids `0x2e` through `0x31`, which decode as
+`GOON`, `CRIMINAL`, `CRIME LORD`, and `HOMICIDAL MANIAC`. The planning-limit
+byte selects ids `0x32` through `0x35`, which decode as `NONE`, `30 SECONDS`,
+`2 MINUTES`, and `5 MINUTES`. Direct extraction with `LoadLibraryEx` as a data
+file and `LoadStringW` from the shipped executable confirms both tables; the
+duration table is ids `0x36` through `0x39`. The six player-status labels that
+share the next resource block begin `HUMAN`, `AI`, and `ELIMINATED` at ids
+`0x3a`, `0x3b`, and `0x3c` respectively.
+
 **Interpretation:** `PX05021` is a 320-by-209 alternate panel, not the normal
 344-pixel shared template. Its source crop must be retained when drawing the
 imported panel rather than stretching it, and all dynamic x origins move 24
 pixels right from the former shared-template approximation. Consequently Game
 Information must display, for example, `GREED (6 MONTHS)` but just `SIEGE`.
+The independent planning-limit table happens to use the same visible labels as
+the setup control, so `PlanningTimerPolicy.Label` is presentation-compatible
+with the native Game Information field without conflating its stored byte with
+the duration selector.
 
-**Confidence:** High static evidence for alternate source/destination rectangles, close target, field origins, alignment, and row stride from complete handler `0x0045519d`; native capture remains useful for palette and text clipping.
+**Confidence:** High static evidence for alternate source/destination rectangles, close target, field origins, alignment, and row stride from complete handler `0x0045519d`, plus direct resource extraction for all three header tables; native capture remains useful for palette and text clipping.
 
 ### BIN-GANG-DEFINITION-001 - `PX05022` alternate definition panel
 
