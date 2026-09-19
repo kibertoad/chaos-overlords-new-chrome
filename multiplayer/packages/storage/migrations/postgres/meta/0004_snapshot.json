@@ -1,5 +1,5 @@
 {
-  "id": "6a4818ca-7864-429e-9463-0ab39bcb09f2",
+  "id": "81f63ddb-493a-4b90-a7bf-8864dbe98eed",
   "prevId": "9e96093b-e63b-431d-8f33-b8a799450eab",
   "version": "7",
   "dialect": "postgresql",
@@ -281,6 +281,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "portrait_id": {
+          "name": "portrait_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "token_hash": {
           "name": "token_hash",

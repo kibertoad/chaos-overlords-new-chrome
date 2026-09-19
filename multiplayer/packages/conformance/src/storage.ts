@@ -47,6 +47,7 @@ function playerFixture(match: Match, overrides: Partial<Player> = {}): Player {
     slot: -1,
     joinOrder: 0,
     displayName: 'P',
+    portraitId: 0,
     tokenHash: uid('hash'),
     status: 'active',
     joinedAt: new Date('2026-03-01T10:00:01.000Z'),

@@ -74,8 +74,8 @@ public sealed class MatchStateCloneTests
             [0, 1, 2, 3, 4, 5]);
         PlayerView[] roster =
         [
-            new("p1", 0, "ADA", WirePlayerStatus.Active, IsHost: true),
-            new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: false),
+            new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
+            new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
         ];
         return MatchBootstrapFactory.Create(definitions, 1996, settings, roster);
     }

@@ -9,6 +9,7 @@ import {
   joinCodeSchema,
   matchNameSchema,
   playerCountSchema,
+  portraitIdSchema,
   resourceIdSchema,
   seatSchema,
   seedSchema,
@@ -50,6 +51,8 @@ export const playerViewSchema = strictObject({
   /** -1 in the lobby; the seat the match start assigned once running. */
   slot: seatSchema,
   displayName: displayNameSchema,
+  /** The overlord face this player chose; every client generates their seat with it. */
+  portraitId: portraitIdSchema,
   status: playerStatusSchema,
   isHost: boolean(),
 })

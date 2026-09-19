@@ -25,6 +25,8 @@ const MIN_PLAYERS_TO_START = LIMITS.minPlayers
 const JOIN_CODE_ATTEMPTS = 5
 /** The host always holds the first position in the join sequence. */
 const HOST_JOIN_ORDER = 0
+/** The face a client that predates portrait selection is seated with. */
+const DEFAULT_PORTRAIT_ID = 0
 
 /** Host statuses that mean the seat is genuinely empty and the role may move. */
 const VACANT_HOST_STATUSES: ReadonlyArray<Player['status']> = ['left', 'kicked', 'computer']
@@ -79,6 +81,7 @@ export class LobbyService {
       slot: -1,
       joinOrder: HOST_JOIN_ORDER,
       displayName: request.hostDisplayName,
+      portraitId: request.hostPortraitId ?? DEFAULT_PORTRAIT_ID,
       tokenHash: await hashToken(token),
       status: 'active',
       joinedAt: now,
@@ -127,6 +130,7 @@ export class LobbyService {
       slot: -1,
       joinOrder,
       displayName: request.displayName,
+      portraitId: request.portraitId ?? DEFAULT_PORTRAIT_ID,
       tokenHash: await hashToken(token),
       status: 'active',
       joinedAt: this.deps.clock.now(),
@@ -204,6 +208,7 @@ export class LobbyService {
       slot: request.slot,
       joinOrder: match.joinCounter,
       displayName: request.displayName,
+      portraitId: request.portraitId ?? DEFAULT_PORTRAIT_ID,
       tokenHash: await hashToken(token),
       status: 'active',
       joinedAt: this.deps.clock.now(),

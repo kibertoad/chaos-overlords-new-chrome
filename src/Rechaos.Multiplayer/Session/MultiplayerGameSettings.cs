@@ -100,7 +100,7 @@ public sealed record MultiplayerGameSettings(
     }
 
     /// <summary>The original overlord portrait atlas holds sixteen faces.</summary>
-    private const short PortraitCount = 16;
+    internal const short PortraitCount = 16;
 
     /// <summary>
     /// Enums travel as their numeric value, not their name.

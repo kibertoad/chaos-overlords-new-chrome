@@ -48,6 +48,8 @@ export const players = sqliteTable(
     slot: integer('slot').notNull().default(-1),
     joinOrder: integer('join_order').notNull().default(0),
     displayName: text('display_name').notNull(),
+    /** Index into the original sixteen-face overlord atlas; defaults to the first for older rows. */
+    portraitId: integer('portrait_id').notNull().default(0),
     /** Null once revoked; SQL equality never matches null, so a revoked token resolves to nobody. */
     tokenHash: text('token_hash').unique(),
     status: text('status').notNull(),

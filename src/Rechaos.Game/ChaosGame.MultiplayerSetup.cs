@@ -28,6 +28,18 @@ public sealed partial class ChaosGame
         _screens.Show(ClientScreen.Lobby);
     }
 
+    /// <summary>
+    /// A roster face, as the screens may draw it.
+    /// </summary>
+    /// <remarks>
+    /// Clamped rather than trusted: this is a number a server sent, and the drawing code indexes the
+    /// atlas with it. A face outside the atlas still stops the match — see
+    /// <see cref="MatchBootstrapFactory"/>, which refuses one rather than seating a city nobody else
+    /// generated — but that refusal belongs to the bootstrap, not to a frame being drawn.
+    /// </remarks>
+    private static short OnlinePortrait(PlayerView player) => checked((short)Math.Clamp(
+        player.PortraitId, 0, PlayerPortraitLayout.Count - 1));
+
     /// <summary>Names the session, falling back to the one the host would have been given.</summary>
     private string SessionNameOrDefault()
     {

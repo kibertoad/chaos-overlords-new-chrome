@@ -44,6 +44,7 @@ public static class Program
                 // the lobby flow the two-client match cannot exercise from a join code.
                 new MatchSettings("SMOKE CITY", 2, 0, MatchVisibility.Public, settings.ToWire()),
                 "ADA",
+                HostPortraitId: 0,
                 Password: null,
                 MultiplayerProtocolVersion.Current,
                 MultiplayerSessionVersion.Current),
@@ -62,7 +63,8 @@ public static class Program
             + $"{listing.Status})");
 
         var guest = await anonymous.JoinAsync(
-            new JoinMatchRequest(host.JoinCode, "GRACE", Password: null), CancellationToken.None);
+            new JoinMatchRequest(host.JoinCode, "GRACE", PortraitId: 1, Password: null),
+            CancellationToken.None);
         Console.WriteLine($"joined as {guest.Player.Id}");
 
         var hostMatch = anonymous.WithToken(host.Token).Match(host.Match.Id);

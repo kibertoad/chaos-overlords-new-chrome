@@ -22,8 +22,8 @@ public sealed partial class MultiplayerSessionTests
 
     private static readonly IReadOnlyList<PlayerView> Roster =
     [
-        new("p1", 0, "ADA", WirePlayerStatus.Active, IsHost: true),
-        new("p2", 1, "GRACE", WirePlayerStatus.Active, IsHost: false),
+        new("p1", 0, "ADA", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
+        new("p2", 1, "GRACE", PortraitId: 1, Status: WirePlayerStatus.Active, IsHost: false),
     ];
 
     /// <summary>

@@ -172,6 +172,39 @@ describe('multiplayer kernel', () => {
     expect(legacySnapshot?.sessionVersion).toBe(1)
   })
 
+  /**
+   * The face is the one thing a player brings to the roster besides their name, and every client
+   * generates that seat's overlord from it, so it has to survive create, join and the read back.
+   */
+  it('seats each player under the face they chose, and the first face when none was sent', async () => {
+    const host = await kernel.lobby.createMatch({
+      settings: {
+        name: 'Faces',
+        maxPlayers: 3,
+        turnTimerSeconds: 0,
+        visibility: 'private',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Host',
+      hostPortraitId: 7,
+    })
+    const guest = await kernel.lobby.join({
+      joinCode: host.joinCode,
+      displayName: 'Guest',
+      portraitId: 12,
+    })
+    const legacy = await kernel.lobby.join({ joinCode: host.joinCode, displayName: 'Legacy' })
+    expect(host.player.portraitId).toBe(7)
+    expect(guest.player.portraitId).toBe(12)
+    expect(legacy.player.portraitId).toBe(0)
+    const view = await kernel.query.view((await principalOf(guest.token)).match)
+    expect(view.players.map((player) => [player.displayName, player.portraitId])).toEqual([
+      ['Host', 7],
+      ['Guest', 12],
+      ['Legacy', 0],
+    ])
+  })
+
   it('allows late joining only into a never-human computer slot', async () => {
     const host = await kernel.lobby.createMatch({
       settings: {
@@ -204,9 +237,12 @@ describe('multiplayer kernel', () => {
       match: host.match.id,
       displayName: 'Late',
       slot: 3,
+      // The face that seat has worn since the match was generated, not one the latecomer picked.
+      portraitId: 9,
     })
     expect(joined.player.slot).toBe(3)
     expect(joined.player.status).toBe('active')
+    expect(joined.player.portraitId).toBe(9)
     await expect(
       kernel.lobby.joinRunning({
         match: host.joinCode,
