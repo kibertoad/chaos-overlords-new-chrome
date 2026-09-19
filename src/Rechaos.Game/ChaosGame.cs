@@ -369,8 +369,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         PumpBugReportSend();
         // Before the planning timer, so a turn that resolved on the server is adopted even on the
         // frame the local clock would otherwise have taken over the loop.
-        PumpOnlineNotices();
-        SendOnlineDraft();
+        UpdateOnlineSession();
         var rightClicked = PointerButtonEdges.Pressed(
             mouse.RightButton, _previousMouse.RightButton);
         if (!_gameMenuOpen && UpdatePlanningTimer(gameTime.TotalGameTime))
@@ -445,7 +444,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     else if (!_screens.Back()) Exit();
                 }
             }
-            if (!_gameMenuOpen) switch (_screens.Current)
+            if (!_gameMenuOpen && !TakeoverVoteBlocksInput) switch (_screens.Current)
             {
                 case ClientScreen.Title:
                     UpdateTitle(keyboard);

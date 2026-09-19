@@ -61,7 +61,23 @@ public abstract record MultiplayerNotice
     /// <param name="Turn">The turn that was applied.</param>
     /// <param name="State">A copy for the interface; the session keeps its own.</param>
     /// <param name="StateHash">What this client reported for that turn.</param>
-    public sealed record TurnResolved(int Turn, MatchState State, string StateHash) : MultiplayerNotice;
+    /// <param name="IncludedOwnOrders">
+    /// Whether the sealed set carried a document for this client's seat.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// <paramref name="IncludedOwnOrders"/> is the sealed set's own word for it, not what this
+    /// client believes it sent. A turn that seals on the clock takes whatever draft had reached the
+    /// server, and a draft still in flight when the deadline passed did not — so the interface can
+    /// only tell the player which of those happened by reading the set the turn was actually
+    /// resolved from.
+    /// </para>
+    /// </remarks>
+    public sealed record TurnResolved(
+        int Turn,
+        MatchState State,
+        string StateHash,
+        bool IncludedOwnOrders) : MultiplayerNotice;
 
     /// <summary>
     /// Clients disagreed about the state after a turn, and the match is paused until it is repaired.

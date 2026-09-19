@@ -12,9 +12,6 @@ public sealed partial class ChaosGame
 {
     private static readonly Rectangle StopReconnectButton = new(222, 354, 196, 28);
 
-    private static readonly Rectangle TakeoverVoteWait = new(164, 300, 140, 32);
-    private static readonly Rectangle TakeoverVoteComputer = new(336, 300, 140, 32);
-
     private void DrawOnline(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         if (_online.Stage == MultiplayerStage.History)
@@ -379,6 +376,11 @@ public sealed partial class ChaosGame
     /// A disconnection takes the line over, because it explains everything else on it: a countdown
     /// that is still running and a turn that is not resolving mean something quite different when the
     /// server has stopped answering, and the player is the one who can do something about it.
+    ///
+    /// An open vote on this player's own seat takes the line over for the same reason, and it is
+    /// the only place they are told: the modal that asks everyone else about them is deliberately
+    /// not shown to them (see <see cref="MultiplayerUiState.CurrentTakeoverVote"/>), and without
+    /// this they would be looking at a stopped clock with nothing to explain it.
     /// </remarks>
     private string OnlineTurnStatus()
     {
@@ -386,6 +388,11 @@ public sealed partial class ChaosGame
             return $"RECONNECTING TO THE SERVER  ATTEMPT {_online.ReconnectAttempt}";
         if (_online.TurnSyncError.Length > 0)
             return $"TURN SYNC ERROR  {_online.TurnSyncError}";
+        if (_online.OwnTakeoverVote is { } ownVote)
+        {
+            return $"YOU MISSED TURN {ownVote.Turn}  THE OTHER PLAYERS ARE VOTING ON "
+                + "COMPUTER CONTROL OF YOUR SEAT";
+        }
         return _online.Stage switch
         {
             MultiplayerStage.WaitingForSeal =>
@@ -482,22 +489,5 @@ public sealed partial class ChaosGame
             transformMatrix: VirtualInput.Transform(viewport));
         DrawReconnectPopup(_batch, _pixel, _font);
         _batch.End();
-    }
-
-    private void DrawTakeoverVote(SpriteBatch batch, Texture2D pixel, PixelFont font)
-    {
-        if (_gameMenuOpen || _online.CurrentTakeoverVote is not { } vote || _session is null) return;
-        var panel = new Rectangle(120, 154, 400, 198);
-        batch.Draw(pixel, panel, new Color(6, 12, 12, 248));
-        DrawBorder(batch, pixel, panel, Color.Gold, 2);
-        DrawCentered(font, batch, "PLAYER ABSENT", 174, Color.Gold, 2);
-        DrawCentered(font, batch, vote.DisplayName.ToUpperInvariant(), 212, Color.White, 1);
-        DrawCentered(font, batch, $"MISSED TURN {vote.Turn}", 232, new Color(150, 165, 165), 1);
-        var eligible = _online.Match?.Players.Count(player => player.Status == WirePlayerStatus.Active) ?? 0;
-        var approvals = vote.Votes.Count(entry => entry.Value == TakeoverChoice.Computer);
-        DrawCentered(font, batch, $"AI APPROVALS {approvals}/{eligible}  UNANIMOUS REQUIRED", 256,
-            new Color(150, 165, 165), 1);
-        DrawButton(batch, pixel, font, TakeoverVoteWait, "WAIT", true);
-        DrawButton(batch, pixel, font, TakeoverVoteComputer, "USE AI", true);
     }
 }

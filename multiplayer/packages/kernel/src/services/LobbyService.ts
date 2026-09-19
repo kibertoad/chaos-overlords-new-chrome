@@ -492,7 +492,6 @@ export class LobbyService {
       return
     }
     await this.turns.openTakeoverPrompt(match.id, target.id, match.currentTurn)
-    await this.turns.pauseForTakeoverVote(match.id)
     if (target.id === match.hostPlayerId) {
       const successor = remaining[0] as Player
       await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {

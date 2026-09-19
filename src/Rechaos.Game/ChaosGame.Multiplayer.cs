@@ -298,6 +298,7 @@ public sealed partial class ChaosGame
             return;
         }
         _online.Match = view;
+        _online.SelfPlayerId = _session.PlayerId;
         _online.DeadlineAt = _session.Bootstrap.Deadline;
         _online.SeatedSeats = view.Players.Count(player => player.Slot >= 0);
         ResetMatchPresentation(_session.Bootstrap.State);
@@ -426,6 +427,21 @@ public sealed partial class ChaosGame
     private void CloseOnlinePlanning() => _actions = null;
 
     /// <summary>
+    /// Everything an online match needs of a frame, in the order it needs it.
+    /// </summary>
+    /// <remarks>
+    /// Notices first, so a turn that resolved on the server is adopted before anything reads what
+    /// the player is planning; then the draft, which is what preserves their work when the server's
+    /// clock seals the turn before they finish it; then the countdown they are racing.
+    /// </remarks>
+    private void UpdateOnlineSession()
+    {
+        PumpOnlineNotices();
+        SendOnlineDraft();
+        UpdateOnlineDeadlineWarnings();
+    }
+
+    /// <summary>
     /// Drains what the sessions have to say, on the game thread.
     /// </summary>
     /// <remarks>
@@ -526,9 +542,19 @@ public sealed partial class ChaosGame
                 }
                 return;
             case MultiplayerNotice.TurnResolved resolved:
+                // Read before the adopt, which reopens planning on the turn that follows: the
+                // player was cut off exactly when the seal arrived while the turn was still theirs
+                // to plan. Saying so matters because the two outcomes look identical afterwards —
+                // a new turn either way — and only one of them cost them the orders they were
+                // still giving.
+                var cutOff = _online.Stage == MultiplayerStage.Playing;
                 if (AdoptOnlineState(resolved.State))
                 {
-                    _message = "NEW TURN READY  PLAY AGAIN";
+                    _message = cutOff
+                        ? resolved.IncludedOwnOrders
+                            ? "TIME UP  THE TURN SEALED WITH THE ORDERS YOU HAD SENT"
+                            : "TIME UP  YOUR SEAT GAVE NO ORDERS THIS TURN"
+                        : "NEW TURN READY  PLAY AGAIN";
                     PlayGeneralSound(AudioRouting.OnlineTurnReadySound());
                     ShowTurnReportsOrCity();
                 }
@@ -575,9 +601,15 @@ public sealed partial class ChaosGame
                 return;
             case MultiplayerNotice.TakeoverVoteClosed closed:
                 _online.TakeoverVotes.Remove(closed.PlayerId);
-                _message = closed.ComputerControl
-                    ? "PLAYERS APPROVED COMPUTER CONTROL"
-                    : "THE PLAYER RETURNED  TAKEOVER VOTE CANCELLED";
+                var ownSeat = string.Equals(
+                    closed.PlayerId, _online.SelfPlayerId, StringComparison.Ordinal);
+                _message = (closed.ComputerControl, ownSeat) switch
+                {
+                    (true, true) => "THE OTHER PLAYERS GAVE YOUR SEAT TO THE COMPUTER",
+                    (true, false) => "PLAYERS APPROVED COMPUTER CONTROL",
+                    (false, true) => "YOU ARE BACK IN THE MATCH  THE VOTE ON YOUR SEAT IS OFF",
+                    (false, false) => "THE PLAYER RETURNED  TAKEOVER VOTE CANCELLED",
+                };
                 return;
             case MultiplayerNotice.DeadlineChanged deadline:
                 _online.DeadlineAt = deadline.DeadlineAt;
@@ -686,27 +718,6 @@ public sealed partial class ChaosGame
         if (_activeMultiplayerRecovery is { Completed: false } recovery)
             UpdateOnlineRecovery(recovery with { CleanExit = true });
         EndOnlineMatch("LEFT THE MATCH");
-    }
-
-    private bool HandleTakeoverVoteClick(Point point)
-    {
-        if (_online.CurrentTakeoverVote is not { } vote || _session is null) return false;
-        TakeoverChoice? choice = point switch
-        {
-            _ when TakeoverVoteWait.Contains(point) => TakeoverChoice.Wait,
-            _ when TakeoverVoteComputer.Contains(point) => TakeoverChoice.Computer,
-            _ => null,
-        };
-        if (choice is { } selected)
-        {
-            Forget(
-                _session.VoteOnTakeoverAsync(vote.PlayerId, selected),
-                "multiplayer.takeover-vote.failed");
-            _message = selected == TakeoverChoice.Wait
-                ? "VOTED TO WAIT FOR THE PLAYER"
-                : "VOTED TO USE COMPUTER CONTROL";
-        }
-        return true;
     }
 
     private bool HandleReconnectPopupClick(Point point)

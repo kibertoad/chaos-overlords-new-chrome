@@ -55,10 +55,30 @@ internal sealed class MultiplayerUiState
 {
     internal Dictionary<string, TakeoverVotePrompt> TakeoverVotes { get; } = new(StringComparer.Ordinal);
 
-    internal TakeoverVotePrompt? CurrentTakeoverVote => TakeoverVotes.Values
-        .OrderBy(vote => vote.Turn)
-        .ThenBy(vote => vote.PlayerId, StringComparer.Ordinal)
-        .FirstOrDefault();
+    /// <summary>This client's own player id in the running match, or empty when there is none.</summary>
+    internal string SelfPlayerId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The absence the player is being asked to vote on, if any.
+    /// </summary>
+    /// <remarks>
+    /// Never the player's own seat — see <see cref="TakeoverVotePolicy.SeatToVoteOn"/>, which is
+    /// where that rule and its reasons live. What their own absence means for them is said on the
+    /// turn status line instead; see <see cref="OwnTakeoverVote"/>.
+    /// </remarks>
+    internal TakeoverVotePrompt? CurrentTakeoverVote =>
+        TakeoverVotePolicy.SeatToVoteOn(
+                TakeoverVotes.Values.Select(vote => (vote.PlayerId, vote.Turn)), SelfPlayerId)
+            is { } playerId && TakeoverVotes.TryGetValue(playerId, out var prompt)
+            ? prompt
+            : null;
+
+    /// <summary>The open vote about this client's own seat, when the player missed a deadline.</summary>
+    internal TakeoverVotePrompt? OwnTakeoverVote =>
+        SelfPlayerId.Length > 0 && TakeoverVotes.TryGetValue(SelfPlayerId, out var vote)
+            ? vote
+            : null;
+
     internal MultiplayerStage Stage { get; set; } = MultiplayerStage.Connect;
     internal int RecoverySelection { get; set; }
     internal int DiscoverySelection { get; set; }
@@ -225,6 +245,7 @@ internal sealed class MultiplayerUiState
         ConnectionErrorCopyStatus = string.Empty;
         ServerStatus = string.Empty;
         TakeoverVotes.Clear();
+        SelfPlayerId = string.Empty;
         Password.Set(string.Empty);
         JoinCode.Set(string.Empty);
         SessionName.Set(string.Empty);

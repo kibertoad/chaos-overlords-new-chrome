@@ -143,9 +143,70 @@ public sealed class PlanningTimer
         : PlanningTimerPolicy.BarWidth;
 }
 
+/// <summary>
+/// The warnings for an online turn's countdown, which the server owns.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A <see cref="PlanningTimer"/> is deliberately never armed online — see
+/// <see cref="ChaosGame.StartPlanningTimer"/> — so the only clock there is the server's turn
+/// deadline. That left the online countdown silent: a player planning a turn heard nothing as their
+/// time ran out, while the same match played hot-seat warned them twice. This watches the deadline
+/// rather than running one, so nothing it does can seal a turn or disagree with the server about
+/// when the turn ends.
+/// </para>
+/// <para>
+/// Each warning sounds once per deadline. A turn whose clock is restarted — an absence vote
+/// closing, a desync pause lifting — is a new deadline and is warned about again, because the
+/// player really does have a fresh countdown to hear out.
+/// </para>
+/// </remarks>
+public sealed class OnlineDeadlineWarnings
+{
+    private int _turn = -1;
+    private DateTimeOffset? _deadline;
+
+    /// <summary>The highest warning slot already sounded for <see cref="_deadline"/>.</summary>
+    private int _sounded;
+
+    /// <summary>
+    /// The warning owed for this frame, if any.
+    /// </summary>
+    /// <remarks>
+    /// Never <see cref="PlanningTimerSignal.Expired"/>: a client does not end an online turn, and
+    /// answering the deadline locally is exactly what the online path must not do.
+    /// </remarks>
+    public PlanningTimerSignal Advance(int turn, DateTimeOffset? deadline, DateTimeOffset now)
+    {
+        if (turn != _turn || deadline != _deadline)
+        {
+            _turn = turn;
+            _deadline = deadline;
+            _sounded = 0;
+        }
+        if (deadline is not { } dueAt) return PlanningTimerSignal.None;
+        if (PlanningTimerPolicy.WarningSoundSlot(dueAt - now) is not { } slot
+            || slot <= _sounded)
+        {
+            return PlanningTimerSignal.None;
+        }
+        _sounded = slot;
+        return slot == 7 ? PlanningTimerSignal.LongWarning : PlanningTimerSignal.FinalWarning;
+    }
+
+    /// <summary>Forgets the deadline being watched, so the next one warns from the start.</summary>
+    public void Stop()
+    {
+        _turn = -1;
+        _deadline = null;
+        _sounded = 0;
+    }
+}
+
 public sealed partial class ChaosGame
 {
     private readonly PlanningTimer _planningTimer = new();
+    private readonly OnlineDeadlineWarnings _onlineDeadlineWarnings = new();
     private PlanningTimeLimit _selectedPlanningTimeLimit = PlanningTimeLimit.None;
 
     private void SelectPlanningTimeLimit(PlanningTimeLimit limit)
@@ -225,18 +286,67 @@ public sealed partial class ChaosGame
         }
     }
 
+    /// <summary>
+    /// Sounds the online countdown's warnings, which the server's deadline drives.
+    /// </summary>
+    /// <remarks>
+    /// Only while the turn is still the player's to plan. Once it is submitted the countdown is
+    /// about how long the other players have, and hurrying somebody who has already finished is
+    /// noise.
+    /// </remarks>
+    private void UpdateOnlineDeadlineWarnings()
+    {
+        if (_session is null || !_online.PlanningIsOpen)
+        {
+            _onlineDeadlineWarnings.Stop();
+            return;
+        }
+        switch (_onlineDeadlineWarnings.Advance(
+            _online.PlanningTurn, _online.DeadlineAt, DateTimeOffset.UtcNow))
+        {
+            case PlanningTimerSignal.LongWarning:
+                PlayGeneralSound(GeneralSoundSlot.CountdownWarning);
+                return;
+            case PlanningTimerSignal.FinalWarning:
+                PlayGeneralSound(GeneralSoundSlot.FinalSecondWarning);
+                return;
+            default:
+                return;
+        }
+    }
+
+    /// <summary>
+    /// The countdown bar for an online turn, or null when there is no clock to draw one from.
+    /// </summary>
+    /// <remarks>
+    /// Recomputed from the deadline every frame rather than counted down, like the line on the city
+    /// footer, so a clock the server restarts — an absence vote closing, a desync pause lifting —
+    /// corrects itself on the next frame. A paused turn has no deadline and so draws no bar, which
+    /// is the honest picture: there is nothing running to show.
+    /// </remarks>
+    private int? OnlineBarWidth()
+    {
+        if (!_online.PlanningIsOpen || _online.DeadlineAt is not { } deadline) return null;
+        var seconds = _online.Match?.Settings.TurnTimerSeconds ?? 0;
+        if (seconds <= 0) return null;
+        return PlanningTimerPolicy.VisibleBarWidth(
+            TimeSpan.FromSeconds(seconds), deadline - DateTimeOffset.UtcNow);
+    }
+
     private void DrawPlanningTimer(SpriteBatch batch, Texture2D pixel)
     {
-        if (!_planningTimer.IsActive
-            || _screens.Current is ClientScreen.Options or ClientScreen.Help
-            || _idleGangWarningOpen)
+        if (_screens.Current is ClientScreen.Options or ClientScreen.Help || _idleGangWarningOpen)
             return;
+        // Online the bar comes from the server's deadline; the local timer is never armed there.
+        var width = _session is not null
+            ? OnlineBarWidth()
+            : _planningTimer.IsActive ? _planningTimer.VisibleBarWidth(_inputTime) : null;
+        if (width is not { } visible) return;
 
-        var width = _planningTimer.VisibleBarWidth(_inputTime);
         batch.Draw(pixel, PlanningTimerLayout.Bar, Color.Black);
-        if (width > 0)
+        if (visible > 0)
             batch.Draw(pixel, new Rectangle(
                 PlanningTimerLayout.Bar.X, PlanningTimerLayout.Bar.Y,
-                width, PlanningTimerLayout.Bar.Height), Color.Lime);
+                visible, PlanningTimerLayout.Bar.Height), Color.Lime);
     }
 }

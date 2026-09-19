@@ -458,12 +458,12 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         CancellationToken cancellationToken)
     {
         if (turn < _replay.State.Coordinator.Turn) return;
-        var stateHash = await FetchAndApplySealedTurnAsync(
+        var (stateHash, includedOwnOrders) = await FetchAndApplySealedTurnAsync(
                 turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
         await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
-            turn, MatchStateClone.Of(_replay.State, _definitions), stateHash));
+            turn, MatchStateClone.Of(_replay.State, _definitions), stateHash, includedOwnOrders));
     }
 
     /// <summary>
@@ -474,7 +474,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// asked for, that turn is the one the match is waiting to resolve, and the digest is the one
     /// the log announced. A set for any other turn applied here would be a desync nobody reported.
     /// </remarks>
-    private async Task<string> FetchAndApplySealedTurnAsync(
+    /// <returns>
+    /// The hash to report, and whether the set carried a document for this client's own seat — the
+    /// one authoritative answer to "did what I sent make it into the turn".
+    /// </returns>
+    private async Task<(string StateHash, bool IncludedOwnOrders)> FetchAndApplySealedTurnAsync(
         int turn,
         string announcedOrderSetHash,
         CancellationToken cancellationToken)
@@ -506,7 +510,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             throw new MultiplayerProtocolException(
                 $"the sealed set for turn {turn} does not match the digest the server announced");
         }
-        return SealedTurnApplier.Apply(_replay, sealedOrders);
+        var includedOwnOrders = sealedOrders.Players.Any(entry => entry.Slot == Slot);
+        return (SealedTurnApplier.Apply(_replay, sealedOrders), includedOwnOrders);
     }
 
     private PendingTakeoverVote BeginTakeoverVote(string playerId, int turn)

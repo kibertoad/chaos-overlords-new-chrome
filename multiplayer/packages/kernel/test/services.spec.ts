@@ -500,6 +500,47 @@ describe('multiplayer kernel', () => {
     )
   })
 
+  /**
+   * Every way a vote opens stops the clock, not just the kick and the seal that had been wired to.
+   *
+   * A vote owns the screen on every remaining client, so time that passes behind it is time nobody
+   * can plan in. These two paths open one without a departure to trigger it: a player voting on a
+   * seat that went quiet before anyone was present to ask, and a returning player being asked about
+   * the seats they find absent. Both used to leave the countdown running, which spent a turn of
+   * planning time on a modal and could seal the turn while the vote was still up.
+   */
+  it('stops the clock for a vote that opens the question itself', async () => {
+    const { host, guest } = await startedMatchOfThree(60)
+    await kernel.lobby.leave(await principalOf(guest.token))
+    // A prompt opened before this server kept them durably: nothing on file, seat still absent.
+    await storage.takeovers.closePrompt(host.match.id, guest.player.id)
+    await kernel.turns.resumeAfterTakeoverVotes(host.match.id)
+    expect((await storage.turns.get(host.match.id, 1))?.deadlineAt).not.toBeNull()
+
+    await kernel.lobby.voteOnTakeover(await principalOf(host.token), guest.player.id, {
+      decision: 'wait',
+    })
+
+    expect(await storage.takeovers.listOpenPrompts(host.match.id)).toEqual([guest.player.id])
+    expect((await storage.turns.get(host.match.id, 1))?.deadlineAt).toBeNull()
+  })
+
+  it('stops the clock for the seats a returning player is asked about', async () => {
+    const { host, guest, third } = await startedMatchOfThree(60)
+    await kernel.lobby.leave(await principalOf(guest.token))
+    await kernel.lobby.leave(await principalOf(third.token))
+    await storage.takeovers.closePrompt(host.match.id, guest.player.id)
+    await storage.takeovers.closePrompt(host.match.id, third.player.id)
+    await kernel.turns.resumeAfterTakeoverVotes(host.match.id)
+    expect((await storage.turns.get(host.match.id, 1))?.deadlineAt).not.toBeNull()
+
+    await kernel.lobby.rejoin(await principalOf(guest.token))
+
+    // Asked about the seat still absent, and not about the one that just came back.
+    expect(await storage.takeovers.listOpenPrompts(host.match.id)).toEqual([third.player.id])
+    expect((await storage.turns.get(host.match.id, 1))?.deadlineAt).toBeNull()
+  })
+
   it('requires every present player to approve computer control exactly once', async () => {
     const { host, guest, third } = await startedMatchOfThree(60)
     await submit(await principalOf(host.token), 1, 1, true)

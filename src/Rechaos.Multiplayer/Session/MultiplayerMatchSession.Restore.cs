@@ -245,10 +245,13 @@ public sealed partial class MultiplayerMatchSession
                         $"the event history sealed turn {sealedTurn.Payload.Turn} while the "
                         + $"reconstructed match was still on turn {_replay.State.Coordinator.Turn}");
                 }
-                var stateHash = await FetchAndApplySealedTurnAsync(
+                var (stateHash, _) = await FetchAndApplySealedTurnAsync(
                     sealedTurn.Payload.Turn,
                     sealedTurn.Payload.OrderSetHash,
                     cancellationToken).ConfigureAwait(false);
+                // Whether this seat's own orders were in that set is not said on this path: these
+                // turns are history being caught up on, and the resumed state is announced by
+                // `Resumed`, which carries the submission the server holds for the open turn.
                 _unreportedSeal = (sealedTurn.Payload.Turn, stateHash);
                 return;
             case TurnConfirmedEvent confirmed:
