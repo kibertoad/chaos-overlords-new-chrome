@@ -3884,6 +3884,11 @@ part of the native layout; using the shared panel's 29-column description and
 x=199 identification origin overwrites the template labels and causes the
 identification/description overlap.
 
+**Static follow-through:** Item Information now keeps the item's three
+authored fixed 30-character rows instead of word-reflowing them. For example,
+METAL PIPE retains `TITANIUM ALLOY.`, `GOOD FOR BUSTING IN A FEW`, and `HARD
+HEADS.` on its three native screen rows.
+
 **Confidence:** High from complete renderer and input handler `0x0044b699`,
 including literal backing/destination rectangles, text destinations, fixed
 numeric helper widths, frame-wrap branch, and exit control.

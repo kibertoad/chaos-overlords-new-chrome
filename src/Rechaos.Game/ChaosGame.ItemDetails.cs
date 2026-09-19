@@ -47,7 +47,7 @@ public sealed partial class ChaosGame
             new Vector2(ItemInformationLayout.NameLeft, ItemInformationLayout.HeaderY), Color.Lime, 1);
         DrawPanelValue(font, batch, ItemInformationLayout.TypeLabel(item.Type),
             ItemInformationLayout.TypeRight, ItemInformationLayout.HeaderY);
-        foreach (var entry in WrapPanelText(item.Description, ItemInformationLayout.DescriptionColumns).Take(3)
+        foreach (var entry in ItemInformationLayout.DescriptionLines(item.Description)
                      .Select((text, row) => (text, row)))
             font.Draw(batch, entry.text,
                 new Vector2(ItemInformationLayout.DescriptionLeft,

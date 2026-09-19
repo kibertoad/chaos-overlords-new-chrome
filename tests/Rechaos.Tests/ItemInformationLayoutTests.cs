@@ -23,4 +23,19 @@ public sealed class ItemInformationLayoutTests
         Assert.Equal(new Rectangle(396, 216, 12, 7),
             GangInformationLayout.ValueField(ItemInformationLayout.RightValueLeft, 216));
     }
+
+    [Fact]
+    public void PreservesAuthoredFixedWidthDescriptionRows()
+    {
+        var description = "TITANIUM ALLOY.               "
+            + "GOOD FOR BUSTING IN A FEW     "
+            + "HARD HEADS.";
+
+        Assert.Equal(
+        [
+            "TITANIUM ALLOY.",
+            "GOOD FOR BUSTING IN A FEW",
+            "HARD HEADS."
+        ], ItemInformationLayout.DescriptionLines(description));
+    }
 }
