@@ -27,7 +27,8 @@ original-game capture confirms the screen and interaction state.
 |---|---|---|
 | `PX00129` | Main UI composite sheet: original font strip `(0,0,354,7)` containing six-pixel ASCII cells from space through `Z`, action names, player bars, arrows, buttons, portraits, message controls and command icons; diagonal `HIRED` stamp `(120,300,60,60)`; eight composable gang-status frames at `(492,67 + 20n,20,20)` for assigned/idle, uncontested/contested, and ordinary/incoming combinations, plus incoming-only `(492,227,20,20)` | High from pixel inspection, visible content, user captures, and native surface-6 copy calls; the sheet mixes opaque, pattern-mask, and exact-white-key roles rather than one alpha policy |
 | `PX00132` | Next-player/Ready handoff panel; active Overlord fills the measured 80x77 portrait aperture | High from visible labels and border pixels |
-| `PX00137`, `PX00139` | Empty and filled horizontal meter frames | Medium |
+| `PX00137` | Centered 220-by-72 legacy transport transfer-progress frame; a three-pixel green `PX00129` strip fills its single bar | High from complete loader/caller and renderer paths; deliberately unsupported legacy transport |
+| `PX00139` | Centered 220-by-72 legacy six-seat synchronization frame; the same three-pixel strip fills one stacked bar per connected slot | High from complete loader/caller and six-slot renderer paths; deliberately unsupported legacy transport |
 | `PX00138` | Circular action/command icons | High from repeated command imagery |
 | `PX00140` | Compact setup-control sheet matching `PX00143` labels | High |
 | `PX00150` | Twenty-two 20x14 city site markers in two 11-item rows and controlled/uncontrolled states; pure white is transparent | High from the complete native city marker renderer and original 1.1 captures |

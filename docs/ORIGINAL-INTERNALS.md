@@ -4451,6 +4451,39 @@ and renderer ownership.
 **Recreation status:** The modern online flow is intentionally independent. No
 legacy transport, screen, record encoding, or compatibility claim is added.
 
+### BIN-SETUP-007 - legacy transport progress sheets
+
+**Observation:** `PX00137` is loaded only by `0x0040ced0` and
+`0x0040d72f`, both reached through the original legacy connection/setup paths.
+The 220-by-72 sheet is copied to the centered screen rectangle
+`(210,60)-(430,132)`. Their shared helper `0x0040d3c0` copies a three-pixel
+wide-as-progress segment from the `PX00129` green strip at `(354,0)` into the
+frame at x=298/y=105 and selects one of the legacy status-text pairs for modes
+0 through 4 or 10 through 13.
+
+`PX00139` is likewise loaded only by the legacy connected-session branches
+`0x0046a7cb` and `0x0046d22f`; `0x004726c0` selects those branches instead of
+the normal local whole-turn resolver when its legacy-session state is set. Its
+shared renderer `0x0046d77b` scans all six connection slots. Each connected
+slot with a positive progress value receives its own three-pixel green segment
+at x=298, on rows y=96 plus four times the slot; other slots are restored from
+the panel's fixed empty-bar art. It also selects the same bounded legacy status
+text family. No local-game or modern-client caller reaches either renderer.
+
+**Interpretation:** `PX00137` is the single legacy transport transfer-progress
+frame and `PX00139` is its six-seat synchronization counterpart. They are not
+city/site meters or a presentation contract for the modern public-lobby or
+join-key protocol.
+
+**Confidence:** High from the complete resource-loader call census, caller
+paths through legacy setup/session branches, exact copy rectangles, and both
+bounded progress renderers. Native timing and text phrasing are irrelevant to
+the explicitly unsupported transport.
+
+**Recreation status:** Both sheets remain extracted as original artifacts but
+are deliberately unrouted. The modern multiplayer flow supplies its own safe,
+observable session feedback and never claims legacy wire compatibility.
+
 ### BIN-HOTSEAT-002 - private handoff ordering and terminal-player path
 
 **Observation:** The outer local-game loop at `0x0046e766` counts active local
