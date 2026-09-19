@@ -140,13 +140,13 @@ public sealed partial class ChaosGame
                     new Vector2(definitionOnly ? GangDefinitionInformationLayout.DescriptionLeft : SharedPanelLayout.X(98),
                         definitionOnly ? GangDefinitionInformationLayout.DescriptionY(entry.row)
                             : SharedPanelLayout.Y(45 + entry.row * 10)), Color.Lime, 1);
-            DrawPanelValue(font, batch, gang is null ? "??" : gang.Force.ToString(),
+            DrawGangPanelValue(font, batch, gang is null ? "??" : gang.Force.ToString(),
                 definitionOnly ? GangDefinitionInformationLayout.LeftValueRight : GangInformationLayout.LeftValueRight,
                 definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92));
-            DrawPanelValue(font, batch, definition.Upkeep,
+            DrawGangPanelValue(font, batch, -definition.Upkeep,
                 definitionOnly ? GangDefinitionInformationLayout.RightValueRight : GangInformationLayout.RightValueRight,
                 definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92));
-            DrawPanelValue(font, batch, definition.TechLevel,
+            DrawGangPanelValue(font, batch, definition.TechLevel,
                 definitionOnly ? GangDefinitionInformationLayout.RightValueRight : GangInformationLayout.RightValueRight,
                 definitionOnly ? GangDefinitionInformationLayout.TechLevelY : SharedPanelLayout.Y(101));
             int[] left = [stats.Combat, stats.Defense, stats.Chaos, stats.Control, stats.Heal, stats.Influence, stats.Research];
@@ -155,9 +155,9 @@ public sealed partial class ChaosGame
             {
                 var y = definitionOnly ? GangDefinitionInformationLayout.StatisticY(index)
                     : GangInformationLayout.StatisticY(index);
-                DrawPanelValue(font, batch, left[index], definitionOnly
+                DrawGangPanelValue(font, batch, left[index], definitionOnly
                     ? GangDefinitionInformationLayout.LeftValueRight : GangInformationLayout.LeftValueRight, y);
-                DrawPanelValue(font, batch, right[index], definitionOnly
+                DrawGangPanelValue(font, batch, right[index], definitionOnly
                     ? GangDefinitionInformationLayout.RightValueRight : GangInformationLayout.RightValueRight, y);
             }
         }
@@ -183,18 +183,15 @@ public sealed partial class ChaosGame
         var techLevelY = definitionOnly ? GangDefinitionInformationLayout.TechLevelY : SharedPanelLayout.Y(101);
         batch.Draw(pixel, new Rectangle(nameLeft, nameY, 180, 10), Color.Black);
         batch.Draw(pixel, new Rectangle(descriptionLeft, descriptionY, 186, 37), Color.Black);
-        batch.Draw(pixel, new Rectangle(leftValueRight - 12, forceY, 12, 7), Color.Black);
-        batch.Draw(pixel, new Rectangle(rightValueRight - 12, forceY, 12, 7), Color.Black);
-        batch.Draw(pixel, new Rectangle(rightValueRight - 12, techLevelY, 12, 7), Color.Black);
+        batch.Draw(pixel, GangInformationLayout.ValueField(leftValueRight, forceY), Color.Black);
+        batch.Draw(pixel, GangInformationLayout.ValueField(rightValueRight, forceY), Color.Black);
+        batch.Draw(pixel, GangInformationLayout.ValueField(rightValueRight, techLevelY), Color.Black);
         for (var row = 0; row < 7; row++)
         {
             var y = definitionOnly ? GangDefinitionInformationLayout.StatisticY(row)
                 : GangInformationLayout.StatisticY(row);
-            // PX05000 reserves exactly two six-pixel glyph cells for each value.
-            // Keep the adjacent green dividers intact: widening these masks makes
-            // their surviving pixels look like punctuation beside the new value.
-            batch.Draw(pixel, new Rectangle(leftValueRight - 12, y, 12, 7), Color.Black);
-            batch.Draw(pixel, new Rectangle(rightValueRight - 12, y, 12, 7), Color.Black);
+            batch.Draw(pixel, GangInformationLayout.ValueField(leftValueRight, y), Color.Black);
+            batch.Draw(pixel, GangInformationLayout.ValueField(rightValueRight, y), Color.Black);
         }
     }
 
@@ -228,4 +225,16 @@ public sealed partial class ChaosGame
     private static void DrawPanelValue(
         PixelFont font, SpriteBatch batch, string text, int right, int y, Color color) =>
         font.Draw(batch, text, new Vector2(right - text.Length * 6, y), color, 1);
+
+    private static void DrawGangPanelValue(PixelFont font, SpriteBatch batch, int value, int rightInclusive, int y) =>
+        DrawGangPanelValue(font, batch, value.ToString(), rightInclusive, y);
+
+    private static void DrawGangPanelValue(
+        PixelFont font, SpriteBatch batch, string text, int rightInclusive, int y)
+    {
+        if (text.Length is < 1 or > 2)
+            throw new ArgumentOutOfRangeException(nameof(text), "Gang values use two native glyph cells.");
+        font.Draw(batch, text,
+            new Vector2(GangInformationLayout.ValueTextLeft(rightInclusive, text), y), Color.Lime, 1);
+    }
 }

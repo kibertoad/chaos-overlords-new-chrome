@@ -53,7 +53,10 @@ public sealed class EndgameNoticePresentationTests
         Assert.Equal(state.Outcome!.Standings.Select(standing => standing.Player),
             rows.Select(row => row.Player));
         Assert.All(state.Outcome.Standings.Zip(rows), pair =>
-            Assert.StartsWith($"{pair.First.Place}. ", pair.Second.Label));
+        {
+            Assert.Equal(pair.First.Place, pair.Second.Place);
+            Assert.Equal(state.FindPlayer(pair.First.Player)!.Setup.Name, pair.Second.Label);
+        });
     }
 
     [Fact]
@@ -64,6 +67,9 @@ public sealed class EndgameNoticePresentationTests
         Assert.Equal(new Rectangle(480, 33, 48, 48), EndgameLayout.Stats);
         Assert.Equal(new Rectangle(428, 377, 100, 48), EndgameLayout.Done);
         Assert.Equal(new Rectangle(132, 360, 64, 64), EndgameLayout.Portrait(5));
+        Assert.Equal(new Rectangle(113, 361, 16, 32), EndgameLayout.PlayerMarker(5));
+        Assert.Equal(new Rectangle(32, 144, 16, 32),
+            EndgameLayout.PlayerMarkerSource(new PlayerId(3), 3));
         Assert.Equal(new Rectangle(110, 30, 312, 393), EndgameNoticeLayout.Panel);
         Assert.Equal(new Rectangle(126, 54, 64, 64), EndgameNoticeLayout.Portrait);
         Assert.Equal(158, EndgameNoticeLayout.NameCenterX);

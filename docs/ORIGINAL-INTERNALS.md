@@ -3873,6 +3873,28 @@ description rows, and must preserve the alternate 320-pixel crop and its
 
 **Confidence:** High static evidence for resource identity, crop/destination, portrait, all recovered text/value origins, description length, statistic rows, and exit control from complete handler `0x00455b6b`; native capture remains useful for palette and label clipping.
 
+### BIN-GANG-VALUES-001 - fixed two-cell gang values retain the template zero
+
+**Observation:** The `PX05000` live-gang handler at `0x00449e80` draws its
+numeric values with the two-character integer helpers at backing x=172 and
+x=268 (screen x=276 and x=372), including all statistic rows. `PX05000`
+already supplies a third `0` glyph immediately after each such field. The
+helper paints both six-by-seven cells, right-aligns a one-character value into
+the second cell, and leaves the template glyph untouched. The same handler
+negates the stored upkeep before rendering it. Its no-instance force branch
+draws the two-character unknown marker in that same two-cell field.
+
+**Interpretation:** Gang numeric fields are not generic right-aligned strings.
+They occupy precisely the two cells ending at the recovered inclusive right
+edge, preserving the template's scale zero: `3` displays as `30`, `10` as
+`100`, and a missing Force as `??0`. Rendering a live digit before or over the
+template's three zeros produces the erroneous `300`/`??00` padding and can
+erase adjacent panel pixels.
+
+**Confidence:** High static evidence from the complete `PX05000` renderer
+`0x00449e80` and the fixed-width number helper `0x00414187`; panel asset
+inspection confirms the retained third zero.
+
 ### BIN-MOVEMENT-001 - Terminate pass before roster-ordered Move
 
 **Observation:** The whole-turn resolver `0x00472775` has two distinct movement
@@ -4436,6 +4458,13 @@ The Stats tab copies the opaque `PX00201` `(x=96, y=112, 160x64)` strip to
 fixed-width 8/8/7/6/6 digit fields, all ending at `x=419`, at vertical offsets
 37, 46, 58, 67, and 79. The recreation uses that strip and preserves the
 native field widths rather than redrawing an approximate label grid.
+
+The shared results renderer prints the unmodified player name at `(197,
+38 + 66 * displayed-row)`; it does not prefix a textual place. For ranked
+players it separately copies the 16-by-32 `PX00201` marker from
+`(16 * (place - 1), 48 + 32 * player-slot)` to `(113, 31 + 66 * displayed-row)`.
+Inactive rows have no marker. The recreation keeps competition standings for
+ordering and tie semantics while using this native visual representation.
 
 **Next validation:** Capture a multi-local elimination followed by another
 human turn to corroborate `PX00203` timing and later-slot timing, and capture

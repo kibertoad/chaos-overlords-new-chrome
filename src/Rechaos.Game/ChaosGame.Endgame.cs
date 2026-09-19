@@ -67,6 +67,9 @@ public sealed partial class ChaosGame
         {
             var row = rows[index];
             var player = state.FindPlayer(row.Player)!;
+            if (_endgameSprites is not null && row.Place > 0)
+                batch.Draw(_endgameSprites, EndgameLayout.PlayerMarker(index),
+                    EndgameLayout.PlayerMarkerSource(player.Id, row.Place), Color.White);
             if (_uiSprites is not null)
                 batch.Draw(_uiSprites, EndgameLayout.Portrait(index),
                     OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
@@ -214,7 +217,7 @@ public static class EndgameNoticeLayout
     public static Rectangle Portrait => new(126, 54, 64, 64);
 }
 
-public sealed record EndgamePlayerRow(PlayerId Player, string Label);
+public sealed record EndgamePlayerRow(PlayerId Player, int Place, string Label);
 
 public static class EndgamePresentation
 {
@@ -226,16 +229,14 @@ public static class EndgamePresentation
         var outcome = state.Outcome ?? throw new ArgumentException("Match has not ended.", nameof(state));
         return outcome.Standings.Count > 0
             ? outcome.Standings.Select(standing => new EndgamePlayerRow(
-                standing.Player, standing.Place > 0
-                    ? $"{standing.Place}. {state.FindPlayer(standing.Player)!.Setup.Name}"
-                    : state.FindPlayer(standing.Player)!.Setup.Name))
-                .ToArray()
+                standing.Player, standing.Place,
+                state.FindPlayer(standing.Player)!.Setup.Name))
+            .ToArray()
             : state.Players.OrderByDescending(player => outcome.Winners.Contains(player.Id))
                 .ThenBy(player => player.Id.Value)
                 .Select(player => new EndgamePlayerRow(player.Id,
-                    outcome.Winners.Contains(player.Id)
-                        ? $"1. {player.Setup.Name}"
-                        : player.Setup.Name))
+                    outcome.Winners.Contains(player.Id) ? 1 : 0,
+                    player.Setup.Name))
                 .ToArray();
     }
 
@@ -274,6 +275,21 @@ public static class EndgameLayout
     {
         ValidateRow(row);
         return new Rectangle(132, 30 + row * 66, 64, 64);
+    }
+
+    public static Rectangle PlayerMarker(int row)
+    {
+        ValidateRow(row);
+        return new Rectangle(113, 31 + row * 66, 16, 32);
+    }
+
+    public static Rectangle PlayerMarkerSource(PlayerId player, int place)
+    {
+        if (player.Value is < 0 or >= MatchLimits.PlayerCount)
+            throw new ArgumentOutOfRangeException(nameof(player));
+        if (place is < 1 or > MatchLimits.PlayerCount)
+            throw new ArgumentOutOfRangeException(nameof(place));
+        return new Rectangle((place - 1) * 16, 48 + player.Value * 32, 16, 32);
     }
 
     public static Vector2 Name(int row)

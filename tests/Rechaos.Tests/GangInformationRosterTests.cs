@@ -34,4 +34,15 @@ public sealed class GangInformationRosterTests
         Assert.Equal(new Rectangle(394, 273, 40, 40), GangInformationLayout.Equipment(2));
         Assert.Throws<ArgumentOutOfRangeException>(() => GangInformationLayout.Equipment(3));
     }
+
+    [Fact]
+    public void GangValueFieldsCoverOnlyTheTwoLiveGlyphCells()
+    {
+        Assert.Equal(new Rectangle(276, 243, 12, 7),
+            GangInformationLayout.ValueField(GangInformationLayout.LeftValueRight, 243));
+        Assert.Equal(282, GangInformationLayout.ValueTextLeft(
+            GangInformationLayout.LeftValueRight, "3"));
+        Assert.Equal(276, GangInformationLayout.ValueTextLeft(
+            GangInformationLayout.LeftValueRight, "10"));
+    }
 }
