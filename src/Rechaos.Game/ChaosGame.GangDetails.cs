@@ -162,13 +162,16 @@ public sealed partial class ChaosGame
             if (gang is null)
                 DrawGangPanelValue(font, batch, "??", forceLeft, forceY);
             else
-                DrawNativeTwoCellValue(font, batch, gang.Force, forceLeft, forceY);
+                DrawNativeTwoCellValue(font, batch, gang.Force, forceLeft, forceY,
+                    NativeTwoCellNumberPresentation.Kind.Baseline);
             DrawNativeTwoCellValue(font, batch, -definition.Upkeep,
                 definitionOnly ? GangDefinitionInformationLayout.RightValueLeft : GangInformationLayout.RightValueLeft,
-                definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92));
+                definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92),
+                NativeTwoCellNumberPresentation.Kind.Baseline);
             DrawNativeTwoCellValue(font, batch, definition.TechLevel,
                 definitionOnly ? GangDefinitionInformationLayout.RightValueLeft : GangInformationLayout.RightValueLeft,
-                definitionOnly ? GangDefinitionInformationLayout.TechLevelY : SharedPanelLayout.Y(101));
+                definitionOnly ? GangDefinitionInformationLayout.TechLevelY : SharedPanelLayout.Y(101),
+                NativeTwoCellNumberPresentation.Kind.Baseline);
             int[] left = [stats.Combat, stats.Defense, stats.Chaos, stats.Control, stats.Heal, stats.Influence, stats.Research];
             int[] right = [stats.Stealth, stats.Detect, stats.Strength, stats.Blade, stats.Range, stats.Fighting, stats.MartialArts];
             for (var index = 0; index < left.Length; index++)
@@ -176,9 +179,13 @@ public sealed partial class ChaosGame
                 var y = definitionOnly ? GangDefinitionInformationLayout.StatisticY(index)
                     : GangInformationLayout.StatisticY(index);
                 DrawNativeTwoCellValue(font, batch, left[index], definitionOnly
-                    ? GangDefinitionInformationLayout.LeftValueLeft : GangInformationLayout.LeftValueLeft, y);
+                    ? GangDefinitionInformationLayout.LeftValueLeft : GangInformationLayout.LeftValueLeft, y,
+                    index < 2 ? NativeTwoCellNumberPresentation.Kind.Baseline
+                        : NativeTwoCellNumberPresentation.Kind.Modifier);
                 DrawNativeTwoCellValue(font, batch, right[index], definitionOnly
-                    ? GangDefinitionInformationLayout.RightValueLeft : GangInformationLayout.RightValueLeft, y);
+                    ? GangDefinitionInformationLayout.RightValueLeft : GangInformationLayout.RightValueLeft, y,
+                    index < 2 ? NativeTwoCellNumberPresentation.Kind.Baseline
+                        : NativeTwoCellNumberPresentation.Kind.Modifier);
             }
         }
         if (_hoverPoint is { } hover)
@@ -255,12 +262,13 @@ public sealed partial class ChaosGame
         font.Draw(batch, text, new Vector2(right - text.Length * 6, y), color, 1);
 
     private static void DrawNativeTwoCellValue(
-        PixelFont font, SpriteBatch batch, int value, int left, int y)
+        PixelFont font, SpriteBatch batch, int value, int left, int y,
+        NativeTwoCellNumberPresentation.Kind kind = NativeTwoCellNumberPresentation.Kind.Modifier)
     {
-        var display = NativeTwoCellNumberPresentation.Format(value);
+        var display = NativeTwoCellNumberPresentation.Format(value, kind);
         font.Draw(batch, display.Digits,
             new Vector2(GangInformationLayout.ValueTextLeft(left, display.Digits), y),
-            display.IsNegative ? Color.Red : Color.Lime, 1);
+            display.IsNegative ? Color.Red : display.IsDim ? new Color(0, 137, 0) : Color.Lime, 1);
     }
 
     private static void DrawGangPanelValue(

@@ -53,8 +53,10 @@ public sealed partial class ChaosGame
                 new Vector2(ItemInformationLayout.DescriptionLeft,
                     ItemInformationLayout.DescriptionY + entry.row * 9), Color.Lime, 1);
 
-        DrawItemPanelValue(font, batch, item.Cost, ItemInformationLayout.LeftValueLeft, 216);
-        DrawItemPanelValue(font, batch, item.TechLevel, ItemInformationLayout.RightValueLeft, 216);
+        DrawItemPanelValue(font, batch, item.Cost, ItemInformationLayout.LeftValueLeft, 216,
+            NativeTwoCellNumberPresentation.Kind.Baseline);
+        DrawItemPanelValue(font, batch, item.TechLevel, ItemInformationLayout.RightValueLeft, 216,
+            NativeTwoCellNumberPresentation.Kind.Baseline);
         int[] left =
         [
             item.Stats.Combat, item.Stats.Defense, item.Stats.Chaos, item.Stats.Control,
@@ -90,12 +92,13 @@ public sealed partial class ChaosGame
         }
     }
 
-    private static void DrawItemPanelValue(PixelFont font, SpriteBatch batch, int value, int left, int y)
+    private static void DrawItemPanelValue(PixelFont font, SpriteBatch batch, int value, int left, int y,
+        NativeTwoCellNumberPresentation.Kind kind = NativeTwoCellNumberPresentation.Kind.Modifier)
     {
-        var display = NativeTwoCellNumberPresentation.Format(value);
+        var display = NativeTwoCellNumberPresentation.Format(value, kind);
         font.Draw(batch, display.Digits,
             new Vector2(GangInformationLayout.ValueTextLeft(left, display.Digits), y),
-            display.IsNegative ? Color.Red : Color.Lime, 1);
+            display.IsNegative ? Color.Red : display.IsDim ? new Color(0, 137, 0) : Color.Lime, 1);
     }
 
     private static void ClearItemValueField(SpriteBatch batch, Texture2D pixel, int left, int y) =>

@@ -3891,13 +3891,15 @@ HEADS.` on its three native screen rows. Its numeric clears remain exactly two
 glyph cells wide: extending the clear into a speculative third cell overwrites
 the template's right border.
 
-**Numeric helper detail:** The exact helper is `0x004142e7`, with every
-`PX05001` call passing literal width two. For a nonzero negative, it first
-negates the value and selects the red numeric row of surface 6 (source y=8),
-then copies each absolute-value digit from the same fixed two-cell walk. It
-does not select an ASCII minus glyph or allocate a third cell: `-2` is a
-right-aligned red `2`, and the table's `-12` values fill the two red cells with
-`12`. The recreation follows that bounded red-row presentation.
+**Numeric helper detail:** Cost and Tech Level use `0x00414187`; the fourteen
+item modifier fields use `0x004142e7`, with every call passing literal width
+two. For a nonzero negative, either helper negates the value and selects the
+red numeric row of surface 6 (source y=8), then copies each absolute-value
+digit from the same fixed two-cell walk. Neither selects an ASCII minus glyph
+or allocates a third cell: `-2` is a right-aligned red `2`, and the table's
+`-12` values fill the two red cells with `12`. Unlike `0x00414187`, the
+modifier helper copies the dim-green zero glyph at source `(354,8)` for an
+exact zero. The recreation follows both bounded presentations.
 
 **Confidence:** High from complete renderer and input handler `0x0044b699`,
 including literal backing/destination rectangles, text destinations, fixed
@@ -3929,26 +3931,57 @@ fields.
 including resource destination, portrait/title/numeric coordinates, all
 literal helper calls, and close branch.
 
+### BIN-NUMBER-HELPERS-001 - baseline and modifier zero glyphs
+
+**Observation:** `0x00414187` and `0x004142e7` both walk exactly the supplied
+number of six-by-seven cells, right-align nonzero decimal digits, and choose
+the red digit row for a negative absolute value. The former receives a final
+"show leading zeros" flag; every inspected panel call passes false, so zero is
+the ordinary bright green `0` in the final cell. The latter has no flag and
+takes a separate zero branch: it copies a blank for every leading cell and
+then copies source `(354,8)-(360,15)`. Direct PX00129 inspection shows that
+cell is the same zero shape at the dim green intensity (14/31) rather than the
+bright green intensity (26/31) or red negative row.
+
+**Panel mapping:** Gang and Gang Definition use the baseline helper for Force,
+Upkeep, Tech Level, Combat, Defence, Stealth, and Detect, then the modifier
+helper for the ten Command Skills. Hire and Gangs in Sector use the baseline
+helper for their first six Tech/Upkeep/basic-stat rows and the modifier helper
+for the remaining ten rows. Item Information uses baseline Cost/Tech fields
+and modifier fields for all fourteen effects. Site Information uses the
+modifier helper for every numeric field.
+
+**Static follow-through:** The recreation now carries the helper kind to the
+renderer. Bright baseline zeroes and dim modifier zeroes are distinct while
+remaining fixed at two glyph cells; nonzero and negative values retain the
+already recovered placement and red absolute-digit behavior.
+
+**Confidence:** High from both complete helper bodies, their direct caller
+inventory, complete panel renderers, and pixel inspection of the three source
+glyph cells. Native capture remains useful only to verify blend/palette output.
+
 ### BIN-HIRE-COMPARISON-001 - fixed-width signed values in the three-offer panel
 
-**Observation:** The Hire comparison renderer `0x004546c5` calls the same
-numeric helper at `0x004142e7` for every inspected offer statistic. Each call
-passes literal width two and a signed word value; for example, the consecutive
-calls at `0x00454a85`, `0x00454ace`, and `0x00454b17` read adjacent signed
-word fields before passing that width. The renderer proceeds directly to the
-next value's destination calculation after each call. It does not compare the
-three offers or select a separate best-value palette.
+**Observation:** The Hire comparison renderer `0x004546c5` uses
+`0x00414187` for Tech Level, Upkeep, Combat, Defence, Stealth, and Detect,
+then `0x004142e7` for its ten modifier rows. Every inspected call passes
+literal width two and a signed word value; for example, the consecutive
+modifier calls at `0x00454a85`, `0x00454ace`, and `0x00454b17` read adjacent
+signed word fields before passing that width. The renderer proceeds directly
+to the next value's destination calculation after each call. It does not
+compare the three offers or select a separate best-value palette.
 
 **Interpretation:** Hire comparison values use the native two-cell rule: a
 one-digit positive value occupies the right cell, while a negative value uses
 the red numeric glyph row and renders its absolute digits without an ASCII
-minus sign. The previously added green/red best-offer comparison tint and
-zero-padded Tech Level were not native behavior.
+minus sign. Baseline zeroes are bright green and modifier zeroes dim green.
+The previously added green/red best-offer comparison tint and zero-padded Tech
+Level were not native behavior.
 
 **Static follow-through:** The recreation shares
-`NativeTwoCellNumberPresentation` with the Gang, Item, and Site panels for all
-sixteen Hire rows. It keeps the recovered 12-by-7 field clears, but no longer
-derives a color from the other offers.
+`NativeTwoCellNumberPresentation` with the Gang, Item, Site, and Sector panels
+for all sixteen Hire rows. It keeps the recovered 12-by-7 field clears, but no
+longer derives a color from the other offers.
 
 **Confidence:** High for the fixed-width, signed rendering and absence of a
 comparison branch from bounded call-site contexts in complete renderer
@@ -4002,7 +4035,8 @@ Negative values select the red digit row and render the absolute-value digits;
 they do not select an ASCII minus glyph or allocate a third cell. The verified
 decoded `PX05022` art contains exactly two green `0` glyphs at every numeric
 field before this overwriting occurs; it does not contain a value multiplier or
-a literal `00` suffix.
+a literal `00` suffix. See `BIN-NUMBER-HELPERS-001` for the native bright
+baseline versus dim modifier zero distinction.
 
 **Interpretation:** Gang numeric fields are not generic right-aligned strings.
 They occupy precisely the two cells beginning at the recovered field origin.

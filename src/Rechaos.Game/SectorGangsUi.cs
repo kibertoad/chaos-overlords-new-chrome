@@ -120,7 +120,9 @@ public sealed partial class ChaosGame
                 var y = SectorGangsLayout.ValueY(row);
                 var valueRight = SectorGangsLayout.ValueRight(entry.index);
                 batch.Draw(pixel, new Rectangle(valueRight - 12, y, 12, 7), Color.Black);
-                DrawNativeTwoCellValue(font, batch, values[row], valueRight - 12, y);
+                DrawNativeTwoCellValue(font, batch, values[row], valueRight - 12, y,
+                    row < 6 ? NativeTwoCellNumberPresentation.Kind.Baseline
+                        : NativeTwoCellNumberPresentation.Kind.Modifier);
             }
         }
     }

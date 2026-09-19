@@ -67,7 +67,9 @@ public sealed partial class ChaosGame
             var values = HireComparisonValues(definition);
             for (var row = 0; row < values.Length; row++)
                 DrawNativeTwoCellValue(font, batch, values[row],
-                    HireComparisonLayout.ValueCell(slot, row).X, HireComparisonLayout.StatY(row));
+                    HireComparisonLayout.ValueCell(slot, row).X, HireComparisonLayout.StatY(row),
+                    row < 6 ? NativeTwoCellNumberPresentation.Kind.Baseline
+                        : NativeTwoCellNumberPresentation.Kind.Modifier);
         }
         if (_hoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.HireAt(hover));
