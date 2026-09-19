@@ -212,6 +212,43 @@ public sealed class MultiplayerMatchLifecycleTests
     }
 
     /// <summary>
+    /// The lobby can retain a modern display name, but the seeded game receives only the original
+    /// executable's upper-case ten-character name record.
+    /// </summary>
+    [Fact]
+    public void ProjectsAModernDisplayNameIntoTheOriginalNameRecord()
+    {
+        IReadOnlyList<PlayerView> named =
+        [
+            new("p1", 0, "Ada Lovelace", PortraitId: 0, Status: WirePlayerStatus.Active, IsHost: true),
+            Roster[1],
+        ];
+
+        var setup = MatchBootstrapFactory.Setup(Seed, Settings, named);
+
+        Assert.Equal("ADA LOVELA", setup.Players[0].Name);
+    }
+
+    /// <summary>
+    /// A name that becomes a cheat only after native ten-character truncation must be neutralized
+    /// just like the exact modern spelling.
+    /// </summary>
+    [Fact]
+    public void NeutralisesACheatNameCreatedByNativeProjection()
+    {
+        IReadOnlyList<PlayerView> cheating =
+        [
+            new("p1", 0, "smgfundage legacy", PortraitId: 0,
+                Status: WirePlayerStatus.Active, IsHost: true),
+            Roster[1],
+        ];
+
+        var setup = MatchBootstrapFactory.Setup(Seed, Settings, cheating);
+
+        Assert.Equal("PLAYER 1", setup.Players[0].Name);
+    }
+
+    /// <summary>
     /// Every seat wears the face its player chose, and an empty one the face the host dressed it in.
     /// </summary>
     /// <remarks>

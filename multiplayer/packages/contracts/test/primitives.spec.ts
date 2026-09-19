@@ -10,6 +10,7 @@ import {
   INT32_MIN,
   isoTimestampSchema,
   matchNameSchema,
+  originalPlayerNameProjection,
   RESERVED_DISPLAY_NAMES,
   resourceIdSchema,
   seedSchema,
@@ -86,10 +87,13 @@ describe('displayNameInputSchema', () => {
     }
   })
 
-  it('allows a name that merely contains one', () => {
-    // The rules match the whole name, so only the whole name is a cheat; refusing a substring would
-    // rule out names that do nothing.
-    expect(safeParse(displayNameInputSchema, 'SMGFUNDAGE THE THIRD').success).toBe(true)
+  it('refuses a modern name that becomes a cheat in the native ten-character record', () => {
+    expect(originalPlayerNameProjection('SMGFUNDAGE THE THIRD')).toBe('SMGFUNDAGE')
+    expect(safeParse(displayNameInputSchema, 'SMGFUNDAGE THE THIRD').success).toBe(false)
+  })
+
+  it('allows a name that only contains a cheat outside the native record', () => {
+    expect(safeParse(displayNameInputSchema, 'I AM SMGFUNDAGE').success).toBe(true)
   })
 
   it.each([

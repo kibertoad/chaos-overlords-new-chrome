@@ -100,15 +100,19 @@ public static class MatchBootstrapFactory
     /// The name a seated player's overlord plays under.
     /// </summary>
     /// <remarks>
-    /// Their own, unless it is one the original rules read as a cheat code rather than as a name —
-    /// see <see cref="ReservedPlayerNames"/>. The lobby refuses those outright, so this is the
-    /// safety net for a server that did not: substituting the seat's derived name is deterministic,
-    /// so every client substitutes the same one and the match stays in step while staying fair.
+    /// The deterministic ten-character, original-font projection of their modern lobby name,
+    /// unless that projection is one the original rules read as a cheat code rather than as a
+    /// name — see <see cref="ReservedPlayerNames"/>. The lobby refuses those outright, so this is
+    /// the safety net for an old or permissive server: substituting the seat's derived name is
+    /// deterministic, so every client substitutes the same one and the match stays in step while
+    /// staying fair.
     /// </remarks>
-    private static string SeatName(PlayerView player, int slot) =>
-        ReservedPlayerNames.IsReserved(player.DisplayName)
-            ? DerivedSeatName(slot)
-            : player.DisplayName;
+    private static string SeatName(PlayerView player, int slot)
+    {
+        var fallback = DerivedSeatName(slot);
+        var name = OriginalPlayerName.ProjectOrFallback(player.DisplayName, fallback);
+        return ReservedPlayerNames.IsReserved(name) ? fallback : name;
+    }
 
     /// <summary>
     /// The face a seated player's overlord wears.

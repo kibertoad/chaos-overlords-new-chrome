@@ -421,6 +421,17 @@ derived name for any that reach it, deterministically, so a server that let one 
 fair match. `ReservedPlayerNames` in `Rechaos.Core` is the list; the TypeScript copy names it as the
 source of truth.
 
+The recovered list is now complete: `SMGSPANK`, `SMGHUBBLE`, `SMGMILK`, and
+`SMGKICKASS` also alter the original setup, visibility/roster, or hiring. The
+native input record contains at most ten upper-case printable glyphs, while the
+modern lobby can show a 32-character display name. Every seeded online match
+therefore uses the deterministic ten-character original-font projection, and
+the input schema rejects a longer name such as `SMGFUNDAGE THE THIRD` when
+that projection would become a cheat. An older or permissive server cannot
+bypass this: the client bootstrap applies the same projection and substitutes
+the derived `PLAYER n` name for every resulting cheat, so all clients still
+seed one fair match.
+
 **Checked because a face is not only a face.** A player chooses their overlord portrait when they
 create or join, and it rides their roster row from there: `playerView.portraitId`, one of the
 original atlas's sixteen. Every client builds its city from that roster, and the setup a city was

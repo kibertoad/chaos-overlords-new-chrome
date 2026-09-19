@@ -4012,7 +4012,13 @@ draws a status label for that same slot. The match-start setup screen likewise
 copies all six configured name records before play. The recreation's local
 bootstrap therefore correctly completes every unclaimed slot as a computer
 player before this panel is available, instead of omitting rows for seats that
-were not manually configured.
+were not manually configured. The input-copy helper `0x0040f63d` stores at
+most ten characters, filters its modal text buffer to the original printable
+range `0x20..0x5a`, and terminates the 12-byte record. The reachable native
+text-entry path supplies upper-case text; modern online display names
+consequently project deterministically into that same ten-character record
+before they enter match state, while the lobby may still show its complete
+modern name.
 
 The first header is scenario-sensitive. For scenario ids 0 through 3 (Greed,
 Power, Acceptance, and Dominance), the renderer appends the two-byte literal
@@ -4499,6 +4505,12 @@ strictly greater than 48 calls increment helper `0x00468cfc`. Vertical offset
 the native hit regions are 16-by-58 on the left, 15-by-58 on the right, and
 64-by-10 along the bottom; they intentionally exceed the visible 12-by-18
 arrows and 64-by-8 text baseline.
+
+The name editor clears its modal buffer before opening dialog resource `0x8b`.
+On acceptance, `0x0040f63d` copies only a non-empty buffer; accepting an empty
+editor therefore leaves the existing player-name record unchanged. The local
+setup follows that behavior instead of substituting a generated `PLAYER#n`
+default.
 
 Before applying those click actions, sole-call drag helper `0x0040f72e` waits
 while the pointer stays in the half-open four-pixel box from initial offset -2

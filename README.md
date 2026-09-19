@@ -120,6 +120,10 @@ presentation-only conveniences that make the original systems easier to read:
   remains the compatibility default. Game Information retains the native AI
   Mentality field and appends the stored `ORIGINAL` or `ADVANCED` policy label
   so that this deliberate gameplay choice is visible during a match.
+- Online lobbies retain modern display names, while a started match uses the
+  original game's deterministic ten-character, upper-case name record. Names
+  that would become a native cheat code under that projection are refused and
+  never reach match state.
 - Keyboard navigation is available throughout the compatible mouse panels, and
   Escape or a right-click consistently cancels the current transient panel,
   drag, warning, or presentation without changing an unconfirmed command.

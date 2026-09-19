@@ -238,7 +238,34 @@ export const displayNameSchema = pipe(
  * desync — nothing about it is inconsistent — which is exactly why neither can be left to surface on
  * its own.
  */
-export const RESERVED_DISPLAY_NAMES = ['SMGFUNDAGE', 'SMGISLANDS'] as const
+export const RESERVED_DISPLAY_NAMES = [
+  'SMGSPANK',
+  'SMGHUBBLE',
+  'SMGMILK',
+  'SMGKICKASS',
+  'SMGISLANDS',
+  'SMGFUNDAGE',
+] as const
+
+/** The original executable stores a player name in a fixed ten-character record. */
+export const ORIGINAL_PLAYER_NAME_MAX_LENGTH = 10
+
+/**
+ * Projects a modern display name into the original executable's printable, upper-case name record.
+ *
+ * This mirrors <c>OriginalPlayerName.Project</c> in the game core. The lobby remains free to show
+ * the full modern display name; this value is only for checking what a seeded native match would
+ * actually receive.
+ */
+export function originalPlayerNameProjection(name: string): string {
+  let output = ''
+  for (let index = 0; index < name.length && index < ORIGINAL_PLAYER_NAME_MAX_LENGTH; index++) {
+    const source = name[index] ?? ' '
+    const upper = source >= 'a' && source <= 'z' ? source.toUpperCase() : source
+    output += upper >= ' ' && upper <= 'Z' ? upper : ' '
+  }
+  return output.trim()
+}
 
 /**
  * A display name as a request may set it.
@@ -252,7 +279,7 @@ export const displayNameInputSchema = pipe(
   normalizeName,
   check((name) => !UNSAFE_NAME_CHARACTERS.test(name), NAME_CHARACTER_MESSAGE),
   check(
-    (name) => !RESERVED_DISPLAY_NAMES.some((reserved) => name.toUpperCase() === reserved),
+    (name) => !RESERVED_DISPLAY_NAMES.some((reserved) => originalPlayerNameProjection(name) === reserved),
     'that display name is a cheat code in the original game, not a name',
   ),
 )

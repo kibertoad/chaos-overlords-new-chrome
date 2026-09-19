@@ -161,7 +161,7 @@ public sealed partial class ChaosGame
             _online.Status = "ENTER A NAME";
             return false;
         }
-        if (ReservedPlayerNames.IsReserved(name))
+        if (ReservedPlayerNames.IsReserved(OriginalPlayerName.Project(name)))
         {
             _online.Status = "THAT NAME IS A CHEAT CODE  PICK ANOTHER";
             return false;
