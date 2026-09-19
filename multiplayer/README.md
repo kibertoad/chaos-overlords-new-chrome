@@ -207,23 +207,43 @@ deployment consumes `@chaos-overlords/worker` and the two migration lineages as 
 dependencies rather than as a checkout of this repository.
 
 They share one release version. `workspace:*` is what the packages depend on each other by, and pnpm
-rewrites it to that exact version as it packs, so every package must be bumped together. The release
-workflow does that in its checkout and then runs `pnpm check-versions` before it builds anything;
-release commits do not need manual package-version edits.
+rewrites it to that exact version as it packs, so every package must be bumped together. The nine
+manifests are also where the released version is written down — what `version.txt` is for the
+installers — and `pnpm check-versions` holds them to one number before anything is packed.
+
+Nobody types the next number. The release workflow is asked for a release *kind* — `patch`, `minor`,
+or `major` — and works the number out at release time from the version the manifests on `main` carry
+just then: a patch release after `0.8.8` is `0.8.9`, a minor one `0.9.0`, a major one `1.0.0`. It
+records that number in every manifest on `main` before anything is published, and every job runs from
+that commit, so one run records, packs, publishes, and tags the same version. To see what the next
+release would be called without starting one:
+
+```sh
+pnpm next-version patch              # the arithmetic alone
+pnpm release-version patch           # ...and what the tags already say, as the workflow reads them
+```
+
+Two cases are not a plain bump, and they match how the installer release settles its own number. A
+recorded version that carries no tag never shipped — an earlier run recorded it and then failed, or
+branch protection forced the bump to be landed by hand — so the workflow publishes *that* version
+rather than a number past it, and the release kind is ignored for that run; the log says so. And a
+set of manifests that has fallen behind a version already tagged stops the release outright, because
+counting on from it would land on a number that is taken: correct the manifests on `main` first, with
+`pnpm set-version <version>` if it is quicker than nine edits.
 
 Release from *Actions → Publish multiplayer packages → Run workflow*, which runs
-[`.github/workflows/multiplayer-publish.yml`](../.github/workflows/multiplayer-publish.yml). Enter the
-version and choose a mode:
+[`.github/workflows/multiplayer-publish.yml`](../.github/workflows/multiplayer-publish.yml). Choose
+how far the version advances and pick a mode:
 
 | Mode | What it does |
 | --- | --- |
-| `rehearse` (default) | Lints, builds, typechecks, tests, checks the C# codegen, and packs every tarball, then stops without contacting the registry. |
-| `release` | The same checks, then publishes all nine packages, then tags the commit it published `multiplayer-v0.2.0`. |
+| `rehearse` (default) | Lints, builds, typechecks, tests, checks the C# codegen, and packs every tarball, then stops without contacting either the registry or `main`. A rehearsal never advances the recorded version, so it keeps naming the same one. |
+| `release` | Records the version in the nine manifests on `main`, runs the same checks, publishes all nine packages, then tags the commit it published `multiplayer-v0.2.0`. |
 
-Both cut from the tip of main, pin that commit, and apply the requested version to all nine package
-manifests in the workflow checkout. The checks, tarballs, and tag therefore describe one commit even
-if someone pushes to main mid-run. A release refuses to start if its tag already exists. The tag is
-created last because it is the half that is cheap to redo by hand.
+Both cut from the tip of main and pin that commit, so the checks, tarballs, and tag describe one
+commit even if someone pushes to main mid-run; releases also run one at a time, since two started
+together would settle on the same number. The tag is created last because it is the half that is
+cheap to redo by hand.
 
 Pushing a `multiplayer-v*` tag still publishes, for a release that has to come from a commit other
 than the tip of main:
@@ -231,6 +251,12 @@ than the tip of main:
 ```sh
 git tag multiplayer-v0.2.0 && git push origin multiplayer-v0.2.0
 ```
+
+A tag push names its version outright rather than counting on from the manifests, is the only way in
+that may carry a prerelease suffix, and records nothing on `main`: the commit it publishes need never
+have been on `main` at all, so the version is applied in the workflow checkout instead. A prerelease
+tagged this way is outside the counting above; the next dispatched release still counts on from the
+recorded version.
 
 Either way the workflow authenticates with **npm OIDC trusted publishing**: the job trades its
 GitHub-issued `id-token` for a short-lived registry credential, so there is no npm token in this
