@@ -633,6 +633,7 @@ public static class ComlinkSendLayout
     public const int MessageColumns = 40;
     public const int MessageRows = 4;
     public const int TextRowStride = 8;
+    public const int InverseCaretGlyphY = 441;
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Point TextOrigin => new(199, 256);
     public static Rectangle Message => new(TextOrigin.X, TextOrigin.Y,
@@ -640,6 +641,33 @@ public static class ComlinkSendLayout
         (MessageRows - 1) * TextRowStride + OriginalFontLayout.GlyphHeight);
     public static Rectangle Cancel => SharedPanelLayout.At(33, 137, 49, 22);
     public static Rectangle Ok => SharedPanelLayout.At(33, 169, 49, 22);
+    // Native press helper 0x00418821 draws a one-pixel-larger held sprite than
+    // either half-open activation target, then restores the baked face on exit.
+    public static Rectangle CancelPressed => new(Cancel.X, Cancel.Y, 50, 23);
+    public static Rectangle OkPressed => new(Ok.X, Ok.Y, 50, 23);
+    public static Rectangle CancelPressedSource => new(50, 409, 50, 23);
+    public static Rectangle OkPressedSource => new(50, 386, 50, 23);
+
+    /// <summary>Native Send caret destination for a cell in the fixed 4-by-40 editor.</summary>
+    public static Rectangle CaretDestination(int column, int row)
+    {
+        ValidateEditorCell(column, row);
+        return new Rectangle(TextOrigin.X + column * OriginalFontLayout.CellWidth,
+            TextOrigin.Y + row * TextRowStride,
+            OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight);
+    }
+
+    /// <summary>
+    /// PX00129 source used by native caret helper <c>0x0046023c</c>. The normal
+    /// glyph strip is row zero; the same glyphs at y=441 carry the inverse cell.
+    /// </summary>
+    public static Rectangle CaretSource(char character, bool inverse)
+    {
+        if (!OriginalFontLayout.TryGlyph(character, out var glyph))
+            throw new ArgumentOutOfRangeException(nameof(character));
+        return new Rectangle(glyph.X, inverse ? InverseCaretGlyphY : glyph.Y,
+            glyph.Width, glyph.Height);
+    }
 
     public static Rectangle Recipient(int slot)
     {
@@ -679,6 +707,12 @@ public static class ComlinkSendLayout
     {
         var cell = Recipient(slot);
         return new Point(cell.X + 42, cell.Y + 2);
+    }
+
+    private static void ValidateEditorCell(int column, int row)
+    {
+        if (column is < 0 or >= MessageColumns) throw new ArgumentOutOfRangeException(nameof(column));
+        if (row is < 0 or >= MessageRows) throw new ArgumentOutOfRangeException(nameof(row));
     }
 }
 

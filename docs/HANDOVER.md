@@ -310,9 +310,10 @@ Last updated: 2026-09-19
   active OK state for a valid item and shows accumulated/required progress.
   Completed-research reports name the resolved item and play its dedicated
   15-frame `PX04xxx` rotation in the monitor.
-- The `PX05016` Gangs for Hire comparison now opens at the shared management
-  panel destination instead of screen origin. Its three portraits, right-aligned
-  values, and irregular sixteen-row baselines follow the template pixels.
+- The `PX05016` Gangs for Hire comparison now opens through its native
+  320-pixel alternate crop at `(128,124)` instead of screen origin. Its three
+  portraits, right-aligned values, and irregular sixteen-row baselines follow
+  the template pixels.
 - Handoff now auto-presents combat from the immediately completed turn. When
   both report types exist, Last Turn Events opens first and then chains into
   Combat Results; Detailed animation capture waits until private handoff/event
@@ -393,7 +394,9 @@ Last updated: 2026-09-19
   `PX05017` incoming-message viewer and `PX05018` sender. Human players can page
   the newest 16 messages, see unread-state blinking, select multiple human
   recipients, enter the recovered four 40-character rows, and send through the
-  authoritative replay-recorded operation. Opening the viewer and paging mark
+  authoritative replay-recorded operation. Send also copies its focused cell
+  from the recovered normal/inverse font rows on the original three-event,
+  166-ms timer-zero cadence. Opening the viewer and paging mark
   only the displayed record read through that same authoritative path; unread
   state remains until every retained unread record has actually been viewed.
 - The title and in-game Help commands open a cross-platform viewer backed by

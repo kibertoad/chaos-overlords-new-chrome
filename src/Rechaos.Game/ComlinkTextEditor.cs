@@ -17,6 +17,7 @@ public sealed class ComlinkTextEditor
 
     public int Column { get; private set; }
     public int Row { get; private set; }
+    public char CharacterAtCursor => _cells[CellIndex];
     public bool IsFull => _cells.All(character => character != ' ');
     public string Text => new string(_cells).TrimEnd();
 

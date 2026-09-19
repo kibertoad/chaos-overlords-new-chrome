@@ -20,8 +20,16 @@ public sealed class ComlinkUiTests
         Assert.Equal(new Point(199, 256), ComlinkSendLayout.TextOrigin);
         Assert.Equal(new Rectangle(199, 256, 240, 31), ComlinkSendLayout.Message);
         Assert.Equal(8, ComlinkSendLayout.TextRowStride);
+        Assert.Equal(new Rectangle(199, 256, 6, 7), ComlinkSendLayout.CaretDestination(0, 0));
+        Assert.Equal(new Rectangle(433, 280, 6, 7), ComlinkSendLayout.CaretDestination(39, 3));
+        Assert.Equal(new Rectangle(198, 0, 6, 7), ComlinkSendLayout.CaretSource('a', inverse: false));
+        Assert.Equal(new Rectangle(198, 441, 6, 7), ComlinkSendLayout.CaretSource('a', inverse: true));
         Assert.Equal(new Rectangle(137, 261, 49, 22), ComlinkSendLayout.Cancel);
         Assert.Equal(new Rectangle(137, 293, 49, 22), ComlinkSendLayout.Ok);
+        Assert.Equal(new Rectangle(137, 261, 50, 23), ComlinkSendLayout.CancelPressed);
+        Assert.Equal(new Rectangle(137, 293, 50, 23), ComlinkSendLayout.OkPressed);
+        Assert.Equal(new Rectangle(50, 409, 50, 23), ComlinkSendLayout.CancelPressedSource);
+        Assert.Equal(new Rectangle(50, 386, 50, 23), ComlinkSendLayout.OkPressedSource);
         Assert.Equal(new Rectangle(201, 143, 105, 34), ComlinkSendLayout.Recipient(0));
         Assert.Equal(new Rectangle(322, 211, 105, 34), ComlinkSendLayout.Recipient(5));
         Assert.Equal(new Rectangle(202, 144, 100, 32), ComlinkSendLayout.RecipientHit(0));
@@ -31,6 +39,8 @@ public sealed class ComlinkUiTests
         Assert.Equal(new Point(243, 145), ComlinkSendLayout.RecipientNameOrigin(0));
         Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.Recipient(6));
         Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.RecipientHit(6));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.CaretDestination(40, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ComlinkSendLayout.CaretSource('[', inverse: false));
     }
 
     [Fact]
@@ -50,6 +60,7 @@ public sealed class ComlinkUiTests
         Assert.Equal(1, editor.Row);
         Assert.True(editor.TryAppend('q'));
         Assert.Equal('Q', editor.DisplayLines()[1][0]);
+        Assert.Equal(' ', editor.CharacterAtCursor);
 
         editor.MoveUp();
         editor.MoveLeft();
@@ -108,5 +119,20 @@ public sealed class ComlinkUiTests
         router.Show(ClientScreen.ComlinkSend);
         Assert.True(router.Back());
         Assert.Equal(ClientScreen.City, router.Current);
+    }
+
+    [Fact]
+    public void SendCaretStartsNormalAndTogglesEveryThreeSixHertzTimerEvents()
+    {
+        var cadence = new ComlinkCaretCadence();
+        cadence.Reset(TimeSpan.Zero);
+
+        Assert.False(cadence.UsesInverseGlyph);
+        cadence.Advance(ComlinkCaretCadence.TimerEventInterval * 2);
+        Assert.False(cadence.UsesInverseGlyph);
+        cadence.Advance(ComlinkCaretCadence.TimerEventInterval * 3);
+        Assert.True(cadence.UsesInverseGlyph);
+        cadence.Advance(ComlinkCaretCadence.TimerEventInterval * 6);
+        Assert.False(cadence.UsesInverseGlyph);
     }
 }

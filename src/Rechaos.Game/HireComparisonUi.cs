@@ -18,19 +18,20 @@ public static class HireReservationWarning
 
 public static class HireComparisonLayout
 {
-    public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
+    public static Rectangle Panel => new(128, 124, 320, 209);
+    public static Rectangle BackgroundSource => new(0, 0, 320, 209);
+    public static Rectangle Ok => new(161, 293, 49, 22);
 
     public static Rectangle Portrait(int slot)
     {
         ValidateSlot(slot);
-        return SharedPanelLayout.At(164 + slot * 40, 14, 32, 32);
+        return new Rectangle(Panel.X + 164 + slot * 40, Panel.Y + 14, 32, 32);
     }
 
     public static int StatRight(int slot)
     {
         ValidateSlot(slot);
-        return SharedPanelLayout.X(185 + slot * 40);
+        return Panel.X + 186 + slot * 40;
     }
 
     public static Rectangle ValueCell(int slot, int row) =>
@@ -47,22 +48,22 @@ public static class HireComparisonLayout
         if (row is < 0 or >= 16) throw new ArgumentOutOfRangeException(nameof(row));
         return row switch
         {
-            0 => SharedPanelLayout.Y(48),
-            1 => SharedPanelLayout.Y(57),
-            2 => SharedPanelLayout.Y(67),
-            3 => SharedPanelLayout.Y(76),
-            4 => SharedPanelLayout.Y(85),
-            5 => SharedPanelLayout.Y(94),
-            6 => SharedPanelLayout.Y(104),
-            7 => SharedPanelLayout.Y(113),
-            8 => SharedPanelLayout.Y(122),
-            9 => SharedPanelLayout.Y(131),
-            10 => SharedPanelLayout.Y(140),
-            11 => SharedPanelLayout.Y(150),
-            12 => SharedPanelLayout.Y(159),
-            13 => SharedPanelLayout.Y(168),
-            14 => SharedPanelLayout.Y(177),
-            15 => SharedPanelLayout.Y(186),
+            0 => Panel.Y + 48,
+            1 => Panel.Y + 57,
+            2 => Panel.Y + 67,
+            3 => Panel.Y + 76,
+            4 => Panel.Y + 85,
+            5 => Panel.Y + 94,
+            6 => Panel.Y + 104,
+            7 => Panel.Y + 113,
+            8 => Panel.Y + 122,
+            9 => Panel.Y + 131,
+            10 => Panel.Y + 140,
+            11 => Panel.Y + 150,
+            12 => Panel.Y + 159,
+            13 => Panel.Y + 168,
+            14 => Panel.Y + 177,
+            15 => Panel.Y + 186,
             _ => throw new ArgumentOutOfRangeException(nameof(row))
         };
     }

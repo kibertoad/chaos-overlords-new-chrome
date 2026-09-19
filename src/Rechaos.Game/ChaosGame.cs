@@ -142,6 +142,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _comlinkCursor;
     private readonly bool[] _comlinkRecipients = new bool[MatchLimits.PlayerCount];
     private readonly ComlinkTextEditor _comlinkEditor = new();
+    private readonly ComlinkCaretCadence _comlinkCaretCadence = new();
+    private ComlinkSendButton? _pressedComlinkSendButton;
     private readonly ComlinkAlertCadence _comlinkAlertCadence = new();
     private string _comlinkStatus = string.Empty;
     private IReadOnlyList<GameCommand> _giveOptions = [];
@@ -365,6 +367,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         }
         UpdateSoundtrack(gameTime);
         UpdateComlinkAlert(gameTime.TotalGameTime);
+        UpdateComlinkCaret(gameTime.TotalGameTime);
         PumpBugReportSend();
         // Before the planning timer, so a turn that resolved on the server is adopted even on the
         // frame the local clock would otherwise have taken over the loop.
@@ -639,39 +642,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 _message = string.Empty;
             }
         }
-        if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
-            && _pressedSetupButton is not null)
-        {
-            if (pointerMapped) CompleteSetupButton(virtualPoint);
-            else _pressedSetupButton = null;
-        }
-        else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
-                 && _pressedCityConsoleControl is not null)
-        {
-            if (pointerMapped) CompleteCityConsolePress(virtualPoint);
-            else CancelCityConsolePress();
-        }
-        else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
-                 && _draggedSetupPlayerSlot is not null)
-        {
-            if (pointerMapped && _setupPlayerDragStarted) CompleteSetupPlayerDrag(virtualPoint);
-            else if (pointerMapped) CompleteSetupPlayerClick();
-            else CancelSetupPlayerDrag();
-        }
-        else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
-                 && _draggedHireDefinitionId is not null)
-        {
-            if (pointerMapped && _hireDragStarted) CompleteHireDrag(virtualPoint);
-            else if (pointerMapped) CompleteHireClick();
-            else CancelHireDrag();
-        }
-        else if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released
-                 && _draggedGangId is not null)
-        {
-            if (pointerMapped && _gangDragStarted) CompleteGangDrag(virtualPoint);
-            else if (pointerMapped) CompleteGangClick();
-            else CancelGangDrag();
-        }
+        if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released)
+            CompletePointerRelease(pointerMapped, virtualPoint);
         CaptureNewCombatAnimations();
         _previousKeyboard = keyboard;
         _previousMouse = mouse;

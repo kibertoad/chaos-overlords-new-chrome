@@ -7,6 +7,12 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private enum ComlinkSendButton
+    {
+        Send,
+        Cancel
+    }
+
     /// <summary>
     /// Whether Comlink can be opened at all, which an online match currently cannot.
     /// </summary>
@@ -63,8 +69,15 @@ public sealed partial class ChaosGame
         _managementReturnScreen = returnScreen;
         Array.Fill(_comlinkRecipients, false);
         _comlinkEditor.Clear();
+        _comlinkCaretCadence.Reset(_inputTime);
         _comlinkStatus = string.Empty;
         _screens.Show(ClientScreen.ComlinkSend);
+    }
+
+    private void UpdateComlinkCaret(TimeSpan now)
+    {
+        if (_screens.Current == ClientScreen.ComlinkSend)
+            _comlinkCaretCadence.Advance(now);
     }
 
     private void UpdateComlinkView(KeyboardState keyboard)
@@ -166,12 +179,43 @@ public sealed partial class ChaosGame
             }
         }
         else if (ComlinkSendLayout.Cancel.Contains(point))
-        {
-            AcceptInput();
-            CloseComlink();
-        }
-        else if (ComlinkSendLayout.Ok.Contains(point)) SendComlink();
+            BeginComlinkSendButton(ComlinkSendButton.Cancel);
+        else if (ComlinkSendLayout.Ok.Contains(point))
+            BeginComlinkSendButton(ComlinkSendButton.Send);
     }
+
+    private void BeginComlinkSendButton(ComlinkSendButton button)
+    {
+        // Native Send handler 0x0045eab1 rejects the face immediately when no
+        // recipient is selected; it only enters shared held-button helper
+        // 0x00418821 after that predicate passes.
+        if (button == ComlinkSendButton.Send && !_comlinkRecipients.Any(selected => selected))
+        {
+            SendComlink();
+            return;
+        }
+
+        _pressedComlinkSendButton = button;
+        AcceptInput();
+    }
+
+    private void CompleteComlinkSendButton(Point point)
+    {
+        var button = _pressedComlinkSendButton;
+        CancelComlinkSendButton();
+        if (button is null || _screens.Current != ClientScreen.ComlinkSend) return;
+
+        if (button == ComlinkSendButton.Cancel && ComlinkSendLayout.Cancel.Contains(point))
+        {
+            CloseComlink();
+            return;
+        }
+
+        if (button == ComlinkSendButton.Send && ComlinkSendLayout.Ok.Contains(point))
+            SendComlink(pointerButton: true);
+    }
+
+    private void CancelComlinkSendButton() => _pressedComlinkSendButton = null;
 
     private bool EligibleComlinkRecipient(int playerIndex)
     {
@@ -201,7 +245,7 @@ public sealed partial class ChaosGame
         if (!inbox.IsRead(sequence)) _actions?.MarkComlinkRead(playerId, sequence);
     }
 
-    private void SendComlink()
+    private void SendComlink(bool pointerButton = false)
     {
         if (_state?.Coordinator.ActivePlayer is not { } sender || _actions is null) return;
         var recipients = Enumerable.Range(0, MatchLimits.PlayerCount)
@@ -209,13 +253,25 @@ public sealed partial class ChaosGame
             .Select(index => new PlayerId(index))
             .ToArray();
         var result = _actions.SendComlinkMessage(sender, recipients, _comlinkEditor.Text);
-        ReportInputResult(result.Accepted, result.Message);
+        ReportComlinkSendResult(result.Accepted, result.Message, pointerButton);
         if (!result.Accepted)
         {
             _comlinkStatus = _message;
             return;
         }
         CloseComlink();
+    }
+
+    private void ReportComlinkSendResult(bool accepted, string rejectionMessage, bool pointerButton)
+    {
+        if (!pointerButton)
+        {
+            ReportInputResult(accepted, rejectionMessage);
+            return;
+        }
+
+        _message = accepted ? string.Empty : CityStatusMessage.Error(rejectionMessage);
+        if (AudioRouting.PointerPushResultSound(accepted) is { } sound) PlayGeneralSound(sound);
     }
 
     private void CloseComlink() => _screens.Show(_managementReturnScreen);
@@ -286,6 +342,12 @@ public sealed partial class ChaosGame
         batch.Draw(pixel, ComlinkSendLayout.Message, Color.Black);
         DrawComlinkLines(batch, font, _comlinkEditor.DisplayLines(),
             ComlinkSendLayout.TextOrigin, Color.Lime, ComlinkSendLayout.TextRowStride);
+        DrawPressedComlinkSendButton(batch);
+        if (_uiSprites is not null)
+            batch.Draw(_uiSprites,
+                ComlinkSendLayout.CaretDestination(_comlinkEditor.Column, _comlinkEditor.Row),
+                ComlinkSendLayout.CaretSource(_comlinkEditor.CharacterAtCursor,
+                    _comlinkCaretCadence.UsesInverseGlyph), Color.White);
         if (_comlinkStatus.Length > 0)
             font.Draw(batch, _comlinkStatus.Length <= 40 ? _comlinkStatus : _comlinkStatus[..40],
                 new Vector2(SharedPanelLayout.X(92), SharedPanelLayout.Y(181)), Color.OrangeRed, 1);
@@ -296,6 +358,22 @@ public sealed partial class ChaosGame
     {
         if (artwork is not null) batch.Draw(artwork, panel, Color.White);
         else batch.Draw(pixel, panel, new Color(0, 0, 0, 245));
+    }
+
+    private void DrawPressedComlinkSendButton(SpriteBatch batch)
+    {
+        if (_uiSprites is null || _hoverPoint is not { } hover) return;
+        switch (_pressedComlinkSendButton)
+        {
+            case ComlinkSendButton.Cancel when ComlinkSendLayout.Cancel.Contains(hover):
+                batch.Draw(_uiSprites, ComlinkSendLayout.CancelPressed,
+                    ComlinkSendLayout.CancelPressedSource, Color.White);
+                break;
+            case ComlinkSendButton.Send when ComlinkSendLayout.Ok.Contains(hover):
+                batch.Draw(_uiSprites, ComlinkSendLayout.OkPressed,
+                    ComlinkSendLayout.OkPressedSource, Color.White);
+                break;
+        }
     }
 
     private static void DrawComlinkLines(

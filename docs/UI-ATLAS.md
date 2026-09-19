@@ -237,9 +237,9 @@ cursor feedback remain to be validated.
   a reserved recruit retains its cell under the color-keyed original `HIRED`
   stamp from `PX00129`. Available candidates show their two-digit initial hire
   price with a minimum width of two digits (`06`, but `11` remains `11`),
-  centered in the left 33-by-24 footer half at y 436;
-  the reject control
-  occupies the right half. This interaction and placement were confirmed in the
+  centered in the left 33-by-24 footer half at y 436. The right-footer Reject
+  action is a deliberately compact 32-by-13 target at `(472 + 66*slot,437)`,
+  rather than the full footer cell. This interaction and placement were confirmed in the
   user-supplied original-game capture and footage at 03:57.
 - Each sector containing the active player's gangs displays the original
   idle/question or assigned 20-by-20 status marker. The whole-city map projects every sector containing
@@ -374,16 +374,15 @@ readability improvement, not an original rendering claim.
 Because the starting Headquarters has zero resistance but no explicit site
 influencer, its display inherits the sector owner before choosing the fill.
 
-`PX05016` is the original 344-by-209 `GANGS FOR HIRE` comparison panel. The
-Hire console button overlays it on the live city, with three 32-by-32 gang
-portraits and their sixteen comparison values. Hiring itself remains the
-original drag-from-dock interaction; the comparison panel's OK control closes
-the overlay. The panel uses the native shared `(104,124)` management-panel
-destination. All descendants use panel-local coordinates so background,
-content, clearing rectangles, and hit regions remain aligned as one unit.
-its portrait cells begin at source `(164,14)` with a 40-pixel pitch, and its
-right-aligned value columns end at source x 185, 225, and 265. The sixteen rows
-follow the baked irregular 9/10-pixel label baselines rather than a uniform
+`PX05016` is the 344-by-209 `GANGS FOR HIRE` source image, but its native
+slide copies only its left 320 pixels to alternate-panel destination `(128,124)`.
+The Hire console button overlays that crop on the live city, with three 32-by-32
+gang portraits and their sixteen comparison values. Hiring itself remains the
+original drag-from-dock interaction; the separately gated OK control at
+`(161,293)` closes the overlay. Portrait cells begin at source-local `(164,14)`
+with a 40-pixel pitch. The three two-character value fields begin at local x
+174, 214, and 254, making their right edges 186, 226, and 266; the sixteen
+rows follow the baked irregular 9/10-pixel label baselines rather than a uniform
 pitch.
 
 `PX05017` is the original 344-by-209 `COMLINK: INCOMING MESSAGES` viewer. It
@@ -392,7 +391,13 @@ portrait, date and sender fields, and the message aperture. `PX05018` is the
 matching `COMLINK: SEND MESSAGE` panel: six recipient cells in two columns by
 three rows and four fixed 40-character composition rows. The recreation routes
 both halves of the main-console Comlink control, blinks View while the active
-human has unread mail, and uses authoritative inbox/read/send operations.
+human has unread mail, uses authoritative inbox/read/send operations, and
+copies the focused Send cell from `PX00129`'s normal glyph strip or its inverse
+row at y=441. The Send caret starts normal and changes source row after every
+three 166-ms timer-zero events. Its Cancel and Send faces use the common held
+button sprites at `PX00129 (50,409,50,23)` and `(50,386,50,23)` respectively:
+they are 50-by-23 visual overlays on the 49-by-22 activation targets and act
+only on release inside.
 
 `PX05024` is the Search: Sites filter. Its 22 selection bytes are independent
 for each player and change immediately on ALL, NONE, or an individual row.

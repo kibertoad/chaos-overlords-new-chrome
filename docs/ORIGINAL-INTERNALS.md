@@ -221,6 +221,12 @@ The helper copies matching opaque `PX00129` pressed artwork from `(0,512)`,
 surface-1 pixels whenever the pointer leaves the same outer rectangle, redraws
 the pressed tile on re-entry, and succeeds only on release inside that tile.
 
+The city/sector Hire input handler at `0x00416c75` divides the three 66-pixel
+dock cells from x=438. Its Reject operation does not use the full right footer:
+each release gate is `(top=437,left=472 + 66*slot,bottom=450,right=504 +
+66*slot)`, i.e. a 32-by-13 half-open target. The broad portrait drag flow is
+separate from this compact reject gate.
+
 Five 48-pixel tiles select a subroute from the original press x coordinate,
 not from separate vertical rows. Comlink, Combat, Finance, and Gangs/Hire use
 the left 33 pixels and right 15 pixels: View/Send, Results/Detailed, City/Sector,
@@ -911,6 +917,12 @@ recipient is eligible. Its six half-open, panel-local recipient controls are
 Eligible clicks toggle an independent selector byte; ineligible clicks reject.
 
 The Cancel control is `(33,137)-(82,159)` and Send is `(33,169)-(82,191)`.
+Both use shared held-button helper `0x00418821`: Cancel copies source
+`PX00129 (50,409,50,23)` and Send copies `(50,386,50,23)` to a one-pixel-larger
+50-by-23 destination while held inside, restores the baked face on pointer
+exit, plays slot 3 on press, and activates only when released inside. Recipient
+cards instead toggle directly after their hit test. Send with no selected
+recipient rejects before entering the held-button helper.
 Only virtual key Execute (`0x2b`) invokes Send; it rejects an empty recipient
 selection. Enter (`0x0d`) sets the text cursor to column zero of the next row,
 Backspace (`0x08`) deletes at the current cursor, and Left/Up/Right/Down move a
@@ -918,13 +930,17 @@ clamped four-row, 40-column cursor. Printable ASCII is uppercased before its
 `0x20..0x5a` acceptance check. Cell writer `0x004600d2` paints each 6-by-7
 glyph at `(199 + 6 * column,256 + 8 * row)`. Caret helper `0x0046023c` redraws
 the focused cell from the ordinary `PX00129` glyph row at y=0 or the matching
-inverse glyph row at y=441. Send begins with the normal row; each third consumed
-timer-0 event toggles this source row. The window-message callback
+inverse glyph row at y=441, using the same opaque surface-6 copy helper as its
+panel artwork. Send begins with the normal row; each third consumed timer-0
+event toggles this source row. The window-message callback
 `0x004327c0` and direct signal helper `0x00432926` each raise one of the four
 bytes at `0x00494810`; test/clear helpers `0x004328be`/`0x004328f8` make every
 consumer observe a pending event once. The Send loop starts by signalling timer
-0 and only advances its three-event counter when it consumes that flag. Static
-control flow does not establish the OS timer's wall-clock period.
+0 and only advances its three-event counter when it consumes that flag.
+Initialization routine `0x00460ccf` registers timer 0 through `0x004327dc` at
+frequency 6; that helper calls `timeSetEvent(1000 / frequency, 20, ...)`, so
+the timer period is integer `1000 / 6 = 166` ms and a glyph-row phase lasts
+three timer events (498 ms).
 
 **Interpretation:** Recipient selection is a 100-by-32 name-and-portrait target,
 inset by one pixel within a 105-by-34 tile; it is not the narrower visual
@@ -945,11 +961,14 @@ recovered 4x40 overwrite grid: uppercase/range filtering, cursor-position
 editing, Enter/arrow movement, horizontal wrap, row clamping, and Backspace
 all follow the handler. Its normal glyph origin and 8-pixel row stride are also
 exact. Recipient cards now use the recovered 105-by-34 backing/portrait/name
-projection while eligibility remains authoritative. Inverse-caret artwork and
-timer-event blink cadence remain presentation work.
+projection while eligibility remains authoritative. The managed cursor now
+copies the recovered normal/inverse `PX00129` glyph cells and advances the
+normal-to-inverse phase after each three 166-ms timer-zero events, without
+making that presentation state part of a match. Cancel and Send now retain the
+native pressed source sprites, release-inside action, and slot-3/slot-4 outcome
+order; recipient selectors keep their direct toggle behavior.
 
-**Next validation:** Route the inverse caret artwork through the managed atlas,
-model its timer-event blink cadence, and compare its rendered field/recipient
+**Next validation:** Compare the rendered caret phase, field, and recipient
 tiles with a native golden-screen capture.
 
 ### BIN-COMLINK-004 - View record fields and projection
@@ -1099,7 +1118,11 @@ Information `PX05002`, `0x0044d1bb` loads City/Sector Financial
 `PX05008`/`PX05019`, `0x004546c5` loads Hire comparison `PX05016`,
 `0x0045519d` loads Game Info `PX05021`, and `0x00455b6b` loads Gangs in Sector
 `PX05022`. The other seventeen caller pairs pass zero and use the primary
-344-pixel form.
+344-pixel form. The Hire handler makes the distinction explicit: it first loads
+the 344-by-209 image into `(top=144,left=344,bottom=353,right=688)`, then
+calls the nonzero slide mode. That mode copies only source x=344..664 to screen
+x=128..448, so the final panel is the same 320-pixel alternate crop as the
+other five callers rather than a shared-panel presentation.
 Both calculate a step from the startup blit benchmark at `0x00432954`. That
 benchmark counts identical copies for just over one second. The transition
 divides the count by four, divides its travel by that result, and clamps the

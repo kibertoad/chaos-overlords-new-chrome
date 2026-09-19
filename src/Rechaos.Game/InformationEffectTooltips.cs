@@ -93,7 +93,8 @@ public static class InformationEffectTooltips
     {
         for (var row = 0; row < 16; row++)
         {
-            if (!new Rectangle(200, HireComparisonLayout.StatY(row) - 1, 184, 9)
+            if (!new Rectangle(HireComparisonLayout.Panel.X + 96,
+                    HireComparisonLayout.StatY(row) - 1, 184, 9)
                     .Contains(point)) continue;
             if (row == 0)
                 return ["TECH LEVEL", "LIMITS WHICH ITEMS THE HIRED GANG CAN USE OR RESEARCH."];

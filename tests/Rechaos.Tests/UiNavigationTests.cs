@@ -250,7 +250,7 @@ public sealed class UiNavigationTests
     public void HirePriceSitsBesideRejectControl()
     {
         Assert.Equal(new Rectangle(438, 436, 33, 24), HireDockLayout.PriceCell(0));
-        Assert.Equal(new Rectangle(471, 436, 33, 24), HireDockLayout.Reject(0));
+        Assert.Equal(new Rectangle(472, 437, 32, 13), HireDockLayout.Reject(0));
         Assert.Equal(new Point(449, 440), HireDockLayout.Price(0));
         Assert.Equal(new Point(581, 440), HireDockLayout.Price(2));
         Assert.Equal("06", HireDockLayout.PriceText(6));
@@ -948,7 +948,7 @@ public sealed class UiNavigationTests
         Assert.Equal(new HireDockEntry(2, true), cells[1]);
         Assert.Equal(new HireDockEntry(3, false), cells[2]);
         Assert.Equal(new Rectangle(570, 436, 33, 24), HireDockLayout.PriceCell(2));
-        Assert.Equal(new Rectangle(603, 436, 33, 24), HireDockLayout.Reject(2));
+        Assert.Equal(new Rectangle(604, 437, 32, 13), HireDockLayout.Reject(2));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireDockLayout.Cell(3));
     }
 
@@ -975,16 +975,17 @@ public sealed class UiNavigationTests
     [Fact]
     public void HireComparisonMatchesOriginalThreeColumnPanel()
     {
-        Assert.Equal(new Rectangle(104, 124, 344, 209), HireComparisonLayout.Panel);
-        Assert.Equal(EquipmentCommandLayout.Ok, HireComparisonLayout.Ok);
-        Assert.Equal(new Rectangle(348, 138, 32, 32), HireComparisonLayout.Portrait(2));
-        Assert.Equal(369, HireComparisonLayout.StatRight(2));
+        Assert.Equal(new Rectangle(128, 124, 320, 209), HireComparisonLayout.Panel);
+        Assert.Equal(new Rectangle(0, 0, 320, 209), HireComparisonLayout.BackgroundSource);
+        Assert.Equal(new Rectangle(161, 293, 49, 22), HireComparisonLayout.Ok);
+        Assert.Equal(new Rectangle(372, 138, 32, 32), HireComparisonLayout.Portrait(2));
+        Assert.Equal(394, HireComparisonLayout.StatRight(2));
         Assert.Equal(310, HireComparisonLayout.StatY(15));
-        Assert.Equal(new Rectangle(357, 172, 12, 7), HireComparisonLayout.ValueCell(2, 0));
+        Assert.Equal(new Rectangle(382, 172, 12, 7), HireComparisonLayout.ValueCell(2, 0));
         Assert.Equal("05", HireComparisonLayout.FormatValue(0, 5));
         Assert.Equal("-2", HireComparisonLayout.FormatValue(4, -2));
         Assert.Contains("ATTACK DICE", InformationEffectTooltips.HireAt(
-            new Point(220, HireComparisonLayout.StatY(12)))[1]);
+            new Point(244, HireComparisonLayout.StatY(12)))[1]);
         Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.Portrait(3));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.StatRight(-1));
         Assert.Throws<ArgumentOutOfRangeException>(() => HireComparisonLayout.StatY(16));

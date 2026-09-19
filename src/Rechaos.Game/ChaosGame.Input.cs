@@ -44,6 +44,18 @@ public sealed partial class ChaosGame
             _message = string.Empty;
             return;
         }
+        if (_pressedComlinkSendButton is not null)
+        {
+            CancelComlinkSendButton();
+            _message = string.Empty;
+            return;
+        }
+        if (_pressedHireRejectSlot is not null)
+        {
+            CancelHireReject();
+            _message = string.Empty;
+            return;
+        }
         if (_draggedSetupPlayerSlot is not null)
         {
             CancelSetupPlayerDrag();

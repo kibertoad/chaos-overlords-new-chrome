@@ -7,6 +7,9 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    private int? _pressedHireRejectSlot;
+    private ClientScreen _pressedHireRejectScreen;
+
     private void DrawHireDock(
         SpriteBatch batch,
         PixelFont font,
@@ -44,7 +47,8 @@ public sealed partial class ChaosGame
     private void DrawHirePanel(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         if (_hireComparisonBackground is not null)
-            batch.Draw(_hireComparisonBackground, HireComparisonLayout.Panel, Color.White);
+            batch.Draw(_hireComparisonBackground, HireComparisonLayout.Panel,
+                HireComparisonLayout.BackgroundSource, Color.White);
         else
             batch.Draw(pixel, HireComparisonLayout.Panel, new Color(0, 0, 0, 245));
         var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
@@ -218,6 +222,25 @@ public sealed partial class ChaosGame
         _message = string.Empty;
     }
 
+    private void BeginHireReject(int slot, ClientScreen screen)
+    {
+        _pressedHireRejectSlot = slot;
+        _pressedHireRejectScreen = screen;
+        PlayGeneralSound(AudioRouting.PointerPushSound());
+    }
+
+    private void CompleteHireReject(Point point)
+    {
+        var slot = _pressedHireRejectSlot;
+        var screen = _pressedHireRejectScreen;
+        CancelHireReject();
+        if (slot is null || _screens.Current != screen || !HireDockLayout.Reject(slot.Value).Contains(point))
+            return;
+        SnubHireDockOffer(slot.Value, pointerButton: true);
+    }
+
+    private void CancelHireReject() => _pressedHireRejectSlot = null;
+
     private void MoveHireCursor(int delta)
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
@@ -289,7 +312,6 @@ public sealed partial class ChaosGame
     private void SnubHireDockOffer(int slot, bool pointerButton = false)
     {
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
-        if (pointerButton) PlayGeneralSound(AudioRouting.PointerPushSound());
         if (_actions is null)
         {
             ReportHireDockResult(false, OnlinePlanningClosed, pointerButton);

@@ -24,7 +24,7 @@ public static class HireDockLayout
     public static Rectangle Reject(int slot)
     {
         ValidateSlot(slot);
-        return new Rectangle(471 + slot * 66, 436, 33, 24);
+        return new Rectangle(472 + slot * 66, 437, 32, 13);
     }
 
     public static Rectangle PriceCell(int slot)
