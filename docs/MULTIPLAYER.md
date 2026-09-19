@@ -11,11 +11,15 @@ a new design over HTTP.
 The game offers the official central service at `https://chaos-overlords.dinorefurb.com` and a
 custom/self-hosted choice. Opening the Online screen probes the selected service's unversioned
 `GET /health` route and reports whether it is available before the player tries to host or join.
-Hosts give each match a name and choose whether it is publicly discoverable or join-code-only. The
-Online screen browses public waiting and ongoing matches and filters them by status, scenario, and
-AI difficulty. Code-only matches remain absent from discovery. A host still receives an
-eight-character code and can copy it to the system clipboard; joiners have a bounded Paste button
-that reads at most the eight supported characters without disturbing the player-name field.
+Hosts give each match a name and choose whether it is publicly discoverable or join-code-only;
+publicly discoverable is the default, and a server lists those matches unless its operator turned
+`PUBLIC_LISTING` off. The Online screen browses public waiting and ongoing matches and filters them
+by status, scenario, and AI difficulty. An unfiltered browse shows every match the server returned,
+including one whose settings blob this build cannot read — that session is listed without its
+scenario and mentality rather than hidden, and only a scenario or AI filter drops it. Code-only
+matches remain absent from discovery. A host still receives an eight-character code and can copy it
+to the system clipboard; joiners have a bounded Paste button that reads at most the eight supported
+characters without disturbing the player-name field.
 
 ## What the server is, and is not
 
@@ -109,7 +113,7 @@ generated from the same valibot schemas (see "Two languages, one contract").
 | Call | Who | Effect |
 |---|---|---|
 | `POST /matches` | anyone | Creates a lobby. Returns the host's token, the 8-character join code and the match view. `hostPortraitId` is the overlord face the host sits down under, stored on their roster row. `settings.gameSettings` is an object the server stores for clients (scenario, the portraits that dress the unclaimed seats, difficulty) and reads two keys of: `allowLateJoin` gates the late-join door, and `seatSummaries` is written back from the host's snapshot uploads and hash reports for the public listing. Everything else in it is opaque. The server also reads `name`, `maxPlayers`, `turnTimerSeconds`, `visibility`. An optional `password` gates joining. |
-| `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings and available late-join seats with current gang, site, and sector counts. |
+| `GET /matches` | anyone | Public waiting and ongoing matches, including filterable settings and available late-join seats with current gang, site, and sector counts. Served unless the deployment set `PUBLIC_LISTING=false`, which answers 404 `listing_disabled` instead. |
 | `POST /matches/join` | anyone | Joins by code (and password), under the caller's chosen `portraitId`. Returns that player's token. Capacity is a single atomic seat claim. |
 | `POST /matches/join-running` | anyone | Joins an ongoing late-join-enabled match in a selected never-human AI slot. The atomic claim prevents two callers taking the same seat. `portraitId` is the face that seat already wears, which the client reads out of `gameSettings`: the match was generated with it before the caller existed, so a latecomer inherits a face rather than choosing one. |
 | `GET /matches/:id` | member | Match view: players, current and previous turn (who is ready, who reported), status, seed. |
@@ -437,6 +441,13 @@ in-flight order replacement says `ready: true`, later drafts for that same turn
 continue sending `true` until the server seals it; document replacement must
 not retract readiness merely because the earlier request has left the outbox.
 
+Readiness reaches the interface as the seats that have finished, not as a count
+of them. The city top bar marks every opponent the turn is still waiting on with
+a green `WAIT` under their portrait, so "waiting for the other players" says
+which ones; the footer's tally is the same fact counted. A seat the turn does not
+seal against — a computer empire, a player who left, or one voted onto computer
+control — is never marked, and neither is the player's own.
+
 ## Client integration contract
 
 What the C# client has to do. `multiplayer/packages/client` is the reference and
@@ -521,7 +532,11 @@ recomputed. Only after pairing the state with the caller's current whole-documen
 the stream resume from the refreshed `lastEventSeq`.
 
 The desktop client writes the server, match id, player id, join code, session password, and
-membership token to an atomic local recovery record as soon as it takes a seat. A normal shutdown
+membership token to an atomic local recovery record as soon as it takes a seat. It writes the
+match's own name beside them, which reaches every member on the wire rather than only the host who
+typed it, and stamps the record each time the client adopts a turn's authoritative state. That is
+what the list of unfinished sessions is read by: each row names the game and says when it was last
+played, so a player with seats in more than one match can tell them apart. A normal shutdown
 marks that record clean; an unclean exit leaves it resumable, so the next launch points the player
 to a Reconnect action. Terminal online errors are shown on the title screen and name that recovery
 path when the saved membership may still be valid. A completed match or an explicit Leave retires

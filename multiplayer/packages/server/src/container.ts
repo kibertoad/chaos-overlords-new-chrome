@@ -4,7 +4,15 @@ import type { Context } from 'hono'
 import type { AppEnv } from './http/types'
 
 export interface ServerConfig {
-  /** Serve `GET /api/v1/matches` (public lobby browsing). Off by default for self-hosted servers. */
+  /**
+   * Serve `GET /api/v1/matches` (public lobby browsing). On by default.
+   *
+   * It lists the matches whose host chose `visibility: "public"` and nothing else, so a server
+   * that serves it still keeps every code-only lobby out of sight. Off, the route answers 404 and
+   * the game's Browse screen has nothing to show on any server — which is worth choosing
+   * deliberately, for a server that exists for one group of friends, and is the wrong thing to
+   * land on by having configured nothing.
+   */
   publicListing: boolean
   /** Interval between SSE keepalive comments. */
   sseHeartbeatMs: number
@@ -56,7 +64,7 @@ export interface ServerContainer {
 }
 
 export const DEFAULT_SERVER_CONFIG: ServerConfig = {
-  publicListing: false,
+  publicListing: true,
   sseHeartbeatMs: 20_000,
   corsOrigins: [],
 }

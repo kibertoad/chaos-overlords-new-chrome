@@ -97,12 +97,29 @@ public abstract record MultiplayerNotice
     public sealed record MatchAbandoned : MultiplayerNotice;
 
     /// <summary>
-    /// How many seats have said they are done with the open turn.
+    /// Which seats have said they are done with the open turn.
     /// </summary>
+    /// <remarks>
+    /// Seats rather than a tally, because the interface marks the opponents that are still
+    /// drafting under their own portraits: a count says how many the turn is waiting on, and the
+    /// player wants to know which.
+    /// </remarks>
     /// <param name="Turn">The turn being counted.</param>
-    /// <param name="Ready">Seats that have submitted and marked themselves ready.</param>
-    /// <param name="Seated">Seats the server is waiting on, which is the roster it seals against.</param>
-    public sealed record ReadinessChanged(int Turn, int Ready, int Seated) : MultiplayerNotice;
+    /// <param name="ReadySlots">Seats that have submitted and marked themselves ready.</param>
+    /// <param name="AwaitedSlots">
+    /// Seats the server is waiting on, which is the roster it seals against.
+    /// </param>
+    public sealed record ReadinessChanged(
+        int Turn,
+        IReadOnlySet<int> ReadySlots,
+        IReadOnlySet<int> AwaitedSlots) : MultiplayerNotice
+    {
+        /// <summary>How many seats have finished planning the turn.</summary>
+        public int Ready => ReadySlots.Count;
+
+        /// <summary>How many seats the turn seals against.</summary>
+        public int Seated => AwaitedSlots.Count;
+    }
 
     /// <summary>The server took this client's order document for a turn.</summary>
     /// <param name="Turn">The turn it was taken for.</param>

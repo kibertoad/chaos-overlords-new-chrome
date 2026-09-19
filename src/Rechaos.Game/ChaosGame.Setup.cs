@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Rechaos.Core;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 
@@ -27,6 +28,9 @@ public sealed partial class ChaosGame
     /// straight through the row of buttons underneath it.
     /// </remarks>
     private static readonly Rectangle TitleMessage = new(494, 292, 138, 118);
+
+    /// <summary>How far the version line stays clear of the right edge of the title screen.</summary>
+    private const int TitleVersionMargin = 6;
 
     private const string ObjectiveDurationWarning =
         "OBJECTIVES DISABLE TIME LIMITS";
@@ -377,6 +381,22 @@ public sealed partial class ChaosGame
         DrawTitleMessage(batch, pixel, font);
         DrawCentered(font, batch, "RESTORED BY KIBERTOAD", 430,
             new Color(185, 195, 195), 1);
+        DrawTitleVersion(batch, font);
+    }
+
+    /// <summary>
+    /// Prints the build's version in the corner the credit line leaves free.
+    /// </summary>
+    /// <remarks>
+    /// The title screen is the one place every player passes through, so it is where the number a
+    /// bug report will be filed against has to be readable without opening anything.
+    /// </remarks>
+    private static void DrawTitleVersion(SpriteBatch batch, PixelFont font)
+    {
+        var width = GameVersion.Display.Length * OriginalFontLayout.CellWidth;
+        font.Draw(batch, GameVersion.Display,
+            new Vector2(VirtualInput.Width - width - TitleVersionMargin, 430),
+            new Color(150, 160, 160), 1);
     }
 
     /// <summary>Draws whatever the last screen left to say, wrapped into the margin.</summary>

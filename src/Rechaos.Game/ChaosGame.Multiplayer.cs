@@ -303,7 +303,7 @@ public sealed partial class ChaosGame
         }
         _online.Match = view;
         _online.DeadlineAt = _session.Bootstrap.Deadline;
-        _online.SeatedSeats = view.Players.Count(player => player.Slot >= 0);
+        _online.AwaitedSlots = AwaitedSeats(view.Players);
         ResetMatchPresentation(_session.Bootstrap.State);
         if (_session.IsRestoring)
         {
@@ -314,6 +314,22 @@ public sealed partial class ChaosGame
         _message = string.Empty;
         _screens.Show(ClientScreen.City);
     }
+
+    /// <summary>
+    /// The seats the turn waits on, as the server's roster describes them.
+    /// </summary>
+    /// <remarks>
+    /// The same rule the session applies to the event stream, for the two moments the interface
+    /// holds a roster before any readiness has been reported. A seat that left or was handed to the
+    /// computer is no longer waited on; a temporarily absent one still is, until its takeover vote
+    /// says otherwise.
+    /// </remarks>
+    private static IReadOnlySet<int> AwaitedSeats(IEnumerable<PlayerView> players) =>
+        players
+            .Where(player => player.Slot is >= 0 and < MatchLimits.PlayerCount
+                && player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending)
+            .Select(player => player.Slot)
+            .ToHashSet();
 
     /// <summary>
     /// Forgets what the previous match left on screen.
@@ -390,11 +406,12 @@ public sealed partial class ChaosGame
         _online.ReadySubmissionAcknowledged = submission?.Ready == true;
         _online.ResolutionExpectedSince = null;
         _online.TurnSyncError = string.Empty;
-        _online.ReadySeats = 0;
+        _online.ReadySlots = MultiplayerUiState.NoSeats;
         _selectedGangIndex = 0;
         _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
             .FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
         if (submission?.Ready == true) CloseOnlinePlanning();
+        TouchOnlineRecovery();
         return true;
     }
 
@@ -483,7 +500,7 @@ public sealed partial class ChaosGame
                     StartOnlineMatch(updated.Match);
                 return;
             case LobbyNotice.Listed listed:
-                _online.Listings = listed.Matches;
+                _online.Listings = Describe(listed.Matches);
                 _online.DiscoverySelection = 0;
                 _online.Stage = MultiplayerStage.Discover;
                 _online.Status = listed.Matches.Count == 0
@@ -517,9 +534,7 @@ public sealed partial class ChaosGame
                         ? parsed
                         : null;
                 ResetMatchPresentation(resumed.State);
-                _online.SeatedSeats = resumed.Match.Players.Count(
-                    player => player.Slot >= 0
-                        && player.Status is WirePlayerStatus.Active or WirePlayerStatus.TakeoverPending);
+                _online.AwaitedSlots = AwaitedSeats(resumed.Match.Players);
                 _online.Status = string.Empty;
                 if (AdoptOnlineState(resumed.State, resumed.Submission, resumed.Turn))
                 {
@@ -588,8 +603,8 @@ public sealed partial class ChaosGame
                 return;
             case MultiplayerNotice.ReadinessChanged readiness:
                 if (readiness.Turn != _online.PlanningTurn) return;
-                _online.ReadySeats = readiness.Ready;
-                _online.SeatedSeats = readiness.Seated;
+                _online.ReadySlots = readiness.ReadySlots;
+                _online.AwaitedSlots = readiness.AwaitedSlots;
                 UpdateOnlineResolutionExpectation();
                 return;
             case MultiplayerNotice.OrdersAccepted accepted:
@@ -908,11 +923,29 @@ public sealed partial class ChaosGame
             membership.Player.IsHost,
             CleanExit: false,
             Completed: false,
-            _online.PasswordShown);
+            _online.PasswordShown,
+            membership.Match.Settings.Name,
+            DateTimeOffset.UtcNow);
         _activeMultiplayerRecovery = recovery;
         _multiplayerRecoveries.RemoveAll(item => SameMembership(item, recovery));
         _multiplayerRecoveries.Insert(0, recovery);
         SaveOnlineRecoveries();
+    }
+
+    /// <summary>
+    /// Stamps the seat with the moment its turn data was last stored.
+    /// </summary>
+    /// <remarks>
+    /// What the list of unfinished sessions is read by, next to the match's name: two matches a
+    /// player still has a seat in are told apart by which one they were last playing. Called where
+    /// authoritative state is adopted rather than where a turn is sent, because that is the point
+    /// the client has the turn's data to keep; a clean exit and a retirement both carry the stamp
+    /// forward untouched, since neither advances the match.
+    /// </remarks>
+    private void TouchOnlineRecovery()
+    {
+        if (_activeMultiplayerRecovery is not { Completed: false } recovery) return;
+        UpdateOnlineRecovery(recovery with { LastUpdatedAt = DateTimeOffset.UtcNow });
     }
 
     private void CompleteOnlineRecovery()

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rechaos.Core.GameModel;
@@ -116,7 +117,7 @@ public sealed partial class ChaosGame
         for (var row = 0; row < Math.Min(5, listings.Count - offset); row++)
         {
             var index = offset + row;
-            var listing = listings[index];
+            var (listing, settings) = listings[index];
             var bounds = OnlineConnectLayout.DiscoveryRow(row);
             batch.Draw(pixel, bounds, index == _online.DiscoverySelection
                 ? new Color(30, 62, 55) : new Color(4, 10, 9));
@@ -125,10 +126,13 @@ public sealed partial class ChaosGame
             var phase = listing.Status == MatchStatus.Lobby ? "WAITING" : "ONGOING";
             font.Draw(batch, $"{listing.Name}  {phase}  {listing.PlayerCount}/{listing.MaxPlayers}",
                 new Vector2(bounds.X + 6, bounds.Y + 6), Color.White, 1);
-            var settings = MultiplayerGameSettings.FromWire(listing.Settings.GameSettings);
+            // A session this build cannot read the settings of is still listed, so the second line
+            // says so rather than naming a scenario and a mentality that were never read.
             font.Draw(batch,
-                $"{ScenarioCatalog.Get(settings.Scenario).Name}  " +
-                $"{DifficultyPresentation.Label(settings.AiMentality)}",
+                settings is { } known
+                    ? $"{ScenarioCatalog.Get(known.Scenario).Name}  " +
+                        $"{DifficultyPresentation.Label(known.AiMentality)}"
+                    : "SETTINGS THIS VERSION OF THE GAME CANNOT READ",
                 new Vector2(bounds.X + 6, bounds.Y + 19), new Color(150, 165, 165), 1);
         }
         DrawButton(batch, pixel, font, OnlineConnectLayout.DiscoveryJoin, "JOIN", listings.Count > 0);
@@ -184,8 +188,15 @@ public sealed partial class ChaosGame
             DrawBorder(batch, pixel, bounds,
                 index == _online.RecoverySelection ? Color.Gold : new Color(70, 90, 88), 1);
             var role = recovery.IsHost ? "HOST" : "PLAYER";
-            font.Draw(batch, $"{recovery.DisplayName}  {recovery.JoinCode}  {role}",
-                new Vector2(bounds.X + 7, bounds.Y + 9), Color.White, 1);
+            var lastPlayed = LastPlayedLabel(recovery);
+            var detail = new Color(150, 165, 165);
+            font.Draw(batch, Fitted(SessionLabel(recovery), RowRoom(bounds, role)),
+                new Vector2(bounds.X + 7, bounds.Y + 6), Color.White, 1);
+            DrawRightAligned(font, batch, role, bounds.Right - 7, bounds.Y + 6, detail);
+            font.Draw(batch,
+                Fitted($"{recovery.DisplayName}  {recovery.JoinCode}", RowRoom(bounds, lastPlayed)),
+                new Vector2(bounds.X + 7, bounds.Y + 17), detail, 1);
+            DrawRightAligned(font, batch, lastPlayed, bounds.Right - 7, bounds.Y + 17, detail);
         }
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN", sessions.Count > 0);
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK", true);
@@ -220,11 +231,39 @@ public sealed partial class ChaosGame
         new(bounds.X, bounds.Y - OnlineConnectLayout.CaptionOffset);
 
     /// <summary>As much of a value as fits inside the box it is drawn in.</summary>
-    private static string Fitted(string value, Rectangle bounds)
+    private static string Fitted(string value, Rectangle bounds) => Fitted(value, bounds.Width - 10);
+
+    /// <summary>As much of a value as fits in a given width, in whole glyphs.</summary>
+    private static string Fitted(string value, int width)
     {
-        var columns = (bounds.Width - 10) / OriginalFontLayout.CellWidth;
+        var columns = Math.Max(0, width) / OriginalFontLayout.CellWidth;
         return value.Length > columns ? value[..columns] : value;
     }
+
+    /// <summary>
+    /// What a session row's left-hand text may take up without running into its right-hand column.
+    /// </summary>
+    /// <remarks>Seven pixels of padding at each edge, and seven more between the two columns.</remarks>
+    private static int RowRoom(Rectangle bounds, string rightHandText) =>
+        bounds.Width - 21 - rightHandText.Length * OriginalFontLayout.CellWidth;
+
+    /// <summary>The match's own name, or a stand-in where the record was written before one was kept.</summary>
+    private static string SessionLabel(MultiplayerRecovery recovery) =>
+        recovery.SessionName.Length > 0 ? recovery.SessionName : "UNNAMED SESSION";
+
+    /// <summary>
+    /// When the seat last had turn data stored, read in the player's own time zone.
+    /// </summary>
+    /// <remarks>
+    /// Formatted invariantly rather than by the current culture: the font draws
+    /// <see cref="OriginalFontLayout.FirstCharacter"/> through
+    /// <see cref="OriginalFontLayout.LastCharacter"/> and nothing else, so a culture whose default
+    /// calendar or digits fall outside that range would draw the row as blanks.
+    /// </remarks>
+    private static string LastPlayedLabel(MultiplayerRecovery recovery) =>
+        recovery.LastUpdatedAt is { } updated
+            ? updated.ToLocalTime().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+            : "TIME UNKNOWN";
 
     /// <summary>Draws a field's place while the choices on the screen leave it out of use.</summary>
     private static void DrawDisabledField(
@@ -392,6 +431,33 @@ public sealed partial class ChaosGame
     private static bool Seated(PlayerView player) => player.Status == WirePlayerStatus.Active;
 
     private static int SeatedPlayerCount(MatchView match) => match.Players.Count(Seated);
+
+    /// <summary>
+    /// Marks every opponent still drafting this turn, under their portrait on the city top bar.
+    /// </summary>
+    /// <remarks>
+    /// Drawn on black because the eight rows under the portraits are background art, which lime
+    /// text alone is not reliably legible over. Offline there is nobody to wait for, and once the
+    /// match is paused by a desync or over altogether nobody is drafting anything, so the captions
+    /// go with the turn they describe rather than lingering as a state that cannot change.
+    /// </remarks>
+    private void DrawOpponentPlanning(SpriteBatch batch, Texture2D pixel, PixelFont font)
+    {
+        if (_session is null) return;
+        var turnIsOpen = _online.Stage
+            is MultiplayerStage.Playing or MultiplayerStage.WaitingForSeal;
+        for (var slot = 0; slot < MatchLimits.PlayerCount; slot++)
+        {
+            if (!OpponentPlanningPresentation.IsDrafting(
+                    slot, _session.Slot, turnIsOpen, _online.AwaitedSlots, _online.ReadySlots))
+                continue;
+            var caption = PlayerPortraitLayout.CityCaption(
+                slot, OpponentPlanningPresentation.WaitingCaption.Length);
+            batch.Draw(pixel, caption, Color.Black);
+            font.Draw(batch, OpponentPlanningPresentation.WaitingCaption,
+                new Vector2(caption.X, caption.Y), OpponentPlanningPresentation.WaitingColor, 1);
+        }
+    }
 
     /// <summary>
     /// The countdown for the open turn, or an empty string when the match has no timer.

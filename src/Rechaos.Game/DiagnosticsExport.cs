@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json;
+using Rechaos.Core;
 
 namespace Rechaos.Game;
 
@@ -132,7 +133,7 @@ public static class DiagnosticsExport
         var manifest = new DiagnosticsExportManifest(
             CurrentFormatVersion,
             created,
-            typeof(RuntimeDiagnostics).Assembly.GetName().Version?.ToString() ?? "unknown",
+            GameVersion.Current,
             sessionCount,
             crashCount,
             "Player names, commands, saves, asset paths, exception messages, and source paths are not included.");

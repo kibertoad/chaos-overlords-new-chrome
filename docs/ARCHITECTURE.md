@@ -284,7 +284,12 @@ that runtime boundary. The extractor remains a single-file utility.
 `Build-LinuxInstaller.ps1` produces an amd64 Debian package, and
 `Build-MacInstaller.ps1` produces native x64/arm64 application-bundle `.pkg`
 installers. Before publishing, `tools/Verify-Repository.ps1` enforces the
-tracked-file legal boundary from `tools/repository-policy.json`.
+tracked-file legal boundary from `tools/repository-policy.json`. Every assembly
+is stamped with the version in the repository's `version.txt`, which the game
+shows on its title screen and quotes in bug reports, crash logs, and
+diagnostics exports; the packaging scripts reject a requested version that
+disagrees with that file and verify the stamp on the packaged executable, so an
+installer cannot be named after a version the game inside it does not report.
 `packaging/windows/RechaosOverlords.iss` detects a
 legal GOG source through registry records and bounded conventional paths, then
 optionally runs the extractor into the installed game's private `Assets`
