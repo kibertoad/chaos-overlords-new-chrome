@@ -482,7 +482,8 @@ public sealed record CreateMatchRequest(
     [property: JsonPropertyName("hostDisplayName")] string HostDisplayName,
     [property: JsonPropertyName("hostPortraitId"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? HostPortraitId,
     [property: JsonPropertyName("password"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Password,
-    [property: JsonPropertyName("protocolVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ProtocolVersion
+    [property: JsonPropertyName("protocolVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ProtocolVersion,
+    [property: JsonPropertyName("sessionVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? SessionVersion
 );
 
 public sealed record JoinMatchRequest(
@@ -535,6 +536,7 @@ public sealed record UploadSnapshotRequest(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("formatVersion")] int FormatVersion,
     [property: JsonPropertyName("protocolVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? ProtocolVersion,
+    [property: JsonPropertyName("sessionVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? SessionVersion,
     [property: JsonPropertyName("stateHash")] string StateHash,
     [property: JsonPropertyName("body")] string Body,
     [property: JsonPropertyName("seatSummaries")] IReadOnlyList<AiSeatSummary> SeatSummaries
@@ -606,6 +608,7 @@ public sealed record TurnView(
 public sealed record MatchView(
     [property: JsonPropertyName("id")] string Id,
     [property: JsonPropertyName("protocolVersion")] int ProtocolVersion,
+    [property: JsonPropertyName("sessionVersion")] int SessionVersion,
     [property: JsonPropertyName("status")] MatchStatus Status,
     [property: JsonPropertyName("settings")] MatchSettings Settings,
     [property: JsonPropertyName("hostPlayerId")] string HostPlayerId,
@@ -670,6 +673,7 @@ public sealed record SnapshotView(
     [property: JsonPropertyName("turn")] int Turn,
     [property: JsonPropertyName("formatVersion")] int FormatVersion,
     [property: JsonPropertyName("protocolVersion")] int ProtocolVersion,
+    [property: JsonPropertyName("sessionVersion")] int SessionVersion,
     [property: JsonPropertyName("stateHash")] string StateHash,
     [property: JsonPropertyName("uploadedByPlayerId")] string UploadedByPlayerId,
     [property: JsonPropertyName("uploadedAt")] string UploadedAt,

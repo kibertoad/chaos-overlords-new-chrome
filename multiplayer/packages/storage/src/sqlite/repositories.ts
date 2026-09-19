@@ -537,6 +537,7 @@ function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
           turn: snapshots.turn,
           formatVersion: snapshots.formatVersion,
           protocolVersion: snapshots.protocolVersion,
+          sessionVersion: snapshots.sessionVersion,
           stateHash: snapshots.stateHash,
           uploadedByPlayerId: snapshots.uploadedByPlayerId,
           uploadedAt: snapshots.uploadedAt,

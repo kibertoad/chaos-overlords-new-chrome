@@ -172,10 +172,14 @@ public sealed partial class ChaosGame
                 x + row, y + (open ? 2 - row : row), 5 - row * 2, 1), Color.Gold);
     }
 
+    /// <summary>The colour of a session this build cannot play.</summary>
+    private static readonly Color IncompatibleSession = new(220, 120, 90);
+
     private void DrawOnlineHistory(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         DrawOnlinePanel(batch, pixel, font, "UNFINISHED SESSIONS");
         var sessions = RecoverableOnlineSessions;
+        var selected = SelectedOnlineRecovery;
         var offset = Math.Clamp(_online.RecoverySelection - 5, 0, Math.Max(0, sessions.Count - 6));
         for (var row = 0; row < Math.Min(6, sessions.Count - offset); row++)
         {
@@ -187,22 +191,32 @@ public sealed partial class ChaosGame
                 : new Color(4, 10, 9));
             DrawBorder(batch, pixel, bounds,
                 index == _online.RecoverySelection ? Color.Gold : new Color(70, 90, 88), 1);
-            var role = recovery.IsHost ? "HOST" : "PLAYER";
-            var lastPlayed = LastPlayedLabel(recovery);
-            var detail = new Color(150, 165, 165);
-            font.Draw(batch, Fitted(SessionLabel(recovery), RowRoom(bounds, role)),
-                new Vector2(bounds.X + 7, bounds.Y + 6), Color.White, 1);
-            DrawRightAligned(font, batch, role, bounds.Right - 7, bounds.Y + 6, detail);
-            font.Draw(batch,
-                Fitted($"{recovery.DisplayName}  {recovery.JoinCode}", RowRoom(bounds, lastPlayed)),
-                new Vector2(bounds.X + 7, bounds.Y + 17), detail, 1);
-            DrawRightAligned(font, batch, lastPlayed, bounds.Right - 7, bounds.Y + 17, detail);
+            DrawHistoryRow(batch, font, bounds, recovery);
         }
-        DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN", sessions.Count > 0);
+        DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryRejoin, "REJOIN",
+            selected is { CanResume: true });
         DrawButton(batch, pixel, font, OnlineConnectLayout.HistoryBack, "BACK", true);
-        DrawCentered(font, batch, "UP/DOWN SELECT  ENTER REJOINS", 424,
-            new Color(150, 165, 165), 1);
+        DrawCentered(font, batch, OnlineHistoryPresentation.Footer(selected), 424,
+            selected is { IsCompatible: false } ? IncompatibleSession : new Color(150, 165, 165), 1);
         DrawCentered(font, batch, _online.Status, 440, Color.Gold, 1);
+    }
+
+    /// <summary>The membership on one row, with the reason beside it when it cannot be taken.</summary>
+    private static void DrawHistoryRow(
+        SpriteBatch batch, PixelFont font, Rectangle bounds, MultiplayerRecovery recovery)
+    {
+        var roleOrNote = OnlineHistoryPresentation.Note(recovery)
+            ?? (recovery.IsHost ? "HOST" : "PLAYER");
+        var lastPlayed = LastPlayedLabel(recovery);
+        var detail = new Color(150, 165, 165);
+        font.Draw(batch, Fitted(SessionLabel(recovery), RowRoom(bounds, roleOrNote)),
+            new Vector2(bounds.X + 7, bounds.Y + 6), Color.White, 1);
+        DrawRightAligned(font, batch, roleOrNote, bounds.Right - 7, bounds.Y + 6,
+            recovery.IsCompatible ? detail : IncompatibleSession);
+        font.Draw(batch,
+            Fitted($"{recovery.DisplayName}  {recovery.JoinCode}", RowRoom(bounds, lastPlayed)),
+            new Vector2(bounds.X + 7, bounds.Y + 17), detail, 1);
+        DrawRightAligned(font, batch, lastPlayed, bounds.Right - 7, bounds.Y + 17, detail);
     }
 
     private void DrawLateJoinSeats(SpriteBatch batch, Texture2D pixel, PixelFont font)

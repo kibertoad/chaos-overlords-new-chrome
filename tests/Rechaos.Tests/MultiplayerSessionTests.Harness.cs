@@ -65,6 +65,7 @@ public sealed partial class MultiplayerSessionTests
     private static MatchView View(string? deadlineAt = null) => new(
         MatchId,
         MultiplayerProtocolVersion.Current,
+        MultiplayerSessionVersion.Current,
         MatchStatus.Running,
         new MatchSettings("ADA'S CITY", 2, 300, MatchVisibility.Private, GameSettings.ToWire()),
         "p1",

@@ -290,6 +290,7 @@ public sealed partial class MultiplayerSessionTests
             2,
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
+            MultiplayerSessionVersion.Current,
             MatchStateHasher.ComputeSha256(replay.State),
             "p1",
             "2026-09-10T12:04:00.000Z",

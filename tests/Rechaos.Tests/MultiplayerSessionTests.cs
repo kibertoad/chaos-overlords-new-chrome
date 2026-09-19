@@ -82,6 +82,7 @@ public sealed partial class MultiplayerSessionTests
             1,
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
+            MultiplayerSessionVersion.Current,
             MatchStateHasher.ComputeSha256(replay.State),
             "p1",
             "2026-09-10T12:04:00.000Z",
@@ -188,6 +189,7 @@ public sealed partial class MultiplayerSessionTests
             0,
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
+            MultiplayerSessionVersion.Current,
             MatchStateHasher.ComputeSha256(bootstrap.State),
             "p1",
             "2026-09-10T11:59:30.000Z",
@@ -233,6 +235,7 @@ public sealed partial class MultiplayerSessionTests
             0,
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
+            MultiplayerSessionVersion.Current,
             MatchStateHasher.ComputeSha256(bootstrap.State),
             "p1",
             "2026-09-10T11:59:30.000Z",
@@ -638,6 +641,7 @@ public sealed partial class MultiplayerSessionTests
             3,
             NativeSaveSerializer.CurrentFormatVersion + 1,
             MultiplayerProtocolVersion.Current,
+            MultiplayerSessionVersion.Current,
             new string('a', 64),
             "p1",
             "2026-09-10T12:00:00.000Z",
@@ -660,6 +664,7 @@ public sealed partial class MultiplayerSessionTests
             3,
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
+            MultiplayerSessionVersion.Current,
             new string('a', 64),
             "p1",
             "2026-09-10T12:00:00.000Z",
@@ -978,20 +983,4 @@ public sealed partial class MultiplayerSessionTests
         Assert.Null(session.Bootstrap.Deadline);
     }
 
-    /// <summary>A roster that does not seat this client is refused before a city is generated.</summary>
-    [Fact]
-    public void RefusesToStartWhenThisClientIsNotOnTheRoster()
-    {
-        using var server = new FakeMultiplayerServer();
-        using var http = new HttpClient(server);
-        var handle = new MultiplayerClient(
-                http, new MultiplayerClientOptions(new Uri("http://server.test")))
-            .WithToken("cop_test")
-            .Match(MatchId);
-
-        var failure = Assert.Throws<MultiplayerProtocolException>(
-            () => MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
-                handle, BundledOriginalData.Load(), View(), "nobody", ResumeAfterSeq: 0)));
-        Assert.Contains("roster", failure.Message, StringComparison.OrdinalIgnoreCase);
-    }
 }

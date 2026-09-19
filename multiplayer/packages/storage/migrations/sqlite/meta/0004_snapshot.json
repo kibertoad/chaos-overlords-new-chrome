@@ -89,6 +89,14 @@
           "autoincrement": false,
           "default": 1
         },
+        "session_version": {
+          "name": "session_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
         "status": {
           "name": "status",
           "type": "text",
@@ -353,6 +361,14 @@
         },
         "protocol_version": {
           "name": "protocol_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "session_version": {
+          "name": "session_version",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,

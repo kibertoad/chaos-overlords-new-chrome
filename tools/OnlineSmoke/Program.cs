@@ -46,7 +46,8 @@ public static class Program
                 "ADA",
                 HostPortraitId: 0,
                 Password: null,
-                MultiplayerProtocolVersion.Current),
+                MultiplayerProtocolVersion.Current,
+                MultiplayerSessionVersion.Current),
             CancellationToken.None);
         Console.WriteLine($"hosted {host.Match.Id} with code {host.JoinCode}");
 

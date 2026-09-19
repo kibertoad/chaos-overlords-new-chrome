@@ -196,7 +196,8 @@ public sealed partial class ChaosGame
             _online.DisplayName.Value.Trim(),
             _online.Portrait,
             password,
-            MultiplayerProtocolVersion.Current));
+            MultiplayerProtocolVersion.Current,
+            MultiplayerSessionVersion.Current));
     }
 
     private void BeginJoin()
@@ -220,9 +221,14 @@ public sealed partial class ChaosGame
 
     private void ResumeSelectedOnlineMatch()
     {
-        var sessions = RecoverableOnlineSessions;
-        if (sessions.Count == 0) return;
-        var recovery = sessions[Math.Clamp(_online.RecoverySelection, 0, sessions.Count - 1)];
+        if (SelectedOnlineRecovery is not { } recovery) return;
+        // The match view settles this again on the way in; refusing here only spares the player a
+        // round trip that ends in the same answer, beside the row that caused it.
+        if (!recovery.IsCompatible)
+        {
+            _online.Status = OnlineHistoryPresentation.IncompatibleReason;
+            return;
+        }
         if (!Uri.TryCreate(recovery.Server, UriKind.Absolute, out var server))
         {
             _online.Status = "THE SAVED SERVER ADDRESS IS INVALID";
@@ -924,8 +930,9 @@ public sealed partial class ChaosGame
             CleanExit: false,
             Completed: false,
             _online.PasswordShown,
-            membership.Match.Settings.Name,
-            DateTimeOffset.UtcNow);
+            SessionVersion: membership.Match.SessionVersion,
+            SessionName: membership.Match.Settings.Name,
+            LastUpdatedAt: DateTimeOffset.UtcNow);
         _activeMultiplayerRecovery = recovery;
         _multiplayerRecoveries.RemoveAll(item => SameMembership(item, recovery));
         _multiplayerRecoveries.Insert(0, recovery);

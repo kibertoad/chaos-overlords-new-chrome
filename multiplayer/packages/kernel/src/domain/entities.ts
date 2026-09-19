@@ -9,8 +9,17 @@ import type {
 
 export interface Match {
   id: string
-  /** Wire protocol used by the client that created this session. */
+  /** Wire protocol spoken by the client that created this session. */
   protocolVersion: number
+  /**
+   * Shape of the session as it is stored here.
+   *
+   * Separate from `protocolVersion` because the two answer different questions: the protocol says
+   * whether a client and this server can talk, and this says whether a client can pick the match
+   * up and keep playing it. A client that speaks a newer protocol resumes a match created under an
+   * older one as long as this is the version it plays.
+   */
+  sessionVersion: number
   status: MatchStatus
   settings: MatchSettings
   hostPlayerId: string
@@ -116,8 +125,10 @@ export interface Snapshot {
   matchId: string
   turn: number
   formatVersion: number
-  /** Wire protocol used by the client that serialized this snapshot. */
+  /** Wire protocol spoken by the client that serialized this snapshot. */
   protocolVersion: number
+  /** Session shape these bytes belong to; see `Match.sessionVersion`. */
+  sessionVersion: number
   stateHash: string
   uploadedByPlayerId: string
   uploadedAt: Date
