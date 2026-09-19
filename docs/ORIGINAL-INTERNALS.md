@@ -4766,6 +4766,10 @@ completed multi-local games continue to shared awards. The shared results
 frame and both private cards now use the recovered native composition
 coordinates and player-name placement. The existing handoff portrait, Ready
 press cue, per-viewer combat state, and unread-Comlink delay remain in place.
+The recreation holds the presentation-only unread-Comlink cadence dormant
+through the automatic Game Information, Combat, and Events route, then starts
+it only when that player reaches the planning city; ordinary manually opened
+panels do not affect an already-active cadence.
 The native pointer targets for Awards, Stats, and Done are now also recovered;
 Enter/Space presentation navigation remains the separately documented
 compatible-keyboard QoL layer.

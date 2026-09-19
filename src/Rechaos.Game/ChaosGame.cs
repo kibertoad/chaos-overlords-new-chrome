@@ -135,6 +135,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private bool _openEventsAfterCombat;
     private bool _automaticDetailedCombatPresentation;
     private bool _showGameInfoAtPlanningEntry;
+    private bool _continuePlanningEntryAfterGameInfo;
+    private bool _deferComlinkAlertUntilPlanningVisible;
     private readonly Queue<PlayerId> _pendingHotSeatEliminations = [];
     private readonly HashSet<PlayerId> _presentedHotSeatEliminations = [];
     private PlayerId? _eliminationHandoffPlayer;
@@ -558,7 +560,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     break;
                 case ClientScreen.GameInfo:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        AcceptAndShow(_managementReturnScreen);
+                        AcceptAndInvoke(CloseGameInformation);
                     break;
                 case ClientScreen.Finance:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
@@ -933,7 +935,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 break;
             case ClientScreen.GameInfo:
                 if (GameInformationLayout.Ok.Contains(point))
-                    AcceptAndShow(_managementReturnScreen);
+                    AcceptAndInvoke(CloseGameInformation);
                 break;
             case ClientScreen.Finance:
                 if (FinanceLayout.Ok.Contains(point))

@@ -31,10 +31,11 @@ public sealed partial class ChaosGame
         }
         PrepareCurrentHireOffers();
         StartPlanningTimer(_inputTime);
-        UpdateComlinkAlert(_inputTime, enteringPlanning: true);
+        _deferComlinkAlertUntilPlanningVisible = true;
         if (_showGameInfoAtPlanningEntry)
         {
             _showGameInfoAtPlanningEntry = false;
+            _continuePlanningEntryAfterGameInfo = true;
             _screens.Show(ClientScreen.GameInfo);
             return;
         }
@@ -77,6 +78,7 @@ public sealed partial class ChaosGame
                 return;
             default:
                 _screens.Show(ClientScreen.City);
+                CompletePlanningEntryPresentation();
                 return;
         }
     }
@@ -87,6 +89,7 @@ public sealed partial class ChaosGame
         if (!_openEventsAfterCombat)
         {
             _screens.Show(_managementReturnScreen);
+            CompletePlanningEntryPresentation();
             return;
         }
 
@@ -100,6 +103,7 @@ public sealed partial class ChaosGame
         if (reports.Count == 0)
         {
             _screens.Show(_managementReturnScreen);
+            CompletePlanningEntryPresentation();
             return;
         }
         BeginEventReview(reports.Count);
@@ -111,10 +115,11 @@ public sealed partial class ChaosGame
         var hasUnread = _state?.Coordinator.ActivePlayer is { } playerId
             && _state.Outcome is null
             && _state.ComlinkFor(playerId).HasUnread;
-        var presentationActive = enteringPlanning || _screens.Current is not (
+        var presentationActive = !_deferComlinkAlertUntilPlanningVisible
+            && (enteringPlanning || _screens.Current is not (
             ClientScreen.Title or ClientScreen.Setup or ClientScreen.Online
             or ClientScreen.Lobby or ClientScreen.Handoff or ClientScreen.Elimination
-            or ClientScreen.Endgame);
+            or ClientScreen.Endgame));
         if (_comlinkAlertCadence.Advance(hasUnread, presentationActive, now)
             && AudioRouting.IncomingMessageSound(hasUnread) is { } alert)
             PlayGeneralSound(alert);
@@ -186,6 +191,26 @@ public sealed partial class ChaosGame
         _eventCursor = 0;
         _eventViewedPages.Clear();
         _screens.Show(_managementReturnScreen);
+        CompletePlanningEntryPresentation();
+    }
+
+    private void CloseGameInformation()
+    {
+        if (_continuePlanningEntryAfterGameInfo)
+        {
+            _continuePlanningEntryAfterGameInfo = false;
+            ShowTurnReportsOrCity();
+            return;
+        }
+
+        _screens.Show(_managementReturnScreen);
+    }
+
+    private void CompletePlanningEntryPresentation()
+    {
+        if (!_deferComlinkAlertUntilPlanningVisible) return;
+        _deferComlinkAlertUntilPlanningVisible = false;
+        UpdateComlinkAlert(_inputTime, enteringPlanning: true);
     }
 
     private void DrawLastTurnEventsFrame(

@@ -359,6 +359,8 @@ public sealed partial class ChaosGame
         // The original's outer local-player loop shows the privacy card before it enters the
         // first planner. The planner itself owns the one-time Game Information presentation.
         _showGameInfoAtPlanningEntry = GameInformationPresentation.OpensAtNewGame(_state.Setup);
+        _continuePlanningEntryAfterGameInfo = false;
+        _deferComlinkAlertUntilPlanningVisible = false;
         PresentHotSeatPlanningEntry();
     }
 

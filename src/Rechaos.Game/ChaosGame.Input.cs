@@ -115,6 +115,8 @@ public sealed partial class ChaosGame
                 CloseItemDetails();
                 break;
             case ClientScreen.GameInfo:
+                CloseGameInformation();
+                break;
             case ClientScreen.Finance:
             case ClientScreen.Ranking:
                 _screens.Show(_managementReturnScreen);

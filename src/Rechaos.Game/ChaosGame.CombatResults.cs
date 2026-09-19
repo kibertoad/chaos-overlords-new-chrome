@@ -44,7 +44,11 @@ public sealed partial class ChaosGame
     private void CloseCombatResults()
     {
         if (_openEventsAfterCombat) FinishAutomaticCombatPresentation();
-        else _screens.Show(_managementReturnScreen);
+        else
+        {
+            _screens.Show(_managementReturnScreen);
+            CompletePlanningEntryPresentation();
+        }
     }
 
     private void ReplaySelectedCombatDetail()
