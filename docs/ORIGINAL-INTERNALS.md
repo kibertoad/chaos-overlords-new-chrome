@@ -3857,6 +3857,37 @@ pointer branches, sound outcomes, and absence of a Delete branch from complete
 handler `0x0044f2fc`; native capture remains useful for pressed-state
 presentation.
 
+### BIN-ITEM-INFO-001 - `PX05001` alternate item-information panel
+
+**Observation:** Item Information handler `0x0044b699` loads `PX05001` into
+the alternate backing area and closes through the same 320-pixel crop as Game
+Information: backing `(344,144)-(664,353)` reaches final screen
+`(128,124)-(448,333)`. The item monitor copies the current 48-by-48 cell from
+its loaded `PX04xxx` 720-by-48 strip to backing `(378,161)-(426,209)`, or
+screen `(162,141)-(210,189)`. The frame counter starts at zero and advances
+through 0..14 before wrapping.
+
+Identification starts at backing `(444,171)`, with the type right-aligned to
+backing x=624. Three description buffers of exactly 30 bytes are written at
+backing x=444, y=189, 198, and 207. Cost and Tech Level use two-cell numeric
+fields at backing x=516 and x=612, y=236; their fourteen statistic fields use
+those same x positions at screen rows 243, 252, 270, 279, 288, 297, and 306.
+Those coordinates map to screen identification `(228,151)`, type right edge
+408, description rows y=169/178/187, and numeric field origins x=300/396.
+The sole activation control is the standard bottom face at local
+`(33,169)-(82,191)`: Enter/Execute and a successful pointer press close the
+panel, while an outside press takes the rejected-input path.
+
+**Interpretation:** `PX05001` is an alternate 320-by-209 panel, not the
+344-by-209 shared panel. Its 30-byte description rows and shifted origins are
+part of the native layout; using the shared panel's 29-column description and
+x=199 identification origin overwrites the template labels and causes the
+identification/description overlap.
+
+**Confidence:** High from complete renderer and input handler `0x0044b699`,
+including literal backing/destination rectangles, text destinations, fixed
+numeric helper widths, frame-wrap branch, and exit control.
+
 ### BIN-GAME-INFO-001 - alternate panel crop and field origins
 
 **Observation:** Game Information handler `0x0045519d` loads `PX05021` into

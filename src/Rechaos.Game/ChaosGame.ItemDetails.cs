@@ -28,7 +28,8 @@ public sealed partial class ChaosGame
         else
             DrawCommands(batch, pixel, font, state);
         if (_itemInfoBackground is not null)
-            batch.Draw(_itemInfoBackground, ItemInformationLayout.Panel, Color.White);
+            batch.Draw(_itemInfoBackground, ItemInformationLayout.Panel,
+                ItemInformationLayout.BackgroundSource, Color.White);
         else
             batch.Draw(pixel, ItemInformationLayout.Panel, new Color(0, 0, 0, 245));
         if (_itemDetailsId is not { } itemId) return;
@@ -43,19 +44,17 @@ public sealed partial class ChaosGame
             batch.Draw(_itemPortraits, ItemInformationLayout.CompactPortrait,
                 OriginalSpriteLayout.ItemPortrait(item.Id), Color.White);
         font.Draw(batch, item.Name,
-            new Vector2(SharedPanelLayout.X(95), SharedPanelLayout.Y(27)), Color.Lime, 1);
+            new Vector2(ItemInformationLayout.NameLeft, ItemInformationLayout.HeaderY), Color.Lime, 1);
         DrawPanelValue(font, batch, ItemInformationLayout.TypeLabel(item.Type),
-            ItemInformationLayout.RightValueRight, SharedPanelLayout.Y(27));
+            ItemInformationLayout.TypeRight, ItemInformationLayout.HeaderY);
         foreach (var entry in WrapPanelText(item.Description, ItemInformationLayout.DescriptionColumns).Take(3)
                      .Select((text, row) => (text, row)))
             font.Draw(batch, entry.text,
-                new Vector2(SharedPanelLayout.X(95),
-                    SharedPanelLayout.Y(45 + entry.row * 9)), Color.Lime, 1);
+                new Vector2(ItemInformationLayout.DescriptionLeft,
+                    ItemInformationLayout.DescriptionY + entry.row * 9), Color.Lime, 1);
 
-        DrawPanelValue(font, batch, item.Cost, ItemInformationLayout.LeftValueRight,
-            SharedPanelLayout.Y(92));
-        DrawPanelValue(font, batch, item.TechLevel, ItemInformationLayout.RightValueRight,
-            SharedPanelLayout.Y(92));
+        DrawItemPanelValue(font, batch, item.Cost, ItemInformationLayout.LeftValueLeft, 216);
+        DrawItemPanelValue(font, batch, item.TechLevel, ItemInformationLayout.RightValueLeft, 216);
         int[] left =
         [
             item.Stats.Combat, item.Stats.Defense, item.Stats.Chaos, item.Stats.Control,
@@ -69,8 +68,8 @@ public sealed partial class ChaosGame
         for (var row = 0; row < left.Length; row++)
         {
             var y = ItemInformationLayout.StatisticY(row);
-            DrawPanelValue(font, batch, left[row], ItemInformationLayout.LeftValueRight, y);
-            DrawPanelValue(font, batch, right[row], ItemInformationLayout.RightValueRight, y);
+            DrawItemPanelValue(font, batch, left[row], ItemInformationLayout.LeftValueLeft, y);
+            DrawItemPanelValue(font, batch, right[row], ItemInformationLayout.RightValueLeft, y);
         }
         if (_hoverPoint is { } hover)
             DrawHoverTooltip(batch, pixel, font, hover, InformationEffectTooltips.ItemAt(hover));
@@ -78,16 +77,32 @@ public sealed partial class ChaosGame
 
     private static void ClearItemInformationFields(SpriteBatch batch, Texture2D pixel)
     {
-        batch.Draw(pixel, SharedPanelLayout.At(94, 27, 146, 7), Color.Black);
-        batch.Draw(pixel, SharedPanelLayout.At(243, 27, 36, 7), Color.Black);
-        batch.Draw(pixel, SharedPanelLayout.At(94, 45, 185, 25), Color.Black);
-        batch.Draw(pixel, SharedPanelLayout.At(171, 92, 12, 7), Color.Black);
-        batch.Draw(pixel, SharedPanelLayout.At(267, 92, 12, 7), Color.Black);
+        batch.Draw(pixel, new Rectangle(ItemInformationLayout.NameLeft, ItemInformationLayout.HeaderY, 114, 7), Color.Black);
+        batch.Draw(pixel, new Rectangle(ItemInformationLayout.TypeRight - 36, ItemInformationLayout.HeaderY, 36, 7), Color.Black);
+        batch.Draw(pixel, new Rectangle(ItemInformationLayout.DescriptionLeft, ItemInformationLayout.DescriptionY, 180, 25), Color.Black);
+        ClearItemValueField(batch, pixel, ItemInformationLayout.LeftValueLeft, 216);
+        ClearItemValueField(batch, pixel, ItemInformationLayout.RightValueLeft, 216);
         for (var row = 0; row < 7; row++)
         {
             var y = ItemInformationLayout.StatisticY(row);
-            batch.Draw(pixel, new Rectangle(275, y, 12, 7), Color.Black);
-            batch.Draw(pixel, new Rectangle(371, y, 12, 7), Color.Black);
+            ClearItemValueField(batch, pixel, ItemInformationLayout.LeftValueLeft, y);
+            ClearItemValueField(batch, pixel, ItemInformationLayout.RightValueLeft, y);
         }
     }
+
+    private static void DrawItemPanelValue(PixelFont font, SpriteBatch batch, int value, int left, int y)
+    {
+        var text = value.ToString();
+        if (text.Length > 2)
+        {
+            font.Draw(batch, text, new Vector2(left, y), Color.Lime, 1);
+            return;
+        }
+        font.Draw(batch, text,
+            new Vector2(GangInformationLayout.ValueTextLeft(left, text), y), Color.Lime, 1);
+    }
+
+    private static void ClearItemValueField(SpriteBatch batch, Texture2D pixel, int left, int y) =>
+        batch.Draw(pixel, new Rectangle(left, y,
+            3 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
 }

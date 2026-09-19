@@ -125,7 +125,7 @@ public sealed class UiNavigationTests
     [Fact]
     public void GangSiteAndItemEffectsExplainTheirRulesAndScope()
     {
-        Assert.Equal(29, ItemInformationLayout.DescriptionColumns);
+        Assert.Equal(30, ItemInformationLayout.DescriptionColumns);
         foreach (var row in Enumerable.Range(0, 7))
         {
             var gangLeft = InformationEffectTooltips.GangAt(
@@ -679,8 +679,8 @@ public sealed class UiNavigationTests
         Assert.Equal(244, SiteInformationLayout.StatisticY(0));
         Assert.Equal(271, SiteInformationLayout.StatisticY(2));
         Assert.Equal(307, SiteInformationLayout.StatisticY(6));
-        Assert.Equal(new Rectangle(138, 141, 48, 48), ItemInformationLayout.Portrait);
-        Assert.Equal(new Rectangle(152, 155, 20, 20), ItemInformationLayout.CompactPortrait);
+        Assert.Equal(new Rectangle(162, 141, 48, 48), ItemInformationLayout.Portrait);
+        Assert.Equal(new Rectangle(176, 155, 20, 20), ItemInformationLayout.CompactPortrait);
         Assert.Equal("RANGE", ItemInformationLayout.TypeLabel(2));
         Assert.Equal("ARMOR", ItemInformationLayout.TypeLabel(3));
         Assert.Equal(243, ItemInformationLayout.StatisticY(0));

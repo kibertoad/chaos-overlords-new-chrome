@@ -473,10 +473,13 @@ other gang-command panels, is the template's local `(26,17,64,64)` rectangle at
 screen `(130,142,64,64)`; Attack's opponent cells begin at screen x 202.
 `PX05001` is now shared by Purchase and Research: a stationary item-row
 double-click opens its art, type, description, cost, tech level and fourteen
-modifiers, then returns to the same tab/selection. Its local `(34,17,48,48)`
-monitor aperture is screen `(138,142,48,48)` and continuously plays the item's
-15-frame `PX04xxx` rotation at 80 ms per frame. The compact `PX04999` inventory
-icon is centered in that aperture only as a fallback when a rotation is absent.
+modifiers, then returns to the same tab/selection. It uses the same 320-pixel
+alternate crop as Game Information: screen bounds `(128,124,320,209)`, a
+48-by-48 monitor aperture at `(162,141)`, identification at `(228,151)`, three
+30-character description rows at y=169, 178, and 187, and the sole exit face at
+`(161,293,49,22)`. The monitor continuously plays the item's 15-frame
+`PX04xxx` rotation at 80 ms per frame. The compact `PX04999` inventory icon is
+centered in that aperture only as a fallback when a rotation is absent.
 
 `PX05002` is the Site Information panel. Its local `(28,15,120,64)` aperture is
 screen `(132,140,120,64)` and uses the same `PX02000` strip as the

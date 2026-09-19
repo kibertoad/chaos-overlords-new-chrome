@@ -609,13 +609,20 @@ public static class SiteInformationLayout
 
 public static class ItemInformationLayout
 {
-    public static Rectangle Panel => SharedPanelLayout.Panel;
-    public static Rectangle Portrait => SharedPanelLayout.At(34, 17, 48, 48);
-    public static Rectangle CompactPortrait => SharedPanelLayout.At(48, 31, 20, 20);
-    public static Rectangle Ok => EquipmentCommandLayout.Ok;
-    public const int DescriptionColumns = 29;
-    public static int LeftValueRight => SharedPanelLayout.X(183);
-    public static int RightValueRight => SharedPanelLayout.X(279);
+    // Native handler 0x0044b699 copies PX05001's 320-pixel alternate crop.
+    public static Rectangle Panel => new(128, 124, 320, 209);
+    public static Rectangle BackgroundSource => new(0, 0, 320, 209);
+    public static Rectangle Portrait => new(162, 141, 48, 48);
+    public static Rectangle CompactPortrait => new(176, 155, 20, 20);
+    public static Rectangle Ok => new(161, 293, 49, 22);
+    public const int DescriptionColumns = 30;
+    public const int NameLeft = 228;
+    public const int HeaderY = 151;
+    public const int TypeRight = 408;
+    public const int DescriptionLeft = 228;
+    public const int DescriptionY = 169;
+    public const int LeftValueLeft = 300;
+    public const int RightValueLeft = 396;
     public static int StatisticY(int row) => GangInformationLayout.StatisticY(row);
 
     public static string TypeLabel(int itemType) => itemType switch

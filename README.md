@@ -98,6 +98,9 @@ presentation-only conveniences that make the original systems easier to read:
 - Command pickers name their valid gang, sector, site, and item targets. In the
   detailed-sector view, hovering an assigned gang highlights its queued Move,
   Influence, or Attack target directly on the board, building, or gang card.
+- Double-clicking an equipped item in Gang Information opens its Item
+  Information panel; closing it returns to the same gang without changing the
+  authoritative match state.
 - The mouse-facing Give panel keeps its recovered original item and recipient
   cells, while Up/Down cycles eligible recipients as an additional keyboard
   navigation shortcut.
