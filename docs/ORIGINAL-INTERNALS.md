@@ -4375,6 +4375,32 @@ remains unobserved.
 routed until the native Help menu itself is recovered. Adding an invented title
 button would be a recreation-only UI change rather than a faithful port.
 
+### BIN-UI-TITLE-001 - title canvas and dormant demo promotion
+
+**Observation:** The title loop at `0x00460ccf` repeatedly loads `PX00130`
+into surface 1 at its full 640-by-460 extent, then opaque-copies that surface
+to the display before entering the title routes. The same sequence appears on
+initial entry and on returns from local setup, legacy-network setup, and load.
+The decoded sheet contains the Chaos Overlords logo and copyright title canvas.
+
+`PX00131` is also a full 640-by-460 sheet, but its only renderer is the
+dedicated blocking presenter at `0x004653de`. That presenter draws the sheet,
+restores it after system messages, and exits for close-event types `2`, `4`,
+`6`, or `18`. The decoded text is a limited/demo-version sales promotion. A
+complete direct-reference census finds no caller for that presenter in the
+supported 1.1 executable, unlike the live `PX00130` title loop.
+
+**Interpretation:** `PX00130` is the live title background. `PX00131` is
+retained demo-build promotional content, not a normal full-version first-run
+splash or title interaction.
+
+**Confidence:** High. The resource loads, display copies, decoded sheets, and
+the complete direct-call census agree.
+
+**Recreation status:** The recreation uses `PX00130` for its title background.
+It deliberately does not route `PX00131`; adding a new route for a presenter
+with no direct caller in the supported executable would invent behavior.
+
 ### BIN-UI-MENU-001 - native menu resource and command groups
 
 **Observation:** RT_MENU resource 101 defines the original application menu.

@@ -14,8 +14,8 @@ original-game capture confirms the screen and interaction state.
 |---|---|---|---|
 | `PX00100` | Publisher/developer credits; a blocking full-canvas presenter entered from `Help` → `About Chaos Overlords...` (menu resource 101, command `0x8003`, dispatcher event `(0x80, 3)`) | High from visible text, menu resource, and complete presenter `0x00464d53` | The native Help-menu surface is not yet routed; do not substitute a title-canvas button |
 | `PX00128` | Main city view and right control-panel frame | High from visible labels | City screen background |
-| `PX00130` | Chaos Overlords title/logo | High from visible title | Title screen background |
-| `PX00131` | Limited/demo-version promotion | High from visible text | Not used for full version |
+| `PX00130` | Chaos Overlords title/logo/copyright canvas | High from decoded art and complete title-loader path | Title screen background |
+| `PX00131` | Limited/demo-version promotion modal; dedicated presenter has no direct caller in the supported executable | High from decoded art, presenter analysis, and complete direct-call census | Deliberately unrouted dormant/demo content |
 | `PX00143` | Full local objective/player setup | High from visible labels and load at `0x0040e150` | Setup screen background |
 | `PX00144` | Legacy network host lobby: four configurable seats and host-side readiness polling | High from complete `0x004677f0` presenter/handler and its host-address message path | Unsupported legacy network protocol; do not reuse as local setup |
 | `PX00145` | Legacy compact session editor: four configurable seats after a legacy connection opens | High from complete `0x0040b9c0` handler and its distinct connection/setup path | Unsupported legacy network protocol; do not reuse as local setup |
