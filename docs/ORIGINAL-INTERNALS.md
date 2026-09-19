@@ -3883,15 +3883,27 @@ second cell. The same handler negates the stored upkeep before rendering it.
 Its no-instance force branch draws the two-character unknown marker in that
 same two-cell field.
 
+A focused recheck of `0x00414187` and its `PX05000`/`PX05022` call sites
+shows that every such numeric call supplies a literal width of two and disables
+leading zeroes. For a one-digit value, the first iteration copies atlas cell
+zero (the opaque blank glyph) over the first destination cell, then the second
+copies the digit. Negative values select the minus-sign source row before that
+same two-cell walk. The verified decoded `PX05022` art contains exactly two
+green `0` glyphs at every numeric field before this overwriting occurs; it does
+not contain a value multiplier or a literal `00` suffix.
+
 **Interpretation:** Gang numeric fields are not generic right-aligned strings.
 They occupy precisely the two cells beginning at the recovered field origin.
 Rendering a live digit before that field leaves the zero placeholders visible,
 producing the erroneous `300`/`??00` padding and can erase adjacent panel
-pixels.
+pixels. The raw table value `3` must therefore replace the placeholder with a
+blank-plus-`3` field, not be scaled to 300. A visible `00` after a live value
+is evidence that the cleared/drawn field began at the wrong pixel origin.
 
-**Confidence:** High static evidence from the complete `PX05000` renderer
-`0x00449e80` and the fixed-width number helper `0x00414187`; panel asset
-inspection confirms each placeholder field is two glyph cells wide.
+**Confidence:** High static evidence from the complete `PX05000` and
+`PX05022` renderers (`0x00449e80`, `0x00455b6b`), their bounded helper-call
+contexts, and fixed-width number helper `0x00414187`; verified decoded panel
+art confirms each placeholder field is two glyph cells wide.
 
 ### BIN-MOVEMENT-001 - Terminate pass before roster-ordered Move
 
