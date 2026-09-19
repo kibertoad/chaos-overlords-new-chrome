@@ -249,6 +249,34 @@ handlers, and matching `PX00128`/`PX00129` artwork.
 **Next validation:** Remaining main-screen static work is content-layer and
 cursor-role classification rather than console hit geometry.
 
+### BIN-UI-034 - native pointer is stock-arrow/wait, not an atlas sprite
+
+**Observation:** Window bootstrap `0x00465620` obtains its class cursor through
+`LoadCursorA`; the executable contains no PX cursor resource path. Cursor helper
+`0x00465bc8` caches its selected state and maps five selector values to stock
+Windows cursor IDs: 0 is `IDC_ARROW` (`0x7f00`), 1 is `IDC_IBEAM` (`0x7f01`),
+2 is `IDC_CROSS` (`0x7f03`), 3 is `IDC_NO` (`0x7f88`), and 4 is `IDC_WAIT`
+(`0x7f02`). It loads the selected system handle and passes it directly to
+`SetCursor`; there is no image decode, atlas copy, or custom hotspot involved.
+
+The complete direct-call census contains 35 callers: all literal, with 20
+selecting Arrow and 15 selecting Wait. No direct caller selects I-beam, Cross,
+or No. The calls use the helper's force-update argument when changing into or
+out of the synchronous original setup/load/resolve paths, so its state cache
+does not suppress the transition. The three other switch branches are retained
+code paths but have no direct caller in this executable.
+
+**Interpretation:** Native interaction does not add cursor frames to `PX00129`
+or any other extracted resource. The playable recreation's framework-managed
+standard pointer correctly covers the reachable Arrow baseline and needs no
+atlas-derived pointer, crosshair, text caret, or unavailable sprite. The native
+Wait cursor is only visible around original synchronous work, whereas modern
+asynchronous UI keeps its controls responsive and communicates pending work
+in-screen.
+
+**Confidence:** High from the complete import references, cursor-helper body,
+all direct caller arguments, and absence of a custom-resource dataflow.
+
 ### BIN-UI-033 - exact Siege and Big Man objective-sector pylons
 
 **Observation:** Complete city compositor `0x004123cc` first copies the neutral
@@ -4330,6 +4358,58 @@ and renderer ownership.
 
 **Recreation status:** The modern online flow is intentionally independent. No
 legacy transport, screen, record encoding, or compatibility claim is added.
+
+### BIN-HOTSEAT-002 - private handoff ordering and terminal-player path
+
+**Observation:** The outer local-game loop at `0x0046e766` counts active local
+players before it starts their planning visits and enables `PX00132` only when
+more than one remains. For an ordinary active local player it calls the
+`PX00132` presenter at `0x004396c0`, records that player as the current viewer,
+and then enters planning at `0x0046fd80`. The presenter itself is a blocking
+event loop: its sole Ready control uses the slot-2 pressed-control helper at
+`0x00439f7a`, and neither its keyboard nor pointer paths continue until that
+control completes or the outer menu/quit state interrupts it.
+
+Planning entry makes the ordering unambiguous. It first invokes either the
+simple Combat Results presenter `0x00451f80` or Detailed Combat presenter
+`0x0042e040`, selected by the Detailed Combat option. `0x00451f80` silently
+returns for an empty eligible-sector set when called in this automatic mode;
+when results exist, its panel event loop returns before planning continues.
+Only after that call returns does `0x0046fd80` test and open Last Turn Events
+at `0x0044f2fc`. The same function rebuilds unread-Comlink state after those
+private presentations and emits the initial alert only afterwards.
+
+The outer loop has a distinct terminal-player branch. A local player marked
+for elimination still receives the `PX00132` handoff in a multi-local game,
+then receives the elimination presentation before the slot is retired; it is
+not silently skipped. Single-local play bypasses the handoff gate.
+
+**Interpretation:** `PX00132` is a privacy boundary for a locally controlled
+turn, not merely a decorative next-player card. For a normal hot-seat handoff,
+the order is **Ready -> automatic combat (Simple or Detailed) -> Last Turn
+Events -> planning city**. Combat and events remain separate blocking/private
+presentations; events must not be shown first just because both queues are
+nonempty. An eliminated local player also owns their terminal presentation
+before later local players are considered.
+
+**Confidence:** High static evidence for the multi-local gate, Ready control,
+normal and terminal call paths, and Combat-before-Events order. Exact native
+animation cadence and the terminal-screen artwork timing still require runtime
+capture.
+
+**Recreation status:** Automatic handoff routing now follows Combat-before-
+Events. Simple Combat opens `PX05012` and continues to Last Turn Events only
+when its private panel closes. Detailed Combat starts its bounded recreation
+presentation over the city and then follows the same event chain; its
+non-blocking/skippable behavior remains an explicit modern safety correction
+for the known native detailed-combat freeze. The existing handoff portrait,
+Ready press cue, per-viewer combat state, and unread-Comlink delay remain in
+place. Terminal local-player sequencing remains open until a native capture
+closes the private elimination-screen details.
+
+**Next validation:** Capture a multi-local elimination followed by another
+human turn, and capture Simple and Detailed handoffs containing both a combat
+result and an event report to corroborate modal completion and timing.
 
 ### BIN-HIRE-001 - initial and replacement offers
 

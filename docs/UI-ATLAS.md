@@ -151,6 +151,9 @@ silently exposed as compatible online modes.
 - All mapped screens render in a 640 by 460 virtual canvas.
 - Scaling uses point sampling and centered letterboxing.
 - Mouse coordinates are inverse-mapped through the same scale/offset as drawing.
+- The native pointer is a stock system cursor, not a `PX` sprite. Static direct
+  callers select Arrow or Wait only; no atlas cursor frame, hotspot, or custom
+  pointer transparency remains to map.
 - Extracted RGB555 bitmaps are loaded from the installed asset pack; they are
   not embedded in source or redistributed.
 - `PX00129` contains sixteen 32-by-32 overlord portraits across source row
@@ -524,11 +527,11 @@ art. The native handler has no in-panel Detail replay control: Detailed Combat
 uses the separate right-console route. Its one bottom face is local
 `(33,169)-(82,191)` and exits the bounded presentation queue without touching
 match state. At handoff, only visible combat from the immediately completed turn is
-eligible. Last Turn Events opens first
-when both exist, and Detailed animation capture waits until the handoff/event
-privacy panels have closed. Each hot-seat player has an independent presentation
-cursor, while load/replay initialization suppresses historical autoplay for all
-viewers. Both identities are confirmed by
+eligible. Automatic Combat opens first when both combat and reports exist; Last
+Turn Events opens only after the Combat presentation closes. Detailed Combat
+uses the same order through the recreation's bounded overlay. Each hot-seat
+player has an independent presentation cursor, while load/replay initialization
+suppresses historical autoplay for all viewers. Both identities are confirmed by
 their template text, apertures, and the supplied original Combat capture.
 
 `PX05010` is the paged Last Turn Events panel. At the next human-player handoff,
@@ -591,7 +594,7 @@ load, and replay initialization clear the presentation-only archive.
 1. Identify any remaining main-city content layers outside the closed ownership,
    objective-pylon, site, gang-status, and selection compositions; its
    right-console hit and pressed geometry is closed.
-2. Map remaining cursor frames, selection/pressed-state sprites and
-   transparency; setup card hit/drag geometry is closed.
+2. Map remaining selection/pressed-state sprites and transparency; setup card
+   hit/drag geometry and native pointer ownership are closed.
 3. Capture reference screenshots for title, every setup configuration and the
    initial city, then add masked native-resolution golden comparisons.

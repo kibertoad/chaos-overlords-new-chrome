@@ -36,14 +36,58 @@ public sealed partial class ChaosGame
         }
         var reports = LastTurnReports(_state, playerId);
         var hasCombat = VisibleCombatResults(_state, playerId).Count > 0;
-        if (reports.Count == 0)
+        _openEventsAfterCombat = false;
+        _automaticDetailedCombatPresentation = false;
+        switch (HandoffPresentationOrder.First(hasCombat, reports.Count > 0))
         {
-            if (hasCombat) OpenCombatResults(ClientScreen.City);
-            else _screens.Show(ClientScreen.City);
+            case HandoffPresentationStep.Combat:
+                // The original's planning entry displays the automatic combat presentation before
+                // it opens Last Turn Events. Detailed Combat remains a bounded recreation overlay,
+                // but starts over the city rather than after the private event review.
+                _openEventsAfterCombat = reports.Count > 0;
+                _managementReturnScreen = ClientScreen.City;
+                if (_detailedCombat && _combatAnimationTextures.Count > 0)
+                {
+                    _automaticDetailedCombatPresentation = true;
+                    _screens.Show(ClientScreen.City);
+                }
+                else
+                {
+                    OpenCombatResults(ClientScreen.City);
+                }
+                return;
+            case HandoffPresentationStep.Events:
+                _managementReturnScreen = ClientScreen.City;
+                BeginEventReview(reports.Count);
+                _screens.Show(ClientScreen.Events);
+                return;
+            default:
+                _screens.Show(ClientScreen.City);
+                return;
+        }
+    }
+
+    private void FinishAutomaticCombatPresentation()
+    {
+        _automaticDetailedCombatPresentation = false;
+        if (!_openEventsAfterCombat)
+        {
+            _screens.Show(_managementReturnScreen);
             return;
         }
-        _openCombatAfterEvents = hasCombat;
-        _managementReturnScreen = ClientScreen.City;
+
+        _openEventsAfterCombat = false;
+        if (_state?.Coordinator.ActivePlayer is not { } playerId)
+        {
+            _screens.Show(_managementReturnScreen);
+            return;
+        }
+        var reports = LastTurnReports(_state, playerId);
+        if (reports.Count == 0)
+        {
+            _screens.Show(_managementReturnScreen);
+            return;
+        }
         BeginEventReview(reports.Count);
         _screens.Show(ClientScreen.Events);
     }
@@ -126,15 +170,7 @@ public sealed partial class ChaosGame
         }
         _eventCursor = 0;
         _eventViewedPages.Clear();
-        if (_openCombatAfterEvents)
-        {
-            _openCombatAfterEvents = false;
-            OpenCombatResults(_managementReturnScreen);
-        }
-        else
-        {
-            _screens.Show(_managementReturnScreen);
-        }
+        _screens.Show(_managementReturnScreen);
     }
 
     private void DrawLastTurnEventsFrame(
@@ -275,6 +311,24 @@ public sealed partial class ChaosGame
         batch.Draw(pixel, LastTurnEventsLayout.ObjectValue, Color.Black);
         batch.Draw(pixel, LastTurnEventsLayout.StatusValue, Color.Black);
     }
+}
+
+public enum HandoffPresentationStep
+{
+    City,
+    Combat,
+    Events
+}
+
+/// <summary>
+/// The original planning entry is synchronous: combat is presented before private turn reports.
+/// This keeps both automatic presentation paths on that shared, testable order.
+/// </summary>
+public static class HandoffPresentationOrder
+{
+    public static HandoffPresentationStep First(bool hasCombat, bool hasReports) => hasCombat
+        ? HandoffPresentationStep.Combat
+        : hasReports ? HandoffPresentationStep.Events : HandoffPresentationStep.City;
 }
 
 public static class LastTurnEventProjection

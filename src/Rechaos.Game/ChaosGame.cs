@@ -131,7 +131,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private int _combatSummaryCursor;
     private long _combatSummaryEventSequence = -1;
     private PlayerId? _combatSummaryOpponent;
-    private bool _openCombatAfterEvents;
+    private bool _openEventsAfterCombat;
+    private bool _automaticDetailedCombatPresentation;
     private int _eventCursor;
     private readonly HashSet<int> _eventViewedPages = [];
     private readonly LastTurnEventArchive _lastTurnEventArchive = new();
@@ -411,6 +412,8 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 return;
             }
         }
+        if (_automaticDetailedCombatPresentation)
+            FinishAutomaticCombatPresentation();
         if (rightClicked && !_gameMenuOpen) CancelCurrentInteraction();
         if (_gameMenuOpen)
         {
@@ -592,7 +595,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveCombatSummary(1);
                     if (Pressed(keyboard, Keys.D)) ReplaySelectedCombatDetail();
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        AcceptAndShow(_managementReturnScreen);
+                    {
+                        AcceptInput();
+                        CloseCombatResults();
+                    }
                     break;
                 case ClientScreen.Search:
                     if (Pressed(keyboard, Keys.Left))

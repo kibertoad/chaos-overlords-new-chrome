@@ -29,6 +29,19 @@ public sealed class CombatResultProjectionTests
             CombatResultProjection.IsFromLastCompletedTurn(0, 0));
     }
 
+    [Theory]
+    [InlineData(false, false, HandoffPresentationStep.City)]
+    [InlineData(false, true, HandoffPresentationStep.Events)]
+    [InlineData(true, false, HandoffPresentationStep.Combat)]
+    [InlineData(true, true, HandoffPresentationStep.Combat)]
+    public void HandoffPresentsCombatBeforePrivateTurnReports(
+        bool hasCombat,
+        bool hasReports,
+        HandoffPresentationStep expected)
+    {
+        Assert.Equal(expected, HandoffPresentationOrder.First(hasCombat, hasReports));
+    }
+
     [Fact]
     public void AnimationProgressIsIndependentForEachHotSeatPlayer()
     {

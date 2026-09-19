@@ -117,8 +117,10 @@ public sealed partial class ChaosGame
             case ClientScreen.GameInfo:
             case ClientScreen.Finance:
             case ClientScreen.Ranking:
-            case ClientScreen.CombatSummary:
                 _screens.Show(_managementReturnScreen);
+                break;
+            case ClientScreen.CombatSummary:
+                CloseCombatResults();
                 break;
             case ClientScreen.Items:
                 _screens.Show(ClientScreen.City);

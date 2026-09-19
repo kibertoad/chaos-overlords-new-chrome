@@ -27,6 +27,12 @@ Last updated: 2026-09-19
 
 ## Latest playable work
 
+- Cursor mapping is statically closed: the original never decodes a custom
+  pointer sprite. Its five-branch helper selects Windows Arrow, I-beam, Cross,
+  No, or Wait cursors, but every direct caller in this build selects only Arrow
+  or Wait. The recreation correctly retains its framework-managed standard
+  pointer rather than inventing a PX-atlas cursor.
+
 - Static mapping closes the three visually similar but operationally separate
   legacy network setup resources. `PX00144` is the host lobby, `PX00145` a
   compact session editor, and `PX00146` a participant-ready screen; their exact
@@ -321,13 +327,14 @@ Last updated: 2026-09-19
   320-pixel alternate crop at `(128,124)` instead of screen origin. Its three
   portraits, right-aligned values, and irregular sixteen-row baselines follow
   the template pixels.
-- Handoff now auto-presents combat from the immediately completed turn. When
-  both report types exist, Last Turn Events opens first and then chains into
-  Combat Results; Detailed animation capture waits until private handoff/event
-  panels have closed. Its event cursor is per player, so one hot-seat viewer
-  cannot consume another's Detailed playback; loading initializes every cursor
-  past historical events. Manual Combat Summary also refuses an empty result set
-  and no longer accumulates historical combats from every prior turn.
+- Handoff now auto-presents combat from the immediately completed turn before
+  Last Turn Events, exactly as the original planning-entry call order requires.
+  Simple Combat blocks in `PX05012` and then chains to Events when present;
+  Detailed Combat uses the same order through its bounded city-overlay safety
+  presentation. Its event cursor is per player, so one hot-seat viewer cannot
+  consume another's Detailed playback; loading initializes every cursor past
+  historical events. Manual Combat Summary also refuses an empty result set and
+  no longer accumulates historical combats from every prior turn.
 - Last Turn Events now tracks which report pages were actually visited. Closing
   before viewing every page preserves the report queue and blinks the Events
   control; viewing all pages clears it through replay-recorded dismissals. The

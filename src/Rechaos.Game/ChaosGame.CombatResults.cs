@@ -33,12 +33,18 @@ public sealed partial class ChaosGame
         if (CombatResultsLayout.Ok.Contains(point))
         {
             AcceptInput();
-            _screens.Show(_managementReturnScreen);
+            CloseCombatResults();
             return;
         }
         if (CombatResultsLayout.Previous.Contains(point)) MoveCombatSummary(-1);
         else if (CombatResultsLayout.Next.Contains(point)) MoveCombatSummary(1);
         else SelectCombatSummaryEntry(point);
+    }
+
+    private void CloseCombatResults()
+    {
+        if (_openEventsAfterCombat) FinishAutomaticCombatPresentation();
+        else _screens.Show(_managementReturnScreen);
     }
 
     private void ReplaySelectedCombatDetail()
