@@ -12,7 +12,21 @@ namespace Rechaos.Game;
 public sealed partial class ChaosGame
 {
     private static readonly TimeSpan LobbyPollInterval = TimeSpan.FromSeconds(1);
-    private static readonly TimeSpan OnlineResolutionGrace = TimeSpan.FromSeconds(30);
+    /// <summary>
+    /// How long every seat may be ready with no sealed turn arriving before the client goes and
+    /// looks for itself.
+    /// </summary>
+    /// <remarks>
+    /// It has to sit ABOVE the stream's own idle detector plus its first reconnect, or it fires
+    /// first and pre-empts the recovery that was already on its way. The server seals in the same
+    /// request that completes the roster, so the ready `PUT` succeeds on a fresh connection while
+    /// `turn.sealed` goes out on a stream a suspended laptop or an expired NAT entry has silently
+    /// killed; the stream notices at <see cref="MatchEventStream.DefaultIdleTimeout"/>, fifty
+    /// seconds, and comes back from its `Last-Event-ID`. At thirty seconds this watchdog was tearing
+    /// the session down twenty seconds before the mechanism that fixes it even woke up.
+    /// </remarks>
+    private static readonly TimeSpan OnlineResolutionGrace =
+        MatchEventStream.DefaultIdleTimeout + TimeSpan.FromSeconds(25);
 
     private readonly MultiplayerUiState _online = new();
     /// <summary>

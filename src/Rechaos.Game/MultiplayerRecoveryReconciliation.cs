@@ -1,6 +1,6 @@
-using System.Net;
 using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Protocol;
+using Rechaos.Multiplayer.Session;
 
 namespace Rechaos.Game;
 
@@ -71,9 +71,11 @@ public static class MultiplayerRecoveryReconciliation
     /// produced a 404 with no error envelope, and the player's seat in a running match was deleted
     /// from the file for good. A refusal that names a membership reason came from this server's own
     /// error handler and is definitive; anything else might be transient.
+    ///
+    /// The test itself lives in <see cref="MultiplayerFailureText.IsMembershipRevoked"/>, which the
+    /// match session now asks the same question of: this file and a live session must not disagree
+    /// about whether a seat still exists.
     /// </remarks>
     private static bool IsMembershipGone(MultiplayerApiException exception) =>
-        exception.Status is HttpStatusCode.Unauthorized or HttpStatusCode.NotFound
-        && exception.Reason is "unknown_match" or "unknown_player" or "invalid_token"
-            or "missing_token";
+        MultiplayerFailureText.IsMembershipRevoked(exception);
 }

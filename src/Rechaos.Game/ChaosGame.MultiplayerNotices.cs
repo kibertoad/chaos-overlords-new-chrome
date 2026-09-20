@@ -206,6 +206,10 @@ public sealed partial class ChaosGame
             case MultiplayerNotice.Desynced desynced:
                 _online.Stage = MultiplayerStage.Desynced;
                 CloseOnlinePlanning();
+                // A pause is not a silence. The resolution watchdog is waiting for a seal that
+                // cannot come until the repair lands, and a legitimately slow repair on the
+                // previous turn used to trip it.
+                _online.ResolutionExpectedSince = null;
                 _online.TurnSyncError = desynced.IsHostRepair
                     ? $"DESYNC TURN {desynced.Turn}  AUTOMATIC REPAIR IN PROGRESS"
                     : $"DESYNC TURN {desynced.Turn}  WAITING FOR HOST REPAIR";

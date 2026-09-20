@@ -29,6 +29,32 @@ namespace Rechaos.Multiplayer.Session;
 /// <see cref="MatchEventStream.DefaultIdleTimeout"/>. A socket the network has forgotten about
 /// never says so; this is how the session finds out.
 /// </param>
+/// <param name="StreamOutageBudget">
+/// How long the event stream may stay down before the session gives up, or null to keep trying for
+/// as long as the player leaves the match open.
+/// <para>
+/// Null is the game's own answer, and it is deliberate. <see cref="RetryPolicy.Stream"/>'s five
+/// minutes bound how long the client waits <em>silently</em>: when that window closes the
+/// connection modal says so and goes on trying at the same backoff ceiling. It used to end the
+/// session instead, so a six-minute sleep or a slow redeploy cost the player their city screen and
+/// their planning copy — while the outbox on the same session, meeting the same exhausted window,
+/// simply requeued the draft and opened another one. The recovery record made the manual reconnect
+/// work; what it could not give back was the sense that nothing had gone wrong.
+/// </para>
+/// <para>
+/// A bounded value is for a caller that owns the whole match and has somewhere to report to,
+/// which is what the headless smoke test is.
+/// </para>
+/// </param>
+/// <param name="StreamRetryPolicy">
+/// How one connection's worth of reconnecting is paced, or null for <see cref="RetryPolicy.Stream"/>.
+/// <para>
+/// Its <see cref="RetryPolicy.MaxElapsed"/> is the bound on how long the client waits silently
+/// before the connection modal says how long it has been trying; it is not a bound on the session,
+/// which is <paramref name="StreamOutageBudget"/>. A caller overrides this to make a test reach the
+/// end of a window without waiting out the real one.
+/// </para>
+/// </param>
 public sealed record MultiplayerSessionOptions(
     MatchHandle Match,
     OriginalData Definitions,
@@ -36,4 +62,6 @@ public sealed record MultiplayerSessionOptions(
     string OwnPlayerId,
     int ResumeAfterSeq,
     bool JoinedInProgress = false,
-    TimeSpan? StreamIdleTimeout = null);
+    TimeSpan? StreamIdleTimeout = null,
+    TimeSpan? StreamOutageBudget = null,
+    RetryPolicy? StreamRetryPolicy = null);

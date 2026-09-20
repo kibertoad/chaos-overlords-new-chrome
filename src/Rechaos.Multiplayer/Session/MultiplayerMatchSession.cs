@@ -43,6 +43,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private readonly CancellationTokenSource _stopping = new();
     private readonly CancellationToken _stoppingToken;
     private readonly TimeSpan? _streamIdleTimeout;
+    private readonly TimeSpan? _streamOutageBudget;
+    private readonly RetryPolicy _streamRetryPolicy;
     private readonly Dictionary<string, int> _slotsByPlayerId;
     private readonly Dictionary<string, PendingTakeoverVote> _takeoverVotes = new(StringComparer.Ordinal);
 
@@ -100,6 +102,19 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// </remarks>
     private volatile bool _isHost;
 
+    /// <summary>
+    /// Cancels the event stream currently being read, so the pump can start a fresh cycle.
+    /// </summary>
+    /// <remarks>
+    /// Written by the pump and read by whoever calls <see cref="RequestResync"/>, which is the game
+    /// thread. It is never the session's own stopping source: a resync ends one connection, not the
+    /// session.
+    /// </remarks>
+    private CancellationTokenSource? _streamCycle;
+
+    /// <summary>Set by <see cref="RequestResync"/>; cleared by the pump when it acts on it.</summary>
+    private int _resyncRequested;
+
     private MultiplayerMatchSession(
         MultiplayerSessionOptions options,
         MatchReplayRecorder replay,
@@ -110,6 +125,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _match = options.Match;
         _definitions = options.Definitions;
         _streamIdleTimeout = options.StreamIdleTimeout;
+        _streamOutageBudget = options.StreamOutageBudget;
+        _streamRetryPolicy = options.StreamRetryPolicy ?? RetryPolicy.Stream;
         _stoppingToken = _stopping.Token;
         _replay = replay;
         _slotsByPlayerId = slotsByPlayerId;
@@ -200,6 +217,37 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     public bool TryDequeueNotice(out MultiplayerNotice notice) => _notices.TryDequeue(out notice!);
 
     /// <summary>
+    /// Drops the event stream and rebuilds the session's state from the server's durable history.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The answer to "I should have heard something by now and I have not". A stream can be dead
+    /// without saying so — a suspended laptop, a NAT entry that expired — and the request that
+    /// preceded the silence may well have succeeded on a fresh connection, so the fact the client
+    /// is missing is sitting in the log waiting to be read. This is the recovery the pump already
+    /// runs for a sequence gap, offered to a caller that noticed the silence from outside.
+    /// </para>
+    /// <para>
+    /// Safe to call at any time and from any thread, and cheap when nothing is wrong: the restore
+    /// replays from the last applied sequence, so a session that was in fact up to date re-reads a
+    /// view and carries on. It is not a failure and it does not end anything.
+    /// </para>
+    /// </remarks>
+    public void RequestResync()
+    {
+        if (Interlocked.Exchange(ref _resyncRequested, 1) != 0) return;
+        try
+        {
+            Volatile.Read(ref _streamCycle)?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The cycle ended on its own between the read and the cancel; the flag is what matters
+            // and the next cycle will see it.
+        }
+    }
+
+    /// <summary>
     /// Votes on whether an absent player's seat should become computer-controlled.
     /// </summary>
     /// <remarks>
@@ -280,88 +328,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _notices.Enqueue(new MultiplayerNotice.Failed(
             Describe(exception), exception, operation, Volatile.Read(ref _resumeAfterSeq)));
         _stopping.Cancel();
-    }
-
-    /// <summary>The pump's whole life: reconstruct if the match moved on, then read the log forever.</summary>
-    private async Task RunPumpAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            if (IsRestoring && !await RestoreAsync(replayFromSeq: 0, cancellationToken).ConfigureAwait(false))
-                return;
-            await PumpAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            // Ordinary shutdown, or the outbox failed first and stopped the session.
-        }
-        catch (Exception exception)
-        {
-            Fail(exception, Volatile.Read(ref _pumpOperation) ?? "event_stream");
-        }
-    }
-
-    /// <summary>
-    /// Reads the log forever, acting on every fact in the order the log gives them.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A failure that ends the stream ends the session with it: a revoked token means the player
-    /// left or was kicked, and there is nothing left to read. Everything that describes one attempt
-    /// is retried — the stream by itself, and the calls a fact leads to by <see cref="CallAsync"/>.
-    /// </para>
-    /// <para>
-    /// Sequence numbers are gapless, so the stream is held to that: an event that skips past the
-    /// next expected number means something between was never delivered, and acting on what came
-    /// after would apply a later turn to an earlier state. The session resynchronises instead — the
-    /// same reconstruction a restart does — and resumes from where the server now is. An event at
-    /// or below the last applied number is the at-least-once repeat and is dropped.
-    /// </para>
-    /// </remarks>
-    private async Task PumpAsync(CancellationToken cancellationToken)
-    {
-        if (_uploadInitialSnapshot)
-        {
-            await UploadInitialSnapshotAsync(cancellationToken).ConfigureAwait(false);
-            _uploadInitialSnapshot = false;
-        }
-        while (true)
-        {
-            Volatile.Write(ref _pumpOperation, "event_stream");
-            var stream = new MatchEventStream(
-                _match,
-                RetryPolicy.Stream,
-                onReconnect: (exception, attempt) => _streamLane.Failed(Describe(exception), attempt),
-                onConnected: _streamLane.Recovered,
-                _streamIdleTimeout);
-            var gap = false;
-            await foreach (var @event in stream
-                .ReadAsync(_resumeAfterSeq, cancellationToken).ConfigureAwait(false))
-            {
-                if (!string.Equals(@event.MatchId, _match.MatchId, StringComparison.Ordinal))
-                {
-                    throw new MultiplayerProtocolException(
-                        $"event sequence {@event.Seq} belongs to another match");
-                }
-                var expected = _resumeAfterSeq + 1;
-                if (@event.Seq < expected) continue;
-                if (@event.Seq > expected)
-                {
-                    _streamLane.Failed(
-                        $"The event stream jumped from sequence {_resumeAfterSeq} to {@event.Seq}; "
-                        + "resynchronising with the server.",
-                        attempt: 1);
-                    gap = true;
-                    break;
-                }
-                await HandleAsync(@event, cancellationToken).ConfigureAwait(false);
-                _resumeAfterSeq = @event.Seq;
-            }
-            // The stream ends only by throwing, by cancellation, or by the gap above.
-            if (!gap) return;
-            if (!await RestoreAsync(_resumeAfterSeq, cancellationToken).ConfigureAwait(false)) return;
-            _streamLane.Recovered();
-        }
     }
 
     private async Task HandleAsync(MatchEvent @event, CancellationToken cancellationToken)

@@ -39,7 +39,9 @@ public sealed partial class MultiplayerSessionTests
             MatchView? matchView = null,
             Action<FakeMultiplayerServer>? configure = null,
             bool joinedInProgress = false,
-            TimeSpan? streamIdleTimeout = null)
+            TimeSpan? streamIdleTimeout = null,
+            TimeSpan? streamOutageBudget = null,
+            RetryPolicy? streamRetryPolicy = null)
     {
         var server = new FakeMultiplayerServer();
         var http = new HttpClient(server);
@@ -58,7 +60,7 @@ public sealed partial class MultiplayerSessionTests
             .Match(MatchId);
         var session = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
             handle, BundledOriginalData.Load(), view, ownPlayerId, ResumeAfterSeq: 7,
-            joinedInProgress, streamIdleTimeout));
+            joinedInProgress, streamIdleTimeout, streamOutageBudget, streamRetryPolicy));
         return (session, server, http);
     }
 

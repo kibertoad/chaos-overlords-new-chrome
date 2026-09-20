@@ -161,21 +161,18 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
                 request.Method, path, body, lastEventId, request.RequestUri.Query));
         }
 
-        if (path.EndsWith("/stream", StringComparison.Ordinal))
-        {
-            return Streaming();
-        }
-
         var block = NextBlock(request.Method, path);
         if (block is not null)
             await block.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
 
+        // A queued or standing answer wins even for the stream route, so a test can play the
+        // things that sit between a player and the server: a reverse proxy answering 404 for every
+        // path while the backend restarts, a tunnel that has gone stale. Those produce a status
+        // with no error envelope, which is a different fact from the server refusing.
         var reply = Next(request.Method, path);
-        if (reply is null)
-        {
-            return Json(HttpStatusCode.NotFound, Serialize(null));
-        }
-        return Json(reply.Status, reply.Body);
+        if (reply is not null) return Json(reply.Status, reply.Body);
+        if (path.EndsWith("/stream", StringComparison.Ordinal)) return Streaming();
+        return Json(HttpStatusCode.NotFound, UnroutedEnvelope);
     }
 
     /// <inheritdoc />
@@ -252,6 +249,21 @@ internal sealed class FakeMultiplayerServer : HttpMessageHandler
 
     private static HttpResponseMessage Json(HttpStatusCode status, string body) =>
         new(status) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
+
+    /// <summary>
+    /// What a route nothing answered replies with: the server's own error envelope.
+    /// </summary>
+    /// <remarks>
+    /// An envelope rather than a bare status, because the real server's error handler always writes
+    /// one and the client now reads the difference. A status with no envelope is what something
+    /// BETWEEN the player and the server answers — a proxy, a tunnel, another service on the port —
+    /// and the client treats that as an outage rather than a verdict. A fake that answered bare
+    /// statuses for its own unrouted paths would have been playing the proxy by accident.
+    /// </remarks>
+    private const string UnroutedEnvelope =
+        """
+        {"error":{"code":"not_found","message":"no such route","details":{"reason":"not_found"}}}
+        """;
 
     private static string Serialize(object? body) =>
         body is null ? "{}" : body as string ?? WireJson.Write(body);
