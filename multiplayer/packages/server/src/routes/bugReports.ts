@@ -20,6 +20,11 @@ export function registerBugReportRoutes(api: Hono<AppEnv>): void {
         reason: 'bug_reports_disabled',
       })
     }
-    return c.json(await bugReports.submit(c.req.valid('json')), 201)
+    const request = c.req.valid('json')
+    // An address that has spent its daily journal budget files the description without the
+    // journal, and the receipt says `omitted` — the same outcome the global budget produces.
+    const submitted =
+      c.get('bugReportStateAllowed') === false ? { ...request, state: undefined } : request
+    return c.json(await bugReports.submit(submitted), 201)
   })
 }

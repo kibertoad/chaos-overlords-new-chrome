@@ -59,8 +59,15 @@ Copy-Item -LiteralPath (Join-Path $repositoryRoot 'NOTICE') -Destination $packag
 if (Test-Path -LiteralPath (Join-Path $gameOutput 'Assets/manifest.json')) {
     throw 'The portable package contains extracted original assets.'
 }
-& (Join-Path $gameOutput 'Rechaos.Game.exe') --smoke-test
-if ($LASTEXITCODE -ne 0) { throw 'Packaged game smoke check failed.' }
+# Start-Process -Wait, not the call operator. PowerShell does not wait for a Windows-subsystem
+# executable invoked with '&' when its output is not captured, and does not update $LASTEXITCODE
+# for it — so this read the 0 left by the preceding dotnet publish, and a crashing smoke test
+# reported "verified". Both workflows already use this pattern for exactly that reason.
+$smokeTest = Start-Process -FilePath (Join-Path $gameOutput 'Rechaos.Game.exe') `
+    -ArgumentList '--smoke-test' -WorkingDirectory $gameOutput -Wait -PassThru -WindowStyle Hidden
+if ($smokeTest.ExitCode -ne 0) {
+    throw "Packaged game smoke check failed with $($smokeTest.ExitCode)."
+}
 
 # The number the game shows is the number on the installer only if the build picked up version.txt.
 # The executable is a Windows subsystem binary and cannot answer --version down a pipe, so its
@@ -72,8 +79,13 @@ if ($stampedVersion -ne $expectedVersion) {
     throw "Packaged game is stamped '$stampedVersion'; version.txt holds '$expectedVersion'."
 }
 
-& (Join-Path $gameOutput 'Rechaos.Game.exe') --platform-smoke-test
-if ($LASTEXITCODE -ne 0) { throw 'Packaged game could not initialize its native platform libraries.' }
+$platformSmokeTest = Start-Process -FilePath (Join-Path $gameOutput 'Rechaos.Game.exe') `
+    -ArgumentList '--platform-smoke-test' -WorkingDirectory $gameOutput `
+    -Wait -PassThru -WindowStyle Hidden
+if ($platformSmokeTest.ExitCode -ne 0) {
+    throw ('Packaged game could not initialize its native platform libraries ' +
+        "(exit $($platformSmokeTest.ExitCode)).")
+}
 foreach ($nativeLibrary in @('SDL2.dll', 'openal.dll')) {
     if (-not (Test-Path -LiteralPath (Join-Path $gameOutput $nativeLibrary))) {
         throw "Packaged game is missing native library '$nativeLibrary'."

@@ -47,6 +47,17 @@ export interface RateLimiters {
    * thirty multi-megabyte uploads a minute from a stranger).
    */
   bugReport: RateLimiter
+  /**
+   * How many attached journals one address may file in a day.
+   *
+   * The per-minute tier bounds a retry loop; it does nothing about a steady drip. Five reports a
+   * minute at six megabytes each is thirty megabytes a minute, so one address could spend the whole
+   * 512 MiB global journal budget in about seventeen minutes and every real player's report would
+   * lose its journal for the next twenty-four hours. Over this budget the report is still accepted
+   * and the journal is dropped, which is what the global budget does too: the description is the
+   * part worth keeping.
+   */
+  bugReportState: RateLimiter
 }
 
 export interface ServerContainer {
@@ -80,4 +91,9 @@ export const DEFAULT_RATE_LIMITS = {
    * beyond that is a client in a loop uploading whole match journals.
    */
   bugReportPerMinute: 5,
+  /**
+   * Attached journals per address per day. At about six megabytes each this is roughly six per cent
+   * of the default global budget, so no single address can crowd everybody else out of it.
+   */
+  bugReportStatePerDay: 5,
 } as const

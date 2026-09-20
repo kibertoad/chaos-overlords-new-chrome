@@ -23,13 +23,18 @@ A pass at one layer does not imply a pass at the next.
 This is the canonical local validation entry point. It serializes runs for the
 checkout and caps MSBuild at two workers by default. Before building, it stops
 only a `Rechaos.Game` process whose executable lives inside this checkout; an
-installed copy and unrelated `dotnet` processes are left alone. The normal
-incremental outputs and MSBuild/Roslyn server reuse are retained because both
-materially speed repeated builds.
+installed copy and unrelated `dotnet` processes are left alone. MSBuild and
+Roslyn server reuse are retained because both materially speed repeated builds.
+
+Every run is a cold build. Since `de425b9` the script restores, builds and tests
+into a fresh GUID-named directory under the temporary root and deletes it
+afterwards, so no `obj` or `bin` from a previous run — or from an editor — takes
+part. A run killed before it can clean up leaves that tree behind; the next run
+for the same checkout removes any it finds while it holds the lock.
 
 The default gate excludes only the 53-case `LongRunning` AI campaign category.
-At the current checkpoint it builds with zero warnings and runs 1,522 focused
-tests in about 35 seconds. These retain deterministic planner, Advanced-policy,
+At the current checkpoint it builds with zero warnings and runs about 2,550
+focused tests in well under a minute. These retain deterministic planner, Advanced-policy,
 headless-runner, replay, persistence, and bounded single-case behavior coverage;
 the exclusion is the repeated 20/40/60-turn, multi-seed statistical campaign
 matrix, not the AI unit and integration tests.

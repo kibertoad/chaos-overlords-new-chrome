@@ -30,6 +30,11 @@ public static partial class AiTurnPlanner
         IReadOnlyList<ObjectiveTarget> targetPool,
         Func<int, int, int, int, int, int, bool> acceptsComparison)
     {
+        // Families 12 and 13/14 clamp their pool before they get here and the other callers only
+        // reach this with a hostile list they have already found non-empty. Say so out loud, so a
+        // future caller meets a named precondition rather than a divide by zero inside the RNG.
+        if (targetPool.Count == 0)
+            throw new InvalidOperationException("A recovered attack draw needs a non-empty target pool.");
         var ordinal = state.Random.NextInclusive(targetPool.Count);
         var selected = targetPool[ordinal - 1];
         var comparisonTarget = visible[ordinal - 1].Gang;

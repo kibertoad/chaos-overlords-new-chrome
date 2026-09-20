@@ -54,11 +54,20 @@ public static class GameMenuLayout
     public static Rectangle ConfirmSave => new(206, 272, 108, 34);
     public static Rectangle CancelSave => new(326, 272, 108, 34);
 
+    /// <summary>
+    /// One browser row: nine manual slots and then the autosave.
+    /// </summary>
+    /// <remarks>
+    /// The rows were pitched at 37 for nine of them. The autosave has to be reachable from the same
+    /// browser (it was written every turn and nothing could load it), and ten rows at that pitch run
+    /// into the buttons, so the pitch is 34 and the row 32 tall. The last row now ends at 386,
+    /// clear of the button strip at 397.
+    /// </remarks>
     public static Rectangle SlotRow(int slot)
     {
-        if (slot is < 0 or >= SaveSlotCatalog.SlotCount)
+        if (slot is < 0 or >= SaveSlotCatalog.BrowserRowCount)
             throw new ArgumentOutOfRangeException(nameof(slot));
-        return new Rectangle(58, 48 + slot * 37, 524, 35);
+        return new Rectangle(58, 48 + slot * 34, 524, 32);
     }
 }
 
@@ -87,7 +96,8 @@ public sealed partial class ChaosGame
     private SaveBrowserMode _saveBrowserMode;
     private bool _saveBrowserFromTitle;
     private int _saveSlotCursor;
-    private SaveSlotSummary?[] _saveSlots = new SaveSlotSummary?[SaveSlotCatalog.SlotCount];
+    /// <summary>The nine manual slots, then the autosave in <see cref="SaveSlotCatalog.AutoSaveRow"/>.</summary>
+    private SaveSlotSummary?[] _saveSlots = new SaveSlotSummary?[SaveSlotCatalog.BrowserRowCount];
     private readonly TextField _saveName = new("SAVE NAME", 48);
     private bool _editingSaveName;
 
@@ -131,7 +141,7 @@ public sealed partial class ChaosGame
         _planningTimer.Pause(_inputTime);
         RefreshSaveSlots();
         _saveSlotCursor = saving ? 0
-            : Math.Max(0, Array.FindIndex(_saveSlots, slot => slot is not null));
+            : Math.Max(0, Array.FindIndex(_saveSlots, slot => slot is { IsPlayable: true }));
         _message = string.Empty;
     }
 
@@ -140,6 +150,8 @@ public sealed partial class ChaosGame
         if (_definitions is null) return;
         for (var slot = 0; slot < SaveSlotCatalog.SlotCount; slot++)
             _saveSlots[slot] = SaveSlotCatalog.Read(_saveDirectory, slot, _definitions);
+        _saveSlots[SaveSlotCatalog.AutoSaveRow] =
+            SaveSlotCatalog.ReadAutoSave(_autoSavePath, _definitions);
     }
 
     private void UpdateGameMenu(KeyboardState keyboard)
@@ -176,7 +188,7 @@ public sealed partial class ChaosGame
         }
         if (Pressed(keyboard, Keys.Up)) _saveSlotCursor = Math.Max(0, _saveSlotCursor - 1);
         if (Pressed(keyboard, Keys.Down))
-            _saveSlotCursor = Math.Min(SaveSlotCatalog.SlotCount - 1, _saveSlotCursor + 1);
+            _saveSlotCursor = Math.Min(LastSelectableSlotRow, _saveSlotCursor + 1);
         if (Pressed(keyboard, Keys.Escape) || Pressed(keyboard, Keys.Back)) CloseSaveBrowser();
         else if (Pressed(keyboard, Keys.Enter)) UseSelectedSlot();
     }
@@ -213,17 +225,44 @@ public sealed partial class ChaosGame
         }
     }
 
+    /// <summary>The autosave row is read-only, so Save mode stops at the ninth slot.</summary>
+    private int LastSelectableSlotRow => _saveBrowserMode == SaveBrowserMode.Save
+        ? SaveSlotCatalog.SlotCount - 1
+        : SaveSlotCatalog.BrowserRowCount - 1;
+
     private void UseSelectedSlot()
     {
         if (_saveBrowserMode == SaveBrowserMode.Save)
         {
+            if (_saveSlotCursor >= SaveSlotCatalog.SlotCount)
+            {
+                _message = "THE AUTOSAVE CANNOT BE WRITTEN BY HAND";
+                return;
+            }
             _saveName.Set(_state is null ? string.Empty : SaveSlotCatalog.SuggestedName(_state));
             _saveName.IsFocused = true;
             _editingSaveName = true;
             _message = string.Empty;
+            return;
         }
-        else if (_saveSlots[_saveSlotCursor] is null) _message = "EMPTY SLOT";
-        else if (LoadGameFromSlot(_saveSlotCursor)) CloseSaveBrowserAfterLoad();
+        switch (_saveSlots[_saveSlotCursor])
+        {
+            case null:
+                _message = _saveSlotCursor == SaveSlotCatalog.AutoSaveRow
+                    ? "NO AUTOSAVE YET"
+                    : "EMPTY SLOT";
+                return;
+            case { Status: SaveSlotStatus.Incompatible }:
+                _message = "SAVED BY ANOTHER BUILD";
+                return;
+            case { Status: SaveSlotStatus.Unreadable }:
+                _message = "SAVE CANNOT BE READ";
+                return;
+        }
+        var loaded = _saveSlotCursor == SaveSlotCatalog.AutoSaveRow
+            ? LoadGameFromAutoSave()
+            : LoadGameFromSlot(_saveSlotCursor);
+        if (loaded) CloseSaveBrowserAfterLoad();
     }
 
     private void SaveSelectedSlot()
@@ -293,7 +332,7 @@ public sealed partial class ChaosGame
             else if (GameMenuLayout.CancelSave.Contains(point)) CancelSaveName();
             return;
         }
-        var slot = Enumerable.Range(0, SaveSlotCatalog.SlotCount)
+        var slot = Enumerable.Range(0, LastSelectableSlotRow + 1)
             .FirstOrDefault(index => GameMenuLayout.SlotRow(index).Contains(point), -1);
         if (slot >= 0) _saveSlotCursor = slot;
         else if (GameMenuLayout.UseSlot.Contains(point)) UseSelectedSlot();
@@ -321,7 +360,7 @@ public sealed partial class ChaosGame
         _quitToMainMenuConfirmationOpen = false;
         _saveBrowserMode = SaveBrowserMode.None;
         StopPlanningTimer();
-        _combatAnimationPlayer.Clear();
+        ResetTransientMatchUi();
         if (_session is not null)
         {
             LeaveOnlineMatch();
@@ -433,18 +472,19 @@ public sealed partial class ChaosGame
         DrawCentered(font, batch,
             _saveBrowserMode == SaveBrowserMode.Save ? "SAVE GAME" : "LOAD GAME",
             27, Color.Gold, 2);
-        for (var slot = 0; slot < SaveSlotCatalog.SlotCount; slot++)
+        for (var slot = 0; slot <= LastSelectableSlotRow; slot++)
         {
             var row = GameMenuLayout.SlotRow(slot);
             batch.Draw(pixel, row, slot == _saveSlotCursor
                 ? new Color(72, 54, 18, 235) : new Color(24, 37, 39, 235));
             DrawBorder(batch, pixel, row, slot == _saveSlotCursor ? Color.Gold : Color.Gray, 1);
             var summary = _saveSlots[slot];
-            font.Draw(batch, summary is null ? $"{slot + 1}. EMPTY" : $"{slot + 1}. {summary.Name}",
-                new Vector2(row.X + 7, row.Y + 4), Color.White, 1);
+            var label = slot == SaveSlotCatalog.AutoSaveRow ? "A." : $"{slot + 1}.";
+            font.Draw(batch, summary is null ? $"{label} EMPTY" : $"{label} {summary.Name}",
+                new Vector2(row.X + 7, row.Y + 3), Color.White, 1);
             if (summary is not null)
-                font.Draw(batch, summary.Details, new Vector2(row.X + 22, row.Y + 20),
-                    Color.LightGray, 1);
+                font.Draw(batch, summary.Details, new Vector2(row.X + 22, row.Y + 18),
+                    summary.IsPlayable ? Color.LightGray : Color.Orange, 1);
         }
         DrawButton(batch, pixel, font, GameMenuLayout.UseSlot,
             _saveBrowserMode == SaveBrowserMode.Save ? "SELECT" : "LOAD", true);

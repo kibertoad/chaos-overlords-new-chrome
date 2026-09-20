@@ -73,6 +73,13 @@ export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) =
   const container = c.get('container')
   const key = (container.clientAddress ?? defaultClientAddress)(c)
   enforce(container.rateLimiters, 'bugReport', key, c)
+  // The per-day journal budget is spent here rather than refused here. An address over it still
+  // files its report; what it loses is the attached match journal, which is what the global daily
+  // budget does too. Charging it before the handler runs keeps the decision off the body's size.
+  c.set(
+    'bugReportStateAllowed',
+    container.rateLimiters.bugReportState.take(`bugReportState:${rateLimitKey(key)}`) === null,
+  )
   await next()
 }
 
@@ -88,13 +95,42 @@ export function memberRateLimited(tier: keyof RateLimiters = 'member'): Middlewa
   }
 }
 
+/**
+ * The budget key for a client address.
+ *
+ * Two normalisations, both because the raw string is not one client. A routed IPv6 /64 gives a
+ * client 2^64 source addresses, so every request could carry a new key and no per-address budget
+ * would ever bind; and proxies that write `ip:port` into `X-Forwarded-For` (Azure Application
+ * Gateway does) give a new port per connection, with the same result. Each unrecognised key also
+ * costs a map entry that lives up to two windows, so the limiter's own memory grew with the flood
+ * it was meant to stop.
+ */
+export function rateLimitKey(address: string): string {
+  const trimmed = address.trim()
+  if (trimmed === '') return 'unknown'
+  // `[2001:db8::1]:443` — a bracketed IPv6 host with a port.
+  const bracketed = /^\[([^\]]+)](?::\d+)?$/.exec(trimmed)
+  const host = bracketed?.[1] ?? trimmed
+  // `1.2.3.4:443` — an IPv4 host with a port. A bare IPv6 address has more than one colon.
+  const withoutPort = /^[^:]+:\d+$/.test(host) ? (host.split(':')[0] as string) : host
+  if (!withoutPort.includes(':')) return withoutPort
+  // IPv6, masked to the /64 a single client is routed. IPv4-mapped forms keep their full address.
+  if (withoutPort.includes('.')) return withoutPort
+  const groups = withoutPort.toLowerCase().split('::')
+  if (groups.length > 1) {
+    const leading = (groups[0] as string).split(':').filter((part) => part !== '')
+    return leading.length >= 4 ? `${leading.slice(0, 4).join(':')}::/64` : `${withoutPort}::/64`
+  }
+  return `${withoutPort.split(':').slice(0, 4).join(':')}::/64`
+}
+
 function enforce(
   limiters: RateLimiters,
   tier: keyof RateLimiters,
   key: string,
   c: Context<AppEnv>,
 ): void {
-  const retryAfter = limiters[tier].take(`${tier}:${key}`)
+  const retryAfter = limiters[tier].take(`${tier}:${rateLimitKey(key)}`)
   if (retryAfter === null) return
   c.header('Retry-After', String(retryAfter))
   throw new RateLimitedError('Too many attempts; slow down', {

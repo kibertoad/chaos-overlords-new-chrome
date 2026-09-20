@@ -40,7 +40,13 @@ concurrency:
 jobs:
   prepare:
     name: Validate release
+    # A workflow_dispatch runs the workflow file of whatever branch it is dispatched from, and the
+    # signing secrets are bound to the environment rather than to the branch. main is the only
+    # branch a release may come from; the deployment-branch rule on the `release-signing`
+    # environment is the real gate, and this is the cheap second layer.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write # Required to record the release version on main before anything is built.
     outputs:
@@ -125,6 +131,7 @@ jobs:
     name: Test release commit
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -147,6 +154,10 @@ jobs:
     name: Build Windows x64 installer
     needs: [prepare, test]
     runs-on: windows-latest
+    # Every Start-Process -Wait on an installer and the eSigner network calls live here; the
+    # default of 360 minutes would hold the runner, and the release concurrency group with it,
+    # for six hours on one modal dialog.
+    timeout-minutes: 45
     environment: ${{ inputs.signed_release != 'none' && 'release-signing' || '' }}
     permissions:
       contents: read
@@ -188,7 +199,12 @@ jobs:
             --repo jrsoftware/issrc `
             --pattern 'innosetup-7.1.0-x64.exe' `
             --dir $env:RUNNER_TEMP
+          # A failing native command does not stop a pwsh step, and the runner only inspects
+          # $LASTEXITCODE of the last one, so neither of these was checked and the attestation
+          # check was a defence that did nothing.
+          if ($LASTEXITCODE -ne 0) { throw "Downloading the Inno Setup installer failed with $LASTEXITCODE." }
           gh release verify-asset $installer --repo jrsoftware/issrc
+          if ($LASTEXITCODE -ne 0) { throw "Attestation verification of the Inno Setup installer failed with $LASTEXITCODE." }
           $signature = Get-AuthenticodeSignature -LiteralPath $installer
           if ($signature.Status -ne 'Valid' -or
               $signature.SignerCertificate.Subject -notlike '*Pyrsys B.V.*') {
@@ -355,6 +371,7 @@ jobs:
   build-linux:
     name: Build Linux x64 installer
     needs: [prepare, test]
+    timeout-minutes: 30
     if: ${{ inputs.installers != 'windows' }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.signed_release == 'Windows/Linux' && 'release-signing' || '' }}
@@ -419,6 +436,7 @@ jobs:
     needs: [prepare, test]
     if: ${{ inputs.installers != 'windows' }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     permissions:
       contents: read
     strategy:
@@ -463,6 +481,7 @@ jobs:
   release:
     name: Create GitHub Release
     needs: [prepare, build-windows, build-linux, build-macos]
+    timeout-minutes: 15
     if: >-
       ${{
         always() &&
@@ -488,29 +507,13 @@ jobs:
           path: release-assets
           merge-multiple: true
 
-      - name: Create annotated tag
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-        run: |
-          $commit = git rev-parse HEAD
-          if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve release commit.' }
-          $tagObject = gh api --method POST "repos/$env:GITHUB_REPOSITORY/git/tags" `
-            -f "tag=$env:RELEASE_TAG" `
-            -f "message=Release $env:RELEASE_TAG" `
-            -f "object=$commit" `
-            -f 'type=commit' | ConvertFrom-Json
-          gh api --method POST "repos/$env:GITHUB_REPOSITORY/git/refs" `
-            -f "ref=refs/tags/$env:RELEASE_TAG" `
-            -f "sha=$($tagObject.sha)"
-          if ($LASTEXITCODE -ne 0) { throw 'Unable to create release tag reference.' }
-
-      - name: Create GitHub Release
+      # Before the tag, not after it. A failing asset count used to leave a tag with no release
+      # behind: re-running the job got a 422 from the tag step because the ref already existed, and
+      # a fresh dispatch saw the version as released and bumped past it, so the tagged version was
+      # never published and its installers expired after a day.
+      - name: Verify downloaded assets
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           RELEASE_INSTALLERS: ${{ inputs.installers }}
           RELEASE_SIGNING: ${{ inputs.signed_release }}
         run: |
@@ -525,6 +528,48 @@ jobs:
             echo "Expected $expected release asset(s), found ${#assets[@]}." >&2
             exit 1
           fi
+
+      - name: Create annotated tag
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          $commit = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to resolve release commit.' }
+          # Idempotent, so a re-run of a job that failed after tagging can finish. A tag that
+          # already points at this commit is this release's own; one pointing anywhere else is a
+          # different release wearing the same number, and that is a stop.
+          $existing = gh api "repos/$env:GITHUB_REPOSITORY/git/ref/tags/$env:RELEASE_TAG" 2>$null | ConvertFrom-Json
+          if ($LASTEXITCODE -eq 0 -and $existing) {
+            $target = $existing.object.sha
+            if ($existing.object.type -eq 'tag') {
+              $target = (gh api "repos/$env:GITHUB_REPOSITORY/git/tags/$target" | ConvertFrom-Json).object.sha
+            }
+            if ($target -ne $commit) {
+              throw "Tag $env:RELEASE_TAG already points at $target, not at the release commit $commit."
+            }
+            Write-Host "Tag $env:RELEASE_TAG already points at the release commit; reusing it."
+            exit 0
+          }
+          $tagObject = gh api --method POST "repos/$env:GITHUB_REPOSITORY/git/tags" `
+            -f "tag=$env:RELEASE_TAG" `
+            -f "message=Release $env:RELEASE_TAG" `
+            -f "object=$commit" `
+            -f 'type=commit' | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to create the annotated tag object.' }
+          gh api --method POST "repos/$env:GITHUB_REPOSITORY/git/refs" `
+            -f "ref=refs/tags/$env:RELEASE_TAG" `
+            -f "sha=$($tagObject.sha)"
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to create release tag reference.' }
+
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          mapfile -t assets < <(find release-assets -type f -print | sort)
           gh release create "$RELEASE_TAG" "${assets[@]}" \
             --verify-tag \
             --generate-notes \

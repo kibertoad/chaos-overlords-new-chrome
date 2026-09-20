@@ -80,6 +80,19 @@ public sealed partial class ChaosGame
                 return;
             case LobbyNotice.Updated updated:
                 _online.Match = updated.Match;
+                // A host who leaves the lobby abandons the match. The poll carries that status
+                // back, and looking only for `Running` left the joiner's screen saying WAITING FOR
+                // THE HOST TO START THE MATCH for as long as they cared to wait. `Seated` already
+                // handles both terminal statuses; this is the same rule on the other notice.
+                if (_session is null
+                    && updated.Match.Status is MatchStatus.Abandoned or MatchStatus.Finished)
+                {
+                    CompleteOnlineRecovery();
+                    EndOnlineMatch(updated.Match.Status == MatchStatus.Abandoned
+                        ? "THE HOST CLOSED THE LOBBY"
+                        : "THE MATCH IS OVER");
+                    return;
+                }
                 // Not while the host is editing them: the poll that carries a settings change back
                 // is the same poll that would type over the name being written next to it.
                 if (!_online.IsHost) AdoptLobbySettings(updated.Match);
@@ -118,6 +131,16 @@ public sealed partial class ChaosGame
                     _online.Stage = MultiplayerStage.Connect;
                     // A call that failed seated nobody, so the seat's own flags go with it.
                     _online.JoinedInProgress = false;
+                }
+                // Let the session go while no seat is held, so the next attempt builds one from the
+                // form. It was kept alive across a failure and reused by `TryBeginLobby`, so a
+                // player who entered a code with Central selected, got "no match with that code",
+                // then switched to Custom and typed their friend's address, went on dialling
+                // Central until they backed all the way out to the title screen.
+                if (_lobby is { Handle: null } stale)
+                {
+                    Forget(stale.StopAsync(), "multiplayer.lobby.stop.failed");
+                    _lobby = null;
                 }
                 _online.Status = string.Empty;
                 _online.ConnectionError = failed.Reason;

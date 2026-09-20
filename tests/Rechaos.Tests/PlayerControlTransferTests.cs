@@ -49,6 +49,64 @@ public sealed class PlayerControlTransferTests
             match.TransferPlayerToComputer(new PlayerId(MatchLimits.PlayerCount)));
     }
 
+    /// <summary>
+    /// A carried-over recurring command is not planning in progress.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="TurnCommandQueue.FinishExecution"/> keeps every command with Repeat set, and
+    /// Repeat travels in the online order document, so from the first recurring Research or
+    /// Influence onward the queue is never empty at a turn boundary. Refusing a transfer on that
+    /// threw inside the event pump of every client at once — on an approved takeover, on a player
+    /// returning, and on a late join — and the throw is in the match history, so every reconnect
+    /// replayed it and the match was lost for good.
+    /// </remarks>
+    [Fact]
+    public void TransferSucceedsWhileAnotherSeatHoldsARecurringCommand()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        var hider = match.Players[0].Gangs[0];
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(0), hider.Id, GangAction.Hide,
+            Rechaos.Core.GameModel.CommandTarget.None, Repeat: true)).Accepted);
+        // Resolve the turn so the recurring command is carried into the next Command boundary
+        // rather than being one submitted in the turn the transfer is asked about.
+        AdvanceToNextCommandPhase(match);
+        Assert.NotEmpty(match.Commands.ExecutionPlan());
+
+        Assert.True(match.TransferPlayerToComputer(new PlayerId(1)));
+
+        Assert.Equal(PlayerController.Computer, match.Setup.Players[1].Controller);
+        // The recurring command of the seat that did not move is untouched.
+        Assert.True(match.Commands.TryGet(hider.Id, out _));
+    }
+
+    /// <summary>
+    /// The transferred seat's own recurring orders go with the human who left.
+    /// </summary>
+    /// <remarks>
+    /// The AI planner never writes or clears Repeat, so a gang the planner leaves idle would keep
+    /// running the departed player's order for the rest of the match.
+    /// </remarks>
+    [Fact]
+    public void TransferToComputerCancelsTheSeatsOwnRecurringCommands()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        var gang = match.Players[1].Gangs[0];
+        match.FinishCommand(new PlayerId(0));
+        Assert.True(match.Submit(new GameCommand(
+            new PlayerId(1), gang.Id, GangAction.Hide,
+            Rechaos.Core.GameModel.CommandTarget.None, Repeat: true)).Accepted);
+        AdvanceToNextCommandPhase(match);
+        Assert.True(match.Commands.TryGet(gang.Id, out _));
+
+        Assert.True(match.TransferPlayerToComputer(new PlayerId(1)));
+
+        Assert.False(match.Commands.TryGet(gang.Id, out _));
+        Assert.Null(match.FindGang(gang.Id)!.QueuedCommand);
+    }
+
     [Fact]
     public void TransferRejectsASeatWithAuthenticatedHumanComlinkHistory()
     {
@@ -132,6 +190,38 @@ public sealed class PlayerControlTransferTests
         Assert.Equal(
             MatchStateHasher.ComputeSha256(replay.State),
             MatchStateHasher.ComputeSha256(restored));
+    }
+
+    /// <summary>Runs the match on to the Command phase of the next turn, first seat active.</summary>
+    private static void AdvanceToNextCommandPhase(MatchState match)
+    {
+        for (var boundary = 0; boundary < 64; boundary++)
+        {
+            switch (match.Coordinator.Phase)
+            {
+                case TurnPhase.Upkeep:
+                    match.FinishUpkeep();
+                    break;
+                case TurnPhase.Command:
+                    match.FinishCommand(match.Coordinator.ActivePlayer!.Value);
+                    break;
+                case TurnPhase.Execution:
+                    match.FinishExecutionPhase();
+                    break;
+                case TurnPhase.Hire:
+                    match.FinishHire(match.Coordinator.ActivePlayer!.Value);
+                    break;
+                default:
+                    match.FinishPlayerElimination();
+                    break;
+            }
+            if (match.Coordinator.Phase == TurnPhase.Command
+                && match.Coordinator.ActivePlayer == new PlayerId(0))
+            {
+                return;
+            }
+        }
+        Assert.Fail("The match did not reach the next Command phase.");
     }
 
     private static MatchState CreateMatch(OriginalData? definitions = null)

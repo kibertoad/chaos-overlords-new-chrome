@@ -66,3 +66,18 @@ orphanCleanupLog.md
 
 # User-captured F12 screenshots
 screenshots/
+
+# Tool caches an agent or a CI dry run leaves in the checkout. `git add -A` used to stage a whole
+# NuGet cache and a pnpm store; Verify-Repository.ps1 would flag the size afterwards, which is one
+# step too late.
+/.dotnet-cli/
+/.pnpm-store/
+/tmp/
+/.artifacts-*/
+
+# Review and analysis notes. These are working documents about this repository's own defects and
+# its security posture, and staging one into a public repository by accident is not recoverable.
+/bugs.md
+/*-review-*.md
+/*-review-*/
+/*-findings-*.md

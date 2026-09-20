@@ -3,6 +3,10 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Best-effort repair of a missing or invalid primary from a verified backup.</summary>
 internal static class AtomicGenerationRecovery
 {
+    /// <summary>Where a rejected primary is kept instead of being overwritten.</summary>
+    public const string RejectedSuffix = ".corrupt";
+
+
     public static bool TryRestore(
         string primaryPath,
         string backupPath,
@@ -27,6 +31,10 @@ internal static class AtomicGenerationRecovery
                 output.Flush(flushToDisk: true);
             }
             validate(temporaryPath);
+            // Keep the file being replaced. It costs one more file on disk and it is the only
+            // evidence of what went wrong; overwriting it threw that away every time.
+            if (File.Exists(primaryPath))
+                File.Move(primaryPath, primaryPath + RejectedSuffix, overwrite: true);
             File.Move(temporaryPath, primaryPath, overwrite: true);
             return true;
         }

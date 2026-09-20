@@ -56,16 +56,30 @@ export interface MatchRepository {
    */
   deleteInactive(statuses: readonly MatchStatus[], before: Date, limit: number): Promise<number>
   /**
-   * Deletes running or desynced matches last touched before `before` that hold no active player,
-   * with everything they own. Returns how many went.
+   * Deletes running or desynced matches last touched before `before`, with everything they own.
+   * Returns how many went.
    *
    * The living-dead case: everybody walked away from a running match, which is deliberately kept so
    * anyone can rejoin, and then nobody ever did. Nothing else collects one — a desync pause is not
    * abandonment and neither is a weekend — so on a public server this is the ordinary end of most
    * matches and it accumulated orders, events and up to five megabytes of snapshot each. The
    * caller's window for these is far longer than the one for a terminated match.
+   *
+   * `requireEmptyRoster` is the difference between the two windows the caller uses. A player stops
+   * being `active` only through `leave`, `kick` or a missed deadline, and the game's default is an
+   * untimed match, so two friends whose clients both died mid-match leave two `active` rows that
+   * nothing ever clears: with the roster test alone their match is immortal. The longer window drops
+   * the test, because `updated_at` is refreshed by every turn open and every status change and
+   * months of silence on both is not something a live match does.
    */
-  deleteAbandonedLive(before: Date, limit: number): Promise<number>
+  deleteAbandonedLive(before: Date, limit: number, requireEmptyRoster: boolean): Promise<number>
+  /**
+   * Ids of matches sitting in `desynced`, oldest first.
+   *
+   * The sweep re-runs the verdict for these. A `settle` interrupted after its compare-and-swap
+   * leaves the match desynced with nothing unsettled, which no request path revisits.
+   */
+  listDesynced(limit: number): Promise<string[]>
   /** Compare-and-swap on status; returns false when the match was not in one of `from`. */
   transition(
     matchId: string,
@@ -109,7 +123,15 @@ export interface PlayerRepository {
    * already committed — and nothing downstream repairs seating.
    */
   assignSlots(assignments: ReadonlyArray<{ playerId: string; slot: number }>): Promise<void>
-  delete(playerId: string): Promise<void>
+  /**
+   * Deletes a lobby member. True when a row went.
+   *
+   * The result is what the caller releases the seat on. Two requests that both authenticated before
+   * either deleted — a `leave` sent twice, or a host `kick` racing the target's own `leave` — each
+   * used to decrement the seat counter for one row, so the lobby admitted more players than
+   * `maxPlayers` and a seventh seat failed `seatSchema` in every match view.
+   */
+  delete(playerId: string): Promise<boolean>
 }
 
 export interface TurnRepository {
@@ -161,7 +183,14 @@ export interface TurnRepository {
   listReports(matchId: string, number: number): Promise<TurnReport[]>
   /** Turns of a match still awaiting a verdict: status `sealed` or `desynced`, ascending. */
   listUnsettled(matchId: string): Promise<Turn[]>
-  /** Open turns whose deadline has passed, oldest first. */
+  /**
+   * Open turns of RUNNING matches whose deadline has passed, oldest first.
+   *
+   * The match status is part of the query on purpose. A desynced match keeps its open turn's expired
+   * deadline for as long as the pause lasts, `trySeal` refuses it on every pass, and the row stays at
+   * the head of a list ordered by deadline. A hundred of them and the page holds nothing the sweep
+   * could act on, which on Node is the only thing that seals a deadline whose timer a restart lost.
+   */
   listExpiredOpen(now: Date, limit: number): Promise<Array<Pick<Turn, 'matchId' | 'number'>>>
   /**
    * Live matches whose current turn is not open, so there is nothing for anyone to play: a seal

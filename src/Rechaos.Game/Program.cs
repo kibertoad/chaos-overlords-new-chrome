@@ -35,11 +35,22 @@ try
     using var game = new ChaosGame(
         assetRoot,
         args.Contains("--debug-phases", StringComparer.OrdinalIgnoreCase),
-        diagnostics,
-        Path.Combine(AppContext.BaseDirectory, "screenshots"));
+        diagnostics);
     if (platformSmokeTest)
         return 0;
-    game.Run();
+    try
+    {
+        game.Run();
+    }
+    catch (Exception exception)
+    {
+        // A crash during play is a different event from a crash before the window opened, and
+        // sending the player to re-import their assets in the middle of turn 30 helps nobody.
+        // The match is still in memory here, so try to get it onto disk before saying anything.
+        var recoveryPath = game.TryWriteCrashRecoverySave();
+        StartupFailureReporter.ReportMainLoopFailure(exception, recoveryPath, diagnostics);
+        return 1;
+    }
     return 0;
 }
 catch (Exception exception)

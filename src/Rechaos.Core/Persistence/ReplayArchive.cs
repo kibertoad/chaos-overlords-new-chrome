@@ -218,15 +218,28 @@ public static class ReplayArchive
     }
 
     /// <summary>Decompresses exactly the payload the header declares, and not one byte more.</summary>
+    /// <remarks>
+    /// <see cref="BrotliStream"/> reports damaged input as <see cref="InvalidOperationException"/>
+    /// ("Decoder ran into invalid data"), which is neither what this class documents nor what any
+    /// caller on the load path filters for, so a flipped byte inside a journal ended the process
+    /// while the save beside it was perfectly good.
+    /// </remarks>
     private static byte[] ReadBody(Stream body, ReplayArchiveHeader header)
     {
         var payload = new byte[header.UncompressedBytes];
-        using var brotli = new BrotliStream(body, CompressionMode.Decompress, leaveOpen: true);
-        ReadExactly(brotli, payload);
-        // Exactly the declared length, no more: a stream that still has bytes left declared a
-        // smaller payload than it carries, which is how a decompression bomb is spelled.
-        if (brotli.ReadByte() != -1)
-            throw new InvalidDataException("Journal archive expands beyond its declared size.");
+        try
+        {
+            using var brotli = new BrotliStream(body, CompressionMode.Decompress, leaveOpen: true);
+            ReadExactly(brotli, payload);
+            // Exactly the declared length, no more: a stream that still has bytes left declared a
+            // smaller payload than it carries, which is how a decompression bomb is spelled.
+            if (brotli.ReadByte() != -1)
+                throw new InvalidDataException("Journal archive expands beyond its declared size.");
+        }
+        catch (InvalidOperationException exception)
+        {
+            throw new InvalidDataException("Journal archive body is corrupt.", exception);
+        }
         return payload;
     }
 

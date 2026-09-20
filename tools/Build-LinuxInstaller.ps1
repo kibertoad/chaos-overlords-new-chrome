@@ -40,6 +40,10 @@ New-Item -ItemType Directory -Path $installRoot, $debianRoot, $binaryRoot, $desk
     -Force | Out-Null
 Get-ChildItem -LiteralPath $portableRoot | Copy-Item -Destination $installRoot -Recurse
 
+# A self-contained .NET app needs ICU (no project sets InvariantGlobalization) and OpenSSL for the
+# multiplayer client's HTTPS, plus the C++ and zlib runtimes. ubuntu-latest has all of them, so the
+# CI smoke test could never catch their absence; a minimal Debian install or a container aborted at
+# launch with "Couldn't find a valid ICU package". Keep the ICU alternatives list current.
 @"
 Package: chaos-overlords-new-chrome
 Version: $Version
@@ -47,7 +51,7 @@ Section: games
 Priority: optional
 Architecture: amd64
 Maintainer: kibertoad
-Depends: libc6, libgl1, libx11-6
+Depends: libc6, libgcc-s1, libstdc++6, zlib1g, libssl3 | libssl1.1, libicu76 | libicu74 | libicu72 | libicu70 | libicu67, libgl1, libx11-6
 Description: Clean-room recreation of Chaos Overlords
  Requires resources extracted from a legally owned original copy.
 "@ | Set-Content -LiteralPath (Join-Path $debianRoot 'control') -Encoding utf8NoBOM

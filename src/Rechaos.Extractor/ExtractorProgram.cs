@@ -20,6 +20,13 @@ public static class ExtractorProgram
 
     public static async Task<int> RunAsync(string[] args)
     {
+        // Asking for help is not a failure: it goes to stdout and returns success, so a script that
+        // runs `--help` to check the tool exists is not told the tool is broken.
+        if (args.Contains("--help"))
+        {
+            Console.WriteLine(UsageText);
+            return 0;
+        }
         try
         {
             var options = ParseArguments(args);
@@ -60,7 +67,7 @@ public static class ExtractorProgram
             if (options.Mode == ExtractorMode.GenerateGameplayData)
             {
                 var gameDataSource = options.Source
-                    ?? throw new ArgumentException("--source is required when generating gameplay data.");
+                    ?? throw new UsageException("--source is required when generating gameplay data.");
                 var gameDataSourcePack = await VerifySourceAsync(gameDataSource);
                 var data = OriginalDataReader.Read(gameDataSourcePack.DataDirectory);
                 await GameplayDataGenerator.WriteAsync(data, options.GameDataOutput!);
@@ -71,7 +78,7 @@ public static class ExtractorProgram
             }
 
             var source = options.Source
-                ?? throw new ArgumentException("--source is required; the port does not distribute original assets.");
+                ?? throw new UsageException("--source is required; the port does not distribute original assets.");
             Console.WriteLine($"Checking the original Chaos Overlords installation at {Path.GetFullPath(source)}...");
             var sourcePack = await VerifySourceAsync(source);
             if (options.Mode == ExtractorMode.VerifySource)
@@ -94,7 +101,7 @@ public static class ExtractorProgram
             Console.WriteLine($"Extracted and verified {manifest.Files.Count} assets to {Path.GetFullPath(options.Output)}");
             return 0;
         }
-        catch (ArgumentException exception) { Console.Error.WriteLine(exception.Message); return 2; }
+        catch (UsageException exception) { Console.Error.WriteLine(exception.Message); return 2; }
         catch (Exception exception) { Console.Error.WriteLine($"Extraction failed: {exception.Message}"); return 1; }
     }
 
@@ -111,12 +118,14 @@ public static class ExtractorProgram
     public static async Task<OriginalAssetPack> VerifySourceAsync(string source)
     {
         source = Path.GetFullPath(source);
-        var sourceContainsDataDirectory = Directory.Exists(Path.Combine(source, "DATA"));
-        var dataDirectory = sourceContainsDataDirectory ? Path.Combine(source, "DATA") : source;
-        var installRoot = sourceContainsDataDirectory ? source : Directory.GetParent(source)?.FullName ?? source;
-        var musicDirectory = Path.Combine(installRoot, "MUSIC");
-        var helpDirectory = Path.Combine(installRoot, "HELP");
-        if (!Directory.Exists(Path.Combine(dataDirectory, "PX16")))
+        var nestedData = OriginalDataReader.FindDirectoryCaseInsensitive(Path.Combine(source, "DATA"));
+        var dataDirectory = nestedData ?? source;
+        var installRoot = nestedData is not null ? source : Directory.GetParent(source)?.FullName ?? source;
+        var musicDirectory = OriginalDataReader.FindDirectoryCaseInsensitive(Path.Combine(installRoot, "MUSIC"))
+            ?? Path.Combine(installRoot, "MUSIC");
+        var helpDirectory = OriginalDataReader.FindDirectoryCaseInsensitive(Path.Combine(installRoot, "HELP"))
+            ?? Path.Combine(installRoot, "HELP");
+        if (OriginalDataReader.FindDirectoryCaseInsensitive(Path.Combine(dataDirectory, "PX16")) is null)
             throw new InvalidDataException("The selected folder is not a Chaos Overlords asset pack (DATA/PX16 is missing).");
         foreach (var expected in KnownTableSha256)
         {
@@ -127,6 +136,12 @@ public static class ExtractorProgram
         }
 
         _ = OriginalDataReader.Read(dataDirectory); // Validate exact record structure before extraction.
+        // The fingerprint comes before the movies are decoded, not after. The decoders are the most
+        // forgiving thing here about what they are handed, and there is no reason to run them over
+        // bytes that have not been established as the known original.
+        var fingerprint = await SourceFingerprint.ComputeAsync(dataDirectory, musicDirectory, helpDirectory);
+        if (!string.Equals(fingerprint, KnownSourceFingerprintSha256, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"Unsupported or incomplete original asset pack (SHA-256 {fingerprint}).");
         foreach (var videoName in new[] { "MVINTRO", "MVLOGOS" })
         {
             var video = OriginalDataReader.FindCaseInsensitive(Path.Combine(dataDirectory, videoName));
@@ -147,9 +162,6 @@ public static class ExtractorProgram
                 _ = videoDecoder.Decode(packet);
             }
         }
-        var fingerprint = await SourceFingerprint.ComputeAsync(dataDirectory, musicDirectory, helpDirectory);
-        if (!string.Equals(fingerprint, KnownSourceFingerprintSha256, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException($"Unsupported or incomplete original asset pack (SHA-256 {fingerprint}).");
         return new OriginalAssetPack(source, dataDirectory, musicDirectory, helpDirectory, fingerprint);
     }
 
@@ -161,7 +173,9 @@ public static class ExtractorProgram
         var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
 
         Console.WriteLine("Importing artwork...");
-        var px16 = Path.Combine(source.DataDirectory, "PX16");
+        var px16 = OriginalDataReader.FindDirectoryCaseInsensitive(
+                       Path.Combine(source.DataDirectory, "PX16"))
+                   ?? Path.Combine(source.DataDirectory, "PX16");
         foreach (var sourceImage in Directory.EnumerateFiles(px16).OrderBy(Path.GetFileName))
         {
             var name = Path.GetFileName(sourceImage).ToUpperInvariant();
@@ -176,14 +190,16 @@ public static class ExtractorProgram
         }
 
         Console.WriteLine("Importing sound and music...");
-        foreach (var sound in Directory.EnumerateFiles(source.DataDirectory, "SND*", SearchOption.TopDirectoryOnly))
+        foreach (var sound in Directory.EnumerateFiles(
+                     source.DataDirectory, "SND*", OriginalDataReader.CaseInsensitiveFiles))
         {
             var name = Path.GetFileName(sound).ToUpperInvariant();
             files.Add(await CopyAsync(output, sound, Path.Combine(output, "audio", name + ".wav"),
                 $"DATA/{name}", "audio/wav"));
         }
         if (Directory.Exists(source.MusicDirectory))
-            foreach (var music in Directory.EnumerateFiles(source.MusicDirectory, "*.ogg"))
+            foreach (var music in Directory.EnumerateFiles(
+                         source.MusicDirectory, "*.ogg", OriginalDataReader.CaseInsensitiveFiles))
             {
                 var name = Path.GetFileName(music).ToLowerInvariant();
                 files.Add(await CopyAsync(output, music, Path.Combine(output, "music", name),
@@ -202,7 +218,10 @@ public static class ExtractorProgram
             files.Add(await CopyAsync(output, raw, Path.Combine(output, "raw", "data", rawName),
                 $"DATA/{rawName}", "application/octet-stream"));
         }
-        foreach (var image in Directory.EnumerateFiles(Path.Combine(source.DataDirectory, "PX08")))
+        var px08 = OriginalDataReader.FindDirectoryCaseInsensitive(
+                       Path.Combine(source.DataDirectory, "PX08"))
+                   ?? Path.Combine(source.DataDirectory, "PX08");
+        foreach (var image in Directory.EnumerateFiles(px08))
         {
             var name = Path.GetFileName(image).ToUpperInvariant();
             files.Add(await CopyAsync(output, image, Path.Combine(output, "raw", "px08", name),
@@ -258,10 +277,21 @@ public static class ExtractorProgram
         return manifest;
     }
 
+    internal const string UsageText =
+        "Usage:\n  Rechaos.Extractor --source <original install> [--output <assets>] [--force]\n  Rechaos.Extractor --verify-source --source <original install>\n  Rechaos.Extractor --verify-output [--output <assets>] [--quick] [--json]\n  Rechaos.Extractor --catalog [--output <assets>] [--catalog-output <markdown>]\n  Rechaos.Extractor --analyze-px [--output <assets>]\n  Rechaos.Extractor --generate-game-data <json> --source <original install>";
+
+    /// <summary>A problem with the command line, as opposed to a problem with the assets.</summary>
+    /// <remarks>
+    /// Every <see cref="ArgumentException"/> from anywhere in the run used to be reported as a usage
+    /// error with exit code 2, including an <see cref="ArgumentOutOfRangeException"/> out of a
+    /// decoder deep inside the extraction. Naming the usage case separately keeps exit code 2 for
+    /// what it means.
+    /// </remarks>
+    internal sealed class UsageException(string message) : ArgumentException(message);
+
     private static ExtractorOptions ParseArguments(string[] args)
     {
-        if (args.Length == 0 || args.Contains("--help"))
-            throw new ArgumentException("Usage:\n  Rechaos.Extractor --source <original install> [--output <assets>] [--force]\n  Rechaos.Extractor --verify-source --source <original install>\n  Rechaos.Extractor --verify-output [--output <assets>] [--quick] [--json]\n  Rechaos.Extractor --catalog [--output <assets>] [--catalog-output <markdown>]\n  Rechaos.Extractor --analyze-px [--output <assets>]\n  Rechaos.Extractor --generate-game-data <json> --source <original install>");
+        if (args.Length == 0) throw new UsageException(UsageText);
         string? source = null;
         var output = Path.Combine("src", "Rechaos.Game", "Assets");
         var mode = ExtractorMode.Extract;
@@ -290,29 +320,35 @@ public static class ExtractorProgram
                     mode = ExtractorMode.GenerateGameplayData;
                     gameDataOutput = TakeValue(args, ref i);
                     break;
-                default: throw new ArgumentException($"Unknown argument: {args[i]}");
+                default: throw new UsageException($"Unknown argument: {args[i]}");
             }
         }
         if (quick && mode != ExtractorMode.VerifyOutput)
-            throw new ArgumentException("--quick is valid only with --verify-output.");
+            throw new UsageException("--quick is valid only with --verify-output.");
         if (json && mode != ExtractorMode.VerifyOutput)
-            throw new ArgumentException("--json is valid only with --verify-output.");
+            throw new UsageException("--json is valid only with --verify-output.");
         if (force && mode != ExtractorMode.Extract)
-            throw new ArgumentException("--force is valid only when extracting.");
+            throw new UsageException("--force is valid only when extracting.");
         if (catalogOutput is not null && mode != ExtractorMode.GenerateCatalog)
-            throw new ArgumentException("--catalog-output is valid only with --catalog.");
+            throw new UsageException("--catalog-output is valid only with --catalog.");
         if (gameDataOutput is not null && mode != ExtractorMode.GenerateGameplayData)
-            throw new ArgumentException("--generate-game-data cannot be combined with another mode.");
+            throw new UsageException("--generate-game-data cannot be combined with another mode.");
         return new ExtractorOptions(
             mode, source, output, quick, force, json, catalogOutput, gameDataOutput);
     }
 
     /// <summary>The value that follows a flag, or a refusal naming the flag that wanted one.</summary>
+    /// <remarks>
+    /// Another flag is not a value: <c>--source --force</c> used to take <c>--force</c> as the path
+    /// and then report that the folder was not a Chaos Overlords install.
+    /// </remarks>
     private static string TakeValue(string[] args, ref int index)
     {
         var flag = args[index];
         if (++index >= args.Length)
-            throw new ArgumentException($"{flag} needs a value.");
+            throw new UsageException($"{flag} needs a value.");
+        if (args[index].StartsWith("--", StringComparison.Ordinal))
+            throw new UsageException($"{flag} needs a value, but {args[index]} is another flag.");
         return args[index];
     }
 
@@ -431,7 +467,8 @@ public static class SourceFingerprint
         files.AddRange(Directory.EnumerateFiles(dataDirectory, "*", SearchOption.AllDirectories)
             .Select(path => ($"data/{Path.GetRelativePath(dataDirectory, path).Replace('\\', '/').ToLowerInvariant()}", path)));
         if (Directory.Exists(musicDirectory))
-            files.AddRange(Directory.EnumerateFiles(musicDirectory, "*.ogg")
+            files.AddRange(Directory.EnumerateFiles(
+                    musicDirectory, "*.ogg", OriginalDataReader.CaseInsensitiveFiles)
                 .Select(path => ($"music/{Path.GetFileName(path).ToLowerInvariant()}", path)));
         if (Directory.Exists(helpDirectory))
             files.AddRange(Directory.EnumerateFiles(helpDirectory, "*", SearchOption.AllDirectories)

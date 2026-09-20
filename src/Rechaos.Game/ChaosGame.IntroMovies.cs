@@ -16,6 +16,7 @@ public sealed partial class ChaosGame
     private string? _introMovieFileName;
     private DynamicSoundEffectInstance? _introMovieAudio;
     private Texture2D? _introMovieTexture;
+    private Color[]? _introMovieColors;
     private bool _introMoviesPlaying;
     private bool _introMovieReached;
     private bool _introMoviesSeen;
@@ -128,7 +129,11 @@ public sealed partial class ChaosGame
 
         var palette = frame.Palette;
         var indices = frame.Video.ColorIndices.Span;
-        var colors = new Color[indices.Length];
+        // One reusable buffer rather than a fresh 480 KB array per frame: the movies run 1,350
+        // frames at ten a second, which was about 5 MB a second of large-object garbage.
+        if (_introMovieColors is null || _introMovieColors.Length != indices.Length)
+            _introMovieColors = new Color[indices.Length];
+        var colors = _introMovieColors;
         for (var index = 0; index < colors.Length; index++)
         {
             var color = palette[indices[index]];

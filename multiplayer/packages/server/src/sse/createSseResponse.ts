@@ -23,6 +23,8 @@ export interface SseOptions {
   afterSeq: number
   heartbeatMs: number
   signal: AbortSignal
+  /** Told the sequence of a stored event this build cannot validate, so it can be logged. */
+  onUnreadable?: (seq: number) => void
 }
 
 const encoder = new TextEncoder()
@@ -52,6 +54,7 @@ const STREAM_HIGH_WATER_MARK = 32
  * again; the log keeps the events in the meantime, which is the whole point of it being the truth.
  */
 export function createSseResponse(source: EventStreamSource, options: SseOptions): Response {
+  const { onUnreadable } = options
   let lastSeq = options.afterSeq
   let draining: Promise<void> | null = null
   let wakeAgain = false
@@ -83,7 +86,16 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
             const events = await source.listAfter(lastSeq)
             if (events.length === 0) return
             for (const event of events) {
-              send(formatEvent(event))
+              // A stored row this build cannot validate is skipped, not fatal. Failing the drain
+              // errored the stream, and the client reconnected with the same `Last-Event-ID`, read
+              // the same row and failed again, for good — and a payload reshaped by a server
+              // upgrade is a protocol change, which AGENTS.md says stored matches survive.
+              const frame = tryFormatEvent(event)
+              if (frame === null) {
+                onUnreadable?.(event.seq)
+              } else {
+                send(frame)
+              }
               lastSeq = Math.max(lastSeq, event.seq)
             }
           }
@@ -190,4 +202,13 @@ export function formatEvent(event: PersistedEvent): string {
   const validated = validateSync(matchEventSchema, event)
   const data = JSON.stringify(validated)
   return `id: ${validated.seq}\nevent: ${MATCH_EVENT_SSE_NAME}\ndata: ${data}\n\n`
+}
+
+/** The same frame, or null when the stored row does not fit this build's schema. */
+export function tryFormatEvent(event: PersistedEvent): string | null {
+  try {
+    return formatEvent(event)
+  } catch {
+    return null
+  }
 }

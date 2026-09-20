@@ -87,6 +87,10 @@ export function buildContainer(env: Env): ServerContainer {
         env.BUG_REPORT_RATE_LIMIT_PER_MINUTE,
         DEFAULT_RATE_LIMITS.bugReportPerMinute,
       ),
+      bugReportState: new RateLimiter(clock, {
+        limit: DEFAULT_RATE_LIMITS.bugReportStatePerDay,
+        windowMs: 24 * 60 * 60 * 1000,
+      }),
     },
     // Listing is on unless a deployment turns it off: an unset var means the Browse screen works,
     // rather than every client being told the server lists nothing.
@@ -110,19 +114,30 @@ export default {
   ): Promise<void> {
     const { container } = containerFor(env)
     const { kernel } = container
+    // Each step in its own `try`, as the Node sweeper already does. One shared `catch` meant a
+    // throw inside the turn sweep also stopped both retention sweeps, every time the cron ran.
+    const step = async (name: string, run: () => Promise<void>): Promise<void> => {
+      try {
+        await run()
+      } catch (error: unknown) {
+        workerLogger.error('cron step failed', { step: name, error: String(error) })
+      }
+    }
     ctx.waitUntil(
       (async () => {
-        const { sealed, repaired } = await kernel.turns.sweep()
-        if (sealed > 0 || repaired > 0) {
-          workerLogger.info('cron advanced turns', { sealed, repaired })
-        }
-        await kernel.retention.collect()
+        await step('turns', async () => {
+          const { sealed, repaired } = await kernel.turns.sweep()
+          if (sealed > 0 || repaired > 0) {
+            workerLogger.info('cron advanced turns', { sealed, repaired })
+          }
+        })
+        await step('retention', () => kernel.retention.collect().then(() => undefined))
         // A separate database with a separate window; nothing about a match's retention decides
         // when a bug report and its R2 object go.
-        await container.bugReports?.collect()
-      })().catch((error: unknown) => {
-        workerLogger.error('cron sweep failed', { error: String(error) })
-      }),
+        await step('bugReports', async () => {
+          await container.bugReports?.collect()
+        })
+      })(),
     )
   },
 }

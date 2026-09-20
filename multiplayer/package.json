@@ -10,6 +10,7 @@
     "check-versions": "node scripts/check-versions.mjs",
     "current-version": "node scripts/current-version.mjs",
     "next-version": "node scripts/next-version.mjs",
+    "pack-release": "node scripts/pack.mjs",
     "release-version": "node scripts/release-version.mjs",
     "set-version": "node scripts/set-version.mjs",
     "typecheck": "turbo run typecheck",

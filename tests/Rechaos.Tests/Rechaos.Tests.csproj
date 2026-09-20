@@ -9,6 +9,13 @@
          single version source beside the test binary so GameVersionTests still verifies the exact
          file MSBuild stamped into every assembly. -->
     <None Include="../../version.txt" Link="version.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The TypeScript source of the two version constants, beside the test binary for the same
+         reason. AGENTS.md makes each pair's equality a hard rule and nothing enforced it: the
+         protocol pair was covered only indirectly by the path-filtered OnlineSmoke job, and the
+         session pair not at all, because the server stores whatever sessionVersion a client sends
+         and never compares it to its own. -->
+    <None Include="../../multiplayer/packages/contracts/src/protocol.ts"
+          Link="contracts-protocol.ts" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="xunit.v3" Version="4.0.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />

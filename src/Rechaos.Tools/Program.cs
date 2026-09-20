@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Rechaos.Core.Assets;
@@ -247,7 +248,10 @@ file sealed record TournamentOptions(
         if (text.Equals("all", StringComparison.OrdinalIgnoreCase))
             return Enum.GetValues<ScenarioId>();
         var scenarios = text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            // Enum.TryParse accepts any integer that fits the underlying type, so `--scenarios 99`
+            // parsed happily and every match then failed inside the runner.
             .Select(value => Enum.TryParse<ScenarioId>(value, ignoreCase: true, out var scenario)
+                             && Enum.IsDefined(scenario)
                 ? scenario
                 : throw new ArgumentException($"Unknown scenario '{value}'."))
             .Distinct()
@@ -273,9 +277,11 @@ file sealed record TournamentOptions(
             : throw new ArgumentOutOfRangeException(name, "Value cannot be negative.");
     }
 
+    // Command-line integers are invariant, not whatever the operator's regional settings say: a
+    // culture-sensitive parse reads "1,000" differently from one machine to the next.
     private static int Integer(IReadOnlyDictionary<string, string> values, string name, int fallback) =>
         values.TryGetValue(name, out var text)
-            ? int.TryParse(text, out var value)
+            ? int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
                 ? value
                 : throw new ArgumentException($"Option '{name}' requires an integer.")
             : fallback;

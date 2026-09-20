@@ -56,9 +56,10 @@ describe('canonicalJson', () => {
   /**
    * A golden digest for the C# side to reproduce, over a document in the real op vocabulary. Its
    * canonical text is
-   * `{"ops":[{"action":10,"gang":7,"op":"submitCommand","player":0,"repeat":false,"secondaryTarget":null,"target":{"id":27,"kind":"sector"}},{"gangDefinitionId":44,"op":"queueHire","player":0,"sectorId":27}],"schemaVersion":1}`
+   * `{"ops":[{"action":10,"gang":7,"op":"submitCommand","player":0,"quaternaryTarget":null,"repeat":false,"secondaryTarget":null,"target":{"id":27,"kind":"sector"},"tertiaryTarget":null},{"gangDefinitionId":44,"op":"queueHire","player":0,"sectorId":27}],"schemaVersion":1}`
    * and the digest is SHA-256 of those UTF-8 bytes. If this value ever has to change, every client
-   * changes with it.
+   * changes with it — which is what the protocol and session version bumps that came with the
+   * third and fourth command targets are for.
    */
   it('pins the order digest of a known document', async () => {
     const document: OrderDocument = {
@@ -72,6 +73,8 @@ describe('canonicalJson', () => {
           target: { kind: 'sector', id: 27 },
           repeat: false,
           secondaryTarget: null,
+          tertiaryTarget: null,
+          quaternaryTarget: null,
         },
         { op: 'queueHire', player: 0, gangDefinitionId: 44, sectorId: 27 },
       ],
@@ -79,7 +82,7 @@ describe('canonicalJson', () => {
     // The pin is only worth anything over a document the wire would actually carry.
     expect(safeParse(orderDocumentSchema, document).success).toBe(true)
     expect(await hashOrderDocument(document)).toBe(
-      '1e8d923be158821a974c60903be48d010f7499bdadc3510f6ea3714abadd6631',
+      '551ddbd0dcadc5036f922f74aad6563b81a6dc14044231dd6d10bf63a3830152',
     )
   })
 

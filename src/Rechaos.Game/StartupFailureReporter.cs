@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -23,14 +24,57 @@ public static class StartupFailureReporter
         return builder.ToString().TrimEnd();
     }
 
+    /// <summary>What the player is told when the game stops during play.</summary>
+    public static string BuildMainLoopMessage(
+        Exception exception,
+        string? recoverySavePath,
+        string? logPath = null)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+        var builder = new StringBuilder()
+            .AppendLine($"{ApplicationTitle} stopped unexpectedly.")
+            .AppendLine()
+            .AppendLine(exception.Message)
+            .AppendLine()
+            .AppendLine(recoverySavePath is null
+                ? "The match in progress could not be saved. Your last manual save is unchanged."
+                : $"The match in progress was written to {recoverySavePath}. Your saved slots are unchanged.");
+        if (!string.IsNullOrWhiteSpace(logPath))
+            builder.AppendLine().AppendLine($"Technical details: {logPath}");
+        return builder.ToString().TrimEnd();
+    }
+
     public static void Report(
         Exception exception,
         string? assetRoot,
         RuntimeDiagnostics? diagnostics = null)
     {
-        var logPath = diagnostics?.CaptureCrash(exception, "main-loop")
+        var logPath = diagnostics?.CaptureCrash(exception, "startup")
             ?? TryWriteLog(exception, assetRoot);
-        var message = BuildUserMessage(exception, assetRoot, logPath);
+        Show(BuildUserMessage(exception, assetRoot, logPath), exception);
+    }
+
+    /// <summary>
+    /// Reports a crash that happened after the game was running.
+    /// </summary>
+    /// <remarks>
+    /// The two used to share one message. A player whose turn resolution threw on turn 30 was told
+    /// the game "could not start" and advised to re-import their assets, and the crash log recorded
+    /// the origin as "main-loop" for real startup failures too, so the log could not tell them apart
+    /// either.
+    /// </remarks>
+    public static void ReportMainLoopFailure(
+        Exception exception,
+        string? recoverySavePath,
+        RuntimeDiagnostics? diagnostics = null)
+    {
+        var logPath = diagnostics?.CaptureCrash(exception, "main-loop")
+            ?? TryWriteLog(exception, null);
+        Show(BuildMainLoopMessage(exception, recoverySavePath, logPath), exception);
+    }
+
+    private static void Show(string message, Exception exception)
+    {
         Console.Error.WriteLine(message);
         Console.Error.WriteLine(exception);
         if (OperatingSystem.IsWindows())
@@ -47,7 +91,7 @@ public static class StartupFailureReporter
                 "Logs");
             Directory.CreateDirectory(directory);
             var path = Path.Combine(directory,
-                $"crash-{DateTimeOffset.UtcNow:yyyyMMddTHHmmssfffZ}-{Environment.ProcessId}.log");
+                $"crash-{DateTimeOffset.UtcNow.ToString("yyyyMMddTHHmmssfffZ", CultureInfo.InvariantCulture)}-{Environment.ProcessId}.log");
             File.WriteAllText(path,
                 $"{DateTimeOffset.UtcNow:O}{Environment.NewLine}" +
                 $"Asset folder: {assetRoot ?? "(not resolved)"}{Environment.NewLine}" +

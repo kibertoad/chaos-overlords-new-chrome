@@ -204,9 +204,18 @@ public sealed class MultiplayerClient
     /// Opens the event stream. The caller owns the response and disposes it.
     /// </summary>
     /// <remarks>
-    /// It reads with <see cref="HttpCompletionOption.ResponseHeadersRead"/> and outside the request
-    /// deadline: a stream that has said nothing for a minute is healthy, and buffering it to
-    /// completion would mean never seeing an event at all.
+    /// <para>
+    /// It reads with <see cref="HttpCompletionOption.ResponseHeadersRead"/>, so the BODY is outside
+    /// the request deadline: a stream that has said nothing for a minute is healthy, and buffering
+    /// it to completion would mean never seeing an event at all.
+    /// </para>
+    /// <para>
+    /// The HEADER phase keeps the ordinary deadline. Without one the only bound was
+    /// <see cref="HttpClient.Timeout"/>, a hundred seconds on the shared client, and it surfaces as
+    /// a <see cref="TaskCanceledException"/> the retry policy reads as fatal — so a reconnect
+    /// through a captive network that never answers ended the match instead of spending the
+    /// five-minute reconnect window the docs promise.
+    /// </para>
     /// </remarks>
     internal async Task<HttpResponseMessage> OpenStreamAsync(
         string path,
@@ -219,9 +228,22 @@ public sealed class MultiplayerClient
         request.Headers.TryAddWithoutValidation("Last-Event-ID", afterSeq.ToString(
             System.Globalization.CultureInfo.InvariantCulture));
         Authorize(request);
-        var response = await _http
-            .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
-            .ConfigureAwait(false);
+        // Disposed once the headers are in, never before: tying the body to it would cancel the
+        // stream fifteen seconds after it opened.
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(_options.EffectiveTimeout);
+        HttpResponseMessage response;
+        try
+        {
+            response = await _http
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException exception)
+            when (!cancellationToken.IsCancellationRequested && timeout.IsCancellationRequested)
+        {
+            throw new MultiplayerTimeoutException(_options.EffectiveTimeout, exception);
+        }
         if (response.IsSuccessStatusCode) return response;
         using (response)
         {

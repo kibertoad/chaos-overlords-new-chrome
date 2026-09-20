@@ -166,8 +166,13 @@ public sealed class BugReportSubmitter
         HttpResponseMessage response;
         try
         {
+            // Headers first, then a bounded read of the body. `MaxResponseContentBufferSize` is
+            // what `CreateHttpClient` sets, but it belongs to the client rather than to this class,
+            // so a caller that built its own — which the constructor above allows, and the timeout
+            // check made look validated — got the two-gigabyte default. Reading the body here
+            // bounds it whatever client it arrives on.
             response = await _http
-                .SendAsync(request, HttpCompletionOption.ResponseContentRead, deadline.Token)
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token)
                 .ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is HttpRequestException
@@ -181,7 +186,7 @@ public sealed class BugReportSubmitter
         using (response)
         {
             if (!response.IsSuccessStatusCode) throw Refusal(response.StatusCode);
-            var body = await response.Content.ReadAsStringAsync(cancellationToken)
+            var body = await ReadBoundedBodyAsync(response, deadline.Token, cancellationToken)
                 .ConfigureAwait(false);
             try
             {
@@ -194,6 +199,45 @@ public sealed class BugReportSubmitter
                     "The bug report server answered something this build cannot read.",
                     exception);
             }
+        }
+    }
+
+    /// <summary>
+    /// The receipt body, up to <see cref="MaximumResponseBytes"/>, or a refusal.
+    /// </summary>
+    /// <remarks>
+    /// A receipt is a few hundred bytes. Anything past the bound is not one, and reading it would
+    /// be this process holding whatever a server — or something sitting in front of one — decided
+    /// to send.
+    /// </remarks>
+    private static async Task<string> ReadBoundedBodyAsync(
+        HttpResponseMessage response,
+        CancellationToken deadline,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await using var stream = await response.Content.ReadAsStreamAsync(deadline)
+                .ConfigureAwait(false);
+            var buffer = new byte[MaximumResponseBytes + 1];
+            var read = await stream.ReadAtLeastAsync(
+                buffer, buffer.Length, throwOnEndOfStream: false, deadline).ConfigureAwait(false);
+            if (read > MaximumResponseBytes)
+            {
+                throw new BugReportException(
+                    BugReportFailure.ServerError,
+                    "The bug report server answered more than this build will read.");
+            }
+            return Encoding.UTF8.GetString(buffer, 0, read);
+        }
+        catch (Exception exception) when (exception is HttpRequestException
+                                          or IOException
+                                          or OperationCanceledException
+                                          && !cancellationToken.IsCancellationRequested)
+        {
+            throw new BugReportException(
+                BugReportFailure.Unreachable,
+                "The bug report server stopped answering.", exception);
         }
     }
 

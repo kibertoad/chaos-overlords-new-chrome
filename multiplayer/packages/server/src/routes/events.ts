@@ -3,16 +3,31 @@ import type { Hono } from 'hono'
 import { requireMember } from '../http/guards'
 import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
+import { tryFormatEvent } from '../sse/createSseResponse'
 
 /** The event log: a paged REST read (the fallback) and the SSE stream over the same log. */
 export function registerEventRoutes(api: Hono<AppEnv>): void {
   buildHonoRoute(api, listEventsContract, async (c) => {
     const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
     const { after, limit } = c.req.valid('query')
-    const events = await c
-      .get('container')
-      .kernel.deps.storage.events.listAfter(principal.match.id, after, limit)
-    return c.json({ events }, 200)
+    const container = c.get('container')
+    const events = await container.kernel.deps.storage.events.listAfter(
+      principal.match.id,
+      after,
+      limit,
+    )
+    // A row this build's schema refuses is left out rather than answered as a 500. One reshaped
+    // payload — which a protocol-only upgrade may leave behind, and AGENTS.md says stored matches
+    // survive those — otherwise made every page holding it unreadable for the life of the match.
+    const readable = events.filter((event) => {
+      if (tryFormatEvent(event) !== null) return true
+      container.kernel.deps.logger.warn('skipped an unreadable stored event', {
+        matchId: principal.match.id,
+        seq: event.seq,
+      })
+      return false
+    })
+    return c.json({ events: readable }, 200)
   })
 
   buildHonoRoute(api, streamEventsContract, async (c) => {

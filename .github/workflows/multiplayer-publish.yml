@@ -63,6 +63,11 @@ concurrency:
 jobs:
   prepare:
     name: Validate release
+    # A workflow_dispatch runs the workflow file of the branch it is dispatched from, and npm
+    # trusted publishing matches on repository, workflow file name and environment rather than on
+    # branch. A release comes from main or from a `multiplayer-v*` tag and from nowhere else; the
+    # deployment-branch rule on the `npm` environment is the real gate, and this is the second one.
+    if: github.event_name == 'push' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -158,15 +163,18 @@ jobs:
           fi
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
 
-  publish:
-    name: Verify and publish
+  # Everything that runs repository code, in a job that holds no OIDC identity and no environment.
+  # `pnpm install` (install scripts allowed for better-sqlite3, esbuild and workerd), the whole
+  # build, the whole vitest suite including the workerd pool, and the codegen check all run here —
+  # and any of them could otherwise have asked GitHub for the job's id-token and traded it at the
+  # registry for permission to publish all nine packages with valid provenance.
+  verify:
+    name: Verify and pack
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    environment: npm
     permissions:
       contents: read # Required to check out the release commit.
-      id-token: write # Required for npm trusted publishing and provenance attestations.
     defaults:
       run:
         working-directory: multiplayer
@@ -233,32 +241,73 @@ jobs:
         run: pnpm exec turbo run test:run --env-mode=loose
         env:
           TEST_DATABASE_URL: postgres://chaos:chaos@localhost:5432/chaos
+          # Turns a missing URL from a green skip into a failure; see postgres.spec.ts.
+          REQUIRE_POSTGRES: "1"
 
       - name: Check the generated C# still matches the contracts
         run: pnpm codegen:check
 
       # Packs every package and prints the file list without contacting the registry, so a tarball
-      # that is missing its dist or its licence fails here rather than after it is published.
+      # that is missing its dist or its licence fails here rather than after it is published. This
+      # is also what runs each package's `prepublishOnly` file check.
       - name: Rehearse the publish
         run: pnpm publish -r --dry-run --no-git-checks --access public
 
-      - name: Publish to npm
-        if: github.event_name == 'push' || inputs.mode == 'release'
-        run: pnpm publish -r --no-git-checks --access public --report-summary
+      - name: Pack the release tarballs
+        run: pnpm pack-release "$RUNNER_TEMP/release-tarballs"
 
-      - name: Summarise what was published
-        if: github.event_name == 'push' || inputs.mode == 'release'
+      - name: Upload the release tarballs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: multiplayer-tarballs
+          path: ${{ runner.temp }}/release-tarballs/*.tgz
+          if-no-files-found: error
+          retention-days: 1
+
+  # The only job with an OIDC identity, and it runs no repository code at all: it downloads the
+  # tarballs the job above produced and hands each one to `npm publish`. `npm publish <tarball>`
+  # runs no lifecycle scripts from the package, so what reaches the registry is exactly the bytes
+  # that were rehearsed and tested.
+  publish:
+    name: Publish to npm
+    needs: [prepare, verify]
+    if: github.event_name == 'push' || inputs.mode == 'release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write # Required for npm trusted publishing and provenance attestations.
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: Download the release tarballs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: multiplayer-tarballs
+          path: tarballs
+
+      - name: Publish to npm
         run: |
+          shopt -s nullglob
+          tarballs=(tarballs/*.tgz)
+          if (( ${#tarballs[@]} == 0 )); then
+            echo 'No tarballs to publish.' >&2
+            exit 1
+          fi
           {
             echo '## Published'
             echo
-            node -e '
-              const summary = require("./pnpm-publish-summary.json");
-              for (const { name, version } of summary.publishedPackages) {
-                console.log(`- \`${name}@${version}\``);
-              }
-            '
           } >> "$GITHUB_STEP_SUMMARY"
+          for tarball in "${tarballs[@]}"; do
+            npm publish "$tarball" --provenance --access public
+            echo "- \`$(basename "$tarball")\`" >> "$GITHUB_STEP_SUMMARY"
+          done
 
   tag:
     name: Tag the release

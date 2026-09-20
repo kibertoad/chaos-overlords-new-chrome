@@ -137,7 +137,14 @@ export const commandTargetSchema = variant('kind', [
  * it (see `assertOwnOps` in the kernel's turn service).
  */
 
-/** `MatchState.Submit(GameCommand)`. */
+/**
+ * `MatchState.Submit(GameCommand)`.
+ *
+ * All four targets travel. `GameCommand` has held `TertiaryTarget` and `QuaternaryTarget` since
+ * multi-item Sell and Give were added: a Sell names up to three items, and a Give names the
+ * recipient gang plus up to three items. Carrying only two of them meant every client applied the
+ * same shortened order — no desync, and no third or fourth item either.
+ */
 export const submitCommandOpSchema = strictObject({
   op: literal('submitCommand'),
   player: slotSchema,
@@ -146,6 +153,8 @@ export const submitCommandOpSchema = strictObject({
   target: commandTargetSchema,
   repeat: boolean(),
   secondaryTarget: nullable(commandTargetSchema),
+  tertiaryTarget: nullable(commandTargetSchema),
+  quaternaryTarget: nullable(commandTargetSchema),
 })
 
 /** `MatchState.Cancel(player, gang)`. */

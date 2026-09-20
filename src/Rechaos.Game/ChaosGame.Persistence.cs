@@ -19,29 +19,54 @@ public sealed partial class ChaosGame
             _message = "GAME SAVED";
             return summary;
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or InvalidDataException
+                                          or UnauthorizedAccessException)
         {
+            _diagnostics?.Write("save.failed", new Dictionary<string, string?>
+            {
+                ["slot"] = slot.ToString(),
+                ["error"] = exception.ToString()
+            });
             _message = "SAVE FAILED";
             return null;
         }
     }
 
-    private bool LoadGameFromSlot(int slot)
+    private bool LoadGameFromSlot(int slot) => AdoptLoadedMatch(
+        () => SaveSlotCatalog.Load(_saveDirectory, slot, _definitions!),
+        loaded => SaveSlotCatalog.LoadJournal(_saveDirectory, slot, loaded),
+        _saveSlots[slot]);
+
+    /// <summary>
+    /// Loads the rolling autosave.
+    /// </summary>
+    /// <remarks>
+    /// The autosave writes no journal (it is written from inside the turn flow, where capturing one
+    /// would double the cost of every turn boundary), so the loaded match starts a fresh recorder.
+    /// That loses the session history a slot save keeps, which is the price of the autosave being
+    /// there at all after a crash.
+    /// </remarks>
+    private bool LoadGameFromAutoSave() => AdoptLoadedMatch(
+        () => NativeSaveStore.LoadRecoveringBackup(_autoSavePath, _definitions!).State,
+        _ => null,
+        _saveSlots[SaveSlotCatalog.AutoSaveRow]);
+
+    private bool AdoptLoadedMatch(
+        Func<MatchState> load,
+        Func<MatchState, MatchReplayRecorder?> journal,
+        SaveSlotSummary? summary)
     {
         if (_session is not null) return false;
         if (_definitions is null) return false;
         try
         {
-            var summary = _saveSlots[slot];
-            var loaded = SaveSlotCatalog.Load(_saveDirectory, slot, _definitions);
+            var loaded = load();
             // The save is the match; the companion journal, when the slot has one that belongs to
             // it, is only how it got there — the history from the first turn, which is what lets a
             // bug report filed after a load reproduce the whole session rather than the tail of it.
             // Either way the state that is played on is the one that was saved.
             _state = loaded;
-            _actions = new MatchActions(
-                SaveSlotCatalog.LoadJournal(_saveDirectory, slot, loaded)
-                ?? new MatchReplayRecorder(loaded));
+            _actions = new MatchActions(journal(loaded) ?? new MatchReplayRecorder(loaded));
             ResetHotSeatEliminationPresentation(acknowledgeExistingEliminations: true);
             if (!_debugPhaseStepping) GameplayTurnFlow.AdvanceToPlanning(_actions.HotSeatRecorder);
             if (!_debugPhaseStepping) PrepareCurrentHireOffers();
@@ -50,12 +75,7 @@ public sealed partial class ChaosGame
             _message = summary?.RecoveredFromBackup == true
                 ? summary.PrimaryRepaired ? "BACKUP RECOVERED" : "BACKUP LOADED  REPAIR FAILED"
                 : string.Empty;
-            _combatPresentationProgress.ResetTo(
-                _state.Players.Select(player => player.Id),
-                _state.Events.LastOrDefault()?.Sequence ?? -1);
-            _combatAnimationPlayer.Clear();
-            _siteSearchSelections.Reset();
-            _lastTurnEventArchive.Clear();
+            ResetMatchPresentation(_state);
             _showGameInfoAtPlanningEntry = false;
             _continuePlanningEntryAfterGameInfo = false;
             _deferComlinkAlertUntilPlanningVisible = false;
@@ -71,6 +91,35 @@ public sealed partial class ChaosGame
         }
     }
 
+    /// <summary>
+    /// Writes the live match to <c>crash-recovery.rchsave</c> on the way out of a main-loop crash.
+    /// </summary>
+    /// <returns>The path written, or null when there was nothing to write or it failed.</returns>
+    /// <remarks>
+    /// Everything here is best effort and nothing may throw: this runs while the process is already
+    /// ending because something else threw, and a second exception would replace the one the player
+    /// needs to see. A save that fails its own round trip is exactly the class of defect that gets
+    /// here, so the catch is deliberately wide.
+    /// </remarks>
+    public string? TryWriteCrashRecoverySave()
+    {
+        try
+        {
+            if (_state is null || _session is not null) return null;
+            var path = Path.Combine(_saveDirectory, "crash-recovery.rchsave");
+            NativeSaveStore.SaveAtomic(path, _state);
+            return path;
+        }
+        catch (Exception exception)
+        {
+            _diagnostics?.Write("crash.recovery.failed", new Dictionary<string, string?>
+            {
+                ["error"] = exception.ToString()
+            });
+            return null;
+        }
+    }
+
     private void SaveReplay()
     {
         if (_actions is null) return;
@@ -79,7 +128,12 @@ public sealed partial class ChaosGame
             MatchReplayStore.SaveAtomic(_replayPath, _actions.HotSeatRecorder);
             _message = string.Empty;
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        // InvalidOperationException is the desynced recorder, which MatchReplayRecorder.Capture
+        // raises before it writes anything; SaveSlotCatalog.WriteJournal already treats it as a
+        // companion failure rather than a reason to end the process, and F6 must do the same.
+        catch (Exception exception) when (exception is IOException or InvalidDataException
+                                          or UnauthorizedAccessException
+                                          or InvalidOperationException)
         {
             _message = "REPLAY SAVE FAILED";
         }

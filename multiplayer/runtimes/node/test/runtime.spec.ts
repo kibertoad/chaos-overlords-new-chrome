@@ -81,6 +81,11 @@ describe('node runtime configuration', () => {
 })
 
 defineFacadeSuite('node runtime over sqlite', 'sqlite::memory:')
+// `REQUIRE_POSTGRES` turns a missing URL from a green skip into a failure, for the CI and release
+// jobs that stand a Postgres service up. See the note in `packages/storage/test/postgres.spec.ts`.
+if (process.env.REQUIRE_POSTGRES === '1' && !process.env.TEST_DATABASE_URL) {
+  throw new Error('REQUIRE_POSTGRES=1 but TEST_DATABASE_URL is empty.')
+}
 defineFacadeSuite('node runtime over postgres', process.env.TEST_DATABASE_URL)
 
 /**

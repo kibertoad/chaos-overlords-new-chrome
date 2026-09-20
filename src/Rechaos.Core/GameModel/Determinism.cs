@@ -70,7 +70,7 @@ public sealed record PhaseBoundaryHash(
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 27;
+    private const int FormatVersion = 28;
 
     internal static string ComputeLegacySha256(MatchState state) =>
         ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
@@ -246,6 +246,18 @@ public static class MatchStateHasher
             includePhaseHistory: true, includeComlinkReadSequences: true,
             includeAiPolicy: true);
 
+    internal static string ComputeVersionTwentySevenSha256(MatchState state) =>
+        ComputeSha256(state, 27, includeSectorIncome: true, includeCrackdownDuration: true,
+            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
+            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
+            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
+            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
+            includeAiFormationSectors: true, includeAiCoverageSectors: true,
+            includeComlink: true, includeTertiaryTargets: true,
+            includeQuaternaryTargets: true, includeEventHistory: true,
+            includePhaseHistory: true, includeComlinkReadSequences: true,
+            includeAiPolicy: true, includeSectorChaos: false);
+
     public static string ComputeSha256(MatchState state)
         => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
             includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
@@ -256,7 +268,8 @@ public static class MatchStateHasher
             includeComlink: true, includeTertiaryTargets: true,
             includeQuaternaryTargets: true, includeEventHistory: true,
             includePhaseHistory: true, includeComlinkReadSequences: true,
-            includeAiPolicy: true, includeSectorChaos: false);
+            includeAiPolicy: true, includeSectorChaos: false,
+            includeRosterSlotOrder: true);
 
     private static string ComputeSha256(
         MatchState state,
@@ -284,7 +297,8 @@ public static class MatchStateHasher
         bool includePhaseHistory = false,
         bool includeComlinkReadSequences = false,
         bool includeAiPolicy = false,
-        bool includeSectorChaos = true)
+        bool includeSectorChaos = true,
+        bool includeRosterSlotOrder = false)
     {
         ArgumentNullException.ThrowIfNull(state);
         using var stream = new MemoryStream();
@@ -392,7 +406,7 @@ public static class MatchStateHasher
             writer.Write(state.Players.Count);
             foreach (var player in state.Players.OrderBy(item => item.Id.Value))
                 WritePlayer(writer, player, includeHireSlots, includeHirePayment,
-                    includeMaximumHireForce);
+                    includeMaximumHireForce, includeRosterSlotOrder);
             writer.Write(state.Sectors.Count);
             foreach (var sector in state.Sectors.OrderBy(item => item.Id))
                 WriteSector(writer, sector, includeSectorIncome, includeCrackdownDuration,
@@ -450,7 +464,31 @@ public static class MatchStateHasher
         writer.Write(target.Second);
     }
 
+    /// <summary>
+    /// The canonical definition block, built once per <see cref="OriginalData"/> instance.
+    /// </summary>
+    /// <remarks>
+    /// The block is the same bytes on every call for a given definition set, and a turn hashes
+    /// 8 + 2P boundaries, so re-serialising every site, gang and item (names and descriptions
+    /// included) each time was pure repetition. The entries are weak, so a definition set the
+    /// process stops using is still collectable.
+    /// </remarks>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<OriginalData, byte[]>
+        DefinitionBlocks = [];
+
     private static void WriteDefinitions(BinaryWriter writer, OriginalData definitions)
+    {
+        var block = DefinitionBlocks.GetValue(definitions, static value =>
+        {
+            using var stream = new MemoryStream();
+            using (var blockWriter = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+                WriteDefinitionBlock(blockWriter, value);
+            return stream.ToArray();
+        });
+        writer.Write(block);
+    }
+
+    private static void WriteDefinitionBlock(BinaryWriter writer, OriginalData definitions)
     {
         writer.Write(definitions.Sites.Count);
         foreach (var site in definitions.Sites.OrderBy(item => item.Id))
@@ -479,13 +517,21 @@ public static class MatchStateHasher
         MatchPlayerState player,
         bool includeHireSlots,
         bool includeHirePayment,
-        bool includeMaximumHireForce)
+        bool includeMaximumHireForce,
+        bool includeRosterSlotOrder)
     {
         writer.Write(player.Id.Value); writer.Write((byte)player.Status); writer.Write(player.Cash); writer.Write(player.Support);
         writer.Write(player.BigManPoints);
         if (includeMaximumHireForce) writer.Write(player.UsesMaximumHireForce);
         writer.Write(player.Gangs.Count);
-        foreach (var gang in player.Gangs.OrderBy(item => item.Id.Value))
+        // Roster slot order is play state: every phase resolver orders by slot, hire reuse takes the
+        // first inactive slot, and the AI planning tables are indexed by slot. Hashing in gang id
+        // order let two states that resolve differently produce the same fingerprint once a slot had
+        // been reused, which a repair snapshot with a reordered roster could have exploited.
+        var roster = includeRosterSlotOrder
+            ? (IEnumerable<MatchGangState>)player.Gangs
+            : player.Gangs.OrderBy(item => item.Id.Value);
+        foreach (var gang in roster)
         {
             writer.Write(gang.Id.Value); writer.Write(gang.Owner.Value); writer.Write(gang.DefinitionId); writer.Write(gang.SectorId);
             writer.Write(gang.Force); writer.Write(gang.Hidden); writer.Write(gang.HiredThisTurn);

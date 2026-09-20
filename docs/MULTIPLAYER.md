@@ -675,8 +675,10 @@ dock a player plans against the dock the sealed turn grants.
   host uploads becomes the state every other client must match, so it may only claim a hash more
   active players reported than any other. A genuine tie leaves nothing to count and the host breaks
   it, which is every two-player desync. A host who never uploads leaves the match paused
-  indefinitely, and the escape is the ordinary one: players leave, and the match is abandoned when
-  the last active player goes. The counting assumes one human per seat; see the security model.
+  indefinitely, and the escape is the ordinary one: players leave. The match is not abandoned when
+  the last active player goes — it stays `running` so anybody can rejoin, with its turn clock
+  stopped — and retention collects it once it has been silent for long enough. The counting assumes
+  one human per seat; see the security model.
 - **A host who never presses ready stalls an untimed match.** Only the host can kick, and without a
   turn timer nothing seals on its own, so the other players' only remedy is to leave. A unanimous
   vote of the remaining active players, reusing the takeover machinery, is the obvious next step.

@@ -68,6 +68,11 @@ function apiRoutes(): Hono<AppEnv> {
   // handler checking: storage values and JSON columns are not trustworthy merely because typed.
   api.use('*', validateContractResponse)
 
+  // A backstop sized to the largest legitimate body on the API (a bug report's base64 state), so a
+  // route added without a cap of its own is still bounded. Every route below narrows it; Hono
+  // composes middleware rather than replacing it, so the tightest cap that matches a path wins.
+  api.use('*', bodyLimit({ maxSize: BUG_REPORT_LIMITS.stateBase64Bytes + SMALL_BODY }))
+
   // The unauthenticated handshake parses a body before any player identity exists, so it needs the
   // same address budget and small-body cap as the lobby doors it protects.
   api.use('/handshake', rateLimited, bodyLimit({ maxSize: SMALL_BODY }))
@@ -95,6 +100,15 @@ function apiRoutes(): Hono<AppEnv> {
   // the bare path would authenticate (a token lookup plus a match read) and charge the member's
   // rate limit twice on every request to it.
   api.use('/matches/:matchId/*', bearerAuth, memberRateLimited())
+  // The two member routes with a JSON body that had no cap of their own. A member token costs one
+  // unauthenticated `POST /matches`, so without these a stranger could make the process buffer and
+  // parse a body of any size, a few hundred megabytes at a time, inside the same process that is
+  // sealing every other match's turns.
+  api.use(
+    '/matches/:matchId/settings',
+    bodyLimit({ maxSize: LIMITS.gameSettingsBytes + SMALL_BODY }),
+  )
+  api.use('/matches/:matchId/players/:playerId/takeover-vote', bodyLimit({ maxSize: SMALL_BODY }))
   api.use('/matches/:matchId/turns/:turn/orders', bodyLimit({ maxSize: LIMITS.ordersBytes }))
   api.use('/matches/:matchId/turns/:turn/report', bodyLimit({ maxSize: SMALL_BODY }))
   // A snapshot is a megabyte, so uploads carry their own tighter budget on top of the member one.

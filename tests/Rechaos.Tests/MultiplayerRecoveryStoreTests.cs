@@ -1,4 +1,5 @@
 using Rechaos.Game;
+using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Protocol;
 using Xunit;
 
@@ -24,6 +25,15 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         Assert.True(loaded.ShouldSuggestReconnect);
     }
 
+    /// <summary>
+    /// Only the server's own "this membership is gone" retires a saved seat.
+    /// </summary>
+    /// <remarks>
+    /// A bare 404 or 401 is not proof. Every unsuccessful response becomes a
+    /// <c>MultiplayerApiException</c>, so a reverse proxy answering 404 for every path while the
+    /// server behind it is down looked exactly like a deleted match — and the player's seat in a
+    /// running game was removed from the file for good, with no token left to reconnect with.
+    /// </remarks>
     [Fact]
     public async Task ReconciliationDropsOnlyMembershipsTheServerHasDefinitelyRetired()
     {
@@ -31,11 +41,19 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         using var http = new HttpClient(server);
         var deleted = Recovery(CleanExit: true, Completed: false) with { MatchId = "deleted" };
         var unreachable = Recovery(CleanExit: true, Completed: false) with { MatchId = "offline" };
-        server.Answer(HttpMethod.Get, "/matches/deleted", null, System.Net.HttpStatusCode.Unauthorized);
+        var proxied = Recovery(CleanExit: true, Completed: false) with { MatchId = "proxied" };
+        server.Answer(
+            HttpMethod.Get, "/matches/deleted",
+            new ErrorEnvelope(new ErrorEnvelopeError(
+                ErrorCode.Unauthorized, "Invalid or expired player token",
+                new ErrorEnvelopeErrorDetails("invalid_token"), RequestId: null)),
+            System.Net.HttpStatusCode.Unauthorized);
         server.Answer(HttpMethod.Get, "/matches/offline", null, System.Net.HttpStatusCode.BadGateway);
+        // A proxy's own 404: the right status, and no envelope behind it.
+        server.Answer(HttpMethod.Get, "/matches/proxied", null, System.Net.HttpStatusCode.NotFound);
 
         var unavailable = await MultiplayerRecoveryReconciliation.FindUnavailableAsync(
-            http, [deleted, unreachable], TestContext.Current.CancellationToken);
+            http, [deleted, unreachable, proxied], TestContext.Current.CancellationToken);
 
         Assert.Equal([deleted], unavailable);
     }

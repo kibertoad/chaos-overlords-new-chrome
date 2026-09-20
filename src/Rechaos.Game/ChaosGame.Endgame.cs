@@ -172,10 +172,26 @@ public sealed partial class ChaosGame
     /// An online match is over in its own right, but the session that drove it is still holding a
     /// token and a connection until somebody says so.
     /// </remarks>
+    /// <summary>
+    /// Returns to the title after a finished match.
+    /// </summary>
+    /// <remarks>
+    /// The finished match is let go here, as <c>QuitToMainMenu</c> does. Keeping it meant Escape on
+    /// the Setup or Online screen afterwards opened the in-game menu over the title, where SAVE GAME
+    /// saved the finished match and QUIT warned that "your current game will be lost".
+    /// </remarks>
     private void LeaveEndgame()
     {
-        if (_session is not null) EndOnlineMatch("THE MATCH IS OVER");
-        else _screens.Show(ClientScreen.Title);
+        if (_session is not null)
+        {
+            EndOnlineMatch("THE MATCH IS OVER");
+            return;
+        }
+        ResetTransientMatchUi();
+        StopPlanningTimer();
+        _state = null;
+        _actions = null;
+        _screens.Show(ClientScreen.Title);
     }
 }
 

@@ -85,6 +85,7 @@ public static class EventStreamParser
     {
         ArgumentNullException.ThrowIfNull(body);
         using var reader = new StreamReader(body, Encoding.UTF8, detectEncodingFromByteOrderMarks: false);
+        var lines = new BoundedLineReader(reader, MaximumFrameChars);
         // One linked source, re-armed after every line: `CancelAfter` restarts the countdown, so
         // the deadline is always measured from the last byte rather than from the connection.
         using var idle = idleTimeout is { } ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken) : null;
@@ -92,7 +93,7 @@ public static class EventStreamParser
         var firstLine = true;
         while (true)
         {
-            var line = await ReadLineAsync(reader, idle, idleTimeout, cancellationToken).ConfigureAwait(false);
+            var line = await ReadLineAsync(lines, idle, idleTimeout, cancellationToken).ConfigureAwait(false);
             if (line is null)
             {
                 // The connection ended. A frame with no blank line after it was cut mid-write, and
@@ -124,7 +125,7 @@ public static class EventStreamParser
 
     /// <summary>One line, with the idle deadline told apart from the caller's cancellation.</summary>
     private static async Task<string?> ReadLineAsync(
-        StreamReader reader,
+        BoundedLineReader reader,
         CancellationTokenSource? idle,
         TimeSpan? idleTimeout,
         CancellationToken cancellationToken)
@@ -138,6 +139,69 @@ public static class EventStreamParser
         catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
         {
             throw new EventStreamIdleException(idleTimeout.Value, exception);
+        }
+    }
+
+    /// <summary>
+    /// Reads lines in chunks, refusing one longer than the frame limit.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="StreamReader.ReadLineAsync(CancellationToken)"/> grows its own buffer until it
+    /// finds a newline, so the frame ceiling the caller applies afterwards bounded nothing: a
+    /// server writing bytes with no newline could deliver gigabytes into this process first, and
+    /// the idle timer is re-armed per line rather than per byte, so it does not help either.
+    /// <see cref="HttpClient.MaxResponseContentBufferSize"/> does not apply to a
+    /// <see cref="HttpCompletionOption.ResponseHeadersRead"/> body.
+    /// </remarks>
+    private sealed class BoundedLineReader(StreamReader reader, int maximumLineChars)
+    {
+        private readonly char[] _buffer = new char[8192];
+        private readonly StringBuilder _line = new();
+        private int _start;
+        private int _length;
+        private bool _skipLeadingNewline;
+
+        public async Task<string?> ReadLineAsync(CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                while (_start < _length)
+                {
+                    var character = _buffer[_start++];
+                    if (_skipLeadingNewline)
+                    {
+                        _skipLeadingNewline = false;
+                        if (character == '\n') continue;
+                    }
+                    if (character == '\r')
+                    {
+                        // CRLF and a bare CR both end a line, as the event-stream format says.
+                        _skipLeadingNewline = true;
+                        return Take();
+                    }
+                    if (character == '\n') return Take();
+                    if (_line.Length >= maximumLineChars)
+                    {
+                        throw new MultiplayerProtocolException(
+                            $"an event stream line passed {maximumLineChars} characters without ending");
+                    }
+                    _line.Append(character);
+                }
+                _start = 0;
+                _length = await reader.ReadAsync(_buffer.AsMemory(), cancellationToken)
+                    .ConfigureAwait(false);
+                if (_length != 0) continue;
+                // End of stream. A trailing partial line is dropped: the caller treats an
+                // unterminated frame as one that was cut mid-write.
+                return null;
+            }
+        }
+
+        private string Take()
+        {
+            var line = _line.ToString();
+            _line.Clear();
+            return line;
         }
     }
 

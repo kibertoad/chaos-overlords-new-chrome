@@ -1,0 +1,58 @@
+# The C# fast gate, on every pull request and every push to main.
+#
+# Until this existed, the 1,500-test gate ran in exactly two places: a developer's machine, and the
+# `test` job of a release, on Linux only. Nothing compiled `Rechaos.Game`, `Rechaos.Extractor` or
+# the test project on a pull request, so a change that broke the build or a test could merge green
+# and be found at release time — after `prepare` had already committed the bumped `version.txt` to
+# main. It is also what would have caught the CI publish step breaking when validation started
+# isolating its build artifacts.
+#
+# Two legs rather than four. `ci.yml` keeps the macOS ones and the installer packaging, which is
+# what the macOS runner minutes are worth spending on; Windows is here because the Windows-only
+# paths (DPAPI token storage above all) are otherwise never exercised by automation, and Windows is
+# the platform most players run.
+name: Fast gate
+
+on:
+  pull_request:
+    branches: ["**"]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: fast-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x64
+            os: ubuntu-latest
+          - name: Windows x64
+            os: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.400
+
+      - name: Verify, build, and test
+        shell: pwsh
+        run: ./tools/Invoke-Validation.ps1

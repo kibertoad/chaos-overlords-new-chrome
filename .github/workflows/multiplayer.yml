@@ -90,6 +90,8 @@ jobs:
         run: pnpm exec turbo run test:run --env-mode=loose
         env:
           TEST_DATABASE_URL: postgres://chaos:chaos@localhost:5432/chaos
+          # Turns a missing URL from a green skip into a failure; see postgres.spec.ts.
+          REQUIRE_POSTGRES: "1"
 
       # The game's C# wire types are generated from these schemas and committed, so building the
       # game never needs Node. This is what stops the two from drifting apart in the meantime — which

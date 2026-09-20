@@ -77,7 +77,11 @@ public static class SealedTurnApplier
         {
             var player = new PlayerId(slot);
             if (bySlot.TryGetValue(slot, out var document)) ApplyDocument(replay, player, document);
-            else if (state.Setup.Players[slot].Controller == PlayerController.Computer)
+            // An eliminated seat is skipped, as HeadlessMatchRunner.Advance skips it offline. The
+            // planner produces no commands for a dead seat, but the hire placement draw still spends
+            // the shared RNG, so planning it made online and offline runs of one seed diverge.
+            else if (state.Setup.Players[slot].Controller == PlayerController.Computer
+                     && state.FindPlayer(player)?.Status == Core.GameModel.PlayerStatus.Active)
                 PlanComputerTurn(replay, player);
             replay.FinishCommand(player);
         }

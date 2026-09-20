@@ -43,10 +43,22 @@ internal sealed class TextField(string label, int maxLength, string value = "")
         _value.Append(character);
     }
 
+    /// <summary>
+    /// Replaces the value, applying the same filter <see cref="Type"/> applies.
+    /// </summary>
+    /// <remarks>
+    /// Anything set here comes from outside the keyboard — the clipboard, a stored preference, a
+    /// server's roster — and skipping the filter let a pasted "AB\tCD" put a tab in the field.
+    /// </remarks>
     internal void Set(string text)
     {
         _value.Clear();
-        _value.Append(text.Length > maxLength ? text[..maxLength] : text);
+        foreach (var character in text)
+        {
+            if (character < ' ' || character == (char)127) continue;
+            if (_value.Length >= maxLength) break;
+            _value.Append(character);
+        }
     }
 
     /// <summary>The value with a caret, when focused, for drawing.</summary>

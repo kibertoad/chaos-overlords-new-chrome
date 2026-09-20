@@ -18,7 +18,15 @@ public sealed class GameMenuLayoutTests
         Assert.Equal(new Rectangle(226, 276, 188, 32), GameMenuLayout.ReportBug);
         Assert.Equal(new Rectangle(226, 314, 188, 42), GameMenuLayout.QuitToMainMenu);
         Assert.Equal(9, SaveSlotCatalog.SlotCount);
-        Assert.Equal(new Rectangle(58, 344, 524, 35), GameMenuLayout.SlotRow(8));
+        // Nine manual slots and the autosave, all of them clear of the button strip at y=397.
+        Assert.Equal(10, SaveSlotCatalog.BrowserRowCount);
+        Assert.Equal(new Rectangle(58, 320, 524, 32), GameMenuLayout.SlotRow(8));
+        Assert.Equal(new Rectangle(58, 354, 524, 32),
+            GameMenuLayout.SlotRow(SaveSlotCatalog.AutoSaveRow));
+        Assert.True(GameMenuLayout.SlotRow(SaveSlotCatalog.AutoSaveRow).Bottom
+                    < GameMenuLayout.UseSlot.Top);
+        Assert.True(GameMenuLayout.BrowserPanel.Contains(
+            GameMenuLayout.SlotRow(SaveSlotCatalog.AutoSaveRow)));
         Assert.True(GameMenuLayout.Panel.Contains(GameMenuLayout.Resume));
         Assert.True(GameMenuLayout.Panel.Contains(GameMenuLayout.ReportBug));
         Assert.True(GameMenuLayout.Panel.Contains(GameMenuLayout.ConfirmQuit));

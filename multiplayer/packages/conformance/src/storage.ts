@@ -228,11 +228,49 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         })
       }
 
-      expect(await storage.matches.deleteAbandonedLive(cutoff, 100)).toBeGreaterThanOrEqual(1)
+      expect(await storage.matches.deleteAbandonedLive(cutoff, 100, true)).toBeGreaterThanOrEqual(1)
       expect(await storage.matches.get(stale.id)).toBeNull()
       expect(await storage.players.get(departed.id)).toBeNull()
-      // One active seat spares the match at any age: it is kept precisely so they can come back.
+      // One active seat spares the match while the roster test applies: it is kept precisely so
+      // they can come back.
       expect(await storage.matches.get(busy.id)).not.toBeNull()
+
+      // The longer window drops the roster test, because an untimed match whose players' clients
+      // died without a `leave` keeps `active` rows that nothing ever clears.
+      expect(await storage.matches.deleteAbandonedLive(cutoff, 100, false)).toBeGreaterThanOrEqual(
+        1,
+      )
+      expect(await storage.matches.get(busy.id)).toBeNull()
+    })
+
+    it('lists desynced matches so the sweep can finish an interrupted verdict', async () => {
+      const healthy = matchFixture({ status: 'lobby' })
+      const stuck = matchFixture({ status: 'lobby' })
+      for (const match of [healthy, stuck]) await storage.matches.create(match)
+      await storage.matches.transition(healthy.id, ['lobby'], {
+        status: 'running',
+        updatedAt: new Date(),
+      })
+      await storage.matches.transition(stuck.id, ['lobby'], {
+        status: 'desynced',
+        updatedAt: new Date(),
+      })
+
+      const desynced = await storage.matches.listDesynced(100)
+
+      expect(desynced).toContain(stuck.id)
+      expect(desynced).not.toContain(healthy.id)
+    })
+
+    it('reports whether deleting a player removed a row, so a seat is released once', async () => {
+      const match = matchFixture({ status: 'lobby' })
+      await storage.matches.create(match)
+      const player = playerFixture(match)
+      await storage.players.create(player)
+
+      expect(await storage.players.delete(player.id)).toBe(true)
+      // The second request of a racing pair must not release the seat a second time.
+      expect(await storage.players.delete(player.id)).toBe(false)
     })
 
     it('lists public waiting and running sessions, newest first, and hides private ones', async () => {
@@ -470,7 +508,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
     })
 
     it('finds expired open turns oldest first and ignores timerless ones', async () => {
-      const match = matchFixture()
+      const match = matchFixture({ status: 'running' })
       await storage.matches.create(match)
       await storage.turns.open(
         turnFixture(match, 1, { deadlineAt: new Date('2026-03-01T12:00:00.000Z') }),
@@ -487,6 +525,28 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       )
       const expired = await storage.turns.listExpiredOpen(new Date('2026-03-01T12:00:00.000Z'), 10)
       expect(expired.filter((t) => t.matchId === match.id).map((t) => t.number)).toEqual([2, 1])
+    })
+
+    /**
+     * A desynced match keeps its open turn's expired deadline for the whole pause, and `trySeal`
+     * refuses it on every pass. Listed, it would sit at the head of a page ordered by deadline and
+     * crowd out the turns the sweep could actually act on.
+     */
+    it('leaves out the expired turns of matches that cannot seal', async () => {
+      const paused = matchFixture({ status: 'running' })
+      await storage.matches.create(paused)
+      await storage.turns.open(
+        turnFixture(paused, 1, { deadlineAt: new Date('2026-03-01T10:00:00.000Z') }),
+        [],
+      )
+      await storage.matches.transition(paused.id, ['running'], {
+        status: 'desynced',
+        updatedAt: new Date(),
+      })
+
+      const expired = await storage.turns.listExpiredOpen(new Date('2026-03-01T12:00:00.000Z'), 10)
+
+      expect(expired.filter((t) => t.matchId === paused.id)).toEqual([])
     })
 
     it('finds the current turn of a live match that is no longer open', async () => {

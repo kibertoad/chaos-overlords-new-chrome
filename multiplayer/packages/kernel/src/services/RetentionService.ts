@@ -17,6 +17,17 @@ export interface RetentionPolicy {
    * the ordinary end of a match on a public server, and nothing else ever collected it.
    */
   abandonedLiveMaxAgeMs: number
+  /**
+   * Age after which a running or desynced match is deleted whatever its roster says. 0 keeps them
+   * forever.
+   *
+   * The roster test alone is not enough to collect anything. A player stops being `active` through
+   * `leave`, `kick` or a missed deadline, and the game's default is an untimed match with no
+   * deadline to miss, so two friends whose clients both died leave two `active` rows that nothing
+   * ever clears. That is the ordinary end of an untimed match, and without this window those
+   * matches, their orders, their events and up to five megabytes of snapshot are immortal.
+   */
+  silentLiveMaxAgeMs: number
   /** Matches deleted per sweep, so one pass cannot monopolise the database. */
   batchSize: number
 }
@@ -26,6 +37,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export const DEFAULT_RETENTION: RetentionPolicy = {
   maxAgeMs: 30 * DAY_MS,
   abandonedLiveMaxAgeMs: 90 * DAY_MS,
+  silentLiveMaxAgeMs: 180 * DAY_MS,
   batchSize: 50,
 }
 
@@ -46,7 +58,11 @@ export class RetentionService {
   ) {}
 
   async collect(): Promise<number> {
-    return (await this.collectTerminated()) + (await this.collectAbandonedLive())
+    return (
+      (await this.collectTerminated()) +
+      (await this.collectAbandonedLive()) +
+      (await this.collectSilentLive())
+    )
   }
 
   private async collectTerminated(): Promise<number> {
@@ -72,9 +88,28 @@ export class RetentionService {
     const deleted = await this.deps.storage.matches.deleteAbandonedLive(
       before,
       this.policy.batchSize,
+      true,
     )
     if (deleted > 0) {
       this.deps.logger.info('retention deleted long-abandoned live matches', {
+        deleted,
+        before: before.toISOString(),
+      })
+    }
+    return deleted
+  }
+
+  /** The same delete without the roster test, on a window long enough to stand in for it. */
+  private async collectSilentLive(): Promise<number> {
+    if (this.policy.silentLiveMaxAgeMs <= 0) return 0
+    const before = new Date(this.deps.clock.now().getTime() - this.policy.silentLiveMaxAgeMs)
+    const deleted = await this.deps.storage.matches.deleteAbandonedLive(
+      before,
+      this.policy.batchSize,
+      false,
+    )
+    if (deleted > 0) {
+      this.deps.logger.info('retention deleted silent live matches', {
         deleted,
         before: before.toISOString(),
       })

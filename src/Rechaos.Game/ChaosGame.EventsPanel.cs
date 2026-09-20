@@ -328,8 +328,36 @@ public sealed partial class ChaosGame
         return notification.Kind.ToString().ToUpperInvariant();
     }
 
-    private static IReadOnlyList<GameNotification> LastTurnReports(MatchState state, PlayerId playerId)
-        => LastTurnEventProjection.For(state, playerId);
+    /// <summary>
+    /// This player's reports for the completed turn, memoised for the frame.
+    /// </summary>
+    /// <remarks>
+    /// <c>DrawBoard</c> asks this every frame just to decide whether to blink the Events light, and
+    /// the Events screen asks it two or three more times per frame. The answer only changes when an
+    /// event is appended, a notification is dismissed, or the turn moves, so those three make up the
+    /// key. The state is compared by identity because adopting an online turn replaces the object.
+    /// </remarks>
+    private IReadOnlyList<GameNotification> LastTurnReports(MatchState state, PlayerId playerId)
+    {
+        var key = (state.Events.Count, state.Coordinator.Turn, state.NotificationsFor(playerId).Count);
+        if (!ReferenceEquals(_lastTurnReportSource, state))
+        {
+            _lastTurnReportCache.Clear();
+            _lastTurnReportSource = state;
+        }
+        if (_lastTurnReportCache.TryGetValue(playerId, out var cached) && cached.Key == key)
+            return cached.Reports;
+        var reports = LastTurnEventProjection.For(state, playerId);
+        _lastTurnReportCache[playerId] = (key, reports);
+        return reports;
+    }
+
+    private MatchState? _lastTurnReportSource;
+
+    private readonly Dictionary<
+        PlayerId,
+        ((int Events, int Turn, int Notifications) Key, IReadOnlyList<GameNotification> Reports)>
+        _lastTurnReportCache = [];
 
     private IReadOnlyList<GameNotification> ReviewableReports(MatchState state, PlayerId playerId)
     {
@@ -339,10 +367,29 @@ public sealed partial class ChaosGame
             : _lastTurnEventArchive.For(playerId, state.Coordinator.Turn);
     }
 
-    private static GameEvent? RelatedEvent(MatchState state, GameNotification notification) =>
-        notification.RelatedEventSequence is { } sequence
-            ? state.Events.FirstOrDefault(gameEvent => gameEvent.Sequence == sequence)
-            : null;
+    /// <summary>
+    /// The event a notification points at.
+    /// </summary>
+    /// <remarks>
+    /// Binary search rather than a linear scan: the list is append-only in sequence order, never
+    /// trimmed, and this is asked once per drawn report on screens that redraw every frame.
+    /// </remarks>
+    private static GameEvent? RelatedEvent(MatchState state, GameNotification notification)
+    {
+        if (notification.RelatedEventSequence is not { } sequence) return null;
+        var events = state.Events;
+        var low = 0;
+        var high = events.Count - 1;
+        while (low <= high)
+        {
+            var middle = low + ((high - low) / 2);
+            var found = events[middle].Sequence;
+            if (found == sequence) return events[middle];
+            if (found < sequence) low = middle + 1;
+            else high = middle - 1;
+        }
+        return null;
+    }
 
     private static void ClearLastTurnEventFields(SpriteBatch batch, Texture2D pixel)
     {
@@ -391,7 +438,15 @@ public static class LastTurnEventProjection
         ArgumentNullException.ThrowIfNull(events);
         if (completedTurn < 1) return [];
 
-        var eventsBySequence = events.ToDictionary(gameEvent => gameEvent.Sequence);
+        // The event list is append-only in turn order and is never trimmed, so indexing all of it
+        // allocated a dictionary the size of the whole match — several hundred kilobytes by turn
+        // 150, onto the large object heap, on every frame that drew the board. A report for the
+        // completed turn can only relate to an event from that turn, so the tail is enough.
+        var first = events.Count;
+        while (first > 0 && events[first - 1].Turn >= completedTurn) first--;
+        var eventsBySequence = new Dictionary<long, GameEvent>(events.Count - first);
+        for (var index = first; index < events.Count; index++)
+            eventsBySequence[events[index].Sequence] = events[index];
         var reports = new List<GameNotification>(MatchLimits.LastTurnReportsPerPlayer);
         var sectorMilestones = new HashSet<(GameNotificationKind Kind, int? Sector)>();
         foreach (var notification in notifications)

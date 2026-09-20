@@ -321,7 +321,9 @@ public sealed record SubmitCommandOp(
     [property: JsonPropertyName("action")] int Action,
     [property: JsonPropertyName("target")] CommandTarget Target,
     [property: JsonPropertyName("repeat")] bool Repeat,
-    [property: JsonPropertyName("secondaryTarget")] CommandTarget? SecondaryTarget
+    [property: JsonPropertyName("secondaryTarget")] CommandTarget? SecondaryTarget,
+    [property: JsonPropertyName("tertiaryTarget")] CommandTarget? TertiaryTarget,
+    [property: JsonPropertyName("quaternaryTarget")] CommandTarget? QuaternaryTarget
 ) : OrderOp(Player, "submitCommand");
 
 public sealed record CancelCommandOp(

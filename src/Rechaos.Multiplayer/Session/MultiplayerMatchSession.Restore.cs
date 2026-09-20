@@ -15,10 +15,18 @@ public sealed partial class MultiplayerMatchSession
     private const int EventHistoryPageSize = 200;
 
     /// <summary>
-    /// The last turn reconstructed from history whose confirmation the log has not carried yet,
-    /// with the hash this client reached, so that the report a crash interrupted is made after all.
+    /// Every turn reconstructed from history whose confirmation the log has not carried, in turn
+    /// order, with the hash this client reached, so that the reports a crash interrupted are made
+    /// after all.
     /// </summary>
-    private (int Turn, string StateHash)? _unreportedSeal;
+    /// <remarks>
+    /// A list rather than one slot. A client can miss more than one seal — a laptop that sleeps
+    /// through a timed turn seals on the draft it already sent, and the next one seals absent — and
+    /// each replayed seal used to overwrite the last. The server waits for a report from every human
+    /// seat, so the forgotten turn stayed `sealed` for the rest of the match, `listUnsettled` never
+    /// emptied, and `resumeAfterDesync` could therefore never lift a later desync pause.
+    /// </remarks>
+    private readonly List<(int Turn, string StateHash)> _unreportedSeals = [];
 
     /// <summary>
     /// Fetches the match, adopts the newest snapshot the local state is behind, replays the log
@@ -61,19 +69,27 @@ public sealed partial class MultiplayerMatchSession
                 $"the resumed state reached {_replay.State.Coordinator.Phase} turn "
                 + $"{_replay.State.Coordinator.Turn}, but the server is on turn {view.CurrentTurn}");
         }
+        // The pending reports go out BEFORE the "ended but the server says running" check, not
+        // after it. The server marks a match finished only once every human seat has reported the
+        // final turn, so a client that replayed that seal from history is the reason the match is
+        // still running — and refusing it here left the player locked out for good and the server
+        // match unfinishable.
+        if (_unreportedSeals.Count > 0)
+        {
+            // In turn order. The turn a report is missing from is the turn the barrier is waiting
+            // on, and an earlier one left unsettled blocks every later desync repair.
+            foreach (var seal in _unreportedSeals.OrderBy(item => item.Turn).ToArray())
+                await ReportAsync(seal.Turn, seal.StateHash, cancellationToken).ConfigureAwait(false);
+            _unreportedSeals.Clear();
+            // The reports may have finished the match; re-read rather than judge it on the view
+            // that was fetched before they were sent.
+            view = await ReadMatchViewAsync(cancellationToken).ConfigureAwait(false);
+        }
         if (_replay.State.Outcome is not null
             && view.Status is not (MatchStatus.Finished or MatchStatus.Abandoned))
         {
             throw new MultiplayerProtocolException(
                 "the reconstructed match has ended while the server still reports it in progress");
-        }
-        if (_unreportedSeal is { } seal)
-        {
-            // The turn resolved here as it did before the restart, but the report never reached
-            // the server — otherwise the log would carry its confirmation — and the barrier is
-            // waiting on it.
-            await ReportAsync(seal.Turn, seal.StateHash, cancellationToken).ConfigureAwait(false);
-            _unreportedSeal = null;
         }
 
         var submission = _replay.State.Outcome is null
@@ -252,11 +268,11 @@ public sealed partial class MultiplayerMatchSession
                 // Whether this seat's own orders were in that set is not said on this path: these
                 // turns are history being caught up on, and the resumed state is announced by
                 // `Resumed`, which carries the submission the server holds for the open turn.
-                _unreportedSeal = (sealedTurn.Payload.Turn, stateHash);
+                _unreportedSeals.Add((sealedTurn.Payload.Turn, stateHash));
                 return;
             case TurnConfirmedEvent confirmed:
                 VerifyHistoricalConfirmation(confirmed);
-                if (_unreportedSeal?.Turn == confirmed.Payload.Turn) _unreportedSeal = null;
+                _unreportedSeals.RemoveAll(seal => seal.Turn == confirmed.Payload.Turn);
                 return;
         }
     }

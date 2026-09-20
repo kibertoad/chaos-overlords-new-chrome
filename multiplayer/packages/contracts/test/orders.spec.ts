@@ -20,6 +20,10 @@ const submitCommand = {
   target: { kind: 'sector', id: 12 },
   repeat: false,
   secondaryTarget: null,
+  // All four targets travel: a Sell names up to three items and a Give names a gang plus up to
+  // three items, and the wire used to carry only the first two of them.
+  tertiaryTarget: null,
+  quaternaryTarget: null,
 }
 
 describe('orderDocumentSchema', () => {

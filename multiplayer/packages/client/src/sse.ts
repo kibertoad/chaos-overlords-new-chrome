@@ -41,6 +41,14 @@ export class StreamIdleError extends Error {
   }
 }
 
+/**
+ * The largest frame worth assembling.
+ *
+ * Generous next to the events the protocol defines and far below the snapshots, which are fetched
+ * over REST rather than streamed. It bounds the buffer; it does not validate an event.
+ */
+const MAXIMUM_FRAME_CHARS = 256 * 1024
+
 export async function* parseEventStream(
   body: ReadableStream<Uint8Array>,
   options: ParseOptions = {},
@@ -58,6 +66,13 @@ export async function* parseEventStream(
         break
       }
       buffer += decoder.decode(value, { stream: true })
+      // A frame ends at a blank line, and without a cap a server that never writes one grows this
+      // string for as long as it keeps sending. The C# client caps a frame at the same size.
+      if (buffer.length > MAXIMUM_FRAME_CHARS) {
+        throw new Error(
+          `an event stream frame passed ${MAXIMUM_FRAME_CHARS} characters without ending`,
+        )
+      }
       for (const frame of takeFrames()) {
         const event = parseFrame(frame)
         if (event) yield event

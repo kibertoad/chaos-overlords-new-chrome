@@ -9,10 +9,13 @@ services:
     image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
     environment:
       POSTGRES_USER: chaos
-      POSTGRES_PASSWORD: chaos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chaos}
       POSTGRES_DB: chaos
     ports:
-      - "5432:5432"
+      # Loopback only. Docker publishes a port by writing its own NAT rules, which bypass most host
+      # firewalls (ufw included), so "0.0.0.0:5432" on a VPS puts a superuser with a known password
+      # on the internet. Set POSTGRES_PASSWORD and change this line deliberately if you need more.
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:

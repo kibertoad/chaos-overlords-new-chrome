@@ -404,6 +404,71 @@ public sealed class ChaosResolutionTests
         Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
     }
 
+    /// <summary>
+    /// A Chaos participant killed between the roll and the payout does not abort the turn.
+    /// </summary>
+    /// <remarks>
+    /// Chaos is rolled at the end of Instant and paid at the later Chaos boundary; Combat runs in
+    /// between, and eliminating a gang retires its queue entry. Rebuilding the pass from the live
+    /// queue therefore found one fewer command than there were events and threw — offline that
+    /// ended the process at the end of the turn, and online it threw on every client at the same
+    /// sealed turn, so reconnecting replayed straight back into it and the match was lost.
+    /// </remarks>
+    [Fact]
+    public void AChaosParticipantKilledInCombatStillPaysItsGroup()
+    {
+        var match = CreateMatch(twoPlayerZeroGangs: true, income: 6);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Chaos(0, 10)).Accepted);
+        Assert.True(match.Submit(Chaos(0, 11)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase(); // Instant: the Chaos pass is rolled and recorded here.
+        var chaosEvents = match.Events.Count(gameEvent =>
+            gameEvent.ExecutionPhase == ExecutionPhase.Chaos
+            && gameEvent.Action == GangAction.Chaos);
+        Assert.Equal(2, chaosEvents);
+        var cashBeforeCombat = match.Players[0].Cash;
+        // Combat killing the first participant of the group, whose event carries its payout. That
+        // is what `EliminateGang` does: Force to zero and the queue entry retired.
+        match.Players[0].Gangs[0].Force = 0;
+        match.Players[0].Gangs[0].Hidden = false;
+        match.Commands.Cancel(new GangId(10));
+        match.Players[0].Gangs[0].QueuedCommand = null;
+
+        match.FinishExecutionPhase(); // Combat
+        match.FinishExecutionPhase(); // Transaction
+        match.FinishExecutionPhase(); // Chaos: the payout, from the recorded events.
+
+        Assert.Equal(ExecutionPhase.Movement, match.Coordinator.ExecutionPhase);
+        Assert.Equal(2, match.LastPhaseResolutions.Count);
+        // The dead gang's event stays in the pass, so the group's income is still credited once.
+        Assert.True(match.Players[0].Cash >= cashBeforeCombat);
+    }
+
+    /// <summary>The whole Chaos set dying leaves an empty queue and a pass that still pays.</summary>
+    [Fact]
+    public void AChaosPassWhoseWholeSetDiedStillResolves()
+    {
+        var match = CreateMatch(income: 6);
+        match.FinishUpkeep();
+        Assert.True(match.Submit(Chaos(0, 10)).Accepted);
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase(); // Instant
+        match.Players[0].Gangs[0].Force = 0;
+        match.Commands.Cancel(new GangId(10));
+        match.Players[0].Gangs[0].QueuedCommand = null;
+        Assert.Empty(match.Commands.ForPhase(ExecutionPhase.Chaos));
+
+        match.FinishExecutionPhase(); // Combat
+        match.FinishExecutionPhase(); // Transaction
+        match.FinishExecutionPhase(); // Chaos
+
+        Assert.Equal(ExecutionPhase.Movement, match.Coordinator.ExecutionPhase);
+        Assert.Single(match.LastPhaseResolutions);
+    }
+
     private static void QueueChaosAndEnterPhase(MatchState match, bool includeSecondPlayer)
     {
         match.FinishUpkeep();

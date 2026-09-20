@@ -293,7 +293,7 @@ public sealed class MatchReplayRecorder
 public static class MatchReplaySerializer
 {
     // 26 adds the recorded departed-seat controller handover.
-    public const int CurrentFormatVersion = 28;
+    public const int CurrentFormatVersion = 29;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -431,7 +431,11 @@ public static class MatchReplaySerializer
 
     private static MatchState Apply(ReplayDocument document, OriginalData definitions)
     {
-        if (document.FormatVersion is < 2 or > CurrentFormatVersion)
+        if (document.FormatVersion > CurrentFormatVersion)
+            throw IncompatibleSave.Create(
+                IncompatibleSaveReason.NewerFormat,
+                $"Unsupported replay format {document.FormatVersion}.");
+        if (document.FormatVersion < 2)
             throw new InvalidDataException($"Unsupported replay format {document.FormatVersion}.");
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
@@ -656,7 +660,8 @@ public static class MatchReplaySerializer
         }
         string[] candidateHashes = replayVersion switch
         {
-            >= 28 => [MatchStateHasher.ComputeSha256(state)],
+            >= 29 => [MatchStateHasher.ComputeSha256(state)],
+            28 => [MatchStateHasher.ComputeVersionTwentySevenSha256(state)],
             >= 25 => [MatchStateHasher.ComputeVersionTwentySixSha256(state)],
             24 => [MatchStateHasher.ComputeVersionTwentyFiveSha256(state)],
             23 => [MatchStateHasher.ComputeVersionTwentyFourSha256(state)],
@@ -761,8 +766,19 @@ public static class MatchReplayStore
             }
 
             // Replays are long-lived verification artifacts. Read back the new
-            // file before promotion and preserve the last valid generation.
-            _ = LoadAndReplay(temporaryPath, recorder.State.Definitions);
+            // file before promotion and preserve the last valid generation. A replay that cannot
+            // reproduce itself reaches the player as a failed save, so report it as one rather than
+            // as an InvalidDataException no caller filters for.
+            try
+            {
+                _ = LoadAndReplay(temporaryPath, recorder.State.Definitions);
+            }
+            catch (InvalidDataException exception)
+            {
+                throw new IOException(
+                    "The replay was written but could not be replayed back, so it was not promoted.",
+                    exception);
+            }
             if (!File.Exists(fullPath))
             {
                 File.Move(temporaryPath, fullPath);
@@ -790,9 +806,20 @@ public static class MatchReplayStore
         return MatchReplaySerializer.LoadAndReplay(stream, definitions);
     }
 
+    /// <summary>
+    /// Loads a replay, falling back to its backup generation when the primary is damaged.
+    /// </summary>
+    /// <param name="path">The primary file.</param>
+    /// <param name="definitions">The bundled definitions this build plays with.</param>
+    /// <param name="repairPrimary">Whether a successful backup load may also rewrite the primary.</param>
+    /// <remarks>
+    /// A file <see cref="IncompatibleSave"/> recognises is deliberately not recovered from, for the
+    /// reason given on <see cref="NativeSaveStore.LoadRecoveringBackup"/>.
+    /// </remarks>
     public static MatchReplayLoadResult LoadAndReplayRecoveringBackup(
         string path,
-        OriginalData definitions)
+        OriginalData definitions,
+        bool repairPrimary = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(definitions);
@@ -800,11 +827,14 @@ public static class MatchReplayStore
         {
             return new MatchReplayLoadResult(LoadAndReplay(path, definitions), false);
         }
-        catch (Exception primaryFailure) when (primaryFailure is IOException or InvalidDataException)
+        catch (Exception primaryFailure) when (
+            primaryFailure is IOException or InvalidDataException
+            && !IncompatibleSave.IsIncompatible(primaryFailure))
         {
             var backupPath = Path.GetFullPath(path) + BackupSuffix;
             if (!File.Exists(backupPath)) throw;
             var state = LoadAndReplay(backupPath, definitions);
+            if (!repairPrimary) return new MatchReplayLoadResult(state, true);
             var fullPath = Path.GetFullPath(path);
             var repaired = AtomicGenerationRecovery.TryRestore(
                 fullPath, backupPath, candidate => _ = LoadAndReplay(candidate, definitions));
@@ -812,6 +842,7 @@ public static class MatchReplayStore
         }
     }
 
+    /// <summary>Whether the existing primary is worth keeping as the next backup generation.</summary>
     private static bool IsValid(string path, OriginalData definitions)
     {
         try
@@ -821,7 +852,7 @@ public static class MatchReplayStore
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException)
         {
-            return false;
+            return IncompatibleSave.IsIncompatible(exception);
         }
     }
 }

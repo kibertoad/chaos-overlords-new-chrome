@@ -35,7 +35,9 @@ public static class OrderOpDecoder
             Action(submit.Action, document),
             Target(submit.Target, document, "target"),
             submit.Repeat,
-            submit.SecondaryTarget is { } secondary ? Target(secondary, document, "secondaryTarget") : null);
+            submit.SecondaryTarget is { } secondary ? Target(secondary, document, "secondaryTarget") : null,
+            submit.TertiaryTarget is { } tertiary ? Target(tertiary, document, "tertiaryTarget") : null,
+            submit.QuaternaryTarget is { } quaternary ? Target(quaternary, document, "quaternaryTarget") : null);
     }
 
     /// <summary>A gang definition id that fits the core's <c>short</c>.</summary>

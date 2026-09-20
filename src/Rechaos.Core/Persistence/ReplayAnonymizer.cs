@@ -72,7 +72,13 @@ public static class ReplayAnonymizer
                 RewriteSnapshot(document.InitialSnapshot), writable: false);
             state = NativeSaveSerializer.LoadRewritten(snapshot, source.State.Definitions);
         }
-        catch (Exception exception) when (exception is InvalidDataException or JsonException)
+        // `RewriteSnapshot` reaches into the JSON with `AsObject`, `AsArray` and `GetValue<T>`,
+        // which answer a shape mismatch with InvalidOperationException or FormatException. The
+        // input is this build's own snapshot, so neither should happen — but `BugReportComposer`
+        // filters for ReplayAnonymizationException and InvalidDataException, so one of those
+        // escaping would crash the report dialog rather than degrading to "not anonymizable".
+        catch (Exception exception) when (exception is InvalidDataException or JsonException
+            or InvalidOperationException or FormatException)
         {
             throw new ReplayAnonymizationException(
                 "The match snapshot could not be rewritten without its names.", exception);
@@ -212,6 +218,23 @@ public static class ReplayAnonymizer
                     step.Accepted,
                     recorder.MarkComlinkRead(
                         RequiredValue(step.Player, index), RequiredValue(step.ComlinkSequence, index)),
+                    index);
+                break;
+            // The two seat transfers. `MatchReplaySerializer.ApplyStep` has handled them since
+            // online play recorded them; this did not, so a journal carrying either ended in "has
+            // an operation this build cannot re-apply" and the bug report went out with no state.
+            // Not reachable while reports attach the speculative turn's journal, and live the
+            // moment a session journal is attached to one.
+            case ReplayOperationKind.TransferPlayerToComputer:
+                VerifyOutcome(
+                    step.Accepted,
+                    recorder.TransferPlayerToComputer(RequiredValue(step.Player, index)),
+                    index);
+                break;
+            case ReplayOperationKind.TransferPlayerToHuman:
+                VerifyOutcome(
+                    step.Accepted,
+                    recorder.TransferPlayerToHuman(RequiredValue(step.Player, index)),
                     index);
                 break;
             default:

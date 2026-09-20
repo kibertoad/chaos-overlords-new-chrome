@@ -92,6 +92,28 @@ describe('displayNameInputSchema', () => {
     expect(safeParse(displayNameInputSchema, 'SMGFUNDAGE THE THIRD').success).toBe(false)
   })
 
+  /**
+   * The length is measured after normalisation, not before.
+   *
+   * NFC does not preserve length: `שּׁ` is one unit going in and three coming out, and it is
+   * category Lo so the unsafe-character check accepts it. Measuring first stored a 96-unit name
+   * that then failed `displayNameSchema` on the way out, so every response carrying it — the match
+   * view, the events page, and `GET /matches` when it was a public host's name — became a 500 that
+   * one unauthenticated join could cause and nobody could undo.
+   */
+  it('refuses a name that fits only until NFC expands it', () => {
+    const expanding = 'שּׁ'.repeat(32)
+    expect(expanding).toHaveLength(32)
+    expect(expanding.normalize('NFC')).toHaveLength(96)
+    expect(safeParse(displayNameInputSchema, expanding).success).toBe(false)
+    // The relaying schema still accepts whatever a roster already holds.
+    const accepted = safeParse(displayNameInputSchema, 'שּׁ'.repeat(10))
+    expect(accepted.success).toBe(true)
+    if (accepted.success) {
+      expect(safeParse(displayNameSchema, accepted.output).success).toBe(true)
+    }
+  })
+
   it('allows a name that only contains a cheat outside the native record', () => {
     expect(safeParse(displayNameInputSchema, 'I AM SMGFUNDAGE').success).toBe(true)
   })

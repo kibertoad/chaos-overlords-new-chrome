@@ -421,19 +421,24 @@ public static partial class CommandResolver
             GameNotificationKind.Elimination);
     }
 
+    /// <summary>
+    /// Applies one normalised move.
+    /// </summary>
+    /// <remarks>
+    /// There is no capacity test here. <see cref="NormalizeMoveDestinations"/> has already rewritten
+    /// the player's whole move set so that no sector ends the phase with more than
+    /// <see cref="MatchLimits.FriendlyGangsPerSector"/> friendly gangs, counting movers at their
+    /// destination and everyone else where they stand. Re-testing per move measured the sector
+    /// mid-phase instead, so a move into a sector a later-slotted gang was about to leave failed
+    /// with <see cref="CommandResolutionCode.DestinationFull"/> purely because of roster order, and a
+    /// move rewritten back to its own full sector failed where RULE-MOVE-001 asks for a successful
+    /// no-op.
+    /// </remarks>
     private static CommandResolutionResult ResolveMove(MatchState state, GameCommand command)
     {
         var gang = state.FindGang(command.Gang)!;
-        var destination = command.Target.Id;
-        var friendlyCount = state.FindPlayer(command.Player)!.Gangs.Count(candidate =>
-            candidate.IsActive && candidate.SectorId == destination);
-        if (friendlyCount >= MatchLimits.FriendlyGangsPerSector)
-            return Complete(state, command, GameEventKind.CommandFailed,
-                new CommandResolutionDetails(
-                    CommandResolutionCode.DestinationFull, [], 0, gang.SectorId, gang.SectorId),
-                GameNotificationKind.Movement);
-
         var before = gang.SectorId;
+        var destination = command.Target.Id;
         gang.SectorId = destination;
         return Complete(state, command, GameEventKind.CommandResolved,
             new CommandResolutionDetails(CommandResolutionCode.Resolved, [], 0, before, destination),
@@ -464,6 +469,9 @@ public static partial class CommandResolver
         return results;
     }
 
+    /// <summary>How many reroute draws one move set may spend before the deterministic fallback.</summary>
+    private const int MaximumMoveRerouteDraws = 256;
+
     private static IReadOnlyList<QueuedCommand> NormalizeMoveDestinations(
         MatchState state,
         IReadOnlyList<QueuedCommand> moves)
@@ -471,6 +479,7 @@ public static partial class CommandResolver
         if (moves.Count == 0) return [];
         var player = state.FindPlayer(moves[0].Command.Player)!;
         var normalized = moves.ToArray();
+        var passes = 0;
 
         while (true)
         {
@@ -500,7 +509,16 @@ public static partial class CommandResolver
             var selected = normalized[moveIndex];
             var selectedGang = state.FindGang(selected.Command.Gang)!;
             var replacement = selectedGang.SectorId;
-            if (selected.Command.Target.Id == replacement)
+            if (selected.Command.Target.Id == replacement && ++passes > MaximumMoveRerouteDraws)
+            {
+                // The reroute draw can hand back the source sector, which changes nothing and sends
+                // the loop round again on the same RNG stream. Fall back to the lowest-numbered
+                // sector with room. The board holds 64 x 6 gangs against a roster of 80, so one
+                // always exists, and it cannot be the overcrowded sector.
+                replacement = Array.FindIndex(
+                    projectedCounts, count => count < MatchLimits.FriendlyGangsPerSector);
+            }
+            else if (selected.Command.Target.Id == replacement)
             {
                 var currentCounts = Enumerable.Range(0, MatchLimits.SectorCount)
                     .Select(sectorId => player.Gangs.Count(gang =>
@@ -527,166 +545,6 @@ public static partial class CommandResolver
             };
         }
     }
-
-    private static IReadOnlyList<CommandResolutionResult> ResolveChaosPhase(
-        MatchState state,
-        IReadOnlyList<QueuedCommand> commands)
-    {
-        var results = PreparedChaosResults(state, commands);
-        if (results.Count == 0 && commands.Count > 0)
-            results = PrepareChaosPhase(state, commands);
-        foreach (var result in results)
-        {
-            var payout = result.Event!.Resolution!.CashDelta;
-            if (payout == 0) continue;
-            var player = state.FindPlayer(result.Command.Player)!;
-            player.Cash = checked(player.Cash + payout);
-            player.Statistics.CashEarned += payout;
-        }
-        return results;
-    }
-
-    internal static IReadOnlyList<CommandResolutionResult> PrepareChaosPhase(
-        MatchState state,
-        IReadOnlyList<QueuedCommand> commands)
-    {
-        var prepared = PreparedChaosResults(state, commands);
-        if (prepared.Count > 0 || commands.Count == 0) return prepared;
-        var ordered = commands
-            .OrderBy(queued => queued.Command.Player.Value)
-            .ThenBy(queued => GangSlot(state, queued.Command))
-            .ToArray();
-        var rolled = ordered.Select(queued =>
-        {
-            var gang = state.FindGang(queued.Command.Gang)!;
-            var sector = state.Sectors[gang.SectorId];
-            var band = OriginalResolutionRules.Band(state, queued.Command.Player);
-            var pool = checked(SectorIncome(state, sector) + gang.Force
-                + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos);
-            var dice = OriginalResolutionRules.ActionPool(band, GangAction.Chaos, pool);
-            var rolls = DiceRoller.RollD6(state.Random, dice);
-            var successes = OriginalResolutionRules.CountSuccesses(
-                rolls, OriginalResolutionRules.SuccessThreshold(band, GangAction.Chaos));
-            return new ChaosRoll(queued, sector, rolls, successes, dice, band);
-        }).ToArray();
-        var groups = rolled
-            .GroupBy(value => (value.Queued.Command.Player, value.Sector.Id))
-            .Select(group =>
-            {
-                var values = group.ToArray();
-                return new ChaosGroup(
-                    values.Select(value => value.Queued).ToArray(), values[0].Sector,
-                    values.SelectMany(value => value.Rolls).ToArray(),
-                    values.Sum(value => value.Successes), values.Sum(value => value.DiceCount),
-                    values[0].Band);
-            })
-            .ToArray();
-
-        var sectorSuccesses = groups
-            .GroupBy(group => group.Sector.Id)
-            .ToDictionary(group => group.Key, group => group.Sum(value => value.Successes));
-        var triggered = new HashSet<int>();
-        var crackdownChaos = groups
-            .GroupBy(group => group.Sector.Id)
-            .ToDictionary(group => group.Key, group => group.Sum(value =>
-                OriginalResolutionRules.CrackdownContribution(
-                    value.Band,
-                    value.Sector.Owner == value.Participants[0].Command.Player,
-                    value.Successes)));
-        foreach (var sector in state.Sectors.OrderBy(value => value.Id))
-        {
-            if (!ManualRules.TriggersCrackdown(
-                    crackdownChaos.GetValueOrDefault(sector.Id), sector.Tolerance)) continue;
-            CrackdownResolver.Trigger(state, sector, ExecutionPhase.Chaos);
-            triggered.Add(sector.Id);
-        }
-
-        var groupByCommand = groups.SelectMany(group => group.Participants.Select(
-                participant => (participant.Sequence, Group: group)))
-            .ToDictionary(value => value.Sequence, value => value.Group);
-        var payouts = new Dictionary<(PlayerId Player, int SectorId), int>();
-        foreach (var group in groups)
-        {
-            var player = state.FindPlayer(group.Participants[0].Command.Player)!;
-            var payout = group.Sector.CrackdownActive
-                ? 0
-                : ManualRules.ChaosIncome(group.Successes, group.Sector.Owner == player.Id);
-            payouts[(player.Id, group.Sector.Id)] = payout;
-        }
-
-        var results = new List<CommandResolutionResult>(ordered.Length);
-        var firstEventBySector = new Dictionary<int, long>();
-        var paidGroups = new HashSet<(PlayerId Player, int SectorId)>();
-        foreach (var participant in ordered)
-        {
-            var group = groupByCommand[participant.Sequence];
-            var key = (participant.Command.Player, group.Sector.Id);
-            var result = Complete(state, participant.Command, GameEventKind.CommandResolved,
-                new CommandResolutionDetails(
-                    CommandResolutionCode.Resolved, group.Rolls, group.Successes,
-                    0, sectorSuccesses[group.Sector.Id],
-                    CashDelta: paidGroups.Add(key) ? payouts[key] : 0,
-                    AttackValue: group.DiceCount, DefenseValue: group.Sector.Tolerance),
-                GameNotificationKind.Chaos,
-                ExecutionPhase.Chaos);
-            results.Add(result);
-            firstEventBySector.TryAdd(group.Sector.Id, result.Event!.Sequence);
-        }
-
-        foreach (var sectorId in triggered.Order())
-        {
-            foreach (var player in state.Players.Where(player => player.Status == PlayerStatus.Active))
-                state.QueueNotification(
-                    player.Id, GameNotificationKind.Crackdown,
-                    sectorId: sectorId,
-                    relatedEventSequence: firstEventBySector.TryGetValue(sectorId, out var sequence) ? sequence : null,
-                    executionPhase: ExecutionPhase.Chaos);
-        }
-        return results;
-    }
-
-    private static IReadOnlyList<CommandResolutionResult> PreparedChaosResults(
-        MatchState state,
-        IReadOnlyList<QueuedCommand> commands)
-    {
-        var events = state.Events.Where(gameEvent =>
-                gameEvent.Turn == state.Coordinator.Turn
-                && gameEvent.Phase == TurnPhase.Execution
-                && gameEvent.ExecutionPhase == ExecutionPhase.Chaos
-                && gameEvent.Action == GangAction.Chaos
-                && gameEvent.Kind is GameEventKind.CommandResolved or GameEventKind.CommandFailed)
-            .ToDictionary(gameEvent => gameEvent.Gang!.Value);
-        if (events.Count == 0) return [];
-        if (events.Count != commands.Count
-            || commands.Any(command => !events.ContainsKey(command.Command.Gang)))
-            throw new InvalidOperationException("The prepared Chaos pass does not match the command queue.");
-        return commands
-            .OrderBy(queued => queued.Command.Player.Value)
-            .ThenBy(queued => GangSlot(state, queued.Command))
-            .Select(queued =>
-            {
-                var gameEvent = events[queued.Command.Gang];
-                return new CommandResolutionResult(
-                    queued.Command, gameEvent.Resolution!.Code, gameEvent);
-            })
-            .ToArray();
-    }
-
-    private sealed record ChaosRoll(
-        QueuedCommand Queued,
-        MatchSectorState Sector,
-        IReadOnlyList<int> Rolls,
-        int Successes,
-        int DiceCount,
-        OriginalResolutionBand Band);
-
-    private sealed record ChaosGroup(
-        IReadOnlyList<QueuedCommand> Participants,
-        MatchSectorState Sector,
-        IReadOnlyList<int> Rolls,
-        int Successes,
-        int DiceCount,
-        OriginalResolutionBand Band);
 
     private static IReadOnlyList<CommandResolutionResult> ResolveControlPhase(
         MatchState state,

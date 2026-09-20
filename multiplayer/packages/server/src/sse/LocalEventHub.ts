@@ -56,6 +56,8 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     private readonly events: EventRepository,
     private readonly heartbeatMs: number,
     private readonly limits: EventHubLimits = DEFAULT_EVENT_HUB_LIMITS,
+    /** Told about a stored event a stream had to skip, so an operator can find out it exists. */
+    private readonly onUnreadable?: (matchId: string, seq: number) => void,
   ) {}
 
   async notify(event: PersistedEvent): Promise<void> {
@@ -84,6 +86,23 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     }
   }
 
+  /**
+   * End every stream this process holds, for a graceful shutdown.
+   *
+   * An event stream never ends on its own, so `server.close()` cannot return while one is open.
+   * Ending them here is what lets a SIGTERM finish at once instead of waiting out the grace period
+   * and then cutting the sockets, which clients see as a reset rather than as a stream to resume
+   * from their `Last-Event-ID`.
+   */
+  closeAll(): void {
+    // Snapshot deliberately: `close()` removes the subscription from the set being walked.
+    // oxlint-disable-next-line unicorn/no-useless-spread
+    for (const subscriptions of [...this.listeners.values()]) {
+      // oxlint-disable-next-line unicorn/no-useless-spread
+      for (const subscription of [...subscriptions]) subscription.close()
+    }
+  }
+
   connectionCount(matchId: string): number {
     return this.listeners.get(matchId)?.size ?? 0
   }
@@ -105,7 +124,12 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
         listAfter: (afterSeq) => this.events.listAfter(input.matchId, afterSeq, PAGE_SIZE),
         subscribe: (wake, close) => this.subscribe(input.matchId, input.playerId, wake, close),
       },
-      { afterSeq: input.afterSeq, heartbeatMs: this.heartbeatMs, signal: input.signal },
+      {
+        afterSeq: input.afterSeq,
+        heartbeatMs: this.heartbeatMs,
+        signal: input.signal,
+        onUnreadable: (seq) => this.onUnreadable?.(input.matchId, seq),
+      },
     )
   }
 

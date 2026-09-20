@@ -93,7 +93,7 @@ public sealed partial class MultiplayerSessionTests
     {
         var (replay, definitions) = FreshMatch();
         var gang = replay.State.Players[0].Gangs[0].Id.Value;
-        var badAction = new SubmitCommandOp(0, gang, 99, new NoneTarget(), false, null);
+        var badAction = new SubmitCommandOp(0, gang, 99, new NoneTarget(), false, null, null, null);
         var badHire = new QueueHireOp(0, 100_000, 0);
 
         var sealedFailure = Assert.Throws<MultiplayerProtocolException>(

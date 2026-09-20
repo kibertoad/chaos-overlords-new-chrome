@@ -68,8 +68,20 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
     /// <param name="options">Where the server is, and how patiently to wait for it.</param>
     public MultiplayerLobbySession(HttpClient http, MultiplayerClientOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         _anonymous = new MultiplayerClient(http, options);
+        BaseAddress = options.RootAddress;
     }
+
+    /// <summary>
+    /// The server this session actually dials.
+    /// </summary>
+    /// <remarks>
+    /// Recorded here because the connect form is not it. A recovery record written from the address
+    /// the form was showing, after a retry succeeded against the one the session had kept, names a
+    /// server the seat is not on, and every later reconnect for it answers 401 or 404.
+    /// </remarks>
+    public Uri BaseAddress { get; }
 
     /// <summary>Whether a call is in flight, and so whether the buttons should be live.</summary>
     public bool IsBusy => Volatile.Read(ref _busy) != 0;

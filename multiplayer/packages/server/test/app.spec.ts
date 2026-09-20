@@ -47,7 +47,7 @@ function build(
   overrides: Partial<ServerContainer['config']> = {},
   rateLimit = { limit: 1000, windowMs: 60_000 },
   memberRateLimit = { limit: 1000, windowMs: 60_000 },
-  bugReportOptions: { enabled?: boolean; limit?: number } = {},
+  bugReportOptions: { enabled?: boolean; limit?: number; statePerDay?: number } = {},
 ) {
   const storage = new InMemoryStorage()
   const clock = new ManualClock()
@@ -81,6 +81,10 @@ function build(
       bugReport: new RateLimiter(clock, {
         limit: bugReportOptions.limit ?? 1000,
         windowMs: 60_000,
+      }),
+      bugReportState: new RateLimiter(clock, {
+        limit: bugReportOptions.statePerDay ?? 1000,
+        windowMs: 24 * 60 * 60 * 1000,
       }),
     },
     config: { ...DEFAULT_SERVER_CONFIG, publicListing: true, ...overrides },
@@ -301,6 +305,65 @@ describe('server app over in-memory storage', () => {
     })
     expect(huge.status).toBe(413)
     expect(await huge.json()).toMatchObject({ error: { code: 'payload_too_large' } })
+  })
+
+  /**
+   * Every member route that takes a body is capped, including the two that had no cap of their own.
+   *
+   * A member token costs one unauthenticated `POST /matches`, so without these a stranger could make
+   * the process buffer and parse a body of any size, inside the same process that is sealing every
+   * other match's turns.
+   */
+  it('refuses an oversized body on every member route that takes one', async () => {
+    const hostRes = await app.request('/api/v1/matches', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        settings: {
+          name: 'x',
+          maxPlayers: 2,
+          turnTimerSeconds: 0,
+          visibility: 'private',
+          gameSettings: {},
+        },
+        hostDisplayName: 'h',
+      }),
+    })
+    const { token, match, player } = (await hostRes.json()) as {
+      token: string
+      match: { id: string }
+      player: { id: string }
+    }
+    const padding = 'y'.repeat(2 * 1024 * 1024)
+    const routes: Array<{ path: string; method: string; body: unknown }> = [
+      {
+        path: `/api/v1/matches/${match.id}/settings`,
+        method: 'PUT',
+        body: {
+          settings: {
+            name: 'x',
+            maxPlayers: 2,
+            turnTimerSeconds: 0,
+            visibility: 'private',
+            gameSettings: { padding },
+          },
+        },
+      },
+      {
+        path: `/api/v1/matches/${match.id}/players/${player.id}/takeover-vote`,
+        method: 'POST',
+        body: { decision: 'computer', padding },
+      },
+    ]
+    for (const route of routes) {
+      const response = await app.request(route.path, {
+        method: route.method,
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+        body: JSON.stringify(route.body),
+      })
+      expect(response.status, route.path).toBe(413)
+      expect(await response.json()).toMatchObject({ error: { code: 'payload_too_large' } })
+    }
   })
 
   it('closes the stream and drops the listener when the client disconnects', async () => {

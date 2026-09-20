@@ -60,6 +60,7 @@ public static class SmackerVideoReader
     internal const int MaximumFramePayloadBytes = 64 * 1024 * 1024;
     internal const uint MaximumTreeBytes = 4 * 1024 * 1024;
     internal const uint MaximumTreeAllocationBytes = 1024 * 1024;
+    internal const uint MaximumAudioBufferBytes = 16 * 1024 * 1024;
 
     public static SmackerVideoMetadata Read(string path)
     {
@@ -94,7 +95,16 @@ public static class SmackerVideoReader
 
         var audioBufferSizes = new uint[7];
         for (var index = 0; index < audioBufferSizes.Length; index++)
+        {
             audioBufferSizes[index] = reader.ReadUInt32();
+            // Every other length in the header has a ceiling; this one did not, and it is the value
+            // SmackerAudioDecoder allocates against before it reads a single sample. A twelve-byte
+            // chunk could ask for two gigabytes. The shipped movies are three orders of magnitude
+            // under this bound.
+            if (audioBufferSizes[index] > MaximumAudioBufferBytes)
+                throw new InvalidDataException(
+                    $"Smacker audio track {index} declares a buffer over the allocation limit.");
+        }
         var treeBytes = reader.ReadUInt32();
         if (treeBytes > MaximumTreeBytes)
             throw new InvalidDataException("Smacker Huffman trees exceed the allocation limit.");

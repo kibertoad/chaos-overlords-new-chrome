@@ -2,7 +2,9 @@
   "deniedRoots": [
     "src/Rechaos.Game/Assets/",
     "analysis/original/",
-    "reference/original/"
+    "reference/original/",
+    ".dotnet-cli/",
+    ".pnpm-store/"
   ],
   "restrictedExtensions": [
     ".bmp",

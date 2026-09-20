@@ -39,10 +39,16 @@ process.on('uncaughtException', (error) => {
 const connections = server as Server
 
 let shuttingDown = false
+let exiting = false
 function shutdown(): void {
   if (shuttingDown) return
   shuttingDown = true
   const exit = () => {
+    // Both the deadline and `server.close` can reach this, and `runtime.close()` is not idempotent:
+    // running it twice made the second `pool.end()` reject with "Called end on pool more than
+    // once", which surfaced as an unhandled rejection during an otherwise clean shutdown.
+    if (exiting) return
+    exiting = true
     void runtime.close().finally(() => process.exit(process.exitCode ?? 0))
   }
   const deadline = setTimeout(() => {
@@ -51,6 +57,11 @@ function shutdown(): void {
     exit()
   }, config.shutdownGraceMs)
   deadline.unref()
+  // End the event streams first. They never close on their own, so without this every SIGTERM on a
+  // server with one connected player waited the whole grace period and then cut the sockets, which
+  // clients see as a connection reset rather than as a stream to reconnect with their
+  // `Last-Event-ID`. Closing them lets `server.close` return at once.
+  runtime.closeStreams()
   connections.closeIdleConnections()
   server.close(() => {
     clearTimeout(deadline)

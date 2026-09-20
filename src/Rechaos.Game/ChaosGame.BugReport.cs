@@ -207,8 +207,25 @@ public sealed partial class ChaosGame
         });
         var message = _bugReportText.Value;
         var shareState = _bugReportShareState;
-        var captured = BugReportComposer.Capture(
-            _actions?.Journal, BugReportComposer.MatchTypeOf(_state, _session is not null));
+        // Capturing serialises the recorder, which first re-hashes the match and refuses when the
+        // state has moved outside it. That is exactly the kind of defect somebody is filing a
+        // report about, so it must not be the thing that stops the report going out.
+        CapturedJournal? captured;
+        try
+        {
+            captured = BugReportComposer.Capture(
+                _actions?.Journal, BugReportComposer.MatchTypeOf(_state, _session is not null));
+        }
+        catch (Exception exception) when (exception is InvalidOperationException
+                                          or InvalidDataException or IOException)
+        {
+            _diagnostics?.Write("bugreport.capture.failed", new Dictionary<string, string?>
+            {
+                ["error"] = exception.ToString()
+            });
+            captured = null;
+            shareState = false;
+        }
         _bugReportStatus = "SENDING...";
         _bugReportSend = Task.Run(async () =>
         {

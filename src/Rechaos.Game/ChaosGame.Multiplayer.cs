@@ -359,9 +359,34 @@ public sealed partial class ChaosGame
         _combatPresentationProgress.ResetTo(
             state.Players.Select(player => player.Id),
             state.Events.LastOrDefault()?.Sequence ?? -1);
-        _combatAnimationPlayer.Clear();
+        ResetTransientMatchUi();
         _siteSearchSelections.Reset();
         _lastTurnEventArchive.Clear();
+    }
+
+    /// <summary>
+    /// Clears interface state that belongs to one turn and must not outlive it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The idle-gang warning was cleared by Confirm, Cancel and the local planning timer, and by
+    /// nothing else. Online, a deadline that sealed the turn while the warning was open left it on
+    /// screen over the next turn, where OK submitted that turn as ready with no orders. After the
+    /// match ended it kept swallowing F1, O and Escape on the title screen and then reappeared over
+    /// turn 1 of the next match.
+    /// </para>
+    /// <para>
+    /// The automatic combat presentation has the same shape: left running when a match ends, Update
+    /// keeps returning early with no state to draw, and the queue draining shows the city screen
+    /// with no match behind it.
+    /// </para>
+    /// </remarks>
+    private void ResetTransientMatchUi()
+    {
+        _idleGangWarningOpen = false;
+        _combatAnimationPlayer.Clear();
+        _automaticDetailedCombatPresentation = false;
+        _openEventsAfterCombat = false;
     }
 
     /// <summary>
@@ -423,6 +448,9 @@ public sealed partial class ChaosGame
         // not the player submitted it — the authoritative clock can seal a turn out from under them,
         // and the gangs they picked may have moved since.
         _gangSelection.Clear();
+        // The idle-gang warning belongs to the turn that is being replaced. Left open, OK on it
+        // submits the new turn as ready with no orders, and there is no taking that back.
+        _idleGangWarningOpen = false;
         _selectedGangIndex = 0;
         _cursor = _state.FindPlayer(new PlayerId(_session.Slot))?.Gangs
             .FirstOrDefault(gang => gang.IsActive)?.SectorId ?? _cursor;
@@ -444,6 +472,7 @@ public sealed partial class ChaosGame
         _state = final;
         _online.ConcludeMatch();
         CloseOnlinePlanning();
+        ResetTransientMatchUi();
         _message = string.Empty;
         CompleteOnlineRecovery();
         _screens.Show(ClientScreen.Endgame);
@@ -509,6 +538,7 @@ public sealed partial class ChaosGame
         if (_session is not null)
         {
             CloseOnlinePlanning();
+            ResetTransientMatchUi();
             _state = null;
         }
         Forget(_session?.StopAsync(), "multiplayer.session.stop.failed");
@@ -711,7 +741,11 @@ public sealed partial class ChaosGame
 
     private void RememberOnlineMembership(MembershipView membership)
     {
-        if (!TrySelectedServer(out var server)) return;
+        // The session's own address, not the one the connect form is showing. They differ whenever
+        // the form was edited after the session was built, and a record naming the wrong server is
+        // a seat every later reconnect gets a 401 or 404 for — after which reconciliation deletes it.
+        var server = _lobby?.BaseAddress;
+        if (server is null && !TrySelectedServer(out server)) return;
         var recovery = new MultiplayerRecovery(
             MultiplayerRecovery.CurrentFormatVersion,
             server.ToString(),

@@ -632,6 +632,105 @@ describe('multiplayer kernel', () => {
     expect(storage.statusOf(host.match.id)).toBe('running')
   })
 
+  /**
+   * A timed match whose last active player leaves stops its clock instead of sealing forever.
+   *
+   * Nobody is left to open a takeover prompt for, so nothing else paused the turn, and the match
+   * sealed an empty turn every `turnTimerSeconds` for as long as the server ran: a turn row and two
+   * events a cycle, with every cycle refreshing `updated_at` so retention never reached it. Creating
+   * a match needs no account, so it was also a cheap way to grow somebody else's database.
+   */
+  it('stops the clock of a timed match whose last active player leaves, and restarts it on rejoin', async () => {
+    const { host, guest } = await startedMatch(60)
+    await kernel.lobby.leave(await principalOf(guest.token))
+    // The guest's departure opens a prompt, which pauses the clock; the host's vote clears it.
+    await kernel.lobby.voteOnTakeover(await principalOf(host.token), guest.player.id, {
+      decision: 'computer',
+    })
+    const turn = (await principalOf(host.token)).match.currentTurn
+    expect((await storage.turns.get(host.match.id, turn))?.deadlineAt).not.toBeNull()
+
+    await kernel.lobby.leave(await principalOf(host.token))
+
+    expect(storage.statusOf(host.match.id)).toBe('running')
+    expect((await storage.turns.get(host.match.id, turn))?.deadlineAt).toBeNull()
+    // Nothing for the sweep to seal, however far the clock is wound on.
+    clock.advance(60 * 60 * 1000)
+    expect(await kernel.turns.sweep()).toMatchObject({ sealed: 0 })
+    expect((await principalOf(host.token)).match.currentTurn).toBe(turn)
+
+    await kernel.lobby.rejoin(await principalOf(host.token))
+
+    expect((await storage.turns.get(host.match.id, turn))?.deadlineAt).not.toBeNull()
+  })
+
+  /**
+   * Kicking a seat the turn is waiting on re-runs the verdict.
+   *
+   * `humanParticipants` counts a `takeoverPending` seat, so both readiness and consensus wait on it.
+   * Returning early for every non-active target left the match waiting on a seat that could never
+   * answer, with the clock paused by its own prompt and everyone present already ready.
+   */
+  it('re-evaluates the turn when a seat the turn was waiting on is kicked', async () => {
+    const { host, guest } = await startedMatch(60)
+    await submit(await principalOf(host.token), 1, 1, true)
+    await storage.players.setStatus(guest.player.id, 'takeoverPending')
+    await kernel.turns.openTakeoverPrompt(host.match.id, guest.player.id, 1)
+    expect((await principalOf(host.token)).match.currentTurn).toBe(1)
+
+    await kernel.lobby.kick(await principalOf(host.token), guest.player.id)
+
+    expect((await principalOf(host.token)).match.currentTurn).toBe(2)
+  })
+
+  /** A seat already handed to the computer is not a human a kick may turn back into an absent one. */
+  it('leaves a computer-controlled seat alone when the host kicks it', async () => {
+    const { host, guest } = await startedMatch()
+    await kernel.lobby.leave(await principalOf(guest.token))
+    await kernel.lobby.voteOnTakeover(await principalOf(host.token), guest.player.id, {
+      decision: 'computer',
+    })
+    expect((await storage.players.get(guest.player.id))?.status).toBe('computer')
+
+    await kernel.lobby.kick(await principalOf(host.token), guest.player.id)
+
+    expect((await storage.players.get(guest.player.id))?.status).toBe('computer')
+  })
+
+  /**
+   * The seat counter follows the rows, so a racing pair of removals releases one seat.
+   *
+   * `players.delete` used to answer nothing, and the seat was released whether or not a row went.
+   * Two requests that both authenticated before either deleted therefore decremented the counter
+   * twice, the lobby admitted more than `maxPlayers`, and a seventh player got slot 6 — which fails
+   * `seatSchema` in every player view and makes the match a 500 for the whole roster.
+   */
+  it('releases one seat when two removals race for the same lobby member', async () => {
+    const host = await kernel.lobby.createMatch({
+      settings: {
+        name: 'Night City',
+        maxPlayers: 2,
+        turnTimerSeconds: 0,
+        visibility: 'public',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Host',
+    })
+    const guest = await kernel.lobby.join({ joinCode: host.joinCode, displayName: 'Guest' })
+    const guestPrincipal = await principalOf(guest.token)
+
+    await kernel.lobby.leave(guestPrincipal)
+    // The same principal again: what a client retrying a lost response, or a kick racing a leave,
+    // hands the server.
+    await kernel.lobby.leave(guestPrincipal)
+
+    // One seat back, so the lobby holds exactly one more.
+    await kernel.lobby.join({ joinCode: host.joinCode, displayName: 'Second' })
+    await expect(
+      kernel.lobby.join({ joinCode: host.joinCode, displayName: 'Third' }),
+    ).rejects.toMatchObject({ details: { reason: 'match_full' } })
+  })
+
   it('lets former members rejoin and makes the first returning player host', async () => {
     const { host, guest } = await startedMatch()
     await kernel.lobby.leave(await principalOf(host.token))

@@ -98,6 +98,10 @@ export function buildKernel(
         maxAgeMs: days(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS) * DAY_MS,
         abandonedLiveMaxAgeMs:
           days(env.ABANDONED_RETENTION_DAYS, DEFAULT_ABANDONED_RETENTION_DAYS) * DAY_MS,
+        // Twice the abandoned window, and without its roster test, which never collects an untimed
+        // match whose players' clients died without a `leave`.
+        silentLiveMaxAgeMs:
+          days(env.ABANDONED_RETENTION_DAYS, DEFAULT_ABANDONED_RETENTION_DAYS) * 2 * DAY_MS,
         batchSize: 50,
       },
     },

@@ -169,14 +169,24 @@ public sealed partial class ChaosGame
         DrawButton(batch, pixel, font, OnlineConnectLayout.DismissError, "CLOSE", false);
     }
 
-    private void DrawReconnectPopupOverCurrentFrame(Viewport viewport)
+    /// <summary>
+    /// Draws the two online panels that take input away, over a frame that has already ended.
+    /// </summary>
+    /// <remarks>
+    /// The screens that return early from <c>Draw</c> (the sliding panels: Hire, Ranking, the combat
+    /// summary; and the filtered Last Turn Events) never reached the generic branch that draws these.
+    /// The absence vote gates the keyboard and every click on every screen, so a vote that opened
+    /// while the player was reading their combat summary — which is where the turn boundary puts
+    /// them — left the game looking frozen with nothing on screen to explain it.
+    /// </remarks>
+    private void DrawBlockingOnlineOverlays(Viewport viewport)
     {
-        if (_batch is null || _pixel is null || _font is null
-            || _session is null || _online.IsConnected)
-            return;
+        if (_batch is null || _pixel is null || _font is null || _session is null) return;
+        if (_online.IsConnected && _online.CurrentTakeoverVote is null) return;
         _batch.Begin(
             samplerState: SamplerState.PointClamp,
             transformMatrix: VirtualInput.Transform(viewport));
+        DrawTakeoverVote(_batch, _pixel, _font);
         DrawReconnectPopup(_batch, _pixel, _font);
         _batch.End();
     }

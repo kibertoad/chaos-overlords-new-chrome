@@ -1,6 +1,7 @@
 import {
   type CreateMatchRequest,
   foldName,
+  GAME_BOUNDS,
   type JoinMatchRequest,
   type JoinRunningMatchRequest,
   LIMITS,
@@ -381,9 +382,22 @@ export class LobbyService {
       payload: { playerId: target.id, voterPlayerId: player.id, decision: request.decision },
     })
     if (request.decision === 'wait') return
+    await this.tallyTakeoverVote(match, target.id)
+  }
 
+  /**
+   * Hand a seat to the computer once every remaining active player has voted for it.
+   *
+   * Extracted from `voteOnTakeover` because the tally can also be completed by the voter set
+   * shrinking. When the one player who had not voted (or had voted `wait`) leaves or is kicked,
+   * everyone left has already approved, and the prompt used to stay open with the clock stopped
+   * until somebody clicked the same button a second time — on a modal reading 2 of 2.
+   */
+  private async tallyTakeoverVote(match: Match, targetPlayerId: string): Promise<void> {
+    const target = await this.deps.storage.players.get(targetPlayerId)
+    if (!target || target.status === 'computer') return
     const votes = new Map(
-      (await this.deps.storage.takeovers.listVotes(match.id, target.id)).map((vote) => [
+      (await this.deps.storage.takeovers.listVotes(match.id, targetPlayerId)).map((vote) => [
         vote.voterPlayerId,
         vote.decision,
       ]),
@@ -391,16 +405,20 @@ export class LobbyService {
     const voters = activePlayers(await this.deps.storage.players.listByMatch(match.id))
     if (voters.length === 0 || voters.some((voter) => votes.get(voter.id) !== 'computer')) return
     if (
-      !(await this.deps.storage.players.transitionStatus(target.id, [target.status], 'computer'))
+      !(await this.deps.storage.players.transitionStatus(
+        targetPlayerId,
+        [target.status],
+        'computer',
+      ))
     ) {
       return
     }
-    await this.deps.storage.takeovers.closePrompt(match.id, target.id)
+    await this.deps.storage.takeovers.closePrompt(match.id, targetPlayerId)
     await this.publisher.publish(match.id, {
       type: 'match.playerTakenOver',
-      payload: { playerId: target.id },
+      payload: { playerId: targetPlayerId },
     })
-    if (target.id === match.hostPlayerId) {
+    if (targetPlayerId === match.hostPlayerId) {
       const successor = activePlayers(await this.deps.storage.players.listByMatch(match.id))[0]
       if (successor) {
         await this.deps.storage.matches.transition(match.id, ['running', 'desynced'], {
@@ -417,6 +435,13 @@ export class LobbyService {
     await this.turns.resumeAfterTakeoverVotes(match.id)
   }
 
+  /** Re-tally every open prompt, for when the set of voters has just shrunk. */
+  private async retallyOpenPrompts(match: Match): Promise<void> {
+    for (const playerId of await this.deps.storage.takeovers.listOpenPrompts(match.id)) {
+      await this.tallyTakeoverVote(match, playerId)
+    }
+  }
+
   async start(principal: Principal): Promise<void> {
     const { match } = principal
     requireHost(principal)
@@ -427,6 +452,14 @@ export class LobbyService {
     if (roster.length < MIN_PLAYERS_TO_START) {
       throw new ConflictError(`At least ${MIN_PLAYERS_TO_START} players are needed`, {
         reason: 'not_enough_players',
+      })
+    }
+    // The seat counter is what admits a join, so a roster larger than the match allows means the
+    // counter has been undercounted. Refuse rather than seat a seventh player, whose slot fails
+    // `seatSchema` in every player view and makes the match a 500 for the whole roster.
+    if (roster.length > Math.min(match.settings.maxPlayers, GAME_BOUNDS.playerCount)) {
+      throw new ConflictError('The lobby holds more players than the match allows', {
+        reason: 'match_full',
       })
     }
     const seed = generateSeed()
@@ -455,20 +488,49 @@ export class LobbyService {
 
   private async remove(match: Match, target: Player, reason: 'left' | 'kicked'): Promise<void> {
     if (target.status === 'kicked') return
-    // Leaving is something only a seated, active player does. A kick has to reach the seat whatever
-    // state it is in: a player who left or went quiet keeps a working token until it is revoked
-    // here, and `rejoin` turns away nobody but the kicked, so answering 204 and doing nothing let a
-    // kicked player walk straight back in.
+    // A seat already handed to the computer is not a human to remove. Marking it `kicked` put it
+    // back in ABSENT_HUMAN_STATUSES, so the next rejoin or vote opened a fresh prompt for a seat
+    // every client is already playing as AI, stopped the clock, and a unanimous vote published a
+    // second `match.playerTakenOver` for it. Revoke the owner's token, leave the seat alone.
+    if (target.status === 'computer') {
+      if (reason === 'kicked') {
+        await this.deps.storage.players.revokeToken(target.id)
+        await this.hangUp(match.id, target.id)
+      }
+      return
+    }
+    // Leaving is something only a seated, active player does — or one whose seat is waiting on an
+    // absence vote, who would otherwise be waited on for the rest of the match after answering 204.
+    // A kick has to reach the seat whatever state it is in: a player who left or went quiet keeps a
+    // working token until it is revoked here, and `rejoin` turns away nobody but the kicked, so
+    // answering 204 and doing nothing let a kicked player walk straight back in.
     const wasActive = target.status === 'active'
-    if (!wasActive && reason !== 'kicked') return
+    if (!wasActive && reason !== 'kicked' && target.status !== 'takeoverPending') return
     const now = this.deps.clock.now()
     if (match.status === 'lobby') {
       if (target.id === match.hostPlayerId) {
         await this.abandon(match, now)
         return
       }
-      await this.deps.storage.players.delete(target.id)
+      // `match.status` was read at authentication, so the host's `start` may have landed since. A
+      // re-read here is not a transaction, but it turns the window from "the whole request" into
+      // "two statements", and the running path below is the correct one for a seated player.
+      const current = await this.deps.storage.matches.get(match.id)
+      if (current && current.status !== 'lobby') {
+        await this.remove(current, target, reason)
+        return
+      }
+      // The seat is released only when a row actually went. Two requests that both authenticated
+      // before either deleted — a `leave` sent twice, or this kick racing the target's own `leave` —
+      // each decremented the counter for the one row that went, so the lobby admitted more than
+      // `maxPlayers` and a seventh player got slot 6, which fails `seatSchema` in every player view
+      // and turns the match into a 500 for everybody.
+      if (!(await this.deps.storage.players.delete(target.id))) return
       await this.deps.storage.matches.releaseSeat(match.id)
+      // A kicked member's token is dead with the row, but a stream they already hold is never
+      // re-authenticated: without this it goes on delivering `match.started` with the seed and
+      // every seal, desync and roster change for the rest of the match.
+      if (reason === 'kicked') await this.hangUp(match.id, target.id)
       await this.publisher.publish(match.id, {
         type: 'lobby.playerLeft',
         payload: { playerId: target.id, reason },
@@ -488,13 +550,27 @@ export class LobbyService {
       type: 'lobby.playerLeft',
       payload: { playerId: target.id, reason },
     })
-    // A seat that was already absent changes no tally and holds no host role: whatever vote or
-    // succession its absence called for ran when it went quiet, and it is not a seat any turn is
-    // waiting on now. Nor does a match that is over have anything left to vote on.
-    if (!wasActive || (match.status !== 'running' && match.status !== 'desynced')) return
+    if (match.status !== 'running' && match.status !== 'desynced') return
+    if (!wasActive) {
+      // A `takeoverPending` seat is not idle: `humanParticipants` counts it, so both readiness and
+      // consensus wait on it. Kicking one and returning here left the turn waiting on a seat that
+      // could never answer, with the clock paused by its own prompt and everyone present already
+      // ready. A `left` seat really is idle, and re-running the verdict for it costs one query.
+      await this.turns.reevaluate(match.id)
+      await this.retallyOpenPrompts(match)
+      return
+    }
     const remaining = activePlayers(await this.deps.storage.players.listByMatch(match.id))
     if (remaining.length === 0) {
       // Keep the durable match available. The first former member to rejoin becomes host.
+      //
+      // Stop the clock on the way out. Nobody opens a takeover prompt on the last seat — there is
+      // nobody left to ask — so nothing else would pause it, and a timed match went on sealing an
+      // empty turn every `turnTimerSeconds` for as long as the server ran: one turn row and two
+      // events a cycle, about 2,900 turns a day, with every cycle refreshing `updatedAt` so the
+      // 90-day abandoned-live sweep never reached it. `rejoin` restarts the clock through
+      // `resumeAfterTakeoverVotes`.
+      await this.turns.pauseAbandonedMatch(match.id)
       return
     }
     await this.turns.openTakeoverPrompt(match.id, target.id, match.currentTurn)
@@ -511,6 +587,7 @@ export class LobbyService {
     }
     // A departure can complete readiness or a consensus that was waiting on the leaver.
     await this.turns.reevaluate(match.id)
+    await this.retallyOpenPrompts(match)
   }
 
   /**

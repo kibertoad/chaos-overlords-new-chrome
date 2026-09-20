@@ -33,6 +33,21 @@ SetupLogging=yes
 InfoBeforeFile={#PackageRoot}\NOTICE
 LicenseFile={#PackageRoot}\LICENSE
 
+; An upgrade overlays the new package on the old one, so a DLL a newer build no longer ships used
+; to stay in {app}\Game and an upgraded install was never the file set the smoke test validated.
+; Assets are deliberately not listed: they are the player's imported copy and an upgrade keeps them.
+[InstallDelete]
+Type: filesandordirs; Name: "{app}\Tools"
+Type: files; Name: "{app}\Game\*.dll"
+Type: files; Name: "{app}\Game\*.exe"
+Type: files; Name: "{app}\Game\*.json"
+
+; The asset import writes {app}\Game\Assets from an external process in ssPostInstall, so Inno's
+; uninstall log knows nothing about those files and left the whole converted pack behind. It is
+; regenerable from the player's own original copy, so uninstalling removes it.
+[UninstallDelete]
+Type: filesandordirs; Name: "{app}\Game\Assets"
+
 [Files]
 Source: "{#PackageRoot}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 

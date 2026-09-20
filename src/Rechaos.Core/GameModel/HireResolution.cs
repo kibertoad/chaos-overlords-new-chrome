@@ -238,16 +238,19 @@ internal static class HireResolver
                 .Count(gang => gang.IsActive && gang.SectorId == pending.TargetSectorId)
                 < MatchLimits.FriendlyGangsPerSector;
             var canAfford = HireRules.CanAffordInitialCost(player.Cash, definition);
-            if (!pending.InitialCostPaid && !canAfford)
-            {
-                RecordFailure(state, player, pending, definition,
-                    GameNotificationKind.HireInsufficientCash);
-                continue;
-            }
+            // docs/ORIGINAL-INTERNALS.md:4882-4886: the resolver counts the gang records in the
+            // target sector first and only then looks at then-current cash. Neither test draws RNG,
+            // so the order decides nothing but which failure notification the player is shown.
             if (!pending.InitialCostPaid && !hasSectorCapacity)
             {
                 RecordFailure(state, player, pending, definition,
                     GameNotificationKind.HireSectorFull);
+                continue;
+            }
+            if (!pending.InitialCostPaid && !canAfford)
+            {
+                RecordFailure(state, player, pending, definition,
+                    GameNotificationKind.HireInsufficientCash);
                 continue;
             }
 

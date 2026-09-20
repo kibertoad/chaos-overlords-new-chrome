@@ -3,6 +3,12 @@ name: GitHub Actions security
 on:
   pull_request:
     branches: ["**"]
+  # Also on a direct push to main. This repository's history shows workflow edits landing there
+  # without a pull request, and those were the ones zizmor never saw.
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions: {}

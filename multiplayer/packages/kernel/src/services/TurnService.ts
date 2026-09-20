@@ -96,6 +96,13 @@ export class TurnService {
       if (turn.deadlineAt === null || turn.deadlineAt.getTime() > this.deps.clock.now().getTime()) {
         return false
       }
+      // A second guard behind `pauseAbandonedMatch`: a deadline that survived it, or one armed
+      // before this rule existed, must not go on sealing empty turns in a match nobody is in.
+      const roster = await this.deps.storage.players.listByMatch(matchId)
+      if (activePlayers(roster).length === 0) {
+        await this.clearOpenDeadline(matchId)
+        return false
+      }
     } else {
       const [players, orders] = await Promise.all([
         this.deps.storage.players.listByMatch(matchId),
@@ -204,11 +211,17 @@ export class TurnService {
   }
 
   /** Whether the log carries an event of `type`. Only read on repair paths, where the log is short. */
-  private async hasEvent(matchId: string, type: string): Promise<boolean> {
+  private async hasEvent(matchId: string, type: string, turn?: number): Promise<boolean> {
+    const matches = (event: { type: string; payload: unknown }): boolean =>
+      event.type === type &&
+      (turn === undefined ||
+        (typeof event.payload === 'object' &&
+          event.payload !== null &&
+          (event.payload as { turn?: unknown }).turn === turn))
     let after = 0
     for (;;) {
       const page = await this.deps.storage.events.listAfter(matchId, after, 200)
-      if (page.some((event) => event.type === type)) return true
+      if (page.some(matches)) return true
       if (page.length < 200) return false
       after = page[page.length - 1]?.seq ?? after
     }
@@ -272,21 +285,54 @@ export class TurnService {
     const expired = await this.deps.storage.turns.listExpiredOpen(this.deps.clock.now(), limit)
     let sealed = 0
     for (const { matchId, number } of expired) {
-      if (await this.trySeal(matchId, number, 'deadline')) sealed += 1
+      // One match that throws must not abort the pass. `listExpiredOpen` is ordered oldest first,
+      // so the same match would be at the head of the next pass too and no later expired turn or
+      // stalled seal would ever be reached — and this is the safety net behind a lost timer.
+      if (await this.guard(matchId, number, () => this.trySeal(matchId, number, 'deadline'))) {
+        sealed += 1
+      }
     }
     // A seal in flight looks stalled for the moment between its compare-and-swap and the next turn
     // opening, so this also runs against healthy matches. `completeSeal` changes nothing there, and
     // only a call that actually had work left to do is reported.
     let repaired = 0
     for (const { matchId, number } of await this.deps.storage.turns.listStalledSeals(limit)) {
-      const match = await this.deps.storage.matches.get(matchId)
-      if (!match) continue
-      if (await this.completeSeal(match, number)) {
+      const finished = await this.guard(matchId, number, async () => {
+        const match = await this.deps.storage.matches.get(matchId)
+        if (!match) return false
+        return this.completeSeal(match, number)
+      })
+      if (finished) {
         this.deps.logger.warn('finished an interrupted seal', { matchId, turn: number })
         repaired += 1
       }
     }
+    // A verdict cut short after its compare-and-swap leaves the match `desynced` with nothing
+    // unsettled, which no other path revisits.
+    for (const matchId of await this.deps.storage.matches.listDesynced(limit)) {
+      await this.guard(matchId, 0, async () => {
+        await this.reevaluate(matchId)
+        return false
+      })
+    }
     return { sealed, repaired }
+  }
+
+  private async guard(
+    matchId: string,
+    turn: number,
+    step: () => Promise<boolean>,
+  ): Promise<boolean> {
+    try {
+      return await step()
+    } catch (error) {
+      this.deps.logger.warn('a match was skipped by the sweep', {
+        matchId,
+        turn,
+        error: String(error),
+      })
+      return false
+    }
   }
 
   async report(principal: Principal, number: number, request: TurnReportRequest): Promise<void> {
@@ -389,6 +435,20 @@ export class TurnService {
    * stopped already, so a second absent seat neither double-publishes nor disturbs the first pause.
    */
   private async pauseForTakeoverVote(matchId: string): Promise<void> {
+    await this.clearOpenDeadline(matchId)
+  }
+
+  /**
+   * Stop the clock of a match whose last active player has just left.
+   *
+   * There is nobody left to ask about the empty seat, so no prompt is opened and nothing else would
+   * pause the turn. `resumeAfterTakeoverVotes`, which `rejoin` calls, restarts it.
+   */
+  async pauseAbandonedMatch(matchId: string): Promise<void> {
+    await this.clearOpenDeadline(matchId)
+  }
+
+  private async clearOpenDeadline(matchId: string): Promise<void> {
     const match = await this.deps.storage.matches.get(matchId)
     if (!match || (match.status !== 'running' && match.status !== 'desynced')) return
     const turn = await this.deps.storage.turns.get(matchId, match.currentTurn)
@@ -426,8 +486,15 @@ export class TurnService {
   async reevaluate(matchId: string): Promise<void> {
     const match = await this.deps.storage.matches.get(matchId)
     if (!match || (match.status !== 'running' && match.status !== 'desynced')) return
-    for (const turn of await this.deps.storage.turns.listUnsettled(matchId)) {
+    const unsettled = await this.deps.storage.turns.listUnsettled(matchId)
+    for (const turn of unsettled) {
       await this.settle(matchId, turn.number)
+    }
+    // A match left `desynced` with nothing unsettled is a verdict whose consequences were cut short
+    // after its compare-and-swap. Nothing else reaches `resumeAfterDesync`, so without this the
+    // match answers `match_desynced` to every submission for the rest of its life.
+    if (match.status === 'desynced' && unsettled.length === 0) {
+      await this.resumeAfterDesync(matchId, this.deps.clock.now())
     }
     await this.trySeal(matchId, match.currentTurn, 'ready')
   }
@@ -438,7 +505,16 @@ export class TurnService {
       this.deps.storage.matches.get(matchId),
       this.deps.storage.turns.get(matchId, number),
     ])
-    if (!match || !turn || turn.status === 'open' || turn.status === 'confirmed') return
+    if (!match || !turn || turn.status === 'open') return
+    if (turn.status === 'confirmed') {
+      // The compare-and-swap already happened; what may not have is what follows it. A process that
+      // died between the two left the match `desynced` for good with nothing unsettled, so
+      // `submitOrders` answered `match_desynced` forever and nothing could reach `resumeAfterDesync`
+      // again — it is private and `reevaluate` only visits sealed and desynced turns. The seal path
+      // was built to survive exactly this; the verdict path was not.
+      if (match.status === 'desynced') await this.resumeAfterDesync(matchId, this.deps.clock.now())
+      return
+    }
     const [players, reports, snapshot] = await Promise.all([
       this.deps.storage.players.listByMatch(matchId),
       this.deps.storage.turns.listReports(matchId, number),
@@ -482,19 +558,28 @@ export class TurnService {
       return
     }
     if (verdict.kind === 'desynced') {
-      const won = await this.deps.storage.turns.transition(matchId, number, ['sealed'], {
-        status: 'desynced',
-      })
+      // Each consequence is conditional on its own state rather than on winning the transition, so
+      // a retry after an interrupted verdict finishes the job. Losing the CAS and returning here
+      // left the match `running` with the turn already `desynced`: `turn.desynced` was never
+      // announced, `SnapshotService.upload` refused the repair with `snapshot_not_required` because
+      // the match was not desynced, and the turn stayed unsettled for good.
+      const won =
+        turn.status === 'desynced' ||
+        (await this.deps.storage.turns.transition(matchId, number, ['sealed'], {
+          status: 'desynced',
+        }))
       if (!won) return
       this.deps.logger.warn('turn desynced', { matchId, turn: number })
-      await this.publisher.publish(matchId, {
-        type: 'turn.desynced',
-        payload: {
-          turn: number,
-          reports: verdict.reports,
-          candidateStateHashes: verdict.candidateStateHashes,
-        },
-      })
+      if (!(await this.hasEvent(matchId, 'turn.desynced', number))) {
+        await this.publisher.publish(matchId, {
+          type: 'turn.desynced',
+          payload: {
+            turn: number,
+            reports: verdict.reports,
+            candidateStateHashes: verdict.candidateStateHashes,
+          },
+        })
+      }
       if (
         await this.deps.storage.matches.transition(matchId, ['running'], {
           status: 'desynced',
@@ -530,6 +615,12 @@ export class TurnService {
       type: 'match.statusChanged',
       payload: { status: 'running' },
     })
+    // Not behind a modal. Kicking the odd one out is the documented remedy for a desync, and the
+    // kick opens an absence prompt for the kicked seat, so this path reached a paused turn every
+    // time in a timed match and put a full deadline back on it while the vote nobody could dismiss
+    // was still up. `resumeAfterTakeoverVotes` restarts the clock when the last prompt closes, the
+    // same way `openTurn` leaves a turn paused when it opens behind one.
+    if (await this.deps.storage.takeovers.hasOpenPrompts(matchId)) return
     const deadlineAt = turnDeadline(now, match.settings.turnTimerSeconds)
     if (deadlineAt === null) return // A match without a turn timer has no clock to restart.
     if (

@@ -107,6 +107,11 @@ public static partial class CommandResolver
     {
         var source = state.FindGang(command.Gang)!;
         var items = command.GiveTargets().Select(target => checked((short)target.Id)).ToArray();
+        // The recipient is checked for activity at submission, and Combat runs between then and
+        // Transaction. Handing items to a gang that died in the meantime writes them onto a record
+        // nothing can reach, and takes them out of the giver's hands to do it.
+        if (state.FindGang(new GangId(command.Target.Id)) is not { IsActive: true })
+            return new PreparedGive(command, items, false, items.Length > 0 ? items[0] : null);
         var unavailable = items.FirstOrDefault(itemIndex =>
             EquipmentRules.EquippedItem(source,
                 EquipmentRules.SlotFor(state.Definitions.Items[itemIndex])) != itemIndex, (short)-1);

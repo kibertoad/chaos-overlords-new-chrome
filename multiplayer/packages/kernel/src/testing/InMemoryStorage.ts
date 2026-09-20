@@ -107,21 +107,28 @@ export class InMemoryStorage implements MultiplayerStorage {
       for (const match of doomed) this.deleteMatch(match.id)
       return doomed.length
     },
-    deleteAbandonedLive: async (before, limit) => {
+    deleteAbandonedLive: async (before, limit, requireEmptyRoster) => {
       const doomed = [...this.matchRows.values()]
         .filter(
           (match) =>
             (match.status === 'running' || match.status === 'desynced') &&
             match.updatedAt < before &&
-            ![...this.playerRows.values()].some(
-              (player) => player.matchId === match.id && player.status === 'active',
-            ),
+            (!requireEmptyRoster ||
+              ![...this.playerRows.values()].some(
+                (player) => player.matchId === match.id && player.status === 'active',
+              )),
         )
         .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())
         .slice(0, limit)
       for (const match of doomed) this.deleteMatch(match.id)
       return doomed.length
     },
+    listDesynced: async (limit) =>
+      [...this.matchRows.values()]
+        .filter((match) => match.status === 'desynced')
+        .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())
+        .slice(0, limit)
+        .map((match) => match.id),
     transition: async (matchId, from, patch) => {
       const match = this.matchRows.get(matchId)
       if (!match || !from.includes(match.status)) return false
@@ -187,9 +194,7 @@ export class InMemoryStorage implements MultiplayerStorage {
         if (player) player.slot = slot
       }
     },
-    delete: async (playerId) => {
-      this.playerRows.delete(playerId)
-    },
+    delete: async (playerId) => this.playerRows.delete(playerId),
   }
 
   readonly turns: TurnRepository = {
@@ -269,7 +274,13 @@ export class InMemoryStorage implements MultiplayerStorage {
     listExpiredOpen: async (now, limit) =>
       [...this.turnRows.values()]
         .filter(
-          (turn) => turn.status === 'open' && turn.deadlineAt !== null && turn.deadlineAt <= now,
+          (turn) =>
+            turn.status === 'open' &&
+            turn.deadlineAt !== null &&
+            turn.deadlineAt <= now &&
+            // Only a running match can seal; a desynced one holds its expired deadline for the
+            // whole pause and would sit at the head of every page.
+            this.matchRows.get(turn.matchId)?.status === 'running',
         )
         .sort((a, b) => (a.deadlineAt?.getTime() ?? 0) - (b.deadlineAt?.getTime() ?? 0))
         .slice(0, limit)

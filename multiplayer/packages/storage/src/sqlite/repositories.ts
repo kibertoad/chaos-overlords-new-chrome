@@ -176,7 +176,13 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
      * `not exists` over the players rather than a count: one active row is enough to spare the
      * match, and asking whether any exists stops at the first.
      */
-    async deleteAbandonedLive(before, limit) {
+    async deleteAbandonedLive(before, limit, requireEmptyRoster) {
+      const emptyRoster = notExists(
+        db
+          .select({ one: sql`1` })
+          .from(players)
+          .where(and(eq(players.matchId, matches.id), eq(players.status, 'active'))),
+      )
       const collectable = db
         .select({ id: matches.id })
         .from(matches)
@@ -184,12 +190,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
           and(
             inArray(matches.status, ['running', 'desynced']),
             lt(matches.updatedAt, before),
-            notExists(
-              db
-                .select({ one: sql`1` })
-                .from(players)
-                .where(and(eq(players.matchId, matches.id), eq(players.status, 'active'))),
-            ),
+            ...(requireEmptyRoster ? [emptyRoster] : []),
           ),
         )
         .limit(limit)
@@ -198,6 +199,15 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
         .where(inArray(matches.id, collectable))
         .returning({ id: matches.id })
       return rows.length
+    },
+    async listDesynced(limit) {
+      const rows = await db
+        .select({ id: matches.id })
+        .from(matches)
+        .where(eq(matches.status, 'desynced'))
+        .orderBy(matches.updatedAt)
+        .limit(limit)
+      return rows.map((row) => row.id)
     },
     async transition(matchId, from, patch) {
       const rows = await db
@@ -327,7 +337,11 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
         )
     },
     async delete(playerId) {
-      await db.delete(players).where(eq(players.id, playerId))
+      const rows = await db
+        .delete(players)
+        .where(eq(players.id, playerId))
+        .returning({ id: players.id })
+      return rows.length === 1
     },
   }
 }
@@ -468,8 +482,16 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
       return db
         .select({ matchId: turns.matchId, number: turns.number })
         .from(turns)
+        .innerJoin(matches, eq(matches.id, turns.matchId))
         .where(
-          and(eq(turns.status, 'open'), isNotNull(turns.deadlineAt), lte(turns.deadlineAt, now)),
+          and(
+            eq(turns.status, 'open'),
+            isNotNull(turns.deadlineAt),
+            lte(turns.deadlineAt, now),
+            // Only a running match can seal. A desynced one keeps its expired deadline for the
+            // whole pause and would otherwise squat at the head of this page.
+            eq(matches.status, 'running'),
+          ),
         )
         .orderBy(asc(turns.deadlineAt))
         .limit(limit)

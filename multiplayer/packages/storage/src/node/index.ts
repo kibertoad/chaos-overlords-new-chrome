@@ -61,9 +61,28 @@ export function openSqliteStorage(filename: string): OpenedStorage {
   }
 }
 
-/** Opens a Postgres pool, applies pending migrations, and returns the storage ports. */
-export async function openPostgresStorage(connectionString: string): Promise<OpenedStorage> {
-  const pool = new pg.Pool({ connectionString })
+/**
+ * Opens a Postgres pool, applies pending migrations, and returns the storage ports.
+ *
+ * @param onPoolError Told when an idle pooled connection dies. Required in effect, not in type: an
+ * `EventEmitter` `error` with no listener is thrown, and node-postgres emits one on the pool every
+ * time a Postgres restart, a failover or a NAT idle-reset drops a pooled connection. That reached
+ * `process.on('uncaughtException')` in the Node runtime, which shut the server down — for an event
+ * the pool would have recovered from on the next query.
+ */
+export async function openPostgresStorage(
+  connectionString: string,
+  onPoolError?: (error: unknown) => void,
+): Promise<OpenedStorage> {
+  const pool = new pg.Pool({
+    connectionString,
+    // Both default to waiting forever. A database that has stopped answering should produce 500s
+    // and log lines, not requests that hang until the client gives up.
+    connectionTimeoutMillis: 10_000,
+    idleTimeoutMillis: 30_000,
+    statement_timeout: 30_000,
+  })
+  pool.on('error', (error) => onPoolError?.(error))
   const db = drizzlePostgres(pool, { schema: postgresSchema })
   const lock = await pool.connect()
   try {
@@ -95,13 +114,16 @@ export function parseStorageTarget(databaseUrl: string): StorageTarget {
   if (databaseUrl.startsWith('sqlite:')) {
     return { kind: 'sqlite', filename: databaseUrl.slice('sqlite:'.length) || ':memory:' }
   }
-  throw new Error(
-    `Unsupported DATABASE_URL "${databaseUrl}": expected postgres://… or sqlite:<path>`,
-  )
+  // The URL is not repeated: the natural mistake here is a `mysql://user:password@host/db`, and
+  // this message goes to stderr at startup and into whatever collects the container's logs.
+  throw new Error('Unsupported DATABASE_URL: expected postgres://… or sqlite:<path>')
 }
 
-export function openStorage(target: StorageTarget): Promise<OpenedStorage> {
+export function openStorage(
+  target: StorageTarget,
+  onPoolError?: (error: unknown) => void,
+): Promise<OpenedStorage> {
   return target.kind === 'postgres'
-    ? openPostgresStorage(target.connectionString)
+    ? openPostgresStorage(target.connectionString, onPoolError)
     : Promise.resolve(openSqliteStorage(target.filename))
 }

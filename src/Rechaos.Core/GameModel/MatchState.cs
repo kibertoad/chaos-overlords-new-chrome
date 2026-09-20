@@ -847,7 +847,14 @@ public sealed partial class MatchState
                     gang.QueuedCommand = null;
                     if (gang.IsActive) RetireGangForEliminate(gang);
                 }
-                foreach (var sector in Sectors.Where(sector => sector.Owner == player.Id)) sector.Owner = null;
+                // Neutralize rather than clearing Owner: every other way of losing a sector runs
+                // ResetInfluencedSites, which restores Resistance on all three sites. Clearing the
+                // owner on its own stranded a site whose Resistance had just reached zero but whose
+                // ownership had not yet activated at the next upkeep, because ActivatePending skips
+                // ownerless sectors. The site then stayed at Resistance 0 with no influencer, so the
+                // next player to take the sector could neither influence it nor collect from it.
+                foreach (var sector in Sectors.Where(sector => sector.Owner == player.Id))
+                    SectorControlResolver.Neutralize(this, sector);
             }
             foreach (var sector in Sectors)
             foreach (var site in sector.Sites.Where(site => site.InfluencedBy == player.Id))

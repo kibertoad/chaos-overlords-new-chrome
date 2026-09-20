@@ -6,6 +6,9 @@ namespace Rechaos.Game;
 /// <summary>Copies short game text through the SDL clipboard used by DesktopGL.</summary>
 public static class DesktopClipboard
 {
+    /// <summary>How much clipboard is read before trimming, so surrounding space is not the value.</summary>
+    private const int ReadAheadCharacters = 64;
+
     public static bool TryGetText(out string text, int maximumCharacters)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(maximumCharacters, 1);
@@ -15,7 +18,15 @@ public static class DesktopClipboard
         {
             pointer = GetNativeText();
             if (pointer == IntPtr.Zero) return false;
-            text = ReadBoundedUtf8(pointer, maximumCharacters).Trim();
+            // Read past the field width, then trim and filter, then cut. Cutting first turned a
+            // join code copied from chat as " ABCD2345" into "ABCD234", with the status line
+            // cheerfully reporting that the code had been pasted.
+            var raw = ReadBoundedUtf8(pointer, Math.Max(maximumCharacters, ReadAheadCharacters));
+            var filtered = new StringBuilder(raw.Length);
+            foreach (var character in raw.Trim())
+                if (!char.IsControl(character)) filtered.Append(character);
+            var value = filtered.ToString().Trim();
+            text = value.Length <= maximumCharacters ? value : value[..maximumCharacters];
             return text.Length > 0;
         }
         catch (Exception exception) when (exception is DllNotFoundException

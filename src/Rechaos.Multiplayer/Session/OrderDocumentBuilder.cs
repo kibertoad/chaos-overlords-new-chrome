@@ -65,7 +65,9 @@ public sealed class OrderDocumentBuilder(PlayerId player)
             (int)command.Action,
             ToWire(command.Target),
             command.Repeat,
-            command.SecondaryTarget is { } secondary ? ToWire(secondary) : null));
+            command.SecondaryTarget is { } secondary ? ToWire(secondary) : null,
+            command.TertiaryTarget is { } tertiary ? ToWire(tertiary) : null,
+            command.QuaternaryTarget is { } quaternary ? ToWire(quaternary) : null));
     }
 
     /// <summary>Records a cancelled command. Mirrors <c>MatchState.Cancel</c>.</summary>

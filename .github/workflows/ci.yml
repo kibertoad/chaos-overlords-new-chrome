@@ -57,8 +57,11 @@ jobs:
         shell: pwsh
         run: ./tools/Invoke-Validation.ps1 -LongRunningTestsOnly -TraceTestOutput
 
+      # No `--no-restore`: since de425b9 the validation step restores into a temporary root and
+      # deletes it, so the checkout has no project.assets.json and this failed with NETSDK1004 on
+      # every matrix leg — taking the three installer jobs that depend on it with it.
       - name: Publish assetless game
-        run: dotnet publish src/Rechaos.Game/Rechaos.Game.csproj --no-restore -c Release -p:IncludeOriginalAssets=false --output artifacts/assetless-game -v minimal
+        run: dotnet publish src/Rechaos.Game/Rechaos.Game.csproj -c Release -p:IncludeOriginalAssets=false --output artifacts/assetless-game -v minimal
 
       - name: Verify proprietary asset boundary
         shell: pwsh
@@ -103,7 +106,12 @@ jobs:
             --repo jrsoftware/issrc `
             --pattern 'innosetup-7.1.0-x64.exe' `
             --dir $env:RUNNER_TEMP
+          # A failing native command does not stop a pwsh step, and the runner only inspects
+          # $LASTEXITCODE of the last one, so neither of these was checked and the attestation
+          # check was a defence that did nothing.
+          if ($LASTEXITCODE -ne 0) { throw "Downloading the Inno Setup installer failed with $LASTEXITCODE." }
           gh release verify-asset $installer --repo jrsoftware/issrc
+          if ($LASTEXITCODE -ne 0) { throw "Attestation verification of the Inno Setup installer failed with $LASTEXITCODE." }
           $signature = Get-AuthenticodeSignature -LiteralPath $installer
           if ($signature.Status -ne 'Valid' -or
               $signature.SignerCertificate.Subject -notlike '*Pyrsys B.V.*') {

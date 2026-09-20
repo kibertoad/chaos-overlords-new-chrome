@@ -70,15 +70,17 @@ public sealed class MultiplayerCanonicalJsonTests
     public void ReproducesTheServersGoldenOrderDigest()
     {
         var document = new OrderDocument(1, [
-            new SubmitCommandOp(0, 7, 10, new SectorTarget(27), Repeat: false, SecondaryTarget: null),
+            new SubmitCommandOp(
+                0, 7, 10, new SectorTarget(27), Repeat: false, SecondaryTarget: null,
+                TertiaryTarget: null, QuaternaryTarget: null),
             new QueueHireOp(0, 44, 27),
         ]);
 
         Assert.Equal(
-            """{"ops":[{"action":10,"gang":7,"op":"submitCommand","player":0,"repeat":false,"secondaryTarget":null,"target":{"id":27,"kind":"sector"}},{"gangDefinitionId":44,"op":"queueHire","player":0,"sectorId":27}],"schemaVersion":1}""",
+            """{"ops":[{"action":10,"gang":7,"op":"submitCommand","player":0,"quaternaryTarget":null,"repeat":false,"secondaryTarget":null,"target":{"id":27,"kind":"sector"},"tertiaryTarget":null},{"gangDefinitionId":44,"op":"queueHire","player":0,"sectorId":27}],"schemaVersion":1}""",
             OrderDigest.CanonicalTextOf(document));
         Assert.Equal(
-            "1e8d923be158821a974c60903be48d010f7499bdadc3510f6ea3714abadd6631",
+            "551ddbd0dcadc5036f922f74aad6563b81a6dc14044231dd6d10bf63a3830152",
             OrderDigest.OfDocument(document));
     }
 

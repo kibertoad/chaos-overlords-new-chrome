@@ -76,6 +76,20 @@ try {
 
     Stop-CheckoutGame
 
+    # A run killed before its `finally` (an agent timeout, a closed terminal) leaves a whole Release
+    # build tree behind in %TEMP%, and nothing ever removed it. Holding the lock proves no other run
+    # for this checkout owns these, so they are this run's to sweep.
+    foreach ($stale in @(Get-ChildItem -Path $temporaryRoot -Directory -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -like "rechaos-validation-$($repositoryIdentity.Substring(0, 16))-*" })) {
+        try {
+            Remove-Item -LiteralPath $stale.FullName -Recurse -Force -ErrorAction Stop
+            Write-Host "Removed a validation build root left by an interrupted run: $($stale.Name)"
+        }
+        catch {
+            Write-Warning "Could not remove the stale validation build root $($stale.Name)."
+        }
+    }
+
     New-Item -ItemType Directory -Path $validationBuildRoot -Force | Out-Null
     $validationProjectRoot = [IO.Path]::GetFullPath($validationBuildRoot) +
         [IO.Path]::DirectorySeparatorChar

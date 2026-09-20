@@ -47,12 +47,41 @@ public sealed partial class ChaosGame
         if (texture is not null) _combatAnimationTextures[fileName] = texture;
     }
 
+    /// <summary>Set once the audio backend has refused to open a device.</summary>
+    /// <remarks>
+    /// Every other audio path in the game treats sound as optional: <see cref="TryPlaySound"/>,
+    /// the soundtrack loader and the movie audio all swallow backend failures. Loading the effects
+    /// did not, so a machine with no output device enabled, a remote desktop session with no audio
+    /// redirection, or a Linux box with no sound server running could not start the game at all, and
+    /// was told to re-import its assets.
+    /// </remarks>
+    private bool _audioUnavailable;
+
     private SoundEffect? LoadSound(string fileName)
     {
+        if (_audioUnavailable) return null;
         var path = Path.Combine(_assetRoot, "audio", fileName);
         if (!File.Exists(path)) return null;
-        using var stream = File.OpenRead(path);
-        return SoundEffect.FromStream(stream);
+        try
+        {
+            using var stream = File.OpenRead(path);
+            return SoundEffect.FromStream(stream);
+        }
+        catch (NoAudioHardwareException)
+        {
+            _audioUnavailable = true;
+            _diagnostics?.Write("audio.unavailable", new Dictionary<string, string?>
+            {
+                ["firstFile"] = fileName
+            });
+            return null;
+        }
+        catch (Exception exception) when (exception is IOException
+            or InvalidOperationException or ArgumentException)
+        {
+            // One unreadable effect file is not a reason to stop loading the rest.
+            return null;
+        }
     }
 
     private void PlayCombatSound(short soundIndex)
@@ -106,10 +135,14 @@ public sealed partial class ChaosGame
         if (_screens.Current is not (ClientScreen.City or ClientScreen.CombatSummary)) return;
         var viewer = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
         var lastSeen = _combatPresentationProgress.LastSeen(viewer);
-        foreach (var gameEvent in _state.Events
-                     .Where(value => value.Sequence > lastSeen)
-                     .OrderBy(value => value.Sequence))
+        // The list is append-only in sequence order and this runs twice per Update, so walk back
+        // from the end to the first unseen event instead of filtering and re-sorting all of it.
+        var events = _state.Events;
+        var first = events.Count;
+        while (first > 0 && events[first - 1].Sequence > lastSeen) first--;
+        for (var index = first; index < events.Count; index++)
         {
+            var gameEvent = events[index];
             if (_detailedCombat && _combatAnimationTextures.Count > 0
                 && CombatResultProjection.IsFromLastCompletedTurn(
                     gameEvent.Turn, _state.Coordinator.Turn)

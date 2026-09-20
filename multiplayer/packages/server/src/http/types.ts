@@ -9,5 +9,10 @@ export interface AppEnv {
     principal: Principal
     /** Set by the contract route before the handler runs; absent on non-contract routes. */
     apiContract?: ApiContract
+    /**
+     * Whether this caller's address still has room in its daily attached-journal budget. Set by
+     * `bugReportRateLimited`; absent everywhere else.
+     */
+    bugReportStateAllowed?: boolean
   }
 }

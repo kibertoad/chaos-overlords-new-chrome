@@ -275,8 +275,16 @@ export function originalPlayerNameProjection(name: string): string {
  * a cheat costs one player one retype, and letting one through costs everybody the match.
  */
 export const displayNameInputSchema = pipe(
-  displayNameSchema,
+  string(),
+  trim(),
+  // Normalise before measuring, as `matchNameSchema` does. NFC is not length-preserving:
+  // `'שּׁ'.repeat(32)` is 32 units going in and 96 coming out, and it is category Lo so the
+  // unsafe-character check accepts it. Measuring first stored a 96-unit name that then failed
+  // `displayNameSchema` on the way out, turning every response carrying it into a 500 — the match
+  // view, the events page, and `GET /matches` when it was the public host's name.
   normalizeName,
+  minLength(1),
+  maxLength(LIMITS.displayNameLength),
   check((name) => !UNSAFE_NAME_CHARACTERS.test(name), NAME_CHARACTER_MESSAGE),
   check(
     (name) =>

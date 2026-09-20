@@ -92,14 +92,21 @@ public static class MatchStateClone
             try
             {
                 brotli.ReadExactly(payload);
+                if (brotli.ReadByte() != -1)
+                    throw new InvalidDataException(
+                        "Native snapshot archive expands beyond its declared size.");
             }
             catch (EndOfStreamException exception)
             {
                 throw new InvalidDataException("Native snapshot archive is truncated.", exception);
             }
-            if (brotli.ReadByte() != -1)
-                throw new InvalidDataException(
-                    "Native snapshot archive expands beyond its declared size.");
+            // BrotliStream reports damaged input as InvalidOperationException, which the caller of
+            // this method does not filter for: a mangled snapshot body from the server would end
+            // the process instead of being refused as an unusable repair candidate.
+            catch (InvalidOperationException exception)
+            {
+                throw new InvalidDataException("Native snapshot archive body is corrupt.", exception);
+            }
         }
         using var stream = new MemoryStream(payload, writable: false);
         return NativeSaveSerializer.Load(stream, definitions);

@@ -422,6 +422,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             case MatchPlayerTakenOverEvent takenOver:
                 _takeoverVotes.Remove(takenOver.Payload.PlayerId);
                 TransferPlayerToComputer(takenOver.Payload.PlayerId);
+                // This seat is no longer a human the server accepts writes from. Every later report
+                // is answered `403 not_active`, which is not transient, so the session failed with a
+                // raw HTTP 403 a turn or two after the modal said the seat had been handed over.
+                if (string.Equals(takenOver.Payload.PlayerId, PlayerId, StringComparison.Ordinal))
+                    _ownSeatIsComputerControlled = true;
                 await PublishMatchAsync(cancellationToken).ConfigureAwait(false);
                 _notices.Enqueue(new MultiplayerNotice.TakeoverVoteClosed(
                     takenOver.Payload.PlayerId, ComputerControl: true));
@@ -464,6 +469,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         CancellationToken cancellationToken)
     {
         if (turn < _replay.State.Coordinator.Turn) return;
+        // A finished match has no turn left to apply. The coordinator stops short of Command when
+        // the match ends, so a successor turn that seals on its deadline — which happens when the
+        // server cannot finish the match because a seat has not reported — would throw inside
+        // SealedTurnApplier and throw the player off the endgame screen into an error modal.
+        if (_replay.State.Outcome is not null) return;
         var (stateHash, includedOwnOrders) = await FetchAndApplySealedTurnAsync(
                 turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
@@ -608,8 +618,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     {
         var turn = announced.Turn;
         if (turn < _replay.State.Coordinator.Turn - 1) return;
-        if (string.Equals(announced.UploadedByPlayerId, PlayerId, StringComparison.Ordinal)
-            && string.Equals(
+        // Whoever uploaded it. A client whose own state already hashes to the repair has nothing to
+        // load and has already reported that hash: downloading it, replacing the state and
+        // re-reporting raced the client that actually diverged, and the loser was answered
+        // `409 turn_confirmed`. It also threw away a plan the player had started on the open turn.
+        if (string.Equals(
                 announced.StateHash, MatchStateHasher.ComputeSha256(_replay.State), StringComparison.Ordinal))
         {
             return;
@@ -685,17 +698,49 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             + MultiplayerSessionVersion.Current);
     }
 
-    private Task ReportAsync(int turn, string stateHash, CancellationToken cancellationToken) =>
-        CallAsync(
-            token => _match.ReportAsync(
-                turn,
-                new TurnReportRequest(
-                    stateHash,
-                    _replay.State.Outcome is not null,
-                    IsHost ? SummarizeSeats(_replay.State) : null),
-                token),
-            _pumpLane,
-            cancellationToken);
+    /// <summary>
+    /// Reports this client's state hash for a settled turn.
+    /// </summary>
+    /// <remarks>
+    /// A turn the server has already confirmed is a success, not a failure. Since reports on settled
+    /// turns were refused, the server answers `409 turn_confirmed` for one, and a 409 is below 500
+    /// so the retry policy treats it as terminal — which ended the session of any client whose
+    /// redundant report lost a race, and of any client whose report completed the consensus but
+    /// whose response was lost and therefore retried. The turn is confirmed either way, which is
+    /// what this report was asking for.
+    /// </remarks>
+    /// <summary>Set once the other players have voted this client's own seat onto the computer.</summary>
+    private bool _ownSeatIsComputerControlled;
+
+    private async Task ReportAsync(int turn, string stateHash, CancellationToken cancellationToken)
+    {
+        // A seat the server no longer counts as human has nothing to report. Carrying on and being
+        // refused is how this used to surface, one 403 at a time.
+        if (_ownSeatIsComputerControlled) return;
+        try
+        {
+            await CallAsync(
+                token => _match.ReportAsync(
+                    turn,
+                    new TurnReportRequest(
+                        stateHash,
+                        _replay.State.Outcome is not null,
+                        IsHost ? SummarizeSeats(_replay.State) : null),
+                    token),
+                _pumpLane,
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (MultiplayerApiException exception) when (exception.Reason == "turn_confirmed")
+        {
+            // Nothing to do and nothing wrong: the verdict this report was asking for is in.
+        }
+        catch (MultiplayerApiException exception) when (exception.Reason == "not_active")
+        {
+            // The roster moved under this report: the seat was handed to the computer, or removed,
+            // between the seal and now. Stop reporting rather than failing the session on a 403.
+            _ownSeatIsComputerControlled = true;
+        }
+    }
 
     private async Task PublishMatchAsync(CancellationToken cancellationToken)
     {

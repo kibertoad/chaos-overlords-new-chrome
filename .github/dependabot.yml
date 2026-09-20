@@ -1,0 +1,33 @@
+# Nothing proposed updates for the SHA-pinned actions, the pinned Postgres image, the NuGet
+# packages or the npm workspace, so every one of them moved only when somebody happened to touch it.
+# Weekly, grouped, so a release is not preceded by nine separate bumps.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dotnet:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /multiplayer
+    schedule:
+      interval: weekly
+    groups:
+      multiplayer:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /multiplayer
+    schedule:
+      interval: weekly

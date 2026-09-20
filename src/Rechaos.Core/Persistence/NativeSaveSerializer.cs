@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -9,18 +10,35 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 24;
+    public const int CurrentFormatVersion = 25;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
     internal static JsonSerializerOptions CreateCompatibleJsonOptions() => new(JsonOptions);
 
+    /// <summary>Writes a snapshot, refusing one the reader would later refuse.</summary>
+    /// <remarks>
+    /// Every save carries the whole event history and the whole phase-hash history, and neither is
+    /// trimmed, so a long six-player match grows towards <see cref="MaximumSaveBytes"/>. The writer
+    /// used to have no limit at all, so the first file over the line was written happily and then
+    /// failed its own read-back, which is the worst moment to find out. Checking here means the
+    /// player is told the match is too large to save while the match is still in memory.
+    /// </remarks>
+    /// <exception cref="InvalidDataException">The snapshot is over the size limit.</exception>
     public static void Save(Stream destination, MatchState state)
     {
         ArgumentNullException.ThrowIfNull(destination);
         ArgumentNullException.ThrowIfNull(state);
         if (!destination.CanWrite) throw new ArgumentException("Destination stream is not writable.", nameof(destination));
-        JsonSerializer.Serialize(destination, Capture(state), JsonOptions);
+        using var buffer = new MemoryStream();
+        JsonSerializer.Serialize(buffer, Capture(state), JsonOptions);
+        if (buffer.Length > MaximumSaveBytes)
+        {
+            throw new InvalidDataException(
+                $"Native save is {buffer.Length} bytes, over the {MaximumSaveBytes} byte limit.");
+        }
+        buffer.Position = 0;
+        buffer.CopyTo(destination);
     }
 
     public static MatchState Load(Stream source, OriginalData definitions) =>
@@ -54,6 +72,13 @@ public static class NativeSaveSerializer
         ArgumentNullException.ThrowIfNull(definitions);
         if (!source.CanRead) throw new ArgumentException("Source stream is not readable.", nameof(source));
         using var bounded = ReadBounded(source);
+        // The version has to be read before the members are bound: JsonOptions refuses unmapped
+        // members, so a save from a newer build fails as "JSON is invalid" on the very field the
+        // newer build added, and the caller would have no way to tell it from real damage.
+        if (DeclaredFormatVersion(bounded) is { } declared && declared > CurrentFormatVersion)
+            throw IncompatibleSave.Create(
+                IncompatibleSaveReason.NewerFormat,
+                $"Unsupported native save format {declared}.");
         NativeSaveDocument document;
         try
         {
@@ -73,22 +98,53 @@ public static class NativeSaveSerializer
             throw;
         }
         catch (Exception exception) when (exception is ArgumentException
-            or InvalidOperationException or KeyNotFoundException or OverflowException)
+            or InvalidOperationException or KeyNotFoundException or OverflowException
+            or NullReferenceException)
         {
             throw new InvalidDataException("Native save state is invalid.", exception);
+        }
+    }
+
+    /// <summary>The envelope's <c>formatVersion</c>, or null when the bytes are not readable JSON.</summary>
+    /// <remarks>Leaves the stream rewound for the real deserialization pass.</remarks>
+    private static int? DeclaredFormatVersion(MemoryStream bounded)
+    {
+        try
+        {
+            using var envelope = JsonDocument.Parse(bounded, new JsonDocumentOptions { MaxDepth = 64 });
+            return envelope.RootElement.ValueKind == JsonValueKind.Object
+                && envelope.RootElement.TryGetProperty("formatVersion", out var version)
+                && version.ValueKind == JsonValueKind.Number
+                && version.TryGetInt32(out var value)
+                    ? value
+                    : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+        finally
+        {
+            bounded.Position = 0;
         }
     }
 
     private static MatchState RestoreDocument(
         NativeSaveDocument document, OriginalData definitions, bool verifyStateFingerprint)
     {
-        if (document.FormatVersion is < 1 or > CurrentFormatVersion)
+        if (document.FormatVersion > CurrentFormatVersion)
+            throw IncompatibleSave.Create(
+                IncompatibleSaveReason.NewerFormat,
+                $"Unsupported native save format {document.FormatVersion}.");
+        if (document.FormatVersion < 1)
             throw new InvalidDataException($"Unsupported native save format {document.FormatVersion}.");
         ValidateVersionedTargets(document);
         if (!CryptographicOperations.FixedTimeEquals(
                 DecodeSha256(document.DefinitionsSha256, "definition fingerprint"),
                 DecodeSha256(DefinitionFingerprint(definitions), "current definition fingerprint")))
-            throw new InvalidDataException("Native save gameplay definitions do not match this installation.");
+            throw IncompatibleSave.Create(
+                IncompatibleSaveReason.DifferentDefinitions,
+                "Native save gameplay definitions do not match this installation.");
 
         var setup = new MatchSetup(
             document.Setup.Scenario,
@@ -233,6 +289,7 @@ public static class NativeSaveSerializer
             21 => MatchStateHasher.ComputeVersionTwentyFourSha256(state),
             22 => MatchStateHasher.ComputeVersionTwentyFiveSha256(state),
             23 => MatchStateHasher.ComputeVersionTwentySixSha256(state),
+            24 => MatchStateHasher.ComputeVersionTwentySevenSha256(state),
             _ => MatchStateHasher.ComputeSha256(state)
         };
         if (verifyStateFingerprint && !CryptographicOperations.FixedTimeEquals(
@@ -570,8 +627,19 @@ public static class NativeSaveSerializer
         return memory;
     }
 
+    /// <summary>
+    /// Fingerprints the bundled definitions, once per <see cref="OriginalData"/> instance.
+    /// </summary>
+    /// <remarks>
+    /// Serialising and hashing the whole definition set costs the same every time for a given
+    /// instance, and a single autosave paid it three times while opening the save browser paid it
+    /// up to nine times on the update thread. The entries are weak, so nothing is pinned.
+    /// </remarks>
+    private static readonly ConditionalWeakTable<OriginalData, string> DefinitionFingerprints = [];
+
     private static string DefinitionFingerprint(OriginalData definitions) =>
-        Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(definitions, JsonOptions)));
+        DefinitionFingerprints.GetValue(definitions, static value => Convert.ToHexStringLower(
+            SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value, JsonOptions))));
 
     private static byte[] DecodeSha256(string value, string field)
     {
@@ -594,6 +662,11 @@ public static class NativeSaveSerializer
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
             RespectRequiredConstructorParameters = true,
+            // Without this a hand-edited `"setup": null` deserializes to a document whose members
+            // are null and then raises NullReferenceException deep inside the restore, past every
+            // handler on the load path. With it the same input is a JsonException, which Load
+            // already translates into InvalidDataException.
+            RespectNullableAnnotations = true,
             MaxDepth = 64
         };
         options.Converters.Add(new PlayerIdJsonConverter());

@@ -355,7 +355,7 @@ public sealed partial class ChaosGame
         _selectedGangIndex = 0;
         _message = string.Empty;
         _combatPresentationProgress.Clear();
-        _combatAnimationPlayer.Clear();
+        ResetTransientMatchUi();
         _siteSearchSelections.Reset();
         _lastTurnEventArchive.Clear();
         _managementReturnScreen = ClientScreen.City;

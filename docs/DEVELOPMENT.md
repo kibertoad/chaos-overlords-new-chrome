@@ -56,8 +56,9 @@ Run the repository's fast regression gate through its serialized entry point:
 
 It stops a game launched from this checkout, serializes validation, and bounds
 build parallelism, preventing overlapping sessions and locked game files.
-Normal incremental outputs and build-server reuse remain on for performance.
-Installed copies of the game are not stopped. See [VALIDATION.md](VALIDATION.md)
+Build-server reuse remains on for performance; the build output itself goes to a
+fresh temporary root each run, so every run is a cold build over the checkout as
+it stands. Installed copies of the game are not stopped. See [VALIDATION.md](VALIDATION.md)
 for the explicit 53-case long-running/full-suite modes and build-server cleanup
 option.
 

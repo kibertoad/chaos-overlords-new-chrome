@@ -81,4 +81,30 @@ public static class OriginalDataReader
             .FirstOrDefault(file => string.Equals(Path.GetFileName(file), name, StringComparison.OrdinalIgnoreCase))
             ?? throw new FileNotFoundException($"Required original game file not found: {name}", path);
     }
+
+    /// <summary>
+    /// The directory at <paramref name="path"/> whatever case its name is stored in, or null.
+    /// </summary>
+    /// <remarks>
+    /// The original CD and the GOG re-release differ in how they case `DATA`, `MUSIC` and the rest,
+    /// and a case-sensitive file system takes that literally. <see cref="FindCaseInsensitive"/>
+    /// already handles the files; without this the directories holding them were still matched
+    /// exactly, so a lower-case install failed with a message about the wrong thing.
+    /// </remarks>
+    public static string? FindDirectoryCaseInsensitive(string path)
+    {
+        if (Directory.Exists(path)) return path;
+        var parent = Path.GetDirectoryName(path);
+        if (parent is null || !Directory.Exists(parent)) return null;
+        var name = Path.GetFileName(path);
+        return Directory.EnumerateDirectories(parent).FirstOrDefault(candidate =>
+            string.Equals(Path.GetFileName(candidate), name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Enumeration that matches a glob the way Windows does, on every platform.</summary>
+    public static readonly EnumerationOptions CaseInsensitiveFiles = new()
+    {
+        MatchCasing = MatchCasing.CaseInsensitive,
+        RecurseSubdirectories = false
+    };
 }

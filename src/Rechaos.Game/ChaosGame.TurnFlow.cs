@@ -55,22 +55,8 @@ public sealed partial class ChaosGame
             ["turnAfter"] = _state.Coordinator.Turn.ToString(),
             ["phase"] = _state.Coordinator.Phase.ToString()
         });
-        if (_state.Coordinator.Turn != previousTurn)
-        {
-            try
-            {
-                NativeSaveStore.SaveAtomic(_autoSavePath, _state);
-                _message = string.Empty;
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                _message = "AUTOSAVE FAILED";
-            }
-        }
-        else
-        {
-            _message = string.Empty;
-        }
+        _message = string.Empty;
+        if (_state.Coordinator.Turn != previousTurn) WriteAutoSave();
 
         if (_state.Outcome is not null)
             _screens.Show(ClientScreen.Endgame);
@@ -83,6 +69,34 @@ public sealed partial class ChaosGame
             PrepareCurrentHireOffers();
             _selectedGangIndex = 0;
             PresentHotSeatPlanningEntry();
+        }
+    }
+
+    /// <summary>
+    /// Writes the rolling autosave for the turn that has just begun.
+    /// </summary>
+    /// <remarks>
+    /// This used to fire only inside the human's own <c>FinishPlanningTurn</c>, when the turn number
+    /// changed there. With the human in slot 0 and computers after, the turn rolls over inside
+    /// <see cref="RunComputerTurns"/> instead, so the default single-player game wrote an autosave
+    /// on no turn at all. Both paths call this now.
+    /// </remarks>
+    private void WriteAutoSave()
+    {
+        if (_state is null) return;
+        try
+        {
+            NativeSaveStore.SaveAtomic(_autoSavePath, _state);
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException
+                                          or UnauthorizedAccessException)
+        {
+            _diagnostics?.Write("autosave.failed", new Dictionary<string, string?>
+            {
+                ["turn"] = _state.Coordinator.Turn.ToString(),
+                ["error"] = exception.ToString()
+            });
+            _message = "AUTOSAVE FAILED";
         }
     }
 
@@ -107,18 +121,7 @@ public sealed partial class ChaosGame
             _ => throw new InvalidOperationException("Unknown turn phase.")
         };
         _message = string.Empty;
-        if (completedTurn)
-        {
-            try
-            {
-                NativeSaveStore.SaveAtomic(_autoSavePath, _state);
-                _message = string.Empty;
-            }
-            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-            {
-                _message = "AUTOSAVE FAILED";
-            }
-        }
+        if (completedTurn) WriteAutoSave();
         if (_state.Outcome is not null)
             _screens.Show(ClientScreen.Endgame);
         else if (transition.ActivePlayer is not null && transition.ActivePlayer != previousActivePlayer)
@@ -145,10 +148,16 @@ public sealed partial class ChaosGame
                 or ClientScreen.Endgame or ClientScreen.Elimination
             || _eliminationHandoffPlayer is not null) return;
         var acted = false;
+        var startingTurn = _state.Coordinator.Turn;
         while (_state.Coordinator.ActivePlayer is { } playerId)
         {
             var player = _state.FindPlayer(playerId)!;
             if (player.Setup.Controller != PlayerController.Computer) break;
+            // One turn per frame at most. With two or more humans all eliminated and two or more
+            // computers still alive the match does not end, and this loop used to run every
+            // remaining turn — up to about 190 of them — inside a single Update, with the window
+            // unresponsive and the game menu unreachable for the whole of it.
+            if (acted && _state.Coordinator.Turn != startingTurn) break;
             if (_state.Coordinator.Phase == TurnPhase.Command)
             {
                 _actions.HotSeatRecorder.PrepareAiPlanning(playerId);
@@ -194,6 +203,7 @@ public sealed partial class ChaosGame
         if (!acted) return;
         _selectedGangIndex = 0;
         _message = string.Empty;
+        if (_state.Coordinator.Turn != startingTurn) WriteAutoSave();
         if (_state.Outcome is not null)
         {
             _screens.Show(ClientScreen.Endgame);
