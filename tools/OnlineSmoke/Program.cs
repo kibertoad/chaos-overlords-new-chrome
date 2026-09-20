@@ -74,10 +74,16 @@ public static class Program
         var started = (await hostMatch.GetAsync(CancellationToken.None)).Match;
         Console.WriteLine($"started on seed {started.Seed}, {started.Players.Count} seated");
 
+        // A bounded outage budget, unlike the game's. Nobody is watching this run, so a server
+        // that stops answering has to end it rather than keep it waiting; see
+        // `MultiplayerSessionOptions.StreamOutageBudget`.
+        var smokeBudget = TimeSpan.FromMinutes(2);
         await using var hostSession = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
-            hostMatch, definitions, started, host.Player.Id, started.LastEventSeq));
+            hostMatch, definitions, started, host.Player.Id, started.LastEventSeq,
+            StreamOutageBudget: smokeBudget));
         await using var guestSession = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
-            guestMatch, definitions, started, guest.Player.Id, started.LastEventSeq));
+            guestMatch, definitions, started, guest.Player.Id, started.LastEventSeq,
+            StreamOutageBudget: smokeBudget));
 
         var hostState = hostSession.Bootstrap.State;
         var guestState = guestSession.Bootstrap.State;

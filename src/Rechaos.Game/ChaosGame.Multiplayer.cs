@@ -12,7 +12,21 @@ namespace Rechaos.Game;
 public sealed partial class ChaosGame
 {
     private static readonly TimeSpan LobbyPollInterval = TimeSpan.FromSeconds(1);
-    private static readonly TimeSpan OnlineResolutionGrace = TimeSpan.FromSeconds(30);
+    /// <summary>
+    /// How long every seat may be ready with no sealed turn arriving before the client goes and
+    /// looks for itself.
+    /// </summary>
+    /// <remarks>
+    /// It has to sit ABOVE the stream's own idle detector plus its first reconnect, or it fires
+    /// first and pre-empts the recovery that was already on its way. The server seals in the same
+    /// request that completes the roster, so the ready `PUT` succeeds on a fresh connection while
+    /// `turn.sealed` goes out on a stream a suspended laptop or an expired NAT entry has silently
+    /// killed; the stream notices at <see cref="MatchEventStream.DefaultIdleTimeout"/>, fifty
+    /// seconds, and comes back from its `Last-Event-ID`. At thirty seconds this watchdog was tearing
+    /// the session down twenty seconds before the mechanism that fixes it even woke up.
+    /// </remarks>
+    private static readonly TimeSpan OnlineResolutionGrace =
+        MatchEventStream.DefaultIdleTimeout + TimeSpan.FromSeconds(25);
 
     private readonly MultiplayerUiState _online = new();
     /// <summary>
@@ -28,6 +42,12 @@ public sealed partial class ChaosGame
     private CancellationTokenSource? _recoveryReconciliationCancellation;
     private Task<IReadOnlyList<MultiplayerRecovery>>? _recoveryReconciliation;
     private readonly List<MultiplayerRecovery> _multiplayerRecoveries = [];
+
+    /// <summary>
+    /// Bumped whenever <see cref="_multiplayerRecoveries"/> changes, so the filtered view over it
+    /// can tell whether it is stale without comparing the lists.
+    /// </summary>
+    private int _multiplayerRecoveryVersion;
     private MultiplayerRecovery? _activeMultiplayerRecovery;
     private bool _configuringOnlineLobby;
 
@@ -780,7 +800,7 @@ public sealed partial class ChaosGame
     private void TouchOnlineRecovery()
     {
         if (_activeMultiplayerRecovery is not { Completed: false } recovery) return;
-        UpdateOnlineRecovery(recovery with { LastUpdatedAt = DateTimeOffset.UtcNow });
+        UpdateOnlineRecovery(recovery with { LastUpdatedAt = DateTimeOffset.UtcNow }, durable: false);
     }
 
     private void CompleteOnlineRecovery()
@@ -789,17 +809,38 @@ public sealed partial class ChaosGame
         UpdateOnlineRecovery(recovery with { CleanExit = true, Completed = true });
     }
 
-    private void UpdateOnlineRecovery(MultiplayerRecovery recovery)
+    /// <summary>
+    /// Writes a membership back to the history file.
+    /// </summary>
+    /// <param name="recovery">The membership as it now stands.</param>
+    /// <param name="durable">
+    /// Whether the write has to survive losing power. True for the marks that decide whether a
+    /// player is offered a reconnect at all — the clean exit and the completion — and false for the
+    /// routine stamp every resolved turn makes, which costs an fsync on the game thread in the
+    /// frame the new turn appears and whose loss costs only the order of a list.
+    /// </param>
+    private void UpdateOnlineRecovery(MultiplayerRecovery recovery, bool durable = true)
     {
         var index = _multiplayerRecoveries.FindIndex(item => SameMembership(item, recovery));
         if (index >= 0) _multiplayerRecoveries[index] = recovery;
         else _multiplayerRecoveries.Insert(0, recovery);
         _activeMultiplayerRecovery = recovery;
-        SaveOnlineRecoveries();
+        SaveOnlineRecoveries(durable);
     }
 
-    private void SaveOnlineRecoveries() =>
-        MultiplayerRecoveryStore.TrySaveAll(_multiplayerRecoveryPath, _multiplayerRecoveries);
+    /// <summary>
+    /// Writes the history back, and marks the views over it stale.
+    /// </summary>
+    /// <remarks>
+    /// Every path that changes <see cref="_multiplayerRecoveries"/> ends here, which is why the
+    /// version lives in this one place rather than beside each mutation: a caller cannot add a
+    /// membership and forget to say so.
+    /// </remarks>
+    private void SaveOnlineRecoveries(bool durable = true)
+    {
+        _multiplayerRecoveryVersion++;
+        MultiplayerRecoveryStore.TrySaveAll(_multiplayerRecoveryPath, _multiplayerRecoveries, durable);
+    }
 
     private static bool SameMembership(MultiplayerRecovery left, MultiplayerRecovery right) =>
         string.Equals(left.Server, right.Server, StringComparison.OrdinalIgnoreCase)

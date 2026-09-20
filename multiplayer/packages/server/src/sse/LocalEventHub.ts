@@ -8,17 +8,17 @@ import {
   type StreamCloser,
 } from '@chaos-overlords/kernel'
 import { createSseResponse } from './createSseResponse'
-
-const PAGE_SIZE = 200
+import { MatchLog } from './MatchLog'
 
 /**
  * How many streams may be open at once, and against what.
  *
  * A stream is not a request: it lives until the client closes it, it holds a heartbeat timer and a
- * wake listener, and every event or heartbeat costs it one `listAfter` query. The
- * per-player rate limit counts the opening call and nothing after it, so without these one
- * authenticated member could hold thousands of streams and turn each published event into thousands
- * of database reads and thousands of response writes — the whole match stops sealing for everybody.
+ * wake listener, and it is written to for every event of its match. The per-player rate limit counts
+ * the opening call and nothing after it, so without these one authenticated member could hold
+ * thousands of streams and turn each published event into thousands of response writes — the whole
+ * match stops sealing for everybody. (What one event costs in READS is `MatchLog`'s business, and
+ * the answer there is "once for the match", not once per stream.)
  *
  * `perPlayer` is generous enough for the one case a healthy client produces: a reconnect whose
  * predecessor is still being torn down. Reaching it closes that player's oldest stream rather than
@@ -50,6 +50,13 @@ interface Subscription {
 export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCloser {
   /** Insertion-ordered, which is what makes "close this player's oldest" a first match. */
   private readonly listeners = new Map<string, Set<Subscription>>()
+  /**
+   * The shared read and shared frames of each match with a stream open; see `MatchLog`.
+   *
+   * Keyed by match and dropped with the last stream of it, so what this holds is bounded by the
+   * stream caps rather than by how many matches the server has ever served.
+   */
+  private readonly logs = new Map<string, MatchLog>()
   private open_ = 0
 
   constructor(
@@ -61,6 +68,10 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
   ) {}
 
   async notify(event: PersistedEvent): Promise<void> {
+    // The notification carries the durable row, so its frame is formatted once here and every
+    // stream one event behind — which is every healthy stream of the match — is served from it
+    // without reading anything. See `MatchLog`.
+    this.logs.get(event.matchId)?.record(event)
     this.wake(event.matchId)
   }
 
@@ -119,9 +130,11 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     signal: AbortSignal
   }): Promise<Response> {
     this.makeRoom(input.matchId, input.playerId)
+    const log = this.logOf(input.matchId)
     return createSseResponse(
       {
-        listAfter: (afterSeq) => this.events.listAfter(input.matchId, afterSeq, PAGE_SIZE),
+        page: (afterSeq, force) => log.page(afterSeq, force),
+        caughtUp: (lastSeq) => log.caughtUp(lastSeq),
         subscribe: (wake, close) => this.subscribe(input.matchId, input.playerId, wake, close),
       },
       {
@@ -131,6 +144,14 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
         onUnreadable: (seq) => this.onUnreadable?.(input.matchId, seq),
       },
     )
+  }
+
+  private logOf(matchId: string): MatchLog {
+    const existing = this.logs.get(matchId)
+    if (existing) return existing
+    const log = new MatchLog(matchId, this.events)
+    this.logs.set(matchId, log)
+    return log
   }
 
   private subscribe(
@@ -147,30 +168,39 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     return () => {
       if (!set.delete(subscription)) return
       this.open_ -= 1
-      if (set.size === 0) this.listeners.delete(matchId)
+      if (set.size === 0) {
+        this.listeners.delete(matchId)
+        // Nothing reads this match any more, so its frames are only memory. The next stream of it
+        // starts from the log, which is where the truth was all along.
+        this.logs.delete(matchId)
+      }
     }
   }
 
   /**
    * Enforce the three caps before a stream is built.
    *
-   * The process cap is checked first: it is the one that protects everyone else's matches, and a
-   * refusal is cheaper than closing somebody's live stream to make room for a caller this cap is
-   * about to turn away anyway. The caller's own stale streams go next, BEFORE the match cap is
-   * read: a full match is exactly the state a reconnecting player finds when every seat holds its
-   * quota, and refusing them there would turn the one legitimate reconnect into a 429.
+   * The caller's own stale streams are closed FIRST, before either ceiling is read. Closing them is
+   * not a concession to the caller, it is bookkeeping: a reconnect whose predecessor has not
+   * finished being torn down is the one case that reaches these caps in healthy traffic, and the
+   * corpse it is replacing occupies a slot in all three counts. Reading the process cap ahead of
+   * that answered 429 to the player whose laptop had just woken up, on a server whose own count
+   * would have been under the cap the moment their dead stream went.
+   *
+   * `perMatch` and `perProcess` then refuse whatever is still over, which is the case no client can
+   * talk its way past.
    */
   private makeRoom(matchId: string, playerId: string): void {
+    const set = this.listeners.get(matchId)
+    if (set) {
+      const mine = [...set].filter((subscription) => subscription.playerId === playerId)
+      for (const stale of mine.slice(0, mine.length - this.limits.perPlayer + 1)) stale.close()
+    }
     if (this.open_ >= this.limits.perProcess) {
       throw new RateLimitedError('This server is holding as many event streams as it can', {
         reason: 'too_many_streams',
         scope: 'process',
       })
-    }
-    const set = this.listeners.get(matchId)
-    if (set) {
-      const mine = [...set].filter((subscription) => subscription.playerId === playerId)
-      for (const stale of mine.slice(0, mine.length - this.limits.perPlayer + 1)) stale.close()
     }
     if ((this.listeners.get(matchId)?.size ?? 0) >= this.limits.perMatch) {
       throw new RateLimitedError('This match is holding as many event streams as it can', {

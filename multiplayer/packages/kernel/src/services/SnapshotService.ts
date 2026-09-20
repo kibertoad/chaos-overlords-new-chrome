@@ -5,7 +5,7 @@ import {
   type UploadSnapshotRequest,
 } from '@chaos-overlords/contracts'
 import { safeParse } from 'valibot'
-import type { Snapshot } from '../domain/entities'
+import type { Snapshot, Turn } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError } from '../domain/errors'
 import { authoritativeCandidates } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
@@ -33,14 +33,19 @@ export class SnapshotService {
 
   async upload(principal: Principal, request: UploadSnapshotRequest): Promise<void> {
     const { match, player } = principal
-    if (player.id !== match.hostPlayerId) {
-      throw new ForbiddenError('Only the host uploads snapshots', { reason: 'host_only' })
-    }
     const isBootstrap = request.turn === 0 && match.status === 'running' && match.currentTurn === 1
-    if (!isBootstrap && match.status !== 'desynced') {
-      throw new ConflictError('Full snapshots are only accepted for bootstrap or desync repair', {
-        reason: 'snapshot_not_required',
+    // The bootstrap snapshot is the host's alone: it is unconstrained (nothing has been reported
+    // yet) and it is the match's starting state, which only the host has.
+    if (isBootstrap && player.id !== match.hostPlayerId) {
+      throw new ForbiddenError('Only the host uploads the starting snapshot', {
+        reason: 'host_only',
       })
+    }
+    if (player.status !== 'active' && player.status !== 'takeoverPending') {
+      throw new ForbiddenError('You are no longer part of this match', { reason: 'not_active' })
+    }
+    if (!isBootstrap && match.status !== 'running' && match.status !== 'desynced') {
+      throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
     }
     if (request.turn > match.currentTurn) {
       throw new ConflictError('Cannot snapshot a turn that has not opened', {
@@ -52,37 +57,98 @@ export class SnapshotService {
         reason: 'turn_open',
       })
     }
-    // Bootstrap has no reports to corroborate. A repair does: only a hash the active players
-    // reported most often can become the state every client is asked to adopt.
-    await this.requireCorroboration(match.id, request.turn, request.stateHash)
+    if (isBootstrap) {
+      // Nothing has been reported yet, so there is no consensus a bootstrap could contradict.
+      await this.deps.storage.snapshots.put(await this.snapshotOf(match, player.id, request))
+      await this.publishSeatSummaries(
+        match.id,
+        mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries),
+      )
+      await this.pruneOldSnapshots(match.id)
+      return
+    }
+    const turn = await this.deps.storage.turns.get(match.id, request.turn)
+    if (!turn) throw new NotFoundError('No such turn', { reason: 'unknown_turn' })
+    if (turn.status === 'confirmed') {
+      await this.storeCheckpoint(match, player, turn, request)
+      return
+    }
+    this.requireDesyncedTurn(turn)
+    await this.requireRepairAuthority(match, player, request.turn, request.stateHash)
     // Judged before anything is written: a refusal after the row landed would leave a stored
     // snapshot the caller was told was rejected, with no `snapshot.available` and no verdict.
     const gameSettings = mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries)
-    const snapshot: Snapshot = {
+    await this.deps.storage.snapshots.put(await this.snapshotOf(match, player.id, request))
+    await this.publishSeatSummaries(match.id, gameSettings)
+    await this.pruneOldSnapshots(match.id)
+    await this.publisher.publish(match.id, {
+      type: 'snapshot.available',
+      payload: {
+        turn: request.turn,
+        formatVersion: request.formatVersion,
+        stateHash: request.stateHash,
+        uploadedByPlayerId: player.id,
+      },
+    })
+    await this.turns.settle(match.id, request.turn)
+  }
+
+  /**
+   * A periodic checkpoint of a turn the match has already agreed on.
+   *
+   * Only two kinds of snapshot used to exist, the host's turn-0 bootstrap and desync repairs, so a
+   * client reconnecting at turn 80 replayed eighty turns from the bootstrap — eighty sequential
+   * fetches, each under its own deadline, and eighty full turn resolutions, before the player saw
+   * anything. The design doc talks about matches of hundreds of turns.
+   *
+   * It is not a second way to say what a turn's state was. The turn is CONFIRMED, so the verdict
+   * has already been reached and written on the turn row, and the checkpoint is refused unless it
+   * claims exactly that hash: it can only agree with what every client already computed. The host
+   * writes it because the host is the one client the protocol already asks for bytes, storage stays
+   * bounded by the per-match snapshot pruning, and the rate stays bounded by the upload budget.
+   *
+   * Nothing is announced. A checkpoint changes nothing about the match; it is there for whoever
+   * reconnects next, and `getLatest` is what finds it.
+   */
+  private async storeCheckpoint(
+    match: Principal['match'],
+    player: Principal['player'],
+    turn: Turn,
+    request: UploadSnapshotRequest,
+  ): Promise<void> {
+    if (player.id !== match.hostPlayerId) {
+      throw new ForbiddenError('Only the host uploads checkpoints', { reason: 'host_only' })
+    }
+    if (turn.stateHash !== request.stateHash) {
+      throw new ConflictError('A checkpoint must be the state the turn was confirmed on', {
+        reason: 'uncorroborated_state_hash',
+        candidateStateHashes: turn.stateHash === null ? [] : [turn.stateHash],
+      })
+    }
+    const gameSettings = mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries)
+    await this.deps.storage.snapshots.put(await this.snapshotOf(match, player.id, request))
+    await this.publishSeatSummaries(match.id, gameSettings)
+    await this.pruneOldSnapshots(match.id)
+  }
+
+  private async snapshotOf(
+    match: Principal['match'],
+    uploadedByPlayerId: string,
+    request: UploadSnapshotRequest,
+  ): Promise<Snapshot> {
+    // Re-running the settings schema over the merge is what holds the blob to its cap; it throws
+    // before anything is stored, which is why it is called on both paths before the write.
+    mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries)
+    return {
       matchId: match.id,
       turn: request.turn,
       formatVersion: request.formatVersion,
       protocolVersion: request.protocolVersion ?? 1,
       sessionVersion: request.sessionVersion ?? 1,
       stateHash: request.stateHash,
-      uploadedByPlayerId: player.id,
+      uploadedByPlayerId,
       uploadedAt: this.deps.clock.now(),
       body: request.body,
-    }
-    await this.deps.storage.snapshots.put(snapshot)
-    await this.publishSeatSummaries(match.id, gameSettings)
-    await this.pruneOldSnapshots(match.id)
-    if (match.status === 'desynced') {
-      await this.publisher.publish(match.id, {
-        type: 'snapshot.available',
-        payload: {
-          turn: request.turn,
-          formatVersion: request.formatVersion,
-          stateHash: request.stateHash,
-          uploadedByPlayerId: player.id,
-        },
-      })
-      await this.turns.settle(match.id, request.turn)
     }
   }
 
@@ -103,31 +169,62 @@ export class SnapshotService {
   }
 
   /**
-   * A recovery snapshot may only claim a state hash that the players themselves already computed
-   * in the greatest number.
+   * A repair must name the turn that actually diverged.
    *
-   * This is what keeps the host from arbitrating a disagreement it is a party to. The snapshot for
-   * a desynced turn becomes the hash every other client is told to converge on, so a host free to
-   * name any hash could resolve a deliberate desync in favour of a doctored state. A hash that more
-   * active players reported than any other cannot be minted by one of them. A tie leaves nothing to
-   * count and the host breaks it; turns with no reports at all (a bootstrap snapshot for a
-   * reconnecting client) are unconstrained, because there is no consensus to contradict yet.
+   * "Below `currentTurn` while the match is desynced" was too loose, and the corroboration check
+   * below cannot make up the difference: it counts reports, and a turn with none — the successor a
+   * seal opened before anybody had reported on it — has no candidates to contradict, so it returned
+   * early and let the host store any hash it liked for that turn. `evaluateConsensus` then had an
+   * authoritative hash to judge against and could only confirm or wait, never desync. That is
+   * exactly the "host arbitrates a disagreement it is a party to" case the corroboration rule
+   * exists to prevent; it needs the turn's own status to close it.
    */
-  private async requireCorroboration(
-    matchId: string,
+  private requireDesyncedTurn(turn: Turn): void {
+    if (turn.status === 'desynced') return
+    throw new ConflictError('Only a turn that diverged may be repaired with a snapshot', {
+      reason: 'turn_not_desynced',
+    })
+  }
+
+  /**
+   * Who may post a repair, and which hash they may claim.
+   *
+   * The hash is the hard rule and it binds everyone: the snapshot for a desynced turn becomes the
+   * state every other client is told to converge on, so a client free to name any hash could
+   * resolve a deliberate desync in favour of a doctored one. A hash that more active players
+   * reported than any other cannot be minted by one of them.
+   *
+   * Who may post it follows from that. A hash that is the SOLE most-reported one is already the
+   * majority's, so whoever holds it may post the repair whether or not they are the host. That is
+   * the one case a host-only rule could not serve at all: a host that is itself the odd one out can
+   * never name a majority hash, so no repair existed and the match stayed paused until retention
+   * collected it. A TIE — most of all the 1-1 split of a two-player match — is different: there is
+   * no majority, nothing to count, and no third party to ask, so the host breaks it as before and a
+   * peer may not. Letting either side of a tie impose its state would hand a two-player match to
+   * whoever uploaded first.
+   */
+  private async requireRepairAuthority(
+    match: Principal['match'],
+    player: Principal['player'],
     turn: number,
     stateHash: string,
   ): Promise<void> {
     const [players, reports] = await Promise.all([
-      this.deps.storage.players.listByMatch(matchId),
-      this.deps.storage.turns.listReports(matchId, turn),
+      this.deps.storage.players.listByMatch(match.id),
+      this.deps.storage.turns.listReports(match.id, turn),
     ])
     const candidates = authoritativeCandidates(players, reports)
-    if (candidates.length === 0 || candidates.includes(stateHash)) return
-    throw new ConflictError(
-      'A recovery snapshot must match a state hash the players reported most often',
-      { reason: 'uncorroborated_state_hash', candidateStateHashes: candidates },
-    )
+    if (!candidates.includes(stateHash)) {
+      throw new ConflictError(
+        'A recovery snapshot must match a state hash the players reported most often',
+        { reason: 'uncorroborated_state_hash', candidateStateHashes: candidates },
+      )
+    }
+    if (candidates.length === 1 || player.id === match.hostPlayerId) return
+    throw new ForbiddenError('Only the host may break a tie between reported states', {
+      reason: 'host_only',
+      candidateStateHashes: candidates,
+    })
   }
 
   /**

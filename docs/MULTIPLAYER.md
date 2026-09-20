@@ -322,12 +322,31 @@ default); collecting one deletes its archive from the blob store as well, becaus
 there. The intake also spends a whole-day byte budget across every reporter
 (`BUG_REPORT_DAILY_STATE_MB`, 512 by default): over budget a report is still filed and only its
 journal is dropped, which is what bounds a flood arriving from many addresses at a few a minute
-each. There is deliberately no per-address daily counter — on an unauthenticated route that map is
-itself unbounded memory, and the byte budget plus retention bound the thing worth bounding.
+each. A per-address daily counter sits beside it, spent by the handler only for a report that
+actually carries a journal and only after the contract has accepted the body — a budget charged
+before either would be spent by text-only reports and by bodies the validator refused, so the one
+report somebody attached a journal to would be filed without it. The map that counter lives in is
+bounded by a hard cap on the number of keys any limiter holds, because on an unauthenticated route
+a map keyed by address is otherwise unbounded memory.
 
-Node runs every sweep in its periodic pass and Cloudflare invokes the same ones from cron. Snapshot
-storage is independently bounded to the newest five snapshots per match: normally that is one
-bootstrap plus only the exceptional desync repairs.
+Node runs every sweep in its periodic pass and Cloudflare invokes the same ones from cron. Most
+passes visit only matches something has happened to in the last few minutes — a seal in flight and
+an interrupted verdict are both seconds old — with an unbounded pass on a much longer period and one
+at startup, so the standing population of a public server (matches kept `running` for ninety days
+after everyone walked away, matches parked in `desynced` because nobody ever repaired them) is not
+re-judged every tick for the whole of its retention.
+
+Snapshot storage is independently bounded to the newest five snapshots per match: a bootstrap, a
+checkpoint every ten confirmed turns, and the exceptional desync repairs. A checkpoint is what
+bounds how far a reconnect has to replay; the server takes one only from the host, only for a turn
+already CONFIRMED, and only at exactly the hash that verdict settled on, so it can restate the
+match's own conclusion and nothing else.
+
+**SQLite runs with `synchronous = NORMAL`.** "Published after durable" therefore holds against a
+process crash and not against losing power: a handful of the most recent writes can be lost with
+the machine. It is a deliberate trade — the alternative is an fsync on the path that seals every
+turn — and the sweeps are what pick a match back up afterwards. A deployment that wants the stronger
+guarantee sets `synchronous = FULL` or runs Postgres.
 
 ## Security model
 
@@ -567,14 +586,22 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    events in order, skipping seals already represented by the snapshot, before restoring the current
    draft and resuming the stream. Historical confirmation hashes are checked after each reconstructed
    turn, so a cash or other rules divergence is refused at its first authoritative boundary instead
-   of being shown as a plausible restored state. A token that answers 401 means the membership was
-   revoked — the player left or was kicked.
+   of being shown as a plausible restored state. A restore also picks up a divergence it finds in
+   the history: the `turn.desynced` that announced it is behind the view's sequence and will never
+   be delivered again, so the client adopts a repair somebody has already posted, or posts one
+   itself if it turns out to hold the state the others agreed on.
+
+   A refusal means the membership is gone only when it is the SERVER saying so — an envelope naming
+   `invalid_token`, `missing_token`, `unknown_match`, `unknown_player` or `not_active`. A bare 4xx
+   is what a reverse proxy, a stale tunnel or another service on the port answers, and the client
+   treats those as an outage to wait out rather than a verdict to end a session on.
 8. Drop and reconnect a stream that carries nothing, not even the server's 20-second keepalive, for
    two and a half heartbeats: a half-open connection (a suspended laptop, an expired NAT entry)
    delivers neither an error nor an end, and without that deadline every seal after it is missed
    until the operating system notices. Reconnect attempts count against one outage window that
-   only an arriving event resets; a server that accepts the connection and closes it at once is
-   an outage like any other. Retry transient failures for up to five minutes rather than ending the match immediately. Every call a received fact leads to is idempotent — the reads
+   only an arriving EVENT resets, or a connection that has lasted a heartbeat; a server that
+   accepts the connection, writes its keepalive and closes it at once is an outage like any other,
+   and the keepalive is not allowed to disguise it. Retry transient failures for up to five minutes rather than ending the match immediately. Every call a received fact leads to is idempotent — the reads
    plainly so, and the two writes by definition, since a report restates a hash the server already
    holds and an order document replaces what was held — so a server having a bad moment costs latency
    and nothing else. Draft submissions are whole-document replacements: an unsent older draft is
@@ -690,10 +717,12 @@ dock a player plans against the dock the sealed turn grants.
   interface mutation.
 - The turn timer is a whole-match setting; per-turn extensions are not offered beyond the restart
   that follows a desync pause or the closing of an absence vote.
-- **Desync recovery is decided by a count of reports, and the host breaks ties.** The snapshot the
-  host uploads becomes the state every other client must match, so it may only claim a hash more
-  active players reported than any other. A genuine tie leaves nothing to count and the host breaks
-  it, which is every two-player desync. A host who never uploads leaves the match paused
+- **Desync recovery is decided by a count of reports, and the host breaks ties.** The snapshot a
+  client uploads becomes the state every other client must match, so it may only claim a hash more
+  active players reported than any other, and it must name the turn that actually diverged. Whoever
+  holds the SOLE most-reported hash may post it, host or not — which is what makes a desync the host
+  is itself the outlier of repairable at all. A genuine tie leaves nothing to count and the host
+  breaks it, which is every two-player desync. A match where nobody ever uploads stays paused
   indefinitely, and the escape is the ordinary one: players leave. The match is not abandoned when
   the last active player goes — it stays `running` so anybody can rejoin, with its turn clock
   stopped — and retention collects it once it has been silent for long enough. The counting assumes

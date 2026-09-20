@@ -19,18 +19,26 @@ public sealed partial class ChaosGame
 
     /// <summary>
     /// A successful final submission is returned only after the server has attempted to seal the
-    /// turn. If every seat is ready but no successor arrives, reconnect instead of displaying an
-    /// unbounded wait: reconnecting replays the server's durable event history.
+    /// turn. If every seat is ready and no successor arrives, resynchronise: the fact is in the
+    /// server's durable log, and the stream that should have carried it may be dead without saying
+    /// so.
     /// </summary>
+    /// <remarks>
+    /// This used to END the session, which is the wrong answer to a silence the session can simply
+    /// go and break: the state is rebuilt from the log and the player keeps their city screen and
+    /// their planning copy. A resync that itself fails permanently still fails the session, through
+    /// the pump, which is where every other permanent failure is decided.
+    ///
+    /// The grace is re-armed rather than cleared, so a second silence of the same length asks
+    /// again; the request is cheap and idempotent.
+    /// </remarks>
     private void CheckOnlineResolutionWatchdog()
     {
-        if (_online.ResolutionExpectedSince is not { } since
+        if (_session is not { } session
+            || _online.ResolutionExpectedSince is not { } since
             || DateTimeOffset.UtcNow - since < OnlineResolutionGrace)
             return;
         var turn = _online.PlanningTurn;
-        var details = $"Server acknowledged all {_online.SeatedSeats} ready players for turn "
-            + $"{turn}, but no sealed turn arrived within {OnlineResolutionGrace.TotalSeconds:0} "
-            + "seconds. Reconnect to replay the authoritative event history.";
         _diagnostics?.Write("multiplayer.turn-resolution.timeout",
             new Dictionary<string, string?>
             {
@@ -38,8 +46,9 @@ public sealed partial class ChaosGame
                 ["ready"] = _online.ReadySeats.ToString(CultureInfo.InvariantCulture),
                 ["seated"] = _online.SeatedSeats.ToString(CultureInfo.InvariantCulture),
             });
-        _online.ResolutionExpectedSince = null;
-        ShowOnlineMatchFailure(details);
+        _online.ResolutionExpectedSince = DateTimeOffset.UtcNow;
+        _online.Status = "NO SEALED TURN YET  RESYNCHRONISING WITH THE SERVER";
+        session.RequestResync();
     }
 
     private string OnlineFailureMessage(string reason)

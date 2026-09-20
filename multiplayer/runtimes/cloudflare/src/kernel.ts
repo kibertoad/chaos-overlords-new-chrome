@@ -44,6 +44,39 @@ export function hubFor(env: Env, matchId: string) {
 }
 
 /**
+ * How long a call into a match's Durable Object may take before the caller gives up on it.
+ *
+ * Every one of them is best effort by design — fan-out, arming a deadline, hanging up a revoked
+ * membership — and each has a safety net behind it: the stream's own catch-up drain, the sweep's
+ * `listExpiredOpen`, and the revoked token itself. What they did not have was an end. An object
+ * that is slow to wake, being relocated, or holding a lock kept the REQUEST waiting, so a seal
+ * completed in the database and the submitter saw a timeout.
+ */
+const HUB_CALL_TIMEOUT_MS = 5_000
+
+/**
+ * A best-effort call into a hub: bounded in time, and its failure logged rather than raised.
+ *
+ * The step it belongs to has already committed whatever was durable about it, so the only thing a
+ * failure here can still cost is latency somebody else's retry or the sweep already covers.
+ */
+async function tellHub(
+  env: Env,
+  call: { matchId: string; path: string; body: unknown },
+): Promise<void> {
+  const { matchId, path, body } = call
+  try {
+    await hubFor(env, matchId).fetch(`https://hub${path}`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(HUB_CALL_TIMEOUT_MS),
+    })
+  } catch (error) {
+    workerLogger.warn('could not reach the match hub', { matchId, path, error: String(error) })
+  }
+}
+
+/**
  * Builds the kernel over D1 for one invocation. Fan-out and alarms cross into the match's Durable
  * Object; everything else is plain D1 through the shared SQLite repositories.
  */
@@ -57,28 +90,25 @@ export function buildKernel(
 ): Kernel {
   const storage = createSqliteStorage(drizzle(env.DB, { schema: sqliteSchema }))
   const notifier: EventNotifier = overrides.notifier ?? {
-    notify: async (event) => {
-      await hubFor(env, event.matchId).fetch(`https://hub${HUB_PATHS.notify}`, {
-        method: 'POST',
-        body: JSON.stringify({ matchId: event.matchId }),
-      })
-    },
+    // The whole durable row, not just the match id. The object formats it once and hands the frame
+    // to every stream of the match, so a seal's burst costs it no reads at all; being told only
+    // which match had changed meant each subscriber queried D1 for rows the notification was
+    // already carrying. The event has been persisted before this runs, so the body crossing the
+    // isolate boundary is a copy of a fact, never a substitute for one.
+    notify: async (event) =>
+      tellHub(env, { matchId: event.matchId, path: HUB_PATHS.notify, body: event }),
   }
   const streams: StreamCloser = overrides.streams ?? {
-    close: async (input) => {
-      await hubFor(env, input.matchId).fetch(`https://hub${HUB_PATHS.disconnect}`, {
-        method: 'POST',
-        body: JSON.stringify(input),
-      })
-    },
+    close: async (input) =>
+      tellHub(env, { matchId: input.matchId, path: HUB_PATHS.disconnect, body: input }),
   }
   const scheduler: DeadlineScheduler = overrides.scheduler ?? {
-    schedule: async (input) => {
-      await hubFor(env, input.matchId).fetch(`https://hub${HUB_PATHS.schedule}`, {
-        method: 'POST',
-        body: JSON.stringify({ ...input, dueAt: input.dueAt.toISOString() }),
-      })
-    },
+    schedule: async (input) =>
+      tellHub(env, {
+        matchId: input.matchId,
+        path: HUB_PATHS.schedule,
+        body: { ...input, dueAt: input.dueAt.toISOString() },
+      }),
   }
   const days = (raw: string | undefined, fallback: number): number => {
     const value = Number(raw ?? fallback)

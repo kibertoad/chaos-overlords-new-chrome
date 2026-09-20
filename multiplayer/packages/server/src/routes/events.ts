@@ -1,9 +1,10 @@
 import { INT32_MAX, listEventsContract, streamEventsContract } from '@chaos-overlords/contracts'
 import type { Hono } from 'hono'
+import { answering } from '../http/contractJson'
 import { requireMember } from '../http/guards'
 import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
-import { tryFormatEvent } from '../sse/createSseResponse'
+import { isReadableEvent } from '../sse/createSseResponse'
 
 /** The event log: a paged REST read (the fallback) and the SSE stream over the same log. */
 export function registerEventRoutes(api: Hono<AppEnv>): void {
@@ -19,26 +20,34 @@ export function registerEventRoutes(api: Hono<AppEnv>): void {
     // A row this build's schema refuses is left out rather than answered as a 500. One reshaped
     // payload — which a protocol-only upgrade may leave behind, and AGENTS.md says stored matches
     // survive those — otherwise made every page holding it unreadable for the life of the match.
+    //
+    // The test is a validation, not a format: building the whole SSE frame here only to throw the
+    // string away meant serialising every event of the page an extra time, and `c.json` then
+    // serialised all of them again.
     const readable = events.filter((event) => {
-      if (tryFormatEvent(event) !== null) return true
+      if (isReadableEvent(event)) return true
       container.kernel.deps.logger.warn('skipped an unreadable stored event', {
         matchId: principal.match.id,
         seq: event.seq,
       })
       return false
     })
-    return c.json({ events: readable }, 200)
+    return c.json(answering(c, { events: readable }), 200)
   })
 
   buildHonoRoute(api, streamEventsContract, async (c) => {
     const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
     const afterSeq = resumePoint(c.req.header('last-event-id'), c.req.query('after'))
-    return c.get('container').eventStream.open({
+    const stream = await c.get('container').eventStream.open({
       matchId: principal.match.id,
       playerId: principal.player.id,
       afterSeq,
       signal: c.req.raw.signal,
     })
+    // The stream is a raw `Response`, and Hono does not merge the headers the middleware prepared
+    // into one of those — so the one response an operator most wants to correlate, a stream that
+    // misbehaved for an hour, was the only one without an `X-Request-Id`.
+    return c.newResponse(stream.body, stream)
   })
 }
 

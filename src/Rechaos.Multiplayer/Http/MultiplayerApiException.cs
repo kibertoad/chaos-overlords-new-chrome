@@ -17,13 +17,15 @@ public sealed class MultiplayerApiException : Exception
         ErrorCode code,
         string message,
         string? reason,
-        string? requestId)
+        string? requestId,
+        bool fromEnvelope)
         : base(message)
     {
         Status = status;
         Code = code;
         Reason = reason;
         RequestId = requestId;
+        FromEnvelope = fromEnvelope;
     }
 
     public HttpStatusCode Status { get; }
@@ -34,6 +36,19 @@ public sealed class MultiplayerApiException : Exception
 
     /// <summary>The server's request id, so a player can quote it from a log.</summary>
     public string? RequestId { get; }
+
+    /// <summary>
+    /// Whether the body was this server's own error envelope, rather than a status stood in for one.
+    /// </summary>
+    /// <remarks>
+    /// The distinction decides whether a refusal is permanent. Everything between the player and the
+    /// coordination server can answer a 4xx of its own: a reverse proxy that serves 404 for every
+    /// path while the backend restarts, a tunnel that answers 403 once its session lapses, a captive
+    /// portal, another service that took the port. None of those say anything about the match, and a
+    /// session that read them as the server's verdict ended over an outage it would have ridden out.
+    /// An envelope, by contrast, came from the server's own error handler and means what it says.
+    /// </remarks>
+    public bool FromEnvelope { get; }
 
     /// <summary>
     /// Reads the envelope out of a failed response.
@@ -68,7 +83,8 @@ public sealed class MultiplayerApiException : Exception
                     error.Code,
                     error.Message,
                     error.Details?.Reason,
-                    error.RequestId ?? headerRequestId);
+                    error.RequestId ?? headerRequestId,
+                    fromEnvelope: true);
             }
         }
         catch (MultiplayerProtocolException)
@@ -81,7 +97,8 @@ public sealed class MultiplayerApiException : Exception
             ErrorCode.Internal,
             $"HTTP {(int)response.StatusCode}",
             reason: null,
-            requestId: headerRequestId);
+            requestId: headerRequestId,
+            fromEnvelope: false);
     }
 
     private static async Task<string> ReadBodyAsync(
@@ -102,14 +119,24 @@ public sealed class MultiplayerApiException : Exception
     /// Whether reconnecting the event stream after this refusal could ever succeed.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Everything at 500 and above is the server having a bad moment. Below that, only a refusal
     /// about the membership itself is permanent: a timeout and a rate limit describe this attempt,
     /// and backing off is exactly the right response to both. Treating 429 as fatal would make the
     /// recovery path destroy the thing it recovers, because the reconnect loop is what spends the
     /// budget in the first place.
+    /// </para>
+    /// <para>
+    /// A 4xx that did not come with an envelope is transient, whatever its number. It was not this
+    /// server's verdict: <see cref="FromResponseAsync"/> deliberately builds one of these out of a
+    /// proxy's HTML page or an empty body, so a reverse proxy answering 404 or 403 for every path
+    /// while the backend restarts used to end a session the client could simply have waited out.
+    /// This is the rule the recovery file already applies to the same question.
+    /// </para>
     /// </remarks>
     public bool EndsTheStream =>
-        (int)Status < 500
+        FromEnvelope
+        && (int)Status < 500
         && Status is not (HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests)
         // 425 Too Early has no name in HttpStatusCode. A proxy that replays requests can still
         // send it, and it says "try again", not "never".

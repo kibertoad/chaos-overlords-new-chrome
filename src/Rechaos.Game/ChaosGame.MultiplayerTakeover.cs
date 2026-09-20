@@ -84,9 +84,11 @@ public sealed partial class ChaosGame
         };
         if (choice is { } selected)
         {
+            // Still fire-and-forget — nothing about the turn waits on the round trip — but a vote
+            // that fails now answers on the notice queue rather than only in a diagnostics line.
             Forget(
                 _session.VoteOnTakeoverAsync(vote.PlayerId, selected),
-                "multiplayer.takeover-vote.failed");
+                "multiplayer.takeover-vote.faulted");
             _message = selected == TakeoverChoice.Wait
                 ? "VOTED TO WAIT FOR THE PLAYER"
                 : "VOTED TO USE COMPUTER CONTROL";

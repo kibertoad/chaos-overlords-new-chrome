@@ -185,7 +185,7 @@ public sealed partial class ChaosGame
                 // a new turn either way — and only one of them cost them the orders they were
                 // still giving.
                 var cutOff = _online.Stage == MultiplayerStage.Playing;
-                if (AdoptOnlineState(resolved.State))
+                if (AdoptOnlineState(resolved.State, restored: resolved.Planning))
                 {
                     _message = cutOff
                         ? resolved.IncludedOwnOrders
@@ -196,8 +196,21 @@ public sealed partial class ChaosGame
                     ShowTurnReportsOrCity();
                 }
                 return;
+            case MultiplayerNotice.TakeoverVoteFailed failedVote:
+                // The vote is still open and the buttons are still there; the player is told the
+                // answer did not reach the server so they can give it again.
+                _message = "THE VOTE DID NOT REACH THE SERVER  TRY AGAIN";
+                _online.Status = _message;
+                _diagnostics?.Write("multiplayer.takeover-vote.failed",
+                    new Dictionary<string, string?>
+                    {
+                        ["player"] = failedVote.PlayerId,
+                        ["choice"] = failedVote.Choice.ToString(),
+                        ["reason"] = failedVote.Reason,
+                    });
+                return;
             case MultiplayerNotice.Resynced resynced:
-                if (AdoptOnlineState(resynced.State))
+                if (AdoptOnlineState(resynced.State, restored: resynced.Planning))
                 {
                     _message = string.Empty;
                     _screens.Show(ClientScreen.City);
@@ -206,25 +219,27 @@ public sealed partial class ChaosGame
             case MultiplayerNotice.Desynced desynced:
                 _online.Stage = MultiplayerStage.Desynced;
                 CloseOnlinePlanning();
-                _online.TurnSyncError = desynced.IsHostRepair
+                // A pause is not a silence. The resolution watchdog is waiting for a seal that
+                // cannot come until the repair lands, and a legitimately slow repair on the
+                // previous turn used to trip it.
+                _online.ResolutionExpectedSince = null;
+                _online.TurnSyncError = desynced.IsRepairing
                     ? $"DESYNC TURN {desynced.Turn}  AUTOMATIC REPAIR IN PROGRESS"
-                    : $"DESYNC TURN {desynced.Turn}  WAITING FOR HOST REPAIR";
-                _message = desynced.IsHostRepair
+                    : $"DESYNC TURN {desynced.Turn}  WAITING FOR A REPAIR";
+                _message = desynced.IsRepairing
                     ? $"DESYNC ON TURN {desynced.Turn}  SENDING A SNAPSHOT"
-                    : $"DESYNC ON TURN {desynced.Turn}  WAITING FOR THE HOST";
+                    : $"DESYNC ON TURN {desynced.Turn}  WAITING FOR ANOTHER PLAYER";
                 _diagnostics?.Write("multiplayer.desync", new Dictionary<string, string?>
                 {
                     ["turn"] = desynced.Turn.ToString(CultureInfo.InvariantCulture),
                     ["details"] = desynced.Details,
-                    ["hostRepair"] = desynced.IsHostRepair.ToString(),
+                    ["repairing"] = desynced.IsRepairing.ToString(),
                 });
-                if (desynced.IsHost && !desynced.IsHostRepair)
-                {
-                    ShowOnlineMatchFailure(
-                        $"DESYNC ON TURN {desynced.Turn}. THIS HOST'S STATE IS NOT AN "
-                        + $"ALLOWED REPAIR CANDIDATE. {desynced.Details}. RECONNECT FROM "
-                        + "PREVIOUS SESSIONS TO REBUILD FROM THE AUTHORITATIVE HISTORY.");
-                }
+                // A client that cannot post the repair WAITS. It used to be a terminal failure for
+                // a host whose own state was not a candidate — the one case where the host is the
+                // odd one out — and that was the exact moment the match needed the session alive:
+                // the repair comes from whoever holds the majority's state, and the pause lifts for
+                // everyone when it lands.
                 return;
             case MultiplayerNotice.MatchUpdated updated:
                 _online.Match = updated.Match;
@@ -276,19 +291,22 @@ public sealed partial class ChaosGame
             case MultiplayerNotice.OrdersRefused refused:
                 // Not fatal. The turn may have sealed while the player was still planning it, which
                 // costs them that turn and nothing else.
-                _message = refused.Reason.ToUpperInvariant();
-                _online.TurnSyncError = refused.Reason.ToUpperInvariant();
-                if (refused.Turn == _online.PlanningTurn)
-                {
-                    _online.ReadySubmissionPending = false;
-                    _online.ResolutionExpectedSince = null;
-                }
                 _diagnostics?.Write("multiplayer.orders.refused",
                     new Dictionary<string, string?>
                     {
                         ["turn"] = refused.Turn.ToString(CultureInfo.InvariantCulture),
                         ["reason"] = refused.Reason,
                     });
+                // Only about the turn the player is on. The outbox and the pump are independent
+                // lanes, so a `409 turn_not_open` for turn N routinely arrives AFTER the seal of
+                // turn N has already opened N+1 — and "TURN SYNC ERROR" then sat over a perfectly
+                // healthy new turn until the next draft was accepted. `OrdersAccepted` already
+                // draws this line.
+                if (refused.Turn != _online.PlanningTurn) return;
+                _message = refused.Reason.ToUpperInvariant();
+                _online.TurnSyncError = refused.Reason.ToUpperInvariant();
+                _online.ReadySubmissionPending = false;
+                _online.ResolutionExpectedSince = null;
                 if (_online.Stage == MultiplayerStage.WaitingForSeal)
                     _online.Status = refused.Reason.ToUpperInvariant();
                 return;

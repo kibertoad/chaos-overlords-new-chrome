@@ -13,6 +13,7 @@ import {
 } from '@chaos-overlords/contracts'
 import { NotFoundError } from '@chaos-overlords/kernel'
 import type { Hono } from 'hono'
+import { answering } from '../http/contractJson'
 import { requireMember } from '../http/guards'
 import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
@@ -32,22 +33,29 @@ export function registerPublicLobbyRoutes(api: Hono<AppEnv>): void {
         reason: 'listing_disabled',
       })
     }
-    return c.json({ matches: await kernel.query.listPublicLobbies(50) }, 200)
+    return c.json(answering(c, { matches: await kernel.query.listPublicLobbies(50) }), 200)
   })
 
   buildHonoRoute(api, createMatchContract, async (c) => {
     const membership = await c.get('container').kernel.lobby.createMatch(c.req.valid('json'))
-    return c.json(membership, 201)
+    return c.json(answering(c, membership), 201)
   })
 
+  // Both join doors verify a password, so both hand the kernel the caller the attempt belongs to:
+  // its per-caller budget in front of PBKDF2 is what keeps one stranger from spending a match's.
+  // `rateLimited` put the key there; see `AppEnv`.
   buildHonoRoute(api, joinMatchContract, async (c) => {
-    const membership = await c.get('container').kernel.lobby.join(c.req.valid('json'))
-    return c.json(membership, 201)
+    const membership = await c
+      .get('container')
+      .kernel.lobby.join(c.req.valid('json'), c.get('caller'))
+    return c.json(answering(c, membership), 201)
   })
 
   buildHonoRoute(api, joinRunningMatchContract, async (c) => {
-    const membership = await c.get('container').kernel.lobby.joinRunning(c.req.valid('json'))
-    return c.json(membership, 201)
+    const membership = await c
+      .get('container')
+      .kernel.lobby.joinRunning(c.req.valid('json'), c.get('caller'))
+    return c.json(answering(c, membership), 201)
   })
 }
 
@@ -57,7 +65,11 @@ export function registerMemberLobbyRoutes(api: Hono<AppEnv>): void {
     const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
     const view = await c.get('container').kernel.query.view(principal.match)
     return c.json(
-      { match: view, joinCode: principal.match.joinCode, you: principal.player.id },
+      answering(c, {
+        match: view,
+        joinCode: principal.match.joinCode,
+        you: principal.player.id,
+      }),
       200,
     )
   })

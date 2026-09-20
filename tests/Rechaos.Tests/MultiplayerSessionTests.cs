@@ -312,11 +312,11 @@ public sealed partial class MultiplayerSessionTests
         await WaitFor<MultiplayerNotice.MatchUpdated>(session);
 
         Assert.True(session.IsHost);
-        var ours = MatchStateHasher.ComputeSha256(session.Bootstrap.State);
-        server.Events.Write(Frame(9, "turn.desynced", Desync(ours)));
+        var ours = await ResolveTurnOneAsync(session, server, seq: 9);
+        server.Events.Write(Frame(10, "turn.desynced", Desync(ours)));
         var desynced = await WaitFor<MultiplayerNotice.Desynced>(session);
 
-        Assert.True(desynced.IsHostRepair);
+        Assert.True(desynced.IsRepairing);
         await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the repair upload");
     }
 
@@ -589,13 +589,13 @@ public sealed partial class MultiplayerSessionTests
         var (session, server, http) = Running();
         using var _ = http;
         await using var __ = session;
-        var ours = MatchStateHasher.ComputeSha256(session.Bootstrap.State);
         await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
+        var ours = await ResolveTurnOneAsync(session, server);
 
-        server.Events.Write(Frame(8, "turn.desynced", Desync(ours)));
+        server.Events.Write(Frame(9, "turn.desynced", Desync(ours)));
         var desynced = await WaitFor<MultiplayerNotice.Desynced>(session);
 
-        Assert.True(desynced.IsHostRepair);
+        Assert.True(desynced.IsRepairing);
         await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 2, "the upload");
         var upload = Assert.Single(server.BodiesSentTo(HttpMethod.Post, "/snapshots"),
             body => body.Contains("\"turn\":1", StringComparison.Ordinal)
@@ -616,11 +616,12 @@ public sealed partial class MultiplayerSessionTests
         using var _ = http;
         await using var __ = session;
         await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
+        await ResolveTurnOneAsync(session, server);
 
-        server.Events.Write(Frame(8, "turn.desynced", Desync(new string('7', 64))));
+        server.Events.Write(Frame(9, "turn.desynced", Desync(new string('7', 64))));
         var desynced = await WaitFor<MultiplayerNotice.Desynced>(session);
 
-        Assert.False(desynced.IsHostRepair);
+        Assert.False(desynced.IsRepairing);
         Assert.Equal(1, server.CallsTo(HttpMethod.Post, "/snapshots"));
     }
 
@@ -637,8 +638,8 @@ public sealed partial class MultiplayerSessionTests
         var (session, server, http) = Running(ownPlayerId: "p2");
         using var _ = http;
         await using var __ = session;
-        server.Answer(HttpMethod.Get, "/snapshots/3", new SnapshotView(
-            3,
+        server.Answer(HttpMethod.Get, "/snapshots/1", new SnapshotView(
+            1,
             NativeSaveSerializer.CurrentFormatVersion + 1,
             MultiplayerProtocolVersion.Current,
             MultiplayerSessionVersion.Current,
@@ -646,8 +647,12 @@ public sealed partial class MultiplayerSessionTests
             "p1",
             "2026-09-10T12:00:00.000Z",
             "QUJD"));
+        await ResolveTurnOneAsync(session, server);
+        // A repair is only fetched for a divergence that is open, so the pause comes first.
+        server.Events.Write(Frame(9, "turn.desynced", Desync(new string('a', 64))));
+        await WaitFor<MultiplayerNotice.Desynced>(session);
 
-        server.Events.Write(Frame(8, "snapshot.available", """{"turn":3,"stateHash":"aa"}"""));
+        server.Events.Write(Frame(10, "snapshot.available", """{"turn":1,"stateHash":"aa"}"""));
         var failed = await WaitFor<MultiplayerNotice.Failed>(session);
 
         Assert.Contains("save format", failed.Reason, StringComparison.OrdinalIgnoreCase);
@@ -660,8 +665,8 @@ public sealed partial class MultiplayerSessionTests
         var (session, server, http) = Running(ownPlayerId: "p2");
         using var _ = http;
         await using var __ = session;
-        server.Answer(HttpMethod.Get, "/snapshots/3", new SnapshotView(
-            3,
+        server.Answer(HttpMethod.Get, "/snapshots/1", new SnapshotView(
+            1,
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
             MultiplayerSessionVersion.Current,
@@ -669,8 +674,11 @@ public sealed partial class MultiplayerSessionTests
             "p1",
             "2026-09-10T12:00:00.000Z",
             "bm90IGEgc2F2ZQ=="));
+        await ResolveTurnOneAsync(session, server);
+        server.Events.Write(Frame(9, "turn.desynced", Desync(new string('a', 64))));
+        await WaitFor<MultiplayerNotice.Desynced>(session);
 
-        server.Events.Write(Frame(8, "snapshot.available", """{"turn":3,"stateHash":"aa"}"""));
+        server.Events.Write(Frame(10, "snapshot.available", """{"turn":1,"stateHash":"aa"}"""));
         var failed = await WaitFor<MultiplayerNotice.Failed>(session);
 
         Assert.Contains("this build can read", failed.Reason, StringComparison.OrdinalIgnoreCase);

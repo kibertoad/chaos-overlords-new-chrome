@@ -81,7 +81,12 @@ public sealed class SpeculativeTurn
                 nameof(slot), slot, "That seat is not at this table.");
         }
         var player = new PlayerId(slot);
-        var replay = new MatchReplayRecorder(MatchStateClone.Of(authoritative, definitions));
+        // Unverified: the copy is made here, handed to one owner and thrown away when the turn
+        // seals, so there is nothing else holding a reference that could mutate it behind the
+        // recorder's back — which is the only thing the per-step re-hash checks for. It halves what
+        // a click costs on the render thread. The journal itself stays, because a bug report filed
+        // from an online match attaches the turn being planned.
+        var replay = MatchReplayRecorder.Unverified(MatchStateClone.Of(authoritative, definitions));
         while (replay.State.Coordinator.ActivePlayer is { } active && active != player)
         {
             replay.FinishCommand(active);

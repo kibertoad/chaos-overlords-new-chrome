@@ -20,6 +20,23 @@ export type SealTrigger = 'ready' | 'deadline'
 export const FIRST_TURN = 1
 
 /**
+ * How recently a match must have been touched for the ordinary sweep pass to visit it.
+ *
+ * A seal in flight is seconds old and a verdict interrupted after its compare-and-swap is too, so
+ * this window is generous by orders of magnitude for both. What it excludes is the standing
+ * population of a public server: matches deliberately kept `running` for ninety days after everyone
+ * walked away, and matches parked in `desynced` because the host never uploaded a repair. Those
+ * used to be re-judged, and joined against, on every single tick forever.
+ */
+const SWEEP_WINDOW_MS = 5 * 60_000
+
+/**
+ * Passes between two unbounded scans, which is what still finds work left behind while the process
+ * was down. A fresh service does one immediately, so a restart never has to wait for it.
+ */
+const FULL_SCAN_EVERY = 20
+
+/**
  * The simultaneous-turn barrier. Players submit orders privately; the turn seals when every
  * active player is ready or the deadline passes; the sealed set becomes readable and the next
  * turn opens at once. Clients resolve the turn locally and report the resulting state hash, and
@@ -31,6 +48,9 @@ export const FIRST_TURN = 1
  * what lets `sweep` finish a seal whose process died halfway through instead of stranding the match.
  */
 export class TurnService {
+  /** Passes since the last unbounded scan; see `sweep`. Starts due so the first pass is a full one. */
+  private passesSinceFullScan = FULL_SCAN_EVERY
+
   constructor(
     private readonly deps: KernelDeps,
     private readonly publisher: EventPublisher,
@@ -53,7 +73,7 @@ export class TurnService {
       // endpoint is a replacement, not an append, so an identical retry is an acknowledgement of
       // that durable row even after currentTurn advances. A different document remains a stale
       // write and is refused.
-      const persisted = await this.deps.storage.turns.getOrders(match.id, number, player.id)
+      const persisted = await this.deps.storage.turns.getOrderSummary(match.id, number, player.id)
       if (persisted?.ordersHash === ordersHash && persisted.ready === request.ready) {
         return { turn: number, orders: request.orders, ready: request.ready, ordersHash }
       }
@@ -63,7 +83,7 @@ export class TurnService {
       })
     }
     await this.restorePendingPlayer(player.id, match.id)
-    const previous = await this.deps.storage.turns.getOrders(match.id, number, player.id)
+    const previous = await this.deps.storage.turns.getOrderSummary(match.id, number, player.id)
     const accepted = await this.deps.storage.turns.submitOrders(match.id, number, player.id, {
       orders: request.orders,
       ordersHash,
@@ -73,10 +93,14 @@ export class TurnService {
     if (!accepted) {
       throw new ConflictError('The turn is no longer accepting orders', { reason: 'turn_not_open' })
     }
-    if (previous?.ready !== request.ready || (request.ready && previous?.ready === true)) {
-      // Re-publishing the same ready value is deliberate. If a process stopped after storing the
-      // row but before publishing its first event, the idempotent HTTP retry repairs the event too.
-      // Consumers treat readiness as a set, so the duplicate is harmless when the first did land.
+    if (previous?.ready !== request.ready) {
+      // Only on a CHANGE of readiness. Re-publishing the same value used to be deliberate, to
+      // repair an event lost between the row write and its publish, but a member may submit at the
+      // member rate limit and the client sends a whole-document replacement per queued command: one
+      // misbehaving client could grow a match's durable log by hundreds of thousands of rows a day
+      // and wake every subscriber of the match for each. The window it covered is closed from the
+      // other end instead — the match view carries `readyPlayerIds`, and every client reconciles
+      // its readiness from the view when it reconnects.
       await this.publisher.publish(match.id, {
         type: 'turn.readiness',
         payload: { turn: number, playerId: player.id, ready: request.ready },
@@ -169,8 +193,12 @@ export class TurnService {
         entries.push({ slot, ordersHash: row.ordersHash })
       }
       const orderSetHash = await hashOrderSet(entries)
-      const frozen = await this.deps.storage.turns.transition(match.id, number, [turn.status], {
-        status: turn.status,
+      // Conditional on the set not being frozen already, NOT on the status: the status stays
+      // `sealed` for the whole window this branch runs in, and the sweep deliberately runs
+      // `completeSeal` against a seal in flight. Two callers with a departure between their two
+      // computations would otherwise each write a different digest and each announce it, and the
+      // client that fetched the set after the overwrite failed its digest check.
+      const frozen = await this.deps.storage.turns.freezeSeal(match.id, number, {
         orderSetHash,
         sealedSlots,
       })
@@ -210,14 +238,16 @@ export class TurnService {
     })
   }
 
-  /** Whether the log carries an event of `type`. Only read on repair paths, where the log is short. */
-  private async hasEvent(matchId: string, type: string, turn?: number): Promise<boolean> {
-    const matches = (event: { type: string; payload: unknown }): boolean =>
-      event.type === type &&
-      (turn === undefined ||
-        (typeof event.payload === 'object' &&
-          event.payload !== null &&
-          (event.payload as { turn?: unknown }).turn === turn))
+  /**
+   * Whether the log carries an event of `type`.
+   *
+   * Only the interrupted-start repair asks this, and only about turn 1, so the log it pages is a
+   * handful of rows. The verdict used to ask it about `turn.desynced` on every sweep of a paused
+   * match, where the log is the whole match; that answer lives on the turn row now
+   * (`claimDesyncAnnouncement`), and this must not grow another steady-state caller.
+   */
+  private async hasEvent(matchId: string, type: string): Promise<boolean> {
+    const matches = (event: { type: string }): boolean => event.type === type
     let after = 0
     for (;;) {
       const page = await this.deps.storage.events.listAfter(matchId, after, 200)
@@ -255,6 +285,7 @@ export class TurnService {
         orderSetHash: null,
         sealedSlots: null,
         stateHash: null,
+        desyncedAt: null,
       },
       players.map((player) => player.id),
     )
@@ -271,7 +302,19 @@ export class TurnService {
       })
     }
     if (deadlineAt) {
-      await this.deps.scheduler.schedule({ matchId: match.id, turn: number, dueAt: deadlineAt })
+      try {
+        await this.deps.scheduler.schedule({ matchId: match.id, turn: number, dueAt: deadlineAt })
+      } catch (error) {
+        // The deadline is durable on the turn row and `listExpiredOpen` is the safety net behind
+        // every timer, so a scheduler that cannot be reached costs at most one sweep interval of
+        // lateness. It used to cost the submitter a 500 on a seal that had already completed,
+        // which left them retrying a request the server had in fact finished.
+        this.deps.logger.warn('could not arm a turn deadline; the sweep will seal it', {
+          matchId: match.id,
+          turn: number,
+          error: String(error),
+        })
+      }
     }
     return created
   }
@@ -282,7 +325,15 @@ export class TurnService {
    * call this on an interval (Node) or a cron (Cloudflare).
    */
   async sweep(limit = 100): Promise<{ sealed: number; repaired: number }> {
-    const expired = await this.deps.storage.turns.listExpiredOpen(this.deps.clock.now(), limit)
+    const now = this.deps.clock.now()
+    // Every pass but one in `FULL_SCAN_EVERY` looks only at matches something happened to
+    // recently; see `SWEEP_WINDOW_MS`. The counter starts at the period, so a process that has
+    // just started scans everything once before settling into the cheap cadence.
+    this.passesSinceFullScan += 1
+    const full = this.passesSinceFullScan >= FULL_SCAN_EVERY
+    if (full) this.passesSinceFullScan = 0
+    const touchedSince = full ? null : new Date(now.getTime() - SWEEP_WINDOW_MS)
+    const expired = await this.deps.storage.turns.listExpiredOpen(now, limit)
     let sealed = 0
     for (const { matchId, number } of expired) {
       // One match that throws must not abort the pass. `listExpiredOpen` is ordered oldest first,
@@ -296,7 +347,10 @@ export class TurnService {
     // opening, so this also runs against healthy matches. `completeSeal` changes nothing there, and
     // only a call that actually had work left to do is reported.
     let repaired = 0
-    for (const { matchId, number } of await this.deps.storage.turns.listStalledSeals(limit)) {
+    for (const { matchId, number } of await this.deps.storage.turns.listStalledSeals(
+      limit,
+      touchedSince,
+    )) {
       const finished = await this.guard(matchId, number, async () => {
         const match = await this.deps.storage.matches.get(matchId)
         if (!match) return false
@@ -309,7 +363,7 @@ export class TurnService {
     }
     // A verdict cut short after its compare-and-swap leaves the match `desynced` with nothing
     // unsettled, which no other path revisits.
-    for (const matchId of await this.deps.storage.matches.listDesynced(limit)) {
+    for (const matchId of await this.deps.storage.matches.listDesynced(limit, touchedSince)) {
       await this.guard(matchId, 0, async () => {
         await this.reevaluate(matchId)
         return false
@@ -355,14 +409,23 @@ export class TurnService {
       throw new ConflictError('That turn is already confirmed', { reason: 'turn_confirmed' })
     }
     await this.restorePendingPlayer(player.id, match.id)
-    await this.deps.storage.turns.upsertReport({
-      matchId: match.id,
-      turn: number,
-      playerId: player.id,
-      stateHash: request.stateHash,
-      finished: request.finished,
-      reportedAt: this.deps.clock.now(),
-    })
+    // Conditional on the turn still awaiting a verdict, because its status was read a statement
+    // ago: a report that lost the race with a `settle` confirming the turn would otherwise land
+    // behind the verdict it could not have changed, against the rule that the evidence a verdict
+    // was taken on is immutable. The client treats the refusal as success, as it already does for
+    // the check above.
+    if (
+      !(await this.deps.storage.turns.upsertReport({
+        matchId: match.id,
+        turn: number,
+        playerId: player.id,
+        stateHash: request.stateHash,
+        finished: request.finished,
+        reportedAt: this.deps.clock.now(),
+      }))
+    ) {
+      throw new ConflictError('That turn is already confirmed', { reason: 'turn_confirmed' })
+    }
     // The order set is the turn increment the server retains. Publishing these few derived counters
     // with the host's report keeps late-join selection current without uploading another full save.
     if (player.id === match.hostPlayerId && request.seatSummaries !== undefined) {
@@ -475,6 +538,14 @@ export class TurnService {
     ) {
       return
     }
+    // A prompt that opened between the check above and this write would have cleared a deadline
+    // that did not exist yet, so the clock would be left running behind a modal nobody can dismiss.
+    // Asking again after the write closes that interleaving: whichever of the two ran last, the
+    // deadline ends up cleared.
+    if (await this.deps.storage.takeovers.hasOpenPrompts(matchId)) {
+      await this.clearOpenDeadline(matchId)
+      return
+    }
     await this.publisher.publish(matchId, {
       type: 'turn.deadlineExtended',
       payload: { turn: match.currentTurn, deadlineAt: deadlineAt.toISOString() },
@@ -518,7 +589,9 @@ export class TurnService {
     const [players, reports, snapshot] = await Promise.all([
       this.deps.storage.players.listByMatch(matchId),
       this.deps.storage.turns.listReports(matchId, number),
-      this.deps.storage.snapshots.get(matchId, number),
+      // The summary, not the row: the verdict reads one hash, and `get` carries up to a megabyte
+      // of base64 with it, on every unsettled turn of every paused match on every sweep.
+      this.deps.storage.snapshots.getSummary(matchId, number),
     ])
     const verdict = evaluateConsensus(players, reports, snapshot?.stateHash ?? null)
     const now = this.deps.clock.now()
@@ -570,7 +643,10 @@ export class TurnService {
         }))
       if (!won) return
       this.deps.logger.warn('turn desynced', { matchId, turn: number })
-      if (!(await this.hasEvent(matchId, 'turn.desynced', number))) {
+      // The announcement is claimed on the turn row, the way the seal's digest is, so exactly one
+      // caller publishes it. Asking the event log instead paged every event the match had ever
+      // logged, on every sweep, for the whole of a pause that can last the retention window.
+      if (await this.deps.storage.turns.claimDesyncAnnouncement(matchId, number, now)) {
         await this.publisher.publish(matchId, {
           type: 'turn.desynced',
           payload: {

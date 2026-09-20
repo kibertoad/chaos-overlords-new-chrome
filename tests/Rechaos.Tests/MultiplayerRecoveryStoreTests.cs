@@ -42,6 +42,7 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         var deleted = Recovery(CleanExit: true, Completed: false) with { MatchId = "deleted" };
         var unreachable = Recovery(CleanExit: true, Completed: false) with { MatchId = "offline" };
         var proxied = Recovery(CleanExit: true, Completed: false) with { MatchId = "proxied" };
+        var slept = Recovery(CleanExit: true, Completed: false) with { MatchId = "slept" };
         server.Answer(
             HttpMethod.Get, "/matches/deleted",
             new ErrorEnvelope(new ErrorEnvelopeError(
@@ -51,9 +52,19 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         server.Answer(HttpMethod.Get, "/matches/offline", null, System.Net.HttpStatusCode.BadGateway);
         // A proxy's own 404: the right status, and no envelope behind it.
         server.Answer(HttpMethod.Get, "/matches/proxied", null, System.Net.HttpStatusCode.NotFound);
+        // The server's own envelope, and still not a retirement: `not_active` says the seat is not
+        // the one it is taking writes from right now — voted onto computer control while the player
+        // slept, or left — and `rejoin` turns away nobody but the kicked, whose token is revoked
+        // instead. Counting it here deleted a seat the player could have walked back into.
+        server.Answer(
+            HttpMethod.Get, "/matches/slept",
+            new ErrorEnvelope(new ErrorEnvelopeError(
+                ErrorCode.Forbidden, "You are no longer part of this match",
+                new ErrorEnvelopeErrorDetails("not_active"), RequestId: null)),
+            System.Net.HttpStatusCode.Forbidden);
 
         var unavailable = await MultiplayerRecoveryReconciliation.FindUnavailableAsync(
-            http, [deleted, unreachable, proxied], TestContext.Current.CancellationToken);
+            http, [deleted, unreachable, proxied, slept], TestContext.Current.CancellationToken);
 
         Assert.Equal([deleted], unavailable);
     }
@@ -318,6 +329,43 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         File.WriteAllText(Path(), "not-json");
 
         Assert.Null(MultiplayerRecoveryStore.Load(Path()));
+    }
+
+    /// <summary>Bytes that are not a history are moved out of the way of the next save.</summary>
+    [Fact]
+    public void CorruptRecoveryIsMovedAside()
+    {
+        File.WriteAllText(Path(), "not-json");
+
+        Assert.Empty(MultiplayerRecoveryStore.LoadAll(Path()));
+
+        Assert.False(File.Exists(Path()));
+        Assert.Equal("not-json", File.ReadAllText(Path() + ".corrupt"));
+    }
+
+    /// <summary>
+    /// A file that could not be READ is left exactly where it is.
+    /// </summary>
+    /// <remarks>
+    /// A backup tool or a virus scanner holding the file open for a moment raises the same
+    /// <see cref="IOException"/> a shredded file would, and says nothing whatever about what the
+    /// file holds. The catch-all that moved any unreadable file aside renamed a history of live
+    /// seats to <c>.corrupt</c> over a lock that was gone a second later, and the next save then
+    /// wrote a fresh file over the only record of them.
+    /// </remarks>
+    [Fact]
+    public void AHistoryHeldOpenByAnotherProcessIsNotTreatedAsCorrupt()
+    {
+        var expected = Recovery(CleanExit: false, Completed: false);
+        Assert.True(MultiplayerRecoveryStore.TrySave(Path(), expected));
+
+        using (new FileStream(Path(), FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            Assert.Empty(MultiplayerRecoveryStore.LoadAll(Path()));
+        }
+
+        Assert.False(File.Exists(Path() + ".corrupt"));
+        Assert.Equal([expected], MultiplayerRecoveryStore.LoadAll(Path()));
     }
 
     public void Dispose() => _directory.Delete(recursive: true);

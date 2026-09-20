@@ -15,6 +15,21 @@ public sealed partial class MultiplayerMatchSession
     private const int EventHistoryPageSize = 200;
 
     /// <summary>
+    /// Sealed sets fetched ahead of the turn that needs them, while earlier turns are being applied.
+    /// </summary>
+    /// <remarks>
+    /// Replay is sequential by nature — turn N has to be applied before N+1 — but FETCHING is not:
+    /// a sealed set is immutable, served with <c>Cache-Control: immutable</c>, and its contents do
+    /// not depend on anything the replay does. Every set used to be fetched only when its turn came
+    /// round, so a reconnect that had to replay ten turns spent ten round trips end to end with the
+    /// player watching. Asking for the next few while the current one resolves overlaps the network
+    /// with the work.
+    /// </remarks>
+    private const int SealedSetPrefetchDepth = 4;
+
+    private readonly Dictionary<int, Task<SealedOrdersView>> _prefetchedSealedSets = [];
+
+    /// <summary>
     /// Every turn reconstructed from history whose confirmation the log has not carried, in turn
     /// order, with the hash this client reached, so that the reports a crash interrupted are made
     /// after all.
@@ -57,6 +72,10 @@ public sealed partial class MultiplayerMatchSession
         // next to everyone else's. A snapshot older than the local state has nothing to add.
         if (snapshot is not null && snapshot.Turn + 1 >= _replay.State.Coordinator.Turn)
             AdoptResumeSnapshot(snapshot, view.CurrentTurn);
+        // A host that crashed before its bootstrap upload completed never tried again, because the
+        // flag that drives it is only set for a session that is NOT restoring — and the server then
+        // answered `late_join_not_ready` to every late join for the life of the match.
+        _uploadInitialSnapshot |= IsHost && snapshot is null && view.CurrentTurn == 1;
 
         await ReplayEventHistoryAsync(replayFromSeq, view.LastEventSeq, cancellationToken)
             .ConfigureAwait(false);
@@ -113,6 +132,12 @@ public sealed partial class MultiplayerMatchSession
         _notices.Enqueue(new MultiplayerNotice.Resumed(view, state, submission, turn));
         foreach (var vote in _takeoverVotes.Values.OrderBy(item => item.PlayerId, StringComparer.Ordinal))
             PublishTakeoverVote(vote);
+        // Last, on a state that is now caught up: a pause the history carried is picked back up
+        // here — adopt a repair somebody posted while this client was away, or post one if this
+        // client turns out to be holding the state the others agreed on. Until this existed, every
+        // restart during a desync simply rejoined the wait.
+        await ResolvePendingDesyncAsync(lookForAPostedRepair: true, cancellationToken)
+            .ConfigureAwait(false);
         return true;
     }
 
@@ -192,6 +217,31 @@ public sealed partial class MultiplayerMatchSession
     private async Task ReplayEventHistoryAsync(int fromSeq, int throughSeq, CancellationToken cancellationToken)
     {
         var after = fromSeq;
+        try
+        {
+            await ReplayPagesAsync(after, throughSeq, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            // Whatever is still in flight belongs to a replay that is over, one way or the other.
+            foreach (var pending in _prefetchedSealedSets.Values) Forget(pending);
+            _prefetchedSealedSets.Clear();
+        }
+    }
+
+    /// <summary>Swallows the result of a prefetch nothing is going to read.</summary>
+    private static void Forget(Task task) =>
+        _ = task.ContinueWith(
+            static finished => _ = finished.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default);
+
+    private async Task ReplayPagesAsync(
+        int after,
+        int throughSeq,
+        CancellationToken cancellationToken)
+    {
         while (after < throughSeq)
         {
             var page = await CallAsync(
@@ -203,6 +253,9 @@ public sealed partial class MultiplayerMatchSession
                 throw new MultiplayerProtocolException(
                     $"the event history ended at sequence {after}, before sequence {throughSeq}");
             }
+            // The page names every turn this replay is about to apply, so the fetches for the first
+            // few can start now rather than one at a time as each turn comes round.
+            PrefetchSealedSets(page, throughSeq, cancellationToken);
 
             foreach (var @event in page.Events)
             {
@@ -224,6 +277,41 @@ public sealed partial class MultiplayerMatchSession
                 if (after == throughSeq) return;
             }
         }
+    }
+
+    /// <summary>
+    /// Starts the fetches for the next few sealed sets this page will need.
+    /// </summary>
+    /// <remarks>
+    /// Bounded by <see cref="SealedSetPrefetchDepth"/>, because a match of hundreds of turns would
+    /// otherwise open hundreds of requests at once and hold every one of their responses in memory
+    /// — which is the problem this is meant to avoid, not a bigger version of it.
+    /// </remarks>
+    private void PrefetchSealedSets(EventPage page, int throughSeq, CancellationToken cancellationToken)
+    {
+        var started = 0;
+        foreach (var @event in page.Events)
+        {
+            if (@event.Seq > throughSeq || started >= SealedSetPrefetchDepth) return;
+            if (@event is not TurnSealedEvent sealedTurn) continue;
+            var turn = sealedTurn.Payload.Turn;
+            if (turn < _replay.State.Coordinator.Turn || _prefetchedSealedSets.ContainsKey(turn))
+                continue;
+            _prefetchedSealedSets[turn] = CallAsync(
+                token => _match.SealedOrdersAsync(turn, token), _pumpLane, cancellationToken);
+            started++;
+        }
+    }
+
+    /// <summary>
+    /// The sealed set for a turn, from the prefetch when it was started and from the server
+    /// otherwise.
+    /// </summary>
+    private Task<SealedOrdersView> SealedSetAsync(int turn, CancellationToken cancellationToken)
+    {
+        if (_prefetchedSealedSets.Remove(turn, out var prefetched)) return prefetched;
+        return CallAsync(
+            token => _match.SealedOrdersAsync(turn, token), _pumpLane, cancellationToken);
     }
 
     private async Task ApplyHistoricalEventAsync(
@@ -273,6 +361,22 @@ public sealed partial class MultiplayerMatchSession
             case TurnConfirmedEvent confirmed:
                 VerifyHistoricalConfirmation(confirmed);
                 _unreportedSeals.RemoveAll(seal => seal.Turn == confirmed.Payload.Turn);
+                // A turn the log went on to confirm is no longer a pause anybody is waiting on.
+                if (_pendingDesync?.Turn == confirmed.Payload.Turn) _pendingDesync = null;
+                return;
+            // A divergence and its repair are FACTS about the match, not merely live notifications,
+            // and the history is the only place a client that was not connected can learn them. A
+            // restart during a pause replayed straight past both: nothing re-delivered the
+            // `turn.desynced` behind the view's sequence, so the client re-reported the same hash
+            // and waited for a repair that nobody was going to post. It is carried out of the
+            // replay here and acted on once the state it is about has been rebuilt.
+            case TurnDesyncedEvent desynced:
+                _pendingDesync = new PendingDesync(
+                    desynced.Payload.Turn,
+                    desynced.Payload.CandidateStateHashes,
+                    string.Join(", ", desynced.Payload.Reports
+                        .OrderBy(report => report.PlayerId, StringComparer.Ordinal)
+                        .Select(report => $"{report.PlayerId}:{ShortHash(report.StateHash)}")));
                 return;
         }
     }

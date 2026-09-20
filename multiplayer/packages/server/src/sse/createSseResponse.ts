@@ -5,10 +5,23 @@ import {
 } from '@chaos-overlords/contracts'
 import type { PersistedEvent } from '@chaos-overlords/kernel'
 import { validateSync } from '@toad-contracts/core'
+import type { EventFrame } from './MatchLog'
 
 export interface EventStreamSource {
-  /** Persisted events after `afterSeq`, ascending, at most one page. */
-  listAfter(afterSeq: number): Promise<PersistedEvent[]>
+  /**
+   * Formatted frames after `afterSeq`, ascending, at most one page.
+   *
+   * Frames rather than rows because the validation and the serialisation of one event are the same
+   * work for every reader of it; see `MatchLog`.
+   */
+  page(afterSeq: number, force?: boolean): Promise<EventFrame[]>
+  /**
+   * Whether a stream at `lastSeq` is known to have everything.
+   *
+   * Only ever used to skip a periodic catch-up read that would have found nothing, so an
+   * implementation that cannot tell must answer false.
+   */
+  caughtUp(lastSeq: number): boolean
   /**
    * Register a wake-up for new events; returns the unsubscribe.
    *
@@ -26,6 +39,27 @@ export interface SseOptions {
   /** Told the sequence of a stored event this build cannot validate, so it can be logged. */
   onUnreadable?: (seq: number) => void
 }
+
+/**
+ * Heartbeats between two catch-up reads a caught-up stream cannot talk its way out of.
+ *
+ * `caughtUp` answers from what THIS process has been told, which is everything on a single Node
+ * process and inside a Durable Object, and not necessarily everything when several processes share
+ * one database. This bounds how long such a stream can be behind without knowing it, at the cost of
+ * one query per stream every hundred seconds or so instead of one every twenty.
+ */
+const CATCH_UP_EVERY_HEARTBEATS = 5
+
+/**
+ * Heartbeats a consumer may leave the drain parked on backpressure before the stream is dropped.
+ *
+ * `enqueue` never refuses, so a connection that has stopped being read — a suspended phone, a
+ * half-open TCP connection a NAT forgot — is invisible from this side: the drain parks correctly,
+ * but the slot, its heartbeat timer and its catch-up reads persist until the OS retransmit timer
+ * gives up, which on Linux is fifteen to thirty minutes. Dropping it costs the client nothing it
+ * cannot recover: it reconnects and resumes from its `Last-Event-ID`.
+ */
+const STALLED_HEARTBEATS_BEFORE_DROP = 3
 
 const encoder = new TextEncoder()
 
@@ -79,29 +113,36 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
             if (closed || (controller.desiredSize ?? 1) > 0) return resolve()
             demand = resolve
           })
-        const drain = async (): Promise<void> => {
+        const drain = async (force: boolean): Promise<void> => {
+          let first = force
           while (!closed) {
             await awaitDemand()
             if (closed) return
-            const events = await source.listAfter(lastSeq)
-            if (events.length === 0) return
-            for (const event of events) {
+            // Only the first page of a forced drain has to reach the log — and it does, because
+            // `force` bypasses the source's memo rather than only its "nothing further" answer.
+            // Once it has, the cursor is beyond whatever this process did not know about.
+            const frames = await source.page(lastSeq, first)
+            first = false
+            if (frames.length === 0) return
+            for (const frame of frames) {
               // A stored row this build cannot validate is skipped, not fatal. Failing the drain
               // errored the stream, and the client reconnected with the same `Last-Event-ID`, read
               // the same row and failed again, for good — and a payload reshaped by a server
               // upgrade is a protocol change, which AGENTS.md says stored matches survive.
-              const frame = tryFormatEvent(event)
-              if (frame === null) {
-                onUnreadable?.(event.seq)
+              if (frame.text === null) {
+                onUnreadable?.(frame.seq)
               } else {
-                send(frame)
+                send(frame.text)
               }
-              lastSeq = Math.max(lastSeq, event.seq)
+              lastSeq = Math.max(lastSeq, frame.seq)
             }
           }
         }
-        const wake = () => {
+        /** True when a drain must reach the log rather than trust what this process was told. */
+        let forceNext = false
+        const wake = (force = false) => {
           if (closed) return
+          forceNext ||= force
           if (draining) {
             wakeAgain = true
             return
@@ -109,7 +150,9 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
           draining = (async () => {
             do {
               wakeAgain = false
-              await drain()
+              const forced = forceNext
+              forceNext = false
+              await drain(forced)
             } while (wakeAgain && !closed)
           })()
             .catch((error) => {
@@ -137,14 +180,32 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
         // A thunk, not `shutdown` itself: the real one is assigned a few lines below and the
         // placeholder above it only flips `closed`, so passing the reference here would hand the
         // hub a close that leaves the heartbeat running and the subscription in place.
-        const unsubscribe = source.subscribe(wake, () => {
-          shutdown()
-        })
+        const unsubscribe = source.subscribe(
+          () => wake(),
+          () => {
+            shutdown()
+          },
+        )
+        let beats = 0
+        let stalledBeats = 0
         const heartbeat = setInterval(() => {
+          // A consumer that is not reading is not a consumer. The queue is full, so this frame
+          // would only buffer; after a few beats of that the connection is gone in every way that
+          // matters and the stream is dropped rather than held; see the constant above.
+          if ((controller.desiredSize ?? 1) <= 0) {
+            stalledBeats += 1
+            if (stalledBeats >= STALLED_HEARTBEATS_BEFORE_DROP) shutdown()
+            return
+          }
+          stalledBeats = 0
           send(`: ${SSE_HEARTBEAT_COMMENT}\n\n`)
           // Fan-out is deliberately best-effort. Re-read the durable log even when the socket is
-          // healthy so a failed or process-local notification cannot strand this client forever.
-          wake()
+          // healthy so a failed or process-local notification cannot strand this client forever —
+          // but only when this process is not already certain there is nothing to read, because an
+          // idle server was otherwise issuing one query per stream per heartbeat to find nothing.
+          beats += 1
+          const overdue = beats % CATCH_UP_EVERY_HEARTBEATS === 0
+          if (overdue || !source.caughtUp(lastSeq)) wake(overdue)
         }, options.heartbeatMs)
         shutdown = () => {
           if (closed) return
@@ -162,7 +223,8 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
         }
         options.signal.addEventListener('abort', shutdown, { once: true })
         send(': connected\n\n')
-        wake()
+        // The opening catch-up always reaches the log: a fresh stream has been told nothing.
+        wake(true)
       },
       // The consumer read enough to want more: let a drain parked on backpressure continue.
       pull() {
@@ -210,5 +272,21 @@ export function tryFormatEvent(event: PersistedEvent): string | null {
     return formatEvent(event)
   } catch {
     return null
+  }
+}
+
+/**
+ * Whether a stored row fits this build's schema, without building a frame from it.
+ *
+ * The REST read of the log uses this to leave an unreadable row out of its page. Asking
+ * `tryFormatEvent` there meant serialising every event of the page once to throw the string away
+ * and once more inside `c.json`.
+ */
+export function isReadableEvent(event: PersistedEvent): boolean {
+  try {
+    validateSync(matchEventSchema, event)
+    return true
+  } catch {
+    return false
   }
 }

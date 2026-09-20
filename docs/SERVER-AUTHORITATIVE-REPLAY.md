@@ -48,13 +48,14 @@ costs; the phased plan at the end says in what order.
 The lockstep model in [MULTIPLAYER.md](MULTIPLAYER.md#security-model) is honest about what it does
 not defend against. Three of its gaps are the reasons for this design.
 
-- **The snapshot store is dumb.** A desync is repaired by the host uploading a base64 native
-  snapshot that the server never decodes. The server checks only that the hash the host claims is
-  one the players reported most often. That is a count of clients, not a check of the state: a
-  host with two of three seats reports a doctored hash twice and uploads the doctored state as the
-  new truth, and the honest third player is told to converge. Bootstrap snapshots for reconnecting
-  clients are not corroborated at all. A megabyte of opaque bytes per repair is also the largest
-  thing the server stores.
+- **The snapshot store is dumb.** A desync is repaired by a client uploading a base64 native
+  snapshot that the server never decodes. The server checks only that the hash the uploader claims
+  is the one the players reported most often, and that the uploader holds it. That is a count of
+  clients, not a check of the state: one person with two of three seats reports a doctored hash
+  twice and uploads the doctored state as the new truth, and the honest third player is told to
+  converge. Bootstrap snapshots and the periodic checkpoints a reconnecting client starts from are
+  accepted from the host on the strength of a hash alone. A megabyte of opaque bytes per snapshot
+  is also the largest thing the server stores.
 - **Nothing enforces that a stored match is valid.** The server stores the sealed order sets, which
   are the only thing needed to reconstruct a match, but it cannot read them. It cannot tell whether
   a sealed set was ever applied, whether the hash a client reports is the hash those orders produce,
@@ -69,19 +70,23 @@ means one named client disagrees with the rules, a snapshot is something the ser
 than accepts, and the stored match is valid by construction because every row in it was derived by
 replaying validated orders through the rules.
 
-The code review in [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md) reaches the same gaps from the
-implementation side. Its highest finding,
-[R1](MULTIPLAYER-REVIEW.md#r1-desync-repair-only-works-on-a-live-host-inside-a-narrow-window), is
-that a desync can be repaired only by a host that is online, saw the live event and has not yet
-applied the following turn; its client finding
+The code review in [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md) reached the same gaps from the
+implementation side and its findings have since been addressed on the current model, which is worth
+reading beside this design because it shows how far a server that cannot produce state can be
+pushed. [R1](MULTIPLAYER-REVIEW.md#r1-desync-repair-only-works-on-a-live-host-inside-a-narrow-window)
+made repair possible by whoever holds the sole most-reported hash, and required a repair to name a
+turn that is actually `desynced`;
 [C1](MULTIPLAYER-REVIEW.md#c1-a-reconnect-replays-the-whole-match-from-turn-0-one-round-trip-per-turn)
-is that a reconnect at turn 80 replays 80 turns because only turn 0 was ever snapshotted; and
+added a host-uploaded checkpoint every ten confirmed turns, accepted only at the hash the verdict
+already settled on; and
 [S3](MULTIPLAYER-REVIEW.md#s3-a-paused-match-is-re-judged-every-sweep-with-a-log-scan-and-a-megabyte-read-each-time)
-is the sweep re-reading a megabyte snapshot to judge a paused match. All three are properties of a
-server that cannot produce state. With a checkpoint per resolved turn written by the server itself,
-there is no host to wait for, every reconnect starts from the previous turn, and a verdict is a
-comparison of two stored hashes. The review's own recommended fixes for those findings remain the
-right interim work on the current model; this design is what makes them unnecessary.
+put the divergence and a snapshot summary on the turn row so a verdict no longer reads a megabyte.
+Each of those is the best answer available when the only source of state is a client: a repair is
+still a client's bytes admitted on a count of reports, a checkpoint is still a client's bytes
+admitted on a hash, and a reconnect still replays up to nine turns. With a checkpoint per resolved
+turn written by the server itself, there is no uploader to trust, no count to take, every reconnect
+starts from the previous turn, and a verdict is a comparison of two stored hashes. The review's
+fixes are the right shape for the current model; this design is what makes them unnecessary.
 
 What it deliberately does not close is stated in
 [What this does and does not defend against](#what-this-does-and-does-not-defend-against): a modified
@@ -257,8 +262,10 @@ turn_reports       unchanged: what each client claims, judged against resolved_s
 turn_verdicts      NEW: (match_id, turn, slot, op_index, accepted, validation_code)
 match_states       NEW: (match_id, turn, state_hash, format_version, body BLOB, resolved_at)
                    body is the server's native snapshot at the Command boundary after `turn` sealed;
-                   turn 0 is the bootstrap. Kept for the newest N turns (N = 5 as today) plus every
-                   turn a client is still reporting on; older ones are re-derivable from turn_orders.
+                   turn 0 is the bootstrap. Kept for the newest N turns (N = 5, the current per-match
+                   snapshot bound) plus every turn a client is still reporting on; older ones are
+                   re-derivable from turn_orders. The host-uploaded ten-turn checkpoints the current
+                   model takes are subsumed: every turn is a checkpoint and none is uploaded.
 ```
 
 Two properties follow. The stored match is valid by construction: every row of `match_states` was
@@ -411,8 +418,8 @@ Replacing the paragraph of the same name in MULTIPLAYER.md for the new model.
 
 **Closed:**
 
-- **A doctored state can no longer become the truth.** No client sends state. The host uploads
-  nothing. Snapshot corroboration, its tie-break and the multi-seat collusion it was vulnerable to
+- **A doctored state can no longer become the truth.** No client sends state. Nobody uploads
+  anything. Snapshot corroboration, its tie-break and the multi-seat collusion it was vulnerable to
   are gone, because there is nothing to corroborate.
 - **A stored match is valid.** Every checkpoint is derived by the rules from validated inputs; an
   invalid state cannot be written because nothing but the resolver writes one.
