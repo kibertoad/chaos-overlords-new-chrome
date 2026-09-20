@@ -5,7 +5,7 @@ import {
   type UploadSnapshotRequest,
 } from '@chaos-overlords/contracts'
 import { safeParse } from 'valibot'
-import type { Snapshot } from '../domain/entities'
+import type { Snapshot, Turn } from '../domain/entities'
 import { ConflictError, ForbiddenError, NotFoundError } from '../domain/errors'
 import { authoritativeCandidates } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
@@ -44,10 +44,8 @@ export class SnapshotService {
     if (player.status !== 'active' && player.status !== 'takeoverPending') {
       throw new ForbiddenError('You are no longer part of this match', { reason: 'not_active' })
     }
-    if (!isBootstrap && match.status !== 'desynced') {
-      throw new ConflictError('Full snapshots are only accepted for bootstrap or desync repair', {
-        reason: 'snapshot_not_required',
-      })
+    if (!isBootstrap && match.status !== 'running' && match.status !== 'desynced') {
+      throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
     }
     if (request.turn > match.currentTurn) {
       throw new ConflictError('Cannot snapshot a turn that has not opened', {
@@ -69,7 +67,13 @@ export class SnapshotService {
       await this.pruneOldSnapshots(match.id)
       return
     }
-    await this.requireDesyncedTurn(match.id, request.turn)
+    const turn = await this.deps.storage.turns.get(match.id, request.turn)
+    if (!turn) throw new NotFoundError('No such turn', { reason: 'unknown_turn' })
+    if (turn.status === 'confirmed') {
+      await this.storeCheckpoint(match, player, turn, request)
+      return
+    }
+    this.requireDesyncedTurn(turn)
     await this.requireRepairAuthority(match, player, request.turn, request.stateHash)
     // Judged before anything is written: a refusal after the row landed would leave a stored
     // snapshot the caller was told was rejected, with no `snapshot.available` and no verdict.
@@ -87,6 +91,44 @@ export class SnapshotService {
       },
     })
     await this.turns.settle(match.id, request.turn)
+  }
+
+  /**
+   * A periodic checkpoint of a turn the match has already agreed on.
+   *
+   * Only two kinds of snapshot used to exist, the host's turn-0 bootstrap and desync repairs, so a
+   * client reconnecting at turn 80 replayed eighty turns from the bootstrap — eighty sequential
+   * fetches, each under its own deadline, and eighty full turn resolutions, before the player saw
+   * anything. The design doc talks about matches of hundreds of turns.
+   *
+   * It is not a second way to say what a turn's state was. The turn is CONFIRMED, so the verdict
+   * has already been reached and written on the turn row, and the checkpoint is refused unless it
+   * claims exactly that hash: it can only agree with what every client already computed. The host
+   * writes it because the host is the one client the protocol already asks for bytes, storage stays
+   * bounded by the per-match snapshot pruning, and the rate stays bounded by the upload budget.
+   *
+   * Nothing is announced. A checkpoint changes nothing about the match; it is there for whoever
+   * reconnects next, and `getLatest` is what finds it.
+   */
+  private async storeCheckpoint(
+    match: Principal['match'],
+    player: Principal['player'],
+    turn: Turn,
+    request: UploadSnapshotRequest,
+  ): Promise<void> {
+    if (player.id !== match.hostPlayerId) {
+      throw new ForbiddenError('Only the host uploads checkpoints', { reason: 'host_only' })
+    }
+    if (turn.stateHash !== request.stateHash) {
+      throw new ConflictError('A checkpoint must be the state the turn was confirmed on', {
+        reason: 'uncorroborated_state_hash',
+        candidateStateHashes: turn.stateHash === null ? [] : [turn.stateHash],
+      })
+    }
+    const gameSettings = mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries)
+    await this.deps.storage.snapshots.put(await this.snapshotOf(match, player.id, request))
+    await this.publishSeatSummaries(match.id, gameSettings)
+    await this.pruneOldSnapshots(match.id)
   }
 
   private async snapshotOf(
@@ -137,9 +179,8 @@ export class SnapshotService {
    * exactly the "host arbitrates a disagreement it is a party to" case the corroboration rule
    * exists to prevent; it needs the turn's own status to close it.
    */
-  private async requireDesyncedTurn(matchId: string, turn: number): Promise<void> {
-    const row = await this.deps.storage.turns.get(matchId, turn)
-    if (row?.status === 'desynced') return
+  private requireDesyncedTurn(turn: Turn): void {
+    if (turn.status === 'desynced') return
     throw new ConflictError('Only a turn that diverged may be repaired with a snapshot', {
       reason: 'turn_not_desynced',
     })

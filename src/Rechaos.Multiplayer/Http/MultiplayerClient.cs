@@ -38,8 +38,25 @@ public sealed record MultiplayerClientOptions(Uri BaseAddress, TimeSpan? Request
     public const long MaximumResponseBytes = 8L * 1024 * 1024;
 
     /// <summary>A client bounded by <see cref="MaximumResponseBytes"/>, for a caller that owns one.</summary>
+    /// <summary>
+    /// How long a pooled connection may be reused before it is replaced.
+    /// </summary>
+    /// <remarks>
+    /// The default is forever, which is right against socket exhaustion and wrong against a central
+    /// service behind an edge whose addresses rotate: a pooled connection to an address that has
+    /// gone away is not refused, it simply never answers, so every call through it costs a full
+    /// request deadline until the operating system resets the socket. Recycling on a few minutes
+    /// means DNS is re-read that often and a dead address is dropped with the connection that used
+    /// it. Connections already carrying a request — an event stream, most of all — are not cut off;
+    /// the lifetime governs reuse, not the connection in hand.
+    /// </remarks>
+    public static readonly TimeSpan PooledConnectionLifetime = TimeSpan.FromMinutes(5);
+
     public static HttpClient CreateHttpClient() =>
-        new() { MaxResponseContentBufferSize = MaximumResponseBytes };
+        new(new SocketsHttpHandler { PooledConnectionLifetime = PooledConnectionLifetime })
+        {
+            MaxResponseContentBufferSize = MaximumResponseBytes,
+        };
 
     internal TimeSpan EffectiveTimeout => RequestTimeout ?? DefaultRequestTimeout;
 
@@ -159,6 +176,7 @@ public sealed class MultiplayerClient
         using var response = await SendWithDeadlineAsync(
             request, HttpCompletionOption.ResponseContentRead, timeout, cancellationToken)
             .ConfigureAwait(false);
+        _handshake.ObserveServerDate(response.Headers.Date);
         if (!response.IsSuccessStatusCode)
         {
             throw await MultiplayerApiException
@@ -244,6 +262,7 @@ public sealed class MultiplayerClient
         {
             throw new MultiplayerTimeoutException(_options.EffectiveTimeout, exception);
         }
+        _handshake.ObserveServerDate(response.Headers.Date);
         if (response.IsSuccessStatusCode) return response;
         using (response)
         {
@@ -251,6 +270,24 @@ public sealed class MultiplayerClient
                 .FromResponseAsync(response, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    /// <summary>How far the server's clock is ahead of this machine's; see `HandshakeState`.</summary>
+    public TimeSpan ServerTimeOffset => _handshake.ServerOffset;
+
+    /// <summary>
+    /// Forgets the handshake, so the next call establishes the protocol again.
+    /// </summary>
+    /// <remarks>
+    /// The handshake used to be taken once and never revisited, which is right for a session that
+    /// begins and ends inside one server version and wrong across a redeploy: the stream reconnects
+    /// (a 5xx or a reset during a restart is transient), and every call after it is made under a
+    /// contract the other side may no longer speak. That surfaces as a schema refusal on some later
+    /// request, an unreadable event, or — worst — a tolerant read of a field whose meaning changed,
+    /// where "Update your game to connect to this server" was the truth all along. The stream asks
+    /// for this whenever it opens a fresh connection, which is exactly when a redeploy would have
+    /// happened underneath it.
+    /// </remarks>
+    public void ForgetHandshake() => _handshake.Complete = false;
 
     /// <summary>
     /// The absolute URL of a route, under whatever path the server is mounted at.
@@ -322,10 +359,57 @@ public sealed class MultiplayerClient
     }
 }
 
+/// <summary>
+/// What the client has established about the server it is talking to, shared by every handle.
+/// </summary>
+/// <remarks>
+/// Both facts here are about the server rather than about a seat, which is why they outlive the
+/// token-bound handles that are derived from this client: the protocol both sides speak, and how
+/// far the server's clock is from this machine's.
+/// </remarks>
 internal sealed class HandshakeState
 {
+    private long _offsetTicks;
+
     internal SemaphoreSlim Gate { get; } = new(1, 1);
     internal volatile bool Complete;
+
+    /// <summary>
+    /// How far the server's clock is ahead of this one, smoothed over the responses seen.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every deadline the protocol carries is an instant on the SERVER's clock, and the countdown a
+    /// player watches is that instant minus the time on theirs. A machine thirty seconds fast on a
+    /// thirty-second timer shows the turn expiring before the server seals it; one that is slow is
+    /// sealed on while the screen still shows time to plan. Neither is a protocol failure and
+    /// neither is rare — an unsynchronised clock is an ordinary thing for a desktop to have.
+    /// </para>
+    /// <para>
+    /// The server is still the authority on when a turn ends. This only makes the courtesy
+    /// countdown honest, so it is deliberately cheap: the `Date` header every HTTP response
+    /// already carries, smoothed so that one slow response cannot jerk the clock on screen.
+    /// </para>
+    /// </remarks>
+    internal TimeSpan ServerOffset => TimeSpan.FromTicks(Interlocked.Read(ref _offsetTicks));
+
+    /// <summary>
+    /// Folds one response's <c>Date</c> into the offset.
+    /// </summary>
+    /// <remarks>
+    /// The header has one-second resolution and the response spent some of the round trip in
+    /// flight, so a single reading is worth little; the exponential average over many is worth
+    /// enough for a countdown. The first reading is taken whole, because starting from zero would
+    /// mean the first turn of a session is shown on an uncorrected clock.
+    /// </remarks>
+    internal void ObserveServerDate(DateTimeOffset? served)
+    {
+        if (served is not { } instant) return;
+        var sample = (instant - DateTimeOffset.UtcNow).Ticks;
+        var previous = Interlocked.Read(ref _offsetTicks);
+        var blended = previous == 0 ? sample : previous + ((sample - previous) / 4);
+        Interlocked.Exchange(ref _offsetTicks, blended);
+    }
 }
 
 /// <summary>The absence of a body, for the calls that answer 204.</summary>

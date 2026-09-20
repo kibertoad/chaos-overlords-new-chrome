@@ -127,4 +127,10 @@ public sealed class MatchHandle
     /// <summary>Opens one connection's worth of the event stream. The caller disposes it.</summary>
     internal Task<HttpResponseMessage> OpenStreamAsync(int afterSeq, CancellationToken cancellationToken) =>
         _client.OpenStreamAsync(ApiRoutes.Stream(MatchId), afterSeq, cancellationToken);
+
+    /// <summary>How far the server's clock is ahead of this machine's; see `HandshakeState`.</summary>
+    public TimeSpan ServerTimeOffset => _client.ServerTimeOffset;
+
+    /// <summary>Forgets the handshake, so the next call establishes the protocol again.</summary>
+    internal void ForgetHandshake() => _client.ForgetHandshake();
 }

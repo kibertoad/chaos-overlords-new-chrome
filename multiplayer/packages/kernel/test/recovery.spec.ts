@@ -113,7 +113,7 @@ describe('desync verdicts, snapshots and recovery', () => {
     expect((await h.storage.snapshots.getLatest(hostP.match.id))?.turn).toBe(7)
   })
 
-  it('does not store a confirmed-turn full snapshot', async () => {
+  it('stores a confirmed-turn checkpoint, and refuses one that rewrites the verdict', async () => {
     const { host, guest } = await h.startedMatch()
     await h.submit(await h.principalOf(host.token), 1, 1, true)
     await h.submit(await h.principalOf(guest.token), 1, 2, true)
@@ -126,18 +126,29 @@ describe('desync verdicts, snapshots and recovery', () => {
       finished: false,
     })
 
+    // The checkpoint a reconnect replays from: accepted at the hash the verdict settled on...
+    await h.kernel.snapshots.upload(await h.principalOf(host.token), {
+      turn: 1,
+      formatVersion: 23,
+      stateHash: HASH_A,
+      body: 'AUTOSAVE',
+      seatSummaries: [],
+    })
+    expect(await h.kernel.snapshots.latest(host.match.id)).toMatchObject({
+      turn: 1,
+      body: 'AUTOSAVE',
+    })
+
+    // ...and refused at any other, because a settled turn's state is not the host's to restate.
     await expect(
       h.kernel.snapshots.upload(await h.principalOf(host.token), {
         turn: 1,
         formatVersion: 23,
-        stateHash: HASH_A,
-        body: 'AUTOSAVE',
+        stateHash: HASH_B,
+        body: 'DOCTORED',
         seatSummaries: [],
       }),
-    ).rejects.toMatchObject({ details: { reason: 'snapshot_not_required' } })
-    await expect(h.kernel.snapshots.latest(host.match.id)).rejects.toMatchObject({
-      details: { reason: 'no_snapshot' },
-    })
+    ).rejects.toMatchObject({ details: { reason: 'uncorroborated_state_hash' } })
   })
 
   /**
@@ -460,7 +471,8 @@ describe('desync verdicts, snapshots and recovery', () => {
       finished: false,
     })
     expect(h.storage.statusOf(host.match.id)).toBe('running')
-    // Confirmed now, so no longer repairable even though it is below `currentTurn`.
+    // Confirmed now, so a snapshot for it can only be a checkpoint, and a checkpoint may only
+    // agree with the verdict.
     await expect(
       h.kernel.snapshots.upload(await h.principalOf(host.token), {
         turn: 1,
@@ -469,7 +481,7 @@ describe('desync verdicts, snapshots and recovery', () => {
         body: 'BBBB',
         seatSummaries: [],
       }),
-    ).rejects.toMatchObject({ details: { reason: 'snapshot_not_required' } })
+    ).rejects.toMatchObject({ details: { reason: 'uncorroborated_state_hash' } })
   })
 
   /**

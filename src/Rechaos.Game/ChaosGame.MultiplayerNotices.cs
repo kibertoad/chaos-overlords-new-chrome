@@ -185,7 +185,7 @@ public sealed partial class ChaosGame
                 // a new turn either way — and only one of them cost them the orders they were
                 // still giving.
                 var cutOff = _online.Stage == MultiplayerStage.Playing;
-                if (AdoptOnlineState(resolved.State))
+                if (AdoptOnlineState(resolved.State, restored: resolved.Planning))
                 {
                     _message = cutOff
                         ? resolved.IncludedOwnOrders
@@ -196,8 +196,21 @@ public sealed partial class ChaosGame
                     ShowTurnReportsOrCity();
                 }
                 return;
+            case MultiplayerNotice.TakeoverVoteFailed failedVote:
+                // The vote is still open and the buttons are still there; the player is told the
+                // answer did not reach the server so they can give it again.
+                _message = "THE VOTE DID NOT REACH THE SERVER  TRY AGAIN";
+                _online.Status = _message;
+                _diagnostics?.Write("multiplayer.takeover-vote.failed",
+                    new Dictionary<string, string?>
+                    {
+                        ["player"] = failedVote.PlayerId,
+                        ["choice"] = failedVote.Choice.ToString(),
+                        ["reason"] = failedVote.Reason,
+                    });
+                return;
             case MultiplayerNotice.Resynced resynced:
-                if (AdoptOnlineState(resynced.State))
+                if (AdoptOnlineState(resynced.State, restored: resynced.Planning))
                 {
                     _message = string.Empty;
                     _screens.Show(ClientScreen.City);
@@ -278,19 +291,22 @@ public sealed partial class ChaosGame
             case MultiplayerNotice.OrdersRefused refused:
                 // Not fatal. The turn may have sealed while the player was still planning it, which
                 // costs them that turn and nothing else.
-                _message = refused.Reason.ToUpperInvariant();
-                _online.TurnSyncError = refused.Reason.ToUpperInvariant();
-                if (refused.Turn == _online.PlanningTurn)
-                {
-                    _online.ReadySubmissionPending = false;
-                    _online.ResolutionExpectedSince = null;
-                }
                 _diagnostics?.Write("multiplayer.orders.refused",
                     new Dictionary<string, string?>
                     {
                         ["turn"] = refused.Turn.ToString(CultureInfo.InvariantCulture),
                         ["reason"] = refused.Reason,
                     });
+                // Only about the turn the player is on. The outbox and the pump are independent
+                // lanes, so a `409 turn_not_open` for turn N routinely arrives AFTER the seal of
+                // turn N has already opened N+1 — and "TURN SYNC ERROR" then sat over a perfectly
+                // healthy new turn until the next draft was accepted. `OrdersAccepted` already
+                // draws this line.
+                if (refused.Turn != _online.PlanningTurn) return;
+                _message = refused.Reason.ToUpperInvariant();
+                _online.TurnSyncError = refused.Reason.ToUpperInvariant();
+                _online.ReadySubmissionPending = false;
+                _online.ResolutionExpectedSince = null;
                 if (_online.Stage == MultiplayerStage.WaitingForSeal)
                     _online.Status = refused.Reason.ToUpperInvariant();
                 return;

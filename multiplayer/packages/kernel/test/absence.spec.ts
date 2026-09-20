@@ -308,7 +308,7 @@ describe('absent seats, departures and the repair sweeps', () => {
     expect(h.streams.closed).toHaveLength(1)
   })
 
-  it('refuses a report and a routine full snapshot after a turn is confirmed', async () => {
+  it('refuses a report and a contradictory checkpoint after a turn is confirmed', async () => {
     const { host, guest } = await h.startedMatch()
     for (const token of [host.token, guest.token]) {
       await h.submit(await h.principalOf(token), 1, 1, true)
@@ -327,7 +327,8 @@ describe('absent seats, departures and the repair sweeps', () => {
       }),
     ).rejects.toMatchObject({ details: { reason: 'turn_confirmed' } })
 
-    // Ordinary recovery replays the stored order sets, so a full upload is not accepted here.
+    // A checkpoint of a confirmed turn can only agree with that verdict. One claiming a different
+    // hash is not a checkpoint, it is a second opinion on a settled question.
     await h.kernel.lobby.leave(await h.principalOf(guest.token))
     await expect(
       h.kernel.snapshots.upload(await h.principalOf(host.token), {
@@ -337,7 +338,53 @@ describe('absent seats, departures and the repair sweeps', () => {
         body: 'AAAA',
         seatSummaries: [],
       }),
-    ).rejects.toMatchObject({ details: { reason: 'snapshot_not_required' } })
+    ).rejects.toMatchObject({ details: { reason: 'uncorroborated_state_hash' } })
+  })
+
+  /**
+   * The checkpoint a reconnect replays from.
+   *
+   * Only the turn-0 bootstrap and desync repairs used to exist, so a client reconnecting at turn 80
+   * replayed eighty turns from the beginning — eighty sequential fetches and eighty full
+   * resolutions before the player saw anything. A checkpoint is not a second opinion: the turn is
+   * already confirmed, and the upload is refused unless it claims exactly the hash the verdict
+   * settled on.
+   */
+  it('stores a host checkpoint of a turn the match already confirmed', async () => {
+    const { host, guest } = await h.startedMatch()
+    for (const token of [host.token, guest.token]) {
+      await h.submit(await h.principalOf(token), 1, 1, true)
+    }
+    for (const token of [host.token, guest.token]) {
+      await h.kernel.turns.report(await h.principalOf(token), 1, {
+        stateHash: HASH_A,
+        finished: false,
+      })
+    }
+
+    // A peer may not write one: the host is the client the protocol already asks for bytes.
+    await expect(
+      h.kernel.snapshots.upload(await h.principalOf(guest.token), {
+        turn: 1,
+        formatVersion: 1,
+        stateHash: HASH_A,
+        body: 'AAAA',
+        seatSummaries: [],
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'host_only' } })
+
+    await h.kernel.snapshots.upload(await h.principalOf(host.token), {
+      turn: 1,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+
+    expect((await h.kernel.snapshots.latest(host.match.id)).turn).toBe(1)
+    // Nothing is announced: a checkpoint changes nothing about the match, and the client that
+    // needs it is the one that has not connected yet.
+    expect(h.notifier.events.some((event) => event.type === 'snapshot.available')).toBe(false)
   })
 
   /**
@@ -364,7 +411,7 @@ describe('absent seats, departures and the repair sweeps', () => {
         body: 'AAAA',
         seatSummaries: [],
       }),
-    ).rejects.toMatchObject({ details: { reason: 'snapshot_not_required' } })
+    ).rejects.toMatchObject({ details: { reason: 'turn_not_desynced' } })
 
     // The disagreement is still free to surface.
     await h.kernel.turns.report(await h.principalOf(guest.token), 1, {
@@ -626,7 +673,7 @@ describe('absent seats, departures and the repair sweeps', () => {
     expect(recovered.player.displayName).toBe('G')
   })
 
-  it('refuses routine full snapshots even when they match a confirmed turn', async () => {
+  it('accepts a confirmed turn checkpoint only at the hash the verdict settled on', async () => {
     const { host, guest } = await h.startedMatch()
     for (const token of [host.token, guest.token]) {
       await h.submit(await h.principalOf(token), 1, 1, true)
@@ -645,12 +692,13 @@ describe('absent seats, departures and the repair sweeps', () => {
         body: 'AAAA',
         seatSummaries: [],
       })
-    // Neither matching nor contradictory bytes belong on the normal confirmed-turn path.
-    await expect(upload(HASH_A)).rejects.toMatchObject({
-      details: { reason: 'snapshot_not_required' },
-    })
+    // A checkpoint may only agree with the verdict: the matching hash is stored, and the
+    // contradictory one is refused, which is the whole difference between a checkpoint and a
+    // second opinion on a settled turn.
+    await upload(HASH_A)
+    expect((await h.kernel.snapshots.latest(host.match.id)).turn).toBe(1)
     await expect(upload(HASH_B)).rejects.toMatchObject({
-      details: { reason: 'snapshot_not_required' },
+      details: { reason: 'uncorroborated_state_hash' },
     })
   })
 

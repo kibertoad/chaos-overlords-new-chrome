@@ -15,6 +15,21 @@ public sealed partial class MultiplayerMatchSession
     private const int EventHistoryPageSize = 200;
 
     /// <summary>
+    /// Sealed sets fetched ahead of the turn that needs them, while earlier turns are being applied.
+    /// </summary>
+    /// <remarks>
+    /// Replay is sequential by nature — turn N has to be applied before N+1 — but FETCHING is not:
+    /// a sealed set is immutable, served with <c>Cache-Control: immutable</c>, and its contents do
+    /// not depend on anything the replay does. Every set used to be fetched only when its turn came
+    /// round, so a reconnect that had to replay ten turns spent ten round trips end to end with the
+    /// player watching. Asking for the next few while the current one resolves overlaps the network
+    /// with the work.
+    /// </remarks>
+    private const int SealedSetPrefetchDepth = 4;
+
+    private readonly Dictionary<int, Task<SealedOrdersView>> _prefetchedSealedSets = [];
+
+    /// <summary>
     /// Every turn reconstructed from history whose confirmation the log has not carried, in turn
     /// order, with the hash this client reached, so that the reports a crash interrupted are made
     /// after all.
@@ -202,6 +217,31 @@ public sealed partial class MultiplayerMatchSession
     private async Task ReplayEventHistoryAsync(int fromSeq, int throughSeq, CancellationToken cancellationToken)
     {
         var after = fromSeq;
+        try
+        {
+            await ReplayPagesAsync(after, throughSeq, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            // Whatever is still in flight belongs to a replay that is over, one way or the other.
+            foreach (var pending in _prefetchedSealedSets.Values) Forget(pending);
+            _prefetchedSealedSets.Clear();
+        }
+    }
+
+    /// <summary>Swallows the result of a prefetch nothing is going to read.</summary>
+    private static void Forget(Task task) =>
+        _ = task.ContinueWith(
+            static finished => _ = finished.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted,
+            TaskScheduler.Default);
+
+    private async Task ReplayPagesAsync(
+        int after,
+        int throughSeq,
+        CancellationToken cancellationToken)
+    {
         while (after < throughSeq)
         {
             var page = await CallAsync(
@@ -213,6 +253,9 @@ public sealed partial class MultiplayerMatchSession
                 throw new MultiplayerProtocolException(
                     $"the event history ended at sequence {after}, before sequence {throughSeq}");
             }
+            // The page names every turn this replay is about to apply, so the fetches for the first
+            // few can start now rather than one at a time as each turn comes round.
+            PrefetchSealedSets(page, throughSeq, cancellationToken);
 
             foreach (var @event in page.Events)
             {
@@ -234,6 +277,41 @@ public sealed partial class MultiplayerMatchSession
                 if (after == throughSeq) return;
             }
         }
+    }
+
+    /// <summary>
+    /// Starts the fetches for the next few sealed sets this page will need.
+    /// </summary>
+    /// <remarks>
+    /// Bounded by <see cref="SealedSetPrefetchDepth"/>, because a match of hundreds of turns would
+    /// otherwise open hundreds of requests at once and hold every one of their responses in memory
+    /// — which is the problem this is meant to avoid, not a bigger version of it.
+    /// </remarks>
+    private void PrefetchSealedSets(EventPage page, int throughSeq, CancellationToken cancellationToken)
+    {
+        var started = 0;
+        foreach (var @event in page.Events)
+        {
+            if (@event.Seq > throughSeq || started >= SealedSetPrefetchDepth) return;
+            if (@event is not TurnSealedEvent sealedTurn) continue;
+            var turn = sealedTurn.Payload.Turn;
+            if (turn < _replay.State.Coordinator.Turn || _prefetchedSealedSets.ContainsKey(turn))
+                continue;
+            _prefetchedSealedSets[turn] = CallAsync(
+                token => _match.SealedOrdersAsync(turn, token), _pumpLane, cancellationToken);
+            started++;
+        }
+    }
+
+    /// <summary>
+    /// The sealed set for a turn, from the prefetch when it was started and from the server
+    /// otherwise.
+    /// </summary>
+    private Task<SealedOrdersView> SealedSetAsync(int turn, CancellationToken cancellationToken)
+    {
+        if (_prefetchedSealedSets.Remove(turn, out var prefetched)) return prefetched;
+        return CallAsync(
+            token => _match.SealedOrdersAsync(turn, token), _pumpLane, cancellationToken);
     }
 
     private async Task ApplyHistoricalEventAsync(

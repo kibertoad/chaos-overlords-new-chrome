@@ -163,13 +163,30 @@ public static class MultiplayerRecoveryStore
     public static MultiplayerRecovery? Load(string path)
         => LoadAll(path).FirstOrDefault();
 
+    /// <summary>
+    /// The memberships on file, or none when the file cannot be read.
+    /// </summary>
+    /// <remarks>
+    /// A file this cannot read is MOVED ASIDE rather than left where the next save will overwrite
+    /// it. It holds live seats in running matches, and "the parse threw" is not the same fact as
+    /// "there are no seats": a partial write from a build that crashed, a file half-synced by a
+    /// backup tool, or a format from a build newer than this one all arrive here, and a player who
+    /// updates the game again would get their matches back — if the file still existed. It is kept
+    /// beside the original with a <c>.corrupt</c> suffix, and the last good file this writes is
+    /// kept as <c>.bak</c>, so both are there for a later build or for a hand repair.
+    /// </remarks>
     public static IReadOnlyList<MultiplayerRecovery> LoadAll(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         try
         {
             var file = new FileInfo(path);
-            if (!file.Exists || file.Length > MaximumFileBytes) return [];
+            if (!file.Exists) return [];
+            if (file.Length > MaximumFileBytes)
+            {
+                SetAside(path);
+                return [];
+            }
             var bytes = File.ReadAllBytes(path);
             using var document = JsonDocument.Parse(bytes);
             if (document.RootElement.TryGetProperty("Sessions", out _))
@@ -189,14 +206,56 @@ public static class MultiplayerRecoveryStore
         }
         catch
         {
+            SetAside(path);
             return [];
         }
     }
 
-    public static bool TrySave(string path, MultiplayerRecovery recovery)
-        => TrySaveAll(path, [recovery]);
+    /// <summary>Moves an unreadable history out of the way of the next save. Best effort.</summary>
+    private static void SetAside(string path)
+    {
+        try
+        {
+            File.Move(path, path + ".corrupt", overwrite: true);
+        }
+        catch
+        {
+            // A file that cannot even be renamed is one nothing here can do anything about; the
+            // player loses the reconnect either way, and failing the load loudly would take the
+            // whole online screen with it.
+        }
+    }
 
-    public static bool TrySaveAll(string path, IEnumerable<MultiplayerRecovery> recoveries)
+    public static bool TrySave(string path, MultiplayerRecovery recovery, bool durable = false)
+        => TrySaveAll(path, [recovery], durable);
+
+    /// <summary>
+    /// Writes the memberships through a temporary file and an atomic rename.
+    /// </summary>
+    /// <param name="path">Where the history lives.</param>
+    /// <param name="recoveries">What to keep; retired memberships are dropped on the way in.</param>
+    /// <param name="durable">
+    /// Whether to wait for the bytes to reach the disk before renaming.
+    /// </param>
+    /// <remarks>
+    /// <para>
+    /// The rename is what makes the file never torn, and it does that whether or not the write was
+    /// flushed: a reader sees either the old file or the new one. <paramref name="durable"/> adds
+    /// the guarantee that the new one survives losing power, and that costs an fsync.
+    /// </para>
+    /// <para>
+    /// Which is worth paying for depends on what the write says. Every resolved turn stamps this
+    /// file with a fresh <c>LastUpdatedAt</c>, on the game thread, in the frame the new turn
+    /// appears — and losing the last stamp costs only the order of a list on the previous-sessions
+    /// screen. The clean-exit and completed marks are different: they are the difference between
+    /// offering a player a reconnect and telling them a match is over, so those are written
+    /// durably.
+    /// </para>
+    /// </remarks>
+    public static bool TrySaveAll(
+        string path,
+        IEnumerable<MultiplayerRecovery> recoveries,
+        bool durable = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(recoveries);
@@ -205,12 +264,23 @@ public static class MultiplayerRecoveryStore
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
+            // The previous file, kept for one generation. A save that drops a membership this
+            // build could not read is the other way the seats go, and this is what is left to
+            // recover them from.
+            try
+            {
+                if (File.Exists(path)) File.Copy(path, path + ".bak", overwrite: true);
+            }
+            catch
+            {
+                // A backup that cannot be written must not stop the save it was taken for.
+            }
             using (var stream = new FileStream(
                        temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 JsonSerializer.Serialize(stream, new MultiplayerRecoveryHistory(
                     MultiplayerRecoveryHistory.CurrentFormatVersion, sessions), JsonOptions);
-                stream.Flush(flushToDisk: true);
+                stream.Flush(flushToDisk: durable);
             }
             File.Move(temporaryPath, path, overwrite: true);
             return true;

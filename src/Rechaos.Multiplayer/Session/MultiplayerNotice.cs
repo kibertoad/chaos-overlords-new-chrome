@@ -61,6 +61,17 @@ public abstract record MultiplayerNotice
     /// <param name="Turn">The turn that was applied.</param>
     /// <param name="State">A copy for the interface; the session keeps its own.</param>
     /// <param name="StateHash">What this client reported for that turn.</param>
+    /// <param name="Planning">
+    /// The copy the player plans the NEXT turn on, built here rather than on the game thread, or
+    /// null when the turn ended the match and there is no next one.
+    /// <para>
+    /// Building it is a full native save and load of the match plus a walk of the coordinator up to
+    /// the local seat, and it used to happen in the frame the new turn appeared — on top of a clone
+    /// this notice had already made, at the moment the player is looking at the screen. The restore
+    /// path always did it this way and handed the finished turn over; this is the same handover for
+    /// the ordinary case.
+    /// </para>
+    /// </param>
     /// <param name="IncludedOwnOrders">
     /// Whether the sealed set carried a document for this client's seat.
     /// </param>
@@ -77,7 +88,8 @@ public abstract record MultiplayerNotice
         int Turn,
         MatchState State,
         string StateHash,
-        bool IncludedOwnOrders) : MultiplayerNotice;
+        bool IncludedOwnOrders,
+        SpeculativeTurn? Planning) : MultiplayerNotice;
 
     /// <summary>
     /// Clients disagreed about the state after a turn, and the match is paused until it is repaired.
@@ -95,8 +107,26 @@ public abstract record MultiplayerNotice
         bool IsRepairing,
         string Details) : MultiplayerNotice;
 
+    /// <summary>
+    /// A vote this client cast did not reach the server, so the question is still open.
+    /// </summary>
+    /// <remarks>
+    /// The interface fires a vote and forgets it, which is right — nothing about the turn waits on
+    /// the round trip — but "forgot" used to mean a diagnostics line and nothing else, so a
+    /// <c>403 not_active</c> or an exhausted retry window left the modal saying the vote had been
+    /// cast. The player is the only one who can cast it again.
+    /// </remarks>
+    public sealed record TakeoverVoteFailed(
+        string PlayerId,
+        TakeoverChoice Choice,
+        string Reason) : MultiplayerNotice;
+
     /// <summary>A repaired state arrived and was adopted; this client is back in step.</summary>
-    public sealed record Resynced(int Turn, MatchState State, string StateHash) : MultiplayerNotice;
+    public sealed record Resynced(
+        int Turn,
+        MatchState State,
+        string StateHash,
+        SpeculativeTurn? Planning) : MultiplayerNotice;
 
     /// <summary>The turn's countdown moved, because the match resumed after a desync pause.</summary>
     public sealed record DeadlineChanged(int Turn, DateTimeOffset? DeadlineAt) : MultiplayerNotice;

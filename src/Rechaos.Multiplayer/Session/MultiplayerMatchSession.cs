@@ -160,6 +160,17 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     public bool IsRestoring { get; }
 
     /// <summary>
+    /// How far the server's clock is ahead of this machine's.
+    /// </summary>
+    /// <remarks>
+    /// Every deadline the protocol carries is an instant on the SERVER's clock, so a countdown
+    /// taken against the local one is wrong by however far the two have drifted — and an
+    /// unsynchronised desktop clock is an ordinary thing to have. The server is still the authority
+    /// on when a turn ends; this only makes the courtesy countdown honest.
+    /// </remarks>
+    public TimeSpan ServerTimeOffset => _match.ServerTimeOffset;
+
+    /// <summary>
     /// The match as generated from the seed, for the interface to plan turn 1 on.
     /// </summary>
     /// <remarks>
@@ -262,15 +273,33 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     {
         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken, _stoppingToken);
-        await CallAsync(
-            token => _match.VoteOnTakeoverAsync(
-                playerId,
-                new TakeoverVoteRequest(choice == TakeoverChoice.Computer
-                    ? TakeoverVoteRequestDecision.Computer
-                    : TakeoverVoteRequestDecision.Wait),
-                token),
-            lane: null,
-            lifetime.Token).ConfigureAwait(false);
+        try
+        {
+            await CallAsync(
+                token => _match.VoteOnTakeoverAsync(
+                    playerId,
+                    new TakeoverVoteRequest(choice == TakeoverChoice.Computer
+                        ? TakeoverVoteRequestDecision.Computer
+                        : TakeoverVoteRequestDecision.Wait),
+                    token),
+                lane: null,
+                lifetime.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
+        {
+            // The session is stopping, or the caller asked to stop. Neither is news.
+            throw;
+        }
+        catch (Exception exception) when (exception is MultiplayerApiException
+            or MultiplayerProtocolException or RetryExhaustedException
+            or MultiplayerTimeoutException or HttpRequestException or IOException)
+        {
+            // A vote that did not land leaves the question open, and the player is the only one who
+            // can answer it again — so it goes through the notice queue like every other background
+            // result rather than into a diagnostics line nobody is reading.
+            _notices.Enqueue(new MultiplayerNotice.TakeoverVoteFailed(
+                playerId, choice, Describe(exception)));
+        }
     }
 
     /// <summary>Gives up the seat; the match stops waiting on this player from the next turn.</summary>
@@ -347,6 +376,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 // a settled turn's repair announcement, which every reconnect replays, from being
                 // treated as an open question again.
                 if (_pendingDesync?.Turn == confirmed.Payload.Turn) _pendingDesync = null;
+                await CheckpointIfDueAsync(
+                        confirmed.Payload.Turn, confirmed.Payload.StateHash, cancellationToken)
+                    .ConfigureAwait(false);
                 return;
             case TurnDesyncedEvent desynced:
                 await HandleDesyncAsync(desynced, cancellationToken).ConfigureAwait(false);
@@ -448,8 +480,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
         await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
+        var (state, planning) = HandOver();
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
-            turn, MatchStateClone.Of(_replay.State, _definitions), stateHash, includedOwnOrders));
+            turn, state, stateHash, includedOwnOrders, planning));
     }
 
     /// <summary>
@@ -475,9 +508,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             throw new MultiplayerProtocolException(
                 $"the log sealed turn {turn} while the match was on turn {current}");
         }
-        var sealedOrders = await CallAsync(
-            token => _match.SealedOrdersAsync(turn, token), _pumpLane, cancellationToken)
-            .ConfigureAwait(false);
+        // From the replay's prefetch when one was started for this turn, and from the server
+        // otherwise; see `SealedSetAsync`.
+        var sealedOrders = await SealedSetAsync(turn, cancellationToken).ConfigureAwait(false);
         if (sealedOrders.Turn != turn)
         {
             throw new MultiplayerProtocolException(
@@ -498,6 +531,24 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         }
         var includedOwnOrders = sealedOrders.Players.Any(entry => entry.Slot == Slot);
         return (SealedTurnApplier.Apply(_replay, sealedOrders), includedOwnOrders);
+    }
+
+    /// <summary>
+    /// The two copies the interface needs, both built here rather than on the game thread.
+    /// </summary>
+    /// <remarks>
+    /// The authoritative copy it owns, and the planning copy built over it — which is another
+    /// native save and load plus a walk of the coordinator up to the local seat. Doing the second
+    /// one on the game thread meant that work landed in the frame the new turn appeared, on top of
+    /// a clone the notice had already made of the same state. The restore path has always handed
+    /// the finished planning copy over instead; this is that, for every other path.
+    /// </remarks>
+    private (MatchState State, SpeculativeTurn? Planning) HandOver()
+    {
+        var state = MatchStateClone.Of(_replay.State, _definitions);
+        // A turn that ended the match leaves no turn to plan, and the interface shows the endgame
+        // from the state alone.
+        return (state, state.Outcome is null ? SpeculativeTurn.For(state, _definitions, Slot) : null);
     }
 
     private PendingTakeoverVote BeginTakeoverVote(string playerId, int turn)

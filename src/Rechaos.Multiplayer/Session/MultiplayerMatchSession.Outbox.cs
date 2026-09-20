@@ -40,6 +40,7 @@ public sealed partial class MultiplayerMatchSession
     public void QueueOrders(int turn, OrderDocument document, bool ready)
     {
         ArgumentNullException.ThrowIfNull(document);
+        CancellationTokenSource? superseded;
         lock (_outboxGate)
         {
             if (ready) _locallyReadyTurns.Add(turn);
@@ -48,8 +49,15 @@ public sealed partial class MultiplayerMatchSession
             _pending = new PendingOrders(turn, document, carriedReady);
             // A whole-document replacement makes the older request disposable. In particular, do
             // not spend the reconnect window retrying a stale draft while a newer one waits.
-            _inFlightOrders?.Cancel();
+            superseded = _inFlightOrders;
         }
+        // Cancelled OUTSIDE the lock. `Cancel` runs its registrations synchronously on the calling
+        // thread — the game thread here — and the retry loop's continuation can resume inline
+        // through it: out of `Task.Delay`, through the lane's recovery report, through the
+        // `finally`, and on into the next submission's synchronous prologue, all while this lock
+        // was still held. It is reentrant, so nothing deadlocked; what it did was run the outbox's
+        // own bookkeeping under a lock taken by the interface, from the interface's thread.
+        superseded?.Cancel();
         _outboxSignal.Release();
     }
 

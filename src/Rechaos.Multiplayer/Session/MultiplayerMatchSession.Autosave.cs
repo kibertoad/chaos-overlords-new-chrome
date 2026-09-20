@@ -1,6 +1,7 @@
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Protocol;
 
 namespace Rechaos.Multiplayer.Session;
@@ -14,13 +15,72 @@ public sealed partial class MultiplayerMatchSession
             state.Sectors.Sum(sector => sector.Sites.Count(site => site.InfluencedBy == player.Id)),
             state.Sectors.Count(sector => sector.Owner == player.Id))).ToArray();
 
-    private Task UploadInitialSnapshotAsync(CancellationToken cancellationToken)
+    /// <summary>
+    /// Confirmed turns between two checkpoints.
+    /// </summary>
+    /// <remarks>
+    /// A reconnect replays from the newest snapshot the server holds, one sequential sealed-set
+    /// fetch and one full turn resolution per turn since. With only the turn-0 bootstrap and desync
+    /// repairs to replay from, a reconnect at turn 80 was eighty of each — minutes of it, inside
+    /// the pump, before the player saw anything, and every retry started over. The design doc talks
+    /// about matches of hundreds of turns.
+    ///
+    /// Ten bounds that at ten turns' replay. The cost is one upload of a megabyte every ten turns,
+    /// by the host only, on a path the player is not waiting on; the server keeps five snapshots
+    /// per match and prunes the rest, so what it holds does not grow either.
+    /// </remarks>
+    private const int CheckpointEveryTurns = 10;
+
+    private Task UploadInitialSnapshotAsync(CancellationToken cancellationToken) =>
+        UploadSnapshotAsync(0, MatchStateHasher.ComputeSha256(_replay.State), cancellationToken);
+
+    /// <summary>
+    /// Writes a checkpoint of a turn the match has just confirmed, if one is due.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The host only, and only for the turn this client has just finished applying — so the state
+    /// being uploaded is the one the verdict settled on, which is the only state the server will
+    /// accept for a confirmed turn. A checkpoint that arrives for any other turn is one this client
+    /// has moved past, and rebuilding it to upload would cost more than the checkpoint saves.
+    /// </para>
+    /// <para>
+    /// Failure is not the session's problem. Nothing waits on a checkpoint: the next reconnect
+    /// simply replays from an older one, which is what every reconnect did before they existed.
+    /// </para>
+    /// </remarks>
+    private async Task CheckpointIfDueAsync(
+        int confirmedTurn,
+        string stateHash,
+        CancellationToken cancellationToken)
     {
-        var stateHash = MatchStateHasher.ComputeSha256(_replay.State);
-        return CallAsync(
+        if (!IsHost || confirmedTurn <= 0 || confirmedTurn % CheckpointEveryTurns != 0) return;
+        if (_replay.State.Coordinator.Turn != confirmedTurn + 1) return;
+        if (!string.Equals(
+                stateHash, MatchStateHasher.ComputeSha256(_replay.State), StringComparison.Ordinal))
+        {
+            return;
+        }
+        try
+        {
+            await UploadSnapshotAsync(confirmedTurn, stateHash, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is MultiplayerApiException
+            or MultiplayerProtocolException or RetryExhaustedException)
+        {
+            // A checkpoint nobody is waiting for. The next reconnect replays from an older one.
+        }
+    }
+
+    private Task UploadSnapshotAsync(
+        int turn,
+        string stateHash,
+        CancellationToken cancellationToken) =>
+        CallAsync(
             token => _match.UploadSnapshotAsync(
                 new UploadSnapshotRequest(
-                    0,
+                    turn,
                     NativeSaveSerializer.CurrentFormatVersion,
                     MultiplayerProtocolVersion.Current,
                     MultiplayerSessionVersion.Current,
@@ -30,6 +90,4 @@ public sealed partial class MultiplayerMatchSession
                 token),
             _pumpLane,
             cancellationToken);
-    }
-
 }

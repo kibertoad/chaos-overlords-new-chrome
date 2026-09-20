@@ -193,8 +193,8 @@ public sealed partial class MultiplayerMatchSession
         foreach (var (turn, stateHash) in settled)
             await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
         var current = MatchStateHasher.ComputeSha256(_replay.State);
-        _notices.Enqueue(new MultiplayerNotice.Resynced(
-            snapshot.Turn, MatchStateClone.Of(_replay.State, _definitions), current));
+        var (state, planning) = HandOver();
+        _notices.Enqueue(new MultiplayerNotice.Resynced(snapshot.Turn, state, current, planning));
     }
 
     /// <summary>

@@ -9,8 +9,31 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
-    private IReadOnlyList<MultiplayerRecovery> RecoverableOnlineSessions =>
-        _multiplayerRecoveries.Where(recovery => recovery.CanReconnect).ToArray();
+    /// <summary>
+    /// The memberships the player can still take a seat in, cached until the list behind them moves.
+    /// </summary>
+    /// <remarks>
+    /// Both screens that read this read it several times a frame — for the row count, for the
+    /// scroll window, for the selected row, and once per row drawn — and it used to be a fresh
+    /// filter and array allocation each time. It changes only when a membership is written back,
+    /// which is a handful of times a match.
+    /// </remarks>
+    private IReadOnlyList<MultiplayerRecovery> RecoverableOnlineSessions
+    {
+        get
+        {
+            if (_recoverableSessions is null || _recoverableSessionsVersion != _multiplayerRecoveryVersion)
+            {
+                _recoverableSessions =
+                    _multiplayerRecoveries.Where(recovery => recovery.CanReconnect).ToArray();
+                _recoverableSessionsVersion = _multiplayerRecoveryVersion;
+            }
+            return _recoverableSessions;
+        }
+    }
+
+    private IReadOnlyList<MultiplayerRecovery>? _recoverableSessions;
+    private int _recoverableSessionsVersion = -1;
 
     /// <summary>
     /// The row the browser is on, or null when there is nothing to browse.
@@ -108,8 +131,30 @@ public sealed partial class ChaosGame
         return described;
     }
 
-    private IReadOnlyList<DiscoveredListing> FilteredOnlineListings() =>
-        _online.Listings.Where(MatchesDiscoveryFilters).ToArray();
+    /// <summary>
+    /// The listings the current filters admit, cached until the listings or the filters move.
+    /// </summary>
+    /// <remarks>
+    /// Read the same way as the recovery list above: several times a frame, for a result that
+    /// changes only when a refresh lands or the player moves a filter.
+    /// </remarks>
+    private IReadOnlyList<DiscoveredListing> FilteredOnlineListings()
+    {
+        var filters = HashCode.Combine(
+            _online.Listings,
+            _online.DiscoveryStatusFilter,
+            _online.DiscoveryScenarioFilter,
+            _online.DiscoveryAiFilter);
+        if (_filteredListings is null || _filteredListingsKey != filters)
+        {
+            _filteredListings = _online.Listings.Where(MatchesDiscoveryFilters).ToArray();
+            _filteredListingsKey = filters;
+        }
+        return _filteredListings;
+    }
+
+    private IReadOnlyList<DiscoveredListing>? _filteredListings;
+    private int _filteredListingsKey;
 
     private bool MatchesDiscoveryFilters(DiscoveredListing entry) => DiscoveryFilters.Matches(
         _online.DiscoveryStatusFilter,

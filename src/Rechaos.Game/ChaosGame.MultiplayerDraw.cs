@@ -54,10 +54,26 @@ public sealed partial class ChaosGame
     private string OnlineCountdown()
     {
         if (_online.DeadlineAt is not { } deadline) return string.Empty;
-        var remaining = deadline - DateTimeOffset.UtcNow;
+        // Against the SERVER's clock. The deadline is an instant on it, and a machine thirty
+        // seconds fast on a thirty-second timer showed the turn expiring before the server sealed
+        // it, while one that was slow was sealed on with time still on the screen.
+        var offset = _session?.ServerTimeOffset ?? TimeSpan.Zero;
+        var remaining = deadline - (DateTimeOffset.UtcNow + offset);
         if (remaining <= TimeSpan.Zero) return "SEALING";
-        return $"{(int)remaining.TotalMinutes:00}:{remaining.Seconds:00}";
+        // Built when the second changes, not every frame: the string is identical in between, and
+        // this runs in the draw loop of every frame a timed online turn is on screen.
+        var whole = (int)remaining.TotalSeconds;
+        if (whole != _onlineCountdownSeconds)
+        {
+            _onlineCountdownSeconds = whole;
+            _onlineCountdownText = $"{whole / 60:00}:{whole % 60:00}";
+        }
+        return _onlineCountdownText;
     }
+
+    /// <summary>The whole second <see cref="_onlineCountdownText"/> was built for.</summary>
+    private int _onlineCountdownSeconds = -1;
+    private string _onlineCountdownText = string.Empty;
 
     /// <summary>
     /// A line for the city screen saying where the online turn stands.
