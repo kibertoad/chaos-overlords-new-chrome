@@ -429,9 +429,9 @@ explicit M6 gap rather than an unmeasured claim.
    Tolerance), `0x21` (sector owner), `0x2c` (strict Control feasibility),
    `0x35` (human owner), `0x3c` (Force), `0x3d` (queued action), and `0x51`
    (Heal), plus action bytes 3 (Chaos), 10 (Move), and 13 (Snitch), are now
-   bounded in `ORIGINAL-INTERNALS.md`. Mode 6 is now live as a family-2
-   Move route toward the unique scenario leader (or all tied leaders), with an
-   additional two-point preference for hostile human owners when humans
+   bounded in `original-internals/computer-players.md`. Mode 6 is now live as a
+   family-2 Move route toward the unique scenario leader (or all tied leaders),
+   with an additional two-point preference for hostile human owners when humans
    participate. The exact scenario scorer and competition-standing bytes are
    rebuilt for all ten scenarios, including Dominance's final integer division.
    Its pair flag permits Control—not Attack—when no defending

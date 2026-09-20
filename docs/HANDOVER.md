@@ -195,7 +195,8 @@ status of each area is in [PARITY-MATRIX.md](PARITY-MATRIX.md).
   therefore costs $8 only with a previously active Factory. Manual-backed
   match validation rejects influenced sites
   in neutral sectors or sites influenced by anyone other than the sector owner;
-  binary addresses and operation order are recorded in `ORIGINAL-INTERNALS.md`.
+  binary addresses and operation order are recorded in the original-internals
+  research log.
 
 - Instant resolution now snapshots acting gangs' effective statistics before
   applying any command. Same-phase Influence can still acquire a site, but its
@@ -774,7 +775,8 @@ status of each area is in [PARITY-MATRIX.md](PARITY-MATRIX.md).
 
 For authoritative scope and parity status, continue with
 [IMPLEMENTATION-PLAN.md](IMPLEMENTATION-PLAN.md) and
-[PARITY-MATRIX.md](PARITY-MATRIX.md). Record new static findings in
-[ORIGINAL-INTERNALS.md](ORIGINAL-INTERNALS.md), intended mechanics in
+[PARITY-MATRIX.md](PARITY-MATRIX.md). Record new static findings in the
+subsystem document [ORIGINAL-INTERNALS.md](ORIGINAL-INTERNALS.md#finding-documents)
+lists for them, intended mechanics in
 [GAME-RULES.md](GAME-RULES.md), and player-visible AI behavior in
 [AI-SPEC.md](AI-SPEC.md).
