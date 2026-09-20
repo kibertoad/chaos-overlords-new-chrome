@@ -183,9 +183,31 @@ export class MultiplayerClient {
       'Last-Event-ID': String(after),
     }
     if (this.token) headers.Authorization = `Bearer ${this.token}`
-    const init: RequestInit = { headers }
-    if (signal) init.signal = signal
-    const response = await this.fetchImpl(`${this.baseUrl}${API}${path}`, init)
+    // A deadline on the CONNECT phase only, cancelled the moment the headers arrive.
+    //
+    // A stream is exempt from the request timeout because it is meant to stay open, but that
+    // exemption used to cover getting it open too: against a host that accepts nothing and answers
+    // nothing — a firewall that drops SYNs rather than refusing them — each attempt cost the
+    // operating system's own connect timeout, often two minutes, so the five-minute outage budget
+    // bought two attempts instead of the dozens it is sized for. The C# client races the header
+    // phase against a timer for the same reason.
+    //
+    // The controller stays attached to the body afterwards, with the caller's own signal forwarded
+    // into it, so cancelling the stream still works exactly as before; only the TIMER is cleared.
+    const connect = new AbortController()
+    signal?.addEventListener('abort', () => connect.abort(signal.reason), { once: true })
+    const timer = setTimeout(() => {
+      connect.abort(new Error(`the event stream did not open within ${this.requestTimeoutMs} ms`))
+    }, this.requestTimeoutMs)
+    let response: Response
+    try {
+      response = await this.fetchImpl(`${this.baseUrl}${API}${path}`, {
+        headers,
+        signal: connect.signal,
+      })
+    } finally {
+      clearTimeout(timer)
+    }
     if (!response.ok) throw await MultiplayerApiError.fromResponse(response)
     const responseKind = resolveResponseEntry(
       contract.responsesByStatusCode,
@@ -393,10 +415,20 @@ export function isFatalStreamError(status: number): boolean {
   return status < 500 && !RETRYABLE_STREAM_STATUSES.has(status)
 }
 
-/** Exponential with full jitter: every client picks a different point in the window. */
+/**
+ * Exponential with FULL jitter: a delay drawn uniformly from the whole window, not from its upper
+ * half.
+ *
+ * The half-window form still clumps. The case that matters is the one the Node server produces on
+ * purpose: `closeAll()` ends every stream in the process at once for a graceful shutdown, so every
+ * client in every match starts its first backoff in the same millisecond, and half a window is a
+ * narrow enough target that they all come back within the same second — at the moment the
+ * replacement process is coldest. Over the whole window the herd spreads evenly, and the expected
+ * delay halves as well, so a single client reconnects sooner on average rather than later.
+ */
 function backoff(baseMs: number, ceilingMs: number, attempt: number): number {
   const window = Math.min(ceilingMs, baseMs * 2 ** (attempt - 1))
-  return Math.round(window * (0.5 + Math.random() / 2))
+  return Math.round(window * Math.random())
 }
 
 function sleep(ms: number, signal: AbortSignal | undefined): Promise<void> {
