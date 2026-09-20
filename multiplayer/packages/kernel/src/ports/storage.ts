@@ -1,5 +1,4 @@
 import type {
-  LobbyListing,
   MatchEventBody,
   MatchSettings,
   MatchStatus,
@@ -7,9 +6,11 @@ import type {
 } from '@chaos-overlords/contracts'
 import type {
   Match,
+  MatchSeat,
   OrderSummary,
   PersistedEvent,
   Player,
+  PublicLobbyRow,
   SealedSlot,
   Snapshot,
   SnapshotSummary,
@@ -34,7 +35,14 @@ export interface MatchRepository {
   create(match: Match): Promise<boolean>
   get(id: string): Promise<Match | null>
   getByJoinCode(joinCode: string): Promise<Match | null>
-  listPublicLobbies(limit: number): Promise<LobbyListing[]>
+  /**
+   * The public lobby list: open lobbies and running matches anyone may look at, newest first.
+   *
+   * `playerCount` and `hasSnapshot` come out of the same statement rather than from a read per
+   * listed match, and a running match with no human left in it is left out — it is unjoinable, so
+   * advertising it only costs the reader a row and the server the two queries behind it.
+   */
+  listPublicLobbies(limit: number): Promise<PublicLobbyRow[]>
   /**
    * Atomically take a seat while the match is in the lobby and below capacity. Returns the seat's
    * position in the match's monotonic join sequence, or null when no seat was available.
@@ -78,8 +86,16 @@ export interface MatchRepository {
    *
    * The sweep re-runs the verdict for these. A `settle` interrupted after its compare-and-swap
    * leaves the match desynced with nothing unsettled, which no request path revisits.
+   *
+   * `touchedSince` bounds that to the matches something has actually happened to. `updatedAt` moves
+   * on every report and every snapshot upload, so a match that nothing touched since the previous
+   * pass has no new evidence and its verdict cannot have changed; without the bound a public
+   * server's parked desyncs — the documented way a match ends when a host never uploads — were
+   * re-judged every fifteen seconds for the ninety days retention keeps them. It also ends the
+   * starvation of a page ordered by an `updatedAt` that never moves: pass null to sweep everything,
+   * which is what a freshly started process does once to pick up whatever it missed.
    */
-  listDesynced(limit: number): Promise<string[]>
+  listDesynced(limit: number, touchedSince: Date | null): Promise<string[]>
   /** Compare-and-swap on status; returns false when the match was not in one of `from`. */
   transition(
     matchId: string,
@@ -101,13 +117,25 @@ export interface PlayerRepository {
    * host pressed start from becoming an unseated player in a running match.
    */
   create(player: Player): Promise<boolean>
-  /** Inserts a deterministic-id late member after start; false if that seat was ever human. */
+  /**
+   * Inserts a deterministic-id late member after start; false if that seat was ever human.
+   *
+   * `maxPlayers` is part of the same statement, because two late joiners taking two different free
+   * slots each passed a capacity check the other invalidated and the match ended up over capacity,
+   * with a roster the match view's seat schema then refused.
+   */
   createLate(player: Player): Promise<boolean>
   get(id: string): Promise<Player | null>
   /** Never matches a revoked membership, whose token hash is null. */
   getByTokenHash(tokenHash: string): Promise<Player | null>
   /** Ordered by slot, then join order, then id. */
   listByMatch(matchId: string): Promise<Player[]>
+  /**
+   * Every seat held in any of `matchIds`, in ONE statement. The public listing needs the taken
+   * slots of each match it returns and nothing else about the players; a `listByMatch` per listing
+   * was a query per running match on an unauthenticated route.
+   */
+  listSeats(matchIds: readonly string[]): Promise<MatchSeat[]>
   setStatus(playerId: string, status: Player['status']): Promise<void>
   /** Compare-and-swap a player status; exactly one return/takeover race may win. */
   transitionStatus(
@@ -157,6 +185,16 @@ export interface TurnRepository {
     },
   ): Promise<boolean>
   getOrders(matchId: string, number: number, playerId: string): Promise<TurnOrders | null>
+  /**
+   * One player's row for a turn WITHOUT the document.
+   *
+   * `submitOrders` reads the previous row on every submission to decide whether readiness changed
+   * and whether a stale write is an identical retry, and both questions are answered by the hash
+   * and the flag. The client sends a whole-document replacement per command the player queues, so
+   * loading up to `LIMITS.ordersBytes` of JSON to compare a boolean was the hottest read the server
+   * had.
+   */
+  getOrderSummary(matchId: string, number: number, playerId: string): Promise<OrderSummary | null>
   listOrders(matchId: string, number: number): Promise<TurnOrders[]>
   /**
    * The readiness and digest of every row of a turn, WITHOUT the documents. The seal decision,
@@ -177,9 +215,42 @@ export interface TurnRepository {
       stateHash?: string
     },
   ): Promise<boolean>
+  /**
+   * Freeze a sealed turn's participant set and digest, in ONE statement conditional on them not
+   * being frozen already. True only for the caller that wrote them.
+   *
+   * `transition` is conditional on the STATUS, and the status is `sealed` for the whole window
+   * between the seal's compare-and-swap and the successor opening — a window the sweep deliberately
+   * runs `completeSeal` inside. Two callers could therefore both compute a set, both write it, and
+   * both announce it, and with a departure landing between their two computations the second
+   * overwrote the first with a different digest. Every client then saw two `turn.sealed` events for
+   * one turn, and the one that fetched the set afterwards failed its digest check and ended the
+   * session. Whoever wins here is the only one that announces, so the set is immutable from the
+   * compare-and-swap onwards, as the design promises.
+   */
+  freezeSeal(
+    matchId: string,
+    number: number,
+    frozen: { orderSetHash: string; sealedSlots: readonly SealedSlot[] },
+  ): Promise<boolean>
+  /**
+   * Claim the announcement of a turn's divergence, in ONE statement conditional on `desyncedAt`
+   * being null. True only for the caller that stamped it, which is then the one that publishes
+   * `turn.desynced`.
+   *
+   * The alternative was asking the event log whether the announcement was already there, which
+   * pages every event the match ever logged — on every sweep, for every paused match.
+   */
+  claimDesyncAnnouncement(matchId: string, number: number, at: Date): Promise<boolean>
   /** Move an open turn's deadline, e.g. when a match resumes after a desync pause. */
   rescheduleDeadline(matchId: string, number: number, deadlineAt: Date | null): Promise<boolean>
-  upsertReport(report: TurnReport): Promise<void>
+  /**
+   * Record or replace one player's report, in ONE statement conditional on the turn still awaiting
+   * a verdict (`sealed` or `desynced`). False when it has been confirmed since, which is what keeps
+   * the evidence a verdict was taken on immutable: the caller reads the status a statement earlier,
+   * so a report can otherwise land behind the `settle` that raced it.
+   */
+  upsertReport(report: TurnReport): Promise<boolean>
   listReports(matchId: string, number: number): Promise<TurnReport[]>
   /** Turns of a match still awaiting a verdict: status `sealed` or `desynced`, ascending. */
   listUnsettled(matchId: string): Promise<Turn[]>
@@ -197,13 +268,28 @@ export interface TurnRepository {
    * that died between marking the turn sealed and opening its successor, or a start that died
    * between running the match and opening turn 1 (no row at all). The repair sweep finishes both,
    * which is why a missing turn counts as stalled rather than being skipped.
+   *
+   * `touchedSince` bounds the join to matches something happened to recently. A seal in flight is
+   * seconds old, but abandoned matches are deliberately kept `running` for ninety days, so the
+   * unbounded join walked thousands of rows every fifteen seconds to find nothing. The caller runs
+   * the bounded scan every tick and the unbounded one (null) on a much longer period, which is what
+   * still finds a seal interrupted while the process was down.
    */
-  listStalledSeals(limit: number): Promise<Array<Pick<Turn, 'matchId' | 'number'>>>
+  listStalledSeals(
+    limit: number,
+    touchedSince: Date | null,
+  ): Promise<Array<Pick<Turn, 'matchId' | 'number'>>>
 }
 
 export interface SnapshotRepository {
   put(snapshot: Snapshot): Promise<void>
   get(matchId: string, turn: number): Promise<Snapshot | null>
+  /**
+   * One turn's snapshot metadata without its body. The verdict needs only `stateHash`, and it is
+   * re-run for every unsettled turn of every paused match on every sweep; `get` there loaded a
+   * megabyte of base64 to read one field.
+   */
+  getSummary(matchId: string, turn: number): Promise<SnapshotSummary | null>
   getLatest(matchId: string): Promise<Snapshot | null>
   /** The newest snapshot's metadata without its body, which is a megabyte a caller checking for existence never reads. */
   getLatestSummary(matchId: string): Promise<SnapshotSummary | null>

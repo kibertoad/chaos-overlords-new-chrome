@@ -71,47 +71,56 @@ export class MatchQueryService {
     }
   }
 
+  /**
+   * The public lobby list.
+   *
+   * Two queries in total, whatever the page holds: the listing itself carries the seat count and
+   * whether a snapshot exists, and the seats of every match that could still advertise one are read
+   * together. It used to be two more queries for each running match on the page, on a route no
+   * token guards.
+   */
   async listPublicLobbies(limit: number): Promise<LobbyListing[]> {
-    const listings = await this.storage.matches.listPublicLobbies(limit)
-    return Promise.all(
-      listings.map(async (listing) => {
-        if (listing.status !== 'running') return listing
-        const players = await this.storage.players.listByMatch(listing.id)
-        const current = {
-          ...listing,
-          playerCount: players.filter((player) => player.status === 'active').length,
-        }
-        if (listing.settings.gameSettings.allowLateJoin !== true)
-          return { ...current, availableSlots: [], availableSeatSummaries: [] }
-        if (!(await this.storage.snapshots.getLatestSummary(listing.id)))
-          return { ...current, availableSlots: [], availableSeatSummaries: [] }
-        // `joinRunning` counts every seat a human has ever held against the host's own limit, so a
-        // listing that ignored it advertised seats that every join answers `match_full` for.
-        if (players.length >= listing.settings.maxPlayers)
-          return { ...current, availableSlots: [], availableSeatSummaries: [] }
-        const reserved = new Set(players.map((player) => player.slot))
-        const availableSlots = Array.from(
-          { length: GAME_BOUNDS.playerCount },
-          (_, slot) => slot,
-        ).filter((slot) => !reserved.has(slot))
-        const summaries = Array.isArray(listing.settings.gameSettings.seatSummaries)
-          ? listing.settings.gameSettings.seatSummaries
-          : []
-        return {
-          ...current,
-          availableSlots,
-          availableSeatSummaries: availableSlots.map(
-            (slot) =>
-              summaries.filter(isSeatSummary).find((summary) => summary.slot === slot) ?? {
-                slot,
-                gangs: 0,
-                sites: 0,
-                sectors: 0,
-              },
-          ),
-        }
-      }),
+    const rows = await this.storage.matches.listPublicLobbies(limit)
+    const lateJoinable = rows.filter(
+      (row) =>
+        row.status === 'running' &&
+        row.settings.gameSettings.allowLateJoin === true &&
+        row.hasSnapshot,
     )
+    const seatsByMatch = new Map<string, number[]>()
+    for (const seat of await this.storage.players.listSeats(lateJoinable.map((row) => row.id))) {
+      const seats = seatsByMatch.get(seat.matchId)
+      if (seats) seats.push(seat.slot)
+      else seatsByMatch.set(seat.matchId, [seat.slot])
+    }
+    return rows.map(({ hasSnapshot: _hasSnapshot, ...listing }) => {
+      const seats = seatsByMatch.get(listing.id)
+      if (seats === undefined) return listing
+      // `joinRunning` counts every seat a human has ever held against the host's own limit, so a
+      // listing that ignored it advertised seats that every join answers `match_full` for.
+      if (seats.length >= listing.settings.maxPlayers) return listing
+      const reserved = new Set(seats)
+      const availableSlots = Array.from(
+        { length: GAME_BOUNDS.playerCount },
+        (_, slot) => slot,
+      ).filter((slot) => !reserved.has(slot))
+      const summaries = Array.isArray(listing.settings.gameSettings.seatSummaries)
+        ? listing.settings.gameSettings.seatSummaries.filter(isSeatSummary)
+        : []
+      return {
+        ...listing,
+        availableSlots,
+        availableSeatSummaries: availableSlots.map(
+          (slot) =>
+            summaries.find((summary) => summary.slot === slot) ?? {
+              slot,
+              gangs: 0,
+              sites: 0,
+              sectors: 0,
+            },
+        ),
+      }
+    })
   }
 
   async ownSubmission(match: Match, playerId: string, number: number): Promise<OwnSubmissionView> {

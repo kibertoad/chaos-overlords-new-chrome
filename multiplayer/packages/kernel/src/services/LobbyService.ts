@@ -10,7 +10,13 @@ import {
   type TakeoverVoteRequest,
 } from '@chaos-overlords/contracts'
 import { activePlayers, type Match, type Player } from '../domain/entities'
-import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../domain/errors'
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  RateLimitedError,
+  UnauthorizedError,
+} from '../domain/errors'
 import { generateJoinCode, generateSeed, generateToken, hashToken } from '../logic/crypto'
 import { hashPassword, verifyPassword } from '../logic/password'
 import { assignSlots } from '../logic/turn-logic'
@@ -18,6 +24,7 @@ import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
 import { MatchQueryService, toPlayerView } from './MatchQueryService'
+import { RateLimiter } from './RateLimiter'
 import { FIRST_TURN, type TurnService } from './TurnService'
 
 const JOIN_CODE_LENGTH = LIMITS.joinCodeLength
@@ -34,6 +41,19 @@ const VACANT_HOST_STATUSES: ReadonlyArray<Player['status']> = ['left', 'kicked',
 /** A human seat nobody is playing: the ones an absence vote can hand to the computer. */
 const ABSENT_HUMAN_STATUSES: ReadonlyArray<Player['status']> = ['takeoverPending', 'left', 'kicked']
 
+/**
+ * Wrong passwords one match will verify in a window before it stops verifying at all.
+ *
+ * `verifyPassword` is PBKDF2 at 120,000 iterations, on a door no token guards. The per-address
+ * limiter in front of it bounds one caller, but public listings carry the join code and the
+ * `passwordProtected` flag, so a match's password is a target many addresses can share: tens of
+ * milliseconds of CPU per attempt is the libuv thread pool on Node and billed CPU on Workers. This
+ * is per match, so an attacker distributing the work across addresses spends the match's budget
+ * rather than each address's, and one person mistyping their own password is nowhere near it.
+ */
+const PASSWORD_ATTEMPTS_PER_MATCH = 30
+const PASSWORD_ATTEMPT_WINDOW_MS = 60_000
+
 export interface LobbyServiceOptions {
   /** Generates the player/match ids; defaults to `crypto.randomUUID`. */
   newId?: () => string
@@ -43,6 +63,7 @@ export interface LobbyServiceOptions {
 export class LobbyService {
   private readonly query: MatchQueryService
   private readonly newId: () => string
+  private readonly passwordAttempts: RateLimiter
 
   constructor(
     private readonly deps: KernelDeps,
@@ -52,6 +73,35 @@ export class LobbyService {
   ) {
     this.query = new MatchQueryService(deps.storage)
     this.newId = options.newId ?? (() => crypto.randomUUID())
+    this.passwordAttempts = new RateLimiter(deps.clock, {
+      limit: PASSWORD_ATTEMPTS_PER_MATCH,
+      windowMs: PASSWORD_ATTEMPT_WINDOW_MS,
+    })
+  }
+
+  /**
+   * Check a match password, charging the match's own attempt budget before the hash is computed.
+   *
+   * The budget is spent on every attempt rather than only on the wrong ones, because a caller who
+   * knows the password does not need to make thirty attempts a minute and an attacker who does not
+   * would otherwise be charged for nothing. Both doors go through here; see
+   * `PASSWORD_ATTEMPTS_PER_MATCH`.
+   */
+  private async verifyMatchPassword(match: Match, password: string | undefined): Promise<void> {
+    if (match.passwordHash === null) return
+    if (!password) {
+      throw new UnauthorizedError('This match needs a password', { reason: 'password_required' })
+    }
+    const retryAfterSeconds = this.passwordAttempts.take(match.id)
+    if (retryAfterSeconds !== null) {
+      throw new RateLimitedError('Too many password attempts for this match', {
+        reason: 'rate_limited',
+        retryAfterSeconds,
+      })
+    }
+    if (!(await verifyPassword(password, match.passwordHash))) {
+      throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
+    }
   }
 
   async createMatch(request: CreateMatchRequest): Promise<MembershipView> {
@@ -111,14 +161,7 @@ export class LobbyService {
         reason: 'unknown_join_code',
       })
     }
-    if (match.passwordHash !== null) {
-      if (!request.password) {
-        throw new UnauthorizedError('This match needs a password', { reason: 'password_required' })
-      }
-      if (!(await verifyPassword(request.password, match.passwordHash))) {
-        throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
-      }
-    }
+    await this.verifyMatchPassword(match, request.password)
     await this.refuseDuplicateName(match.id, request.displayName)
     const joinOrder = await this.deps.storage.matches.claimSeat(match.id)
     if (joinOrder === null) {
@@ -184,19 +227,16 @@ export class LobbyService {
         reason: 'late_join_not_ready',
       })
     }
-    if (match.passwordHash !== null) {
-      if (!request.password || !(await verifyPassword(request.password, match.passwordHash))) {
-        throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
-      }
-    }
+    await this.verifyMatchPassword(match, request.password)
     const existing = await this.deps.storage.players.listByMatch(match.id)
     if (existing.some((player) => player.slot === request.slot)) {
       throw new ConflictError('That seat has already belonged to a human', {
         reason: 'seat_reserved',
       })
     }
-    // The lobby door counts seats through `claimSeat`; this one has no counter behind it, so the
-    // host's own limit has to be read here or a two-seat match could gather humans up to six.
+    // A courtesy refusal with the right reason before any work is done; `createLate` tests
+    // capacity again inside its own insert, which is what actually decides the race between two
+    // late joiners taking two different free seats.
     if (existing.length >= match.settings.maxPlayers) {
       throw new ConflictError('The match is full', { reason: 'match_full' })
     }
@@ -215,7 +255,7 @@ export class LobbyService {
       joinedAt: this.deps.clock.now(),
     }
     if (!(await this.deps.storage.players.createLate(player))) {
-      throw new ConflictError('That seat was claimed by another player', {
+      throw new ConflictError('That seat was claimed by another player, or the match filled up', {
         reason: 'seat_reserved',
       })
     }
@@ -537,7 +577,19 @@ export class LobbyService {
       })
       return
     }
-    await this.deps.storage.players.setStatus(target.id, reason)
+    // A compare-and-swap, not a write. `target.status` was read at authentication, and
+    // `tallyTakeoverVote` concurrently swaps `takeoverPending` to `computer` and announces the
+    // takeover. Writing `left` or `kicked` over that put a seat every client already plays as AI
+    // back among the absent human statuses, so the next rejoin or vote opened a fresh prompt for
+    // it, paused the clock, and published a second `match.playerTakenOver` — the regression the
+    // note at the top of this method says was fixed.
+    const claimed = await this.deps.storage.players.transitionStatus(
+      target.id,
+      ['active', 'takeoverPending', 'left'],
+      reason,
+    )
+    // Revoking and hanging up stay unconditional for a kick: the seat may now be computer
+    // controlled, but the person behind it must still lose the token and the streams either way.
     // Membership is the only thing the token ever proved, so it stops working here: a kicked player
     // keeps neither the event stream nor the sealed order sets of the turns that follow. The revoke
     // closes the next request and the hang-up closes the streams already open, which are never
@@ -546,11 +598,21 @@ export class LobbyService {
       await this.deps.storage.players.revokeToken(target.id)
       await this.hangUp(match.id, target.id)
     }
-    await this.publisher.publish(match.id, {
-      type: 'lobby.playerLeft',
-      payload: { playerId: target.id, reason },
-    })
+    if (claimed) {
+      await this.publisher.publish(match.id, {
+        type: 'lobby.playerLeft',
+        payload: { playerId: target.id, reason },
+      })
+    }
     if (match.status !== 'running' && match.status !== 'desynced') return
+    // The takeover won the seat, so it is no longer a human absence anyone has to decide on. The
+    // verdict is still re-run below, because the seat leaving `humanParticipants` can complete a
+    // readiness or a consensus that was waiting on it.
+    if (!claimed) {
+      await this.turns.reevaluate(match.id)
+      await this.retallyOpenPrompts(match)
+      return
+    }
     if (!wasActive) {
       // A `takeoverPending` seat is not idle: `humanParticipants` counts it, so both readiness and
       // consensus wait on it. Kicking one and returning here left the turn waiting on a seat that

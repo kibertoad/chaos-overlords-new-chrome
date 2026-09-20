@@ -1,0 +1,1 @@
+ALTER TABLE "turns" ADD COLUMN "desynced_at" timestamp with time zone;

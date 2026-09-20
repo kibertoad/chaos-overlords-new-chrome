@@ -1510,4 +1510,269 @@ describe('multiplayer kernel', () => {
     expect(roster.every((player) => player.slot >= 0)).toBe(true)
     expect(roster).toHaveLength(2)
   })
+
+  /**
+   * S1: two `completeSeal` calls in flight at once, with the roster changing between them.
+   *
+   * The sweep deliberately runs `completeSeal` against a seal the request path is still finishing,
+   * so this interleaving is a designed one rather than a corner. The freeze used to be conditional
+   * on the STATUS, which does not change across the window, so both callers computed a set, both
+   * wrote one, and both announced it — and with a departure in between, the two sets differed. A
+   * client that fetched the set after the second write verified it against the first announced
+   * digest and ended its session on "the sealed-set digest for turn N does not match the event
+   * log", which is terminal.
+   *
+   * The interleaving is forced rather than raced for: the first caller is held on the roster read
+   * the digest is computed from, so it goes on to hash a roster that has since changed. That is
+   * precisely the state a second caller must not be allowed to overwrite.
+   */
+  it('freezes a sealed turn once, even with a departure between two concurrent completions', async () => {
+    const { host, guest, third } = await startedMatchOfThree()
+    await submit(await principalOf(host.token), 1, 1, true)
+    await submit(await principalOf(guest.token), 1, 2, true)
+    await submit(await principalOf(third.token), 1, 3, false)
+    const matchId = host.match.id
+    // The seal's own compare-and-swap without the completion that follows it, so both callers
+    // below enter the freeze branch on the same unfrozen turn.
+    expect(
+      await storage.turns.transition(matchId, 1, ['open'], {
+        status: 'sealed',
+        sealedAt: clock.now(),
+      }),
+    ).toBe(true)
+
+    // Hold the second roster read — the one `completeSeal` derives the sealed set from — so the
+    // first caller carries a roster of three past the departure below.
+    let release = (): void => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const realListByMatch = storage.players.listByMatch.bind(storage.players)
+    let reads = 0
+    storage.players.listByMatch = async (id: string) => {
+      const roster = await realListByMatch(id)
+      reads += 1
+      if (reads === 2) await held
+      return roster
+    }
+
+    const held3 = kernel.turns.sweep()
+    await Promise.resolve()
+    await kernel.lobby.kick(await principalOf(host.token), third.player.id)
+    // The second caller runs to completion on the roster of two while the first is still held.
+    await kernel.turns.sweep()
+    release()
+    await held3
+    storage.players.listByMatch = realListByMatch
+
+    const sealed = notifier.events.filter((event) => event.type === 'turn.sealed')
+    expect(sealed).toHaveLength(1)
+    const turn = await storage.turns.get(matchId, 1)
+    const announced = sealed[0]?.payload as { orderSetHash: string } | undefined
+    expect(turn?.orderSetHash).toBe(announced?.orderSetHash)
+  })
+
+  /**
+   * R1, server half: a repair must name the turn that actually diverged.
+   *
+   * The successor a seal opens carries no reports, so `authoritativeCandidates` had nothing to
+   * count for it and let the host store any hash it liked. `evaluateConsensus` then judged every
+   * later report against that hash and could only confirm or wait, never desync — the host
+   * arbitrating a disagreement it is a party to, through the one turn the corroboration rule could
+   * not see.
+   */
+  it('refuses a repair snapshot for a turn that did not diverge', async () => {
+    const { host, guest } = await startedMatch()
+    await submit(await principalOf(host.token), 1, 1, true)
+    await submit(await principalOf(guest.token), 1, 2, true)
+    await kernel.turns.report(await principalOf(host.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+    await kernel.turns.report(await principalOf(guest.token), 1, {
+      stateHash: HASH_B,
+      finished: false,
+    })
+    expect(storage.statusOf(host.match.id)).toBe('desynced')
+
+    // Turn 2 is `open`, turn 1 is the one that diverged. Neither the open successor nor a turn
+    // already confirmed may be repaired.
+    await expect(
+      kernel.snapshots.upload(await principalOf(host.token), {
+        turn: 2,
+        formatVersion: 1,
+        stateHash: HASH_A,
+        body: 'AAAA',
+        seatSummaries: [],
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'turn_open' } })
+
+    await kernel.snapshots.upload(await principalOf(host.token), {
+      turn: 1,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+    await kernel.turns.report(await principalOf(guest.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+    expect(storage.statusOf(host.match.id)).toBe('running')
+    // Confirmed now, so no longer repairable even though it is below `currentTurn`.
+    await expect(
+      kernel.snapshots.upload(await principalOf(host.token), {
+        turn: 1,
+        formatVersion: 1,
+        stateHash: HASH_B,
+        body: 'BBBB',
+        seatSummaries: [],
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'snapshot_not_required' } })
+  })
+
+  /**
+   * R1, the case that had no fix: the host is the odd one out.
+   *
+   * Its own hash can never be the majority's, so a host-only repair rule meant no repair existed
+   * and the match stayed paused until retention collected it. The hash is still the hard rule —
+   * whoever posts the repair must name the one the players reported most often — so letting a
+   * majority holder post it cannot be used to impose a state nobody computed.
+   */
+  it('lets a majority holder repair a desync the host is the outlier of, and refuses the outlier', async () => {
+    const { host, guest, third } = await startedMatchOfThree()
+    await submit(await principalOf(host.token), 1, 1, true)
+    await submit(await principalOf(guest.token), 1, 2, true)
+    await submit(await principalOf(third.token), 1, 3, true)
+    await kernel.turns.report(await principalOf(host.token), 1, {
+      stateHash: HASH_B,
+      finished: false,
+    })
+    await kernel.turns.report(await principalOf(guest.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+    await kernel.turns.report(await principalOf(third.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+    expect(storage.statusOf(host.match.id)).toBe('desynced')
+
+    // The host's own state is not what the others computed, so it may not be imposed on them.
+    await expect(
+      kernel.snapshots.upload(await principalOf(host.token), {
+        turn: 1,
+        formatVersion: 1,
+        stateHash: HASH_B,
+        body: 'BBBB',
+        seatSummaries: [],
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'uncorroborated_state_hash' } })
+
+    await kernel.snapshots.upload(await principalOf(guest.token), {
+      turn: 1,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+    await kernel.turns.report(await principalOf(host.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+    expect(storage.statusOf(host.match.id)).toBe('running')
+  })
+
+  /**
+   * The other half of the same rule: a tie has no majority, so the host still breaks it and a peer
+   * may not. Without this, whoever uploaded first would decide a two-player match.
+   */
+  it('lets only the host break a tie between two reported states', async () => {
+    const { host, guest } = await startedMatch()
+    await submit(await principalOf(host.token), 1, 1, true)
+    await submit(await principalOf(guest.token), 1, 2, true)
+    await kernel.turns.report(await principalOf(host.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+    await kernel.turns.report(await principalOf(guest.token), 1, {
+      stateHash: HASH_B,
+      finished: false,
+    })
+
+    await expect(
+      kernel.snapshots.upload(await principalOf(guest.token), {
+        turn: 1,
+        formatVersion: 1,
+        stateHash: HASH_B,
+        body: 'BBBB',
+        seatSummaries: [],
+      }),
+    ).rejects.toMatchObject({ details: { reason: 'host_only' } })
+    await kernel.snapshots.upload(await principalOf(host.token), {
+      turn: 1,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+    expect((await kernel.snapshots.latest(host.match.id)).body).toBe('AAAA')
+  })
+
+  /**
+   * S4: readiness is a change notification, not a receipt.
+   *
+   * A member may submit at the member rate limit, and the client sends a whole-document
+   * replacement per command the player queues. Publishing on every `ready: true` submission let one
+   * client grow a match's durable log by hundreds of thousands of rows a day, and wake every
+   * subscriber of the match for each of them.
+   */
+  it('publishes readiness only when it changes', async () => {
+    const { host, guest } = await startedMatch()
+    const readiness = () => notifier.events.filter((event) => event.type === 'turn.readiness')
+    await submit(await principalOf(host.token), 1, 1, false)
+    expect(readiness()).toHaveLength(0)
+    await submit(await principalOf(host.token), 1, 2, true)
+    expect(readiness()).toHaveLength(1)
+    for (let repeat = 0; repeat < 5; repeat += 1) {
+      await submit(await principalOf(host.token), 1, 3 + repeat, true)
+    }
+    expect(readiness()).toHaveLength(1)
+    await submit(await principalOf(host.token), 1, 9, false)
+    expect(readiness()).toHaveLength(2)
+    await submit(await principalOf(guest.token), 1, 10, true)
+    expect(readiness()).toHaveLength(3)
+  })
+
+  /**
+   * S6: evidence a verdict was taken on is immutable.
+   *
+   * `report` reads the turn status and writes in two statements, so a report that lost the race
+   * with the `settle` that confirmed the turn used to land behind the verdict it could not have
+   * changed. The write is conditional on the turn still awaiting one now.
+   */
+  it('refuses a report that lands after the turn was confirmed', async () => {
+    const { host, guest } = await startedMatch()
+    await submit(await principalOf(host.token), 1, 1, true)
+    await submit(await principalOf(guest.token), 1, 2, true)
+    const principal = await principalOf(guest.token)
+    await kernel.turns.report(await principalOf(host.token), 1, {
+      stateHash: HASH_A,
+      finished: false,
+    })
+    await kernel.turns.report(principal, 1, { stateHash: HASH_A, finished: false })
+    expect((await storage.turns.get(host.match.id, 1))?.status).toBe('confirmed')
+    expect(
+      await storage.turns.upsertReport({
+        matchId: host.match.id,
+        turn: 1,
+        playerId: principal.player.id,
+        stateHash: HASH_B,
+        finished: false,
+        reportedAt: clock.now(),
+      }),
+    ).toBe(false)
+    const reports = await storage.turns.listReports(host.match.id, 1)
+    expect(reports.every((report) => report.stateHash === HASH_A)).toBe(true)
+  })
 })

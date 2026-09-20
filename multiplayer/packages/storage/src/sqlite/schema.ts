@@ -74,6 +74,12 @@ export const turns = sqliteTable(
     sealedSlots: text('sealed_slots', { mode: 'json' }),
     /** The state hash the verdict confirmed the turn on; null until a verdict does. */
     stateHash: text('state_hash'),
+    /**
+     * When the verdict announced this turn's divergence, stamped by the compare-and-swap that
+     * claims the announcement. It is what makes `turn.desynced` a publish-once event without
+     * scanning the log for one, the same way `order_set_hash` does for `turn.sealed`.
+     */
+    desyncedAt: integer('desynced_at', { mode: 'timestamp_ms' }),
   },
   (table) => [
     primaryKey({ columns: [table.matchId, table.number] }),

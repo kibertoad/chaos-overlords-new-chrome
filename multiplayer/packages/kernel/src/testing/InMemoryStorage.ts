@@ -1,8 +1,9 @@
-import type { LobbyListing, MatchStatus, TurnStatus } from '@chaos-overlords/contracts'
+import type { MatchStatus, TurnStatus } from '@chaos-overlords/contracts'
 import type {
   Match,
   PersistedEvent,
   Player,
+  PublicLobbyRow,
   Snapshot,
   TakeoverVote,
   Turn,
@@ -48,23 +49,29 @@ export class InMemoryStorage implements MultiplayerStorage {
     getByJoinCode: async (joinCode) =>
       clone([...this.matchRows.values()].find((match) => match.joinCode === joinCode)),
     listPublicLobbies: async (limit) => {
-      const lobbies: LobbyListing[] = []
+      const lobbies: PublicLobbyRow[] = []
       for (const match of this.matchRows.values()) {
         if (!['lobby', 'running'].includes(match.status) || match.settings.visibility !== 'public')
           continue
+        const activeCount = [...this.playerRows.values()].filter(
+          (player) => player.matchId === match.id && player.status === 'active',
+        ).length
+        // A running match nobody is in any more is unjoinable, so it is not advertised.
+        if (match.status === 'running' && activeCount === 0) continue
         const host = this.playerRows.get(match.hostPlayerId)
         lobbies.push({
           id: match.id,
           joinCode: match.joinCode,
           name: match.settings.name,
           hostDisplayName: host?.displayName ?? '',
-          playerCount: match.seatCount,
+          playerCount: match.status === 'running' ? activeCount : match.seatCount,
           maxPlayers: match.settings.maxPlayers,
           passwordProtected: match.passwordHash !== null,
           status: match.status,
           settings: match.settings,
           availableSlots: [],
           availableSeatSummaries: [],
+          hasSnapshot: [...this.snapshotRows.values()].some((row) => row.matchId === match.id),
           createdAt: match.createdAt.toISOString(),
         })
       }
@@ -123,9 +130,13 @@ export class InMemoryStorage implements MultiplayerStorage {
       for (const match of doomed) this.deleteMatch(match.id)
       return doomed.length
     },
-    listDesynced: async (limit) =>
+    listDesynced: async (limit, touchedSince) =>
       [...this.matchRows.values()]
-        .filter((match) => match.status === 'desynced')
+        .filter(
+          (match) =>
+            match.status === 'desynced' &&
+            (touchedSince === null || match.updatedAt >= touchedSince),
+        )
         .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime())
         .slice(0, limit)
         .map((match) => match.id),
@@ -153,12 +164,12 @@ export class InMemoryStorage implements MultiplayerStorage {
     createLate: async (player) => {
       const match = this.matchRows.get(player.matchId)
       if (match?.status !== 'running') return false
-      if (
-        [...this.playerRows.values()].some(
-          (candidate) => candidate.matchId === player.matchId && candidate.slot === player.slot,
-        )
+      const seated = [...this.playerRows.values()].filter(
+        (candidate) => candidate.matchId === player.matchId,
       )
-        return false
+      if (seated.some((candidate) => candidate.slot === player.slot)) return false
+      // Capacity is part of the claim, not a check the caller made a moment earlier.
+      if (seated.length >= match.settings.maxPlayers) return false
       this.playerRows.set(player.id, { ...player })
       return true
     },
@@ -174,6 +185,10 @@ export class InMemoryStorage implements MultiplayerStorage {
         .filter((player) => player.matchId === matchId)
         .sort((a, b) => a.slot - b.slot || a.joinOrder - b.joinOrder || a.id.localeCompare(b.id))
         .map((player) => ({ ...player })),
+    listSeats: async (matchIds) =>
+      [...this.playerRows.values()]
+        .filter((player) => matchIds.includes(player.matchId))
+        .map((player) => ({ matchId: player.matchId, slot: player.slot })),
     setStatus: async (playerId, status) => {
       const player = this.playerRows.get(playerId)
       if (player) player.status = status
@@ -226,6 +241,17 @@ export class InMemoryStorage implements MultiplayerStorage {
     },
     getOrders: async (matchId, number, playerId) =>
       clone(this.orderRows.get(orderKey(matchId, number, playerId))),
+    getOrderSummary: async (matchId, number, playerId) => {
+      const row = this.orderRows.get(orderKey(matchId, number, playerId))
+      if (!row) return null
+      return {
+        matchId: row.matchId,
+        turn: row.turn,
+        playerId: row.playerId,
+        ordersHash: row.ordersHash,
+        ready: row.ready,
+      }
+    },
     listOrders: async (matchId, number) =>
       [...this.orderRows.values()]
         .filter((row) => row.matchId === matchId && row.turn === number)
@@ -248,6 +274,21 @@ export class InMemoryStorage implements MultiplayerStorage {
       Object.assign(turn, definedOnly(patch))
       return true
     },
+    freezeSeal: async (matchId, number, frozen) => {
+      const turn = this.turnRows.get(turnKey(matchId, number))
+      // Conditional on what is being frozen, not on the status: two callers are in this branch
+      // for the whole window between the seal's swap and the successor opening.
+      if (!turn || turn.status === 'open' || turn.orderSetHash !== null) return false
+      turn.orderSetHash = frozen.orderSetHash
+      turn.sealedSlots = structuredClone(frozen.sealedSlots)
+      return true
+    },
+    claimDesyncAnnouncement: async (matchId, number, at) => {
+      const turn = this.turnRows.get(turnKey(matchId, number))
+      if (turn?.status !== 'desynced' || turn.desyncedAt !== null) return false
+      turn.desyncedAt = at
+      return true
+    },
     rescheduleDeadline: async (matchId, number, deadlineAt) => {
       const turn = this.turnRows.get(turnKey(matchId, number))
       if (turn?.status !== 'open') return false
@@ -255,7 +296,11 @@ export class InMemoryStorage implements MultiplayerStorage {
       return true
     },
     upsertReport: async (report) => {
+      const turn = this.turnRows.get(turnKey(report.matchId, report.turn))
+      // Conditional on the turn still awaiting a verdict, like the conditional insert in SQL.
+      if (turn?.status !== 'sealed' && turn?.status !== 'desynced') return false
       this.reportRows.set(orderKey(report.matchId, report.turn, report.playerId), { ...report })
+      return true
     },
     listReports: async (matchId, number) =>
       [...this.reportRows.values()]
@@ -286,13 +331,14 @@ export class InMemoryStorage implements MultiplayerStorage {
         .slice(0, limit)
         .map((turn) => ({ matchId: turn.matchId, number: turn.number })),
     // Driven from the matches, so a current turn with no row at all counts as stalled too.
-    listStalledSeals: async (limit) =>
+    listStalledSeals: async (limit, touchedSince) =>
       [...this.matchRows.values()]
         .filter((match) => match.status === 'running' || match.status === 'desynced')
+        .filter((match) => touchedSince === null || match.updatedAt >= touchedSince)
         .filter(
           (match) => this.turnRows.get(turnKey(match.id, match.currentTurn))?.status !== 'open',
         )
-        .sort((a, b) => a.id.localeCompare(b.id))
+        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime() || a.id.localeCompare(b.id))
         .slice(0, limit)
         .map((match) => ({ matchId: match.id, number: match.currentTurn })),
   }
@@ -302,6 +348,12 @@ export class InMemoryStorage implements MultiplayerStorage {
       this.snapshotRows.set(turnKey(snapshot.matchId, snapshot.turn), { ...snapshot })
     },
     get: async (matchId, turn) => clone(this.snapshotRows.get(turnKey(matchId, turn))),
+    getSummary: async (matchId, turn) => {
+      const row = this.snapshotRows.get(turnKey(matchId, turn))
+      if (!row) return null
+      const { body: _body, ...summary } = row
+      return structuredClone(summary)
+    },
     prune: async (matchId, keep) => {
       const turns = [...this.snapshotRows.values()]
         .filter((snapshot) => snapshot.matchId === matchId)

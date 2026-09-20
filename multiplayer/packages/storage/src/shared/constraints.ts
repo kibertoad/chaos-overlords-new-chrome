@@ -50,3 +50,17 @@ export async function insertUnlessTaken(write: () => Promise<unknown>): Promise<
     throw error
   }
 }
+
+/**
+ * Jittered pause between two attempts at claiming the next event sequence number.
+ *
+ * `append` allocates its own sequence inside the insert, so concurrent appenders collide on the
+ * primary key and the losers retry. Retrying immediately means they collide again on the same
+ * scheduling tick: six players plus the sweeper appending to one match can plausibly exhaust all
+ * eight attempts in a row, and the throw lands in the middle of `completeSeal`. A few milliseconds
+ * of full jitter, growing with the attempt, breaks the convoy for the cost of a timer.
+ */
+export async function appendBackoff(attempt: number): Promise<void> {
+  const ceiling = Math.min(2 ** (attempt - 1), 16)
+  await new Promise((resolve) => setTimeout(resolve, Math.random() * ceiling))
+}

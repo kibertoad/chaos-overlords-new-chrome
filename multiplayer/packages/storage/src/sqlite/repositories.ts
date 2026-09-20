@@ -1,12 +1,9 @@
-import type { LobbyListing } from '@chaos-overlords/contracts'
 import type {
-  EventRepository,
   MatchRepository,
   MultiplayerStorage,
-  PersistedEvent,
   PlayerRepository,
+  PublicLobbyRow,
   SnapshotRepository,
-  TakeoverRepository,
   TurnRepository,
 } from '@chaos-overlords/kernel'
 import {
@@ -15,6 +12,7 @@ import {
   desc,
   eq,
   exists,
+  gte,
   inArray,
   isNotNull,
   isNull,
@@ -25,29 +23,25 @@ import {
   or,
   sql,
 } from 'drizzle-orm'
-import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core'
-import { APPEND_ATTEMPTS, insertUnlessTaken, isUniqueViolation } from '../shared/constraints'
+import { insertUnlessTaken } from '../shared/constraints'
 import {
   firstOrNull,
-  toEvent,
   toMatch,
   toMatchInsert,
   toPlayer,
+  toPublicLobbyRow,
   toSnapshot,
   toSnapshotSummary,
-  toTakeoverVote,
   toTurn,
   toTurnOrders,
   toTurnReport,
 } from '../shared/mappers'
+import type { SqliteDatabase } from './database'
+import { sqliteEventRepository } from './events'
 import * as schema from './schema'
+import { sqliteTakeoverRepository } from './takeovers'
 
-/**
- * Either SQLite driver Drizzle offers: better-sqlite3 (`'sync'`) or D1 (`'async'`). Awaiting a
- * synchronous result is a no-op, so one implementation serves both. Every conditional write ends
- * in `.returning()` because the two drivers report affected rows in different shapes.
- */
-export type SqliteDatabase = BaseSQLiteDatabase<'sync' | 'async', unknown, typeof schema>
+export type { SqliteDatabase }
 
 export function createSqliteStorage(db: SqliteDatabase): MultiplayerStorage {
   return {
@@ -61,7 +55,7 @@ export function createSqliteStorage(db: SqliteDatabase): MultiplayerStorage {
 }
 
 function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
-  const { matches, players } = schema
+  const { matches, players, snapshots } = schema
   return {
     async create(match) {
       return insertUnlessTaken(() => db.insert(matches).values(toMatchInsert(match)))
@@ -74,34 +68,47 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
         (await db.select().from(matches).where(eq(matches.joinCode, joinCode))).map(toMatch),
       )
     },
-    async listPublicLobbies(limit): Promise<LobbyListing[]> {
+    /**
+     * One statement for the whole listing. The active-seat count and the existence of a snapshot
+     * are correlated subselects rather than a read per listed match: the route is unauthenticated,
+     * and two extra queries per running match is the cost an anonymous caller could ask for
+     * thirty times a minute. A running match with nobody active is left out — `joinRunning`
+     * refuses it and rejoining needs the join code, so it is a row no reader can act on.
+     */
+    async listPublicLobbies(limit): Promise<PublicLobbyRow[]> {
+      const activeSeats = sql<number>`(select count(*) from ${players} where ${players.matchId} = ${matches.id} and ${players.status} = 'active')`
       const rows = await db
         .select({
           id: matches.id,
           joinCode: matches.joinCode,
           name: matches.name,
           hostDisplayName: players.displayName,
-          playerCount: matches.seatCount,
+          seatCount: matches.seatCount,
+          activeCount: activeSeats,
           maxPlayers: matches.maxPlayers,
           passwordHash: matches.passwordHash,
           status: matches.status,
           settings: matches.settings,
           createdAt: matches.createdAt,
+          hasSnapshot: exists(
+            db
+              .select({ one: sql`1` })
+              .from(snapshots)
+              .where(eq(snapshots.matchId, matches.id)),
+          ),
         })
         .from(matches)
         .innerJoin(players, eq(players.id, matches.hostPlayerId))
-        .where(and(inArray(matches.status, ['lobby', 'running']), eq(matches.visibility, 'public')))
+        .where(
+          and(
+            inArray(matches.status, ['lobby', 'running']),
+            eq(matches.visibility, 'public'),
+            or(ne(matches.status, 'running'), sql`${activeSeats} > 0`),
+          ),
+        )
         .orderBy(desc(matches.createdAt), asc(matches.id))
         .limit(limit)
-      return rows.map(({ passwordHash, createdAt, ...rest }) => ({
-        ...rest,
-        status: rest.status as LobbyListing['status'],
-        settings: rest.settings as LobbyListing['settings'],
-        availableSlots: [],
-        availableSeatSummaries: [],
-        passwordProtected: passwordHash !== null,
-        createdAt: createdAt.toISOString(),
-      }))
+      return rows.map(toPublicLobbyRow)
     },
     async claimSeat(matchId) {
       const rows = await db
@@ -200,11 +207,16 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
         .returning({ id: matches.id })
       return rows.length
     },
-    async listDesynced(limit) {
+    async listDesynced(limit, touchedSince) {
       const rows = await db
         .select({ id: matches.id })
         .from(matches)
-        .where(eq(matches.status, 'desynced'))
+        .where(
+          and(
+            eq(matches.status, 'desynced'),
+            ...(touchedSince ? [gte(matches.updatedAt, touchedSince)] : []),
+          ),
+        )
         .orderBy(matches.updatedAt)
         .limit(limit)
       return rows.map((row) => row.id)
@@ -282,6 +294,10 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
                 eq(matches.id, player.matchId),
                 eq(matches.status, 'running'),
                 notExists(occupied),
+                // Capacity in the same statement as the insert. Two late joiners for two different
+                // free slots each passed a capacity check taken a moment before the other's insert,
+                // and the match ended up holding more players than `maxPlayers`.
+                sql`(select count(*) from ${players} where ${players.matchId} = ${player.matchId}) < ${matches.maxPlayers}`,
               ),
             ),
         )
@@ -304,6 +320,13 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
         .where(eq(players.matchId, matchId))
         .orderBy(asc(players.slot), asc(players.joinOrder), asc(players.id))
       return rows.map(toPlayer)
+    },
+    async listSeats(matchIds) {
+      if (matchIds.length === 0) return []
+      return db
+        .select({ matchId: players.matchId, slot: players.slot })
+        .from(players)
+        .where(inArray(players.matchId, [...matchIds]))
     },
     async setStatus(playerId, status) {
       await db.update(players).set({ status }).where(eq(players.id, playerId))
@@ -346,30 +369,19 @@ function sqlitePlayerRepository(db: SqliteDatabase): PlayerRepository {
   }
 }
 
-function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
-  const { matches, turns, turnOrders, turnReports } = schema
+/**
+ * The orders half of the turn repository: one player's row, the whole set, and the
+ * projection that reads a turn's readiness and digests without the documents. Split out of
+ * the repository so neither half grows past what fits on a screen.
+ */
+function sqliteTurnOrderMethods(
+  db: SqliteDatabase,
+): Pick<
+  TurnRepository,
+  'submitOrders' | 'getOrders' | 'getOrderSummary' | 'listOrders' | 'listOrderSummaries'
+> {
+  const { turns, turnOrders } = schema
   return {
-    async open(turn, playerIds) {
-      const created = await insertUnlessTaken(() => db.insert(turns).values(turn))
-      if (playerIds.length > 0) {
-        // Topped up rather than assumed: a re-run of the open step (a repaired seal) fills any row
-        // an interrupted one never wrote, and a player who already has a row keeps it untouched.
-        await db
-          .insert(turnOrders)
-          .values(
-            playerIds.map((playerId) => ({ matchId: turn.matchId, turn: turn.number, playerId })),
-          )
-          .onConflictDoNothing()
-      }
-      return created
-    },
-    async get(matchId, number) {
-      const rows = await db
-        .select()
-        .from(turns)
-        .where(and(eq(turns.matchId, matchId), eq(turns.number, number)))
-      return firstOrNull(rows.map(toTurn))
-    },
     async submitOrders(matchId, number, playerId, submission) {
       const turnIsOpen = exists(
         db
@@ -406,6 +418,25 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
         )
       return firstOrNull(rows.map(toTurnOrders))
     },
+    async getOrderSummary(matchId, number, playerId) {
+      const rows = await db
+        .select({
+          matchId: turnOrders.matchId,
+          turn: turnOrders.turn,
+          playerId: turnOrders.playerId,
+          ordersHash: turnOrders.ordersHash,
+          ready: turnOrders.ready,
+        })
+        .from(turnOrders)
+        .where(
+          and(
+            eq(turnOrders.matchId, matchId),
+            eq(turnOrders.turn, number),
+            eq(turnOrders.playerId, playerId),
+          ),
+        )
+      return firstOrNull(rows)
+    },
     async listOrders(matchId, number) {
       const rows = await db
         .select()
@@ -427,6 +458,34 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
         .where(and(eq(turnOrders.matchId, matchId), eq(turnOrders.turn, number)))
         .orderBy(asc(turnOrders.playerId))
     },
+  }
+}
+
+function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
+  const { matches, turns, turnOrders, turnReports } = schema
+  return {
+    ...sqliteTurnOrderMethods(db),
+    async open(turn, playerIds) {
+      const created = await insertUnlessTaken(() => db.insert(turns).values(turn))
+      if (playerIds.length > 0) {
+        // Topped up rather than assumed: a re-run of the open step (a repaired seal) fills any row
+        // an interrupted one never wrote, and a player who already has a row keeps it untouched.
+        await db
+          .insert(turnOrders)
+          .values(
+            playerIds.map((playerId) => ({ matchId: turn.matchId, turn: turn.number, playerId })),
+          )
+          .onConflictDoNothing()
+      }
+      return created
+    },
+    async get(matchId, number) {
+      const rows = await db
+        .select()
+        .from(turns)
+        .where(and(eq(turns.matchId, matchId), eq(turns.number, number)))
+      return firstOrNull(rows.map(toTurn))
+    },
     async transition(matchId, number, from, patch) {
       const rows = await db
         .update(turns)
@@ -441,6 +500,38 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
         .returning({ number: turns.number })
       return rows.length === 1
     },
+    async freezeSeal(matchId, number, frozen) {
+      const rows = await db
+        .update(turns)
+        .set(frozen)
+        .where(
+          and(
+            eq(turns.matchId, matchId),
+            eq(turns.number, number),
+            ne(turns.status, 'open'),
+            // The compare-and-swap is on what is being frozen, not on the status: the status is
+            // `sealed` for the whole window two callers can be computing a set in.
+            isNull(turns.orderSetHash),
+          ),
+        )
+        .returning({ number: turns.number })
+      return rows.length === 1
+    },
+    async claimDesyncAnnouncement(matchId, number, at) {
+      const rows = await db
+        .update(turns)
+        .set({ desyncedAt: at })
+        .where(
+          and(
+            eq(turns.matchId, matchId),
+            eq(turns.number, number),
+            eq(turns.status, 'desynced'),
+            isNull(turns.desyncedAt),
+          ),
+        )
+        .returning({ number: turns.number })
+      return rows.length === 1
+    },
     async rescheduleDeadline(matchId, number, deadlineAt) {
       const rows = await db
         .update(turns)
@@ -449,10 +540,33 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
         .returning({ number: turns.number })
       return rows.length === 1
     },
+    /**
+     * An insert fed by a select over the turn row, so "the turn is still unsettled" is tested by
+     * the same statement that writes the report; the conflict clause makes it a replacement of the
+     * player's earlier one.
+     */
     async upsertReport(report) {
-      await db
+      const rows = await db
         .insert(turnReports)
-        .values(report)
+        .select(
+          db
+            .select({
+              matchId: sql`${report.matchId}`.as('match_id'),
+              turn: sql`${report.turn}`.as('turn'),
+              playerId: sql`${report.playerId}`.as('player_id'),
+              stateHash: sql`${report.stateHash}`.as('state_hash'),
+              finished: sql`${report.finished ? 1 : 0}`.as('finished'),
+              reportedAt: sql`${report.reportedAt.getTime()}`.as('reported_at'),
+            })
+            .from(turns)
+            .where(
+              and(
+                eq(turns.matchId, report.matchId),
+                eq(turns.number, report.turn),
+                inArray(turns.status, ['sealed', 'desynced']),
+              ),
+            ),
+        )
         .onConflictDoUpdate({
           target: [turnReports.matchId, turnReports.turn, turnReports.playerId],
           set: {
@@ -461,6 +575,8 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
             reportedAt: report.reportedAt,
           },
         })
+        .returning({ playerId: turnReports.playerId })
+      return rows.length === 1
     },
     async listReports(matchId, number) {
       const rows = await db
@@ -501,19 +617,27 @@ function sqliteTurnRepository(db: SqliteDatabase): TurnRepository {
      * `start` that died before opening turn 1) is as stalled as one whose seal stopped halfway,
      * and an inner join would never see it. The repair opens the successor in both cases.
      */
-    async listStalledSeals(limit) {
-      return db
-        .select({ matchId: matches.id, number: matches.currentTurn })
-        .from(matches)
-        .leftJoin(turns, and(eq(turns.matchId, matches.id), eq(turns.number, matches.currentTurn)))
-        .where(
-          and(
-            inArray(matches.status, ['running', 'desynced']),
-            or(isNull(turns.status), ne(turns.status, 'open')),
-          ),
-        )
-        .orderBy(asc(matches.id))
-        .limit(limit)
+    async listStalledSeals(limit, touchedSince) {
+      return (
+        db
+          .select({ matchId: matches.id, number: matches.currentTurn })
+          .from(matches)
+          .leftJoin(
+            turns,
+            and(eq(turns.matchId, matches.id), eq(turns.number, matches.currentTurn)),
+          )
+          .where(
+            and(
+              inArray(matches.status, ['running', 'desynced']),
+              or(isNull(turns.status), ne(turns.status, 'open')),
+              ...(touchedSince ? [gte(matches.updatedAt, touchedSince)] : []),
+            ),
+          )
+          // Ordered by the recency the window is taken on, so a match that keeps throwing cannot pin
+          // the head of the page and hide every other stall behind it.
+          .orderBy(desc(matches.updatedAt), asc(matches.id))
+          .limit(limit)
+      )
     },
   }
 }
@@ -529,6 +653,10 @@ function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
           target: [snapshots.matchId, snapshots.turn],
           set: {
             formatVersion: snapshot.formatVersion,
+            // Re-uploading a turn replaces the bytes, so the versions they were written under have
+            // to move with them; leaving them behind described the new body with the old client's.
+            protocolVersion: snapshot.protocolVersion,
+            sessionVersion: snapshot.sessionVersion,
             stateHash: snapshot.stateHash,
             uploadedByPlayerId: snapshot.uploadedByPlayerId,
             uploadedAt: snapshot.uploadedAt,
@@ -542,6 +670,22 @@ function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
         .from(snapshots)
         .where(and(eq(snapshots.matchId, matchId), eq(snapshots.turn, turn)))
       return firstOrNull(rows.map(toSnapshot))
+    },
+    async getSummary(matchId, turn) {
+      const rows = await db
+        .select({
+          matchId: snapshots.matchId,
+          turn: snapshots.turn,
+          formatVersion: snapshots.formatVersion,
+          protocolVersion: snapshots.protocolVersion,
+          sessionVersion: snapshots.sessionVersion,
+          stateHash: snapshots.stateHash,
+          uploadedByPlayerId: snapshots.uploadedByPlayerId,
+          uploadedAt: snapshots.uploadedAt,
+        })
+        .from(snapshots)
+        .where(and(eq(snapshots.matchId, matchId), eq(snapshots.turn, turn)))
+      return firstOrNull(rows.map(toSnapshotSummary))
     },
     async getLatest(matchId) {
       const rows = await db
@@ -585,145 +729,6 @@ function sqliteSnapshotRepository(db: SqliteDatabase): SnapshotRepository {
         .where(and(eq(snapshots.matchId, matchId), lt(snapshots.turn, oldestKept)))
         .returning({ turn: snapshots.turn })
       return rows.length
-    },
-  }
-}
-
-function sqliteTakeoverRepository(db: SqliteDatabase): TakeoverRepository {
-  const { takeoverPrompts, takeoverVotes } = schema
-  return {
-    async openPrompt(matchId, playerId, turn, openedAt) {
-      const rows = await db
-        .insert(takeoverPrompts)
-        .values({ matchId, playerId, turn, openedAt })
-        .onConflictDoNothing()
-        .returning({ playerId: takeoverPrompts.playerId })
-      return rows.length === 1
-    },
-    async closePrompt(matchId, playerId) {
-      // Votes first: a death between the two leaves an open prompt with no votes, which is the
-      // safe state, rather than votes that a later prompt for the same seat would inherit.
-      await db
-        .delete(takeoverVotes)
-        .where(and(eq(takeoverVotes.matchId, matchId), eq(takeoverVotes.targetPlayerId, playerId)))
-      await db
-        .delete(takeoverPrompts)
-        .where(and(eq(takeoverPrompts.matchId, matchId), eq(takeoverPrompts.playerId, playerId)))
-    },
-    async hasOpenPrompts(matchId) {
-      const rows = await db
-        .select({ playerId: takeoverPrompts.playerId })
-        .from(takeoverPrompts)
-        .where(eq(takeoverPrompts.matchId, matchId))
-        .limit(1)
-      return rows.length > 0
-    },
-    async listOpenPrompts(matchId) {
-      const rows = await db
-        .select({ playerId: takeoverPrompts.playerId })
-        .from(takeoverPrompts)
-        .where(eq(takeoverPrompts.matchId, matchId))
-        .orderBy(asc(takeoverPrompts.playerId))
-      return rows.map((row) => row.playerId)
-    },
-    /**
-     * An insert fed by a select over the prompt row, so "the prompt is open" is tested by the same
-     * statement that writes the vote; the conflict clause makes it a replacement of the voter's
-     * earlier choice.
-     */
-    async castVote({ matchId, targetPlayerId, voterPlayerId, decision, castAt }) {
-      const rows = await db
-        .insert(takeoverVotes)
-        .select(
-          db
-            .select({
-              matchId: sql`${matchId}`.as('match_id'),
-              targetPlayerId: sql`${targetPlayerId}`.as('target_player_id'),
-              voterPlayerId: sql`${voterPlayerId}`.as('voter_player_id'),
-              decision: sql`${decision}`.as('decision'),
-              castAt: sql`${castAt.getTime()}`.as('cast_at'),
-            })
-            .from(takeoverPrompts)
-            .where(
-              and(
-                eq(takeoverPrompts.matchId, matchId),
-                eq(takeoverPrompts.playerId, targetPlayerId),
-              ),
-            ),
-        )
-        .onConflictDoUpdate({
-          target: [
-            takeoverVotes.matchId,
-            takeoverVotes.targetPlayerId,
-            takeoverVotes.voterPlayerId,
-          ],
-          set: { decision, castAt },
-        })
-        .returning({ voterPlayerId: takeoverVotes.voterPlayerId })
-      return rows.length === 1
-    },
-    async listVotes(matchId, targetPlayerId) {
-      const rows = await db
-        .select()
-        .from(takeoverVotes)
-        .where(
-          and(eq(takeoverVotes.matchId, matchId), eq(takeoverVotes.targetPlayerId, targetPlayerId)),
-        )
-        .orderBy(asc(takeoverVotes.voterPlayerId))
-      return rows.map(toTakeoverVote)
-    },
-  }
-}
-
-function sqliteEventRepository(db: SqliteDatabase): EventRepository {
-  const { matchEvents } = schema
-  return {
-    /**
-     * The sequence number comes from the log itself inside the insert, so the allocation cannot be
-     * separated from the write: a committed `seq` therefore implies every lower one is committed,
-     * which is the invariant a stream cursor relies on. Concurrent appends collide on the primary
-     * key and the loser simply re-reads the maximum.
-     */
-    async append(event): Promise<PersistedEvent> {
-      const nextSeq = sql<number>`(select coalesce(max(${matchEvents.seq}), 0) + 1 from ${matchEvents} where ${eq(matchEvents.matchId, event.matchId)})`
-      for (let attempt = 1; attempt <= APPEND_ATTEMPTS; attempt += 1) {
-        try {
-          const rows = await db
-            .insert(matchEvents)
-            .values({
-              matchId: event.matchId,
-              seq: nextSeq,
-              type: event.type,
-              payload: event.payload,
-              createdAt: new Date(event.createdAt),
-            })
-            .returning({ seq: matchEvents.seq })
-          const row = rows[0]
-          if (!row) throw new Error(`append to ${event.matchId} reported no row`)
-          return { ...event, seq: row.seq } as PersistedEvent
-        } catch (error) {
-          if (!isUniqueViolation(error) || attempt === APPEND_ATTEMPTS) throw error
-        }
-      }
-      throw new Error(`could not append an event for ${event.matchId}`)
-    },
-    async listAfter(matchId, afterSeq, limit) {
-      const rows = await db
-        .select()
-        .from(matchEvents)
-        .where(and(eq(matchEvents.matchId, matchId), sql`${matchEvents.seq} > ${afterSeq}`))
-        .orderBy(asc(matchEvents.seq))
-        .limit(limit)
-      return rows.map(toEvent)
-    },
-    async lastSeq(matchId) {
-      const rows = await db
-        .select({ seq: matchEvents.seq })
-        .from(matchEvents)
-        .where(eq(matchEvents.matchId, matchId))
-        .orderBy(desc(matchEvents.seq))
-        .limit(1)
-      return rows[0]?.seq ?? 0
     },
   }
 }

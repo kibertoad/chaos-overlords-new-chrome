@@ -66,6 +66,7 @@ function turnFixture(match: Match, number: number, overrides: Partial<Turn> = {}
     orderSetHash: null,
     sealedSlots: null,
     stateHash: null,
+    desyncedAt: null,
     ...overrides,
   }
 }
@@ -256,7 +257,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         updatedAt: new Date(),
       })
 
-      const desynced = await storage.matches.listDesynced(100)
+      const desynced = await storage.matches.listDesynced(100, null)
 
       expect(desynced).toContain(stuck.id)
       expect(desynced).not.toContain(healthy.id)
@@ -549,6 +550,148 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(expired.filter((t) => t.matchId === paused.id)).toEqual([])
     })
 
+    /**
+     * The freeze is a compare-and-swap on WHAT IT FREEZES, not on the status.
+     *
+     * The status is `sealed` for the whole window between the seal's own swap and the successor
+     * opening, and the sweep deliberately runs the completion inside that window, so a condition on
+     * the status lets two callers both write a set. With a roster change between their two
+     * computations the sets differ, and a client that fetched the second one verified it against
+     * the first announced digest and ended its session.
+     */
+    it('freezes a sealed set once and refuses to overwrite it', async () => {
+      const match = matchFixture({ status: 'running', currentTurn: 1 })
+      await storage.matches.create(match)
+      await storage.turns.open(turnFixture(match, 1, { status: 'sealed' }), [])
+
+      expect(
+        await storage.turns.freezeSeal(match.id, 1, {
+          orderSetHash: 'first',
+          sealedSlots: [{ playerId: 'p1', slot: 0 }],
+        }),
+      ).toBe(true)
+      expect(
+        await storage.turns.freezeSeal(match.id, 1, {
+          orderSetHash: 'second',
+          sealedSlots: [{ playerId: 'p2', slot: 1 }],
+        }),
+      ).toBe(false)
+
+      const frozen = await storage.turns.get(match.id, 1)
+      expect(frozen?.orderSetHash).toBe('first')
+      expect(frozen?.sealedSlots).toEqual([{ playerId: 'p1', slot: 0 }])
+    })
+
+    it('refuses to freeze a turn that is still open', async () => {
+      const match = matchFixture({ status: 'running', currentTurn: 1 })
+      await storage.matches.create(match)
+      await storage.turns.open(turnFixture(match, 1), [])
+      expect(
+        await storage.turns.freezeSeal(match.id, 1, { orderSetHash: 'h', sealedSlots: [] }),
+      ).toBe(false)
+      expect((await storage.turns.get(match.id, 1))?.orderSetHash).toBeNull()
+    })
+
+    /**
+     * The same shape for the divergence announcement, which the verdict used to look for by paging
+     * the whole event log on every sweep of every paused match.
+     */
+    it('claims a desync announcement once, and only for a desynced turn', async () => {
+      const match = matchFixture({ status: 'desynced', currentTurn: 2 })
+      await storage.matches.create(match)
+      await storage.turns.open(turnFixture(match, 1, { status: 'sealed' }), [])
+      const at = new Date('2026-03-01T12:00:00.000Z')
+
+      expect(await storage.turns.claimDesyncAnnouncement(match.id, 1, at)).toBe(false)
+      await storage.turns.transition(match.id, 1, ['sealed'], { status: 'desynced' })
+      expect(await storage.turns.claimDesyncAnnouncement(match.id, 1, at)).toBe(true)
+      expect(await storage.turns.claimDesyncAnnouncement(match.id, 1, new Date())).toBe(false)
+      expect((await storage.turns.get(match.id, 1))?.desyncedAt).toEqual(at)
+    })
+
+    /** The projection `submitOrders` reads on every submission instead of the whole document. */
+    it('summarises one player row without its document', async () => {
+      const match = matchFixture({ status: 'running', currentTurn: 1 })
+      await storage.matches.create(match)
+      const player = playerFixture(match, { slot: 0 })
+      await storage.matches.transition(match.id, ['running'], {
+        status: 'lobby',
+        updatedAt: new Date(),
+      })
+      await storage.players.create(player)
+      await storage.matches.transition(match.id, ['lobby'], {
+        status: 'running',
+        updatedAt: new Date(),
+      })
+      await storage.turns.open(turnFixture(match, 1), [player.id])
+      await storage.turns.submitOrders(match.id, 1, player.id, {
+        orders: { schemaVersion: 1, ops: [] },
+        ordersHash: 'hash',
+        ready: true,
+        submittedAt: new Date('2026-03-01T11:30:00.000Z'),
+      })
+
+      expect(await storage.turns.getOrderSummary(match.id, 1, player.id)).toEqual({
+        matchId: match.id,
+        turn: 1,
+        playerId: player.id,
+        ordersHash: 'hash',
+        ready: true,
+      })
+      expect(await storage.turns.getOrderSummary(match.id, 1, 'nobody')).toBeNull()
+    })
+
+    /** The projection the verdict reads instead of a megabyte of base64 it never decodes. */
+    it('summarises one turn snapshot without its body', async () => {
+      const match = matchFixture({ status: 'running', currentTurn: 2 })
+      await storage.matches.create(match)
+      await storage.snapshots.put({
+        matchId: match.id,
+        turn: 1,
+        formatVersion: 3,
+        protocolVersion: 7,
+        sessionVersion: 2,
+        stateHash: 'c'.repeat(64),
+        uploadedByPlayerId: 'host',
+        uploadedAt: new Date('2026-03-01T12:00:00.000Z'),
+        body: 'AAAA',
+      })
+      const summary = await storage.snapshots.getSummary(match.id, 1)
+      expect(summary).toEqual({
+        matchId: match.id,
+        turn: 1,
+        formatVersion: 3,
+        protocolVersion: 7,
+        sessionVersion: 2,
+        stateHash: 'c'.repeat(64),
+        uploadedByPlayerId: 'host',
+        uploadedAt: new Date('2026-03-01T12:00:00.000Z'),
+      })
+      expect(summary).not.toHaveProperty('body')
+      expect(await storage.snapshots.getSummary(match.id, 9)).toBeNull()
+    })
+
+    /**
+     * A re-upload replaces the bytes, so the versions that describe them move too. Leaving them
+     * behind described the new body with the version of whichever client wrote the first one.
+     */
+    it('carries the provenance of a re-uploaded snapshot', async () => {
+      const match = matchFixture({ status: 'desynced', currentTurn: 2 })
+      await storage.matches.create(match)
+      const base = {
+        matchId: match.id,
+        turn: 1,
+        formatVersion: 1,
+        stateHash: 'd'.repeat(64),
+        uploadedByPlayerId: 'host',
+        uploadedAt: new Date('2026-03-01T12:00:00.000Z'),
+      }
+      await storage.snapshots.put({ ...base, protocolVersion: 4, sessionVersion: 1, body: 'AAAA' })
+      await storage.snapshots.put({ ...base, protocolVersion: 9, sessionVersion: 3, body: 'BBBB' })
+      const stored = await storage.snapshots.get(match.id, 1)
+      expect(stored).toMatchObject({ protocolVersion: 9, sessionVersion: 3, body: 'BBBB' })
+    })
+
     it('finds the current turn of a live match that is no longer open', async () => {
       const stalled = matchFixture({ status: 'running', currentTurn: 2 })
       const healthy = matchFixture({ status: 'running', currentTurn: 1 })
@@ -558,7 +701,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       await storage.turns.open(turnFixture(stalled, 2, { status: 'sealed' }), [])
       await storage.turns.open(turnFixture(healthy, 1), [])
       await storage.turns.open(turnFixture(over, 1, { status: 'confirmed' }), [])
-      const stalls = await storage.turns.listStalledSeals(50)
+      const stalls = await storage.turns.listStalledSeals(50, null)
       expect(stalls.filter((t) => t.matchId === stalled.id)).toEqual([
         { matchId: stalled.id, number: 2 },
       ])
@@ -573,7 +716,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
     it('finds a live match whose current turn was never created', async () => {
       const stranded = matchFixture({ status: 'running', currentTurn: 0 })
       await storage.matches.create(stranded)
-      const stalls = await storage.turns.listStalledSeals(50)
+      const stalls = await storage.turns.listStalledSeals(50, null)
       expect(stalls.filter((t) => t.matchId === stranded.id)).toEqual([
         { matchId: stranded.id, number: 0 },
       ])

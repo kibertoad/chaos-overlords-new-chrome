@@ -84,6 +84,12 @@ export const turns = pgTable(
     sealedSlots: jsonb('sealed_slots'),
     /** The state hash the verdict confirmed the turn on; null until a verdict does. */
     stateHash: text('state_hash'),
+    /**
+     * When the verdict announced this turn's divergence, stamped by the compare-and-swap that
+     * claims the announcement. It is what makes `turn.desynced` a publish-once event without
+     * scanning the log for one, the same way `order_set_hash` does for `turn.sealed`.
+     */
+    desyncedAt: stamp('desynced_at'),
   },
   (table) => [
     primaryKey({ columns: [table.matchId, table.number] }),
