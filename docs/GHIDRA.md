@@ -4,6 +4,14 @@ This project uses Ghidra only as a research tool against a legally owned local
 copy of *Chaos Overlords*. Ghidra projects, proprietary binaries, byte dumps,
 and full disassembly/decompiler output must never be added to Git.
 
+<!-- doc-index:begin toc depth=2 -->
+- [Known local installation](#known-local-installation)
+- [Reference executable](#reference-executable)
+- [Reference manual](#reference-manual)
+- [Headless workflow](#headless-workflow)
+- [Evidence discipline](#evidence-discipline)
+<!-- doc-index:end -->
+
 ## Known local installation
 
 Quick lookup: Ghidra is pinned at

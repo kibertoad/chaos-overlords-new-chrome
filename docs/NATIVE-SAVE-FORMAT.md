@@ -1,7 +1,7 @@
 # Recreation-native save format
 
 Status: implemented format version 24
-Last updated: 2026-09-18
+Last updated: 2026-09-20
 
 This format belongs to the recreation. It is deliberately separate from the
 original *Chaos Overlords* fixed-memory save envelopes and makes no claim of
@@ -12,6 +12,13 @@ individual Win32 I/O byte count. `ORIGINAL-INTERNALS.md` records the exact block
 sequence. Those facts inform state research only: this recreation uses a safe,
 portable, independently versioned document rather than reproducing the
 original's address-shaped layout or partial-read behavior.
+
+<!-- doc-index:begin toc depth=2 -->
+- [Container and limits](#container-and-limits)
+- [Version 24 document](#version-24-document)
+- [Compatibility policy](#compatibility-policy)
+- [Replay format version 28](#replay-format-version-28)
+<!-- doc-index:end -->
 
 ## Container and limits
 

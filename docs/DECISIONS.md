@@ -1,10 +1,34 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-19
+Last updated: 2026-09-20
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
+
+Entries are ordered newest first. Each records the decision, the evidence or
+reasoning behind it, and what it rules in or out; a decision that changes a
+parity row is also reflected in [PARITY-MATRIX.md](PARITY-MATRIX.md) with the
+`Intentional deviation` status.
+
+## Decision index
+
+Generated from the `##` headings of this file by `node tools/update-doc-indexes.mjs`.
+
+<!-- doc-index:begin decision-index -->
+| Date | Decision |
+|---|---|
+| 2026-09-19 | [Order a ctrl-picked selection of gangs at once](#2026-09-19--order-a-ctrl-picked-selection-of-gangs-at-once) |
+| 2026-09-18 | [Scope the Sector workspace's opponent gang view to detection](#2026-09-18--scope-the-sector-workspaces-opponent-gang-view-to-detection) |
+| 2026-09-17 | [Do not substitute rejected recovered AI commands](#2026-09-17--do-not-substitute-rejected-recovered-ai-commands) |
+| 2026-09-17 | [Correct the original registry persistence defects](#2026-09-17--correct-the-original-registry-persistence-defects) |
+| 2026-09-17 | [Correct the original AI hire slot/role indexing defect](#2026-09-17--correct-the-original-ai-hire-slotrole-indexing-defect) |
+| 2026-09-13 | [Decode the supported Smacker subset at runtime](#2026-09-13--decode-the-supported-smacker-subset-at-runtime) |
+| 2026-09-13 | [Stream the intro once, then keep it on the title screen](#2026-09-13--stream-the-intro-once-then-keep-it-on-the-title-screen) |
+| 2026-09-13 | [Bug reports carry a replayable journal, stored apart from matches](#2026-09-13--bug-reports-carry-a-replayable-journal-stored-apart-from-matches) |
+| 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
+| 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
+<!-- doc-index:end -->
 
 ## 2026-09-19 — Order a ctrl-picked selection of gangs at once
 
@@ -121,30 +145,6 @@ implementation plan.
   original finding and the exact recreation exception; no claim of bit-for-bit
   AI decision parity includes this bug.
 
-## 2026-09-10 — Save compatibility scope
-
-- Importing or exporting original *Chaos Overlords* saves is an explicit
-  non-goal.
-- Recreation-native saves and replays may change incompatibly before version
-  1.0.0. Compatibility between pre-1.0 development formats is useful but is not
-  a release gate.
-- Keep the existing version discriminator, bounded readers, legacy hash
-  selection, and migration structure as infrastructure for post-1.0 evolution.
-- Existing pre-1.0 readers and tests may be retained when inexpensive, but new
-  schema work may remove or replace them rather than accumulate migration debt.
-- Starting with 1.0.0, incompatible format changes must increment the format
-  version and provide either a deterministic migration or an explicitly
-  documented safe rejection path.
-
-## 2026-09-10 — Networking scope
-
-Original network code and protocols are outside the parity target and are never
-reproduced. Modern online play is a new design: a coordination server under
-`multiplayer/` that relays sealed orders between deterministic clients and
-verifies state hashes, hostable by players or run centrally
-([`MULTIPLAYER.md`](./MULTIPLAYER.md)). Hot-seat play remains the local mode
-and the client-side wiring of online play is tracked as follow-up work.
-
 ## 2026-09-13 — Decode the supported Smacker subset at runtime
 
 - Decision: keep the two verified user-owned `.smk` files in the extracted
@@ -233,3 +233,27 @@ and the client-side wiring of online play is tracked as follow-up work.
   digest the client computed over the compressed bytes and stores opaque bytes.
 - Status: implemented and tested. The central address is a placeholder
   (`http://localhost:8787`) until the public deployment exists.
+
+## 2026-09-10 — Save compatibility scope
+
+- Importing or exporting original *Chaos Overlords* saves is an explicit
+  non-goal.
+- Recreation-native saves and replays may change incompatibly before version
+  1.0.0. Compatibility between pre-1.0 development formats is useful but is not
+  a release gate.
+- Keep the existing version discriminator, bounded readers, legacy hash
+  selection, and migration structure as infrastructure for post-1.0 evolution.
+- Existing pre-1.0 readers and tests may be retained when inexpensive, but new
+  schema work may remove or replace them rather than accumulate migration debt.
+- Starting with 1.0.0, incompatible format changes must increment the format
+  version and provide either a deterministic migration or an explicitly
+  documented safe rejection path.
+
+## 2026-09-10 — Networking scope
+
+Original network code and protocols are outside the parity target and are never
+reproduced. Modern online play is a new design: a coordination server under
+`multiplayer/` that relays sealed orders between deterministic clients and
+verifies state hashes, hostable by players or run centrally
+([`MULTIPLAYER.md`](./MULTIPLAYER.md)). Hot-seat play remains the local mode
+and the client-side wiring of online play is tracked as follow-up work.

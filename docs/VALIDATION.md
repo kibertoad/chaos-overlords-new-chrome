@@ -1,7 +1,18 @@
 # Recreation validation procedure
 
 Status: maintained canonical procedure
-Last updated: 2026-09-13
+Last updated: 2026-09-20
+
+<!-- doc-index:begin toc depth=2 -->
+- [Validation layers](#validation-layers)
+- [Local automated checks](#local-automated-checks)
+- [Current canonical identities](#current-canonical-identities)
+- [Original-binary oracle protocol](#original-binary-oracle-protocol)
+- [Static binary research protocol](#static-binary-research-protocol)
+- [Fixture classes](#fixture-classes)
+- [Required parity record fields](#required-parity-record-fields)
+- [Failure triage](#failure-triage)
+<!-- doc-index:end -->
 
 ## Validation layers
 

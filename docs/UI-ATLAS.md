@@ -1,12 +1,22 @@
 # Original UI atlas
 
 Status: partial, active mapping
-Last updated: 2026-09-19
+Last updated: 2026-09-20
 
 This file assigns presentation resources from the verified extracted asset pack
 to visible workflows. Coordinates use the original 640 by 460 virtual canvas.
 Mappings based only on image inspection are Provisional until a controlled
 original-game capture confirms the screen and interaction state.
+
+<!-- doc-index:begin toc depth=2 -->
+- [Full-screen resources](#full-screen-resources)
+- [Composite sheets and panels](#composite-sheets-and-panels)
+- [PX00143 hit map](#px00143-hit-map)
+- [Legacy session setup screens](#legacy-session-setup-screens)
+- [Rendering rules recovered so far](#rendering-rules-recovered-so-far)
+- [PX00128 exact control routes](#px00128-exact-control-routes)
+- [Next mapping work](#next-mapping-work)
+<!-- doc-index:end -->
 
 ## Full-screen resources
 
