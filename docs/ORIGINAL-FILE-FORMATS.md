@@ -5,6 +5,25 @@ Every implementation-relevant observation belongs here, including negative
 results and unresolved questions. It is not a redistribution guide: users must
 provide their own legal copy, and extracted output remains proprietary.
 
+<!-- doc-index:begin toc depth=3 -->
+- [Confidence scale](#confidence-scale)
+- [Installation identity](#installation-identity)
+  - [Bundled-data fidelity statement](#bundled-data-fidelity-statement)
+- [General encoding](#general-encoding)
+- [Gameplay tables](#gameplay-tables)
+  - [SITES](#sites)
+  - [Gangs](#gangs)
+  - [ITEMS](#items)
+- [PX16/PXxxxxx graphics](#px16pxxxxxx-graphics)
+- [PX08/PXxxxxx graphics](#px08pxxxxxx-graphics)
+- [Audio and music](#audio-and-music)
+- [Video](#video)
+- [Help](#help)
+- [Other files](#other-files)
+- [Save games (historical reference only; unsupported)](#save-games-historical-reference-only-unsupported)
+- [Open questions / next experiments](#open-questions--next-experiments)
+<!-- doc-index:end -->
+
 ## Confidence scale
 
 | Level | Meaning |

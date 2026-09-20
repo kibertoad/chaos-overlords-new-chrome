@@ -1,7 +1,7 @@
 # Game rules and evidence
 
 Status: partial, active research
-Last updated: 2026-09-11
+Last updated: 2026-09-20
 
 This document separates intended rules stated by the original manual from
 behavior verified against the fingerprinted version 1.1 executable. A manual
@@ -15,6 +15,55 @@ controlled reference observation confirms its execution timing and edge cases.
 - `EXE-GOG-1.1`: `Chaos Overlords.exe`, version 1.1, 664,576 bytes,
   SHA-256 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`.
   No resolver finding below has yet been verified against this executable.
+
+## Rule format
+
+Each rule carries a stable `RULE-<AREA>-<NNN>` ID and is written as a bullet
+list with, where they apply:
+
+- **Source**: the evidence source above and its page, or the finding IDs in
+  [ORIGINAL-INTERNALS.md](ORIGINAL-INTERNALS.md) that the rule rests on.
+- **Observed statement**: what the manual or executable states or does.
+- **Interpretation**: the rule as the recreation applies it, including timing,
+  ordering, and edge cases.
+- **Confidence**: Verified, High, Medium, or Low, with what it covers.
+- **Implementation**: the types and tests that carry the rule.
+
+Rule IDs are referenced from code comments, tests, [PARITY-MATRIX.md](PARITY-MATRIX.md),
+and the topic index in [README.md](README.md#topic-index).
+
+## Rule index
+
+Generated from the `###` headings of this file by `node tools/update-doc-indexes.mjs`.
+
+<!-- doc-index:begin rule-index -->
+| ID | Rule | Section |
+|---|---|---|
+| [RULE-HIRE-001](#rule-hire-001--offer-replacement-and-starting-force) | Offer replacement and starting Force | Hiring |
+| [RULE-HIDE-001](#rule-hide-001--enter-hidden-state) | Enter hidden state | Instant commands |
+| [RULE-INFLUENCE-001](#rule-influence-001--cooperative-site-influence) | Cooperative site influence | Instant commands |
+| [RULE-HEAL-001](#rule-heal-001--heal-dice-and-force-restoration) | Heal dice and force restoration | Instant commands |
+| [RULE-RESEARCH-001](#rule-research-001--research-dice-and-persistent-progress) | Research dice and persistent progress | Instant commands |
+| [RULE-BRIBE-001](#rule-bribe-001--bribe-tolerance-adjustment) | Bribe tolerance adjustment | Instant commands |
+| [RULE-SNITCH-001](#rule-snitch-001--snitch-tolerance-adjustment) | Snitch tolerance adjustment | Instant commands |
+| [RULE-TOLERANCE-001](#rule-tolerance-001--return-toward-normal-tolerance) | Return toward normal tolerance | Instant commands |
+| [RULE-ATTACK-001](#rule-attack-001--simultaneous-attack-and-retaliation) | Simultaneous attack and retaliation | Combat |
+| [RULE-DETECT-001](#rule-detect-001--cooperative-sector-visibility) | Cooperative sector visibility | Combat |
+| [RULE-SITE-STATS-001](#rule-site-stats-001--influenced-site-local-modifiers) | Influenced-site local modifiers | Combat |
+| [RULE-EQUIP-001](#rule-equip-001--purchase-and-equip) | Purchase and equip | Equipment transactions |
+| [RULE-GIVE-001](#rule-give-001--transfer-equipped-item) | Transfer equipped item | Equipment transactions |
+| [RULE-SELL-001](#rule-sell-001--half-price-sale) | Half-price sale | Equipment transactions |
+| [RULE-TERMINATE-001](#rule-terminate-001--remove-gang-and-equipment) | Remove gang and equipment | Equipment transactions |
+| [RULE-CHAOS-001](#rule-chaos-001--cooperative-chaos-and-crackdown) | Cooperative Chaos and crackdown | Movement and sector control |
+| [RULE-POLICE-001](#rule-police-001--crackdown-detection-and-combat) | Crackdown detection and combat | Movement and sector control |
+| [RULE-MOVE-001](#rule-move-001--adjacent-movement-and-friendly-capacity) | Adjacent movement and friendly capacity | Movement and sector control |
+| [RULE-CONTROL-001](#rule-control-001--cooperative-sector-control-comparison) | Cooperative sector control comparison | Movement and sector control |
+| [RULE-UPKEEP-001](#rule-upkeep-001--base-income-upkeep-and-debt) | Base income, upkeep, and debt | Upkeep economy |
+| [RULE-TIMER-001](#rule-timer-001--optional-human-planning-limit) | Optional human planning limit | Turn timing |
+| [RULE-SETUP-001](#rule-setup-001--starting-resources-and-smgfundage) | Starting resources and SMGFUNDAGE | Objectives and match completion |
+| [RULE-OBJECTIVE-001](#rule-objective-001--end-of-turn-objective-evaluation) | End-of-turn objective evaluation | Objectives and match completion |
+| [RULE-AWARDS-001](#rule-awards-001--endgame-performance-awards) | Endgame performance awards | Objectives and match completion |
+<!-- doc-index:end -->
 
 ## Hiring
 

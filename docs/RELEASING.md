@@ -1,5 +1,15 @@
 # Building and releasing installers
 
+<!-- doc-index:begin toc depth=3 -->
+- [The version number](#the-version-number)
+- [Local package builds](#local-package-builds)
+- [GitHub release workflow](#github-release-workflow)
+  - [Windows: Authenticode through SSL.com eSigner](#windows-authenticode-through-sslcom-esigner)
+  - [Linux: detached OpenPGP signature over the .deb](#linux-detached-openpgp-signature-over-the-deb)
+  - [macOS: deliberately unsigned](#macos-deliberately-unsigned)
+- [Continuous integration](#continuous-integration)
+<!-- doc-index:end -->
+
 ## The version number
 
 `version.txt` in the repository root holds the released version as a single

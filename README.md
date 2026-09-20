@@ -38,6 +38,8 @@ match flow.
 This is not yet a claim of pixel-perfect or rule-perfect parity with the shipped
 1996 executable. The detailed evidence and next proof gate for each system are
 tracked in the [parity matrix](docs/PARITY-MATRIX.md).
+The technical documentation is cataloged and indexed in
+[docs/README.md](docs/README.md).
 
 ### Implemented
 
@@ -219,6 +221,22 @@ The game keeps up to five small local session logs and ten crash reports in
 `%LOCALAPPDATA%\ChaosOverlordsNewChrome\Logs`. They contain technical lifecycle
 and match-flow details, but no player names, commands, save contents, or asset
 paths. Nothing is uploaded automatically.
+
+## Documentation
+
+[docs/README.md](docs/README.md) catalogs every technical document by purpose
+and indexes them by game subsystem. The most-used entry points:
+
+| If you want to… | Read |
+|---|---|
+| Build, run, and test from source | [Development guide](docs/DEVELOPMENT.md), [Validation procedure](docs/VALIDATION.md) |
+| Resume development at the current checkpoint | [Handover](docs/HANDOVER.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md) |
+| Know how faithful each system is | [Parity matrix](docs/PARITY-MATRIX.md), [Project decisions](docs/DECISIONS.md) |
+| Understand the code layout | [Architecture](docs/ARCHITECTURE.md) |
+| Look up a game rule or an executable finding | [Game rules](docs/GAME-RULES.md), [Original executable internals](docs/ORIGINAL-INTERNALS.md), [AI specification](docs/AI-SPEC.md) |
+| Work on the original file formats or assets | [Original file formats](docs/ORIGINAL-FILE-FORMATS.md), [Asset catalog](docs/ASSET-CATALOG.md), [UI atlas](docs/UI-ATLAS.md), [Audio and video](docs/AUDIO-VIDEO.md) |
+| Host or extend online play | [Multiplayer](docs/MULTIPLAYER.md), [Server operator manual](multiplayer/README.md) |
+| Cut a release | [Building and releasing installers](docs/RELEASING.md) |
 
 ## Acknowledgements
 

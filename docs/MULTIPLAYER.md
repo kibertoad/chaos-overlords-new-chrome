@@ -1,7 +1,7 @@
 # Multiplayer
 
 Status: implemented server, game client wired
-Last updated: 2026-09-18
+Last updated: 2026-09-20
 
 Online play for *Chaos Overlords: New Chrome* runs through a coordination server that any player
 can host and that can also run as a central public service. The server code lives under
@@ -20,6 +20,25 @@ scenario and mentality rather than hidden, and only a scenario or AI filter drop
 matches remain absent from discovery. A host still receives an eight-character code and can copy it
 to the system clipboard; joiners have a bounded Paste button that reads at most the eight supported
 characters without disturbing the player-name field.
+
+<!-- doc-index:begin toc depth=3 -->
+- [What the server is, and is not](#what-the-server-is-and-is-not)
+- [Transport: REST for intents, server-sent events for the log](#transport-rest-for-intents-server-sent-events-for-the-log)
+- [Protocol](#protocol)
+  - [Two versions: one for talking, one for playing](#two-versions-one-for-talking-one-for-playing)
+  - [Lobby](#lobby)
+  - [Turn barrier](#turn-barrier)
+  - [Turn lifecycle](#turn-lifecycle)
+  - [Timer](#timer)
+- [Bug reports: the same deployment, a different database](#bug-reports-the-same-deployment-a-different-database)
+- [Retention](#retention)
+- [Security model](#security-model)
+- [What the server does and does not defend against](#what-the-server-does-and-does-not-defend-against)
+- [Two languages, one contract](#two-languages-one-contract)
+- [Client integration contract](#client-integration-contract)
+  - [What a hot-seat core does not say](#what-a-hot-seat-core-does-not-say)
+- [Limitations and next steps](#limitations-and-next-steps)
+<!-- doc-index:end -->
 
 ## What the server is, and is not
 

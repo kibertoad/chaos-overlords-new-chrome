@@ -77,5 +77,6 @@ number; see [RELEASING.md](RELEASING.md).
 - `Rechaos.Tests`: format, gameplay, persistence, extractor, and UI tests.
 
 Detailed architecture, validation, reverse-engineering, format, and parity notes
-live in the other files in this directory. Start a resumed development session
-with [HANDOVER.md](HANDOVER.md).
+live in the other files in this directory; [README.md](README.md) catalogs them
+by purpose and indexes them by topic. Start a resumed development session with
+[HANDOVER.md](HANDOVER.md).

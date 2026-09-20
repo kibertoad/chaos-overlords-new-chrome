@@ -1,7 +1,7 @@
 # AI specification
 
 Status: provisional recreation baseline  
-Last updated: 2026-09-13
+Last updated: 2026-09-20
 
 The original executable's complete difficulty branches and evaluation weights
 have not yet been recovered. Static analysis has recovered the outer per-gang
@@ -10,6 +10,13 @@ Mentality global, all six writes to it, and all eight genuine query consumers.
 The current planner exists to make Human-versus-Computer
 matches operable while preserving deterministic simulation and replay behavior.
 It must not be cited as behavioral parity with the original AI.
+
+<!-- doc-index:begin toc depth=2 -->
+- [Original and Advanced policy architecture](#original-and-advanced-policy-architecture)
+- [Inputs and invariants](#inputs-and-invariants)
+- [Current policy](#current-policy)
+- [Required parity work](#required-parity-work)
+<!-- doc-index:end -->
 
 ## Original and Advanced policy architecture
 

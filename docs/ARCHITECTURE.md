@@ -1,7 +1,24 @@
 # Architecture
 
 Status: evolving implementation architecture
-Last updated: 2026-09-11
+Last updated: 2026-09-20
+
+<!-- doc-index:begin toc depth=3 -->
+- [Dependency direction](#dependency-direction)
+- [Projects](#projects)
+  - [Rechaos.Core](#rechaoscore)
+  - [Rechaos.Extractor](#rechaosextractor)
+  - [Rechaos.Tools](#rechaostools)
+  - [Rechaos.Game](#rechaosgame)
+- [Target command/event flow](#target-commandevent-flow)
+- [Original turn model](#original-turn-model)
+- [State ownership target](#state-ownership-target)
+- [Determinism boundary](#determinism-boundary)
+- [Proprietary-content boundary](#proprietary-content-boundary)
+- [Online play](#online-play)
+- [Error and security model](#error-and-security-model)
+- [Known architectural debt](#known-architectural-debt)
+<!-- doc-index:end -->
 
 ## Dependency direction
 

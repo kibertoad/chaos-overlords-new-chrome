@@ -1,7 +1,7 @@
 # Original executable internals research
 
 Status: active clean-room research log
-Last updated: 2026-09-19
+Last updated: 2026-09-20
 Reference executable SHA-256:
 `a1430159bbe20869e277a5000311344f4ec141ab77c96b385336617149e97d89`
 
@@ -16,6 +16,227 @@ valid only for the fingerprint above.
 - **Interpretation**: what the observation may mean.
 - **Confidence**: Verified, High, Medium, or Low.
 - **Next validation**: experiment needed before relying on semantics.
+
+Findings are appended in the order they were recovered, so the `##` sections
+below reflect research history rather than a subsystem taxonomy: a `BIN-AI-*`
+finding may sit under a heading about imports. Use the finding index below, or
+the topic index in [README.md](README.md#topic-index), to reach a finding by
+subsystem; the ID is the stable handle and every ID is unique.
+
+ID history: `BIN-API-006` (audio and video) and `BIN-UI-036` (detailed-sector
+site and gang meters) were originally recorded under the already-used IDs
+`BIN-API-002` and `BIN-UI-034` and were renumbered on 2026-09-20. Nothing else
+about those findings changed.
+
+## Finding index
+
+The tables below are generated from the `###` headings of this file by
+`node tools/update-doc-indexes.mjs`; edit the headings, not the tables.
+Findings are grouped by subsystem and listed in ID order. The section column
+names the `##` section a finding physically sits under.
+
+<!-- doc-index:begin finding-index -->
+104 findings.
+
+**Executable image**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-PE-001](#bin-pe-001---executable-format) | executable format | PE image |
+| [BIN-PE-002](#bin-pe-002---sections) | sections | PE image |
+| [BIN-TOOL-001](#bin-tool-001---compilerruntime) | compiler/runtime | Toolchain hypothesis |
+
+**Platform boundaries visible in imports**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-API-001](#bin-api-001---rendering) | rendering | Platform boundaries visible in imports |
+| [BIN-API-002](#bin-api-002---px-loading-palette-and-copy-modes) | PX loading, palette, and copy modes | Platform boundaries visible in imports |
+| [BIN-API-003](#bin-api-003---files-and-persistence) | files and persistence | Platform boundaries visible in imports |
+| [BIN-API-004](#bin-api-004---legacy-networking) | legacy networking | Platform boundaries visible in imports |
+| [BIN-API-005](#bin-api-005---configuration) | configuration | Platform boundaries visible in imports |
+| [BIN-API-006](#bin-api-006---audio-and-video) | audio and video | Platform boundaries visible in imports |
+
+**Resource lookup**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-ASSET-001](#bin-asset-001---data-paths) | data paths | Resource lookup literals |
+| [BIN-ASSET-002](#bin-asset-002---winhelp-context-maps) | WinHelp context maps | Resource lookup literals |
+| [BIN-ASSET-003](#bin-asset-003---winhelp-styled-text-and-internal-hotspots) | WinHelp styled text and internal hotspots | Resource lookup literals |
+
+**Randomness and seeding**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-RNG-001](#bin-rng-001---original-process-seed) | original process seed | Timing and RNG candidates |
+| [BIN-RNG-002](#bin-rng-002---runtime-random-step) | runtime random step | Timing and RNG candidates |
+| [BIN-RNG-003](#bin-rng-003---bounded-random-wrapper) | bounded random wrapper | Timing and RNG candidates |
+| [BIN-RNG-004](#bin-rng-004---ai-planning-callers) | AI planning callers | Timing and RNG candidates |
+| [BIN-RNG-005](#bin-rng-005---accepted-local-setup-through-initial-city) | accepted local setup through initial city | Timing and RNG candidates |
+
+**New-game setup and city generation**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-CITY-001](#bin-city-001---density-derived-sector-income-and-tolerance) | density-derived sector income and tolerance | New-game initialization |
+| [BIN-CITY-002](#bin-city-002---three-site-rejection-sampling) | three-site rejection sampling | New-game initialization |
+| [BIN-CITY-003](#bin-city-003---headquarters-and-right-hands) | headquarters and Right Hands | New-game initialization |
+| [BIN-HOTSEAT-002](#bin-hotseat-002---private-handoff-ordering-and-terminal-player-path) | private handoff ordering and terminal-player path | New-game initialization |
+| [BIN-SETUP-000](#bin-setup-000---fresh-setup-defaults-to-kill-em-all) | fresh setup defaults to Kill 'Em All | New-game initialization |
+| [BIN-SETUP-001](#bin-setup-001---smgfundage-starting-cash-override) | SMGFUNDAGE starting cash override | New-game initialization |
+| [BIN-SETUP-002](#bin-setup-002---local-missing-slots-become-computer-players) | local missing slots become computer players | New-game initialization |
+| [BIN-SETUP-003](#bin-setup-003---smgislands-permanent-neutral-sector-crackdown) | SMGISLANDS permanent neutral-sector Crackdown | New-game initialization |
+| [BIN-SETUP-004](#bin-setup-004---extra-gang-and-global-visibility-name-modifiers) | extra-gang and global-visibility name modifiers | New-game initialization |
+| [BIN-SETUP-005](#bin-setup-005---exact-local-player-card-interaction-geometry) | exact local player-card interaction geometry | New-game initialization |
+| [BIN-SETUP-006](#bin-setup-006---legacy-session-lobby-resources-are-distinct-flows) | legacy session lobby resources are distinct flows | New-game initialization |
+| [BIN-SETUP-007](#bin-setup-007---legacy-transport-progress-sheets) | legacy transport progress sheets | New-game initialization |
+| [BIN-SETUP-008](#bin-setup-008---legacy-transfer-spinner-animation) | legacy transfer spinner animation | New-game initialization |
+
+**Turn structure and phase order**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-COMMAND-ASSIGN-001](#bin-command-assign-001---recurring-menus-and-replacement-writes) | recurring menus and replacement writes | Timing and RNG candidates |
+| [BIN-ENDTURN-001](#bin-endturn-001---elimination-cleanup-reports-and-objective-order) | elimination cleanup, reports, and objective order | Timing and RNG candidates |
+| [BIN-HIDE-LIFECYCLE-001](#bin-hide-lifecycle-001---active-and-recurring-action-boundary) | active and recurring action boundary | Timing and RNG candidates |
+| [BIN-REPEAT-001](#bin-repeat-001---turn-start-terminal-recurring-command-cleanup) | turn-start terminal recurring-command cleanup | Timing and RNG candidates |
+| [BIN-TURN-PLAYER-ORDER-001](#bin-turn-player-order-001---fixed-ascending-planning-slots) | fixed ascending planning slots | Timing and RNG candidates |
+
+**Hiring**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-HIRE-001](#bin-hire-001---initial-and-replacement-offers) | initial and replacement offers | New-game initialization |
+| [BIN-HIRE-COMPARISON-001](#bin-hire-comparison-001---fixed-width-signed-values-in-the-three-offer-panel) | fixed-width signed values in the three-offer panel | Timing and RNG candidates |
+
+**Instant commands**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-BRIBE-001](#bin-bribe-001---shipped-three-dollar-cost-and-direct-tolerance-delta) | shipped three-dollar cost and direct tolerance delta | Timing and RNG candidates |
+| [BIN-INFLUENCE-001](#bin-influence-001---influence-picker-targets-and-detail-entry) | Influence picker targets and detail entry | Timing and RNG candidates |
+| [BIN-INSTANT-001](#bin-instant-001---roster-order-actions-and-cumulative-influence) | roster-order actions and cumulative Influence | Timing and RNG candidates |
+| [BIN-RESEARCH-000](#bin-research-000---initial-progress-and-armageddon-completion) | initial progress and Armageddon completion | Timing and RNG candidates |
+| [BIN-RESEARCH-001](#bin-research-001---same-phase-completion-suppresses-later-rolls) | same-phase completion suppresses later rolls | Timing and RNG candidates |
+| [BIN-SNITCH-001](#bin-snitch-001---debt-independent-delta-and-post-instant-floor) | debt-independent delta and post-Instant floor | Timing and RNG candidates |
+
+**Chaos and police**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-CHAOS-001](#bin-chaos-001---roster-order-rolls-and-grouped-uncontrolled-payout) | roster-order rolls and grouped uncontrolled payout | Timing and RNG candidates |
+| [BIN-POLICE-001](#bin-police-001---occurrence-window-neutralization-and-duration-order) | occurrence window, neutralization, and duration order | Timing and RNG candidates |
+| [BIN-POLICE-COMBAT-001](#bin-police-combat-001---exact-detection-and-damage-formulas) | exact detection and damage formulas | Timing and RNG candidates |
+
+**Combat**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-ATTACK-001](#bin-attack-001---attack-picker-selector-and-target-hit-map) | Attack picker selector and target hit map | Timing and RNG candidates |
+| [BIN-COMBAT-ORDER-001](#bin-combat-order-001---playerroster-attack-and-police-rolls) | player/roster attack and police rolls | Timing and RNG candidates |
+| [BIN-COMBAT-RESULTS-001](#bin-combat-results-001---results-pager-selection-map-and-bottom-control) | results pager, selection map, and bottom control | Timing and RNG candidates |
+| [BIN-COMBAT-STATS-001](#bin-combat-stats-001---full-opening-damage-is-credited) | full opening damage is credited | Timing and RNG candidates |
+| [BIN-DETECT-001](#bin-detect-001---cooperative-sector-visibility-aggregation) | cooperative sector visibility aggregation | Timing and RNG candidates |
+
+**Gang statistics and equipment**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-EFFECTIVE-STATS-001](#bin-effective-stats-001---gang-equipment-and-controlled-site-aggregation) | gang, equipment, and controlled-site aggregation | Timing and RNG candidates |
+| [BIN-EQUIP-001](#bin-equip-001---factory-price-division-and-rounding) | Factory price division and rounding | Timing and RNG candidates |
+| [BIN-EQUIP-002](#bin-equip-002---fixed-transaction-scan-deferred-gifts-and-sell-overwrite) | fixed transaction scan, deferred gifts, and Sell overwrite | Timing and RNG candidates |
+| [BIN-EQUIP-003](#bin-equip-003---give-item-selection-hit-targets) | Give item-selection hit targets | Timing and RNG candidates |
+| [BIN-EQUIP-004](#bin-equip-004---sell-item-toggle-hit-targets) | Sell item-toggle hit targets | Timing and RNG candidates |
+| [BIN-EQUIP-005](#bin-equip-005---equip-and-research-categorylist-targets) | Equip and Research category/list targets | Timing and RNG candidates |
+| [BIN-GANG-DEFINITION-001](#bin-gang-definition-001---px05022-alternate-definition-panel) | PX05022 alternate definition panel | Timing and RNG candidates |
+| [BIN-GANG-RETIRE-001](#bin-gang-retire-001---death-and-terminate-preserve-inactive-record-payload) | death and Terminate preserve inactive record payload | Timing and RNG candidates |
+| [BIN-GANG-VALUES-001](#bin-gang-values-001---fixed-two-cell-gang-values-replace-template-padding) | fixed two-cell gang values replace template padding | Timing and RNG candidates |
+
+**Movement and sector control**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-CONTROL-001](#bin-control-001---cross-player-winner-and-zero-margin-neutral-candidate) | cross-player winner and zero-margin neutral candidate | Timing and RNG candidates |
+| [BIN-MOVEMENT-001](#bin-movement-001---terminate-pass-before-roster-ordered-move) | Terminate pass before roster-ordered Move | Timing and RNG candidates |
+| [BIN-MOVEMENT-002](#bin-movement-002---move-panel-neighborhood-target-mapping) | Move panel neighborhood target mapping | Timing and RNG candidates |
+
+**Economy and finance**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-FINANCE-001](#bin-finance-001---alternate-financial-panel-destination-and-close-face) | alternate Financial panel destination and close face | Timing and RNG candidates |
+| [BIN-UPKEEP-001](#bin-upkeep-001---flat-sector-tax-and-influenced-site-cash-share-one-byte) | flat sector tax and influenced-site Cash share one byte | Timing and RNG candidates |
+
+**Objectives, ranking, and awards**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-AWARDS-001](#bin-awards-001---thresholds-priority-ties-and-visible-slots) | thresholds, priority, ties, and visible slots | Timing and RNG candidates |
+| [BIN-RANKING-001](#bin-ranking-001---player-rail-portrait-positions) | player-rail portrait positions | Timing and RNG candidates |
+
+**Computer players**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-AI-001](#bin-ai-001---per-gang-command-dispatcher-and-action-handlers) | per-gang command dispatcher and action handlers | Timing and RNG candidates |
+| [BIN-AI-002](#bin-ai-002---scenario-sensitive-family-selection) | scenario-sensitive family selection | Timing and RNG candidates |
+| [BIN-AI-003](#bin-ai-003---outer-ai-planning-pass-and-command-history) | outer AI planning pass and command history | Timing and RNG candidates |
+| [BIN-AI-003A](#bin-ai-003a---strategic-hire-offer-ranking) | strategic hire-offer ranking | Timing and RNG candidates |
+| [BIN-AI-003B](#bin-ai-003b---base-hire-role-schedule) | base hire-role schedule | Timing and RNG candidates |
+| [BIN-AI-003C](#bin-ai-003c---ai-hire-destination-and-persistent-placement-anchor) | AI hire destination and persistent placement anchor | Timing and RNG candidates |
+| [BIN-AI-004](#bin-ai-004---global-ai-mentality-byte-and-first-consumers) | global AI Mentality byte and first consumers | Timing and RNG candidates |
+| [BIN-AI-005](#bin-ai-005---shared-weighted-sector-selector) | shared weighted sector selector | Timing and RNG candidates |
+| [BIN-AI-006](#bin-ai-006---directional-attitude-and-hostility-matrix) | directional attitude and hostility matrix | Timing and RNG candidates |
+| [BIN-AI-007](#bin-ai-007---per-player-difficulty-resolution-band) | per-player difficulty resolution band | Timing and RNG candidates |
+
+**Turn reports and Comlink**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-COMLINK-001](#bin-comlink-001---per-player-message-queue-capacity-and-overflow) | per-player message queue capacity and overflow | Platform boundaries visible in imports |
+| [BIN-COMLINK-002](#bin-comlink-002---view-navigation-and-hit-geometry) | View navigation and hit geometry | Platform boundaries visible in imports |
+| [BIN-COMLINK-003](#bin-comlink-003---send-eligibility-controls-and-composition-cursor) | Send eligibility, controls, and composition cursor | Platform boundaries visible in imports |
+| [BIN-COMLINK-004](#bin-comlink-004---view-record-fields-and-projection) | View record fields and projection | Platform boundaries visible in imports |
+| [BIN-EVENT-001](#bin-event-001---last-turn-report-table-types-and-lifetime) | Last Turn report table, types, and lifetime | Platform boundaries visible in imports |
+| [BIN-EVENTS-002](#bin-events-002---last-turn-events-pager-and-exit-control) | Last Turn Events pager and exit control | Timing and RNG candidates |
+| [BIN-SEARCH-001](#bin-search-001---per-player-site-filters-and-city-markers) | per-player site filters and city markers | Platform boundaries visible in imports |
+| [BIN-SEARCH-002](#bin-search-002---exact-search-panel-controls-and-row-targets) | exact Search panel controls and row targets | Platform boundaries visible in imports |
+
+**Options and preferences**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-OPTIONS-001](#bin-options-001---registry-keys-initialized-defaults-and-idle-gang-warning) | registry keys, initialized defaults, and idle-gang warning | Platform boundaries visible in imports |
+
+**Screens, panels, and hit geometry**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-GAME-INFO-001](#bin-game-info-001---alternate-panel-crop-and-field-origins) | alternate panel crop and field origins | Timing and RNG candidates |
+| [BIN-ITEM-INFO-001](#bin-item-info-001---px05001-alternate-item-information-panel) | PX05001 alternate item-information panel | Timing and RNG candidates |
+| [BIN-NUMBER-HELPERS-001](#bin-number-helpers-001---baseline-and-modifier-zero-glyphs) | baseline and modifier zero glyphs | Timing and RNG candidates |
+| [BIN-SECTOR-GANGS-001](#bin-sector-gangs-001---compact-all-gangs-sector-roster) | compact all-gangs sector roster | Timing and RNG candidates |
+| [BIN-SITE-INFO-001](#bin-site-info-001---px05002-alternate-site-information-panel) | PX05002 alternate Site Information panel | Timing and RNG candidates |
+| [BIN-UI-001](#bin-ui-001---combat-animation-cadence) | combat animation cadence | Platform boundaries visible in imports |
+| [BIN-UI-016](#bin-ui-016---last-turn-events-site-image-treatment) | Last Turn Events site-image treatment | Platform boundaries visible in imports |
+| [BIN-UI-031](#bin-ui-031---px00129-uses-role-specific-copy-modes) | PX00129 uses role-specific copy modes | Platform boundaries visible in imports |
+| [BIN-UI-032](#bin-ui-032---exact-main-console-hit-split-and-pressed-geometry) | exact main-console hit, split, and pressed geometry | Platform boundaries visible in imports |
+| [BIN-UI-033](#bin-ui-033---exact-siege-and-big-man-objective-sector-pylons) | exact Siege and Big Man objective-sector pylons | Platform boundaries visible in imports |
+| [BIN-UI-034](#bin-ui-034---native-pointer-is-stock-arrowwait-not-an-atlas-sprite) | native pointer is stock-arrow/wait, not an atlas sprite | Platform boundaries visible in imports |
+| [BIN-UI-035](#bin-ui-035---sector-income-and-owner-only-cash-rows) | sector Income and owner-only Cash rows | Timing and RNG candidates |
+| [BIN-UI-036](#bin-ui-036---detailed-sector-site-and-gang-meters) | detailed-sector site and gang meters | Platform boundaries visible in imports |
+| [BIN-UI-CREDITS-001](#bin-ui-credits-001---blocking-publisherdeveloper-credits-presenter) | blocking publisher/developer credits presenter | New-game initialization |
+| [BIN-UI-MENU-001](#bin-ui-menu-001---native-menu-resource-and-command-groups) | native menu resource and command groups | New-game initialization |
+| [BIN-UI-TITLE-001](#bin-ui-title-001---title-canvas-and-dormant-demo-promotion) | title canvas and dormant demo promotion | New-game initialization |
+
+**Audio and video**
+
+| ID | Finding | Section |
+|---|---|---|
+| [BIN-MUSIC-001](#bin-music-001---cd-track-programs-and-lifecycle) | CD track programs and lifecycle | Platform boundaries visible in imports |
+| [BIN-SOUND-001](#bin-sound-001---effect-slots-volume-and-setup-cues) | effect slots, volume and setup cues | Platform boundaries visible in imports |
+<!-- doc-index:end -->
 
 ## PE image
 
@@ -310,7 +531,7 @@ equal source/destination dimensions, keyed-copy mode, and visible atlas pixels.
 the sprite identity, marked sector sets, copy mode, and placement are closed
 statically.
 
-### BIN-UI-034 - detailed-sector site and gang meters
+### BIN-UI-036 - detailed-sector site and gang meters
 
 **Observation:** Detailed-sector compositor `0x00410770` calculates each site
 percentage as integer `progress * 100 / base Resistance`, with the
@@ -481,7 +702,7 @@ previous recreation playback as too fast.
 **Next validation:** Capture an original combat sequence with frame timestamps
 to quantify any scheduling jitter around the 166-millisecond nominal period.
 
-### BIN-API-002 - audio and video
+### BIN-API-006 - audio and video
 
 **Observation:** WINMM imports include `PlaySoundA`, `mciSendCommandA`, auxiliary
 volume APIs, `timeGetTime`, `timeSetEvent`, and `timeKillEvent`. Sixteen Smacker
