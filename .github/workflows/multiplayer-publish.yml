@@ -203,8 +203,9 @@ jobs:
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
         with:
           # Pinned here rather than read from a `packageManager` field: that field drives corepack,
-          # which is deprecated and gone in newer Node. `devEngines.packageManager` records the
-          # same floor for humans and turbo.
+          # which is deprecated and gone in newer Node. `devEngines.packageManager` records the same
+          # version for humans and turbo, and names it exactly rather than as a range: corepack, which
+          # Dependabot's updater still runs, refuses a range in that field outright.
           version: 12.5.1
 
       # No dependency cache, deliberately: a cache entry poisoned by a pull request build would be
@@ -305,7 +306,10 @@ jobs:
             echo
           } >> "$GITHUB_STEP_SUMMARY"
           for tarball in "${tarballs[@]}"; do
-            npm publish "$tarball" --provenance --access public
+            # `./` matters: a bare `tarballs/name.tgz` is not a path to npm, it is the GitHub
+            # shorthand `owner/repo`, and `npm publish` resolved it as one — the 0.9.4 release died
+            # on `git ls-remote ssh://git@github.com/tarballs/...tgz.git` before it published a byte.
+            npm publish "./$tarball" --provenance --access public
             echo "- \`$(basename "$tarball")\`" >> "$GITHUB_STEP_SUMMARY"
           done
 

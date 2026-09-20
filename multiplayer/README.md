@@ -33,9 +33,12 @@ This file is the operator and contributor manual.
 Prerequisites: Node.js 22+ and pnpm 12 (`npm install -g pnpm@12`). Corepack is deliberately not
 used: it is deprecated and removed in newer Node, so the workspace declares its package manager
 through `devEngines.packageManager` and `engines.pnpm` instead of a corepack-driven
-`packageManager` field. `engine-strict=true` makes a too-old pnpm fail the install rather than
-silently resolve a different tree. The workspace explicitly allowlists the native build scripts
-required by its runtime adapters.
+`packageManager` field. `devEngines.packageManager.version` names one exact version — the one CI
+installs — rather than a range: corepack reads that field wherever it is still around, Dependabot's
+updater included, and refuses a range there with "expected a semver version". `engines.pnpm` is
+what states the supported floor, and `engine-strict=true` makes a too-old pnpm fail the install
+rather than silently resolve a different tree. The workspace explicitly allowlists the native build
+scripts required by its runtime adapters.
 
 ```sh
 cd multiplayer
