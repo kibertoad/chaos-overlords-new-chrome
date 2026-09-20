@@ -21,7 +21,7 @@ Last updated: 2026-09-19
   server reuse. Use `-ShutdownBuildServersAfterRun` only to clear stale servers;
   it can also make the next IDE build cold.
 - Native saves are format v24, replays are v28, canonical hashes are v27, asset
-  manifests are v6, extracted help is v3, and client preferences are v8. Save
+  manifests are v6, extracted help is v3, and client preferences are v11. Save
   and replay compatibility may intentionally break before 1.0.0; retain the
   migration/versioning machinery for post-1.0 compatibility.
 
@@ -150,8 +150,9 @@ Last updated: 2026-09-19
   next movie or title. A bounded Windows run completed the logo and began the
   intro without diagnostics; no ambient codec is required.
 - The movies are no longer an unattended toll on every launch. Completing the
-  queue records `IntroMoviesSeen` in preferences (format v8, migrated from v7
-  with the intro still owed once), so only an installation that has not shown
+  queue records `IntroMoviesSeen` in preferences (introduced in format v8 and
+  retained through the current v11 migrations; the v7 migration leaves the
+  intro owed once), so only an installation that has not shown
   them yet streams them at startup. The title screen carries an `INTRO` button that replays the queue at
   any time, reports an unreadable pack instead of stalling, and hands the menu
   music back when the last movie ends.

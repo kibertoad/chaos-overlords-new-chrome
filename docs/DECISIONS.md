@@ -165,7 +165,8 @@ and the client-side wiring of online play is tracked as follow-up work.
   reached the end of the queue. The recreation has no player profiles, so the
   record lives in the single local preferences file alongside the other client
   settings. Completing it records `IntroMoviesSeen` in
-  the client preferences (format v8), and the title screen gains an `INTRO`
+  the then-current client preferences format v8 (subsequently migrated through
+  the current format), and the title screen gains an `INTRO`
   button that replays the same queue on demand.
 - Reason: 135 seconds of startup video, even with skip input, is a toll on every
   launch of a recreation that players restart often, while the movies themselves
