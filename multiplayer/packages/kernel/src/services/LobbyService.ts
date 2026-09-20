@@ -9,8 +9,14 @@ import {
   type MembershipView,
   type TakeoverVoteRequest,
 } from '@chaos-overlords/contracts'
-import { activePlayers, type Match, type Player } from '../domain/entities'
-import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../domain/errors'
+import { activePlayers, humanParticipants, type Match, type Player } from '../domain/entities'
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  RateLimitedError,
+  UnauthorizedError,
+} from '../domain/errors'
 import { generateJoinCode, generateSeed, generateToken, hashToken } from '../logic/crypto'
 import { hashPassword, verifyPassword } from '../logic/password'
 import { assignSlots } from '../logic/turn-logic'
@@ -18,6 +24,7 @@ import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
 import { MatchQueryService, toPlayerView } from './MatchQueryService'
+import { RateLimiter } from './RateLimiter'
 import { FIRST_TURN, type TurnService } from './TurnService'
 
 const JOIN_CODE_LENGTH = LIMITS.joinCodeLength
@@ -34,6 +41,32 @@ const VACANT_HOST_STATUSES: ReadonlyArray<Player['status']> = ['left', 'kicked',
 /** A human seat nobody is playing: the ones an absence vote can hand to the computer. */
 const ABSENT_HUMAN_STATUSES: ReadonlyArray<Player['status']> = ['takeoverPending', 'left', 'kicked']
 
+/**
+ * Passwords one caller will have verified against one match in a window.
+ *
+ * `verifyPassword` is PBKDF2 at 120,000 iterations, on a door no token guards, so tens of
+ * milliseconds of CPU per attempt is the libuv thread pool on Node and billed CPU on Workers. The
+ * budget is per caller AND per match rather than per match alone: a public listing carries the
+ * join code and the `passwordProtected` flag, so one match's budget is something any stranger can
+ * reach, and one that could be spent by a stranger would lock every legitimate player out of a
+ * match for as long as the stranger cared to keep spending it. Someone mistyping their own
+ * password is nowhere near ten tries a minute.
+ */
+const PASSWORD_ATTEMPTS_PER_CALLER = 10
+/**
+ * Wrong passwords one match will verify in a window before it stops taking a caller's word twice.
+ *
+ * The per-caller budget bounds one address; this bounds the match against an attacker who has
+ * many. It is charged only by a verification that FAILED, so the traffic of a match whose players
+ * know their password never approaches it. While it is spent, a caller still gets their first
+ * attempt of the window — which is what keeps this a brake on a distributed attack rather than a
+ * lever for closing someone else's match: an attacker under it costs the match one hash per
+ * address per minute, and a player who knows the password is only ever refused a RETRY, never
+ * their first try.
+ */
+const PASSWORD_FAILURES_PER_MATCH = 30
+const PASSWORD_ATTEMPT_WINDOW_MS = 60_000
+
 export interface LobbyServiceOptions {
   /** Generates the player/match ids; defaults to `crypto.randomUUID`. */
   newId?: () => string
@@ -43,6 +76,8 @@ export interface LobbyServiceOptions {
 export class LobbyService {
   private readonly query: MatchQueryService
   private readonly newId: () => string
+  private readonly passwordAttempts: RateLimiter
+  private readonly passwordFailures: RateLimiter
 
   constructor(
     private readonly deps: KernelDeps,
@@ -52,6 +87,58 @@ export class LobbyService {
   ) {
     this.query = new MatchQueryService(deps.storage)
     this.newId = options.newId ?? (() => crypto.randomUUID())
+    this.passwordAttempts = new RateLimiter(deps.clock, {
+      limit: PASSWORD_ATTEMPTS_PER_CALLER,
+      windowMs: PASSWORD_ATTEMPT_WINDOW_MS,
+    })
+    this.passwordFailures = new RateLimiter(deps.clock, {
+      limit: PASSWORD_FAILURES_PER_MATCH,
+      windowMs: PASSWORD_ATTEMPT_WINDOW_MS,
+    })
+  }
+
+  /**
+   * Check a match password, charging two budgets before the hash is computed.
+   *
+   * The caller's own budget is spent on every attempt rather than only on the wrong ones, because
+   * a caller who knows the password does not need ten attempts a minute and an attacker who does
+   * not would otherwise be charged for nothing. The match's budget is spent only by a failure, and
+   * closes only the caller's SECOND and later attempts in a window, so a stranger grinding a
+   * public match's password cannot turn the protection into a way of shutting its players out.
+   * Both doors go through here; see `PASSWORD_ATTEMPTS_PER_CALLER`.
+   *
+   * `caller` is whatever the transport can attribute an attempt to — the client address, already
+   * normalised. A transport that cannot attribute one passes nothing, and every such attempt then
+   * shares a single budget, which is the safe direction: an unattributable flood is throttled
+   * together rather than not at all.
+   */
+  private async verifyMatchPassword(
+    match: Match,
+    password: string | undefined,
+    caller: string | undefined,
+  ): Promise<void> {
+    if (match.passwordHash === null) return
+    if (!password) {
+      throw new UnauthorizedError('This match needs a password', { reason: 'password_required' })
+    }
+    const callerKey = `${match.id}:${caller ?? 'unattributed'}`
+    const retry = this.passwordAttempts.take(callerKey)
+    if (retry !== null) throw this.tooManyPasswordAttempts(retry)
+    if (this.passwordAttempts.spent(callerKey) > 1) {
+      const underAttack = this.passwordFailures.peek(match.id)
+      if (underAttack !== null) throw this.tooManyPasswordAttempts(underAttack)
+    }
+    if (!(await verifyPassword(password, match.passwordHash))) {
+      this.passwordFailures.take(match.id)
+      throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
+    }
+  }
+
+  private tooManyPasswordAttempts(retryAfterSeconds: number): RateLimitedError {
+    return new RateLimitedError('Too many password attempts for this match', {
+      reason: 'rate_limited',
+      retryAfterSeconds,
+    })
   }
 
   async createMatch(request: CreateMatchRequest): Promise<MembershipView> {
@@ -100,7 +187,7 @@ export class LobbyService {
     return this.membership(match, host, token)
   }
 
-  async join(request: JoinMatchRequest): Promise<MembershipView> {
+  async join(request: JoinMatchRequest, caller?: string): Promise<MembershipView> {
     const match = await this.deps.storage.matches.getByJoinCode(request.joinCode)
     // A code that names no match and a code that names a match which has already started answer the
     // same 404, so a scan of the code space learns nothing from the difference. The wording covers
@@ -111,14 +198,7 @@ export class LobbyService {
         reason: 'unknown_join_code',
       })
     }
-    if (match.passwordHash !== null) {
-      if (!request.password) {
-        throw new UnauthorizedError('This match needs a password', { reason: 'password_required' })
-      }
-      if (!(await verifyPassword(request.password, match.passwordHash))) {
-        throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
-      }
-    }
+    await this.verifyMatchPassword(match, request.password, caller)
     await this.refuseDuplicateName(match.id, request.displayName)
     const joinOrder = await this.deps.storage.matches.claimSeat(match.id)
     if (joinOrder === null) {
@@ -159,7 +239,7 @@ export class LobbyService {
     }
   }
 
-  async joinRunning(request: JoinRunningMatchRequest): Promise<MembershipView> {
+  async joinRunning(request: JoinRunningMatchRequest, caller?: string): Promise<MembershipView> {
     const byId = await this.deps.storage.matches.get(request.match)
     // A private match is reachable by its join code only. Its id is not a secret — it rides every
     // event, the client's recovery file and any log line — so looking one up by id would make a
@@ -184,19 +264,23 @@ export class LobbyService {
         reason: 'late_join_not_ready',
       })
     }
-    if (match.passwordHash !== null) {
-      if (!request.password || !(await verifyPassword(request.password, match.passwordHash))) {
-        throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
-      }
-    }
+    await this.verifyMatchPassword(match, request.password, caller)
     const existing = await this.deps.storage.players.listByMatch(match.id)
+    // A match every human has left is paused by `remove`, with no clock and nobody to restart it:
+    // `rejoin` is the door back into one, and it needs a token this caller does not have. Seating
+    // a stranger at a stopped table would strand them there, so the late-join door refuses it —
+    // which is also exactly the test the public listing leaves such a match out on.
+    if (humanParticipants(existing).length === 0) {
+      throw new ConflictError('Every player has left this match', { reason: 'match_abandoned' })
+    }
     if (existing.some((player) => player.slot === request.slot)) {
       throw new ConflictError('That seat has already belonged to a human', {
         reason: 'seat_reserved',
       })
     }
-    // The lobby door counts seats through `claimSeat`; this one has no counter behind it, so the
-    // host's own limit has to be read here or a two-seat match could gather humans up to six.
+    // A courtesy refusal with the right reason before any work is done; `createLate` tests
+    // capacity again inside its own insert, which is what actually decides the race between two
+    // late joiners taking two different free seats.
     if (existing.length >= match.settings.maxPlayers) {
       throw new ConflictError('The match is full', { reason: 'match_full' })
     }
@@ -215,7 +299,7 @@ export class LobbyService {
       joinedAt: this.deps.clock.now(),
     }
     if (!(await this.deps.storage.players.createLate(player))) {
-      throw new ConflictError('That seat was claimed by another player', {
+      throw new ConflictError('That seat was claimed by another player, or the match filled up', {
         reason: 'seat_reserved',
       })
     }
@@ -537,7 +621,19 @@ export class LobbyService {
       })
       return
     }
-    await this.deps.storage.players.setStatus(target.id, reason)
+    // A compare-and-swap, not a write. `target.status` was read at authentication, and
+    // `tallyTakeoverVote` concurrently swaps `takeoverPending` to `computer` and announces the
+    // takeover. Writing `left` or `kicked` over that put a seat every client already plays as AI
+    // back among the absent human statuses, so the next rejoin or vote opened a fresh prompt for
+    // it, paused the clock, and published a second `match.playerTakenOver` — the regression the
+    // note at the top of this method says was fixed.
+    const claimed = await this.deps.storage.players.transitionStatus(
+      target.id,
+      ['active', 'takeoverPending', 'left'],
+      reason,
+    )
+    // Revoking and hanging up stay unconditional for a kick: the seat may now be computer
+    // controlled, but the person behind it must still lose the token and the streams either way.
     // Membership is the only thing the token ever proved, so it stops working here: a kicked player
     // keeps neither the event stream nor the sealed order sets of the turns that follow. The revoke
     // closes the next request and the hang-up closes the streams already open, which are never
@@ -546,11 +642,21 @@ export class LobbyService {
       await this.deps.storage.players.revokeToken(target.id)
       await this.hangUp(match.id, target.id)
     }
-    await this.publisher.publish(match.id, {
-      type: 'lobby.playerLeft',
-      payload: { playerId: target.id, reason },
-    })
+    if (claimed) {
+      await this.publisher.publish(match.id, {
+        type: 'lobby.playerLeft',
+        payload: { playerId: target.id, reason },
+      })
+    }
     if (match.status !== 'running' && match.status !== 'desynced') return
+    // The takeover won the seat, so it is no longer a human absence anyone has to decide on. The
+    // verdict is still re-run below, because the seat leaving `humanParticipants` can complete a
+    // readiness or a consensus that was waiting on it.
+    if (!claimed) {
+      await this.turns.reevaluate(match.id)
+      await this.retallyOpenPrompts(match)
+      return
+    }
     if (!wasActive) {
       // A `takeoverPending` seat is not idle: `humanParticipants` counts it, so both readiness and
       // consensus wait on it. Kicking one and returning here left the turn waiting on a seat that

@@ -288,9 +288,15 @@ public sealed class MultiplayerEventStreamTests
                 lastError: new MultiplayerProtocolException("bad response"))));
     }
 
-    /// <summary>A connection is reported once its first frame arrives, and a keepalive is a frame.</summary>
+    /// <summary>
+    /// An EVENT proves a connection at once; a keepalive on its own does not.
+    /// </summary>
+    /// <remarks>
+    /// The first frame of any kind used to be enough, and that made a whole class of broken
+    /// middlebox invisible to the backoff — see the one-frame-then-close test below.
+    /// </remarks>
     [Fact]
-    public async Task ReportsAConnectionOnlyOnceItsFirstFrameArrives()
+    public async Task ReportsAConnectionOnceAnEventArrivesRatherThanOnAKeepalive()
     {
         using var server = new FakeMultiplayerServer();
         using var http = new HttpClient(server);
@@ -303,13 +309,73 @@ public sealed class MultiplayerEventStreamTests
         await Until(() => server.CallsTo(HttpMethod.Get, "/stream") == 1);
         Assert.Equal(0, connected);
         server.Events.Write(": keepalive\n\n");
-        await Until(() => connected == 1);
+        // A keepalive is what a proxy that accepts and drops also produces, so it proves nothing
+        // until the connection has lasted; the event below proves it immediately.
+        await Task.Delay(100, TestContext.Current.CancellationToken);
+        Assert.Equal(0, connected);
         server.Events.Write(Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\"}", "3"));
 
         Assert.True(await moving);
         Assert.Equal(3, events.Current.Seq);
         Assert.Equal(1, connected);
         await stop.CancelAsync();
+    }
+
+    /// <summary>
+    /// A server that accepts, writes a keepalive and drops is an outage, and is backed off from.
+    /// </summary>
+    /// <remarks>
+    /// A proxy with response buffering and a load balancer with a short idle cutoff both do exactly
+    /// this. Every attempt used to count as "proven" because a frame had arrived, so the attempt
+    /// counter reset to zero and the outage stopwatch never started: the client reconnected at the
+    /// first backoff step — half a second to a second — for as long as the player left the match
+    /// open, and the retry window that is supposed to end a hopeless reconnect never closed.
+    /// </remarks>
+    [Fact]
+    public async Task BacksOffFromAServerThatAcceptsAndDropsAfterAKeepalive()
+    {
+        using var server = new FakeMultiplayerServer();
+        using var http = new HttpClient(server);
+        using var stop = new CancellationTokenSource();
+        var attempts = new List<int>();
+        var policy = new RetryPolicy(
+            TimeSpan.FromMilliseconds(10),
+            TimeSpan.FromMilliseconds(40),
+            MaxAttempts: 0,
+            MaxElapsed: TimeSpan.FromMilliseconds(400));
+        var stream = new MatchEventStream(
+            Handle(http), policy, onReconnect: (_, attempt) => attempts.Add(attempt));
+        await using var events = stream.ReadAsync(0, stop.Token).GetAsyncEnumerator(stop.Token);
+        var moving = events.MoveNextAsync();
+
+        // Accept, write the keepalive a real server opens with, and drop — over and over.
+        for (var round = 0; round < 40 && !moving.IsCompleted; round++)
+        {
+            await Until(() => server.CallsTo(HttpMethod.Get, "/stream") >= round + 1);
+            server.Events.Write(": keepalive\n\n");
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+            server.DropStream();
+            if (attempts.Count >= 4) break;
+        }
+
+        // The attempt counter climbs instead of being reset by each keepalive, so the backoff
+        // widens and the outage budget can eventually close.
+        Assert.True(attempts.Count >= 4, $"attempts: {string.Join(",", attempts)}");
+        Assert.Equal(attempts.Count, attempts.Distinct().Count());
+        Assert.Equal(attempts.OrderBy(attempt => attempt), attempts);
+
+        // Settle the pending read before the enumerator is disposed; disposing one mid-step is
+        // what `NotSupportedException` from an async enumerator means.
+        await stop.CancelAsync();
+        try
+        {
+            await moving;
+        }
+        catch (Exception exception) when (exception is OperationCanceledException
+            or RetryExhaustedException)
+        {
+            // Either end of a stream nobody is waiting for any more.
+        }
     }
 
     private static MatchHandle Handle(HttpClient http) =>

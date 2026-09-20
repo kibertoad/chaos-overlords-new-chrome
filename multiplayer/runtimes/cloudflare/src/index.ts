@@ -102,8 +102,37 @@ export function buildContainer(env: Env): ServerContainer {
   }
 }
 
+/**
+ * Whether this isolate has ever seen the cron fire, and when it started.
+ *
+ * A deployment with no cron trigger loses every safety net the `scheduled` handler is: the seal of
+ * a turn whose Durable Object alarm never fired, the repair of a seal an isolate died in the
+ * middle of, the re-run of a verdict cut short, and all of retention. None of that fails loudly —
+ * matches just stop advancing for the people in them — so it is worth one log line. Per isolate,
+ * which means a busy Worker says it a few times and then never again; that is the right volume for
+ * something whose remedy is four lines of `wrangler.toml`.
+ */
+let cronSeen = false
+let cronWatchStartedAt = 0
+const CRON_GRACE_MS = 60 * 60 * 1000
+
+function warnIfCronIsMissing(): void {
+  if (cronSeen) return
+  const now = Date.now()
+  if (cronWatchStartedAt === 0) {
+    cronWatchStartedAt = now
+    return
+  }
+  if (now - cronWatchStartedAt < CRON_GRACE_MS) return
+  cronWatchStartedAt = now
+  workerLogger.warn('cron trigger has not fired', {
+    hint: 'add [triggers] crons = ["*/5 * * * *"] to wrangler.toml; without it nothing seals a missed deadline, finishes an interrupted seal or collects retention',
+  })
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    warnIfCronIsMissing()
     return containerFor(env).app.fetch(request, env, ctx)
   },
   /** The cron safety net: expired deadlines, interrupted seals, and retention. */
@@ -112,6 +141,7 @@ export default {
     env: Env,
     ctx: ExecutionContext,
   ): Promise<void> {
+    cronSeen = true
     const { container } = containerFor(env)
     const { kernel } = container
     // Each step in its own `try`, as the Node sweeper already does. One shared `catch` meant a

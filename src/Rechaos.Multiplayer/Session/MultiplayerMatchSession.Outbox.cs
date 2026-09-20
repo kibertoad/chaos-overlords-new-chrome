@@ -40,6 +40,7 @@ public sealed partial class MultiplayerMatchSession
     public void QueueOrders(int turn, OrderDocument document, bool ready)
     {
         ArgumentNullException.ThrowIfNull(document);
+        CancellationTokenSource? superseded;
         lock (_outboxGate)
         {
             if (ready) _locallyReadyTurns.Add(turn);
@@ -48,8 +49,15 @@ public sealed partial class MultiplayerMatchSession
             _pending = new PendingOrders(turn, document, carriedReady);
             // A whole-document replacement makes the older request disposable. In particular, do
             // not spend the reconnect window retrying a stale draft while a newer one waits.
-            _inFlightOrders?.Cancel();
+            superseded = _inFlightOrders;
         }
+        // Cancelled OUTSIDE the lock. `Cancel` runs its registrations synchronously on the calling
+        // thread — the game thread here — and the retry loop's continuation can resume inline
+        // through it: out of `Task.Delay`, through the lane's recovery report, through the
+        // `finally`, and on into the next submission's synchronous prologue, all while this lock
+        // was still held. It is reentrant, so nothing deadlocked; what it did was run the outbox's
+        // own bookkeeping under a lock taken by the interface, from the interface's thread.
+        superseded?.Cancel();
         _outboxSignal.Release();
     }
 
@@ -150,6 +158,17 @@ public sealed partial class MultiplayerMatchSession
                 // (or silently throwing away a turn the player already closed locally).
                 _outboxLane.Failed(Describe(exception), exception.Attempts);
                 Requeue(next);
+            }
+            catch (MultiplayerApiException exception) when (exception.Reason == "not_active")
+            {
+                // The seat was handed to the computer, or left, between the player planning this
+                // document and it reaching the server. It is not the end of the membership — the
+                // player is still on the roster and can take the seat back — so the session goes
+                // on watching the match, exactly as `ReportAsync` does with the same 403, and
+                // stops offering documents the server will not take.
+                _ownSeatIsComputerControlled = true;
+                _notices.Enqueue(
+                    new MultiplayerNotice.OrdersRefused(next.Turn, Describe(exception)));
             }
             catch (Exception exception) when (exception is MultiplayerApiException
                 or MultiplayerProtocolException)

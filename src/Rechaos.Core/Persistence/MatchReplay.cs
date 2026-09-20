@@ -53,17 +53,53 @@ public sealed class MatchReplayRecorder
     private readonly byte[] _initialSnapshot;
     private readonly string _initialStateSha256;
     private readonly List<ReplayStep> _steps = [];
+    private readonly bool _verifying;
     private string _currentStateSha256;
 
     public MatchReplayRecorder(MatchState state)
+        : this(state, verifying: true)
+    {
+    }
+
+    private MatchReplayRecorder(MatchState state, bool verifying)
     {
         State = state ?? throw new ArgumentNullException(nameof(state));
+        _verifying = verifying;
         _initialStateSha256 = MatchStateHasher.ComputeSha256(state);
         _currentStateSha256 = _initialStateSha256;
         using var stream = new MemoryStream();
         NativeSaveSerializer.Save(stream, state);
         _initialSnapshot = stream.ToArray();
     }
+
+    /// <summary>
+    /// A recorder that records without CHECKING, for a copy nothing else can reach.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every mutation costs two full serialisations and SHA-256s of the whole match: one for
+    /// <see cref="EnsureSynchronized"/>, which asks whether the state has moved behind the
+    /// recorder's back, and one for the step's own fingerprint. The speculative copy an online
+    /// player plans on routes every click, every cancel and every hire through that, on the render
+    /// thread — and on a late-game six-player city a player feels it as a hitch each time they
+    /// touch anything.
+    /// </para>
+    /// <para>
+    /// The first of the two is what goes. It is an invariant about ALIASING — somebody holding the
+    /// same <see cref="MatchState"/> and mutating it directly — and the speculative copy is made by
+    /// <c>MatchStateClone.Of</c>, handed to one owner and thrown away when the turn seals. Nothing
+    /// else has a reference to check for.
+    /// </para>
+    /// <para>
+    /// The second stays, and the journal with it. A bug report filed from an online match attaches
+    /// the turn being planned — that is the only history this client is the authority on — so a
+    /// recorder that kept no journal would quietly strip a report of its most useful field.
+    /// </para>
+    /// </remarks>
+    public static MatchReplayRecorder Unverified(MatchState state) => new(state, verifying: false);
+
+    /// <summary>Whether this recorder re-hashes the state before each step; see `Unverified`.</summary>
+    public bool IsVerifying => _verifying;
 
     /// <summary>Adopts a journal that was recorded earlier, so play continues appending to it.</summary>
     private MatchReplayRecorder(
@@ -73,6 +109,7 @@ public sealed class MatchReplayRecorder
         IReadOnlyList<ReplayStep> steps)
     {
         State = state;
+        _verifying = true;
         _initialSnapshot = initialSnapshot;
         _initialStateSha256 = initialStateSha256;
         _steps.AddRange(steps);
@@ -285,6 +322,7 @@ public sealed class MatchReplayRecorder
 
     private void EnsureSynchronized()
     {
+        if (!_verifying) return;
         if (!StringComparer.Ordinal.Equals(_currentStateSha256, CurrentHash()))
             throw new InvalidOperationException("Match state changed outside the replay recorder.");
     }

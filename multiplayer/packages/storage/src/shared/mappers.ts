@@ -1,4 +1,5 @@
 import type {
+  LobbyListing,
   MatchSettings,
   MatchStatus,
   OrderDocument,
@@ -8,6 +9,7 @@ import type {
 import type {
   Match,
   PersistedEvent,
+  PublicLobbyRow,
   Player,
   SealedSlot,
   Snapshot,
@@ -63,6 +65,7 @@ export interface TurnRow {
   orderSetHash: string | null
   sealedSlots: unknown
   stateHash: string | null
+  desyncedAt: Date | null
 }
 
 export interface TurnOrdersRow {
@@ -197,6 +200,60 @@ export const toEvent = (row: EventRow): PersistedEvent =>
   }) as PersistedEvent
 
 export const firstOrNull = <T>(rows: T[]): T | null => rows[0] ?? null
+
+/**
+ * The public listing row as the two listing statements select it, before the contract shape.
+ *
+ * `seatCount` and `humanCount` are both carried because they answer the question for different
+ * statuses: a lobby advertises the seats it has taken, a running match the humans still in it —
+ * the ones playing and the ones a takeover vote has not yet decided on.
+ */
+export interface PublicLobbyRowShape {
+  id: string
+  joinCode: string
+  name: string
+  hostDisplayName: string
+  seatCount: number
+  humanCount: unknown
+  maxPlayers: number
+  passwordHash: string | null
+  status: string
+  settings: unknown
+  createdAt: Date
+  hasSnapshot: unknown
+}
+
+export const toPublicLobbyRow = (row: PublicLobbyRowShape): PublicLobbyRow => ({
+  id: row.id,
+  joinCode: row.joinCode,
+  name: row.name,
+  hostDisplayName: row.hostDisplayName,
+  playerCount: row.status === 'running' ? countColumn(row.humanCount) : row.seatCount,
+  maxPlayers: row.maxPlayers,
+  status: row.status as LobbyListing['status'],
+  settings: row.settings as LobbyListing['settings'],
+  availableSlots: [],
+  availableSeatSummaries: [],
+  passwordProtected: row.passwordHash !== null,
+  hasSnapshot: booleanColumn(row.hasSnapshot),
+  createdAt: row.createdAt.toISOString(),
+})
+
+/**
+ * A driver-agnostic read of an aggregate or predicate column. `count(*)` comes back as a number on
+ * better-sqlite3 and D1 and as a decimal string on node-postgres, and `exists` is a boolean on
+ * Postgres and 0/1 on SQLite; both are normalized here rather than at each call site.
+ */
+function countColumn(value: unknown): number {
+  const number = typeof value === 'string' ? Number(value) : value
+  return typeof number === 'number' && Number.isFinite(number) ? number : 0
+}
+
+function booleanColumn(value: unknown): boolean {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value !== 0
+  return value === 't' || value === 'true' || value === '1'
+}
 
 /**
  * Normalizes a protocol or session version at the database boundary, before it can leak into a

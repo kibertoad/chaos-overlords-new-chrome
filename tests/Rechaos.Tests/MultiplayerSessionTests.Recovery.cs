@@ -19,8 +19,8 @@ public sealed partial class MultiplayerSessionTests
     private static readonly OrderDocument EmptyOrders =
         new(OrderDocumentBuilder.OrderDocumentSchemaVersion, []);
 
-    private static string Readiness(int seq, string playerId = "p2") =>
-        Frame(seq, "turn.readiness", $$"""{"turn":1,"playerId":"{{playerId}}","ready":true}""");
+    private static string Readiness(int seq, string playerId = "p2", int turn = 1) =>
+        Frame(seq, "turn.readiness", $$"""{"turn":{{turn}},"playerId":"{{playerId}}","ready":true}""");
 
     /// <summary>The state every client is on after the empty sealed sets for the first turns.</summary>
     private static string HashAfterTurns(int turns)
@@ -186,23 +186,25 @@ public sealed partial class MultiplayerSessionTests
         var (session, server, http) = Running();
         using var _ = http;
         await using var __ = session;
-        var ours = MatchStateHasher.ComputeSha256(session.Bootstrap.State);
         await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
-        server.Events.Write(Frame(8, "turn.desynced", Desync(ours)));
+        var ours = await ResolveTurnOneAsync(session, server);
+        server.Events.Write(Frame(9, "turn.desynced", Desync(ours)));
         await WaitFor<MultiplayerNotice.Desynced>(session);
         await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 2, "the repair upload");
+        // The one report that resolving turn 1 made. Nothing below may add to it.
+        var reportsBefore = server.CallsTo(HttpMethod.Post, "/turns/1/report");
 
         server.Events.Write(Frame(
-            9,
+            10,
             "snapshot.available",
             $"{{\"turn\":1,\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion},"
             + $"\"stateHash\":\"{ours}\",\"uploadedByPlayerId\":\"p1\"}}"));
-        server.Events.Write(Readiness(10));
+        server.Events.Write(Readiness(11, turn: 2));
         var seen = new List<MultiplayerNotice>();
         await WaitFor<MultiplayerNotice.ReadinessChanged>(session, seen);
 
         Assert.Equal(0, server.CallsTo(HttpMethod.Get, "/snapshots/1"));
-        Assert.Equal(0, server.CallsTo(HttpMethod.Post, "/turns/1/report"));
+        Assert.Equal(reportsBefore, server.CallsTo(HttpMethod.Post, "/turns/1/report"));
         Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Resynced);
     }
 

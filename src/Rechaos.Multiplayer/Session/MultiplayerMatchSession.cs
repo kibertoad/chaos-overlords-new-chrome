@@ -43,6 +43,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private readonly CancellationTokenSource _stopping = new();
     private readonly CancellationToken _stoppingToken;
     private readonly TimeSpan? _streamIdleTimeout;
+    private readonly TimeSpan? _streamOutageBudget;
+    private readonly RetryPolicy _streamRetryPolicy;
     private readonly Dictionary<string, int> _slotsByPlayerId;
     private readonly Dictionary<string, PendingTakeoverVote> _takeoverVotes = new(StringComparer.Ordinal);
 
@@ -100,6 +102,19 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// </remarks>
     private volatile bool _isHost;
 
+    /// <summary>
+    /// Cancels the event stream currently being read, so the pump can start a fresh cycle.
+    /// </summary>
+    /// <remarks>
+    /// Written by the pump and read by whoever calls <see cref="RequestResync"/>, which is the game
+    /// thread. It is never the session's own stopping source: a resync ends one connection, not the
+    /// session.
+    /// </remarks>
+    private CancellationTokenSource? _streamCycle;
+
+    /// <summary>Set by <see cref="RequestResync"/>; cleared by the pump when it acts on it.</summary>
+    private int _resyncRequested;
+
     private MultiplayerMatchSession(
         MultiplayerSessionOptions options,
         MatchReplayRecorder replay,
@@ -110,6 +125,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _match = options.Match;
         _definitions = options.Definitions;
         _streamIdleTimeout = options.StreamIdleTimeout;
+        _streamOutageBudget = options.StreamOutageBudget;
+        _streamRetryPolicy = options.StreamRetryPolicy ?? RetryPolicy.Stream;
         _stoppingToken = _stopping.Token;
         _replay = replay;
         _slotsByPlayerId = slotsByPlayerId;
@@ -141,6 +158,17 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
 
     /// <summary>Whether startup is reconstructing turns or handovers from durable history.</summary>
     public bool IsRestoring { get; }
+
+    /// <summary>
+    /// How far the server's clock is ahead of this machine's.
+    /// </summary>
+    /// <remarks>
+    /// Every deadline the protocol carries is an instant on the SERVER's clock, so a countdown
+    /// taken against the local one is wrong by however far the two have drifted — and an
+    /// unsynchronised desktop clock is an ordinary thing to have. The server is still the authority
+    /// on when a turn ends; this only makes the courtesy countdown honest.
+    /// </remarks>
+    public TimeSpan ServerTimeOffset => _match.ServerTimeOffset;
 
     /// <summary>
     /// The match as generated from the seed, for the interface to plan turn 1 on.
@@ -200,6 +228,37 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     public bool TryDequeueNotice(out MultiplayerNotice notice) => _notices.TryDequeue(out notice!);
 
     /// <summary>
+    /// Drops the event stream and rebuilds the session's state from the server's durable history.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The answer to "I should have heard something by now and I have not". A stream can be dead
+    /// without saying so — a suspended laptop, a NAT entry that expired — and the request that
+    /// preceded the silence may well have succeeded on a fresh connection, so the fact the client
+    /// is missing is sitting in the log waiting to be read. This is the recovery the pump already
+    /// runs for a sequence gap, offered to a caller that noticed the silence from outside.
+    /// </para>
+    /// <para>
+    /// Safe to call at any time and from any thread, and cheap when nothing is wrong: the restore
+    /// replays from the last applied sequence, so a session that was in fact up to date re-reads a
+    /// view and carries on. It is not a failure and it does not end anything.
+    /// </para>
+    /// </remarks>
+    public void RequestResync()
+    {
+        if (Interlocked.Exchange(ref _resyncRequested, 1) != 0) return;
+        try
+        {
+            Volatile.Read(ref _streamCycle)?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The cycle ended on its own between the read and the cancel; the flag is what matters
+            // and the next cycle will see it.
+        }
+    }
+
+    /// <summary>
     /// Votes on whether an absent player's seat should become computer-controlled.
     /// </summary>
     /// <remarks>
@@ -214,15 +273,33 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     {
         using var lifetime = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken, _stoppingToken);
-        await CallAsync(
-            token => _match.VoteOnTakeoverAsync(
-                playerId,
-                new TakeoverVoteRequest(choice == TakeoverChoice.Computer
-                    ? TakeoverVoteRequestDecision.Computer
-                    : TakeoverVoteRequestDecision.Wait),
-                token),
-            lane: null,
-            lifetime.Token).ConfigureAwait(false);
+        try
+        {
+            await CallAsync(
+                token => _match.VoteOnTakeoverAsync(
+                    playerId,
+                    new TakeoverVoteRequest(choice == TakeoverChoice.Computer
+                        ? TakeoverVoteRequestDecision.Computer
+                        : TakeoverVoteRequestDecision.Wait),
+                    token),
+                lane: null,
+                lifetime.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
+        {
+            // The session is stopping, or the caller asked to stop. Neither is news.
+            throw;
+        }
+        catch (Exception exception) when (exception is MultiplayerApiException
+            or MultiplayerProtocolException or RetryExhaustedException
+            or MultiplayerTimeoutException or HttpRequestException or IOException)
+        {
+            // A vote that did not land leaves the question open, and the player is the only one who
+            // can answer it again — so it goes through the notice queue like every other background
+            // result rather than into a diagnostics line nobody is reading.
+            _notices.Enqueue(new MultiplayerNotice.TakeoverVoteFailed(
+                playerId, choice, Describe(exception)));
+        }
     }
 
     /// <summary>Gives up the seat; the match stops waiting on this player from the next turn.</summary>
@@ -282,88 +359,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _stopping.Cancel();
     }
 
-    /// <summary>The pump's whole life: reconstruct if the match moved on, then read the log forever.</summary>
-    private async Task RunPumpAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            if (IsRestoring && !await RestoreAsync(replayFromSeq: 0, cancellationToken).ConfigureAwait(false))
-                return;
-            await PumpAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            // Ordinary shutdown, or the outbox failed first and stopped the session.
-        }
-        catch (Exception exception)
-        {
-            Fail(exception, Volatile.Read(ref _pumpOperation) ?? "event_stream");
-        }
-    }
-
-    /// <summary>
-    /// Reads the log forever, acting on every fact in the order the log gives them.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A failure that ends the stream ends the session with it: a revoked token means the player
-    /// left or was kicked, and there is nothing left to read. Everything that describes one attempt
-    /// is retried — the stream by itself, and the calls a fact leads to by <see cref="CallAsync"/>.
-    /// </para>
-    /// <para>
-    /// Sequence numbers are gapless, so the stream is held to that: an event that skips past the
-    /// next expected number means something between was never delivered, and acting on what came
-    /// after would apply a later turn to an earlier state. The session resynchronises instead — the
-    /// same reconstruction a restart does — and resumes from where the server now is. An event at
-    /// or below the last applied number is the at-least-once repeat and is dropped.
-    /// </para>
-    /// </remarks>
-    private async Task PumpAsync(CancellationToken cancellationToken)
-    {
-        if (_uploadInitialSnapshot)
-        {
-            await UploadInitialSnapshotAsync(cancellationToken).ConfigureAwait(false);
-            _uploadInitialSnapshot = false;
-        }
-        while (true)
-        {
-            Volatile.Write(ref _pumpOperation, "event_stream");
-            var stream = new MatchEventStream(
-                _match,
-                RetryPolicy.Stream,
-                onReconnect: (exception, attempt) => _streamLane.Failed(Describe(exception), attempt),
-                onConnected: _streamLane.Recovered,
-                _streamIdleTimeout);
-            var gap = false;
-            await foreach (var @event in stream
-                .ReadAsync(_resumeAfterSeq, cancellationToken).ConfigureAwait(false))
-            {
-                if (!string.Equals(@event.MatchId, _match.MatchId, StringComparison.Ordinal))
-                {
-                    throw new MultiplayerProtocolException(
-                        $"event sequence {@event.Seq} belongs to another match");
-                }
-                var expected = _resumeAfterSeq + 1;
-                if (@event.Seq < expected) continue;
-                if (@event.Seq > expected)
-                {
-                    _streamLane.Failed(
-                        $"The event stream jumped from sequence {_resumeAfterSeq} to {@event.Seq}; "
-                        + "resynchronising with the server.",
-                        attempt: 1);
-                    gap = true;
-                    break;
-                }
-                await HandleAsync(@event, cancellationToken).ConfigureAwait(false);
-                _resumeAfterSeq = @event.Seq;
-            }
-            // The stream ends only by throwing, by cancellation, or by the gap above.
-            if (!gap) return;
-            if (!await RestoreAsync(_resumeAfterSeq, cancellationToken).ConfigureAwait(false)) return;
-            _streamLane.Recovered();
-        }
-    }
-
     private async Task HandleAsync(MatchEvent @event, CancellationToken cancellationToken)
     {
         switch (@event)
@@ -376,7 +371,14 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                         cancellationToken)
                     .ConfigureAwait(false);
                 return;
-            case TurnConfirmedEvent:
+            case TurnConfirmedEvent confirmed:
+                // The verdict this client may have been waiting on. Clearing it here is what stops
+                // a settled turn's repair announcement, which every reconnect replays, from being
+                // treated as an open question again.
+                if (_pendingDesync?.Turn == confirmed.Payload.Turn) _pendingDesync = null;
+                await CheckpointIfDueAsync(
+                        confirmed.Payload.Turn, confirmed.Payload.StateHash, cancellationToken)
+                    .ConfigureAwait(false);
                 return;
             case TurnDesyncedEvent desynced:
                 await HandleDesyncAsync(desynced, cancellationToken).ConfigureAwait(false);
@@ -478,8 +480,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
         await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
+        var (state, planning) = HandOver();
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
-            turn, MatchStateClone.Of(_replay.State, _definitions), stateHash, includedOwnOrders));
+            turn, state, stateHash, includedOwnOrders, planning));
     }
 
     /// <summary>
@@ -505,9 +508,9 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             throw new MultiplayerProtocolException(
                 $"the log sealed turn {turn} while the match was on turn {current}");
         }
-        var sealedOrders = await CallAsync(
-            token => _match.SealedOrdersAsync(turn, token), _pumpLane, cancellationToken)
-            .ConfigureAwait(false);
+        // From the replay's prefetch when one was started for this turn, and from the server
+        // otherwise; see `SealedSetAsync`.
+        var sealedOrders = await SealedSetAsync(turn, cancellationToken).ConfigureAwait(false);
         if (sealedOrders.Turn != turn)
         {
             throw new MultiplayerProtocolException(
@@ -529,6 +532,33 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         var includedOwnOrders = sealedOrders.Players.Any(entry => entry.Slot == Slot);
         return (SealedTurnApplier.Apply(_replay, sealedOrders), includedOwnOrders);
     }
+
+    /// <summary>
+    /// The two copies the interface needs, both built here rather than on the game thread.
+    /// </summary>
+    /// <remarks>
+    /// The authoritative copy it owns, and the planning copy built over it — which is another
+    /// native save and load plus a walk of the coordinator up to the local seat. Doing the second
+    /// one on the game thread meant that work landed in the frame the new turn appeared, on top of
+    /// a clone the notice had already made of the same state. The restore path has always handed
+    /// the finished planning copy over instead; this is that, for every other path.
+    /// </remarks>
+    private (MatchState State, SpeculativeTurn? Planning) HandOver()
+    {
+        var state = MatchStateClone.Of(_replay.State, _definitions);
+        // A turn that ended the match leaves no turn to plan, and the interface shows the endgame
+        // from the state alone. So does a state that stopped anywhere but Command: `SpeculativeTurn`
+        // refuses to plan on one, and refusing HERE is an `InvalidOperationException` on the pump,
+        // which the catch-all turns into a failed session. The interface has always had a way to
+        // stand down from that state gracefully — it says the match reached one this client cannot
+        // play on — and it reaches that way by being handed no planning copy, exactly as it is at
+        // the end of a match.
+        return (state, IsPlannable(state) ? SpeculativeTurn.For(state, _definitions, Slot) : null);
+    }
+
+    /// <summary>Whether there is a turn on this state for the local seat to plan.</summary>
+    private static bool IsPlannable(MatchState state) =>
+        state.Outcome is null && state.Coordinator.Phase == TurnPhase.Command;
 
     private PendingTakeoverVote BeginTakeoverVote(string playerId, int turn)
     {
@@ -553,94 +583,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             vote.PlayerId,
             vote.Turn,
             new Dictionary<string, TakeoverChoice>(vote.Votes, StringComparer.Ordinal)));
-
-    /// <summary>
-    /// The match paused because clients disagreed about a turn.
-    /// </summary>
-    /// <remarks>
-    /// Only the host can repair it, and only with a hash the players themselves already reported in
-    /// the greatest number — otherwise a host could desync deliberately and upload a doctored state
-    /// as the new truth. A host whose own client is the odd one out therefore has nothing it is
-    /// allowed to upload, and says so rather than uploading something the server would refuse.
-    /// </remarks>
-    private async Task HandleDesyncAsync(TurnDesyncedEvent desynced, CancellationToken cancellationToken)
-    {
-        var turn = desynced.Payload.Turn;
-        var ours = MatchStateHasher.ComputeSha256(_replay.State);
-        var canRepair = IsHost && desynced.Payload.CandidateStateHashes.Contains(ours, StringComparer.Ordinal);
-        var details = string.Join(", ", desynced.Payload.Reports
-            .OrderBy(report => report.PlayerId, StringComparer.Ordinal)
-            .Select(report => $"{report.PlayerId}:{ShortHash(report.StateHash)}"));
-        _notices.Enqueue(new MultiplayerNotice.Desynced(
-            turn,
-            IsHost,
-            canRepair,
-            $"LOCAL {ShortHash(ours)}  REPORTS {details}"));
-        if (!canRepair) return;
-        await CallAsync(
-            token => _match.UploadSnapshotAsync(
-                new UploadSnapshotRequest(
-                    turn,
-                    // The body is a native save, so the version that describes it is the native
-                    // save format's — not the replay format's, which says nothing about these bytes.
-                    NativeSaveSerializer.CurrentFormatVersion,
-                    MultiplayerProtocolVersion.Current,
-                    MultiplayerSessionVersion.Current,
-                    ours,
-                    MatchStateClone.ToBase64(_replay.State),
-                    SummarizeSeats(_replay.State)),
-                token),
-            _pumpLane,
-            cancellationToken).ConfigureAwait(false);
-
-        static string ShortHash(string hash) => hash[..Math.Min(12, hash.Length)];
-    }
-
-    /// <summary>
-    /// Adopts a repaired state and re-reports the turn it settles.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The host is already on the state it uploaded, so it has nothing to load and nothing new to
-    /// say; every other client replaces its own with the snapshot, recomputes the hash and reports
-    /// again. Loading also starts a fresh recorder: the old one is bound to the state it was
-    /// constructed over and refuses to record another.
-    /// </para>
-    /// <para>
-    /// A repair for a turn older than the one this client last resolved is left alone. Delivery
-    /// is at least once, so the repeat of a repair already adopted arrives here, and adopting it
-    /// again would throw away every turn applied since.
-    /// </para>
-    /// </remarks>
-    private async Task AdoptSnapshotAsync(
-        SnapshotAvailableEventPayload announced,
-        CancellationToken cancellationToken)
-    {
-        var turn = announced.Turn;
-        if (turn < _replay.State.Coordinator.Turn - 1) return;
-        // Whoever uploaded it. A client whose own state already hashes to the repair has nothing to
-        // load and has already reported that hash: downloading it, replacing the state and
-        // re-reporting raced the client that actually diverged, and the loser was answered
-        // `409 turn_confirmed`. It also threw away a plan the player had started on the open turn.
-        if (string.Equals(
-                announced.StateHash, MatchStateHasher.ComputeSha256(_replay.State), StringComparison.Ordinal))
-        {
-            return;
-        }
-        var snapshot = await CallAsync(
-            token => _match.SnapshotAsync(turn, token), _pumpLane, cancellationToken).ConfigureAwait(false);
-        if (snapshot.Turn != turn)
-        {
-            throw new MultiplayerProtocolException(
-                $"the server answered turn {turn}'s repair with the snapshot for turn {snapshot.Turn}");
-        }
-        var restored = ReadVerifiedSnapshot(snapshot);
-        _replay = new MatchReplayRecorder(restored);
-        var stateHash = snapshot.StateHash;
-        await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
-        _notices.Enqueue(new MultiplayerNotice.Resynced(
-            turn, MatchStateClone.Of(restored, _definitions), stateHash));
-    }
 
     /// <summary>
     /// A snapshot's state, checked to be one this build reads and to hash to what it claims.
@@ -698,6 +640,14 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             + MultiplayerSessionVersion.Current);
     }
 
+    /// <summary>Set once the other players have voted this client's own seat onto the computer.</summary>
+    /// <remarks>
+    /// Written by the pump — from the takeover event, and from a report the roster moved under —
+    /// and by the outbox, which meets the same 403 on a submission, hence <c>volatile</c>. Losing
+    /// the race costs one more request that is refused the same way.
+    /// </remarks>
+    private volatile bool _ownSeatIsComputerControlled;
+
     /// <summary>
     /// Reports this client's state hash for a settled turn.
     /// </summary>
@@ -709,9 +659,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// whose response was lost and therefore retried. The turn is confirmed either way, which is
     /// what this report was asking for.
     /// </remarks>
-    /// <summary>Set once the other players have voted this client's own seat onto the computer.</summary>
-    private bool _ownSeatIsComputerControlled;
-
     private async Task ReportAsync(int turn, string stateHash, CancellationToken cancellationToken)
     {
         // A seat the server no longer counts as human has nothing to report. Carrying on and being

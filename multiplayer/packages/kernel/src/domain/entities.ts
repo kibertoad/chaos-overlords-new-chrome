@@ -1,4 +1,5 @@
 import type {
+  LobbyListing,
   MatchEvent,
   MatchSettings,
   MatchStatus,
@@ -93,6 +94,15 @@ export interface Turn {
    * verdict without trying to reconstruct an old vote against today's roster.
    */
   stateHash: string | null
+  /**
+   * When the verdict announced this turn's divergence, or null while it has not.
+   *
+   * It is the fact beside the status that makes `turn.desynced` publish-once, exactly as
+   * `orderSetHash` does for `turn.sealed`: the caller whose compare-and-swap stamps it is the one
+   * that announces. Without it the verdict had to page the whole event log looking for its own
+   * announcement, on every sweep, for as long as the match stayed paused.
+   */
+  desyncedAt: Date | null
 }
 
 /** One player's row for a turn. Rows are pre-created when the turn opens (see TurnRepository). */
@@ -138,6 +148,25 @@ export interface Snapshot {
 
 /** A snapshot row without its body. */
 export type SnapshotSummary = Omit<Snapshot, 'body'>
+
+/**
+ * A public listing row as the database produces it: the contract's listing plus the two facts the
+ * lobby list used to go back per match for.
+ *
+ * `playerCount` is already the count the reader wants — seats taken for a lobby, humans still in
+ * the match for a running one — and `hasSnapshot` answers "could a late joiner bootstrap here"
+ * without a second read. The listing is unauthenticated and rate limited per address, and it used
+ * to cost up to two extra queries for every running match it returned.
+ */
+export interface PublicLobbyRow extends LobbyListing {
+  hasSnapshot: boolean
+}
+
+/** One seat a listed match holds, for the reserved-slot arithmetic of the public listing. */
+export interface MatchSeat {
+  matchId: string
+  slot: number
+}
 
 export type TakeoverDecision = 'computer' | 'wait'
 

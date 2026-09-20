@@ -4,6 +4,7 @@ import {
   uploadSnapshotContract,
 } from '@chaos-overlords/contracts'
 import type { Hono } from 'hono'
+import { answering } from '../http/contractJson'
 import { requireMember } from '../http/guards'
 import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
@@ -22,12 +23,18 @@ export function registerSnapshotRoutes(api: Hono<AppEnv>): void {
 
   buildHonoRoute(api, latestSnapshotContract, async (c) => {
     const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
-    return c.json(await c.get('container').kernel.snapshots.latest(principal.match.id), 200)
+    return c.json(
+      answering(c, await c.get('container').kernel.snapshots.latest(principal.match.id)),
+      200,
+    )
   })
 
   buildHonoRoute(api, snapshotContract, async (c) => {
     const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
     const { turn } = c.req.valid('param')
-    return c.json(await c.get('container').kernel.snapshots.get(principal.match.id, turn), 200)
+    return c.json(
+      answering(c, await c.get('container').kernel.snapshots.get(principal.match.id, turn)),
+      200,
+    )
   })
 }

@@ -1,6 +1,7 @@
 import { handshakeContract, MULTIPLAYER_PROTOCOL_VERSION } from '@chaos-overlords/contracts'
 import { DomainError } from '@chaos-overlords/kernel'
 import type { Hono } from 'hono'
+import { answering } from '../http/contractJson'
 import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
 
@@ -20,6 +21,6 @@ export function registerProtocolRoutes(api: Hono<AppEnv>): void {
         { reason: 'protocol_version_mismatch', clientVersion, serverVersion },
       )
     }
-    return c.json({ protocolVersion: serverVersion }, 200)
+    return c.json(answering(c, { protocolVersion: serverVersion }), 200)
   })
 }

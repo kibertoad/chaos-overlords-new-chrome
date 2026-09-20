@@ -45,6 +45,26 @@ public sealed class MatchEventStream(
     /// </summary>
     public static readonly TimeSpan DefaultIdleTimeout = ServerHeartbeat * 2.5;
 
+    /// <summary>
+    /// How long a connection that has carried only keepalives must last before it counts as one.
+    /// </summary>
+    /// <remarks>
+    /// The first frame of any kind used to be enough, which made a whole class of broken middlebox
+    /// invisible to the backoff: a proxy with response buffering, or a load balancer with a short
+    /// idle cutoff, accepts the stream, writes the server's <c>: connected</c> comment and drops
+    /// it. Every such attempt was "proven", so the attempt counter reset to zero and the outage
+    /// stopwatch never started — and the client reconnected at the first backoff step, half a
+    /// second to a second apart, for as long as the player left the match open. The design says
+    /// the opposite: a server that accepts the connection and closes it at once is an outage like
+    /// any other.
+    ///
+    /// One heartbeat is the shortest interval that tells a working stream from that one. A healthy
+    /// server sends a keepalive every <see cref="ServerHeartbeat"/>, so a connection that survives
+    /// to the second one is carrying traffic; and any real EVENT proves it immediately, whenever
+    /// it arrives.
+    /// </remarks>
+    public static readonly TimeSpan ProvenAfter = ServerHeartbeat;
+
     private readonly RetryPolicy _policy = policy ?? RetryPolicy.Stream;
     private readonly TimeSpan _idleTimeout = idleTimeout ?? DefaultIdleTimeout;
 
@@ -67,12 +87,19 @@ public sealed class MatchEventStream(
         Exception? lastFailure = null;
         while (!cancellationToken.IsCancellationRequested)
         {
+            // Establish the protocol again on every fresh connection. A stream that reconnects
+            // through a redeploy is exactly the case where the server on the other end may no
+            // longer be the one this session handshook with, and every call made after it would go
+            // out under a contract neither side has agreed to; see `ForgetHandshake`.
+            if (attempt > 0) match.ForgetHandshake();
             var connected = await ConnectAsync(after, cancellationToken).ConfigureAwait(false);
             if (connected.Connection is not null)
             {
                 await using var reader = connected.Connection;
                 await using var frames = reader
                     .FramesAsync(_idleTimeout, cancellationToken).GetAsyncEnumerator(cancellationToken);
+                // A connection has to LAST to count as one; see `ProvenAfter`.
+                var opened = System.Diagnostics.Stopwatch.StartNew();
                 var proven = false;
                 while (true)
                 {
@@ -88,9 +115,11 @@ public sealed class MatchEventStream(
                         if (!outage.IsRunning) outage.Start();
                         break;
                     }
-                    if (!proven)
+                    if (!proven && (frames.Current.Event is not null || opened.Elapsed >= ProvenAfter))
                     {
-                        // The first frame, keepalive or event, is what makes this a connection.
+                        // An EVENT proves the connection at once — the server is talking, and the
+                        // client is reading a live match. A keepalive alone does not: see
+                        // `ProvenAfter` for what that used to cost.
                         proven = true;
                         attempt = 0;
                         outage.Reset();

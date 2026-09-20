@@ -1,4 +1,4 @@
-import { isDomainError } from '@chaos-overlords/kernel'
+import { isDomainError, type PersistedEvent } from '@chaos-overlords/kernel'
 import { DEFAULT_SERVER_CONFIG, LocalEventHub } from '@chaos-overlords/server'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
 import type { DurableObjectState } from '@cloudflare/workers-types'
@@ -33,8 +33,11 @@ export class MatchHub {
     const url = new URL(request.url)
     switch (url.pathname) {
       case HUB_PATHS.notify: {
-        const { matchId } = (await request.json()) as { matchId: string }
-        this.hub.wake(matchId)
+        const event = (await request.json()) as PersistedEvent & { matchId?: string }
+        // The event body when the caller sent one; a bare match id is still accepted, so an isolate
+        // running an older build cannot silence this object's streams.
+        if (typeof event.seq === 'number') await this.hub.notify(event)
+        else if (event.matchId) this.hub.wake(event.matchId)
         return new Response(null, { status: 204 })
       }
       case HUB_PATHS.schedule: {
@@ -78,7 +81,7 @@ export class MatchHub {
     if (!pending) return
     const kernel = buildKernel(this.env, {
       // Already inside the hub: wake local streams directly instead of calling ourselves.
-      notifier: { notify: async (event) => this.hub.wake(event.matchId) },
+      notifier: { notify: async (event) => this.hub.notify(event) },
       streams: this.hub,
       scheduler: {
         schedule: async (input) => {

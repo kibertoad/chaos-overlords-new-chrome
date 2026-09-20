@@ -32,15 +32,23 @@ public sealed partial class ChaosGame
         _session = null;
         _lobby = null;
         _pendingLeave = null;
+        var settled = false;
         try
         {
-            Task.WaitAll(stopping, ShutdownGrace);
+            settled = Task.WaitAll(stopping, ShutdownGrace);
         }
         catch (AggregateException)
         {
-            // Nothing to do about a session that failed on the way out.
+            // A session that failed on its way out has still finished with the client.
+            settled = true;
         }
-        _http.Dispose();
+        // Only once nothing is still using it. Disposing under a task that is still winding down
+        // raises `ObjectDisposedException` inside that task, where nobody observes it, and the one
+        // thing the grace period exists for — the `leave` that stops the match waiting on this seat
+        // — is exactly the request that would be cut off. A client left undisposed at this point
+        // goes with the process a moment later.
+        if (settled) _http.Dispose();
+        else foreach (var task in stopping) Forget(task, "multiplayer.shutdown.unfinished");
     }
 
     /// <summary>How long a closing window waits for the sessions to let go.</summary>
