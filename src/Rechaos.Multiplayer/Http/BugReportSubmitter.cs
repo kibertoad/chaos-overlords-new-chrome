@@ -79,6 +79,14 @@ public sealed class BugReportSubmitter
     /// </remarks>
     public static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(3);
 
+    /// <summary>The largest response the fixed bug-report endpoint may buffer.</summary>
+    /// <remarks>
+    /// The successful response is a three-field receipt, and refusal bodies are deliberately not
+    /// read.  A megabyte is therefore generous while ensuring that a compromised endpoint cannot
+    /// make the game buffer the framework default of two gigabytes before that distinction is made.
+    /// </remarks>
+    public const long MaximumResponseBytes = 1024 * 1024;
+
     private readonly HttpClient _http;
     private readonly Uri _endpoint;
     private readonly TimeSpan _timeout;
@@ -111,6 +119,7 @@ public sealed class BugReportSubmitter
     private static HttpClient Configure(HttpClient client)
     {
         client.Timeout = Timeout.InfiniteTimeSpan;
+        client.MaxResponseContentBufferSize = MaximumResponseBytes;
         return client;
     }
 

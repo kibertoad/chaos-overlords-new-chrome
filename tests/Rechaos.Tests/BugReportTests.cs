@@ -335,6 +335,18 @@ public sealed class BugReportSubmitterTests
     }
 
     /// <summary>
+    /// The receipt is tiny, but <see cref="HttpCompletionOption.ResponseContentRead"/> buffers a
+    /// response before the submitter can decide whether it is a receipt or a refusal.
+    /// </summary>
+    [Fact]
+    public void BuildsAClientThatBoundsTheReceiptResponse()
+    {
+        using var client = BugReportSubmitter.CreateHttpClient();
+
+        Assert.Equal(BugReportSubmitter.MaximumResponseBytes, client.MaxResponseContentBufferSize);
+    }
+
+    /// <summary>
     /// A client with a shorter clock is refused where the mistake is, not a hundred seconds into
     /// somebody's report — where it would be indistinguishable from an unreachable server.
     /// </summary>

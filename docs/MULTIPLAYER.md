@@ -279,6 +279,9 @@ Everything else about it is kept apart from matches:
 
 The server never decompresses or parses an archive. It verifies the SHA-256 the client took over the
 compressed bytes — so a truncated upload is refused rather than filed — and stores opaque bytes.
+The game also caps the corresponding receipt response at 1 MiB before parsing it; a report receipt
+is tiny, and an unexpectedly large response must not consume the client's default multi-gigabyte
+HTTP buffer.
 
 ## Retention
 
