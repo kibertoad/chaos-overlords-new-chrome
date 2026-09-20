@@ -287,6 +287,11 @@ jobs:
           package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
+      # The rest of the workspace is pnpm's, and the rehearsal and the pack above are pnpm's too;
+      # only the registry call is npm's. `pnpm publish` delegated that to the npm CLI until pnpm 11
+      # took it over and broke the OIDC exchange with it (pnpm#11513), and trusted publishing is
+      # npm's own protocol, so the 30 seconds that spend the credential stay on npm's reference path.
+      #
       # Node 22 ships npm 10, which has no OIDC exchange at all: it reads the `${NODE_AUTH_TOKEN}`
       # line `registry-url` writes, finds nothing there, and fails the publish as unauthenticated.
       # Trusted publishing landed in npm 11.5.1, so the job installs an npm that has it rather than
