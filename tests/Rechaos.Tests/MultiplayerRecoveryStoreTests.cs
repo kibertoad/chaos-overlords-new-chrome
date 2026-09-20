@@ -206,7 +206,10 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         Assert.False(loaded.ShouldSuggestReconnect);
     }
 
-    /// <summary>A file from a build that wrote no session version is the first one.</summary>
+    /// <summary>
+    /// A file from a build that wrote no session version is the first session version, which this
+    /// newer build retains in history but must not resume under the incompatible-session rule.
+    /// </summary>
     [Fact]
     public void MembershipWithoutAStoredSessionVersionIsTheInitialOne()
     {
@@ -214,7 +217,8 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
 
         var loaded = Assert.Single(MultiplayerRecoveryStore.LoadAll(Path()));
         Assert.Equal(MultiplayerSessionVersion.Initial, loaded.SessionVersion);
-        Assert.True(loaded.CanResume);
+        Assert.False(loaded.CanResume);
+        Assert.True(loaded.CanReconnect);
     }
 
     /// <summary>
@@ -312,6 +316,7 @@ public sealed class MultiplayerRecoveryStoreTests : IDisposable
         CleanExit,
         Completed,
         Password: string.Empty,
+        SessionVersion: MultiplayerSessionVersion.Current,
         SessionName: "NIGHT OF THE LONG KNIVES",
         LastUpdatedAt: LastPlayed);
 

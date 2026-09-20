@@ -5,6 +5,10 @@
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Validation builds tests beneath a disposable artifact root, not the repository. Keep the
+         single version source beside the test binary so GameVersionTests still verifies the exact
+         file MSBuild stamped into every assembly. -->
+    <None Include="../../version.txt" Link="version.txt" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageReference Include="xunit.v3" Version="4.0.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />

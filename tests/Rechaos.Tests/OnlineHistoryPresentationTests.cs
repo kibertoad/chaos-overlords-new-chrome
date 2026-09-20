@@ -71,5 +71,6 @@ public sealed class OnlineHistoryPresentationTests
         "ADA",
         IsHost: true,
         CleanExit: false,
-        Completed: false);
+        Completed: false,
+        SessionVersion: MultiplayerSessionVersion.Current);
 }
