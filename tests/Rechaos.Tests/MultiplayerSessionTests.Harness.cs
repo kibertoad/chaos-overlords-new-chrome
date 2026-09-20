@@ -100,6 +100,28 @@ public sealed partial class MultiplayerSessionTests
     private static string SealedFrame(int seq, int turn) => SealedFrameForSlots(seq, turn, 0, 1);
 
     /// <summary>
+    /// Puts the session where a desync for turn 1 is actually announced from, and answers with the
+    /// hash it reached.
+    /// </summary>
+    /// <remarks>
+    /// The server flags a divergence for turn N only once every human seat has REPORTED turn N, and
+    /// a seat reports it by applying its sealed set — which leaves the client standing on N+1. A
+    /// fixture that announced the desync while the client was still on turn 1 was asking it to
+    /// speak for a turn it had not played, and the hash it would have offered was the state before
+    /// the turn rather than after it.
+    /// </remarks>
+    private static async Task<string> ResolveTurnOneAsync(
+        MultiplayerMatchSession session,
+        FakeMultiplayerServer server,
+        int seq = 8)
+    {
+        server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+        server.Events.Write(SealedFrame(seq, 1));
+        var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session).ConfigureAwait(false);
+        return resolved.StateHash;
+    }
+
+    /// <summary>
     /// A seal announcing the set that exactly <paramref name="slots"/> submitted for.
     /// </summary>
     /// <remarks>

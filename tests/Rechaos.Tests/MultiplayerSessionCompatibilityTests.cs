@@ -140,8 +140,8 @@ public sealed partial class MultiplayerSessionTests
         var (session, server, http) = Running(ownPlayerId: "p2");
         using var _ = http;
         await using var __ = session;
-        server.Answer(HttpMethod.Get, "/snapshots/3", new SnapshotView(
-            3,
+        server.Answer(HttpMethod.Get, "/snapshots/1", new SnapshotView(
+            1,
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
             MultiplayerSessionVersion.Current + 1,
@@ -149,8 +149,12 @@ public sealed partial class MultiplayerSessionTests
             "p1",
             "2026-09-10T12:00:00.000Z",
             "QUJD"));
+        await ResolveTurnOneAsync(session, server);
+        // A repair is only fetched for a divergence that is open, so the pause comes first.
+        server.Events.Write(Frame(9, "turn.desynced", Desync(new string('a', 64))));
+        await WaitFor<MultiplayerNotice.Desynced>(session);
 
-        server.Events.Write(Frame(8, "snapshot.available", """{"turn":3,"stateHash":"aa"}"""));
+        server.Events.Write(Frame(10, "snapshot.available", """{"turn":1,"stateHash":"aa"}"""));
         var failed = await WaitFor<MultiplayerNotice.Failed>(session);
 
         Assert.Contains("session version", failed.Reason, StringComparison.OrdinalIgnoreCase);

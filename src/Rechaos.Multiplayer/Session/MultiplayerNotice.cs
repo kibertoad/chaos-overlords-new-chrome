@@ -83,15 +83,16 @@ public abstract record MultiplayerNotice
     /// Clients disagreed about the state after a turn, and the match is paused until it is repaired.
     /// </summary>
     /// <param name="Turn">The disputed turn.</param>
-    /// <param name="IsHostRepair">
-    /// True when this client is the host and is therefore the one that has to upload the snapshot
-    /// everyone else converges on.
+    /// <param name="IsRepairing">
+    /// True when this client is the one posting the snapshot everyone else converges on: it holds
+    /// the state the players reported most often, and the server will accept it from this seat.
+    /// False means waiting for somebody who does, which is not a failure and never ends a session.
     /// </param>
     /// <param name="Details">Short hashes reported by each client, suitable for diagnostics.</param>
     public sealed record Desynced(
         int Turn,
         bool IsHost,
-        bool IsHostRepair,
+        bool IsRepairing,
         string Details) : MultiplayerNotice;
 
     /// <summary>A repaired state arrived and was adopted; this client is back in step.</summary>

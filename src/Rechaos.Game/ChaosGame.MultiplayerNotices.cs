@@ -210,25 +210,23 @@ public sealed partial class ChaosGame
                 // cannot come until the repair lands, and a legitimately slow repair on the
                 // previous turn used to trip it.
                 _online.ResolutionExpectedSince = null;
-                _online.TurnSyncError = desynced.IsHostRepair
+                _online.TurnSyncError = desynced.IsRepairing
                     ? $"DESYNC TURN {desynced.Turn}  AUTOMATIC REPAIR IN PROGRESS"
-                    : $"DESYNC TURN {desynced.Turn}  WAITING FOR HOST REPAIR";
-                _message = desynced.IsHostRepair
+                    : $"DESYNC TURN {desynced.Turn}  WAITING FOR A REPAIR";
+                _message = desynced.IsRepairing
                     ? $"DESYNC ON TURN {desynced.Turn}  SENDING A SNAPSHOT"
-                    : $"DESYNC ON TURN {desynced.Turn}  WAITING FOR THE HOST";
+                    : $"DESYNC ON TURN {desynced.Turn}  WAITING FOR ANOTHER PLAYER";
                 _diagnostics?.Write("multiplayer.desync", new Dictionary<string, string?>
                 {
                     ["turn"] = desynced.Turn.ToString(CultureInfo.InvariantCulture),
                     ["details"] = desynced.Details,
-                    ["hostRepair"] = desynced.IsHostRepair.ToString(),
+                    ["repairing"] = desynced.IsRepairing.ToString(),
                 });
-                if (desynced.IsHost && !desynced.IsHostRepair)
-                {
-                    ShowOnlineMatchFailure(
-                        $"DESYNC ON TURN {desynced.Turn}. THIS HOST'S STATE IS NOT AN "
-                        + $"ALLOWED REPAIR CANDIDATE. {desynced.Details}. RECONNECT FROM "
-                        + "PREVIOUS SESSIONS TO REBUILD FROM THE AUTHORITATIVE HISTORY.");
-                }
+                // A client that cannot post the repair WAITS. It used to be a terminal failure for
+                // a host whose own state was not a candidate — the one case where the host is the
+                // odd one out — and that was the exact moment the match needed the session alive:
+                // the repair comes from whoever holds the majority's state, and the pause lifts for
+                // everyone when it lands.
                 return;
             case MultiplayerNotice.MatchUpdated updated:
                 _online.Match = updated.Match;

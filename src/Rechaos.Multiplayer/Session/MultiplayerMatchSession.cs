@@ -342,7 +342,11 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                         cancellationToken)
                     .ConfigureAwait(false);
                 return;
-            case TurnConfirmedEvent:
+            case TurnConfirmedEvent confirmed:
+                // The verdict this client may have been waiting on. Clearing it here is what stops
+                // a settled turn's repair announcement, which every reconnect replays, from being
+                // treated as an open question again.
+                if (_pendingDesync?.Turn == confirmed.Payload.Turn) _pendingDesync = null;
                 return;
             case TurnDesyncedEvent desynced:
                 await HandleDesyncAsync(desynced, cancellationToken).ConfigureAwait(false);
@@ -519,94 +523,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             vote.PlayerId,
             vote.Turn,
             new Dictionary<string, TakeoverChoice>(vote.Votes, StringComparer.Ordinal)));
-
-    /// <summary>
-    /// The match paused because clients disagreed about a turn.
-    /// </summary>
-    /// <remarks>
-    /// Only the host can repair it, and only with a hash the players themselves already reported in
-    /// the greatest number — otherwise a host could desync deliberately and upload a doctored state
-    /// as the new truth. A host whose own client is the odd one out therefore has nothing it is
-    /// allowed to upload, and says so rather than uploading something the server would refuse.
-    /// </remarks>
-    private async Task HandleDesyncAsync(TurnDesyncedEvent desynced, CancellationToken cancellationToken)
-    {
-        var turn = desynced.Payload.Turn;
-        var ours = MatchStateHasher.ComputeSha256(_replay.State);
-        var canRepair = IsHost && desynced.Payload.CandidateStateHashes.Contains(ours, StringComparer.Ordinal);
-        var details = string.Join(", ", desynced.Payload.Reports
-            .OrderBy(report => report.PlayerId, StringComparer.Ordinal)
-            .Select(report => $"{report.PlayerId}:{ShortHash(report.StateHash)}"));
-        _notices.Enqueue(new MultiplayerNotice.Desynced(
-            turn,
-            IsHost,
-            canRepair,
-            $"LOCAL {ShortHash(ours)}  REPORTS {details}"));
-        if (!canRepair) return;
-        await CallAsync(
-            token => _match.UploadSnapshotAsync(
-                new UploadSnapshotRequest(
-                    turn,
-                    // The body is a native save, so the version that describes it is the native
-                    // save format's — not the replay format's, which says nothing about these bytes.
-                    NativeSaveSerializer.CurrentFormatVersion,
-                    MultiplayerProtocolVersion.Current,
-                    MultiplayerSessionVersion.Current,
-                    ours,
-                    MatchStateClone.ToBase64(_replay.State),
-                    SummarizeSeats(_replay.State)),
-                token),
-            _pumpLane,
-            cancellationToken).ConfigureAwait(false);
-
-        static string ShortHash(string hash) => hash[..Math.Min(12, hash.Length)];
-    }
-
-    /// <summary>
-    /// Adopts a repaired state and re-reports the turn it settles.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The host is already on the state it uploaded, so it has nothing to load and nothing new to
-    /// say; every other client replaces its own with the snapshot, recomputes the hash and reports
-    /// again. Loading also starts a fresh recorder: the old one is bound to the state it was
-    /// constructed over and refuses to record another.
-    /// </para>
-    /// <para>
-    /// A repair for a turn older than the one this client last resolved is left alone. Delivery
-    /// is at least once, so the repeat of a repair already adopted arrives here, and adopting it
-    /// again would throw away every turn applied since.
-    /// </para>
-    /// </remarks>
-    private async Task AdoptSnapshotAsync(
-        SnapshotAvailableEventPayload announced,
-        CancellationToken cancellationToken)
-    {
-        var turn = announced.Turn;
-        if (turn < _replay.State.Coordinator.Turn - 1) return;
-        // Whoever uploaded it. A client whose own state already hashes to the repair has nothing to
-        // load and has already reported that hash: downloading it, replacing the state and
-        // re-reporting raced the client that actually diverged, and the loser was answered
-        // `409 turn_confirmed`. It also threw away a plan the player had started on the open turn.
-        if (string.Equals(
-                announced.StateHash, MatchStateHasher.ComputeSha256(_replay.State), StringComparison.Ordinal))
-        {
-            return;
-        }
-        var snapshot = await CallAsync(
-            token => _match.SnapshotAsync(turn, token), _pumpLane, cancellationToken).ConfigureAwait(false);
-        if (snapshot.Turn != turn)
-        {
-            throw new MultiplayerProtocolException(
-                $"the server answered turn {turn}'s repair with the snapshot for turn {snapshot.Turn}");
-        }
-        var restored = ReadVerifiedSnapshot(snapshot);
-        _replay = new MatchReplayRecorder(restored);
-        var stateHash = snapshot.StateHash;
-        await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
-        _notices.Enqueue(new MultiplayerNotice.Resynced(
-            turn, MatchStateClone.Of(restored, _definitions), stateHash));
-    }
 
     /// <summary>
     /// A snapshot's state, checked to be one this build reads and to hash to what it claims.
