@@ -628,23 +628,49 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       const at = new Date('2026-03-01T12:00:00.000Z')
       expect(await storage.takeovers.hasOpenPrompts(match.id)).toBe(false)
       // No prompt, no vote: a choice can never outlive or precede the question it answers.
-      expect(await storage.takeovers.castVote(match.id, 'absent', 'voter', 'computer', at)).toBe(
-        false,
-      )
+      expect(
+        await storage.takeovers.castVote({
+          matchId: match.id,
+          targetPlayerId: 'absent',
+          voterPlayerId: 'voter',
+          decision: 'computer',
+          castAt: at,
+        }),
+      ).toBe(false)
       expect(await storage.takeovers.openPrompt(match.id, 'absent', 3, at)).toBe(true)
       expect(await storage.takeovers.openPrompt(match.id, 'absent', 4, at)).toBe(false)
       expect(await storage.takeovers.openPrompt(match.id, 'another', 3, at)).toBe(true)
       expect(await storage.takeovers.hasOpenPrompts(match.id)).toBe(true)
       expect(await storage.takeovers.hasOpenPrompts(other.id)).toBe(false)
       expect(await storage.takeovers.listOpenPrompts(match.id)).toEqual(['absent', 'another'])
-      expect(await storage.takeovers.castVote(match.id, 'absent', 'voter', 'wait', at)).toBe(true)
+      expect(
+        await storage.takeovers.castVote({
+          matchId: match.id,
+          targetPlayerId: 'absent',
+          voterPlayerId: 'voter',
+          decision: 'wait',
+          castAt: at,
+        }),
+      ).toBe(true)
       const later = new Date('2026-03-01T12:01:00.000Z')
-      expect(await storage.takeovers.castVote(match.id, 'absent', 'voter', 'computer', later)).toBe(
-        true,
-      )
-      expect(await storage.takeovers.castVote(match.id, 'absent', 'second', 'wait', later)).toBe(
-        true,
-      )
+      expect(
+        await storage.takeovers.castVote({
+          matchId: match.id,
+          targetPlayerId: 'absent',
+          voterPlayerId: 'voter',
+          decision: 'computer',
+          castAt: later,
+        }),
+      ).toBe(true)
+      expect(
+        await storage.takeovers.castVote({
+          matchId: match.id,
+          targetPlayerId: 'absent',
+          voterPlayerId: 'second',
+          decision: 'wait',
+          castAt: later,
+        }),
+      ).toBe(true)
       expect(await storage.takeovers.listVotes(match.id, 'absent')).toEqual([
         {
           matchId: match.id,
@@ -752,7 +778,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       const appended = await Promise.all(
         [1, 2, 3, 4, 5].map((turn) => storage.events.append(body(turn))),
       )
-      expect([...appended.map((event) => event.seq)].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5])
+      expect(appended.map((event) => event.seq).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5])
       expect(await storage.events.lastSeq(match.id)).toBe(5)
 
       const all = await storage.events.listAfter(match.id, 0, 10)

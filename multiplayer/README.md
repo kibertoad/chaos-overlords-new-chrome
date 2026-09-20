@@ -30,8 +30,12 @@ This file is the operator and contributor manual.
 
 ## Run it
 
-Prerequisites: Node.js 22+, pnpm 11 (`corepack enable`). The workspace pins the latest supported
-11.x release and explicitly allowlists the native build scripts required by its runtime adapters.
+Prerequisites: Node.js 22+ and pnpm 12 (`npm install -g pnpm@12`). Corepack is deliberately not
+used: it is deprecated and removed in newer Node, so the workspace declares its package manager
+through `devEngines.packageManager` and `engines.pnpm` instead of a corepack-driven
+`packageManager` field. `engine-strict=true` makes a too-old pnpm fail the install rather than
+silently resolve a different tree. The workspace explicitly allowlists the native build scripts
+required by its runtime adapters.
 
 ```sh
 cd multiplayer
@@ -275,7 +279,8 @@ needs its own), and fails the publish if anything `files` promises is missing.
 ## Develop
 
 ```sh
-pnpm lint                 # biome
+pnpm lint                 # oxlint + oxfmt --check
+pnpm lint:fix             # autofix, then format
 pnpm typecheck
 pnpm test                 # every package; Postgres lanes run only with TEST_DATABASE_URL set
 TEST_DATABASE_URL=postgres://chaos:chaos@localhost:5432/chaos pnpm exec turbo run test:run --env-mode=loose

@@ -199,6 +199,15 @@ export interface EventRepository {
   lastSeq(matchId: string): Promise<number>
 }
 
+/** One voter's choice on an open takeover prompt. */
+export interface CastVoteInput {
+  matchId: string
+  targetPlayerId: string
+  voterPlayerId: string
+  decision: TakeoverDecision
+  castAt: Date
+}
+
 /**
  * Absence prompts and their votes, as durable state rather than a replay of the event log.
  *
@@ -219,13 +228,7 @@ export interface TakeoverRepository {
    * Records or replaces one voter's choice on an open prompt, in ONE statement conditional on the
    * prompt being open. False when it is not, so a vote can never outlive the prompt it answers.
    */
-  castVote(
-    matchId: string,
-    targetPlayerId: string,
-    voterPlayerId: string,
-    decision: TakeoverDecision,
-    castAt: Date,
-  ): Promise<boolean>
+  castVote(input: CastVoteInput): Promise<boolean>
   listVotes(matchId: string, targetPlayerId: string): Promise<TakeoverVote[]>
 }
 

@@ -14,22 +14,32 @@
     "set-version": "node scripts/set-version.mjs",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test:run",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
+    "lint": "oxlint && oxfmt --check .",
+    "lint:fix": "oxlint --fix && oxfmt .",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
     "db:generate": "turbo run db:generate",
     "dev:node": "turbo run dev --filter=@chaos-overlords/node-server",
     "dev:worker": "turbo run dev --filter=@chaos-overlords/worker",
     "publish:dry-run": "pnpm publish -r --dry-run --no-git-checks"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.13",
     "@game-infra/valibot-to-csharp": "0.2.0",
-    "tsx": "4.20.6",
-    "turbo": "^2.10.12",
-    "typescript": "^5.9.3"
+    "oxfmt": "^0.68.0",
+    "oxlint": "^1.83.0",
+    "tsx": "4.23.15",
+    "turbo": "^2.11.2",
+    "typescript": "^7.0.2"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^12.5.1",
+      "onFail": "warn"
+    }
   },
   "engines": {
-    "node": ">=22"
-  },
-  "packageManager": "pnpm@11.27.0"
+    "node": ">=22",
+    "pnpm": ">=12"
+  }
 }

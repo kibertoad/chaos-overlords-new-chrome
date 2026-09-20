@@ -12,7 +12,7 @@
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
     <!-- DPAPI, for sealing the multiplayer membership token in the local recovery file to the
          current user account. Windows only at runtime; MultiplayerRecoveryStore guards the call. -->
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.5" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.12" />
     <None Include="Assets/**/*" CopyToOutputDirectory="PreserveNewest"
           Condition="'$(IncludeOriginalAssets)' != 'false'" />
   </ItemGroup>

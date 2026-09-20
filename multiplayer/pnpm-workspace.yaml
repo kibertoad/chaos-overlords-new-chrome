@@ -10,3 +10,5 @@ minimumReleaseAgeExclude:
   - '@toad-contracts/core@1.0.0'
   - '@toad-contracts/hono@1.0.0'
   - '@toad-contracts/valibot@1.0.0'
+  - '@cloudflare/workers-types@5.20260920.1'
+  - tsx@4.23.15

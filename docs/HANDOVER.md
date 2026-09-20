@@ -7,7 +7,7 @@ Last updated: 2026-09-19
 
 - The canonical repository is
   `https://github.com/kibertoad/chaos-overlords-new-chrome.git`. `main` contains
-  every accepted checkpoint through player-approved online AI takeover and pnpm 11 tooling. New cohesive batches are
+  every accepted checkpoint through player-approved online AI takeover and pnpm 12 tooling. New cohesive batches are
   committed and pushed directly to `main`; older `codex/full-reimplementation*` refs remain only as
   historical checkpoints and are not the active integration path.
 - The canonical local gate is `./tools/Invoke-Validation.ps1`: its fast default

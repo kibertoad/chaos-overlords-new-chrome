@@ -71,14 +71,14 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
           if (!closed) controller.enqueue(encoder.encode(text))
         }
         /** Wait until the consumer wants more, or the stream closes. */
-        const awaitDemand = (controller: ReadableStreamDefaultController<Uint8Array>) =>
+        const awaitDemand = () =>
           new Promise<void>((resolve) => {
             if (closed || (controller.desiredSize ?? 1) > 0) return resolve()
             demand = resolve
           })
         const drain = async (): Promise<void> => {
           while (!closed) {
-            await awaitDemand(controller)
+            await awaitDemand()
             if (closed) return
             const events = await source.listAfter(lastSeq)
             if (events.length === 0) return

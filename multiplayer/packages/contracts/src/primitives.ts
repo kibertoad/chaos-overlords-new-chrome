@@ -279,7 +279,8 @@ export const displayNameInputSchema = pipe(
   normalizeName,
   check((name) => !UNSAFE_NAME_CHARACTERS.test(name), NAME_CHARACTER_MESSAGE),
   check(
-    (name) => !RESERVED_DISPLAY_NAMES.some((reserved) => originalPlayerNameProjection(name) === reserved),
+    (name) =>
+      !RESERVED_DISPLAY_NAMES.some((reserved) => originalPlayerNameProjection(name) === reserved),
     'that display name is a cheat code in the original game, not a name',
   ),
 )

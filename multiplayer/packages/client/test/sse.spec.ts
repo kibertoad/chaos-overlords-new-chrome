@@ -189,7 +189,7 @@ describe('parseEventStream framing', () => {
   const frame = (id: number, seq: number) =>
     `id: ${id}\nevent: message\ndata: ${JSON.stringify({ seq, matchId: 'm', type: 'turn.opened', payload: { turn: 1, deadlineAt: null }, createdAt: '2026-09-18T12:00:00.000Z' })}\n\n`
 
-  const bodyOf = (text: string) =>
+  const singleChunkBody = (text: string) =>
     new ReadableStream<Uint8Array>({
       start(controller) {
         controller.enqueue(new TextEncoder().encode(text))
@@ -199,12 +199,12 @@ describe('parseEventStream framing', () => {
 
   it('refuses a frame whose id disagrees with its payload', async () => {
     const good = []
-    for await (const event of parseEventStream(bodyOf(frame(4, 4)))) good.push(event)
+    for await (const event of parseEventStream(singleChunkBody(frame(4, 4)))) good.push(event)
     expect(good.map((event) => event.seq)).toEqual([4])
 
     // Resuming from the wrong number would skip events in silence, so the frame is refused instead.
     await expect(async () => {
-      for await (const _ of parseEventStream(bodyOf(frame(9, 4)))) {
+      for await (const _ of parseEventStream(singleChunkBody(frame(9, 4)))) {
         // consume
       }
     }).rejects.toThrow(/disagrees/)
@@ -218,7 +218,7 @@ describe('parseEventStream framing', () => {
   it('refuses a frame named anything but the contracted event name', async () => {
     const renamed = frameOf(5).replace('event: message', 'event: turn.opened')
     await expect(async () => {
-      for await (const _ of parseEventStream(bodyOf(renamed))) {
+      for await (const _ of parseEventStream(singleChunkBody(renamed))) {
         // consume
       }
     }).rejects.toThrow(/not the contracted 'message'/)
@@ -228,14 +228,14 @@ describe('parseEventStream framing', () => {
   it('accepts a frame that names no event', async () => {
     const unnamed = frameOf(6).replace('event: message\n', '')
     const seen = []
-    for await (const parsed of parseEventStream(bodyOf(unnamed))) seen.push(parsed)
+    for await (const parsed of parseEventStream(singleChunkBody(unnamed))) seen.push(parsed)
     expect(seen).toEqual([eventAt(6)])
   })
 
   it('refuses an event whose JSON does not satisfy the shared event contract', async () => {
     const malformed = `id: 4\nevent: message\ndata: ${JSON.stringify({ ...eventAt(4), payload: { turn: '4', deadlineAt: null } })}\n\n`
     await expect(async () => {
-      for await (const _ of parseEventStream(bodyOf(malformed))) {
+      for await (const _ of parseEventStream(singleChunkBody(malformed))) {
         // consume
       }
     }).rejects.toThrow()

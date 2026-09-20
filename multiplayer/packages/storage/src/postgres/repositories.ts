@@ -614,7 +614,7 @@ function postgresTakeoverRepository(db: PostgresDatabase): TakeoverRepository {
      * statement that writes the vote; the conflict clause makes it a replacement of the voter's
      * earlier choice.
      */
-    async castVote(matchId, targetPlayerId, voterPlayerId, decision, castAt) {
+    async castVote({ matchId, targetPlayerId, voterPlayerId, decision, castAt }) {
       const rows = await db
         .insert(takeoverVotes)
         .select(

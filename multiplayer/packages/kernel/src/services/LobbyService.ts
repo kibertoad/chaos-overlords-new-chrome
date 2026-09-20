@@ -350,26 +350,26 @@ export class LobbyService {
     }
     const now = this.deps.clock.now()
     if (
-      !(await this.deps.storage.takeovers.castVote(
-        match.id,
-        target.id,
-        player.id,
-        request.decision,
-        now,
-      ))
+      !(await this.deps.storage.takeovers.castVote({
+        matchId: match.id,
+        targetPlayerId: target.id,
+        voterPlayerId: player.id,
+        decision: request.decision,
+        castAt: now,
+      }))
     ) {
       // The seat is absent but nobody asked about it yet: it went quiet before this table existed,
       // or while nobody was present to ask. The vote itself opens the question, so the seat can
       // still be decided rather than left idle for the rest of the match.
       await this.turns.openTakeoverPrompt(match.id, target.id, match.currentTurn)
       if (
-        !(await this.deps.storage.takeovers.castVote(
-          match.id,
-          target.id,
-          player.id,
-          request.decision,
-          now,
-        ))
+        !(await this.deps.storage.takeovers.castVote({
+          matchId: match.id,
+          targetPlayerId: target.id,
+          voterPlayerId: player.id,
+          decision: request.decision,
+          castAt: now,
+        }))
       ) {
         throw new ConflictError('That player is not awaiting a takeover vote', {
           reason: 'takeover_not_pending',
