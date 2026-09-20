@@ -230,12 +230,12 @@ export class InMemoryStorage implements MultiplayerStorage {
       [...this.orderRows.values()]
         .filter((row) => row.matchId === matchId && row.turn === number)
         .sort((a, b) => a.playerId.localeCompare(b.playerId))
-        .map(({ matchId, turn, playerId, ordersHash, ready }) => ({
-          matchId,
-          turn,
-          playerId,
-          ordersHash,
-          ready,
+        .map((row) => ({
+          matchId: row.matchId,
+          turn: row.turn,
+          playerId: row.playerId,
+          ordersHash: row.ordersHash,
+          ready: row.ready,
         })),
     transition: async (matchId, number, from, patch) => {
       const turn = this.turnRows.get(turnKey(matchId, number))
@@ -337,7 +337,7 @@ export class InMemoryStorage implements MultiplayerStorage {
         .filter((prompt) => prompt.matchId === matchId)
         .map((prompt) => prompt.playerId)
         .sort(),
-    castVote: async (matchId, targetPlayerId, voterPlayerId, decision, castAt) => {
+    castVote: async ({ matchId, targetPlayerId, voterPlayerId, decision, castAt }) => {
       if (!this.promptRows.has(promptKey(matchId, targetPlayerId))) return false
       this.voteRows.set(`${promptKey(matchId, targetPlayerId)}:${voterPlayerId}`, {
         matchId,

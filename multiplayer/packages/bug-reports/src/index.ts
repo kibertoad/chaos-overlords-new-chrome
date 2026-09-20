@@ -6,12 +6,7 @@ export {
   createR2BlobStore,
   UNSCRUBBED_ARCHIVE_PREFIX,
 } from './blobs'
-export type {
-  BlobStore,
-  BugReportRepository,
-  StoredBugReport,
-  StoredBugReportState,
-} from './ports'
+export type { BlobStore, BugReportRepository, StoredBugReport, StoredBugReportState } from './ports'
 export { type BugReportDatabase, createBugReportRepository } from './repository'
 export * as bugReportSchema from './schema'
 export {

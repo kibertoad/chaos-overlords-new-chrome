@@ -67,12 +67,12 @@
     "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20260910.1",
+    "@cloudflare/workers-types": "^5.20260920.1",
     "@types/better-sqlite3": "^9.6.0",
-    "@types/node": "^22.20.2",
+    "@types/node": "^26.6.2",
     "better-sqlite3": "^13.0.3",
     "drizzle-kit": "^0.31.10",
-    "typescript": "^5.9.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   },
   "peerDependencies": {

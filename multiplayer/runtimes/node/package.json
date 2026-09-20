@@ -61,14 +61,14 @@
     "@chaos-overlords/storage": "workspace:*",
     "@hono/node-server": "^2.1.1",
     "better-sqlite3": "^13.0.3",
-    "hono": "^4.13.7",
+    "hono": "^4.13.8",
     "pg": "^8.23.0"
   },
   "devDependencies": {
     "@chaos-overlords/client": "workspace:*",
     "@chaos-overlords/conformance": "workspace:*",
-    "@types/node": "^22.20.2",
-    "typescript": "^5.9.3",
+    "@types/node": "^26.6.2",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   }
 }
