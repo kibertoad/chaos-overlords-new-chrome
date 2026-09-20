@@ -142,6 +142,15 @@ public sealed partial class MultiplayerMatchSession
             {
                 throw;
             }
+            catch (RetryExhaustedException exception) when (TransientFailure.CanRetryAfterExhaustion(exception))
+            {
+                // CallAsync wraps the last unanswered transient failure when its five-minute
+                // retry window expires. The order PUT remains an idempotent whole-document
+                // replacement, so retain it and start a new window instead of ending the match
+                // (or silently throwing away a turn the player already closed locally).
+                _outboxLane.Failed(Describe(exception), exception.Attempts);
+                Requeue(next);
+            }
             catch (Exception exception) when (exception is MultiplayerApiException
                 or MultiplayerProtocolException)
             {
@@ -160,6 +169,29 @@ public sealed partial class MultiplayerMatchSession
                 requestCancellation?.Dispose();
             }
         }
+    }
+
+    /// <summary>
+    /// Returns a document that received no answer to the front of the outbox.
+    /// </summary>
+    /// <remarks>
+    /// A newer draft wins if the game thread supplied one while this document was reconnecting.
+    /// Otherwise preserve the readiness bit accumulated for the turn and make the next five-minute
+    /// retry window start immediately. This does not duplicate a document: the server's PUT is a
+    /// whole-document replacement and a possible earlier accepted request is equivalent to the
+    /// one being retried.
+    /// </remarks>
+    private void Requeue(PendingOrders orders)
+    {
+        lock (_outboxGate)
+        {
+            if (_pending is not null) return;
+            _pending = orders with
+            {
+                Ready = orders.Ready || _locallyReadyTurns.Contains(orders.Turn),
+            };
+        }
+        _outboxSignal.Release();
     }
 
     /// <summary>An order document waiting to be sent, and whether it completes the player's turn.</summary>

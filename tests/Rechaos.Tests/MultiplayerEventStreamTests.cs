@@ -267,6 +267,27 @@ public sealed class MultiplayerEventStreamTests
         Assert.Equal(3, server.CallsTo(HttpMethod.Get, "/stream"));
     }
 
+    /// <summary>
+    /// A bounded retry can end while its last error is still only a failed transport attempt.
+    /// An outbox is allowed to begin another window for its idempotent whole-document PUT; a
+    /// protocol refusal and a caller-requested cancellation do not take this path.
+    /// </summary>
+    [Fact]
+    public void IdentifiesAnExhaustedTransientRetryForAnIdempotentCaller()
+    {
+        var exhausted = new RetryExhaustedException(
+            attempts: 3,
+            elapsed: TimeSpan.FromMinutes(5),
+            lastError: new HttpRequestException("connection reset"));
+
+        Assert.True(TransientFailure.CanRetryAfterExhaustion(exhausted));
+        Assert.False(TransientFailure.CanRetryAfterExhaustion(
+            new RetryExhaustedException(
+                attempts: 1,
+                elapsed: TimeSpan.Zero,
+                lastError: new MultiplayerProtocolException("bad response"))));
+    }
+
     /// <summary>A connection is reported once its first frame arrives, and a keepalive is a frame.</summary>
     [Fact]
     public async Task ReportsAConnectionOnlyOnceItsFirstFrameArrives()

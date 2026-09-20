@@ -511,7 +511,11 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    whenever its digest changes, with `ready: true` when the player presses Done. A `ready: false`
    draft means a turn the clock seals still uses what the player planned. The outbox retains only
    the newest pending whole-document replacement while one request is in flight, so rapid edits
-   cannot build a backlog of obsolete drafts.
+   cannot build a backlog of obsolete drafts. A transient request is retried for the shared
+   five-minute call window; if that window expires without an answer, the outbox retains the same
+   idempotent document and starts another window. Only a server refusal, a revoked membership, or
+   caller shutdown discards it, so a connectivity outage cannot silently turn a submitted draft
+   into an empty sealed turn.
 4. On `turn.sealed`, fetch the sealed set and verify both the digest announced by that exact event
    and the set's internally recomputed digest: SHA-256 over `slot:ordersHash`
    lines joined by `\n` in slot order, each `ordersHash` being SHA-256 of that player's canonical

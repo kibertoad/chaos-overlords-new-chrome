@@ -97,6 +97,20 @@ public static class TransientFailure
     };
 
     /// <summary>
+    /// Whether an operation that exhausted one bounded retry window is still safe to try again.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="CallAsync{T}"/> deliberately wraps the last transient failure when its retry
+    /// budget expires. An idempotent outbox has a useful next action at that point: retain its
+    /// whole-document replacement and begin another reconnect window, rather than treating the
+    /// wrapper as a permanent protocol failure and losing the player's planned turn. This is kept
+    /// separate from <see cref="IsTransient"/> because callers that own a bounded operation may
+    /// still correctly surface its exhausted budget as terminal.
+    /// </remarks>
+    public static bool CanRetryAfterExhaustion(Exception exception) => exception is RetryExhaustedException
+        { LastError: var lastError } && IsTransient(lastError);
+
+    /// <summary>
     /// Runs an idempotent call, retrying transient failures under <paramref name="policy"/>.
     /// </summary>
     /// <param name="call">The call, which may be made more than once.</param>
