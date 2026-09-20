@@ -304,30 +304,42 @@ returns. A match ends when the server's state carries an outcome.
 
 ### Order validation at submission
 
-The authoritative judgement of an op stays at the seal, applied against the resolved state of the
-previous turn with every seat's ops in slot order. That is the only judgement whose result is a fact
-of the match; it is exactly what every client already does, and it is what the verdicts table
-records.
+Two distinct questions hide under "should the server refuse an invalid order", and they have
+different answers.
 
-Two further checks become possible because the server can now read state, and the design takes one
-of them.
+**Integrity does not depend on it.** An op the validator rejects is applied by nobody: the core
+records the rejection with its code and changes nothing. Once the server computes the state, a
+rejected op has no effect on the truth whether it is refused at submission or rejected at the seal.
+Refusal adds no integrity; the validator running on the server already guarantees that no illegal
+op ever reaches the state.
 
-**Taken: refuse a document that no state could accept.** At `PUT /turns/:n/orders` the server
-restores the checkpoint the turn opened on and dry-runs the submitter's document alone, as the
-speculative copy on the client does. An op the validator rejects with a structural code
-(`GangNotFound`, `GangNotOwned`, `InvalidTargetKind`, `TargetNotFound`, `CommandNotQueued`,
-`ItemNotResearched`, `InsufficientTechLevel`) is refused with `422 invalid_orders` naming the op
-index and the code, because no ordering of other players' ops can make it legal and the client that
-sent it is either broken or lying. Codes that depend on the state after other players act, and codes
-the client may legitimately have got wrong on a speculative copy, are not refused: `DestinationAtCapacity`,
-`TargetUndetected`, `SectorInCrackdown`, `GangAtFullForce` and the like are left to the seal, where
-they resolve as a recorded rejection exactly as they do today. A refused document is not stored, so a
-`ready` that arrives with it does not count.
+**Refusal is still done, for every code, because an honest client never sends a rejectable op.**
+The game client records an op into its order document only when the core accepted it on the
+planning copy (`SpeculativeTurn.Submit`), and that copy is a clone of the same Command-boundary state
+the seal will apply the document to. Nothing another seat does during Command changes what this
+seat's validator sees: queued commands only resolve in Execution, every seat's hire offers were drawn
+on entering Command, and a controller transfer only removes a seat. The client's own reconnect path
+already treats a document that does not apply to that state as "a protocol contradiction, not a
+partial draft" (`SpeculativeTurn.Restore`). A document carrying an op the validator rejects therefore
+comes from a modified or broken client, which is exactly the signal to catch, and catching it at the
+door is strictly better than recording it at the seal.
 
-**Not taken: refusing every rejected op.** The core's semantics are that a rejected op is a recorded
-fact of the turn (a client can queue an attack on a gang that moves away), and every client's replay
-reader expects to see that rejection. Turning rejections into refusals would change the rules and
-force a session-version bump for no gain in integrity, since the seal already judges them.
+So at `PUT /turns/:n/orders` the server restores the checkpoint the turn opened on, applies any
+controller transfers the log already carries, and dry-runs the submitter's document alone and in
+order, as the planning copy did. The first op the validator rejects refuses the whole document with
+`422 invalid_orders`, naming the op index and the `CommandValidationCode`; nothing is stored, so a
+`ready` that arrived with it does not count, and the refusal is logged against the seat. A dry-run
+costs one checkpoint restore and a handful of validator calls per submission, which is far below the
+cost of the resolution it precedes.
+
+**What does not change is the seal's treatment of a rejected op**, should one still reach it. The
+sealed set is applied through the same recorder on the server and on every client, and the replay
+format records a rejected op as a step with `accepted: false` and its code. That path stays exactly
+as it is, because it is what keeps every client's replay of the sealed set identical to the server's.
+After submission-time refusal it should never be taken: a rejection at the seal means the dry-run and
+the seal disagreed, which is a server defect (or a transfer that landed between the two) to log and
+investigate, not a fact of the match. Neither the refusal nor the logging changes the rules, so
+neither moves the session version.
 
 ### Snapshots, reconnect and late join
 
@@ -393,8 +405,9 @@ Replacing the paragraph of the same name in MULTIPLAYER.md for the new model.
 - **Divergence is attributed.** A report that differs from the resolved hash names one client, and
   only that client is told to resync. Griefing by deliberate desync stops working: the match does not
   pause and the other players are not asked to do anything.
-- **Structurally impossible orders are refused at the door**, with the op index and the validation
-  code, rather than discovered as a rejection at the seal.
+- **Any order the rules reject is refused at the door**, with the op index and the validation code.
+  Since an unmodified client only ever submits ops its own planning copy accepted, a refusal names a
+  client that is broken or tampered with, on the turn it happened.
 - **Every seat's orders are secret until the seal, including from the server operator's point of
   view of correctness**: the server reads them at submission only to dry-run them, and the dry-run
   result is returned to the submitter alone.
@@ -637,7 +650,7 @@ Each phase is shippable on its own and none changes the rules a client plays.
    enough to see real matches with real players, which the corpus cannot generate.
 4. **Authoritative verdicts.** The server's hash becomes the verdict, per-seat desync replaces the
    match-wide pause, and the snapshot routes serve `match_states`. `POST /snapshots` is removed and
-   the protocol version moves. Submission-time refusal of structurally impossible orders ships here.
+   the protocol version moves. Submission-time refusal of rejected orders ships here.
 5. **Retire the client-side path that no longer has a purpose.** The host's upload code and the
    corroboration logic are deleted from both the kernel and the game client; the storage migration
    drops the `snapshots` table once every live match has a server checkpoint.
