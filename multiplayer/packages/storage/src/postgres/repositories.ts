@@ -75,7 +75,7 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
     },
     /** See the SQLite twin: the counts and the snapshot test ride in the listing statement. */
     async listPublicLobbies(limit): Promise<PublicLobbyRow[]> {
-      const activeSeats = sql<number>`(select count(*) from ${players} where ${players.matchId} = ${matches.id} and ${players.status} = 'active')`
+      const humanSeats = sql<number>`(select count(*) from ${players} where ${players.matchId} = ${matches.id} and ${players.status} in ('active', 'takeoverPending'))`
       const rows = await db
         .select({
           id: matches.id,
@@ -83,7 +83,7 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
           name: matches.name,
           hostDisplayName: players.displayName,
           seatCount: matches.seatCount,
-          activeCount: activeSeats,
+          humanCount: humanSeats,
           maxPlayers: matches.maxPlayers,
           passwordHash: matches.passwordHash,
           status: matches.status,
@@ -102,7 +102,7 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
           and(
             inArray(matches.status, ['lobby', 'running']),
             eq(matches.visibility, 'public'),
-            or(ne(matches.status, 'running'), sql`${activeSeats} > 0`),
+            or(ne(matches.status, 'running'), sql`${humanSeats} > 0`),
           ),
         )
         .orderBy(desc(matches.createdAt), asc(matches.id))

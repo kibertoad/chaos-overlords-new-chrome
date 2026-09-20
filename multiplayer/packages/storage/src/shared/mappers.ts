@@ -204,8 +204,9 @@ export const firstOrNull = <T>(rows: T[]): T | null => rows[0] ?? null
 /**
  * The public listing row as the two listing statements select it, before the contract shape.
  *
- * `seatCount` and `activeCount` are both carried because they answer the question for different
- * statuses: a lobby advertises the seats it has taken, a running match the humans still in it.
+ * `seatCount` and `humanCount` are both carried because they answer the question for different
+ * statuses: a lobby advertises the seats it has taken, a running match the humans still in it —
+ * the ones playing and the ones a takeover vote has not yet decided on.
  */
 export interface PublicLobbyRowShape {
   id: string
@@ -213,7 +214,7 @@ export interface PublicLobbyRowShape {
   name: string
   hostDisplayName: string
   seatCount: number
-  activeCount: unknown
+  humanCount: unknown
   maxPlayers: number
   passwordHash: string | null
   status: string
@@ -227,7 +228,7 @@ export const toPublicLobbyRow = (row: PublicLobbyRowShape): PublicLobbyRow => ({
   joinCode: row.joinCode,
   name: row.name,
   hostDisplayName: row.hostDisplayName,
-  playerCount: row.status === 'running' ? countColumn(row.activeCount) : row.seatCount,
+  playerCount: row.status === 'running' ? countColumn(row.humanCount) : row.seatCount,
   maxPlayers: row.maxPlayers,
   status: row.status as LobbyListing['status'],
   settings: row.settings as LobbyListing['settings'],

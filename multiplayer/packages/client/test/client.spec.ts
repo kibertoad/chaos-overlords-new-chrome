@@ -45,28 +45,107 @@ describe('MultiplayerClient stream connect phase', () => {
     expect(Date.now() - started).toBeLessThan(2_000)
   })
 
-  /** And the caller's own cancellation still reaches the body once the stream is open. */
+  /** `0` disables the deadline, the same way it does for a plain request. */
+  it('does not arm the connect deadline when the timeout is disabled', async () => {
+    const caller = new AbortController()
+    let connectSignal: AbortSignal | undefined
+    const client = new MultiplayerClient({
+      baseUrl: 'https://example.invalid',
+      token: 'token',
+      requestTimeoutMs: 0,
+      fetch: async (_input, init) => {
+        connectSignal = init?.signal ?? undefined
+        return openStreamResponse(init?.signal)
+      },
+    })
+
+    const events = client.match('m').streamOnce({ signal: caller.signal })
+    const first = events.next()
+    // An armed timer fires on the next macrotask at `0`, which would abort the stream before it
+    // could ever carry anything.
+    await new Promise((resolve) => setTimeout(resolve, 5))
+    expect(connectSignal?.aborted).toBe(false)
+    caller.abort()
+    await expect(first).rejects.toThrow()
+  })
+
+  /** And the caller's own cancellation still reaches the body of a stream that is open. */
   it('keeps the caller signal attached after the headers arrive', async () => {
-    const controller = new AbortController()
+    const caller = new AbortController()
     let bodySignal: AbortSignal | undefined
     const client = new MultiplayerClient({
       baseUrl: 'https://example.invalid',
       token: 'token',
       requestTimeoutMs: 10_000,
       fetch: async (_input, init) => {
-        bodySignal = init?.signal
-        return new Response(': connected\n\n', {
-          status: 200,
-          headers: { 'content-type': 'text/event-stream' },
-        })
+        bodySignal = init?.signal ?? undefined
+        return openStreamResponse(init?.signal)
       },
     })
 
-    const events = client.match('m').streamOnce({ signal: controller.signal })
-    await events.next()
+    const events = client.match('m').streamOnce({ signal: caller.signal })
+    const first = events.next()
+    await new Promise((resolve) => setTimeout(resolve, 5))
     expect(bodySignal?.aborted).toBe(false)
-    controller.abort()
+    caller.abort()
     expect(bodySignal?.aborted).toBe(true)
-    await events.return(undefined)
+    await expect(first).rejects.toThrow()
+  })
+
+  /**
+   * `stream` opens one connection per reconnect against a signal the caller owns for the life of
+   * the stream, so a connection that forwards the caller's abort has to take the listener back off
+   * when it ends. Left attached, a long outage accumulated one listener and one `AbortController`
+   * per attempt, and Node starts warning about a leak at ten.
+   */
+  it('detaches the caller signal when a connection ends', async () => {
+    const controller = new AbortController()
+    let attached = 0
+    const signal = controller.signal
+    const add = signal.addEventListener.bind(signal)
+    const remove = signal.removeEventListener.bind(signal)
+    signal.addEventListener = ((...args: Parameters<typeof add>) => {
+      attached += 1
+      return add(...args)
+    }) as typeof add
+    signal.removeEventListener = ((...args: Parameters<typeof remove>) => {
+      attached -= 1
+      return remove(...args)
+    }) as typeof remove
+
+    const client = new MultiplayerClient({
+      baseUrl: 'https://example.invalid',
+      token: 'token',
+      requestTimeoutMs: 10_000,
+      fetch: async () =>
+        new Response(': connected\n\n', {
+          status: 200,
+          headers: { 'content-type': 'text/event-stream' },
+        }),
+    })
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      // The server closes at once, which is exactly what the reconnect loop drives through.
+      for await (const _event of client.match('m').streamOnce({ signal })) {
+        // The body carries only a keepalive comment, so there is nothing to consume.
+      }
+    }
+    expect(attached).toBe(0)
   })
 })
+
+/**
+ * A stream response that stays open until its request signal aborts, the way a real one does.
+ *
+ * `fetch` wires the two together; a hand-built `Response` does not, and a body nothing can end
+ * leaves the reader waiting out its idle timeout at the end of a test.
+ */
+function openStreamResponse(signal: AbortSignal | null | undefined): Response {
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode(': connected\n\n'))
+      signal?.addEventListener('abort', () => controller.error(signal.reason), { once: true })
+    },
+  })
+  return new Response(body, { status: 200, headers: { 'content-type': 'text/event-stream' } })
+}

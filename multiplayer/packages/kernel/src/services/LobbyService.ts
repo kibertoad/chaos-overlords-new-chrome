@@ -9,7 +9,7 @@ import {
   type MembershipView,
   type TakeoverVoteRequest,
 } from '@chaos-overlords/contracts'
-import { activePlayers, type Match, type Player } from '../domain/entities'
+import { activePlayers, humanParticipants, type Match, type Player } from '../domain/entities'
 import {
   ConflictError,
   ForbiddenError,
@@ -42,16 +42,29 @@ const VACANT_HOST_STATUSES: ReadonlyArray<Player['status']> = ['left', 'kicked',
 const ABSENT_HUMAN_STATUSES: ReadonlyArray<Player['status']> = ['takeoverPending', 'left', 'kicked']
 
 /**
- * Wrong passwords one match will verify in a window before it stops verifying at all.
+ * Passwords one caller will have verified against one match in a window.
  *
- * `verifyPassword` is PBKDF2 at 120,000 iterations, on a door no token guards. The per-address
- * limiter in front of it bounds one caller, but public listings carry the join code and the
- * `passwordProtected` flag, so a match's password is a target many addresses can share: tens of
- * milliseconds of CPU per attempt is the libuv thread pool on Node and billed CPU on Workers. This
- * is per match, so an attacker distributing the work across addresses spends the match's budget
- * rather than each address's, and one person mistyping their own password is nowhere near it.
+ * `verifyPassword` is PBKDF2 at 120,000 iterations, on a door no token guards, so tens of
+ * milliseconds of CPU per attempt is the libuv thread pool on Node and billed CPU on Workers. The
+ * budget is per caller AND per match rather than per match alone: a public listing carries the
+ * join code and the `passwordProtected` flag, so one match's budget is something any stranger can
+ * reach, and one that could be spent by a stranger would lock every legitimate player out of a
+ * match for as long as the stranger cared to keep spending it. Someone mistyping their own
+ * password is nowhere near ten tries a minute.
  */
-const PASSWORD_ATTEMPTS_PER_MATCH = 30
+const PASSWORD_ATTEMPTS_PER_CALLER = 10
+/**
+ * Wrong passwords one match will verify in a window before it stops taking a caller's word twice.
+ *
+ * The per-caller budget bounds one address; this bounds the match against an attacker who has
+ * many. It is charged only by a verification that FAILED, so the traffic of a match whose players
+ * know their password never approaches it. While it is spent, a caller still gets their first
+ * attempt of the window — which is what keeps this a brake on a distributed attack rather than a
+ * lever for closing someone else's match: an attacker under it costs the match one hash per
+ * address per minute, and a player who knows the password is only ever refused a RETRY, never
+ * their first try.
+ */
+const PASSWORD_FAILURES_PER_MATCH = 30
 const PASSWORD_ATTEMPT_WINDOW_MS = 60_000
 
 export interface LobbyServiceOptions {
@@ -64,6 +77,7 @@ export class LobbyService {
   private readonly query: MatchQueryService
   private readonly newId: () => string
   private readonly passwordAttempts: RateLimiter
+  private readonly passwordFailures: RateLimiter
 
   constructor(
     private readonly deps: KernelDeps,
@@ -74,34 +88,57 @@ export class LobbyService {
     this.query = new MatchQueryService(deps.storage)
     this.newId = options.newId ?? (() => crypto.randomUUID())
     this.passwordAttempts = new RateLimiter(deps.clock, {
-      limit: PASSWORD_ATTEMPTS_PER_MATCH,
+      limit: PASSWORD_ATTEMPTS_PER_CALLER,
+      windowMs: PASSWORD_ATTEMPT_WINDOW_MS,
+    })
+    this.passwordFailures = new RateLimiter(deps.clock, {
+      limit: PASSWORD_FAILURES_PER_MATCH,
       windowMs: PASSWORD_ATTEMPT_WINDOW_MS,
     })
   }
 
   /**
-   * Check a match password, charging the match's own attempt budget before the hash is computed.
+   * Check a match password, charging two budgets before the hash is computed.
    *
-   * The budget is spent on every attempt rather than only on the wrong ones, because a caller who
-   * knows the password does not need to make thirty attempts a minute and an attacker who does not
-   * would otherwise be charged for nothing. Both doors go through here; see
-   * `PASSWORD_ATTEMPTS_PER_MATCH`.
+   * The caller's own budget is spent on every attempt rather than only on the wrong ones, because
+   * a caller who knows the password does not need ten attempts a minute and an attacker who does
+   * not would otherwise be charged for nothing. The match's budget is spent only by a failure, and
+   * closes only the caller's SECOND and later attempts in a window, so a stranger grinding a
+   * public match's password cannot turn the protection into a way of shutting its players out.
+   * Both doors go through here; see `PASSWORD_ATTEMPTS_PER_CALLER`.
+   *
+   * `caller` is whatever the transport can attribute an attempt to — the client address, already
+   * normalised. A transport that cannot attribute one passes nothing, and every such attempt then
+   * shares a single budget, which is the safe direction: an unattributable flood is throttled
+   * together rather than not at all.
    */
-  private async verifyMatchPassword(match: Match, password: string | undefined): Promise<void> {
+  private async verifyMatchPassword(
+    match: Match,
+    password: string | undefined,
+    caller: string | undefined,
+  ): Promise<void> {
     if (match.passwordHash === null) return
     if (!password) {
       throw new UnauthorizedError('This match needs a password', { reason: 'password_required' })
     }
-    const retryAfterSeconds = this.passwordAttempts.take(match.id)
-    if (retryAfterSeconds !== null) {
-      throw new RateLimitedError('Too many password attempts for this match', {
-        reason: 'rate_limited',
-        retryAfterSeconds,
-      })
+    const callerKey = `${match.id}:${caller ?? 'unattributed'}`
+    const retry = this.passwordAttempts.take(callerKey)
+    if (retry !== null) throw this.tooManyPasswordAttempts(retry)
+    if (this.passwordAttempts.spent(callerKey) > 1) {
+      const underAttack = this.passwordFailures.peek(match.id)
+      if (underAttack !== null) throw this.tooManyPasswordAttempts(underAttack)
     }
     if (!(await verifyPassword(password, match.passwordHash))) {
+      this.passwordFailures.take(match.id)
       throw new UnauthorizedError('Wrong password', { reason: 'wrong_password' })
     }
+  }
+
+  private tooManyPasswordAttempts(retryAfterSeconds: number): RateLimitedError {
+    return new RateLimitedError('Too many password attempts for this match', {
+      reason: 'rate_limited',
+      retryAfterSeconds,
+    })
   }
 
   async createMatch(request: CreateMatchRequest): Promise<MembershipView> {
@@ -150,7 +187,7 @@ export class LobbyService {
     return this.membership(match, host, token)
   }
 
-  async join(request: JoinMatchRequest): Promise<MembershipView> {
+  async join(request: JoinMatchRequest, caller?: string): Promise<MembershipView> {
     const match = await this.deps.storage.matches.getByJoinCode(request.joinCode)
     // A code that names no match and a code that names a match which has already started answer the
     // same 404, so a scan of the code space learns nothing from the difference. The wording covers
@@ -161,7 +198,7 @@ export class LobbyService {
         reason: 'unknown_join_code',
       })
     }
-    await this.verifyMatchPassword(match, request.password)
+    await this.verifyMatchPassword(match, request.password, caller)
     await this.refuseDuplicateName(match.id, request.displayName)
     const joinOrder = await this.deps.storage.matches.claimSeat(match.id)
     if (joinOrder === null) {
@@ -202,7 +239,7 @@ export class LobbyService {
     }
   }
 
-  async joinRunning(request: JoinRunningMatchRequest): Promise<MembershipView> {
+  async joinRunning(request: JoinRunningMatchRequest, caller?: string): Promise<MembershipView> {
     const byId = await this.deps.storage.matches.get(request.match)
     // A private match is reachable by its join code only. Its id is not a secret — it rides every
     // event, the client's recovery file and any log line — so looking one up by id would make a
@@ -227,8 +264,15 @@ export class LobbyService {
         reason: 'late_join_not_ready',
       })
     }
-    await this.verifyMatchPassword(match, request.password)
+    await this.verifyMatchPassword(match, request.password, caller)
     const existing = await this.deps.storage.players.listByMatch(match.id)
+    // A match every human has left is paused by `remove`, with no clock and nobody to restart it:
+    // `rejoin` is the door back into one, and it needs a token this caller does not have. Seating
+    // a stranger at a stopped table would strand them there, so the late-join door refuses it —
+    // which is also exactly the test the public listing leaves such a match out on.
+    if (humanParticipants(existing).length === 0) {
+      throw new ConflictError('Every player has left this match', { reason: 'match_abandoned' })
+    }
     if (existing.some((player) => player.slot === request.slot)) {
       throw new ConflictError('That seat has already belonged to a human', {
         reason: 'seat_reserved',

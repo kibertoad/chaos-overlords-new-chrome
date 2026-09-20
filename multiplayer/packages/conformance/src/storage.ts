@@ -314,6 +314,33 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(listing[2]?.passwordProtected).toBe(true)
     })
 
+    /**
+     * A running match is listed while a human still holds a seat, and `takeoverPending` is such a
+     * seat: it is a player who missed a deadline, not one who is gone. Counting only `active` hid
+     * live matches from the listing and understated the players in the ones it kept, while the
+     * late-join door — which refuses only a match no human holds a seat in — went on taking them.
+     */
+    it("counts a seat awaiting a takeover vote as a running match's player", async () => {
+      const pending = matchFixture()
+      const abandoned = matchFixture()
+      for (const match of [pending, abandoned]) {
+        await storage.matches.create(match)
+        await storage.players.create(
+          playerFixture(match, { id: match.hostPlayerId, displayName: `host of ${match.id}` }),
+        )
+        await storage.matches.transition(match.id, ['lobby'], {
+          status: 'running',
+          updatedAt: match.updatedAt,
+        })
+      }
+      await storage.players.transitionStatus(pending.hostPlayerId, ['active'], 'takeoverPending')
+      await storage.players.transitionStatus(abandoned.hostPlayerId, ['active'], 'left')
+
+      const listing = await storage.matches.listPublicLobbies(100)
+      expect(listing.find((entry) => entry.id === pending.id)?.playerCount).toBe(1)
+      expect(listing.some((entry) => entry.id === abandoned.id)).toBe(false)
+    })
+
     it('finds players by token hash, orders them by slot then join order, and updates status/slots', async () => {
       const match = matchFixture()
       await storage.matches.create(match)

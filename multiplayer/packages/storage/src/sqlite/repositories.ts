@@ -69,14 +69,20 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
       )
     },
     /**
-     * One statement for the whole listing. The active-seat count and the existence of a snapshot
+     * One statement for the whole listing. The human-seat count and the existence of a snapshot
      * are correlated subselects rather than a read per listed match: the route is unauthenticated,
      * and two extra queries per running match is the cost an anonymous caller could ask for
-     * thirty times a minute. A running match with nobody active is left out — `joinRunning`
-     * refuses it and rejoining needs the join code, so it is a row no reader can act on.
+     * thirty times a minute. A running match no human holds a seat in is left out, which is the
+     * same test `joinRunning` refuses on: a match everyone has left is paused, so joining one is
+     * a seat at a table whose clock is stopped.
+     *
+     * A seat counts as human while it is `takeoverPending` as well as while it is `active`. That
+     * status is a player who missed one deadline, not one who is gone — `humanParticipants` waits
+     * on them and the takeover vote is what decides otherwise — so counting only `active` hid
+     * live matches from the listing and understated the players in the ones it kept.
      */
     async listPublicLobbies(limit): Promise<PublicLobbyRow[]> {
-      const activeSeats = sql<number>`(select count(*) from ${players} where ${players.matchId} = ${matches.id} and ${players.status} = 'active')`
+      const humanSeats = sql<number>`(select count(*) from ${players} where ${players.matchId} = ${matches.id} and ${players.status} in ('active', 'takeoverPending'))`
       const rows = await db
         .select({
           id: matches.id,
@@ -84,7 +90,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
           name: matches.name,
           hostDisplayName: players.displayName,
           seatCount: matches.seatCount,
-          activeCount: activeSeats,
+          humanCount: humanSeats,
           maxPlayers: matches.maxPlayers,
           passwordHash: matches.passwordHash,
           status: matches.status,
@@ -103,7 +109,7 @@ function sqliteMatchRepository(db: SqliteDatabase): MatchRepository {
           and(
             inArray(matches.status, ['lobby', 'running']),
             eq(matches.visibility, 'public'),
-            or(ne(matches.status, 'running'), sql`${activeSeats} > 0`),
+            or(ne(matches.status, 'running'), sql`${humanSeats} > 0`),
           ),
         )
         .orderBy(desc(matches.createdAt), asc(matches.id))

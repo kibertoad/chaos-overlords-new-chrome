@@ -41,13 +41,20 @@ export function registerPublicLobbyRoutes(api: Hono<AppEnv>): void {
     return c.json(answering(c, membership), 201)
   })
 
+  // Both join doors verify a password, so both hand the kernel the caller the attempt belongs to:
+  // its per-caller budget in front of PBKDF2 is what keeps one stranger from spending a match's.
+  // `rateLimited` put the key there; see `AppEnv`.
   buildHonoRoute(api, joinMatchContract, async (c) => {
-    const membership = await c.get('container').kernel.lobby.join(c.req.valid('json'))
+    const membership = await c
+      .get('container')
+      .kernel.lobby.join(c.req.valid('json'), c.get('caller'))
     return c.json(answering(c, membership), 201)
   })
 
   buildHonoRoute(api, joinRunningMatchContract, async (c) => {
-    const membership = await c.get('container').kernel.lobby.joinRunning(c.req.valid('json'))
+    const membership = await c
+      .get('container')
+      .kernel.lobby.joinRunning(c.req.valid('json'), c.get('caller'))
     return c.json(answering(c, membership), 201)
   })
 }

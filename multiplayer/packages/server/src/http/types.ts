@@ -10,6 +10,12 @@ export interface AppEnv {
     /** Set by the contract route before the handler runs; absent on non-contract routes. */
     apiContract?: ApiContract
     /**
+     * Who this request is attributed to, normalised the way the limiters key on. Set by
+     * `rateLimited`, read by the handlers that charge a budget of their own below the transport —
+     * the join doors, whose password check is PBKDF2 — and absent on every other route.
+     */
+    caller?: string
+    /**
      * Spends one unit of this caller's daily attached-journal budget and says whether there was
      * any left. Set by `bugReportRateLimited`, called by the handler and only for a report that
      * actually carries a journal; absent everywhere else.

@@ -66,15 +66,19 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
  */
 function chargeFailedAuth(c: Context<AppEnv>): void {
   const container = c.get('container')
-  const key = (container.clientAddress ?? defaultClientAddress)(c)
+  const key = addressOf(c)
   enforce(container.rateLimiters, 'anonymous', key, c)
 }
 
 /** Fixed-window limiter on the unauthenticated doors, keyed by client address. */
 export const rateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
   const container = c.get('container')
-  const key = (container.clientAddress ?? defaultClientAddress)(c)
+  const key = addressOf(c)
   enforce(container.rateLimiters, 'anonymous', key, c)
+  // The join doors charge a per-caller budget of their own in front of PBKDF2, in the kernel,
+  // where there is no request to work an address out from. Normalised here so that one client is
+  // one key there too; see `rateLimitKey`.
+  c.set('caller', rateLimitKey(key))
   await next()
 }
 
@@ -85,7 +89,7 @@ export const rateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
  */
 export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
   const container = c.get('container')
-  const key = (container.clientAddress ?? defaultClientAddress)(c)
+  const key = addressOf(c)
   enforce(container.rateLimiters, 'bugReport', key, c)
   // The daily journal budget is NOT spent here. It used to be, before the body had even been read,
   // so five text-only reports or five requests the contract validator answered 413 or 422 for spent
@@ -110,6 +114,12 @@ export function memberRateLimited(tier: keyof RateLimiters = 'member'): Middlewa
     enforce(container.rateLimiters, tier, c.get('principal').player.id, c)
     await next()
   }
+}
+
+/** The client address this deployment attributes a request to, before it is normalised. */
+function addressOf(c: Context<AppEnv>): string {
+  const container = c.get('container')
+  return (container.clientAddress ?? defaultClientAddress)(c)
 }
 
 /**

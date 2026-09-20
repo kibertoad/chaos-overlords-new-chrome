@@ -257,6 +257,125 @@ describe('the lobby, the roster and the turn barrier', () => {
     ).rejects.toMatchObject({ details: { reason: 'match_full' } })
   })
 
+  /**
+   * The budget in front of PBKDF2 used to be per match and charged on every attempt, which made it
+   * a lever: a public listing carries the join code, so any stranger could spend a match's thirty
+   * a minute forever and nobody who knew the password could get in while they did.
+   */
+  it("bounds a distributed password attack without shutting a match's own players out", async () => {
+    const created = await h.kernel.lobby.createMatch({
+      settings: {
+        name: 'Under Attack',
+        maxPlayers: 6,
+        turnTimerSeconds: 0,
+        visibility: 'public',
+        gameSettings: {},
+      },
+      hostDisplayName: 'Host',
+      password: 'secret1',
+    })
+    const wrongFrom = (address: string, name: string) =>
+      h.kernel.lobby.join(
+        { joinCode: created.joinCode, displayName: name, password: 'nope!!' },
+        address,
+      )
+
+    // Ten from one address are all verified, and the eleventh is not: one caller's own budget.
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      await expect(wrongFrom('198.51.100.1', `Grinder${attempt}`)).rejects.toMatchObject({
+        details: { reason: 'wrong_password' },
+      })
+    }
+    await expect(wrongFrom('198.51.100.1', 'Grinder')).rejects.toMatchObject({
+      details: { reason: 'rate_limited' },
+    })
+
+    // Thirty failures spread across fresh addresses spend the match's own budget, which is what
+    // an attacker who has many addresses would do.
+    for (let address = 0; address < 30; address += 1) {
+      await expect(
+        wrongFrom(`198.51.100.${address + 10}`, `Swarm${address}`),
+      ).rejects.toMatchObject({ details: { reason: 'wrong_password' } })
+    }
+
+    // A caller the match has never heard from still gets a first attempt, so knowing the password
+    // is still enough to get in while the attack runs.
+    const joined = await h.kernel.lobby.join(
+      { joinCode: created.joinCode, displayName: 'Grace', password: 'secret1' },
+      '203.0.113.9',
+    )
+    expect(joined.player.displayName).toBe('Grace')
+
+    // What the match's spent budget buys: one hash per address per window, rather than ten.
+    await expect(wrongFrom('203.0.113.10', 'Fresh')).rejects.toMatchObject({
+      details: { reason: 'wrong_password' },
+    })
+    await expect(wrongFrom('203.0.113.10', 'Fresh')).rejects.toMatchObject({
+      details: { reason: 'rate_limited' },
+    })
+  })
+
+  /**
+   * The listing leaves a running match with no human seats out, so the late-join door has to
+   * refuse the same match: it is paused, and only a former member's token can restart it.
+   */
+  it('neither lists nor late-joins a running match every player has left', async () => {
+    const host = await h.kernel.lobby.createMatch({
+      settings: {
+        name: 'Empty Table',
+        maxPlayers: 6,
+        turnTimerSeconds: 0,
+        visibility: 'public',
+        gameSettings: { allowLateJoin: true },
+      },
+      hostDisplayName: 'Host',
+    })
+    await h.kernel.lobby.start(await h.principalOf(host.token))
+    await h.kernel.snapshots.upload(await h.principalOf(host.token), {
+      turn: 0,
+      formatVersion: 1,
+      stateHash: HASH_A,
+      body: 'AAAA',
+      seatSummaries: [],
+    })
+    expect(
+      (await h.kernel.query.listPublicLobbies(10)).some((row) => row.id === host.match.id),
+    ).toBe(true)
+
+    await h.kernel.lobby.leave(await h.principalOf(host.token))
+
+    expect(
+      (await h.kernel.query.listPublicLobbies(10)).some((row) => row.id === host.match.id),
+    ).toBe(false)
+    await expect(
+      h.kernel.lobby.joinRunning({ match: host.match.id, displayName: 'Late', slot: 3 }),
+    ).rejects.toMatchObject({ details: { reason: 'match_abandoned' } })
+  })
+
+  /**
+   * `takeoverPending` is a player who missed one deadline, not one who is gone: the turn barrier
+   * still waits on them, so counting only `active` hid live matches from the listing.
+   */
+  it('lists a running match whose players are all awaiting a takeover vote', async () => {
+    const host = await h.kernel.lobby.createMatch({
+      settings: {
+        name: 'Slow Table',
+        maxPlayers: 6,
+        turnTimerSeconds: 0,
+        visibility: 'public',
+        gameSettings: { allowLateJoin: true },
+      },
+      hostDisplayName: 'Host',
+    })
+    await h.kernel.lobby.start(await h.principalOf(host.token))
+    await h.storage.players.transitionStatus(host.player.id, ['active'], 'takeoverPending')
+
+    const listing = (await h.kernel.query.listPublicLobbies(10)).find(
+      (row) => row.id === host.match.id,
+    )
+    expect(listing?.playerCount).toBe(1)
+  })
+
   it('start seats players deterministically, seeds the match and opens turn 1', async () => {
     const { host, guest } = await h.startedMatch()
     const view = await h.kernel.query.view((await h.principalOf(guest.token)).match)

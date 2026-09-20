@@ -1,4 +1,5 @@
 import type { MatchStatus, TurnStatus } from '@chaos-overlords/contracts'
+import { humanParticipants } from '../domain/entities'
 import type {
   Match,
   PersistedEvent,
@@ -53,18 +54,19 @@ export class InMemoryStorage implements MultiplayerStorage {
       for (const match of this.matchRows.values()) {
         if (!['lobby', 'running'].includes(match.status) || match.settings.visibility !== 'public')
           continue
-        const activeCount = [...this.playerRows.values()].filter(
-          (player) => player.matchId === match.id && player.status === 'active',
+        const humanCount = humanParticipants(
+          [...this.playerRows.values()].filter((player) => player.matchId === match.id),
         ).length
-        // A running match nobody is in any more is unjoinable, so it is not advertised.
-        if (match.status === 'running' && activeCount === 0) continue
+        // A running match no human holds a seat in is paused and `joinRunning` refuses it, so it
+        // is not advertised either. See the SQL twins for why `takeoverPending` counts as human.
+        if (match.status === 'running' && humanCount === 0) continue
         const host = this.playerRows.get(match.hostPlayerId)
         lobbies.push({
           id: match.id,
           joinCode: match.joinCode,
           name: match.settings.name,
           hostDisplayName: host?.displayName ?? '',
-          playerCount: match.status === 'running' ? activeCount : match.seatCount,
+          playerCount: match.status === 'running' ? humanCount : match.seatCount,
           maxPlayers: match.settings.maxPlayers,
           passwordProtected: match.passwordHash !== null,
           status: match.status,

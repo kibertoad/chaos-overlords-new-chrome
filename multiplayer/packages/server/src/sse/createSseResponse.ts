@@ -118,8 +118,9 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
           while (!closed) {
             await awaitDemand()
             if (closed) return
-            // Only the first read of a forced drain has to reach the log; once it has, the cursor
-            // is beyond whatever it did not know about.
+            // Only the first page of a forced drain has to reach the log — and it does, because
+            // `force` bypasses the source's memo rather than only its "nothing further" answer.
+            // Once it has, the cursor is beyond whatever this process did not know about.
             const frames = await source.page(lastSeq, first)
             first = false
             if (frames.length === 0) return

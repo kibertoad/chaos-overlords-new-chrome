@@ -50,8 +50,9 @@ export interface ClientOptions {
   fetch?: FetchLike
   token?: string
   /**
-   * Abandons a request that has produced nothing for this long. Event streams are exempt: they are
-   * expected to stay open and carry their own keepalives.
+   * Abandons a request that has produced nothing for this long. Event streams are exempt once they
+   * are open: they are expected to stay that way and carry their own keepalives, so the deadline
+   * covers only getting them open. `0` (or any value below it) disables both.
    */
   requestTimeoutMs?: number
 }
@@ -177,7 +178,7 @@ export class MultiplayerClient {
     path: string,
     after: number,
     signal: AbortSignal | undefined,
-  ): Promise<Response> {
+  ): Promise<OpenStream> {
     const headers: Record<string, string> = {
       Accept: 'text/event-stream',
       'Last-Event-ID': String(after),
@@ -190,36 +191,65 @@ export class MultiplayerClient {
     // nothing — a firewall that drops SYNs rather than refusing them — each attempt cost the
     // operating system's own connect timeout, often two minutes, so the five-minute outage budget
     // bought two attempts instead of the dozens it is sized for. The C# client races the header
-    // phase against a timer for the same reason.
+    // phase against a timer for the same reason. A non-positive `requestTimeoutMs` disables the
+    // deadline here exactly as it does for `call`, rather than aborting every connect at once.
     //
     // The controller stays attached to the body afterwards, with the caller's own signal forwarded
     // into it, so cancelling the stream still works exactly as before; only the TIMER is cleared.
+    // That forwarding is a listener on a signal the caller owns and keeps across every reconnect,
+    // so `release` takes it back off once the body is done with — one connection's listener must
+    // not outlive its connection, or a long stream accumulates one per reconnect.
     const connect = new AbortController()
-    signal?.addEventListener('abort', () => connect.abort(signal.reason), { once: true })
-    const timer = setTimeout(() => {
-      connect.abort(new Error(`the event stream did not open within ${this.requestTimeoutMs} ms`))
-    }, this.requestTimeoutMs)
-    let response: Response
+    const forward = (): void => connect.abort(signal?.reason)
+    const release = (): void => signal?.removeEventListener('abort', forward)
+    if (signal?.aborted) forward()
+    else signal?.addEventListener('abort', forward, { once: true })
+    const timer =
+      this.requestTimeoutMs > 0
+        ? setTimeout(() => {
+            connect.abort(
+              new Error(`the event stream did not open within ${this.requestTimeoutMs} ms`),
+            )
+          }, this.requestTimeoutMs)
+        : undefined
     try {
-      response = await this.fetchImpl(`${this.baseUrl}${API}${path}`, {
-        headers,
-        signal: connect.signal,
-      })
-    } finally {
-      clearTimeout(timer)
+      let response: Response
+      try {
+        response = await this.fetchImpl(`${this.baseUrl}${API}${path}`, {
+          headers,
+          signal: connect.signal,
+        })
+      } finally {
+        if (timer !== undefined) clearTimeout(timer)
+      }
+      if (!response.ok) throw await MultiplayerApiError.fromResponse(response)
+      const responseKind = resolveResponseEntry(
+        contract.responsesByStatusCode,
+        response.status,
+        response.headers.get('content-type') ?? undefined,
+        true,
+      )
+      if (responseKind?.kind !== 'sse')
+        throw new Error('server response is not the contracted stream')
+      if (!response.body) throw new Error('event stream response has no body')
+      return { response, release }
+    } catch (error) {
+      // Nothing was handed back, so nothing will call `release`.
+      release()
+      throw error
     }
-    if (!response.ok) throw await MultiplayerApiError.fromResponse(response)
-    const responseKind = resolveResponseEntry(
-      contract.responsesByStatusCode,
-      response.status,
-      response.headers.get('content-type') ?? undefined,
-      true,
-    )
-    if (responseKind?.kind !== 'sse')
-      throw new Error('server response is not the contracted stream')
-    if (!response.body) throw new Error('event stream response has no body')
-    return response
   }
+}
+
+/**
+ * A connected event stream and the teardown for the caller-signal forwarding it installed.
+ *
+ * `release` only detaches that listener; it never aborts. It is called once the body has been
+ * finished with, by which point cancelling it is the body reader's own business.
+ */
+export interface OpenStream {
+  readonly response: Response
+  release(): void
 }
 
 export class MatchHandle {
@@ -338,15 +368,21 @@ export class MatchHandle {
 
   /** One connection's worth of events; ends when the server closes it. */
   async *streamOnce(options: StreamOptions = {}): AsyncGenerator<MatchEvent> {
-    const response = await this.client.openStream(
+    const { response, release } = await this.client.openStream(
       streamEventsContract,
       streamEventsContract.pathResolver({ matchId: this.matchId }),
       options.after ?? 0,
       options.signal,
     )
-    yield* parseEventStream(response.body as ReadableStream<Uint8Array>, {
-      idleTimeoutMs: options.idleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS,
-    })
+    try {
+      yield* parseEventStream(response.body as ReadableStream<Uint8Array>, {
+        idleTimeoutMs: options.idleTimeoutMs ?? DEFAULT_STREAM_IDLE_TIMEOUT_MS,
+      })
+    } finally {
+      // Runs on a `break` or a `return` from the consumer as well, so every connection gives its
+      // listener back — including the ones `stream` abandons to reconnect.
+      release()
+    }
   }
 
   /**

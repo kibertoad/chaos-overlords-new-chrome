@@ -133,7 +133,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     const log = this.logOf(input.matchId)
     return createSseResponse(
       {
-        page: (afterSeq) => log.page(afterSeq),
+        page: (afterSeq, force) => log.page(afterSeq, force),
         caughtUp: (lastSeq) => log.caughtUp(lastSeq),
         subscribe: (wake, close) => this.subscribe(input.matchId, input.playerId, wake, close),
       },

@@ -93,15 +93,25 @@ export class MatchLog {
    * caller can never be handed a frame whose predecessor it has not seen, which is the invariant
    * the stream cursor rests on.
    *
-   * `force` skips the memo's "nothing further" answer and always asks the log. The caller that
-   * passes it is the periodic catch-up, which exists precisely for what this process cannot be
-   * told: an append by another process against the same database. Everything else may take the
-   * short answer, because the events THIS process publishes are the events it is notified of.
+   * `force` bypasses memory entirely and asks the log. The caller that passes it is the periodic
+   * catch-up, which exists precisely for what this process cannot be told: an append by another
+   * process against the same database. Everything else may take the short answer, because the
+   * events THIS process publishes are the events it is notified of.
+   *
+   * Bypassing the memo rather than only its "nothing further" answer is what makes the catch-up
+   * happen at all: the drain spends the force on its FIRST page, so a page served out of memory
+   * used it up without a read ever reaching the log, and the stream then waited another whole
+   * catch-up period to try again. A tail hit is the common case on a woken stream, so that was
+   * most of them.
    */
   async page(afterSeq: number, force = false): Promise<EventFrame[]> {
-    const memoised = this.pageFromMemory(afterSeq)
-    if (memoised.length > 0) return memoised
-    if (!force && this.caughtUp(afterSeq)) return []
+    if (!force) {
+      const memoised = this.pageFromMemory(afterSeq)
+      if (memoised.length > 0) return memoised
+      if (this.caughtUp(afterSeq)) return []
+    }
+    // A read already in flight for this cursor is a read of the log, forced or not, so joining it
+    // satisfies a forced caller too.
     const shared = this.inFlight.get(afterSeq)
     if (shared) return shared
     const request = this.read(afterSeq).finally(() => {

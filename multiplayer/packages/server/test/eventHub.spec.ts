@@ -1,6 +1,6 @@
 import type { EventRepository, PersistedEvent } from '@chaos-overlords/kernel'
 import { describe, expect, it } from 'vitest'
-import { LocalEventHub } from '../src'
+import { LocalEventHub, MatchLog } from '../src'
 
 /** An empty log: these tests are about the subscriptions, not about what comes down them. */
 const emptyEvents: EventRepository = {
@@ -243,5 +243,27 @@ describe('LocalEventHub fan-out cost', () => {
     expect(await stale.ended()).toBe(true)
     expect(hub.openStreams).toBe(1)
     fresh.abort()
+  })
+})
+
+describe('MatchLog catch-up', () => {
+  /**
+   * The periodic catch-up exists for an append another process made against the same database, and
+   * the drain spends its force on the FIRST page of the pass. `force` therefore has to bypass the
+   * memo rather than only its "nothing further" answer: a page served out of the tail — the common
+   * case on a woken stream — used to spend the force without a read reaching the log, and the
+   * stream waited another whole catch-up period before it tried again.
+   */
+  it('reaches the log for a forced page even when the tail answers it', async () => {
+    // Only the first event was published through this process; the second is another process's.
+    const log = countingLog([eventAt(1), eventAt(2)])
+    const matchLog = new MatchLog('m', log.repository)
+    matchLog.record(eventAt(1))
+
+    expect((await matchLog.page(0)).map((frame) => frame.seq)).toEqual([1])
+    expect(log.reads).toEqual([])
+
+    expect((await matchLog.page(0, true)).map((frame) => frame.seq)).toEqual([1, 2])
+    expect(log.reads).toEqual([0])
   })
 })

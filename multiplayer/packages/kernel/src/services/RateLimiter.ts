@@ -43,6 +43,23 @@ export class RateLimiter {
     return null
   }
 
+  /** What `take` would answer right now, spending nothing. */
+  peek(key: string): number | null {
+    const now = this.clock.now().getTime()
+    const entry = this.windows.get(key)
+    if (!entry || now - entry.windowStart >= this.options.windowMs) return null
+    if (entry.count < this.options.limit) return null
+    return Math.ceil((entry.windowStart + this.options.windowMs - now) / 1000)
+  }
+
+  /** How much of `key`'s budget the current window has already spent; 0 once it has rolled. */
+  spent(key: string): number {
+    const now = this.clock.now().getTime()
+    const entry = this.windows.get(key)
+    if (!entry || now - entry.windowStart >= this.options.windowMs) return 0
+    return entry.count
+  }
+
   /**
    * Drop windows that have expired, at most once per window period.
    *
