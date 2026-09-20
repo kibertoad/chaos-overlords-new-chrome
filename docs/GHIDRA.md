@@ -174,7 +174,8 @@ sites.
   observed constants, and an independent behavioral description.
 - Never copy decompiled implementation into production. Reimplement factual
   behavior independently using project naming and structure.
-- Store stable findings in `ORIGINAL-INTERNALS.md` and rules in `GAME-RULES.md`.
+- Store stable findings in the `original-internals/` document for their
+  subsystem, and rules in `GAME-RULES.md`.
 - Mark an interpretation Provisional until static evidence and a controlled
   observation agree.
 - Do not commit temporary Ghidra projects, proprietary resources, executable

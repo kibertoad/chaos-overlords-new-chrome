@@ -244,9 +244,10 @@ gameplay recreation even though its decoded tables and asset pack are verified.
 ## Binary evidence status
 
 Initial PE/import/string classification and continuing address-level gameplay
-research are recorded in `ORIGINAL-INTERNALS.md`. Verified or high-confidence
-findings now cover platform boundaries, source resource paths, save/version
-strings, the original RNG step and bounded wrapper, city/site/HQ/hire setup,
-and the outer AI command dispatcher. Exact AI planner policy, remaining resolver
+research are recorded in the `original-internals/` documents indexed by
+`ORIGINAL-INTERNALS.md`. Verified or high-confidence findings now cover platform
+boundaries, source resource paths, save/version strings, the original RNG step
+and bounded wrapper, city/site/HQ/hire setup, and the outer AI command
+dispatcher. Exact AI planner policy, remaining resolver
 ordering/reveal edges, and reference-trace parity retain their explicitly
 listed gaps.

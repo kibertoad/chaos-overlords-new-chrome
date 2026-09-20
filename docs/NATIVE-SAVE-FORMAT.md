@@ -8,7 +8,7 @@ original *Chaos Overlords* fixed-memory save envelopes and makes no claim of
 binary compatibility with them. Static analysis bounds the original standalone
 `S40W` form at 45,305 bytes and its six-DWORD legacy-network `N40W` extension at
 45,329 bytes; both repeat their header marker as a trailer but ignore every
-individual Win32 I/O byte count. `ORIGINAL-INTERNALS.md` records the exact block
+individual Win32 I/O byte count. `BIN-API-003` records the exact block
 sequence. Those facts inform state research only: this recreation uses a safe,
 portable, independently versioned document rather than reproducing the
 original's address-shaped layout or partial-read behavior.

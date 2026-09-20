@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Regenerates the generated index blocks in docs/*.md.
+// Regenerates the generated index blocks in docs/*.md and docs/original-internals/*.md,
+// and checks that every relative link between those documents still resolves.
 //
 // A block is delimited by two HTML comments:
 //
@@ -9,7 +10,8 @@
 //
 // Kinds:
 //   toc depth=N       table of contents of this file's `##`..`#`*N headings
-//   finding-index     BIN-* findings of ORIGINAL-INTERNALS.md grouped by subsystem
+//   finding-index     BIN-* findings of the docs/original-internals/ documents,
+//                     grouped by subsystem, each group naming its document
 //   rule-index        RULE-* rules of GAME-RULES.md with their section
 //   decision-index    dated decisions of DECISIONS.md
 //
@@ -17,33 +19,45 @@
 //   node tools/update-doc-indexes.mjs          rewrite stale blocks
 //   node tools/update-doc-indexes.mjs --check  exit 1 when a block is stale
 //
+// Either way, broken links fail the run; they cannot be repaired automatically.
+//
 // No dependencies. Anchors follow GitHub's heading-slug rules.
 
-import { readFileSync, writeFileSync, readdirSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
+import { join, dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const docsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "docs");
+const repoDir = join(dirname(fileURLToPath(import.meta.url)), "..");
+const docsDir = join(repoDir, "docs");
+const findingsDir = join(docsDir, "original-internals");
 const check = process.argv.includes("--check");
 
 const BEGIN = /^<!-- doc-index:begin ([a-z-]+)((?: [a-z]+=[^\s]+)*) -->$/;
 const END = "<!-- doc-index:end -->";
 
-/** Subsystem labels for BIN-* finding families, keyed by the ID without its number. */
+/**
+ * Subsystem labels for BIN-* finding families, keyed by the ID without its number.
+ * A subsystem must live in exactly one document under docs/original-internals/, and
+ * this order is the order the finding index prints, so keep it grouped by document.
+ */
 const FINDING_FAMILIES = new Map([
+  // executable-and-platform.md
   ["BIN-PE", "Executable image"],
   ["BIN-TOOL", "Executable image"],
   ["BIN-API", "Platform boundaries visible in imports"],
   ["BIN-ASSET", "Resource lookup"],
+  // randomness-and-turn-structure.md
   ["BIN-RNG", "Randomness and seeding"],
-  ["BIN-CITY", "New-game setup and city generation"],
-  ["BIN-SETUP", "New-game setup and city generation"],
-  ["BIN-HOTSEAT", "New-game setup and city generation"],
   ["BIN-TURN-PLAYER-ORDER", "Turn structure and phase order"],
   ["BIN-ENDTURN", "Turn structure and phase order"],
   ["BIN-REPEAT", "Turn structure and phase order"],
   ["BIN-COMMAND-ASSIGN", "Turn structure and phase order"],
   ["BIN-HIDE-LIFECYCLE", "Turn structure and phase order"],
+  // new-game-setup.md
+  ["BIN-CITY", "New-game setup and city generation"],
+  ["BIN-SETUP", "New-game setup and city generation"],
+  ["BIN-HOTSEAT", "New-game setup and city generation"],
+  // commands-and-economy.md
   ["BIN-HIRE", "Hiring"],
   ["BIN-HIRE-COMPARISON", "Hiring"],
   ["BIN-INSTANT", "Instant commands"],
@@ -51,31 +65,30 @@ const FINDING_FAMILIES = new Map([
   ["BIN-RESEARCH", "Instant commands"],
   ["BIN-BRIBE", "Instant commands"],
   ["BIN-SNITCH", "Instant commands"],
-  ["BIN-CHAOS", "Chaos and police"],
-  ["BIN-POLICE", "Chaos and police"],
-  ["BIN-POLICE-COMBAT", "Chaos and police"],
-  ["BIN-ATTACK", "Combat"],
-  ["BIN-COMBAT-ORDER", "Combat"],
-  ["BIN-COMBAT-STATS", "Combat"],
-  ["BIN-COMBAT-RESULTS", "Combat"],
-  ["BIN-DETECT", "Combat"],
+  ["BIN-MOVEMENT", "Movement and sector control"],
+  ["BIN-CONTROL", "Movement and sector control"],
   ["BIN-EFFECTIVE-STATS", "Gang statistics and equipment"],
   ["BIN-EQUIP", "Gang statistics and equipment"],
   ["BIN-GANG-RETIRE", "Gang statistics and equipment"],
   ["BIN-GANG-DEFINITION", "Gang statistics and equipment"],
   ["BIN-GANG-VALUES", "Gang statistics and equipment"],
-  ["BIN-MOVEMENT", "Movement and sector control"],
-  ["BIN-CONTROL", "Movement and sector control"],
   ["BIN-UPKEEP", "Economy and finance"],
   ["BIN-FINANCE", "Economy and finance"],
+  // combat-and-police.md
+  ["BIN-ATTACK", "Combat"],
+  ["BIN-COMBAT-ORDER", "Combat"],
+  ["BIN-COMBAT-STATS", "Combat"],
+  ["BIN-COMBAT-RESULTS", "Combat"],
+  ["BIN-DETECT", "Combat"],
+  ["BIN-CHAOS", "Chaos and police"],
+  ["BIN-POLICE", "Chaos and police"],
+  ["BIN-POLICE-COMBAT", "Chaos and police"],
+  // objectives-and-awards.md
   ["BIN-RANKING", "Objectives, ranking, and awards"],
   ["BIN-AWARDS", "Objectives, ranking, and awards"],
+  // computer-players.md
   ["BIN-AI", "Computer players"],
-  ["BIN-EVENT", "Turn reports and Comlink"],
-  ["BIN-EVENTS", "Turn reports and Comlink"],
-  ["BIN-COMLINK", "Turn reports and Comlink"],
-  ["BIN-SEARCH", "Turn reports and Comlink"],
-  ["BIN-OPTIONS", "Options and preferences"],
+  // interface-and-options.md
   ["BIN-UI", "Screens, panels, and hit geometry"],
   ["BIN-UI-CREDITS", "Screens, panels, and hit geometry"],
   ["BIN-UI-TITLE", "Screens, panels, and hit geometry"],
@@ -85,6 +98,13 @@ const FINDING_FAMILIES = new Map([
   ["BIN-SITE-INFO", "Screens, panels, and hit geometry"],
   ["BIN-GAME-INFO", "Screens, panels, and hit geometry"],
   ["BIN-NUMBER-HELPERS", "Screens, panels, and hit geometry"],
+  ["BIN-OPTIONS", "Options and preferences"],
+  // reports-and-comlink.md
+  ["BIN-EVENT", "Turn reports and Comlink"],
+  ["BIN-EVENTS", "Turn reports and Comlink"],
+  ["BIN-COMLINK", "Turn reports and Comlink"],
+  ["BIN-SEARCH", "Turn reports and Comlink"],
+  // audio-and-video.md
   ["BIN-MUSIC", "Audio and video"],
   ["BIN-SOUND", "Audio and video"],
 ]);
@@ -142,29 +162,66 @@ function renderToc(headings, depth) {
   return rows;
 }
 
-function renderFindingIndex(headings) {
+/**
+ * Every BIN-* finding across docs/original-internals/, grouped by subsystem in
+ * FINDING_FAMILIES order. Each group records the one document that holds it.
+ */
+function collectFindings() {
   const pattern = /^(BIN-[A-Z][A-Z-]*?)-(\d+[A-Z]?) - (.+)$/;
-  const groups = new Map(FAMILY_ORDER.map((name) => [name, []]));
+  const groups = new Map(FAMILY_ORDER.map((name) => [name, { document: null, findings: [] }]));
   const ids = new Set();
-  for (const h of headings) {
-    if (h.level !== 3) continue;
-    const m = pattern.exec(h.text);
-    if (!m) continue;
-    const [, family, number, title] = m;
-    const id = `${family}-${number}`;
-    if (ids.has(id)) throw new Error(`duplicate finding ID ${id}`);
-    ids.add(id);
-    const group = FINDING_FAMILIES.get(family);
-    if (!group) throw new Error(`finding family ${family} has no subsystem in FINDING_FAMILIES (${id})`);
-    groups.get(group).push({ id, title, anchor: h.anchor, section: h.section });
+  for (const name of readdirSync(findingsDir).filter((n) => n.endsWith(".md")).sort()) {
+    const headings = parseHeadings(readFileSync(join(findingsDir, name), "utf8").split("\n"));
+    for (const h of headings) {
+      if (h.level !== 3) continue;
+      const m = pattern.exec(h.text);
+      if (!m) continue;
+      const [, family, number, title] = m;
+      const id = `${family}-${number}`;
+      if (ids.has(id)) throw new Error(`duplicate finding ID ${id}`);
+      ids.add(id);
+      const group = FINDING_FAMILIES.get(family);
+      if (!group) throw new Error(`finding family ${family} has no subsystem in FINDING_FAMILIES (${id})`);
+      const entry = groups.get(group);
+      if (entry.document && entry.document !== name) {
+        throw new Error(
+          `subsystem "${group}" is split across ${entry.document} and ${name}; keep a subsystem in one document`,
+        );
+      }
+      entry.document = name;
+      entry.findings.push({ id, title, anchor: h.anchor });
+    }
   }
-  const rows = [`${ids.size} findings.`, ""];
-  for (const [group, findings] of groups) {
+  const seen = new Set();
+  let previous = null;
+  for (const { document } of groups.values()) {
+    if (!document || document === previous) continue;
+    if (seen.has(document)) {
+      throw new Error(
+        `FINDING_FAMILIES returns to ${document} after leaving it; keep each document's subsystems adjacent`,
+      );
+    }
+    seen.add(document);
+    previous = document;
+  }
+  return { groups, total: ids.size };
+}
+
+function renderFindingIndex(path) {
+  const { groups, total } = collectFindings();
+  const prefix = relative(dirname(path), findingsDir).split(/[\\/]/).join("/");
+  const rows = [`${total} findings.`, ""];
+  for (const [group, { document, findings }] of groups) {
     if (findings.length === 0) continue;
     findings.sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true }));
-    rows.push(`**${group}**`, "", "| ID | Finding | Section |", "|---|---|---|");
+    rows.push(
+      `**${group}** — [${document}](${prefix}/${document})`,
+      "",
+      "| ID | Finding |",
+      "|---|---|",
+    );
     for (const f of findings) {
-      rows.push(`| [${f.id}](#${f.anchor}) | ${plain(f.title)} | ${plain(f.section)} |`);
+      rows.push(`| [${f.id}](${prefix}/${document}#${f.anchor}) | ${plain(f.title)} |`);
     }
     rows.push("");
   }
@@ -199,12 +256,12 @@ function renderDecisionIndex(headings) {
   return rows;
 }
 
-function render(kind, attrs, headings) {
+function render(kind, attrs, headings, path) {
   switch (kind) {
     case "toc":
       return renderToc(headings, Number(attrs.depth ?? 2));
     case "finding-index":
-      return renderFindingIndex(headings);
+      return renderFindingIndex(path);
     case "rule-index":
       return renderRuleIndex(headings);
     case "decision-index":
@@ -232,7 +289,7 @@ function processFile(path) {
     );
     const end = lines.indexOf(END, i + 1);
     if (end < 0) throw new Error(`${path}: unterminated doc-index block at line ${i + 1}`);
-    out.push(lines[i], ...render(kind, attrs, headings), END);
+    out.push(lines[i], ...render(kind, attrs, headings, path), END);
     i = end;
     blocks++;
   }
@@ -240,23 +297,82 @@ function processFile(path) {
   return { blocks, stale: updated !== original, updated };
 }
 
+/** Every maintained markdown document, docs/ first and then its subdirectories. */
+function documentPaths() {
+  const paths = [];
+  for (const dir of [docsDir, findingsDir]) {
+    for (const name of readdirSync(dir).filter((n) => n.endsWith(".md")).sort()) {
+      paths.push(join(dir, name));
+    }
+  }
+  return paths;
+}
+
+/** Anchors a markdown file offers, cached per path. */
+const anchorCache = new Map();
+function anchorsOf(path) {
+  if (!anchorCache.has(path)) {
+    const headings = parseHeadings(readFileSync(path, "utf8").split("\n"));
+    anchorCache.set(path, new Set(headings.map((h) => h.anchor)));
+  }
+  return anchorCache.get(path);
+}
+
+/**
+ * Relative links of the maintained documents that no longer resolve: a missing
+ * file, or an `#anchor` no heading produces. External and absolute links are
+ * left alone.
+ */
+function brokenLinks(paths) {
+  const LINK = /\[[^\]]*\]\(([^)\s]+)\)/g;
+  const broken = [];
+  for (const path of paths) {
+    const label = relative(repoDir, path).split(/[\\/]/).join("/");
+    let inFence = false;
+    let line = 0;
+    for (const text of readFileSync(path, "utf8").split("\n")) {
+      line++;
+      if (/^(```|~~~)/.test(text)) inFence = !inFence;
+      if (inFence) continue;
+      for (const [, target] of text.matchAll(LINK)) {
+        if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("/")) continue;
+        const [file, anchor] = target.split("#");
+        const resolved = file ? resolve(dirname(path), file) : path;
+        if (file && !existsSync(resolved)) {
+          broken.push(`${label}:${line}: no such file: ${target}`);
+          continue;
+        }
+        if (!anchor || !resolved.endsWith(".md")) continue;
+        if (!anchorsOf(resolved).has(anchor)) {
+          broken.push(`${label}:${line}: no such heading: ${target}`);
+        }
+      }
+    }
+  }
+  return broken;
+}
+
 let stale = 0;
-for (const name of readdirSync(docsDir).filter((n) => n.endsWith(".md")).sort()) {
-  const path = join(docsDir, name);
+for (const path of documentPaths()) {
+  const label = relative(repoDir, path).split(/[\\/]/).join("/");
   const result = processFile(path);
   if (result.blocks === 0) continue;
   if (result.stale) {
     stale++;
     if (check) {
-      console.error(`stale: docs/${name}`);
+      console.error(`stale: ${label}`);
     } else {
       writeFileSync(path, result.updated);
-      console.log(`updated: docs/${name}`);
+      console.log(`updated: ${label}`);
     }
   }
 }
+const broken = brokenLinks([...documentPaths(), join(repoDir, "README.md"), join(repoDir, "AGENTS.md")]);
+for (const problem of broken) console.error(`broken link: ${problem}`);
+
 if (check && stale > 0) {
   console.error(`${stale} file(s) have stale doc-index blocks; run node tools/update-doc-indexes.mjs`);
-  process.exit(1);
 }
 if (!check && stale === 0) console.log("all doc-index blocks are current");
+if (broken.length === 0) console.log("all relative links resolve");
+if (broken.length > 0 || (check && stale > 0)) process.exit(1);
