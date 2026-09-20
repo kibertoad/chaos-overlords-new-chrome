@@ -48,18 +48,25 @@ public static class AssetCatalogGenerator
     private static (string Role, string Owner, string Palette) Classify(ExtractedAsset asset)
     {
         var resourceName = Path.GetFileNameWithoutExtension(asset.Path).ToUpperInvariant();
+        var knownPresentation = KnownPresentation(resourceName);
         var keyedCopy = resourceName is "PX00150" or "PX06004";
         var mixedCopy = resourceName == "PX00129";
+        var opaqueBaseScreen = resourceName is "PX00144" or "PX00145" or "PX00146";
         var opaqueBlackCopy = resourceName is "PX00201" or "PX00300" ||
                               resourceName.StartsWith("PX04", StringComparison.Ordinal) ||
                               resourceName.StartsWith("PX07", StringComparison.Ordinal);
 
         if (asset.Path.StartsWith("images/", StringComparison.Ordinal))
-            return ("PX16 presentation image", "Unknown", DescribePx16Copy(keyedCopy, mixedCopy, opaqueBlackCopy));
+            return (knownPresentation?.Role ?? "PX16 presentation image",
+                knownPresentation?.Owner ?? "Unknown", DescribePx16Copy(keyedCopy, mixedCopy, opaqueBaseScreen, opaqueBlackCopy));
         if (asset.Path.StartsWith("images8/", StringComparison.Ordinal))
-            return ("Decoded PX08 presentation image", "Unknown", DescribePx08Copy(keyedCopy, mixedCopy, opaqueBlackCopy, decoded: true));
+            return (knownPresentation?.Role ?? "Decoded PX08 presentation image",
+                knownPresentation?.Owner ?? "Unknown", DescribePx08Copy(keyedCopy, mixedCopy, opaqueBaseScreen, opaqueBlackCopy, decoded: true));
         if (asset.Path.StartsWith("raw/px08/", StringComparison.Ordinal))
-            return ("PX08 indexed image source", "Unknown", DescribePx08Copy(keyedCopy, mixedCopy, opaqueBlackCopy, decoded: false));
+            return (knownPresentation is { } presentation
+                    ? presentation.Role + " source"
+                    : "PX08 indexed image source",
+                knownPresentation?.Owner ?? "Unknown", DescribePx08Copy(keyedCopy, mixedCopy, opaqueBaseScreen, opaqueBlackCopy, decoded: false));
         if (asset.Path.StartsWith("audio/", StringComparison.Ordinal))
             return ("Sound effect", "Unknown action/UI trigger", "N/A");
         if (asset.Path.StartsWith("music/", StringComparison.Ordinal))
@@ -73,19 +80,57 @@ public static class AssetCatalogGenerator
         return ("Opaque original data", "Unknown", "Unknown");
     }
 
-    private static string DescribePx16Copy(bool keyedCopy, bool mixedCopy, bool opaqueBlackCopy)
+    /// <summary>
+    /// Presentation identities established by the address-level native research log and UI atlas.
+    /// </summary>
+    /// <remarks>
+    /// Keep this intentionally small and factual. A generic image is still marked unknown until a
+    /// resource load/caller path or an independently corroborated atlas mapping identifies it;
+    /// naming an attractive sheet from pixels alone would turn the catalog into speculation.
+    /// </remarks>
+    private static (string Role, string Owner)? KnownPresentation(string resourceName) => resourceName switch
+    {
+        "PX00100" => ("Publisher/developer credits screen", "Native Help > About; deliberately unrouted"),
+        "PX00128" => ("Main city and control-panel canvas", "City/Sector UI"),
+        "PX00129" => ("Shared UI composite atlas", "City, panel, font, and status compositors"),
+        "PX00130" => ("Title/logo/copyright canvas", "Title screen"),
+        "PX00131" => ("Dormant limited/demo promotion", "No caller in supported executable; deliberately unrouted"),
+        "PX00132" => ("Next-player handoff panel", "Local hot-seat handoff"),
+        "PX00137" => ("Legacy transfer-progress frame", "Unsupported original transport"),
+        "PX00138" => ("Legacy transfer spinner", "Unsupported original transport"),
+        "PX00139" => ("Legacy synchronization-progress frame", "Unsupported original transport"),
+        "PX00140" => ("Local-setup control sheet", "Local setup"),
+        "PX00143" => ("Local objective/player setup canvas", "Local setup"),
+        "PX00144" => ("Legacy network host lobby", "Unsupported original transport"),
+        "PX00145" => ("Legacy compact session editor", "Unsupported original transport"),
+        "PX00146" => ("Legacy participant-ready screen", "Unsupported original transport"),
+        "PX00150" => ("City site-marker sheet", "Search and city marker renderer"),
+        "PX00200" => ("Endgame awards/statistics frame", "Endgame"),
+        "PX00201" => ("Endgame award and statistics sprites", "Endgame"),
+        "PX00202" => ("Single-human victory splash", "Endgame"),
+        "PX00203" => ("Private elimination splash", "Endgame and hot-seat elimination"),
+        "PX00300" => ("Police combat sprite sheet", "Combat compositor"),
+        "PX02000" => ("Site portrait strip", "Site, sector, Search, and event panels"),
+        "PX03000" => ("Gang portrait grid", "Gang, sector, hire, and combat panels"),
+        _ => null
+    };
+
+    private static string DescribePx16Copy(bool keyedCopy, bool mixedCopy, bool opaqueBaseScreen, bool opaqueBlackCopy)
     {
         if (keyedCopy) return "RGB555; native exact maximum-white key";
         if (mixedCopy) return "RGB555; native mixed opaque, pattern-mask, and exact-white copies";
+        if (opaqueBaseScreen) return "RGB555; opaque base screen";
         if (opaqueBlackCopy) return "RGB555; native opaque copy (black retained)";
         return "RGB555; color key unresolved";
     }
 
-    private static string DescribePx08Copy(bool keyedCopy, bool mixedCopy, bool opaqueBlackCopy, bool decoded)
+    private static string DescribePx08Copy(
+        bool keyedCopy, bool mixedCopy, bool opaqueBaseScreen, bool opaqueBlackCopy, bool decoded)
     {
         var palette = decoded ? "Embedded 256-entry BGRA palette" : "Embedded indexed palette";
         if (keyedCopy) return $"{palette}; native exact white key";
         if (mixedCopy) return $"{palette}; native mixed opaque, pattern-mask, and exact-white copies";
+        if (opaqueBaseScreen) return $"{palette}; opaque base screen";
         if (opaqueBlackCopy) return $"{palette}; native opaque copy (black retained)";
         return decoded
             ? "Embedded 256-entry BGRA palette; transparency unresolved"
