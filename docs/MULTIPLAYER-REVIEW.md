@@ -1,6 +1,6 @@
 # Multiplayer implementation review: robustness and efficiency
 
-Status: review, findings open
+Status: findings addressed
 Last updated: 2026-09-20
 
 A code review of online play as implemented: the coordination server under
@@ -11,9 +11,15 @@ does it cost. The design is in [MULTIPLAYER.md](MULTIPLAYER.md) and is not re-ar
 findings are about the implementation of that design, and every one was checked against the source
 before it was written down.
 
-Each finding names the code, says what it does today, gives the concrete failure or cost, and
-recommends a change. Severity is about consequence to a running match, not about how hard the fix
-is. Line numbers are as of the commit this review was written against.
+Each finding names the code, says what it did, gives the concrete failure or cost, and recommends a
+change. Severity is about consequence to a running match, not about how hard the fix is. Line
+numbers are as of the commit this review was written against.
+
+**Every finding below has been addressed**, in the order the closing section recommends. The
+findings are kept in the present tense they were written in, because they are the record of what was
+wrong and why it mattered; what each one led to is summarised under [Resolution](#resolution), and
+the code carries the reasoning at the place it applies. Two recommendations were not followed as
+written, and both are named there.
 
 <!-- doc-index:begin toc depth=3 -->
 - [Verdict](#verdict)
@@ -46,6 +52,12 @@ is. Line numbers are as of the commit this review was written against.
 - [The TypeScript client](#the-typescript-client)
 - [Test coverage gaps](#test-coverage-gaps)
 - [Recommended order of work](#recommended-order-of-work)
+- [Resolution](#resolution)
+  - [High](#high)
+  - [Server](#server)
+  - [Client](#client)
+  - [Where the review was not followed](#where-the-review-was-not-followed)
+  - [Test coverage](#test-coverage)
 <!-- doc-index:end -->
 
 ## Verdict
@@ -765,3 +777,91 @@ cover, and what the findings above would want:
 7. **C1**: periodic checkpoint snapshots and concurrent sealed-set prefetch.
 8. **S4, S5, S9, S10, C4** as ordinary hardening, then the remaining items in S6, S11 and C7 as the
    surrounding code is next touched.
+
+## Resolution
+
+Worked through in the order above. The wire moved twice — protocol version 10 to 12 — and the
+session version did not: nothing about a stored match's shape or its resolution changed, so no match
+in progress was retired for any of it.
+
+### High
+
+**R1** is answered on both sides. The server now requires a repair to name a turn whose status is
+`desynced`, which closes the hole the sealed successor left: it carries no reports, so
+`authoritativeCandidates` had nothing to count for it and the host could store any hash it liked,
+after which the verdict could only confirm or wait. A repair may also be posted by whoever holds
+the *sole* most-reported hash rather than by the host alone — the only thing that could ever fix a
+desync the host is itself the outlier of — while a tie still belongs to the host, so a two-player
+match is not handed to whoever uploads first.
+
+The client no longer offers whatever hash it happens to be standing on. It works out the state as
+it stood *after* the disputed turn, rebuilding it from the newest snapshot at or below that turn
+plus the sealed sets on top when the match has moved past it. A restart during a pause carries the
+divergence out of the event history and acts on it; a client that comes back after a repair was
+posted adopts it *and reports the hash it adopted*, which the old path loaded but never said. A
+client that cannot repair waits, and says so, rather than ending its session.
+
+**R2**'s three places are all resynchronisations now. The resolution watchdog asks the session to
+rebuild from the log rather than tearing it down, with its grace set above the stream's own idle
+detector plus a reconnect — it used to fire twenty seconds before the mechanism that fixes the
+thing it watches for. A closed retry window says how long it has been trying and opens another,
+which is what the outbox on the same session always did; a caller that owns the whole match and has
+somewhere to report to sets `StreamOutageBudget` to keep the old bound, and the headless smoke test
+does. And terminality now requires the server's own error envelope, so a proxy answering 404 or 403
+for every path while the backend restarts is an outage rather than a verdict.
+
+### Server
+
+**S1** and **S2** are compare-and-swaps: `turns.freezeSeal` is conditional on the set not being
+frozen, not on a status that does not change across the window, and `remove` swaps a seat's status
+instead of writing it. **S3** put the divergence announcement on the turn row beside the seal's
+digest and gave the verdict a snapshot summary, so a paused match costs a few indexed reads rather
+than a megabyte of base64 and a scan of its whole event log. **S4** publishes readiness on a change.
+**S5** windows the sweep to matches something has happened to and folds the public listing into two
+queries. **S6**'s items each landed: capacity inside `createLate`'s insert, a conditional
+`upsertReport`, the versions of a re-uploaded snapshot, jittered backoff in `append`, and a
+re-check of the prompts after the clock restarts.
+
+**S7** is `MatchLog`: the read, the validation and the serialisation of one event happen once for
+the match rather than once per reader, the notification carries the event so a healthy stream never
+reads at all, and a caught-up heartbeat asks nothing. **S8** validates the handler's own object
+instead of cloning and re-parsing the body. **S9** spends the journal budget in the handler, after
+validation and only for a report that carries a journal. **S10** takes the received value back out
+of valibot's default message, which the stripped fields did not cover. **S11**'s items landed, from
+the stream's `X-Request-Id` to a per-match budget in front of PBKDF2 and a deployment that says so
+in its own logs when it has no cron trigger.
+
+### Client
+
+**C1** is checkpoints every ten confirmed turns plus a concurrent prefetch of the sealed sets a
+replay needs. **C3** builds the planning copy on the pump and stops fsyncing the recovery file for
+a stamp whose loss costs the order of a list. **C4** requires a connection to last a heartbeat
+before a keepalive counts as proof. **C5** takes the countdown against the server's clock. **C6**
+re-establishes the handshake on every reconnect. **C7**'s items each landed.
+
+The TypeScript client got a connect-phase deadline, a size cap on the error body, full-window
+backoff jitter, and a README that says what it does and does not implement.
+
+### Where the review was not followed
+
+Two recommendations were changed on the evidence:
+
+- **C2** says the speculative copy's journal is never used and recommends dropping it. It is used:
+  `MatchActions.Journal` hands that recorder to a bug report filed from an online match, because
+  the turn being planned is the only history that client is the authority on. Dropping it would
+  have stripped those reports of their most useful field without saying so. The verification half
+  of the recommendation — skipping the per-step re-hash, which checks an aliasing invariant a
+  single-owner copy cannot violate — is taken, and halves what a click costs.
+- **S6**'s note that duplicate events beyond readiness should either be gated or documented is
+  answered by gating the two that matter (S1's seal and S3's divergence) and leaving the rest as
+  at-least-once delivery, which is what the design already promises and what every handler on both
+  clients is written for.
+
+### Test coverage
+
+The gaps the review lists are covered, each by a test that fails against the code as it was: a
+forced two-caller seal completion with a roster change between the steps, the four desync scenarios
+end to end, the session's behaviour at each of R2's three boundaries, the one-frame-then-close
+cadence, the sealed-set prefetch, and query-count budgets for a submission, a paused match's
+re-judgement, the sweep, the public listing and the stream fan-out. `tools/OnlineSmoke` is still
+not in CI, and a nightly two-runtime smoke remains the one item on that list left open.
