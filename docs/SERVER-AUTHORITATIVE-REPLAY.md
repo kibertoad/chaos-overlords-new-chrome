@@ -69,6 +69,20 @@ means one named client disagrees with the rules, a snapshot is something the ser
 than accepts, and the stored match is valid by construction because every row in it was derived by
 replaying validated orders through the rules.
 
+The code review in [MULTIPLAYER-REVIEW.md](MULTIPLAYER-REVIEW.md) reaches the same gaps from the
+implementation side. Its highest finding,
+[R1](MULTIPLAYER-REVIEW.md#r1-desync-repair-only-works-on-a-live-host-inside-a-narrow-window), is
+that a desync can be repaired only by a host that is online, saw the live event and has not yet
+applied the following turn; its client finding
+[C1](MULTIPLAYER-REVIEW.md#c1-a-reconnect-replays-the-whole-match-from-turn-0-one-round-trip-per-turn)
+is that a reconnect at turn 80 replays 80 turns because only turn 0 was ever snapshotted; and
+[S3](MULTIPLAYER-REVIEW.md#s3-a-paused-match-is-re-judged-every-sweep-with-a-log-scan-and-a-megabyte-read-each-time)
+is the sweep re-reading a megabyte snapshot to judge a paused match. All three are properties of a
+server that cannot produce state. With a checkpoint per resolved turn written by the server itself,
+there is no host to wait for, every reconnect starts from the previous turn, and a verdict is a
+comparison of two stored hashes. The review's own recommended fixes for those findings remain the
+right interim work on the current model; this design is what makes them unnecessary.
+
 What it deliberately does not close is stated in
 [What this does and does not defend against](#what-this-does-and-does-not-defend-against): a modified
 client still holds the full state and can still read fog it should not see. Removing that requires
