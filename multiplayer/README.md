@@ -272,10 +272,10 @@ name the workflow as a trusted publisher on npmjs.com first (*Settings → Trust
 repository, workflow `multiplayer-publish.yml`), and the very first release of a new package name has
 to be pushed by hand — a package that does not exist yet cannot have a trusted publisher. That
 binding is to the workflow's filename, which is why releasing lives in the publishing workflow rather
-than a second one that drives it. The OIDC exchange is npm's own and arrived in npm 11.5.1, so the
-publishing job alone runs on Node 24 for the npm it carries — the Node 22 line the rest of the
-repository builds on is still on npm 10, which has no exchange at all — and it checks that version
-before it publishes rather than letting a missing exchange surface as a credential error.
+than a second one that drives it. `pnpm publish` performs the exchange itself, so the publishing job
+installs pnpm and nothing else — no Node, no `.npmrc`, no token — and hands each rehearsed tarball
+straight to it. Its pnpm version is pinned to the one the rehearsal packed with rather than ranged,
+because the exchange is young enough that a release is the wrong place to meet a regression in it.
 
 `pnpm publish:dry-run` does the pack locally without a registry, and prints what each tarball would
 contain. What goes into a tarball is `files` in each manifest; `prepublishOnly` builds the package,

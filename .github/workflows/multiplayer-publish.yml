@@ -200,7 +200,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           # Pinned here rather than read from a `packageManager` field: that field drives corepack,
           # which is deprecated and gone in newer Node. `devEngines.packageManager` records the same
@@ -266,9 +266,9 @@ jobs:
           retention-days: 1
 
   # The only job with an OIDC identity, and it runs no repository code at all: it downloads the
-  # tarballs the job above produced and hands each one to `npm publish`. `npm publish <tarball>`
-  # runs no lifecycle scripts from the package, so what reaches the registry is exactly the bytes
-  # that were rehearsed and tested.
+  # tarballs the job above produced and hands each one to `pnpm publish`. Publishing a tarball runs
+  # no lifecycle scripts from the package, so what reaches the registry is exactly the bytes that
+  # were rehearsed and tested.
   publish:
     name: Publish to npm
     needs: [prepare, verify]
@@ -280,34 +280,16 @@ jobs:
       contents: read
       id-token: write # Required for npm trusted publishing and provenance attestations.
     steps:
-      # Node 24 rather than the 22 the rest of the repository builds on, for the npm it carries: the
-      # OIDC exchange below is npm's own and arrived in npm 11.5.1, and the Node 22 line is still on
-      # npm 10, which has no exchange at all. There it would read the `${NODE_AUTH_TOKEN}` line
-      # `registry-url` writes, find nothing to expand into it, and fail the publish unauthenticated.
-      # This job runs no repository code, so nothing else here is built or tested on that Node.
-      #
-      # (The rest of the release is pnpm's — the rehearsal and the pack above both are — and only the
-      # registry call is npm's. `pnpm publish` delegated that to the npm CLI until pnpm 11 took it
-      # over and broke the OIDC exchange with it, so the seconds that spend the credential stay on
-      # npm's own reference path.)
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      # The same pnpm the rehearsal and the pack ran on, and it is the whole toolchain this job
+      # needs: pnpm 12 ships a native executable and performs the OIDC exchange itself, so no Node
+      # is set up here and no `.npmrc` is written. The version is pinned rather than ranged because
+      # the exchange is young: pnpm 11 took the registry protocol over from the npm CLI and broke it
+      # for a few releases, and a job that only ever runs at release time is the wrong place to find
+      # that out. It is the version the verify job packed with.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
-          node-version: 24
-          package-manager-cache: false
-          registry-url: https://registry.npmjs.org
-
-      # Which npm a Node line carries is the Node release's business and can move under this job, so
-      # the requirement is checked rather than assumed: a publish that starts without the exchange
-      # fails as a credential error, which reads like a misconfigured trusted publisher.
-      - name: Check npm can publish with OIDC
-        run: |
-          version="$(npm --version)"
-          if [[ "$(printf '%s\n' 11.5.1 "$version" | sort -V | head -n 1)" != 11.5.1 ]]; then
-            echo "::error::npm $version predates trusted publishing; npm 11.5.1 or later is required." >&2
-            exit 1
-          fi
-          echo "Publishing with npm $version."
+          version: 12.5.1
 
       - name: Download the release tarballs
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -328,10 +310,11 @@ jobs:
             echo
           } >> "$GITHUB_STEP_SUMMARY"
           for tarball in "${tarballs[@]}"; do
-            # `./` matters: a bare `tarballs/name.tgz` is not a path to npm, it is the GitHub
-            # shorthand `owner/repo`, and `npm publish` resolved it as one — the 0.9.4 release died
-            # on `git ls-remote ssh://git@github.com/tarballs/...tgz.git` before it published a byte.
-            npm publish "./$tarball" --provenance --access public
+            # Kept as an explicit `./` path: pnpm reads a bare `tarballs/name.tgz` as a path too, but
+            # npm, which published these before, read it as the GitHub shorthand `owner/repo` — the
+            # 0.9.4 release died on `git ls-remote ssh://git@github.com/tarballs/...tgz.git` before
+            # it published a byte.
+            pnpm publish "./$tarball" --provenance --access public --no-git-checks
             echo "- \`$(basename "$tarball")\`" >> "$GITHUB_STEP_SUMMARY"
           done
 
