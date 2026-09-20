@@ -64,6 +64,8 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
 
   /** Wake every stream of a match; used when the notification arrives without the event body. */
   wake(matchId: string): void {
+    // Snapshot deliberately: waking a stream can close it, which mutates the set being walked.
+    // oxlint-disable-next-line unicorn/no-useless-spread
     for (const subscription of [...(this.listeners.get(matchId) ?? [])]) subscription.wake()
   }
 
@@ -75,6 +77,8 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
    * (which names each player's state hash) and every host change until they choose to disconnect.
    */
   async close(input: { matchId: string; playerId: string }): Promise<void> {
+    // Snapshot deliberately: `close()` removes the subscription from the set being walked.
+    // oxlint-disable-next-line unicorn/no-useless-spread
     for (const subscription of [...(this.listeners.get(input.matchId) ?? [])]) {
       if (subscription.playerId === input.playerId) subscription.close()
     }

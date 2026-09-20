@@ -15,29 +15,43 @@ import type { AppEnv } from './types'
 export function handleError(error: Error, c: Context<AppEnv>): Response {
   const requestId = c.get('requestId')
   if (isDomainError(error)) {
-    return respond(c, error.code, error.message, error.details, requestId)
+    return respond(c, {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      requestId,
+    })
   }
   if (error instanceof SchemaValidationError) {
     // The contract validator refused a path param, a query value or the body. The issue paths and
     // messages come straight from valibot rather than being restated per endpoint, so a client is
     // told which field it got wrong.
-    return respond(
-      c,
-      'validation_failed',
-      'Request failed contract validation',
-      { reason: 'invalid_request', issues: error.issues.map(describeIssue) },
+    return respond(c, {
+      code: 'validation_failed',
+      message: 'Request failed contract validation',
+      details: { reason: 'invalid_request', issues: error.issues.map(describeIssue) },
       requestId,
-    )
+    })
   }
   if (error instanceof HTTPException) {
     const code = codeForStatus(error.status)
-    return respond(c, code, error.message || code, { reason: `http_${error.status}` }, requestId)
+    return respond(c, {
+      code,
+      message: error.message || code,
+      details: { reason: `http_${error.status}` },
+      requestId,
+    })
   }
   c.get('container')?.kernel.deps.logger.error('unhandled request error', {
     requestId,
     error: error.stack ?? String(error),
   })
-  return respond(c, 'internal', 'Internal server error', { reason: 'internal' }, requestId)
+  return respond(c, {
+    code: 'internal',
+    message: 'Internal server error',
+    details: { reason: 'internal' },
+    requestId,
+  })
 }
 
 /**
@@ -79,13 +93,15 @@ function codeForStatus(status: number): ErrorCode {
   return CODE_BY_STATUS[status] ?? 'internal'
 }
 
-function respond(
-  c: Context<AppEnv>,
-  code: ErrorCode,
-  message: string,
-  details: NonNullable<ErrorEnvelope['error']['details']>,
-  requestId: string,
-): Response {
+/** The parts of the envelope a caller supplies; the response status follows from `code`. */
+interface ErrorBody {
+  code: ErrorCode
+  message: string
+  details: NonNullable<ErrorEnvelope['error']['details']>
+  requestId: string
+}
+
+function respond(c: Context<AppEnv>, { code, message, details, requestId }: ErrorBody): Response {
   const body: ErrorEnvelope = { error: { code, message, details, requestId } }
   return c.json(validateSync(errorEnvelopeSchema, body), STATUS_BY_CODE[code] as 400)
 }
