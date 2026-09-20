@@ -1,6 +1,10 @@
 # Nothing proposed updates for the SHA-pinned actions, the pinned Postgres image, the NuGet
 # packages or the npm workspace, so every one of them moved only when somebody happened to touch it.
 # Weekly, grouped, so a release is not preceded by nine separate bumps.
+#
+# `cooldown` holds every proposal back for a week after the version is published, which is the
+# window a compromised release is usually pulled in; zizmor's `dependabot-cooldown` audit fails the
+# configuration without it.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -10,6 +14,8 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: nuget
     directory: /
@@ -18,6 +24,8 @@ updates:
     groups:
       dotnet:
         patterns: ["*"]
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: npm
     directory: /multiplayer
@@ -26,8 +34,16 @@ updates:
     groups:
       multiplayer:
         patterns: ["*"]
+    cooldown:
+      default-days: 7
 
-  - package-ecosystem: docker
+  # `docker-compose`, not `docker`: the only image this repository pins outside the workflows is the
+  # Postgres service in `multiplayer/docker-compose.yml`, and there is no Dockerfile anywhere. The
+  # `docker` ecosystem reads Dockerfiles and Kubernetes manifests only, so it failed every run with
+  # "No Dockerfiles nor Kubernetes YAML found in /multiplayer" and the image was never offered.
+  - package-ecosystem: docker-compose
     directory: /multiplayer
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7

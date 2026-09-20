@@ -53,8 +53,9 @@ jobs:
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
         with:
           # Pinned here rather than read from a `packageManager` field: that field drives corepack,
-          # which is deprecated and gone in newer Node. `devEngines.packageManager` records the
-          # same floor for humans and turbo.
+          # which is deprecated and gone in newer Node. `devEngines.packageManager` records the same
+          # version for humans and turbo, and names it exactly rather than as a range: corepack, which
+          # Dependabot's updater still runs, refuses a range in that field outright.
           version: 12.5.1
 
       - name: Set up Node.js
