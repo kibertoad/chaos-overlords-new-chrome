@@ -163,31 +163,44 @@ public static class MultiplayerRecoveryStore
     public static MultiplayerRecovery? Load(string path)
         => LoadAll(path).FirstOrDefault();
 
+    /// <summary>How many times a read that could not open the file is tried again, and how far apart.</summary>
+    /// <remarks>
+    /// A backup tool or a virus scanner holding the file open for a moment is the whole of what
+    /// this covers, and a moment is what it waits. Two retries at 25ms is bounded at 50ms on a
+    /// startup path, and the alternative is a player being shown no previous sessions.
+    /// </remarks>
+    private const int ReadAttempts = 3;
+
+    private static readonly TimeSpan ReadRetryDelay = TimeSpan.FromMilliseconds(25);
+
     /// <summary>
     /// The memberships on file, or none when the file cannot be read.
     /// </summary>
     /// <remarks>
-    /// A file this cannot read is MOVED ASIDE rather than left where the next save will overwrite
-    /// it. It holds live seats in running matches, and "the parse threw" is not the same fact as
-    /// "there are no seats": a partial write from a build that crashed, a file half-synced by a
-    /// backup tool, or a format from a build newer than this one all arrive here, and a player who
-    /// updates the game again would get their matches back — if the file still existed. It is kept
-    /// beside the original with a <c>.corrupt</c> suffix, and the last good file this writes is
-    /// kept as <c>.bak</c>, so both are there for a later build or for a hand repair.
+    /// <para>
+    /// A file whose CONTENTS this cannot read is MOVED ASIDE rather than left where the next save
+    /// will overwrite it. It holds live seats in running matches, and "the parse threw" is not the
+    /// same fact as "there are no seats": a partial write from a build that crashed, a file
+    /// half-synced by a backup tool, or a format from a build newer than this one all arrive here,
+    /// and a player who updates the game again would get their matches back — if the file still
+    /// existed. It is kept beside the original with a <c>.corrupt</c> suffix, and the last good file
+    /// this writes is kept as <c>.bak</c>, so both are there for a later build or for a hand repair.
+    /// </para>
+    /// <para>
+    /// Failing to READ the bytes at all is the opposite fact and is handled the opposite way. A
+    /// backup tool or a virus scanner holding the file open answers with an <see cref="IOException"/>
+    /// that says nothing whatever about what the file holds, and a moment later the same file reads
+    /// perfectly — so it is retried briefly and then left exactly where it is. Renaming it to
+    /// <c>.corrupt</c> over a transient lock took a player's live seats off the previous-sessions
+    /// screen and out of the only file that knew about them.
+    /// </para>
     /// </remarks>
     public static IReadOnlyList<MultiplayerRecovery> LoadAll(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        if (ReadBytesOrNull(path) is not { } bytes) return [];
         try
         {
-            var file = new FileInfo(path);
-            if (!file.Exists) return [];
-            if (file.Length > MaximumFileBytes)
-            {
-                SetAside(path);
-                return [];
-            }
-            var bytes = File.ReadAllBytes(path);
             using var document = JsonDocument.Parse(bytes);
             if (document.RootElement.TryGetProperty("Sessions", out _))
             {
@@ -206,8 +219,40 @@ public static class MultiplayerRecoveryStore
         }
         catch
         {
+            // The bytes are here and they are not a history this build can make sense of.
             SetAside(path);
             return [];
+        }
+    }
+
+    /// <summary>
+    /// The file's bytes, or null when there are none to parse.
+    /// </summary>
+    /// <remarks>
+    /// Three ways to have nothing, and only one of them says anything about the contents: there is
+    /// no file, the file is far too large to be one of these — set aside here, where its size was
+    /// measured — or the read itself would not go through, which is retried and then left alone.
+    /// </remarks>
+    private static byte[]? ReadBytesOrNull(string path)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                var file = new FileInfo(path);
+                if (!file.Exists) return null;
+                if (file.Length > MaximumFileBytes)
+                {
+                    SetAside(path);
+                    return null;
+                }
+                return File.ReadAllBytes(path);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                if (attempt >= ReadAttempts) return null;
+                Thread.Sleep(ReadRetryDelay);
+            }
         }
     }
 

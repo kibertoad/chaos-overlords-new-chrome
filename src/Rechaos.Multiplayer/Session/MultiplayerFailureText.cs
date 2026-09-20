@@ -21,6 +21,8 @@ public static class MultiplayerFailureText
         {
             MultiplayerApiException api when IsMembershipRevoked(api) => "You are no longer in this match.",
             MultiplayerApiException { Reason: "turn_not_open" } => "That turn has already sealed.",
+            MultiplayerApiException { Reason: "not_active" } =>
+                "Your seat is not being played by you at the moment.",
             MultiplayerApiException { Reason: "unknown_match" } => "No match with that code.",
             MultiplayerApiException { Reason: "match_full" } => "That lobby is full.",
             MultiplayerApiException { Reason: "host_only" } => "Only the host can do that.",
@@ -49,13 +51,24 @@ public static class MultiplayerFailureText
     /// Reasons this server's own error handler uses when a seat's membership is gone.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Named here so the stream, the outbox and the recovery file all answer the question the same
     /// way. Each is written by exactly one place in the kernel: the token no longer resolves, the
     /// match it named is gone, or the seat is no longer one this player holds.
+    /// </para>
+    /// <para>
+    /// <c>not_active</c> is deliberately NOT one of them. It says the seat is not the one the
+    /// server is taking this write from right now — it was voted onto computer control while the
+    /// player slept, or they left — and the kernel's own <c>rejoin</c> turns away nobody but the
+    /// kicked, whose token is revoked anyway. Counting it here ended the session in the outbox and
+    /// deleted a live seat from the recovery file, while <c>ReportAsync</c> swallowed the same 403
+    /// and kept the client watching the match: the two paths disagreed about whether the player
+    /// was still there.
+    /// </para>
     /// </remarks>
     private static readonly string[] MembershipReasons =
     [
-        "revoked", "invalid_token", "missing_token", "unknown_match", "unknown_player", "not_active",
+        "revoked", "invalid_token", "missing_token", "unknown_match", "unknown_player",
     ];
 
     /// <summary>

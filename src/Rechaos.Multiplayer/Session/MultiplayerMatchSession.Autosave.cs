@@ -31,8 +31,39 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private const int CheckpointEveryTurns = 10;
 
-    private Task UploadInitialSnapshotAsync(CancellationToken cancellationToken) =>
-        UploadSnapshotAsync(0, MatchStateHasher.ComputeSha256(_replay.State), cancellationToken);
+    /// <summary>
+    /// Writes the host's turn-0 bootstrap snapshot, if this client still owes one.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It is worth sending: it opens the late-join door and it is the oldest thing a reconnect can
+    /// replay from. But nothing on this client is waiting for it, and the window the server accepts
+    /// it in can close while this client is standing in it — a turn-0 upload is a bootstrap only
+    /// while the match is on turn 1, and once turn 1 seals the same request is answered
+    /// <c>unknown_turn</c>. Ending the session on that would cost the player the match to save the
+    /// next reconnect a few seconds, so it is treated like a checkpoint: try, and carry on.
+    /// </para>
+    /// <para>
+    /// Nothing is lost by carrying on. A restore re-arms this while the match is still on turn 1,
+    /// and once it is not, a checkpoint is what late join and the next reconnect read instead.
+    /// </para>
+    /// </remarks>
+    private async Task UploadBootstrapSnapshotIfDueAsync(CancellationToken cancellationToken)
+    {
+        if (!_uploadInitialSnapshot) return;
+        _uploadInitialSnapshot = false;
+        try
+        {
+            await UploadSnapshotAsync(
+                    0, MatchStateHasher.ComputeSha256(_replay.State), cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is MultiplayerApiException
+            or MultiplayerProtocolException or RetryExhaustedException)
+        {
+            // See above: a bootstrap nobody is waiting on.
+        }
+    }
 
     /// <summary>
     /// Writes a checkpoint of a turn the match has just confirmed, if one is due.

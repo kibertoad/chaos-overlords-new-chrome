@@ -58,6 +58,7 @@ written, and both are named there.
   - [Client](#client)
   - [Where the review was not followed](#where-the-review-was-not-followed)
   - [Test coverage](#test-coverage)
+  - [Review of the changes](#review-of-the-changes)
 <!-- doc-index:end -->
 
 ## Verdict
@@ -874,3 +875,37 @@ end to end, the session's behaviour at each of R2's three boundaries, the one-fr
 cadence, the sealed-set prefetch, and query-count budgets for a submission, a paused match's
 re-judgement, the sweep, the public listing and the stream fan-out. `tools/OnlineSmoke` is still
 not in CI, and a nightly two-runtime smoke remains the one item on that list left open.
+
+### Review of the changes
+
+A second pass over the diff found five places where the changes above had themselves introduced a
+way to lose a session or a seat. All five are on the game client, and each is now covered by a test
+that fails against the code as it was.
+
+- **The resync request could latch.** `RequestResync` sets a flag and cancels the stream cycle, but
+  there are stretches with no cycle to cancel — the restore at startup, and the rebuild between two
+  cycles. A request landing in one set the flag against nothing, so no restart cleared it, so every
+  later request was turned away as a duplicate: the resolution watchdog R2 introduced was
+  permanently disabled in exactly the dead-but-open-stream case it exists for. The pump reads the
+  flag after publishing each cycle, which closes the window from the other side.
+- **The planning copy was built where it could not be refused.** C3 moved it onto the pump, where
+  `SpeculativeTurn`'s refusal to plan on a state outside Command is an `InvalidOperationException`
+  the catch-all turns into a failed session. The interface has always had a graceful way to stand
+  down from such a state, and it reaches it by being handed no planning copy — the same way it is
+  told a match is over — so the pump asks that question before it builds one.
+- **`not_active` is not a revoked membership.** It says the seat is not the one the server is
+  taking this write from right now: voted onto computer control while the player slept, or left.
+  The kernel's own `rejoin` turns away nobody but the kicked, whose token is revoked instead.
+  Counting it among the membership reasons made the outbox end the session and the recovery file
+  delete a live seat, while `ReportAsync` deliberately swallowed the same 403 and kept the client
+  watching; the two paths now agree, and the outbox marks the seat rather than rethrowing.
+- **An unreadable recovery file is not a corrupt one.** A backup tool or a virus scanner holding
+  the file open raises the same `IOException` a shredded file would, and says nothing about what
+  the file holds. The catch-all renamed it to `.corrupt` over a lock that was gone a second later.
+  Failing to *read* the bytes is now retried briefly and then left alone; only bytes that are here
+  and are not a history are moved aside.
+- **The bootstrap snapshot is not worth a match.** The server takes a turn-0 upload only while the
+  match is on turn 1 and answers `unknown_turn` afterwards — a window a client can be standing in
+  when it closes, now that a restoring host arms the upload too. It is treated like a checkpoint:
+  tried, and carried on from. A restore re-arms it while the match is still on turn 1, and after
+  that a checkpoint is what late join and the next reconnect read instead.

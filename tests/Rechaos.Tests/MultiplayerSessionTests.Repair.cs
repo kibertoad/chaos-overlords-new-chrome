@@ -198,6 +198,69 @@ public sealed partial class MultiplayerSessionTests
         Assert.NotEqual(ours, resynced.StateHash);
     }
 
+    /// <summary>
+    /// A repair this client cannot plan on stands the interface down rather than ending the session.
+    /// </summary>
+    /// <remarks>
+    /// The server stores snapshot bytes it never decodes, so what comes back is whatever state a
+    /// peer put there — and a state that is neither finished nor at a Command boundary is one
+    /// `SpeculativeTurn` refuses to plan on. Refusing on the PUMP is an `InvalidOperationException`
+    /// the catch-all turns into a failed session; the interface has always had a graceful way to
+    /// stand down from that state, and it reaches it by being handed no planning copy. The state
+    /// used here is the bootstrap before `CommandPhase.Enter`: in Upkeep, and not over.
+    /// </remarks>
+    [Fact]
+    public async Task ARepairThisClientCannotPlanOnIsAdoptedWithoutAPlanningCopy()
+    {
+        var (session, server, http) = Running();
+        using var _ = http;
+        await using var __ = session;
+        await Until(() => server.CallsTo(HttpMethod.Post, "/snapshots") == 1, "the initial snapshot");
+        await ResolveTurnOneAsync(session, server);
+        var seen = new List<MultiplayerNotice>();
+
+        server.Events.Write(Frame(9, "turn.desynced", Desync(new string('7', 64))));
+        await WaitFor<MultiplayerNotice.Desynced>(session, seen);
+
+        var repaired = RepairBeforeTheCommandPhase();
+        server.Answer(HttpMethod.Get, "/snapshots/1", repaired);
+        server.Events.Write(Frame(
+            10,
+            "snapshot.available",
+            $"{{\"turn\":1,\"formatVersion\":{NativeSaveSerializer.CurrentFormatVersion},"
+            + $"\"stateHash\":\"{repaired.StateHash}\",\"uploadedByPlayerId\":\"p2\"}}"));
+
+        var resynced = await WaitFor<MultiplayerNotice.Resynced>(session, seen);
+
+        Assert.Equal(repaired.StateHash, resynced.StateHash);
+        Assert.Null(resynced.Planning);
+        Assert.NotEqual(TurnPhase.Command, resynced.State.Coordinator.Phase);
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
+    }
+
+    /// <summary>
+    /// A repair whose state stopped short of a Command phase, and is not a finished match either.
+    /// </summary>
+    /// <remarks>
+    /// The bootstrap the generator produces, before <c>CommandPhase.Enter</c> walks it into the
+    /// first turn's Command: the one state this harness can build that is genuinely unplannable
+    /// without being over.
+    /// </remarks>
+    private static SnapshotView RepairBeforeTheCommandPhase()
+    {
+        var state = MatchBootstrapFactory.Create(
+            BundledOriginalData.Load(), Seed, GameSettings, Roster);
+        return new SnapshotView(
+            1,
+            NativeSaveSerializer.CurrentFormatVersion,
+            MultiplayerProtocolVersion.Current,
+            MultiplayerSessionVersion.Current,
+            MatchStateHasher.ComputeSha256(state),
+            "p2",
+            "2026-09-10T12:03:00.000Z",
+            MatchStateClone.ToBase64(state));
+    }
+
     /// <summary>The bootstrap snapshot as the host itself would have uploaded it.</summary>
     private static SnapshotView BootstrapSnapshot(MultiplayerMatchSession session) => new(
         0,

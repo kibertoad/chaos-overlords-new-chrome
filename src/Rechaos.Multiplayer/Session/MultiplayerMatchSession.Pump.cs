@@ -60,11 +60,7 @@ public sealed partial class MultiplayerMatchSession
     /// </remarks>
     private async Task PumpAsync(CancellationToken cancellationToken)
     {
-        if (_uploadInitialSnapshot)
-        {
-            await UploadInitialSnapshotAsync(cancellationToken).ConfigureAwait(false);
-            _uploadInitialSnapshot = false;
-        }
+        await UploadBootstrapSnapshotIfDueAsync(cancellationToken).ConfigureAwait(false);
         // How long the stream has been down across consecutive windows, reset by any connection
         // that opens. Only `_streamOutageBudget` ends the session over it; see the option.
         var outage = new System.Diagnostics.Stopwatch();
@@ -77,7 +73,14 @@ public sealed partial class MultiplayerMatchSession
             var restart = false;
             try
             {
-                restart = await ReadStreamCycleAsync(outage, cycle.Token).ConfigureAwait(false);
+                // The flag is read AFTER the cycle is published, which is what closes the window
+                // `RequestResync` cannot cancel its way out of: a request that arrives while no
+                // cycle is registered — during the restore above, or between two cycles — finds
+                // null and only sets the flag, and a request that arrives after this point
+                // cancels the cycle. Reading it here catches the first case; without it the flag
+                // stayed latched at 1 and every later resync request was a permanent no-op.
+                restart = Volatile.Read(ref _resyncRequested) != 0
+                    || await ReadStreamCycleAsync(outage, cycle.Token).ConfigureAwait(false);
             }
             catch (RetryExhaustedException exhausted)
                 when (TransientFailure.CanRetryAfterExhaustion(exhausted))
@@ -106,6 +109,9 @@ public sealed partial class MultiplayerMatchSession
             if (!restart) return;
             if (Interlocked.Exchange(ref _resyncRequested, 0) != 0) outage.Reset();
             if (!await RestoreAsync(_resumeAfterSeq, cancellationToken).ConfigureAwait(false)) return;
+            // The restore re-arms the bootstrap upload for a host that never completed one, so it
+            // is offered again here rather than only on the way into the loop.
+            await UploadBootstrapSnapshotIfDueAsync(cancellationToken).ConfigureAwait(false);
             outage.Reset();
             attemptsThisOutage = 0;
             _streamLane.Recovered();

@@ -547,9 +547,18 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     {
         var state = MatchStateClone.Of(_replay.State, _definitions);
         // A turn that ended the match leaves no turn to plan, and the interface shows the endgame
-        // from the state alone.
-        return (state, state.Outcome is null ? SpeculativeTurn.For(state, _definitions, Slot) : null);
+        // from the state alone. So does a state that stopped anywhere but Command: `SpeculativeTurn`
+        // refuses to plan on one, and refusing HERE is an `InvalidOperationException` on the pump,
+        // which the catch-all turns into a failed session. The interface has always had a way to
+        // stand down from that state gracefully — it says the match reached one this client cannot
+        // play on — and it reaches that way by being handed no planning copy, exactly as it is at
+        // the end of a match.
+        return (state, IsPlannable(state) ? SpeculativeTurn.For(state, _definitions, Slot) : null);
     }
+
+    /// <summary>Whether there is a turn on this state for the local seat to plan.</summary>
+    private static bool IsPlannable(MatchState state) =>
+        state.Outcome is null && state.Coordinator.Phase == TurnPhase.Command;
 
     private PendingTakeoverVote BeginTakeoverVote(string playerId, int turn)
     {
@@ -631,6 +640,14 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             + MultiplayerSessionVersion.Current);
     }
 
+    /// <summary>Set once the other players have voted this client's own seat onto the computer.</summary>
+    /// <remarks>
+    /// Written by the pump — from the takeover event, and from a report the roster moved under —
+    /// and by the outbox, which meets the same 403 on a submission, hence <c>volatile</c>. Losing
+    /// the race costs one more request that is refused the same way.
+    /// </remarks>
+    private volatile bool _ownSeatIsComputerControlled;
+
     /// <summary>
     /// Reports this client's state hash for a settled turn.
     /// </summary>
@@ -642,9 +659,6 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// whose response was lost and therefore retried. The turn is confirmed either way, which is
     /// what this report was asking for.
     /// </remarks>
-    /// <summary>Set once the other players have voted this client's own seat onto the computer.</summary>
-    private bool _ownSeatIsComputerControlled;
-
     private async Task ReportAsync(int turn, string stateHash, CancellationToken cancellationToken)
     {
         // A seat the server no longer counts as human has nothing to report. Carrying on and being

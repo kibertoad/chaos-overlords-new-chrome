@@ -124,6 +124,111 @@ public sealed partial class MultiplayerSessionTests
     }
 
     /// <summary>
+    /// A resync asked for while the pump has no connection open is still acted on.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// `RequestResync` latches a flag and cancels the cycle being read. There are stretches with no
+    /// cycle to cancel — the restore at startup, and the rebuild between two cycles — and a request
+    /// that lands in one used to set the flag against nothing: no restart, so nothing ever cleared
+    /// it, so the very next line of `RequestResync` turned every LATER request away as a duplicate.
+    /// The resolution watchdog that asks for these was then permanently disabled, in exactly the
+    /// dead-but-open-stream case it exists for.
+    /// </para>
+    /// <para>
+    /// Blocking the restore's own submission read is what puts the request in that stretch
+    /// deterministically, rather than racing the pump for it.
+    /// </para>
+    /// </remarks>
+    [Fact]
+    public async Task AResyncAskedForWhileNoStreamIsOpenIsNotLostOrLatched()
+    {
+        TaskCompletionSource? inTheRestore = null;
+        var (session, server, http) = Running(
+            matchView: ViewAtTurn(2) with { LastEventSeq = 3 },
+            configure: fake =>
+            {
+                fake.Answer(
+                    HttpMethod.Get, "/snapshots/latest", Envelope("no_snapshot"), HttpStatusCode.NotFound);
+                fake.Answer(HttpMethod.Get, "/events", new EventPage(
+                [
+                    new TurnOpenedEvent(1, MatchId, "2026-09-10T12:00:00.000Z", new(1, null)),
+                    new TurnSealedEvent(
+                        2, MatchId, "2026-09-10T12:01:00.000Z", new(1, SealedOrders(1).OrderSetHash)),
+                    new TurnConfirmedEvent(
+                        3, MatchId, "2026-09-10T12:01:30.000Z", new(1, HashAfterTurns(1))),
+                ]));
+                fake.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+                fake.Answer(
+                    HttpMethod.Get,
+                    "/turns/2/orders/mine",
+                    new OwnSubmissionView(2, null, Ready: false, OrdersHash: null));
+                // The last read of the startup restore, held open so the request below lands while
+                // the pump is inside it and `_streamCycle` is therefore null.
+                inTheRestore = fake.BlockOnce(HttpMethod.Get, "/turns/2/orders/mine");
+            });
+        using var _ = http;
+        await using var __ = session;
+        var seen = new List<MultiplayerNotice>();
+
+        await Until(
+            () => server.CallsTo(HttpMethod.Get, "/turns/2/orders/mine") >= 1,
+            "the startup restore reached its submission read");
+        session.RequestResync();
+        inTheRestore!.SetResult();
+
+        // The restore that was in flight finishes, and the request made during it is acted on by
+        // the cycle that follows rather than swallowed.
+        await WaitFor<MultiplayerNotice.Resumed>(session, seen);
+        await WaitFor<MultiplayerNotice.Resumed>(session, seen);
+
+        // And the flag is clear, so the watchdog can still ask again.
+        var streams = server.CallsTo(HttpMethod.Get, "/stream");
+        session.RequestResync();
+        await WaitFor<MultiplayerNotice.Resumed>(session, seen);
+        await Until(
+            () => server.CallsTo(HttpMethod.Get, "/stream") > streams,
+            "the second resync opened a fresh stream");
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
+    }
+
+    /// <summary>
+    /// The host's bootstrap snapshot is worth sending and not worth ending a match over.
+    /// </summary>
+    /// <remarks>
+    /// The server takes a turn-0 upload only while the match is on turn 1, and answers
+    /// `unknown_turn` once turn 1 has sealed — a window this client can be standing in when it
+    /// closes, now that a restoring host arms the upload too. Nothing on this client waits for it:
+    /// late join and the next reconnect read a checkpoint just as happily.
+    /// </remarks>
+    [Fact]
+    public async Task ARefusedBootstrapSnapshotDoesNotEndTheSession()
+    {
+        var (session, server, http) = Running(configure: fake => fake.Answer(
+            HttpMethod.Post,
+            "/snapshots",
+            new ErrorEnvelope(new ErrorEnvelopeError(
+                ErrorCode.NotFound, "No such turn", new ErrorEnvelopeErrorDetails("unknown_turn"),
+                RequestId: null)),
+            HttpStatusCode.NotFound));
+        using var _ = http;
+        await using var __ = session;
+        var seen = new List<MultiplayerNotice>();
+
+        await Until(
+            () => server.CallsTo(HttpMethod.Post, "/snapshots") >= 1,
+            "the host tried its bootstrap snapshot");
+
+        // Refused, and the match carries on: the pump reads the log and resolves turns.
+        server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
+        server.Events.Write(SealedFrame(8, 1));
+        var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session, seen);
+
+        Assert.Equal(1, resolved.Turn);
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
+    }
+
+    /// <summary>
     /// The stream's retry window bounds silent waiting, not the session.
     /// </summary>
     /// <remarks>

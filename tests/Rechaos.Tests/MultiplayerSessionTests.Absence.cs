@@ -2,6 +2,7 @@ using System.Net;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
+using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Session;
 using Xunit;
 
@@ -85,6 +86,49 @@ public sealed partial class MultiplayerSessionTests
         // from the session's own copy rather than from the clone the final turn resolved into —
         // that one was taken before the takeover arrived, so it would say Human either way.
         Assert.Equal(PlayerController.Human, session.ControllerOfSlot(1));
+    }
+
+    /// <summary>
+    /// A submission refused because the seat is no longer being played by this client is not the
+    /// end of the session.
+    /// </summary>
+    /// <remarks>
+    /// The seat is still on the roster and the token still opens it — the kernel's own `rejoin`
+    /// turns away nobody but the kicked — so the player goes on watching the match their seat is
+    /// still in, which is exactly what a report meeting the same 403 has always done. Counting
+    /// `not_active` as a revoked membership made the outbox rethrow it and the two paths disagree
+    /// about whether the player was still there.
+    /// </remarks>
+    [Fact]
+    public async Task ASubmissionForASeatOnComputerControlIsRefusedRatherThanEndingTheSession()
+    {
+        var (session, server, http) = Running(configure: fake => fake.Answer(
+            HttpMethod.Put,
+            "/orders",
+            new ErrorEnvelope(new ErrorEnvelopeError(
+                ErrorCode.Forbidden,
+                "You are no longer part of this match",
+                new ErrorEnvelopeErrorDetails("not_active"),
+                RequestId: null)),
+            HttpStatusCode.Forbidden));
+        using var _ = http;
+        await using var __ = session;
+        var seen = new List<MultiplayerNotice>();
+
+        session.QueueOrders(1, EmptyOrders, ready: true);
+        var refused = await WaitFor<MultiplayerNotice.OrdersRefused>(session, seen);
+
+        Assert.Equal(1, refused.Turn);
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
+
+        // And the session is still reading the log: the turn its seat is now played on by the
+        // computer resolves on this client like any other.
+        server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrdersForSlots(1, 1));
+        server.Events.Write(SealedFrameForSlots(8, 1, 1));
+        var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session, seen);
+
+        Assert.Equal(1, resolved.Turn);
+        Assert.DoesNotContain(seen, notice => notice is MultiplayerNotice.Failed);
     }
 
     /// <summary>
