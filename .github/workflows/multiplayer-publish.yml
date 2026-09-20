@@ -287,6 +287,15 @@ jobs:
           package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
+      # Node 22 ships npm 10, which has no OIDC exchange at all: it reads the `${NODE_AUTH_TOKEN}`
+      # line `registry-url` writes, finds nothing there, and fails the publish as unauthenticated.
+      # Trusted publishing landed in npm 11.5.1, so the job installs an npm that has it rather than
+      # inheriting whatever the Node release happens to carry.
+      - name: Install an npm that can publish with OIDC
+        run: |
+          npm install -g npm@^11.5.1
+          npm --version
+
       - name: Download the release tarballs
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
