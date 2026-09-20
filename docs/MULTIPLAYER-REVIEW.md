@@ -818,7 +818,9 @@ instead of writing it. **S3** put the divergence announcement on the turn row be
 digest and gave the verdict a snapshot summary, so a paused match costs a few indexed reads rather
 than a megabyte of base64 and a scan of its whole event log. **S4** publishes readiness on a change.
 **S5** windows the sweep to matches something has happened to and folds the public listing into two
-queries. **S6**'s items each landed: capacity inside `createLate`'s insert, a conditional
+queries, which now asks the same question of a running match that the late-join door does: a seat
+one missed deadline behind (`takeoverPending`) still counts as a human in it, and a match every
+human has left is not offered because the door refuses it as `match_abandoned`. **S6**'s items each landed: capacity inside `createLate`'s insert, a conditional
 `upsertReport`, the versions of a re-uploaded snapshot, jittered backoff in `append`, and a
 re-check of the prompts after the clock restarts.
 
@@ -828,8 +830,13 @@ reads at all, and a caught-up heartbeat asks nothing. **S8** validates the handl
 instead of cloning and re-parsing the body. **S9** spends the journal budget in the handler, after
 validation and only for a report that carries a journal. **S10** takes the received value back out
 of valibot's default message, which the stripped fields did not cover. **S11**'s items landed, from
-the stream's `X-Request-Id` to a per-match budget in front of PBKDF2 and a deployment that says so
-in its own logs when it has no cron trigger.
+the stream's `X-Request-Id` to a budget in front of PBKDF2 and a deployment that says so in its own
+logs when it has no cron trigger. That budget is charged per caller and per match rather than per
+match alone: a public listing carries the join code, so a match-wide counter charged on every
+attempt was a lever a stranger could hold down to lock out everyone who knew the password. The
+match-wide half is charged only by a failed verification and closes only a caller's second and
+later attempts in a window, so a caller the match has not heard from still gets a first try while
+an attack is running.
 
 ### Client
 
@@ -840,7 +847,9 @@ before a keepalive counts as proof. **C5** takes the countdown against the serve
 re-establishes the handshake on every reconnect. **C7**'s items each landed.
 
 The TypeScript client got a connect-phase deadline, a size cap on the error body, full-window
-backoff jitter, and a README that says what it does and does not implement.
+backoff jitter, and a README that says what it does and does not implement. The deadline reads
+`requestTimeoutMs: 0` as disabled, the way `call` does, and releases the listener it puts on the
+caller's signal at the end of each attempt rather than once per stream.
 
 ### Where the review was not followed
 
