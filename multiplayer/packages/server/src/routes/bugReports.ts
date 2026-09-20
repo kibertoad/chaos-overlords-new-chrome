@@ -1,6 +1,7 @@
 import { submitBugReportContract } from '@chaos-overlords/contracts'
 import { NotFoundError } from '@chaos-overlords/kernel'
 import type { Hono } from 'hono'
+import { answering } from '../http/contractJson'
 import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
 
@@ -21,10 +22,16 @@ export function registerBugReportRoutes(api: Hono<AppEnv>): void {
       })
     }
     const request = c.req.valid('json')
-    // An address that has spent its daily journal budget files the description without the
-    // journal, and the receipt says `omitted` — the same outcome the global budget produces.
-    const submitted =
-      c.get('bugReportStateAllowed') === false ? { ...request, state: undefined } : request
-    return c.json(await bugReports.submit(submitted), 201)
+    // The daily journal budget is spent HERE: after the contract has validated the body, and only
+    // when there is a journal to spend it on. Charging it in the middleware meant five text-only
+    // reports, or five bodies the validator refused, used up the day's allowance for everyone
+    // behind one address — and the sixth report, the one carrying the journal somebody wanted, was
+    // filed without it and said so only in the receipt.
+    //
+    // An address that really has spent it files the description without the journal, and the
+    // receipt says `omitted` — the same outcome the global byte budget produces.
+    const allowed = request.state === undefined || (c.get('bugReportJournalBudget')?.() ?? true)
+    const submitted = allowed ? request : { ...request, state: undefined }
+    return c.json(answering(c, await bugReports.submit(submitted)), 201)
   })
 }

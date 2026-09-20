@@ -23,6 +23,21 @@ The D1 migration lineages ship in `@chaos-overlords/storage` and `@chaos-overlor
 `ABANDONED_RETENTION_DAYS`, `BUG_REPORT_RETENTION_DAYS` and `BUG_REPORT_DAILY_STATE_MB` are vars. The
 `scheduled` handler expects a cron trigger; five minutes is the interval its sweeper is written for.
 
+**A deployment without a cron trigger has no safety net.** The sweeper is what seals a turn whose
+Durable Object alarm never fired, finishes a seal whose isolate died halfway through, re-runs the
+verdict of a match left paused by an interrupted one, and collects retention. Nothing else does any
+of it, and nothing fails loudly when it is missing: matches simply stop advancing for the players in
+them. `wrangler.dev.toml` deliberately carries no `[triggers]` block, because it is not a
+deployment — so the first thing to add to a real one is:
+
+```toml
+[triggers]
+crons = ["*/5 * * * *"]
+```
+
+The Worker logs `cron trigger has not fired` on a request once it has been up for an hour without
+one, which is how a deployment that forgot finds out from its own logs rather than from a player.
+
 ## Install
 
 ```sh

@@ -114,3 +114,134 @@ describe('LocalEventHub stream caps', () => {
     survivor.abort()
   })
 })
+
+/** A log that records every read, so a test can assert what fan-out actually costs. */
+function countingLog(events: PersistedEvent[]) {
+  const reads: number[] = []
+  const repository: EventRepository = {
+    append: async () => {
+      throw new Error('not used')
+    },
+    listAfter: async (_matchId, afterSeq, limit) => {
+      reads.push(afterSeq)
+      return events.filter((event) => event.seq > afterSeq).slice(0, limit)
+    },
+    lastSeq: async () => events.at(-1)?.seq ?? 0,
+  }
+  return { repository, reads }
+}
+
+const eventAt = (seq: number): PersistedEvent =>
+  ({
+    seq,
+    matchId: 'm',
+    type: 'turn.opened',
+    payload: { turn: seq, deadlineAt: null },
+    createdAt: '2026-01-01T00:00:00.000Z',
+  }) as PersistedEvent
+
+/** Let the stream's own scheduling run. */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
+
+describe('LocalEventHub fan-out cost', () => {
+  /**
+   * The work of one event is per EVENT, not per reader.
+   *
+   * Every subscriber used to drain the log with its own `listAfter`, validate the same rows with
+   * its own schema pass and serialise the same payload with its own `JSON.stringify`. A seal emits
+   * three to five events in a burst and wakes up to eighteen streams per match, and the notifier
+   * was holding the durable row the whole time.
+   */
+  it('costs no reads at all to fan one published event out to many streams', async () => {
+    const log = countingLog([])
+    const hub = new LocalEventHub(log.repository, 60_000)
+    const readers = await Promise.all(
+      ['p1', 'p2', 'p3', 'p4'].map((playerId) => open(hub, 'm', playerId)),
+    )
+    await settle()
+    // Every one of them has to reach the log, because a fresh stream has been told nothing — but
+    // they are all at the same cursor, so they share one statement rather than issuing four.
+    expect(log.reads).toEqual([0])
+    log.reads.length = 0
+
+    await hub.notify(eventAt(1))
+    await hub.notify(eventAt(2))
+    await settle()
+
+    expect(log.reads).toEqual([])
+    for (const reader of readers) reader.abort()
+  })
+
+  /**
+   * The other half: a heartbeat on a stream that has everything asks nothing. At the default cap of
+   * 512 streams the unconditional re-read was about twenty-five queries a second finding nothing,
+   * on the event loop that also seals turns.
+   */
+  it('stops re-reading the log on the heartbeat of a stream that is caught up', async () => {
+    const log = countingLog([])
+    const hub = new LocalEventHub(log.repository, 10)
+    const reader = await open(hub, 'm', 'p1')
+    await hub.notify(eventAt(1))
+    await settle()
+    log.reads.length = 0
+
+    // Many heartbeats' worth of time, with nothing published.
+    await new Promise((resolve) => setTimeout(resolve, 120))
+
+    // Only the periodic catch-up, which exists for an append this process was never told about.
+    expect(log.reads.length).toBeLessThan(4)
+    reader.abort()
+  })
+
+  /**
+   * A hub woken without the event body cannot know it has everything, so it must keep reading. The
+   * Durable Object used to be notified by match id alone, and a `caughtUp` that answered from reads
+   * rather than from notifications would have silenced every stream it held.
+   */
+  it('keeps reading the log for a hub that is woken without the event', async () => {
+    const durable: PersistedEvent[] = []
+    const log = countingLog(durable)
+    const hub = new LocalEventHub(log.repository, 60_000)
+    const controller = new AbortController()
+    const response = await hub.open({
+      matchId: 'm',
+      playerId: 'p1',
+      afterSeq: 0,
+      signal: controller.signal,
+    })
+    const reader = (response.body as ReadableStream<Uint8Array>).getReader()
+    const decoder = new TextDecoder()
+    await reader.read()
+    await settle()
+
+    durable.push(eventAt(1))
+    hub.wake('m')
+    let text = ''
+    for (let i = 0; i < 10 && !text.includes('id: 1'); i += 1) {
+      const frame = await reader.read()
+      if (frame.value) text += decoder.decode(frame.value)
+    }
+    expect(text).toContain('id: 1')
+    controller.abort()
+    await reader.cancel().catch(() => {})
+  })
+
+  /**
+   * A reconnecting player whose predecessor is still open must not be told the server is full: the
+   * corpse it is replacing is occupying one of the slots being counted.
+   */
+  it('closes the caller own stale stream before reading the process cap', async () => {
+    const log = countingLog([])
+    const hub = new LocalEventHub(log.repository, 60_000, {
+      perPlayer: 1,
+      perMatch: 4,
+      perProcess: 1,
+    })
+    const stale = await open(hub, 'm', 'p1')
+    expect(hub.openStreams).toBe(1)
+    const fresh = await open(hub, 'm', 'p1')
+    expect(await stale.ended()).toBe(true)
+    expect(hub.openStreams).toBe(1)
+    fresh.abort()
+  })
+})

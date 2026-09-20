@@ -10,10 +10,24 @@ import type { AppEnv } from './types'
  * here, and the response most worth correlating is exactly the one that failed.
  */
 export const requestId: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const id = c.req.header('x-request-id')?.slice(0, 64) || crypto.randomUUID()
+  const id = safeRequestId(c.req.header('x-request-id')) ?? crypto.randomUUID()
   c.set('requestId', id)
   c.header('X-Request-Id', id)
   await next()
+}
+
+/**
+ * A client-supplied correlation id, or null when it is not one.
+ *
+ * The value is echoed in a response header and written into the structured logs, so it is a string
+ * a stranger chooses that ends up in an operator's tooling. Restricting it to the characters ids
+ * are actually made of leaves header splitting, log-line forgery and terminal escapes with nothing
+ * to work with; anything else is simply replaced by a minted one, because a caller sending a
+ * malformed id wanted correlation, not a refusal.
+ */
+function safeRequestId(raw: string | undefined): string | null {
+  const trimmed = raw?.trim() ?? ''
+  return trimmed !== '' && trimmed.length <= 64 && /^[A-Za-z0-9_-]+$/.test(trimmed) ? trimmed : null
 }
 
 /**
@@ -73,12 +87,15 @@ export const bugReportRateLimited: MiddlewareHandler<AppEnv> = async (c, next) =
   const container = c.get('container')
   const key = (container.clientAddress ?? defaultClientAddress)(c)
   enforce(container.rateLimiters, 'bugReport', key, c)
-  // The per-day journal budget is spent here rather than refused here. An address over it still
-  // files its report; what it loses is the attached match journal, which is what the global daily
-  // budget does too. Charging it before the handler runs keeps the decision off the body's size.
+  // The daily journal budget is NOT spent here. It used to be, before the body had even been read,
+  // so five text-only reports or five requests the contract validator answered 413 or 422 for spent
+  // it, and the sixth — the one that actually carried a journal — was quietly filed with
+  // `stateStored: 'omitted'`. Everyone behind one NAT shares those five. The handler spends it
+  // instead, once it knows there is a journal to spend it on; see the bug report route.
   c.set(
-    'bugReportStateAllowed',
-    container.rateLimiters.bugReportState.take(`bugReportState:${rateLimitKey(key)}`) === null,
+    'bugReportJournalBudget',
+    () =>
+      container.rateLimiters.bugReportState.take(`bugReportState:${rateLimitKey(key)}`) === null,
   )
   await next()
 }
@@ -124,13 +141,23 @@ export function rateLimitKey(address: string): string {
   return `${withoutPort.split(':').slice(0, 4).join(':')}::/64`
 }
 
+/**
+ * Tiers keyed by something that is already a single identity rather than a client address.
+ *
+ * `rateLimitKey` masks IPv6 prefixes and strips ports, which is meaningless work on a player UUID
+ * and runs on every authenticated request.
+ */
+const IDENTITY_TIERS: ReadonlySet<string> = new Set(['member', 'upload'])
+
 function enforce(
   limiters: RateLimiters,
   tier: keyof RateLimiters,
   key: string,
   c: Context<AppEnv>,
 ): void {
-  const retryAfter = limiters[tier].take(`${tier}:${rateLimitKey(key)}`)
+  const retryAfter = limiters[tier].take(
+    `${tier}:${IDENTITY_TIERS.has(tier) ? key : rateLimitKey(key)}`,
+  )
   if (retryAfter === null) return
   c.header('Retry-After', String(retryAfter))
   throw new RateLimitedError('Too many attempts; slow down', {

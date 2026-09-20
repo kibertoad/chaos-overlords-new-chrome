@@ -15,16 +15,20 @@ const event = (seq: number): PersistedEvent =>
 /** Let queued microtasks and the stream's own pull scheduling run. */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 50))
 
+const frames = (events: PersistedEvent[]) =>
+  events.map((item) => ({ seq: item.seq, text: formatEvent(item) }))
+
 /** A log of `total` events, which records how far a reader has actually pulled it. */
 function logOf(total: number) {
   const reads: number[] = []
   const source: EventStreamSource = {
-    listAfter: async (afterSeq) => {
+    page: async (afterSeq) => {
       reads.push(afterSeq)
-      return Array.from({ length: Math.min(50, total - afterSeq) }, (_, i) =>
-        event(afterSeq + i + 1),
+      return frames(
+        Array.from({ length: Math.min(50, total - afterSeq) }, (_, i) => event(afterSeq + i + 1)),
       )
     },
+    caughtUp: () => false,
     subscribe: () => () => {},
   }
   return { source, reads }
@@ -34,7 +38,10 @@ describe('createSseResponse backpressure', () => {
   it('recovers a durable event whose fan-out wake was lost', async () => {
     const durable: PersistedEvent[] = []
     const source: EventStreamSource = {
-      listAfter: async (afterSeq) => durable.filter((item) => item.seq > afterSeq),
+      page: async (afterSeq) => frames(durable.filter((item) => item.seq > afterSeq)),
+      // Unsure, as a source that cannot see every writer must answer: the periodic catch-up is
+      // the whole point of this test.
+      caughtUp: () => false,
       // Deliberately discard the wake callback, as a failed cross-process notification would.
       subscribe: () => () => {},
     }
@@ -124,9 +131,10 @@ describe('createSseResponse backpressure', () => {
   it('ends the stream and releases its subscription when a read fails', async () => {
     let unsubscribed = 0
     const source: EventStreamSource = {
-      listAfter: async () => {
+      page: async () => {
         throw new Error('database unavailable')
       },
+      caughtUp: () => false,
       subscribe: () => () => {
         unsubscribed += 1
       },

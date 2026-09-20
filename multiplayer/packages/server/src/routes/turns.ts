@@ -5,6 +5,7 @@ import {
   submitOrdersContract,
 } from '@chaos-overlords/contracts'
 import type { Hono } from 'hono'
+import { answering } from '../http/contractJson'
 import { requireMember } from '../http/guards'
 import { buildHonoRoute } from '../http/routes'
 import type { AppEnv } from '../http/types'
@@ -20,7 +21,7 @@ export function registerTurnRoutes(api: Hono<AppEnv>): void {
         turn,
         c.req.valid('json'),
       )
-    return c.json(view, 200)
+    return c.json(answering(c, view), 200)
   })
 
   buildHonoRoute(api, ownSubmissionContract, async (c) => {
@@ -29,7 +30,7 @@ export function registerTurnRoutes(api: Hono<AppEnv>): void {
     const view = await c
       .get('container')
       .kernel.query.ownSubmission(principal.match, principal.player.id, turn)
-    return c.json(view, 200)
+    return c.json(answering(c, view), 200)
   })
 
   buildHonoRoute(api, sealedOrdersContract, async (c) => {
@@ -38,7 +39,7 @@ export function registerTurnRoutes(api: Hono<AppEnv>): void {
     const view = await c.get('container').kernel.query.sealedOrders(principal.match, turn)
     // A sealed set never changes, so clients and proxies may keep it.
     c.header('Cache-Control', 'private, max-age=31536000, immutable')
-    return c.json(view, 200)
+    return c.json(answering(c, view), 200)
   })
 
   buildHonoRoute(api, reportTurnContract, async (c) => {

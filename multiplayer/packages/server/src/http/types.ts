@@ -10,9 +10,16 @@ export interface AppEnv {
     /** Set by the contract route before the handler runs; absent on non-contract routes. */
     apiContract?: ApiContract
     /**
-     * Whether this caller's address still has room in its daily attached-journal budget. Set by
-     * `bugReportRateLimited`; absent everywhere else.
+     * Spends one unit of this caller's daily attached-journal budget and says whether there was
+     * any left. Set by `bugReportRateLimited`, called by the handler and only for a report that
+     * actually carries a journal; absent everywhere else.
      */
-    bugReportStateAllowed?: boolean
+    bugReportJournalBudget?: () => boolean
+    /**
+     * The object a contract handler answered with, recorded by `contractJson` so the response
+     * validator can check it without parsing the body back out. Wrapped so that a handler
+     * answering `null` is still told apart from a handler that recorded nothing.
+     */
+    responseBody?: { value: unknown }
   }
 }

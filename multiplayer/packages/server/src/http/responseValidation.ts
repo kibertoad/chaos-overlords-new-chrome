@@ -29,10 +29,12 @@ export const validateContractResponse: MiddlewareHandler<AppEnv> = async (c, nex
   }
   if (responseKind.kind !== 'json') return
 
-  let body: unknown
   try {
-    body = await c.res.clone().json()
-    await validate(responseKind.schema, body)
+    // The handler's own object when it recorded one (`contractJson`), which is every contract
+    // route: checking that is checking what was serialised, without serialising it again. A
+    // response that arrives without one is still read back rather than trusted.
+    const recorded = c.get('responseBody')
+    await validate(responseKind.schema, recorded ? recorded.value : await c.res.clone().json())
   } catch (error) {
     throw new ContractResponseError(
       `status ${c.res.status} body does not match the contract`,

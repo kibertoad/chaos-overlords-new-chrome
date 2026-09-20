@@ -70,7 +70,26 @@ function describeIssue(issue: SchemaValidationError['issues'][number]): {
       typeof segment === 'object' && segment !== null && 'key' in segment ? segment.key : segment,
     ),
   )
-  return { message: issue.message, path }
+  return { message: describeMessage(issue), path }
+}
+
+/**
+ * The message with the received value taken back out of it.
+ *
+ * Stripping valibot's `input` and `received` FIELDS was not enough, because its default message
+ * embeds the same value in prose: every schema step without a message of its own reports
+ * `Invalid type: Expected string but received "<value>"`, and the same shape covers `literal`,
+ * `picklist`, `minValue` and `maxValue`. So `{ "password": 123456 }` answered with the password,
+ * and `"visibility": "secret"` answered with the word. A wrong password that is at least a STRING
+ * fails on its length instead and was never echoed, which is why the conformance case for the
+ * no-echo rule passed while the rule did not hold.
+ *
+ * What the caller needs is which field and what was expected; what it sent, it already knows.
+ */
+function describeMessage(issue: { message: string; received?: unknown }): string {
+  if (issue.received === undefined) return issue.message
+  const withoutReceived = issue.message.replace(/\s*but received\b.*$/is, '')
+  return withoutReceived === '' ? 'Invalid value' : withoutReceived
 }
 
 /**
