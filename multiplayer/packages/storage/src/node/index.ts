@@ -1,4 +1,5 @@
-import { fileURLToPath } from 'node:url'
+// URL too: this file also sees @cloudflare/workers-types' global URL, which node:url rejects.
+import { fileURLToPath, URL } from 'node:url'
 import type { MultiplayerStorage } from '@chaos-overlords/kernel'
 import BetterSqlite3 from 'better-sqlite3'
 import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3'
