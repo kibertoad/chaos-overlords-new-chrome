@@ -41,6 +41,26 @@ tracked in the [parity matrix](docs/PARITY-MATRIX.md).
 The technical documentation is cataloged and indexed in
 [docs/README.md](docs/README.md).
 
+### Faithfulness audit (2026-09-20)
+
+The documentation maps the 29 currently identified in-scope game subsystems to
+their rules, executable findings, implementation/parity rows, and deliberate
+deviations. It contains 104 stable `BIN-*` findings and 24 `RULE-*` entries,
+and its generated indexes and relative links are current. This is broad,
+traceable coverage of the recovered structure; it is **not** evidence that the
+entire original program structure or every hidden behavior has been recovered.
+
+The audit does **not** validate New Chrome as fully compliant with the shipped
+1996 logic. The matrix's only explicit `Parity verified` result is the
+values-only gameplay-table row. Native launch-seed/RNG correlation, initial
+city and transaction fixtures, full Original-AI decision traces, several
+objective/police edges, and native visual/input/media comparisons remain open.
+Consequently, the implementation should be regarded as a broad, deterministic,
+evidence-led recreation with high-confidence static coverage in many areas,
+not as a rule-perfect replica. Intentional deviations and quality-of-life
+extensions are separately recorded in [DECISIONS.md](docs/DECISIONS.md) and
+the [parity matrix](docs/PARITY-MATRIX.md).
+
 ### Implemented
 
 | Area | Available now |
