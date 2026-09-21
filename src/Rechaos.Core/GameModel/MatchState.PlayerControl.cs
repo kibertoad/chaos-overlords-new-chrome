@@ -28,14 +28,9 @@ public sealed partial class MatchState
         // or clears Repeat, so a gang the planner leaves idle would otherwise keep running the
         // departed player's Heal or Influence for the rest of the match.
         foreach (var gang in player.Gangs.Where(gang => Commands.TryGet(gang.Id, out _)).ToArray())
-        {
-            Commands.Cancel(gang.Id);
-            gang.QueuedCommand = null;
-        }
+            CancelQueuedCommand(gang);
 
-        Setup = Setup.WithController(playerId, PlayerController.Computer);
-        for (var index = 0; index < Players.Count; index++)
-            Players[index].Setup = Setup.Players[index];
+        SetController(playerId, PlayerController.Computer);
         return true;
     }
 
@@ -45,9 +40,15 @@ public sealed partial class MatchState
         var player = FindPlayer(playerId) ?? throw new ArgumentOutOfRangeException(nameof(playerId));
         if (player.Setup.Controller == PlayerController.Human) return false;
         RequireCleanCommandBoundary();
-        Setup = Setup.WithController(playerId, PlayerController.Human);
-        for (var index = 0; index < Players.Count; index++) Players[index].Setup = Setup.Players[index];
+        SetController(playerId, PlayerController.Human);
         return true;
+    }
+
+    private void SetController(PlayerId playerId, PlayerController controller)
+    {
+        Setup = Setup.WithController(playerId, controller);
+        for (var index = 0; index < Players.Count; index++)
+            Players[index].Setup = Setup.Players[index];
     }
 
     /// <summary>
