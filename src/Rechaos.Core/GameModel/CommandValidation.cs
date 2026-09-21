@@ -331,7 +331,7 @@ public static class CommandValidator
     }
 
     private static CommandValidation ValidateItemTarget(MatchState state, CommandTarget target) =>
-        target.Id >= 0 && target.Id < state.Definitions.Items.Count && state.Definitions.Items[target.Id].Type != 99
+        MatchState.IsActualItem(state.Definitions, target.Id)
             ? CommandValidation.Valid()
             : CommandValidation.Reject(CommandValidationCode.TargetNotFound);
 

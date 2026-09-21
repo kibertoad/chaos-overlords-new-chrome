@@ -131,7 +131,7 @@ public sealed partial class MatchPlayerState
 
     private static void ValidateResearchItem(OriginalData definitions, short itemIndex)
     {
-        if (itemIndex < 0 || itemIndex >= definitions.Items.Count || definitions.Items[itemIndex].Type == 99)
+        if (!MatchState.IsActualItem(definitions, itemIndex))
             throw new ArgumentOutOfRangeException(nameof(itemIndex));
     }
 }

@@ -78,9 +78,7 @@ public static class OriginalCityGenerator
     {
         ArgumentNullException.ThrowIfNull(sectors);
         ArgumentNullException.ThrowIfNull(random);
-        if (sectors.Length != MatchLimits.SectorCount
-            || !sectors.Select(sector => sector.Id).SequenceEqual(Enumerable.Range(0, MatchLimits.SectorCount)))
-            throw new ArgumentException("The city must contain sectors ordered from 0 through 63.", nameof(sectors));
+        MatchBootstrap.RequireOrderedCity(sectors, nameof(sectors));
 
         var permutation = new int[MatchLimits.PlayerCount];
         Array.Fill(permutation, -1);
@@ -121,9 +119,7 @@ public static class OriginalCityGenerator
     {
         ArgumentNullException.ThrowIfNull(sectors);
         ArgumentNullException.ThrowIfNull(headquarters);
-        if (sectors.Length != MatchLimits.SectorCount
-            || !sectors.Select(sector => sector.Id).SequenceEqual(Enumerable.Range(0, MatchLimits.SectorCount)))
-            throw new ArgumentException("The city must contain sectors ordered from 0 through 63.", nameof(sectors));
+        MatchBootstrap.RequireOrderedCity(sectors, nameof(sectors));
         if (headquarters.Count != MatchLimits.PlayerCount
             || headquarters.Distinct().Count() != MatchLimits.PlayerCount
             || headquarters.Any(sectorId => sectorId is < 0 or >= MatchLimits.SectorCount))
@@ -132,19 +128,7 @@ public static class OriginalCityGenerator
 
         foreach (var sectorId in headquarters)
         {
-            var sector = sectors[sectorId];
-            sectors[sectorId] = new MatchSectorState(
-                sector.Id,
-                sector.Sites.Select(site => new MatchSiteState(
-                    site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy)).ToArray(),
-                sector.Owner,
-                sector.Tolerance,
-                sector.LegacyChaos,
-                sector.CrackdownActive,
-                isImportant: true,
-                sector.Income,
-                sector.CrackdownTurnsRemaining,
-                sector.CrackdownHistory);
+            sectors[sectorId] = MatchBootstrap.CloneSector(sectors[sectorId], isImportant: true);
         }
     }
 

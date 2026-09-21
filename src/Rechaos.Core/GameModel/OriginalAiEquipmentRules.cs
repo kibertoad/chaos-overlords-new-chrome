@@ -375,7 +375,6 @@ internal static class OriginalAiEquipmentRules
     {
         if (gang.Owner != player.Id || !player.Gangs.Contains(gang))
             throw new ArgumentException("Gang does not belong to the supplied player.", nameof(gang));
-        if (state.FindPlayer(player.Id) != player)
-            throw new ArgumentException("Player does not belong to the match.", nameof(player));
+        state.RequirePlayer(player);
     }
 }

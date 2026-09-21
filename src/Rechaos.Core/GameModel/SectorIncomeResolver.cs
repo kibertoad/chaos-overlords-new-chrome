@@ -11,8 +11,7 @@ public static class SectorIncomeResolver
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sector);
-        if (sector.Id < 0 || sector.Id >= state.Sectors.Count || state.Sectors[sector.Id] != sector)
-            throw new ArgumentException("Sector does not belong to the match.", nameof(sector));
+        state.RequireSector(sector);
 
         return checked(ManualRules.ControlledSectorTax + sector.Sites
             .Where(site => site.InfluencedBy is not null)

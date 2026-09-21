@@ -73,8 +73,7 @@ public static class EconomyResolver
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(player);
-        if (state.FindPlayer(player.Id) != player)
-            throw new ArgumentException("Player does not belong to the match.", nameof(player));
+        state.RequirePlayer(player);
         var previousCash = player.Cash;
         var sectorIncome = state.Sectors.Count(sector => sector.Owner == player.Id)
             * ManualRules.ControlledSectorTax;

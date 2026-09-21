@@ -146,8 +146,7 @@ public static class MatchOutcomeEvaluator
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(player);
-        if (state.FindPlayer(player.Id) != player)
-            throw new ArgumentException("Player does not belong to the match.", nameof(player));
+        state.RequirePlayer(player);
 
         var controlledSectors = state.Sectors.Count(sector => sector.Owner == player.Id);
         var opponents = state.Players.Where(candidate => candidate.Id != player.Id).ToArray();

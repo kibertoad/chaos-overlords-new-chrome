@@ -58,7 +58,7 @@ public sealed partial class MatchState
             if (player.Gangs.Any(gang => !definitions.Gangs.Any(definition => definition.Id == gang.DefinitionId)))
                 throw new ArgumentException($"Player {player.Id} contains an unknown gang definition.", nameof(players));
             if (player.Gangs.Any(gang => EquippedItemIds(gang).Any(itemId =>
-                    itemId < 0 || itemId >= definitions.Items.Count || definitions.Items[itemId].Type == 99)))
+                    !IsActualItem(definitions, itemId))))
                 throw new ArgumentException($"Player {player.Id} contains invalid equipped item state.", nameof(players));
             if (player.ResearchProgress.Any(pair =>
                     !IsActualItem(definitions, pair.Key) || pair.Value <= 0))
@@ -105,6 +105,21 @@ public sealed partial class MatchState
         if (gang.MiscellaneousItemId is { } miscellaneous) yield return miscellaneous;
     }
 
-    private static bool IsActualItem(OriginalData definitions, short itemId) =>
+    /// <summary>Whether the id indexes an item slot the data file fills (type 99 marks an empty one).</summary>
+    internal static bool IsActualItem(OriginalData definitions, int itemId) =>
         itemId >= 0 && itemId < definitions.Items.Count && definitions.Items[itemId].Type != 99;
+
+    /// <summary>Throws unless <paramref name="sector"/> is the object this match holds at its id.</summary>
+    internal void RequireSector(MatchSectorState sector)
+    {
+        if (sector.Id < 0 || sector.Id >= Sectors.Count || Sectors[sector.Id] != sector)
+            throw new ArgumentException("Sector does not belong to the match.", nameof(sector));
+    }
+
+    /// <summary>Throws unless <paramref name="player"/> is the object this match holds for its id.</summary>
+    internal void RequirePlayer(MatchPlayerState player)
+    {
+        if (FindPlayer(player.Id) != player)
+            throw new ArgumentException("Player does not belong to the match.", nameof(player));
+    }
 }

@@ -12,8 +12,7 @@ public static class ToleranceResolver
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sector);
-        if (state.Sectors.Count <= sector.Id || state.Sectors[sector.Id] != sector)
-            throw new ArgumentException("Sector does not belong to the match.", nameof(sector));
+        state.RequireSector(sector);
 
         var siteAdjustment = SiteAdjustment(state, sector);
         return checked(IncomeToleranceSum - sector.Income + siteAdjustment);
