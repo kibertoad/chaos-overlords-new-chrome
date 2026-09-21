@@ -16,12 +16,16 @@ namespace Rechaos.Game;
 internal sealed class RollingAutoSave
 {
     /// <summary>Durably writes one captured generation over the current one.</summary>
+    /// <param name="row">
+    /// The browser row for this generation, captured on the game thread with the bytes.
+    /// </param>
     /// <param name="trustExistingPrimary">
     /// Whether the writer may keep the existing primary as the next backup generation without
     /// reading it back first, because the caller knows this process wrote and verified it.
     /// </param>
     internal delegate void Writer(
-        ReadOnlyMemory<byte> snapshot, OriginalData definitions, bool trustExistingPrimary);
+        ReadOnlyMemory<byte> snapshot, OriginalData definitions, SaveSlotSummary row,
+        bool trustExistingPrimary);
 
     private readonly Writer _write;
     private readonly Action<int, Exception> _reportFailure;
@@ -44,8 +48,16 @@ internal sealed class RollingAutoSave
 
     public RollingAutoSave(string path, Action<int, Exception> reportFailure)
         : this(
-            (snapshot, definitions, trustExistingPrimary) => NativeSaveStore.SaveAtomic(
-                path, snapshot, definitions, trustExistingPrimary),
+            (snapshot, definitions, row, trustExistingPrimary) =>
+            {
+                NativeSaveStore.SaveAtomic(path, snapshot, definitions, trustExistingPrimary);
+                // The sidecar describes the file that has just been promoted, so it is written
+                // here rather than on the game thread: what it records for the staleness check is
+                // that file's own length and write time, and only this thread knows when the
+                // promotion happened. It never throws, and never stands between a durable
+                // generation and the next one.
+                SaveSlotCatalog.WriteAutoSaveMetadata(path, row, definitions);
+            },
             reportFailure)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -67,7 +79,9 @@ internal sealed class RollingAutoSave
         Snapshot snapshot;
         try
         {
-            snapshot = new Snapshot(NativeSaveStore.Serialize(state), state.Definitions, turn);
+            snapshot = new Snapshot(
+                NativeSaveStore.Serialize(state), state.Definitions,
+                SaveSlotCatalog.DescribeAutoSave(state), turn);
         }
         catch (Exception exception) when (IsSaveFailure(exception))
         {
@@ -137,11 +151,17 @@ internal sealed class RollingAutoSave
     {
         _activeTurn = snapshot.Turn;
         var trustExistingPrimary = _primaryVerified;
-        _task = Task.Run(() => _write(snapshot.Bytes, snapshot.Definitions, trustExistingPrimary));
+        _task = Task.Run(() => _write(
+            snapshot.Bytes, snapshot.Definitions, snapshot.Row, trustExistingPrimary));
     }
 
     private static bool IsSaveFailure(Exception exception) =>
         exception is IOException or InvalidDataException or UnauthorizedAccessException;
 
-    private sealed record Snapshot(byte[] Bytes, OriginalData Definitions, int Turn);
+    /// <param name="Row">
+    /// What the save browser draws for this generation. Taken on the game thread with the bytes:
+    /// the match it describes keeps moving, and the worker may only see the turn it was handed.
+    /// </param>
+    private sealed record Snapshot(
+        byte[] Bytes, OriginalData Definitions, SaveSlotSummary Row, int Turn);
 }

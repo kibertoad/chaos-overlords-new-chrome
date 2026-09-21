@@ -124,6 +124,45 @@ public sealed class RollingAutoSaveTests
         releasing.Join();
     }
 
+    /// <summary>
+    /// The worker writes the browser's sidecar beside the generation it has just promoted.
+    /// </summary>
+    /// <remarks>
+    /// The sidecar is what lets the save browser draw the autosave row without deserializing a
+    /// multi-megabyte match. It belongs to the write, not to the game thread: the staleness check
+    /// it carries is the promoted file's own length and write time, and the game thread does not
+    /// know when the promotion happened.
+    /// </remarks>
+    [Fact]
+    public void TheWriterLeavesABrowserSidecarBesideTheAutoSave()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"rechaos-autosave-{Guid.NewGuid():N}");
+        try
+        {
+            Directory.CreateDirectory(directory);
+            var path = Path.Combine(directory, "autosave.rchsave");
+            var state = CreateMatch();
+            var queue = new RollingAutoSave(path, (_, exception) => Assert.Fail(exception.ToString()));
+
+            queue.Capture(state);
+            queue.Flush();
+
+            Assert.True(File.Exists(path + ".json"));
+            var row = Assert.IsType<SaveSlotSummary>(
+                SaveSlotCatalog.ReadAutoSave(path, state.Definitions));
+            Assert.Equal("AUTOSAVE", row.Name);
+            Assert.Equal(SaveSlotCatalog.AutoSaveRow, row.Slot);
+            Assert.Equal(ScenarioId.Greed, row.Scenario);
+            Assert.Equal(1, row.HumanPlayers);
+            Assert.Equal(state.Setup.Players.Count - 1, row.AiPlayers);
+            Assert.True(row.IsPlayable);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static bool[] Trust(RecordingWriter writer) =>
         writer.Writes.Select(write => write.TrustExistingPrimary).ToArray();
 
@@ -165,7 +204,8 @@ public sealed class RollingAutoSaveTests
         }
 
         public void Write(
-            ReadOnlyMemory<byte> snapshot, OriginalData definitions, bool trustExistingPrimary)
+            ReadOnlyMemory<byte> snapshot, OriginalData definitions, SaveSlotSummary row,
+            bool trustExistingPrimary)
         {
             _entered.Set();
             _released.Wait();
