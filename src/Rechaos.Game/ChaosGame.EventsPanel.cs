@@ -150,10 +150,7 @@ public sealed partial class ChaosGame
         if (LastTurnEventsLayout.Previous.Contains(point)) MoveEventCursor(-1);
         else if (LastTurnEventsLayout.Next.Contains(point)) MoveEventCursor(1);
         else if (LastTurnEventsLayout.Ok.Contains(point))
-        {
-            AcceptInput();
-            CloseEvents();
-        }
+            AcceptAndInvoke(CloseEvents);
     }
 
     private void MoveEventCursor(int delta)
@@ -220,11 +217,8 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawBoard(batch, pixel, font, state);
-        if (_lastTurnEventsBackground is not null)
-            batch.Draw(_lastTurnEventsBackground, LastTurnEventsLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, LastTurnEventsLayout.Panel, new Color(0, 0, 0, 245));
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        DrawPanelArtwork(batch, pixel, _lastTurnEventsBackground, LastTurnEventsLayout.Panel);
+        var playerId = ViewingPlayer(state);
         var notifications = ReviewableReports(state, playerId);
         ClearLastTurnEventFields(batch, pixel);
         batch.Draw(pixel, LastTurnEventsLayout.Artwork, Color.Black);
@@ -236,7 +230,7 @@ public sealed partial class ChaosGame
 
     private GameNotification? CurrentEventReport(MatchState state)
     {
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = ViewingPlayer(state);
         var notifications = ReviewableReports(state, playerId);
         if (notifications.Count == 0) return null;
         _eventCursor = Math.Clamp(_eventCursor, 0, notifications.Count - 1);
@@ -257,7 +251,7 @@ public sealed partial class ChaosGame
             return;
         }
 
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = ViewingPlayer(state);
         var reportCount = ReviewableReports(state, playerId).Count;
         font.Draw(batch, $"{_eventCursor + 1:00} OF {reportCount:00}",
             new Vector2(SharedPanelLayout.X(34), SharedPanelLayout.Y(13)), Color.Lime, 1);

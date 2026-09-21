@@ -192,8 +192,7 @@ public sealed partial class ChaosGame
             }
             var first = Math.Max(0, _commandTargetCursor - 6);
             var visible = Math.Min(13, _commandTargetOptions.Count - first);
-            var index = Enumerable.Range(0, Math.Max(0, visible))
-                .FirstOrDefault(row => CommandOverlayLayout.TargetRow(row).Contains(point), -1);
+            var index = HitTest.IndexAt(Math.Max(0, visible), CommandOverlayLayout.TargetRow, point);
             if (index >= 0)
             {
                 _commandTargetCursor = first + index;
@@ -203,8 +202,7 @@ public sealed partial class ChaosGame
             return;
         }
         var actions = CommandOverlayActions;
-        var actionIndex = Enumerable.Range(0, actions.Count)
-            .FirstOrDefault(index => CommandOverlayLayout.ActionRow(index).Contains(point), -1);
+        var actionIndex = HitTest.IndexAt(actions.Count, CommandOverlayLayout.ActionRow, point);
         if (actionIndex >= 0)
         {
             _commandCursor = actionIndex;
@@ -311,9 +309,8 @@ public sealed partial class ChaosGame
 
     private void DrawCommands(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        if (_commandReturnScreen == ClientScreen.Sector) DrawSectorDetails(batch, pixel, font, state);
-        else DrawBoard(batch, pixel, font, state);
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        DrawMapBackdrop(batch, pixel, font, state, _commandReturnScreen);
+        var playerId = ViewingPlayer(state);
         var gang = SelectedGang(state.FindPlayer(playerId)!);
         if (_choosingCommandTarget)
         {
@@ -416,10 +413,7 @@ public sealed partial class ChaosGame
         Texture2D pixel,
         MatchState state)
     {
-        if (_influenceBackground is not null)
-            batch.Draw(_influenceBackground, InfluenceCommandLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, InfluenceCommandLayout.Panel, new Color(0, 0, 0, 248));
+        DrawPanelArtwork(batch, pixel, _influenceBackground, InfluenceCommandLayout.Panel, 248);
 
         var actor = state.FindGang(_commandTargetOptions[0].Gang)!;
         var actorDefinition = state.Definitions.Gangs.Single(gang => gang.Id == actor.DefinitionId);

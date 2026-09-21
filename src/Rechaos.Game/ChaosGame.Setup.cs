@@ -267,8 +267,7 @@ public sealed partial class ChaosGame
             CancelSetupPlayerDrag();
             return;
         }
-        var target = Enumerable.Range(0, MatchLimits.PlayerCount)
-            .FirstOrDefault(index => PlayerPortraitLayout.SetupHit(index).Contains(point), -1);
+        var target = HitTest.IndexAt(MatchLimits.PlayerCount, PlayerPortraitLayout.SetupHit, point);
         var result = _localSetupRoster.MoveHuman(source, target);
         if (result is LocalSetupMoveResult.MovedToEmptyColor
             or LocalSetupMoveResult.ExchangedHumanColors)
@@ -499,8 +498,8 @@ public sealed partial class ChaosGame
             if (_uiKeyedSprites is not null)
                 batch.Draw(_uiKeyedSprites, token,
                     OriginalSpriteLayout.SetupDragFrame, Color.White);
-            if (Enumerable.Range(0, MatchLimits.PlayerCount).FirstOrDefault(
-                    index => PlayerPortraitLayout.SetupHit(index).Contains(_dragPoint), -1) is { } target
+            if (HitTest.IndexAt(
+                MatchLimits.PlayerCount, PlayerPortraitLayout.SetupHit, _dragPoint) is { } target
                 && target >= 0)
                 DrawBorder(batch, pixel, PlayerPortraitLayout.SetupLarge(target), Color.Lime, 2);
         }

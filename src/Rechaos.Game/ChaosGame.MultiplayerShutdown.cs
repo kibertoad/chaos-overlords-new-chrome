@@ -19,10 +19,7 @@ public sealed partial class ChaosGame
         {
             UpdateOnlineRecovery(recovery with { CleanExit = true });
         }
-        _serverProbeCancellation?.Cancel();
-        _serverProbeCancellation?.Dispose();
-        _serverProbeCancellation = null;
-        _serverProbe = null;
+        CancelServerProbe();
         // The leave a player asked for on the way out is waited for too, within the same grace:
         // disposing the client under it would cut off the one request that stops the match waiting
         // on this seat.

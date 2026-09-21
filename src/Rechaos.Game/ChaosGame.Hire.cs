@@ -51,7 +51,7 @@ public sealed partial class ChaosGame
                 HireComparisonLayout.BackgroundSource, Color.White);
         else
             batch.Draw(pixel, HireComparisonLayout.Panel, new Color(0, 0, 0, 245));
-        var playerId = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
         var entries = CurrentHireDock(player);
         for (var slot = 0; slot < HireDockLayout.SlotCount; slot++)
@@ -246,30 +246,7 @@ public sealed partial class ChaosGame
     private void HandleHireClick(Point point)
     {
         if (HireComparisonLayout.Ok.Contains(point))
-        {
-            AcceptInput();
-            _screens.Show(_managementReturnScreen);
-        }
-    }
-
-    private void QueueSelectedHireOffer()
-    {
-        if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
-        if (_actions is null)
-        {
-            RejectInput(OnlinePlanningClosed);
-            return;
-        }
-        var player = _state.FindPlayer(playerId)!;
-        _hireCursor = HireDockLayout.MoveCursor(player.HireOfferSlots, _hireCursor, 0);
-        if (_hireCursor < 0) return;
-        var offer = player.HireOfferSlots[_hireCursor].GangDefinitionId!.Value;
-        var result = _actions.QueueHire(playerId, offer, _cursor);
-        ReportHireSubmission(result, player);
-        if (result.Accepted)
-        {
-            _screens.Show(ClientScreen.City);
-        }
+            AcceptAndShow(_managementReturnScreen);
     }
 
     private void ReportHireSubmission(HireSubmissionResult result, MatchPlayerState player)
@@ -309,7 +286,7 @@ public sealed partial class ChaosGame
         if (_state?.Coordinator.ActivePlayer is not { } playerId) return;
         if (_actions is null)
         {
-            ReportHireDockResult(false, OnlinePlanningClosed, pointerButton);
+            ReportButtonResult(false, OnlinePlanningClosed, pointerButton);
             return;
         }
         PrepareCurrentHireOffers();
@@ -320,23 +297,6 @@ public sealed partial class ChaosGame
             return;
         }
         var result = _actions.SnubHireOffer(playerId, entry.GangDefinitionId);
-        ReportHireDockResult(result.Accepted, result.Validation.Message, pointerButton);
-    }
-
-    /// <summary>Answers a dock action in whichever voice the control that asked speaks.</summary>
-    /// <remarks>
-    /// The dock's reject button is a pointer control with its own result sounds, so an answer it
-    /// triggered has to use those rather than the keyboard's, which would land on top of the push
-    /// the button has already played.
-    /// </remarks>
-    private void ReportHireDockResult(bool accepted, string rejectionMessage, bool pointerButton)
-    {
-        if (!pointerButton)
-        {
-            ReportInputResult(accepted, rejectionMessage);
-            return;
-        }
-        _message = accepted ? string.Empty : CityStatusMessage.Error(rejectionMessage);
-        if (AudioRouting.PointerPushResultSound(accepted) is { } sound) PlayGeneralSound(sound);
+        ReportButtonResult(result.Accepted, result.Validation.Message, pointerButton);
     }
 }

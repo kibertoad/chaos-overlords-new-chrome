@@ -113,10 +113,7 @@ public sealed partial class ChaosGame
         Texture2D pixel,
         MatchState state)
     {
-        if (_movementBackground is not null)
-            batch.Draw(_movementBackground, MovementLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, MovementLayout.Panel, new Color(0, 0, 0, 248));
+        DrawPanelArtwork(batch, pixel, _movementBackground, MovementLayout.Panel, 248);
         var actor = state.FindGang(_commandTargetOptions[0].Gang)!;
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, MovementLayout.Portrait,

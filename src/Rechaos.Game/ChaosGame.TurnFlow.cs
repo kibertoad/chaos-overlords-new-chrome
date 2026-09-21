@@ -227,7 +227,7 @@ public sealed partial class ChaosGame
         var panel = HandoffLayout.Panel;
         if (_handoffPanel is not null) batch.Draw(_handoffPanel, panel, Color.White);
         else batch.Draw(pixel, panel, new Color(24, 37, 39));
-        var playerId = _eliminationHandoffPlayer ?? state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var playerId = _eliminationHandoffPlayer ?? ViewingPlayer(state);
         var player = state.FindPlayer(playerId)!;
         if (_uiSprites is not null)
             batch.Draw(_uiSprites, HandoffLayout.Portrait,

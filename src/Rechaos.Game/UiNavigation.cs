@@ -489,8 +489,7 @@ public static class SectorGangDropTarget
             .ThenBy(gang => gang.Id.Value)
             .Take(SectorGangCardLayout.VisibleCards)
             .ToArray();
-        var slot = Enumerable.Range(0, displayed.Length)
-            .FirstOrDefault(index => SectorGangCardLayout.Frame(index).Contains(point), -1);
+        var slot = HitTest.IndexAt(displayed.Length, SectorGangCardLayout.Frame, point);
         return slot >= 0 && displayed[slot].Owner != actorOwner ? displayed[slot].Id : null;
     }
 }

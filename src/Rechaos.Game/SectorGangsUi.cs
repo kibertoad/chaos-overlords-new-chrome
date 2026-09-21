@@ -90,12 +90,8 @@ public sealed partial class ChaosGame
         PixelFont font,
         MatchState state)
     {
-        if (_sectorGangReturnScreen == ClientScreen.Sector) DrawSectorDetails(batch, pixel, font, state);
-        else DrawBoard(batch, pixel, font, state);
-        if (_sectorGangsBackground is not null)
-            batch.Draw(_sectorGangsBackground, SectorGangsLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, SectorGangsLayout.Panel, new Color(0, 0, 0, 245));
+        DrawMapBackdrop(batch, pixel, font, state, _sectorGangReturnScreen);
+        DrawPanelArtwork(batch, pixel, _sectorGangsBackground, SectorGangsLayout.Panel);
         foreach (var entry in _sectorGangRoster.Take(SectorGangsLayout.MaximumGangCount)
                      .Select((id, index) => (id, index)))
         {

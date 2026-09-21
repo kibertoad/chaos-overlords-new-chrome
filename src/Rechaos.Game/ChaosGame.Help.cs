@@ -549,13 +549,7 @@ public sealed partial class ChaosGame
 
     private void DrawHelp(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
-        var background = _helpReturnScreen switch
-        {
-            ClientScreen.Title => _titleBackground,
-            ClientScreen.Setup => _setupBackground,
-            ClientScreen.Endgame => _endgameBackground,
-            _ => _cityBackground
-        };
+        var background = ReturnScreenBackground(_helpReturnScreen);
         if (background is not null)
             batch.Draw(background, new Rectangle(0, 0, 640, 460), Color.White);
         batch.Draw(pixel, new Rectangle(0, 0, 640, 460), new Color(0, 0, 0, 205));

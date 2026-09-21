@@ -93,10 +93,7 @@ public sealed partial class ChaosGame
         PixelFont font,
         MatchState state)
     {
-        if (_gangDetailsReturnScreen == ClientScreen.Sector)
-            DrawSectorDetails(batch, pixel, font, state);
-        else
-            DrawBoard(batch, pixel, font, state);
+        DrawMapBackdrop(batch, pixel, font, state, _gangDetailsReturnScreen);
     }
 
     private void DrawGangDetailsPanel(

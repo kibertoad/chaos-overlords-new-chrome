@@ -402,9 +402,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (Pressed(keyboard, Keys.F11) || altEnter) ToggleFullscreen();
         if (altEnter || UpdateIntroMovies(gameTime, keyboard, mouse))
         {
-            _previousKeyboard = keyboard;
-            _previousMouse = mouse;
-            base.Update(gameTime);
+            EndUpdate(gameTime, keyboard, mouse);
             return;
         }
         UpdateSoundtrack(gameTime);
@@ -418,9 +416,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             mouse.RightButton, _previousMouse.RightButton);
         if (!_gameMenuOpen && UpdatePlanningTimer(gameTime.TotalGameTime))
         {
-            _previousKeyboard = keyboard;
-            _previousMouse = mouse;
-            base.Update(gameTime);
+            EndUpdate(gameTime, keyboard, mouse);
             return;
         }
         RunComputerTurns();
@@ -444,9 +440,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             }
             else
             {
-                _previousKeyboard = keyboard;
-                _previousMouse = mouse;
-                base.Update(gameTime);
+                EndUpdate(gameTime, keyboard, mouse);
                 return;
             }
         }
@@ -545,10 +539,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     }
                     if (Pressed(keyboard, Keys.Enter)) ActivateCommandSelection();
                     if (Pressed(keyboard, Keys.Back))
-                    {
-                        AcceptInput();
-                        BackFromCommands();
-                    }
+                        AcceptAndInvoke(BackFromCommands);
                     break;
                 case ClientScreen.Hire:
                     if (Pressed(keyboard, Keys.Left) || Pressed(keyboard, Keys.Up)) MoveHireCursor(-1);
@@ -590,9 +581,6 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                         AcceptAndInvoke(CloseGameInformation);
                     break;
                 case ClientScreen.Finance:
-                    if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                        AcceptAndShow(_managementReturnScreen);
-                    break;
                 case ClientScreen.Ranking:
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
                         AcceptAndShow(_managementReturnScreen);
@@ -637,10 +625,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                     if (Pressed(keyboard, Keys.Right) || Pressed(keyboard, Keys.Down)) MoveCombatSummary(1);
                     if (Pressed(keyboard, Keys.D)) ReplaySelectedCombatDetail();
                     if (Pressed(keyboard, Keys.Back) || Pressed(keyboard, Keys.Enter))
-                    {
-                        AcceptInput();
-                        CloseCombatResults();
-                    }
+                        AcceptAndInvoke(CloseCombatResults);
                     break;
                 case ClientScreen.Search:
                     if (Pressed(keyboard, Keys.Left))
@@ -679,15 +664,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
                 _message = string.Empty;
             }
             else if (_draggedHireDefinitionId is not null && !_hireDragStarted
-                     && (Math.Abs(virtualPoint.X - _hirePressPoint.X) >= 4
-                         || Math.Abs(virtualPoint.Y - _hirePressPoint.Y) >= 4))
+                     && DragMoved(_hirePressPoint, virtualPoint))
             {
                 _hireDragStarted = true;
                 _message = string.Empty;
             }
             else if (_draggedGangId is not null && !_gangDragStarted
-                     && (Math.Abs(virtualPoint.X - _gangPressPoint.X) >= 4
-                         || Math.Abs(virtualPoint.Y - _gangPressPoint.Y) >= 4))
+                     && DragMoved(_gangPressPoint, virtualPoint))
             {
                 _gangDragStarted = true;
                 _message = string.Empty;
@@ -696,10 +679,19 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         if (_previousMouse.LeftButton == ButtonState.Pressed && mouse.LeftButton == ButtonState.Released)
             CompletePointerRelease(pointerMapped, virtualPoint);
         CaptureNewCombatAnimations();
+        EndUpdate(gameTime, keyboard, mouse);
+    }
+
+    /// <summary>Records this frame's input as the previous frame's, which every edge test reads.</summary>
+    private void EndUpdate(GameTime gameTime, KeyboardState keyboard, MouseState mouse)
+    {
         _previousKeyboard = keyboard;
         _previousMouse = mouse;
         base.Update(gameTime);
     }
+
+    private static bool DragMoved(Point press, Point current) =>
+        Math.Abs(current.X - press.X) >= 4 || Math.Abs(current.Y - press.Y) >= 4;
 
     private void HandleClick(Point point)
     {

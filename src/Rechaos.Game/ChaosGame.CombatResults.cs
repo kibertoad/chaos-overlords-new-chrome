@@ -117,11 +117,8 @@ public sealed partial class ChaosGame
         PixelFont font,
         MatchState state)
     {
-        if (_combatResultsBackground is not null)
-            batch.Draw(_combatResultsBackground, CombatResultsLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, CombatResultsLayout.Panel, new Color(0, 0, 0, 245));
-        var viewer = state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        DrawPanelArtwork(batch, pixel, _combatResultsBackground, CombatResultsLayout.Panel);
+        var viewer = ViewingPlayer(state);
         var pages = CombatResultProjection.Pages(state, viewer);
         ClearCombatResultPage(batch, pixel);
         if (pages.Count == 0)

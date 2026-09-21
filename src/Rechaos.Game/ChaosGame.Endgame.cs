@@ -91,10 +91,7 @@ public sealed partial class ChaosGame
     /// </summary>
     private void DrawEndgameBackground(SpriteBatch batch, Texture2D pixel)
     {
-        if (_endgameBackground is not null)
-            batch.Draw(_endgameBackground, EndgameLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, EndgameLayout.Panel, new Color(0, 0, 0, 230));
+        DrawPanelArtwork(batch, pixel, _endgameBackground, EndgameLayout.Panel, 230);
     }
 
     private static void DrawEndgameNoticeName(

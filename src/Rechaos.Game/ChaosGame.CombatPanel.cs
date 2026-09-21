@@ -9,10 +9,7 @@ public sealed partial class ChaosGame
     private void DrawCombatPanel(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         if (_combatAnimationPlayer.Active is not { } clip) return;
-        if (_combatBackground is not null)
-            batch.Draw(_combatBackground, CombatPanelLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, CombatPanelLayout.Panel, new Color(0, 0, 0, 245));
+        DrawPanelArtwork(batch, pixel, _combatBackground, CombatPanelLayout.Panel);
 
         var gameEvent = state.Events.FirstOrDefault(value => value.Sequence == clip.EventSequence);
         var leftId = gameEvent?.Gang;
