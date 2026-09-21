@@ -78,6 +78,7 @@ public sealed partial class ChaosGame
     private void DrawPoliceCombatant(SpriteBatch batch, Texture2D pixel, PixelFont font, bool rightSide)
     {
         font.Draw(batch, "POLICE", CombatPanelLayout.PoliceName(rightSide).ToVector2(), Color.LightBlue, 1);
+        batch.Draw(pixel, CombatPanelLayout.GangPortrait(rightSide), Color.Black);
         if (_policeSprites is not null)
             batch.Draw(_policeSprites, CombatPanelLayout.PolicePortrait(rightSide),
                 OriginalSpriteLayout.PolicePatrolCar, Color.White);

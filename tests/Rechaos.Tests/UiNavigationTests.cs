@@ -695,8 +695,8 @@ public sealed class UiNavigationTests
         Assert.Equal(new Rectangle(327, 172, 64, 64), CombatPanelLayout.GangPortrait(true));
         Assert.Equal(new Rectangle(254, 254, 64, 64), CombatPanelLayout.Animation(false));
         Assert.Equal(new Rectangle(327, 254, 64, 64), CombatPanelLayout.Animation(true));
-        Assert.Equal(new Rectangle(254, 172, 48, 64), CombatPanelLayout.PolicePortrait(false));
-        Assert.Equal(new Rectangle(327, 172, 48, 64), CombatPanelLayout.PolicePortrait(true));
+        Assert.Equal(new Rectangle(262, 172, 48, 64), CombatPanelLayout.PolicePortrait(false));
+        Assert.Equal(new Rectangle(335, 172, 48, 64), CombatPanelLayout.PolicePortrait(true));
         Assert.Equal(new Rectangle(256, 238, 60, 3), CombatPanelLayout.ForceBar(false));
         Assert.Equal(new Rectangle(329, 238, 60, 3), CombatPanelLayout.ForceBar(true));
         Assert.Equal(EquipmentCommandLayout.Panel, CombatResultsLayout.Panel);

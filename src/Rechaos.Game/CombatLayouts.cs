@@ -64,7 +64,7 @@ public static class CombatPanelLayout
     public static Rectangle PolicePortrait(bool right)
     {
         var portrait = GangPortrait(right);
-        return new Rectangle(portrait.X, portrait.Y, 48, 64);
+        return new Rectangle(portrait.X + 8, portrait.Y, 48, 64);
     }
 
     public static Rectangle EquipmentItem(bool right, int slot)
