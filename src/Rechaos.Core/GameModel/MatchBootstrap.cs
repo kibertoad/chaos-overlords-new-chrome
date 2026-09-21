@@ -36,13 +36,11 @@ public static class MatchBootstrap
             throw new ArgumentException("Player starts must follow setup player order.", nameof(starts));
         if (starts.Select(start => start.HeadquartersSectorId).Distinct().Count() != starts.Count)
             throw new ArgumentException("Players must have distinct headquarters sectors.", nameof(starts));
-        if (sectors.Count != MatchLimits.SectorCount
-            || !sectors.Select(sector => sector.Id).SequenceEqual(Enumerable.Range(0, MatchLimits.SectorCount)))
-            throw new ArgumentException("The city must contain sectors ordered from 0 through 63.", nameof(sectors));
+        RequireOrderedCity(sectors, nameof(sectors));
 
         // The bootstrap is transactional with respect to its inputs: ownership is
         // applied to a private state graph, not to the caller's reusable layout.
-        var sectorArray = sectors.Select(CloneSector).ToArray();
+        var sectorArray = sectors.Select(sector => CloneSector(sector)).ToArray();
         foreach (var start in starts)
         {
             if (start.HeadquartersSectorId is < 0 or >= MatchLimits.SectorCount)
@@ -93,10 +91,23 @@ public static class MatchBootstrap
         return new MatchState(definitions, setup, players, sectorArray);
     }
 
-    private static MatchSectorState CloneSector(MatchSectorState sector) => new(
+    /// <summary>Throws unless the city holds all 64 sectors, each at the index of its own id.</summary>
+    internal static void RequireOrderedCity(IReadOnlyList<MatchSectorState> sectors, string parameterName)
+    {
+        if (sectors.Count != MatchLimits.SectorCount
+            || !sectors.Select(sector => sector.Id).SequenceEqual(Enumerable.Range(0, MatchLimits.SectorCount)))
+            throw new ArgumentException("The city must contain sectors ordered from 0 through 63.", parameterName);
+    }
+
+    /// <summary>
+    /// A copy of the sector with its own site objects. The owner is kept, and
+    /// <paramref name="isImportant"/> replaces the flag when given.
+    /// </summary>
+    internal static MatchSectorState CloneSector(MatchSectorState sector, bool? isImportant = null) => new(
         sector.Id,
         sector.Sites.Select(site => new MatchSiteState(
             site.Slot, site.DefinitionId, site.Resistance, site.InfluencedBy)).ToArray(),
-        sector.Owner, sector.Tolerance, sector.LegacyChaos, sector.CrackdownActive, sector.IsImportant, sector.Income,
+        sector.Owner, sector.Tolerance, sector.LegacyChaos, sector.CrackdownActive,
+        isImportant ?? sector.IsImportant, sector.Income,
         sector.CrackdownTurnsRemaining, sector.CrackdownHistory);
 }

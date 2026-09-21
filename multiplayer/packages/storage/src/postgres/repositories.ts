@@ -1,6 +1,7 @@
 import type {
   MatchRepository,
   MultiplayerStorage,
+  Player,
   PlayerRepository,
   PublicLobbyRow,
   SnapshotRepository,
@@ -21,6 +22,7 @@ import {
   ne,
   notExists,
   or,
+  type SQLWrapper,
   sql,
 } from 'drizzle-orm'
 import { insertUnlessTaken } from '../shared/constraints'
@@ -61,6 +63,14 @@ export function createPostgresStorage(db: PostgresDatabase): MultiplayerStorage 
 
 function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
   const { matches, players, snapshots } = schema
+  // Children cascade from the match row, so one delete takes the whole match with it.
+  const deleteCollectable = async (collectable: SQLWrapper): Promise<number> => {
+    const rows = await db
+      .delete(matches)
+      .where(inArray(matches.id, collectable))
+      .returning({ id: matches.id })
+    return rows.length
+  }
   return {
     async create(match) {
       return insertUnlessTaken(() => db.insert(matches).values(toMatchInsert(match)))
@@ -174,12 +184,7 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
         .where(and(inArray(matches.status, [...statuses]), lt(matches.updatedAt, before)))
         .limit(limit)
         .for('update', { skipLocked: true })
-      // Children cascade from the match row, so one delete takes the whole match with it.
-      const rows = await db
-        .delete(matches)
-        .where(inArray(matches.id, collectable))
-        .returning({ id: matches.id })
-      return rows.length
+      return deleteCollectable(collectable)
     },
     /**
      * The same delete, aimed at a live match nobody is in any more. The roster test is a
@@ -205,11 +210,7 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
         )
         .limit(limit)
         .for('update', { skipLocked: true })
-      const rows = await db
-        .delete(matches)
-        .where(inArray(matches.id, collectable))
-        .returning({ id: matches.id })
-      return rows.length
+      return deleteCollectable(collectable)
     },
     async listDesynced(limit, touchedSince) {
       const rows = await db
@@ -236,6 +237,29 @@ function postgresMatchRepository(db: PostgresDatabase): MatchRepository {
   }
 }
 
+/**
+ * The select list `create` and `createLate` feed their insert from: the player's own values, each
+ * under the column name it is inserted as.
+ *
+ * The list is written out, which means it does NOT get Drizzle's column mapping: a column added to
+ * `players` later has to be added here too, in the storage form the column expects. The
+ * conformance suite compares a created player against its fixture field by field, so a dropped
+ * column fails there rather than going unnoticed.
+ */
+function playerValues(player: Player) {
+  return {
+    id: sql`${player.id}`.as('id'),
+    matchId: sql`${player.matchId}`.as('match_id'),
+    slot: sql`${player.slot}`.as('slot'),
+    joinOrder: sql`${player.joinOrder}`.as('join_order'),
+    displayName: sql`${player.displayName}`.as('display_name'),
+    portraitId: sql`${player.portraitId}`.as('portrait_id'),
+    tokenHash: sql`${player.tokenHash}`.as('token_hash'),
+    status: sql`${player.status}`.as('status'),
+    joinedAt: sql`${player.joinedAt}`.as('joined_at'),
+  }
+}
+
 function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
   const { matches, players } = schema
   return {
@@ -244,28 +268,13 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
      * by the same statement that writes the player. The seat counter was claimed a moment earlier
      * and the match may have started since; without this the player would land in a running match
      * that had already seated its roster, holding a seat nobody can play.
-     *
-     * The select list is written out, which means it does NOT get Drizzle's column mapping: a
-     * column added to `players` later has to be added here too, in the storage form the column
-     * expects. The conformance suite compares a created player against its fixture field by field,
-     * so a dropped column fails there rather than going unnoticed.
      */
     async create(player) {
       const rows = await db
         .insert(players)
         .select(
           db
-            .select({
-              id: sql`${player.id}`.as('id'),
-              matchId: sql`${player.matchId}`.as('match_id'),
-              slot: sql`${player.slot}`.as('slot'),
-              joinOrder: sql`${player.joinOrder}`.as('join_order'),
-              displayName: sql`${player.displayName}`.as('display_name'),
-              portraitId: sql`${player.portraitId}`.as('portrait_id'),
-              tokenHash: sql`${player.tokenHash}`.as('token_hash'),
-              status: sql`${player.status}`.as('status'),
-              joinedAt: sql`${player.joinedAt}`.as('joined_at'),
-            })
+            .select(playerValues(player))
             .from(matches)
             .where(and(eq(matches.id, player.matchId), eq(matches.status, 'lobby'))),
         )
@@ -281,17 +290,7 @@ function postgresPlayerRepository(db: PostgresDatabase): PlayerRepository {
         .insert(players)
         .select(
           db
-            .select({
-              id: sql`${player.id}`.as('id'),
-              matchId: sql`${player.matchId}`.as('match_id'),
-              slot: sql`${player.slot}`.as('slot'),
-              joinOrder: sql`${player.joinOrder}`.as('join_order'),
-              displayName: sql`${player.displayName}`.as('display_name'),
-              portraitId: sql`${player.portraitId}`.as('portrait_id'),
-              tokenHash: sql`${player.tokenHash}`.as('token_hash'),
-              status: sql`${player.status}`.as('status'),
-              joinedAt: sql`${player.joinedAt}`.as('joined_at'),
-            })
+            .select(playerValues(player))
             .from(matches)
             .where(
               and(
@@ -379,6 +378,13 @@ function postgresTurnOrderMethods(
   'submitOrders' | 'getOrders' | 'getOrderSummary' | 'listOrders' | 'listOrderSummaries'
 > {
   const { turns, turnOrders } = schema
+  const orderSummaryColumns = {
+    matchId: turnOrders.matchId,
+    turn: turnOrders.turn,
+    playerId: turnOrders.playerId,
+    ordersHash: turnOrders.ordersHash,
+    ready: turnOrders.ready,
+  }
   return {
     async submitOrders(matchId, number, playerId, submission) {
       const turnIsOpen = exists(
@@ -418,13 +424,7 @@ function postgresTurnOrderMethods(
     },
     async getOrderSummary(matchId, number, playerId) {
       const rows = await db
-        .select({
-          matchId: turnOrders.matchId,
-          turn: turnOrders.turn,
-          playerId: turnOrders.playerId,
-          ordersHash: turnOrders.ordersHash,
-          ready: turnOrders.ready,
-        })
+        .select(orderSummaryColumns)
         .from(turnOrders)
         .where(
           and(
@@ -445,13 +445,7 @@ function postgresTurnOrderMethods(
     },
     async listOrderSummaries(matchId, number) {
       return db
-        .select({
-          matchId: turnOrders.matchId,
-          turn: turnOrders.turn,
-          playerId: turnOrders.playerId,
-          ordersHash: turnOrders.ordersHash,
-          ready: turnOrders.ready,
-        })
+        .select(orderSummaryColumns)
         .from(turnOrders)
         .where(and(eq(turnOrders.matchId, matchId), eq(turnOrders.turn, number)))
         .orderBy(asc(turnOrders.playerId))
@@ -635,6 +629,16 @@ function postgresTurnRepository(db: PostgresDatabase): TurnRepository {
 
 function postgresSnapshotRepository(db: PostgresDatabase): SnapshotRepository {
   const { snapshots } = schema
+  const snapshotSummaryColumns = {
+    matchId: snapshots.matchId,
+    turn: snapshots.turn,
+    formatVersion: snapshots.formatVersion,
+    protocolVersion: snapshots.protocolVersion,
+    sessionVersion: snapshots.sessionVersion,
+    stateHash: snapshots.stateHash,
+    uploadedByPlayerId: snapshots.uploadedByPlayerId,
+    uploadedAt: snapshots.uploadedAt,
+  }
   return {
     async put(snapshot) {
       await db
@@ -663,16 +667,7 @@ function postgresSnapshotRepository(db: PostgresDatabase): SnapshotRepository {
     },
     async getSummary(matchId, turn) {
       const rows = await db
-        .select({
-          matchId: snapshots.matchId,
-          turn: snapshots.turn,
-          formatVersion: snapshots.formatVersion,
-          protocolVersion: snapshots.protocolVersion,
-          sessionVersion: snapshots.sessionVersion,
-          stateHash: snapshots.stateHash,
-          uploadedByPlayerId: snapshots.uploadedByPlayerId,
-          uploadedAt: snapshots.uploadedAt,
-        })
+        .select(snapshotSummaryColumns)
         .from(snapshots)
         .where(and(eq(snapshots.matchId, matchId), eq(snapshots.turn, turn)))
       return firstOrNull(rows.map(toSnapshotSummary))
@@ -688,16 +683,7 @@ function postgresSnapshotRepository(db: PostgresDatabase): SnapshotRepository {
     },
     async getLatestSummary(matchId) {
       const rows = await db
-        .select({
-          matchId: snapshots.matchId,
-          turn: snapshots.turn,
-          formatVersion: snapshots.formatVersion,
-          protocolVersion: snapshots.protocolVersion,
-          sessionVersion: snapshots.sessionVersion,
-          stateHash: snapshots.stateHash,
-          uploadedByPlayerId: snapshots.uploadedByPlayerId,
-          uploadedAt: snapshots.uploadedAt,
-        })
+        .select(snapshotSummaryColumns)
         .from(snapshots)
         .where(eq(snapshots.matchId, matchId))
         .orderBy(desc(snapshots.turn))

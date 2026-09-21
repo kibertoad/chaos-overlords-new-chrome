@@ -30,8 +30,7 @@ internal static class OriginalAiFamilyTenRules
         var selected = gang.ArmorItemId is { } equipped
             ? checked((int)equipped)
             : UnequippedArmorBaselineItem;
-        var gangTech = state.Definitions.Gangs
-            .Single(definition => definition.Id == gang.DefinitionId).TechLevel;
+        var gangTech = state.Definitions.Gang(gang.DefinitionId).TechLevel;
         for (var index = 0; index < 64; index++)
         {
             var item = state.Definitions.Items[index];
@@ -93,7 +92,6 @@ internal static class OriginalAiFamilyTenRules
 
         return state.Sectors[sectorId].Sites
             .Where(site => site.Resistance <= 0)
-            .Sum(site => Math.Max(0, (int)state.Definitions.Sites
-                .Single(definition => definition.Id == site.DefinitionId).Stats.Stealth));
+            .Sum(site => Math.Max(0, (int)state.Definitions.Site(site.DefinitionId).Stats.Stealth));
     }
 }

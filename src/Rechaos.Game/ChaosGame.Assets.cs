@@ -89,6 +89,10 @@ public sealed partial class ChaosGame
         if (_combatSounds.TryGetValue(soundIndex, out var sound)) TryPlaySound(sound);
     }
 
+    /// <summary>The player whose view is drawn: the active one, or the first seat between turns.</summary>
+    private static PlayerId ViewingPlayer(MatchState state) =>
+        state.Coordinator.ActivePlayer ?? new PlayerId(0);
+
     private void PlayGeneralSound(int slot)
     {
         if (_generalSounds.TryGetValue(slot, out var sound)) TryPlaySound(sound);
@@ -98,6 +102,22 @@ public sealed partial class ChaosGame
     {
         _message = accepted ? string.Empty : CityStatusMessage.Error(rejectionMessage);
         PlayGeneralSound(AudioRouting.InputResultSound(accepted));
+    }
+
+    /// <summary>Answers an action in whichever voice the control that asked speaks.</summary>
+    /// <remarks>
+    /// A pointer button has its own result sounds, so an answer it triggered has to use those rather
+    /// than the keyboard's, which would land on top of the push the button has already played.
+    /// </remarks>
+    private void ReportButtonResult(bool accepted, string rejectionMessage, bool pointerButton)
+    {
+        if (!pointerButton)
+        {
+            ReportInputResult(accepted, rejectionMessage);
+            return;
+        }
+        _message = accepted ? string.Empty : CityStatusMessage.Error(rejectionMessage);
+        if (AudioRouting.PointerPushResultSound(accepted) is { } sound) PlayGeneralSound(sound);
     }
 
     private void RejectInput(string message) => ReportInputResult(false, message);
@@ -133,7 +153,7 @@ public sealed partial class ChaosGame
     {
         if (_state is null) return;
         if (_screens.Current is not (ClientScreen.City or ClientScreen.CombatSummary)) return;
-        var viewer = _state.Coordinator.ActivePlayer ?? new PlayerId(0);
+        var viewer = ViewingPlayer(_state);
         var lastSeen = _combatPresentationProgress.LastSeen(viewer);
         // The list is append-only in sequence order and this runs twice per Update, so walk back
         // from the end to the first unseen event instead of filtering and re-sorting all of it.

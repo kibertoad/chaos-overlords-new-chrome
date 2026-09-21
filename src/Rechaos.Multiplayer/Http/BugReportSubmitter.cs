@@ -142,9 +142,7 @@ public sealed class BugReportSubmitter
                 nameof(http));
         var address = endpoint ?? BugReportEndpoint.Default;
         _endpoint = new Uri(
-            address.AbsolutePath.EndsWith('/')
-                ? address
-                : new Uri(address, $"{address.AbsolutePath}/"),
+            MultiplayerClientOptions.WithTrailingSlash(address),
             $"{ApiRoutes.Prefix[1..]}{ApiRoutes.BugReports}");
     }
 

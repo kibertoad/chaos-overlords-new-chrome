@@ -30,6 +30,12 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const DEFAULT_RETENTION_DAYS = 30
 const DEFAULT_ABANDONED_RETENTION_DAYS = 90
 
+/** A non-negative whole number from an environment variable; anything else reads as `fallback`. */
+function wholeNumber(raw: string | undefined, fallback: number): number {
+  const value = Number(raw ?? fallback)
+  return Number.isInteger(value) && value >= 0 ? value : fallback
+}
+
 export const HUB_PATHS = {
   notify: '/notify',
   schedule: '/schedule',
@@ -110,10 +116,6 @@ export function buildKernel(
         body: { ...input, dueAt: input.dueAt.toISOString() },
       }),
   }
-  const days = (raw: string | undefined, fallback: number): number => {
-    const value = Number(raw ?? fallback)
-    return Number.isInteger(value) && value >= 0 ? value : fallback
-  }
   return createKernel(
     {
       storage,
@@ -125,13 +127,13 @@ export function buildKernel(
     },
     {
       retention: {
-        maxAgeMs: days(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS) * DAY_MS,
+        maxAgeMs: wholeNumber(env.RETENTION_DAYS, DEFAULT_RETENTION_DAYS) * DAY_MS,
         abandonedLiveMaxAgeMs:
-          days(env.ABANDONED_RETENTION_DAYS, DEFAULT_ABANDONED_RETENTION_DAYS) * DAY_MS,
+          wholeNumber(env.ABANDONED_RETENTION_DAYS, DEFAULT_ABANDONED_RETENTION_DAYS) * DAY_MS,
         // Twice the abandoned window, and without its roster test, which never collects an untimed
         // match whose players' clients died without a `leave`.
         silentLiveMaxAgeMs:
-          days(env.ABANDONED_RETENTION_DAYS, DEFAULT_ABANDONED_RETENTION_DAYS) * 2 * DAY_MS,
+          wholeNumber(env.ABANDONED_RETENTION_DAYS, DEFAULT_ABANDONED_RETENTION_DAYS) * 2 * DAY_MS,
         batchSize: 50,
       },
     },
@@ -153,10 +155,6 @@ export function buildBugReports(env: Env): BugReportService | undefined {
   if (!env.BUG_DB) return undefined
   const repository = createBugReportRepository(drizzle(env.BUG_DB, { schema: bugReportSchema }))
   const blobs = env.BUG_BLOBS ? createR2BlobStore(env.BUG_BLOBS) : undefined
-  const number = (raw: string | undefined, fallback: number): number => {
-    const value = Number(raw ?? fallback)
-    return Number.isInteger(value) && value >= 0 ? value : fallback
-  }
   return createBugReportService({
     repository,
     clock: { now: () => new Date() },
@@ -164,14 +162,14 @@ export function buildBugReports(env: Env): BugReportService | undefined {
     retention: {
       ...DEFAULT_BUG_REPORT_RETENTION,
       dailyStateBytes:
-        number(
+        wholeNumber(
           env.BUG_REPORT_DAILY_STATE_MB,
           DEFAULT_BUG_REPORT_RETENTION.dailyStateBytes / (1024 * 1024),
         ) *
         1024 *
         1024,
       maxAgeMs:
-        number(env.BUG_REPORT_RETENTION_DAYS, DEFAULT_BUG_REPORT_RETENTION.maxAgeMs / DAY_MS) *
+        wholeNumber(env.BUG_REPORT_RETENTION_DAYS, DEFAULT_BUG_REPORT_RETENTION.maxAgeMs / DAY_MS) *
         DAY_MS,
     },
     ...(blobs ? { blobs } : {}),

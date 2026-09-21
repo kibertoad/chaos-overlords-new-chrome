@@ -55,10 +55,8 @@ public sealed partial class ChaosGame
             HandleIdleGangWarningClick(point);
             return;
         }
-        var rejectSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
-            .FirstOrDefault(slot => HireDockLayout.Reject(slot).Contains(point), -1);
-        var hireSlot = Enumerable.Range(0, HireDockLayout.SlotCount)
-            .FirstOrDefault(slot => HireDockLayout.Portrait(slot).Contains(point), -1);
+        var rejectSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Reject, point);
+        var hireSlot = HitTest.IndexAt(HireDockLayout.SlotCount, HireDockLayout.Portrait, point);
         if (rejectSlot >= 0)
         {
             BeginHireReject(rejectSlot, ClientScreen.City);

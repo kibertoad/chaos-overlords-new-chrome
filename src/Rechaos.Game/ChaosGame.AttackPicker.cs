@@ -45,10 +45,7 @@ public sealed partial class ChaosGame
         PixelFont font,
         MatchState state)
     {
-        if (_targetAcquisitionBackground is not null)
-            batch.Draw(_targetAcquisitionBackground, AttackCommandLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, AttackCommandLayout.Panel, new Color(0, 0, 0, 248));
+        DrawPanelArtwork(batch, pixel, _targetAcquisitionBackground, AttackCommandLayout.Panel, 248);
 
         var selected = _commandTargetOptions[_commandTargetCursor];
         var actor = state.FindGang(selected.Gang)!;
@@ -98,7 +95,7 @@ public sealed partial class ChaosGame
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
         DrawBorder(batch, pixel, portrait, PlayerColors[gang.Owner.Value], 1);
 
-        var itemIds = new short?[] { gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId };
+        var itemIds = EquippedItems(gang);
         for (var slot = 0; slot < itemIds.Length; slot++)
         {
             var destination = itemDestination(slot);

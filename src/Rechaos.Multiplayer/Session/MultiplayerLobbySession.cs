@@ -177,25 +177,26 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             _notices.Enqueue(new LobbyNotice.Updated(detail.Match));
             return;
         }
-        _notices.Enqueue(new LobbyNotice.Updated(
-            (await _handle.GetAsync(token).ConfigureAwait(false)).Match));
+        await PublishLobbyAsync(_handle, token).ConfigureAwait(false);
     });
 
     public void UpdateSettings(MatchSettings settings) => Run(async token =>
     {
         if (_handle is null) return;
         await _handle.UpdateSettingsAsync(settings, token).ConfigureAwait(false);
-        _notices.Enqueue(new LobbyNotice.Updated(
-            (await _handle.GetAsync(token).ConfigureAwait(false)).Match));
+        await PublishLobbyAsync(_handle, token).ConfigureAwait(false);
     });
 
     /// <summary>Re-reads the lobby, for the roster and for the moment it starts running.</summary>
     public void Refresh() => Run(async token =>
     {
         if (_handle is null) return;
-        _notices.Enqueue(new LobbyNotice.Updated(
-            (await _handle.GetAsync(token).ConfigureAwait(false)).Match));
+        await PublishLobbyAsync(_handle, token).ConfigureAwait(false);
     });
+
+    private async Task PublishLobbyAsync(MatchHandle handle, CancellationToken token) =>
+        _notices.Enqueue(new LobbyNotice.Updated(
+            (await handle.GetAsync(token).ConfigureAwait(false)).Match));
 
     /// <summary>
     /// Gives up the seat, and answers a task that completes when the server has been told.
@@ -260,14 +261,16 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
             // that the seat is actually given up before the caller disposes the client under it.
             await _leaving.ConfigureAwait(false);
         }
-        catch (Exception exception) when (exception is MultiplayerApiException
-            or MultiplayerProtocolException or MultiplayerTimeoutException
-            or HttpRequestException or IOException)
+        catch (Exception exception) when (IsServerOrNetworkFailure(exception))
         {
             // A leave that did not get through is the server's turn timer's problem now.
         }
         _stopping.Dispose();
     }
+
+    private static bool IsServerOrNetworkFailure(Exception exception) =>
+        exception is MultiplayerApiException or MultiplayerProtocolException
+            or MultiplayerTimeoutException or HttpRequestException or IOException;
 
     private void Seat(MembershipView membership)
     {
@@ -302,9 +305,7 @@ public sealed class MultiplayerLobbySession : IAsyncDisposable
         {
             // The player left while this was in flight; there is nobody to tell.
         }
-        catch (Exception exception) when (exception is MultiplayerApiException
-            or MultiplayerProtocolException or MultiplayerTimeoutException
-            or HttpRequestException or IOException)
+        catch (Exception exception) when (IsServerOrNetworkFailure(exception))
         {
             _notices.Enqueue(new LobbyNotice.Failed(Describe(exception), exception, operationName));
         }

@@ -52,17 +52,10 @@ public sealed partial class MultiplayerMatchSession
     {
         if (!_uploadInitialSnapshot) return;
         _uploadInitialSnapshot = false;
-        try
-        {
-            await UploadSnapshotAsync(
-                    0, MatchStateHasher.ComputeFingerprint(_replay.State), cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (Exception exception) when (exception is MultiplayerApiException
-            or MultiplayerProtocolException or RetryExhaustedException)
-        {
-            // See above: a bootstrap nobody is waiting on.
-        }
+        // See above: a bootstrap nobody is waiting on.
+        await TryUploadSnapshotAsync(
+                0, MatchStateHasher.ComputeFingerprint(_replay.State), cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <summary>
@@ -92,15 +85,24 @@ public sealed partial class MultiplayerMatchSession
         {
             return;
         }
+        // A checkpoint nobody is waiting for. The next reconnect replays from an older one.
+        await TryUploadSnapshotAsync(confirmedTurn, stateHash, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>Uploads a snapshot nothing on this client waits for, so a refusal is dropped.</summary>
+    private async Task TryUploadSnapshotAsync(
+        int turn,
+        string stateHash,
+        CancellationToken cancellationToken)
+    {
         try
         {
-            await UploadSnapshotAsync(confirmedTurn, stateHash, cancellationToken)
-                .ConfigureAwait(false);
+            await UploadSnapshotAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is MultiplayerApiException
             or MultiplayerProtocolException or RetryExhaustedException)
         {
-            // A checkpoint nobody is waiting for. The next reconnect replays from an older one.
         }
     }
 

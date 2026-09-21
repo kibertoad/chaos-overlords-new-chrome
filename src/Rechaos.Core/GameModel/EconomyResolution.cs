@@ -52,8 +52,7 @@ public static class EconomyResolver
     {
         foreach (var gang in player.Gangs.Where(gang => gang.IsActive))
         {
-            var upkeep = state.Definitions.Gangs
-                .Single(definition => definition.Id == gang.DefinitionId).Upkeep;
+            var upkeep = state.Definitions.Gang(gang.DefinitionId).Upkeep;
             if (upkeep < 0)
                 player.Statistics.CashEarned = checked(player.Statistics.CashEarned - upkeep);
             else
@@ -74,16 +73,15 @@ public static class EconomyResolver
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(player);
-        if (state.FindPlayer(player.Id) != player)
-            throw new ArgumentException("Player does not belong to the match.", nameof(player));
+        state.RequirePlayer(player);
         var previousCash = player.Cash;
         var sectorIncome = state.Sectors.Count(sector => sector.Owner == player.Id)
             * ManualRules.ControlledSectorTax;
         var siteIncome = state.Sectors.SelectMany(sector => sector.Sites)
             .Where(site => site.InfluencedBy == player.Id)
-            .Sum(site => state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Cash);
+            .Sum(site => state.Definitions.Site(site.DefinitionId).Cash);
         var gangUpkeep = player.Gangs.Where(gang => gang.IsActive)
-            .Sum(gang => state.Definitions.Gangs.Single(definition => definition.Id == gang.DefinitionId).Upkeep);
+            .Sum(gang => state.Definitions.Gang(gang.DefinitionId).Upkeep);
         return new EconomyForecast(previousCash, sectorIncome, siteIncome, gangUpkeep,
             checked(previousCash + sectorIncome + siteIncome - gangUpkeep));
     }

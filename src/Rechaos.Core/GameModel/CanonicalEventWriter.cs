@@ -1,3 +1,5 @@
+using static Rechaos.Core.GameModel.MatchStateHasher;
+
 namespace Rechaos.Core.GameModel;
 
 internal static class CanonicalEventWriter
@@ -153,26 +155,9 @@ internal static class CanonicalEventWriter
     {
         writer.Write(value is not null);
         if (value is null) return;
-        writer.Write((byte)value.Scenario);
-        writer.Write((byte)value.Reason);
-        writer.Write(value.CompletedTurn);
-        writer.Write(value.Winners.Count);
-        foreach (var winner in value.Winners) writer.Write(winner.Value);
-        writer.Write(value.Standings.Count);
-        foreach (var standing in value.Standings)
-        {
-            writer.Write(standing.Player.Value);
-            writer.Write(standing.Place);
-            writer.Write(standing.Score);
-        }
-        writer.Write(value.Awards.Count);
-        foreach (var award in value.Awards)
-        {
-            writer.Write((byte)award.Award);
-            writer.Write(award.Value);
-            writer.Write(award.Recipients.Count);
-            foreach (var recipient in award.Recipients) writer.Write(recipient.Value);
-        }
+        WriteOutcomeBody(
+            writer, value.Scenario, value.Reason, value.CompletedTurn,
+            value.Winners, value.Standings, value.Awards);
     }
 
     private static void WriteInts(BinaryWriter writer, IReadOnlyList<int> values)
@@ -193,36 +178,6 @@ internal static class CanonicalEventWriter
         if (values is null) return;
         writer.Write(values.Count);
         foreach (var value in values) writer.Write(value);
-    }
-
-    private static void WriteNullableTarget(BinaryWriter writer, CommandTarget? value)
-    {
-        writer.Write(value.HasValue);
-        if (value is { } target) WriteTarget(writer, target);
-    }
-
-    private static void WriteTarget(BinaryWriter writer, CommandTarget value)
-    {
-        writer.Write((byte)value.Kind);
-        writer.Write(value.Id);
-    }
-
-    private static void WriteNullableInt(BinaryWriter writer, int? value)
-    {
-        writer.Write(value.HasValue);
-        if (value.HasValue) writer.Write(value.Value);
-    }
-
-    private static void WriteNullableShort(BinaryWriter writer, short? value)
-    {
-        writer.Write(value.HasValue);
-        if (value.HasValue) writer.Write(value.Value);
-    }
-
-    private static void WriteNullableByte(BinaryWriter writer, byte? value)
-    {
-        writer.Write(value.HasValue);
-        if (value.HasValue) writer.Write(value.Value);
     }
 
     private static IReadOnlyList<T> Freeze<T>(IEnumerable<T> values) =>

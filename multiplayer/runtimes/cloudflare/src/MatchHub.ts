@@ -1,4 +1,8 @@
-import { isDomainError, type PersistedEvent } from '@chaos-overlords/kernel'
+import {
+  isDomainError,
+  type MultiplayerStorage,
+  type PersistedEvent,
+} from '@chaos-overlords/kernel'
 import { DEFAULT_SERVER_CONFIG, LocalEventHub } from '@chaos-overlords/server'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
 import type { DurableObjectState } from '@cloudflare/workers-types'
@@ -20,13 +24,14 @@ const DEADLINE_KEY = 'deadline'
  */
 export class MatchHub {
   private readonly hub: LocalEventHub
+  private readonly repositories: MultiplayerStorage
 
   constructor(
     private readonly state: DurableObjectState,
     private readonly env: Env,
   ) {
-    const storage = createSqliteStorage(drizzle(env.DB, { schema: sqliteSchema }))
-    this.hub = new LocalEventHub(storage.events, DEFAULT_SERVER_CONFIG.sseHeartbeatMs)
+    this.repositories = createSqliteStorage(drizzle(env.DB, { schema: sqliteSchema }))
+    this.hub = new LocalEventHub(this.repositories.events, DEFAULT_SERVER_CONFIG.sseHeartbeatMs)
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -42,11 +47,7 @@ export class MatchHub {
       }
       case HUB_PATHS.schedule: {
         const body = (await request.json()) as PendingDeadline & { dueAt: string }
-        await this.state.storage.put<PendingDeadline>(DEADLINE_KEY, {
-          matchId: body.matchId,
-          turn: body.turn,
-        })
-        await this.state.storage.setAlarm(new Date(body.dueAt).getTime())
+        await this.arm(body.matchId, body.turn, new Date(body.dueAt).getTime())
         return new Response(null, { status: 204 })
       }
       case HUB_PATHS.subscribe: {
@@ -84,18 +85,18 @@ export class MatchHub {
       notifier: { notify: async (event) => this.hub.notify(event) },
       streams: this.hub,
       scheduler: {
-        schedule: async (input) => {
-          await this.state.storage.put<PendingDeadline>(DEADLINE_KEY, {
-            matchId: input.matchId,
-            turn: input.turn,
-          })
-          await this.state.storage.setAlarm(input.dueAt.getTime())
-        },
+        schedule: async (input) => this.arm(input.matchId, input.turn, input.dueAt.getTime()),
       },
     })
     const sealed = await kernel.turns.trySeal(pending.matchId, pending.turn, 'deadline')
     workerLogger.info('deadline alarm handled', { ...pending, sealed })
     await this.forgetSpentDeadline(pending)
+  }
+
+  /** Record which turn the alarm is for, then set the alarm. One deadline is pending at a time. */
+  private async arm(matchId: string, turn: number, dueAtMs: number): Promise<void> {
+    await this.state.storage.put<PendingDeadline>(DEADLINE_KEY, { matchId, turn })
+    await this.state.storage.setAlarm(dueAtMs)
   }
 
   /**
@@ -108,10 +109,9 @@ export class MatchHub {
   private async forgetSpentDeadline(fired: PendingDeadline): Promise<void> {
     const current = await this.state.storage.get<PendingDeadline>(DEADLINE_KEY)
     if (!current || current.matchId !== fired.matchId || current.turn !== fired.turn) return
-    const storage = createSqliteStorage(drizzle(this.env.DB, { schema: sqliteSchema }))
     const [match, turn] = await Promise.all([
-      storage.matches.get(fired.matchId),
-      storage.turns.get(fired.matchId, fired.turn),
+      this.repositories.matches.get(fired.matchId),
+      this.repositories.turns.get(fired.matchId, fired.turn),
     ])
     const stillDue =
       match?.status === 'running' && turn?.status === 'open' && turn.deadlineAt !== null

@@ -57,8 +57,16 @@ public static class JsonStateDiffer
         return;
 
         void Add(StateDifferenceKind kind, string? expectedValue, string? actualValue) =>
-            differences.Add(new StateDifference(path, ResolveLabel(path, labels), kind, expectedValue, actualValue));
+            differences.Add(Difference(path, labels, kind, expectedValue, actualValue));
     }
+
+    private static StateDifference Difference(
+        string path,
+        IReadOnlyDictionary<string, string>? labels,
+        StateDifferenceKind kind,
+        string? expectedValue,
+        string? actualValue) =>
+        new(path, ResolveLabel(path, labels), kind, expectedValue, actualValue);
 
     private static void CompareObjects(
         JsonElement expected,
@@ -76,13 +84,13 @@ public static class JsonStateDiffer
             var hasActual = actualProperties.TryGetValue(name, out var actualProperty);
             if (!hasExpected)
             {
-                differences.Add(new StateDifference(childPath, ResolveLabel(childPath, labels),
-                    StateDifferenceKind.Added, null, actualProperty.Value.GetRawText()));
+                differences.Add(Difference(
+                    childPath, labels, StateDifferenceKind.Added, null, actualProperty.Value.GetRawText()));
             }
             else if (!hasActual)
             {
-                differences.Add(new StateDifference(childPath, ResolveLabel(childPath, labels),
-                    StateDifferenceKind.Removed, expectedProperty.Value.GetRawText(), null));
+                differences.Add(Difference(
+                    childPath, labels, StateDifferenceKind.Removed, expectedProperty.Value.GetRawText(), null));
             }
             else
             {
@@ -105,13 +113,13 @@ public static class JsonStateDiffer
             var childPath = $"{path}[{index}]";
             if (index >= expectedItems.Length)
             {
-                differences.Add(new StateDifference(childPath, ResolveLabel(childPath, labels),
-                    StateDifferenceKind.Added, null, actualItems[index].GetRawText()));
+                differences.Add(Difference(
+                    childPath, labels, StateDifferenceKind.Added, null, actualItems[index].GetRawText()));
             }
             else if (index >= actualItems.Length)
             {
-                differences.Add(new StateDifference(childPath, ResolveLabel(childPath, labels),
-                    StateDifferenceKind.Removed, expectedItems[index].GetRawText(), null));
+                differences.Add(Difference(
+                    childPath, labels, StateDifferenceKind.Removed, expectedItems[index].GetRawText(), null));
             }
             else
             {

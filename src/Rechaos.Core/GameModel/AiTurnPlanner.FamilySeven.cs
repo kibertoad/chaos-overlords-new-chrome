@@ -2,21 +2,16 @@ namespace Rechaos.Core.GameModel;
 
 public static partial class AiTurnPlanner
 {
-    private static bool PrepareFamilySevenCommand(
+    private static void PrepareFamilySevenCommand(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var player = state.FindPlayer(playerId)!;
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = visible.Count == 0
-            ? 0
-            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
 
         if (visibleWeight == 10)
             TryPrepareFamilySevenAttack(state, playerId, gang, gangSlot, visible);
@@ -28,15 +23,9 @@ public static partial class AiTurnPlanner
         var plannedAction = state.AiPlanning.PlannedAction(playerId, gangSlot);
         if (!OriginalAiFamilySevenRules.EndsAfterPreliminaryAction(plannedAction))
             PrepareFamilySevenResearchContinuation(
-                state, player, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, player, gang, gangSlot, snapshot);
 
-        var turnsRemaining = Math.Max(0,
-            ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
-        if (OriginalAiFamilySevenRules.ShouldTerminateForGreed(
-                state.Setup.Scenario, turnsRemaining))
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
-        return true;
+        TerminateForGreed(state, playerId, gangSlot);
     }
 
     private static void TryPrepareFamilySevenAttack(
@@ -68,10 +57,7 @@ public static partial class AiTurnPlanner
         MatchPlayerState player,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var playerId = player.Id;
         var previousAction = state.AiPlanning.PreviousAction(playerId, gangSlot);
@@ -90,8 +76,7 @@ public static partial class AiTurnPlanner
         if (state.AiPlanning.FocusValue(playerId, gangSlot) == bestSector)
         {
             PrepareFamilySevenResearch(
-                state, player, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, player, gang, gangSlot, snapshot);
             return;
         }
 
@@ -102,16 +87,16 @@ public static partial class AiTurnPlanner
                 sourceSectorId: gang.SectorId,
                 player: playerId,
                 family: 7,
-                sectorOwners,
-                sectorDisabled,
-                sectorGangCounts,
+                snapshot.SectorOwners,
+                snapshot.SectorDisabled,
+                snapshot.SectorGangCounts,
                 canSoloControl: _ => true,
                 hasPriorChaos: _ => false,
                 isHostileOwner: owner =>
                     state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
                 isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                     .Setup.Controller == PlayerController.Human,
-                playerOrder,
+                snapshot.PlayerOrder,
                 state.Random);
             SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
             return;
@@ -128,8 +113,7 @@ public static partial class AiTurnPlanner
 
         state.AiPlanning.SetFocusValue(playerId, gangSlot, gang.SectorId);
         PrepareFamilySevenResearch(
-            state, player, gang, gangSlot,
-            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+            state, player, gang, gangSlot, snapshot);
     }
 
     private static void PrepareFamilySevenResearch(
@@ -137,10 +121,7 @@ public static partial class AiTurnPlanner
         MatchPlayerState player,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var playerId = player.Id;
         var previousItem = state.AiPlanning.PreviousTarget(playerId, gangSlot).First;
@@ -163,9 +144,9 @@ public static partial class AiTurnPlanner
             sourceSectorId: gang.SectorId,
             player: playerId,
             family: 0,
-            sectorOwners,
-            sectorDisabled,
-            sectorGangCounts,
+            snapshot.SectorOwners,
+            snapshot.SectorDisabled,
+            snapshot.SectorGangCounts,
             canSoloControl: sectorId => CanSoloControl(state, playerId, gang, sectorId),
             hasPriorChaos: sectorId => player.Gangs
                 .Select((candidate, slot) => (candidate, slot))
@@ -177,7 +158,7 @@ public static partial class AiTurnPlanner
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            playerOrderValues: playerOrder,
+            playerOrderValues: snapshot.PlayerOrder,
             random: state.Random);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }

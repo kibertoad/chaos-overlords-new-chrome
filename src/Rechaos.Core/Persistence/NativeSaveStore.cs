@@ -55,51 +55,16 @@ public static class NativeSaveStore
         var fullPath = Path.GetFullPath(path);
         var directory = Path.GetDirectoryName(fullPath)
             ?? throw new ArgumentException("Save path has no parent directory.", nameof(path));
-        Directory.CreateDirectory(directory);
-        var temporaryPath = Path.Combine(
-            directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
-        try
-        {
-            using (var stream = new FileStream(
-                temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
-                bufferSize: 81920, FileOptions.WriteThrough))
-            {
-                NativeSaveSerializer.Save(stream, state);
-                stream.Flush(flushToDisk: true);
-            }
-
-            // Do not promote bytes that cannot be read back, and never replace a
-            // known-good backup with a corrupt current file. A state that fails its own round trip
-            // is a defect in the serializer, not a disk problem, but it reaches the player as a
-            // failed save either way, so report it as one: every caller filters for IOException,
-            // and an InvalidDataException escaping here ended the process at the end of the turn.
-            try
-            {
-                _ = Load(temporaryPath, state.Definitions);
-            }
-            catch (InvalidDataException exception)
-            {
-                throw new IOException(
-                    "The save was written but could not be read back, so it was not promoted.",
-                    exception);
-            }
-            if (!File.Exists(fullPath))
-            {
-                File.Move(temporaryPath, fullPath);
-            }
-            else if (IsValid(fullPath, state.Definitions))
-            {
-                File.Replace(temporaryPath, fullPath, fullPath + BackupSuffix);
-            }
-            else
-            {
-                File.Move(temporaryPath, fullPath, overwrite: true);
-            }
-        }
-        finally
-        {
-            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
-        }
+        // Do not promote bytes that cannot be read back, and never replace a
+        // known-good backup with a corrupt current file. A state that fails its own round trip
+        // is a defect in the serializer, not a disk problem, but it reaches the player as a
+        // failed save either way, so report it as one: every caller filters for IOException,
+        // and an InvalidDataException escaping here ended the process at the end of the turn.
+        AtomicGenerationRecovery.SaveAtomic(
+            fullPath, directory, BackupSuffix,
+            "The save was written but could not be read back, so it was not promoted.",
+            stream => NativeSaveSerializer.Save(stream, state),
+            candidate => _ = Load(candidate, state.Definitions));
     }
 
     public static MatchState Load(string path, OriginalData definitions)
@@ -132,43 +97,8 @@ public static class NativeSaveStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(definitions);
-        try
-        {
-            return new NativeSaveLoadResult(Load(path, definitions), false);
-        }
-        catch (Exception primaryFailure) when (
-            primaryFailure is IOException or InvalidDataException
-            && !IncompatibleSave.IsIncompatible(primaryFailure))
-        {
-            var backupPath = Path.GetFullPath(path) + BackupSuffix;
-            if (!File.Exists(backupPath)) throw;
-            var state = Load(backupPath, definitions);
-            if (!repairPrimary) return new NativeSaveLoadResult(state, true);
-            var fullPath = Path.GetFullPath(path);
-            var repaired = AtomicGenerationRecovery.TryRestore(
-                fullPath, backupPath, candidate => _ = Load(candidate, definitions));
-            return new NativeSaveLoadResult(state, true, repaired);
-        }
-    }
-
-    /// <summary>
-    /// Whether the existing primary is worth keeping as the next backup generation.
-    /// </summary>
-    /// <remarks>
-    /// A file this build cannot read but that is otherwise intact counts as worth keeping, so the
-    /// save goes through <see cref="File.Replace(string, string, string)"/> and the older or newer
-    /// generation survives under <see cref="BackupSuffix"/> instead of being overwritten in place.
-    /// </remarks>
-    private static bool IsValid(string path, OriginalData definitions)
-    {
-        try
-        {
-            _ = Load(path, definitions);
-            return true;
-        }
-        catch (Exception exception) when (exception is IOException or InvalidDataException)
-        {
-            return IncompatibleSave.IsIncompatible(exception);
-        }
+        var (state, recovered, repaired) = AtomicGenerationRecovery.LoadRecoveringBackup(
+            path, BackupSuffix, repairPrimary, candidate => Load(candidate, definitions));
+        return new NativeSaveLoadResult(state, recovered, repaired);
     }
 }

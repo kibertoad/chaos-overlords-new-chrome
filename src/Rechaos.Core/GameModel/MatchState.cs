@@ -131,7 +131,7 @@ public sealed partial class MatchPlayerState
 
     private static void ValidateResearchItem(OriginalData definitions, short itemIndex)
     {
-        if (itemIndex < 0 || itemIndex >= definitions.Items.Count || definitions.Items[itemIndex].Type == 99)
+        if (!MatchState.IsActualItem(definitions, itemIndex))
             throw new ArgumentOutOfRangeException(nameof(itemIndex));
     }
 }
@@ -441,8 +441,7 @@ public sealed partial class MatchState
         foreach (var gameEvent in restore.Events.OrderBy(gameEvent => gameEvent.Sequence))
             StoreEvent(gameEvent);
         _nextEventSequence = restore.NextEventSequence;
-        foreach (var gang in Players.SelectMany(player => player.Gangs))
-            gang.QueuedCommand = Commands.TryGet(gang.Id, out var queued) ? queued : null;
+        RefreshQueuedCommands();
         foreach (var player in Players)
         {
             var next = restore.NextNotificationSequences[player.Id];
@@ -548,10 +547,22 @@ public sealed partial class MatchState
         if (phase == TurnStructure.ExecutionOrder[^1])
         {
             Commands.FinishExecution();
-            foreach (var gang in Players.SelectMany(player => player.Gangs))
-                gang.QueuedCommand = Commands.TryGet(gang.Id, out var queued) ? queued : null;
+            RefreshQueuedCommands();
         }
         return CaptureBoundary(transition);
+    }
+
+    /// <summary>Points every gang at its entry in the command queue, or at nothing.</summary>
+    private void RefreshQueuedCommands()
+    {
+        foreach (var gang in Players.SelectMany(player => player.Gangs))
+            gang.QueuedCommand = Commands.TryGet(gang.Id, out var queued) ? queued : null;
+    }
+
+    private void CancelQueuedCommand(MatchGangState gang)
+    {
+        Commands.Cancel(gang.Id);
+        gang.QueuedCommand = null;
     }
 
     public TurnTransition FinishHire(PlayerId player)
@@ -584,7 +595,7 @@ public sealed partial class MatchState
         if (!validation.IsValid) return new HireSubmissionResult(validation);
 
         var player = FindPlayer(playerId)!;
-        var definition = Definitions.Gangs.Single(item => item.Id == gangDefinitionId);
+        var definition = Definitions.Gang(gangDefinitionId);
         var cost = HireRules.InitialCost(definition);
         var offerSlot = player.FindHireOfferSlot(gangDefinitionId);
         ClearHireAction(player);
@@ -606,7 +617,7 @@ public sealed partial class MatchState
         if (!validation.IsValid) return new HireSubmissionResult(validation);
 
         var player = FindPlayer(playerId)!;
-        var definition = Definitions.Gangs.Single(item => item.Id == gangDefinitionId);
+        var definition = Definitions.Gang(gangDefinitionId);
         var cost = HireRules.InitialCost(definition);
         var offerSlot = player.FindHireOfferSlot(gangDefinitionId);
         var pending = new PendingHireState(
@@ -654,27 +665,12 @@ public sealed partial class MatchState
         return new HireOfferSnubResult(validation, gangDefinitionId, gameEvent);
     }
 
-    internal HireOfferSnubResult SnubHireOfferLegacySingleAction(
-        PlayerId playerId,
-        short gangDefinitionId)
-    {
-        var validation = HireRules.ValidateSnubLegacySingleAction(
-            this, playerId, gangDefinitionId);
-        if (!validation.IsValid) return new HireOfferSnubResult(validation);
-        var player = FindPlayer(playerId)!;
-        player.MarkHireOfferSnubbed(gangDefinitionId, player.FindHireOfferSlot(gangDefinitionId));
-        var gameEvent = AppendHireOfferEvent(
-            GameEventKind.HireOfferSnubbed, playerId,
-            new HireOfferDetails(gangDefinitionId, null));
-        return new HireOfferSnubResult(validation, gangDefinitionId, gameEvent);
-    }
-
     private void ClearHireAction(MatchPlayerState player)
     {
         foreach (var pending in player.PendingHires)
         {
             if (!pending.InitialCostPaid) continue;
-            var definition = Definitions.Gangs.Single(item => item.Id == pending.GangDefinitionId);
+            var definition = Definitions.Gang(pending.GangDefinitionId);
             var cost = HireRules.InitialCost(definition);
             player.Cash += cost;
             player.Statistics.CashSpent -= cost;
@@ -712,7 +708,7 @@ public sealed partial class MatchState
         var gang = FindGang(gangId)!;
         gang.QueuedCommand = null;
         gang.Hidden = false;
-        RecordAiPlannedAction(new GameCommand(player, gangId, GangAction.None, CommandTarget.None));
+        RecordAiPlannedAction(command);
         return new CommandSubmissionResult(validation, AppendEvent(GameEventKind.CommandCancelled, command));
     }
 
@@ -759,21 +755,32 @@ public sealed partial class MatchState
         return StoreEvent(gameEvent);
     }
 
-    internal GameEvent AppendUpkeepEvent(PlayerId player, EconomyResolutionDetails economy)
-    {
-        var gameEvent = new GameEvent(
-            _nextEventSequence++,
-            Coordinator.Turn,
-            Coordinator.Phase,
-            Coordinator.ExecutionPhase,
-            GameEventKind.UpkeepResolved,
-            player,
-            null,
-            GangAction.None,
-            CommandTarget.None,
-            Economy: economy);
-        return StoreEvent(gameEvent);
-    }
+    /// <summary>
+    /// Appends an event no gang command produced: action None, the one detail record the caller
+    /// names, and a Sector target when <paramref name="sectorId"/> is given. The sequence number
+    /// is taken before the sector target is built, as each builder did on its own.
+    /// </summary>
+    private GameEvent AppendSystemEvent(
+        GameEventKind kind,
+        PlayerId player,
+        GangId? gang = null,
+        int? sectorId = null,
+        EconomyResolutionDetails? economy = null,
+        HireResolutionDetails? hire = null,
+        HireOfferDetails? hireOffer = null,
+        EliminationDetails? elimination = null,
+        PoliceAttackResolutionDetails? policeAttack = null,
+        BigManPointDetails? bigManPoints = null,
+        MatchOutcomeDetails? matchOutcome = null) =>
+        StoreEvent(new GameEvent(
+            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
+            Coordinator.ExecutionPhase, kind, player, gang, GangAction.None,
+            sectorId is { } sector ? CommandTarget.Sector(sector) : CommandTarget.None,
+            Economy: economy, Hire: hire, HireOffer: hireOffer, Elimination: elimination,
+            PoliceAttack: policeAttack, BigManPoints: bigManPoints, MatchOutcome: matchOutcome));
+
+    internal GameEvent AppendUpkeepEvent(PlayerId player, EconomyResolutionDetails economy) =>
+        AppendSystemEvent(GameEventKind.UpkeepResolved, player, economy: economy);
 
     internal GangId NextGangId() => new(
         Players.SelectMany(player => player.Gangs).Select(gang => gang.Id.Value).DefaultIfEmpty(-1).Max() + 1);
@@ -782,11 +789,7 @@ public sealed partial class MatchState
     {
         if (kind is not (GameEventKind.HireQueued or GameEventKind.HireResolved or GameEventKind.HireFailed))
             throw new ArgumentOutOfRangeException(nameof(kind));
-        var gameEvent = new GameEvent(
-            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
-            Coordinator.ExecutionPhase, kind, player, hire.Gang,
-            GangAction.None, CommandTarget.Sector(hire.SectorId), Hire: hire);
-        return StoreEvent(gameEvent);
+        return AppendSystemEvent(kind, player, hire.Gang, hire.SectorId, hire: hire);
     }
 
     internal GameEvent AppendHireOfferEvent(
@@ -796,25 +799,16 @@ public sealed partial class MatchState
     {
         if (kind is not (GameEventKind.HireOfferSnubbed or GameEventKind.HireOfferRefilled))
             throw new ArgumentOutOfRangeException(nameof(kind));
-        var gameEvent = new GameEvent(
-            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
-            Coordinator.ExecutionPhase, kind, player, null,
-            GangAction.None, CommandTarget.None, HireOffer: hireOffer);
-        return StoreEvent(gameEvent);
+        return AppendSystemEvent(kind, player, hireOffer: hireOffer);
     }
 
     internal GameEvent AppendPoliceAttackEvent(
         PlayerId player,
         GangId gang,
-        PoliceAttackResolutionDetails policeAttack)
-    {
-        var gameEvent = new GameEvent(
-            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
-            Coordinator.ExecutionPhase, GameEventKind.PoliceAttackResolved, player,
-            gang, GangAction.None, CommandTarget.Sector(policeAttack.SectorId),
-            PoliceAttack: policeAttack);
-        return StoreEvent(gameEvent);
-    }
+        PoliceAttackResolutionDetails policeAttack) =>
+        AppendSystemEvent(
+            GameEventKind.PoliceAttackResolved, player, gang, policeAttack.SectorId,
+            policeAttack: policeAttack);
 
     private void ResolvePlayerEliminations()
     {
@@ -835,8 +829,7 @@ public sealed partial class MatchState
             {
                 foreach (var gang in player.Gangs)
                 {
-                    Commands.Cancel(gang.Id);
-                    gang.QueuedCommand = null;
+                    CancelQueuedCommand(gang);
                     if (gang.IsActive) RetireGangForEliminate(gang);
                 }
                 // Neutralize rather than clearing Owner: every other way of losing a sector runs
@@ -851,7 +844,7 @@ public sealed partial class MatchState
             foreach (var sector in Sectors)
             foreach (var site in sector.Sites.Where(site => site.InfluencedBy == player.Id))
             {
-                var definition = Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+                var definition = Definitions.Site(site.DefinitionId);
                 sector.Tolerance = checked(sector.Tolerance - definition.Tolerance);
                 // As SectorControlResolver.ResetInfluencedSites does when a sector changes hands:
                 // the site stops being influenced, so the Support it granted stops counting.
@@ -895,23 +888,11 @@ public sealed partial class MatchState
         gang.Hidden = false;
     }
 
-    private GameEvent AppendEliminationEvent(PlayerId player, EliminationDetails elimination)
-    {
-        var gameEvent = new GameEvent(
-            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
-            Coordinator.ExecutionPhase, GameEventKind.PlayerEliminated, player,
-            null, GangAction.None, CommandTarget.None, Elimination: elimination);
-        return StoreEvent(gameEvent);
-    }
+    private GameEvent AppendEliminationEvent(PlayerId player, EliminationDetails elimination) =>
+        AppendSystemEvent(GameEventKind.PlayerEliminated, player, elimination: elimination);
 
-    private GameEvent AppendBigManPointsEvent(PlayerId player, BigManPointDetails bigManPoints)
-    {
-        var gameEvent = new GameEvent(
-            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
-            Coordinator.ExecutionPhase, GameEventKind.BigManPointsAwarded, player,
-            null, GangAction.None, CommandTarget.None, BigManPoints: bigManPoints);
-        return StoreEvent(gameEvent);
-    }
+    private GameEvent AppendBigManPointsEvent(PlayerId player, BigManPointDetails bigManPoints) =>
+        AppendSystemEvent(GameEventKind.BigManPointsAwarded, player, bigManPoints: bigManPoints);
 
     private GameEvent AppendMatchEndedEvent(MatchOutcome outcome)
     {
@@ -923,12 +904,8 @@ public sealed partial class MatchState
         var subject = outcome.Winners.Count > 0
             ? outcome.Winners[0]
             : outcome.Standings[0].Player;
-        var gameEvent = new GameEvent(
-            _nextEventSequence++, Coordinator.Turn, Coordinator.Phase,
-            Coordinator.ExecutionPhase, GameEventKind.MatchEnded,
-            subject, null, GangAction.None, CommandTarget.None,
-            MatchOutcome: details);
-        gameEvent = StoreEvent(gameEvent);
+        var gameEvent = AppendSystemEvent(
+            GameEventKind.MatchEnded, subject, matchOutcome: details);
         foreach (var player in Players)
             QueueNotification(player.Id, GameNotificationKind.Objective,
                 relatedEventSequence: gameEvent.Sequence);

@@ -12,13 +12,18 @@ import type { Clock } from '../ports/runtime'
  */
 const MAX_KEYS = 50_000
 
+interface WindowEntry {
+  windowStart: number
+  count: number
+}
+
 /**
  * Fixed-window counter per key, in memory. It protects the unauthenticated doors (create, join)
  * from brute force on one process; a horizontally scaled deployment puts a shared limiter (a WAF
  * rule, Cloudflare's rate limiting) in front and treats this as the last line.
  */
 export class RateLimiter {
-  private readonly windows = new Map<string, { windowStart: number; count: number }>()
+  private readonly windows = new Map<string, WindowEntry>()
   private lastPrune = Number.NEGATIVE_INFINITY
 
   constructor(
@@ -29,16 +34,14 @@ export class RateLimiter {
   /** Returns the retry delay in seconds when over the limit, or null when the call is allowed. */
   take(key: string): number | null {
     const now = this.clock.now().getTime()
-    const entry = this.windows.get(key)
-    if (!entry || now - entry.windowStart >= this.options.windowMs) {
+    const entry = this.live(key, now)
+    if (!entry) {
       this.windows.set(key, { windowStart: now, count: 1 })
       this.prune(now)
       this.evictOldest()
       return null
     }
-    if (entry.count >= this.options.limit) {
-      return Math.ceil((entry.windowStart + this.options.windowMs - now) / 1000)
-    }
+    if (entry.count >= this.options.limit) return this.retryAfter(entry, now)
     entry.count += 1
     return null
   }
@@ -46,18 +49,26 @@ export class RateLimiter {
   /** What `take` would answer right now, spending nothing. */
   peek(key: string): number | null {
     const now = this.clock.now().getTime()
-    const entry = this.windows.get(key)
-    if (!entry || now - entry.windowStart >= this.options.windowMs) return null
-    if (entry.count < this.options.limit) return null
-    return Math.ceil((entry.windowStart + this.options.windowMs - now) / 1000)
+    const entry = this.live(key, now)
+    if (!entry || entry.count < this.options.limit) return null
+    return this.retryAfter(entry, now)
   }
 
   /** How much of `key`'s budget the current window has already spent; 0 once it has rolled. */
   spent(key: string): number {
-    const now = this.clock.now().getTime()
+    return this.live(key, this.clock.now().getTime())?.count ?? 0
+  }
+
+  /** The window `key` is spending from, or undefined once it has rolled or was never opened. */
+  private live(key: string, now: number): WindowEntry | undefined {
     const entry = this.windows.get(key)
-    if (!entry || now - entry.windowStart >= this.options.windowMs) return 0
-    return entry.count
+    if (!entry || now - entry.windowStart >= this.options.windowMs) return undefined
+    return entry
+  }
+
+  /** Whole seconds until `entry`'s window rolls, rounded up. */
+  private retryAfter(entry: WindowEntry, now: number): number {
+    return Math.ceil((entry.windowStart + this.options.windowMs - now) / 1000)
   }
 
   /**

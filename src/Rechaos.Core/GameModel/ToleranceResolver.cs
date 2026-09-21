@@ -12,8 +12,7 @@ public static class ToleranceResolver
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sector);
-        if (state.Sectors.Count <= sector.Id || state.Sectors[sector.Id] != sector)
-            throw new ArgumentException("Sector does not belong to the match.", nameof(sector));
+        state.RequireSector(sector);
 
         var siteAdjustment = SiteAdjustment(state, sector);
         return checked(IncomeToleranceSum - sector.Income + siteAdjustment);
@@ -25,8 +24,7 @@ public static class ToleranceResolver
         ArgumentNullException.ThrowIfNull(sector);
         return sector.Sites
             .Where(site => SiteControlRules.Controller(sector, site) is not null)
-            .Sum(site => state.Definitions.Sites.Single(
-                definition => definition.Id == site.DefinitionId).Tolerance);
+            .Sum(site => state.Definitions.Site(site.DefinitionId).Tolerance);
     }
 
     public static int ApplyBribe(MatchState state, MatchSectorState sector)

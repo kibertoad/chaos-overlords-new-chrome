@@ -22,13 +22,18 @@ public sealed partial class ChaosGame
             && baseAddress.Scheme is "http" or "https";
     }
 
-    /// <summary>Checks the selected server without ever blocking the drawing thread.</summary>
-    private void BeginServerProbe()
+    private void CancelServerProbe()
     {
         _serverProbeCancellation?.Cancel();
         _serverProbeCancellation?.Dispose();
         _serverProbeCancellation = null;
         _serverProbe = null;
+    }
+
+    /// <summary>Checks the selected server without ever blocking the drawing thread.</summary>
+    private void BeginServerProbe()
+    {
+        CancelServerProbe();
         if (!TrySelectedServer(out var address))
         {
             _online.ServerStatus = "CUSTOM SERVER ADDRESS IS INVALID";

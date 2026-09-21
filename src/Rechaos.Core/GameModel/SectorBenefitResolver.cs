@@ -26,8 +26,7 @@ internal static class SectorBenefitResolver
                 if (!completedSites.Contains(siteId)
                     || site.Resistance != 0
                     || site.InfluencedBy is not null) continue;
-                var definition = state.Definitions.Sites.Single(
-                    value => value.Id == site.DefinitionId);
+                var definition = state.Definitions.Site(site.DefinitionId);
                 site.InfluencedBy = owner;
                 player.Support = checked(player.Support + definition.Support);
                 sector.Tolerance = checked(sector.Tolerance + definition.Tolerance);

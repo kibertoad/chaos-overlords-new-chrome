@@ -549,10 +549,7 @@ public sealed partial class ChaosGame
         _recoveryReconciliationCancellation?.Dispose();
         _recoveryReconciliationCancellation = null;
         _recoveryReconciliation = null;
-        _serverProbeCancellation?.Cancel();
-        _serverProbeCancellation?.Dispose();
-        _serverProbeCancellation = null;
-        _serverProbe = null;
+        CancelServerProbe();
         // Only an online match's state is this method's to throw away. Opening the online screen from
         // a hot-seat match in progress and backing out of it again must leave that match alone.
         if (_session is not null)

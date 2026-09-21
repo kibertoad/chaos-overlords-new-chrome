@@ -28,8 +28,7 @@ public static class CrackdownResolver
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(sector);
-        if (state.Sectors.Count <= sector.Id || state.Sectors[sector.Id] != sector)
-            throw new ArgumentException("Sector does not belong to the match.", nameof(sector));
+        state.RequireSector(sector);
 
         var previousOwner = sector.Owner;
         var controlLost = sector.RecordCrackdown(state.Coordinator.Turn) && previousOwner is not null;

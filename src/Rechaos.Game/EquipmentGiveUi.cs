@@ -77,7 +77,7 @@ public sealed partial class ChaosGame
             return;
         }
         var gang = SelectedGang(_state.FindPlayer(playerId)!);
-        if (gang is null || GiveEquippedItems(gang).All(item => item is null))
+        if (gang is null || EquippedItems(gang).All(item => item is null))
         {
             RejectInput("GANG HAS NO EQUIPMENT TO GIVE");
             return;
@@ -97,7 +97,7 @@ public sealed partial class ChaosGame
         if (slot < 0 || slot >= _giveSelections.Length) return;
         if (_state is null || _giveGang is not { } gangId) return;
         var gang = _state.FindGang(gangId);
-        if (gang is null || GiveEquippedItems(gang)[slot] is null) return;
+        if (gang is null || EquippedItems(gang)[slot] is null) return;
         _giveSelections[slot] = !_giveSelections[slot];
         RefreshGiveRecipients();
     }
@@ -105,10 +105,7 @@ public sealed partial class ChaosGame
     private void HandleGiveEquipmentClick(Point point)
     {
         if (EquipmentGiveLayout.Cancel.Contains(point))
-        {
-            AcceptInput();
-            CloseGiveEquipment();
-        }
+            AcceptAndInvoke(CloseGiveEquipment);
         else if (EquipmentGiveLayout.Ok.Contains(point)) QueueSelectedGive();
         else
         {
@@ -136,18 +133,14 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         if (_giveReturnScreen == ClientScreen.Items) DrawItems(batch, pixel, font, state);
-        else if (_giveReturnScreen == ClientScreen.Sector) DrawSectorDetails(batch, pixel, font, state);
-        else DrawBoard(batch, pixel, font, state);
-        if (_equipmentGiveBackground is not null)
-            batch.Draw(_equipmentGiveBackground, EquipmentGiveLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, EquipmentGiveLayout.Panel, new Color(0, 0, 0, 248));
+        else DrawMapBackdrop(batch, pixel, font, state, _giveReturnScreen);
+        DrawPanelArtwork(batch, pixel, _equipmentGiveBackground, EquipmentGiveLayout.Panel, 248);
 
         if (_giveGang is not { } gangId || state.FindGang(gangId) is not { } gang) return;
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, EquipmentGiveLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(gang.DefinitionId), Color.White);
-        var equipped = GiveEquippedItems(gang);
+        var equipped = EquippedItems(gang);
         for (var slot = 0; slot < equipped.Length; slot++)
         {
             var aperture = EquipmentGiveLayout.Item(slot);
@@ -176,7 +169,4 @@ public sealed partial class ChaosGame
                 new Vector2(target.Right + 3, target.Y + 12), Color.Lime, 1);
         }
     }
-
-    private static short?[] GiveEquippedItems(MatchGangState gang) =>
-        [gang.WeaponItemId, gang.ArmorItemId, gang.MiscellaneousItemId];
 }

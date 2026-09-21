@@ -18,25 +18,6 @@ public sealed partial class MatchPlayerState
         .Select(slot => slot.GangDefinitionId!.Value)
         .ToArray();
 
-    internal IReadOnlyList<short> CaptureLegacyHirePool()
-    {
-        var actionSlots = PendingHires.Select(hire => hire.OfferSlot)
-            .Concat(SnubbedHireOfferSlot is { } snubSlot ? [snubSlot] : [])
-            .Where(slot => slot >= 0)
-            .ToHashSet();
-        var result = _hireOfferSlots
-            .Where((_, slot) => !actionSlots.Contains(slot))
-            .Select(slot => slot.GangDefinitionId)
-            .Where(id => id.HasValue)
-            .Select(id => id!.Value)
-            .ToList();
-        foreach (var slot in PendingHires.Select(hire => hire.OfferSlot)
-                     .Concat(SnubbedHireOfferSlot is { } rejectedSlot ? [rejectedSlot] : []))
-            if (slot >= 0 && _hireOfferSlots[slot].LegacyReplacementDefinitionId is { } replacement)
-                result.Add(replacement);
-        return result;
-    }
-
     internal int FindHireOfferSlot(short gangDefinitionId) =>
         Array.FindIndex(_hireOfferSlots, slot => slot.GangDefinitionId == gangDefinitionId);
 

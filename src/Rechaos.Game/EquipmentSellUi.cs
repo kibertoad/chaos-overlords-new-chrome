@@ -91,10 +91,7 @@ public sealed partial class ChaosGame
     private void HandleSellClick(Point point)
     {
         if (EquipmentSellLayout.Cancel.Contains(point))
-        {
-            AcceptInput();
-            CloseSellEquipment();
-        }
+            AcceptAndInvoke(CloseSellEquipment);
         else if (EquipmentSellLayout.Ok.Contains(point)) QueueSelectedSale();
         else
         {
@@ -139,12 +136,8 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         if (_sellReturnScreen == ClientScreen.Items) DrawItems(batch, pixel, font, state);
-        else if (_sellReturnScreen == ClientScreen.Sector) DrawSectorDetails(batch, pixel, font, state);
-        else DrawBoard(batch, pixel, font, state);
-        if (_equipmentSellBackground is not null)
-            batch.Draw(_equipmentSellBackground, EquipmentSellLayout.Panel, Color.White);
-        else
-            batch.Draw(pixel, EquipmentSellLayout.Panel, new Color(0, 0, 0, 248));
+        else DrawMapBackdrop(batch, pixel, font, state, _sellReturnScreen);
+        DrawPanelArtwork(batch, pixel, _equipmentSellBackground, EquipmentSellLayout.Panel, 248);
 
         if (_sellGang is not { } gangId || state.FindGang(gangId) is not { } gang) return;
         if (_gangPortraits is not null)

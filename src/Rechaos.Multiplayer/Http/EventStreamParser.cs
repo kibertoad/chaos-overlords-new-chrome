@@ -15,8 +15,6 @@ namespace Rechaos.Multiplayer.Http;
 /// </remarks>
 public readonly record struct EventStreamFrame(MatchEvent? Event)
 {
-    public static EventStreamFrame Keepalive => default;
-
     public bool IsKeepalive => Event is null;
 }
 

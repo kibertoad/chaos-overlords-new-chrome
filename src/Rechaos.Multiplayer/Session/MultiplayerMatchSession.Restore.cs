@@ -376,12 +376,7 @@ public sealed partial class MultiplayerMatchSession
             // and waited for a repair that nobody was going to post. It is carried out of the
             // replay here and acted on once the state it is about has been rebuilt.
             case TurnDesyncedEvent desynced:
-                _pendingDesync = new PendingDesync(
-                    desynced.Payload.Turn,
-                    desynced.Payload.CandidateStateHashes,
-                    string.Join(", ", desynced.Payload.Reports
-                        .OrderBy(report => report.PlayerId, StringComparer.Ordinal)
-                        .Select(report => $"{report.PlayerId}:{ShortHash(report.StateHash)}")));
+                _pendingDesync = PendingDesync.From(desynced);
                 return;
         }
     }

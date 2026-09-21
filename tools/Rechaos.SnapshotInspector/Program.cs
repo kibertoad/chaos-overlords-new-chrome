@@ -183,7 +183,7 @@ static IReadOnlyDictionary<int, SeatState> SeatStates(MatchState state) => state
 
 static void WriteSeats(string label, MatchState state) => Console.WriteLine(
     $"{label} seats: " + string.Join(", ", SeatStates(state).OrderBy(entry => entry.Key).Select(
-        entry => $"{entry.Key}={entry.Value.Controller}/{entry.Value.Status}/gangs:{entry.Value.ActiveGangs}")) + ".");
+        entry => $"{entry.Key}={entry.Value}")) + ".");
 
 static void WriteSeatChanges(IReadOnlyDictionary<int, SeatState> before, MatchState after)
 {

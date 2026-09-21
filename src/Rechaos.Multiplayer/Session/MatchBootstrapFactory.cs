@@ -61,6 +61,14 @@ public static class MatchBootstrapFactory
         return OriginalMatchFactory.Create(definitions, Setup(seed, settings, players));
     }
 
+    /// <summary>Whether the roster gives this player a chair at the table.</summary>
+    /// <remarks>
+    /// A player still in the lobby has slot -1, and a slot past the board is a server this client
+    /// cannot play against.
+    /// </remarks>
+    internal static bool IsSeated(PlayerView player) =>
+        player.Slot is >= 0 and < MatchLimits.PlayerCount;
+
     /// <summary>
     /// Every player that holds a seat, by slot — whatever their status is now.
     /// </summary>
@@ -84,9 +92,8 @@ public static class MatchBootstrapFactory
         var seated = new Dictionary<int, PlayerView>();
         foreach (var player in players)
         {
-            // A player still in the lobby has slot -1, and seating one would put two players in the
-            // same chair. A slot past the board is a server this client cannot play against.
-            if (player.Slot is < 0 or >= MatchLimits.PlayerCount) continue;
+            // Seating a player still in the lobby would put two players in the same chair.
+            if (!IsSeated(player)) continue;
             if (!seated.TryAdd(player.Slot, player))
             {
                 throw new MultiplayerProtocolException(

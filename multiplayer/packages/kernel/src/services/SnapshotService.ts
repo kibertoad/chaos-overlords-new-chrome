@@ -11,6 +11,7 @@ import { authoritativeCandidates } from '../logic/turn-logic'
 import type { Principal } from './AuthService'
 import type { KernelDeps } from './deps'
 import type { EventPublisher } from './EventPublisher'
+import { requireInProgress, requireParticipant, requireTurn } from './guards'
 import type { TurnService } from './TurnService'
 
 /**
@@ -41,12 +42,8 @@ export class SnapshotService {
         reason: 'host_only',
       })
     }
-    if (player.status !== 'active' && player.status !== 'takeoverPending') {
-      throw new ForbiddenError('You are no longer part of this match', { reason: 'not_active' })
-    }
-    if (!isBootstrap && match.status !== 'running' && match.status !== 'desynced') {
-      throw new ConflictError('The match is not in progress', { reason: 'match_not_running' })
-    }
+    requireParticipant(player)
+    requireInProgress(match)
     if (request.turn > match.currentTurn) {
       throw new ConflictError('Cannot snapshot a turn that has not opened', {
         reason: 'future_turn',
@@ -59,28 +56,17 @@ export class SnapshotService {
     }
     if (isBootstrap) {
       // Nothing has been reported yet, so there is no consensus a bootstrap could contradict.
-      await this.deps.storage.snapshots.put(await this.snapshotOf(match, player.id, request))
-      await this.publishSeatSummaries(
-        match.id,
-        mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries),
-      )
-      await this.pruneOldSnapshots(match.id)
+      await this.store(match, player.id, request)
       return
     }
-    const turn = await this.deps.storage.turns.get(match.id, request.turn)
-    if (!turn) throw new NotFoundError('No such turn', { reason: 'unknown_turn' })
+    const turn = await requireTurn(this.deps.storage.turns, match.id, request.turn)
     if (turn.status === 'confirmed') {
       await this.storeCheckpoint(match, player, turn, request)
       return
     }
     this.requireDesyncedTurn(turn)
     await this.requireRepairAuthority(match, player, request.turn, request.stateHash)
-    // Judged before anything is written: a refusal after the row landed would leave a stored
-    // snapshot the caller was told was rejected, with no `snapshot.available` and no verdict.
-    const gameSettings = mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries)
-    await this.deps.storage.snapshots.put(await this.snapshotOf(match, player.id, request))
-    await this.publishSeatSummaries(match.id, gameSettings)
-    await this.pruneOldSnapshots(match.id)
+    await this.store(match, player.id, request)
     await this.publisher.publish(match.id, {
       type: 'snapshot.available',
       payload: {
@@ -125,20 +111,33 @@ export class SnapshotService {
         candidateStateHashes: turn.stateHash === null ? [] : [turn.stateHash],
       })
     }
+    await this.store(match, player.id, request)
+  }
+
+  /**
+   * Write an accepted snapshot: the row, the seat summaries it carries, then the prune.
+   *
+   * The merge is judged before anything is written: a refusal after the row landed would leave a
+   * stored snapshot the caller was told was rejected, with no `snapshot.available` and no verdict.
+   * Re-running the settings schema over the merge is what holds the blob to its cap, which is why
+   * every upload path comes through here before its write.
+   */
+  private async store(
+    match: Principal['match'],
+    uploadedByPlayerId: string,
+    request: UploadSnapshotRequest,
+  ): Promise<void> {
     const gameSettings = mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries)
-    await this.deps.storage.snapshots.put(await this.snapshotOf(match, player.id, request))
+    await this.deps.storage.snapshots.put(this.snapshotOf(match, uploadedByPlayerId, request))
     await this.publishSeatSummaries(match.id, gameSettings)
     await this.pruneOldSnapshots(match.id)
   }
 
-  private async snapshotOf(
+  private snapshotOf(
     match: Principal['match'],
     uploadedByPlayerId: string,
     request: UploadSnapshotRequest,
-  ): Promise<Snapshot> {
-    // Re-running the settings schema over the merge is what holds the blob to its cap; it throws
-    // before anything is stored, which is why it is called on both paths before the write.
-    mergeSeatSummaries(match.settings.gameSettings, request.seatSummaries)
+  ): Snapshot {
     return {
       matchId: match.id,
       turn: request.turn,

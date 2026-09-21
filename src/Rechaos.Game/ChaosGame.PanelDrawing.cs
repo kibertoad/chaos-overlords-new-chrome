@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Rechaos.Core.GameModel;
 
 namespace Rechaos.Game;
 
@@ -82,5 +83,21 @@ public sealed partial class ChaosGame
         DrawPlanningTimer(_batch, _pixel);
         _batch.End();
         return true;
+    }
+
+    /// <summary>The map a panel opened over: the sector view, or the city board.</summary>
+    private void DrawMapBackdrop(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state, ClientScreen returnScreen)
+    {
+        if (returnScreen == ClientScreen.Sector) DrawSectorDetails(batch, pixel, font, state);
+        else DrawBoard(batch, pixel, font, state);
+    }
+
+    /// <summary>A panel's original artwork, or a dark plate where the asset pack lacks it.</summary>
+    private static void DrawPanelArtwork(
+        SpriteBatch batch, Texture2D pixel, Texture2D? artwork, Rectangle panel, int fallbackAlpha = 245)
+    {
+        if (artwork is not null) batch.Draw(artwork, panel, Color.White);
+        else batch.Draw(pixel, panel, new Color(0, 0, 0, fallbackAlpha));
     }
 }

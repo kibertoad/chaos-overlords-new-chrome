@@ -26,8 +26,10 @@ internal static class OriginalAiFamilyThreeRules
         int comparisonTargetForce,
         int comparisonTargetCombat,
         int comparisonTargetDefense) =>
-        (comparisonTargetForce + comparisonTargetCombat) / 4 - attackerDefense
-        <= attackerForce + attackerCombat - comparisonTargetDefense;
+        OriginalAiFamilyTwelveRules.CanAttackSelectedTarget(
+            attackerForce, attackerCombat, attackerDefense,
+            comparisonTargetForce, comparisonTargetCombat,
+            comparisonTargetDefense);
 
     public static int? ThreeMoveTransitionFamily(
         ScenarioId scenario,
@@ -42,11 +44,9 @@ internal static class OriginalAiFamilyThreeRules
 
     public static bool ShouldTerminateForGreed(
         ScenarioId scenario,
-        int turnsRemaining)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(turnsRemaining);
-        return scenario == ScenarioId.Greed && turnsRemaining < 4;
-    }
+        int turnsRemaining) =>
+        OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
+            scenario, turnsRemaining);
 
     public static int? SelectHighestCashUnfinishedSite(
         MatchState state,
@@ -60,8 +60,7 @@ internal static class OriginalAiFamilyThreeRules
         int? bestSlot = null;
         foreach (var site in state.Sectors[sectorId].Sites.OrderBy(site => site.Slot))
         {
-            var cash = state.Definitions.Sites
-                .Single(definition => definition.Id == site.DefinitionId).Cash;
+            var cash = state.Definitions.Site(site.DefinitionId).Cash;
             if (site.Resistance <= 0 || cash <= bestCash) continue;
             bestCash = cash;
             bestSlot = site.Slot;
@@ -77,7 +76,6 @@ internal static class OriginalAiFamilyThreeRules
 
         return state.Sectors[sectorId].Sites
             .Where(site => site.Resistance > 0)
-            .Sum(site => Math.Max(0, (int)state.Definitions.Sites
-                .Single(definition => definition.Id == site.DefinitionId).Cash));
+            .Sum(site => Math.Max(0, (int)state.Definitions.Site(site.DefinitionId).Cash));
     }
 }

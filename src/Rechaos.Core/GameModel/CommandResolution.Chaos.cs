@@ -30,21 +30,16 @@ public static partial class CommandResolver
     {
         var prepared = PreparedChaosResults(state, commands);
         if (prepared.Count > 0 || commands.Count == 0) return prepared;
-        var ordered = commands
-            .OrderBy(queued => queued.Command.Player.Value)
-            .ThenBy(queued => GangSlot(state, queued.Command))
-            .ToArray();
+        var ordered = InRosterOrder(state, commands);
         var rolled = ordered.Select(queued =>
         {
             var gang = state.FindGang(queued.Command.Gang)!;
             var sector = state.Sectors[gang.SectorId];
             var band = OriginalResolutionRules.Band(state, queued.Command.Player);
-            var pool = checked(SectorIncome(state, sector) + gang.Force
+            var pool = checked(sector.Income + gang.Force
                 + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos);
             var dice = OriginalResolutionRules.ActionPool(band, GangAction.Chaos, pool);
-            var rolls = DiceRoller.RollD6(state.Random, dice);
-            var successes = OriginalResolutionRules.CountSuccesses(
-                rolls, OriginalResolutionRules.SuccessThreshold(band, GangAction.Chaos));
+            var (rolls, successes) = RollAction(state, band, GangAction.Chaos, dice);
             return new ChaosRoll(queued, sector, rolls, successes, dice, band);
         }).ToArray();
         var groups = rolled

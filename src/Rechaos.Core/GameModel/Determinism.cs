@@ -253,20 +253,38 @@ public static class MatchStateHasher
     {
         writer.Write(outcome is not null);
         if (outcome is null) return;
-        writer.Write((byte)outcome.Scenario);
-        writer.Write((byte)outcome.Reason);
-        writer.Write(outcome.Turn);
-        writer.Write(outcome.Winners.Count);
-        foreach (var winner in outcome.Winners) writer.Write(winner.Value);
-        writer.Write(outcome.Standings.Count);
-        foreach (var standing in outcome.Standings)
+        WriteOutcomeBody(
+            writer, outcome.Scenario, outcome.Reason, outcome.Turn,
+            outcome.Winners, outcome.Standings, outcome.Awards);
+    }
+
+    /// <summary>
+    /// The fields a match outcome contributes after its presence flag. The state hash and the
+    /// MatchEnded event encode them in the same order and width.
+    /// </summary>
+    internal static void WriteOutcomeBody(
+        BinaryWriter writer,
+        ScenarioId scenario,
+        MatchEndReason reason,
+        int turn,
+        IReadOnlyList<PlayerId> winners,
+        IReadOnlyList<MatchStanding> standings,
+        IReadOnlyList<EndgameAwardResult> awards)
+    {
+        writer.Write((byte)scenario);
+        writer.Write((byte)reason);
+        writer.Write(turn);
+        writer.Write(winners.Count);
+        foreach (var winner in winners) writer.Write(winner.Value);
+        writer.Write(standings.Count);
+        foreach (var standing in standings)
         {
             writer.Write(standing.Player.Value);
             writer.Write(standing.Place);
             writer.Write(standing.Score);
         }
-        writer.Write(outcome.Awards.Count);
-        foreach (var award in outcome.Awards)
+        writer.Write(awards.Count);
+        foreach (var award in awards)
         {
             writer.Write((byte)award.Award);
             writer.Write(award.Value);
@@ -448,14 +466,18 @@ public static class MatchStateHasher
     {
         writer.Write(command.Player.Value); writer.Write(command.Gang.Value); writer.Write((byte)command.Action);
         WriteTarget(writer, command.Target); writer.Write(command.Repeat);
-        writer.Write(command.SecondaryTarget.HasValue); if (command.SecondaryTarget is { } target) WriteTarget(writer, target);
-        writer.Write(command.TertiaryTarget.HasValue);
-        if (command.TertiaryTarget is { } tertiary) WriteTarget(writer, tertiary);
-        writer.Write(command.QuaternaryTarget.HasValue);
-        if (command.QuaternaryTarget is { } quaternary) WriteTarget(writer, quaternary);
+        WriteNullableTarget(writer, command.SecondaryTarget);
+        WriteNullableTarget(writer, command.TertiaryTarget);
+        WriteNullableTarget(writer, command.QuaternaryTarget);
     }
 
-    private static void WriteTarget(BinaryWriter writer, CommandTarget target) { writer.Write((byte)target.Kind); writer.Write(target.Id); }
+    internal static void WriteNullableTarget(BinaryWriter writer, CommandTarget? value)
+    {
+        writer.Write(value.HasValue);
+        if (value is { } target) WriteTarget(writer, target);
+    }
+
+    internal static void WriteTarget(BinaryWriter writer, CommandTarget target) { writer.Write((byte)target.Kind); writer.Write(target.Id); }
     private static void WriteNotification(BinaryWriter writer, GameNotification notification)
     {
         writer.Write(notification.Sequence); writer.Write(notification.Turn); writer.Write((byte)notification.Phase);
@@ -489,7 +511,7 @@ public static class MatchStateHasher
         }
     }
     private const int StackStringBytes = 256;
-    private static void WriteNullableInt(BinaryWriter writer, int? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
-    private static void WriteNullableShort(BinaryWriter writer, short? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
+    internal static void WriteNullableInt(BinaryWriter writer, int? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
+    internal static void WriteNullableShort(BinaryWriter writer, short? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
     internal static void WriteNullableByte(BinaryWriter writer, byte? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
 }

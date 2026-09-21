@@ -64,3 +64,27 @@ export async function appendBackoff(attempt: number): Promise<void> {
   const ceiling = Math.min(2 ** (attempt - 1), 16)
   await new Promise((resolve) => setTimeout(resolve, Math.random() * ceiling))
 }
+
+/**
+ * Runs an event insert until it claims a sequence number, and returns the number it claimed.
+ *
+ * `insert` is the dialect's own statement and resolves to the `seq` of the row it wrote. A
+ * unique-constraint refusal means another appender took the number first, so the insert is run
+ * again after `appendBackoff`, up to `APPEND_ATTEMPTS` times. Any other error is rethrown as it is.
+ */
+export async function appendWithRetry(
+  matchId: string,
+  insert: () => Promise<number | undefined>,
+): Promise<number> {
+  for (let attempt = 1; attempt <= APPEND_ATTEMPTS; attempt += 1) {
+    try {
+      const seq = await insert()
+      if (seq === undefined) throw new Error(`append to ${matchId} reported no row`)
+      return seq
+    } catch (error) {
+      if (!isUniqueViolation(error) || attempt === APPEND_ATTEMPTS) throw error
+      await appendBackoff(attempt)
+    }
+  }
+  throw new Error(`could not append an event for ${matchId}`)
+}
