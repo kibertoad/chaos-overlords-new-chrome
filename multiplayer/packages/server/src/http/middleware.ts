@@ -42,7 +42,7 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   const header = c.req.header('authorization') ?? ''
   const [scheme, token] = header.split(' ', 2)
   if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    chargeFailedAuth(c)
+    chargeAnonymous(c)
     throw new UnauthorizedError('Send the player token as a Bearer credential', {
       reason: 'missing_token',
     })
@@ -50,31 +50,29 @@ export const bearerAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   try {
     c.set('principal', await c.get('container').kernel.auth.authenticate(token))
   } catch (error) {
-    if (error instanceof UnauthorizedError) chargeFailedAuth(c)
+    if (error instanceof UnauthorizedError) chargeAnonymous(c)
     throw error
   }
   await next()
 }
 
 /**
- * Spend one unit of the anonymous budget for a caller who failed to authenticate.
+ * Spend one unit of the anonymous budget and return the client address it was charged to.
  *
- * It shares the budget with create and join deliberately: an address doing either at volume is the
- * same address either way, and a separate tier would just be a second thing to size. A caller who
- * is over budget is told so (429) instead of being told the token was wrong, which is the right
- * order of refusals for a caller who has proved nothing.
+ * A caller who failed to authenticate shares the budget with create and join deliberately: an
+ * address doing either at volume is the same address either way, and a separate tier would just be
+ * a second thing to size. A caller who is over budget is told so (429) instead of being told the
+ * token was wrong, which is the right order of refusals for a caller who has proved nothing.
  */
-function chargeFailedAuth(c: Context<AppEnv>): void {
-  const container = c.get('container')
+function chargeAnonymous(c: Context<AppEnv>): string {
   const key = addressOf(c)
-  enforce(container.rateLimiters, 'anonymous', key, c)
+  enforce(c.get('container').rateLimiters, 'anonymous', key, c)
+  return key
 }
 
 /** Fixed-window limiter on the unauthenticated doors, keyed by client address. */
 export const rateLimited: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const container = c.get('container')
-  const key = addressOf(c)
-  enforce(container.rateLimiters, 'anonymous', key, c)
+  const key = chargeAnonymous(c)
   // The join doors charge a per-caller budget of their own in front of PBKDF2, in the kernel,
   // where there is no request to work an address out from. Normalised here so that one client is
   // one key there too; see `rateLimitKey`.

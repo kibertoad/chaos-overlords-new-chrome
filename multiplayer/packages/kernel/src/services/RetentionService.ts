@@ -65,55 +65,44 @@ export class RetentionService {
     )
   }
 
-  private async collectTerminated(): Promise<number> {
-    if (this.policy.maxAgeMs <= 0) return 0
-    const before = new Date(this.deps.clock.now().getTime() - this.policy.maxAgeMs)
-    const deleted = await this.deps.storage.matches.deleteInactive(
-      COLLECTABLE,
-      before,
-      this.policy.batchSize,
+  private collectTerminated(): Promise<number> {
+    return this.collectWindow(
+      this.policy.maxAgeMs,
+      'retention deleted inactive matches',
+      (before) =>
+        this.deps.storage.matches.deleteInactive(COLLECTABLE, before, this.policy.batchSize),
     )
-    if (deleted > 0) {
-      this.deps.logger.info('retention deleted inactive matches', {
-        deleted,
-        before: before.toISOString(),
-      })
-    }
-    return deleted
   }
 
-  private async collectAbandonedLive(): Promise<number> {
-    if (this.policy.abandonedLiveMaxAgeMs <= 0) return 0
-    const before = new Date(this.deps.clock.now().getTime() - this.policy.abandonedLiveMaxAgeMs)
-    const deleted = await this.deps.storage.matches.deleteAbandonedLive(
-      before,
-      this.policy.batchSize,
-      true,
+  private collectAbandonedLive(): Promise<number> {
+    return this.collectWindow(
+      this.policy.abandonedLiveMaxAgeMs,
+      'retention deleted long-abandoned live matches',
+      (before) =>
+        this.deps.storage.matches.deleteAbandonedLive(before, this.policy.batchSize, true),
     )
-    if (deleted > 0) {
-      this.deps.logger.info('retention deleted long-abandoned live matches', {
-        deleted,
-        before: before.toISOString(),
-      })
-    }
-    return deleted
   }
 
   /** The same delete without the roster test, on a window long enough to stand in for it. */
-  private async collectSilentLive(): Promise<number> {
-    if (this.policy.silentLiveMaxAgeMs <= 0) return 0
-    const before = new Date(this.deps.clock.now().getTime() - this.policy.silentLiveMaxAgeMs)
-    const deleted = await this.deps.storage.matches.deleteAbandonedLive(
-      before,
-      this.policy.batchSize,
-      false,
+  private collectSilentLive(): Promise<number> {
+    return this.collectWindow(
+      this.policy.silentLiveMaxAgeMs,
+      'retention deleted silent live matches',
+      (before) =>
+        this.deps.storage.matches.deleteAbandonedLive(before, this.policy.batchSize, false),
     )
-    if (deleted > 0) {
-      this.deps.logger.info('retention deleted silent live matches', {
-        deleted,
-        before: before.toISOString(),
-      })
-    }
+  }
+
+  /** One retention window: a window of 0 is switched off and reads neither the clock nor storage. */
+  private async collectWindow(
+    maxAgeMs: number,
+    message: string,
+    run: (before: Date) => Promise<number>,
+  ): Promise<number> {
+    if (maxAgeMs <= 0) return 0
+    const before = new Date(this.deps.clock.now().getTime() - maxAgeMs)
+    const deleted = await run(before)
+    if (deleted > 0) this.deps.logger.info(message, { deleted, before: before.toISOString() })
     return deleted
   }
 }

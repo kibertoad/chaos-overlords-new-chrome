@@ -13,11 +13,11 @@ import type { AppEnv } from '../http/types'
 /** The turn barrier: submit privately, read the sealed set, report the resulting hash. */
 export function registerTurnRoutes(api: Hono<AppEnv>): void {
   buildHonoRoute(api, submitOrdersContract, async (c) => {
-    const { turn } = c.req.valid('param')
+    const { matchId, turn } = c.req.valid('param')
     const view = await c
       .get('container')
       .kernel.turns.submitOrders(
-        requireMember(c.get('principal'), c.req.valid('param').matchId),
+        requireMember(c.get('principal'), matchId),
         turn,
         c.req.valid('json'),
       )
@@ -25,8 +25,8 @@ export function registerTurnRoutes(api: Hono<AppEnv>): void {
   })
 
   buildHonoRoute(api, ownSubmissionContract, async (c) => {
-    const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
-    const { turn } = c.req.valid('param')
+    const { matchId, turn } = c.req.valid('param')
+    const principal = requireMember(c.get('principal'), matchId)
     const view = await c
       .get('container')
       .kernel.query.ownSubmission(principal.match, principal.player.id, turn)
@@ -34,8 +34,8 @@ export function registerTurnRoutes(api: Hono<AppEnv>): void {
   })
 
   buildHonoRoute(api, sealedOrdersContract, async (c) => {
-    const principal = requireMember(c.get('principal'), c.req.valid('param').matchId)
-    const { turn } = c.req.valid('param')
+    const { matchId, turn } = c.req.valid('param')
+    const principal = requireMember(c.get('principal'), matchId)
     const view = await c.get('container').kernel.query.sealedOrders(principal.match, turn)
     // A sealed set never changes, so clients and proxies may keep it.
     c.header('Cache-Control', 'private, max-age=31536000, immutable')
@@ -43,14 +43,10 @@ export function registerTurnRoutes(api: Hono<AppEnv>): void {
   })
 
   buildHonoRoute(api, reportTurnContract, async (c) => {
-    const { turn } = c.req.valid('param')
+    const { matchId, turn } = c.req.valid('param')
     await c
       .get('container')
-      .kernel.turns.report(
-        requireMember(c.get('principal'), c.req.valid('param').matchId),
-        turn,
-        c.req.valid('json'),
-      )
+      .kernel.turns.report(requireMember(c.get('principal'), matchId), turn, c.req.valid('json'))
     return c.body(null, 204)
   })
 }

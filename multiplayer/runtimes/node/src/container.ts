@@ -156,19 +156,18 @@ export async function buildNodeRuntime(
     retentionDays: config.retentionDays,
     bugReports: bugReports ? 'on' : 'off',
   })
+  const closeStreams = (): void => {
+    stopSweeper()
+    scheduler?.stop()
+    hub.closeAll()
+  }
   return {
     app,
     kernel,
     ...(bugReports ? { bugReports: bugReports.service } : {}),
-    closeStreams: () => {
-      stopSweeper()
-      scheduler?.stop()
-      hub.closeAll()
-    },
+    closeStreams,
     close: async () => {
-      stopSweeper()
-      scheduler?.stop()
-      hub.closeAll()
+      closeStreams()
       await opened.close()
       await bugReports?.close()
     },
