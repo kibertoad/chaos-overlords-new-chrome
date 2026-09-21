@@ -230,7 +230,11 @@ public sealed partial class MultiplayerMatchSession
         }
     }
 
-    /// <summary>Swallows the result of a prefetch nothing is going to read.</summary>
+    /// <summary>Swallows the result of a task nothing is going to read.</summary>
+    /// <remarks>
+    /// A prefetch a replay abandoned, and the queued state-hash report the pump hands off so
+    /// that a resolved turn reaches the player without waiting for the round trip.
+    /// </remarks>
     private static void Forget(Task task) =>
         _ = task.ContinueWith(
             static finished => _ = finished.Exception,
