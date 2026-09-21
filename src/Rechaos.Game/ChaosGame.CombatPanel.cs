@@ -11,7 +11,7 @@ public sealed partial class ChaosGame
         if (_combatAnimationPlayer.Active is not { } clip) return;
         DrawPanelArtwork(batch, pixel, _combatBackground, CombatPanelLayout.Panel);
 
-        var gameEvent = state.Events.FirstOrDefault(value => value.Sequence == clip.EventSequence);
+        var gameEvent = EventBySequence(state.Events, clip.EventSequence);
         var leftId = gameEvent?.Gang;
         var rightId = gameEvent?.Target.Kind == CommandTargetKind.Gang
             ? new GangId(gameEvent.Target.Id)
@@ -41,6 +41,21 @@ public sealed partial class ChaosGame
             batch.Draw(layer, CombatPanelLayout.Sector, CityMapLayout.Source(sectorId), Color.White);
         font.Draw(batch, SectorCode(sectorId),
             CombatPanelLayout.SectorCodeText.ToVector2(), Color.Lime, 1);
+    }
+
+    private static GameEvent? EventBySequence(IReadOnlyList<GameEvent> events, long sequence)
+    {
+        var low = 0;
+        var high = events.Count - 1;
+        while (low <= high)
+        {
+            var middle = low + ((high - low) / 2);
+            var found = events[middle].Sequence;
+            if (found == sequence) return events[middle];
+            if (found < sequence) low = middle + 1;
+            else high = middle - 1;
+        }
+        return null;
     }
 
     private void DrawCombatant(
