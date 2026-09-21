@@ -342,7 +342,9 @@ public sealed class MultiplayerEventStreamTests
             TimeSpan.FromMilliseconds(10),
             TimeSpan.FromMilliseconds(40),
             MaxAttempts: 0,
-            MaxElapsed: TimeSpan.FromMilliseconds(400));
+            // Long enough that a slow runner still reaches four attempts before the window closes;
+            // the loop below stops at four, so the test never waits it out.
+            MaxElapsed: TimeSpan.FromSeconds(5));
         var stream = new MatchEventStream(
             Handle(http), policy, onReconnect: (_, attempt) => attempts.Add(attempt));
         await using var events = stream.ReadAsync(0, stop.Token).GetAsyncEnumerator(stop.Token);
@@ -351,7 +353,10 @@ public sealed class MultiplayerEventStreamTests
         // Accept, write the keepalive a real server opens with, and drop — over and over.
         for (var round = 0; round < 40 && !moving.IsCompleted; round++)
         {
-            await Until(() => server.CallsTo(HttpMethod.Get, "/stream") >= round + 1);
+            // A closed retry window ends the read, and no further connection will come.
+            await Until(() => moving.IsCompleted
+                || server.CallsTo(HttpMethod.Get, "/stream") >= round + 1);
+            if (moving.IsCompleted) break;
             server.Events.Write(": keepalive\n\n");
             await Task.Delay(5, TestContext.Current.CancellationToken);
             server.DropStream();
