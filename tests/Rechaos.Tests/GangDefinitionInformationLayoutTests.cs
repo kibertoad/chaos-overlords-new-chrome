@@ -26,4 +26,20 @@ public sealed class GangDefinitionInformationLayoutTests
         Assert.Equal([243, 252, 270, 279, 288, 297, 306], Enumerable.Range(0, 7)
             .Select(GangDefinitionInformationLayout.StatisticY));
     }
+
+    [Fact]
+    public void PreservesAuthoredFixedWidthDescriptionRows()
+    {
+        var description = "THEY BELIEVE IN AN OBSCURE    "
+            + "NETHER ENTITY FROM THE DARK   "
+            + "DIMENSION, BUT WHO CARES?";
+
+        Assert.Equal(30, GangDefinitionInformationLayout.DescriptionColumns);
+        Assert.Equal(
+        [
+            "THEY BELIEVE IN AN OBSCURE",
+            "NETHER ENTITY FROM THE DARK",
+            "DIMENSION, BUT WHO CARES?"
+        ], GangDefinitionInformationLayout.DescriptionLines(description));
+    }
 }
