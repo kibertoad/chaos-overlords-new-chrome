@@ -29,6 +29,12 @@ public sealed class SectorGangDragProjectionTests
             SectorMapGangDrop.Destinations(legalCommands, gang.SectorId),
             projection.LegalSectors);
         Assert.Equal(
+            legalCommands
+                .Where(command => command.Action == GangAction.Influence)
+                .Select(command => command.Target.Id)
+                .ToHashSet(),
+            projection.LegalSites);
+        Assert.Equal(
             SectorGangView.Visible(match, gang.Owner, GangSector),
             projection.VisibleGangs);
     }

@@ -426,6 +426,7 @@ public sealed partial class ChaosGame
         var projection = GangDragProjection(state, gang);
         var legalCommands = projection.LegalCommands;
         var legalSectors = projection.LegalSectors;
+        var legalSites = projection.LegalSites;
         var visibleGangs = projection.VisibleGangs;
         if (SectorGangDropTarget.EnemyAt(visibleGangs, gang.Owner, _dragPoint) is { } enemyId)
         {
@@ -446,7 +447,14 @@ public sealed partial class ChaosGame
         {
             if (SectorDetailLayout.SectorAt(_cursor, column, row) is not { } sectorId
                 || !legalSectors.Contains(sectorId)) continue;
-            DrawBorder(batch, pixel, SectorDetailLayout.Cell(column, row), Color.Lime, 2);
+            DrawBorder(batch, pixel, SectorDetailLayout.Cell(column, row), GangDragSectorHighlight, 1);
+        }
+        for (var siteSlot = 0; siteSlot < MatchLimits.SitesPerSector; siteSlot++)
+        {
+            var siteId = _cursor * MatchLimits.SitesPerSector + siteSlot;
+            if (legalSites.Contains(siteId))
+                DrawBorder(batch, pixel, SectorDetailLayout.SitePortrait(siteSlot),
+                    GangDragSectorHighlight, 1);
         }
         if (_gangPortraits is null) return;
         var token = new Rectangle(_dragPoint.X - 18, _dragPoint.Y - 14, 36, 28);

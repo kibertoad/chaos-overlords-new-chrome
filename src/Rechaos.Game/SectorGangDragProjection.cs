@@ -4,8 +4,8 @@ namespace Rechaos.Game;
 
 /// <summary>
 /// What dragging a gang across the detailed sector view paints with: the commands the gang may
-/// still be given, the sectors those commands reach, and the gangs drawn on the cards behind the
-/// pointer.
+/// still be given, the sectors and sites those commands reach, and the gangs drawn on the cards
+/// behind the pointer.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -32,11 +32,13 @@ public sealed class SectorGangDragProjection
         View view,
         IReadOnlyList<GameCommand> legalCommands,
         IReadOnlySet<int> legalSectors,
+        IReadOnlySet<int> legalSites,
         IReadOnlyList<MatchGangState> visibleGangs)
     {
         _view = view;
         LegalCommands = legalCommands;
         LegalSectors = legalSectors;
+        LegalSites = legalSites;
         VisibleGangs = visibleGangs;
     }
 
@@ -45,6 +47,9 @@ public sealed class SectorGangDragProjection
 
     /// <summary>The sectors of those commands, as the minimap highlights them.</summary>
     public IReadOnlySet<int> LegalSectors { get; }
+
+    /// <summary>The sites those commands may influence, for drag-target highlighting.</summary>
+    public IReadOnlySet<int> LegalSites { get; }
 
     /// <summary>The gangs the selected sector shows the dragged gang's owner, in card order.</summary>
     public IReadOnlyList<MatchGangState> VisibleGangs { get; }
@@ -59,6 +64,10 @@ public sealed class SectorGangDragProjection
             View.Of(state, gang.Id, cursor),
             legalCommands,
             SectorMapGangDrop.Destinations(legalCommands, gang.SectorId),
+            legalCommands
+                .Where(command => command.Action == GangAction.Influence)
+                .Select(command => command.Target.Id)
+                .ToHashSet(),
             SectorGangView.Visible(state, gang.Owner, cursor));
     }
 
