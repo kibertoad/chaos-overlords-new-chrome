@@ -99,11 +99,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder,
-        IReadOnlyList<int> familySlots)
+        FamilyPlanningSnapshot snapshot)
     {
         var player = state.FindPlayer(playerId)!;
         state.AiPlanning.SetFormationSector(playerId, gangSlot, gang.SectorId);
@@ -133,8 +129,7 @@ public static partial class AiTurnPlanner
         if (state.Sectors[gang.SectorId].Owner == playerId)
         {
             PrepareFamilyElevenMove(
-                state, playerId, gang, gangSlot, mode: 10,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, mode: 10, snapshot);
             return;
         }
         var target = VisibleOpponentsInSector(state, playerId, gang.SectorId)
@@ -150,11 +145,11 @@ public static partial class AiTurnPlanner
         }
 
         var leaderSlot = OriginalAiFamilyElevenRules.FormationLeaderSlot(
-            familySlots, gangSlot);
+            snapshot.FamilySlots, gangSlot);
         var isLeader = leaderSlot == gangSlot;
         PrepareFamilyElevenMove(
             state, playerId, gang, gangSlot, isLeader ? 10 : 16,
-            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder,
+            snapshot,
             isLeader ? null : state.AiPlanning.FormationSector(playerId, leaderSlot));
     }
 
@@ -164,10 +159,7 @@ public static partial class AiTurnPlanner
         MatchGangState gang,
         int gangSlot,
         int mode,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder,
+        FamilyPlanningSnapshot snapshot,
         int? formationSectorId = null)
     {
         var target = OriginalAiSectorSelectionRules.Select(
@@ -175,16 +167,16 @@ public static partial class AiTurnPlanner
             gang.SectorId,
             playerId,
             family: 11,
-            sectorOwners,
-            sectorDisabled,
-            sectorGangCounts,
+            snapshot.SectorOwners,
+            snapshot.SectorDisabled,
+            snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            playerOrder,
+            snapshot.PlayerOrder,
             state.Random,
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),
@@ -200,10 +192,7 @@ public static partial class AiTurnPlanner
         MatchGangState gang,
         int gangSlot,
         int family,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var plannedAction = state.AiPlanning.PlannedAction(playerId, gangSlot);
         var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
@@ -269,15 +258,15 @@ public static partial class AiTurnPlanner
             gang.SectorId,
             playerId,
             family,
-            sectorOwners,
-            sectorDisabled,
-            sectorGangCounts,
+            snapshot.SectorOwners,
+            snapshot.SectorDisabled,
+            snapshot.SectorGangCounts,
             sectorId => CanSoloControl(state, playerId, gang, sectorId),
             _ => false,
             owner => state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             owner => state.FindPlayer(new PlayerId(owner))?.Setup.Controller
                 == PlayerController.Human,
-            playerOrder,
+            snapshot.PlayerOrder,
             state.Random);
         SetRecoveredMoveAction(state, playerId, gangSlot, target);
     }

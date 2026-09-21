@@ -2,15 +2,12 @@ namespace Rechaos.Core.GameModel;
 
 public static partial class AiTurnPlanner
 {
-    private static bool PrepareFamilySixCommand(
+    private static void PrepareFamilySixCommand(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
         var visibleWeight = visible.Count == 0
@@ -19,19 +16,16 @@ public static partial class AiTurnPlanner
 
         if (visibleWeight < 1)
             PrepareFamilySixMove(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
         else
             PrepareContestedFamilySixCommand(
-                state, playerId, gang, gangSlot, visible, visibleWeight,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, visible, visibleWeight, snapshot);
 
         var turnsRemaining = Math.Max(0,
             ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
         if (OriginalAiFamilySixRules.ShouldTerminateForGreed(
                 state.Setup.Scenario, turnsRemaining))
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
-        return true;
     }
 
     private static void PrepareContestedFamilySixCommand(
@@ -41,10 +35,7 @@ public static partial class AiTurnPlanner
         int gangSlot,
         IReadOnlyList<ObjectiveTarget> visible,
         int visibleWeight,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var targetPool = SelectHumanWeightedTargetPool(
             state, playerId, gang.SectorId, visible, visibleWeight);
@@ -89,8 +80,7 @@ public static partial class AiTurnPlanner
             }
             else
                 PrepareFamilySixMove(
-                    state, playerId, gang, gangSlot,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                    state, playerId, gang, gangSlot, snapshot);
             return;
         }
 
@@ -111,10 +101,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var strategicTarget = FirstUncoveredFamilySixTarget(state, playerId);
         var mode = strategicTarget is { } targetSector
@@ -124,14 +111,14 @@ public static partial class AiTurnPlanner
             state.AiPlanning.SetCoverageSector(playerId, gangSlot, target);
         var destination = OriginalAiSectorSelectionRules.Select(
             mode, gang.SectorId, playerId, 6,
-            sectorOwners, sectorDisabled, sectorGangCounts,
+            snapshot.SectorOwners, snapshot.SectorDisabled, snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            playerOrder,
+            snapshot.PlayerOrder,
             state.Random);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, destination);
         state.AiPlanning.SetCoverageSector(playerId, gangSlot, destination);

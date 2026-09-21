@@ -2,15 +2,12 @@ namespace Rechaos.Core.GameModel;
 
 public static partial class AiTurnPlanner
 {
-    private static bool PrepareFamilyTenCommand(
+    private static void PrepareFamilyTenCommand(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var player = state.FindPlayer(playerId)!;
         if (OriginalAiFamilyTenRules.SelectArmorUpgrade(
@@ -26,7 +23,7 @@ public static partial class AiTurnPlanner
             state.AiPlanning.SetEquipmentCooldown(
                 playerId, gangSlot, EquipmentSlot.Armor,
                 OriginalAiFamilyTenRules.ArmorCooldown);
-            return true;
+            return;
         }
 
         if (OriginalAiFamilyTenRules.ShouldEquipSmokeBombs(player, gang))
@@ -35,7 +32,7 @@ public static partial class AiTurnPlanner
                 playerId, gangSlot, GangAction.Equip,
                 new AiActionTarget(
                     checked((byte)OriginalAiFamilyTenRules.SmokeBombItemId), 0));
-            return true;
+            return;
         }
 
         var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
@@ -45,21 +42,19 @@ public static partial class AiTurnPlanner
                 gang.Force, effectiveHeal, hasVisibleOpponent))
         {
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Heal);
-            return true;
+            return;
         }
 
         var selected = SelectFamilyTenStealthSector(
-            state, playerId, gang, sectorOwners, sectorDisabled,
-            sectorGangCounts, playerOrder);
+            state, playerId, gang, snapshot);
         if (OriginalAiFamilyTenRules.ShouldMoveToStealthierSector(
                 OriginalAiFamilyTenRules.CompletedStealthScore(state, gang.SectorId),
                 OriginalAiFamilyTenRules.CompletedStealthScore(state, selected)))
         {
             var target = SelectFamilyTenStealthSector(
-                state, playerId, gang, sectorOwners, sectorDisabled,
-                sectorGangCounts, playerOrder);
+                state, playerId, gang, snapshot);
             SetRecoveredMoveAction(state, playerId, gangSlot, target);
-            return true;
+            return;
         }
 
         var priorChaosCount = player.Gangs
@@ -71,32 +66,28 @@ public static partial class AiTurnPlanner
         state.AiPlanning.SetPlannedAction(
             playerId, gangSlot,
             OriginalAiFamilyTenRules.SelectStationaryAction(priorChaosCount));
-        return true;
     }
 
     private static int SelectFamilyTenStealthSector(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder) =>
+        FamilyPlanningSnapshot snapshot) =>
         OriginalAiSectorSelectionRules.Select(
             mode: 9,
             sourceSectorId: gang.SectorId,
             player: playerId,
             family: 10,
-            sectorOwners,
-            sectorDisabled,
-            sectorGangCounts,
+            snapshot.SectorOwners,
+            snapshot.SectorDisabled,
+            snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            playerOrder,
+            snapshot.PlayerOrder,
             state.Random,
             completedSiteScore: sectorId =>
                 OriginalAiFamilyTenRules.CompletedStealthScore(state, sectorId));

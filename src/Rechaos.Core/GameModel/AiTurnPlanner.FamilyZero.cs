@@ -2,15 +2,12 @@ namespace Rechaos.Core.GameModel;
 
 public static partial class AiTurnPlanner
 {
-    private static bool PrepareFamilyZeroCommand(
+    private static void PrepareFamilyZeroCommand(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
         var visibleWeight = visible.Count == 0
@@ -22,39 +19,33 @@ public static partial class AiTurnPlanner
         {
             case GangAction.None:
                 PrepareFamilyZeroAfterNone(
-                    state, playerId, gang, gangSlot,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                    state, playerId, gang, gangSlot, snapshot);
                 break;
             case GangAction.Attack:
                 PrepareFamilyZeroAfterAttack(
-                    state, playerId, gang, gangSlot, visible, visibleWeight,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                    state, playerId, gang, gangSlot, visible, visibleWeight, snapshot);
                 break;
             case GangAction.Hide:
             case GangAction.Equip:
                 PrepareFamilyZeroAfterHideOrEquip(
-                    state, playerId, gang, gangSlot, visible, visibleWeight,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                    state, playerId, gang, gangSlot, visible, visibleWeight, snapshot);
                 break;
             case GangAction.Control:
                 if (state.Sectors[gang.SectorId].Owner == playerId)
                     SetFamilyZeroAction(state, playerId, gangSlot, GangAction.Hide);
                 else
                     PrepareFamilyZeroMove(
-                        state, playerId, gang, gangSlot,
-                        sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                        state, playerId, gang, gangSlot, snapshot);
                 break;
             case GangAction.Heal:
             case GangAction.Snitch:
             case GangAction.Move:
                 PrepareFamilyZeroAfterHealSnitchOrMove(
-                    state, playerId, gang, gangSlot, visible, visibleWeight,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                    state, playerId, gang, gangSlot, visible, visibleWeight, snapshot);
                 break;
             case GangAction.Research:
                 PrepareFamilyZeroMove(
-                    state, playerId, gang, gangSlot,
-                    sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                    state, playerId, gang, gangSlot, snapshot);
                 break;
         }
 
@@ -63,7 +54,6 @@ public static partial class AiTurnPlanner
                 state.AiPlanning.PlannedAction(playerId, gangSlot),
                 state.AiPlanning.OlderAction(playerId, gangSlot)) is { } family)
             state.AiPlanning.SetFamily(playerId, gangSlot, family);
-        return true;
     }
 
     private static void PrepareFamilyZeroAfterNone(
@@ -71,10 +61,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         if (OriginalAiFamilyZeroRules.ShouldHeal(
                 gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Heal))
@@ -87,8 +74,7 @@ public static partial class AiTurnPlanner
             SetFamilyZeroAction(state, playerId, gangSlot, GangAction.Hide);
         else
             PrepareFamilyZeroMove(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
     }
 
     private static void PrepareFamilyZeroAfterAttack(
@@ -98,16 +84,12 @@ public static partial class AiTurnPlanner
         int gangSlot,
         IReadOnlyList<ObjectiveTarget> visible,
         int visibleWeight,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         if (visibleWeight != 10)
         {
             PrepareFamilyZeroMove(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
             return;
         }
 
@@ -124,8 +106,7 @@ public static partial class AiTurnPlanner
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Control);
         else
             PrepareFamilyZeroMove(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
     }
 
     private static void PrepareFamilyZeroAfterHideOrEquip(
@@ -135,10 +116,7 @@ public static partial class AiTurnPlanner
         int gangSlot,
         IReadOnlyList<ObjectiveTarget> visible,
         int visibleWeight,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         if (visibleWeight == 10)
         {
@@ -178,8 +156,7 @@ public static partial class AiTurnPlanner
         // The handler repeats a weight-10 draw here, but reaching this point
         // with that cached weight would already have prepared Attack above.
         PrepareFamilyZeroMove(
-            state, playerId, gang, gangSlot,
-            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+            state, playerId, gang, gangSlot, snapshot);
     }
 
     private static void PrepareFamilyZeroAfterHealSnitchOrMove(
@@ -189,10 +166,7 @@ public static partial class AiTurnPlanner
         int gangSlot,
         IReadOnlyList<ObjectiveTarget> visible,
         int visibleWeight,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         if (OriginalAiFamilyZeroRules.ShouldHeal(
                 gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Heal))
@@ -231,8 +205,7 @@ public static partial class AiTurnPlanner
             SetFamilyZeroAction(state, playerId, gangSlot, GangAction.Hide);
         else
             PrepareFamilyZeroMove(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
     }
 
     private static RecoveredAttackDraw DrawFamilyZeroTarget(
@@ -265,10 +238,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var player = state.FindPlayer(playerId)!;
         var target = OriginalAiSectorSelectionRules.Select(
@@ -276,9 +246,9 @@ public static partial class AiTurnPlanner
             sourceSectorId: gang.SectorId,
             player: playerId,
             family: 0,
-            sectorOwners,
-            sectorDisabled,
-            sectorGangCounts,
+            snapshot.SectorOwners,
+            snapshot.SectorDisabled,
+            snapshot.SectorGangCounts,
             canSoloControl: sectorId => CanSoloControl(state, playerId, gang, sectorId),
             hasPriorChaos: sectorId => player.Gangs
                 .Select((candidate, slot) => (candidate, slot))
@@ -290,7 +260,7 @@ public static partial class AiTurnPlanner
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            playerOrder,
+            snapshot.PlayerOrder,
             state.Random);
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
     }

@@ -2,15 +2,12 @@ namespace Rechaos.Core.GameModel;
 
 public static partial class AiTurnPlanner
 {
-    private static bool PrepareFamilyThreeCommand(
+    private static void PrepareFamilyThreeCommand(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var player = state.FindPlayer(playerId)!;
         var previousAction = state.AiPlanning.PreviousAction(playerId, gangSlot);
@@ -18,23 +15,18 @@ public static partial class AiTurnPlanner
 
         if (OriginalAiFamilyThreeRules.UsesCashSiteContinuation(previousAction))
             PrepareFamilyThreeCashContinuation(
-                state, playerId, gang, gangSlot, effectiveHeal,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, effectiveHeal, snapshot);
         else if (OriginalAiFamilyThreeRules.UsesOpponentContinuation(previousAction))
             PrepareFamilyThreeOpponentContinuation(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
         else if (previousAction == GangAction.Influence)
             PrepareFamilyThreeInfluenceContinuation(
-                state, player, gang, gangSlot, effectiveHeal,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, player, gang, gangSlot, effectiveHeal, snapshot);
         else if (previousAction == GangAction.Snitch)
             PrepareFamilyThreeMove(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
 
         ApplyFamilyThreeTerminalOverrides(state, playerId, gangSlot);
-        return true;
     }
 
     private static void PrepareFamilyThreeCashContinuation(
@@ -43,10 +35,7 @@ public static partial class AiTurnPlanner
         MatchGangState gang,
         int gangSlot,
         int effectiveHeal,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         if (OriginalAiFamilyThreeRules.ShouldHeal(gang.Force, effectiveHeal))
         {
@@ -55,8 +44,7 @@ public static partial class AiTurnPlanner
         }
 
         PrepareFamilyThreeCashSiteOrTerritorial(
-            state, playerId, gang, gangSlot,
-            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+            state, playerId, gang, gangSlot, snapshot);
     }
 
     private static void PrepareFamilyThreeCashSiteOrTerritorial(
@@ -64,10 +52,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         if (state.Sectors[gang.SectorId].Owner == playerId
             && OriginalAiFamilyThreeRules.SelectHighestCashUnfinishedSite(
@@ -84,8 +69,7 @@ public static partial class AiTurnPlanner
         }
 
         PrepareFamilyThreeMove(
-            state, playerId, gang, gangSlot,
-            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+            state, playerId, gang, gangSlot, snapshot);
     }
 
     private static void PrepareFamilyThreeOpponentContinuation(
@@ -93,10 +77,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
         var visibleWeight = visible.Count == 0
@@ -105,8 +86,7 @@ public static partial class AiTurnPlanner
         if (visibleWeight != 10)
         {
             PrepareFamilyThreeCashSiteOrTerritorial(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
             return;
         }
 
@@ -135,10 +115,7 @@ public static partial class AiTurnPlanner
         MatchGangState gang,
         int gangSlot,
         int effectiveHeal,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var playerId = player.Id;
         if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
@@ -176,8 +153,7 @@ public static partial class AiTurnPlanner
         }
 
         PrepareFamilyThreeMove(
-            state, playerId, gang, gangSlot,
-            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+            state, playerId, gang, gangSlot, snapshot);
     }
 
     private static void ApplyFamilyThreeTerminalOverrides(
@@ -213,26 +189,23 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var target = OriginalAiSectorSelectionRules.Select(
             mode: 8,
             sourceSectorId: gang.SectorId,
             player: playerId,
             family: 3,
-            sectorOwners,
-            sectorDisabled,
-            sectorGangCounts,
+            snapshot.SectorOwners,
+            snapshot.SectorDisabled,
+            snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            playerOrder,
+            snapshot.PlayerOrder,
             state.Random,
             unfinishedSiteScore: sectorId =>
                 OriginalAiFamilyThreeRules.UnfinishedCashScore(state, sectorId));

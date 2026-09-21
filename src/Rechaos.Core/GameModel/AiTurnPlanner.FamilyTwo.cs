@@ -2,15 +2,12 @@ namespace Rechaos.Core.GameModel;
 
 public static partial class AiTurnPlanner
 {
-    private static bool PrepareFamilyTwoCommand(
+    private static void PrepareFamilyTwoCommand(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var player = state.FindPlayer(playerId)!;
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
@@ -29,12 +26,10 @@ public static partial class AiTurnPlanner
             SetFamilyTwoAction(state, playerId, gangSlot, GangAction.Heal);
         else if (state.Sectors[gang.SectorId].Owner == playerId)
             PrepareFamilyTwoMove(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
         else
             PrepareFamilyTwoNonOwnedSector(
-                state, playerId, gang, gangSlot, visible, sectorWeight,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, visible, sectorWeight, snapshot);
 
         ApplyFamilyTwoControlOverride(state, playerId, gang, gangSlot, visible);
         var turnsRemaining = Math.Max(0,
@@ -42,7 +37,6 @@ public static partial class AiTurnPlanner
         if (OriginalAiFamilyTwoRules.ShouldTerminateForGreed(
                 state.Setup.Scenario, turnsRemaining))
             state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
-        return true;
     }
 
     private static void PrepareFamilyTwoNonOwnedSector(
@@ -52,10 +46,7 @@ public static partial class AiTurnPlanner
         int gangSlot,
         IReadOnlyList<ObjectiveTarget> visible,
         int sectorWeight,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var hostile = visible.Where(target =>
             state.AiStrategy.IsHostile(playerId, target.Gang.Owner)).ToArray();
@@ -75,8 +66,7 @@ public static partial class AiTurnPlanner
             return;
         }
         PrepareFamilyTwoMove(
-            state, playerId, gang, gangSlot,
-            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+            state, playerId, gang, gangSlot, snapshot);
     }
 
     private static void PrepareFamilyTwoAttack(
@@ -133,26 +123,23 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var target = OriginalAiSectorSelectionRules.Select(
             mode: 6,
             sourceSectorId: gang.SectorId,
             player: playerId,
             family: 2,
-            sectorOwners,
-            sectorDisabled,
-            sectorGangCounts,
+            snapshot.SectorOwners,
+            snapshot.SectorDisabled,
+            snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            playerOrder,
+            snapshot.PlayerOrder,
             state.Random,
             hasHumanPlayers: state.Setup.Players.Any(candidate =>
                 candidate.Controller == PlayerController.Human),

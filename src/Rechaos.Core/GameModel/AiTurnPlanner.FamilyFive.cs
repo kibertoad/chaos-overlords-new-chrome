@@ -2,15 +2,12 @@ namespace Rechaos.Core.GameModel;
 
 public static partial class AiTurnPlanner
 {
-    private static bool PrepareFamilyFiveCommand(
+    private static void PrepareFamilyFiveCommand(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var player = state.FindPlayer(playerId)!;
         var previousAction = state.AiPlanning.PreviousAction(playerId, gangSlot);
@@ -18,23 +15,18 @@ public static partial class AiTurnPlanner
 
         if (OriginalAiFamilyFiveRules.UsesSupportSiteContinuation(previousAction))
             PrepareFamilyFiveSupportContinuation(
-                state, playerId, gang, gangSlot, effectiveHeal,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, effectiveHeal, snapshot);
         else if (OriginalAiFamilyFiveRules.UsesOpponentContinuation(previousAction))
             PrepareFamilyFiveOpponentContinuation(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
         else if (previousAction == GangAction.Influence)
             PrepareFamilyFiveInfluenceContinuation(
-                state, player, gang, gangSlot, effectiveHeal,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, player, gang, gangSlot, effectiveHeal, snapshot);
         else if (previousAction == GangAction.Snitch)
             PrepareFamilyFiveMove(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
 
         ApplyFamilyFiveTerminalOverrides(state, playerId, gangSlot);
-        return true;
     }
 
     private static void PrepareFamilyFiveSupportContinuation(
@@ -43,10 +35,7 @@ public static partial class AiTurnPlanner
         MatchGangState gang,
         int gangSlot,
         int effectiveHeal,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         if (OriginalAiFamilyFiveRules.ShouldHeal(gang.Force, effectiveHeal))
         {
@@ -55,8 +44,7 @@ public static partial class AiTurnPlanner
         }
 
         PrepareFamilyFiveSupportSiteOrTerritorial(
-            state, playerId, gang, gangSlot,
-            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+            state, playerId, gang, gangSlot, snapshot);
     }
 
     private static void PrepareFamilyFiveSupportSiteOrTerritorial(
@@ -64,10 +52,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         if (state.Sectors[gang.SectorId].Owner == playerId
             && OriginalAiFamilyFiveRules.SelectHighestSupportUnfinishedSite(
@@ -84,8 +69,7 @@ public static partial class AiTurnPlanner
         }
 
         PrepareFamilyFiveMove(
-            state, playerId, gang, gangSlot,
-            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+            state, playerId, gang, gangSlot, snapshot);
     }
 
     private static void PrepareFamilyFiveOpponentContinuation(
@@ -93,10 +77,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
         var visibleWeight = visible.Count == 0
@@ -105,8 +86,7 @@ public static partial class AiTurnPlanner
         if (visibleWeight != 10)
         {
             PrepareFamilyFiveSupportSiteOrTerritorial(
-                state, playerId, gang, gangSlot,
-                sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+                state, playerId, gang, gangSlot, snapshot);
             return;
         }
 
@@ -135,10 +115,7 @@ public static partial class AiTurnPlanner
         MatchGangState gang,
         int gangSlot,
         int effectiveHeal,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var playerId = player.Id;
         if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
@@ -176,8 +153,7 @@ public static partial class AiTurnPlanner
         }
 
         PrepareFamilyFiveMove(
-            state, playerId, gang, gangSlot,
-            sectorOwners, sectorDisabled, sectorGangCounts, playerOrder);
+            state, playerId, gang, gangSlot, snapshot);
     }
 
     private static void ApplyFamilyFiveTerminalOverrides(
@@ -213,10 +189,7 @@ public static partial class AiTurnPlanner
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        IReadOnlyList<int> sectorOwners,
-        IReadOnlyList<bool> sectorDisabled,
-        IReadOnlyList<int> sectorGangCounts,
-        IReadOnlyList<int> playerOrder)
+        FamilyPlanningSnapshot snapshot)
     {
         var player = state.FindPlayer(playerId)!;
         var target = OriginalAiSectorSelectionRules.Select(
@@ -224,16 +197,16 @@ public static partial class AiTurnPlanner
             sourceSectorId: gang.SectorId,
             player: playerId,
             family: 5,
-            sectorOwners,
-            sectorDisabled,
-            sectorGangCounts,
+            snapshot.SectorOwners,
+            snapshot.SectorDisabled,
+            snapshot.SectorGangCounts,
             canSoloControl: _ => true,
             hasPriorChaos: _ => false,
             isHostileOwner: owner =>
                 state.AiStrategy.IsHostile(playerId, new PlayerId(owner)),
             isHumanOwner: owner => state.FindPlayer(new PlayerId(owner))?
                 .Setup.Controller == PlayerController.Human,
-            playerOrder,
+            snapshot.PlayerOrder,
             state.Random,
             unfinishedSiteScore: sectorId =>
                 OriginalAiFamilyFiveRules.UnfinishedSupportScore(state, sectorId),
