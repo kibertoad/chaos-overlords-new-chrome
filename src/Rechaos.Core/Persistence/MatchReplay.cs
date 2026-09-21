@@ -438,7 +438,8 @@ public static class MatchReplaySerializer
     {
         try
         {
-            using var bounded = ReadBounded(source);
+            using var bounded = NativeSaveSerializer.ReadBounded(
+                source, MaximumReplayBytes, "Replay exceeds the size limit.");
             return JsonSerializer.Deserialize<ReplayDocument>(bounded, JsonOptions)
                 ?? throw new InvalidDataException("Replay is empty.");
         }
@@ -660,24 +661,6 @@ public static class MatchReplaySerializer
             throw new InvalidDataException($"Replay diverged after step {index}.");
     }
 
-    private static MemoryStream ReadBounded(Stream source)
-    {
-        if (source.CanSeek && source.Length - source.Position > MaximumReplayBytes)
-            throw new InvalidDataException("Replay exceeds the size limit.");
-        var memory = new MemoryStream();
-        var buffer = new byte[81920];
-        while (true)
-        {
-            var read = source.Read(buffer, 0, buffer.Length);
-            if (read == 0) break;
-            if (memory.Length + read > MaximumReplayBytes)
-                throw new InvalidDataException("Replay exceeds the size limit.");
-            memory.Write(buffer, 0, read);
-        }
-        memory.Position = 0;
-        return memory;
-    }
-
     [Flags]
     private enum ReplayStepFields
     {
@@ -717,50 +700,15 @@ public static class MatchReplayStore
         var fullPath = Path.GetFullPath(path);
         var directory = Path.GetDirectoryName(fullPath)
             ?? throw new ArgumentException("Replay path has no parent directory.", nameof(path));
-        Directory.CreateDirectory(directory);
-        var temporaryPath = Path.Combine(
-            directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
-        try
-        {
-            using (var stream = new FileStream(
-                temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None,
-                bufferSize: 81920, FileOptions.WriteThrough))
-            {
-                MatchReplaySerializer.Save(stream, recorder);
-                stream.Flush(flushToDisk: true);
-            }
-
-            // Replays are long-lived verification artifacts. Read back the new
-            // file before promotion and preserve the last valid generation. A replay that cannot
-            // reproduce itself reaches the player as a failed save, so report it as one rather than
-            // as an InvalidDataException no caller filters for.
-            try
-            {
-                _ = LoadAndReplay(temporaryPath, recorder.State.Definitions);
-            }
-            catch (InvalidDataException exception)
-            {
-                throw new IOException(
-                    "The replay was written but could not be replayed back, so it was not promoted.",
-                    exception);
-            }
-            if (!File.Exists(fullPath))
-            {
-                File.Move(temporaryPath, fullPath);
-            }
-            else if (IsValid(fullPath, recorder.State.Definitions))
-            {
-                File.Replace(temporaryPath, fullPath, fullPath + BackupSuffix);
-            }
-            else
-            {
-                File.Move(temporaryPath, fullPath, overwrite: true);
-            }
-        }
-        finally
-        {
-            if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
-        }
+        // Replays are long-lived verification artifacts. Read back the new
+        // file before promotion and preserve the last valid generation. A replay that cannot
+        // reproduce itself reaches the player as a failed save, so report it as one rather than
+        // as an InvalidDataException no caller filters for.
+        AtomicGenerationRecovery.SaveAtomic(
+            fullPath, directory, BackupSuffix,
+            "The replay was written but could not be replayed back, so it was not promoted.",
+            stream => MatchReplaySerializer.Save(stream, recorder),
+            candidate => _ = LoadAndReplay(candidate, recorder.State.Definitions));
     }
 
     public static MatchState LoadAndReplay(string path, OriginalData definitions)
@@ -788,36 +736,8 @@ public static class MatchReplayStore
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(definitions);
-        try
-        {
-            return new MatchReplayLoadResult(LoadAndReplay(path, definitions), false);
-        }
-        catch (Exception primaryFailure) when (
-            primaryFailure is IOException or InvalidDataException
-            && !IncompatibleSave.IsIncompatible(primaryFailure))
-        {
-            var backupPath = Path.GetFullPath(path) + BackupSuffix;
-            if (!File.Exists(backupPath)) throw;
-            var state = LoadAndReplay(backupPath, definitions);
-            if (!repairPrimary) return new MatchReplayLoadResult(state, true);
-            var fullPath = Path.GetFullPath(path);
-            var repaired = AtomicGenerationRecovery.TryRestore(
-                fullPath, backupPath, candidate => _ = LoadAndReplay(candidate, definitions));
-            return new MatchReplayLoadResult(state, true, repaired);
-        }
-    }
-
-    /// <summary>Whether the existing primary is worth keeping as the next backup generation.</summary>
-    private static bool IsValid(string path, OriginalData definitions)
-    {
-        try
-        {
-            _ = LoadAndReplay(path, definitions);
-            return true;
-        }
-        catch (Exception exception) when (exception is IOException or InvalidDataException)
-        {
-            return IncompatibleSave.IsIncompatible(exception);
-        }
+        var (state, recovered, repaired) = AtomicGenerationRecovery.LoadRecoveringBackup(
+            path, BackupSuffix, repairPrimary, candidate => LoadAndReplay(candidate, definitions));
+        return new MatchReplayLoadResult(state, recovered, repaired);
     }
 }

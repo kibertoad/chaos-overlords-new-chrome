@@ -59,9 +59,9 @@ public static class NativeSaveSerializer
     /// </para>
     /// <para>
     /// This is not a weaker <see cref="Load"/>: the definition fingerprint and every structural
-    /// check still run, and only the snapshot's agreement with itself is left to the caller. The anonymizer immediately re-serializes what comes out, which
-    /// is what writes the correct fingerprint back. Nothing that reads a file somebody else wrote
-    /// may use this.
+    /// check still run, and only the snapshot's agreement with itself is left to the caller. The
+    /// anonymizer immediately re-serializes what comes out, which is what writes the correct
+    /// fingerprint back. Nothing that reads a file somebody else wrote may use this.
     /// </para>
     /// </remarks>
     internal static MatchState LoadRewritten(Stream source, OriginalData definitions) =>
@@ -73,7 +73,8 @@ public static class NativeSaveSerializer
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(definitions);
         if (!source.CanRead) throw new ArgumentException("Source stream is not readable.", nameof(source));
-        using var bounded = ReadBounded(source);
+        using var bounded = ReadBounded(
+            source, MaximumSaveBytes, "Native save exceeds the size limit.");
         // The version has to be read before the members are bound: JsonOptions refuses unmapped
         // members, so a save from a newer build fails as "JSON is invalid" on the very field the
         // newer build added, and the caller would have no way to tell it from real damage.
@@ -395,18 +396,23 @@ public static class NativeSaveSerializer
         sector.CrackdownHistory
             ?? throw new InvalidDataException("Native save crackdown history is missing."));
 
-    private static MemoryStream ReadBounded(Stream source)
+    /// <summary>
+    /// Copies <paramref name="source"/> into memory and rewinds the copy, throwing
+    /// <see cref="InvalidDataException"/> with <paramref name="overLimitMessage"/> once more than
+    /// <paramref name="maximumBytes"/> have been read.
+    /// </summary>
+    internal static MemoryStream ReadBounded(Stream source, int maximumBytes, string overLimitMessage)
     {
-        if (source.CanSeek && source.Length - source.Position > MaximumSaveBytes)
-            throw new InvalidDataException("Native save exceeds the size limit.");
+        if (source.CanSeek && source.Length - source.Position > maximumBytes)
+            throw new InvalidDataException(overLimitMessage);
         var memory = new MemoryStream();
         var buffer = new byte[81920];
         while (true)
         {
             var read = source.Read(buffer, 0, buffer.Length);
             if (read == 0) break;
-            if (memory.Length + read > MaximumSaveBytes)
-                throw new InvalidDataException("Native save exceeds the size limit.");
+            if (memory.Length + read > maximumBytes)
+                throw new InvalidDataException(overLimitMessage);
             memory.Write(buffer, 0, read);
         }
         memory.Position = 0;
