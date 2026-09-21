@@ -11,7 +11,7 @@ public sealed partial class ChaosGame
         if (_combatAnimationPlayer.Active is not { } clip) return;
         DrawPanelArtwork(batch, pixel, _combatBackground, CombatPanelLayout.Panel);
 
-        var gameEvent = state.Events.FirstOrDefault(value => value.Sequence == clip.EventSequence);
+        var gameEvent = EventBySequence(state.Events, clip.EventSequence);
         var leftId = gameEvent?.Gang;
         var rightId = gameEvent?.Target.Kind == CommandTargetKind.Gang
             ? new GangId(gameEvent.Target.Id)
