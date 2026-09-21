@@ -276,6 +276,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             HardwareModeSwitch = false,
             IsFullScreen = _fullscreen
         };
+        // Keep background online notices, planning timers, and music responsive without redrawing
+        // the full game at the foreground cadence while the window has no focus.
+        InactiveSleepTime = TimeSpan.FromMilliseconds(200);
         IsMouseVisible = true;
         Window.AllowUserResizing = true;
         Window.Title = "Chaos Overlords: New Chrome";
