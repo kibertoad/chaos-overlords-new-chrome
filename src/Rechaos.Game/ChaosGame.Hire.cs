@@ -30,7 +30,7 @@ public sealed partial class ChaosGame
                     OriginalSpriteLayout.HiredStamp, Color.White);
             if (!entry.Hired)
             {
-                var definition = state.Definitions.Gangs.Single(gang => gang.Id == entry.GangDefinitionId);
+                var definition = state.Definitions.Gang(entry.GangDefinitionId);
                 var price = HireDockLayout.Price(slot);
                 font.Draw(batch, HireDockLayout.PriceText(HireRules.InitialCost(definition)),
                     price.ToVector2(), Color.Lime, 1);
@@ -60,7 +60,7 @@ public sealed partial class ChaosGame
         for (var slot = 0; slot < entries.Count; slot++)
         {
             if (entries[slot] is not { } entry) continue;
-            var definition = state.Definitions.Gangs.Single(gang => gang.Id == entry.GangDefinitionId);
+            var definition = state.Definitions.Gang(entry.GangDefinitionId);
             if (_gangPortraits is not null)
                 batch.Draw(_gangPortraits, HireComparisonLayout.Portrait(slot),
                     OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);

@@ -60,6 +60,12 @@ public static class StatusConsoleTooltip
     public static IReadOnlyList<string> At(Point point)
         => At(point, null, GameDuration.SixMonths);
 
+    public static bool Contains(Point point) =>
+        StatusConsoleLayout.Scenario.Contains(point)
+        || StatusConsoleLayout.Score.Contains(point)
+        || StatusConsoleLayout.Cash.Contains(point)
+        || Enumerable.Range(0, 5).Any(row => StatusConsoleLayout.SectorEntry(row).Contains(point));
+
     public static IReadOnlyList<string> At(
         Point point,
         ScenarioId? scenario,

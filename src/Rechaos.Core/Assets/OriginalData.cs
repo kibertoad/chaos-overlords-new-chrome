@@ -7,11 +7,20 @@ public sealed record OriginalData(
     IReadOnlyList<GangDefinition> Gangs,
     IReadOnlyList<ItemDefinition> Items)
 {
+    private readonly Lazy<IReadOnlyDictionary<short, SiteDefinition>> _sitesById =
+        new(() => Sites.ToDictionary(definition => definition.Id));
+    private readonly Lazy<IReadOnlyDictionary<short, GangDefinition>> _gangsById =
+        new(() => Gangs.ToDictionary(definition => definition.Id));
+
     /// <summary>The one site definition with this id; throws when none or several carry it.</summary>
-    internal SiteDefinition Site(short id) => Sites.Single(definition => definition.Id == id);
+    public SiteDefinition Site(short id) => _sitesById.Value.TryGetValue(id, out var definition)
+        ? definition
+        : throw new InvalidOperationException($"No site definition has id {id}.");
 
     /// <summary>The one gang definition with this id; throws when none or several carry it.</summary>
-    internal GangDefinition Gang(short id) => Gangs.Single(definition => definition.Id == id);
+    public GangDefinition Gang(short id) => _gangsById.Value.TryGetValue(id, out var definition)
+        ? definition
+        : throw new InvalidOperationException($"No gang definition has id {id}.");
 }
 
 public sealed record SiteDefinition(
