@@ -38,8 +38,9 @@ public sealed class AiTournamentTests
         }
     }
 
+    // Greed runs in the fast gate as HeadlessMatchRunnerTests.SixMonthMatchCompletesDeterministicallyAndReplays,
+    // so an end-to-end regression is caught before this suite runs.
     [Theory]
-    [InlineData(ScenarioId.Greed)]
     [InlineData(ScenarioId.Power)]
     [InlineData(ScenarioId.Acceptance)]
     [InlineData(ScenarioId.Dominance)]
