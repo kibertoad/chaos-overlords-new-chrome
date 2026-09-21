@@ -129,8 +129,7 @@ public sealed partial class ChaosGame
         int force,
         int damage)
     {
-        for (var track = 0; track < 2; track++)
-            DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide, track), force, damage);
+        DrawCombatForce(batch, pixel, CombatPanelLayout.ForceBar(rightSide), force, damage);
     }
 
     private static void DrawBeveledForce(

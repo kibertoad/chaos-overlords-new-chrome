@@ -13,7 +13,6 @@ public static class CombatPanelLayout
     private const int RightAnimationX = 223;
     private const int AnimationY = 130;
     private const int ForceBarY = 114;
-    private const int ForceBarStride = 7;
     private const int ForceBarWidth = 60;
     private const int LeftItemX = 100;
     private const int RightItemX = 289;
@@ -64,8 +63,8 @@ public static class CombatPanelLayout
 
     public static Rectangle PolicePortrait(bool right)
     {
-        var cell = right ? RightGang : LeftGang;
-        return new Rectangle(cell.X + 8, cell.Y + 8, 48, 64);
+        var portrait = GangPortrait(right);
+        return new Rectangle(portrait.X, portrait.Y, 48, 64);
     }
 
     public static Rectangle EquipmentItem(bool right, int slot)
@@ -78,11 +77,10 @@ public static class CombatPanelLayout
             ItemSize);
     }
 
-    public static Rectangle ForceBar(bool right, int track)
+    public static Rectangle ForceBar(bool right)
     {
-        if (track is < 0 or >= 2) throw new ArgumentOutOfRangeException(nameof(track));
         return SharedPanelLayout.At((right ? RightCombatantX : LeftCombatantX) + 2,
-            ForceBarY + track * ForceBarStride, ForceBarWidth, ForceBarHeight);
+            ForceBarY, ForceBarWidth, ForceBarHeight);
     }
 }
 
