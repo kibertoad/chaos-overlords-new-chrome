@@ -146,8 +146,8 @@ public sealed partial class ChaosGame
             font.Draw(batch, definition.Name,
                 new Vector2(definitionOnly ? GangDefinitionInformationLayout.NameLeft : SharedPanelLayout.X(98),
                     definitionOnly ? GangDefinitionInformationLayout.NameY : SharedPanelLayout.Y(28)), Color.Lime, 1);
-            // The definition panel's right edge is one glyph closer than the text origin suggests.
-            var descriptionColumns = definitionOnly ? 29 : 27;
+            // The definition panel's right edge leaves room for 28 glyph cells.
+            var descriptionColumns = definitionOnly ? 28 : 27;
             foreach (var entry in WrapPanelText(definition.Description, descriptionColumns).Take(3)
                          .Select((text, row) => (text, row)))
                 font.Draw(batch, entry.text,

@@ -19,7 +19,7 @@ public static class SectorGangsLayout
     public static int ValueRight(int index)
     {
         if (index is < 0 or >= MaximumGangCount) throw new ArgumentOutOfRangeException(nameof(index));
-        return 154 + index * 32;
+        return SharedPanelLayout.X(154 + index * 32);
     }
 
     public static int ValueY(int row)
@@ -91,6 +91,15 @@ public sealed partial class ChaosGame
         MatchState state)
     {
         DrawMapBackdrop(batch, pixel, font, state, _sectorGangReturnScreen);
+        DrawSectorGangsPanel(batch, pixel, font, state);
+    }
+
+    private void DrawSectorGangsPanel(
+        SpriteBatch batch,
+        Texture2D pixel,
+        PixelFont font,
+        MatchState state)
+    {
         DrawPanelArtwork(batch, pixel, _sectorGangsBackground, SectorGangsLayout.Panel);
         foreach (var entry in _sectorGangRoster.Take(SectorGangsLayout.MaximumGangCount)
                      .Select((id, index) => (id, index)))

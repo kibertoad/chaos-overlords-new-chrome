@@ -375,7 +375,8 @@ confirmed in an original 1.1 runtime observation.
 all 81 roster records for active gangs in the selected sector. It advances one
 display index for every match and draws each portrait into a 32-by-32 cell at
 `(144 + 32*n,158)-(176 + 32*n,190)`. It then writes Tech Level, Upkeep, and
-fourteen statistic values in that same column at x=`154 + 32*n`, with rows
+fourteen statistic values in that same column at panel-local x=`154 + 32*n`
+(screen x=`258 + 32*n`), with rows
 192, 201, 211, 220, 229, 238, 248, 257, 266, 275, 284, 294, 303, 312, 321,
 and 330. The six-gang sector capacity bounds the rendered columns to six.
 
