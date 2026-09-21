@@ -65,7 +65,18 @@ public sealed record PhaseBoundaryHash(
     int Turn,
     TurnPhase Phase,
     ExecutionPhase? ExecutionPhase,
-    string Sha256);
+    string Sha256)
+{
+    /// <summary>Appends this boundary in the encoding the state fingerprint hashes it under.</summary>
+    internal static void AppendCanonical(Stream stream, PhaseBoundaryHash boundary)
+    {
+        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+        writer.Write(boundary.Turn);
+        writer.Write((byte)boundary.Phase);
+        MatchStateHasher.WriteNullableByte(writer, boundary.ExecutionPhase is { } phase ? (byte)phase : null);
+        MatchStateHasher.WriteString(writer, boundary.Sha256);
+    }
+}
 
 /// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
 public static class MatchStateHasher
@@ -301,10 +312,11 @@ public static class MatchStateHasher
         bool includeRosterSlotOrder = false)
     {
         ArgumentNullException.ThrowIfNull(state);
-        using var stream = new MemoryStream();
-        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        var encoder = CanonicalEncoder.Rent();
+        try
         {
-            writer.Write(Encoding.ASCII.GetBytes("RCHS"));
+            var writer = encoder.Writer;
+            writer.Write(Magic);
             writer.Write(formatVersion);
             WriteDefinitions(writer, state.Definitions);
             writer.Write((byte)state.Setup.Scenario);
@@ -365,18 +377,14 @@ public static class MatchStateHasher
             }
             writer.Write(state.NextEventSequence);
             if (includeEventHistory)
-                state.WriteCanonicalEventHistory(writer);
+            {
+                writer.Write(state.Events.Count);
+                encoder.Append(state.CanonicalEventHistory);
+            }
             if (includePhaseHistory)
             {
                 writer.Write(state.PhaseHashes.Count);
-                foreach (var boundary in state.PhaseHashes)
-                {
-                    writer.Write(boundary.Turn);
-                    writer.Write((byte)boundary.Phase);
-                    WriteNullableByte(writer, boundary.ExecutionPhase is { } boundaryPhase
-                        ? (byte)boundaryPhase : null);
-                    WriteString(writer, boundary.Sha256);
-                }
+                encoder.Append(state.CanonicalPhaseHashHistory);
             }
             writer.Write(state.Outcome is not null);
             if (state.Outcome is { } outcome)
@@ -403,12 +411,15 @@ public static class MatchStateHasher
                 }
             }
 
-            writer.Write(state.Players.Count);
-            foreach (var player in state.Players.OrderBy(item => item.Id.Value))
+            var players = state.Players.OrderBy(item => item.Id.Value).ToArray();
+            writer.Write(players.Length);
+            foreach (var player in players)
                 WritePlayer(writer, player, includeHireSlots, includeHirePayment,
                     includeMaximumHireForce, includeRosterSlotOrder);
+            // The constructor requires sectors to be identified 0 through 63 in order, so they are
+            // already in the order an OrderBy would produce.
             writer.Write(state.Sectors.Count);
-            foreach (var sector in state.Sectors.OrderBy(item => item.Id))
+            foreach (var sector in state.Sectors)
                 WriteSector(writer, sector, includeSectorIncome, includeCrackdownDuration,
                     includeCrackdownHistory, includeSectorChaos);
 
@@ -421,7 +432,7 @@ public static class MatchStateHasher
                 WriteCommand(writer, command.Command, includeTertiaryTargets, includeQuaternaryTargets);
             }
 
-            foreach (var player in state.Players.OrderBy(item => item.Id.Value))
+            foreach (var player in players)
             {
                 var notifications = state.NotificationsFor(player.Id);
                 writer.Write(state.NextNotificationSequence(player.Id));
@@ -430,7 +441,7 @@ public static class MatchStateHasher
             }
             if (includeComlink)
             {
-                foreach (var player in state.Players.OrderBy(item => item.Id.Value))
+                foreach (var player in players)
                 {
                     var inbox = state.ComlinkFor(player.Id);
                     writer.Write(inbox.NextSequence);
@@ -453,9 +464,90 @@ public static class MatchStateHasher
                     }
                 }
             }
+
+            return encoder.FinishHex();
+        }
+        finally
+        {
+            encoder.Return();
+        }
+    }
+
+    private static readonly byte[] Magic = Encoding.ASCII.GetBytes("RCHS");
+
+    /// <summary>
+    /// A per-thread canonical byte encoder feeding one incremental SHA-256.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A fingerprint used to be built in a fresh <see cref="MemoryStream"/>: a few hundred
+    /// kilobytes late in a match, regrown by doubling on every call, thousands of calls per match,
+    /// so the large-object heap churned and gen-2 collections dominated a headless replay.
+    /// </para>
+    /// <para>
+    /// The buffer now lives with the thread and is reset between calls, and the two append-only
+    /// histories the state already keeps in canonical form are fed to the hash straight from the
+    /// state's own buffers, so the whole document is never assembled in one place. The digest is
+    /// the same: SHA-256 of a sequence of appends is SHA-256 of their concatenation.
+    /// </para>
+    /// </remarks>
+    private sealed class CanonicalEncoder
+    {
+        [ThreadStatic] private static CanonicalEncoder? _current;
+
+        private readonly MemoryStream _buffered = new(16 * 1024);
+        private readonly IncrementalHash _hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        private bool _inUse;
+
+        private CanonicalEncoder()
+        {
+            Writer = new BinaryWriter(_buffered, Encoding.UTF8, leaveOpen: true);
         }
 
-        return Convert.ToHexStringLower(SHA256.HashData(stream.GetBuffer().AsSpan(0, checked((int)stream.Length))));
+        /// <summary>The writer every canonical field goes through; buffered until an append or the finish.</summary>
+        public BinaryWriter Writer { get; }
+
+        public static CanonicalEncoder Rent()
+        {
+            var encoder = _current ??= new CanonicalEncoder();
+            // A caller interrupted by an exception leaves the thread's encoder mid-document; a
+            // nested fingerprint from within a fingerprint would too. Either gets a fresh one.
+            if (encoder._inUse) encoder = new CanonicalEncoder();
+            encoder._inUse = true;
+            return encoder;
+        }
+
+        /// <summary>Feeds bytes that are already canonical, after everything written so far.</summary>
+        public void Append(ReadOnlySpan<byte> canonical)
+        {
+            Flush();
+            _hash.AppendData(canonical);
+        }
+
+        public string FinishHex()
+        {
+            Flush();
+            Span<byte> digest = stackalloc byte[SHA256.HashSizeInBytes];
+            var written = _hash.GetHashAndReset(digest);
+            return Convert.ToHexStringLower(digest[..written]);
+        }
+
+        public void Return()
+        {
+            Writer.Flush();
+            _buffered.SetLength(0);
+            // Whatever a failed call left in the hash must not leak into the next document.
+            Span<byte> discarded = stackalloc byte[SHA256.HashSizeInBytes];
+            _hash.TryGetHashAndReset(discarded, out _);
+            _inUse = false;
+        }
+
+        private void Flush()
+        {
+            Writer.Flush();
+            _hash.AppendData(_buffered.GetBuffer(), 0, checked((int)_buffered.Length));
+            _buffered.SetLength(0);
+        }
     }
 
     private static void WriteAiTarget(BinaryWriter writer, AiActionTarget target)
@@ -581,7 +673,8 @@ public static class MatchStateHasher
         writer.Write(sector.Id); WriteNullableInt(writer, sector.Owner?.Value); writer.Write(sector.Tolerance);
         if (includeChaos) writer.Write(sector.LegacyChaos);
         writer.Write(sector.CrackdownActive); writer.Write(sector.IsImportant); writer.Write(sector.Sites.Count);
-        foreach (var site in sector.Sites.OrderBy(item => item.Slot))
+        // A sector orders its sites by slot when it is built, so the list is already in slot order.
+        foreach (var site in sector.Sites)
         {
             writer.Write(site.Slot); writer.Write(site.DefinitionId); writer.Write(site.Resistance); WriteNullableInt(writer, site.InfluencedBy?.Value);
         }
@@ -631,11 +724,25 @@ public static class MatchStateHasher
         writer.Write(value.Fighting); writer.Write(value.MartialArts);
     }
 
-    private static void WriteString(BinaryWriter writer, string value)
+    internal static void WriteString(BinaryWriter writer, string value)
     {
-        var bytes = Encoding.UTF8.GetBytes(value); writer.Write(bytes.Length); writer.Write(bytes);
+        // Length-prefixed UTF-8, encoded straight into a stack buffer when it fits: names and
+        // hex digests are short, and a fingerprint writes hundreds of them.
+        var byteCount = Encoding.UTF8.GetByteCount(value);
+        writer.Write(byteCount);
+        if (byteCount <= StackStringBytes)
+        {
+            Span<byte> bytes = stackalloc byte[StackStringBytes];
+            var written = Encoding.UTF8.GetBytes(value, bytes);
+            writer.Write(bytes[..written]);
+        }
+        else
+        {
+            writer.Write(Encoding.UTF8.GetBytes(value));
+        }
     }
+    private const int StackStringBytes = 256;
     private static void WriteNullableInt(BinaryWriter writer, int? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
     private static void WriteNullableShort(BinaryWriter writer, short? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
-    private static void WriteNullableByte(BinaryWriter writer, byte? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
+    internal static void WriteNullableByte(BinaryWriter writer, byte? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
 }

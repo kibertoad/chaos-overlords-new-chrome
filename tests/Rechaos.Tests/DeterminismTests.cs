@@ -134,11 +134,28 @@ public sealed class DeterminismTests
             foreach (var gameEvent in match.Events)
                 CanonicalEventWriter.Write(writer, gameEvent);
         }
-        using var actual = new MemoryStream();
-        using (var writer = new BinaryWriter(actual, System.Text.Encoding.UTF8, leaveOpen: true))
-            match.WriteCanonicalEventHistory(writer);
+        var actual = new byte[sizeof(int) + match.CanonicalEventHistory.Length];
+        BitConverter.TryWriteBytes(actual, match.Events.Count);
+        match.CanonicalEventHistory.CopyTo(actual.AsSpan(sizeof(int)));
 
-        Assert.Equal(expected.ToArray(), actual.ToArray());
+        Assert.Equal(expected.ToArray(), actual);
+    }
+
+    [Fact]
+    public void CanonicalPhaseHashHistoryMatchesFreshEncodingOfEveryBoundary()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase();
+
+        using var expected = new MemoryStream();
+        foreach (var boundary in match.PhaseHashes)
+            PhaseBoundaryHash.AppendCanonical(expected, boundary);
+
+        Assert.NotEmpty(match.PhaseHashes);
+        Assert.Equal(expected.ToArray(), match.CanonicalPhaseHashHistory.ToArray());
     }
 
     [Fact]
