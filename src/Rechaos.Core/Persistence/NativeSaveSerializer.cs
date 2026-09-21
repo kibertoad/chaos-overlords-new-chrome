@@ -58,9 +58,8 @@ public static class NativeSaveSerializer
     /// way to compute the new one without first restoring the state it describes.
     /// </para>
     /// <para>
-    /// This is not a weaker <see cref="Load"/>: the definition fingerprint, the versioned target
-    /// validation and every structural check still run, and only the snapshot's agreement with
-    /// itself is left to the caller. The anonymizer immediately re-serializes what comes out, which
+    /// This is not a weaker <see cref="Load"/>: the definition fingerprint and every structural
+    /// check still run, and only the snapshot's agreement with itself is left to the caller. The anonymizer immediately re-serializes what comes out, which
     /// is what writes the correct fingerprint back. Nothing that reads a file somebody else wrote
     /// may use this.
     /// </para>
@@ -135,7 +134,6 @@ public static class NativeSaveSerializer
     {
         if (document.FormatVersion != CurrentFormatVersion)
             throw UnsupportedFormat(document.FormatVersion);
-        ValidateVersionedTargets(document);
         if (!CryptographicOperations.FixedTimeEquals(
                 DecodeSha256(document.DefinitionsSha256, "definition fingerprint"),
                 DecodeSha256(DefinitionFingerprint(definitions), "current definition fingerprint")))
@@ -148,100 +146,62 @@ public static class NativeSaveSerializer
             document.Setup.Duration,
             document.Setup.InitialSeed,
             document.Setup.Players.Select(player => new MatchPlayerSetup(
-                new PlayerId(player.Id), player.Name, player.Controller,
-                document.FormatVersion >= 5 ? player.PortraitId : checked((short)player.Id))).ToArray(),
-            document.FormatVersion >= 5 ? document.Setup.AiMentality : AiDifficulty.Criminal,
-            aiPolicy: document.FormatVersion >= 23
-                ? document.Setup.AiPolicy
-                    ?? throw new InvalidDataException("Native save AI policy is missing.")
-                : AiPolicyMode.Original);
+                new PlayerId(player.Id), player.Name, player.Controller, player.PortraitId)).ToArray(),
+            document.Setup.AiMentality,
+            aiPolicy: document.Setup.AiPolicy
+                ?? throw new InvalidDataException("Native save AI policy is missing."));
         var players = document.Players
-            .Select(player => RestorePlayer(setup, player, document.FormatVersion))
+            .Select(player => RestorePlayer(setup, player))
             .ToArray();
-        var sectors = document.Sectors.Select(sector => RestoreSector(
-            sector, definitions, document.FormatVersion)).ToArray();
+        var sectors = document.Sectors.Select(RestoreSector).ToArray();
         var notifications = document.Runtime.Notifications.ToDictionary(
             entry => new PlayerId(entry.Player),
             entry => (IReadOnlyList<GameNotification>)entry.Items);
         var notificationSequences = document.Runtime.Notifications.ToDictionary(
             entry => new PlayerId(entry.Player), entry => entry.NextSequence);
-        var comlinkInboxes = document.FormatVersion >= 17
-            ? (document.Runtime.Comlink
-                ?? throw new InvalidDataException("Native save Comlink state is missing."))
-                .ToDictionary(
-                    entry => new PlayerId(entry.Player),
-                    entry => document.FormatVersion >= 22
-                        ? new ComlinkInboxRestore(
-                            entry.Items,
-                            entry.NextSequence,
-                            entry.ReadSequences
-                                ?? throw new InvalidDataException(
-                                    "Native save Comlink read flags are missing."))
-                        : MigrateLegacyComlink(entry))
-            : setup.Players.ToDictionary(
-                player => player.Id,
-                _ => new ComlinkInboxRestore([], 0, []));
-        var aiStrategy = document.FormatVersion >= 6
-            ? document.Runtime.AiStrategy is { } savedStrategy
-                ? AiStrategicState.Restore(savedStrategy.Reactions, savedStrategy.Attitudes)
-                : throw new InvalidDataException("Native save AI strategic state is missing.")
-            : AiStrategicState.MigrateLegacy(setup);
-        var aiPlanning = document.FormatVersion >= 7
-            ? document.Runtime.AiPlanning is { } savedPlanning
-                ? AiPlanningState.Restore(
-                    savedPlanning.CurrentHireRoles,
-                    savedPlanning.PreviousHireRoles,
-                    savedPlanning.Families,
-                    document.FormatVersion >= 11
-                        ? savedPlanning.SectorAnchors
-                            ?? throw new InvalidDataException("Native save AI sector anchors are missing.")
-                        : AiPlanningState.Initialize(players).CaptureSectorAnchors(),
-                    document.FormatVersion >= 12
-                        ? savedPlanning.OlderActions
-                            ?? throw new InvalidDataException("Native save older AI actions are missing.")
-                        : EmptyAiActions(),
-                    document.FormatVersion >= 12
-                        ? savedPlanning.PreviousActions
-                            ?? throw new InvalidDataException("Native save previous AI actions are missing.")
-                        : EmptyAiActions(),
-                    document.FormatVersion >= 12
-                        ? savedPlanning.PlannedActions
-                            ?? throw new InvalidDataException("Native save planned AI actions are missing.")
-                        : EmptyAiActions(),
-                    document.FormatVersion >= 13
-                        ? savedPlanning.OlderTargets
-                            ?? throw new InvalidDataException("Native save older AI targets are missing.")
-                        : EmptyAiTargets(),
-                    document.FormatVersion >= 13
-                        ? savedPlanning.PreviousTargets
-                            ?? throw new InvalidDataException("Native save previous AI targets are missing.")
-                        : EmptyAiTargets(),
-                    document.FormatVersion >= 13
-                        ? savedPlanning.PlannedTargets
-                            ?? throw new InvalidDataException("Native save planned AI targets are missing.")
-                        : EmptyAiTargets(),
-                    document.FormatVersion >= 13
-                        ? savedPlanning.HasPlanned
-                            ?? throw new InvalidDataException("Native save AI first-planning flags are missing.")
-                        : InferLegacyHasPlanned(savedPlanning),
-                    document.FormatVersion >= 14
-                        ? savedPlanning.WeaponCooldowns
-                            ?? throw new InvalidDataException("Native save AI weapon cooldowns are missing.")
-                        : EmptyAiCooldowns(),
-                    document.FormatVersion >= 14
-                        ? savedPlanning.ArmorCooldowns
-                            ?? throw new InvalidDataException("Native save AI armor cooldowns are missing.")
-                        : EmptyAiCooldowns(),
-                    document.FormatVersion >= 15
-                        ? savedPlanning.FormationSectors
-                            ?? throw new InvalidDataException("Native save AI formation sectors are missing.")
-                        : InferLegacyFormationSectors(savedPlanning, players),
-                    document.FormatVersion >= 16
-                        ? savedPlanning.CoverageSectors
-                            ?? throw new InvalidDataException("Native save AI coverage sectors are missing.")
-                        : EmptyAiCoverageSectors())
-                : throw new InvalidDataException("Native save AI planning state is missing.")
-            : AiPlanningState.Initialize(players);
+        var comlinkInboxes = (document.Runtime.Comlink
+            ?? throw new InvalidDataException("Native save Comlink state is missing."))
+            .ToDictionary(
+                entry => new PlayerId(entry.Player),
+                entry => new ComlinkInboxRestore(
+                    entry.Items,
+                    entry.NextSequence,
+                    entry.ReadSequences
+                        ?? throw new InvalidDataException(
+                            "Native save Comlink read flags are missing.")));
+        var aiStrategy = document.Runtime.AiStrategy is { } savedStrategy
+            ? AiStrategicState.Restore(savedStrategy.Reactions, savedStrategy.Attitudes)
+            : throw new InvalidDataException("Native save AI strategic state is missing.");
+        var aiPlanning = document.Runtime.AiPlanning is { } savedPlanning
+            ? AiPlanningState.Restore(
+                savedPlanning.CurrentHireRoles,
+                savedPlanning.PreviousHireRoles,
+                savedPlanning.Families,
+                savedPlanning.SectorAnchors
+                    ?? throw new InvalidDataException("Native save AI sector anchors are missing."),
+                savedPlanning.OlderActions
+                    ?? throw new InvalidDataException("Native save older AI actions are missing."),
+                savedPlanning.PreviousActions
+                    ?? throw new InvalidDataException("Native save previous AI actions are missing."),
+                savedPlanning.PlannedActions
+                    ?? throw new InvalidDataException("Native save planned AI actions are missing."),
+                savedPlanning.OlderTargets
+                    ?? throw new InvalidDataException("Native save older AI targets are missing."),
+                savedPlanning.PreviousTargets
+                    ?? throw new InvalidDataException("Native save previous AI targets are missing."),
+                savedPlanning.PlannedTargets
+                    ?? throw new InvalidDataException("Native save planned AI targets are missing."),
+                savedPlanning.HasPlanned
+                    ?? throw new InvalidDataException("Native save AI first-planning flags are missing."),
+                savedPlanning.WeaponCooldowns
+                    ?? throw new InvalidDataException("Native save AI weapon cooldowns are missing."),
+                savedPlanning.ArmorCooldowns
+                    ?? throw new InvalidDataException("Native save AI armor cooldowns are missing."),
+                savedPlanning.FormationSectors
+                    ?? throw new InvalidDataException("Native save AI formation sectors are missing."),
+                savedPlanning.CoverageSectors
+                    ?? throw new InvalidDataException("Native save AI coverage sectors are missing."))
+            : throw new InvalidDataException("Native save AI planning state is missing.");
         var runtime = new MatchRuntimeRestore(
             document.Runtime.Turn,
             document.Runtime.Phase,
@@ -283,34 +243,6 @@ public static class NativeSaveSerializer
                 ? IncompatibleSaveReason.NewerFormat
                 : IncompatibleSaveReason.OlderFormat,
             $"Unsupported native save format {declared}.");
-
-    private static void ValidateVersionedTargets(NativeSaveDocument document)
-    {
-        foreach (var queued in document.Runtime.Commands)
-            ValidateVersionedTargets(queued.Command, document.FormatVersion, "queued command");
-        foreach (var gameEvent in document.Runtime.Events)
-        {
-            if (document.FormatVersion < 18 && gameEvent.TertiaryTarget is not null)
-                throw new InvalidDataException(
-                    "Native save event uses a target introduced in format 18.");
-            if (document.FormatVersion < 19 && gameEvent.QuaternaryTarget is not null)
-                throw new InvalidDataException(
-                    "Native save event uses a target introduced in format 19.");
-        }
-    }
-
-    private static void ValidateVersionedTargets(
-        GameCommand command,
-        int formatVersion,
-        string owner)
-    {
-        if (formatVersion < 18 && command.TertiaryTarget is not null)
-            throw new InvalidDataException(
-                $"Native save {owner} uses a target introduced in format 18.");
-        if (formatVersion < 19 && command.QuaternaryTarget is not null)
-            throw new InvalidDataException(
-                $"Native save {owner} uses a target introduced in format 19.");
-    }
 
     private static NativeSaveDocument Capture(MatchState state) => new(
         CurrentFormatVersion,
@@ -369,68 +301,6 @@ public static class NativeSaveSerializer
                 state.ComlinkFor(player.Id).Messages,
                 state.ComlinkFor(player.Id).ReadSequences)).ToArray()));
 
-    private static ComlinkInboxRestore MigrateLegacyComlink(PlayerComlinkDocument entry)
-    {
-        var inbox = ComlinkInbox.RestoreLegacy(
-            entry.Items, entry.NextSequence, entry.ReadThroughSequence);
-        return new ComlinkInboxRestore(
-            inbox.Messages, inbox.NextSequence, inbox.ReadSequences,
-            entry.ReadThroughSequence);
-    }
-
-    private static IReadOnlyList<GangAction> EmptyAiActions() =>
-        new GangAction[MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer];
-
-    private static IReadOnlyList<AiActionTarget> EmptyAiTargets() =>
-        new AiActionTarget[MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer];
-
-    private static IReadOnlyList<short> EmptyAiCooldowns() =>
-        new short[MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer];
-
-    private static IReadOnlyList<short> EmptyAiCoverageSectors() =>
-        Enumerable.Repeat(
-            checked((short)AiPlanningState.InactiveCoverageSector),
-            MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer).ToArray();
-
-    private static IReadOnlyList<short> InferLegacyFormationSectors(
-        AiPlanningDocument planning,
-        IReadOnlyList<MatchPlayerState> players)
-    {
-        var result = Enumerable.Repeat(
-            checked((short)AiPlanningState.InactiveFormationSector),
-            MatchLimits.PlayerCount * AiPlanningState.GangSlotsPerPlayer).ToArray();
-        foreach (var player in players)
-        {
-            for (var gangSlot = 0; gangSlot < player.Gangs.Count; gangSlot++)
-            {
-                var gang = player.Gangs[gangSlot];
-                if (!gang.IsActive) continue;
-                result[player.Id.Value * AiPlanningState.GangSlotsPerPlayer + gangSlot] =
-                    checked((short)gang.SectorId);
-            }
-        }
-        return result;
-    }
-
-    private static IReadOnlyList<bool> InferLegacyHasPlanned(AiPlanningDocument planning)
-    {
-        var result = new bool[MatchLimits.PlayerCount];
-        for (var player = 0; player < MatchLimits.PlayerCount; player++)
-        {
-            var start = player * AiPlanningState.GangSlotsPerPlayer;
-            result[player] = planning.Families
-                .Skip(start).Take(AiPlanningState.GangSlotsPerPlayer)
-                .Any(family => family != AiPlanningState.UnusedFamily)
-                || (planning.OlderActions?.Skip(start).Take(AiPlanningState.GangSlotsPerPlayer)
-                    .Any(action => action != GangAction.None) ?? false)
-                || (planning.PreviousActions?.Skip(start).Take(AiPlanningState.GangSlotsPerPlayer)
-                    .Any(action => action != GangAction.None) ?? false)
-                || (planning.PlannedActions?.Skip(start).Take(AiPlanningState.GangSlotsPerPlayer)
-                    .Any(action => action != GangAction.None) ?? false);
-        }
-        return result;
-    }
-
     private static PlayerDocument CapturePlayer(MatchPlayerState player) => new(
         player.Id.Value,
         player.Cash,
@@ -460,8 +330,7 @@ public static class NativeSaveSerializer
 
     private static MatchPlayerState RestorePlayer(
         MatchSetup setup,
-        PlayerDocument player,
-        int formatVersion)
+        PlayerDocument player)
     {
         if (player.Id < 0 || player.Id >= setup.Players.Count)
             throw new InvalidDataException("Native save contains an invalid player identifier.");
@@ -484,71 +353,15 @@ public static class NativeSaveSerializer
             player.Statistics.Casualties,
             player.Statistics.Overthrows,
             player.Statistics.TimesHidden);
-        var hireState = formatVersion >= 8
-            ? (Slots: player.HireOfferSlots
-                    ?? throw new InvalidDataException("Native save hire-offer slots are missing."),
-                Pending: player.PendingHires,
-                SnubSlot: player.SnubbedHireOfferSlot)
-            : MigrateLegacyHireState(player);
-        var pendingHires = formatVersion >= 9
-            ? hireState.Pending
-            : hireState.Pending.Select(pending => pending with { InitialCostPaid = true }).ToArray();
+        var hireOfferSlots = player.HireOfferSlots
+            ?? throw new InvalidDataException("Native save hire-offer slots are missing.");
         return new MatchPlayerState(
             setup.Players[player.Id], player.Cash, gangs, player.HirePool,
-            pendingHires, player.ResearchProgress, player.ResearchedItems.ToHashSet(),
+            player.PendingHires, player.ResearchProgress, player.ResearchedItems.ToHashSet(),
             player.Inventory, player.Support, player.BigManPoints, player.Status,
             statistics, player.SnubbedHireOffer,
-            hireState.Slots, hireState.SnubSlot,
-            usesMaximumHireForce: formatVersion >= 10 && player.UsesMaximumHireForce);
-    }
-
-    private static (
-        IReadOnlyList<HireOfferSlotState> Slots,
-        IReadOnlyList<PendingHireState> Pending,
-        int? SnubSlot) MigrateLegacyHireState(PlayerDocument player)
-    {
-        var actionCount = player.PendingHires.Count + (player.SnubbedHireOffer.HasValue ? 1 : 0);
-        if (actionCount == 0)
-        {
-            var ordinary = Enumerable.Range(0, MatchLimits.HireOffersPerPlayer)
-                .Select(slot => slot < player.HirePool.Count
-                    ? HireOfferSlotState.Available(player.HirePool[slot])
-                    : HireOfferSlotState.Uninitialized)
-                .ToArray();
-            return (ordinary, player.PendingHires, null);
-        }
-
-        var survivorCount = Math.Max(0, MatchLimits.HireOffersPerPlayer - actionCount);
-        var visibleSurvivors = player.HirePool.Take(survivorCount).ToArray();
-        var prefetched = player.HirePool.Skip(visibleSurvivors.Length).ToArray();
-        var slots = visibleSurvivors.Select(HireOfferSlotState.Available).ToList();
-        var migratedPending = new List<PendingHireState>(player.PendingHires.Count);
-        var prefetchIndex = 0;
-        foreach (var pending in player.PendingHires)
-        {
-            var slot = slots.Count;
-            var replacement = prefetchIndex < prefetched.Length
-                ? prefetched[prefetchIndex++]
-                : (short?)null;
-            slots.Add(new HireOfferSlotState(
-                pending.GangDefinitionId, null, replacement));
-            migratedPending.Add(pending with { OfferSlot = slot });
-        }
-
-        int? snubSlot = null;
-        if (player.SnubbedHireOffer is { } snubbed)
-        {
-            snubSlot = slots.Count;
-            var replacement = prefetchIndex < prefetched.Length
-                ? prefetched[prefetchIndex]
-                : (short?)null;
-            slots.Add(new HireOfferSlotState(snubbed, null, replacement));
-        }
-        while (slots.Count < MatchLimits.HireOffersPerPlayer)
-            slots.Add(HireOfferSlotState.Uninitialized);
-        if (slots.Count != MatchLimits.HireOffersPerPlayer)
-            throw new InvalidDataException("Legacy hire state cannot be mapped to three fixed slots.");
-        return (slots, migratedPending, snubSlot);
+            hireOfferSlots, player.SnubbedHireOfferSlot,
+            usesMaximumHireForce: player.UsesMaximumHireForce);
     }
 
     private static SectorDocument CaptureSector(MatchSectorState sector) => new(
@@ -564,10 +377,7 @@ public static class NativeSaveSerializer
         sector.CrackdownHistory.ToArray(),
         Chaos: null);
 
-    private static MatchSectorState RestoreSector(
-        SectorDocument sector,
-        OriginalData definitions,
-        int formatVersion) => new(
+    private static MatchSectorState RestoreSector(SectorDocument sector) => new(
         sector.Id,
         sector.Sites.Select(site => new MatchSiteState(
             site.Slot,
@@ -576,23 +386,14 @@ public static class NativeSaveSerializer
             site.InfluencedBy is { } influencedBy ? new PlayerId(influencedBy) : null)).ToArray(),
         sector.Owner is { } owner ? new PlayerId(owner) : null,
         sector.Tolerance,
-        formatVersion < 24
-            ? sector.Chaos ?? 0
-            : 0,
+        0,
         sector.CrackdownActive,
         sector.IsImportant,
-        formatVersion == 1
-            ? sector.Sites.Sum(site => definitions.Sites.Single(
-                definition => definition.Id == site.DefinitionId).Cash)
-            : sector.Income ?? throw new InvalidDataException("Native save sector income is missing."),
-        formatVersion < 3
-            ? sector.CrackdownActive ? ManualRules.MinimumCrackdownTurns : 0
-            : sector.CrackdownTurnsRemaining
-                ?? throw new InvalidDataException("Native save crackdown duration is missing."),
-        formatVersion < 4
-            ? []
-            : sector.CrackdownHistory
-                ?? throw new InvalidDataException("Native save crackdown history is missing."));
+        sector.Income ?? throw new InvalidDataException("Native save sector income is missing."),
+        sector.CrackdownTurnsRemaining
+            ?? throw new InvalidDataException("Native save crackdown duration is missing."),
+        sector.CrackdownHistory
+            ?? throw new InvalidDataException("Native save crackdown history is missing."));
 
     private static MemoryStream ReadBounded(Stream source)
     {
