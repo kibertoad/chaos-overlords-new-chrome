@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace Rechaos.Core.Assets;
@@ -7,20 +8,40 @@ public sealed record OriginalData(
     IReadOnlyList<GangDefinition> Gangs,
     IReadOnlyList<ItemDefinition> Items)
 {
-    private readonly Lazy<IReadOnlyDictionary<short, SiteDefinition>> _sitesById =
-        new(() => Sites.ToDictionary(definition => definition.Id));
-    private readonly Lazy<IReadOnlyDictionary<short, GangDefinition>> _gangsById =
-        new(() => Gangs.ToDictionary(definition => definition.Id));
+    /// <summary>Id lookups for one definition set, built the first time that set is queried.</summary>
+    /// <remarks>
+    /// Resolution, AI planning and board projection resolve definitions by id constantly, and a
+    /// linear scan per lookup showed up on the update thread. The index cannot be an instance
+    /// field: the copy constructor behind <c>with</c> would hand a derived set the original set's
+    /// index, so <see cref="Site"/> would answer with pre-change definitions, and the record's
+    /// value equality would start comparing cache objects. Keying a static table on the instance
+    /// keeps the index tied to the exact set it was built from. The entries are weak, so a
+    /// definition set the process stops using is still collectable.
+    /// </remarks>
+    private static readonly ConditionalWeakTable<OriginalData, DefinitionIndex> Indexes = [];
 
-    /// <summary>The one site definition with this id; throws when none or several carry it.</summary>
-    public SiteDefinition Site(short id) => _sitesById.Value.TryGetValue(id, out var definition)
+    private DefinitionIndex Index =>
+        Indexes.GetValue(this, static definitions => new DefinitionIndex(definitions));
+
+    /// <summary>The one site definition with this id; throws when none carries it.</summary>
+    public SiteDefinition Site(short id) => Index.Sites.TryGetValue(id, out var definition)
         ? definition
         : throw new InvalidOperationException($"No site definition has id {id}.");
 
-    /// <summary>The one gang definition with this id; throws when none or several carry it.</summary>
-    public GangDefinition Gang(short id) => _gangsById.Value.TryGetValue(id, out var definition)
+    /// <summary>The one gang definition with this id; throws when none carries it.</summary>
+    public GangDefinition Gang(short id) => Index.Gangs.TryGetValue(id, out var definition)
         ? definition
         : throw new InvalidOperationException($"No gang definition has id {id}.");
+
+    /// <summary>Both id lookups for a single definition set; ids are unique per the validator.</summary>
+    private sealed class DefinitionIndex(OriginalData definitions)
+    {
+        public Dictionary<short, SiteDefinition> Sites { get; } =
+            definitions.Sites.ToDictionary(definition => definition.Id);
+
+        public Dictionary<short, GangDefinition> Gangs { get; } =
+            definitions.Gangs.ToDictionary(definition => definition.Id);
+    }
 }
 
 public sealed record SiteDefinition(
