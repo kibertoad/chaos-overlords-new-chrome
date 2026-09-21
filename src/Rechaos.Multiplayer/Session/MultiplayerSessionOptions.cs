@@ -55,6 +55,26 @@ namespace Rechaos.Multiplayer.Session;
 /// end of a window without waiting out the real one.
 /// </para>
 /// </param>
+/// <param name="CallRetryPolicy">
+/// How one idempotent protocol call's worth of reconnecting is paced, or null for
+/// <see cref="RetryPolicy.Call"/>.
+/// <para>
+/// The same bound on silent waiting the stream has, for the calls a received fact leads to and for
+/// the two idempotent writes. Neither the outbox nor the reporter ends a match when a window
+/// closes unanswered — they open another — so a caller overrides this to reach the end of one in a
+/// test without waiting out the real five minutes.
+/// </para>
+/// </param>
+/// <param name="ReportFlushGrace">
+/// How long disposing the session waits for state-hash reports it has not sent, or null for
+/// <see cref="MultiplayerMatchSession.DefaultReportFlushGrace"/>.
+/// <para>
+/// A turn settles only once every human seat has reported it, so a hash abandoned on the way out
+/// holds the rest of the table at that turn until its deadline. The wait is bounded because
+/// leaving a match whose server is not answering has to stay quick, and nothing is lost by giving
+/// up on it: a client that returns replays the seal from history and reports it again.
+/// </para>
+/// </param>
 public sealed record MultiplayerSessionOptions(
     MatchHandle Match,
     OriginalData Definitions,
@@ -64,4 +84,6 @@ public sealed record MultiplayerSessionOptions(
     bool JoinedInProgress = false,
     TimeSpan? StreamIdleTimeout = null,
     TimeSpan? StreamOutageBudget = null,
-    RetryPolicy? StreamRetryPolicy = null);
+    RetryPolicy? StreamRetryPolicy = null,
+    RetryPolicy? CallRetryPolicy = null,
+    TimeSpan? ReportFlushGrace = null);

@@ -46,6 +46,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private readonly TimeSpan? _streamIdleTimeout;
     private readonly TimeSpan? _streamOutageBudget;
     private readonly RetryPolicy _streamRetryPolicy;
+    private readonly RetryPolicy _callRetryPolicy;
     private readonly Dictionary<string, int> _slotsByPlayerId;
     private readonly Dictionary<string, PendingTakeoverVote> _takeoverVotes = new(StringComparer.Ordinal);
 
@@ -129,6 +130,8 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _streamIdleTimeout = options.StreamIdleTimeout;
         _streamOutageBudget = options.StreamOutageBudget;
         _streamRetryPolicy = options.StreamRetryPolicy ?? RetryPolicy.Stream;
+        _callRetryPolicy = options.CallRetryPolicy ?? RetryPolicy.Call;
+        _reportFlushGrace = options.ReportFlushGrace ?? DefaultReportFlushGrace;
         _stoppingToken = _stopping.Token;
         _replay = replay;
         _slotsByPlayerId = slotsByPlayerId;
@@ -330,6 +333,10 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
 
     private async Task DisposeCoreAsync()
     {
+        // Before the token goes. A queued hash the server never hears is a turn every other player
+        // is still held at, and cancelling first threw away exactly the reports a player quitting
+        // the moment a turn resolved had just produced. Bounded; see `FlushReportsAsync`.
+        await FlushReportsAsync().ConfigureAwait(false);
         await _stopping.CancelAsync().ConfigureAwait(false);
         foreach (var task in new[] { _pump, _outbox, _reporter })
         {
@@ -484,15 +491,19 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         var (stateHash, includedOwnOrders) = await FetchAndApplySealedTurnAsync(
                 turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
-        var (state, planning) = HandOver();
-        _notices.Enqueue(new MultiplayerNotice.TurnResolved(
-            turn, state, stateHash, includedOwnOrders, planning));
         // A turn is locally safe to plan as soon as its sealed set has been verified and applied.
         // The hash report is what tells the server whether peers agreed, but waiting for its HTTP
         // response here made every new turn pay an avoidable round trip and held the event pump up
         // behind a retry. The reporter retains the request in turn order and any desync it causes
         // still arrives on this pump and closes the speculative plan immediately.
+        //
+        // Queued BEFORE the handover, which is neither free nor instant: a turn the player has been
+        // told about is one this client is already committed to reporting, so quitting on the very
+        // frame it arrived still flushes the hash the rest of the table is waiting for.
         Forget(QueueReportAsync(turn, stateHash));
+        var (state, planning) = HandOver();
+        _notices.Enqueue(new MultiplayerNotice.TurnResolved(
+            turn, state, stateHash, includedOwnOrders, planning));
     }
 
     /// <summary>
@@ -784,7 +795,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         if (ReferenceEquals(lane, _outboxLane)) Volatile.Write(ref _outboxOperation, operation);
         var result = await TransientFailure.CallAsync(
             call,
-            RetryPolicy.Call,
+            _callRetryPolicy,
             onRetry: lane is null
                 ? null
                 : (exception, attempt) => lane.Failed(Describe(exception), attempt),

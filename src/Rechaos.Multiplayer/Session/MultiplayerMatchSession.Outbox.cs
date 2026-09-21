@@ -164,7 +164,7 @@ public sealed partial class MultiplayerMatchSession
                 // The seat was handed to the computer, or left, between the player planning this
                 // document and it reaching the server. It is not the end of the membership — the
                 // player is still on the roster and can take the seat back — so the session goes
-                // on watching the match, exactly as `ReportAsync` does with the same 403, and
+                // on watching the match, exactly as `SendReportAsync` does with the same 403, and
                 // stops offering documents the server will not take.
                 _ownSeatIsComputerControlled = true;
                 _notices.Enqueue(

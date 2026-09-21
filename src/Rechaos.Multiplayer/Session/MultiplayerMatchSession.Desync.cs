@@ -173,7 +173,7 @@ public sealed partial class MultiplayerMatchSession
     /// Every turn it passes through is re-reported, because the server waits for a report from
     /// every human seat and an earlier turn left unsettled blocks every later repair. Reports for
     /// turns already confirmed are refused with <c>turn_confirmed</c>, which
-    /// <see cref="ReportAsync"/> reads as the success it is.
+    /// <see cref="SendReportAsync"/> reads as the success it is.
     /// </para>
     /// </remarks>
     private async Task AdoptRepairAsync(SnapshotView snapshot, CancellationToken cancellationToken)

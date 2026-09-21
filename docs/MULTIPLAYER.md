@@ -567,6 +567,19 @@ What the C# client has to do. `multiplayer/packages/client` is the reference and
    out of the state rather than a roster fetched beside it — the state is the one answer every client
    is already guaranteed to agree on, and a slot the AI plans on one client and not another is a
    desync on the turn *after* the one that caused it.
+
+   The `POST` is the turn's last act, not a gate in front of the next one: a turn whose sealed set
+   verified and applied is one this client can already plan on, so the hash is handed to an ordered
+   background reporter and the player gets their city back without paying a round trip. The
+   reporter sends one turn at a time and in turn order — the server settles turns in order, and an
+   earlier turn left unreported blocks every later one — and it captures each request as the turn
+   resolves, so `finished` and the host's seat summary describe the state that produced that hash.
+   An exhausted retry window is answered the way the outbox answers one: the report is an
+   idempotent restatement, so another window opens rather than the match ending. A client leaving
+   the match flushes whatever it has not sent within a short grace, because a turn settles only
+   once every human seat has reported it; anything still unsent is replayed out of the history and
+   reported again on the next reconnect. The reconstruction paths — a restore and a desync repair —
+   still wait for their reports, because they must not run ahead of the barrier they are clearing.
 5. The server retains each sealed order set as the turn increment; ordinary confirmed turns do not
    upload the whole state again. The host includes the small public seat summary in its state-hash
    report for late-join selection. On `turn.desynced`, the host uploads a compressed native snapshot
