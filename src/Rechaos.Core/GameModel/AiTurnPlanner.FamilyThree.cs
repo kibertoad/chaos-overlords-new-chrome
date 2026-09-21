@@ -2,40 +2,67 @@ namespace Rechaos.Core.GameModel;
 
 public static partial class AiTurnPlanner
 {
+    /// <summary>
+    /// The two places where families 3 and 5 differ. Both run the site-influence planner below:
+    /// family 3 picks the unfinished site with the highest Cash and moves with selector mode 8,
+    /// family 5 picks by Support and moves with mode 7. Every other rule the planner consults has
+    /// the same body in <see cref="OriginalAiFamilyThreeRules"/> and
+    /// <see cref="OriginalAiFamilyFiveRules"/>, so the planner reads the family 3 copy.
+    /// </summary>
+    private sealed record SiteInfluenceFamily(
+        Func<MatchState, int, int?> SelectUnfinishedSite,
+        Action<MatchState, PlayerId, MatchGangState, int, FamilyPlanningSnapshot> Move);
+
+    private static readonly SiteInfluenceFamily FamilyThreeSiteInfluence = new(
+        OriginalAiFamilyThreeRules.SelectHighestCashUnfinishedSite, PrepareFamilyThreeMove);
+
+    private static readonly SiteInfluenceFamily FamilyFiveSiteInfluence = new(
+        OriginalAiFamilyFiveRules.SelectHighestSupportUnfinishedSite, PrepareFamilyFiveMove);
+
     private static void PrepareFamilyThreeCommand(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        FamilyPlanningSnapshot snapshot)
+        FamilyPlanningSnapshot snapshot) =>
+        PrepareSiteInfluenceFamilyCommand(
+            state, playerId, gang, gangSlot, snapshot, FamilyThreeSiteInfluence);
+
+    private static void PrepareSiteInfluenceFamilyCommand(
+        MatchState state,
+        PlayerId playerId,
+        MatchGangState gang,
+        int gangSlot,
+        FamilyPlanningSnapshot snapshot,
+        SiteInfluenceFamily variant)
     {
         var player = state.FindPlayer(playerId)!;
         var previousAction = state.AiPlanning.PreviousAction(playerId, gangSlot);
         var effectiveHeal = EffectiveStatisticsCalculator.ForGang(state, gang).Heal;
 
         if (OriginalAiFamilyThreeRules.UsesCashSiteContinuation(previousAction))
-            PrepareFamilyThreeCashContinuation(
-                state, playerId, gang, gangSlot, effectiveHeal, snapshot);
+            PrepareSiteInfluenceSiteContinuation(
+                state, playerId, gang, gangSlot, effectiveHeal, snapshot, variant);
         else if (OriginalAiFamilyThreeRules.UsesOpponentContinuation(previousAction))
-            PrepareFamilyThreeOpponentContinuation(
-                state, playerId, gang, gangSlot, snapshot);
+            PrepareSiteInfluenceOpponentContinuation(
+                state, playerId, gang, gangSlot, snapshot, variant);
         else if (previousAction == GangAction.Influence)
-            PrepareFamilyThreeInfluenceContinuation(
-                state, player, gang, gangSlot, effectiveHeal, snapshot);
+            PrepareSiteInfluenceRepeatContinuation(
+                state, player, gang, gangSlot, effectiveHeal, snapshot, variant);
         else if (previousAction == GangAction.Snitch)
-            PrepareFamilyThreeMove(
-                state, playerId, gang, gangSlot, snapshot);
+            variant.Move(state, playerId, gang, gangSlot, snapshot);
 
-        ApplyFamilyThreeTerminalOverrides(state, playerId, gangSlot);
+        ApplySiteInfluenceTerminalOverrides(state, playerId, gangSlot);
     }
 
-    private static void PrepareFamilyThreeCashContinuation(
+    private static void PrepareSiteInfluenceSiteContinuation(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
         int effectiveHeal,
-        FamilyPlanningSnapshot snapshot)
+        FamilyPlanningSnapshot snapshot,
+        SiteInfluenceFamily variant)
     {
         if (OriginalAiFamilyThreeRules.ShouldHeal(gang.Force, effectiveHeal))
         {
@@ -43,22 +70,22 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        PrepareFamilyThreeCashSiteOrTerritorial(
-            state, playerId, gang, gangSlot, snapshot);
+        PrepareSiteInfluenceSiteOrTerritorial(
+            state, playerId, gang, gangSlot, snapshot, variant);
     }
 
-    private static void PrepareFamilyThreeCashSiteOrTerritorial(
+    private static void PrepareSiteInfluenceSiteOrTerritorial(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        FamilyPlanningSnapshot snapshot)
+        FamilyPlanningSnapshot snapshot,
+        SiteInfluenceFamily variant)
     {
         if (state.Sectors[gang.SectorId].Owner == playerId
-            && OriginalAiFamilyThreeRules.SelectHighestCashUnfinishedSite(
-                state, gang.SectorId) is { } siteSlot)
+            && variant.SelectUnfinishedSite(state, gang.SectorId) is { } siteSlot)
         {
-            SetFamilyThreeInfluence(state, playerId, gangSlot, siteSlot);
+            SetSiteInfluenceAction(state, playerId, gangSlot, siteSlot);
             return;
         }
 
@@ -68,23 +95,23 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        PrepareFamilyThreeMove(
-            state, playerId, gang, gangSlot, snapshot);
+        variant.Move(state, playerId, gang, gangSlot, snapshot);
     }
 
-    private static void PrepareFamilyThreeOpponentContinuation(
+    private static void PrepareSiteInfluenceOpponentContinuation(
         MatchState state,
         PlayerId playerId,
         MatchGangState gang,
         int gangSlot,
-        FamilyPlanningSnapshot snapshot)
+        FamilyPlanningSnapshot snapshot,
+        SiteInfluenceFamily variant)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
         var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
         if (visibleWeight != 10)
         {
-            PrepareFamilyThreeCashSiteOrTerritorial(
-                state, playerId, gang, gangSlot, snapshot);
+            PrepareSiteInfluenceSiteOrTerritorial(
+                state, playerId, gang, gangSlot, snapshot, variant);
             return;
         }
 
@@ -107,13 +134,14 @@ public static partial class AiTurnPlanner
         SetRecoveredAttackAction(state, playerId, gangSlot, draw.Selected);
     }
 
-    private static void PrepareFamilyThreeInfluenceContinuation(
+    private static void PrepareSiteInfluenceRepeatContinuation(
         MatchState state,
         MatchPlayerState player,
         MatchGangState gang,
         int gangSlot,
         int effectiveHeal,
-        FamilyPlanningSnapshot snapshot)
+        FamilyPlanningSnapshot snapshot,
+        SiteInfluenceFamily variant)
     {
         var playerId = player.Id;
         if (OriginalAiEquipmentRules.SelectFamilyOneUpgrade(
@@ -137,24 +165,22 @@ public static partial class AiTurnPlanner
             if (previousSiteSlot < MatchLimits.SitesPerSector
                 && state.Sectors[gang.SectorId].Sites[previousSiteSlot].Resistance > 0)
             {
-                SetFamilyThreeInfluence(
+                SetSiteInfluenceAction(
                     state, playerId, gangSlot, previousSiteSlot);
                 return;
             }
 
-            if (OriginalAiFamilyThreeRules.SelectHighestCashUnfinishedSite(
-                    state, gang.SectorId) is { } siteSlot)
+            if (variant.SelectUnfinishedSite(state, gang.SectorId) is { } siteSlot)
             {
-                SetFamilyThreeInfluence(state, playerId, gangSlot, siteSlot);
+                SetSiteInfluenceAction(state, playerId, gangSlot, siteSlot);
                 return;
             }
         }
 
-        PrepareFamilyThreeMove(
-            state, playerId, gang, gangSlot, snapshot);
+        variant.Move(state, playerId, gang, gangSlot, snapshot);
     }
 
-    private static void ApplyFamilyThreeTerminalOverrides(
+    private static void ApplySiteInfluenceTerminalOverrides(
         MatchState state,
         PlayerId playerId,
         int gangSlot)
@@ -169,7 +195,7 @@ public static partial class AiTurnPlanner
         TerminateForGreed(state, playerId, gangSlot);
     }
 
-    private static void SetFamilyThreeInfluence(
+    private static void SetSiteInfluenceAction(
         MatchState state,
         PlayerId playerId,
         int gangSlot,
