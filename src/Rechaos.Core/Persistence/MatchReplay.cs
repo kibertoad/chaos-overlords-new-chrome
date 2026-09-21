@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text.Json;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
@@ -77,7 +76,7 @@ public sealed class MatchReplayRecorder
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Every mutation costs two full serialisations and SHA-256s of the whole match: one for
+    /// Every mutation costs two full fingerprints of the whole match: one for
     /// <see cref="EnsureSynchronized"/>, which asks whether the state has moved behind the
     /// recorder's back, and one for the step's own fingerprint. The speculative copy an online
     /// player plans on routes every click, every cancel and every hire through that, on the render
