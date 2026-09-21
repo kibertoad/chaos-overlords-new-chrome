@@ -376,6 +376,7 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ResetMatchPresentation(MatchState state)
     {
+        ClearGangDragPresentation();
         _combatPresentationProgress.ResetTo(
             state.Players.Select(player => player.Id),
             state.Events.LastOrDefault()?.Sequence ?? -1);

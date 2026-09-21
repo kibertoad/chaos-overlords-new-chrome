@@ -181,6 +181,9 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private GangId? _draggedGangId;
     private Point _gangPressPoint;
     private bool _gangDragStarted;
+    private IReadOnlyList<GameCommand>? _gangDragLegalCommands;
+    private IReadOnlySet<int>? _gangDragLegalSectors;
+    private IReadOnlyList<MatchGangState>? _gangDragVisibleGangs;
     private Point _dragPoint;
     private string _message = string.Empty;
     private KeyboardState _previousKeyboard;
@@ -672,7 +675,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             else if (_draggedGangId is not null && !_gangDragStarted
                      && DragMoved(_gangPressPoint, virtualPoint))
             {
-                _gangDragStarted = true;
+                StartGangDrag();
                 _message = string.Empty;
             }
         }

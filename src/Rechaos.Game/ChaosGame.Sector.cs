@@ -299,7 +299,23 @@ public sealed partial class ChaosGame
         _draggedGangId = gang.Id;
         _gangPressPoint = point;
         _gangDragStarted = false;
+        ClearGangDragPresentation();
         _dragPoint = point;
+    }
+
+    private void StartGangDrag()
+    {
+        if (_state is null || _draggedGangId is not { } gangId
+            || _state.FindGang(gangId) is not { } gang)
+        {
+            CancelGangDrag();
+            return;
+        }
+        _gangDragLegalCommands = CommandOptionCatalog.LegalCommands(_state, gang.Owner, gang.Id);
+        _gangDragLegalSectors = SectorMapGangDrop.Destinations(
+            _gangDragLegalCommands, gang.SectorId);
+        _gangDragVisibleGangs = SectorGangView.Visible(_state, gang.Owner, _cursor);
+        _gangDragStarted = true;
     }
 
     private void CompleteGangClick()
@@ -307,6 +323,7 @@ public sealed partial class ChaosGame
         var gangId = _draggedGangId;
         _draggedGangId = null;
         _gangDragStarted = false;
+        ClearGangDragPresentation();
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang) return;
         if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
             OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
@@ -317,6 +334,7 @@ public sealed partial class ChaosGame
         var gangId = _draggedGangId;
         _draggedGangId = null;
         _gangDragStarted = false;
+        ClearGangDragPresentation();
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang || _actions is null) return;
         var playerId = _state.Coordinator.ActivePlayer ?? gang.Owner;
         var visibleGangs = SectorGangView.Visible(_state, playerId, _cursor).ToArray();
@@ -374,16 +392,27 @@ public sealed partial class ChaosGame
     {
         _draggedGangId = null;
         _gangDragStarted = false;
+        ClearGangDragPresentation();
         _message = string.Empty;
+    }
+
+    private void ClearGangDragPresentation()
+    {
+        _gangDragLegalCommands = null;
+        _gangDragLegalSectors = null;
+        _gangDragVisibleGangs = null;
     }
 
     private void DrawGangMoveDrag(SpriteBatch batch, Texture2D pixel, MatchState state)
     {
-        if (!_gangDragStarted || _draggedGangId is not { } gangId || state.FindGang(gangId) is not { } gang)
+        if (!_gangDragStarted || _draggedGangId is not { } gangId
+            || state.FindGang(gangId) is not { } gang
+            || _gangDragLegalCommands is null || _gangDragLegalSectors is null
+            || _gangDragVisibleGangs is null)
             return;
-        var legalCommands = CommandOptionCatalog.LegalCommands(state, gang.Owner, gang.Id);
-        var legalSectors = SectorMapGangDrop.Destinations(legalCommands, gang.SectorId);
-        var visibleGangs = SectorGangView.Visible(state, gang.Owner, _cursor).ToArray();
+        var legalCommands = _gangDragLegalCommands;
+        var legalSectors = _gangDragLegalSectors;
+        var visibleGangs = _gangDragVisibleGangs;
         if (SectorGangDropTarget.EnemyAt(visibleGangs, gang.Owner, _dragPoint) is { } enemyId)
         {
             var canAttack = legalCommands.Any(command => command.Action == GangAction.Attack
