@@ -433,6 +433,22 @@ public static class NativeSaveSerializer
         DefinitionFingerprints.GetValue(definitions, static value => Convert.ToHexStringLower(
             SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value, JsonOptions))));
 
+    /// <summary>
+    /// The definition fingerprint this build writes into every save and demands of every save it
+    /// reads, as <see cref="Capture"/> and <see cref="RestoreDocument"/> use it.
+    /// </summary>
+    /// <remarks>
+    /// The save browser's sidecar records this alongside <see cref="CurrentFormatVersion"/> so a
+    /// row can be drawn without deserializing the match and still know whether that match would
+    /// load here at all. A save the definitions or the format have moved on from is byte-identical
+    /// on disk, so nothing about the file itself tells the two apart.
+    /// </remarks>
+    public static string DefinitionsFingerprint(OriginalData definitions)
+    {
+        ArgumentNullException.ThrowIfNull(definitions);
+        return DefinitionFingerprint(definitions);
+    }
+
     private static byte[] DecodeSha256(string value, string field)
     {
         try

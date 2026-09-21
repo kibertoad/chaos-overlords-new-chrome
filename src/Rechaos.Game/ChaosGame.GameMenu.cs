@@ -148,6 +148,8 @@ public sealed partial class ChaosGame
     private void RefreshSaveSlots()
     {
         if (_definitions is null) return;
+        // Reading the autosave row means opening the file the background worker replaces.
+        FlushAutoSaves();
         for (var slot = 0; slot < SaveSlotCatalog.SlotCount; slot++)
             _saveSlots[slot] = SaveSlotCatalog.Read(_saveDirectory, slot, _definitions);
         _saveSlots[SaveSlotCatalog.AutoSaveRow] =

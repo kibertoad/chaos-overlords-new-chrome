@@ -67,6 +67,43 @@ public static class NativeSaveStore
             candidate => _ = Load(candidate, state.Definitions));
     }
 
+    /// <summary>Captures a state on the caller's thread for a later durable write.</summary>
+    /// <remarks>
+    /// The match state is mutable and is owned by the game loop. Capturing these bytes before
+    /// dispatching disk I/O lets the worker save a coherent turn without racing the next one.
+    /// </remarks>
+    public static byte[] Serialize(MatchState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        using var stream = new MemoryStream();
+        NativeSaveSerializer.Save(stream, state);
+        return stream.ToArray();
+    }
+
+    /// <summary>Durably saves an already captured snapshot.</summary>
+    /// <param name="trustExistingPrimary">
+    /// True only when this process wrote and verified the current primary immediately before this
+    /// generation. It avoids reloading that known-good generation before replacing it.
+    /// </param>
+    public static void SaveAtomic(
+        string path,
+        ReadOnlyMemory<byte> snapshot,
+        OriginalData definitions,
+        bool trustExistingPrimary)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(definitions);
+        var fullPath = Path.GetFullPath(path);
+        var directory = Path.GetDirectoryName(fullPath)
+            ?? throw new ArgumentException("Save path has no parent directory.", nameof(path));
+        AtomicGenerationRecovery.SaveAtomic(
+            fullPath, directory, BackupSuffix,
+            "The save was written but could not be read back, so it was not promoted.",
+            stream => stream.Write(snapshot.Span),
+            candidate => _ = Load(candidate, definitions),
+            trustExistingPrimary);
+    }
+
     public static MatchState Load(string path, OriginalData definitions)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);

@@ -46,10 +46,19 @@ public sealed partial class ChaosGame
     /// That loses the session history a slot save keeps, which is the price of the autosave being
     /// there at all after a crash.
     /// </remarks>
-    private bool LoadGameFromAutoSave() => AdoptLoadedMatch(
-        () => NativeSaveStore.LoadRecoveringBackup(_autoSavePath, _definitions!).State,
-        _ => null,
-        _saveSlots[SaveSlotCatalog.AutoSaveRow]);
+    private bool LoadGameFromAutoSave()
+    {
+        FlushAutoSaves();
+        // Loading rewrites the autosave when the primary is damaged, and leaves a damaged primary
+        // in place when that repair fails, so the file is no longer one this process wrote and
+        // read back. The next autosave has to prove the primary is worth keeping before it may
+        // become the backup generation.
+        _autoSave.ForgetVerifiedPrimary();
+        return AdoptLoadedMatch(
+            () => NativeSaveStore.LoadRecoveringBackup(_autoSavePath, _definitions!).State,
+            _ => null,
+            _saveSlots[SaveSlotCatalog.AutoSaveRow]);
+    }
 
     private bool AdoptLoadedMatch(
         Func<MatchState> load,
@@ -155,12 +164,7 @@ public sealed partial class ChaosGame
             _message = result.RecoveredFromBackup
                 ? result.PrimaryRepaired ? "REPLAY RECOVERED" : "REPLAY LOADED  REPAIR FAILED"
                 : string.Empty;
-            _combatPresentationProgress.ResetTo(
-                _state.Players.Select(player => player.Id),
-                _state.Events.LastOrDefault()?.Sequence ?? -1);
-            _combatAnimationPlayer.Clear();
-            _siteSearchSelections.Reset();
-            _lastTurnEventArchive.Clear();
+            ResetMatchPresentation(_state);
             StartPlanningTimer(_inputTime);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)

@@ -1,7 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rechaos.Core.GameModel;
-using Rechaos.Core.Persistence;
 
 namespace Rechaos.Game;
 
@@ -31,6 +30,9 @@ public sealed partial class ChaosGame
         // The orders are going in, so the picks that were waiting to give one are spent. The idle
         // gang warning has already had its say, and a turn it sends back keeps its selection.
         _gangSelection.Clear();
+        // Including a gang still held under the pointer: the planning clock can end the turn from
+        // under a drag, and the next player must not inherit it.
+        ForgetGangDrag();
         StopPlanningTimer();
         if (_state.Outcome is not null)
         {
@@ -84,26 +86,34 @@ public sealed partial class ChaosGame
     private void WriteAutoSave()
     {
         if (_state is null) return;
-        try
+        _autoSave.Capture(_state);
+    }
+
+    /// <summary>
+    /// Drains the rolling autosave worker so the game thread may read or replace the file.
+    /// </summary>
+    /// <remarks>
+    /// The autosave file has one writer, on the worker, and readers on the game thread: the save
+    /// browser lists it and the player can load it. Blocking here keeps those apart, and what the
+    /// game thread then sees is the turn that has just been played rather than the one before it.
+    /// </remarks>
+    private void FlushAutoSaves() => _autoSave.Flush();
+
+    private void ReportAutoSaveFailure(int turn, Exception exception)
+    {
+        _diagnostics?.Write("autosave.failed", new Dictionary<string, string?>
         {
-            NativeSaveStore.SaveAtomic(_autoSavePath, _state);
-        }
-        catch (Exception exception) when (exception is IOException or InvalidDataException
-                                          or UnauthorizedAccessException)
-        {
-            _diagnostics?.Write("autosave.failed", new Dictionary<string, string?>
-            {
-                ["turn"] = _state.Coordinator.Turn.ToString(),
-                ["error"] = exception.ToString()
-            });
-            _message = "AUTOSAVE FAILED";
-        }
+            ["turn"] = turn.ToString(),
+            ["error"] = exception.ToString()
+        });
+        _message = "AUTOSAVE FAILED";
     }
 
     private void AdvanceDebugPhase()
     {
         if (_state is null) return;
         _gangSelection.Clear();
+        ForgetGangDrag();
         if (_state.Outcome is not null)
         {
             _message = string.Empty;

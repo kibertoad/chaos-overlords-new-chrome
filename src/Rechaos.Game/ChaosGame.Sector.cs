@@ -299,14 +299,27 @@ public sealed partial class ChaosGame
         _draggedGangId = gang.Id;
         _gangPressPoint = point;
         _gangDragStarted = false;
+        _gangDragProjection = null;
         _dragPoint = point;
+    }
+
+    /// <summary>Promotes a press into a drag, projecting up front what the drag paints with.</summary>
+    private void StartGangDrag()
+    {
+        if (_state is null || _draggedGangId is not { } gangId
+            || _state.FindGang(gangId) is not { } gang)
+        {
+            CancelGangDrag();
+            return;
+        }
+        _gangDragProjection = SectorGangDragProjection.For(_state, gang, _cursor);
+        _gangDragStarted = true;
     }
 
     private void CompleteGangClick()
     {
         var gangId = _draggedGangId;
-        _draggedGangId = null;
-        _gangDragStarted = false;
+        ForgetGangDrag();
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang) return;
         if (_sectorGangClicks.Register(gang.Id.Value, _inputTime))
             OpenGangDetails(gang, ClientScreen.Sector, gang.SectorId);
@@ -315,8 +328,7 @@ public sealed partial class ChaosGame
     private void CompleteGangDrag(Point point)
     {
         var gangId = _draggedGangId;
-        _draggedGangId = null;
-        _gangDragStarted = false;
+        ForgetGangDrag();
         if (gangId is null || _state?.FindGang(gangId.Value) is not { } gang || _actions is null) return;
         var playerId = _state.Coordinator.ActivePlayer ?? gang.Owner;
         var visibleGangs = SectorGangView.Visible(_state, playerId, _cursor).ToArray();
@@ -372,18 +384,49 @@ public sealed partial class ChaosGame
 
     private void CancelGangDrag()
     {
+        ForgetGangDrag();
+        _message = string.Empty;
+    }
+
+    /// <summary>Lets go of a drag in progress, along with what it was painting with.</summary>
+    /// <remarks>
+    /// Every path that replaces the match on screen or ends the turn being planned calls this, for
+    /// the reason those paths already clear the ctrl-picked selection: the gang under the pointer
+    /// was picked up on a turn that is over, and releasing the button would aim its order at a
+    /// board the player never saw.
+    /// </remarks>
+    private void ForgetGangDrag()
+    {
         _draggedGangId = null;
         _gangDragStarted = false;
-        _message = string.Empty;
+        _gangDragProjection = null;
+    }
+
+    /// <summary>
+    /// What the drag paints with, taken again when the board it was projected from has moved on.
+    /// </summary>
+    /// <remarks>
+    /// The projection is kept for the whole gesture so its cost is paid once rather than once per
+    /// frame, and the paths that replace the match or end the turn drop the drag outright. This is
+    /// the guard for everything in between that they cannot see — the minimap scrolled under a
+    /// held button, or a state swapped between an update and the draw that follows it — and it
+    /// keeps what is painted equal to what <see cref="CompleteGangDrag"/> will act on.
+    /// </remarks>
+    private SectorGangDragProjection GangDragProjection(MatchState state, MatchGangState gang)
+    {
+        if (_gangDragProjection is { } held && held.Describes(state, gang.Id, _cursor)) return held;
+        return _gangDragProjection = SectorGangDragProjection.For(state, gang, _cursor);
     }
 
     private void DrawGangMoveDrag(SpriteBatch batch, Texture2D pixel, MatchState state)
     {
-        if (!_gangDragStarted || _draggedGangId is not { } gangId || state.FindGang(gangId) is not { } gang)
+        if (!_gangDragStarted || _draggedGangId is not { } gangId
+            || state.FindGang(gangId) is not { } gang)
             return;
-        var legalCommands = CommandOptionCatalog.LegalCommands(state, gang.Owner, gang.Id);
-        var legalSectors = SectorMapGangDrop.Destinations(legalCommands, gang.SectorId);
-        var visibleGangs = SectorGangView.Visible(state, gang.Owner, _cursor).ToArray();
+        var projection = GangDragProjection(state, gang);
+        var legalCommands = projection.LegalCommands;
+        var legalSectors = projection.LegalSectors;
+        var visibleGangs = projection.VisibleGangs;
         if (SectorGangDropTarget.EnemyAt(visibleGangs, gang.Owner, _dragPoint) is { } enemyId)
         {
             var canAttack = legalCommands.Any(command => command.Action == GangAction.Attack
