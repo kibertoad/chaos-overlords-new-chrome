@@ -35,7 +35,7 @@ public sealed partial class NativeSaveSerializerTests
 
         var restored = RoundTrip(match);
 
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(match.Events, restored.Events);
         Assert.Equal(match.NotificationsFor(new PlayerId(0)), restored.NotificationsFor(new PlayerId(0)));
         Assert.Equal(match.PhaseHashes, restored.PhaseHashes);
@@ -86,7 +86,7 @@ public sealed partial class NativeSaveSerializerTests
         Assert.Equal(CommandTarget.Item(weapon), command.Target);
         Assert.Equal(CommandTarget.Item(armor), command.SecondaryTarget);
         Assert.Equal(CommandTarget.Item(miscellaneous), command.TertiaryTarget);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public sealed partial class NativeSaveSerializerTests
         Assert.Equal(CommandTarget.Item(weapon), command.SecondaryTarget);
         Assert.Equal(CommandTarget.Item(armor), command.TertiaryTarget);
         Assert.Equal(CommandTarget.Item(miscellaneous), command.QuaternaryTarget);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -138,172 +138,15 @@ public sealed partial class NativeSaveSerializerTests
         Assert.Equal(match.ComlinkFor(new PlayerId(1)).ReadSequences,
             restored.ComlinkFor(new PlayerId(1)).ReadSequences);
         Assert.True(restored.ComlinkFor(new PlayerId(1)).HasUnread);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
     }
 
-    [Fact]
-    public void VersionTwentyOneSaveMigratesReadThroughPosition()
-    {
-        var match = CreateMatch(secondPlayerHuman: true);
-        match.FinishUpkeep();
-        Assert.True(match.SendComlinkMessage(
-            new PlayerId(0), [new PlayerId(1)], "FIRST").Accepted);
-        Assert.True(match.SendComlinkMessage(
-            new PlayerId(0), [new PlayerId(1)], "SECOND").Accepted);
-        var inbox = match.ComlinkFor(new PlayerId(1));
-        Assert.True(match.MarkComlinkRead(new PlayerId(1), inbox.Messages[0].Sequence));
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 21;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionTwentyFourSha256(match);
-        foreach (var playerInbox in document["runtime"]!["comlink"]!.AsArray())
-            playerInbox!.AsObject().Remove("readSequences");
 
-        using var legacy = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
 
-        Assert.Equal([inbox.Messages[0].Sequence],
-            restored.ComlinkFor(new PlayerId(1)).ReadSequences);
-        Assert.True(restored.ComlinkFor(new PlayerId(1)).HasUnread);
-    }
 
-    [Fact]
-    public void VersionTwentyOneSavePreservesReadCursorBehindRetainedWindow()
-    {
-        var match = CreateMatch(secondPlayerHuman: true);
-        match.FinishUpkeep();
-        Assert.True(match.SendComlinkMessage(
-            new PlayerId(0), [new PlayerId(1)], "MESSAGE 0").Accepted);
-        var inbox = match.ComlinkFor(new PlayerId(1));
-        Assert.True(match.MarkComlinkRead(new PlayerId(1), inbox.Messages[0].Sequence));
-        for (var index = 1; index <= MatchLimits.ComlinkMessagesPerPlayer; index++)
-            Assert.True(match.SendComlinkMessage(
-                new PlayerId(0), [new PlayerId(1)], $"MESSAGE {index}").Accepted);
-        Assert.Empty(inbox.ReadSequences);
-        Assert.Equal(0, inbox.LegacyReadThroughSequence);
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 21;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionTwentyFourSha256(match);
-        foreach (var playerInbox in document["runtime"]!["comlink"]!.AsArray())
-            playerInbox!.AsObject().Remove("readSequences");
-        using var legacy = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
 
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
 
-        Assert.Empty(restored.ComlinkFor(new PlayerId(1)).ReadSequences);
-        Assert.True(restored.ComlinkFor(new PlayerId(1)).HasUnread);
-        Assert.Equal(
-            MatchStateHasher.ComputeVersionTwentyFourSha256(match),
-            MatchStateHasher.ComputeVersionTwentyFourSha256(restored));
-    }
 
-    [Fact]
-    public void VersionSixteenSaveMigratesEmptyComlinkInboxes()
-    {
-        var match = CreateMatch();
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 16;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionNineteenSha256(match);
-        document["runtime"]!.AsObject().Remove("comlink");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.All(restored.Players, player => Assert.Empty(restored.ComlinkFor(player.Id).Messages));
-        Assert.Equal(MatchStateHasher.ComputeVersionNineteenSha256(match),
-            MatchStateHasher.ComputeVersionNineteenSha256(restored));
-    }
-
-    [Fact]
-    public void VersionThirteenSaveMigratesEmptyEquipmentCooldowns()
-    {
-        var match = CreateMatch();
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 13;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionSixteenSha256(match);
-        document["runtime"]!["aiPlanning"]!.AsObject().Remove("weaponCooldowns");
-        document["runtime"]!["aiPlanning"]!.AsObject().Remove("armorCooldowns");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.All(restored.AiPlanning.CaptureWeaponCooldowns(), value => Assert.Equal(0, value));
-        Assert.All(restored.AiPlanning.CaptureArmorCooldowns(), value => Assert.Equal(0, value));
-        Assert.Equal(MatchStateHasher.ComputeVersionSixteenSha256(match),
-            MatchStateHasher.ComputeVersionSixteenSha256(restored));
-    }
-
-    [Fact]
-    public void VersionFourteenSaveInfersFormationSectorsFromActiveGangs()
-    {
-        var match = CreateMatch();
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 14;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionSeventeenSha256(match);
-        document["runtime"]!["aiPlanning"]!.AsObject().Remove("formationSectors");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        foreach (var player in restored.Players)
-            for (var gangSlot = 0; gangSlot < player.Gangs.Count; gangSlot++)
-                Assert.Equal(player.Gangs[gangSlot].SectorId,
-                    restored.AiPlanning.FormationSector(player.Id, gangSlot));
-        Assert.Equal(MatchStateHasher.ComputeVersionSeventeenSha256(match),
-            MatchStateHasher.ComputeVersionSeventeenSha256(restored));
-    }
-
-    [Fact]
-    public void VersionFifteenSaveInitializesFamilySixCoverageAsInactive()
-    {
-        var match = CreateMatch();
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 15;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionEighteenSha256(match);
-        document["runtime"]!["aiPlanning"]!.AsObject().Remove("coverageSectors");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.All(restored.AiPlanning.CaptureCoverageSectors(), value =>
-            Assert.Equal(AiPlanningState.InactiveCoverageSector, value));
-        Assert.Equal(MatchStateHasher.ComputeVersionEighteenSha256(match),
-            MatchStateHasher.ComputeVersionEighteenSha256(restored));
-    }
-
-    [Fact]
-    public void VersionTwelveSaveInfersFirstPlanningFlagsFromPlanningRecords()
-    {
-        var match = CreateMatch();
-        match.AiPlanning.SetFamily(new PlayerId(1), 0, 6);
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 12;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionFifteenSha256(match);
-        document["runtime"]!["aiPlanning"]!.AsObject().Remove("hasPlanned");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.False(restored.AiPlanning.HasPlanned(new PlayerId(0)));
-        Assert.True(restored.AiPlanning.HasPlanned(new PlayerId(1)));
-        Assert.Equal(MatchStateHasher.ComputeVersionFifteenSha256(match),
-            MatchStateHasher.ComputeVersionFifteenSha256(restored));
-    }
 
     [Fact]
     public void RoundTripPreservesCrackdownDurationAndDuplicateResetSlots()
@@ -320,7 +163,7 @@ public sealed partial class NativeSaveSerializerTests
         Assert.True(restored.Sectors[0].CrackdownActive);
         Assert.Equal(5, restored.Sectors[0].CrackdownTurnsRemaining);
         Assert.Equal([5, 5], restored.Sectors[0].CrackdownHistory);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -338,7 +181,7 @@ public sealed partial class NativeSaveSerializerTests
         {
             original.FinishExecutionPhase();
             restored.FinishExecutionPhase();
-            Assert.Equal(MatchStateHasher.ComputeSha256(original), MatchStateHasher.ComputeSha256(restored));
+            Assert.Equal(MatchStateHasher.ComputeFingerprint(original), MatchStateHasher.ComputeFingerprint(restored));
         }
     }
 
@@ -350,18 +193,18 @@ public sealed partial class NativeSaveSerializerTests
         Assert.True(original.QueueHire(new PlayerId(0), 2, 0).Accepted);
         var restored = RoundTrip(original);
 
-        Assert.Equal(MatchStateHasher.ComputeSha256(original), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(original), MatchStateHasher.ComputeFingerprint(restored));
         original.FinishHire(new PlayerId(0));
         restored.FinishHire(new PlayerId(0));
-        Assert.Equal(MatchStateHasher.ComputeSha256(original), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(original), MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(original.Random.ConsumptionCount, restored.Random.ConsumptionCount);
         Assert.Equal(original.Players[0].HirePool, restored.Players[0].HirePool);
         Assert.Equal(original.Players[0].HireOfferSlots, restored.Players[0].HireOfferSlots);
         var tombstoneRestored = RoundTrip(original);
         Assert.Equal(HireOfferSlotState.Vacant(2),
             tombstoneRestored.Players[0].HireOfferSlots[0]);
-        Assert.Equal(MatchStateHasher.ComputeSha256(original),
-            MatchStateHasher.ComputeSha256(tombstoneRestored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(original),
+            MatchStateHasher.ComputeFingerprint(tombstoneRestored));
         Assert.Equal(SaveBytes(original), SaveBytes(tombstoneRestored));
     }
 
@@ -394,77 +237,13 @@ public sealed partial class NativeSaveSerializerTests
         var restored = RoundTrip(match);
 
         Assert.True(restored.Players[0].UsesMaximumHireForce);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match),
-            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match),
+            MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(SaveBytes(match), SaveBytes(restored));
     }
 
-    [Fact]
-    public void VersionNineSaveMigratesMaximumHireForceFlagToFalse()
-    {
-        var match = CreateMatch("SMGMILK");
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 9;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionTwelveSha256(match);
-        foreach (var player in document["players"]!.AsArray())
-            player!.AsObject().Remove("usesMaximumHireForce");
 
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
 
-        Assert.False(restored.Players[0].UsesMaximumHireForce);
-        Assert.Equal(MatchStateHasher.ComputeVersionTwelveSha256(match),
-            MatchStateHasher.ComputeVersionTwelveSha256(restored));
-    }
-
-    [Fact]
-    public void VersionTenSaveDerivesInitialSectorAnchorsFromRestoredGangZero()
-    {
-        var match = CreateMatch();
-        match.AiPlanning.SetSectorAnchor(new PlayerId(0), 63);
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 10;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionThirteenSha256(match);
-        document["runtime"]!["aiPlanning"]!.AsObject().Remove("sectorAnchors");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        foreach (var player in restored.Players)
-            Assert.Equal(player.Gangs[0].SectorId + AiPlanningState.SectorAnchorOffset,
-                restored.AiPlanning.SectorAnchor(player.Id));
-        Assert.Equal(MatchStateHasher.ComputeVersionThirteenSha256(match),
-            MatchStateHasher.ComputeVersionThirteenSha256(restored));
-    }
-
-    [Fact]
-    public void VersionElevenSaveMigratesEmptyAiActionHistory()
-    {
-        var match = CreateMatch();
-        match.AiPlanning.SetPlannedAction(new PlayerId(1), 0, GangAction.Attack);
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 11;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionFourteenSha256(match);
-        var planning = document["runtime"]!["aiPlanning"]!.AsObject();
-        planning.Remove("olderActions");
-        planning.Remove("previousActions");
-        planning.Remove("plannedActions");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.All(restored.AiPlanning.CaptureOlderActions(), action => Assert.Equal(GangAction.None, action));
-        Assert.All(restored.AiPlanning.CapturePreviousActions(), action => Assert.Equal(GangAction.None, action));
-        Assert.All(restored.AiPlanning.CapturePlannedActions(), action => Assert.Equal(GangAction.None, action));
-        Assert.Equal(MatchStateHasher.ComputeVersionFourteenSha256(match),
-            MatchStateHasher.ComputeVersionFourteenSha256(restored));
-    }
 
     [Fact]
     public void RejectsModifiedSectorAnchorWhoseFingerprintWasNotUpdated()
@@ -511,32 +290,6 @@ public sealed partial class NativeSaveSerializerTests
             NativeSaveSerializer.Load(changed, match.Definitions));
     }
 
-    [Fact]
-    public void VersionEightPaidPendingHireMigratesWithoutDoublePayment()
-    {
-        var match = CreateMatch();
-        AdvanceToHire(match);
-        Assert.True(match.QueueHireLegacyImmediatePayment(new PlayerId(0), 2, 0).Accepted);
-        var paidCash = match.Players[0].Cash;
-        var paidSpent = match.Players[0].Statistics.CashSpent;
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 8;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionElevenSha256(match);
-        document["players"]![0]!["pendingHires"]![0]!.AsObject().Remove("initialCostPaid");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.True(Assert.Single(restored.Players[0].PendingHires).InitialCostPaid);
-        var rerestored = RoundTrip(restored);
-        Assert.Equal(MatchStateHasher.ComputeSha256(restored), MatchStateHasher.ComputeSha256(rerestored));
-        Assert.True(Assert.Single(rerestored.Players[0].PendingHires).InitialCostPaid);
-        rerestored.FinishHire(new PlayerId(0));
-        Assert.Equal(paidCash, rerestored.Players[0].Cash);
-        Assert.Equal(paidSpent, rerestored.Players[0].Statistics.CashSpent);
-    }
 
     [Fact]
     public void RejectsModifiedPendingHirePaymentMarker()
@@ -565,14 +318,14 @@ public sealed partial class NativeSaveSerializerTests
         var restored = RoundTrip(original);
 
         Assert.Equal(1, restored.Players[0].SnubbedHireOfferSlot);
-        Assert.Equal(MatchStateHasher.ComputeSha256(original),
-            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(original),
+            MatchStateHasher.ComputeFingerprint(restored));
         original.FinishHire(new PlayerId(0));
         restored.FinishHire(new PlayerId(0));
         Assert.Equal(HireOfferSlotState.Vacant(3),
             restored.Players[0].HireOfferSlots[1]);
-        Assert.Equal(MatchStateHasher.ComputeSha256(original),
-            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(original),
+            MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -599,213 +352,14 @@ public sealed partial class NativeSaveSerializerTests
         Assert.Throws<InvalidDataException>(() => NativeSaveSerializer.Load(stream, changedDefinitions));
     }
 
-    [Fact]
-    public void VersionOneSaveMigratesSiteCashDerivedSectorIncome()
-    {
-        var match = CreateMatch();
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 1;
-        document["stateSha256"] = MatchStateHasher.ComputeLegacySha256(match);
-        foreach (var sector in document["sectors"]!.AsArray())
-            sector!.AsObject().Remove("income");
 
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
 
-        Assert.All(restored.Sectors, sector => Assert.Equal(
-            sector.Sites.Sum(site => match.Definitions.Sites.Single(
-                definition => definition.Id == site.DefinitionId).Cash),
-            sector.Income));
-    }
 
-    [Fact]
-    public void VersionTwoSaveMigratesActiveCrackdownToMinimumDuration()
-    {
-        var match = CreateMatch();
-        match.Sectors[0].CrackdownActive = true;
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 2;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionTwoSha256(match);
-        foreach (var sector in document["sectors"]!.AsArray())
-        {
-            sector!.AsObject().Remove("crackdownTurnsRemaining");
-            sector.AsObject().Remove("crackdownHistory");
-        }
 
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
 
-        Assert.Equal(ManualRules.MinimumCrackdownTurns, restored.Sectors[0].CrackdownTurnsRemaining);
-        Assert.Empty(restored.Sectors[0].CrackdownHistory);
-    }
 
-    [Fact]
-    public void VersionThreeSavePreservesDurationAndStartsWithEmptyHistory()
-    {
-        var match = CreateMatch();
-        match.Sectors[0].CrackdownActive = true;
-        match.Sectors[0].CrackdownTurnsRemaining = 5;
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 3;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionThreeSha256(match);
-        foreach (var sector in document["sectors"]!.AsArray())
-            sector!.AsObject().Remove("crackdownHistory");
 
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
 
-        Assert.Equal(5, restored.Sectors[0].CrackdownTurnsRemaining);
-        Assert.Empty(restored.Sectors[0].CrackdownHistory);
-    }
-
-    [Fact]
-    public void VersionFourSaveMigratesMissingDifficultyToCriminal()
-    {
-        var match = CreateMatch();
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 4;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionFourSha256(match);
-        foreach (var player in document["setup"]!["players"]!.AsArray())
-            player!.AsObject().Remove("difficulty");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.Equal(AiDifficulty.Criminal, restored.Setup.AiMentality);
-        Assert.Equal([0, 1], restored.Setup.Players.Select(player => (int)player.PortraitId));
-    }
-
-    [Fact]
-    public void VersionFiveSaveReconstructsAiStrategyWithoutAdvancingSavedRandomStream()
-    {
-        var match = CreateMatch();
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 5;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionFiveSha256(match);
-        document["runtime"]!.AsObject().Remove("aiStrategy");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.Equal(match.Random.State, restored.Random.State);
-        Assert.Equal(match.Random.ConsumptionCount, restored.Random.ConsumptionCount);
-        Assert.Equal(match.AiStrategy.CaptureReactions(), restored.AiStrategy.CaptureReactions());
-        Assert.Equal(match.AiStrategy.CaptureAttitudes(), restored.AiStrategy.CaptureAttitudes());
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
-    }
-
-    [Fact]
-    public void VersionSixSaveMigratesEmptyAiPlanningState()
-    {
-        var match = CreateMatch();
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 6;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionSixSha256(match);
-        document["runtime"]!.AsObject().Remove("aiPlanning");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.Equal(0, restored.AiPlanning.CurrentHireRole(new PlayerId(0)));
-        Assert.Equal(0, restored.AiPlanning.PreviousHireRole(new PlayerId(0)));
-        Assert.All(restored.AiPlanning.CaptureFamilies(),
-            family => Assert.Equal(AiPlanningState.UnusedFamily, family));
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
-    }
-
-    [Fact]
-    public void VersionSevenSaveMigratesCompactHirePoolIntoFixedSlots()
-    {
-        var match = CreateMatch();
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 7;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionTenSha256(match);
-        foreach (var player in document["players"]!.AsArray())
-        {
-            player!.AsObject().Remove("hireOfferSlots");
-            player.AsObject().Remove("snubbedHireOfferSlot");
-        }
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.Equal(
-            match.Players[0].HirePool.Select(HireOfferSlotState.Available),
-            restored.Players[0].HireOfferSlots);
-    }
-
-    [Fact]
-    public void VersionSevenMidHireMigrationPreservesPrematureReplacementWithoutNewRng()
-    {
-        var match = CreateMatch();
-        AdvanceToHire(match);
-        Assert.True(match.QueueHireLegacyImmediatePayment(new PlayerId(0), 2, 0).Accepted);
-        match.Players[0].SetHireOfferSlot(0,
-            new HireOfferSlotState(2, null, LegacyReplacementDefinitionId: 8));
-        var legacyHash = MatchStateHasher.ComputeVersionTenSha256(match);
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 7;
-        document["stateSha256"] = legacyHash;
-        var player = document["players"]![0]!.AsObject();
-        player["hirePool"] = JsonNode.Parse("[3,4,8]");
-        player.Remove("hireOfferSlots");
-        player.Remove("snubbedHireOfferSlot");
-        player["pendingHires"]![0]!.AsObject().Remove("offerSlot");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-        var randomBefore = restored.Random.ConsumptionCount;
-
-        restored.FinishHire(new PlayerId(0));
-
-        Assert.Equal([3, 4, 8], restored.Players[0].HirePool);
-        Assert.Equal(randomBefore + 3, restored.Random.ConsumptionCount);
-    }
-
-    [Fact]
-    public void VersionSevenMigrationPreservesLegacySimultaneousHireAndSnub()
-    {
-        var match = CreateMatch();
-        AdvanceToHire(match);
-        Assert.True(match.QueueHireLegacyImmediatePayment(new PlayerId(0), 2, 0).Accepted);
-        match.Players[0].MarkHireOfferSnubbed(3, 1);
-        var legacyHash = MatchStateHasher.ComputeVersionTenSha256(match);
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 7;
-        document["stateSha256"] = legacyHash;
-        var player = document["players"]![0]!.AsObject();
-        player["hirePool"] = JsonNode.Parse("[4]");
-        player.Remove("hireOfferSlots");
-        player.Remove("snubbedHireOfferSlot");
-        player["pendingHires"]![0]!.AsObject().Remove("offerSlot");
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.Single(restored.Players[0].PendingHires);
-        Assert.Equal((short)3, restored.Players[0].SnubbedHireOffer);
-        restored.FinishHire(new PlayerId(0));
-        Assert.Equal(HireOfferSlotState.Vacant(2), restored.Players[0].HireOfferSlots[1]);
-        Assert.Equal(HireOfferSlotState.Vacant(3), restored.Players[0].HireOfferSlots[2]);
-    }
 
     [Fact]
     public void RejectsModifiedAiStrategyWhoseFingerprintWasNotUpdated()
@@ -888,19 +442,19 @@ public sealed partial class NativeSaveSerializerTests
         {
             var first = CreateMatch();
             NativeSaveStore.SaveAtomic(path, first);
-            var firstHash = MatchStateHasher.ComputeSha256(first);
+            var firstHash = MatchStateHasher.ComputeFingerprint(first);
             first.FinishUpkeep();
             NativeSaveStore.SaveAtomic(path, first);
-            var currentHash = MatchStateHasher.ComputeSha256(first);
+            var currentHash = MatchStateHasher.ComputeFingerprint(first);
 
-            Assert.Equal(currentHash, MatchStateHasher.ComputeSha256(
+            Assert.Equal(currentHash, MatchStateHasher.ComputeFingerprint(
                 NativeSaveStore.Load(path, first.Definitions)));
             File.WriteAllText(path, "corrupt");
             var recovered = NativeSaveStore.LoadRecoveringBackup(path, first.Definitions);
             Assert.True(recovered.RecoveredFromBackup);
             Assert.True(recovered.PrimaryRepaired);
-            Assert.Equal(firstHash, MatchStateHasher.ComputeSha256(recovered.State));
-            Assert.Equal(firstHash, MatchStateHasher.ComputeSha256(
+            Assert.Equal(firstHash, MatchStateHasher.ComputeFingerprint(recovered.State));
+            Assert.Equal(firstHash, MatchStateHasher.ComputeFingerprint(
                 NativeSaveStore.Load(path, first.Definitions)));
             Assert.Empty(Directory.EnumerateFiles(directory, "*.tmp"));
         }
@@ -922,16 +476,16 @@ public sealed partial class NativeSaveSerializerTests
             NativeSaveStore.SaveAtomic(path, match);
             match.FinishUpkeep();
             NativeSaveStore.SaveAtomic(path, match);
-            var backupHash = MatchStateHasher.ComputeSha256(
+            var backupHash = MatchStateHasher.ComputeFingerprint(
                 NativeSaveStore.Load(path + NativeSaveStore.BackupSuffix, match.Definitions));
             File.WriteAllText(path, "corrupt");
 
             match.FinishCommand(new PlayerId(0));
             NativeSaveStore.SaveAtomic(path, match);
 
-            Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(
+            Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(
                 NativeSaveStore.Load(path, match.Definitions)));
-            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(
+            Assert.Equal(backupHash, MatchStateHasher.ComputeFingerprint(
                 NativeSaveStore.Load(path + NativeSaveStore.BackupSuffix, match.Definitions)));
         }
         finally

@@ -75,7 +75,9 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   notification queues. The client filters those richer payloads into Last Turn
   Events; the separately recovered 16-entry bound belongs to Comlink messages.
 - `GameModel/Determinism.cs`: serializable recovered Visual C++ random step and
-  three-sample range wrapper plus canonical little-endian SHA-256 encoding. Its
+  three-sample range wrapper plus the canonical little-endian state encoding,
+  fingerprinted with XxHash128 over chained event and phase-boundary history
+  digests so a fingerprint costs the same on turn 200 as on turn 1. Its
   authoritative stream intentionally excludes the original first-run registry
   serial-number side effect, which coupled gameplay to installation history.
 - `GameModel/EffectiveStatistics.cs`: definition/equipment/influenced-site stat

@@ -124,7 +124,7 @@ public sealed class PoliceCombatResolutionTests
         var secondDetails = second.LastPoliceAttackResolutions[0].Details;
         Assert.Equal(firstDetails with { Rolls = [] }, secondDetails with { Rolls = [] });
         Assert.Equal(firstDetails.Rolls, secondDetails.Rolls);
-        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+        Assert.Equal(first.PhaseHashes[^1].Fingerprint, second.PhaseHashes[^1].Fingerprint);
     }
 
     private static void EnterAndResolveCombat(MatchState match)

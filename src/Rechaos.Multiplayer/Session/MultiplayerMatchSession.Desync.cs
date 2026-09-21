@@ -85,7 +85,7 @@ public sealed partial class MultiplayerMatchSession
         // client is on: reports for turn N can arrive after N+1 has sealed, and in a timed match
         // one slow seat is enough to make that the ordinary case rather than a corner.
         var ours = await StateAfterTurnAsync(pending.Turn, cancellationToken).ConfigureAwait(false);
-        var hash = ours is null ? null : MatchStateHasher.ComputeSha256(ours);
+        var hash = ours is null ? null : MatchStateHasher.ComputeFingerprint(ours);
         var mayRepair = hash is not null
             && pending.Candidates.Contains(hash, StringComparer.Ordinal)
             // The server takes a repair from whoever holds the SOLE most-reported hash, and leaves
@@ -139,7 +139,7 @@ public sealed partial class MultiplayerMatchSession
         if (ours is not null
             && string.Equals(
                 announced.StateHash,
-                MatchStateHasher.ComputeSha256(ours),
+                MatchStateHasher.ComputeFingerprint(ours),
                 StringComparison.Ordinal))
         {
             _pendingDesync = null;
@@ -192,7 +192,7 @@ public sealed partial class MultiplayerMatchSession
         _unreportedSeals.Clear();
         foreach (var (turn, stateHash) in settled)
             await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
-        var current = MatchStateHasher.ComputeSha256(_replay.State);
+        var current = MatchStateHasher.ComputeFingerprint(_replay.State);
         var (state, planning) = HandOver();
         _notices.Enqueue(new MultiplayerNotice.Resynced(snapshot.Turn, state, current, planning));
     }

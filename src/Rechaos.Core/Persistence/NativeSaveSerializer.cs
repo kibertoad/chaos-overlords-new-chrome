@@ -10,7 +10,10 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    public const int CurrentFormatVersion = 25;
+    // 26 replaces the SHA-256 state fingerprint with the XxHash128 one and drops every older
+    // format: the phase-hash history a save carries is written in the fingerprint of its day, and
+    // there is no build in players' hands whose saves this would strand.
+    public const int CurrentFormatVersion = 26;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -75,10 +78,8 @@ public static class NativeSaveSerializer
         // The version has to be read before the members are bound: JsonOptions refuses unmapped
         // members, so a save from a newer build fails as "JSON is invalid" on the very field the
         // newer build added, and the caller would have no way to tell it from real damage.
-        if (DeclaredFormatVersion(bounded) is { } declared && declared > CurrentFormatVersion)
-            throw IncompatibleSave.Create(
-                IncompatibleSaveReason.NewerFormat,
-                $"Unsupported native save format {declared}.");
+        if (DeclaredFormatVersion(bounded) is { } declared && declared != CurrentFormatVersion)
+            throw UnsupportedFormat(declared);
         NativeSaveDocument document;
         try
         {
@@ -132,12 +133,8 @@ public static class NativeSaveSerializer
     private static MatchState RestoreDocument(
         NativeSaveDocument document, OriginalData definitions, bool verifyStateFingerprint)
     {
-        if (document.FormatVersion > CurrentFormatVersion)
-            throw IncompatibleSave.Create(
-                IncompatibleSaveReason.NewerFormat,
-                $"Unsupported native save format {document.FormatVersion}.");
-        if (document.FormatVersion < 1)
-            throw new InvalidDataException($"Unsupported native save format {document.FormatVersion}.");
+        if (document.FormatVersion != CurrentFormatVersion)
+            throw UnsupportedFormat(document.FormatVersion);
         ValidateVersionedTargets(document);
         if (!CryptographicOperations.FixedTimeEquals(
                 DecodeSha256(document.DefinitionsSha256, "definition fingerprint"),
@@ -264,40 +261,28 @@ public static class NativeSaveSerializer
             aiStrategy,
             aiPlanning);
         var state = new MatchState(definitions, setup, players, sectors, runtime);
-        var restoredHash = document.FormatVersion switch
-        {
-            1 => MatchStateHasher.ComputeLegacySha256(state),
-            2 => MatchStateHasher.ComputeVersionTwoSha256(state),
-            3 => MatchStateHasher.ComputeVersionThreeSha256(state),
-            4 => MatchStateHasher.ComputeVersionFourSha256(state),
-            5 => MatchStateHasher.ComputeVersionFiveSha256(state),
-            6 => MatchStateHasher.ComputeVersionSixSha256(state),
-            7 => MatchStateHasher.ComputeVersionTenSha256(state),
-            8 => MatchStateHasher.ComputeVersionElevenSha256(state),
-            9 => MatchStateHasher.ComputeVersionTwelveSha256(state),
-            10 => MatchStateHasher.ComputeVersionThirteenSha256(state),
-            11 => MatchStateHasher.ComputeVersionFourteenSha256(state),
-            12 => MatchStateHasher.ComputeVersionFifteenSha256(state),
-            13 => MatchStateHasher.ComputeVersionSixteenSha256(state),
-            14 => MatchStateHasher.ComputeVersionSeventeenSha256(state),
-            15 => MatchStateHasher.ComputeVersionEighteenSha256(state),
-            16 => MatchStateHasher.ComputeVersionNineteenSha256(state),
-            17 => MatchStateHasher.ComputeVersionTwentySha256(state),
-            18 => MatchStateHasher.ComputeVersionTwentyOneSha256(state),
-            19 => MatchStateHasher.ComputeVersionTwentyTwoSha256(state),
-            20 => MatchStateHasher.ComputeVersionTwentyThreeSha256(state),
-            21 => MatchStateHasher.ComputeVersionTwentyFourSha256(state),
-            22 => MatchStateHasher.ComputeVersionTwentyFiveSha256(state),
-            23 => MatchStateHasher.ComputeVersionTwentySixSha256(state),
-            24 => MatchStateHasher.ComputeVersionTwentySevenSha256(state),
-            _ => MatchStateHasher.ComputeSha256(state)
-        };
-        if (verifyStateFingerprint && !CryptographicOperations.FixedTimeEquals(
-                DecodeSha256(document.StateSha256, "state fingerprint"),
-                DecodeSha256(restoredHash, "restored state fingerprint")))
+        if (verifyStateFingerprint
+            && !string.Equals(
+                document.StateFingerprint, MatchStateHasher.ComputeFingerprint(state),
+                StringComparison.Ordinal))
             throw new InvalidDataException("Native save state fingerprint does not match its contents.");
         return state;
     }
+
+    /// <summary>
+    /// A save this build does not read, marked as intact rather than damaged either way.
+    /// </summary>
+    /// <remarks>
+    /// Older formats are refused rather than migrated. Their state fingerprint, and the whole
+    /// phase-hash history inside them, were written under the SHA-256 encoding that format 26
+    /// retired, so this build could restore one only by taking it on trust.
+    /// </remarks>
+    private static InvalidDataException UnsupportedFormat(int declared) =>
+        IncompatibleSave.Create(
+            declared > CurrentFormatVersion
+                ? IncompatibleSaveReason.NewerFormat
+                : IncompatibleSaveReason.OlderFormat,
+            $"Unsupported native save format {declared}.");
 
     private static void ValidateVersionedTargets(NativeSaveDocument document)
     {
@@ -330,7 +315,7 @@ public static class NativeSaveSerializer
     private static NativeSaveDocument Capture(MatchState state) => new(
         CurrentFormatVersion,
         DefinitionFingerprint(state.Definitions),
-        MatchStateHasher.ComputeSha256(state),
+        MatchStateHasher.ComputeFingerprint(state),
         new MatchSetupDocument(
             state.Setup.Scenario,
             state.Setup.Duration,
@@ -646,7 +631,7 @@ public static class NativeSaveSerializer
         try
         {
             var bytes = Convert.FromHexString(value);
-            if (bytes.Length != 32) throw new FormatException();
+            if (bytes.Length is not (16 or 32)) throw new FormatException();
             return bytes;
         }
         catch (FormatException exception)
@@ -679,7 +664,7 @@ public static class NativeSaveSerializer
 internal sealed record NativeSaveDocument(
     int FormatVersion,
     string DefinitionsSha256,
-    string StateSha256,
+    string StateFingerprint,
     MatchSetupDocument Setup,
     IReadOnlyList<PlayerDocument> Players,
     IReadOnlyList<SectorDocument> Sectors,

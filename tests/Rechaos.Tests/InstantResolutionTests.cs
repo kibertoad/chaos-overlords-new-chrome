@@ -258,7 +258,7 @@ public sealed class InstantResolutionTests
             first.LastPhaseResolutions.Select(value => value.Event!.Resolution!.Rolls),
             second.LastPhaseResolutions.Select(value => value.Event!.Resolution!.Rolls));
         Assert.Equal(first.FindSite(0)!.Resistance, second.FindSite(0)!.Resistance);
-        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+        Assert.Equal(first.PhaseHashes[^1].Fingerprint, second.PhaseHashes[^1].Fingerprint);
     }
 
     private static void QueueInfluencePair(MatchState match)

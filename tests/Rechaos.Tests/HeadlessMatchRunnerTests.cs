@@ -28,6 +28,32 @@ public sealed class HeadlessMatchRunnerTests
             player => Assert.Equal(PlayerController.Computer, player.Setup.Controller));
     }
 
+    /// <summary>
+    /// One whole match in the fast gate: a six-month Greed game played to its time limit, twice,
+    /// with the journal replayed. The tournament suite covers the other scenarios and longer
+    /// durations, but it is long-running by design, and an end-to-end break in the turn loop,
+    /// the AI planner, the recorder or the replay verifier should fail before that suite runs.
+    /// </summary>
+    [Fact]
+    public void SixMonthMatchCompletesDeterministicallyAndReplays()
+    {
+        var definitions = BundledOriginalData.Load();
+        var options = new HeadlessMatchOptions(
+            ScenarioId.Greed, GameDuration.SixMonths, 1984, VerifyReplay: true);
+
+        var first = HeadlessMatchRunner.Run(
+            definitions, options, cancellationToken: TestContext.Current.CancellationToken);
+        var second = HeadlessMatchRunner.Run(
+            definitions, options, cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.NotNull(first.State.Outcome);
+        Assert.Equal(MatchEndReason.TimeLimit, first.State.Outcome!.Reason);
+        Assert.True(first.ReplayVerified);
+        Assert.Equal(first.StateHash, second.StateHash);
+        Assert.Contains(first.State.Events,
+            gameEvent => gameEvent.Kind == GameEventKind.HireResolved);
+    }
+
     [Fact]
     public void TurnWindowEmitsBoundedProgressWithoutPresentationRuntime()
     {

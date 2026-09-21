@@ -372,8 +372,8 @@ public sealed class CombatResolutionTests
             detailed.LastPhaseResolutions[0].Event!.Resolution!.Rolls);
         Assert.Equal(simple.LastPhaseResolutions[0].Event!.Resolution!.RetaliationRolls,
             detailed.LastPhaseResolutions[0].Event!.Resolution!.RetaliationRolls);
-        Assert.Equal(simple.PhaseHashes[^1].Sha256, detailed.PhaseHashes[^1].Sha256);
-        Assert.Equal(MatchStateHasher.ComputeSha256(simple), MatchStateHasher.ComputeSha256(detailed));
+        Assert.Equal(simple.PhaseHashes[^1].Fingerprint, detailed.PhaseHashes[^1].Fingerprint);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(simple), MatchStateHasher.ComputeFingerprint(detailed));
     }
 
     /// <summary>A match whose attacker destroys the defender in one pass.</summary>

@@ -76,7 +76,7 @@ public sealed class SaveSlotCatalogTests
             SaveSlotCatalog.Save(directory, 4, "Recovery test", state, online: false);
             state.FinishUpkeep();
             SaveSlotCatalog.Save(directory, 4, "Recovery test", state, online: false);
-            var backupHash = MatchStateHasher.ComputeSha256(NativeSaveStore.Load(
+            var backupHash = MatchStateHasher.ComputeFingerprint(NativeSaveStore.Load(
                 path + NativeSaveStore.BackupSuffix, definitions));
             File.Delete(path);
 
@@ -90,9 +90,9 @@ public sealed class SaveSlotCatalogTests
 
             var loaded = SaveSlotCatalog.Load(directory, 4, definitions);
 
-            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(loaded));
+            Assert.Equal(backupHash, MatchStateHasher.ComputeFingerprint(loaded));
             Assert.True(File.Exists(path));
-            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(
+            Assert.Equal(backupHash, MatchStateHasher.ComputeFingerprint(
                 NativeSaveStore.Load(path, definitions)));
         }
         finally

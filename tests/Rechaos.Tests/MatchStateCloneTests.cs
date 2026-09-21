@@ -23,7 +23,7 @@ public sealed class MatchStateCloneTests
 
         Assert.Equal(remaining, restored.Sectors[29].CrackdownTurnsRemaining);
         Assert.True(restored.Sectors[29].CrackdownActive);
-        Assert.Equal(MatchStateHasher.ComputeSha256(state), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(state), MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class MatchStateCloneTests
 
         Assert.Equal("RCHS", System.Text.Encoding.ASCII.GetString(encoded, 0, 4));
         Assert.True(encoded.Length < raw.Length / 2);
-        Assert.Equal(MatchStateHasher.ComputeSha256(state), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(state), MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -54,7 +54,7 @@ public sealed class MatchStateCloneTests
         var restored = MatchStateClone.FromBase64(
             Convert.ToBase64String(raw.ToArray()), definitions);
 
-        Assert.Equal(MatchStateHasher.ComputeSha256(state), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(state), MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public sealed class MatchStateCloneTests
         Assert.True(System.Text.Encoding.UTF8.GetByteCount(body) < 1024 * 1024);
         Assert.Equal(
             result.StateHash,
-            MatchStateHasher.ComputeSha256(MatchStateClone.FromBase64(body, definitions)));
+            MatchStateHasher.ComputeFingerprint(MatchStateClone.FromBase64(body, definitions)));
     }
 
     private static MatchState State(OriginalData definitions)

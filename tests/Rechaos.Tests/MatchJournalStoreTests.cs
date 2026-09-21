@@ -35,8 +35,8 @@ public sealed class MatchJournalStoreTests
             Assert.NotNull(resumed);
             Assert.Equal(stepsBeforeSave, resumed.StepCount);
             Assert.Equal(
-                MatchStateHasher.ComputeSha256(recorder.State),
-                MatchStateHasher.ComputeSha256(resumed.State));
+                MatchStateHasher.ComputeFingerprint(recorder.State),
+                MatchStateHasher.ComputeFingerprint(resumed.State));
 
             // Playing on appends to the same journal, so the whole session still replays.
             while (resumed.State.Coordinator.Phase == TurnPhase.Execution)
@@ -46,8 +46,8 @@ public sealed class MatchJournalStoreTests
             MatchReplaySerializer.Save(journal, resumed);
             journal.Position = 0;
             Assert.Equal(
-                MatchStateHasher.ComputeSha256(resumed.State),
-                MatchStateHasher.ComputeSha256(
+                MatchStateHasher.ComputeFingerprint(resumed.State),
+                MatchStateHasher.ComputeFingerprint(
                     MatchReplaySerializer.LoadAndReplay(journal, definitions)));
         }
         finally
@@ -215,8 +215,8 @@ public sealed class MatchJournalStoreTests
             Assert.False(File.Exists(SaveSlotCatalog.JournalPath(directory, 8)));
             var loaded = SaveSlotCatalog.Load(directory, 8, definitions);
             Assert.Equal(
-                MatchStateHasher.ComputeSha256(recorder.State),
-                MatchStateHasher.ComputeSha256(loaded));
+                MatchStateHasher.ComputeFingerprint(recorder.State),
+                MatchStateHasher.ComputeFingerprint(loaded));
             Assert.Null(SaveSlotCatalog.LoadJournal(directory, 8, loaded));
         }
         finally
@@ -246,7 +246,7 @@ public sealed class MatchJournalStoreTests
             var before = new MatchReplayRecorder(TestMatches.Create("MARGARET"));
             before.FinishUpkeep();
             foreach (var player in before.State.Players) before.FinishCommand(player.Id);
-            var firstStepHashWhenNamed = before.Steps[0].ResultingStateSha256;
+            var firstStepHashWhenNamed = before.Steps[0].ResultingStateFingerprint;
             var stepsBeforeSave = before.StepCount;
 
             SaveSlotCatalog.Save(directory, 6, "mid-match", before.State, false, before);
@@ -278,8 +278,8 @@ public sealed class MatchJournalStoreTests
             // It arrives where the anonymized match ends — the names are part of the canonical hash,
             // so this is the same state the player was in, played by differently named people.
             Assert.Equal(
-                MatchStateHasher.ComputeSha256(ReplayAnonymizer.Anonymize(resumed).State),
-                MatchStateHasher.ComputeSha256(replayed));
+                MatchStateHasher.ComputeFingerprint(ReplayAnonymizer.Anonymize(resumed).State),
+                MatchStateHasher.ComputeFingerprint(replayed));
 
             // And it is the same match: the save-and-load in the middle changed nothing about where
             // the session got to.
@@ -292,7 +292,7 @@ public sealed class MatchJournalStoreTests
             var sent = MatchReplaySerializer.TryLoadResumable(json, definitions);
             Assert.NotNull(sent);
             Assert.Equal(resumed.StepCount, sent.StepCount);
-            Assert.NotEqual(firstStepHashWhenNamed, sent.Steps[0].ResultingStateSha256);
+            Assert.NotEqual(firstStepHashWhenNamed, sent.Steps[0].ResultingStateFingerprint);
             Assert.Equal(
                 ["PLAYER 1", "PLAYER 2"],
                 replayed.Setup.Players.Select(player => player.Name));

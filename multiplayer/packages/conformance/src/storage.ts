@@ -170,7 +170,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         matchId: doomed.id,
         turn: 1,
         playerId: player.id,
-        stateHash: 'a'.repeat(64),
+        stateHash: 'a'.repeat(32),
         finished: true,
         reportedAt: ancient,
       })
@@ -180,7 +180,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         formatVersion: 1,
         protocolVersion: 2,
         sessionVersion: 1,
-        stateHash: 'a'.repeat(64),
+        stateHash: 'a'.repeat(32),
         uploadedByPlayerId: player.id,
         uploadedAt: ancient,
         body: 'QUJD',
@@ -524,14 +524,14 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         matchId: match.id,
         turn: 1,
         playerId: 'p1',
-        stateHash: 'a'.repeat(64),
+        stateHash: 'a'.repeat(32),
         finished: false,
         reportedAt: new Date('2026-03-01T13:00:00.000Z'),
       }
       await storage.turns.upsertReport(report)
-      await storage.turns.upsertReport({ ...report, stateHash: 'b'.repeat(64), finished: true })
+      await storage.turns.upsertReport({ ...report, stateHash: 'b'.repeat(32), finished: true })
       expect(await storage.turns.listReports(match.id, 1)).toEqual([
-        { ...report, stateHash: 'b'.repeat(64), finished: true },
+        { ...report, stateHash: 'b'.repeat(32), finished: true },
       ])
     })
 
@@ -678,7 +678,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         formatVersion: 3,
         protocolVersion: 7,
         sessionVersion: 2,
-        stateHash: 'c'.repeat(64),
+        stateHash: 'c'.repeat(32),
         uploadedByPlayerId: 'host',
         uploadedAt: new Date('2026-03-01T12:00:00.000Z'),
         body: 'AAAA',
@@ -690,7 +690,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         formatVersion: 3,
         protocolVersion: 7,
         sessionVersion: 2,
-        stateHash: 'c'.repeat(64),
+        stateHash: 'c'.repeat(32),
         uploadedByPlayerId: 'host',
         uploadedAt: new Date('2026-03-01T12:00:00.000Z'),
       })
@@ -709,7 +709,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         matchId: match.id,
         turn: 1,
         formatVersion: 1,
-        stateHash: 'd'.repeat(64),
+        stateHash: 'd'.repeat(32),
         uploadedByPlayerId: 'host',
         uploadedAt: new Date('2026-03-01T12:00:00.000Z'),
       }
@@ -939,7 +939,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         formatVersion: 3,
         protocolVersion: 2,
         sessionVersion: 1,
-        stateHash: 'c'.repeat(64),
+        stateHash: 'c'.repeat(32),
         uploadedByPlayerId: 'h',
         uploadedAt: new Date('2026-03-01T15:00:00.000Z'),
         body: 'QUJD',
@@ -970,7 +970,7 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
         formatVersion: 1,
         protocolVersion: 2,
         sessionVersion: 1,
-        stateHash: 'c'.repeat(64),
+        stateHash: 'c'.repeat(32),
         uploadedByPlayerId: 'h',
         uploadedAt: new Date('2026-03-01T15:00:00.000Z'),
         body: 'QUJD',

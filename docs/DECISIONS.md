@@ -1,7 +1,7 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-20
+Last updated: 2026-09-21
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-21 | [Fingerprint match state with XxHash128, not SHA-256](#2026-09-21--fingerprint-match-state-with-xxhash128-not-sha-256) |
 | 2026-09-19 | [Order a ctrl-picked selection of gangs at once](#2026-09-19--order-a-ctrl-picked-selection-of-gangs-at-once) |
 | 2026-09-18 | [Scope the Sector workspace's opponent gang view to detection](#2026-09-18--scope-the-sector-workspaces-opponent-gang-view-to-detection) |
 | 2026-09-17 | [Do not substitute rejected recovered AI commands](#2026-09-17--do-not-substitute-rejected-recovered-ai-commands) |
@@ -29,6 +30,31 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-21 — Fingerprint match state with XxHash128, not SHA-256
+
+**Decision.** The canonical match-state fingerprint is 128 bits of XxHash128
+over the canonical state encoding, with the event history and the
+phase-boundary history folded in as running digests chained entry by entry.
+Native save format 26 and replay format 30 carry it, refuse every older
+format, and the multiplayer protocol and session versions move to 13 and 5.
+
+**Reasoning.** The fingerprint is compared, never trusted: a replay step, a
+save and an online turn report each carry one so that a divergence or a
+corrupted file is noticed. Nothing depends on it being hard to forge, so a
+cryptographic digest bought nothing, and it was the dominant cost of a match.
+Every recorder step hashed the whole growing event history twice, so a
+headless 200-turn match spent most of its time in SHA-256 and got slower with
+every turn. Chaining the histories makes a fingerprint cost the same on any
+turn; a 200-turn headless match dropped from 76 s to 5 s across the two
+changes.
+
+**Compatibility.** Older saves and journals were verified through preserved
+projections of the SHA-256 of their day and cannot be checked under the new
+fingerprint, so they are refused as `OlderFormat` rather than loaded on trust.
+The game has not been released, so no player's file is stranded; the
+multiplayer session bump retires in-progress online matches for the same
+reason, as [AGENTS.md](../AGENTS.md) requires when a state hash changes.
 
 ## 2026-09-19 — Order a ctrl-picked selection of gangs at once
 

@@ -613,7 +613,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
                 $"the repair for turn {snapshot.Turn} is not a match this build can read: {exception.Message}",
                 exception);
         }
-        var stateHash = MatchStateHasher.ComputeSha256(restored);
+        var stateHash = MatchStateHasher.ComputeFingerprint(restored);
         if (!string.Equals(stateHash, snapshot.StateHash, StringComparison.Ordinal))
         {
             throw new MultiplayerProtocolException(

@@ -47,7 +47,7 @@ public sealed class ComlinkTests
         var match = OriginalMatchFactory.Create(data,
             new MatchSetup(ScenarioId.Greed, GameDuration.SixMonths, 1996, players));
         match.FinishUpkeep();
-        var before = MatchStateHasher.ComputeSha256(match);
+        var before = MatchStateHasher.ComputeFingerprint(match);
 
         var accepted = match.SendComlinkMessage(
             new PlayerId(0), [new PlayerId(1)], "WATCH YOUR BACK");
@@ -61,7 +61,7 @@ public sealed class ComlinkTests
         Assert.Equal(ComlinkValidationCode.RecipientNotHuman, rejected.Code);
         Assert.Equal("WATCH YOUR BACK", match.ComlinkFor(new PlayerId(1)).Messages[0].Text);
         Assert.True(match.ComlinkFor(new PlayerId(1)).HasUnread);
-        Assert.NotEqual(before, MatchStateHasher.ComputeSha256(match));
+        Assert.NotEqual(before, MatchStateHasher.ComputeFingerprint(match));
         var inbox = match.ComlinkFor(new PlayerId(1));
         Assert.True(match.MarkComlinkRead(new PlayerId(1), inbox.Messages[1].Sequence));
         Assert.True(inbox.HasUnread);

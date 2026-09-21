@@ -41,10 +41,4 @@ public sealed partial class MatchState
             throw new ArgumentException(
                 "Restored match outcome is invalid.", nameof(restore));
     }
-
-    private static bool IsSha256(string value) =>
-        value?.Length == 64 && value.All(character =>
-            character is >= '0' and <= '9'
-                or >= 'a' and <= 'f'
-                or >= 'A' and <= 'F');
 }

@@ -65,7 +65,7 @@ describe('portrait selection', () => {
 })
 
 describe('uploadSnapshotRequestSchema', () => {
-  const base = { turn: 1, formatVersion: 1, stateHash: 'a'.repeat(64), seatSummaries: [] }
+  const base = { turn: 1, formatVersion: 1, stateHash: 'a'.repeat(32), seatSummaries: [] }
 
   /** The server never decodes the body, so this is the only chance to notice it cannot be decoded. */
   it('refuses base64 that could never decode', () => {
@@ -92,7 +92,7 @@ describe('uploadSnapshotRequestSchema', () => {
 
 describe('turnReportRequestSchema', () => {
   it('accepts an omitted summary and bounds a supplied one like a snapshot summary', () => {
-    const base = { stateHash: 'a'.repeat(64), finished: false }
+    const base = { stateHash: 'a'.repeat(32), finished: false }
     const summary = (slot: number) => ({ slot, gangs: 1, sites: 1, sectors: 1 })
     expect(safeParse(turnReportRequestSchema, base).success).toBe(true)
     expect(

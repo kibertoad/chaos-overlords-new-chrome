@@ -83,7 +83,7 @@ public sealed partial class MultiplayerSessionTests
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
             MultiplayerSessionVersion.Current,
-            MatchStateHasher.ComputeSha256(replay.State),
+            MatchStateHasher.ComputeFingerprint(replay.State),
             "p1",
             "2026-09-10T12:04:00.000Z",
             MatchStateClone.ToBase64(replay.State));
@@ -165,8 +165,8 @@ public sealed partial class MultiplayerSessionTests
         SealedTurnApplier.Apply(expected, SealedOrdersForSlots(2, 0));
         Assert.Equal(PlayerController.Computer, resumed.State.Players[1].Setup.Controller);
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(expected.State),
-            MatchStateHasher.ComputeSha256(resumed.State));
+            MatchStateHasher.ComputeFingerprint(expected.State),
+            MatchStateHasher.ComputeFingerprint(resumed.State));
         Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/events"));
     }
 
@@ -190,7 +190,7 @@ public sealed partial class MultiplayerSessionTests
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
             MultiplayerSessionVersion.Current,
-            MatchStateHasher.ComputeSha256(bootstrap.State),
+            MatchStateHasher.ComputeFingerprint(bootstrap.State),
             "p1",
             "2026-09-10T11:59:30.000Z",
             MatchStateClone.ToBase64(bootstrap.State));
@@ -236,7 +236,7 @@ public sealed partial class MultiplayerSessionTests
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
             MultiplayerSessionVersion.Current,
-            MatchStateHasher.ComputeSha256(bootstrap.State),
+            MatchStateHasher.ComputeFingerprint(bootstrap.State),
             "p1",
             "2026-09-10T11:59:30.000Z",
             MatchStateClone.ToBase64(bootstrap.State));
@@ -279,8 +279,8 @@ public sealed partial class MultiplayerSessionTests
         Assert.Equal("PLAYER 2", resumed.State.Players[1].Setup.Name);
         Assert.Equal(PlayerController.Human, resumed.State.Players[1].Setup.Controller);
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(expected.State),
-            MatchStateHasher.ComputeSha256(resumed.State));
+            MatchStateHasher.ComputeFingerprint(expected.State),
+            MatchStateHasher.ComputeFingerprint(resumed.State));
     }
 
     /// <summary>
@@ -831,7 +831,7 @@ public sealed partial class MultiplayerSessionTests
         expected.TransferPlayerToComputer(new PlayerId(1));
         SealedTurnApplier.Apply(expected, SealedOrdersForSlots(1, 0));
         Assert.Equal(PlayerController.Computer, resolved.State.Players[1].Setup.Controller);
-        Assert.Equal(MatchStateHasher.ComputeSha256(expected.State), resolved.StateHash);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(expected.State), resolved.StateHash);
 
         IReadOnlyList<PlayerView> returnedRoster =
         [
@@ -854,7 +854,7 @@ public sealed partial class MultiplayerSessionTests
         expected.TransferPlayerToHuman(new PlayerId(1));
         SealedTurnApplier.Apply(expected, secondTurn);
         Assert.Equal(PlayerController.Human, returned.State.Players[1].Setup.Controller);
-        Assert.Equal(MatchStateHasher.ComputeSha256(expected.State), returned.StateHash);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(expected.State), returned.StateHash);
     }
 
     [Fact]

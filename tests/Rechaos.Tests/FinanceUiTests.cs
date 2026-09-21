@@ -34,10 +34,10 @@ public sealed class FinanceUiTests
         var state = CreatePlanningMatch();
         var player = state.Players[0];
         var gang = player.Gangs.Single(gang => gang.IsActive);
-        var before = MatchStateHasher.ComputeSha256(state);
+        var before = MatchStateHasher.ComputeFingerprint(state);
         var baseline = FinanceProjection.Project(state, player, null);
 
-        Assert.Equal(before, MatchStateHasher.ComputeSha256(state));
+        Assert.Equal(before, MatchStateHasher.ComputeFingerprint(state));
         Assert.Equal(state.Sectors.Count(sector => sector.Owner == player.Id)
             * ManualRules.ControlledSectorTax, baseline.SectorTax);
         Assert.Equal(player.Gangs.Count(candidate => candidate.IsActive), baseline.ProjectedGangCount);
