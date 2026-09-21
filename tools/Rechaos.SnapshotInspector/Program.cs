@@ -4,6 +4,7 @@ using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Multiplayer.Generated;
+using Rechaos.Multiplayer.Protocol;
 using Rechaos.Multiplayer.Session;
 
 if (args.Length is < 1 or > 2)
@@ -26,7 +27,7 @@ try
 
     var rows = await ReadSealedOrderRowsAsync(args[1]);
     var replay = new MatchReplayRecorder(state);
-    foreach (var turn in rows.GroupBy(row => row.Turn).OrderBy(group => group.Key))
+    foreach (var turn in AlignToSnapshot(rows, state))
     {
         var first = turn.First();
         var players = turn.Select(row => new SealedPlayerOrders(
@@ -58,7 +59,8 @@ try
     return 0;
 }
 catch (Exception exception) when (exception is IOException or JsonException or FormatException
-    or InvalidDataException or ArgumentException or OverflowException)
+    or InvalidDataException or ArgumentException or OverflowException
+    or MultiplayerProtocolException or InvalidOperationException)
 {
     Console.Error.WriteLine($"Snapshot inspector failed: {exception.Message}");
     return 2;
@@ -75,6 +77,38 @@ static async Task<IReadOnlyList<SealedOrderRow>> ReadSealedOrderRowsAsync(string
                         || string.IsNullOrWhiteSpace(row.StateHash)))
         throw new InvalidDataException("A sealed-order export row is incomplete.");
     return rows;
+}
+
+/// <summary>
+/// The turns of the export the snapshot can actually replay, oldest first.
+/// </summary>
+/// <remarks>
+/// A snapshot is uploaded after its turn was applied, so it restores on the turn that comes next,
+/// while a full export starts at turn 1. The turns before the snapshot are already folded into it
+/// and applying them would be refused, so they are skipped here rather than pre-filtered out of the
+/// export by hand.
+/// </remarks>
+static IReadOnlyList<IGrouping<int, SealedOrderRow>> AlignToSnapshot(
+    IReadOnlyList<SealedOrderRow> rows,
+    MatchState state)
+{
+    if (state.Coordinator.Phase != TurnPhase.Command)
+        throw new InvalidDataException(
+            $"The snapshot is in {state.Coordinator.Phase}, but a sealed turn is applied during Command.");
+    var start = state.Coordinator.Turn;
+    var turns = rows.GroupBy(row => row.Turn).OrderBy(group => group.Key).ToArray();
+    var replayable = turns.Where(group => group.Key >= start).ToArray();
+    if (replayable.Length == 0)
+        throw new InvalidDataException(
+            $"The sealed-order export ends at turn {turns[^1].Key}, before the snapshot's turn {start}.");
+    if (replayable[0].Key != start)
+        throw new InvalidDataException(
+            $"The sealed-order export resumes at turn {replayable[0].Key}, but the snapshot is on turn {start}.");
+    if (replayable.Length < turns.Length)
+        Console.WriteLine(
+            $"Skipping {turns.Length - replayable.Length} turn(s) already folded into the snapshot; "
+            + $"replaying turns {start} to {replayable[^1].Key}.");
+    return replayable;
 }
 
 static string TryRoundTrip(MatchState state, OriginalData definitions, int turn)
