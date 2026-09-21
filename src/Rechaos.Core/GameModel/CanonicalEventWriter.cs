@@ -1,3 +1,5 @@
+using static Rechaos.Core.GameModel.MatchStateHasher;
+
 namespace Rechaos.Core.GameModel;
 
 internal static class CanonicalEventWriter
@@ -38,15 +40,15 @@ internal static class CanonicalEventWriter
         writer.Write(value.Sequence);
         writer.Write(value.Turn);
         writer.Write((byte)value.Phase);
-        MatchStateHasher.WriteNullableByte(writer, value.ExecutionPhase is { } phase ? (byte)phase : null);
+        WriteNullableByte(writer, value.ExecutionPhase is { } phase ? (byte)phase : null);
         writer.Write((byte)value.Kind);
         writer.Write(value.Player.Value);
-        MatchStateHasher.WriteNullableInt(writer, value.Gang?.Value);
+        WriteNullableInt(writer, value.Gang?.Value);
         writer.Write((byte)value.Action);
-        MatchStateHasher.WriteTarget(writer, value.Target);
-        MatchStateHasher.WriteNullableTarget(writer, value.SecondaryTarget);
-        MatchStateHasher.WriteNullableTarget(writer, value.TertiaryTarget);
-        MatchStateHasher.WriteNullableTarget(writer, value.QuaternaryTarget);
+        WriteTarget(writer, value.Target);
+        WriteNullableTarget(writer, value.SecondaryTarget);
+        WriteNullableTarget(writer, value.TertiaryTarget);
+        WriteNullableTarget(writer, value.QuaternaryTarget);
         WriteResolution(writer, value.Resolution);
         WriteEconomy(writer, value.Economy);
         WriteHire(writer, value.Hire);
@@ -64,22 +66,22 @@ internal static class CanonicalEventWriter
         writer.Write((byte)value.Code);
         WriteInts(writer, value.Rolls);
         writer.Write(value.Successes);
-        MatchStateHasher.WriteNullableInt(writer, value.PreviousValue);
-        MatchStateHasher.WriteNullableInt(writer, value.ResultValue);
+        WriteNullableInt(writer, value.PreviousValue);
+        WriteNullableInt(writer, value.ResultValue);
         writer.Write(value.CashDelta);
-        MatchStateHasher.WriteNullableShort(writer, value.ItemId);
-        MatchStateHasher.WriteNullableShort(writer, value.ReplacedItemId);
-        MatchStateHasher.WriteNullableInt(writer, value.AttackValue);
-        MatchStateHasher.WriteNullableInt(writer, value.DefenseValue);
+        WriteNullableShort(writer, value.ItemId);
+        WriteNullableShort(writer, value.ReplacedItemId);
+        WriteNullableInt(writer, value.AttackValue);
+        WriteNullableInt(writer, value.DefenseValue);
         WriteNullableInts(writer, value.RetaliationRolls);
         writer.Write(value.RetaliationSuccesses);
         writer.Write(value.Damage);
         writer.Write(value.RetaliationDamage);
-        MatchStateHasher.WriteNullableInt(writer, value.DetectionRoll);
-        MatchStateHasher.WriteNullableInt(writer, value.DetectionChance);
-        MatchStateHasher.WriteNullableInt(writer, value.ChanceRoll);
-        MatchStateHasher.WriteNullableInt(writer, value.ChanceSides);
-        MatchStateHasher.WriteNullableShort(writer, value.RetaliationItemId);
+        WriteNullableInt(writer, value.DetectionRoll);
+        WriteNullableInt(writer, value.DetectionChance);
+        WriteNullableInt(writer, value.ChanceRoll);
+        WriteNullableInt(writer, value.ChanceSides);
+        WriteNullableShort(writer, value.RetaliationItemId);
         WriteNullableShorts(writer, value.ItemIds);
         WriteNullableShorts(writer, value.ReplacedItemIds);
     }
@@ -102,17 +104,17 @@ internal static class CanonicalEventWriter
         writer.Write(value.GangDefinitionId);
         writer.Write(value.SectorId);
         writer.Write(value.Cost);
-        MatchStateHasher.WriteNullableInt(writer, value.Gang?.Value);
-        MatchStateHasher.WriteNullableShort(writer, value.ReplacementOffer);
-        MatchStateHasher.WriteNullableInt(writer, value.InitialForce);
+        WriteNullableInt(writer, value.Gang?.Value);
+        WriteNullableShort(writer, value.ReplacementOffer);
+        WriteNullableInt(writer, value.InitialForce);
     }
 
     private static void WriteHireOffer(BinaryWriter writer, HireOfferDetails? value)
     {
         writer.Write(value is not null);
         if (value is null) return;
-        MatchStateHasher.WriteNullableShort(writer, value.RemovedOffer);
-        MatchStateHasher.WriteNullableShort(writer, value.AddedOffer);
+        WriteNullableShort(writer, value.RemovedOffer);
+        WriteNullableShort(writer, value.AddedOffer);
     }
 
     private static void WriteElimination(BinaryWriter writer, EliminationDetails? value)
@@ -153,7 +155,7 @@ internal static class CanonicalEventWriter
     {
         writer.Write(value is not null);
         if (value is null) return;
-        MatchStateHasher.WriteOutcomeBody(
+        WriteOutcomeBody(
             writer, value.Scenario, value.Reason, value.CompletedTurn,
             value.Winners, value.Standings, value.Awards);
     }
