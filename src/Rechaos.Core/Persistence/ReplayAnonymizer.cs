@@ -207,10 +207,7 @@ public static class ReplayAnonymizer
                     RequiredValue(step.Player, index),
                     Required(step.Recipients, index),
                     Redact(Required(step.Text, index)));
-                VerifyOutcome(step.Accepted, result.Accepted, index);
-                if (step.ValidationCode != (int)result.Code)
-                    throw new ReplayAnonymizationException(
-                        $"Anonymized replay judged step {index} differently.");
+                Verify(step, result.Accepted, (int)result.Code, index);
                 break;
             }
             case ReplayOperationKind.MarkComlinkRead:
@@ -267,26 +264,19 @@ public static class ReplayAnonymizer
     private static T RequiredValue<T>(T? value, int index) where T : struct =>
         value ?? throw new ReplayAnonymizationException($"Journal step {index} is incomplete.");
 
-    private static void Verify(ReplayStep step, CommandSubmissionResult result, int index)
-    {
-        VerifyOutcome(step.Accepted, result.Accepted, index);
-        if (step.ValidationCode != (int)result.Validation.Code)
-            throw new ReplayAnonymizationException(
-                $"Anonymized replay judged step {index} differently.");
-    }
+    private static void Verify(ReplayStep step, CommandSubmissionResult result, int index) =>
+        Verify(step, result.Accepted, (int)result.Validation.Code, index);
 
-    private static void Verify(ReplayStep step, HireSubmissionResult result, int index)
-    {
-        VerifyOutcome(step.Accepted, result.Accepted, index);
-        if (step.ValidationCode != (int)result.Validation.Code)
-            throw new ReplayAnonymizationException(
-                $"Anonymized replay judged step {index} differently.");
-    }
+    private static void Verify(ReplayStep step, HireSubmissionResult result, int index) =>
+        Verify(step, result.Accepted, (int)result.Validation.Code, index);
 
-    private static void Verify(ReplayStep step, HireOfferSnubResult result, int index)
+    private static void Verify(ReplayStep step, HireOfferSnubResult result, int index) =>
+        Verify(step, result.Accepted, (int)result.Validation.Code, index);
+
+    private static void Verify(ReplayStep step, bool accepted, int validationCode, int index)
     {
-        VerifyOutcome(step.Accepted, result.Accepted, index);
-        if (step.ValidationCode != (int)result.Validation.Code)
+        VerifyOutcome(step.Accepted, accepted, index);
+        if (step.ValidationCode != validationCode)
             throw new ReplayAnonymizationException(
                 $"Anonymized replay judged step {index} differently.");
     }

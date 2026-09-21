@@ -112,9 +112,8 @@ public sealed class MatchReplayRecorder
         _initialSnapshot = initialSnapshot;
         _initialStateFingerprint = initialStateFingerprint;
         _steps.AddRange(steps);
-        _currentStateFingerprint = steps.Count == 0
-            ? initialStateFingerprint
-            : steps[^1].ResultingStateFingerprint;
+        _currentStateFingerprint = MatchReplaySerializer.EndingFingerprint(
+            initialStateFingerprint, steps);
         // The state has to be the one the journal ends at, or the first mutation would append a
         // step whose fingerprint nothing can reproduce. The caller replayed it to get here.
         EnsureSynchronized();
@@ -425,14 +424,22 @@ public static class MatchReplaySerializer
         if (document.FormatVersion != CurrentFormatVersion) return null;
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
-        var ending = document.Steps.Count == 0
-            ? document.InitialStateFingerprint
-            : document.Steps[^1].ResultingStateFingerprint;
+        var ending = EndingFingerprint(document.InitialStateFingerprint, document.Steps);
         if (!StringComparer.Ordinal.Equals(ending, MatchStateHasher.ComputeFingerprint(resumed)))
             return null;
         return MatchReplayRecorder.Resume(
             resumed, document.InitialSnapshot, document.InitialStateFingerprint, document.Steps);
     }
+
+    /// <summary>
+    /// The fingerprint a journal ends at: its last step's, or the initial one when it has no steps.
+    /// </summary>
+    internal static string EndingFingerprint(
+        string initialStateFingerprint,
+        IReadOnlyList<ReplayStep> steps) =>
+        steps.Count == 0
+            ? initialStateFingerprint
+            : steps[^1].ResultingStateFingerprint;
 
     private static ReplayDocument Read(Stream source)
     {
@@ -514,8 +521,7 @@ public static class MatchReplaySerializer
             case ReplayOperationKind.QueueHire:
             {
                 var player = Required(step.Player, index);
-                var gangDefinitionId = step.GangDefinitionId
-                    ?? throw new InvalidDataException($"Replay step {index} has no gang definition.");
+                var gangDefinitionId = RequiredGangDefinition(step, index);
                 var sectorId = step.SectorId
                     ?? throw new InvalidDataException($"Replay step {index} has no sector.");
                 var result = state.QueueHire(player, gangDefinitionId, sectorId);
@@ -525,8 +531,7 @@ public static class MatchReplaySerializer
             case ReplayOperationKind.SnubHireOffer:
             {
                 var player = Required(step.Player, index);
-                var gangDefinitionId = step.GangDefinitionId
-                    ?? throw new InvalidDataException($"Replay step {index} has no gang definition.");
+                var gangDefinitionId = RequiredGangDefinition(step, index);
                 var result = state.SnubHireOffer(player, gangDefinitionId);
                 VerifyResult(step, result.Accepted, (int)result.Validation.Code, index);
                 break;
@@ -578,16 +583,12 @@ public static class MatchReplaySerializer
                 break;
             }
             case ReplayOperationKind.TransferPlayerToComputer:
-            {
-                var changed = state.TransferPlayerToComputer(Required(step.Player, index));
-                if (step.Accepted != changed)
-                    throw new InvalidDataException(
-                        $"Replay step {index} produced a different control-transfer result.");
-                break;
-            }
             case ReplayOperationKind.TransferPlayerToHuman:
             {
-                var changed = state.TransferPlayerToHuman(Required(step.Player, index));
+                var seat = Required(step.Player, index);
+                var changed = step.Kind == ReplayOperationKind.TransferPlayerToComputer
+                    ? state.TransferPlayerToComputer(seat)
+                    : state.TransferPlayerToHuman(seat);
                 if (step.Accepted != changed)
                     throw new InvalidDataException(
                         $"Replay step {index} produced a different control-transfer result.");
@@ -652,6 +653,10 @@ public static class MatchReplaySerializer
 
     private static T Required<T>(T? value, int index) where T : struct =>
         value ?? throw new InvalidDataException($"Replay step {index} is missing a required value.");
+
+    private static short RequiredGangDefinition(ReplayStep step, int index) =>
+        step.GangDefinitionId
+            ?? throw new InvalidDataException($"Replay step {index} has no gang definition.");
 
     private static void VerifyFingerprint(string expected, MatchState state, int index)
     {
