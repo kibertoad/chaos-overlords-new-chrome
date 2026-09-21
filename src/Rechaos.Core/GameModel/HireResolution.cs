@@ -21,6 +21,7 @@ public readonly record struct HireValidation(HireValidationCode Code, string Mes
 {
     public bool IsValid => Code == HireValidationCode.Valid;
     public static HireValidation Accept() => new(HireValidationCode.Valid, string.Empty);
+    public static HireValidation Reject(HireValidationCode code) => new(code, HireValidationMessages.For(code));
 }
 
 public sealed record HireSubmissionResult(
@@ -84,22 +85,16 @@ public static class HireRules
     private static readonly IReadOnlyList<IValidationRule<Context, HireValidationCode>> SelectionRules =
     [
         new DelegateRule(HireValidationCode.InvalidPhase,
-            HireValidationMessages.For(HireValidationCode.InvalidPhase),
             context => context.State.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire)),
         new DelegateRule(HireValidationCode.InactivePlayer,
-            HireValidationMessages.For(HireValidationCode.InactivePlayer),
             context => context.State.Coordinator.ActivePlayer != context.PlayerId),
         new DelegateRule(HireValidationCode.InactivePlayer,
-            HireValidationMessages.For(HireValidationCode.InactivePlayer),
             context => context.Player is null),
         new DelegateRule(HireValidationCode.PlayerEliminated,
-            HireValidationMessages.For(HireValidationCode.PlayerEliminated),
             context => context.Player!.Status != PlayerStatus.Active),
         new DelegateRule(HireValidationCode.OfferUnavailable,
-            HireValidationMessages.For(HireValidationCode.OfferUnavailable),
             context => !context.Player!.HirePool.Contains(context.GangDefinitionId)),
         new DelegateRule(HireValidationCode.SectorNotControlled,
-            HireValidationMessages.For(HireValidationCode.SectorNotControlled),
             context => context.TargetSectorId is < 0 or >= MatchLimits.SectorCount ||
                 context.State.Sectors[context.TargetSectorId].Owner != context.PlayerId
                 && !context.Player!.Gangs.Any(gang =>
@@ -110,34 +105,29 @@ public static class HireRules
     [
         .. SelectionRules.Take(5),
         new DelegateRule(HireValidationCode.HireAlreadyPending,
-            HireValidationMessages.For(HireValidationCode.HireAlreadyPending),
             context => context.Player!.PendingHires.Count != 0
                 || context.Player.HasSnubbedHireOfferThisTurn),
         new DelegateRule(HireValidationCode.InsufficientCash,
-            HireValidationMessages.For(HireValidationCode.InsufficientCash),
             context => !CanAffordInitialCost(
                 context.Player!.Cash,
                 context.State.Definitions.Gang(context.GangDefinitionId))),
         new DelegateRule(HireValidationCode.SectorNotControlled,
-            HireValidationMessages.For(HireValidationCode.SectorNotControlled),
             context => context.TargetSectorId is < 0 or >= MatchLimits.SectorCount ||
                 context.State.Sectors[context.TargetSectorId].Owner != context.PlayerId),
         new DelegateRule(HireValidationCode.GangCapacityReached,
-            HireValidationMessages.For(HireValidationCode.GangCapacityReached),
             context => context.Player!.Gangs.Count(gang => gang.IsActive) >= MatchLimits.GangsPerPlayer),
         new DelegateRule(HireValidationCode.SectorCapacityReached,
-            HireValidationMessages.For(HireValidationCode.SectorCapacityReached),
             context => context.Player!.Gangs.Count(gang =>
                 gang.IsActive && gang.SectorId == context.TargetSectorId) >= MatchLimits.FriendlyGangsPerSector)
     ];
 
     private sealed class DelegateRule(
         HireValidationCode code,
-        string message,
         Func<Context, bool> rejects)
         : IValidationRule<Context, HireValidationCode>
     {
-        private readonly ValidationFailure<HireValidationCode> _failure = new(code, message);
+        private readonly ValidationFailure<HireValidationCode> _failure =
+            new(code, HireValidationMessages.For(code));
 
         public ValidationFailure<HireValidationCode>? Evaluate(Context context) =>
             rejects(context) ? _failure : null;
@@ -159,27 +149,27 @@ public static class HireRules
         MatchState state,
         PlayerId playerId,
         short gangDefinitionId,
-        int targetSectorId)
-    {
-        var context = new Context(
-            state ?? throw new ArgumentNullException(nameof(state)),
-            playerId, gangDefinitionId, targetSectorId);
-        var failure = ValidationRuleSet.Evaluate(context, SelectionRules);
-        return failure is { } rejected
-            ? new HireValidation(rejected.Code, rejected.Message)
-            : HireValidation.Accept();
-    }
+        int targetSectorId) =>
+        Evaluate(state, playerId, gangDefinitionId, targetSectorId, SelectionRules);
 
     internal static HireValidation ValidateLegacyImmediatePayment(
         MatchState state,
         PlayerId playerId,
         short gangDefinitionId,
-        int targetSectorId)
+        int targetSectorId) =>
+        Evaluate(state, playerId, gangDefinitionId, targetSectorId, LegacyImmediatePaymentRules);
+
+    private static HireValidation Evaluate(
+        MatchState state,
+        PlayerId playerId,
+        short gangDefinitionId,
+        int targetSectorId,
+        IReadOnlyList<IValidationRule<Context, HireValidationCode>> rules)
     {
         var context = new Context(
             state ?? throw new ArgumentNullException(nameof(state)),
             playerId, gangDefinitionId, targetSectorId);
-        var failure = ValidationRuleSet.Evaluate(context, LegacyImmediatePaymentRules);
+        var failure = ValidationRuleSet.Evaluate(context, rules);
         return failure is { } rejected
             ? new HireValidation(rejected.Code, rejected.Message)
             : HireValidation.Accept();
@@ -193,17 +183,14 @@ public static class HireRules
         ArgumentNullException.ThrowIfNull(state);
         var player = state.FindPlayer(playerId);
         if (state.Coordinator.Phase is not (TurnPhase.Command or TurnPhase.Hire))
-            return Reject(HireValidationCode.InvalidPhase);
+            return HireValidation.Reject(HireValidationCode.InvalidPhase);
         if (state.Coordinator.ActivePlayer != playerId || player is null)
-            return Reject(HireValidationCode.InactivePlayer);
+            return HireValidation.Reject(HireValidationCode.InactivePlayer);
         if (player.Status != PlayerStatus.Active)
-            return Reject(HireValidationCode.PlayerEliminated);
+            return HireValidation.Reject(HireValidationCode.PlayerEliminated);
         if (!player.HirePool.Contains(gangDefinitionId))
-            return Reject(HireValidationCode.OfferUnavailable);
+            return HireValidation.Reject(HireValidationCode.OfferUnavailable);
         return HireValidation.Accept();
-
-        static HireValidation Reject(HireValidationCode code) =>
-            new(code, HireValidationMessages.For(code));
     }
 }
 
@@ -285,14 +272,7 @@ internal static class HireResolver
             var offerSlot = pending.OfferSlot >= 0
                 ? pending.OfferSlot
                 : player.FindHireOfferSlot(pending.GangDefinitionId);
-            if (offerSlot >= 0)
-            {
-                var slot = player.HireOfferSlots[offerSlot];
-                player.SetHireOfferSlot(offerSlot,
-                    slot.LegacyReplacementDefinitionId is { } replacement
-                        ? HireOfferSlotState.Available(replacement)
-                        : HireOfferSlotState.Vacant(pending.GangDefinitionId));
-            }
+            ReleaseOfferSlot(player, offerSlot, pending.GangDefinitionId);
             var details = new HireResolutionDetails(
                 pending.GangDefinitionId, pending.TargetSectorId,
                 cost, gang.Id, null, initialForce);
@@ -309,17 +289,24 @@ internal static class HireResolver
             var snubbed = player.SnubbedHireOffer!.Value;
             var offerSlot = player.SnubbedHireOfferSlot
                 ?? player.FindHireOfferSlot(snubbed);
-            if (offerSlot >= 0)
-            {
-                var slot = player.HireOfferSlots[offerSlot];
-                player.SetHireOfferSlot(offerSlot,
-                    slot.LegacyReplacementDefinitionId is { } replacement
-                        ? HireOfferSlotState.Available(replacement)
-                        : HireOfferSlotState.Vacant(snubbed));
-            }
+            ReleaseOfferSlot(player, offerSlot, snubbed);
             player.ClearSnubbedHireOffer();
         }
         return results;
+    }
+
+    /// <summary>
+    /// Empties an offer slot whose gang was hired or snubbed. The slot takes its stored legacy
+    /// replacement when it has one, and otherwise goes vacant excluding the gang that left it.
+    /// </summary>
+    private static void ReleaseOfferSlot(MatchPlayerState player, int offerSlot, short definitionId)
+    {
+        if (offerSlot < 0) return;
+        var slot = player.HireOfferSlots[offerSlot];
+        player.SetHireOfferSlot(offerSlot,
+            slot.LegacyReplacementDefinitionId is { } replacement
+                ? HireOfferSlotState.Available(replacement)
+                : HireOfferSlotState.Vacant(definitionId));
     }
 
     private static void RecordFailure(
