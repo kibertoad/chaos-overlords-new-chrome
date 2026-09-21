@@ -2,6 +2,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Rechaos.Core.Assets;
+using System.Text;
 
 namespace Rechaos.Game;
 
@@ -125,15 +126,20 @@ public static class HelpTextLayout
     {
         while (end > start && paragraph[end - 1].Value == ' ') end--;
         var runs = new List<ExtractedHelpTextRun>();
+        ExtractedHelpTextRun? style = null;
+        StringBuilder? text = null;
         for (var index = start; index < end; index++)
         {
             var character = paragraph[index];
-            var next = character.Style with { Text = character.Value.ToString() };
-            if (runs.LastOrDefault() is { } previous && SameStyle(previous, next))
-                runs[^1] = previous with { Text = previous.Text + next.Text };
-            else
-                runs.Add(next);
+            if (style is null || !SameStyle(style, character.Style))
+            {
+                if (style is not null) runs.Add(style with { Text = text!.ToString() });
+                style = character.Style;
+                text = new StringBuilder();
+            }
+            text!.Append(character.Value);
         }
+        if (style is not null) runs.Add(style with { Text = text!.ToString() });
         return new HelpTextLine(runs);
     }
 
@@ -399,6 +405,17 @@ public sealed partial class ChaosGame
     private int _helpLineOffset;
     private int? _helpPopupTopicIndex;
     private IReadOnlyList<int> _helpTopicOrder = [];
+    private readonly Dictionary<(int TopicIndex, int Columns), IReadOnlyList<HelpTextLine>>
+        _helpTextLayouts = [];
+
+    private IReadOnlyList<HelpTextLine> HelpLines(int topicIndex, int columns)
+    {
+        var key = (topicIndex, columns);
+        if (_helpTextLayouts.TryGetValue(key, out var lines)) return lines;
+        lines = HelpTextLayout.Wrap(_helpDocument!.Topics[topicIndex], columns);
+        _helpTextLayouts.Add(key, lines);
+        return lines;
+    }
 
     private void OpenHelp()
     {
@@ -474,8 +491,7 @@ public sealed partial class ChaosGame
     private void ScrollHelp(int delta)
     {
         if (_helpDocument is null) return;
-        var lines = HelpTextLayout.Wrap(
-            _helpDocument.Topics[_helpTopicIndex], HelpLayout.TextColumns);
+        var lines = HelpLines(_helpTopicIndex, HelpLayout.TextColumns);
         _helpLineOffset = Math.Clamp(_helpLineOffset + delta,
             0, Math.Max(0, lines.Count - HelpLayout.VisibleTextLines));
     }
@@ -506,8 +522,7 @@ public sealed partial class ChaosGame
         if (_helpDocument is null || point.X < 226 || point.Y < 94
             || !HelpLayout.Text.Contains(point))
             return false;
-        var lines = HelpTextLayout.Wrap(
-            _helpDocument.Topics[_helpTopicIndex], HelpLayout.TextColumns);
+        var lines = HelpLines(_helpTopicIndex, HelpLayout.TextColumns);
         var row = (point.Y - 94) / OriginalFontLayout.LineHeight;
         if (row < 0 || row >= HelpLayout.VisibleTextLines
             || _helpLineOffset + row >= lines.Count)
@@ -601,7 +616,7 @@ public sealed partial class ChaosGame
         var title = topic.Title.ToUpperInvariant();
         if (title.Length > HelpLayout.TextColumns) title = title[..HelpLayout.TextColumns];
         font.Draw(batch, title, new Vector2(226, 74), Color.Gold, 1);
-        var lines = HelpTextLayout.Wrap(topic, HelpLayout.TextColumns);
+        var lines = HelpLines(_helpTopicIndex, HelpLayout.TextColumns);
         for (var row = 0; row < HelpLayout.VisibleTextLines && _helpLineOffset + row < lines.Count; row++)
             DrawHelpLine(batch, pixel, font, lines[_helpLineOffset + row], 226, 94 + row * 9);
         var position = HelpNavigation.PositionOf(_helpTopicOrder, _helpTopicIndex);
@@ -653,7 +668,7 @@ public sealed partial class ChaosGame
             if (title.Length > 48) title = title[..48];
             font.Draw(batch, title, new Vector2(panel.X + 10, panel.Y + 10), Color.Gold, 1);
         }
-        var lines = HelpTextLayout.Wrap(topic, 48);
+        var lines = HelpLines(_helpPopupTopicIndex!.Value, 48);
         var firstLineY = panel.Y + (hasAuthoredTitle ? 28 : 10);
         var visibleLines = hasAuthoredTitle ? 18 : 20;
         for (var row = 0; row < visibleLines && row < lines.Count; row++)

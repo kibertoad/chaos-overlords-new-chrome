@@ -83,6 +83,19 @@ public sealed class ExtractedHelpStoreTests : IDisposable
     }
 
     [Fact]
+    public void StyledHelpWrapMergesLongRunsWithoutChangingTheirFormatting()
+    {
+        var topic = new ExtractedHelpTopic(0, "Topic", "ABCDEFGHIJ", true, 0,
+            [new ExtractedHelpTextRun("ABCDEFGHIJ", Italic: true)]);
+
+        var line = Assert.Single(HelpTextLayout.Wrap(topic, 20));
+
+        var run = Assert.Single(line.Runs);
+        Assert.Equal("ABCDEFGHIJ", run.Text);
+        Assert.True(run.Italic);
+    }
+
+    [Fact]
     public void HelpTopicWindowKeepsSelectionInsideStableVisibleRange()
     {
         Assert.Equal(0, HelpLayout.TopicWindowStart(80, 0));
