@@ -1,6 +1,6 @@
 {
   "name": "@chaos-overlords/node-server",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "description": "Node.js runtime facade: serves the shared Hono app over @hono/node-server against SQLite or Postgres, with an in-process event hub and a timer-driven turn deadline scheduler.",
   "keywords": [
     "chaos-overlords",

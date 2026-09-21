@@ -1,6 +1,6 @@
 {
   "name": "@chaos-overlords/kernel",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "description": "Runtime-neutral domain of the multiplayer server: entities, ports, pure turn logic and the lobby/turn/snapshot services.",
   "keywords": [
     "chaos-overlords",
