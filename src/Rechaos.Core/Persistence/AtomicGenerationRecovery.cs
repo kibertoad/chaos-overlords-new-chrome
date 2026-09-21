@@ -16,6 +16,12 @@ internal static class AtomicGenerationRecovery
     /// known-good backup is never replaced by a damaged file. The caller validates its own
     /// arguments and resolves <paramref name="fullPath"/> and <paramref name="directory"/>.
     /// </remarks>
+    /// <param name="trustExistingPrimary">
+    /// Whether the existing primary may be demoted to the backup generation without being read
+    /// back first. Only a caller that knows this process wrote and verified that exact file may
+    /// set it, and it has to stop setting it the moment anything else writes the path or leaves
+    /// it damaged: a trusted primary is moved over the known-good backup unexamined.
+    /// </param>
     /// <exception cref="IOException">
     /// The new file failed its read-back; the message is <paramref name="unreadableMessage"/>.
     /// </exception>
@@ -56,6 +62,7 @@ internal static class AtomicGenerationRecovery
             // The rolling autosave reaches this path only after this process has already written
             // and verified the primary itself. It can keep that generation with File.Replace
             // without paying another full deserialization just to prove what it already knows.
+            // Everything below rests on the caller holding to that; see the parameter.
             else if (trustExistingPrimary || IsWorthKeeping(fullPath, load))
             {
                 File.Replace(temporaryPath, fullPath, fullPath + backupSuffix);

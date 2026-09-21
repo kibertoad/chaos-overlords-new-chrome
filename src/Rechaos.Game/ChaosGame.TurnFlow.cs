@@ -1,8 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
-using Rechaos.Core.Persistence;
 
 namespace Rechaos.Game;
 
@@ -85,73 +83,18 @@ public sealed partial class ChaosGame
     private void WriteAutoSave()
     {
         if (_state is null) return;
-        try
-        {
-            QueueAutoSave(new AutoSaveSnapshot(
-                NativeSaveStore.Serialize(_state), _state.Definitions, _state.Coordinator.Turn));
-        }
-        catch (Exception exception) when (exception is IOException or InvalidDataException
-                                          or UnauthorizedAccessException)
-        {
-            ReportAutoSaveFailure(_state.Coordinator.Turn, exception);
-        }
+        _autoSave.Capture(_state);
     }
 
     /// <summary>
-    /// Starts one durable autosave worker, retaining only the latest turn captured while it runs.
+    /// Drains the rolling autosave worker so the game thread may read or replace the file.
     /// </summary>
     /// <remarks>
-    /// The capture happens on the game thread because the state mutates there. All filesystem
-    /// work, including the round-trip validation, happens on a worker and never races another
-    /// write to this path.
+    /// The autosave file has one writer, on the worker, and readers on the game thread: the save
+    /// browser lists it and the player can load it. Blocking here keeps those apart, and what the
+    /// game thread then sees is the turn that has just been played rather than the one before it.
     /// </remarks>
-    private void QueueAutoSave(AutoSaveSnapshot snapshot)
-    {
-        ProcessCompletedAutoSaves(waitForCompletion: false);
-        if (_autoSaveTask is not null)
-        {
-            _pendingAutoSave = snapshot;
-            return;
-        }
-
-        StartAutoSave(snapshot);
-    }
-
-    private void StartAutoSave(AutoSaveSnapshot snapshot)
-    {
-        _activeAutoSaveTurn = snapshot.Turn;
-        var trustExistingPrimary = _autoSavePrimaryVerifiedByThisProcess;
-        _autoSaveTask = Task.Run(() => NativeSaveStore.SaveAtomic(
-            _autoSavePath, snapshot.Bytes, snapshot.Definitions, trustExistingPrimary));
-    }
-
-    /// <summary>Observes completed autosaves and starts the newest pending capture, if any.</summary>
-    private void ProcessCompletedAutoSaves(bool waitForCompletion)
-    {
-        while (_autoSaveTask is not null && (waitForCompletion || _autoSaveTask.IsCompleted))
-        {
-            var completedTurn = _activeAutoSaveTurn ?? -1;
-            try
-            {
-                _autoSaveTask.GetAwaiter().GetResult();
-                _autoSavePrimaryVerifiedByThisProcess = true;
-            }
-            catch (Exception exception) when (exception is IOException or InvalidDataException
-                                              or UnauthorizedAccessException)
-            {
-                ReportAutoSaveFailure(completedTurn, exception);
-            }
-            finally
-            {
-                _autoSaveTask = null;
-                _activeAutoSaveTurn = null;
-            }
-
-            if (_pendingAutoSave is not { } pending) continue;
-            _pendingAutoSave = null;
-            StartAutoSave(pending);
-        }
-    }
+    private void FlushAutoSaves() => _autoSave.Flush();
 
     private void ReportAutoSaveFailure(int turn, Exception exception)
     {
@@ -162,8 +105,6 @@ public sealed partial class ChaosGame
         });
         _message = "AUTOSAVE FAILED";
     }
-
-    private sealed record AutoSaveSnapshot(byte[] Bytes, OriginalData Definitions, int Turn);
 
     private void AdvanceDebugPhase()
     {
