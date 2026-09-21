@@ -205,23 +205,6 @@ public static class HireRules
         static HireValidation Reject(HireValidationCode code) =>
             new(code, HireValidationMessages.For(code));
     }
-
-    internal static HireValidation ValidateSnubLegacySingleAction(
-        MatchState state,
-        PlayerId playerId,
-        short gangDefinitionId)
-    {
-        var validation = ValidateSnub(state, playerId, gangDefinitionId);
-        if (!validation.IsValid) return validation;
-        var player = state.FindPlayer(playerId)!;
-        if (player.HasSnubbedHireOfferThisTurn)
-            return new HireValidation(HireValidationCode.OfferAlreadySnubbed,
-                HireValidationMessages.For(HireValidationCode.OfferAlreadySnubbed));
-        if (player.PendingHires.Count != 0)
-            return new HireValidation(HireValidationCode.HireAlreadyPending,
-                HireValidationMessages.For(HireValidationCode.HireAlreadyPending));
-        return HireValidation.Accept();
-    }
 }
 
 internal static class HireResolver

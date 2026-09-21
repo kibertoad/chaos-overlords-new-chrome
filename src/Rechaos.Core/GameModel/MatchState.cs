@@ -654,21 +654,6 @@ public sealed partial class MatchState
         return new HireOfferSnubResult(validation, gangDefinitionId, gameEvent);
     }
 
-    internal HireOfferSnubResult SnubHireOfferLegacySingleAction(
-        PlayerId playerId,
-        short gangDefinitionId)
-    {
-        var validation = HireRules.ValidateSnubLegacySingleAction(
-            this, playerId, gangDefinitionId);
-        if (!validation.IsValid) return new HireOfferSnubResult(validation);
-        var player = FindPlayer(playerId)!;
-        player.MarkHireOfferSnubbed(gangDefinitionId, player.FindHireOfferSlot(gangDefinitionId));
-        var gameEvent = AppendHireOfferEvent(
-            GameEventKind.HireOfferSnubbed, playerId,
-            new HireOfferDetails(gangDefinitionId, null));
-        return new HireOfferSnubResult(validation, gangDefinitionId, gameEvent);
-    }
-
     private void ClearHireAction(MatchPlayerState player)
     {
         foreach (var pending in player.PendingHires)

@@ -373,22 +373,14 @@ public static class CommandValidator
         var itemIndex = checked((short)command.Target.Id);
         var item = state.Definitions.Items[itemIndex];
         var slot = EquipmentRules.SlotFor(item);
-
-        if (command.Action == GangAction.Equip)
-        {
-            var player = state.FindPlayer(command.Player)!;
-            if (item.ResearchDifficulty > 0 && !player.ResearchedItems.Contains(itemIndex))
-                return CommandValidation.Reject(CommandValidationCode.ItemNotResearched);
-            if (!MeetsTechLevel(state, actor, item))
-                return CommandValidation.Reject(CommandValidationCode.InsufficientTechLevel);
-            return EquipmentRules.EquippedItem(actor, slot) == itemIndex
-                ? CommandValidation.Reject(CommandValidationCode.ItemAlreadyEquipped)
-                : CommandValidation.Valid();
-        }
-
-        if (EquipmentRules.EquippedItem(actor, slot) != itemIndex)
-            return CommandValidation.Reject(CommandValidationCode.ItemNotEquipped);
-        return CommandValidation.Valid();
+        var player = state.FindPlayer(command.Player)!;
+        if (item.ResearchDifficulty > 0 && !player.ResearchedItems.Contains(itemIndex))
+            return CommandValidation.Reject(CommandValidationCode.ItemNotResearched);
+        if (!MeetsTechLevel(state, actor, item))
+            return CommandValidation.Reject(CommandValidationCode.InsufficientTechLevel);
+        return EquipmentRules.EquippedItem(actor, slot) == itemIndex
+            ? CommandValidation.Reject(CommandValidationCode.ItemAlreadyEquipped)
+            : CommandValidation.Valid();
     }
 
     private static bool MeetsTechLevel(

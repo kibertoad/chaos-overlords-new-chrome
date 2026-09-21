@@ -39,7 +39,7 @@ public static partial class CommandResolver
             var gang = state.FindGang(queued.Command.Gang)!;
             var sector = state.Sectors[gang.SectorId];
             var band = OriginalResolutionRules.Band(state, queued.Command.Player);
-            var pool = checked(SectorIncome(state, sector) + gang.Force
+            var pool = checked(sector.Income + gang.Force
                 + EffectiveStatisticsCalculator.ForGang(state, gang).Chaos);
             var dice = OriginalResolutionRules.ActionPool(band, GangAction.Chaos, pool);
             var rolls = DiceRoller.RollD6(state.Random, dice);

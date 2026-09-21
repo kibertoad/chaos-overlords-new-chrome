@@ -587,7 +587,7 @@ public static partial class CommandResolver
         }
 
         var previousOwner = sector.Owner;
-        var sectorIncome = SectorIncome(state, sector);
+        var sectorIncome = sector.Income;
         var defense = 0;
         var support = 0;
         if (previousOwner is { } owner)
@@ -687,7 +687,7 @@ public static partial class CommandResolver
             return (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Control);
         });
         var attack = ManualRules.ControlStrength(attackers);
-        var sectorIncome = SectorIncome(state, sector);
+        var sectorIncome = sector.Income;
         var defense = 0;
         var support = 0;
         if (sector.Owner is { } owner && owner != first.Player)
@@ -728,8 +728,6 @@ public static partial class CommandResolver
         }
         return results;
     }
-
-    private static int SectorIncome(MatchState state, MatchSectorState sector) => sector.Income;
 
     private static CommandResolutionResult ResolveHeal(
         MatchState state,
