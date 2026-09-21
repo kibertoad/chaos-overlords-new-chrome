@@ -66,7 +66,7 @@ are grouped by subsystem, each group names the document that holds it, and rows
 are in ID order.
 
 <!-- doc-index:begin finding-index -->
-104 findings.
+105 findings.
 
 **Executable image** — [executable-and-platform.md](original-internals/executable-and-platform.md)
 
@@ -256,6 +256,7 @@ are in ID order.
 | [BIN-COMLINK-003](original-internals/reports-and-comlink.md#bin-comlink-003---send-eligibility-controls-and-composition-cursor) | Send eligibility, controls, and composition cursor |
 | [BIN-COMLINK-004](original-internals/reports-and-comlink.md#bin-comlink-004---view-record-fields-and-projection) | View record fields and projection |
 | [BIN-EVENT-001](original-internals/reports-and-comlink.md#bin-event-001---last-turn-report-table-types-and-lifetime) | Last Turn report table, types, and lifetime |
+| [BIN-EVENT-003](original-internals/reports-and-comlink.md#bin-event-003---cash-failure-report-illustration) | cash-failure report illustration |
 | [BIN-EVENTS-002](original-internals/reports-and-comlink.md#bin-events-002---last-turn-events-pager-and-exit-control) | Last Turn Events pager and exit control |
 | [BIN-SEARCH-001](original-internals/reports-and-comlink.md#bin-search-001---per-player-site-filters-and-city-markers) | per-player site filters and city markers |
 | [BIN-SEARCH-002](original-internals/reports-and-comlink.md#bin-search-002---exact-search-panel-controls-and-row-targets) | exact Search panel controls and row targets |

@@ -56,6 +56,7 @@ original-game capture confirms the screen and interaction state.
 | `PX05021` | Scenario Information panel: objective, global AI mentality, turn time limit, six color-coded player name/intelligence rows, and OK control | High from visible labels and original WinHelp Game Info topic |
 | `PX05022` | Gang Information variant without live-instance equipment cells, used for hire-offer definition inspection | High from comparison with `PX05000` and Hire/Gang help topics |
 | `PX05024` | Search: Sites panel with ALL, NONE, and OK controls plus a two-column aperture sized for all 22 site types | High from visible identity, geometry, and the complete native handler |
+| `PX06006` | Empty-safe illustration for insufficient-cash Bribe, Equip, and Hire Last Turn reports | High from type-6 report composition at `0x0044fd6c` |
 | `PX02000` | 22 vertically stacked site portraits, 120x64 each | High from dimensions and definition coverage |
 | `PX03000` | 10x9 gang portrait grid, 64x64 each, covering all 90 definitions | High from dimensions and definition coverage |
 | `PX07000`-`PX07027`, `PX07200`-`PX07228` | Eight-frame 64x64 attacker overlays facing opposite directions; unarmed uses 0 normally or 1 for any positive base Martial Arts, index 27 is target-evasion/question art, and right-facing index 28 is the police car | High from frame inspection, item-table indices, and detailed-combat loader branches |

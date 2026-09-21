@@ -58,7 +58,11 @@ public static class StatusConsoleTooltip
     public static IReadOnlyList<string> At(
         Point point,
         ScenarioId? scenario,
-        GameDuration duration)
+        GameDuration duration,
+        int? tolerance = null,
+        ChaosRangeEstimate? chaosEstimate = null,
+        IReadOnlyList<string>? chaosBreakdown = null,
+        bool knownEnemyGangs = false)
     {
         if (scenario is { } mode && StatusConsoleLayout.Scenario.Contains(point))
             return ScenarioSetupTooltip.Lines(mode, duration);
@@ -79,7 +83,9 @@ public static class StatusConsoleTooltip
                 "IT IS NOT PASSIVE CASH; CONTROL PAYS $1 SECTOR TAX."
             ];
         if (StatusConsoleLayout.SectorEntry(2).Contains(point))
-            return ["TOLERANCE", "CHAOS ABOVE THIS VALUE TRIGGERS A POLICE CRACKDOWN."];
+            return tolerance is { } value && chaosEstimate is { } estimate
+                ? Tolerance(value, estimate, chaosBreakdown ?? [], knownEnemyGangs)
+                : ["TOLERANCE", "CHAOS ABOVE THIS VALUE TRIGGERS A POLICE CRACKDOWN."];
         if (StatusConsoleLayout.SectorEntry(3).Contains(point))
             return ["SUPPORT", "INFLUENCED-SITE SUPPORT ADDED AGAINST ENEMY CONTROL."];
         if (StatusConsoleLayout.SectorEntry(4).Contains(point))
@@ -89,6 +95,43 @@ public static class StatusConsoleTooltip
             ];
         return [];
     }
+
+    public static IReadOnlyList<string> Tolerance(
+        int tolerance,
+        ChaosRangeEstimate chaosEstimate,
+        IReadOnlyList<string> chaosBreakdown,
+        bool knownEnemyGangs = false)
+    {
+        List<string> lines =
+        [
+            "TOLERANCE",
+            "CHAOS ABOVE THIS VALUE TRIGGERS",
+            "A POLICE CRACKDOWN.",
+            "",
+            $"YOUR QUEUED CHAOS: {chaosEstimate.Range.Minimum}-{chaosEstimate.Range.Maximum}",
+            "SUCCESS RANGE FROM YOUR QUEUED ORDERS.",
+            "ITEMS AND LOCAL SITES MODIFY CHAOS.",
+            "CONTROLLED: EACH SUCCESS PAYS $1.",
+            "UNCONTROLLED: HALF THE COMBINED",
+            "SUCCESSES, ROUNDED DOWN.",
+            "CRACKDOWN: NO CHAOS CASH PAID.",
+            ""
+        ];
+        if (knownEnemyGangs) lines.Add("KNOWN ENEMY GANGS MAY ADD MORE CHAOS.");
+        lines.Add(chaosEstimate.Range.CanTriggerCrackdown(tolerance)
+            ? "YOUR RANGE CAN TRIGGER A CRACKDOWN."
+            : "YOUR RANGE CANNOT TRIGGER A CRACKDOWN.");
+        lines.Add("");
+        lines.Add("CHAOS RANGE BREAKDOWN:");
+        lines.AddRange(chaosBreakdown);
+        return lines;
+    }
+
+    public static IReadOnlyList<string> Tolerance(
+        int tolerance,
+        ChaosRange chaosRange,
+        bool knownEnemyGangs = false) =>
+        Tolerance(tolerance, new ChaosRangeEstimate(chaosRange, []), [], knownEnemyGangs);
 
     public static Rectangle Bounds(Point point, IReadOnlyList<string> lines) =>
         HoverTooltipLayout.Bounds(point, lines);
@@ -101,6 +144,29 @@ public static class StatusConsolePresentation
 
     public static int SectorCash(PlayerId? owner, PlayerId activePlayer, int cash) =>
         owner == activePlayer ? cash : 0;
+
+    public static IReadOnlyList<string> ChaosBreakdown(
+        MatchState state,
+        ChaosRangeEstimate estimate)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var lines = estimate.Contributions.SelectMany(contribution =>
+        {
+            var gang = state.FindGang(contribution.Gang)!;
+            var name = state.Definitions.Gangs.Single(
+                definition => definition.Id == gang.DefinitionId).Name;
+            var values = new List<string>
+            {
+                $"{name}: {contribution.Dice} CHAOS DICE",
+                $"  {contribution.Income} INCOME + {contribution.Force} FORCE + {contribution.EffectiveChaos} CHAOS"
+            };
+            if (contribution.Dice != Math.Max(0, contribution.RawDice))
+                values.Add($"  ADJUSTED FROM {contribution.RawDice} TO {contribution.Dice} DICE");
+            return values;
+        }).ToList();
+        if (lines.Count == 0) lines.Add("NO QUEUED CHAOS GANGS.");
+        return lines;
+    }
 }
 
 public static class HoverTooltipLayout

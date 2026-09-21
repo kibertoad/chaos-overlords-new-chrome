@@ -509,6 +509,13 @@ public static class LastTurnEventPresentation
     public static int ArtworkIndex(GameNotification notification, GameEvent? relatedEvent)
     {
         ArgumentNullException.ThrowIfNull(notification);
+        if (relatedEvent is
+            {
+                Kind: GameEventKind.CommandFailed,
+                Action: GangAction.Bribe or GangAction.Equip,
+                Resolution.Code: CommandResolutionCode.InsufficientCash
+            })
+            return 6;
         return notification.Kind switch
         {
             GameNotificationKind.Crackdown => 1,
@@ -518,6 +525,7 @@ public static class LastTurnEventPresentation
             GameNotificationKind.Elimination => 4,
             GameNotificationKind.Research => 5,
             GameNotificationKind.Influence => 4,
+            GameNotificationKind.HireInsufficientCash => 6,
             GameNotificationKind.Objective => 7,
             _ => 0
         };

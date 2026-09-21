@@ -18,6 +18,7 @@ reference executable fingerprinted there.
 - [Last Turn Events](#last-turn-events)
   - [BIN-EVENT-001 - Last Turn report table, types, and lifetime](#bin-event-001---last-turn-report-table-types-and-lifetime)
   - [BIN-EVENTS-002 - Last Turn Events pager and exit control](#bin-events-002---last-turn-events-pager-and-exit-control)
+  - [BIN-EVENT-003 - cash-failure report illustration](#bin-event-003---cash-failure-report-illustration)
 - [Comlink](#comlink)
   - [BIN-COMLINK-001 - per-player message queue capacity and overflow](#bin-comlink-001---per-player-message-queue-capacity-and-overflow)
   - [BIN-COMLINK-002 - View navigation and hit geometry](#bin-comlink-002---view-navigation-and-hit-geometry)
@@ -104,6 +105,26 @@ per-panel delete path.
 pointer branches, sound outcomes, and absence of a Delete branch from complete
 handler `0x0044f2fc`; native capture remains useful for pressed-state
 presentation.
+
+### BIN-EVENT-003 - cash-failure report illustration
+
+**Observation:** In the reference executable, the Last Turn compositor
+`0x0044fd6c` keeps the report type in local `local_10c`. Apart from its special
+type-4 and type-5 branches, its generic illustration branch calls the resource
+loader with `local_10c + 6000`. The cash-failure entries recorded as type 6 in
+BIN-EVENT-001 therefore load `PX06006`, a 242-by-158 PX16 presentation image.
+
+**Interpretation:** Bribe, equip, and hire insufficient-cash reports all show
+`PX06006` in the Last Turn Events artwork aperture. It is the empty-safe
+illustration; leaving that aperture black is not native behavior.
+
+**Confidence:** High static evidence from the complete compositor's type value,
+special-case branches, and generic resource-load arithmetic. The descriptive
+empty-safe name is corroborated by its recovered artwork, while the resource
+identity itself does not depend on visual interpretation.
+
+**Implementation:** `LastTurnEventPresentation` routes the three native
+insufficient-cash report forms to already-loaded artwork index 6 (`PX06006`).
 
 ## Comlink
 

@@ -344,7 +344,8 @@ public sealed partial class ChaosGame
 
         if (_commandTooltipDwell.SettledRegion is { } settled && settled < actions.Count
             && _hoverPoint is { } hover)
-            DrawHoverTooltip(batch, pixel, font, hover, CommandActionTooltips.Lines(actions[settled]));
+            DrawHoverTooltip(batch, pixel, font, hover,
+                CommandActionTooltips.Lines(actions[settled], state, gang));
     }
 
     private void DrawCommandTargets(

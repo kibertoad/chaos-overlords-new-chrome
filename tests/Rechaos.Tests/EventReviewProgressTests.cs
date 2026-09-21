@@ -133,6 +133,32 @@ public sealed class EventReviewProgressTests
         Assert.False(NotificationPresentation.IsLastTurnReport(notification, gameEvent));
     }
 
+    [Theory]
+    [InlineData(GangAction.Bribe, GameNotificationKind.CommandResult)]
+    [InlineData(GangAction.Equip, GameNotificationKind.Equipment)]
+    public void CashFailedCommandsUseTheNativeEmptySafeArtwork(
+        GangAction action,
+        GameNotificationKind notificationKind)
+    {
+        var gameEvent = new GameEvent(42, 2, TurnPhase.Execution, ExecutionPhase.Instant,
+            GameEventKind.CommandFailed, new PlayerId(0), new GangId(10), action,
+            CommandTarget.None, Resolution: new CommandResolutionDetails(
+                CommandResolutionCode.InsufficientCash, [], 0));
+        var notification = new GameNotification(0, 2, TurnPhase.Execution,
+            ExecutionPhase.Instant, notificationKind, new GangId(10), 7, 42);
+
+        Assert.Equal(6, LastTurnEventPresentation.ArtworkIndex(notification, gameEvent));
+    }
+
+    [Fact]
+    public void CashFailedHireUsesTheNativeEmptySafeArtwork()
+    {
+        var notification = new GameNotification(0, 2, TurnPhase.Hire, null,
+            GameNotificationKind.HireInsufficientCash, SectorId: 7);
+
+        Assert.Equal(6, LastTurnEventPresentation.ArtworkIndex(notification, null));
+    }
+
     [Fact]
     public void ObjectiveUpdatesAreNotNativeLastTurnReports()
     {

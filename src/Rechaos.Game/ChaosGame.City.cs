@@ -237,6 +237,7 @@ public sealed partial class ChaosGame
         }
 
         var selectedSector = state.Sectors[_cursor];
+        var selectedSectorChaos = ChaosRangeProjection.Detail(state, player.Id, _cursor);
         var scenario = ScenarioCatalog.Get(state.Setup.Scenario);
         batch.Draw(pixel, new Rectangle(StatusConsoleLayout.LabelLeft, 14, 44, 8), Color.Black);
         font.Draw(batch, scenario.Name,
@@ -252,8 +253,11 @@ public sealed partial class ChaosGame
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(0));
         DrawPanelValue(font, batch, $"${SectorIncome(state, selectedSector)}",
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(1));
-        DrawPanelValue(font, batch, selectedSector.Tolerance,
-            StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(2));
+        DrawPanelValue(font, batch, selectedSector.Tolerance.ToString(),
+            StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(2),
+            selectedSectorChaos.Range.CanTriggerCrackdown(selectedSector.Tolerance)
+                ? Color.OrangeRed
+                : Color.Lime);
         DrawPanelValue(font, batch, SectorSupport(state, player.Id, selectedSector),
             StatusConsoleLayout.ValueRight, StatusConsoleLayout.SectorValueY(3));
         batch.Draw(pixel, StatusConsoleLayout.CashLabel, Color.Black);
@@ -306,9 +310,23 @@ public sealed partial class ChaosGame
     private void DrawStatusConsoleTooltip(SpriteBatch batch, Texture2D pixel, PixelFont font)
     {
         if (_hoverPoint is { } statusHover && _state is { } state)
+        {
+            var player = ViewingPlayer(state);
+            var sector = state.Sectors[_cursor];
+            var chaosEstimate = ChaosRangeProjection.Detail(state, player, _cursor);
             DrawHoverTooltip(batch, pixel, font, statusHover, StatusConsoleTooltip.At(
-                statusHover, state.Setup.Scenario, state.Setup.Duration));
+                statusHover, state.Setup.Scenario, state.Setup.Duration, sector.Tolerance,
+                chaosEstimate, StatusConsolePresentation.ChaosBreakdown(state, chaosEstimate),
+                HasKnownEnemyGang(state, player, _cursor)));
+        }
     }
+
+    private static bool HasKnownEnemyGang(MatchState state, PlayerId viewer, int sectorId) =>
+        state.Players.Where(player => player.Id != viewer)
+            .SelectMany(player => player.Gangs)
+            .Any(gang => gang.IsActive
+                && gang.SectorId == sectorId
+                && state.CanPlayerDetectGang(viewer, gang.Id));
 
     private void DrawGangStatusMarker(SpriteBatch batch, int sectorId, Rectangle source)
     {
