@@ -69,6 +69,56 @@ public sealed class AtomicGenerationRecoveryTests
         }
     }
 
+    [Fact]
+    public void TrustedExistingPrimarySkipsRedundantValidationBeforeReplacement()
+    {
+        var directory = CreateTemporaryDirectory();
+        var path = Path.Combine(directory, "match.rchsave");
+        var validated = new List<string>();
+        try
+        {
+            File.WriteAllText(path, "previous generation");
+
+            AtomicGenerationRecovery.SaveAtomic(
+                path, directory, ".bak", "unreadable",
+                stream => stream.Write("next generation"u8),
+                candidate => validated.Add(Path.GetFullPath(candidate)),
+                trustExistingPrimary: true);
+
+            Assert.Single(validated);
+            Assert.NotEqual(Path.GetFullPath(path), validated[0]);
+            Assert.Equal("next generation", File.ReadAllText(path));
+            Assert.Equal("previous generation", File.ReadAllText(path + ".bak"));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CapturedSnapshotCanBeDurablyWrittenAfterTheStateAdvances()
+    {
+        var directory = CreateTemporaryDirectory();
+        var path = Path.Combine(directory, "match.rchsave");
+        try
+        {
+            var match = CreateMatch();
+            var snapshot = NativeSaveStore.Serialize(match);
+            var expectedHash = MatchStateHasher.ComputeFingerprint(match);
+            match.FinishUpkeep();
+
+            NativeSaveStore.SaveAtomic(path, snapshot, match.Definitions, trustExistingPrimary: false);
+
+            Assert.Equal(expectedHash, MatchStateHasher.ComputeFingerprint(
+                NativeSaveStore.Load(path, match.Definitions)));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static string CreateTemporaryDirectory()
     {
         var path = Path.Combine(

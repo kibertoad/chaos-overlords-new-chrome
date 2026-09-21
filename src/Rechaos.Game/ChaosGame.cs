@@ -38,6 +38,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string _multiplayerRecoveryPath;
     private readonly bool _debugPhaseStepping;
     private readonly RuntimeDiagnostics? _diagnostics;
+    private readonly RollingAutoSave _autoSave;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
     private Texture2D? _titleBackground;
@@ -237,6 +238,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
         NativeSaveStore.DeleteStaleTemporaryFiles(userDataRoot);
         ConfigureScreenshotOutput(screenshotFolder, userDataRoot);
         _autoSavePath = Path.Combine(userDataRoot, "autosave.rchsave");
+        _autoSave = new RollingAutoSave(_autoSavePath, ReportAutoSaveFailure);
         _replayPath = Path.Combine(userDataRoot, "last-match.rchreplay");
         _preferencesPath = Path.Combine(userDataRoot, "preferences.json");
         _multiplayerRecoveryPath = Path.Combine(userDataRoot, "multiplayer-recovery.json");
@@ -391,6 +393,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     protected override void Update(GameTime gameTime)
     {
+        _autoSave.Pump();
         _inputTime = gameTime.TotalGameTime;
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();

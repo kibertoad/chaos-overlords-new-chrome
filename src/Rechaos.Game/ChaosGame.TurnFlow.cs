@@ -1,7 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Rechaos.Core.GameModel;
-using Rechaos.Core.Persistence;
 
 namespace Rechaos.Game;
 
@@ -84,21 +83,27 @@ public sealed partial class ChaosGame
     private void WriteAutoSave()
     {
         if (_state is null) return;
-        try
+        _autoSave.Capture(_state);
+    }
+
+    /// <summary>
+    /// Drains the rolling autosave worker so the game thread may read or replace the file.
+    /// </summary>
+    /// <remarks>
+    /// The autosave file has one writer, on the worker, and readers on the game thread: the save
+    /// browser lists it and the player can load it. Blocking here keeps those apart, and what the
+    /// game thread then sees is the turn that has just been played rather than the one before it.
+    /// </remarks>
+    private void FlushAutoSaves() => _autoSave.Flush();
+
+    private void ReportAutoSaveFailure(int turn, Exception exception)
+    {
+        _diagnostics?.Write("autosave.failed", new Dictionary<string, string?>
         {
-            NativeSaveStore.SaveAtomic(_autoSavePath, _state);
-            SaveSlotCatalog.WriteAutoSaveMetadata(_autoSavePath, _state);
-        }
-        catch (Exception exception) when (exception is IOException or InvalidDataException
-                                          or UnauthorizedAccessException)
-        {
-            _diagnostics?.Write("autosave.failed", new Dictionary<string, string?>
-            {
-                ["turn"] = _state.Coordinator.Turn.ToString(),
-                ["error"] = exception.ToString()
-            });
-            _message = "AUTOSAVE FAILED";
-        }
+            ["turn"] = turn.ToString(),
+            ["error"] = exception.ToString()
+        });
+        _message = "AUTOSAVE FAILED";
     }
 
     private void AdvanceDebugPhase()

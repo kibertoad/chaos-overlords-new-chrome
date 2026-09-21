@@ -176,17 +176,30 @@ public static class SaveSlotCatalog
         return summary;
     }
 
+    /// <summary>
+    /// The rolling autosave's browser row for the turn being captured.
+    /// </summary>
+    /// <remarks>
+    /// Read on the game thread, where the match is; the worker that writes the file is handed the
+    /// result along with the bytes. The timestamp here is a placeholder the sidecar never keeps:
+    /// what it records, and what the browser draws, is the write time of the file itself.
+    /// </remarks>
+    public static SaveSlotSummary DescribeAutoSave(MatchState state)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        return Summarize(
+            AutoSaveRow, "AUTOSAVE", DateTimeOffset.UnixEpoch, state, online: false);
+    }
+
     /// <summary>Writes the rolling autosave's browser sidecar after its primary is durable.</summary>
-    public static void WriteAutoSaveMetadata(string path, MatchState state)
+    /// <param name="row">The row captured by <see cref="DescribeAutoSave"/> for these bytes.</param>
+    public static void WriteAutoSaveMetadata(
+        string path, SaveSlotSummary row, OriginalData definitions)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        ArgumentNullException.ThrowIfNull(state);
-        var file = new FileInfo(path);
-        if (!file.Exists) return;
-        var timestamp = new DateTimeOffset(file.LastWriteTimeUtc, TimeSpan.Zero);
-        WriteMetadata(
-            path, Summarize(AutoSaveRow, "AUTOSAVE", timestamp, state, online: false),
-            state.Definitions);
+        ArgumentNullException.ThrowIfNull(row);
+        ArgumentNullException.ThrowIfNull(definitions);
+        WriteMetadata(path, row, definitions);
     }
 
     public static MatchState Load(
