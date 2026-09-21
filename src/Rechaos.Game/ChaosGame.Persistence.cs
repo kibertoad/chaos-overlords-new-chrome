@@ -155,12 +155,7 @@ public sealed partial class ChaosGame
             _message = result.RecoveredFromBackup
                 ? result.PrimaryRepaired ? "REPLAY RECOVERED" : "REPLAY LOADED  REPAIR FAILED"
                 : string.Empty;
-            _combatPresentationProgress.ResetTo(
-                _state.Players.Select(player => player.Id),
-                _state.Events.LastOrDefault()?.Sequence ?? -1);
-            _combatAnimationPlayer.Clear();
-            _siteSearchSelections.Reset();
-            _lastTurnEventArchive.Clear();
+            ResetMatchPresentation(_state);
             StartPlanningTimer(_inputTime);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException or UnauthorizedAccessException)

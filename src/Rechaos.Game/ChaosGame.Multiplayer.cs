@@ -376,7 +376,6 @@ public sealed partial class ChaosGame
     /// </remarks>
     private void ResetMatchPresentation(MatchState state)
     {
-        ClearGangDragPresentation();
         _combatPresentationProgress.ResetTo(
             state.Players.Select(player => player.Id),
             state.Events.LastOrDefault()?.Sequence ?? -1);
@@ -401,10 +400,15 @@ public sealed partial class ChaosGame
     /// keeps returning early with no state to draw, and the queue draining shows the city screen
     /// with no match behind it.
     /// </para>
+    /// <para>
+    /// A gang drag is the same again: the match it was aimed at is gone, so the token under the
+    /// pointer belongs to nothing and the release would drop it on whatever replaced it.
+    /// </para>
     /// </remarks>
     private void ResetTransientMatchUi()
     {
         _idleGangWarningOpen = false;
+        ForgetGangDrag();
         _combatAnimationPlayer.Clear();
         _automaticDetailedCombatPresentation = false;
         _openEventsAfterCombat = false;
@@ -469,6 +473,10 @@ public sealed partial class ChaosGame
         // not the player submitted it — the authoritative clock can seal a turn out from under them,
         // and the gangs they picked may have moved since.
         _gangSelection.Clear();
+        // A drag in progress was aimed at the turn being replaced, and this is the one path that
+        // replaces it without going through ResetTransientMatchUi. Left alone it would keep
+        // painting the old turn's destinations over the new board until the button came up.
+        ForgetGangDrag();
         // The idle-gang warning belongs to the turn that is being replaced. Left open, OK on it
         // submits the new turn as ready with no orders, and there is no taking that back.
         _idleGangWarningOpen = false;
