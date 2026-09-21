@@ -343,7 +343,7 @@ public static class ObjectiveSectorMarkerPresentation
 public static partial class OriginalSpriteLayout
 {
     public const int ActivePlayerMarkerFrameCount = 12;
-    public static Rectangle PolicePatrolCar => new(116, 0, 48, 64);
+    public static Rectangle PolicePatrolCar => new(116, 0, 48, 48);
     public static Rectangle HiredStamp => new(120, 300, 60, 60);
     public static Rectangle SetupDragFrame => new(150, 386, 40, 40);
     public static Rectangle ObjectiveSectorPylons => new(344, 15, 54, 52);
