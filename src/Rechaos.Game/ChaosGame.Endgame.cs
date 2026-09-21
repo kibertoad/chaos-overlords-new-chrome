@@ -38,6 +38,19 @@ public sealed partial class ChaosGame
     private bool _showEndgameNotice;
     private bool _showEndgameStats;
 
+    /// <summary>The victory or elimination card: artwork, the overlord's portrait, and the name.</summary>
+    private void DrawEndgameNoticeCard(
+        SpriteBatch batch, Texture2D pixel, PixelFont font, Texture2D? background,
+        PlayerId player, int portraitId, string name)
+    {
+        DrawPanelArtwork(batch, pixel, background, EndgameNoticeLayout.Panel, 255);
+        if (_uiSprites is not null)
+            batch.Draw(_uiSprites, EndgameNoticeLayout.Portrait,
+                OriginalSpriteLayout.OverlordPortrait(portraitId), Color.White);
+        DrawBorder(batch, pixel, EndgameNoticeLayout.Portrait, PlayerColors[player.Value], 1);
+        DrawEndgameNoticeName(batch, font, player, name);
+    }
+
     private void DrawEndgame(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
         if (_cityBackground is not null)
@@ -48,16 +61,8 @@ public sealed partial class ChaosGame
             var background = notice.Kind == EndgameNoticeKind.Victory
                 ? _victoryBackground
                 : _eliminationBackground;
-            if (background is not null)
-                batch.Draw(background, EndgameNoticeLayout.Panel, Color.White);
-            else
-                batch.Draw(pixel, EndgameNoticeLayout.Panel, Color.Black);
-            if (_uiSprites is not null)
-                batch.Draw(_uiSprites, EndgameNoticeLayout.Portrait,
-                    OriginalSpriteLayout.OverlordPortrait(notice.PortraitId), Color.White);
-            DrawBorder(batch, pixel, EndgameNoticeLayout.Portrait,
-                PlayerColors[notice.Player.Value], 1);
-            DrawEndgameNoticeName(batch, font, notice.Player, state.FindPlayer(notice.Player)!.Setup.Name);
+            DrawEndgameNoticeCard(batch, pixel, font, background, notice.Player, notice.PortraitId,
+                state.FindPlayer(notice.Player)!.Setup.Name);
             return;
         }
 

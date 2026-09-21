@@ -74,12 +74,8 @@ public sealed partial class ChaosGame
         if (_cityBackground is not null)
             batch.Draw(_cityBackground, new Rectangle(0, 0, 640, 460), Color.White);
         DrawEndgameBackground(batch, pixel);
-        DrawPanelArtwork(batch, pixel, _eliminationBackground, EndgameNoticeLayout.Panel, 255);
-        if (_uiSprites is not null)
-            batch.Draw(_uiSprites, EndgameNoticeLayout.Portrait,
-                OriginalSpriteLayout.OverlordPortrait(player.Setup.PortraitId), Color.White);
-        DrawBorder(batch, pixel, EndgameNoticeLayout.Portrait, PlayerColors[playerId.Value], 1);
-        DrawEndgameNoticeName(batch, font, playerId, player.Setup.Name);
+        DrawEndgameNoticeCard(batch, pixel, font, _eliminationBackground, playerId,
+            player.Setup.PortraitId, player.Setup.Name);
     }
 }
 
