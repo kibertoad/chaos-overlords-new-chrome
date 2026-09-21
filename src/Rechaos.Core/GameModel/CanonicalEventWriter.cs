@@ -38,15 +38,15 @@ internal static class CanonicalEventWriter
         writer.Write(value.Sequence);
         writer.Write(value.Turn);
         writer.Write((byte)value.Phase);
-        WriteNullableByte(writer, value.ExecutionPhase is { } phase ? (byte)phase : null);
+        MatchStateHasher.WriteNullableByte(writer, value.ExecutionPhase is { } phase ? (byte)phase : null);
         writer.Write((byte)value.Kind);
         writer.Write(value.Player.Value);
-        WriteNullableInt(writer, value.Gang?.Value);
+        MatchStateHasher.WriteNullableInt(writer, value.Gang?.Value);
         writer.Write((byte)value.Action);
-        WriteTarget(writer, value.Target);
-        WriteNullableTarget(writer, value.SecondaryTarget);
-        WriteNullableTarget(writer, value.TertiaryTarget);
-        WriteNullableTarget(writer, value.QuaternaryTarget);
+        MatchStateHasher.WriteTarget(writer, value.Target);
+        MatchStateHasher.WriteNullableTarget(writer, value.SecondaryTarget);
+        MatchStateHasher.WriteNullableTarget(writer, value.TertiaryTarget);
+        MatchStateHasher.WriteNullableTarget(writer, value.QuaternaryTarget);
         WriteResolution(writer, value.Resolution);
         WriteEconomy(writer, value.Economy);
         WriteHire(writer, value.Hire);
@@ -64,22 +64,22 @@ internal static class CanonicalEventWriter
         writer.Write((byte)value.Code);
         WriteInts(writer, value.Rolls);
         writer.Write(value.Successes);
-        WriteNullableInt(writer, value.PreviousValue);
-        WriteNullableInt(writer, value.ResultValue);
+        MatchStateHasher.WriteNullableInt(writer, value.PreviousValue);
+        MatchStateHasher.WriteNullableInt(writer, value.ResultValue);
         writer.Write(value.CashDelta);
-        WriteNullableShort(writer, value.ItemId);
-        WriteNullableShort(writer, value.ReplacedItemId);
-        WriteNullableInt(writer, value.AttackValue);
-        WriteNullableInt(writer, value.DefenseValue);
+        MatchStateHasher.WriteNullableShort(writer, value.ItemId);
+        MatchStateHasher.WriteNullableShort(writer, value.ReplacedItemId);
+        MatchStateHasher.WriteNullableInt(writer, value.AttackValue);
+        MatchStateHasher.WriteNullableInt(writer, value.DefenseValue);
         WriteNullableInts(writer, value.RetaliationRolls);
         writer.Write(value.RetaliationSuccesses);
         writer.Write(value.Damage);
         writer.Write(value.RetaliationDamage);
-        WriteNullableInt(writer, value.DetectionRoll);
-        WriteNullableInt(writer, value.DetectionChance);
-        WriteNullableInt(writer, value.ChanceRoll);
-        WriteNullableInt(writer, value.ChanceSides);
-        WriteNullableShort(writer, value.RetaliationItemId);
+        MatchStateHasher.WriteNullableInt(writer, value.DetectionRoll);
+        MatchStateHasher.WriteNullableInt(writer, value.DetectionChance);
+        MatchStateHasher.WriteNullableInt(writer, value.ChanceRoll);
+        MatchStateHasher.WriteNullableInt(writer, value.ChanceSides);
+        MatchStateHasher.WriteNullableShort(writer, value.RetaliationItemId);
         WriteNullableShorts(writer, value.ItemIds);
         WriteNullableShorts(writer, value.ReplacedItemIds);
     }
@@ -102,17 +102,17 @@ internal static class CanonicalEventWriter
         writer.Write(value.GangDefinitionId);
         writer.Write(value.SectorId);
         writer.Write(value.Cost);
-        WriteNullableInt(writer, value.Gang?.Value);
-        WriteNullableShort(writer, value.ReplacementOffer);
-        WriteNullableInt(writer, value.InitialForce);
+        MatchStateHasher.WriteNullableInt(writer, value.Gang?.Value);
+        MatchStateHasher.WriteNullableShort(writer, value.ReplacementOffer);
+        MatchStateHasher.WriteNullableInt(writer, value.InitialForce);
     }
 
     private static void WriteHireOffer(BinaryWriter writer, HireOfferDetails? value)
     {
         writer.Write(value is not null);
         if (value is null) return;
-        WriteNullableShort(writer, value.RemovedOffer);
-        WriteNullableShort(writer, value.AddedOffer);
+        MatchStateHasher.WriteNullableShort(writer, value.RemovedOffer);
+        MatchStateHasher.WriteNullableShort(writer, value.AddedOffer);
     }
 
     private static void WriteElimination(BinaryWriter writer, EliminationDetails? value)
@@ -153,26 +153,9 @@ internal static class CanonicalEventWriter
     {
         writer.Write(value is not null);
         if (value is null) return;
-        writer.Write((byte)value.Scenario);
-        writer.Write((byte)value.Reason);
-        writer.Write(value.CompletedTurn);
-        writer.Write(value.Winners.Count);
-        foreach (var winner in value.Winners) writer.Write(winner.Value);
-        writer.Write(value.Standings.Count);
-        foreach (var standing in value.Standings)
-        {
-            writer.Write(standing.Player.Value);
-            writer.Write(standing.Place);
-            writer.Write(standing.Score);
-        }
-        writer.Write(value.Awards.Count);
-        foreach (var award in value.Awards)
-        {
-            writer.Write((byte)award.Award);
-            writer.Write(award.Value);
-            writer.Write(award.Recipients.Count);
-            foreach (var recipient in award.Recipients) writer.Write(recipient.Value);
-        }
+        MatchStateHasher.WriteOutcomeBody(
+            writer, value.Scenario, value.Reason, value.CompletedTurn,
+            value.Winners, value.Standings, value.Awards);
     }
 
     private static void WriteInts(BinaryWriter writer, IReadOnlyList<int> values)
@@ -193,36 +176,6 @@ internal static class CanonicalEventWriter
         if (values is null) return;
         writer.Write(values.Count);
         foreach (var value in values) writer.Write(value);
-    }
-
-    private static void WriteNullableTarget(BinaryWriter writer, CommandTarget? value)
-    {
-        writer.Write(value.HasValue);
-        if (value is { } target) WriteTarget(writer, target);
-    }
-
-    private static void WriteTarget(BinaryWriter writer, CommandTarget value)
-    {
-        writer.Write((byte)value.Kind);
-        writer.Write(value.Id);
-    }
-
-    private static void WriteNullableInt(BinaryWriter writer, int? value)
-    {
-        writer.Write(value.HasValue);
-        if (value.HasValue) writer.Write(value.Value);
-    }
-
-    private static void WriteNullableShort(BinaryWriter writer, short? value)
-    {
-        writer.Write(value.HasValue);
-        if (value.HasValue) writer.Write(value.Value);
-    }
-
-    private static void WriteNullableByte(BinaryWriter writer, byte? value)
-    {
-        writer.Write(value.HasValue);
-        if (value.HasValue) writer.Write(value.Value);
     }
 
     private static IReadOnlyList<T> Freeze<T>(IEnumerable<T> values) =>
