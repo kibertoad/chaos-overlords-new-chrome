@@ -28,7 +28,14 @@ if "%ASSETS_READY%"=="0" (
   )
 )
 
-call dotnet run --project src\Rechaos.Game
+echo Building the game...
+call dotnet build src\Rechaos.Game\Rechaos.Game.csproj --configuration Debug --verbosity minimal
+if errorlevel 1 (
+  popd
+  exit /b 1
+)
+
+call dotnet run --project src\Rechaos.Game\Rechaos.Game.csproj --configuration Debug --no-build
 set "GAME_EXIT=%ERRORLEVEL%"
 popd
 exit /b %GAME_EXIT%

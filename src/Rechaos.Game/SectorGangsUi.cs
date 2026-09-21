@@ -9,11 +9,11 @@ public static class SectorGangsLayout
     public const int MaximumGangCount = 6;
     public static Rectangle Panel => SharedPanelLayout.Panel;
     public static Rectangle Ok => EquipmentCommandLayout.Ok;
-
     public static Rectangle GangCard(int index)
     {
         if (index is < 0 or >= MaximumGangCount) throw new ArgumentOutOfRangeException(nameof(index));
-        return new Rectangle(144 + index * 32, 158, 32, 32);
+        return new Rectangle(SharedPanelLayout.X(144 + index * 32),
+            SharedPanelLayout.Y(12), 32, 32);
     }
 
     /// <summary>The left edge of the native two-cell statistic field.</summary>

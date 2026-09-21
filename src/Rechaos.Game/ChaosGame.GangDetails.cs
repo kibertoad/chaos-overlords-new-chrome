@@ -146,10 +146,9 @@ public sealed partial class ChaosGame
             font.Draw(batch, definition.Name,
                 new Vector2(definitionOnly ? GangDefinitionInformationLayout.NameLeft : SharedPanelLayout.X(98),
                     definitionOnly ? GangDefinitionInformationLayout.NameY : SharedPanelLayout.Y(28)), Color.Lime, 1);
-            var descriptionLines = definitionOnly
-                ? GangDefinitionInformationLayout.DescriptionLines(definition.Description)
-                : WrapPanelText(definition.Description, 27).Take(3).ToArray();
-            foreach (var entry in descriptionLines.Select((text, row) => (text, row)))
+            var descriptionColumns = definitionOnly ? 29 : 27;
+            foreach (var entry in WrapPanelText(definition.Description, descriptionColumns).Take(3)
+                         .Select((text, row) => (text, row)))
                 font.Draw(batch, entry.text,
                     new Vector2(definitionOnly ? GangDefinitionInformationLayout.DescriptionLeft : SharedPanelLayout.X(98),
                         definitionOnly ? GangDefinitionInformationLayout.DescriptionY(entry.row)
@@ -207,7 +206,10 @@ public sealed partial class ChaosGame
         var forceY = definitionOnly ? GangDefinitionInformationLayout.ForceY : SharedPanelLayout.Y(92);
         var techLevelY = definitionOnly ? GangDefinitionInformationLayout.TechLevelY : SharedPanelLayout.Y(101);
         batch.Draw(pixel, new Rectangle(nameLeft, nameY, 180, 10), Color.Black);
-        batch.Draw(pixel, new Rectangle(descriptionLeft, descriptionY, 186, 37), Color.Black);
+        var descriptionWidth = definitionOnly
+            ? GangDefinitionInformationLayout.DescriptionClearWidth
+            : 186;
+        batch.Draw(pixel, new Rectangle(descriptionLeft, descriptionY, descriptionWidth, 37), Color.Black);
         batch.Draw(pixel, GangInformationLayout.ValueField(leftValueLeft, forceY), Color.Black);
         batch.Draw(pixel, GangInformationLayout.ValueField(rightValueLeft, forceY), Color.Black);
         batch.Draw(pixel, GangInformationLayout.ValueField(rightValueLeft, techLevelY), Color.Black);

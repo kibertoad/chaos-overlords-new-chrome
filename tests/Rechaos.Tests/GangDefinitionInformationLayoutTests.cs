@@ -15,6 +15,7 @@ public sealed class GangDefinitionInformationLayoutTests
         Assert.Equal(new Rectangle(161, 293, 49, 22), GangDefinitionInformationLayout.Ok);
         Assert.Equal(228, GangDefinitionInformationLayout.NameLeft);
         Assert.Equal(228, GangDefinitionInformationLayout.DescriptionLeft);
+        Assert.Equal(180, GangDefinitionInformationLayout.DescriptionClearWidth);
         Assert.Equal([169, 178, 187], Enumerable.Range(0, 3)
             .Select(GangDefinitionInformationLayout.DescriptionY));
         Assert.Equal(300, GangDefinitionInformationLayout.LeftValueLeft);
@@ -25,21 +26,5 @@ public sealed class GangDefinitionInformationLayoutTests
             GangInformationLayout.ValueField(GangDefinitionInformationLayout.RightValueLeft, 216));
         Assert.Equal([243, 252, 270, 279, 288, 297, 306], Enumerable.Range(0, 7)
             .Select(GangDefinitionInformationLayout.StatisticY));
-    }
-
-    [Fact]
-    public void PreservesAuthoredFixedWidthDescriptionRows()
-    {
-        var description = "THEY BELIEVE IN AN OBSCURE    "
-            + "NETHER ENTITY FROM THE DARK   "
-            + "DIMENSION, BUT WHO CARES?";
-
-        Assert.Equal(30, GangDefinitionInformationLayout.DescriptionColumns);
-        Assert.Equal(
-        [
-            "THEY BELIEVE IN AN OBSCURE",
-            "NETHER ENTITY FROM THE DARK",
-            "DIMENSION, BUT WHO CARES?"
-        ], GangDefinitionInformationLayout.DescriptionLines(description));
     }
 }
