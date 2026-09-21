@@ -14,6 +14,7 @@ public static class FinanceLayout
     public const int RowCount = 8;
     public static int ValueLeft => 394;
     public static int ContractCountLeft => 316;
+    public static int ContractCountY => ValueY(0);
     public static Rectangle Panel => new(128, 124, 320, 209);
     public static Rectangle BackgroundSource => new(0, 0, 320, 209);
     public static Rectangle Portrait => new(154, 141, 64, 64);

@@ -57,7 +57,7 @@ public sealed class StatusConsoleScenarioTooltipTests
             StatusConsoleTooltip.Tolerance(12, estimate, breakdown));
         Assert.Equal(Color.Lime, StatusConsolePresentation.QueuedChaosRangeColor(range, 12));
         Assert.Equal(Color.Red, StatusConsolePresentation.QueuedChaosRangeColor(range, 8));
-        Assert.Contains("KNOWN ENEMY GANGS MAY ADD MORE CHAOS.",
-            StatusConsoleTooltip.Tolerance(12, estimate, breakdown, knownEnemyGangs: true));
+        Assert.Contains(StatusConsoleTooltip.EnemyChaosWarning,
+            StatusConsoleTooltip.Tolerance(12, estimate, breakdown, enemyGangsPresent: true));
     }
 }

@@ -314,23 +314,25 @@ public sealed partial class ChaosGame
             var player = ViewingPlayer(state);
             var sector = state.Sectors[_cursor];
             var chaosEstimate = ChaosRangeProjection.Detail(state, player, _cursor);
+            var enemyGangsPresent = HasEnemyGang(state, player, _cursor);
             var lines = StatusConsoleTooltip.At(
                 statusHover, state.Setup.Scenario, state.Setup.Duration, sector.Tolerance,
                 chaosEstimate, StatusConsolePresentation.ChaosBreakdown(state, chaosEstimate),
-                HasKnownEnemyGang(state, player, _cursor));
+                enemyGangsPresent);
             DrawHoverTooltip(batch, pixel, font, statusHover, lines,
                 StatusConsoleTooltip.QueuedChaosRangeRow,
                 StatusConsoleTooltip.QueuedChaosRangePrefix,
-                StatusConsolePresentation.QueuedChaosRangeColor(chaosEstimate.Range, sector.Tolerance));
+                StatusConsolePresentation.QueuedChaosRangeColor(chaosEstimate.Range, sector.Tolerance),
+                enemyGangsPresent ? StatusConsoleTooltip.EnemyChaosWarningRow : null,
+                enemyGangsPresent ? Color.Red : null);
         }
     }
 
-    private static bool HasKnownEnemyGang(MatchState state, PlayerId viewer, int sectorId) =>
+    private static bool HasEnemyGang(MatchState state, PlayerId viewer, int sectorId) =>
         state.Players.Where(player => player.Id != viewer)
             .SelectMany(player => player.Gangs)
             .Any(gang => gang.IsActive
-                && gang.SectorId == sectorId
-                && state.CanPlayerDetectGang(viewer, gang.Id));
+                && gang.SectorId == sectorId);
 
     private void DrawGangStatusMarker(SpriteBatch batch, int sectorId, Rectangle source)
     {

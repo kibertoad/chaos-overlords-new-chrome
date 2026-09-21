@@ -413,7 +413,9 @@ public sealed partial class ChaosGame
         IReadOnlyList<string> lines,
         int? coloredSuffixRow = null,
         string? coloredSuffixPrefix = null,
-        Color? suffixColor = null)
+        Color? suffixColor = null,
+        int? coloredRow = null,
+        Color? rowColor = null)
     {
         if (lines.Count == 0) return;
         var panel = HoverTooltipLayout.Bounds(point, lines);
@@ -423,7 +425,9 @@ public sealed partial class ChaosGame
         {
             var position = new Vector2(panel.X + 8,
                 panel.Y + 8 + row * OriginalFontLayout.LineHeight);
-            var color = row == 0 ? Color.Gold : Color.White;
+            var color = row == coloredRow && rowColor is { } requestedColor
+                ? requestedColor
+                : row == 0 ? Color.Gold : Color.White;
             if (row == coloredSuffixRow && suffixColor is { } highlight
                 && coloredSuffixPrefix is { } prefix
                 && lines[row].StartsWith(prefix, StringComparison.Ordinal))

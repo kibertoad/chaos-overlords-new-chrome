@@ -54,6 +54,8 @@ public static class StatusConsoleTooltip
 {
     public const int QueuedChaosRangeRow = 4;
     public const string QueuedChaosRangePrefix = "YOUR QUEUED CHAOS: ";
+    public const int EnemyChaosWarningRow = 16;
+    public const string EnemyChaosWarning = "ENEMY GANGS MAY ADD MORE CHAOS.";
 
     public static IReadOnlyList<string> At(Point point)
         => At(point, null, GameDuration.SixMonths);
@@ -65,7 +67,7 @@ public static class StatusConsoleTooltip
         int? tolerance = null,
         ChaosRangeEstimate? chaosEstimate = null,
         IReadOnlyList<string>? chaosBreakdown = null,
-        bool knownEnemyGangs = false)
+        bool enemyGangsPresent = false)
     {
         if (scenario is { } mode && StatusConsoleLayout.Scenario.Contains(point))
             return ScenarioSetupTooltip.Lines(mode, duration);
@@ -87,7 +89,7 @@ public static class StatusConsoleTooltip
             ];
         if (StatusConsoleLayout.SectorEntry(2).Contains(point))
             return tolerance is { } value && chaosEstimate is { } estimate
-                ? Tolerance(value, estimate, chaosBreakdown ?? [], knownEnemyGangs)
+                ? Tolerance(value, estimate, chaosBreakdown ?? [], enemyGangsPresent)
                 : ["TOLERANCE", "CHAOS ABOVE THIS VALUE TRIGGERS A POLICE CRACKDOWN."];
         if (StatusConsoleLayout.SectorEntry(3).Contains(point))
             return ["SUPPORT", "INFLUENCED-SITE SUPPORT ADDED AGAINST ENEMY CONTROL."];
@@ -103,7 +105,7 @@ public static class StatusConsoleTooltip
         int tolerance,
         ChaosRangeEstimate chaosEstimate,
         IReadOnlyList<string> chaosBreakdown,
-        bool knownEnemyGangs = false)
+        bool enemyGangsPresent = false)
     {
         List<string> lines =
         [
@@ -124,7 +126,7 @@ public static class StatusConsoleTooltip
             "CRACKDOWN: NO CHAOS CASH PAID.",
             ""
         ];
-        if (knownEnemyGangs) lines.Add("KNOWN ENEMY GANGS MAY ADD MORE CHAOS.");
+        if (enemyGangsPresent) lines.Add(EnemyChaosWarning);
         lines.Add(chaosEstimate.Range.CanTriggerCrackdown(tolerance)
             ? "YOUR RANGE CAN TRIGGER A CRACKDOWN."
             : "YOUR RANGE CANNOT TRIGGER A CRACKDOWN.");
@@ -137,8 +139,8 @@ public static class StatusConsoleTooltip
     public static IReadOnlyList<string> Tolerance(
         int tolerance,
         ChaosRange chaosRange,
-        bool knownEnemyGangs = false) =>
-        Tolerance(tolerance, new ChaosRangeEstimate(chaosRange, []), [], knownEnemyGangs);
+        bool enemyGangsPresent = false) =>
+        Tolerance(tolerance, new ChaosRangeEstimate(chaosRange, []), [], enemyGangsPresent);
 
     public static Rectangle Bounds(Point point, IReadOnlyList<string> lines) =>
         HoverTooltipLayout.Bounds(point, lines);

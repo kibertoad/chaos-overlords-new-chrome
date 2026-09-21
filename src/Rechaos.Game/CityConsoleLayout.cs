@@ -42,16 +42,16 @@ public static partial class CityConsoleLayout
     public static Rectangle Done => new(500, 282, 100, 48);
     public static Rectangle GameInfo => new(588, 41, 26, 34);
 
-    public static Rectangle ComlinkView => new(552, 126, 33, 48);
-    public static Rectangle ComlinkSend => new(585, 126, 15, 48);
-    public static Rectangle CombatSummary => new(500, 178, 33, 48);
-    public static Rectangle CombatDetail => new(533, 178, 15, 48);
-    public static Rectangle FinanceCity => new(552, 178, 33, 48);
-    public static Rectangle FinanceSector => new(585, 178, 15, 48);
-    public static Rectangle Gangs => new(500, 230, 33, 48);
-    public static Rectangle Hire => new(533, 230, 15, 48);
-    public static Rectangle Ranking => new(552, 230, 25, 48);
-    public static Rectangle Search => new(577, 230, 23, 48);
+    public static Rectangle ComlinkView => new(552, 126, 48, 33);
+    public static Rectangle ComlinkSend => new(552, 159, 48, 15);
+    public static Rectangle CombatSummary => new(500, 178, 48, 33);
+    public static Rectangle CombatDetail => new(500, 211, 48, 15);
+    public static Rectangle FinanceCity => new(552, 178, 48, 33);
+    public static Rectangle FinanceSector => new(552, 211, 48, 15);
+    public static Rectangle Gangs => new(500, 230, 48, 33);
+    public static Rectangle Hire => new(500, 263, 48, 15);
+    public static Rectangle Ranking => new(552, 230, 48, 25);
+    public static Rectangle Search => new(552, 255, 48, 23);
 
     public static CityConsoleControl? HitTest(Point point)
     {
@@ -67,19 +67,19 @@ public static partial class CityConsoleLayout
         return control switch
         {
             CityConsoleControl.Events => CityConsoleAction.Events,
-            CityConsoleControl.Comlink => point.X > Comlink.X + 32
+            CityConsoleControl.Comlink => point.Y > Comlink.Y + 32
                 ? CityConsoleAction.ComlinkSend
                 : CityConsoleAction.ComlinkView,
-            CityConsoleControl.Combat => point.X > Combat.X + 32
+            CityConsoleControl.Combat => point.Y > Combat.Y + 32
                 ? CityConsoleAction.CombatDetail
                 : CityConsoleAction.CombatSummary,
-            CityConsoleControl.Finance => point.X > Finance.X + 32
+            CityConsoleControl.Finance => point.Y > Finance.Y + 32
                 ? CityConsoleAction.FinanceSector
                 : CityConsoleAction.FinanceCity,
-            CityConsoleControl.GangHire => point.X > GangHire.X + 32
+            CityConsoleControl.GangHire => point.Y > GangHire.Y + 32
                 ? CityConsoleAction.Hire
                 : CityConsoleAction.Gangs,
-            CityConsoleControl.RankingSearch => point.X > RankingSearch.X + 24
+            CityConsoleControl.RankingSearch => point.Y > RankingSearch.Y + 24
                 ? CityConsoleAction.Search
                 : CityConsoleAction.Ranking,
             CityConsoleControl.Done => CityConsoleAction.Done,

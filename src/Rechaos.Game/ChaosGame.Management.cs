@@ -38,10 +38,10 @@ public sealed partial class ChaosGame
         for (var index = 0; index < rows.Length; index++)
             DrawFinanceValue(font, batch, rows[index], FinanceLayout.ValueY(index));
         DrawNativeFixedWidthValue(font, batch, projection.ProjectedGangCount,
-            FinanceLayout.ContractCountLeft, FinanceLayout.ValueY(1),
+            FinanceLayout.ContractCountLeft, FinanceLayout.ContractCountY,
             FinanceLayout.ContractCountWidth(projection.ProjectedGangCount));
         font.Draw(batch, ")", new Vector2(
-            FinanceLayout.ContractCountCloseLeft(projection.ProjectedGangCount), FinanceLayout.ValueY(1)), Color.Lime, 1);
+            FinanceLayout.ContractCountCloseLeft(projection.ProjectedGangCount), FinanceLayout.ContractCountY), Color.Lime, 1);
     }
 
     private static void DrawFinanceValue(
@@ -53,7 +53,7 @@ public sealed partial class ChaosGame
         for (var row = 0; row < FinanceLayout.RowCount; row++)
             batch.Draw(pixel, FinanceLayout.ValueField(row), Color.Black);
         batch.Draw(pixel, new Rectangle(FinanceLayout.ContractCountLeft,
-            FinanceLayout.ValueY(1), 2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
+            FinanceLayout.ContractCountY, 2 * OriginalFontLayout.CellWidth, OriginalFontLayout.GlyphHeight), Color.Black);
     }
 
     private void DrawSearch(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)

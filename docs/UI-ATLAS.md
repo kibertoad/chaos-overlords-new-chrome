@@ -364,10 +364,10 @@ The native dispatcher uses six 48-by-48 tiles at `(500,126)`, `(552,126)`,
 `(500,178)`, `(552,178)`, `(500,230)`, and `(552,230)`, followed by Done at
 `(500,282,100,48)` and Game Info at `(588,41,26,34)`. They route Events;
 Comlink; Combat; Financial; Gangs/Hire; Ranking/Search; Done; and Game Info.
-The paired tiles split horizontally, not vertically. Comlink, Combat, Financial,
-and Gangs/Hire allocate 33 pixels to View, Results, City, or Gangs and 15 pixels
-to Send, Detailed, Sector, or Hire. Ranking/Search allocates 25 pixels to Ranking
-and 23 to Search. All rectangles are half-open.
+The paired tiles split vertically, not horizontally. Comlink, Combat, Financial,
+and Gangs/Hire allocate the upper 33 pixels to View, Results, City, or Gangs and
+the lower 15 pixels to Send, Detailed, Sector, or Hire. Ranking/Search allocates
+the upper 25 pixels to Ranking and the lower 23 to Search. All rectangles are half-open.
 
 Pressing a tile copies its exact opaque `PX00129` pressed sprite, plays general
 effect slot 2, restores the baked `PX00128` control when the pointer leaves, and
