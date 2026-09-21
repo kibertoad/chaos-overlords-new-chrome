@@ -115,15 +115,22 @@ What already exists and is reused, so the new work is stated against it.
 
 - **The core is already a replayable state machine.** Every authoritative mutation goes through
   `MatchReplayRecorder`; a replay document is an initial native snapshot plus ordered operations,
-  each carrying the canonical state SHA-256 after it. `MatchReplaySerializer.LoadAndReplay` rejects
-  a journal at the first hash divergence. This is exactly the verification the server will perform,
+  each carrying the canonical state fingerprint after it. `MatchReplaySerializer.LoadAndReplay`
+  rejects a journal at the first fingerprint divergence. This is exactly the verification the server will perform,
   already specified and tested on one side.
-- **The state hash is a byte-exact binary encoding**, not JSON: `MatchStateHasher` writes a
-  little-endian stream (`RCHS` magic, format version 28, the full definition tables, setup, the
-  coordinator and PRNG state including its consumption count, AI tables, the canonical event
-  history, phase-boundary hashes, outcome, players in id order with gangs in roster order, sectors,
-  the command queue, notifications, Comlink inboxes) and hashes it. Phase-boundary hashes inside it
-  are taken with the version-23 hasher, so the history is not self-referential.
+- **The state fingerprint is a byte-exact binary encoding**, not JSON: `MatchStateHasher` writes a
+  little-endian stream (`RCHS` magic, encoding version 1, the full definition tables, setup, the
+  coordinator and PRNG state including its consumption count, AI tables, the event count and the
+  running digest of the canonical event history, the phase-boundary count and the running digest
+  of that history, outcome, players in id order with gangs in roster order, sectors, the command
+  queue, notifications, Comlink inboxes) and reduces it to 128 bits of XxHash128, written as 32
+  lowercase hex characters. The two histories only grow, so each is kept as a digest chained entry
+  by entry (`Chain(previous, entry)` is XxHash128 over the previous digest followed by the entry's
+  canonical bytes) and the fingerprint folds in the digest rather than the history; a fingerprint
+  costs the same on turn 200 as on turn 1. A phase boundary records the fingerprint of everything
+  except the boundary history it is about to join, so the history is not self-referential. It is
+  a checksum against divergence, not a cryptographic digest, which is exactly the property the
+  design needs: the server compares fingerprints and never has to trust one.
 - **The PRNG is small and fully specified**: the MSVC linear congruential step with multiplier
   `0x343fd` and addend `0x269ec3`, `(state >> 16) & 0x7fff` per raw draw, and the game's
   three-sample inclusive wrapper that spends three raws per bounded call. City generation and
@@ -175,10 +182,11 @@ packages/engine/src/
   ai/              AiTurnPlanner and its twelve family partials, AiPolicyPlanner, AiPlanningState,
                    AiStrategicState, the OriginalAi*Rules tables
   city/            OriginalCityGenerator, MatchBootstrap, OriginalPlayerName, ReservedPlayerNames
-  hash/            CanonicalEventWriter, MatchStateHasher (format 28 and the version-23 boundary
-                   hasher only), a BinaryWriter equivalent
+  hash/            CanonicalEventWriter, MatchStateHasher (the state fingerprint and the boundary
+                   fingerprint, the chained history digests), an XxHash128 and a BinaryWriter
+                   equivalent
   replay/          MatchReplayRecorder, ReplayStep, the sealed-turn applier, CommandPhase.Enter
-  snapshot/        NativeSaveSerializer (format 25) read and write
+  snapshot/        NativeSaveSerializer (format 26) read and write
   index.ts         the TurnResolver implementation the kernel consumes
 ```
 
@@ -196,10 +204,12 @@ Three rules for the port, each of which the conformance suite can catch a breach
    length prefix; ordinal comparison is UTF-16 code-unit comparison, which is JavaScript's default
    `<` on strings, and never `localeCompare`.
 
-The port is of the current format only: state hash 28, phase-boundary hash 23, native save 25,
-replay 29. The legacy hasher variants the C# keeps for old journals (versions 4 through 27) are not
-ported. A journal older than the current format is readable by the game and by nothing on the server,
-which is the existing session-version policy: the server refuses rather than reinterprets.
+The port is of the current format only: fingerprint encoding 1, native save 26, replay 30. Since
+the fingerprint moved to XxHash128 the C# itself reads no older format (a save or journal declaring
+one is refused as `OlderFormat`), so there is no legacy hasher to leave unported and the two engines
+start from the same clean slate. XxHash128 is not in the Node or Workers standard library; the port
+carries its own implementation, which is a few hundred lines of 64-bit arithmetic over `BigInt` or
+paired 32-bit words and is pinned by the `prng`-style vectors before anything else is built on it.
 
 ### The `TurnResolver` port
 
@@ -211,9 +221,9 @@ export interface TurnResolver {
   bootstrap(input: BootstrapInput): EngineState
   /** Applies one sealed set and runs the turn to the next Command phase. */
   apply(state: EngineState, sealed: SealedTurnInput): TurnResolution
-  /** Canonical state SHA-256 of a state at a Command boundary, as every client reports it. */
+  /** Canonical state fingerprint of a state at a Command boundary, as every client reports it. */
   hash(state: EngineState): string
-  /** The native snapshot (format 25 JSON, UTF-8) of a state, loadable by the game client. */
+  /** The native snapshot (format 26 JSON, UTF-8) of a state, loadable by the game client. */
   snapshot(state: EngineState): Uint8Array
   restore(snapshot: Uint8Array): EngineState
 }
@@ -275,7 +285,7 @@ maintenance job can re-derive a match end to end and compare, which is the same 
 replay serializer performs on a journal file.
 
 The body column keeps the snapshot as a blob rather than as JSON text; SQLite and D1 hold it in one
-row under the 2 MB row limit (a native save at format 25 is on the order of 100 KiB to 700 KiB of
+row under the 2 MB row limit (a native save at format 26 is on the order of 100 KiB to 700 KiB of
 UTF-8 depending on turn count, so the existing 1 MiB base64 cap already implied this fits, and the
 blob is stored raw, not base64). Postgres uses `bytea`. Compression with the `ReplayArchive` codec
 is an option the port makes available since the archive format is part of the replay package; it is
@@ -509,8 +519,7 @@ Every vector is one JSON object:
   "schemaVersion": 1,
   "id": "RESOLUTION.COMBAT.0007",
   "kind": "resolution",
-  "engine": { "stateHash": 28, "boundaryHash": 23, "nativeSave": 25, "replay": 29,
-              "dataSha256": "e65f80e4…" },
+  "engine": { "fingerprint": 1, "nativeSave": 26, "replay": 30, "dataSha256": "e65f80e4…" },
   "provenance": { "generatedBy": "Rechaos.Core", "commit": "…", "generatedAtUtc": "…",
                   "source": "fuzz:seed=1977:match=12:turn=7" },
   "description": "Two-gang attack into a defended sector with a Crackdown pending",
@@ -529,7 +538,7 @@ session-version bump forces every vector to be regenerated in the same change.
 
 - **`seedSetup`**: a seed, scenario, duration, AI settings and six seat definitions, from which both
   engines bootstrap. Cheap, and exercises city generation on every run.
-- **`snapshot`**: an inline native save document (format 25). Used when a vector needs a state
+- **`snapshot`**: an inline native save document (format 26). Used when a vector needs a state
   that random play reaches rarely (a specific site combination, a near-eliminated player), and for
   the snapshot vectors themselves.
 
@@ -538,7 +547,7 @@ session-version bump forces every vector to be regenerated in the same change.
 | Kind | Input | Expectation | What it pins |
 |---|---|---|---|
 | `prng` | seed (uint32), a list of calls (`raw`, `inclusive(max)`, `int(max)`) | each return value, the state and consumption count after each | the LCG step, the three-draw wrapper, the clamp at `max < 1`, `uint` wraparound |
-| `hash` | a snapshot | the hex of the complete encoded byte stream and its SHA-256; separately the version-23 boundary hash | every byte of `MatchStateHasher`, including string prefixes, nullable flags, ordering of every collection, and the definition block. Dumping the bytes, not only the digest, is what makes a mismatch locatable |
+| `hash` | a snapshot, or a list of byte strings to chain | the hex of the complete encoded byte stream and its XxHash128 fingerprint; separately the boundary fingerprint (the same stream without the phase history); for a chain input, the digest after every link | every byte of `MatchStateHasher`, including string prefixes, nullable flags, ordering of every collection, and the definition block, plus the port's XxHash128 and the `Chain` step in isolation. Dumping the bytes, not only the digest, is what makes a mismatch locatable |
 | `city` | seed, scenario, seat definitions | every sector's income, tolerance, three site ids and resistances, headquarters assignment, landmark placement, the PRNG consumption count afterwards | `OriginalCityGenerator`, `AssignHeadquarters`' rejection sampling, `ApplyScenarioLandmarks`, `MatchBootstrap` |
 | `validation` | a state and one `GameCommand` (or a cancellation) | the `CommandValidationCode` and, on acceptance, the event appended | `CommandValidator` in every branch: one vector per code per action that can produce it |
 | `resolution` | a state at Command with queued commands, and a single phase transition (`finishCommand`, `finishExecutionPhase`, `finishHire`, `finishPlayerElimination`, `finishUpkeep`) | the state hash after, the events appended, the PRNG consumption delta | each resolver in isolation: combat, transactions, chaos, movement, control, economy, hire, crackdown, tolerance, elimination, outcome |
