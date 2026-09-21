@@ -25,8 +25,7 @@ public static class ToleranceResolver
         ArgumentNullException.ThrowIfNull(sector);
         return sector.Sites
             .Where(site => SiteControlRules.Controller(sector, site) is not null)
-            .Sum(site => state.Definitions.Sites.Single(
-                definition => definition.Id == site.DefinitionId).Tolerance);
+            .Sum(site => state.Definitions.Site(site.DefinitionId).Tolerance);
     }
 
     public static int ApplyBribe(MatchState state, MatchSectorState sector)

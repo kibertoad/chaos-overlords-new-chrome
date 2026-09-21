@@ -584,7 +584,7 @@ public sealed partial class MatchState
         if (!validation.IsValid) return new HireSubmissionResult(validation);
 
         var player = FindPlayer(playerId)!;
-        var definition = Definitions.Gangs.Single(item => item.Id == gangDefinitionId);
+        var definition = Definitions.Gang(gangDefinitionId);
         var cost = HireRules.InitialCost(definition);
         var offerSlot = player.FindHireOfferSlot(gangDefinitionId);
         ClearHireAction(player);
@@ -606,7 +606,7 @@ public sealed partial class MatchState
         if (!validation.IsValid) return new HireSubmissionResult(validation);
 
         var player = FindPlayer(playerId)!;
-        var definition = Definitions.Gangs.Single(item => item.Id == gangDefinitionId);
+        var definition = Definitions.Gang(gangDefinitionId);
         var cost = HireRules.InitialCost(definition);
         var offerSlot = player.FindHireOfferSlot(gangDefinitionId);
         var pending = new PendingHireState(
@@ -659,7 +659,7 @@ public sealed partial class MatchState
         foreach (var pending in player.PendingHires)
         {
             if (!pending.InitialCostPaid) continue;
-            var definition = Definitions.Gangs.Single(item => item.Id == pending.GangDefinitionId);
+            var definition = Definitions.Gang(pending.GangDefinitionId);
             var cost = HireRules.InitialCost(definition);
             player.Cash += cost;
             player.Statistics.CashSpent -= cost;
@@ -836,7 +836,7 @@ public sealed partial class MatchState
             foreach (var sector in Sectors)
             foreach (var site in sector.Sites.Where(site => site.InfluencedBy == player.Id))
             {
-                var definition = Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+                var definition = Definitions.Site(site.DefinitionId);
                 sector.Tolerance = checked(sector.Tolerance - definition.Tolerance);
                 // As SectorControlResolver.ResetInfluencedSites does when a sector changes hands:
                 // the site stops being influenced, so the Support it granted stops counting.

@@ -157,7 +157,7 @@ public static class OriginalCityGenerator
         {
             var id = checked((short)random.NextInt(GeneratedSiteCount));
             if (scenario == ScenarioId.Armageddon && id is 4 or 8) continue;
-            return definitions.Sites.Single(site => site.Id == id);
+            return definitions.Site(id);
         }
     }
 

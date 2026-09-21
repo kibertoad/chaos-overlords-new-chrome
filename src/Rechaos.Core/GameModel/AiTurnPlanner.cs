@@ -505,7 +505,7 @@ public static partial class AiTurnPlanner
         if (player.HirePool.Count != MatchLimits.HireOffersPerPlayer)
             return new HirePreparation(null);
         var offers = player.HirePool
-            .Select(definitionId => state.Definitions.Gangs.Single(gang => gang.Id == definitionId))
+            .Select(definitionId => state.Definitions.Gang(definitionId))
             .ToArray();
         if (OriginalAiHireRules.SelectOfferIndex(
                 offers, state.Setup.Scenario, selection.RankingMode, player.Cash) is not { } offerIndex)
@@ -568,8 +568,7 @@ public static partial class AiTurnPlanner
                 })));
             defense = checked(defense + sector.Sites
                 .Where(site => site.InfluencedBy == owner)
-                .Sum(site => state.Definitions.Sites.Single(
-                    definition => definition.Id == site.DefinitionId).Support));
+                .Sum(site => state.Definitions.Site(site.DefinitionId).Support));
         }
         return attack > defense;
     }

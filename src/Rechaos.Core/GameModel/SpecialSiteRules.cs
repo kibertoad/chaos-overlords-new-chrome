@@ -30,7 +30,7 @@ public static class SpecialSiteRules
                 _ => siteLimit
             };
         }
-        var gangTech = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).TechLevel;
+        var gangTech = state.Definitions.Gang(gang.DefinitionId).TechLevel;
         return Math.Min(gangTech, siteLimit);
     }
 
@@ -51,6 +51,6 @@ public static class SpecialSiteRules
         var sector = state.Sectors[gang.SectorId];
         if (sector.Owner != gang.Owner) yield break;
         foreach (var site in sector.Sites.Where(site => site.InfluencedBy == gang.Owner))
-            yield return state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+            yield return state.Definitions.Site(site.DefinitionId);
     }
 }

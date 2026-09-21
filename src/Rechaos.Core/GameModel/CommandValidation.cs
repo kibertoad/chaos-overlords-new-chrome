@@ -387,7 +387,7 @@ public static class CommandValidator
         MatchState state,
         MatchGangState gang,
         Rechaos.Core.Assets.ItemDefinition item) =>
-        state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).TechLevel >= item.TechLevel;
+        state.Definitions.Gang(gang.DefinitionId).TechLevel >= item.TechLevel;
 }
 
 internal static class CommandValidationMessages

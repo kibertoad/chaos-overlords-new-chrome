@@ -597,8 +597,7 @@ public static partial class CommandResolver
                 .Select(gang => (gang.Force,
                     EffectiveStatisticsCalculator.ForGang(state, gang).Control)));
             support = sector.Sites.Where(site => site.InfluencedBy == owner).Sum(site =>
-                state.Definitions.Sites.Single(
-                    definition => definition.Id == site.DefinitionId).Support);
+                state.Definitions.Site(site.DefinitionId).Support);
         }
         var totalDefense = checked(sectorIncome + defense + support);
         var attempts = groups.Select(participants =>
@@ -696,7 +695,7 @@ public static partial class CommandResolver
                 .Where(gang => gang.IsActive && !gang.Hidden && gang.SectorId == sector.Id)
                 .Select(gang => (gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Control)));
             support = sector.Sites.Where(site => site.InfluencedBy == owner).Sum(site =>
-                state.Definitions.Sites.Single(definition => definition.Id == site.DefinitionId).Support);
+                state.Definitions.Site(site.DefinitionId).Support);
         }
         var margin = ManualRules.ControlMargin(attack, sectorIncome, defense, support);
         var previousOwner = sector.Owner;

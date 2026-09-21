@@ -16,7 +16,6 @@ public static class SectorIncomeResolver
 
         return checked(ManualRules.ControlledSectorTax + sector.Sites
             .Where(site => site.InfluencedBy is not null)
-            .Sum(site => state.Definitions.Sites.Single(
-                definition => definition.Id == site.DefinitionId).Cash));
+            .Sum(site => state.Definitions.Site(site.DefinitionId).Cash));
     }
 }

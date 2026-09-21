@@ -117,7 +117,7 @@ public static class HireRules
             HireValidationMessages.For(HireValidationCode.InsufficientCash),
             context => !CanAffordInitialCost(
                 context.Player!.Cash,
-                context.State.Definitions.Gangs.Single(item => item.Id == context.GangDefinitionId))),
+                context.State.Definitions.Gang(context.GangDefinitionId))),
         new DelegateRule(HireValidationCode.SectorNotControlled,
             HireValidationMessages.For(HireValidationCode.SectorNotControlled),
             context => context.TargetSectorId is < 0 or >= MatchLimits.SectorCount ||
@@ -214,7 +214,7 @@ internal static class HireResolver
         var results = new List<HireResolutionResult>(player.PendingHires.Count);
         foreach (var pending in player.PendingHires.ToArray())
         {
-            var definition = state.Definitions.Gangs.Single(item => item.Id == pending.GangDefinitionId);
+            var definition = state.Definitions.Gang(pending.GangDefinitionId);
             var cost = HireRules.InitialCost(definition);
             var hasSectorCapacity = state.Players
                 .SelectMany(candidate => candidate.Gangs)

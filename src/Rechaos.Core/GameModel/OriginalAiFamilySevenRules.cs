@@ -60,8 +60,8 @@ internal static class OriginalAiFamilySevenRules
         ArgumentNullException.ThrowIfNull(state);
         if ((uint)sectorId >= MatchLimits.SectorCount)
             throw new ArgumentOutOfRangeException(nameof(sectorId));
-        return state.Sectors[sectorId].Sites.Sum(site => (int)state.Definitions.Sites
-            .Single(definition => definition.Id == site.DefinitionId).Stats.Research);
+        return state.Sectors[sectorId].Sites.Sum(
+            site => (int)state.Definitions.Site(site.DefinitionId).Stats.Research);
     }
 
     public static int? SelectFirstUnfinishedResearchSite(
@@ -73,8 +73,7 @@ internal static class OriginalAiFamilySevenRules
             throw new ArgumentOutOfRangeException(nameof(sectorId));
         foreach (var site in state.Sectors[sectorId].Sites.OrderBy(site => site.Slot))
         {
-            var research = state.Definitions.Sites
-                .Single(definition => definition.Id == site.DefinitionId).Stats.Research;
+            var research = state.Definitions.Site(site.DefinitionId).Stats.Research;
             if (research > 0 && site.Resistance > 0) return site.Slot;
         }
         return null;

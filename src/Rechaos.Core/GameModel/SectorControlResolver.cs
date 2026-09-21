@@ -17,7 +17,7 @@ internal static class SectorControlResolver
         var player = state.FindPlayer(previousOwner)!;
         foreach (var site in sector.Sites)
         {
-            var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+            var definition = state.Definitions.Site(site.DefinitionId);
             if (site.InfluencedBy == previousOwner) player.Support -= definition.Support;
             if (site.InfluencedBy is not null)
                 sector.Tolerance = checked(sector.Tolerance - definition.Tolerance);

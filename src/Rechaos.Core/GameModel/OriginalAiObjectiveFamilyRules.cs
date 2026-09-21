@@ -110,8 +110,7 @@ internal static class OriginalAiObjectiveFamilyRules
         int? bestSlot = null;
         foreach (var site in state.Sectors[sectorId].Sites.OrderBy(site => site.Slot))
         {
-            var support = state.Definitions.Sites
-                .Single(definition => definition.Id == site.DefinitionId).Support;
+            var support = state.Definitions.Site(site.DefinitionId).Support;
             if (site.Resistance <= 0 || support <= bestSupport) continue;
             bestSupport = support;
             bestSlot = site.Slot;

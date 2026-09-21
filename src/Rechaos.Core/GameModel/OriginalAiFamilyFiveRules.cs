@@ -60,8 +60,7 @@ internal static class OriginalAiFamilyFiveRules
         int? bestSlot = null;
         foreach (var site in state.Sectors[sectorId].Sites.OrderBy(site => site.Slot))
         {
-            var support = state.Definitions.Sites
-                .Single(definition => definition.Id == site.DefinitionId).Support;
+            var support = state.Definitions.Site(site.DefinitionId).Support;
             if (site.Resistance <= 0 || support <= bestSupport) continue;
             bestSupport = support;
             bestSlot = site.Slot;
@@ -77,7 +76,6 @@ internal static class OriginalAiFamilyFiveRules
 
         return state.Sectors[sectorId].Sites
             .Where(site => site.Resistance > 0)
-            .Sum(site => Math.Max(0, (int)state.Definitions.Sites
-                .Single(definition => definition.Id == site.DefinitionId).Support));
+            .Sum(site => Math.Max(0, (int)state.Definitions.Site(site.DefinitionId).Support));
     }
 }

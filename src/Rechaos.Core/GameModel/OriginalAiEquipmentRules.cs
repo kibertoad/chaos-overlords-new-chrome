@@ -186,7 +186,7 @@ internal static class OriginalAiEquipmentRules
             ? checked((int)equipped)
             : UnequippedWeaponBaselineItem;
         var selected = currentWeapon;
-        var gangTech = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).TechLevel;
+        var gangTech = state.Definitions.Gang(gang.DefinitionId).TechLevel;
         for (var index = 0; index < state.Definitions.Items.Count; index++)
         {
             var item = state.Definitions.Items[index];
@@ -219,7 +219,7 @@ internal static class OriginalAiEquipmentRules
         var selected = gang.ArmorItemId is { } equipped
             ? checked((int)equipped)
             : UnequippedArmorBaselineItem;
-        var gangTech = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).TechLevel;
+        var gangTech = state.Definitions.Gang(gang.DefinitionId).TechLevel;
         for (var index = 0; index < 64; index++)
         {
             var item = state.Definitions.Items[index];
@@ -265,7 +265,7 @@ internal static class OriginalAiEquipmentRules
         var selected = gang.MiscellaneousItemId is { } equipped
             ? checked((int)equipped)
             : UnequippedMiscellaneousBaselineItem;
-        var gangTech = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).TechLevel;
+        var gangTech = state.Definitions.Gang(gang.DefinitionId).TechLevel;
         for (var index = 0; index < 64; index++)
         {
             var item = state.Definitions.Items[index];

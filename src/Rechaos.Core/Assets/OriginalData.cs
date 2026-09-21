@@ -5,7 +5,14 @@ namespace Rechaos.Core.Assets;
 public sealed record OriginalData(
     IReadOnlyList<SiteDefinition> Sites,
     IReadOnlyList<GangDefinition> Gangs,
-    IReadOnlyList<ItemDefinition> Items);
+    IReadOnlyList<ItemDefinition> Items)
+{
+    /// <summary>The one site definition with this id; throws when none or several carry it.</summary>
+    internal SiteDefinition Site(short id) => Sites.Single(definition => definition.Id == id);
+
+    /// <summary>The one gang definition with this id; throws when none or several carry it.</summary>
+    internal GangDefinition Gang(short id) => Gangs.Single(definition => definition.Id == id);
+}
 
 public sealed record SiteDefinition(
     string Name, short Id, short Resistance, short Support, short Frequency,
