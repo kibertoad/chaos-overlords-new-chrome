@@ -17,12 +17,8 @@ namespace Rechaos.Multiplayer.Protocol;
 public static class OrderDigest
 {
     /// <summary>The digest of one player's order document.</summary>
-    public static string OfDocument(OrderDocument document)
-    {
-        ArgumentNullException.ThrowIfNull(document);
-        using var parsed = JsonDocument.Parse(WireJson.Write(document));
-        return Sha256Hex(CanonicalJson.EncodeUtf8(parsed.RootElement));
-    }
+    public static string OfDocument(OrderDocument document) =>
+        Sha256Hex(Encoding.UTF8.GetBytes(CanonicalTextOf(document)));
 
     /// <summary>The canonical text of a document, for a diagnostic that has to show the bytes.</summary>
     public static string CanonicalTextOf(OrderDocument document)

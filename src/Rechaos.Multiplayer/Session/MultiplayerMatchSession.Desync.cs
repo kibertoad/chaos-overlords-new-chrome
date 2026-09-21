@@ -30,7 +30,15 @@ public sealed partial class MultiplayerMatchSession
     /// <param name="Turn">The disputed turn.</param>
     /// <param name="Candidates">The hashes a repair may claim, as the announcement named them.</param>
     /// <param name="Details">Short hashes per player, for the interface and the diagnostics log.</param>
-    private sealed record PendingDesync(int Turn, IReadOnlyList<string> Candidates, string Details);
+    private sealed record PendingDesync(int Turn, IReadOnlyList<string> Candidates, string Details)
+    {
+        public static PendingDesync From(TurnDesyncedEvent desynced) => new(
+            desynced.Payload.Turn,
+            desynced.Payload.CandidateStateHashes,
+            string.Join(", ", desynced.Payload.Reports
+                .OrderBy(report => report.PlayerId, StringComparer.Ordinal)
+                .Select(report => $"{report.PlayerId}:{ShortHash(report.StateHash)}")));
+    }
 
     /// <summary>
     /// The divergence this client is waiting on, or null.
@@ -45,11 +53,7 @@ public sealed partial class MultiplayerMatchSession
     /// <summary>The match paused because clients disagreed about a turn.</summary>
     private Task HandleDesyncAsync(TurnDesyncedEvent desynced, CancellationToken cancellationToken)
     {
-        var details = string.Join(", ", desynced.Payload.Reports
-            .OrderBy(report => report.PlayerId, StringComparer.Ordinal)
-            .Select(report => $"{report.PlayerId}:{ShortHash(report.StateHash)}"));
-        _pendingDesync = new PendingDesync(
-            desynced.Payload.Turn, desynced.Payload.CandidateStateHashes, details);
+        _pendingDesync = PendingDesync.From(desynced);
         // The live path does not go looking for a repair: `snapshot.available` follows this event
         // in the log and will arrive on its own. Only a client picking a pause up out of history
         // has to ask, because that announcement is behind its cursor and will not come again.
@@ -233,18 +237,38 @@ public sealed partial class MultiplayerMatchSession
         var sealedOrders = await CallAsync(
             token => _match.SealedOrdersAsync(turn, token), _pumpLane, cancellationToken)
             .ConfigureAwait(false);
+        RequireSealedSet(sealedOrders, turn);
+        return SealedTurnApplier.Apply(recorder, sealedOrders);
+    }
+
+    /// <summary>
+    /// Throws unless a fetched sealed set is the one for <paramref name="turn"/>, carries the digest
+    /// the event log announced when there is one, and matches its own digest.
+    /// </summary>
+    private static void RequireSealedSet(
+        SealedOrdersView sealedOrders,
+        int turn,
+        string? announcedOrderSetHash = null)
+    {
         if (sealedOrders.Turn != turn)
         {
             throw new MultiplayerProtocolException(
-                $"the server answered turn {turn}'s sealed set with the set for turn "
-                + sealedOrders.Turn);
+                $"the server answered turn {turn}'s sealed set with the set for turn {sealedOrders.Turn}");
+        }
+        if (announcedOrderSetHash is not null
+            && !string.Equals(
+                sealedOrders.OrderSetHash,
+                announcedOrderSetHash,
+                StringComparison.Ordinal))
+        {
+            throw new MultiplayerProtocolException(
+                $"the sealed-set digest for turn {turn} does not match the event log");
         }
         if (!OrderDigest.Verifies(sealedOrders, sealedOrders.OrderSetHash))
         {
             throw new MultiplayerProtocolException(
                 $"the sealed set for turn {turn} does not match the digest the server announced");
         }
-        return SealedTurnApplier.Apply(recorder, sealedOrders);
     }
 
     /// <summary>The newest snapshot no later than <paramref name="turn"/>, or null.</summary>

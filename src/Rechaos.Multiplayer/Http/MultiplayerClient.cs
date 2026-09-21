@@ -37,7 +37,6 @@ public sealed record MultiplayerClientOptions(Uri BaseAddress, TimeSpan? Request
     /// </remarks>
     public const long MaximumResponseBytes = 8L * 1024 * 1024;
 
-    /// <summary>A client bounded by <see cref="MaximumResponseBytes"/>, for a caller that owns one.</summary>
     /// <summary>
     /// How long a pooled connection may be reused before it is replaced.
     /// </summary>
@@ -52,6 +51,7 @@ public sealed record MultiplayerClientOptions(Uri BaseAddress, TimeSpan? Request
     /// </remarks>
     public static readonly TimeSpan PooledConnectionLifetime = TimeSpan.FromMinutes(5);
 
+    /// <summary>A client bounded by <see cref="MaximumResponseBytes"/>, for a caller that owns one.</summary>
     public static HttpClient CreateHttpClient() =>
         new(new SocketsHttpHandler { PooledConnectionLifetime = PooledConnectionLifetime })
         {
@@ -68,9 +68,10 @@ public sealed record MultiplayerClientOptions(Uri BaseAddress, TimeSpan? Request
     /// so <c>https://host/game</c> would lose <c>/game</c> and a server published under a path
     /// would be unreachable. A player typing the address has no reason to add the slash.
     /// </remarks>
-    internal Uri RootAddress { get; } = BaseAddress.AbsolutePath.EndsWith('/')
-        ? BaseAddress
-        : new Uri(BaseAddress, $"{BaseAddress.AbsolutePath}/");
+    internal Uri RootAddress { get; } = WithTrailingSlash(BaseAddress);
+
+    internal static Uri WithTrailingSlash(Uri address) =>
+        address.AbsolutePath.EndsWith('/') ? address : new Uri(address, $"{address.AbsolutePath}/");
 }
 
 /// <summary>
@@ -250,18 +251,9 @@ public sealed class MultiplayerClient
         // stream fifteen seconds after it opened.
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(_options.EffectiveTimeout);
-        HttpResponseMessage response;
-        try
-        {
-            response = await _http
-                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token)
-                .ConfigureAwait(false);
-        }
-        catch (OperationCanceledException exception)
-            when (!cancellationToken.IsCancellationRequested && timeout.IsCancellationRequested)
-        {
-            throw new MultiplayerTimeoutException(_options.EffectiveTimeout, exception);
-        }
+        var response = await SendWithDeadlineAsync(
+            request, HttpCompletionOption.ResponseHeadersRead, timeout, cancellationToken)
+            .ConfigureAwait(false);
         _handshake.ObserveServerDate(response.Headers.Date);
         if (response.IsSuccessStatusCode) return response;
         using (response)

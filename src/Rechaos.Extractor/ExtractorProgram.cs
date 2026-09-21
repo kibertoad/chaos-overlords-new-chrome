@@ -105,12 +105,6 @@ public static class ExtractorProgram
         catch (Exception exception) { Console.Error.WriteLine($"Extraction failed: {exception.Message}"); return 1; }
     }
 
-    public static async Task<AssetManifest> ExtractAsync(string source, string output)
-    {
-        var sourcePack = await VerifySourceAsync(source);
-        return await InstallVerifiedAsync(sourcePack, output);
-    }
-
     private static Task<AssetManifest> InstallVerifiedAsync(OriginalAssetPack source, string output) =>
         AssetPackInstaller.InstallAsync(output, FormatVersion, ExpectedExtractedAssetCount,
             staging => ExtractToAsync(source, staging));
@@ -121,10 +115,8 @@ public static class ExtractorProgram
         var nestedData = OriginalDataReader.FindDirectoryCaseInsensitive(Path.Combine(source, "DATA"));
         var dataDirectory = nestedData ?? source;
         var installRoot = nestedData is not null ? source : Directory.GetParent(source)?.FullName ?? source;
-        var musicDirectory = OriginalDataReader.FindDirectoryCaseInsensitive(Path.Combine(installRoot, "MUSIC"))
-            ?? Path.Combine(installRoot, "MUSIC");
-        var helpDirectory = OriginalDataReader.FindDirectoryCaseInsensitive(Path.Combine(installRoot, "HELP"))
-            ?? Path.Combine(installRoot, "HELP");
+        var musicDirectory = DirectoryOrDefault(installRoot, "MUSIC");
+        var helpDirectory = DirectoryOrDefault(installRoot, "HELP");
         if (OriginalDataReader.FindDirectoryCaseInsensitive(Path.Combine(dataDirectory, "PX16")) is null)
             throw new InvalidDataException("The selected folder is not a Chaos Overlords asset pack (DATA/PX16 is missing).");
         foreach (var expected in KnownTableSha256)
@@ -142,7 +134,7 @@ public static class ExtractorProgram
         var fingerprint = await SourceFingerprint.ComputeAsync(dataDirectory, musicDirectory, helpDirectory);
         if (!string.Equals(fingerprint, KnownSourceFingerprintSha256, StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException($"Unsupported or incomplete original asset pack (SHA-256 {fingerprint}).");
-        foreach (var videoName in new[] { "MVINTRO", "MVLOGOS" })
+        foreach (var videoName in MovieNames)
         {
             var video = OriginalDataReader.FindCaseInsensitive(Path.Combine(dataDirectory, videoName));
             using var stream = File.OpenRead(video);
@@ -173,9 +165,7 @@ public static class ExtractorProgram
         var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
 
         Console.WriteLine("Importing artwork...");
-        var px16 = OriginalDataReader.FindDirectoryCaseInsensitive(
-                       Path.Combine(source.DataDirectory, "PX16"))
-                   ?? Path.Combine(source.DataDirectory, "PX16");
+        var px16 = DirectoryOrDefault(source.DataDirectory, "PX16");
         foreach (var sourceImage in Directory.EnumerateFiles(px16).OrderBy(Path.GetFileName))
         {
             var name = Path.GetFileName(sourceImage).ToUpperInvariant();
@@ -206,7 +196,7 @@ public static class ExtractorProgram
                     $"MUSIC/{name}", "audio/ogg"));
             }
         Console.WriteLine("Importing video and game data...");
-        foreach (var videoName in new[] { "MVINTRO", "MVLOGOS" })
+        foreach (var videoName in MovieNames)
         {
             var video = OriginalDataReader.FindCaseInsensitive(Path.Combine(source.DataDirectory, videoName));
             files.Add(await CopyAsync(output, video, Path.Combine(output, "video", videoName + ".smk"),
@@ -218,9 +208,7 @@ public static class ExtractorProgram
             files.Add(await CopyAsync(output, raw, Path.Combine(output, "raw", "data", rawName),
                 $"DATA/{rawName}", "application/octet-stream"));
         }
-        var px08 = OriginalDataReader.FindDirectoryCaseInsensitive(
-                       Path.Combine(source.DataDirectory, "PX08"))
-                   ?? Path.Combine(source.DataDirectory, "PX08");
+        var px08 = DirectoryOrDefault(source.DataDirectory, "PX08");
         foreach (var image in Directory.EnumerateFiles(px08))
         {
             var name = Path.GetFileName(image).ToUpperInvariant();
@@ -406,7 +394,14 @@ public static class ExtractorProgram
         new(Path.GetRelativePath(root, path).Replace('\\', '/'), new FileInfo(path).Length, await HashAsync(path),
             sourcePath, mediaType, conversion);
 
-    private static async Task<string> HashAsync(string path)
+    private static readonly string[] MovieNames = ["MVINTRO", "MVLOGOS"];
+
+    /// <summary>The directory as the install spells it, or the expected spelling when it is absent.</summary>
+    private static string DirectoryOrDefault(string parent, string name) =>
+        OriginalDataReader.FindDirectoryCaseInsensitive(Path.Combine(parent, name))
+        ?? Path.Combine(parent, name);
+
+    internal static async Task<string> HashAsync(string path)
     {
         await using var stream = File.OpenRead(path);
         return Convert.ToHexStringLower(await SHA256.HashDataAsync(stream));

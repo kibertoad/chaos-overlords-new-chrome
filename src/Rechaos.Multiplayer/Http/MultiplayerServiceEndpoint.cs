@@ -24,9 +24,7 @@ public static class MultiplayerServiceEndpoint
         ArgumentNullException.ThrowIfNull(http);
         ArgumentNullException.ThrowIfNull(baseAddress);
 
-        var root = baseAddress.AbsolutePath.EndsWith('/')
-            ? baseAddress
-            : new Uri(baseAddress, $"{baseAddress.AbsolutePath}/");
+        var root = MultiplayerClientOptions.WithTrailingSlash(baseAddress);
         using var request = new HttpRequestMessage(HttpMethod.Get, new Uri(root, "health"));
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
