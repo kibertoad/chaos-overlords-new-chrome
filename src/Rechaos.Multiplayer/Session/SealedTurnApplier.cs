@@ -89,7 +89,7 @@ public static class SealedTurnApplier
         // Reaching the next Command phase is part of the sealed turn, not of the interface: see
         // CommandPhase for why the hire draw cannot wait for a player to open the dock.
         CommandPhase.Enter(replay);
-        return MatchStateHasher.ComputeSha256(state);
+        return MatchStateHasher.ComputeFingerprint(state);
     }
 
     /// <summary>

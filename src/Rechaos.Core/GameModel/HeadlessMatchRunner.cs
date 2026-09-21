@@ -92,7 +92,7 @@ public static class HeadlessMatchRunner
                 + $"phase={recorder.State.Coordinator.Phase}, events={recorder.State.Events.Count}.");
         }
 
-        var stateHash = MatchStateHasher.ComputeSha256(recorder.State);
+        var stateHash = MatchStateHasher.ComputeFingerprint(recorder.State);
         var replayVerified = false;
         if (options.VerifyReplay)
         {
@@ -100,7 +100,7 @@ public static class HeadlessMatchRunner
             MatchReplaySerializer.Save(replay, recorder);
             replay.Position = 0;
             var replayed = MatchReplaySerializer.LoadAndReplay(replay, definitions);
-            var replayHash = MatchStateHasher.ComputeSha256(replayed);
+            var replayHash = MatchStateHasher.ComputeFingerprint(replayed);
             if (!string.Equals(stateHash, replayHash, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(

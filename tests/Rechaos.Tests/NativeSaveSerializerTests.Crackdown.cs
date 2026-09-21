@@ -17,6 +17,6 @@ public sealed partial class NativeSaveSerializerTests
 
         Assert.Equal(remaining, restored.Sectors[12].CrackdownTurnsRemaining);
         Assert.True(restored.Sectors[12].CrackdownActive);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
     }
 }

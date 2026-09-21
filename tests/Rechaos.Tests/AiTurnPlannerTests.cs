@@ -12,12 +12,12 @@ public sealed class AiTurnPlannerTests
     {
         var match = CreateMatch();
         match.FinishUpkeep();
-        var before = MatchStateHasher.ComputeSha256(match);
+        var before = MatchStateHasher.ComputeFingerprint(match);
 
         var first = AiTurnPlanner.Plan(match, new PlayerId(0));
         var second = AiTurnPlanner.Plan(match, new PlayerId(0));
 
-        Assert.Equal(before, MatchStateHasher.ComputeSha256(match));
+        Assert.Equal(before, MatchStateHasher.ComputeFingerprint(match));
         Assert.Equal(first, second);
         Assert.Single(first);
         Assert.All(first, command => Assert.True(CommandValidator.Validate(match, command).IsValid));
@@ -310,7 +310,7 @@ public sealed class AiTurnPlannerTests
         MatchReplaySerializer.Save(replay, recorder);
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(checked((short)expectedItem), restored.Players[0].Gangs[0].WeaponItemId);
         Assert.Equal(match.AiPlanning.WeaponCooldown(player, 0),
             restored.AiPlanning.WeaponCooldown(player, 0));
@@ -404,7 +404,7 @@ public sealed class AiTurnPlannerTests
         MatchReplaySerializer.Save(replay, recorder);
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, match.Definitions);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(expectedDestination, restored.Players[0].Gangs[0].SectorId);
     }
 
@@ -444,7 +444,7 @@ public sealed class AiTurnPlannerTests
         MatchReplaySerializer.Save(replay, recorder);
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(13, restored.AiPlanning.Family(player, 0));
         Assert.Equal(GangAction.Heal, restored.AiPlanning.PlannedAction(player, 0));
     }
@@ -487,7 +487,7 @@ public sealed class AiTurnPlannerTests
         MatchReplaySerializer.Save(replay, recorder);
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(GangAction.Heal, restored.AiPlanning.PlannedAction(player, 0));
     }
 
@@ -551,7 +551,7 @@ public sealed class AiTurnPlannerTests
         MatchReplaySerializer.Save(replay, recorder);
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -621,8 +621,8 @@ public sealed class AiTurnPlannerTests
         MatchReplaySerializer.Save(replay, recorder);
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match),
-            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match),
+            MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -647,11 +647,11 @@ public sealed class AiTurnPlannerTests
         match.FinishCommand(new PlayerId(0));
         match.FinishCommand(new PlayerId(1));
         while (match.Coordinator.Phase == TurnPhase.Execution) match.FinishExecutionPhase();
-        var before = MatchStateHasher.ComputeSha256(match);
+        var before = MatchStateHasher.ComputeFingerprint(match);
 
         var choice = AiTurnPlanner.ChooseHire(match, new PlayerId(0));
 
-        Assert.Equal(before, MatchStateHasher.ComputeSha256(match));
+        Assert.Equal(before, MatchStateHasher.ComputeFingerprint(match));
         if (choice is not null)
             Assert.True(HireRules.Validate(match, new PlayerId(0),
                 choice.GangDefinitionId, choice.SectorId).IsValid);

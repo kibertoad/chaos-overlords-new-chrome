@@ -255,7 +255,7 @@ public sealed partial class MultiplayerSessionTests
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
             MultiplayerSessionVersion.Current,
-            MatchStateHasher.ComputeSha256(state),
+            MatchStateHasher.ComputeFingerprint(state),
             "p2",
             "2026-09-10T12:03:00.000Z",
             MatchStateClone.ToBase64(state));
@@ -267,7 +267,7 @@ public sealed partial class MultiplayerSessionTests
         NativeSaveSerializer.CurrentFormatVersion,
         MultiplayerProtocolVersion.Current,
         MultiplayerSessionVersion.Current,
-        MatchStateHasher.ComputeSha256(session.Bootstrap.State),
+        MatchStateHasher.ComputeFingerprint(session.Bootstrap.State),
         "p1",
         "2026-09-10T12:00:00.000Z",
         MatchStateClone.ToBase64(session.Bootstrap.State));

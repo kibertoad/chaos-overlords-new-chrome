@@ -6,6 +6,9 @@ public enum IncompatibleSaveReason
     /// <summary>The file was written by a build with a newer format version.</summary>
     NewerFormat,
 
+    /// <summary>The file was written by a build with a format version this one no longer reads.</summary>
+    OlderFormat,
+
     /// <summary>The file was written against a different set of bundled gameplay definitions.</summary>
     DifferentDefinitions
 }

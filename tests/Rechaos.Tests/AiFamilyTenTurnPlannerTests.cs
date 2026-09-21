@@ -38,8 +38,8 @@ public sealed class AiFamilyTenTurnPlannerTests
         MatchReplaySerializer.Save(replay, recorder);
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match),
-            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match),
+            MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]

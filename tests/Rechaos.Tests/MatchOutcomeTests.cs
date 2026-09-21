@@ -180,7 +180,7 @@ public sealed class MatchOutcomeTests
 
         Assert.Equal(match.Outcome.Winners, restored.Outcome!.Winners);
         Assert.Equal(match.Outcome.Standings, restored.Outcome.Standings);
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -191,7 +191,7 @@ public sealed class MatchOutcomeTests
 
         FinishTurn(finished);
 
-        Assert.NotEqual(MatchStateHasher.ComputeSha256(unfinished), MatchStateHasher.ComputeSha256(finished));
+        Assert.NotEqual(MatchStateHasher.ComputeFingerprint(unfinished), MatchStateHasher.ComputeFingerprint(finished));
     }
 
     [Fact]

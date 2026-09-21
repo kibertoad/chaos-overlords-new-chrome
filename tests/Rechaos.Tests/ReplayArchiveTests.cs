@@ -22,8 +22,8 @@ public sealed class ReplayArchiveTests
         var replayed = ReplayArchive.LoadAndReplay(archive, recorder.State.Definitions);
 
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(recorder.State),
-            MatchStateHasher.ComputeSha256(replayed));
+            MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(replayed));
     }
 
     /// <summary>

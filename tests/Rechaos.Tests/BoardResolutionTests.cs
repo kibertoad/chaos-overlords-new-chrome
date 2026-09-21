@@ -238,7 +238,7 @@ public sealed class BoardResolutionTests
         Assert.Equal(secondConsumptionBefore + 3, second.Random.ConsumptionCount);
         Assert.Equal(resolution.ChanceRoll,
             Assert.Single(second.LastPhaseResolutions).Event!.Resolution!.ChanceRoll);
-        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+        Assert.Equal(first.PhaseHashes[^1].Fingerprint, second.PhaseHashes[^1].Fingerprint);
     }
 
     [Fact]
@@ -590,7 +590,7 @@ public sealed class BoardResolutionTests
         second.FinishExecutionPhase();
 
         Assert.Equal(first.Sectors[0].Owner, second.Sectors[0].Owner);
-        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+        Assert.Equal(first.PhaseHashes[^1].Fingerprint, second.PhaseHashes[^1].Fingerprint);
     }
 
     [Fact]

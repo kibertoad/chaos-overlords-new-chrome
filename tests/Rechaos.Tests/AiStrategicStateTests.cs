@@ -85,11 +85,11 @@ public sealed class AiStrategicStateTests
     public void StrategicStateContributesToCanonicalHash()
     {
         var match = CreateOnePlayerMatch();
-        var before = MatchStateHasher.ComputeSha256(match);
+        var before = MatchStateHasher.ComputeFingerprint(match);
 
         match.AiStrategy.RecordCombat(new PlayerId(1), new PlayerId(0), 7);
 
-        Assert.NotEqual(before, MatchStateHasher.ComputeSha256(match));
+        Assert.NotEqual(before, MatchStateHasher.ComputeFingerprint(match));
     }
 
     [Fact]

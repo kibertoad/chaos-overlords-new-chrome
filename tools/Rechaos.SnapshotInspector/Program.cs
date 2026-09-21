@@ -18,7 +18,7 @@ try
     var definitions = BundledOriginalData.Load();
     var state = MatchStateClone.FromBase64(snapshot.Trim(), definitions);
     Console.WriteLine(
-        $"Snapshot is valid: hash={MatchStateHasher.ComputeSha256(state)} "
+        $"Snapshot is valid: hash={MatchStateHasher.ComputeFingerprint(state)} "
         + $"turn={state.Coordinator.Turn} phase={state.Coordinator.Phase}.");
     WriteSeats("Snapshot", state);
 
@@ -81,14 +81,14 @@ static string TryRoundTrip(MatchState state, OriginalData definitions, int turn)
 {
     try
     {
-        return MatchStateHasher.ComputeSha256(MatchStateClone.Of(state, definitions));
+        return MatchStateHasher.ComputeFingerprint(MatchStateClone.Of(state, definitions));
     }
     catch (InvalidDataException)
     {
         var restored = ReadWithStaleFingerprint(MatchStateClone.ToBase64(state), definitions);
-        var restoredHash = MatchStateHasher.ComputeSha256(restored);
+        var restoredHash = MatchStateHasher.ComputeFingerprint(restored);
         Console.Error.WriteLine($"Turn {turn}: native save fingerprint mismatch; live="
-            + $"{MatchStateHasher.ComputeSha256(state)}, restored={restoredHash}.");
+            + $"{MatchStateHasher.ComputeFingerprint(state)}, restored={restoredHash}.");
         WriteNativeDocumentDifferences(state, restored);
         return restoredHash;
     }

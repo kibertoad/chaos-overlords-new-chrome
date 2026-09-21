@@ -464,7 +464,7 @@ public sealed partial class MatchState
                 || !Enum.IsDefined(boundary.Phase)
                 || boundary.ExecutionPhase is { } phase && !Enum.IsDefined(phase)
                 || (boundary.Phase == TurnPhase.Execution) != boundary.ExecutionPhase.HasValue
-                || !IsSha256(boundary.Sha256)))
+                || !MatchStateHasher.IsFingerprint(boundary.Fingerprint)))
             throw new ArgumentException("Restored phase hash history is invalid.", nameof(restore));
         foreach (var boundary in restore.PhaseHashes) StorePhaseHash(boundary);
         RestoreOutcome(restore);

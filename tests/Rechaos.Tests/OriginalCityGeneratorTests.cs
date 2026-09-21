@@ -143,10 +143,10 @@ public sealed class OriginalCityGeneratorTests
         var first = OriginalMatchFactory.Create(data, setup);
         var second = OriginalMatchFactory.Create(data, setup);
 
-        Assert.Equal(MatchStateHasher.ComputeSha256(first), MatchStateHasher.ComputeSha256(second));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(first), MatchStateHasher.ComputeFingerprint(second));
         Assert.Equal(
-            "51b3e0b4c344f326e00eb0427062f26a34807e7cf08d4b09f1ab8f3092649736:160916660:936",
-            $"{MatchStateHasher.ComputeVersionTwentyThreeSha256(first)}:{first.Random.State}:{first.Random.ConsumptionCount}");
+            "dbda1cf1ccdc1d95dea12c3546bf9a8b:160916660:936",
+            $"{MatchStateHasher.ComputeFingerprint(first)}:{first.Random.State}:{first.Random.ConsumptionCount}");
         Assert.Equal(MatchLimits.PlayerCount, first.Players.Count);
         Assert.Equal(
             ["ONE", "TWO", "GECKO", "KANSER", "VECTOR", "RAZOR"],

@@ -395,7 +395,7 @@ public sealed class TransactionResolutionTests
 
         Assert.Equal(first.Players[0].Cash, second.Players[0].Cash);
         Assert.Equal(first.FindGang(new GangId(10))!.WeaponItemId, second.FindGang(new GangId(10))!.WeaponItemId);
-        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+        Assert.Equal(first.PhaseHashes[^1].Fingerprint, second.PhaseHashes[^1].Fingerprint);
     }
 
     [Fact]

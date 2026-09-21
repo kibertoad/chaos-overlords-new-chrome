@@ -43,8 +43,8 @@ public sealed partial class NativeSaveSerializerTests
 
         Assert.Equal(new PlayerId(0), original.FindSite(1)!.InfluencedBy);
         Assert.Equal(original.FindSite(1)!.InfluencedBy, restored.FindSite(1)!.InfluencedBy);
-        Assert.Equal(MatchStateHasher.ComputeSha256(original),
-            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(original),
+            MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(SaveBytes(original), SaveBytes(restored));
     }
 

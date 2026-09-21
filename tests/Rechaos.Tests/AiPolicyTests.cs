@@ -98,10 +98,8 @@ public sealed class AiPolicyTests
         var original = IdleMatch(AiPolicyMode.Original);
         var advanced = IdleMatch(AiPolicyMode.Advanced);
 
-        Assert.NotEqual(MatchStateHasher.ComputeSha256(original),
-            MatchStateHasher.ComputeSha256(advanced));
-        Assert.Equal(MatchStateHasher.ComputeVersionTwentyFiveSha256(original),
-            MatchStateHasher.ComputeVersionTwentyFiveSha256(advanced));
+        Assert.NotEqual(MatchStateHasher.ComputeFingerprint(original),
+            MatchStateHasher.ComputeFingerprint(advanced));
     }
 
     [Fact]
