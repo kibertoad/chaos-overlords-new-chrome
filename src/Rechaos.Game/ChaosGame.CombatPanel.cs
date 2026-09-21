@@ -43,21 +43,6 @@ public sealed partial class ChaosGame
             CombatPanelLayout.SectorCodeText.ToVector2(), Color.Lime, 1);
     }
 
-    private static GameEvent? EventBySequence(IReadOnlyList<GameEvent> events, long sequence)
-    {
-        var low = 0;
-        var high = events.Count - 1;
-        while (low <= high)
-        {
-            var middle = low + ((high - low) / 2);
-            var found = events[middle].Sequence;
-            if (found == sequence) return events[middle];
-            if (found < sequence) low = middle + 1;
-            else high = middle - 1;
-        }
-        return null;
-    }
-
     private void DrawCombatant(
         SpriteBatch batch,
         Texture2D pixel,

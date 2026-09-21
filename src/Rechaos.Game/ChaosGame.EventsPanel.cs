@@ -364,14 +364,21 @@ public sealed partial class ChaosGame
     /// <summary>
     /// The event a notification points at.
     /// </summary>
+    private static GameEvent? RelatedEvent(MatchState state, GameNotification notification) =>
+        notification.RelatedEventSequence is { } sequence
+            ? EventBySequence(state.Events, sequence)
+            : null;
+
+    /// <summary>
+    /// The event carrying <paramref name="sequence"/>, or <c>null</c> when the log has no such event.
+    /// </summary>
     /// <remarks>
-    /// Binary search rather than a linear scan: the list is append-only in sequence order, never
-    /// trimmed, and this is asked once per drawn report on screens that redraw every frame.
+    /// Binary search rather than a linear scan: the log is append-only in ascending sequence order,
+    /// never trimmed, and the screens that ask this redraw every frame. <c>MatchState</c> maintains
+    /// that ordering on both append and restore, so every caller shares this one lookup.
     /// </remarks>
-    private static GameEvent? RelatedEvent(MatchState state, GameNotification notification)
+    private static GameEvent? EventBySequence(IReadOnlyList<GameEvent> events, long sequence)
     {
-        if (notification.RelatedEventSequence is not { } sequence) return null;
-        var events = state.Events;
         var low = 0;
         var high = events.Count - 1;
         while (low <= high)
