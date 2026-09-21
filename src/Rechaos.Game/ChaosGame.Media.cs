@@ -252,6 +252,9 @@ public sealed partial class ChaosGame
 
     protected override void UnloadContent()
     {
+        // Do not let the process exit between a completed turn and its rolling snapshot reaching
+        // disk. This runs only during shutdown; frame-time work remains on the background worker.
+        ProcessCompletedAutoSaves(waitForCompletion: true);
         DisposeIntroMovie();
         DisposeSoundtrack();
         foreach (var sound in _combatSounds.Values) sound.Dispose();

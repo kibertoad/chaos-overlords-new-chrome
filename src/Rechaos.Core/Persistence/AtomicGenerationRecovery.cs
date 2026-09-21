@@ -25,7 +25,8 @@ internal static class AtomicGenerationRecovery
         string backupSuffix,
         string unreadableMessage,
         Action<Stream> write,
-        Action<string> load)
+        Action<string> load,
+        bool trustExistingPrimary = false)
     {
         Directory.CreateDirectory(directory);
         var temporaryPath = Path.Combine(
@@ -52,7 +53,10 @@ internal static class AtomicGenerationRecovery
             {
                 File.Move(temporaryPath, fullPath);
             }
-            else if (IsWorthKeeping(fullPath, load))
+            // The rolling autosave reaches this path only after this process has already written
+            // and verified the primary itself. It can keep that generation with File.Replace
+            // without paying another full deserialization just to prove what it already knows.
+            else if (trustExistingPrimary || IsWorthKeeping(fullPath, load))
             {
                 File.Replace(temporaryPath, fullPath, fullPath + backupSuffix);
             }

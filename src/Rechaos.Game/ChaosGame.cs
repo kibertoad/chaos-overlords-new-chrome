@@ -38,6 +38,10 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly string _multiplayerRecoveryPath;
     private readonly bool _debugPhaseStepping;
     private readonly RuntimeDiagnostics? _diagnostics;
+    private Task? _autoSaveTask;
+    private AutoSaveSnapshot? _pendingAutoSave;
+    private int? _activeAutoSaveTurn;
+    private bool _autoSavePrimaryVerifiedByThisProcess;
     private SpriteBatch? _batch;
     private Texture2D? _pixel;
     private Texture2D? _titleBackground;
@@ -391,6 +395,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 
     protected override void Update(GameTime gameTime)
     {
+        ProcessCompletedAutoSaves(waitForCompletion: false);
         _inputTime = gameTime.TotalGameTime;
         var keyboard = Keyboard.GetState();
         var mouse = Mouse.GetState();

@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 
@@ -86,19 +87,83 @@ public sealed partial class ChaosGame
         if (_state is null) return;
         try
         {
-            NativeSaveStore.SaveAtomic(_autoSavePath, _state);
+            QueueAutoSave(new AutoSaveSnapshot(
+                NativeSaveStore.Serialize(_state), _state.Definitions, _state.Coordinator.Turn));
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException
                                           or UnauthorizedAccessException)
         {
-            _diagnostics?.Write("autosave.failed", new Dictionary<string, string?>
-            {
-                ["turn"] = _state.Coordinator.Turn.ToString(),
-                ["error"] = exception.ToString()
-            });
-            _message = "AUTOSAVE FAILED";
+            ReportAutoSaveFailure(_state.Coordinator.Turn, exception);
         }
     }
+
+    /// <summary>
+    /// Starts one durable autosave worker, retaining only the latest turn captured while it runs.
+    /// </summary>
+    /// <remarks>
+    /// The capture happens on the game thread because the state mutates there. All filesystem
+    /// work, including the round-trip validation, happens on a worker and never races another
+    /// write to this path.
+    /// </remarks>
+    private void QueueAutoSave(AutoSaveSnapshot snapshot)
+    {
+        ProcessCompletedAutoSaves(waitForCompletion: false);
+        if (_autoSaveTask is not null)
+        {
+            _pendingAutoSave = snapshot;
+            return;
+        }
+
+        StartAutoSave(snapshot);
+    }
+
+    private void StartAutoSave(AutoSaveSnapshot snapshot)
+    {
+        _activeAutoSaveTurn = snapshot.Turn;
+        var trustExistingPrimary = _autoSavePrimaryVerifiedByThisProcess;
+        _autoSaveTask = Task.Run(() => NativeSaveStore.SaveAtomic(
+            _autoSavePath, snapshot.Bytes, snapshot.Definitions, trustExistingPrimary));
+    }
+
+    /// <summary>Observes completed autosaves and starts the newest pending capture, if any.</summary>
+    private void ProcessCompletedAutoSaves(bool waitForCompletion)
+    {
+        while (_autoSaveTask is not null && (waitForCompletion || _autoSaveTask.IsCompleted))
+        {
+            var completedTurn = _activeAutoSaveTurn ?? -1;
+            try
+            {
+                _autoSaveTask.GetAwaiter().GetResult();
+                _autoSavePrimaryVerifiedByThisProcess = true;
+            }
+            catch (Exception exception) when (exception is IOException or InvalidDataException
+                                              or UnauthorizedAccessException)
+            {
+                ReportAutoSaveFailure(completedTurn, exception);
+            }
+            finally
+            {
+                _autoSaveTask = null;
+                _activeAutoSaveTurn = null;
+            }
+
+            if (_pendingAutoSave is not { } pending) continue;
+            _pendingAutoSave = null;
+            StartAutoSave(pending);
+        }
+    }
+
+    private void ReportAutoSaveFailure(int turn, Exception exception)
+    {
+        _diagnostics?.Write("autosave.failed", new Dictionary<string, string?>
+        {
+            ["turn"] = turn.ToString(),
+            ["error"] = exception.ToString()
+        });
+        _message = "AUTOSAVE FAILED";
+    }
+
+    private sealed record AutoSaveSnapshot(byte[] Bytes, OriginalData Definitions, int Turn);
 
     private void AdvanceDebugPhase()
     {
