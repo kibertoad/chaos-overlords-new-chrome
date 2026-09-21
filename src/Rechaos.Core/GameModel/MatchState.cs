@@ -219,8 +219,9 @@ public sealed class MatchSectorState
         Owner = owner;
         Tolerance = tolerance;
         LegacyChaos = chaos;
+        // Only a newly activated sector needs the minimum; restores preserve a decayed duration.
         CrackdownTurnsRemaining = crackdownActive
-            ? Math.Max(ManualRules.MinimumCrackdownTurns, crackdownTurnsRemaining)
+            ? crackdownTurnsRemaining > 0 ? crackdownTurnsRemaining : ManualRules.MinimumCrackdownTurns
             : 0;
         IsImportant = isImportant;
         Income = income;

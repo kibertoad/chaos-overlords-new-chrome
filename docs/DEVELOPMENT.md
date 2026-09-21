@@ -73,6 +73,7 @@ number; see [RELEASING.md](RELEASING.md).
 - `Rechaos.Core`: original-data parsers and platform-independent game state.
 - `Rechaos.Extractor`: validates and transforms legally owned source assets.
 - `Rechaos.Tools`: compares sanitized state captures.
+- `Rechaos.SnapshotInspector`: validates an exported online snapshot and optionally replays an exported sealed-order timeline against its recorded hashes. It is deliberately offline: acquire production exports through the deployment runbook, then run `dotnet run --project tools/Rechaos.SnapshotInspector -- <snapshot-base64.txt> [sealed-orders.json]`.
 - `Rechaos.Game`: MonoGame DesktopGL client.
 - `Rechaos.Tests`: format, gameplay, persistence, extractor, and UI tests.
 
