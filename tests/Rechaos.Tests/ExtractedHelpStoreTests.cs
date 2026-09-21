@@ -83,16 +83,26 @@ public sealed class ExtractedHelpStoreTests : IDisposable
     }
 
     [Fact]
-    public void StyledHelpWrapMergesLongRunsWithoutChangingTheirFormatting()
+    public void StyledHelpWrapMergesAdjacentRunsAndSplitsThemMidRun()
     {
-        var topic = new ExtractedHelpTopic(0, "Topic", "ABCDEFGHIJ", true, 0,
-            [new ExtractedHelpTextRun("ABCDEFGHIJ", Italic: true)]);
+        var topic = new ExtractedHelpTopic(0, "Topic", "ABCDEFGHIJKLMNOPQ", true, 0,
+        [
+            new ExtractedHelpTextRun("ABCDE", Bold: true),
+            new ExtractedHelpTextRun("FGHIJ", Bold: true),
+            new ExtractedHelpTextRun("KLMNOPQ", Italic: true)
+        ]);
 
-        var line = Assert.Single(HelpTextLayout.Wrap(topic, 20));
+        var lines = HelpTextLayout.Wrap(topic, 12);
 
-        var run = Assert.Single(line.Runs);
-        Assert.Equal("ABCDEFGHIJ", run.Text);
-        Assert.True(run.Italic);
+        Assert.Equal(["ABCDEFGHIJKL", "MNOPQ"], lines.Select(line => line.Text));
+        Assert.Equal(["ABCDEFGHIJ", "KL"], lines[0].Runs.Select(run => run.Text));
+        Assert.True(lines[0].Runs[0].Bold);
+        Assert.False(lines[0].Runs[0].Italic);
+        Assert.True(lines[0].Runs[1].Italic);
+        Assert.False(lines[0].Runs[1].Bold);
+        var tail = Assert.Single(lines[1].Runs);
+        Assert.Equal("MNOPQ", tail.Text);
+        Assert.True(tail.Italic);
     }
 
     [Fact]
