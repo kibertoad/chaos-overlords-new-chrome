@@ -99,11 +99,17 @@ public static class SaveSlotCatalog
                 ? File.GetLastWriteTimeUtc(path)
                 : File.GetLastWriteTimeUtc(path + NativeSaveStore.BackupSuffix),
             TimeSpan.Zero);
+        // A current sidecar is all the browser needs. Do not deserialize a multi-megabyte match
+        // merely to draw its row; the full validation happens when the player chooses to load it.
+        var metadata = ReadMetadata(path);
+        if (File.Exists(path) && metadata is not null
+            && metadata.Matches(path)
+            && metadata.ToSummary(row, timestamp) is { } summary)
+            return summary;
         try
         {
             var recovered = NativeSaveStore.LoadRecoveringBackup(
                 path, definitions, repairPrimary: false);
-            var metadata = ReadMetadata(path);
             return Summarize(
                 row, metadata?.Name, timestamp, recovered.State, metadata?.Online ?? false,
                 recovered.RecoveredFromBackup, recovered.PrimaryRepaired);
@@ -154,9 +160,21 @@ public static class SaveSlotCatalog
         NativeSaveStore.SaveAtomic(path, state);
         var timestamp = new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
         var finalName = string.IsNullOrWhiteSpace(name) ? SuggestedName(state) : name.Trim();
-        WriteMetadata(path, new SaveSlotMetadata(finalName, online));
+        var summary = Summarize(slot, finalName, timestamp, state, online);
+        WriteMetadata(path, SaveSlotMetadata.From(summary, path));
         WriteJournal(path, journal);
-        return Summarize(slot, finalName, timestamp, state, online);
+        return summary;
+    }
+
+    /// <summary>Writes the rolling autosave's browser sidecar after its primary is durable.</summary>
+    public static void WriteAutoSaveMetadata(string path, MatchState state)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(state);
+        if (!File.Exists(path)) return;
+        var timestamp = new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
+        WriteMetadata(path, SaveSlotMetadata.From(
+            Summarize(AutoSaveRow, "AUTOSAVE", timestamp, state, online: false), path));
     }
 
     public static MatchState Load(
@@ -226,7 +244,7 @@ public static class SaveSlotCatalog
     /// The slot's display name, or null when the sidecar is missing or damaged.
     /// </summary>
     /// <remarks>
-    /// The sidecar is forty bytes of decoration beside a megabyte of match. A zero-length one, which
+    /// The sidecar is small browser data beside a megabyte of match. A zero-length one, which
     /// is what a power cut used to leave behind, made the whole slot list as empty and refuse to
     /// load, so the save the player actually wanted was hidden by its own label.
     /// </remarks>
@@ -285,5 +303,30 @@ public static class SaveSlotCatalog
         if (slot is < 0 or >= SlotCount) throw new ArgumentOutOfRangeException(nameof(slot));
     }
 
-    private sealed record SaveSlotMetadata(string Name, bool Online);
+    private sealed record SaveSlotMetadata(
+        string? Name,
+        bool? Online,
+        long? SaveLength,
+        long? SaveWriteUtcTicks,
+        ScenarioId? Scenario,
+        int? HumanPlayers,
+        int? AiPlayers,
+        string? MatchType,
+        AiPolicyMode? AiPolicy)
+    {
+        public static SaveSlotMetadata From(SaveSlotSummary summary, string path) => new(
+            summary.Name, summary.MatchType == "ONLINE", new FileInfo(path).Length,
+            File.GetLastWriteTimeUtc(path).Ticks, summary.Scenario, summary.HumanPlayers,
+            summary.AiPlayers, summary.MatchType, summary.AiPolicy);
+
+        public bool Matches(string path) => SaveLength == new FileInfo(path).Length
+                                            && SaveWriteUtcTicks == File.GetLastWriteTimeUtc(path).Ticks;
+
+        public SaveSlotSummary? ToSummary(int row, DateTimeOffset timestamp) =>
+            Name is { Length: > 0 } name && Online is { } online && Scenario is { } scenario
+            && HumanPlayers is { } humans && AiPlayers is { } ai && MatchType is { Length: > 0 } matchType
+            && AiPolicy is { } aiPolicy
+                ? new SaveSlotSummary(row, name, timestamp, scenario, humans, ai, matchType, aiPolicy)
+                : null;
+    }
 }

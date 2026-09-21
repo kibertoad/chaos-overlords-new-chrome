@@ -87,6 +87,7 @@ public sealed partial class ChaosGame
         try
         {
             NativeSaveStore.SaveAtomic(_autoSavePath, _state);
+            SaveSlotCatalog.WriteAutoSaveMetadata(_autoSavePath, _state);
         }
         catch (Exception exception) when (exception is IOException or InvalidDataException
                                           or UnauthorizedAccessException)
