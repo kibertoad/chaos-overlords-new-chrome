@@ -88,55 +88,31 @@ public static class MatchOutcomeEvaluator
                 .OrderBy(player => player.Value)
                 .ToArray();
             if (survivingOpponents.Length > 0)
-                return new MatchOutcome(
-                    state.Setup.Scenario,
-                    MatchEndReason.PlayerEliminated,
-                    state.Coordinator.Turn,
-                    survivingOpponents,
-                    EndgameRankingEvaluator.Evaluate(state),
-                    EndgameAwardEvaluator.Evaluate(state));
+                return Conclude(state, MatchEndReason.PlayerEliminated, survivingOpponents);
         }
         var activePlayers = state.Players
             .Where(player => player.Status == PlayerStatus.Active)
             .ToArray();
         if (activePlayers.Length == 1)
-        {
-            return new MatchOutcome(
-                state.Setup.Scenario,
-                MatchEndReason.PlayerEliminated,
-                state.Coordinator.Turn,
-                [activePlayers[0].Id],
-                EndgameRankingEvaluator.Evaluate(state),
-                EndgameAwardEvaluator.Evaluate(state));
-        }
+            return Conclude(state, MatchEndReason.PlayerEliminated, [activePlayers[0].Id]);
         // Nobody left: the last two Right Hands can destroy each other in one Combat pass, and both
         // owners are eliminated together. The match is over and no one won it. Without this the
         // evaluator answered null and the board sat there for good, or the time limit produced an
         // outcome with no winner in it and the match-ended event threw on the empty list.
         if (activePlayers.Length == 0)
-        {
-            return new MatchOutcome(
-                state.Setup.Scenario,
-                MatchEndReason.PlayerEliminated,
-                state.Coordinator.Turn,
-                [],
-                EndgameRankingEvaluator.Evaluate(state),
-                EndgameAwardEvaluator.Evaluate(state));
-        }
+            return Conclude(state, MatchEndReason.PlayerEliminated, []);
 
         var definition = ScenarioCatalog.Get(state.Setup.Scenario);
         if (definition.IsTimed)
         {
             if (state.Coordinator.Turn < ScenarioCatalog.Turns(state.Setup.Duration)) return null;
             var standings = EndgameRankingEvaluator.Evaluate(state);
-            return new MatchOutcome(
-                state.Setup.Scenario,
+            return Conclude(
+                state,
                 MatchEndReason.TimeLimit,
-                state.Coordinator.Turn,
                 standings.Where(standing => standing.Place == 1)
                     .Select(standing => standing.Player).ToArray(),
-                standings,
-                EndgameAwardEvaluator.Evaluate(state));
+                standings);
         }
 
         var winners = state.Players
@@ -147,14 +123,24 @@ public static class MatchOutcomeEvaluator
             .ToArray();
         return winners.Length == 0
             ? null
-            : new MatchOutcome(
-                state.Setup.Scenario,
-                MatchEndReason.ObjectiveCompleted,
-                state.Coordinator.Turn,
-                winners,
-                EndgameRankingEvaluator.Evaluate(state),
-                EndgameAwardEvaluator.Evaluate(state));
+            : Conclude(state, MatchEndReason.ObjectiveCompleted, winners);
     }
+
+    /// <summary>
+    /// The outcome for this turn: the winners as given, then the standings (evaluated here unless
+    /// the caller already ranked the players to pick the winners), then the awards.
+    /// </summary>
+    private static MatchOutcome Conclude(
+        MatchState state,
+        MatchEndReason reason,
+        IReadOnlyList<PlayerId> winners,
+        IReadOnlyList<MatchStanding>? standings = null) => new(
+        state.Setup.Scenario,
+        reason,
+        state.Coordinator.Turn,
+        winners,
+        standings ?? EndgameRankingEvaluator.Evaluate(state),
+        EndgameAwardEvaluator.Evaluate(state));
 
     public static PlayerScoreState Project(MatchState state, MatchPlayerState player)
     {
