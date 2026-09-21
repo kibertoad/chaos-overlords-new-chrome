@@ -10,6 +10,22 @@ namespace Rechaos.Tests;
 
 public sealed class MatchStateCloneTests
 {
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void OnlineSnapshotPreservesDecayedActiveCrackdownDuration(int remaining)
+    {
+        var definitions = BundledOriginalData.Load();
+        var state = State(definitions);
+        state.Sectors[29].CrackdownTurnsRemaining = remaining;
+
+        var restored = MatchStateClone.Of(state, definitions);
+
+        Assert.Equal(remaining, restored.Sectors[29].CrackdownTurnsRemaining);
+        Assert.True(restored.Sectors[29].CrackdownActive);
+        Assert.Equal(MatchStateHasher.ComputeSha256(state), MatchStateHasher.ComputeSha256(restored));
+    }
+
     [Fact]
     public void OnlineSnapshotIsCompressedAndRoundTrips()
     {
