@@ -109,7 +109,7 @@ public sealed partial class ChaosGame
         {
             var gang = state.FindGang(entry.id);
             if (gang is null) continue;
-            var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
+            var definition = state.Definitions.Gang(gang.DefinitionId);
             var stats = _showBaseStatistics
                 ? EffectiveStatistics.From(definition.Stats)
                 : EffectiveStatisticsCalculator.ForGang(state, gang);

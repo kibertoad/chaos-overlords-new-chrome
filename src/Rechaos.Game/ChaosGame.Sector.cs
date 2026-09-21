@@ -150,7 +150,7 @@ public sealed partial class ChaosGame
 
     private void DrawSectorDetails(SpriteBatch batch, Texture2D pixel, PixelFont font, MatchState state)
     {
-        DrawBoard(batch, pixel, font, state);
+        DrawBoard(batch, pixel, font, state, drawMapLayer: false);
         batch.Draw(pixel, new Rectangle(0, 42, 438, 418), Color.Black);
         DrawSectorSideRail(batch, pixel, font);
         var sector = state.Sectors[_cursor];
@@ -159,7 +159,7 @@ public sealed partial class ChaosGame
         DrawSectorNeighborhood(batch, pixel, font, state);
         foreach (var site in sector.Sites)
         {
-            var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+            var definition = state.Definitions.Site(site.DefinitionId);
             var portrait = SectorDetailLayout.SitePortrait(site.Slot);
             var controlOwner = SiteControlRules.Controller(sector, site);
             if (_sitePortraits is not null)
@@ -512,7 +512,7 @@ public sealed partial class ChaosGame
             font.Draw(batch, label, new Vector2(strip.X + 2, strip.Y + 1), Color.Lime, 1);
         }
 
-        var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
+        var definition = state.Definitions.Gang(gang.DefinitionId);
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, SectorGangCardLayout.Portrait(slot),
                 OriginalSpriteLayout.GangPortrait(definition.Id), Color.White);
