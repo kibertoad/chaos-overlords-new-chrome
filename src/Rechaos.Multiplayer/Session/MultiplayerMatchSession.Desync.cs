@@ -173,7 +173,7 @@ public sealed partial class MultiplayerMatchSession
     /// Every turn it passes through is re-reported, because the server waits for a report from
     /// every human seat and an earlier turn left unsettled blocks every later repair. Reports for
     /// turns already confirmed are refused with <c>turn_confirmed</c>, which
-    /// <see cref="ReportAsync"/> reads as the success it is.
+    /// <see cref="SendReportAsync"/> reads as the success it is.
     /// </para>
     /// </remarks>
     private async Task AdoptRepairAsync(SnapshotView snapshot, CancellationToken cancellationToken)
@@ -191,7 +191,7 @@ public sealed partial class MultiplayerMatchSession
         // Seals reconstructed before this repair are superseded by the turns just replayed.
         _unreportedSeals.Clear();
         foreach (var (turn, stateHash) in settled)
-            await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
+            await QueueReportAsync(turn, stateHash).WaitAsync(cancellationToken).ConfigureAwait(false);
         var current = MatchStateHasher.ComputeFingerprint(_replay.State);
         var (state, planning) = HandOver();
         _notices.Enqueue(new MultiplayerNotice.Resynced(snapshot.Turn, state, current, planning));

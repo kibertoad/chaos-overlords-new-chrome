@@ -98,7 +98,8 @@ public sealed partial class MultiplayerMatchSession
             // In turn order. The turn a report is missing from is the turn the barrier is waiting
             // on, and an earlier one left unsettled blocks every later desync repair.
             foreach (var seal in _unreportedSeals.OrderBy(item => item.Turn).ToArray())
-                await ReportAsync(seal.Turn, seal.StateHash, cancellationToken).ConfigureAwait(false);
+                await QueueReportAsync(seal.Turn, seal.StateHash).WaitAsync(cancellationToken)
+                    .ConfigureAwait(false);
             _unreportedSeals.Clear();
             // The reports may have finished the match; re-read rather than judge it on the view
             // that was fetched before they were sent.
@@ -229,7 +230,11 @@ public sealed partial class MultiplayerMatchSession
         }
     }
 
-    /// <summary>Swallows the result of a prefetch nothing is going to read.</summary>
+    /// <summary>Swallows the result of a task nothing is going to read.</summary>
+    /// <remarks>
+    /// A prefetch a replay abandoned, and the queued state-hash report the pump hands off so
+    /// that a resolved turn reaches the player without waiting for the round trip.
+    /// </remarks>
     private static void Forget(Task task) =>
         _ = task.ContinueWith(
             static finished => _ = finished.Exception,

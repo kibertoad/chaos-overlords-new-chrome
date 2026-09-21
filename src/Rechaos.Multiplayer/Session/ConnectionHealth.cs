@@ -6,10 +6,11 @@ namespace Rechaos.Multiplayer.Session;
 /// <remarks>
 /// <para>
 /// Each loop that retries on its own — the event stream, the calls a received fact leads to, the
-/// order outbox — reports into a <see cref="Lane"/> of its own. The combined answer is connected
-/// only when every lane is, so a submission that lands while the stream is still down does not
-/// announce a recovery the player will watch fail again a second later; and the detail shown is
-/// whichever lane is failing, because that is the one with something to say.
+/// order outbox, the state-hash reporter — reports into a <see cref="Lane"/> of its own. The
+/// combined answer is connected only when every lane is, so a submission that lands while the
+/// stream is still down does not announce a recovery the player will watch fail again a second
+/// later; and the detail shown is whichever lane is failing, because that is the one with
+/// something to say.
 /// </para>
 /// <para>
 /// Transitions are what the callback hears: a failure every time, because each attempt is a line
