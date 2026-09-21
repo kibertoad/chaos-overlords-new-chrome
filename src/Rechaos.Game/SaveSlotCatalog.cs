@@ -89,21 +89,31 @@ public static class SaveSlotCatalog
             ? summary with { Name = "AUTOSAVE" }
             : null;
 
+    /// <remarks>
+    /// Every question about the two files is answered from one stat each, taken up front:
+    /// <see cref="FileInfo"/> caches what it read, so existence, timestamp and the sidecar's
+    /// staleness check cannot contradict each other, and none of them throws when a file is
+    /// deleted underneath the listing. Asking the file system a second time could, and a
+    /// <see cref="FileNotFoundException"/> from the staleness check escaped this method entirely
+    /// — past the catch that degrades a row to <see cref="SaveSlotStatus.Unreadable"/>, and out
+    /// through the browser into the game loop.
+    /// </remarks>
     private static SaveSlotSummary? ReadFile(string path, int row, OriginalData definitions)
     {
-        if (!File.Exists(path) && !File.Exists(path + NativeSaveStore.BackupSuffix)) return null;
+        var primary = new FileInfo(path);
+        var backup = new FileInfo(path + NativeSaveStore.BackupSuffix);
+        if (!primary.Exists && !backup.Exists) return null;
         // The backup's own time when the primary is not there. Asking the file system for a file
         // that is missing answers 1601-01-01, which the browser would show and sort the row by.
         var timestamp = new DateTimeOffset(
-            File.Exists(path)
-                ? File.GetLastWriteTimeUtc(path)
-                : File.GetLastWriteTimeUtc(path + NativeSaveStore.BackupSuffix),
-            TimeSpan.Zero);
-        // A current sidecar is all the browser needs. Do not deserialize a multi-megabyte match
-        // merely to draw its row; the full validation happens when the player chooses to load it.
+            (primary.Exists ? primary : backup).LastWriteTimeUtc, TimeSpan.Zero);
+        // A current sidecar this build wrote is all the browser needs. Do not deserialize a
+        // multi-megabyte match merely to draw its row; the full validation happens when the player
+        // chooses to load it.
         var metadata = ReadMetadata(path);
-        if (File.Exists(path) && metadata is not null
-            && metadata.Matches(path)
+        if (primary.Exists && metadata is not null
+            && metadata.Matches(primary)
+            && metadata.WrittenByThisBuild(definitions)
             && metadata.ToSummary(row, timestamp) is { } summary)
             return summary;
         try
@@ -161,7 +171,7 @@ public static class SaveSlotCatalog
         var timestamp = new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
         var finalName = string.IsNullOrWhiteSpace(name) ? SuggestedName(state) : name.Trim();
         var summary = Summarize(slot, finalName, timestamp, state, online);
-        WriteMetadata(path, SaveSlotMetadata.From(summary, path));
+        WriteMetadata(path, summary, state.Definitions);
         WriteJournal(path, journal);
         return summary;
     }
@@ -171,10 +181,12 @@ public static class SaveSlotCatalog
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentNullException.ThrowIfNull(state);
-        if (!File.Exists(path)) return;
-        var timestamp = new DateTimeOffset(File.GetLastWriteTimeUtc(path), TimeSpan.Zero);
-        WriteMetadata(path, SaveSlotMetadata.From(
-            Summarize(AutoSaveRow, "AUTOSAVE", timestamp, state, online: false), path));
+        var file = new FileInfo(path);
+        if (!file.Exists) return;
+        var timestamp = new DateTimeOffset(file.LastWriteTimeUtc, TimeSpan.Zero);
+        WriteMetadata(
+            path, Summarize(AutoSaveRow, "AUTOSAVE", timestamp, state, online: false),
+            state.Definitions);
     }
 
     public static MatchState Load(
@@ -266,12 +278,22 @@ public static class SaveSlotCatalog
 
     /// <summary>Writes the sidecar the way every other store writes a file, and never fails a save.</summary>
     /// <returns>Whether the sidecar was written.</returns>
-    private static bool WriteMetadata(string savePath, SaveSlotMetadata metadata)
+    /// <remarks>
+    /// The sidecar is built inside the guard rather than handed in ready-made: describing the save
+    /// means asking the file system for its length and write time, which throws when the save is
+    /// no longer there. A save already on disk must not be reported as failed — leaving the
+    /// previous match's journal paired with it — because its small companion could not be
+    /// described.
+    /// </remarks>
+    private static bool WriteMetadata(
+        string savePath, SaveSlotSummary summary, OriginalData definitions)
     {
         var path = MetadataPath(savePath);
         var temporary = $"{path}.{Guid.NewGuid():N}.tmp";
         try
         {
+            if (SaveSlotMetadata.From(summary, savePath, definitions) is not { } metadata)
+                return false;
             using (var stream = new FileStream(
                        temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None,
                        bufferSize: 4096, FileOptions.WriteThrough))
@@ -303,6 +325,15 @@ public static class SaveSlotCatalog
         if (slot is < 0 or >= SlotCount) throw new ArgumentOutOfRangeException(nameof(slot));
     }
 
+    /// <param name="SaveLength">The save's length when this was written, for the staleness check.</param>
+    /// <param name="SaveWriteUtcTicks">The save's write time when this was written.</param>
+    /// <param name="FormatVersion">The save format the writing build spoke.</param>
+    /// <param name="DefinitionsSha256">The bundled definitions the writing build played with.</param>
+    /// <remarks>
+    /// Every member is nullable and unmapped ones are ignored, so a sidecar from a build that
+    /// wrote fewer fields still deserializes and simply fails the checks below, which costs a full
+    /// load of that one slot and nothing else.
+    /// </remarks>
     private sealed record SaveSlotMetadata(
         string? Name,
         bool? Online,
@@ -312,15 +343,47 @@ public static class SaveSlotCatalog
         int? HumanPlayers,
         int? AiPlayers,
         string? MatchType,
-        AiPolicyMode? AiPolicy)
+        AiPolicyMode? AiPolicy,
+        int? FormatVersion = null,
+        string? DefinitionsSha256 = null)
     {
-        public static SaveSlotMetadata From(SaveSlotSummary summary, string path) => new(
-            summary.Name, summary.MatchType == "ONLINE", new FileInfo(path).Length,
-            File.GetLastWriteTimeUtc(path).Ticks, summary.Scenario, summary.HumanPlayers,
-            summary.AiPlayers, summary.MatchType, summary.AiPolicy);
+        /// <summary>The sidecar for a save, or null when the save is no longer there to describe.</summary>
+        public static SaveSlotMetadata? From(
+            SaveSlotSummary summary, string path, OriginalData definitions)
+        {
+            var file = new FileInfo(path);
+            return file.Exists
+                ? new SaveSlotMetadata(
+                    summary.Name, summary.MatchType == "ONLINE", file.Length,
+                    file.LastWriteTimeUtc.Ticks, summary.Scenario, summary.HumanPlayers,
+                    summary.AiPlayers, summary.MatchType, summary.AiPolicy,
+                    NativeSaveSerializer.CurrentFormatVersion,
+                    NativeSaveSerializer.DefinitionsFingerprint(definitions))
+                : null;
+        }
 
-        public bool Matches(string path) => SaveLength == new FileInfo(path).Length
-                                            && SaveWriteUtcTicks == File.GetLastWriteTimeUtc(path).Ticks;
+        /// <summary>Whether the save still is the one this sidecar was written for.</summary>
+        public bool Matches(FileInfo file) => SaveLength == file.Length
+                                              && SaveWriteUtcTicks == file.LastWriteTimeUtc.Ticks;
+
+        /// <summary>
+        /// Whether the save this sidecar describes is one this build could load.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="Matches"/> proves only that the file has not been edited since; it says
+        /// nothing about the build that wrote it. A save from a newer format version, or written
+        /// against other bundled definitions, is byte-identical on disk and its sidecar is as
+        /// current as any other, so without this the browser drew an unloadable slot as a playable
+        /// row with real-looking match details: the cursor parked on it, and choosing it reported a
+        /// generic failure rather than <see cref="SaveSlotStatus.Incompatible"/>. Anything this
+        /// build did not write falls back to the full load, which is what classifies it.
+        /// </remarks>
+        public bool WrittenByThisBuild(OriginalData definitions) =>
+            FormatVersion == NativeSaveSerializer.CurrentFormatVersion
+            && DefinitionsSha256 is { Length: > 0 } fingerprint
+            && string.Equals(
+                fingerprint, NativeSaveSerializer.DefinitionsFingerprint(definitions),
+                StringComparison.OrdinalIgnoreCase);
 
         public SaveSlotSummary? ToSummary(int row, DateTimeOffset timestamp) =>
             Name is { Length: > 0 } name && Online is { } online && Scenario is { } scenario
