@@ -22,11 +22,12 @@ namespace Rechaos.Multiplayer.Session;
 /// <see cref="TryDequeueNotice"/> each time a turn resolves.
 /// </para>
 /// <para>
-/// Two background tasks, and nothing else. The <em>pump</em> reads the log and acts on every fact,
+/// Three background tasks, and nothing else. The <em>pump</em> reads the log and acts on every fact,
 /// so the order in which turns are applied is the order the log delivered them. The <em>outbox</em>
-/// sends this player's order document, so a game loop never waits on a round trip. Both answer
-/// through the notice queue, which the game thread drains, and either one failing for good stops
-/// the other: there is no half-alive session that reads turns it can no longer answer.
+/// sends this player's order document, and the <em>reporter</em> sends resolved-turn hashes, so a
+/// game loop never waits on a round trip. All answer through the notice queue, which the game
+/// thread drains, and any one failing for good stops the others: there is no half-alive session
+/// that reads turns it can no longer answer.
 /// </para>
 /// <para>
 /// Nothing here ends a match because the network hiccuped. Every call a received fact leads to is
@@ -68,6 +69,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private MatchReplayRecorder _replay;
     private Task? _pump;
     private Task? _outbox;
+    private Task? _reporter;
     private Task? _disposal;
     private int _failed;
     private string? _pumpOperation;
@@ -142,6 +144,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         _streamLane = _health.Open("stream");
         _pumpLane = _health.Open("pump");
         _outboxLane = _health.Open("outbox");
+        _reportLane = _health.Open("report");
         Bootstrap = new MatchBootstrap(
             MatchStateClone.Of(replay.State, options.Definitions),
             ParseInstant(options.View.Turn?.DeadlineAt));
@@ -221,6 +224,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             options, replay, self, SeatedSlots(view.Players), isRestoring);
         session._pump = Task.Run(() => session.RunPumpAsync(session._stoppingToken));
         session._outbox = Task.Run(() => session.RunOutboxAsync(session._stoppingToken));
+        session._reporter = Task.Run(() => session.RunReporterAsync(session._stoppingToken));
         return session;
     }
 
@@ -327,7 +331,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private async Task DisposeCoreAsync()
     {
         await _stopping.CancelAsync().ConfigureAwait(false);
-        foreach (var task in new[] { _pump, _outbox })
+        foreach (var task in new[] { _pump, _outbox, _reporter })
         {
             if (task is null) continue;
             try
@@ -341,6 +345,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         }
         _stopping.Dispose();
         _outboxSignal.Dispose();
+        _reportSignal.Dispose();
     }
 
     /// <summary>
@@ -479,10 +484,15 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         var (stateHash, includedOwnOrders) = await FetchAndApplySealedTurnAsync(
                 turn, announcedOrderSetHash, cancellationToken)
             .ConfigureAwait(false);
-        await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
         var (state, planning) = HandOver();
         _notices.Enqueue(new MultiplayerNotice.TurnResolved(
             turn, state, stateHash, includedOwnOrders, planning));
+        // A turn is locally safe to plan as soon as its sealed set has been verified and applied.
+        // The hash report is what tells the server whether peers agreed, but waiting for its HTTP
+        // response here made every new turn pay an avoidable round trip and held the event pump up
+        // behind a retry. The reporter retains the request in turn order and any desync it causes
+        // still arrives on this pump and closes the speculative plan immediately.
+        Forget(QueueReportAsync(turn, stateHash));
     }
 
     /// <summary>
@@ -649,7 +659,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     private volatile bool _ownSeatIsComputerControlled;
 
     /// <summary>
-    /// Reports this client's state hash for a settled turn.
+    /// Sends this client's already-queued state-hash report.
     /// </summary>
     /// <remarks>
     /// A turn the server has already confirmed is a success, not a failure. Since reports on settled
@@ -659,7 +669,7 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
     /// whose response was lost and therefore retried. The turn is confirmed either way, which is
     /// what this report was asking for.
     /// </remarks>
-    private async Task ReportAsync(int turn, string stateHash, CancellationToken cancellationToken)
+    private async Task SendReportAsync(PendingReport report, CancellationToken cancellationToken)
     {
         // A seat the server no longer counts as human has nothing to report. Carrying on and being
         // refused is how this used to surface, one 403 at a time.
@@ -668,13 +678,10 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
         {
             await CallAsync(
                 token => _match.ReportAsync(
-                    turn,
-                    new TurnReportRequest(
-                        stateHash,
-                        _replay.State.Outcome is not null,
-                        IsHost ? SummarizeSeats(_replay.State) : null),
+                    report.Turn,
+                    report.Request,
                     token),
-                _pumpLane,
+                _reportLane,
                 cancellationToken).ConfigureAwait(false);
         }
         catch (MultiplayerApiException exception) when (exception.Reason == "turn_confirmed")

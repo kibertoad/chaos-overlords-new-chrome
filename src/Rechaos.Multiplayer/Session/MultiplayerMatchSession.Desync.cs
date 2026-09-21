@@ -191,7 +191,7 @@ public sealed partial class MultiplayerMatchSession
         // Seals reconstructed before this repair are superseded by the turns just replayed.
         _unreportedSeals.Clear();
         foreach (var (turn, stateHash) in settled)
-            await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
+            await QueueReportAsync(turn, stateHash).WaitAsync(cancellationToken).ConfigureAwait(false);
         var current = MatchStateHasher.ComputeSha256(_replay.State);
         var (state, planning) = HandOver();
         _notices.Enqueue(new MultiplayerNotice.Resynced(snapshot.Turn, state, current, planning));
