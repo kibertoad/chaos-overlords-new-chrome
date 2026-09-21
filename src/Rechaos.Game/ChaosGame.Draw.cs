@@ -5,6 +5,17 @@ namespace Rechaos.Game;
 
 public sealed partial class ChaosGame
 {
+    /// <summary>
+    /// Spaces out redraws while the window has no focus; <see cref="Update"/> keeps its cadence.
+    /// </summary>
+    /// <remarks>
+    /// Returning false skips both <see cref="Draw"/> and the present for this tick, the same path
+    /// MonoGame takes when the graphics device is not ready, so the last presented frame stays on
+    /// screen until the cadence allows the next one.
+    /// </remarks>
+    protected override bool BeginDraw() =>
+        _backgroundRedrawCadence.ShouldRedraw(IsActive, _inputTime) && base.BeginDraw();
+
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(new Color(8, 10, 12));

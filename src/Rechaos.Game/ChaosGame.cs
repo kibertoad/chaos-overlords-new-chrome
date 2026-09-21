@@ -154,6 +154,7 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
     private readonly ComlinkCaretCadence _comlinkCaretCadence = new();
     private ComlinkSendButton? _pressedComlinkSendButton;
     private readonly ComlinkAlertCadence _comlinkAlertCadence = new();
+    private readonly BackgroundRedrawCadence _backgroundRedrawCadence = new();
     private string _comlinkStatus = string.Empty;
     private IReadOnlyList<GameCommand> _giveOptions = [];
     private int _giveCursor;
@@ -279,6 +280,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
             HardwareModeSwitch = false,
             IsFullScreen = _fullscreen
         };
+        // Ticking on without focus is what keeps background online notices, the planning timer and
+        // the autosave serviced; the redraw is the expensive part, and BeginDraw spaces that out
+        // instead. The sleep between inactive ticks doubles as the input poll gap, because every
+        // edge comes from comparing consecutive polled snapshots, so it stays far shorter than a
+        // click: a press and release that both landed inside one sleep would never be seen, and
+        // the click that raises the window would be swallowed.
+        InactiveSleepTime = TimeSpan.FromMilliseconds(20);
         IsMouseVisible = true;
         Window.AllowUserResizing = true;
         Window.Title = "Chaos Overlords: New Chrome";
