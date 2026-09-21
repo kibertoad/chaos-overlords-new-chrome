@@ -80,9 +80,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = visible.Count == 0
-            ? 0
-            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
         if (visibleWeight != 10)
         {
             PrepareFamilyThreeCashSiteOrTerritorial(
@@ -168,11 +166,7 @@ public static partial class AiTurnPlanner
                 state.AiPlanning.OlderAction(playerId, gangSlot)) is { } family)
             state.AiPlanning.SetFamily(playerId, gangSlot, family);
 
-        var turnsRemaining = Math.Max(0,
-            ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
-        if (OriginalAiFamilyThreeRules.ShouldTerminateForGreed(
-                state.Setup.Scenario, turnsRemaining))
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
+        TerminateForGreed(state, playerId, gangSlot);
     }
 
     private static void SetFamilyThreeInfluence(

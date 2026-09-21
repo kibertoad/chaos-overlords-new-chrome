@@ -52,9 +52,7 @@ internal static class OriginalAiFamilyTwoRules
 
     public static bool ShouldTerminateForGreed(
         ScenarioId scenario,
-        int turnsRemaining)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(turnsRemaining);
-        return scenario == ScenarioId.Greed && turnsRemaining < 4;
-    }
+        int turnsRemaining) =>
+        OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
+            scenario, turnsRemaining);
 }

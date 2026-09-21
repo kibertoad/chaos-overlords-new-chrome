@@ -82,8 +82,9 @@ internal static class OriginalAiObjectiveFamilyRules
         int targetForce,
         int targetCombat,
         int targetDefense) =>
-        (targetForce + targetCombat) / 4 - attackerDefense
-        <= attackerForce + attackerCombat - targetDefense;
+        OriginalAiFamilyTwelveRules.CanAttackSelectedTarget(
+            attackerForce, attackerCombat, attackerDefense,
+            targetForce, targetCombat, targetDefense);
 
     public static GangAction SelectContestedObjectiveResult(
         bool selectedTarget,

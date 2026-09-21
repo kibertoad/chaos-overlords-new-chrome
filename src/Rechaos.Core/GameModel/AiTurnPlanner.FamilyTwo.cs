@@ -11,9 +11,7 @@ public static partial class AiTurnPlanner
     {
         var player = state.FindPlayer(playerId)!;
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var sectorWeight = visible.Count == 0
-            ? 0
-            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+        var sectorWeight = FirstVisibleOpponentWeight(state, playerId, visible);
 
         if (OriginalAiEquipmentRules.SelectFamilyTwoUpgrade(
                 state, player, gang, gangSlot) is { } upgrade)
@@ -23,7 +21,7 @@ public static partial class AiTurnPlanner
                      gang.Force,
                      EffectiveStatisticsCalculator.ForGang(state, gang).Heal,
                      sectorWeight))
-            SetFamilyTwoAction(state, playerId, gangSlot, GangAction.Heal);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
         else if (state.Sectors[gang.SectorId].Owner == playerId)
             PrepareFamilyTwoMove(
                 state, playerId, gang, gangSlot, snapshot);
@@ -32,11 +30,7 @@ public static partial class AiTurnPlanner
                 state, playerId, gang, gangSlot, visible, sectorWeight, snapshot);
 
         ApplyFamilyTwoControlOverride(state, playerId, gang, gangSlot, visible);
-        var turnsRemaining = Math.Max(0,
-            ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
-        if (OriginalAiFamilyTwoRules.ShouldTerminateForGreed(
-                state.Setup.Scenario, turnsRemaining))
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
+        TerminateForGreed(state, playerId, gangSlot);
     }
 
     private static void PrepareFamilyTwoNonOwnedSector(
@@ -62,7 +56,7 @@ public static partial class AiTurnPlanner
             CanSoloControl(state, playerId, gang));
         if (action == GangAction.Control)
         {
-            SetFamilyTwoAction(state, playerId, gangSlot, action);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, action);
             return;
         }
         PrepareFamilyTwoMove(
@@ -115,7 +109,7 @@ public static partial class AiTurnPlanner
                 state.AiPlanning.PreviousAction(playerId, gangSlot),
                 state.AiStrategy.HasSectorCombatAdvantageHostility(state, playerId, owner)))
             return;
-        SetFamilyTwoAction(state, playerId, gangSlot, GangAction.Control);
+        SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Control);
     }
 
     private static void PrepareFamilyTwoMove(
@@ -145,15 +139,5 @@ public static partial class AiTurnPlanner
                 candidate.Controller == PlayerController.Human),
             scenarioStandings: OriginalAiScenarioStandingRules.Build(state));
         SetRecoveredFocusedMoveAction(state, playerId, gangSlot, target);
-    }
-
-    private static void SetFamilyTwoAction(
-        MatchState state,
-        PlayerId playerId,
-        int gangSlot,
-        GangAction action)
-    {
-        state.AiPlanning.SetPlannedAction(playerId, gangSlot, action);
-        state.AiPlanning.SetFocusValue(playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 }

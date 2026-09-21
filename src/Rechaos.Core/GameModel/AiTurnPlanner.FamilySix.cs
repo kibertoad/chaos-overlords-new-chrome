@@ -10,9 +10,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = visible.Count == 0
-            ? 0
-            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
 
         if (visibleWeight < 1)
             PrepareFamilySixMove(
@@ -21,11 +19,7 @@ public static partial class AiTurnPlanner
             PrepareContestedFamilySixCommand(
                 state, playerId, gang, gangSlot, visible, visibleWeight, snapshot);
 
-        var turnsRemaining = Math.Max(0,
-            ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
-        if (OriginalAiFamilySixRules.ShouldTerminateForGreed(
-                state.Setup.Scenario, turnsRemaining))
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
+        TerminateForGreed(state, playerId, gangSlot);
     }
 
     private static void PrepareContestedFamilySixCommand(

@@ -11,9 +11,7 @@ public static partial class AiTurnPlanner
     {
         var player = state.FindPlayer(playerId)!;
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = visible.Count == 0
-            ? 0
-            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
 
         if (visibleWeight == 10)
             TryPrepareFamilySevenAttack(state, playerId, gang, gangSlot, visible);
@@ -27,11 +25,7 @@ public static partial class AiTurnPlanner
             PrepareFamilySevenResearchContinuation(
                 state, player, gang, gangSlot, snapshot);
 
-        var turnsRemaining = Math.Max(0,
-            ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
-        if (OriginalAiFamilySevenRules.ShouldTerminateForGreed(
-                state.Setup.Scenario, turnsRemaining))
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
+        TerminateForGreed(state, playerId, gangSlot);
     }
 
     private static void TryPrepareFamilySevenAttack(

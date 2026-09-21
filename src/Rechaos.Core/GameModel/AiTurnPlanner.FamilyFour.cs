@@ -10,9 +10,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = visible.Count == 0
-            ? 0
-            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
         var previousAction = state.AiPlanning.PreviousAction(playerId, gangSlot);
         switch (previousAction)
         {
@@ -46,10 +44,10 @@ public static partial class AiTurnPlanner
     {
         if (OriginalAiFamilyFourRules.ShouldHeal(
                 gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Heal))
-            SetFamilyFourAction(state, playerId, gangSlot, GangAction.Heal);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
         else if (CountPreviousFamilyFourHidesInSector(
                      state, playerId, gang.SectorId) < 1)
-            SetFamilyFourAction(state, playerId, gangSlot, GangAction.Hide);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Hide);
         else
             PrepareFamilyFourMove(
                 state, playerId, gang, gangSlot, snapshot);
@@ -67,7 +65,7 @@ public static partial class AiTurnPlanner
     {
         if (visibleWeight == 10)
         {
-            var draw = DrawFamilyFourTarget(
+            var draw = DrawHumanWeightedAttackTarget(
                 state, playerId, gang, visible, visibleWeight);
             if (draw.Accepted)
                 SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw.Selected);
@@ -80,7 +78,7 @@ public static partial class AiTurnPlanner
         {
             if (CountPreviousFamilyFourHidesInSector(
                     state, playerId, gang.SectorId) < 1)
-                SetFamilyFourAction(state, playerId, gangSlot, GangAction.Hide);
+                SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Hide);
             else
                 PrepareFamilyFourMove(
                     state, playerId, gang, gangSlot, snapshot);
@@ -91,7 +89,7 @@ public static partial class AiTurnPlanner
                 previousAction,
                 state.AiPlanning.OlderAction(playerId, gangSlot),
                 CanSoloControl(state, playerId, gang)))
-            SetFamilyFourAction(state, playerId, gangSlot, GangAction.Control);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Control);
         else
             PrepareFamilyFourMove(
                 state, playerId, gang, gangSlot, snapshot);
@@ -113,7 +111,7 @@ public static partial class AiTurnPlanner
                  attempt < OriginalAiFamilyFourRules.AttackAttemptsAfterHideOrEquip;
                  attempt++)
             {
-                draw = DrawFamilyFourTarget(
+                draw = DrawHumanWeightedAttackTarget(
                     state, playerId, gang, visible, visibleWeight);
                 if (draw.Accepted) break;
             }
@@ -135,35 +133,10 @@ public static partial class AiTurnPlanner
             && CountPreviousFamilyFourHidesInSector(
                 state, playerId, gang.SectorId)
                 <= OriginalAiFamilyFourRules.MaximumPreviousHidesInOwnedSector)
-            SetFamilyFourAction(state, playerId, gangSlot, GangAction.Hide);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Hide);
         else
             PrepareFamilyFourMove(
                 state, playerId, gang, gangSlot, snapshot);
-    }
-
-    private static RecoveredAttackDraw DrawFamilyFourTarget(
-        MatchState state,
-        PlayerId playerId,
-        MatchGangState gang,
-        IReadOnlyList<ObjectiveTarget> visible,
-        int visibleWeight)
-    {
-        var targetPool = SelectHumanWeightedTargetPool(
-            state, playerId, gang.SectorId, visible, visibleWeight);
-        return DrawRecoveredAttackTarget(
-            state, gang, visible, targetPool,
-            OriginalAiFamilyFourRules.CanAttackSelectedTarget);
-    }
-
-    private static void SetFamilyFourAction(
-        MatchState state,
-        PlayerId playerId,
-        int gangSlot,
-        GangAction action)
-    {
-        state.AiPlanning.SetPlannedAction(playerId, gangSlot, action);
-        state.AiPlanning.SetFocusValue(
-            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
     private static void ClearFamilyFourActionAndAuxiliaries(

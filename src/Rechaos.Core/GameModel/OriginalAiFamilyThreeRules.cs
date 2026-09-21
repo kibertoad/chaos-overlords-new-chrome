@@ -26,8 +26,10 @@ internal static class OriginalAiFamilyThreeRules
         int comparisonTargetForce,
         int comparisonTargetCombat,
         int comparisonTargetDefense) =>
-        (comparisonTargetForce + comparisonTargetCombat) / 4 - attackerDefense
-        <= attackerForce + attackerCombat - comparisonTargetDefense;
+        OriginalAiFamilyTwelveRules.CanAttackSelectedTarget(
+            attackerForce, attackerCombat, attackerDefense,
+            comparisonTargetForce, comparisonTargetCombat,
+            comparisonTargetDefense);
 
     public static int? ThreeMoveTransitionFamily(
         ScenarioId scenario,
@@ -42,11 +44,9 @@ internal static class OriginalAiFamilyThreeRules
 
     public static bool ShouldTerminateForGreed(
         ScenarioId scenario,
-        int turnsRemaining)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(turnsRemaining);
-        return scenario == ScenarioId.Greed && turnsRemaining < 4;
-    }
+        int turnsRemaining) =>
+        OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
+            scenario, turnsRemaining);
 
     public static int? SelectHighestCashUnfinishedSite(
         MatchState state,

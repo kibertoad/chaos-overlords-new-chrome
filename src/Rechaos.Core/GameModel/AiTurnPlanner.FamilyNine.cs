@@ -29,9 +29,7 @@ public static partial class AiTurnPlanner
         }
 
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = visible.Count == 0
-            ? 0
-            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
         var action = OriginalAiFamilyNineRules.SelectTerritorialAction(
             state.Sectors[gang.SectorId].Owner == playerId,
             visibleWeight,

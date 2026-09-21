@@ -16,11 +16,7 @@ public static partial class AiTurnPlanner
         else
             PrepareFamilyTwelveAttack(state, playerId, gang, gangSlot, visible);
 
-        var turnsRemaining = Math.Max(0,
-            ScenarioCatalog.Turns(state.Setup.Duration) - (state.Coordinator.Turn - 1));
-        if (OriginalAiFamilyTwelveRules.ShouldTerminateForGreed(
-                state.Setup.Scenario, turnsRemaining))
-            state.AiPlanning.SetPlannedAction(playerId, gangSlot, GangAction.Terminate);
+        TerminateForGreed(state, playerId, gangSlot);
     }
 
     private static void PrepareFamilyTwelveUncontestedCommand(

@@ -10,9 +10,7 @@ public static partial class AiTurnPlanner
         FamilyPlanningSnapshot snapshot)
     {
         var visible = VisibleOpponentsInSector(state, playerId, gang.SectorId);
-        var visibleWeight = visible.Count == 0
-            ? 0
-            : VisibleOpponentWeight(state, playerId, visible[0].Gang.Owner);
+        var visibleWeight = FirstVisibleOpponentWeight(state, playerId, visible);
         var previousAction = state.AiPlanning.PreviousAction(playerId, gangSlot);
 
         switch (previousAction)
@@ -32,7 +30,7 @@ public static partial class AiTurnPlanner
                 break;
             case GangAction.Control:
                 if (state.Sectors[gang.SectorId].Owner == playerId)
-                    SetFamilyZeroAction(state, playerId, gangSlot, GangAction.Hide);
+                    SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Hide);
                 else
                     PrepareFamilyZeroMove(
                         state, playerId, gang, gangSlot, snapshot);
@@ -66,12 +64,12 @@ public static partial class AiTurnPlanner
         if (OriginalAiFamilyZeroRules.ShouldHeal(
                 gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Heal))
         {
-            SetFamilyZeroAction(state, playerId, gangSlot, GangAction.Heal);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
             return;
         }
 
         if (!HasPreviousFamilyZeroHideInSector(state, playerId, gang.SectorId))
-            SetFamilyZeroAction(state, playerId, gangSlot, GangAction.Hide);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Hide);
         else
             PrepareFamilyZeroMove(
                 state, playerId, gang, gangSlot, snapshot);
@@ -93,7 +91,7 @@ public static partial class AiTurnPlanner
             return;
         }
 
-        var draw = DrawFamilyZeroTarget(
+        var draw = DrawHumanWeightedAttackTarget(
             state, playerId, gang, visible, visibleWeight);
         if (draw.Accepted)
         {
@@ -125,7 +123,7 @@ public static partial class AiTurnPlanner
                  attempt < OriginalAiFamilyZeroRules.AttackAttemptsAfterHideOrEquip;
                  attempt++)
             {
-                draw = DrawFamilyZeroTarget(
+                draw = DrawHumanWeightedAttackTarget(
                     state, playerId, gang, visible, visibleWeight);
                 if (draw.Accepted) break;
             }
@@ -147,9 +145,9 @@ public static partial class AiTurnPlanner
         {
             if (OriginalAiFamilyZeroRules.ShouldHeal(
                     gang.Force, EffectiveStatisticsCalculator.ForGang(state, gang).Heal))
-                SetFamilyZeroAction(state, playerId, gangSlot, GangAction.Heal);
+                SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Heal);
             else
-                SetFamilyZeroAction(state, playerId, gangSlot, GangAction.Hide);
+                SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Hide);
             return;
         }
 
@@ -179,7 +177,7 @@ public static partial class AiTurnPlanner
 
         if (visibleWeight == 10)
         {
-            var draw = DrawFamilyZeroTarget(
+            var draw = DrawHumanWeightedAttackTarget(
                 state, playerId, gang, visible, visibleWeight);
             if (draw.Accepted)
                 SetRecoveredFocusedAttack(state, playerId, gang, gangSlot, draw.Selected);
@@ -197,40 +195,15 @@ public static partial class AiTurnPlanner
         var owned = state.Sectors[gang.SectorId].Owner == playerId;
         if (!owned && CanSoloControl(state, playerId, gang))
         {
-            SetFamilyZeroAction(state, playerId, gangSlot, GangAction.Control);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Control);
             return;
         }
 
         if (!HasPreviousFamilyZeroHideInSector(state, playerId, gang.SectorId))
-            SetFamilyZeroAction(state, playerId, gangSlot, GangAction.Hide);
+            SetRecoveredActionClearingFocus(state, playerId, gangSlot, GangAction.Hide);
         else
             PrepareFamilyZeroMove(
                 state, playerId, gang, gangSlot, snapshot);
-    }
-
-    private static RecoveredAttackDraw DrawFamilyZeroTarget(
-        MatchState state,
-        PlayerId playerId,
-        MatchGangState gang,
-        IReadOnlyList<ObjectiveTarget> visible,
-        int visibleWeight)
-    {
-        var targetPool = SelectHumanWeightedTargetPool(
-            state, playerId, gang.SectorId, visible, visibleWeight);
-        return DrawRecoveredAttackTarget(
-            state, gang, visible, targetPool,
-            OriginalAiFamilyZeroRules.CanAttackSelectedTarget);
-    }
-
-    private static void SetFamilyZeroAction(
-        MatchState state,
-        PlayerId playerId,
-        int gangSlot,
-        GangAction action)
-    {
-        state.AiPlanning.SetPlannedAction(playerId, gangSlot, action);
-        state.AiPlanning.SetFocusValue(
-            playerId, gangSlot, AiPlanningState.InactiveFocusValue);
     }
 
     private static void PrepareFamilyZeroMove(
