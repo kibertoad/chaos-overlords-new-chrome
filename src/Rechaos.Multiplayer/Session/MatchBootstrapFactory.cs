@@ -61,6 +61,14 @@ public static class MatchBootstrapFactory
         return OriginalMatchFactory.Create(definitions, Setup(seed, settings, players));
     }
 
+    /// <summary>Whether the roster gives this player a chair at the table.</summary>
+    /// <remarks>
+    /// A player still in the lobby has slot -1, and a slot past the board is a server this client
+    /// cannot play against.
+    /// </remarks>
+    internal static bool IsSeated(PlayerView player) =>
+        player.Slot is >= 0 and < MatchLimits.PlayerCount;
+
     /// <summary>
     /// Every player that holds a seat, by slot — whatever their status is now.
     /// </summary>
@@ -79,14 +87,6 @@ public static class MatchBootstrapFactory
     /// turn by the sealed set rather than by the setup: see <see cref="SealedTurnApplier"/>.
     /// </para>
     /// </remarks>
-    /// <summary>Whether the roster gives this player a chair at the table.</summary>
-    /// <remarks>
-    /// A player still in the lobby has slot -1, and a slot past the board is a server this client
-    /// cannot play against.
-    /// </remarks>
-    internal static bool IsSeated(PlayerView player) =>
-        player.Slot is >= 0 and < MatchLimits.PlayerCount;
-
     private static Dictionary<int, PlayerView> SeatedBySlot(IReadOnlyList<PlayerView> players)
     {
         var seated = new Dictionary<int, PlayerView>();
