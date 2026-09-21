@@ -314,10 +314,14 @@ public sealed partial class ChaosGame
             var player = ViewingPlayer(state);
             var sector = state.Sectors[_cursor];
             var chaosEstimate = ChaosRangeProjection.Detail(state, player, _cursor);
-            DrawHoverTooltip(batch, pixel, font, statusHover, StatusConsoleTooltip.At(
+            var lines = StatusConsoleTooltip.At(
                 statusHover, state.Setup.Scenario, state.Setup.Duration, sector.Tolerance,
                 chaosEstimate, StatusConsolePresentation.ChaosBreakdown(state, chaosEstimate),
-                HasKnownEnemyGang(state, player, _cursor)));
+                HasKnownEnemyGang(state, player, _cursor));
+            DrawHoverTooltip(batch, pixel, font, statusHover, lines,
+                StatusConsoleTooltip.QueuedChaosRangeRow,
+                StatusConsoleTooltip.QueuedChaosRangePrefix,
+                StatusConsolePresentation.QueuedChaosRangeColor(chaosEstimate.Range, sector.Tolerance));
         }
     }
 

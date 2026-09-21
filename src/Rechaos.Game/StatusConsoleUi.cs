@@ -52,6 +52,9 @@ public static class StatusConsoleLayout
 
 public static class StatusConsoleTooltip
 {
+    public const int QueuedChaosRangeRow = 4;
+    public const string QueuedChaosRangePrefix = "YOUR QUEUED CHAOS: ";
+
     public static IReadOnlyList<string> At(Point point)
         => At(point, null, GameDuration.SixMonths);
 
@@ -108,9 +111,12 @@ public static class StatusConsoleTooltip
             "CHAOS ABOVE THIS VALUE TRIGGERS",
             "A POLICE CRACKDOWN.",
             "",
-            $"YOUR QUEUED CHAOS: {chaosEstimate.Range.Minimum}-{chaosEstimate.Range.Maximum}",
+            $"{QueuedChaosRangePrefix}{chaosEstimate.Range.Minimum}-{chaosEstimate.Range.Maximum}",
+            "",
             "SUCCESS RANGE FROM YOUR QUEUED ORDERS.",
-            "ITEMS AND LOCAL SITES MODIFY CHAOS.",
+            "EACH POINT ROLLS ONE STANDARD SIX-SIDED DIE.",
+            "ONLY SUCCESSFUL ROLLS ADD CHAOS OR CASH.",
+            "ITEMS AND LOCAL SITES MODIFY THE ROLL POOL.",
             "CONTROLLED: EACH SUCCESS PAYS $1.",
             "UNCONTROLLED: HALF THE COMBINED",
             "SUCCESSES, ROUNDED DOWN.",
@@ -139,6 +145,9 @@ public static class StatusConsoleTooltip
 
 public static class StatusConsolePresentation
 {
+    public static Color QueuedChaosRangeColor(ChaosRange range, int tolerance) =>
+        range.CanTriggerCrackdown(tolerance) ? Color.Red : Color.Lime;
+
     public static string Cash(int current, int projectedChange) =>
         $"{current} {projectedChange:+#;-#;0}";
 
@@ -157,11 +166,11 @@ public static class StatusConsolePresentation
                 definition => definition.Id == gang.DefinitionId).Name;
             var values = new List<string>
             {
-                $"{name}: {contribution.Dice} CHAOS DICE",
+                $"{name}: {contribution.Dice} D6 ROLLS",
                 $"  {contribution.Income} INCOME + {contribution.Force} FORCE + {contribution.EffectiveChaos} CHAOS"
             };
             if (contribution.Dice != Math.Max(0, contribution.RawDice))
-                values.Add($"  ADJUSTED FROM {contribution.RawDice} TO {contribution.Dice} DICE");
+                values.Add($"  ADJUSTED FROM {contribution.RawDice} TO {contribution.Dice} ROLLS");
             return values;
         }).ToList();
         if (lines.Count == 0) lines.Add("NO QUEUED CHAOS GANGS.");

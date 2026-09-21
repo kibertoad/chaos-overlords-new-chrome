@@ -410,17 +410,30 @@ public sealed partial class ChaosGame
         Texture2D pixel,
         PixelFont font,
         Point point,
-        IReadOnlyList<string> lines)
+        IReadOnlyList<string> lines,
+        int? coloredSuffixRow = null,
+        string? coloredSuffixPrefix = null,
+        Color? suffixColor = null)
     {
         if (lines.Count == 0) return;
         var panel = HoverTooltipLayout.Bounds(point, lines);
         batch.Draw(pixel, panel, new Color(8, 18, 16, 252));
         DrawBorder(batch, pixel, panel, Color.Lime, 2);
         for (var row = 0; row < lines.Count; row++)
-            font.Draw(batch, lines[row],
-                new Vector2(panel.X + 8,
-                    panel.Y + 8 + row * OriginalFontLayout.LineHeight),
-                row == 0 ? Color.Gold : Color.White, 1);
+        {
+            var position = new Vector2(panel.X + 8,
+                panel.Y + 8 + row * OriginalFontLayout.LineHeight);
+            var color = row == 0 ? Color.Gold : Color.White;
+            if (row == coloredSuffixRow && suffixColor is { } highlight
+                && coloredSuffixPrefix is { } prefix
+                && lines[row].StartsWith(prefix, StringComparison.Ordinal))
+            {
+                font.Draw(batch, prefix, position, color, 1);
+                font.Draw(batch, lines[row][prefix.Length..],
+                    position + new Vector2(prefix.Length * OriginalFontLayout.CellWidth, 0), highlight, 1);
+            }
+            else font.Draw(batch, lines[row], position, color, 1);
+        }
     }
 
     private void DrawOptionToggle(SpriteBatch batch, Texture2D pixel, PixelFont font,

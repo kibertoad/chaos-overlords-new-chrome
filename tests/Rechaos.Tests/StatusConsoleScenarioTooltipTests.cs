@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using Rechaos.Core.GameModel;
 using Rechaos.Game;
 using Xunit;
@@ -26,7 +27,7 @@ public sealed class StatusConsoleScenarioTooltipTests
         var estimate = new ChaosRangeEstimate(range, []);
         string[] breakdown =
         [
-            "TEST GANG: 9 CHAOS DICE",
+            "TEST GANG: 9 D6 ROLLS",
             "  2 INCOME + 5 FORCE + 2 CHAOS"
         ];
 
@@ -37,8 +38,11 @@ public sealed class StatusConsoleScenarioTooltipTests
                 "A POLICE CRACKDOWN.",
                 "",
                 "YOUR QUEUED CHAOS: 0-9",
+                "",
                 "SUCCESS RANGE FROM YOUR QUEUED ORDERS.",
-                "ITEMS AND LOCAL SITES MODIFY CHAOS.",
+                "EACH POINT ROLLS ONE STANDARD SIX-SIDED DIE.",
+                "ONLY SUCCESSFUL ROLLS ADD CHAOS OR CASH.",
+                "ITEMS AND LOCAL SITES MODIFY THE ROLL POOL.",
                 "CONTROLLED: EACH SUCCESS PAYS $1.",
                 "UNCONTROLLED: HALF THE COMBINED",
                 "SUCCESSES, ROUNDED DOWN.",
@@ -50,6 +54,8 @@ public sealed class StatusConsoleScenarioTooltipTests
                 ..breakdown
             ],
             StatusConsoleTooltip.Tolerance(12, estimate, breakdown));
+        Assert.Equal(Color.Lime, StatusConsolePresentation.QueuedChaosRangeColor(range, 12));
+        Assert.Equal(Color.Red, StatusConsolePresentation.QueuedChaosRangeColor(range, 8));
         Assert.Contains("KNOWN ENEMY GANGS MAY ADD MORE CHAOS.",
             StatusConsoleTooltip.Tolerance(12, estimate, breakdown, knownEnemyGangs: true));
     }

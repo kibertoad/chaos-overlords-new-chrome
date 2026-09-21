@@ -78,7 +78,7 @@ public static class CommandActionTooltips
         ],
         GangAction.Chaos =>
         [
-            "ROLLS FORCE PLUS CHAOS PLUS SECTOR INCOME TO EARN CASH.",
+            "ROLLS ONE STANDARD D6 FOR EACH POINT OF FORCE, CHAOS, AND INCOME.",
             "THE CHAOS RAISED ALSO PUSHES THE SECTOR TOWARD A CRACKDOWN."
         ],
         GangAction.Control =>
