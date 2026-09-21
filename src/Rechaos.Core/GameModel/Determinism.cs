@@ -1,4 +1,5 @@
-using System.Security.Cryptography;
+using System.Buffers.Binary;
+using System.IO.Hashing;
 using System.Text;
 using Rechaos.Core.Assets;
 
@@ -65,260 +66,98 @@ public sealed record PhaseBoundaryHash(
     int Turn,
     TurnPhase Phase,
     ExecutionPhase? ExecutionPhase,
-    string Sha256);
+    string Fingerprint)
+{
+    /// <summary>Writes this boundary in the encoding the state fingerprint chains it under.</summary>
+    internal static void WriteCanonical(Stream stream, PhaseBoundaryHash boundary)
+    {
+        using var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true);
+        writer.Write(boundary.Turn);
+        writer.Write((byte)boundary.Phase);
+        MatchStateHasher.WriteNullableByte(writer, boundary.ExecutionPhase is { } phase ? (byte)phase : null);
+        MatchStateHasher.WriteString(writer, boundary.Fingerprint);
+    }
+}
 
-/// <summary>Canonical little-endian encoding of all authoritative headless match state.</summary>
+/// <summary>
+/// The canonical little-endian encoding of all authoritative match state, reduced to one
+/// 128-bit fingerprint.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The fingerprint answers "is this the same state?": every replay step, every save and every
+/// online turn report carries one, and two clients compare theirs to detect a desync. It is a
+/// checksum against divergence and corruption, not a defence against an adversary, so it is
+/// XxHash128 rather than a cryptographic digest — the same collision odds for anything that is
+/// not deliberately crafted, at a fraction of the cost, and a match fingerprints itself thousands
+/// of times.
+/// </para>
+/// <para>
+/// The two histories a match carries — its events and its phase boundaries — only ever grow, so
+/// the state keeps a running digest of each, chained entry by entry as they are stored, and the
+/// fingerprint folds in the digest rather than the history. That is what keeps the cost of a
+/// fingerprint flat over a long match instead of growing with every turn played.
+/// </para>
+/// </remarks>
 public static class MatchStateHasher
 {
-    private const int FormatVersion = 28;
+    /// <summary>Bumped whenever the encoding changes, so no two encodings share a fingerprint space.</summary>
+    private const int FormatVersion = 1;
 
-    internal static string ComputeLegacySha256(MatchState state) =>
-        ComputeSha256(state, 4, includeSectorIncome: false, includeCrackdownDuration: false,
-            includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
-            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false, includeSectorAnchors: false);
+    /// <summary>The number of lowercase hex characters a fingerprint has.</summary>
+    public const int FingerprintLength = 2 * DigestBytes;
 
-    internal static string ComputeVersionTwoSha256(MatchState state) =>
-        ComputeSha256(state, 5, includeSectorIncome: true, includeCrackdownDuration: false,
-            includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
-            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false, includeSectorAnchors: false);
+    private const int DigestBytes = 16;
 
-    internal static string ComputeVersionThreeSha256(MatchState state) =>
-        ComputeSha256(state, 6, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: false, includeDifficulty: false, includeAiStrategy: false,
-            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false, includeSectorAnchors: false);
+    /// <summary>The fingerprint of the whole state, as saves, journals and turn reports record it.</summary>
+    public static string ComputeFingerprint(MatchState state) =>
+        ComputeFingerprint(state, includePhaseHistory: true);
 
-    internal static string ComputeVersionFourSha256(MatchState state) =>
-        ComputeSha256(state, 7, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: false, includeAiStrategy: false,
-            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false, includeSectorAnchors: false);
+    /// <summary>
+    /// The fingerprint a phase boundary records: the whole state except the boundary history it
+    /// is about to join, which would otherwise have to contain itself.
+    /// </summary>
+    internal static string ComputePhaseBoundaryFingerprint(MatchState state) =>
+        ComputeFingerprint(state, includePhaseHistory: false);
 
-    internal static string ComputeVersionFiveSha256(MatchState state) =>
-        ComputeSha256(state, 8, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: false,
-            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false, includeSectorAnchors: false);
+    /// <summary>Whether <paramref name="value"/> has the shape of a fingerprint.</summary>
+    public static bool IsFingerprint(string? value) =>
+        value?.Length == FingerprintLength && value.All(character =>
+            character is >= '0' and <= '9' or >= 'a' and <= 'f');
 
-    internal static string ComputeVersionSixSha256(MatchState state) =>
-        ComputeSha256(state, 9, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: false, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false, includeSectorAnchors: false);
+    /// <summary>Extends a running history digest by one canonically encoded entry.</summary>
+    internal static UInt128 Chain(UInt128 previous, ReadOnlySpan<byte> entry)
+    {
+        var hash = new XxHash128();
+        Span<byte> link = stackalloc byte[DigestBytes];
+        BinaryPrimitives.WriteUInt128LittleEndian(link, previous);
+        hash.Append(link);
+        hash.Append(entry);
+        return hash.GetCurrentHashAsUInt128();
+    }
 
-    internal static string ComputeVersionTenSha256(MatchState state) =>
-        ComputeSha256(state, 10, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: false, includeHirePayment: false,
-            includeMaximumHireForce: false, includeSectorAnchors: false);
-
-    internal static string ComputeVersionElevenSha256(MatchState state) =>
-        ComputeSha256(state, 11, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: false,
-            includeMaximumHireForce: false, includeSectorAnchors: false);
-
-    internal static string ComputeVersionTwelveSha256(MatchState state) =>
-        ComputeSha256(state, 12, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: false, includeSectorAnchors: false);
-
-    internal static string ComputeVersionThirteenSha256(MatchState state) =>
-        ComputeSha256(state, 13, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: false);
-
-    internal static string ComputeVersionFourteenSha256(MatchState state) =>
-        ComputeSha256(state, 14, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true);
-
-    internal static string ComputeVersionFifteenSha256(MatchState state) =>
-        ComputeSha256(state, 15, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true);
-
-    internal static string ComputeVersionSixteenSha256(MatchState state) =>
-        ComputeSha256(state, 16, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true);
-
-    internal static string ComputeVersionSeventeenSha256(MatchState state) =>
-        ComputeSha256(state, 17, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true);
-
-    internal static string ComputeVersionEighteenSha256(MatchState state) =>
-        ComputeSha256(state, 18, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true);
-
-    internal static string ComputeVersionNineteenSha256(MatchState state) =>
-        ComputeSha256(state, 19, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true);
-
-    internal static string ComputeVersionTwentySha256(MatchState state) =>
-        ComputeSha256(state, 20, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true,
-            includeComlink: true);
-
-    internal static string ComputeVersionTwentyOneSha256(MatchState state) =>
-        ComputeSha256(state, 21, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true,
-            includeComlink: true, includeTertiaryTargets: true);
-
-    internal static string ComputeVersionTwentyTwoSha256(MatchState state) =>
-        ComputeSha256(state, 22, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true,
-            includeComlink: true, includeTertiaryTargets: true,
-            includeQuaternaryTargets: true);
-
-    internal static string ComputeVersionTwentyThreeSha256(MatchState state) =>
-        ComputeSha256(state, 23, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true,
-            includeComlink: true, includeTertiaryTargets: true,
-            includeQuaternaryTargets: true, includeEventHistory: true);
-
-    internal static string ComputeVersionTwentyFourSha256(MatchState state) =>
-        ComputeSha256(state, 24, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true,
-            includeComlink: true, includeTertiaryTargets: true,
-            includeQuaternaryTargets: true, includeEventHistory: true,
-            includePhaseHistory: true);
-
-    internal static string ComputeVersionTwentyFiveSha256(MatchState state) =>
-        ComputeSha256(state, 25, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true,
-            includeComlink: true, includeTertiaryTargets: true,
-            includeQuaternaryTargets: true, includeEventHistory: true,
-            includePhaseHistory: true, includeComlinkReadSequences: true);
-
-    internal static string ComputeVersionTwentySixSha256(MatchState state) =>
-        ComputeSha256(state, 26, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true,
-            includeComlink: true, includeTertiaryTargets: true,
-            includeQuaternaryTargets: true, includeEventHistory: true,
-            includePhaseHistory: true, includeComlinkReadSequences: true,
-            includeAiPolicy: true);
-
-    internal static string ComputeVersionTwentySevenSha256(MatchState state) =>
-        ComputeSha256(state, 27, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true,
-            includeComlink: true, includeTertiaryTargets: true,
-            includeQuaternaryTargets: true, includeEventHistory: true,
-            includePhaseHistory: true, includeComlinkReadSequences: true,
-            includeAiPolicy: true, includeSectorChaos: false);
-
-    public static string ComputeSha256(MatchState state)
-        => ComputeSha256(state, FormatVersion, includeSectorIncome: true, includeCrackdownDuration: true,
-            includeCrackdownHistory: true, includeDifficulty: true, includeAiStrategy: true,
-            includeAiPlanning: true, includeHireSlots: true, includeHirePayment: true,
-            includeMaximumHireForce: true, includeSectorAnchors: true, includeAiActions: true,
-            includeFirstPlanningFlags: true, includeAiTargets: true, includeAiCooldowns: true,
-            includeAiFormationSectors: true, includeAiCoverageSectors: true,
-            includeComlink: true, includeTertiaryTargets: true,
-            includeQuaternaryTargets: true, includeEventHistory: true,
-            includePhaseHistory: true, includeComlinkReadSequences: true,
-            includeAiPolicy: true, includeSectorChaos: false,
-            includeRosterSlotOrder: true);
-
-    private static string ComputeSha256(
-        MatchState state,
-        int formatVersion,
-        bool includeSectorIncome,
-        bool includeCrackdownDuration,
-        bool includeCrackdownHistory,
-        bool includeDifficulty,
-        bool includeAiStrategy,
-        bool includeAiPlanning,
-        bool includeHireSlots,
-        bool includeHirePayment,
-        bool includeMaximumHireForce,
-        bool includeSectorAnchors,
-        bool includeAiActions = false,
-        bool includeFirstPlanningFlags = false,
-        bool includeAiTargets = false,
-        bool includeAiCooldowns = false,
-        bool includeAiFormationSectors = false,
-        bool includeAiCoverageSectors = false,
-        bool includeComlink = false,
-        bool includeTertiaryTargets = false,
-        bool includeQuaternaryTargets = false,
-        bool includeEventHistory = false,
-        bool includePhaseHistory = false,
-        bool includeComlinkReadSequences = false,
-        bool includeAiPolicy = false,
-        bool includeSectorChaos = true,
-        bool includeRosterSlotOrder = false)
+    private static string ComputeFingerprint(MatchState state, bool includePhaseHistory)
     {
         ArgumentNullException.ThrowIfNull(state);
-        using var stream = new MemoryStream();
-        using (var writer = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
+        var encoder = CanonicalEncoder.Rent();
+        try
         {
-            writer.Write(Encoding.ASCII.GetBytes("RCHS"));
-            writer.Write(formatVersion);
+            var writer = encoder.Writer;
+            writer.Write(Magic);
+            writer.Write(FormatVersion);
             WriteDefinitions(writer, state.Definitions);
             writer.Write((byte)state.Setup.Scenario);
             writer.Write((byte)state.Setup.Duration);
             writer.Write(state.Setup.InitialSeed);
-            if (includeDifficulty) writer.Write((byte)state.Setup.AiMentality);
-            if (includeAiPolicy) writer.Write((byte)state.Setup.AiPolicy);
+            writer.Write((byte)state.Setup.AiMentality);
+            writer.Write((byte)state.Setup.AiPolicy);
             writer.Write(state.Setup.Players.Count);
             foreach (var player in state.Setup.Players)
             {
                 writer.Write(player.Id.Value);
                 WriteString(writer, player.Name);
                 writer.Write((byte)player.Controller);
-                if (includeDifficulty) writer.Write(player.PortraitId);
+                writer.Write(player.PortraitId);
             }
 
             writer.Write(state.Coordinator.Turn);
@@ -327,90 +166,24 @@ public static class MatchStateHasher
             WriteNullableInt(writer, state.Coordinator.ActivePlayer?.Value);
             writer.Write(state.Random.State);
             writer.Write(state.Random.ConsumptionCount);
-            if (includeAiStrategy)
-            {
-                foreach (var reaction in state.AiStrategy.CaptureReactions()) writer.Write(reaction);
-                foreach (var attitude in state.AiStrategy.CaptureAttitudes()) writer.Write(attitude);
-            }
-            if (includeAiPlanning)
-            {
-                foreach (var role in state.AiPlanning.CaptureCurrentHireRoles()) writer.Write(role);
-                foreach (var role in state.AiPlanning.CapturePreviousHireRoles()) writer.Write(role);
-                foreach (var family in state.AiPlanning.CaptureFamilies()) writer.Write(family);
-                if (includeSectorAnchors)
-                    foreach (var anchor in state.AiPlanning.CaptureSectorAnchors()) writer.Write(anchor);
-                if (includeAiActions)
-                {
-                    foreach (var action in state.AiPlanning.CaptureOlderActions()) writer.Write((byte)action);
-                    foreach (var action in state.AiPlanning.CapturePreviousActions()) writer.Write((byte)action);
-                    foreach (var action in state.AiPlanning.CapturePlannedActions()) writer.Write((byte)action);
-                }
-                if (includeAiTargets)
-                {
-                    foreach (var target in state.AiPlanning.CaptureOlderTargets()) WriteAiTarget(writer, target);
-                    foreach (var target in state.AiPlanning.CapturePreviousTargets()) WriteAiTarget(writer, target);
-                    foreach (var target in state.AiPlanning.CapturePlannedTargets()) WriteAiTarget(writer, target);
-                }
-                if (includeFirstPlanningFlags)
-                    foreach (var hasPlanned in state.AiPlanning.CaptureHasPlanned()) writer.Write(hasPlanned);
-                if (includeAiCooldowns)
-                {
-                    foreach (var cooldown in state.AiPlanning.CaptureWeaponCooldowns()) writer.Write(cooldown);
-                    foreach (var cooldown in state.AiPlanning.CaptureArmorCooldowns()) writer.Write(cooldown);
-                }
-                if (includeAiFormationSectors)
-                    foreach (var sector in state.AiPlanning.CaptureFormationSectors()) writer.Write(sector);
-                if (includeAiCoverageSectors)
-                    foreach (var sector in state.AiPlanning.CaptureCoverageSectors()) writer.Write(sector);
-            }
+            WriteAiState(writer, state);
             writer.Write(state.NextEventSequence);
-            if (includeEventHistory)
-                state.WriteCanonicalEventHistory(writer);
+            writer.Write(state.Events.Count);
+            WriteDigest(writer, state.EventHistoryDigest);
             if (includePhaseHistory)
             {
                 writer.Write(state.PhaseHashes.Count);
-                foreach (var boundary in state.PhaseHashes)
-                {
-                    writer.Write(boundary.Turn);
-                    writer.Write((byte)boundary.Phase);
-                    WriteNullableByte(writer, boundary.ExecutionPhase is { } boundaryPhase
-                        ? (byte)boundaryPhase : null);
-                    WriteString(writer, boundary.Sha256);
-                }
+                WriteDigest(writer, state.PhaseHashHistoryDigest);
             }
-            writer.Write(state.Outcome is not null);
-            if (state.Outcome is { } outcome)
-            {
-                writer.Write((byte)outcome.Scenario);
-                writer.Write((byte)outcome.Reason);
-                writer.Write(outcome.Turn);
-                writer.Write(outcome.Winners.Count);
-                foreach (var winner in outcome.Winners) writer.Write(winner.Value);
-                writer.Write(outcome.Standings.Count);
-                foreach (var standing in outcome.Standings)
-                {
-                    writer.Write(standing.Player.Value);
-                    writer.Write(standing.Place);
-                    writer.Write(standing.Score);
-                }
-                writer.Write(outcome.Awards.Count);
-                foreach (var award in outcome.Awards)
-                {
-                    writer.Write((byte)award.Award);
-                    writer.Write(award.Value);
-                    writer.Write(award.Recipients.Count);
-                    foreach (var recipient in award.Recipients) writer.Write(recipient.Value);
-                }
-            }
+            WriteOutcome(writer, state.Outcome);
 
-            writer.Write(state.Players.Count);
-            foreach (var player in state.Players.OrderBy(item => item.Id.Value))
-                WritePlayer(writer, player, includeHireSlots, includeHirePayment,
-                    includeMaximumHireForce, includeRosterSlotOrder);
+            var players = state.Players.OrderBy(item => item.Id.Value).ToArray();
+            writer.Write(players.Length);
+            foreach (var player in players) WritePlayer(writer, player);
+            // The constructor requires sectors to be identified 0 through 63 in order, so they are
+            // already in the order an OrderBy would produce.
             writer.Write(state.Sectors.Count);
-            foreach (var sector in state.Sectors.OrderBy(item => item.Id))
-                WriteSector(writer, sector, includeSectorIncome, includeCrackdownDuration,
-                    includeCrackdownHistory, includeSectorChaos);
+            foreach (var sector in state.Sectors) WriteSector(writer, sector);
 
             var commands = state.Commands.ExecutionPlan().OrderBy(item => item.Sequence).ToArray();
             writer.Write(state.Commands.NextSequence);
@@ -418,44 +191,148 @@ public static class MatchStateHasher
             foreach (var command in commands)
             {
                 writer.Write(command.Sequence);
-                WriteCommand(writer, command.Command, includeTertiaryTargets, includeQuaternaryTargets);
+                WriteCommand(writer, command.Command);
             }
 
-            foreach (var player in state.Players.OrderBy(item => item.Id.Value))
+            foreach (var player in players)
             {
                 var notifications = state.NotificationsFor(player.Id);
                 writer.Write(state.NextNotificationSequence(player.Id));
                 writer.Write(notifications.Count);
                 foreach (var notification in notifications) WriteNotification(writer, notification);
             }
-            if (includeComlink)
+            foreach (var player in players)
             {
-                foreach (var player in state.Players.OrderBy(item => item.Id.Value))
+                var inbox = state.ComlinkFor(player.Id);
+                writer.Write(inbox.NextSequence);
+                writer.Write(inbox.ReadSequences.Count);
+                foreach (var sequence in inbox.ReadSequences) writer.Write(sequence);
+                writer.Write(inbox.Count);
+                foreach (var message in inbox.Messages)
                 {
-                    var inbox = state.ComlinkFor(player.Id);
-                    writer.Write(inbox.NextSequence);
-                    if (includeComlinkReadSequences)
-                    {
-                        writer.Write(inbox.ReadSequences.Count);
-                        foreach (var sequence in inbox.ReadSequences) writer.Write(sequence);
-                    }
-                    else
-                    {
-                        writer.Write(inbox.LegacyReadThroughSequence);
-                    }
-                    writer.Write(inbox.Count);
-                    foreach (var message in inbox.Messages)
-                    {
-                        writer.Write(message.Sequence);
-                        writer.Write(message.Turn);
-                        writer.Write(message.Sender.Value);
-                        WriteString(writer, message.Text);
-                    }
+                    writer.Write(message.Sequence);
+                    writer.Write(message.Turn);
+                    writer.Write(message.Sender.Value);
+                    WriteString(writer, message.Text);
                 }
             }
+
+            return encoder.FinishHex();
+        }
+        finally
+        {
+            encoder.Return();
+        }
+    }
+
+    private static readonly byte[] Magic = Encoding.ASCII.GetBytes("RCHX");
+
+    private static void WriteAiState(BinaryWriter writer, MatchState state)
+    {
+        foreach (var reaction in state.AiStrategy.CaptureReactions()) writer.Write(reaction);
+        foreach (var attitude in state.AiStrategy.CaptureAttitudes()) writer.Write(attitude);
+        var planning = state.AiPlanning;
+        foreach (var role in planning.CaptureCurrentHireRoles()) writer.Write(role);
+        foreach (var role in planning.CapturePreviousHireRoles()) writer.Write(role);
+        foreach (var family in planning.CaptureFamilies()) writer.Write(family);
+        foreach (var anchor in planning.CaptureSectorAnchors()) writer.Write(anchor);
+        foreach (var action in planning.CaptureOlderActions()) writer.Write((byte)action);
+        foreach (var action in planning.CapturePreviousActions()) writer.Write((byte)action);
+        foreach (var action in planning.CapturePlannedActions()) writer.Write((byte)action);
+        foreach (var target in planning.CaptureOlderTargets()) WriteAiTarget(writer, target);
+        foreach (var target in planning.CapturePreviousTargets()) WriteAiTarget(writer, target);
+        foreach (var target in planning.CapturePlannedTargets()) WriteAiTarget(writer, target);
+        foreach (var hasPlanned in planning.CaptureHasPlanned()) writer.Write(hasPlanned);
+        foreach (var cooldown in planning.CaptureWeaponCooldowns()) writer.Write(cooldown);
+        foreach (var cooldown in planning.CaptureArmorCooldowns()) writer.Write(cooldown);
+        foreach (var sector in planning.CaptureFormationSectors()) writer.Write(sector);
+        foreach (var sector in planning.CaptureCoverageSectors()) writer.Write(sector);
+    }
+
+    private static void WriteOutcome(BinaryWriter writer, MatchOutcome? outcome)
+    {
+        writer.Write(outcome is not null);
+        if (outcome is null) return;
+        writer.Write((byte)outcome.Scenario);
+        writer.Write((byte)outcome.Reason);
+        writer.Write(outcome.Turn);
+        writer.Write(outcome.Winners.Count);
+        foreach (var winner in outcome.Winners) writer.Write(winner.Value);
+        writer.Write(outcome.Standings.Count);
+        foreach (var standing in outcome.Standings)
+        {
+            writer.Write(standing.Player.Value);
+            writer.Write(standing.Place);
+            writer.Write(standing.Score);
+        }
+        writer.Write(outcome.Awards.Count);
+        foreach (var award in outcome.Awards)
+        {
+            writer.Write((byte)award.Award);
+            writer.Write(award.Value);
+            writer.Write(award.Recipients.Count);
+            foreach (var recipient in award.Recipients) writer.Write(recipient.Value);
+        }
+    }
+
+    private static void WriteDigest(BinaryWriter writer, UInt128 digest)
+    {
+        Span<byte> bytes = stackalloc byte[DigestBytes];
+        BinaryPrimitives.WriteUInt128LittleEndian(bytes, digest);
+        writer.Write(bytes);
+    }
+
+    /// <summary>
+    /// A per-thread canonical byte encoder feeding one hash.
+    /// </summary>
+    /// <remarks>
+    /// A fingerprint used to be built in a fresh <see cref="MemoryStream"/> regrown by doubling on
+    /// every call, thousands of calls per match, so gen-2 collections dominated a headless replay.
+    /// The buffer now lives with the thread and is reset between calls.
+    /// </remarks>
+    private sealed class CanonicalEncoder
+    {
+        [ThreadStatic] private static CanonicalEncoder? _current;
+
+        private readonly MemoryStream _buffered = new(16 * 1024);
+        private readonly XxHash128 _hash = new();
+        private bool _inUse;
+
+        private CanonicalEncoder()
+        {
+            Writer = new BinaryWriter(_buffered, Encoding.UTF8, leaveOpen: true);
         }
 
-        return Convert.ToHexStringLower(SHA256.HashData(stream.GetBuffer().AsSpan(0, checked((int)stream.Length))));
+        /// <summary>The writer every canonical field goes through.</summary>
+        public BinaryWriter Writer { get; }
+
+        public static CanonicalEncoder Rent()
+        {
+            var encoder = _current ??= new CanonicalEncoder();
+            // A caller interrupted by an exception leaves the thread's encoder mid-document; a
+            // nested fingerprint from within a fingerprint would too. Either gets a fresh one.
+            if (encoder._inUse) encoder = new CanonicalEncoder();
+            encoder._inUse = true;
+            return encoder;
+        }
+
+        public string FinishHex()
+        {
+            Writer.Flush();
+            _hash.Append(_buffered.GetBuffer().AsSpan(0, checked((int)_buffered.Length)));
+            Span<byte> digest = stackalloc byte[DigestBytes];
+            var written = _hash.GetHashAndReset(digest);
+            return Convert.ToHexStringLower(digest[..written]);
+        }
+
+        public void Return()
+        {
+            Writer.Flush();
+            _buffered.SetLength(0);
+            // Whatever a failed call left in the hash must not leak into the next document.
+            _hash.Reset();
+            _inUse = false;
+        }
     }
 
     private static void WriteAiTarget(BinaryWriter writer, AiActionTarget target)
@@ -512,55 +389,37 @@ public static class MatchStateHasher
         }
     }
 
-    private static void WritePlayer(
-        BinaryWriter writer,
-        MatchPlayerState player,
-        bool includeHireSlots,
-        bool includeHirePayment,
-        bool includeMaximumHireForce,
-        bool includeRosterSlotOrder)
+    private static void WritePlayer(BinaryWriter writer, MatchPlayerState player)
     {
         writer.Write(player.Id.Value); writer.Write((byte)player.Status); writer.Write(player.Cash); writer.Write(player.Support);
         writer.Write(player.BigManPoints);
-        if (includeMaximumHireForce) writer.Write(player.UsesMaximumHireForce);
+        writer.Write(player.UsesMaximumHireForce);
         writer.Write(player.Gangs.Count);
         // Roster slot order is play state: every phase resolver orders by slot, hire reuse takes the
         // first inactive slot, and the AI planning tables are indexed by slot. Hashing in gang id
         // order let two states that resolve differently produce the same fingerprint once a slot had
         // been reused, which a repair snapshot with a reordered roster could have exploited.
-        var roster = includeRosterSlotOrder
-            ? (IEnumerable<MatchGangState>)player.Gangs
-            : player.Gangs.OrderBy(item => item.Id.Value);
-        foreach (var gang in roster)
+        foreach (var gang in player.Gangs)
         {
             writer.Write(gang.Id.Value); writer.Write(gang.Owner.Value); writer.Write(gang.DefinitionId); writer.Write(gang.SectorId);
             writer.Write(gang.Force); writer.Write(gang.Hidden); writer.Write(gang.HiredThisTurn);
             WriteNullableShort(writer, gang.WeaponItemId); WriteNullableShort(writer, gang.ArmorItemId); WriteNullableShort(writer, gang.MiscellaneousItemId);
         }
-        if (includeHireSlots)
+        foreach (var slot in player.HireOfferSlots)
         {
-            foreach (var slot in player.HireOfferSlots)
-            {
-                WriteNullableShort(writer, slot.GangDefinitionId);
-                WriteNullableShort(writer, slot.ExcludedDefinitionId);
-                WriteNullableShort(writer, slot.LegacyReplacementDefinitionId);
-            }
-        }
-        else
-        {
-            var legacyHirePool = player.CaptureLegacyHirePool();
-            writer.Write(legacyHirePool.Count);
-            foreach (var id in legacyHirePool) writer.Write(id);
+            WriteNullableShort(writer, slot.GangDefinitionId);
+            WriteNullableShort(writer, slot.ExcludedDefinitionId);
+            WriteNullableShort(writer, slot.LegacyReplacementDefinitionId);
         }
         WriteNullableShort(writer, player.SnubbedHireOffer);
-        if (includeHireSlots) WriteNullableInt(writer, player.SnubbedHireOfferSlot);
+        WriteNullableInt(writer, player.SnubbedHireOfferSlot);
         writer.Write(player.PendingHires.Count);
         foreach (var hire in player.PendingHires)
         {
             writer.Write(hire.GangDefinitionId);
             writer.Write(hire.TargetSectorId);
-            if (includeHireSlots) writer.Write(hire.OfferSlot);
-            if (includeHirePayment) writer.Write(hire.InitialCostPaid);
+            writer.Write(hire.OfferSlot);
+            writer.Write(hire.InitialCostPaid);
         }
         writer.Write(player.ResearchProgress.Count); foreach (var pair in player.ResearchProgress.OrderBy(item => item.Key)) { writer.Write(pair.Key); writer.Write(pair.Value); }
         writer.Write(player.ResearchedItems.Count); foreach (var id in player.ResearchedItems.Order()) writer.Write(id);
@@ -570,49 +429,30 @@ public static class MatchStateHasher
         writer.Write(player.Statistics.TimesHidden);
     }
 
-    private static void WriteSector(
-        BinaryWriter writer,
-        MatchSectorState sector,
-        bool includeIncome,
-        bool includeCrackdownDuration,
-        bool includeCrackdownHistory,
-        bool includeChaos)
+    private static void WriteSector(BinaryWriter writer, MatchSectorState sector)
     {
         writer.Write(sector.Id); WriteNullableInt(writer, sector.Owner?.Value); writer.Write(sector.Tolerance);
-        if (includeChaos) writer.Write(sector.LegacyChaos);
         writer.Write(sector.CrackdownActive); writer.Write(sector.IsImportant); writer.Write(sector.Sites.Count);
-        foreach (var site in sector.Sites.OrderBy(item => item.Slot))
+        // A sector orders its sites by slot when it is built, so the list is already in slot order.
+        foreach (var site in sector.Sites)
         {
             writer.Write(site.Slot); writer.Write(site.DefinitionId); writer.Write(site.Resistance); WriteNullableInt(writer, site.InfluencedBy?.Value);
         }
-        if (includeIncome) writer.Write(sector.Income);
-        if (includeCrackdownDuration) writer.Write(sector.CrackdownTurnsRemaining);
-        if (includeCrackdownHistory)
-        {
-            writer.Write(sector.CrackdownHistory.Count);
-            foreach (var turn in sector.CrackdownHistory) writer.Write(turn);
-        }
+        writer.Write(sector.Income);
+        writer.Write(sector.CrackdownTurnsRemaining);
+        writer.Write(sector.CrackdownHistory.Count);
+        foreach (var turn in sector.CrackdownHistory) writer.Write(turn);
     }
 
-    private static void WriteCommand(
-        BinaryWriter writer,
-        GameCommand command,
-        bool includeTertiaryTarget,
-        bool includeQuaternaryTarget)
+    private static void WriteCommand(BinaryWriter writer, GameCommand command)
     {
         writer.Write(command.Player.Value); writer.Write(command.Gang.Value); writer.Write((byte)command.Action);
         WriteTarget(writer, command.Target); writer.Write(command.Repeat);
         writer.Write(command.SecondaryTarget.HasValue); if (command.SecondaryTarget is { } target) WriteTarget(writer, target);
-        if (includeTertiaryTarget)
-        {
-            writer.Write(command.TertiaryTarget.HasValue);
-            if (command.TertiaryTarget is { } tertiary) WriteTarget(writer, tertiary);
-        }
-        if (includeQuaternaryTarget)
-        {
-            writer.Write(command.QuaternaryTarget.HasValue);
-            if (command.QuaternaryTarget is { } quaternary) WriteTarget(writer, quaternary);
-        }
+        writer.Write(command.TertiaryTarget.HasValue);
+        if (command.TertiaryTarget is { } tertiary) WriteTarget(writer, tertiary);
+        writer.Write(command.QuaternaryTarget.HasValue);
+        if (command.QuaternaryTarget is { } quaternary) WriteTarget(writer, quaternary);
     }
 
     private static void WriteTarget(BinaryWriter writer, CommandTarget target) { writer.Write((byte)target.Kind); writer.Write(target.Id); }
@@ -631,11 +471,25 @@ public static class MatchStateHasher
         writer.Write(value.Fighting); writer.Write(value.MartialArts);
     }
 
-    private static void WriteString(BinaryWriter writer, string value)
+    internal static void WriteString(BinaryWriter writer, string value)
     {
-        var bytes = Encoding.UTF8.GetBytes(value); writer.Write(bytes.Length); writer.Write(bytes);
+        // Length-prefixed UTF-8, encoded straight into a stack buffer when it fits: names and
+        // hex digests are short, and a fingerprint writes hundreds of them.
+        var byteCount = Encoding.UTF8.GetByteCount(value);
+        writer.Write(byteCount);
+        if (byteCount <= StackStringBytes)
+        {
+            Span<byte> bytes = stackalloc byte[StackStringBytes];
+            var written = Encoding.UTF8.GetBytes(value, bytes);
+            writer.Write(bytes[..written]);
+        }
+        else
+        {
+            writer.Write(Encoding.UTF8.GetBytes(value));
+        }
     }
+    private const int StackStringBytes = 256;
     private static void WriteNullableInt(BinaryWriter writer, int? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
     private static void WriteNullableShort(BinaryWriter writer, short? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
-    private static void WriteNullableByte(BinaryWriter writer, byte? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
+    internal static void WriteNullableByte(BinaryWriter writer, byte? value) { writer.Write(value.HasValue); if (value.HasValue) writer.Write(value.Value); }
 }

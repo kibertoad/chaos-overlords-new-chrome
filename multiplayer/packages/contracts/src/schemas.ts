@@ -23,7 +23,7 @@ import {
   passwordSchema,
   portraitIdSchema,
   resourceIdSchema,
-  sha256HexSchema,
+  stateFingerprintSchema,
   slotSchema,
   turnNumberSchema,
 } from './primitives'
@@ -101,7 +101,7 @@ export const aiSeatSummarySchema = strictObject({
 
 export const turnReportRequestSchema = strictObject({
   /** Canonical state hash after the client applied the sealed turn. */
-  stateHash: sha256HexSchema,
+  stateHash: stateFingerprintSchema,
   /** The client observed a completed match after this turn. */
   finished: boolean(),
   /** Current public seat facts. Only the host's copy is published for late-join selection. */
@@ -124,7 +124,7 @@ export const uploadSnapshotRequestSchema = strictObject({
   protocolVersion: optional(protocolVersionSchema),
   /** Session shape these bytes belong to. Omitted legacy requests are session version 1. */
   sessionVersion: optional(sessionVersionSchema),
-  stateHash: sha256HexSchema,
+  stateHash: stateFingerprintSchema,
   /** The client's native snapshot, base64-encoded. The server stores it without decoding it. */
   body: base64BodySchema,
   /**

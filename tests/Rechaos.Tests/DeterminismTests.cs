@@ -1,5 +1,6 @@
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
+using Rechaos.Core.Persistence;
 using Xunit;
 
 namespace Rechaos.Tests;
@@ -80,13 +81,13 @@ public sealed class DeterminismTests
     {
         var first = CreateMatch();
         var second = CreateMatch();
-        Assert.Equal(MatchStateHasher.ComputeSha256(first), MatchStateHasher.ComputeSha256(second));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(first), MatchStateHasher.ComputeFingerprint(second));
 
         first.FinishUpkeep();
         second.FinishUpkeep();
         Assert.True(first.Submit(new GameCommand(new PlayerId(0), new GangId(10), GangAction.Hide, CommandTarget.None)).Accepted);
 
-        Assert.NotEqual(MatchStateHasher.ComputeSha256(first), MatchStateHasher.ComputeSha256(second));
+        Assert.NotEqual(MatchStateHasher.ComputeFingerprint(first), MatchStateHasher.ComputeFingerprint(second));
     }
 
     [Fact]
@@ -98,8 +99,8 @@ public sealed class DeterminismTests
         first.AiPlanning.SetCoverageSector(new PlayerId(1), 0, 23);
 
         Assert.NotEqual(
-            MatchStateHasher.ComputeSha256(first),
-            MatchStateHasher.ComputeSha256(second));
+            MatchStateHasher.ComputeFingerprint(first),
+            MatchStateHasher.ComputeFingerprint(second));
     }
 
     [Fact]
@@ -127,18 +128,57 @@ public sealed class DeterminismTests
         Assert.True(rolls.IsReadOnly);
         Assert.Throws<NotSupportedException>(() => rolls[0]++);
 
-        using var expected = new MemoryStream();
-        using (var writer = new BinaryWriter(expected, System.Text.Encoding.UTF8, leaveOpen: true))
+        // The running digest is the chain of every event's canonical encoding, in order.
+        UInt128 expected = 0;
+        foreach (var gameEvent in match.Events)
         {
-            writer.Write(match.Events.Count);
-            foreach (var gameEvent in match.Events)
-                CanonicalEventWriter.Write(writer, gameEvent);
+            using var entry = new MemoryStream();
+            CanonicalEventWriter.Append(entry, gameEvent);
+            expected = MatchStateHasher.Chain(expected, entry.ToArray());
         }
-        using var actual = new MemoryStream();
-        using (var writer = new BinaryWriter(actual, System.Text.Encoding.UTF8, leaveOpen: true))
-            match.WriteCanonicalEventHistory(writer);
 
-        Assert.Equal(expected.ToArray(), actual.ToArray());
+        Assert.NotEmpty(match.Events);
+        Assert.Equal(expected, match.EventHistoryDigest);
+    }
+
+    [Fact]
+    public void PhaseHashHistoryDigestChainsEveryBoundaryInOrder()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase();
+
+        UInt128 expected = 0;
+        foreach (var boundary in match.PhaseHashes)
+        {
+            using var entry = new MemoryStream();
+            PhaseBoundaryHash.WriteCanonical(entry, boundary);
+            expected = MatchStateHasher.Chain(expected, entry.ToArray());
+        }
+
+        Assert.NotEmpty(match.PhaseHashes);
+        Assert.Equal(expected, match.PhaseHashHistoryDigest);
+    }
+
+    [Fact]
+    public void HistoryDigestsSurviveASaveRoundTrip()
+    {
+        var match = CreateMatch();
+        match.FinishUpkeep();
+        match.FinishCommand(new PlayerId(0));
+        match.FinishCommand(new PlayerId(1));
+        match.FinishExecutionPhase();
+        using var stream = new MemoryStream();
+        NativeSaveSerializer.Save(stream, match);
+        stream.Position = 0;
+
+        var restored = NativeSaveSerializer.Load(stream, match.Definitions);
+
+        Assert.Equal(match.EventHistoryDigest, restored.EventHistoryDigest);
+        Assert.Equal(match.PhaseHashHistoryDigest, restored.PhaseHashHistoryDigest);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -152,7 +192,7 @@ public sealed class DeterminismTests
         Assert.Equal(transition.Turn, boundary.Turn);
         Assert.Equal(transition.Phase, boundary.Phase);
         Assert.Equal(transition.ExecutionPhase, boundary.ExecutionPhase);
-        Assert.Equal(MatchStateHasher.ComputeVersionTwentyThreeSha256(match), boundary.Sha256);
+        Assert.Equal(MatchStateHasher.ComputePhaseBoundaryFingerprint(match), boundary.Fingerprint);
         var boundaries = Assert.IsAssignableFrom<IList<PhaseBoundaryHash>>(match.PhaseHashes);
         Assert.True(boundaries.IsReadOnly);
         Assert.Throws<NotSupportedException>(() => boundaries[0] = boundary with { Turn = 2 });

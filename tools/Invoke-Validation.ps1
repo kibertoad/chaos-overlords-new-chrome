@@ -129,7 +129,7 @@ try {
     elseif ($LongRunningTestsOnly) {
         $testArguments += @(
             '--filter', 'Category=LongRunning',
-            '--minimum-expected-tests', '53'
+            '--minimum-expected-tests', '52'
         )
     }
     elseif ($IncludeLongRunningTests) {

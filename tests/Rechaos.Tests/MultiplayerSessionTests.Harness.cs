@@ -41,7 +41,9 @@ public sealed partial class MultiplayerSessionTests
             bool joinedInProgress = false,
             TimeSpan? streamIdleTimeout = null,
             TimeSpan? streamOutageBudget = null,
-            RetryPolicy? streamRetryPolicy = null)
+            RetryPolicy? streamRetryPolicy = null,
+            RetryPolicy? callRetryPolicy = null,
+            TimeSpan? reportFlushGrace = null)
     {
         var server = new FakeMultiplayerServer();
         var http = new HttpClient(server);
@@ -60,7 +62,8 @@ public sealed partial class MultiplayerSessionTests
             .Match(MatchId);
         var session = MultiplayerMatchSession.Start(new MultiplayerSessionOptions(
             handle, BundledOriginalData.Load(), view, ownPlayerId, ResumeAfterSeq: 7,
-            joinedInProgress, streamIdleTimeout, streamOutageBudget, streamRetryPolicy));
+            joinedInProgress, streamIdleTimeout, streamOutageBudget, streamRetryPolicy,
+            callRetryPolicy, reportFlushGrace));
         return (session, server, http);
     }
 
@@ -118,6 +121,14 @@ public sealed partial class MultiplayerSessionTests
         server.Answer(HttpMethod.Get, "/turns/1/orders", SealedOrders(1));
         server.Events.Write(SealedFrame(seq, 1));
         var resolved = await WaitFor<MultiplayerNotice.TurnResolved>(session).ConfigureAwait(false);
+        // And waits for the report itself, rather than for the notice that used to follow it. The
+        // hash is sent from the reporter now, so a turn can be resolved on this client before the
+        // server has heard about it — which is neither the premise above nor a baseline a test can
+        // count reports against.
+        await Until(
+                () => server.CallsTo(HttpMethod.Post, "/turns/1/report") >= 1,
+                "turn 1's state hash was reported")
+            .ConfigureAwait(false);
         return resolved.StateHash;
     }
 

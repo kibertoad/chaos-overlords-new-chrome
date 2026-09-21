@@ -61,7 +61,7 @@ public static class MultiplayerFailureText
     /// server is taking this write from right now — it was voted onto computer control while the
     /// player slept, or they left — and the kernel's own <c>rejoin</c> turns away nobody but the
     /// kicked, whose token is revoked anyway. Counting it here ended the session in the outbox and
-    /// deleted a live seat from the recovery file, while <c>ReportAsync</c> swallowed the same 403
+    /// deleted a live seat from the recovery file, while <c>SendReportAsync</c> swallowed the same 403
     /// and kept the client watching the match: the two paths disagreed about whether the player
     /// was still there.
     /// </para>

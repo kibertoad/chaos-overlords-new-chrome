@@ -165,7 +165,7 @@ public sealed class MultiplayerMatchLifecycleTests
 
         var hash = SealedTurnApplier.Apply(replay, Sealed(1, (0, Empty)));
 
-        Assert.Equal(MatchStateHasher.ComputeSha256(replay.State), hash);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(replay.State), hash);
         Assert.DoesNotContain(
             replay.Steps,
             step => step.Kind == ReplayOperationKind.PrepareAiPlanning
@@ -313,8 +313,8 @@ public sealed class MultiplayerMatchLifecycleTests
         var (dealt, _) = NewClient();
 
         Assert.NotEqual(
-            MatchStateHasher.ComputeSha256(dealt.State),
-            MatchStateHasher.ComputeSha256(chosen.State));
+            MatchStateHasher.ComputeFingerprint(dealt.State),
+            MatchStateHasher.ComputeFingerprint(chosen.State));
     }
 
     /// <summary>
@@ -343,8 +343,8 @@ public sealed class MultiplayerMatchLifecycleTests
         var (played, _) = NewClient(honest);
 
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(played.State),
-            MatchStateHasher.ComputeSha256(cheated.State));
+            MatchStateHasher.ComputeFingerprint(played.State),
+            MatchStateHasher.ComputeFingerprint(cheated.State));
     }
 
     /// <summary>

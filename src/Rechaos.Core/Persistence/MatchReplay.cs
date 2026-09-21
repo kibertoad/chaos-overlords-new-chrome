@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text.Json;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
@@ -32,7 +31,7 @@ public enum ReplayOperationKind : byte
 
 public sealed record ReplayStep(
     ReplayOperationKind Kind,
-    string ResultingStateSha256,
+    string ResultingStateFingerprint,
     GameCommand? Command = null,
     PlayerId? Player = null,
     GangId? Gang = null,
@@ -51,10 +50,10 @@ public sealed record ReplayStep(
 public sealed class MatchReplayRecorder
 {
     private readonly byte[] _initialSnapshot;
-    private readonly string _initialStateSha256;
+    private readonly string _initialStateFingerprint;
     private readonly List<ReplayStep> _steps = [];
     private readonly bool _verifying;
-    private string _currentStateSha256;
+    private string _currentStateFingerprint;
 
     public MatchReplayRecorder(MatchState state)
         : this(state, verifying: true)
@@ -65,8 +64,8 @@ public sealed class MatchReplayRecorder
     {
         State = state ?? throw new ArgumentNullException(nameof(state));
         _verifying = verifying;
-        _initialStateSha256 = MatchStateHasher.ComputeSha256(state);
-        _currentStateSha256 = _initialStateSha256;
+        _initialStateFingerprint = MatchStateHasher.ComputeFingerprint(state);
+        _currentStateFingerprint = _initialStateFingerprint;
         using var stream = new MemoryStream();
         NativeSaveSerializer.Save(stream, state);
         _initialSnapshot = stream.ToArray();
@@ -77,7 +76,7 @@ public sealed class MatchReplayRecorder
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Every mutation costs two full serialisations and SHA-256s of the whole match: one for
+    /// Every mutation costs two full fingerprints of the whole match: one for
     /// <see cref="EnsureSynchronized"/>, which asks whether the state has moved behind the
     /// recorder's back, and one for the step's own fingerprint. The speculative copy an online
     /// player plans on routes every click, every cancel and every hire through that, on the render
@@ -105,17 +104,17 @@ public sealed class MatchReplayRecorder
     private MatchReplayRecorder(
         MatchState state,
         byte[] initialSnapshot,
-        string initialStateSha256,
+        string initialStateFingerprint,
         IReadOnlyList<ReplayStep> steps)
     {
         State = state;
         _verifying = true;
         _initialSnapshot = initialSnapshot;
-        _initialStateSha256 = initialStateSha256;
+        _initialStateFingerprint = initialStateFingerprint;
         _steps.AddRange(steps);
-        _currentStateSha256 = steps.Count == 0
-            ? initialStateSha256
-            : steps[^1].ResultingStateSha256;
+        _currentStateFingerprint = steps.Count == 0
+            ? initialStateFingerprint
+            : steps[^1].ResultingStateFingerprint;
         // The state has to be the one the journal ends at, or the first mutation would append a
         // step whose fingerprint nothing can reproduce. The caller replayed it to get here.
         EnsureSynchronized();
@@ -139,9 +138,9 @@ public sealed class MatchReplayRecorder
     internal static MatchReplayRecorder Resume(
         MatchState state,
         byte[] initialSnapshot,
-        string initialStateSha256,
+        string initialStateFingerprint,
         IReadOnlyList<ReplayStep> steps) =>
-        new(state, initialSnapshot, initialStateSha256, steps);
+        new(state, initialSnapshot, initialStateFingerprint, steps);
 
     public CommandSubmissionResult Submit(GameCommand command)
     {
@@ -294,7 +293,7 @@ public sealed class MatchReplayRecorder
         EnsureSynchronized();
         return new ReplayDocument(
             MatchReplaySerializer.CurrentFormatVersion,
-            _initialStateSha256,
+            _initialStateFingerprint,
             _initialSnapshot,
             _steps.ToArray());
     }
@@ -310,28 +309,30 @@ public sealed class MatchReplayRecorder
         return result;
     }
 
-    private string CurrentHash() => MatchStateHasher.ComputeSha256(State);
+    private string CurrentHash() => MatchStateHasher.ComputeFingerprint(State);
 
     private void Add(ReplayStep step)
     {
         if (step.Recipients is not null)
             step = step with { Recipients = Array.AsReadOnly(step.Recipients.ToArray()) };
         _steps.Add(step);
-        _currentStateSha256 = step.ResultingStateSha256;
+        _currentStateFingerprint = step.ResultingStateFingerprint;
     }
 
     private void EnsureSynchronized()
     {
         if (!_verifying) return;
-        if (!StringComparer.Ordinal.Equals(_currentStateSha256, CurrentHash()))
+        if (!StringComparer.Ordinal.Equals(_currentStateFingerprint, CurrentHash()))
             throw new InvalidOperationException("Match state changed outside the replay recorder.");
     }
 }
 
 public static class MatchReplaySerializer
 {
-    // 26 adds the recorded departed-seat controller handover.
-    public const int CurrentFormatVersion = 29;
+    // 30 replaces the SHA-256 step fingerprints with XxHash128 ones and drops every older
+    // format: a journal is verified step by step against the fingerprint of its day, and there is
+    // no build in players' hands whose journals this would strand.
+    public const int CurrentFormatVersion = 30;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 
@@ -381,7 +382,7 @@ public static class MatchReplaySerializer
         if (document.FormatVersion != CurrentFormatVersion) return null;
         var state = ApplyGuarded(document, definitions);
         return MatchReplayRecorder.Resume(
-            state, document.InitialSnapshot, document.InitialStateSha256, document.Steps);
+            state, document.InitialSnapshot, document.InitialStateFingerprint, document.Steps);
     }
 
     /// <summary>
@@ -425,12 +426,12 @@ public static class MatchReplaySerializer
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
         var ending = document.Steps.Count == 0
-            ? document.InitialStateSha256
-            : document.Steps[^1].ResultingStateSha256;
-        if (!StringComparer.Ordinal.Equals(ending, MatchStateHasher.ComputeSha256(resumed)))
+            ? document.InitialStateFingerprint
+            : document.Steps[^1].ResultingStateFingerprint;
+        if (!StringComparer.Ordinal.Equals(ending, MatchStateHasher.ComputeFingerprint(resumed)))
             return null;
         return MatchReplayRecorder.Resume(
-            resumed, document.InitialSnapshot, document.InitialStateSha256, document.Steps);
+            resumed, document.InitialSnapshot, document.InitialStateFingerprint, document.Steps);
     }
 
     private static ReplayDocument Read(Stream source)
@@ -469,33 +470,29 @@ public static class MatchReplaySerializer
 
     private static MatchState Apply(ReplayDocument document, OriginalData definitions)
     {
-        if (document.FormatVersion > CurrentFormatVersion)
+        if (document.FormatVersion != CurrentFormatVersion)
             throw IncompatibleSave.Create(
-                IncompatibleSaveReason.NewerFormat,
+                document.FormatVersion > CurrentFormatVersion
+                    ? IncompatibleSaveReason.NewerFormat
+                    : IncompatibleSaveReason.OlderFormat,
                 $"Unsupported replay format {document.FormatVersion}.");
-        if (document.FormatVersion < 2)
-            throw new InvalidDataException($"Unsupported replay format {document.FormatVersion}.");
         if (document.Steps.Count > MaximumSteps)
             throw new InvalidDataException("Replay exceeds the operation limit.");
         using var snapshot = new MemoryStream(document.InitialSnapshot, writable: false);
         var state = NativeSaveSerializer.Load(snapshot, definitions);
-        VerifyHash(document.InitialStateSha256, state, -1, document.FormatVersion);
+        VerifyFingerprint(document.InitialStateFingerprint, state, -1);
         for (var index = 0; index < document.Steps.Count; index++)
         {
             var step = document.Steps[index];
-            ApplyStep(state, step, index, document.FormatVersion);
-            VerifyHash(step.ResultingStateSha256, state, index, document.FormatVersion);
+            ApplyStep(state, step, index);
+            VerifyFingerprint(step.ResultingStateFingerprint, state, index);
         }
         return state;
     }
 
-    private static void ApplyStep(MatchState state, ReplayStep step, int index, int replayVersion)
+    private static void ApplyStep(MatchState state, ReplayStep step, int index)
     {
-        var minimumVersion = MinimumVersionFor(step.Kind);
-        if (replayVersion < minimumVersion)
-            throw new InvalidDataException(
-                $"Replay step {index} uses an operation introduced in replay format {minimumVersion}.");
-        ValidateStepPayload(step, index, replayVersion);
+        ValidateStepPayload(step, index);
 
         switch (step.Kind)
         {
@@ -503,7 +500,6 @@ public static class MatchReplaySerializer
             {
                 var command = step.Command
                     ?? throw new InvalidDataException($"Replay step {index} has no command.");
-                ValidateCommandVersion(command, replayVersion, index);
                 var result = state.Submit(command);
                 VerifyResult(step, result.Accepted, (int)result.Validation.Code, index);
                 break;
@@ -521,9 +517,7 @@ public static class MatchReplaySerializer
                     ?? throw new InvalidDataException($"Replay step {index} has no gang definition.");
                 var sectorId = step.SectorId
                     ?? throw new InvalidDataException($"Replay step {index} has no sector.");
-                var result = replayVersion <= 9
-                    ? state.QueueHireLegacyImmediatePayment(player, gangDefinitionId, sectorId)
-                    : state.QueueHire(player, gangDefinitionId, sectorId);
+                var result = state.QueueHire(player, gangDefinitionId, sectorId);
                 VerifyResult(step, result.Accepted, (int)result.Validation.Code, index);
                 break;
             }
@@ -532,9 +526,7 @@ public static class MatchReplaySerializer
                 var player = Required(step.Player, index);
                 var gangDefinitionId = step.GangDefinitionId
                     ?? throw new InvalidDataException($"Replay step {index} has no gang definition.");
-                var result = replayVersion <= 9
-                    ? state.SnubHireOfferLegacySingleAction(player, gangDefinitionId)
-                    : state.SnubHireOffer(player, gangDefinitionId);
+                var result = state.SnubHireOffer(player, gangDefinitionId);
                 VerifyResult(step, result.Accepted, (int)result.Validation.Code, index);
                 break;
             }
@@ -575,13 +567,11 @@ public static class MatchReplaySerializer
             }
             case ReplayOperationKind.MarkComlinkRead:
             {
-                var changed = replayVersion >= 24
-                    ? state.MarkComlinkRead(
-                        Required(step.Player, index),
-                        step.ComlinkSequence
-                            ?? throw new InvalidDataException(
-                                $"Replay step {index} has no Comlink sequence."))
-                    : state.MarkAllComlinkReadLegacy(Required(step.Player, index));
+                var changed = state.MarkComlinkRead(
+                    Required(step.Player, index),
+                    step.ComlinkSequence
+                        ?? throw new InvalidDataException(
+                            $"Replay step {index} has no Comlink sequence."));
                 if (step.Accepted != changed)
                     throw new InvalidDataException($"Replay step {index} produced a different Comlink read result.");
                 break;
@@ -606,7 +596,7 @@ public static class MatchReplaySerializer
         }
     }
 
-    private static void ValidateStepPayload(ReplayStep step, int index, int replayVersion)
+    private static void ValidateStepPayload(ReplayStep step, int index)
     {
         var actual = ReplayStepFields.None;
         if (step.Command is not null) actual |= ReplayStepFields.Command;
@@ -637,8 +627,7 @@ public static class MatchReplaySerializer
             ReplayOperationKind.DismissNotification =>
                 ReplayStepFields.Player | ReplayStepFields.Accepted,
             ReplayOperationKind.MarkComlinkRead => ReplayStepFields.Player
-                | ReplayStepFields.Accepted
-                | (replayVersion >= 24 ? ReplayStepFields.ComlinkSequence : ReplayStepFields.None),
+                | ReplayStepFields.Accepted | ReplayStepFields.ComlinkSequence,
             ReplayOperationKind.TransferPlayerToComputer or ReplayOperationKind.TransferPlayerToHuman =>
                 ReplayStepFields.Player | ReplayStepFields.Accepted,
             ReplayOperationKind.SendComlinkMessage => ReplayStepFields.Player | result
@@ -654,28 +643,6 @@ public static class MatchReplaySerializer
                 $"Replay step {index} has an invalid payload for {step.Kind}.");
     }
 
-    private static int MinimumVersionFor(ReplayOperationKind kind) => kind switch
-    {
-        ReplayOperationKind.PrepareHireOffers => 3,
-        ReplayOperationKind.PrepareAiPlanning => 6,
-        ReplayOperationKind.PrepareAiHiring => 8,
-        ReplayOperationKind.SendComlinkMessage or ReplayOperationKind.MarkComlinkRead => 18,
-        ReplayOperationKind.PrepareSimultaneousHireOffers => 21,
-        ReplayOperationKind.TransferPlayerToComputer => 26,
-        ReplayOperationKind.TransferPlayerToHuman => 27,
-        _ => 2
-    };
-
-    private static void ValidateCommandVersion(GameCommand command, int replayVersion, int index)
-    {
-        if (replayVersion < 19 && command.TertiaryTarget is not null)
-            throw new InvalidDataException(
-                $"Replay step {index} uses a command target introduced in replay format 19.");
-        if (replayVersion < 20 && command.QuaternaryTarget is not null)
-            throw new InvalidDataException(
-                $"Replay step {index} uses a command target introduced in replay format 20.");
-    }
-
     private static void VerifyResult(ReplayStep step, bool accepted, int validationCode, int index)
     {
         if (step.Accepted != accepted || step.ValidationCode != validationCode)
@@ -685,51 +652,11 @@ public static class MatchReplaySerializer
     private static T Required<T>(T? value, int index) where T : struct =>
         value ?? throw new InvalidDataException($"Replay step {index} is missing a required value.");
 
-    private static void VerifyHash(string expected, MatchState state, int index, int replayVersion)
+    private static void VerifyFingerprint(string expected, MatchState state, int index)
     {
-        byte[] expectedBytes;
-        try
-        {
-            expectedBytes = Convert.FromHexString(expected);
-        }
-        catch (FormatException exception)
-        {
-            throw new InvalidDataException($"Replay step {index} has an invalid state fingerprint.", exception);
-        }
-        string[] candidateHashes = replayVersion switch
-        {
-            >= 29 => [MatchStateHasher.ComputeSha256(state)],
-            28 => [MatchStateHasher.ComputeVersionTwentySevenSha256(state)],
-            >= 25 => [MatchStateHasher.ComputeVersionTwentySixSha256(state)],
-            24 => [MatchStateHasher.ComputeVersionTwentyFiveSha256(state)],
-            23 => [MatchStateHasher.ComputeVersionTwentyFourSha256(state)],
-            22 => [MatchStateHasher.ComputeVersionTwentyThreeSha256(state)],
-            20 or 21 => [MatchStateHasher.ComputeVersionTwentyTwoSha256(state)],
-            19 => [MatchStateHasher.ComputeVersionTwentyOneSha256(state)],
-            18 => [MatchStateHasher.ComputeVersionTwentySha256(state)],
-            17 => [MatchStateHasher.ComputeVersionNineteenSha256(state)],
-            16 => [MatchStateHasher.ComputeVersionEighteenSha256(state)],
-            15 => [MatchStateHasher.ComputeVersionSeventeenSha256(state)],
-            14 => [MatchStateHasher.ComputeVersionSixteenSha256(state)],
-            13 => [MatchStateHasher.ComputeVersionFifteenSha256(state)],
-            12 => [MatchStateHasher.ComputeVersionFourteenSha256(state)],
-            11 => [MatchStateHasher.ComputeVersionThirteenSha256(state)],
-            10 => [MatchStateHasher.ComputeVersionTwelveSha256(state)],
-            9 => [MatchStateHasher.ComputeVersionElevenSha256(state)],
-            7 or 8 => [MatchStateHasher.ComputeVersionTenSha256(state)],
-            5 or 6 => [MatchStateHasher.ComputeVersionSixSha256(state)],
-            4 => [MatchStateHasher.ComputeVersionFiveSha256(state)],
-            _ =>
-            [
-                MatchStateHasher.ComputeVersionFourSha256(state),
-                MatchStateHasher.ComputeVersionThreeSha256(state),
-                MatchStateHasher.ComputeVersionTwoSha256(state),
-                MatchStateHasher.ComputeLegacySha256(state)
-            ]
-        };
-        if (!candidateHashes.Select(Convert.FromHexString).Any(actualBytes =>
-                expectedBytes.Length == actualBytes.Length
-                && CryptographicOperations.FixedTimeEquals(expectedBytes, actualBytes)))
+        if (!MatchStateHasher.IsFingerprint(expected))
+            throw new InvalidDataException($"Replay step {index} has an invalid state fingerprint.");
+        if (!string.Equals(expected, MatchStateHasher.ComputeFingerprint(state), StringComparison.Ordinal))
             throw new InvalidDataException($"Replay diverged after step {index}.");
     }
 
@@ -770,7 +697,7 @@ public static class MatchReplaySerializer
 
 internal sealed record ReplayDocument(
     int FormatVersion,
-    string InitialStateSha256,
+    string InitialStateFingerprint,
     byte[] InitialSnapshot,
     IReadOnlyList<ReplayStep> Steps);
 

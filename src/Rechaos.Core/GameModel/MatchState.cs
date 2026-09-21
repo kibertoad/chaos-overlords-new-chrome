@@ -219,8 +219,9 @@ public sealed class MatchSectorState
         Owner = owner;
         Tolerance = tolerance;
         LegacyChaos = chaos;
+        // Only a newly activated sector needs the minimum; restores preserve a decayed duration.
         CrackdownTurnsRemaining = crackdownActive
-            ? Math.Max(ManualRules.MinimumCrackdownTurns, crackdownTurnsRemaining)
+            ? crackdownTurnsRemaining > 0 ? crackdownTurnsRemaining : ManualRules.MinimumCrackdownTurns
             : 0;
         IsImportant = isImportant;
         Income = income;
@@ -319,15 +320,9 @@ public sealed class MatchStatistics
 /// </summary>
 public sealed partial class MatchState
 {
-    private readonly List<GameEvent> _events = [];
-    private readonly IReadOnlyList<GameEvent> _eventView;
-    private readonly MemoryStream _canonicalEventBytes = new();
     private readonly Dictionary<PlayerId, NotificationQueue> _notifications;
     private readonly Dictionary<PlayerId, long> _nextNotificationSequences;
     private readonly Dictionary<PlayerId, ComlinkInbox> _comlinkInboxes;
-    private readonly List<PhaseBoundaryHash> _phaseHashes = [];
-    private readonly IReadOnlyList<PhaseBoundaryHash> _phaseHashView;
-    private long _nextEventSequence;
     public MatchState(
         OriginalData definitions,
         MatchSetup setup,
@@ -416,14 +411,11 @@ public sealed partial class MatchState
     public TurnCommandQueue Commands { get; }
     public AiStrategicState AiStrategy { get; }
     public AiPlanningState AiPlanning { get; }
-    public IReadOnlyList<GameEvent> Events => _eventView;
-    public IReadOnlyList<PhaseBoundaryHash> PhaseHashes => _phaseHashView;
     public IReadOnlyList<CommandResolutionResult> LastPhaseResolutions { get; private set; } = [];
     public IReadOnlyList<PoliceAttackResolutionResult> LastPoliceAttackResolutions { get; private set; } = [];
     public IReadOnlyList<UpkeepResolutionResult> LastUpkeepResolutions { get; private set; } = [];
     public IReadOnlyList<HireResolutionResult> LastHireResolutions { get; private set; } = [];
     public MatchOutcome? Outcome { get; private set; }
-    internal long NextEventSequence => _nextEventSequence;
 
     private void RestoreRuntime(MatchRuntimeRestore restore)
     {
@@ -472,9 +464,9 @@ public sealed partial class MatchState
                 || !Enum.IsDefined(boundary.Phase)
                 || boundary.ExecutionPhase is { } phase && !Enum.IsDefined(phase)
                 || (boundary.Phase == TurnPhase.Execution) != boundary.ExecutionPhase.HasValue
-                || !IsSha256(boundary.Sha256)))
+                || !MatchStateHasher.IsFingerprint(boundary.Fingerprint)))
             throw new ArgumentException("Restored phase hash history is invalid.", nameof(restore));
-        _phaseHashes.AddRange(restore.PhaseHashes);
+        foreach (var boundary in restore.PhaseHashes) StorePhaseHash(boundary);
         RestoreOutcome(restore);
     }
     public bool CanPlayerDetectGang(PlayerId observer, GangId targetGang)
@@ -943,22 +935,6 @@ public sealed partial class MatchState
         return gameEvent;
     }
 
-    internal void WriteCanonicalEventHistory(BinaryWriter writer)
-    {
-        writer.Write(_events.Count);
-        writer.Write(
-            _canonicalEventBytes.GetBuffer(), 0,
-            checked((int)_canonicalEventBytes.Length));
-    }
-
-    private GameEvent StoreEvent(GameEvent gameEvent)
-    {
-        var frozen = CanonicalEventWriter.Freeze(gameEvent);
-        _events.Add(frozen);
-        CanonicalEventWriter.Append(_canonicalEventBytes, frozen);
-        return frozen;
-    }
-
     internal GameNotification QueueNotification(
         PlayerId player,
         GameNotificationKind kind,
@@ -984,14 +960,5 @@ public sealed partial class MatchState
         _notifications.TryGetValue(player, out var queue)
             ? queue
             : throw new ArgumentOutOfRangeException(nameof(player));
-    private TurnTransition CaptureBoundary(TurnTransition transition)
-    {
-        _phaseHashes.Add(new PhaseBoundaryHash(
-            Coordinator.Turn,
-            Coordinator.Phase,
-            Coordinator.ExecutionPhase,
-            MatchStateHasher.ComputeVersionTwentyThreeSha256(this)));
-        return transition;
-    }
 
 }

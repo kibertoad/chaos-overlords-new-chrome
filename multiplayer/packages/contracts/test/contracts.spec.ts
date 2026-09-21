@@ -143,7 +143,7 @@ describe('matchEventSchema', () => {
       safeParse(matchEventSchema, {
         ...envelope,
         type: 'turn.sealed',
-        payload: { turn: 7, stateHash: 'a'.repeat(64) },
+        payload: { turn: 7, stateHash: 'a'.repeat(32) },
       }).success,
     ).toBe(false)
   })

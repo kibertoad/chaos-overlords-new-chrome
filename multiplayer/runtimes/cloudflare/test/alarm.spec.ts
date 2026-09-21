@@ -87,10 +87,10 @@ it('seals the turn when the alarm fires, and forgets a deadline nothing is due f
     orders: { schemaVersion: 1, ops: [{ op: 'cancelCommand', player: 1, gang: 1 }] },
     ready: true,
   })
-  await hostApi.report(1, { stateHash: 'a'.repeat(64), finished: false })
-  await guestApi.report(1, { stateHash: 'a'.repeat(64), finished: false })
-  await hostApi.report(2, { stateHash: 'b'.repeat(64), finished: true })
-  await guestApi.report(2, { stateHash: 'b'.repeat(64), finished: true })
+  await hostApi.report(1, { stateHash: 'a'.repeat(32), finished: false })
+  await guestApi.report(1, { stateHash: 'a'.repeat(32), finished: false })
+  await hostApi.report(2, { stateHash: 'b'.repeat(32), finished: true })
+  await guestApi.report(2, { stateHash: 'b'.repeat(32), finished: true })
   expect((await hostApi.get()).match.status).toBe('finished')
   await runInDurableObject(stub as never, async (instance: MatchHub, state) => {
     await instance.alarm()

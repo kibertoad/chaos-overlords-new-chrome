@@ -15,6 +15,7 @@ import {
   resourceIdSchema,
   seedSchema,
   sha256HexSchema,
+  stateFingerprintSchema,
   slotSchema,
   turnNumberSchema,
 } from './primitives'
@@ -157,7 +158,7 @@ export const turnSealedEventSchema = strictObject({
 export const turnConfirmedEventSchema = strictObject({
   ...eventEnvelope,
   type: literal('turn.confirmed'),
-  payload: strictObject({ turn: turnNumberSchema, stateHash: sha256HexSchema }),
+  payload: strictObject({ turn: turnNumberSchema, stateHash: stateFingerprintSchema }),
 })
 
 export const turnDesyncedEventSchema = strictObject({
@@ -165,13 +166,13 @@ export const turnDesyncedEventSchema = strictObject({
   type: literal('turn.desynced'),
   payload: strictObject({
     turn: turnNumberSchema,
-    reports: array(strictObject({ playerId: resourceIdSchema, stateHash: sha256HexSchema })),
+    reports: array(strictObject({ playerId: resourceIdSchema, stateHash: stateFingerprintSchema })),
     /**
      * The hashes the most players reported, tied if more than one. A recovery snapshot has to
      * claim one of these, so a client can see from the event alone whether it is the odd one
      * out and what the match will converge on.
      */
-    candidateStateHashes: array(sha256HexSchema),
+    candidateStateHashes: array(stateFingerprintSchema),
   }),
 })
 
@@ -181,7 +182,7 @@ export const snapshotAvailableEventSchema = strictObject({
   payload: strictObject({
     turn: turnNumberSchema,
     formatVersion: formatVersionSchema,
-    stateHash: sha256HexSchema,
+    stateHash: stateFingerprintSchema,
     uploadedByPlayerId: resourceIdSchema,
   }),
 })

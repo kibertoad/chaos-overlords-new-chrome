@@ -85,7 +85,7 @@ public sealed partial class MultiplayerMatchSession
         // client is on: reports for turn N can arrive after N+1 has sealed, and in a timed match
         // one slow seat is enough to make that the ordinary case rather than a corner.
         var ours = await StateAfterTurnAsync(pending.Turn, cancellationToken).ConfigureAwait(false);
-        var hash = ours is null ? null : MatchStateHasher.ComputeSha256(ours);
+        var hash = ours is null ? null : MatchStateHasher.ComputeFingerprint(ours);
         var mayRepair = hash is not null
             && pending.Candidates.Contains(hash, StringComparer.Ordinal)
             // The server takes a repair from whoever holds the SOLE most-reported hash, and leaves
@@ -139,7 +139,7 @@ public sealed partial class MultiplayerMatchSession
         if (ours is not null
             && string.Equals(
                 announced.StateHash,
-                MatchStateHasher.ComputeSha256(ours),
+                MatchStateHasher.ComputeFingerprint(ours),
                 StringComparison.Ordinal))
         {
             _pendingDesync = null;
@@ -173,7 +173,7 @@ public sealed partial class MultiplayerMatchSession
     /// Every turn it passes through is re-reported, because the server waits for a report from
     /// every human seat and an earlier turn left unsettled blocks every later repair. Reports for
     /// turns already confirmed are refused with <c>turn_confirmed</c>, which
-    /// <see cref="ReportAsync"/> reads as the success it is.
+    /// <see cref="SendReportAsync"/> reads as the success it is.
     /// </para>
     /// </remarks>
     private async Task AdoptRepairAsync(SnapshotView snapshot, CancellationToken cancellationToken)
@@ -191,8 +191,8 @@ public sealed partial class MultiplayerMatchSession
         // Seals reconstructed before this repair are superseded by the turns just replayed.
         _unreportedSeals.Clear();
         foreach (var (turn, stateHash) in settled)
-            await ReportAsync(turn, stateHash, cancellationToken).ConfigureAwait(false);
-        var current = MatchStateHasher.ComputeSha256(_replay.State);
+            await QueueReportAsync(turn, stateHash).WaitAsync(cancellationToken).ConfigureAwait(false);
+        var current = MatchStateHasher.ComputeFingerprint(_replay.State);
         var (state, planning) = HandOver();
         _notices.Enqueue(new MultiplayerNotice.Resynced(snapshot.Turn, state, current, planning));
     }

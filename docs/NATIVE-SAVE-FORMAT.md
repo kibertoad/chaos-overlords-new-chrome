@@ -1,7 +1,7 @@
 # Recreation-native save format
 
-Status: implemented format version 24
-Last updated: 2026-09-20
+Status: implemented format version 26
+Last updated: 2026-09-21
 
 This format belongs to the recreation. It is deliberately separate from the
 original *Chaos Overlords* fixed-memory save envelopes and makes no claim of
@@ -15,21 +15,24 @@ original's address-shaped layout or partial-read behavior.
 
 <!-- doc-index:begin toc depth=2 -->
 - [Container and limits](#container-and-limits)
-- [Version 24 document](#version-24-document)
+- [Version 26 document](#version-26-document)
 - [Compatibility policy](#compatibility-policy)
-- [Replay format version 28](#replay-format-version-28)
+- [Replay format version 30](#replay-format-version-30)
 <!-- doc-index:end -->
 
 ## Container and limits
 
-- UTF-8 JSON with camel-case property names and `formatVersion: 24`.
+- UTF-8 JSON with camel-case property names and `formatVersion: 26`.
 - Maximum accepted size: 16 MiB.
 - Unknown properties, missing constructor fields, invalid identifiers, invalid
   enum/phase combinations, and inconsistent sequence counters are rejected.
 - `definitionsSha256` fingerprints the complete supplied site/gang/item model;
   loading with different gameplay data is rejected.
-- `stateSha256` is the canonical `MatchStateHasher` digest captured at save
-  time and verified after reconstruction.
+- `stateFingerprint` is the canonical `MatchStateHasher` fingerprint captured
+  at save time and verified after reconstruction: 128 bits of XxHash128 over
+  the canonical little-endian state encoding, as 32 lowercase hex characters.
+  It is a checksum against corruption and divergence, not a cryptographic
+  digest; `definitionsSha256` stays a SHA-256 because it is computed once.
 
 `NativeSaveSerializer` reads and writes streams. `NativeSaveStore` writes and
 flushes a same-directory temporary file, reads it back through the bounded
@@ -38,15 +41,15 @@ serializer, then atomically promotes it. A valid previous primary becomes
 good backup. Recovery loads the backup only when the primary is missing,
 unreadable, or invalid.
 
-## Version 24 document
+## Version 26 document
 
 The top-level members are:
 
 | Member | Contents |
 |---|---|
-| `formatVersion` | Schema discriminator; currently `24` |
+| `formatVersion` | Schema discriminator; currently `26` |
 | `definitionsSha256` | Gameplay-definition compatibility fingerprint |
-| `stateSha256` | Canonical authoritative-state fingerprint |
+| `stateFingerprint` | Canonical authoritative-state fingerprint |
 | `setup` | Scenario, duration, initial seed, global AI mentality, Original/Advanced AI policy, and ordered player definitions including portrait IDs |
 | `players` | Cash/support/objective state, gangs, three fixed hire slots, pending action slot and legacy prepaid marker, persistent maximum-hire-Force modifier, research, inventory, statistics |
 | `sectors` | Ownership, explicit generated income, tolerance, Crackdown/importance, and three site instances |
@@ -67,77 +70,29 @@ its nested collections are frozen after construction.
 
 ## Compatibility policy
 
-Readers currently accept versions 1 through 24. This pre-1.0 compatibility is
-useful test coverage, not a product guarantee: readers and fixtures for old
-development schemas may be removed or replaced when the authoritative model
-changes. Older documents currently migrate formerly implicit
-sector income and later Crackdown state according to their schema; all v1-v4
-setups migrate to Criminal AI mentality and map each player to its matching
-default portrait. Version 5 and earlier reconstruct the fixed AI reaction and
-attitude state without advancing the saved live RNG. Version 6 and earlier
-initialize the newly authoritative hire roles to zero and all planning-family
-slots to the original sentinel 99. Version 7 compact hire pools map
-deterministically into the fixed slots introduced in version 8. Mid-action
-saves retain removed definitions and any already-drawn premature replacement in
-an explicit compatibility field until resolution. Version 8 pending hires
-migrate as already paid, preserving their prior cash and cumulative-spending
-mutation without charging twice; version 9 selections remain unpaid until
-successful resolution. Version 9 and earlier initialize the newly authoritative
-maximum-hire-Force modifier to false; version 10 preserves it independently of
-the player's name. Version 10 and earlier derive the newly authoritative
-placement anchors from each restored gang-slot-zero sector; unconfigured
-recreation slots use the inactive-sector encoding. Version 11 and earlier
-initialize the newly authoritative three-generation AI action-byte histories
-to `None`. Version 12 and earlier initialize all newly authoritative action
-target bytes to zero and infer each first-planning flag from whether that
-player's family/action records contain initialized data. Version 13 and earlier
-initialize the weapon and armor cooldowns to zero. Version 14 and earlier infer
-the polymorphic focus/formation values from active-gang sectors; this is a
-development-format convenience, not a pre-1.0 compatibility promise. Version
-15 and earlier initialize the newly authoritative family-6 coverage sectors to
-`-1`. Version 16 and earlier initialize empty Comlink inboxes. Version 18 adds
-and fingerprints the optional tertiary command target used by multi-item Sell;
-version 19 adds and fingerprints the optional quaternary target needed when
-multi-item Give carries a recipient plus all three equipment slots. Older
-documents naturally restore the absent targets as null; a legacy-labeled save
-that populates a queued-command or event target introduced by a later schema is
-rejected before reconstruction and legacy-hash verification.
-Version 20 advances the canonical hash to version 23 and authenticates every
-ordered event body and nested resolution fact; version 19 remains readable
-through its preserved version-22 hash projection. In memory, appended events
-and their nested collections are exposed read-only and retain an append-only
-cache of those exact canonical bytes; this is an implementation optimization,
-not a schema or digest-format change. Since the event log is never pruned,
-restore also requires sequences `0..nextEventSequence-1` with no gaps and a
-single kind-appropriate detail payload (or none for queue/cancel facts).
-Version 21 advances the canonical hash to version 24 and authenticates the
-complete phase-boundary history. Boundary entries remain version-23 snapshots,
-avoiding recursive self-hashing while the enclosing v24 state fingerprint
-protects their ordered metadata and digests. Version 20 remains readable
-through its preserved version-23 projection.
-Version 22 replaces each Comlink inbox's single read-through cursor with the
-sorted sequences of the individual records actually viewed and advances the
-canonical hash to version 25. Versions 17 through 21 migrate their read-through
-cursor into the equivalent retained-record prefix and continue to verify with
-their preserved legacy hash projection.
-Version 23 adds the immutable Original/Advanced AI policy to match setup and
-advances the canonical hash to version 26. Versions 1 through 22 migrate to the
-default Original policy and verify through their preserved hash projections.
-Version 24 removes the synthetic persistent sector-Chaos value and advances the
-canonical hash to version 27. Version 23 remains readable and verifies through
-its preserved version-26 projection before the obsolete value is discarded.
-The appropriate legacy canonical hash is verified before the
-migrated state is returned. Unknown
-versions remain rejected. Starting with 1.0.0, incompatible changes must
-increment `formatVersion` and provide either deterministic migration with
-fixtures or an explicitly documented safe rejection path. The existing bounded
-reader, legacy-hash selection, and migration structure is retained for that
-post-1.0 policy.
+Only the current format version is read. A document declaring a newer version
+is refused as `NewerFormat`; one declaring an older version is refused as
+`OlderFormat`. Both are reported as incompatible rather than damaged, so the
+save browser leaves the file where it is instead of treating it as a corrupt
+slot to overwrite.
+
+Format 26 is where the migration ladder ends. Every earlier version was
+verified through a preserved projection of the SHA-256 state hash of its day,
+and formats 21 and later also carry the whole phase-boundary history in that
+hash; once the fingerprint became XxHash128, none of those documents could be
+checked against their contents any more, and the game had not been released,
+so there was nobody whose saves a migration would have rescued. The decision is
+recorded in `DECISIONS.md` under 2026-09-21.
+
+Starting with 1.0.0, incompatible changes must increment `formatVersion` and
+provide either deterministic migration with fixtures or an explicitly
+documented safe rejection path; the bounded reader and the incompatibility
+marker are the structure that policy builds on.
 
 Original-save import/export is an explicit non-goal. Native snapshots must never
 be presented as converted original saves.
 
-## Replay format version 28
+## Replay format version 30
 
 `MatchReplayRecorder` captures an initial native snapshot, then requires every
 authoritative mutation to pass through its API. It covers command submission and
@@ -187,15 +142,17 @@ Versions 26 and 27 add online controller-transfer operations. Version 28 embeds
 native snapshot version 24 and canonical hash version 27, removing synthetic
 sector Chaos from newly recorded state while retaining legacy verification.
 
-Playback enforces the introduction boundary of every operation added after the
-base v2 schema: `PrepareHireOffers` requires v3, `PrepareAiPlanning` v6,
-`PrepareAiHiring` v8, Comlink send/read v18, and simultaneous hire preparation
-v21. Submitted-command payloads likewise require v19 for tertiary targets and
-v20 for quaternary targets. Relabeling a document cannot opt an older schema
-into newer mutations or target shapes.
+Version 30 embeds native snapshot version 26 and replaces every SHA-256 step
+fingerprint with the XxHash128 state fingerprint. Only version 30 is played
+back: a journal declaring another version is refused as `NewerFormat` or
+`OlderFormat`, for the reason the compatibility policy above gives, and the
+per-version operation and target boundaries the older schemas needed went with
+them. Journal members `initialStateFingerprint` and `resultingStateFingerprint`
+replace the `…Sha256` names.
 
 Each ordered replay step stores its operation payload, the expected validation
-result where applicable, and the canonical state SHA-256 after the operation.
+result where applicable, and the canonical state fingerprint after the
+operation.
 The tagged operation union is exact: every kind requires its complete field set
 and rejects fields belonging to another operation, even though those names are
 known to the shared JSON record. Nested recipient lists are frozen on record.

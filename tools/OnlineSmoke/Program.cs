@@ -88,9 +88,9 @@ public static class Program
         var hostState = hostSession.Bootstrap.State;
         var guestState = guestSession.Bootstrap.State;
         Require(
-            MatchStateHasher.ComputeSha256(hostState) == MatchStateHasher.ComputeSha256(guestState),
+            MatchStateHasher.ComputeFingerprint(hostState) == MatchStateHasher.ComputeFingerprint(guestState),
             "the two clients bootstrapped different cities");
-        Console.WriteLine($"bootstrapped {MatchStateHasher.ComputeSha256(hostState)[..12]}");
+        Console.WriteLine($"bootstrapped {MatchStateHasher.ComputeFingerprint(hostState)[..12]}");
 
         for (var turn = 1; turn <= turns; turn++)
         {

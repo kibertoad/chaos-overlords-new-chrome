@@ -24,8 +24,8 @@ export const gangOf = (document: OrderDocument): number | undefined => {
   return op && 'gang' in op ? op.gang : undefined
 }
 
-export const HASH_A = 'a'.repeat(64)
-export const HASH_B = 'b'.repeat(64)
+export const HASH_A = 'a'.repeat(32)
+export const HASH_B = 'b'.repeat(32)
 
 /**
  * A kernel over the in-memory reference storage, with every runtime port recording what it was

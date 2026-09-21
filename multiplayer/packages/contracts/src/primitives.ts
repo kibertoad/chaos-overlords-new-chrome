@@ -129,10 +129,20 @@ export const formatVersionSchema = pipe(
   notNegativeZero,
 )
 
-/** A lowercase hex SHA-256, the only digest shape the protocol carries. */
+/** A lowercase hex SHA-256: the digest of an order document, a sealed set or an uploaded archive. */
 export const sha256HexSchema = pipe(
   string(),
   regex(/^[0-9a-f]{64}$/, 'expected a lowercase hex SHA-256'),
+)
+
+/**
+ * A lowercase hex match-state fingerprint, as the game computes it: 128 bits of XxHash128 over
+ * the canonical state encoding. It is a checksum the clients compare to detect a desync, not a
+ * cryptographic digest, and it is shorter than the SHA-256 the order digests use.
+ */
+export const stateFingerprintSchema = pipe(
+  string(),
+  regex(/^[0-9a-f]{32}$/, 'expected a lowercase hex state fingerprint'),
 )
 
 /**

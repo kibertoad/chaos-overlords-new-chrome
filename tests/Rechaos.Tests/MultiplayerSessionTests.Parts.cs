@@ -78,13 +78,13 @@ public sealed partial class MultiplayerSessionTests
     public void ASealedSetForAnotherTurnIsRefusedBeforeItTouchesTheState()
     {
         var (replay, _) = FreshMatch();
-        var before = MatchStateHasher.ComputeSha256(replay.State);
+        var before = MatchStateHasher.ComputeFingerprint(replay.State);
 
         var failure = Assert.Throws<MultiplayerProtocolException>(
             () => SealedTurnApplier.Apply(replay, SealedOrders(2)));
 
         Assert.Contains("turn 2", failure.Message, StringComparison.Ordinal);
-        Assert.Equal(before, MatchStateHasher.ComputeSha256(replay.State));
+        Assert.Equal(before, MatchStateHasher.ComputeFingerprint(replay.State));
     }
 
     /// <summary>A value that does not fit the core is refused by the name of the field it was in.</summary>

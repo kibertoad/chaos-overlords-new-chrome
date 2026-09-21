@@ -38,8 +38,9 @@ public sealed class AiTournamentTests
         }
     }
 
+    // Greed runs in the fast gate as HeadlessMatchRunnerTests.SixMonthMatchCompletesDeterministicallyAndReplays,
+    // so an end-to-end regression is caught before this suite runs.
     [Theory]
-    [InlineData(ScenarioId.Greed)]
     [InlineData(ScenarioId.Power)]
     [InlineData(ScenarioId.Acceptance)]
     [InlineData(ScenarioId.Dominance)]
@@ -52,8 +53,8 @@ public sealed class AiTournamentTests
         Assert.NotNull(first.State.Outcome);
         Assert.Equal(MatchEndReason.TimeLimit, first.State.Outcome!.Reason);
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(first.State),
-            MatchStateHasher.ComputeSha256(second.State));
+            MatchStateHasher.ComputeFingerprint(first.State),
+            MatchStateHasher.ComputeFingerprint(second.State));
         AssertReplayMatches(first);
     }
 
@@ -72,8 +73,8 @@ public sealed class AiTournamentTests
 
         Assert.True(first.State.Outcome is not null || first.State.Coordinator.Turn > 20);
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(first.State),
-            MatchStateHasher.ComputeSha256(second.State));
+            MatchStateHasher.ComputeFingerprint(first.State),
+            MatchStateHasher.ComputeFingerprint(second.State));
         AssertReplayMatches(first);
     }
 
@@ -140,8 +141,8 @@ public sealed class AiTournamentTests
         var replayed = MatchReplaySerializer.LoadAndReplay(
             replay, recorder.State.Definitions);
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(recorder.State),
-            MatchStateHasher.ComputeSha256(replayed));
+            MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(replayed));
     }
 
     private static void AssertObjectiveProgress(MatchState state, ScenarioId scenario, int seed)

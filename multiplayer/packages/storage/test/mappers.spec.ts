@@ -32,7 +32,7 @@ describe('database row mappers', () => {
       formatVersion: 1,
       protocolVersion: '3' as unknown as number,
       sessionVersion: '1' as unknown as number,
-      stateHash: 'a'.repeat(64),
+      stateHash: 'a'.repeat(32),
       uploadedByPlayerId: 'host',
       uploadedAt: now,
       body: 'AAAA',
