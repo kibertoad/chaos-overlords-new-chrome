@@ -112,8 +112,22 @@ public static class CommandValidator
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(command);
-        var actorValidation = ValidateActor(state, command.Player, command.Gang);
-        if (!actorValidation.IsValid) return actorValidation;
+        var actorValidation = ValidateActor(state, command.Player, command.Gang, out var actor);
+        return actorValidation.IsValid
+            ? ValidateForActor(state, command, actor!)
+            : actorValidation;
+    }
+
+    /// <summary>
+    /// Everything <see cref="Validate"/> checks after the actor, for a caller that has already
+    /// validated the actor and holds it: the option catalog validates hundreds of candidate
+    /// commands for one gang, and looking the same gang up for each was most of its time.
+    /// </summary>
+    internal static CommandValidation ValidateForActor(
+        MatchState state,
+        GameCommand command,
+        MatchGangState actor)
+    {
         if (!CommandRules.ByAction.TryGetValue(command.Action, out var rule))
             return CommandValidation.Reject(CommandValidationCode.InvalidTargetKind);
         if (command.Repeat && !CommandRules.CanRepeat(command.Action))
@@ -121,19 +135,19 @@ public static class CommandValidator
         if (!HasValidTargetShape(command, rule))
             return CommandValidation.Reject(CommandValidationCode.InvalidTargetKind);
 
-        var actor = state.FindGang(command.Gang)!;
         var primaryValidation = ValidateTarget(state, actor, command.Target, rule);
         if (!primaryValidation.IsValid) return primaryValidation;
+        var unconstrained = UnconstrainedRules[command.Action];
         var secondaryValidation = command.SecondaryTarget is { } secondary
-            ? ValidateTarget(state, actor, secondary, rule with { SpatialConstraint = SpatialConstraint.None })
+            ? ValidateTarget(state, actor, secondary, unconstrained)
             : CommandValidation.Valid();
         if (!secondaryValidation.IsValid) return secondaryValidation;
         var tertiaryValidation = command.TertiaryTarget is { } tertiary
-            ? ValidateTarget(state, actor, tertiary, rule with { SpatialConstraint = SpatialConstraint.None })
+            ? ValidateTarget(state, actor, tertiary, unconstrained)
             : CommandValidation.Valid();
         if (!tertiaryValidation.IsValid) return tertiaryValidation;
         var quaternaryValidation = command.QuaternaryTarget is { } quaternary
-            ? ValidateTarget(state, actor, quaternary, rule with { SpatialConstraint = SpatialConstraint.None })
+            ? ValidateTarget(state, actor, quaternary, unconstrained)
             : CommandValidation.Valid();
         if (!quaternaryValidation.IsValid) return quaternaryValidation;
         if (command.Action == GangAction.Research
@@ -165,6 +179,16 @@ public static class CommandValidator
         return ValidateTransaction(state, command, actor);
     }
 
+    /// <summary>
+    /// The secondary and later targets of a command are validated without the rule's spatial
+    /// constraint, which applies to the primary target only. Built once per action rather than
+    /// with a record copy per validated target.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<GangAction, CommandRule> UnconstrainedRules =
+        CommandRules.ByAction.ToDictionary(
+            pair => pair.Key,
+            pair => pair.Value with { SpatialConstraint = SpatialConstraint.None });
+
     private static bool HasValidTargetShape(GameCommand command, CommandRule rule)
     {
         if (command.Target.Kind != rule.PrimaryTarget) return false;
@@ -173,24 +197,47 @@ public static class CommandValidator
                 && (command.TertiaryTarget?.Kind ?? CommandTargetKind.Item) == CommandTargetKind.Item
                 && (command.TertiaryTarget is null || command.SecondaryTarget is not null)
                 && command.QuaternaryTarget is null
-                && command.SellTargets().Select(target => target.Id).Distinct().Count()
-                    == command.SellTargets().Count();
+                && AreDistinctIds(command.Target, command.SecondaryTarget, command.TertiaryTarget);
         if (command.Action == GangAction.Give)
             return command.SecondaryTarget?.Kind == CommandTargetKind.Item
                 && (command.TertiaryTarget?.Kind ?? CommandTargetKind.Item) == CommandTargetKind.Item
                 && (command.QuaternaryTarget?.Kind ?? CommandTargetKind.Item) == CommandTargetKind.Item
                 && (command.QuaternaryTarget is null || command.TertiaryTarget is not null)
-                && command.GiveTargets().Select(target => target.Id).Distinct().Count()
-                    == command.GiveTargets().Count();
+                && AreDistinctIds(command.SecondaryTarget, command.TertiaryTarget, command.QuaternaryTarget);
         return (command.SecondaryTarget?.Kind ?? CommandTargetKind.None) == rule.SecondaryTarget
             && command.TertiaryTarget is null && command.QuaternaryTarget is null;
     }
 
-    public static CommandValidation ValidateCancellation(MatchState state, PlayerId player, GangId gang) =>
-        ValidateActor(state, player, gang);
+    /// <summary>Whether the identifiers of the present targets are pairwise distinct.</summary>
+    private static bool AreDistinctIds(CommandTarget? first, CommandTarget? second, CommandTarget? third) =>
+        (first is not { } a || second is not { } b || a.Id != b.Id)
+        && (first is not { } c || third is not { } d || c.Id != d.Id)
+        && (second is not { } e || third is not { } f || e.Id != f.Id);
 
-    private static CommandValidation ValidateActor(MatchState state, PlayerId playerId, GangId gangId)
+    /// <summary>
+    /// Whether <paramref name="target"/> can be the primary target of an <paramref name="actor"/>
+    /// command under <paramref name="rule"/>. A command whose primary target fails here fails
+    /// <see cref="Validate"/> whatever its other targets are, which lets the option catalog skip
+    /// expanding the secondary targets of a primary that is already rejected.
+    /// </summary>
+    internal static bool AcceptsPrimaryTarget(
+        MatchState state,
+        MatchGangState actor,
+        CommandTarget target,
+        CommandRule rule) =>
+        target.Kind == rule.PrimaryTarget && ValidateTarget(state, actor, target, rule).IsValid;
+
+    public static CommandValidation ValidateCancellation(MatchState state, PlayerId player, GangId gang) =>
+        ValidateActor(state, player, gang, out _);
+
+    /// <summary>Whether <paramref name="playerId"/> may command <paramref name="gangId"/> now; the gang when so.</summary>
+    internal static CommandValidation ValidateActor(
+        MatchState state,
+        PlayerId playerId,
+        GangId gangId,
+        out MatchGangState? actor)
     {
+        actor = null;
         if (state.Coordinator.Phase != TurnPhase.Command)
             return CommandValidation.Reject(CommandValidationCode.InvalidPhase);
         if (state.Coordinator.ActivePlayer != playerId)
@@ -205,9 +252,10 @@ public static class CommandValidator
             return CommandValidation.Reject(CommandValidationCode.GangNotFound);
         if (gang.Owner != playerId)
             return CommandValidation.Reject(CommandValidationCode.GangNotOwned);
-        return gang.IsActive
-            ? CommandValidation.Valid()
-            : CommandValidation.Reject(CommandValidationCode.GangEliminated);
+        if (!gang.IsActive)
+            return CommandValidation.Reject(CommandValidationCode.GangEliminated);
+        actor = gang;
+        return CommandValidation.Valid();
     }
 
     private static CommandValidation ValidateTarget(

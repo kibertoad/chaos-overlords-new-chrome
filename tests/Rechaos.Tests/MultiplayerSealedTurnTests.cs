@@ -60,8 +60,8 @@ public sealed class MultiplayerSealedTurnTests
         var (right, _) = NewClient();
 
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(left.State),
-            MatchStateHasher.ComputeSha256(right.State));
+            MatchStateHasher.ComputeFingerprint(left.State),
+            MatchStateHasher.ComputeFingerprint(right.State));
         Assert.Equal(TurnPhase.Command, left.State.Coordinator.Phase);
         Assert.Equal(MatchLimits.PlayerCount, left.State.Setup.Players.Count);
     }
@@ -97,7 +97,7 @@ public sealed class MultiplayerSealedTurnTests
         var rightHash = SealedTurnApplier.Apply(right, orders);
 
         Assert.Equal(leftHash, rightHash);
-        Assert.Equal(MatchStateHasher.ComputeSha256(left.State), leftHash);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(left.State), leftHash);
         Assert.Equal(2, left.State.Coordinator.Turn);
         Assert.Equal(TurnPhase.Command, left.State.Coordinator.Phase);
     }
@@ -113,7 +113,7 @@ public sealed class MultiplayerSealedTurnTests
 
         var hash = SealedTurnApplier.Apply(replay, Sealed(1));
 
-        Assert.Equal(MatchStateHasher.ComputeSha256(replay.State), hash);
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(replay.State), hash);
         Assert.Equal(2, replay.State.Coordinator.Turn);
     }
 
@@ -202,7 +202,7 @@ public sealed class MultiplayerSealedTurnTests
     public void PlansOnACopyThatMakesTheLocalSeatActive()
     {
         var (authoritative, definitions) = NewClient();
-        var before = MatchStateHasher.ComputeSha256(authoritative.State);
+        var before = MatchStateHasher.ComputeFingerprint(authoritative.State);
 
         var turn = SpeculativeTurn.For(authoritative.State, definitions, slot: 1);
         var gang = turn.State.FindPlayer(new PlayerId(1))!.Gangs.First(g => g.IsActive).Id;
@@ -212,7 +212,7 @@ public sealed class MultiplayerSealedTurnTests
         Assert.Equal(new PlayerId(1), turn.State.Coordinator.ActivePlayer);
         // Recorded once, and the authoritative state is untouched by any of it.
         Assert.Equal(1, turn.Orders.Count);
-        Assert.Equal(before, MatchStateHasher.ComputeSha256(authoritative.State));
+        Assert.Equal(before, MatchStateHasher.ComputeFingerprint(authoritative.State));
     }
 
     [Fact]

@@ -90,8 +90,8 @@ public sealed class ReplayAnonymizerTests
 
         Assert.Equal(recorder.Steps.Count, anonymized.Steps.Count);
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(anonymized.State),
-            MatchStateHasher.ComputeSha256(replayed));
+            MatchStateHasher.ComputeFingerprint(anonymized.State),
+            MatchStateHasher.ComputeFingerprint(replayed));
     }
 
     /// <summary>
@@ -167,7 +167,7 @@ public sealed class ReplayAnonymizerTests
         earlier.FinishUpkeep();
         foreach (var player in earlier.State.Players) earlier.FinishCommand(player.Id);
         Assert.NotEmpty(earlier.State.PhaseHashes);
-        var named = earlier.State.PhaseHashes.Select(boundary => boundary.Sha256).ToArray();
+        var named = earlier.State.PhaseHashes.Select(boundary => boundary.Fingerprint).ToArray();
         // A fresh journal over the same match: the boundaries so far are now in its snapshot.
         var recorder = new MatchReplayRecorder(earlier.State);
 

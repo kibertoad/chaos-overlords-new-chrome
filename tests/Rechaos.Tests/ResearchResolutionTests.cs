@@ -231,7 +231,7 @@ public sealed class ResearchResolutionTests
         Assert.Equal(
             first.Players[0].ResearchedItems.Order(),
             second.Players[0].ResearchedItems.Order());
-        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+        Assert.Equal(first.PhaseHashes[^1].Fingerprint, second.PhaseHashes[^1].Fingerprint);
     }
 
     [Fact]

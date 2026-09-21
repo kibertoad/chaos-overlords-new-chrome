@@ -96,7 +96,7 @@ public sealed class EconomyResolutionTests
         second.FinishUpkeep();
 
         Assert.Equal(first.Events, second.Events);
-        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+        Assert.Equal(first.PhaseHashes[^1].Fingerprint, second.PhaseHashes[^1].Fingerprint);
     }
 
     [Fact]
@@ -104,11 +104,11 @@ public sealed class EconomyResolutionTests
     {
         var match = CreateMatch(20);
         var player = match.Players[0];
-        var before = MatchStateHasher.ComputeSha256(match);
+        var before = MatchStateHasher.ComputeFingerprint(match);
 
         var forecast = EconomyResolver.Project(match, player);
 
-        Assert.Equal(before, MatchStateHasher.ComputeSha256(match));
+        Assert.Equal(before, MatchStateHasher.ComputeFingerprint(match));
         Assert.Equal(new EconomyForecast(20, 2, 5, 3, 24), forecast);
 
         AdvanceToSecondUpkeep(match);

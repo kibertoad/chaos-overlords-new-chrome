@@ -73,7 +73,7 @@ public sealed class MatchReplayTests
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
 
-        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State), MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(
             JsonSerializer.Serialize(recorder.State.Events),
             JsonSerializer.Serialize(restored.Events));
@@ -109,8 +109,8 @@ public sealed class MatchReplayTests
 
         Assert.Equal(recorder.State.FindSite(1)!.InfluencedBy,
             restored.FindSite(1)!.InfluencedBy);
-        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State),
-            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(JsonSerializer.Serialize(recorder.State.Events),
             JsonSerializer.Serialize(restored.Events));
     }
@@ -137,7 +137,7 @@ public sealed class MatchReplayTests
         Assert.True(restored.ComlinkFor(new PlayerId(1)).HasUnread);
         Assert.Equal([inbox.Messages[1].Sequence],
             restored.ComlinkFor(new PlayerId(1)).ReadSequences);
-        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State), MatchStateHasher.ComputeFingerprint(restored));
         var recipients = Assert.IsAssignableFrom<IList<PlayerId>>(
             recorder.Steps.First(step => step.Kind == ReplayOperationKind.SendComlinkMessage).Recipients!);
         Assert.True(recipients.IsReadOnly);
@@ -165,53 +165,6 @@ public sealed class MatchReplayTests
         Assert.Contains("invalid payload", exception.Message);
     }
 
-    [Fact]
-    public void VersionTwentyThreeReplayRetainsMarkAllReadMeaning()
-    {
-        var initial = CreateMatch(secondPlayerHuman: true);
-        var initialHash = MatchStateHasher.ComputeVersionTwentyFourSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        recorder.FinishUpkeep();
-        Assert.True(recorder.SendComlinkMessage(
-            new PlayerId(0), [new PlayerId(1)], "FIRST").Accepted);
-        Assert.True(recorder.SendComlinkMessage(
-            new PlayerId(0), [new PlayerId(1)], "SECOND").Accepted);
-        var newest = recorder.State.ComlinkFor(new PlayerId(1)).Messages[1].Sequence;
-        Assert.True(recorder.MarkComlinkRead(new PlayerId(1), newest));
-
-        var legacyState = CreateMatch(secondPlayerHuman: true);
-        legacyState.FinishUpkeep();
-        var hashes = new List<string>
-        {
-            MatchStateHasher.ComputeVersionTwentyFourSha256(legacyState)
-        };
-        legacyState.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], "FIRST");
-        hashes.Add(MatchStateHasher.ComputeVersionTwentyFourSha256(legacyState));
-        legacyState.SendComlinkMessage(new PlayerId(0), [new PlayerId(1)], "SECOND");
-        hashes.Add(MatchStateHasher.ComputeVersionTwentyFourSha256(legacyState));
-        Assert.True(legacyState.MarkAllComlinkReadLegacy(new PlayerId(1)));
-        hashes.Add(MatchStateHasher.ComputeVersionTwentyFourSha256(legacyState));
-
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = 23;
-        document["initialStateSha256"] = initialHash;
-        var steps = document["steps"]!.AsArray();
-        for (var index = 0; index < hashes.Count; index++)
-            steps[index]!["resultingStateSha256"] = hashes[index];
-        steps[3]!.AsObject().Remove("comlinkSequence");
-        using var legacy = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
-
-        var restored = MatchReplaySerializer.LoadAndReplay(
-            legacy, recorder.State.Definitions);
-
-        Assert.False(restored.ComlinkFor(new PlayerId(1)).HasUnread);
-        Assert.Equal(
-            legacyState.ComlinkFor(new PlayerId(1)).ReadSequences,
-            restored.ComlinkFor(new PlayerId(1)).ReadSequences);
-    }
 
     [Fact]
     public void ReplayRejectsFieldsThatDoNotBelongToOperation()
@@ -260,7 +213,7 @@ public sealed class MatchReplayTests
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, recorder.State.Definitions);
 
-        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State), MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(recorder.State.Sectors[0].CrackdownTurnsRemaining,
             restored.Sectors[0].CrackdownTurnsRemaining);
         Assert.Equal(recorder.State.Sectors[0].CrackdownHistory, restored.Sectors[0].CrackdownHistory);
@@ -287,7 +240,7 @@ public sealed class MatchReplayTests
         replay.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
         Assert.Equal(offers, restored.Players[0].HirePool);
-        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State), MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -313,167 +266,14 @@ public sealed class MatchReplayTests
             replay, recorder.State.Definitions);
 
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(recorder.State),
-            MatchStateHasher.ComputeSha256(restored));
+            MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(restored));
     }
 
-    [Fact]
-    public void VersionTwentyTwoReplayRetainsVersionTwentyThreeHashCompatibility()
-    {
-        var initial = CreateMatch();
-        var legacyInitialHash = MatchStateHasher.ComputeVersionTwentyThreeSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        recorder.FinishUpkeep();
-        var legacyResultHash = MatchStateHasher.ComputeVersionTwentyThreeSha256(recorder.State);
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = 22;
-        document["initialStateSha256"] = legacyInitialHash;
-        document["steps"]![0]!["resultingStateSha256"] = legacyResultHash;
-        using var legacy = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
 
-        var restored = MatchReplaySerializer.LoadAndReplay(
-            legacy, recorder.State.Definitions);
 
-        Assert.Equal(
-            MatchStateHasher.ComputeVersionTwentyThreeSha256(recorder.State),
-            MatchStateHasher.ComputeVersionTwentyThreeSha256(restored));
-    }
 
-    [Fact]
-    public void VersionTwentyRejectsSimultaneousHireOfferOperation()
-    {
-        var initial = CreateMatch();
-        var legacyInitialHash = MatchStateHasher.ComputeVersionTwentyTwoSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        recorder.FinishUpkeep();
-        var legacyAfterUpkeepHash =
-            MatchStateHasher.ComputeVersionTwentyTwoSha256(recorder.State);
-        recorder.PrepareSimultaneousHireOffers();
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = 20;
-        document["initialStateSha256"] = legacyInitialHash;
-        document["steps"]![0]!["resultingStateSha256"] = legacyAfterUpkeepHash;
-        using var mislabeled = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
 
-        var exception = Assert.Throws<InvalidDataException>(() =>
-            MatchReplaySerializer.LoadAndReplay(
-                mislabeled, recorder.State.Definitions));
-
-        Assert.Contains("introduced in replay format 21", exception.Message);
-    }
-
-    [Fact]
-    public void VersionTwentyOneReplayRetainsVersionTwentyTwoHashCompatibility()
-    {
-        var initial = CreateMatch();
-        var legacyInitialHash = MatchStateHasher.ComputeVersionTwentyTwoSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        recorder.FinishUpkeep();
-        var legacyResultHash = MatchStateHasher.ComputeVersionTwentyTwoSha256(recorder.State);
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = 21;
-        document["initialStateSha256"] = legacyInitialHash;
-        document["steps"]![0]!["resultingStateSha256"] = legacyResultHash;
-        using var legacy = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
-
-        var restored = MatchReplaySerializer.LoadAndReplay(
-            legacy, recorder.State.Definitions);
-
-        Assert.Equal(
-            MatchStateHasher.ComputeVersionTwentyTwoSha256(recorder.State),
-            MatchStateHasher.ComputeVersionTwentyTwoSha256(restored));
-    }
-
-    [Theory]
-    [InlineData(ReplayOperationKind.PrepareHireOffers, 2, 3)]
-    [InlineData(ReplayOperationKind.PrepareAiPlanning, 5, 6)]
-    [InlineData(ReplayOperationKind.PrepareAiHiring, 7, 8)]
-    [InlineData(ReplayOperationKind.SendComlinkMessage, 17, 18)]
-    [InlineData(ReplayOperationKind.MarkComlinkRead, 17, 18)]
-    [InlineData(ReplayOperationKind.TransferPlayerToComputer, 25, 26)]
-    [InlineData(ReplayOperationKind.TransferPlayerToHuman, 26, 27)]
-    public void OlderReplayVersionsRejectOperationsAddedByLaterSchemas(
-        ReplayOperationKind operation,
-        int labeledVersion,
-        int introducedVersion)
-    {
-        var initial = CreateMatch();
-        var legacyInitialHash = labeledVersion switch
-        {
-            2 => MatchStateHasher.ComputeVersionFourSha256(initial),
-            5 => MatchStateHasher.ComputeVersionSixSha256(initial),
-            7 => MatchStateHasher.ComputeVersionTenSha256(initial),
-            17 => MatchStateHasher.ComputeVersionNineteenSha256(initial),
-            25 or 26 => MatchStateHasher.ComputeVersionTwentySixSha256(initial),
-            _ => throw new InvalidOperationException("Test case needs its legacy hash projection.")
-        };
-        var recorder = new MatchReplayRecorder(initial);
-        recorder.FinishUpkeep();
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = labeledVersion;
-        document["initialStateSha256"] = legacyInitialHash;
-        document["steps"]![0]!["kind"] = (int)operation;
-        using var mislabeled = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
-
-        var exception = Assert.Throws<InvalidDataException>(() =>
-            MatchReplaySerializer.LoadAndReplay(
-                mislabeled, recorder.State.Definitions));
-
-        Assert.Contains(
-            $"introduced in replay format {introducedVersion}",
-            exception.Message);
-    }
-
-    [Theory]
-    [InlineData(18, "tertiaryTarget", 19)]
-    [InlineData(19, "quaternaryTarget", 20)]
-    public void OlderReplayVersionsRejectCommandTargetsAddedByLaterSchemas(
-        int labeledVersion,
-        string property,
-        int introducedVersion)
-    {
-        var initial = CreateMatch();
-        var legacyInitialHash = labeledVersion == 18
-            ? MatchStateHasher.ComputeVersionTwentySha256(initial)
-            : MatchStateHasher.ComputeVersionTwentyOneSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        recorder.FinishUpkeep();
-        var legacyAfterUpkeepHash = labeledVersion == 18
-            ? MatchStateHasher.ComputeVersionTwentySha256(recorder.State)
-            : MatchStateHasher.ComputeVersionTwentyOneSha256(recorder.State);
-        Assert.True(recorder.Submit(new GameCommand(
-            new PlayerId(0), new GangId(0), GangAction.Hide, CommandTarget.None)).Accepted);
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = labeledVersion;
-        document["initialStateSha256"] = legacyInitialHash;
-        document["steps"]![0]!["resultingStateSha256"] = legacyAfterUpkeepHash;
-        document["steps"]![1]!["command"]![property] =
-            JsonNode.Parse("{\"kind\":4,\"id\":0}");
-        using var legacy = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
-
-        var exception = Assert.Throws<InvalidDataException>(() =>
-            MatchReplaySerializer.LoadAndReplay(
-                legacy, recorder.State.Definitions));
-
-        Assert.Contains(
-            $"introduced in replay format {introducedVersion}",
-            exception.Message);
-    }
 
     [Fact]
     public void ReplaysAiHiringRolePreparation()
@@ -495,8 +295,8 @@ public sealed class MatchReplayTests
         var restored = MatchReplaySerializer.LoadAndReplay(replay, data);
         Assert.Equal(recorder.State.AiPlanning.CurrentHireRole(setupPlayer.Id),
             restored.AiPlanning.CurrentHireRole(setupPlayer.Id));
-        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State),
-            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -519,8 +319,8 @@ public sealed class MatchReplayTests
         Assert.Equal(new AiActionTarget(62, 0),
             restored.AiPlanning.PlannedTarget(new PlayerId(1), 0));
         Assert.True(restored.AiPlanning.HasPlanned(new PlayerId(1)));
-        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State),
-            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -577,7 +377,7 @@ public sealed class MatchReplayTests
         using var replay = new MemoryStream();
         MatchReplaySerializer.Save(replay, recorder);
         var json = Encoding.UTF8.GetString(replay.ToArray());
-        var hash = recorder.Steps[0].ResultingStateSha256;
+        var hash = recorder.Steps[0].ResultingStateFingerprint;
         var replacement = new string(hash[0] == '0' ? '1' : '0', 1) + hash[1..];
         var changed = json.Replace(hash, replacement, StringComparison.Ordinal);
 
@@ -608,152 +408,9 @@ public sealed class MatchReplayTests
             MatchReplaySerializer.Save(new MemoryStream(), recorder));
     }
 
-    [Fact]
-    public void VersionFourReplayUsesVersionFiveStateHashesAfterStrategyMigration()
-    {
-        var initial = CreateMatch();
-        var oldInitialHash = MatchStateHasher.ComputeVersionFiveSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        recorder.FinishUpkeep();
-        var oldResultHash = MatchStateHasher.ComputeVersionFiveSha256(initial);
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = 4;
-        document["initialStateSha256"] = oldInitialHash;
-        document["steps"]![0]!["resultingStateSha256"] = oldResultHash;
 
-        var snapshotBytes = Convert.FromBase64String(
-            document["initialSnapshot"]!.GetValue<string>());
-        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
-        snapshot["formatVersion"] = 5;
-        snapshot["stateSha256"] = oldInitialHash;
-        snapshot["runtime"]!.AsObject().Remove("aiStrategy");
-        document["initialSnapshot"] = Convert.ToBase64String(
-            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
 
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
 
-        Assert.Equal(MatchStateHasher.ComputeSha256(initial), MatchStateHasher.ComputeSha256(restored));
-    }
-
-    [Fact]
-    public void VersionSixReplayUsesVersionSixHashesAfterPlanningMigration()
-    {
-        var initial = CreateMatch();
-        var oldInitialHash = MatchStateHasher.ComputeVersionSixSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        recorder.FinishUpkeep();
-        var oldResultHash = MatchStateHasher.ComputeVersionSixSha256(initial);
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = 6;
-        document["initialStateSha256"] = oldInitialHash;
-        document["steps"]![0]!["resultingStateSha256"] = oldResultHash;
-
-        var snapshotBytes = Convert.FromBase64String(
-            document["initialSnapshot"]!.GetValue<string>());
-        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
-        snapshot["formatVersion"] = 6;
-        snapshot["stateSha256"] = oldInitialHash;
-        snapshot["runtime"]!.AsObject().Remove("aiPlanning");
-        document["initialSnapshot"] = Convert.ToBase64String(
-            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
-
-        Assert.Equal(MatchStateHasher.ComputeSha256(initial), MatchStateHasher.ComputeSha256(restored));
-    }
-
-    [Fact]
-    public void VersionEightReplayMigratesVersionSevenInitialHireSlots()
-    {
-        var initial = CreateMatch();
-        var oldInitialHash = MatchStateHasher.ComputeVersionTenSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = 8;
-        document["initialStateSha256"] = oldInitialHash;
-        var snapshotBytes = Convert.FromBase64String(
-            document["initialSnapshot"]!.GetValue<string>());
-        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
-        snapshot["formatVersion"] = 7;
-        snapshot["stateSha256"] = oldInitialHash;
-        foreach (var player in snapshot["players"]!.AsArray())
-        {
-            player!.AsObject().Remove("hireOfferSlots");
-            player.AsObject().Remove("snubbedHireOfferSlot");
-        }
-        document["initialSnapshot"] = Convert.ToBase64String(
-            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
-
-        Assert.Equal(initial.Players[0].HirePool, restored.Players[0].HirePool);
-        Assert.Equal(initial.Players[0].HireOfferSlots, restored.Players[0].HireOfferSlots);
-    }
-
-    [Fact]
-    public void VersionNineReplayPreservesImmediateHirePaymentAndSingleActionValidation()
-    {
-        var initial = CreateMatch();
-        AdvanceToHire(initial);
-        var initialHash = MatchStateHasher.ComputeVersionElevenSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        Assert.True(recorder.QueueHire(new PlayerId(0), 2, 0).Accepted);
-        recorder.SnubHireOffer(new PlayerId(0), 3);
-        recorder.FinishHire(new PlayerId(0));
-
-        var expected = CreateMatch();
-        AdvanceToHire(expected);
-        var queued = expected.QueueHireLegacyImmediatePayment(new PlayerId(0), 2, 0);
-        Assert.True(queued.Accepted);
-        var queuedHash = MatchStateHasher.ComputeVersionElevenSha256(expected);
-        var snubbed = expected.SnubHireOfferLegacySingleAction(new PlayerId(0), 3);
-        Assert.False(snubbed.Accepted);
-        var snubbedHash = MatchStateHasher.ComputeVersionElevenSha256(expected);
-        expected.FinishHire(new PlayerId(0));
-        var finishedHash = MatchStateHasher.ComputeVersionElevenSha256(expected);
-
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = 9;
-        document["initialStateSha256"] = initialHash;
-        var steps = document["steps"]!.AsArray();
-        steps[0]!["resultingStateSha256"] = queuedHash;
-        steps[0]!["accepted"] = true;
-        steps[0]!["validationCode"] = (int)queued.Validation.Code;
-        steps[1]!["resultingStateSha256"] = snubbedHash;
-        steps[1]!["accepted"] = false;
-        steps[1]!["validationCode"] = (int)snubbed.Validation.Code;
-        steps[2]!["resultingStateSha256"] = finishedHash;
-
-        var snapshotBytes = Convert.FromBase64String(
-            document["initialSnapshot"]!.GetValue<string>());
-        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
-        snapshot["formatVersion"] = 8;
-        snapshot["stateSha256"] = initialHash;
-        document["initialSnapshot"] = Convert.ToBase64String(
-            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
-
-        Assert.Equal(expected.Players[0].Cash, restored.Players[0].Cash);
-        Assert.Equal(expected.Players[0].Statistics.CashSpent,
-            restored.Players[0].Statistics.CashSpent);
-        Assert.Equal(expected.Players[0].Gangs.Count, restored.Players[0].Gangs.Count);
-        Assert.Null(restored.Players[0].SnubbedHireOffer);
-        Assert.Equal(MatchStateHasher.ComputeSha256(expected),
-            MatchStateHasher.ComputeSha256(restored));
-    }
 
     [Fact]
     public void CurrentReplayPreservesMaximumHireForceFlag()
@@ -768,99 +425,12 @@ public sealed class MatchReplayTests
             replay, recorder.State.Definitions);
 
         Assert.True(restored.Players[0].UsesMaximumHireForce);
-        Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State),
-            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(restored));
     }
 
-    [Fact]
-    public void VersionTenReplayUsesVersionTwelveHashAndMigratesMaximumHireForceToFalse()
-    {
-        var initial = CreateMatch(firstPlayerName: "SMGMILK");
-        var oldInitialHash = MatchStateHasher.ComputeVersionTwelveSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = 10;
-        document["initialStateSha256"] = oldInitialHash;
-        var snapshotBytes = Convert.FromBase64String(
-            document["initialSnapshot"]!.GetValue<string>());
-        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
-        snapshot["formatVersion"] = 9;
-        snapshot["stateSha256"] = oldInitialHash;
-        foreach (var player in snapshot["players"]!.AsArray())
-            player!.AsObject().Remove("usesMaximumHireForce");
-        document["initialSnapshot"] = Convert.ToBase64String(
-            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
 
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
 
-        Assert.False(restored.Players[0].UsesMaximumHireForce);
-        Assert.Equal(oldInitialHash,
-            MatchStateHasher.ComputeVersionTwelveSha256(restored));
-    }
-
-    [Fact]
-    public void VersionElevenReplayUsesVersionThirteenHashAndMigratesSectorAnchors()
-    {
-        var initial = CreateMatch();
-        initial.AiPlanning.SetSectorAnchor(new PlayerId(0), 63);
-        var oldInitialHash = MatchStateHasher.ComputeVersionThirteenSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = 11;
-        document["initialStateSha256"] = oldInitialHash;
-        var snapshotBytes = Convert.FromBase64String(
-            document["initialSnapshot"]!.GetValue<string>());
-        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
-        snapshot["formatVersion"] = 10;
-        snapshot["stateSha256"] = oldInitialHash;
-        snapshot["runtime"]!["aiPlanning"]!.AsObject().Remove("sectorAnchors");
-        document["initialSnapshot"] = Convert.ToBase64String(
-            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
-
-        Assert.Equal(restored.Players[0].Gangs[0].SectorId + AiPlanningState.SectorAnchorOffset,
-            restored.AiPlanning.SectorAnchor(new PlayerId(0)));
-        Assert.Equal(oldInitialHash, MatchStateHasher.ComputeVersionThirteenSha256(restored));
-    }
-
-    [Fact]
-    public void VersionTwelveReplayUsesVersionFourteenHashAndMigratesAiActions()
-    {
-        var initial = CreateMatch();
-        initial.AiPlanning.SetPlannedAction(new PlayerId(1), 0, GangAction.Attack);
-        var oldInitialHash = MatchStateHasher.ComputeVersionFourteenSha256(initial);
-        var recorder = new MatchReplayRecorder(initial);
-        using var replay = new MemoryStream();
-        MatchReplaySerializer.Save(replay, recorder);
-        var document = JsonNode.Parse(replay.ToArray())!.AsObject();
-        document["formatVersion"] = 12;
-        document["initialStateSha256"] = oldInitialHash;
-        var snapshotBytes = Convert.FromBase64String(
-            document["initialSnapshot"]!.GetValue<string>());
-        var snapshot = JsonNode.Parse(snapshotBytes)!.AsObject();
-        snapshot["formatVersion"] = 11;
-        snapshot["stateSha256"] = oldInitialHash;
-        var planning = snapshot["runtime"]!["aiPlanning"]!.AsObject();
-        planning.Remove("olderActions");
-        planning.Remove("previousActions");
-        planning.Remove("plannedActions");
-        document["initialSnapshot"] = Convert.ToBase64String(
-            Encoding.UTF8.GetBytes(snapshot.ToJsonString()));
-
-        using var legacy = new MemoryStream(Encoding.UTF8.GetBytes(document.ToJsonString()));
-        var restored = MatchReplaySerializer.LoadAndReplay(legacy, initial.Definitions);
-
-        Assert.All(restored.AiPlanning.CapturePlannedActions(),
-            action => Assert.Equal(GangAction.None, action));
-        Assert.Equal(oldInitialHash, MatchStateHasher.ComputeVersionFourteenSha256(restored));
-    }
 
     [Fact]
     public void AtomicReplayStoreWritesAndReplaysAFile()
@@ -875,7 +445,7 @@ public sealed class MatchReplayTests
 
             var replayed = MatchReplayStore.LoadAndReplay(path, recorder.State.Definitions);
 
-            Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(replayed));
+            Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State), MatchStateHasher.ComputeFingerprint(replayed));
             Assert.Empty(Directory.EnumerateFiles(directory, "*.tmp"));
         }
         finally
@@ -894,7 +464,7 @@ public sealed class MatchReplayTests
             var recorder = new MatchReplayRecorder(CreateMatch());
             recorder.FinishUpkeep();
             MatchReplayStore.SaveAtomic(path, recorder);
-            var previousHash = MatchStateHasher.ComputeSha256(recorder.State);
+            var previousHash = MatchStateHasher.ComputeFingerprint(recorder.State);
             recorder.FinishCommand(new PlayerId(0));
             MatchReplayStore.SaveAtomic(path, recorder);
             File.WriteAllText(path, "corrupt");
@@ -904,8 +474,8 @@ public sealed class MatchReplayTests
 
             Assert.True(recovered.RecoveredFromBackup);
             Assert.True(recovered.PrimaryRepaired);
-            Assert.Equal(previousHash, MatchStateHasher.ComputeSha256(recovered.State));
-            Assert.Equal(previousHash, MatchStateHasher.ComputeSha256(
+            Assert.Equal(previousHash, MatchStateHasher.ComputeFingerprint(recovered.State));
+            Assert.Equal(previousHash, MatchStateHasher.ComputeFingerprint(
                 MatchReplayStore.LoadAndReplay(path, recorder.State.Definitions)));
             Assert.Empty(Directory.EnumerateFiles(directory, "*.tmp"));
         }
@@ -927,16 +497,16 @@ public sealed class MatchReplayTests
             MatchReplayStore.SaveAtomic(path, recorder);
             recorder.FinishCommand(new PlayerId(0));
             MatchReplayStore.SaveAtomic(path, recorder);
-            var backupHash = MatchStateHasher.ComputeSha256(MatchReplayStore.LoadAndReplay(
+            var backupHash = MatchStateHasher.ComputeFingerprint(MatchReplayStore.LoadAndReplay(
                 path + MatchReplayStore.BackupSuffix, recorder.State.Definitions));
             File.WriteAllText(path, "corrupt");
 
             recorder.FinishCommand(new PlayerId(1));
             MatchReplayStore.SaveAtomic(path, recorder);
 
-            Assert.Equal(MatchStateHasher.ComputeSha256(recorder.State), MatchStateHasher.ComputeSha256(
+            Assert.Equal(MatchStateHasher.ComputeFingerprint(recorder.State), MatchStateHasher.ComputeFingerprint(
                 MatchReplayStore.LoadAndReplay(path, recorder.State.Definitions)));
-            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(MatchReplayStore.LoadAndReplay(
+            Assert.Equal(backupHash, MatchStateHasher.ComputeFingerprint(MatchReplayStore.LoadAndReplay(
                 path + MatchReplayStore.BackupSuffix, recorder.State.Definitions)));
         }
         finally

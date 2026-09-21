@@ -55,7 +55,7 @@ public sealed partial class MultiplayerMatchSession
         try
         {
             await UploadSnapshotAsync(
-                    0, MatchStateHasher.ComputeSha256(_replay.State), cancellationToken)
+                    0, MatchStateHasher.ComputeFingerprint(_replay.State), cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is MultiplayerApiException
@@ -88,7 +88,7 @@ public sealed partial class MultiplayerMatchSession
         if (!IsHost || confirmedTurn <= 0 || confirmedTurn % CheckpointEveryTurns != 0) return;
         if (_replay.State.Coordinator.Turn != confirmedTurn + 1) return;
         if (!string.Equals(
-                stateHash, MatchStateHasher.ComputeSha256(_replay.State), StringComparison.Ordinal))
+                stateHash, MatchStateHasher.ComputeFingerprint(_replay.State), StringComparison.Ordinal))
         {
             return;
         }

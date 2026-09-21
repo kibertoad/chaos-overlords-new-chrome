@@ -392,7 +392,7 @@ public sealed partial class MultiplayerMatchSession
                 $"the event history confirmed turn {confirmed.Payload.Turn} while the "
                 + $"reconstructed match had resolved only turn {resolvedTurn}");
         }
-        var actual = MatchStateHasher.ComputeSha256(_replay.State);
+        var actual = MatchStateHasher.ComputeFingerprint(_replay.State);
         if (!string.Equals(actual, confirmed.Payload.StateHash, StringComparison.Ordinal))
         {
             throw new MultiplayerProtocolException(

@@ -14,6 +14,7 @@ import {
   seatSchema,
   seedSchema,
   sha256HexSchema,
+  stateFingerprintSchema,
   slotSchema,
   tokenSchema,
   turnNumberSchema,
@@ -154,7 +155,7 @@ export const snapshotViewSchema = strictObject({
   protocolVersion: protocolVersionSchema,
   /** Session version these bytes belong to; a client that reads another one cannot adopt them. */
   sessionVersion: sessionVersionSchema,
-  stateHash: sha256HexSchema,
+  stateHash: stateFingerprintSchema,
   uploadedByPlayerId: resourceIdSchema,
   uploadedAt: isoTimestampSchema,
   /** Base64 of the client's native snapshot bytes; the server never decodes it. */

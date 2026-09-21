@@ -142,7 +142,7 @@ public sealed class CommandResolutionTests
         second.FinishExecutionPhase();
 
         Assert.Equal(first.Events[^1].Resolution!.Rolls, second.Events[^1].Resolution!.Rolls);
-        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+        Assert.Equal(first.PhaseHashes[^1].Fingerprint, second.PhaseHashes[^1].Fingerprint);
     }
 
     [Fact]

@@ -285,8 +285,8 @@ public sealed class ChaosResolutionTests
         Assert.Equal(original.Players[0].Cash, restored.Players[0].Cash);
         Assert.Equal(original.Players[0].Statistics.CashEarned,
             restored.Players[0].Statistics.CashEarned);
-        Assert.Equal(MatchStateHasher.ComputeSha256(original),
-            MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(original),
+            MatchStateHasher.ComputeFingerprint(restored));
     }
 
     [Fact]
@@ -401,7 +401,7 @@ public sealed class ChaosResolutionTests
             new RollCollectionComparer());
         Assert.Equal(first.LastPhaseResolutions.Select(result => result.Event!.Resolution!.Successes),
             second.LastPhaseResolutions.Select(result => result.Event!.Resolution!.Successes));
-        Assert.Equal(first.PhaseHashes[^1].Sha256, second.PhaseHashes[^1].Sha256);
+        Assert.Equal(first.PhaseHashes[^1].Fingerprint, second.PhaseHashes[^1].Fingerprint);
     }
 
     /// <summary>

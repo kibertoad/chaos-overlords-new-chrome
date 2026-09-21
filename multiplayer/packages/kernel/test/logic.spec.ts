@@ -33,8 +33,8 @@ function report(playerId: string, stateHash: string, finished = false): TurnRepo
   return { matchId: 'm', turn: 1, playerId, stateHash, finished, reportedAt: new Date() }
 }
 
-const HASH_A = 'a'.repeat(64)
-const HASH_B = 'b'.repeat(64)
+const HASH_A = 'a'.repeat(32)
+const HASH_B = 'b'.repeat(32)
 
 describe('canonicalJson', () => {
   it('is independent of key order and nested', () => {

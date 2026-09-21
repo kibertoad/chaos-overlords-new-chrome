@@ -11,8 +11,8 @@ export interface HttpConformanceHarness {
   expireDeadlines?: () => Promise<void>
 }
 
-const HASH_A = 'a'.repeat(64)
-const HASH_B = 'b'.repeat(64)
+const HASH_A = 'a'.repeat(32)
+const HASH_B = 'b'.repeat(32)
 /**
  * A one-op document for the player seated in `slot`. Ops name their own slot because the server
  * refuses any that do not, so the fixture has to know which seat it is submitting for.

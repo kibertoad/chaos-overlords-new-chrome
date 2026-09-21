@@ -29,7 +29,7 @@ public sealed partial class MultiplayerSessionTests
             MatchBootstrapFactory.Create(BundledOriginalData.Load(), Seed, GameSettings, Roster));
         CommandPhase.Enter(replay);
         for (var turn = 1; turn <= turns; turn++) SealedTurnApplier.Apply(replay, SealedOrders(turn));
-        return MatchStateHasher.ComputeSha256(replay.State);
+        return MatchStateHasher.ComputeFingerprint(replay.State);
     }
 
     /// <summary>
@@ -293,7 +293,7 @@ public sealed partial class MultiplayerSessionTests
             NativeSaveSerializer.CurrentFormatVersion,
             MultiplayerProtocolVersion.Current,
             MultiplayerSessionVersion.Current,
-            MatchStateHasher.ComputeSha256(replay.State),
+            MatchStateHasher.ComputeFingerprint(replay.State),
             "p1",
             "2026-09-10T12:04:00.000Z",
             MatchStateClone.ToBase64(replay.State));

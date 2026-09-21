@@ -18,7 +18,7 @@ public sealed class AtomicGenerationRecoveryTests
             NativeSaveStore.SaveAtomic(path, match);
             match.FinishUpkeep();
             NativeSaveStore.SaveAtomic(path, match);
-            var backupHash = MatchStateHasher.ComputeSha256(
+            var backupHash = MatchStateHasher.ComputeFingerprint(
                 NativeSaveStore.Load(path + NativeSaveStore.BackupSuffix, match.Definitions));
             File.Delete(path);
 
@@ -26,8 +26,8 @@ public sealed class AtomicGenerationRecoveryTests
 
             Assert.True(recovered.RecoveredFromBackup);
             Assert.True(recovered.PrimaryRepaired);
-            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(recovered.State));
-            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(
+            Assert.Equal(backupHash, MatchStateHasher.ComputeFingerprint(recovered.State));
+            Assert.Equal(backupHash, MatchStateHasher.ComputeFingerprint(
                 NativeSaveStore.Load(path, match.Definitions)));
             Assert.Empty(Directory.EnumerateFiles(directory, "*.tmp"));
         }
@@ -49,7 +49,7 @@ public sealed class AtomicGenerationRecoveryTests
             MatchReplayStore.SaveAtomic(path, recorder);
             recorder.FinishCommand(new PlayerId(0));
             MatchReplayStore.SaveAtomic(path, recorder);
-            var backupHash = MatchStateHasher.ComputeSha256(MatchReplayStore.LoadAndReplay(
+            var backupHash = MatchStateHasher.ComputeFingerprint(MatchReplayStore.LoadAndReplay(
                 path + MatchReplayStore.BackupSuffix, recorder.State.Definitions));
             File.Delete(path);
 
@@ -58,8 +58,8 @@ public sealed class AtomicGenerationRecoveryTests
 
             Assert.True(recovered.RecoveredFromBackup);
             Assert.True(recovered.PrimaryRepaired);
-            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(recovered.State));
-            Assert.Equal(backupHash, MatchStateHasher.ComputeSha256(
+            Assert.Equal(backupHash, MatchStateHasher.ComputeFingerprint(recovered.State));
+            Assert.Equal(backupHash, MatchStateHasher.ComputeFingerprint(
                 MatchReplayStore.LoadAndReplay(path, recorder.State.Definitions)));
             Assert.Empty(Directory.EnumerateFiles(directory, "*.tmp"));
         }

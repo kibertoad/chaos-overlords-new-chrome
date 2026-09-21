@@ -100,7 +100,7 @@ public sealed partial class MultiplayerSessionTests
         var resumed = await WaitFor<MultiplayerNotice.Resumed>(session);
 
         Assert.Equal(expectedCash, resumed.State.Players[0].Cash);
-        Assert.Equal(expectedHash, MatchStateHasher.ComputeSha256(resumed.State));
+        Assert.Equal(expectedHash, MatchStateHasher.ComputeFingerprint(resumed.State));
         Assert.Equal(1, server.CallsTo(HttpMethod.Get, "/turns/1/orders"));
     }
 

@@ -41,7 +41,7 @@ public sealed class RetiredGangIdTests
 
         var restored = RoundTrip(match);
 
-        Assert.Equal(MatchStateHasher.ComputeSha256(match), MatchStateHasher.ComputeSha256(restored));
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
         Assert.Equal(
             match.NotificationsFor(new PlayerId(0)),
             restored.NotificationsFor(new PlayerId(0)));

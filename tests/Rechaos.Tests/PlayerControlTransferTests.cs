@@ -16,19 +16,19 @@ public sealed class PlayerControlTransferTests
     {
         var match = CreateMatch();
         match.FinishUpkeep();
-        var before = MatchStateHasher.ComputeSha256(match);
+        var before = MatchStateHasher.ComputeFingerprint(match);
 
         Assert.True(match.TransferPlayerToComputer(new PlayerId(1)));
 
         Assert.Equal(PlayerController.Computer, match.Setup.Players[1].Controller);
         Assert.Equal(PlayerController.Computer, match.Players[1].Setup.Controller);
         Assert.Equal(match.Setup.Players[1], match.Players[1].Setup);
-        Assert.NotEqual(before, MatchStateHasher.ComputeSha256(match));
+        Assert.NotEqual(before, MatchStateHasher.ComputeFingerprint(match));
         Assert.False(match.TransferPlayerToComputer(new PlayerId(1)));
         Assert.True(match.TransferPlayerToHuman(new PlayerId(1)));
         Assert.Equal(PlayerController.Human, match.Setup.Players[1].Controller);
         Assert.Equal(PlayerController.Human, match.Players[1].Setup.Controller);
-        Assert.Equal(before, MatchStateHasher.ComputeSha256(match));
+        Assert.Equal(before, MatchStateHasher.ComputeFingerprint(match));
         Assert.False(match.TransferPlayerToHuman(new PlayerId(1)));
     }
 
@@ -141,11 +141,11 @@ public sealed class PlayerControlTransferTests
         Assert.Equal(PlayerController.Human, restoredSave.Setup.Players[1].Controller);
         Assert.Equal(PlayerController.Human, restoredReplay.Setup.Players[1].Controller);
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(recorder.State),
-            MatchStateHasher.ComputeSha256(restoredSave));
+            MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(restoredSave));
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(recorder.State),
-            MatchStateHasher.ComputeSha256(restoredReplay));
+            MatchStateHasher.ComputeFingerprint(recorder.State),
+            MatchStateHasher.ComputeFingerprint(restoredReplay));
         var step = Assert.Single(recorder.Steps,
             item => item.Kind == ReplayOperationKind.TransferPlayerToComputer);
         Assert.Equal(new PlayerId(1), step.Player);
@@ -188,8 +188,8 @@ public sealed class PlayerControlTransferTests
         serialized.Position = 0;
         var restored = MatchReplaySerializer.LoadAndReplay(serialized, definitions);
         Assert.Equal(
-            MatchStateHasher.ComputeSha256(replay.State),
-            MatchStateHasher.ComputeSha256(restored));
+            MatchStateHasher.ComputeFingerprint(replay.State),
+            MatchStateHasher.ComputeFingerprint(restored));
     }
 
     /// <summary>Runs the match on to the Command phase of the next turn, first seat active.</summary>

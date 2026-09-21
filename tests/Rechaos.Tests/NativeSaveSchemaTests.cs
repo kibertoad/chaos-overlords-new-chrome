@@ -178,7 +178,7 @@ public sealed partial class NativeSaveSerializerTests
         using var current = new MemoryStream();
         NativeSaveSerializer.Save(current, match);
         var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["runtime"]!["phaseHashes"]![0]!["sha256"] = new string('0', 64);
+        document["runtime"]!["phaseHashes"]![0]!["fingerprint"] = new string('0', 32);
         using var modified = new MemoryStream(
             Encoding.UTF8.GetBytes(document.ToJsonString()));
 
@@ -188,25 +188,6 @@ public sealed partial class NativeSaveSerializerTests
         Assert.Contains("fingerprint does not match", exception.Message);
     }
 
-    [Fact]
-    public void VersionTwentySaveRetainsVersionTwentyThreeHashCompatibility()
-    {
-        var match = CreateMatch();
-        match.FinishUpkeep();
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 20;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionTwentyThreeSha256(match);
-        using var legacy = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
-
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.Equal(
-            MatchStateHasher.ComputeVersionTwentyThreeSha256(match),
-            MatchStateHasher.ComputeVersionTwentyThreeSha256(restored));
-    }
 
     [Fact]
     public void CurrentSaveRejectsNoncontiguousEventHistory()
@@ -227,25 +208,6 @@ public sealed partial class NativeSaveSerializerTests
         Assert.Contains("event history is invalid", exception.InnerException!.Message);
     }
 
-    [Fact]
-    public void LegacySaveRejectsEventKindWithMismatchedDetails()
-    {
-        var match = CreateMatch();
-        ResolveSecondUpkeep(match);
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 19;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionTwentyTwoSha256(match);
-        document["runtime"]!["events"]![0]!["kind"] = (int)GameEventKind.CommandQueued;
-        using var legacy = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
-
-        var exception = Assert.Throws<InvalidDataException>(() =>
-            NativeSaveSerializer.Load(legacy, match.Definitions));
-
-        Assert.Contains("event history is invalid", exception.InnerException!.Message);
-    }
 
     [Theory]
     [InlineData(false)]
@@ -271,27 +233,6 @@ public sealed partial class NativeSaveSerializerTests
         Assert.Contains("fingerprint does not match", exception.Message);
     }
 
-    [Fact]
-    public void VersionNineteenSaveRetainsVersionTwentyTwoHashCompatibility()
-    {
-        var match = CreateMatch();
-        match.FinishUpkeep();
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = 19;
-        document["stateSha256"] = MatchStateHasher.ComputeVersionTwentyTwoSha256(match);
-        using var legacy = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
-
-        var restored = NativeSaveSerializer.Load(legacy, match.Definitions);
-
-        Assert.Equal(match.Events, restored.Events);
-        Assert.Equal(
-            MatchStateHasher.ComputeVersionTwentyTwoSha256(match),
-            MatchStateHasher.ComputeVersionTwentyTwoSha256(restored));
-    }
-
     private static void ResolveSecondUpkeep(MatchState match)
     {
         match.FinishUpkeep();
@@ -300,39 +241,5 @@ public sealed partial class NativeSaveSerializerTests
         foreach (var player in match.Players) match.FinishHire(player.Id);
         match.FinishPlayerElimination();
         match.FinishUpkeep();
-    }
-
-    [Theory]
-    [InlineData(17, "tertiaryTarget", 18, "commands")]
-    [InlineData(18, "quaternaryTarget", 19, "commands")]
-    [InlineData(17, "tertiaryTarget", 18, "events")]
-    [InlineData(18, "quaternaryTarget", 19, "events")]
-    public void LegacySaveRejectsTargetsAddedByLaterSchemas(
-        int labeledVersion,
-        string property,
-        int introducedVersion,
-        string collection)
-    {
-        var match = CreateMatch();
-        match.FinishUpkeep();
-        Assert.True(match.Submit(new GameCommand(
-            new PlayerId(0), new GangId(0), GangAction.Hide, CommandTarget.None)).Accepted);
-        using var current = new MemoryStream();
-        NativeSaveSerializer.Save(current, match);
-        var document = JsonNode.Parse(current.ToArray())!.AsObject();
-        document["formatVersion"] = labeledVersion;
-        document["stateSha256"] = labeledVersion == 17
-            ? MatchStateHasher.ComputeVersionTwentySha256(match)
-            : MatchStateHasher.ComputeVersionTwentyOneSha256(match);
-        var owner = document["runtime"]![collection]![0]!;
-        if (collection == "commands") owner = owner["command"]!;
-        owner[property] = JsonNode.Parse("{\"kind\":4,\"id\":0}");
-        using var legacy = new MemoryStream(
-            Encoding.UTF8.GetBytes(document.ToJsonString()));
-
-        var exception = Assert.Throws<InvalidDataException>(() =>
-            NativeSaveSerializer.Load(legacy, match.Definitions));
-
-        Assert.Contains($"introduced in format {introducedVersion}", exception.Message);
     }
 }

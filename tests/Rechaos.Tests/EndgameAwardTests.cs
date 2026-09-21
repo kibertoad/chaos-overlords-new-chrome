@@ -128,8 +128,8 @@ public sealed class EndgameAwardTests
         }
         Assert.NotEmpty(outcome.Awards);
         Assert.Equal(
-            MatchStateHasher.ComputeVersionTwentyThreeSha256(match),
-            match.PhaseHashes[^1].Sha256);
+            MatchStateHasher.ComputePhaseBoundaryFingerprint(match),
+            match.PhaseHashes[^1].Fingerprint);
     }
 
     private static void AssertAward(
