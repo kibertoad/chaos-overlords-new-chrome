@@ -297,6 +297,20 @@ public sealed class OriginalCityGeneratorTests
     }
 
     [Fact]
+    public void FactoryIndexesEveryStartingGangIncludingNameModifierBonuses()
+    {
+        var match = OriginalMatchFactory.Create(
+            BundledOriginalData.Load(), SetupWithName("SMGKICKASS"));
+
+        // The bonus gangs join the rosters while the match is still being composed, so this also
+        // covers the factory building exactly one match over those players.
+        Assert.Equal(6, match.Players[0].Gangs.Count);
+        Assert.All(
+            match.Players.SelectMany(player => player.Gangs),
+            gang => Assert.Same(gang, match.FindGang(gang.Id)));
+    }
+
+    [Fact]
     public void ExactSmgHubbleDetectsEveryEnemyGangWithoutLocalObservers()
     {
         var enabled = OriginalMatchFactory.Create(

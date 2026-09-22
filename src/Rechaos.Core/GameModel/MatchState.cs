@@ -30,8 +30,7 @@ public sealed partial class MatchPlayerState
     private readonly Dictionary<short, int> _researchProgress;
     private readonly HashSet<short> _researchedItems;
     private readonly Dictionary<short, int> _inventory;
-    private Action<MatchGangState>? _onGangAdded;
-    private Action<MatchGangState, MatchGangState>? _onGangReplaced;
+    private MatchGangIndex? _gangIndex;
 
     public MatchPlayerState(
         MatchPlayerSetup setup,
@@ -120,10 +119,13 @@ public sealed partial class MatchPlayerState
         return remaining;
     }
 
+    // The match's gang index is told before the roster changes, so an identifier it refuses leaves
+    // the roster as it was. A player composed before its match has no index yet; the match indexes
+    // whatever its rosters already hold when it takes them over.
     internal void AddGang(MatchGangState gang)
     {
         ArgumentNullException.ThrowIfNull(gang);
-        _onGangAdded?.Invoke(gang);
+        _gangIndex?.Add(gang);
         _gangs.Add(gang);
     }
 
@@ -132,20 +134,22 @@ public sealed partial class MatchPlayerState
         ArgumentNullException.ThrowIfNull(gang);
         if (gangSlot is < 0 || gangSlot >= _gangs.Count)
             throw new ArgumentOutOfRangeException(nameof(gangSlot));
-        _onGangReplaced?.Invoke(_gangs[gangSlot], gang);
+        _gangIndex?.Replace(_gangs[gangSlot], gang);
         _gangs[gangSlot] = gang;
     }
 
-    internal void AttachGangIndex(
-        Action<MatchGangState> onGangAdded,
-        Action<MatchGangState, MatchGangState> onGangReplaced)
+    /// <summary>
+    /// Binds this player to the match owning <paramref name="index"/>. A player belongs to one
+    /// match for the rest of its life: were an instance shared, the match that took it first would
+    /// answer <see cref="MatchState.FindGang"/> from an index nobody maintains any more, so the
+    /// second match refuses the instance instead.
+    /// </summary>
+    internal void JoinMatch(MatchGangIndex index)
     {
-        ArgumentNullException.ThrowIfNull(onGangAdded);
-        ArgumentNullException.ThrowIfNull(onGangReplaced);
-        if (_onGangAdded is not null || _onGangReplaced is not null)
-            throw new InvalidOperationException("A gang index is already attached to this player.");
-        _onGangAdded = onGangAdded;
-        _onGangReplaced = onGangReplaced;
+        ArgumentNullException.ThrowIfNull(index);
+        if (_gangIndex is not null)
+            throw new InvalidOperationException("This player already belongs to a match.");
+        _gangIndex = index;
     }
 
     internal void AddPendingHire(PendingHireState hire) => _pendingHires.Add(hire);
@@ -346,7 +350,7 @@ public sealed partial class MatchState
     private readonly Dictionary<PlayerId, long> _nextNotificationSequences;
     private readonly Dictionary<PlayerId, ComlinkInbox> _comlinkInboxes;
     private readonly Dictionary<PlayerId, MatchPlayerState> _playersById;
-    private readonly Dictionary<GangId, MatchGangState> _gangsById;
+    private readonly MatchGangIndex _gangIndex;
     public MatchState(
         OriginalData definitions,
         MatchSetup setup,
@@ -378,9 +382,9 @@ public sealed partial class MatchState
             throw new ArgumentException($"A match must contain exactly {MatchLimits.SectorCount} sectors.", nameof(sectors));
         if (!sectors.Select(sector => sector.Id).SequenceEqual(Enumerable.Range(0, sectors.Count)))
             throw new ArgumentException("Sectors must be ordered and identified from 0 through 63.", nameof(sectors));
-        if (players.SelectMany(player => player.Gangs).Select(gang => gang.Id).Distinct().Count()
-            != players.Sum(player => player.Gangs.Count))
-            throw new ArgumentException("Gang identifiers must be unique across the match.", nameof(players));
+        // Indexing the rosters is how their gang identifiers are checked for collisions, so this
+        // stands where the explicit uniqueness scan used to and costs one pass instead of three.
+        _gangIndex = MatchGangIndex.ForRosters(players);
 
         ValidateDefinitionsAndCapacities(definitions, players, sectors);
 
@@ -389,9 +393,9 @@ public sealed partial class MatchState
         Players = players.ToArray();
         Sectors = sectors.ToArray();
         _playersById = Players.ToDictionary(player => player.Id);
-        _gangsById = Players.SelectMany(player => player.Gangs).ToDictionary(gang => gang.Id);
-        foreach (var player in Players)
-            player.AttachGangIndex(AddGangToIndex, ReplaceGangInIndex);
+        // Taking the roster over comes after every argument check, so a refused construction hands
+        // the caller's players back unbound. It comes before RestoreRuntime, which looks gangs up.
+        foreach (var player in Players) player.JoinMatch(_gangIndex);
         Coordinator = restore is null
             ? new TurnCoordinator(players.Count)
             : new TurnCoordinator(players.Count, restore.Turn, restore.Phase,
@@ -408,27 +412,6 @@ public sealed partial class MatchState
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         _comlinkInboxes = Players.ToDictionary(player => player.Id, _ => new ComlinkInbox());
         if (restore is not null) RestoreRuntime(restore);
-    }
-
-    private void AddGangToIndex(MatchGangState gang)
-    {
-        if (!_gangsById.TryAdd(gang.Id, gang))
-            throw new ArgumentException("Gang identifiers must be unique across the match.", nameof(gang));
-    }
-
-    private void ReplaceGangInIndex(MatchGangState replaced, MatchGangState replacement)
-    {
-        if (!_gangsById.TryGetValue(replaced.Id, out var indexed) || indexed != replaced)
-            throw new InvalidOperationException("The replaced gang is not indexed by this match.");
-        if (replaced.Id == replacement.Id)
-        {
-            _gangsById[replacement.Id] = replacement;
-            return;
-        }
-        if (_gangsById.ContainsKey(replacement.Id))
-            throw new ArgumentException("Gang identifiers must be unique across the match.", nameof(replacement));
-        _gangsById.Remove(replaced.Id);
-        _gangsById.Add(replacement.Id, replacement);
     }
     internal MatchState(
         OriginalData definitions,

@@ -117,6 +117,34 @@ public sealed class MatchStateTests
     }
 
     [Fact]
+    public void MatchRefusesAPlayerThatAlreadyBelongsToAnotherMatch()
+    {
+        var data = BundledOriginalData.Load();
+        var setup = Setup();
+        var players = Players(setup);
+        _ = new MatchState(data, setup, players, Sectors());
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            new MatchState(data, setup, players, Sectors()));
+
+        Assert.Contains("already belongs to a match", error.Message);
+    }
+
+    [Fact]
+    public void RefusedConstructionLeavesItsPlayersFreeForAnotherMatch()
+    {
+        var data = BundledOriginalData.Load();
+        var setup = Setup();
+        var players = Players(setup);
+        Assert.Throws<ArgumentException>(() =>
+            new MatchState(data, setup, players, Sectors().Take(63).ToArray()));
+
+        var match = new MatchState(data, setup, players, Sectors());
+
+        Assert.Same(players[0], match.FindPlayer(players[0].Id));
+    }
+
+    [Fact]
     public void GangLookupTracksRosterAdditionsAndSlotReplacements()
     {
         var match = CreateMatch();
