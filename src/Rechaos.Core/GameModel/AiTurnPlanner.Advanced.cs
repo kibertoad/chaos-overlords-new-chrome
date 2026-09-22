@@ -27,8 +27,9 @@ public static partial class AiTurnPlanner
     {
         var commands = Plan(state, playerId).ToList();
         var player = state.FindPlayer(playerId)!;
+        var targets = new CommandOptionCatalog.TargetLists(state);
         if (features.HasFlag(AdvancedFeature.ExpertExpansion))
-            ApplyAdvancedExpansion(state, player, commands);
+            ApplyAdvancedExpansion(state, player, commands, targets);
         if (!features.HasFlag(AdvancedFeature.IdleRecovery)) return commands;
         var assigned = commands.Select(command => command.Gang).ToHashSet();
         var cashBudget = Math.Max(0, player.Cash)
@@ -38,7 +39,7 @@ public static partial class AiTurnPlanner
                      .OrderBy(gang => gang.Id.Value))
         {
             if (assigned.Contains(gang.Id)) continue;
-            var fallback = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id)
+            var fallback = CommandOptionCatalog.LegalCommands(state, playerId, gang.Id, targets)
                 .Where(command => EstimatedCost(state, command) <= cashBudget)
                 .Where(command => IsAdvancedFallbackCandidate(state, playerId, gang, command))
                 .OrderBy(command => AdvancedActionPriority(command.Action))
@@ -56,7 +57,8 @@ public static partial class AiTurnPlanner
     private static void ApplyAdvancedExpansion(
         MatchState state,
         MatchPlayerState player,
-        List<GameCommand> commands)
+        List<GameCommand> commands,
+        CommandOptionCatalog.TargetLists targets)
     {
         if (state.Setup.AiMentality < AiDifficulty.CrimeLord) return;
         foreach (var entry in player.Gangs.Select((gang, slot) => (gang, slot))
@@ -73,7 +75,7 @@ public static partial class AiTurnPlanner
                     || state.AiPlanning.PreviousAction(player.Id, entry.slot) != original.Action))
                 continue;
 
-            var move = CommandOptionCatalog.LegalCommands(state, player.Id, gang.Id)
+            var move = CommandOptionCatalog.LegalCommands(state, player.Id, gang.Id, targets)
                 .Where(command => command.Action == GangAction.Move
                     && state.Sectors[command.Target.Id].Owner != player.Id)
                 .OrderByDescending(command => DestinationValue(

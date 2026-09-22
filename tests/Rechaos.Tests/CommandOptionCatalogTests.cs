@@ -36,6 +36,17 @@ public sealed class CommandOptionCatalogTests
             first.Select(command => command.Action));
     }
 
+    [Fact]
+    public void SectorAndSiteTargetsAreSharedByCommandProjectionsForTheSameMatch()
+    {
+        var match = CreateMatch();
+        var first = new CommandOptionCatalog.TargetLists(match);
+        var second = new CommandOptionCatalog.TargetLists(match);
+
+        Assert.Same(first.For(CommandTargetKind.Sector), second.For(CommandTargetKind.Sector));
+        Assert.Same(first.For(CommandTargetKind.Site), second.For(CommandTargetKind.Site));
+    }
+
     private static MatchState CreateMatch()
     {
         var data = BundledOriginalData.Load();
