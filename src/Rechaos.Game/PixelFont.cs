@@ -31,7 +31,7 @@ public sealed class PixelFont
     public void Draw(SpriteBatch batch, string text, Vector2 position, Color color, int scale)
     {
         var startX = position.X;
-        foreach (var character in text.ToUpperInvariant())
+        foreach (var character in text)
         {
             if (character == '\n')
             {
