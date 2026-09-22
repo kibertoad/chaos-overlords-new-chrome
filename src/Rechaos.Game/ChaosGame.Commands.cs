@@ -417,7 +417,7 @@ public sealed partial class ChaosGame
         DrawPanelArtwork(batch, pixel, _influenceBackground, InfluenceCommandLayout.Panel, 248);
 
         var actor = state.FindGang(_commandTargetOptions[0].Gang)!;
-        var actorDefinition = state.Definitions.Gangs.Single(gang => gang.Id == actor.DefinitionId);
+        var actorDefinition = state.Definitions.Gang(actor.DefinitionId);
         if (_gangPortraits is not null)
             batch.Draw(_gangPortraits, InfluenceCommandLayout.Portrait,
                 OriginalSpriteLayout.GangPortrait(actorDefinition.Id), Color.White);
@@ -508,8 +508,7 @@ public sealed partial class ChaosGame
     {
         CommandTargetKind.Gang => "GANG " + target.Id,
         CommandTargetKind.Sector => "SECTOR " + (target.Id + 1),
-        CommandTargetKind.Site => state.Definitions.Sites.Single(definition => definition.Id ==
-            state.FindSite(target.Id)!.DefinitionId).Name,
+        CommandTargetKind.Site => state.Definitions.Site(state.FindSite(target.Id)!.DefinitionId).Name,
         CommandTargetKind.Item => state.Definitions.Items[target.Id].Name,
         _ => ""
     };

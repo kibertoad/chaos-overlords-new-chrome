@@ -315,9 +315,9 @@ public sealed partial class ChaosGame
         if (LastTurnEventPresentation.InfluenceSiteObject(state, notification, related) is { } site)
             return site;
         if (related?.Hire is { } hire)
-            return state.Definitions.Gangs.Single(value => value.Id == hire.GangDefinitionId).Name;
+            return state.Definitions.Gang(hire.GangDefinitionId).Name;
         if (notification.Gang is { } gangId && state.FindGang(gangId) is { } gang)
-            return state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Name;
+            return state.Definitions.Gang(gang.DefinitionId).Name;
         if (notification.SectorId is { } sectorId) return SectorCode(sectorId);
         return notification.Kind.ToString().ToUpperInvariant();
     }
@@ -567,7 +567,7 @@ public static class LastTurnEventPresentation
         if (InfluenceSiteId(notification, relatedEvent) is not { } siteId
             || state.FindSite(siteId) is not { } site)
             return null;
-        var definition = state.Definitions.Sites.Single(value => value.Id == site.DefinitionId);
+        var definition = state.Definitions.Site(site.DefinitionId);
         return $"{siteId:00}:{definition.Name}";
     }
 
