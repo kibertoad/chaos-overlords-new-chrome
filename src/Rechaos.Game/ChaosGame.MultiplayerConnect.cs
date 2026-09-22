@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.Xna.Framework;
 using Rechaos.Core.GameModel;
 
@@ -155,7 +156,9 @@ public sealed partial class ChaosGame
     /// </remarks>
     private bool RequireUsableName()
     {
-        var name = _online.DisplayName.Value.Trim();
+        // The server trims and then NFC-normalizes before projecting, and the normalized name is the
+        // one the match is later seeded with, so the pre-check has to project that same form.
+        var name = _online.DisplayName.Value.Trim().Normalize(NormalizationForm.FormC);
         if (name.Length == 0)
         {
             _online.Status = "ENTER A NAME";
