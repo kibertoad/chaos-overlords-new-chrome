@@ -5,20 +5,39 @@ import { describe, expect, it } from 'vitest'
 describe('RateLimiter residency bound', () => {
   it('evicts an older window rather than a rolled, currently limited one', () => {
     const clock = new ManualClock()
-    const limiter = new RateLimiter(clock, { limit: 1, windowMs: 1_000 })
+    const limiter = new RateLimiter(clock, { limit: 1, windowMs: 1_000, maxKeys: 3 })
     limiter.take('active')
 
-    // These all begin later than active, so they remain live when active rolls one millisecond
-    // before them. Filling the exact bound makes the next fresh window choose one to forgive.
+    // Two windows open one millisecond after active's, filling the bound exactly without evicting.
     clock.advance(1)
-    for (let index = 0; index < 50_000; index += 1) limiter.take(`older-${index}`)
+    limiter.take('older-a')
+    limiter.take('older-b')
 
+    // Active rolls and its new window spends the whole budget; both older windows are still live.
     clock.advance(999)
-    limiter.take('active')
+    expect(limiter.take('active')).toBeNull()
 
-    // The renewed window is fresh and spent. It must therefore remain while the earlier window at
-    // the Map head is forgiven; leaving active at its first-seen position did the reverse.
+    // One more key forces a single eviction. The renewed window is the newest, so the head must be
+    // older-a; leaving active at its first-seen position forgave its spent budget instead.
+    limiter.take('fresh')
+
     expect(limiter.take('active')).toBe(1)
-    expect(limiter.spent('older-0')).toBe(0)
+    expect(limiter.spent('older-a')).toBe(0)
+    expect(limiter.spent('older-b')).toBe(1)
+  })
+})
+
+describe('RateLimiter clock steps', () => {
+  it('does not stretch a window when the wall clock steps backwards', () => {
+    const clock = new ManualClock()
+    const limiter = new RateLimiter(clock, { limit: 1, windowMs: 1_000 })
+    limiter.take('key')
+
+    clock.advance(-60_000)
+    expect(limiter.take('key')).toBe(1)
+
+    // Measured on the raw wall clock this window would stay spent for another minute.
+    clock.advance(1_000)
+    expect(limiter.take('key')).toBeNull()
   })
 })
