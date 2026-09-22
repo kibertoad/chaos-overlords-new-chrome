@@ -77,7 +77,12 @@ export async function buildNodeRuntime(
     opened.storage.events,
     DEFAULT_SERVER_CONFIG.sseHeartbeatMs,
     { ...DEFAULT_EVENT_HUB_LIMITS, perProcess: config.maxEventStreams },
-    (matchId, seq) => logger.warn('skipped an unreadable stored event', { matchId, seq }),
+    {
+      unreadable: (matchId, seq) =>
+        logger.warn('skipped an unreadable stored event', { matchId, seq }),
+      abandoned: (matchId, playerId) =>
+        logger.info('answered an already abandoned event stream', { matchId, playerId }),
+    },
   )
 
   let scheduler: TimerDeadlineScheduler | undefined

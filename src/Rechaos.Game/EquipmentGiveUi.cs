@@ -164,7 +164,7 @@ public sealed partial class ChaosGame
                 batch.Draw(_gangPortraits, target,
                     OriginalSpriteLayout.GangPortrait(recipient.DefinitionId), Color.White);
             if (_giveCursor == entry.slot) DrawBorder(batch, pixel, target, Color.White, 2);
-            var name = state.Definitions.Gangs.Single(value => value.Id == recipient.DefinitionId).Name;
+            var name = state.Definitions.Gang(recipient.DefinitionId).Name;
             font.Draw(batch, name[..Math.Min(15, name.Length)],
                 new Vector2(target.Right + 3, target.Y + 12), Color.Lime, 1);
         }

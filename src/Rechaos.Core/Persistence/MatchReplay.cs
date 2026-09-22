@@ -328,10 +328,12 @@ public sealed class MatchReplayRecorder
 
 public static class MatchReplaySerializer
 {
-    // 30 replaces the SHA-256 step fingerprints with XxHash128 ones and drops every older
-    // format: a journal is verified step by step against the fingerprint of its day, and there is
-    // no build in players' hands whose journals this would strand.
-    public const int CurrentFormatVersion = 30;
+    // 31 moves with the state-fingerprint encoding, which now folds the definition set in as a
+    // digest rather than inline (MatchStateHasher.FormatVersion 2), and drops every older format:
+    // a journal is verified step by step against the fingerprint of its day, so a journal from
+    // format 30 would diverge on its first step and be reported as damage rather than as an older
+    // format. There is no build in players' hands whose journals this would strand.
+    public const int CurrentFormatVersion = 31;
     public const int MaximumReplayBytes = 32 * 1024 * 1024;
     public const int MaximumSteps = 1_000_000;
 

@@ -1,6 +1,6 @@
 import { MATCH_EVENT_SSE_NAME } from '@chaos-overlords/contracts'
 import type { PersistedEvent } from '@chaos-overlords/kernel'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createSseResponse, type EventStreamSource, formatEvent } from '../src'
 
 const event = (seq: number): PersistedEvent =>
@@ -33,6 +33,67 @@ function logOf(total: number) {
   }
   return { source, reads }
 }
+
+describe('createSseResponse lifecycle', () => {
+  /** A source that records what the response asked of it. */
+  function recordingSource() {
+    const calls = { pages: 0, subscribed: 0, unsubscribed: 0 }
+    const source: EventStreamSource = {
+      page: async () => {
+        calls.pages += 1
+        return []
+      },
+      caughtUp: () => true,
+      subscribe: () => {
+        calls.subscribed += 1
+        return () => {
+          calls.unsubscribed += 1
+        }
+      },
+    }
+    return { source, calls }
+  }
+
+  /**
+   * An AbortSignal only dispatches for a future transition, and the route can do its
+   * authentication after the client has gone. Such a request must build nothing rather than build a
+   * stream and tear it down again.
+   */
+  it('builds nothing for a request whose signal has already aborted', async () => {
+    const { source, calls } = recordingSource()
+    const signal = AbortSignal.abort()
+    const added = vi.spyOn(signal, 'addEventListener')
+
+    const response = createSseResponse(source, { afterSeq: 0, heartbeatMs: 10, signal })
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toContain('text/event-stream')
+    // No `: connected` frame: the stream is over before it began.
+    expect(await response.text()).toBe('')
+    await settle()
+    expect(calls).toEqual({ pages: 0, subscribed: 0, unsubscribed: 0 })
+    expect(added).not.toHaveBeenCalled()
+  })
+
+  it('takes its abort listener off the signal when the stream ends another way', async () => {
+    const { source, calls } = recordingSource()
+    const controller = new AbortController()
+    const removed = vi.spyOn(controller.signal, 'removeEventListener')
+    const response = createSseResponse(source, {
+      afterSeq: 0,
+      heartbeatMs: 60_000,
+      signal: controller.signal,
+    })
+    const reader = (response.body as ReadableStream<Uint8Array>).getReader()
+    await reader.read()
+
+    // The consumer going away, not the request signal, is what ends this one.
+    await reader.cancel()
+
+    expect(calls.unsubscribed).toBe(1)
+    expect(removed).toHaveBeenCalledWith('abort', expect.any(Function))
+  })
+})
 
 describe('createSseResponse backpressure', () => {
   it('recovers a durable event whose fan-out wake was lost', async () => {

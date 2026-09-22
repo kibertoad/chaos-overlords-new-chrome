@@ -80,6 +80,60 @@ describe('LocalEventHub stream caps', () => {
     for (const stream of held) stream.abort()
   })
 
+  it('answers an already aborted request with an ended stream and holds no slot for it', async () => {
+    const abandoned: string[] = []
+    const hub = new LocalEventHub(
+      emptyEvents,
+      60_000,
+      { perPlayer: 5, perMatch: 1, perProcess: 1 },
+      { abandoned: (matchId, playerId) => abandoned.push(`${matchId}/${playerId}`) },
+    )
+
+    const response = await hub.open({
+      matchId: 'm',
+      playerId: 'gone',
+      afterSeq: 0,
+      signal: AbortSignal.abort(),
+    })
+
+    // Nothing to read and nothing left running: the body is already over, with no frame in it.
+    expect(response.headers.get('content-type')).toContain('text/event-stream')
+    expect(await response.text()).toBe('')
+    expect(hub.openStreams).toBe(0)
+    expect(hub.connectionCount('m')).toBe(0)
+    expect(abandoned).toEqual(['m/gone'])
+    // A real client can therefore claim the only slot in this match and process.
+    const live = await open(hub, 'm', 'present')
+    expect(hub.openStreams).toBe(1)
+    live.abort()
+  })
+
+  /**
+   * Making room closes the caller's oldest stream. A request nobody is waiting on must not get that
+   * far: it would cost the player a live tab, or be refused over caps it was never going to use.
+   */
+  it('neither closes a live stream nor refuses for an already aborted request', async () => {
+    const hub = hubOf({ perPlayer: 1, perMatch: 1, perProcess: 1 })
+    const live = await open(hub, 'm', 'p1')
+
+    for (const [matchId, playerId] of [
+      ['m', 'p1'],
+      ['m', 'p2'],
+      ['other', 'p3'],
+    ] as const) {
+      const response = await hub.open({
+        matchId,
+        playerId,
+        afterSeq: 0,
+        signal: AbortSignal.abort(),
+      })
+      expect(response.status).toBe(200)
+    }
+    expect(hub.connectionCount('m')).toBe(1)
+    expect(hub.openStreams).toBe(1)
+    live.abort()
+  })
+
   /**
    * A full match is exactly what a reconnecting player finds when every seat holds its quota. The
    * caller's own stale stream goes before the match ceiling is read, so the reconnect succeeds.

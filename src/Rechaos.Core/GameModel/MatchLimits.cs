@@ -19,4 +19,7 @@ public static class MatchLimits
     // message queue retained 16 entries and its Last Turn table retained the
     // first 32 reportable records; neither is this richer internal queue.
     public const int NotificationsPerPlayer = 64;
+
+    /// <summary>Whether <paramref name="id"/> names a sector on the board.</summary>
+    public static bool IsSectorId(int id) => id is >= 0 and < SectorCount;
 }

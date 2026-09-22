@@ -3,7 +3,11 @@ import {
   type MultiplayerStorage,
   type PersistedEvent,
 } from '@chaos-overlords/kernel'
-import { DEFAULT_SERVER_CONFIG, LocalEventHub } from '@chaos-overlords/server'
+import {
+  DEFAULT_EVENT_HUB_LIMITS,
+  DEFAULT_SERVER_CONFIG,
+  LocalEventHub,
+} from '@chaos-overlords/server'
 import { createSqliteStorage, sqliteSchema } from '@chaos-overlords/storage/sqlite'
 import type { DurableObjectState } from '@cloudflare/workers-types'
 import { drizzle } from 'drizzle-orm/d1'
@@ -31,7 +35,17 @@ export class MatchHub {
     private readonly env: Env,
   ) {
     this.repositories = createSqliteStorage(drizzle(env.DB, { schema: sqliteSchema }))
-    this.hub = new LocalEventHub(this.repositories.events, DEFAULT_SERVER_CONFIG.sseHeartbeatMs)
+    this.hub = new LocalEventHub(
+      this.repositories.events,
+      DEFAULT_SERVER_CONFIG.sseHeartbeatMs,
+      DEFAULT_EVENT_HUB_LIMITS,
+      {
+        // The request signal here is the Worker's fetch into this object, not the client's own,
+        // so a run of these is where a signal that only looks aborted would show up.
+        abandoned: (matchId, playerId) =>
+          workerLogger.info('answered an already abandoned event stream', { matchId, playerId }),
+      },
+    )
   }
 
   async fetch(request: Request): Promise<Response> {

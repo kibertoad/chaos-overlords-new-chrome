@@ -112,6 +112,31 @@ applies on its own terms, so a change that alters the wire as well moves both nu
 is written for the stored sessions: the server holds them as opaque history and only a client can
 read one, so a match from an older session version is refused rather than reinterpreted.
 
+## State fingerprint format
+
+`MatchStateHasher.FormatVersion` in `src/Rechaos.Core/GameModel/Determinism.cs` identifies the
+encoding a state fingerprint is computed from. Increment it whenever that encoding changes, so no
+two encodings share a fingerprint space.
+
+Nothing on disk or on the wire records which encoding produced a stored fingerprint. A fingerprint
+from an older encoding is well-formed and simply fails to compare equal, and a mismatch is read as
+damage or as divergence, never as an older file. The version gate in front of a stored fingerprint
+is therefore the only thing that can refuse one, so every gate moves in the same change:
+
+- `NativeSaveSerializer.CurrentFormatVersion`, for the fingerprint and the phase-hash history a
+  save carries. Left behind, a save is drawn as playable by the save browser, fails verification as
+  a plain `InvalidDataException` that `IncompatibleSave` does not recognise, and is therefore taken
+  for damage: the backup generation is judged not worth keeping and the next save overwrites it.
+- `MatchReplaySerializer.CurrentFormatVersion`, for the step fingerprints a journal is verified
+  against. Left behind, a journal passes the gate and is reported as a divergence on its first
+  step, and a resume drops it silently.
+- `MULTIPLAYER_SESSION_VERSION` and `MultiplayerSessionVersion.Current`, under the rule above — a
+  stored match whose turns were sealed under the old encoding cannot be carried on.
+
+`StateFingerprintVersionCouplingTests` pins all four numbers together and fails when one moves
+alone. A failure there is the question, not the answer: decide which of the versions the change
+reaches, then pin the new set.
+
 ## Post-commit orphan-process audit
 
 After every commit in this repository, inspect running processes for orphaned

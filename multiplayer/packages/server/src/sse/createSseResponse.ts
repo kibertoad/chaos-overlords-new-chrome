@@ -88,6 +88,10 @@ const STREAM_HIGH_WATER_MARK = 32
  * again; the log keeps the events in the meantime, which is the whole point of it being the truth.
  */
 export function createSseResponse(source: EventStreamSource, options: SseOptions): Response {
+  // An AbortSignal only dispatches an event for a future transition, and the caller can have done
+  // authentication and resume work after its client went away. Such a request is answered before
+  // anything is built: no subscription, no heartbeat, no abort listener that could never fire.
+  if (options.signal.aborted) return abandonedSseResponse()
   const { onUnreadable } = options
   let lastSeq = options.afterSeq
   let draining: Promise<void> | null = null
@@ -210,6 +214,9 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
         shutdown = () => {
           if (closed) return
           closed = true
+          // A stream ended by `cancel`, a stall or its hub would otherwise leave this listener, and
+          // everything its closure holds, on the request signal for as long as that lives.
+          options.signal.removeEventListener('abort', shutdown)
           clearInterval(heartbeat)
           unsubscribe()
           // Release a drain parked on backpressure, so it observes `closed` and stops.
@@ -240,14 +247,27 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
     new CountQueuingStrategy({ highWaterMark: STREAM_HIGH_WATER_MARK }),
   )
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream; charset=utf-8',
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
-      'X-Accel-Buffering': 'no',
-    },
-  })
+  return new Response(stream, { headers: SSE_HEADERS })
+}
+
+const SSE_HEADERS = {
+  'Content-Type': 'text/event-stream; charset=utf-8',
+  'Cache-Control': 'no-cache, no-transform',
+  Connection: 'keep-alive',
+  'X-Accel-Buffering': 'no',
+} as const
+
+/**
+ * The answer to a stream request whose client had gone before the stream could be built.
+ *
+ * Still the contract's 200 `text/event-stream`, since response validation refuses any status the
+ * contract does not declare, but with no body: the stream ends before its first frame. Nobody is
+ * reading it in the ordinary case; a caller that wants a request which only *looked* aborted to be
+ * visible (a runtime passing a signal through wrongly would otherwise loop reconnects silently)
+ * logs the fact where it decided to answer this, as `LocalEventHub` does.
+ */
+export function abandonedSseResponse(): Response {
+  return new Response(null, { headers: SSE_HEADERS })
 }
 
 /**

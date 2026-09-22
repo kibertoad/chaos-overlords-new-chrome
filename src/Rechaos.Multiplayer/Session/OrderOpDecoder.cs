@@ -22,26 +22,48 @@ namespace Rechaos.Multiplayer.Session;
 /// </remarks>
 public static class OrderOpDecoder
 {
-    /// <summary>A queued command, attributed to <paramref name="player"/> whatever the op says.</summary>
-    /// <param name="submit">The op as it came off the wire.</param>
-    /// <param name="player">The seat the op is applied under.</param>
-    /// <param name="document">What the op is part of, for the refusal: "the sealed set" or "the saved draft".</param>
-    public static GameCommand Command(SubmitCommandOp submit, PlayerId player, string document)
+    /// <summary>Every op of a document, read before any of it is applied.</summary>
+    /// <param name="ops">The document's ops, in order.</param>
+    /// <param name="player">The seat the ops are applied under, whatever they say.</param>
+    /// <param name="document">What the ops are part of, for the refusal: "the sealed set" or "the saved draft".</param>
+    public static DecodedOrderOp[] Decode(IReadOnlyList<OrderOp> ops, PlayerId player, string document)
     {
-        ArgumentNullException.ThrowIfNull(submit);
-        return new GameCommand(
-            player,
-            new GangId(submit.Gang),
-            Action(submit.Action, document),
-            Target(submit.Target, document, "target"),
-            submit.Repeat,
-            submit.SecondaryTarget is { } secondary ? Target(secondary, document, "secondaryTarget") : null,
-            submit.TertiaryTarget is { } tertiary ? Target(tertiary, document, "tertiaryTarget") : null,
-            submit.QuaternaryTarget is { } quaternary ? Target(quaternary, document, "quaternaryTarget") : null);
+        ArgumentNullException.ThrowIfNull(ops);
+        var decoded = new DecodedOrderOp[ops.Count];
+        for (var index = 0; index < decoded.Length; index++) decoded[index] = Decode(ops[index], player, document);
+        return decoded;
     }
 
+    /// <summary>One op, attributed to <paramref name="player"/> whatever the op says.</summary>
+    /// <inheritdoc cref="Decode(IReadOnlyList{OrderOp}, PlayerId, string)" path="/param[@name='document']"/>
+    public static DecodedOrderOp Decode(OrderOp op, PlayerId player, string document)
+    {
+        ArgumentNullException.ThrowIfNull(op);
+        return op switch
+        {
+            SubmitCommandOp submit => new DecodedOrderOp.Submit(Command(submit, player, document)),
+            CancelCommandOp cancel => new DecodedOrderOp.Cancel(Gang(cancel.Gang, document, "gang")),
+            QueueHireOp hire => new DecodedOrderOp.QueueHire(
+                GangDefinitionId(hire.GangDefinitionId, document), HireSector(hire.SectorId, document)),
+            SnubHireOfferOp snub => new DecodedOrderOp.SnubHireOffer(GangDefinitionId(snub.GangDefinitionId, document)),
+            DismissNotificationOp => DecodedOrderOp.DismissNotification.Instance,
+            _ => throw new MultiplayerProtocolException(
+                $"{document} carries an op this client cannot apply: {op.Op}"),
+        };
+    }
+
+    private static GameCommand Command(SubmitCommandOp submit, PlayerId player, string document) => new(
+        player,
+        Gang(submit.Gang, document, "gang"),
+        Action(submit.Action, document),
+        Target(submit.Target, document, "target"),
+        submit.Repeat,
+        submit.SecondaryTarget is { } secondary ? Target(secondary, document, "secondaryTarget") : null,
+        submit.TertiaryTarget is { } tertiary ? Target(tertiary, document, "tertiaryTarget") : null,
+        submit.QuaternaryTarget is { } quaternary ? Target(quaternary, document, "quaternaryTarget") : null);
+
     /// <summary>A gang definition id that fits the core's <c>short</c>.</summary>
-    public static short GangDefinitionId(int value, string document)
+    private static short GangDefinitionId(int value, string document)
     {
         if (value is < short.MinValue or > short.MaxValue)
         {
@@ -51,13 +73,15 @@ public static class OrderOpDecoder
         return (short)value;
     }
 
-    /// <summary>The refusal for an op kind this build has never heard of.</summary>
-    public static MultiplayerProtocolException Unsupported(OrderOp op, string document)
-    {
-        ArgumentNullException.ThrowIfNull(op);
-        return new MultiplayerProtocolException(
-            $"{document} carries an op this client cannot apply: {op.Op}");
-    }
+    private static GangId Gang(int value, string document, string field) =>
+        GangId.IsValid(value) ? new GangId(value) : throw NotAnIdentifier(document, field, value, "gang");
+
+    /// <summary>
+    /// A hire sector on the board. Whether the player may hire there is the rules' call; a sector the
+    /// board does not have is not, because it is the same id a command target refuses by name.
+    /// </summary>
+    private static int HireSector(int value, string document) =>
+        MatchLimits.IsSectorId(value) ? value : throw NotAnIdentifier(document, "hire sector", value, "sector");
 
     private static GangAction Action(int value, string document)
     {
@@ -75,11 +99,30 @@ public static class OrderOpDecoder
         string field) => target switch
     {
         NoneTarget => Core.GameModel.CommandTarget.None,
-        GangTarget gang => Core.GameModel.CommandTarget.Gang(new GangId(gang.Id)),
-        SectorTarget sector => Core.GameModel.CommandTarget.Sector(sector.Id),
-        SiteTarget site => Core.GameModel.CommandTarget.Site(site.Id),
-        ItemTarget item => Core.GameModel.CommandTarget.Item(item.Id),
+        GangTarget gang => Bounded(CommandTargetKind.Gang, gang.Id, document, field),
+        SectorTarget sector => Bounded(CommandTargetKind.Sector, sector.Id, document, field),
+        SiteTarget site => Bounded(CommandTargetKind.Site, site.Id, document, field),
+        ItemTarget item => Bounded(CommandTargetKind.Item, item.Id, document, field),
         _ => throw new MultiplayerProtocolException(
             $"{document} carries a {field} kind this client cannot apply: {target?.Kind ?? "null"}"),
     };
+
+    /// <summary>A target whose id the core itself accepts, so the bound lives in one place.</summary>
+    private static Core.GameModel.CommandTarget Bounded(
+        CommandTargetKind kind,
+        int id,
+        string document,
+        string field)
+    {
+        if (Core.GameModel.CommandTarget.TryCreate(kind, id, out var target)) return target;
+        var name = kind.ToString().ToLowerInvariant();
+        throw NotAnIdentifier(document, $"{field} {name}", id, name);
+    }
+
+    private static MultiplayerProtocolException NotAnIdentifier(
+        string document,
+        string field,
+        int value,
+        string kind) =>
+        new($"{document} names {field} {value}, which is not a valid {kind} identifier");
 }

@@ -171,8 +171,7 @@ public static class StatusConsolePresentation
         var lines = estimate.Contributions.SelectMany(contribution =>
         {
             var gang = state.FindGang(contribution.Gang)!;
-            var name = state.Definitions.Gangs.Single(
-                definition => definition.Id == gang.DefinitionId).Name;
+            var name = state.Definitions.Gang(gang.DefinitionId).Name;
             var values = new List<string>
             {
                 $"{name}: {contribution.Dice} D6 ROLLS",

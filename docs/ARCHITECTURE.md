@@ -58,6 +58,10 @@ move under `Rechaos.Formats`; the pure simulation will remain in Core.
   and hire-pool capacities.
 - `GameModel/MatchState.cs`: explicit headless setup, player, sector, site, gang,
   research, inventory, hire, statistics, and equipment state.
+- `GameModel/MatchGangIndex.cs`: the constant-time match-wide gang lookup and the
+  one-gang-per-identifier invariant behind it, established when a match takes its
+  rosters over and maintained through roster additions and slot replacements. A
+  player belongs to one match, so the lookup cannot drift from the rosters.
 - `GameModel/CommandValidation.cs`: data-driven action descriptors and typed,
   non-mutating command validation results.
 - `GameModel/CommandOptionCatalog.cs`: deterministic expansion of declarative
