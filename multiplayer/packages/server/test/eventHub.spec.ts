@@ -80,6 +80,22 @@ describe('LocalEventHub stream caps', () => {
     for (const stream of held) stream.abort()
   })
 
+  it('releases a stream whose request was already aborted before it reached the hub', async () => {
+    const hub = hubOf({ perPlayer: 5, perMatch: 1, perProcess: 1 })
+    const disconnected = new AbortController()
+    disconnected.abort()
+
+    await hub.open({ matchId: 'm', playerId: 'gone', afterSeq: 0, signal: disconnected.signal })
+
+    // The subscription was made before the response could see the signal, but must leave no cap
+    // slot behind. A real client can therefore claim the only slot in this match and process.
+    expect(hub.openStreams).toBe(0)
+    expect(hub.connectionCount('m')).toBe(0)
+    const live = await open(hub, 'm', 'present')
+    expect(hub.openStreams).toBe(1)
+    live.abort()
+  })
+
   /**
    * A full match is exactly what a reconnecting player finds when every seat holds its quota. The
    * caller's own stale stream goes before the match ceiling is read, so the reconnect succeeds.

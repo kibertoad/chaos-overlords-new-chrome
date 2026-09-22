@@ -222,6 +222,13 @@ export function createSseResponse(source: EventStreamSource, options: SseOptions
           }
         }
         options.signal.addEventListener('abort', shutdown, { once: true })
+        // An AbortSignal only dispatches an event for a future transition. The route can have done
+        // authentication and resume work after its client went away, so honour that completed
+        // transition too; otherwise this subscription, its heartbeat, and the match log leak.
+        if (options.signal.aborted) {
+          shutdown()
+          return
+        }
         send(': connected\n\n')
         // The opening catch-up always reaches the log: a fresh stream has been told nothing.
         wake(true)
