@@ -30,6 +30,7 @@ public sealed partial class MatchPlayerState
     private readonly Dictionary<short, int> _researchProgress;
     private readonly HashSet<short> _researchedItems;
     private readonly Dictionary<short, int> _inventory;
+    private MatchGangIndex? _gangIndex;
 
     public MatchPlayerState(
         MatchPlayerSetup setup,
@@ -118,14 +119,39 @@ public sealed partial class MatchPlayerState
         return remaining;
     }
 
-    internal void AddGang(MatchGangState gang) => _gangs.Add(gang);
+    // The match's gang index is told before the roster changes, so an identifier it refuses leaves
+    // the roster as it was. A player composed before its match has no index yet; the match indexes
+    // whatever its rosters already hold when it takes them over.
+    internal void AddGang(MatchGangState gang)
+    {
+        ArgumentNullException.ThrowIfNull(gang);
+        _gangIndex?.Add(gang);
+        _gangs.Add(gang);
+    }
+
     internal void ReplaceGang(int gangSlot, MatchGangState gang)
     {
         ArgumentNullException.ThrowIfNull(gang);
         if (gangSlot is < 0 || gangSlot >= _gangs.Count)
             throw new ArgumentOutOfRangeException(nameof(gangSlot));
+        _gangIndex?.Replace(_gangs[gangSlot], gang);
         _gangs[gangSlot] = gang;
     }
+
+    /// <summary>
+    /// Binds this player to the match owning <paramref name="index"/>. A player belongs to one
+    /// match for the rest of its life: were an instance shared, the match that took it first would
+    /// answer <see cref="MatchState.FindGang"/> from an index nobody maintains any more, so the
+    /// second match refuses the instance instead.
+    /// </summary>
+    internal void JoinMatch(MatchGangIndex index)
+    {
+        ArgumentNullException.ThrowIfNull(index);
+        if (_gangIndex is not null)
+            throw new InvalidOperationException("This player already belongs to a match.");
+        _gangIndex = index;
+    }
+
     internal void AddPendingHire(PendingHireState hire) => _pendingHires.Add(hire);
     internal void ClearPendingHires() => _pendingHires.Clear();
 
@@ -323,6 +349,8 @@ public sealed partial class MatchState
     private readonly Dictionary<PlayerId, NotificationQueue> _notifications;
     private readonly Dictionary<PlayerId, long> _nextNotificationSequences;
     private readonly Dictionary<PlayerId, ComlinkInbox> _comlinkInboxes;
+    private readonly Dictionary<PlayerId, MatchPlayerState> _playersById;
+    private readonly MatchGangIndex _gangIndex;
     public MatchState(
         OriginalData definitions,
         MatchSetup setup,
@@ -354,9 +382,9 @@ public sealed partial class MatchState
             throw new ArgumentException($"A match must contain exactly {MatchLimits.SectorCount} sectors.", nameof(sectors));
         if (!sectors.Select(sector => sector.Id).SequenceEqual(Enumerable.Range(0, sectors.Count)))
             throw new ArgumentException("Sectors must be ordered and identified from 0 through 63.", nameof(sectors));
-        if (players.SelectMany(player => player.Gangs).Select(gang => gang.Id).Distinct().Count()
-            != players.Sum(player => player.Gangs.Count))
-            throw new ArgumentException("Gang identifiers must be unique across the match.", nameof(players));
+        // Indexing the rosters is how their gang identifiers are checked for collisions, so this
+        // stands where the explicit uniqueness scan used to and costs one pass instead of three.
+        _gangIndex = MatchGangIndex.ForRosters(players);
 
         ValidateDefinitionsAndCapacities(definitions, players, sectors);
 
@@ -364,6 +392,10 @@ public sealed partial class MatchState
         _phaseHashView = _phaseHashes.AsReadOnly();
         Players = players.ToArray();
         Sectors = sectors.ToArray();
+        _playersById = Players.ToDictionary(player => player.Id);
+        // Taking the roster over comes after every argument check, so a refused construction hands
+        // the caller's players back unbound. It comes before RestoreRuntime, which looks gangs up.
+        foreach (var player in Players) player.JoinMatch(_gangIndex);
         Coordinator = restore is null
             ? new TurnCoordinator(players.Count)
             : new TurnCoordinator(players.Count, restore.Turn, restore.Phase,
