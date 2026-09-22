@@ -53,6 +53,12 @@ describe('canonicalJson', () => {
     expect(() => canonicalJson({ x: undefined })).toThrow(/unsupported type/)
   })
 
+  it('reports root, nested array, and nested object paths unchanged', () => {
+    expect(() => canonicalJson(undefined)).toThrow('cannot canonicalize value: unsupported type undefined')
+    expect(() => canonicalJson({ x: [{ y: undefined }] })).toThrow('cannot canonicalize x[0].y: unsupported type undefined')
+    expect(() => canonicalJson({ x: { y: -0 } })).toThrow('cannot canonicalize x.y: 0 is not a safe non-negative-zero integer')
+  })
+
   /**
    * A golden digest for the C# side to reproduce, over a document in the real op vocabulary. Its
    * canonical text is
