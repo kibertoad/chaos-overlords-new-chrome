@@ -313,7 +313,11 @@ describe('the lobby, the roster and the turn barrier', () => {
     await expect(wrongFrom('203.0.113.10', 'Fresh')).rejects.toMatchObject({
       details: { reason: 'rate_limited' },
     })
-  })
+    // Forty-odd PBKDF2 verifications at 120,000 iterations is most of the default five-second
+    // budget on its own, and the workspace runs every package's suite at once: this timed out in
+    // CI while passing in isolation. The cost is the point of the test, so raise the budget rather
+    // than weaken what it proves.
+  }, 60_000)
 
   /**
    * The listing leaves a running match with no human seats out, so the late-join door has to

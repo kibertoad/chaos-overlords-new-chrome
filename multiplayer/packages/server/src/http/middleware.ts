@@ -141,12 +141,29 @@ export function rateLimitKey(address: string): string {
   if (!withoutPort.includes(':')) return withoutPort
   // IPv6, masked to the /64 a single client is routed. IPv4-mapped forms keep their full address.
   if (withoutPort.includes('.')) return withoutPort
-  const groups = withoutPort.toLowerCase().split('::')
-  if (groups.length > 1) {
-    const leading = (groups[0] as string).split(':').filter((part) => part !== '')
-    return leading.length >= 4 ? `${leading.slice(0, 4).join(':')}::/64` : `${withoutPort}::/64`
-  }
-  return `${withoutPort.split(':').slice(0, 4).join(':')}::/64`
+  return `${ipv6Prefix64(withoutPort.toLowerCase())}::/64`
+}
+
+/**
+ * The first four groups of an IPv6 address: the /64 a single client is routed.
+ *
+ * The compressed form has to be expanded before it is sliced. `2001:db8::1` writes two groups and
+ * then hides five zero groups behind the `::`, so taking the groups as written either kept the
+ * interface identifier or gave up and used the whole address — and every address in one routed /64
+ * then had a budget of its own, which is the exact thing this masking exists to stop. Groups are
+ * stripped of leading zeros so the two spellings of one address cannot hold two budgets either.
+ */
+function ipv6Prefix64(address: string): string {
+  const [head, tail] = address.split('::', 2)
+  const leading = head === '' ? [] : (head as string).split(':')
+  const trailing = tail === undefined || tail === '' ? [] : tail.split(':')
+  const hidden = tail === undefined ? 0 : Math.max(0, 8 - leading.length - trailing.length)
+  const groups = [...leading, ...Array.from({ length: hidden }, () => '0'), ...trailing]
+  while (groups.length < 4) groups.push('0')
+  return groups
+    .slice(0, 4)
+    .map((group) => group.replace(/^0+(?=.)/, ''))
+    .join(':')
 }
 
 /**

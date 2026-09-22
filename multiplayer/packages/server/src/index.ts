@@ -6,7 +6,7 @@ export {
   type ServerConfig,
   type ServerContainer,
 } from './container'
-export { bugReportRateLimited, defaultClientAddress } from './http/middleware'
+export { bugReportRateLimited, defaultClientAddress, rateLimitKey } from './http/middleware'
 export type { AppEnv } from './http/types'
 export {
   createSseResponse,

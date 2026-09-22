@@ -12,7 +12,13 @@ public sealed partial class ChaosGame : Microsoft.Xna.Framework.Game
 {
     private static readonly Color[] PlayerColors =
         [Color.Red, Color.LimeGreen, Color.Blue, Color.Yellow, Color.Magenta, Color.Cyan];
-    private static readonly Color GangDragSectorHighlight = new(74, 156, 92, 160);
+    /// <summary>
+    /// The translucent green a legal drag target is outlined with. Every <see cref="SpriteBatch"/>
+    /// here begins with the default premultiplied <see cref="BlendState.AlphaBlend"/>, so the
+    /// channels are premultiplied here rather than passed straight through.
+    /// </summary>
+    private static readonly Color GangDragSectorHighlight =
+        Color.FromNonPremultiplied(74, 156, 92, 160);
     private static readonly GameDuration[] Durations = Enum.GetValues<GameDuration>();
     private static readonly Rectangle[] SetupScenarios =
     [

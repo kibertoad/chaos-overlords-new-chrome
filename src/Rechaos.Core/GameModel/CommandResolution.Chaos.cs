@@ -135,14 +135,7 @@ public static partial class CommandResolver
         MatchState state,
         IReadOnlyList<QueuedCommand> commands)
     {
-        var events = state.Events.Where(gameEvent =>
-                gameEvent.Turn == state.Coordinator.Turn
-                && gameEvent.Phase == TurnPhase.Execution
-                && gameEvent.ExecutionPhase == ExecutionPhase.Chaos
-                && gameEvent.Action == GangAction.Chaos
-                && gameEvent.Kind is GameEventKind.CommandResolved or GameEventKind.CommandFailed)
-            .OrderBy(gameEvent => gameEvent.Sequence)
-            .ToArray();
+        var events = RolledThisTurn(state);
         if (events.Length == 0) return [];
 
         var queued = commands.ToDictionary(
@@ -162,6 +155,31 @@ public static partial class CommandResolver
                 return new CommandResolutionResult(command, gameEvent.Resolution!.Code, gameEvent);
             })
             .ToArray();
+    }
+
+    /// <summary>The Chaos rolls the Instant boundary recorded this turn, in roll order.</summary>
+    /// <remarks>
+    /// Walked back from the end rather than filtered, the way every other reader of the log does
+    /// it: the history is append-only in sequence order, so the open turn's tail is the whole
+    /// answer and the ascending order the pass needs falls out of reversing the walk. Filtering all
+    /// of it made the Chaos subphase cost grow with every turn already played.
+    /// </remarks>
+    private static GameEvent[] RolledThisTurn(MatchState state)
+    {
+        var events = state.Events;
+        var rolled = new List<GameEvent>();
+        for (var index = events.Count - 1; index >= 0; index--)
+        {
+            var gameEvent = events[index];
+            if (gameEvent.Turn != state.Coordinator.Turn) break;
+            if (gameEvent.Phase == TurnPhase.Execution
+                && gameEvent.ExecutionPhase == ExecutionPhase.Chaos
+                && gameEvent.Action == GangAction.Chaos
+                && gameEvent.Kind is GameEventKind.CommandResolved or GameEventKind.CommandFailed)
+                rolled.Add(gameEvent);
+        }
+        rolled.Reverse();
+        return rolled.ToArray();
     }
 
     private sealed record ChaosRoll(

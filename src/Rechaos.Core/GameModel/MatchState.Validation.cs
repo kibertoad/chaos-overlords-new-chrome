@@ -71,7 +71,14 @@ public sealed partial class MatchState
                 throw new ArgumentException($"Player {player.Id} contains invalid inventory state.", nameof(players));
         }
 
+        // Only an active gang occupies a sector. Every rule that enforces the six-gang bound counts
+        // active gangs — command validation, the hire resolver's sector test and the simultaneous
+        // Move normalization all do — and a gang killed in Combat or Terminated keeps the sector it
+        // died in on its inactive record, which the hire resolver later reuses. Counting those
+        // records here refused a legal state once one sector had seen enough deaths: the save it
+        // had just written would not load, and neither would the online snapshot built from it.
         var overcrowded = players.SelectMany(player => player.Gangs)
+            .Where(gang => gang.IsActive)
             .GroupBy(gang => (gang.Owner, gang.SectorId))
             .FirstOrDefault(group => group.Count() > MatchLimits.FriendlyGangsPerSector);
         if (overcrowded is not null)
