@@ -102,7 +102,7 @@ public sealed record PhaseBoundaryHash(
 public static class MatchStateHasher
 {
     /// <summary>Bumped whenever the encoding changes, so no two encodings share a fingerprint space.</summary>
-    private const int FormatVersion = 1;
+    private const int FormatVersion = 2;
 
     /// <summary>The number of lowercase hex characters a fingerprint has.</summary>
     public const int FingerprintLength = 2 * DigestBytes;
@@ -360,27 +360,31 @@ public static class MatchStateHasher
     }
 
     /// <summary>
-    /// The canonical definition block, built once per <see cref="OriginalData"/> instance.
+    /// The canonical definition digest, built once per <see cref="OriginalData"/> instance.
     /// </summary>
     /// <remarks>
-    /// The block is the same bytes on every call for a given definition set, and a turn hashes
-    /// 8 + 2P boundaries, so re-serialising every site, gang and item (names and descriptions
-    /// included) each time was pure repetition. The entries are weak, so a definition set the
-    /// process stops using is still collectable.
+    /// The definition block is the same bytes on every call for a given definition set, and a turn
+    /// hashes 8 + 2P boundaries. Folding its digest into the state fingerprint avoids both
+    /// re-serialising and re-hashing every site, gang and item (names and descriptions included).
+    /// The entries are weak, so a definition set the process stops using is still collectable.
     /// </remarks>
-    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<OriginalData, byte[]>
-        DefinitionBlocks = [];
+    private sealed record DefinitionDigest(UInt128 Value);
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<OriginalData, DefinitionDigest>
+        DefinitionDigests = [];
 
     private static void WriteDefinitions(BinaryWriter writer, OriginalData definitions)
     {
-        var block = DefinitionBlocks.GetValue(definitions, static value =>
+        var digest = DefinitionDigests.GetValue(definitions, static value =>
         {
             using var stream = new MemoryStream();
             using (var blockWriter = new BinaryWriter(stream, Encoding.UTF8, leaveOpen: true))
                 WriteDefinitionBlock(blockWriter, value);
-            return stream.ToArray();
+            var hash = new XxHash128();
+            hash.Append(stream.GetBuffer().AsSpan(0, checked((int)stream.Length)));
+            return new DefinitionDigest(hash.GetCurrentHashAsUInt128());
         });
-        writer.Write(block);
+        WriteDigest(writer, digest.Value);
     }
 
     private static void WriteDefinitionBlock(BinaryWriter writer, OriginalData definitions)
