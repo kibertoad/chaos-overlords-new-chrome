@@ -102,7 +102,17 @@ public sealed record PhaseBoundaryHash(
 public static class MatchStateHasher
 {
     /// <summary>Bumped whenever the encoding changes, so no two encodings share a fingerprint space.</summary>
-    private const int FormatVersion = 2;
+    /// <remarks>
+    /// Nothing on disk or on the wire records this number, so nothing can notice on its own that a
+    /// file was written under a different encoding: a fingerprint from an older encoding is not
+    /// malformed, it simply fails to match, and a mismatch reads as damage or as divergence. Every
+    /// version that gates such a file therefore moves in the same change —
+    /// <see cref="Rechaos.Core.Persistence.NativeSaveSerializer.CurrentFormatVersion"/>,
+    /// <see cref="Rechaos.Core.Persistence.MatchReplaySerializer.CurrentFormatVersion"/> and the
+    /// multiplayer session version — so the file is refused as an older format before its
+    /// fingerprint is ever compared. <c>StateFingerprintVersionCouplingTests</c> holds the rule.
+    /// </remarks>
+    internal const int FormatVersion = 2;
 
     /// <summary>The number of lowercase hex characters a fingerprint has.</summary>
     public const int FingerprintLength = 2 * DigestBytes;
