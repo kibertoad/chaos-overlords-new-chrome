@@ -89,7 +89,7 @@ public static class AudioRouting
         }
         var gang = state.FindGang(gangId)
             ?? throw new ArgumentOutOfRangeException(nameof(gangId));
-        var definition = state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId);
+        var definition = state.Definitions.Gang(gang.DefinitionId);
         return definition.Stats.MartialArts > 0 ? MartialArtsSound : UnarmedSound;
     }
 
