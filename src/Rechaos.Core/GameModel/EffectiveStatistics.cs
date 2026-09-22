@@ -68,10 +68,17 @@ public static class EffectiveStatisticsCalculator
         ArgumentNullException.ThrowIfNull(gang);
         var definition = state.Definitions.Gang(gang.DefinitionId);
         var result = EffectiveStatistics.From(definition.Stats);
-        foreach (var (_, itemId) in EquippedItems(gang))
-            result = result.Add(state.Definitions.Items[itemId].Stats);
-        foreach (var site in InfluencedSites(state, gang))
+        if (gang.WeaponItemId is { } weapon)
+            result = result.Add(state.Definitions.Items[weapon].Stats);
+        if (gang.ArmorItemId is { } armor)
+            result = result.Add(state.Definitions.Items[armor].Stats);
+        if (gang.MiscellaneousItemId is { } miscellaneous)
+            result = result.Add(state.Definitions.Items[miscellaneous].Stats);
+        foreach (var site in state.Sectors[gang.SectorId].Sites)
+        {
+            if (site.InfluencedBy != gang.Owner) continue;
             result = result.Add(state.Definitions.Site(site.DefinitionId).Stats);
+        }
         return result;
     }
 
