@@ -36,6 +36,21 @@ public sealed class TurnCommandQueueTests
     }
 
     [Fact]
+    public void PlanCannotBeCastBackToAMutableArray()
+    {
+        var queue = new TurnCommandQueue();
+        queue.Set(Command(0, 10, GangAction.Move, CommandTarget.Sector(1)));
+        queue.Set(Command(1, 11, GangAction.Bribe, CommandTarget.None));
+
+        var plan = queue.ExecutionPlan();
+
+        // Callers share the queue's own plan now, so reordering it in place would silently rewrite
+        // the order fingerprints and saves are taken from.
+        Assert.Null(plan as QueuedCommand[]);
+        Assert.Throws<NotSupportedException>(() => { ((IList<QueuedCommand>)plan)[0] = plan[1]; });
+    }
+
+    [Fact]
     public void SettingSecondCommandForGangReplacesFirstWithNewSequence()
     {
         var queue = new TurnCommandQueue();

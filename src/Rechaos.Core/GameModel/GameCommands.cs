@@ -101,7 +101,7 @@ public sealed class TurnCommandQueue
 {
     private readonly Dictionary<GangId, QueuedCommand> _byGang = [];
     private long _nextSequence;
-    private QueuedCommand[]? _executionPlan;
+    private IReadOnlyList<QueuedCommand>? _executionPlan;
 
     public int Count => _byGang.Count;
     internal long NextSequence => _nextSequence;
@@ -126,12 +126,19 @@ public sealed class TurnCommandQueue
 
     public bool TryGet(GangId gang, out QueuedCommand? command) => _byGang.TryGetValue(gang, out command);
 
-    public IReadOnlyList<QueuedCommand> ExecutionPlan() => _executionPlan ??= _byGang.Values
-        .OrderBy(command => TurnStructure.ExecutionIndex(command.ExecutionPhase))
-        .ThenBy(command => command.Sequence)
-        .ThenBy(command => command.Command.Player.Value)
-        .ThenBy(command => command.Command.Gang.Value)
-        .ToArray();
+    /// <summary>
+    /// The canonical execution order, rebuilt only after the queue changes. The plan is handed out
+    /// by reference rather than copied, so it is wrapped the way <see cref="MatchState.Events"/>
+    /// wraps its live list: an unwrapped array would let a caller cast the result back and reorder
+    /// the queue in place, which state fingerprints would report as divergence rather than damage.
+    /// </summary>
+    public IReadOnlyList<QueuedCommand> ExecutionPlan() => _executionPlan ??= Array.AsReadOnly(
+        _byGang.Values
+            .OrderBy(command => TurnStructure.ExecutionIndex(command.ExecutionPhase))
+            .ThenBy(command => command.Sequence)
+            .ThenBy(command => command.Command.Player.Value)
+            .ThenBy(command => command.Command.Gang.Value)
+            .ToArray());
 
     public IReadOnlyList<QueuedCommand> ForPhase(ExecutionPhase phase) => ExecutionPlan()
         .Where(command => command.ExecutionPhase == phase)
