@@ -48,6 +48,18 @@ jobs:
         with:
           persist-credentials: false
 
+      # Generated documentation indexes and cross-document anchors are platform-independent, so
+      # one matrix leg is enough to make the check an enforced pull-request gate.
+      - name: Set up Node.js for documentation checks
+        if: matrix.name == 'Linux x64'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Check generated documentation indexes
+        if: matrix.name == 'Linux x64'
+        run: node tools/update-doc-indexes.mjs --check
+
       - name: Set up .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
