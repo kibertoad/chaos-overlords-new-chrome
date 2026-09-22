@@ -139,7 +139,7 @@ public sealed class SpeculativeTurn
             {
                 SubmitCommandOp submit =>
                     turn.Submit(OrderOpDecoder.Command(submit, turn.Player, Document)).Accepted,
-                CancelCommandOp cancel => turn.Cancel(new GangId(cancel.Gang)).Accepted,
+                CancelCommandOp cancel => turn.Cancel(OrderOpDecoder.Gang(cancel.Gang, Document, "gang")).Accepted,
                 QueueHireOp hire => turn.QueueHire(
                     OrderOpDecoder.GangDefinitionId(hire.GangDefinitionId, Document),
                     hire.SectorId).Accepted,

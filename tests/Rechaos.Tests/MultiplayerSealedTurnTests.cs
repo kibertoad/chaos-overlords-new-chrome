@@ -248,6 +248,34 @@ public sealed class MultiplayerSealedTurnTests
         Assert.Contains("slot", wrongSeat.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>Every id the core bounds is refused as a named protocol error before it reaches it.</summary>
+    [Theory]
+    [MemberData(nameof(InvalidCommandIds))]
+    public void RefusesAnInvalidCommandIdInASealedSet(OrderOp operation, string field)
+    {
+        var (replay, _) = NewClient();
+        var document = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, [operation]);
+
+        var failure = Assert.Throws<MultiplayerProtocolException>(
+            () => SealedTurnApplier.Apply(replay, Sealed(1, (0, document))));
+
+        Assert.Contains(field, failure.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The saved-draft path shares the gang decoder rather than exposing a CLR range error.</summary>
+    [Fact]
+    public void RefusesAnInvalidCancelGangInASavedDraft()
+    {
+        var (authoritative, definitions) = NewClient();
+        var document = new OrderDocument(
+            OrderDocumentBuilder.OrderDocumentSchemaVersion, [new CancelCommandOp(0, -1)]);
+
+        var failure = Assert.Throws<MultiplayerProtocolException>(
+            () => SpeculativeTurn.Restore(authoritative.State, definitions, slot: 0, document));
+
+        Assert.Contains("gang", failure.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>
     /// The dock a player plans against is the dock the sealed turn grants: offers are drawn for
     /// every seat before anyone plans, so the copy inherits them rather than drawing its own.
@@ -290,5 +318,14 @@ public sealed class MultiplayerSealedTurnTests
                 new PlayerId(slot), gang.Id, GangAction.Hide, CoreTarget.None));
         }
         return builder.Build();
+    }
+
+    public static IEnumerable<object[]> InvalidCommandIds()
+    {
+        yield return [new SubmitCommandOp(0, -1, (int)GangAction.Hide, new NoneTarget(), false, null, null, null), "gang"];
+        yield return [new SubmitCommandOp(0, 0, (int)GangAction.Hide, new GangTarget(-1), false, null, null, null), "target gang"];
+        yield return [new SubmitCommandOp(0, 0, (int)GangAction.Hide, new SectorTarget(MatchLimits.SectorCount), false, null, null, null), "target sector"];
+        yield return [new SubmitCommandOp(0, 0, (int)GangAction.Hide, new SiteTarget(MatchLimits.SiteCount), false, null, null, null), "target site"];
+        yield return [new SubmitCommandOp(0, 0, (int)GangAction.Hide, new ItemTarget(MatchLimits.ItemSlots), false, null, null, null), "target item"];
     }
 }

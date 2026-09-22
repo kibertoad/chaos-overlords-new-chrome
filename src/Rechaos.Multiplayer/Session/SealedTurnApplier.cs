@@ -143,7 +143,7 @@ public static class SealedTurnApplier
                     replay.Submit(OrderOpDecoder.Command(submit, player, Document));
                     break;
                 case CancelCommandOp cancel:
-                    replay.Cancel(player, new GangId(cancel.Gang));
+                    replay.Cancel(player, OrderOpDecoder.Gang(cancel.Gang, Document, "gang"));
                     break;
                 case QueueHireOp hire:
                     replay.QueueHire(

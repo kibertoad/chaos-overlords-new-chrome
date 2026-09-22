@@ -31,7 +31,7 @@ public static class OrderOpDecoder
         ArgumentNullException.ThrowIfNull(submit);
         return new GameCommand(
             player,
-            new GangId(submit.Gang),
+            Gang(submit.Gang, document, "gang"),
             Action(submit.Action, document),
             Target(submit.Target, document, "target"),
             submit.Repeat,
@@ -49,6 +49,17 @@ public static class OrderOpDecoder
                 $"{document} names gang definition {value}, which is outside the range this build reads");
         }
         return (short)value;
+    }
+
+    /// <summary>A gang id whose value the core can safely construct.</summary>
+    public static GangId Gang(int value, string document, string field)
+    {
+        if (value < 0)
+        {
+            throw new MultiplayerProtocolException(
+                $"{document} names {field} {value}, which is not a gang identifier");
+        }
+        return new GangId(value);
     }
 
     /// <summary>The refusal for an op kind this build has never heard of.</summary>
@@ -75,11 +86,35 @@ public static class OrderOpDecoder
         string field) => target switch
     {
         NoneTarget => Core.GameModel.CommandTarget.None,
-        GangTarget gang => Core.GameModel.CommandTarget.Gang(new GangId(gang.Id)),
-        SectorTarget sector => Core.GameModel.CommandTarget.Sector(sector.Id),
-        SiteTarget site => Core.GameModel.CommandTarget.Site(site.Id),
-        ItemTarget item => Core.GameModel.CommandTarget.Item(item.Id),
+        GangTarget gang => Core.GameModel.CommandTarget.Gang(Gang(gang.Id, document, $"{field} gang")),
+        SectorTarget sector => Sector(sector.Id, document, $"{field} sector"),
+        SiteTarget site => Site(site.Id, document, $"{field} site"),
+        ItemTarget item => Item(item.Id, document, $"{field} item"),
         _ => throw new MultiplayerProtocolException(
             $"{document} carries a {field} kind this client cannot apply: {target?.Kind ?? "null"}"),
     };
+
+    private static Core.GameModel.CommandTarget Sector(int value, string document, string field) =>
+        BoundedTarget(value, MatchLimits.SectorCount, document, field, Core.GameModel.CommandTarget.Sector);
+
+    private static Core.GameModel.CommandTarget Site(int value, string document, string field) =>
+        BoundedTarget(value, MatchLimits.SiteCount, document, field, Core.GameModel.CommandTarget.Site);
+
+    private static Core.GameModel.CommandTarget Item(int value, string document, string field) =>
+        BoundedTarget(value, MatchLimits.ItemSlots, document, field, Core.GameModel.CommandTarget.Item);
+
+    private static Core.GameModel.CommandTarget BoundedTarget(
+        int value,
+        int exclusiveMaximum,
+        string document,
+        string field,
+        Func<int, Core.GameModel.CommandTarget> target)
+    {
+        if (value < 0 || value >= exclusiveMaximum)
+        {
+            throw new MultiplayerProtocolException(
+                $"{document} names {field} {value}, which is outside 0 through {exclusiveMaximum - 1}");
+        }
+        return target(value);
+    }
 }
