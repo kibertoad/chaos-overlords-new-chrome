@@ -139,9 +139,35 @@ export function rateLimitKey(address: string): string {
   // `1.2.3.4:443` — an IPv4 host with a port. A bare IPv6 address has more than one colon.
   const withoutPort = /^[^:]+:\d+$/.test(host) ? (host.split(':')[0] as string) : host
   if (!withoutPort.includes(':')) return withoutPort
-  // IPv6, masked to the /64 a single client is routed. IPv4-mapped forms keep their full address.
-  if (withoutPort.includes('.')) return withoutPort
-  return `${ipv6Prefix64(withoutPort.toLowerCase())}::/64`
+  // IPv6 is case-insensitive, so the spelling has to be settled before anything below compares or
+  // slices it. Lowercasing after the IPv4-mapped test let `::FFFF:1.2.3.4` and `::ffff:1.2.3.4`
+  // hold a budget each.
+  const lowered = withoutPort.toLowerCase()
+  // An embedded IPv4 address is the client's own address rather than a prefix it was routed, so it
+  // stays whole.
+  if (lowered.includes('.')) return lowered
+  const mapped = ipv4MappedFromHex(lowered)
+  if (mapped !== null) return mapped
+  // Otherwise IPv6, masked to the /64 a single client is routed.
+  return `${ipv6Prefix64(lowered)}::/64`
+}
+
+/**
+ * The dotted spelling of an IPv4-mapped address whose embedded address is written as hex groups,
+ * or null when the address is not one.
+ *
+ * RFC 4291 lets `::ffff:1.2.3.4` also be written `::ffff:0102:0304`, and only the dotted form was
+ * recognised. The hex form has no `.`, so it fell through to the /64 mask — where the mapped
+ * prefix is all zeros, so every IPv4 client written that way shared `0:0:0:0::/64` with each
+ * other, with `::` and with `::1`. One noisy source in that bucket spent the anonymous and
+ * bug-report budgets for the rest of it. Both spellings now reduce to the same key.
+ */
+function ipv4MappedFromHex(address: string): string | null {
+  const groups = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(address)
+  if (groups === null) return null
+  const high = Number.parseInt(groups[1] as string, 16)
+  const low = Number.parseInt(groups[2] as string, 16)
+  return `::ffff:${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`
 }
 
 /**

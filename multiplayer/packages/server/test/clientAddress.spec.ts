@@ -73,10 +73,40 @@ describe('rateLimitKey', () => {
   it('reads one address under one key however it is written', () => {
     expect(rateLimitKey('2001:0DB8::0001')).toBe(rateLimitKey('2001:db8::1'))
     expect(rateLimitKey('2001:db8:0:0:0:0:0:1')).toBe(rateLimitKey('2001:db8::1'))
+    // The IPv4-mapped branch used to answer before the address was lowercased, so these two
+    // spellings of one client held a budget each.
+    expect(rateLimitKey('::FFFF:1.2.3.4')).toBe(rateLimitKey('::ffff:1.2.3.4'))
+    expect(rateLimitKey('::FFFF:0102:0304')).toBe(rateLimitKey('::ffff:1.2.3.4'))
   })
 
   it('leaves an IPv4-mapped address whole, since its suffix is the address', () => {
     expect(rateLimitKey('::ffff:1.2.3.4')).toBe('::ffff:1.2.3.4')
+  })
+
+  /**
+   * RFC 4291 lets the embedded address be written as a dotted quad or as two hex groups. Only the
+   * dotted form was recognised, and the hex form has no `.`, so it fell through to the /64 mask —
+   * where the mapped prefix is all zeros. Every IPv4 client written that way therefore shared one
+   * bucket with each other and with `::` and `::1`, and one noisy source in it spent the anonymous
+   * and bug-report budgets for all of them.
+   */
+  it('reads the hex spelling of an IPv4-mapped address as that address', () => {
+    expect(rateLimitKey('::ffff:0102:0304')).toBe('::ffff:1.2.3.4')
+    expect(rateLimitKey('[::ffff:0102:0304]:443')).toBe('::ffff:1.2.3.4')
+    // Two different clients, and neither of them the loopback.
+    expect(rateLimitKey('::ffff:0506:0708')).toBe('::ffff:5.6.7.8')
+    expect(rateLimitKey('::ffff:0102:0304')).not.toBe(rateLimitKey('::ffff:0506:0708'))
+    expect(rateLimitKey('::ffff:0102:0304')).not.toBe(rateLimitKey('::1'))
+    expect(rateLimitKey('::ffff:0102:0304')).not.toBe(rateLimitKey('::'))
+    // Short groups and a zero octet still read as the address they carry.
+    expect(rateLimitKey('::ffff:102:304')).toBe('::ffff:1.2.3.4')
+    expect(rateLimitKey('::ffff:0:1')).toBe('::ffff:0.0.0.1')
+  })
+
+  /** A genuine IPv6 address that merely ends in two short groups is not an IPv4-mapped one. */
+  it('masks an address outside the mapped prefix to its /64', () => {
+    expect(rateLimitKey('2001:db8::102:304')).toBe('2001:db8:0:0::/64')
+    expect(rateLimitKey('::fffe:0102:0304')).toBe('0:0:0:0::/64')
   })
 
   /** Two clients behind one /64 must never be told apart; two /64s must never be merged. */
