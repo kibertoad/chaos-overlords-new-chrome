@@ -101,6 +101,7 @@ public sealed class TurnCommandQueue
 {
     private readonly Dictionary<GangId, QueuedCommand> _byGang = [];
     private long _nextSequence;
+    private QueuedCommand[]? _executionPlan;
 
     public int Count => _byGang.Count;
     internal long NextSequence => _nextSequence;
@@ -112,14 +113,20 @@ public sealed class TurnCommandQueue
 
         var queued = new QueuedCommand(_nextSequence++, command);
         _byGang[command.Gang] = queued;
+        _executionPlan = null;
         return queued;
     }
 
-    public bool Cancel(GangId gang) => _byGang.Remove(gang);
+    public bool Cancel(GangId gang)
+    {
+        if (!_byGang.Remove(gang)) return false;
+        _executionPlan = null;
+        return true;
+    }
 
     public bool TryGet(GangId gang, out QueuedCommand? command) => _byGang.TryGetValue(gang, out command);
 
-    public IReadOnlyList<QueuedCommand> ExecutionPlan() => _byGang.Values
+    public IReadOnlyList<QueuedCommand> ExecutionPlan() => _executionPlan ??= _byGang.Values
         .OrderBy(command => TurnStructure.ExecutionIndex(command.ExecutionPhase))
         .ThenBy(command => command.Sequence)
         .ThenBy(command => command.Command.Player.Value)
@@ -133,11 +140,21 @@ public sealed class TurnCommandQueue
     /// <summary>Ends resolution, preserving only commands explicitly marked to repeat.</summary>
     public void FinishExecution()
     {
+        var changed = false;
         foreach (var gang in _byGang.Where(pair => !pair.Value.Command.Repeat).Select(pair => pair.Key).ToArray())
+        {
             _byGang.Remove(gang);
+            changed = true;
+        }
+        if (changed) _executionPlan = null;
     }
 
-    public void Clear() => _byGang.Clear();
+    public void Clear()
+    {
+        if (_byGang.Count == 0) return;
+        _byGang.Clear();
+        _executionPlan = null;
+    }
 
     internal static TurnCommandQueue Restore(
         IReadOnlyList<QueuedCommand> commands,

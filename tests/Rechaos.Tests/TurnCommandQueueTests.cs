@@ -22,6 +22,20 @@ public sealed class TurnCommandQueueTests
     }
 
     [Fact]
+    public void PlanIsReusedUntilAQueueMutation()
+    {
+        var queue = new TurnCommandQueue();
+        queue.Set(Command(0, 10, GangAction.Move, CommandTarget.Sector(1)));
+
+        var first = queue.ExecutionPlan();
+        var second = queue.ExecutionPlan();
+        queue.Set(Command(0, 11, GangAction.Hide, CommandTarget.None));
+
+        Assert.Same(first, second);
+        Assert.NotSame(first, queue.ExecutionPlan());
+    }
+
+    [Fact]
     public void SettingSecondCommandForGangReplacesFirstWithNewSequence()
     {
         var queue = new TurnCommandQueue();
