@@ -250,8 +250,8 @@ public sealed class MultiplayerSealedTurnTests
 
     /// <summary>Every id the core bounds is refused as a named protocol error before it reaches it.</summary>
     [Theory]
-    [MemberData(nameof(InvalidCommandIds))]
-    public void RefusesAnInvalidCommandIdInASealedSet(OrderOp operation, string field)
+    [MemberData(nameof(InvalidOrderIds))]
+    public void RefusesAnInvalidOrderIdInASealedSet(OrderOp operation, string refusal)
     {
         var (replay, _) = NewClient();
         var document = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, [operation]);
@@ -259,21 +259,44 @@ public sealed class MultiplayerSealedTurnTests
         var failure = Assert.Throws<MultiplayerProtocolException>(
             () => SealedTurnApplier.Apply(replay, Sealed(1, (0, document))));
 
-        Assert.Contains(field, failure.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal($"the sealed set {refusal}", failure.Message);
     }
 
-    /// <summary>The saved-draft path shares the gang decoder rather than exposing a CLR range error.</summary>
-    [Fact]
-    public void RefusesAnInvalidCancelGangInASavedDraft()
+    /// <summary>The saved-draft path shares the decoder rather than exposing a CLR range error.</summary>
+    [Theory]
+    [MemberData(nameof(InvalidOrderIds))]
+    public void RefusesAnInvalidOrderIdInASavedDraft(OrderOp operation, string refusal)
     {
         var (authoritative, definitions) = NewClient();
-        var document = new OrderDocument(
-            OrderDocumentBuilder.OrderDocumentSchemaVersion, [new CancelCommandOp(0, -1)]);
+        var document = new OrderDocument(OrderDocumentBuilder.OrderDocumentSchemaVersion, [operation]);
 
         var failure = Assert.Throws<MultiplayerProtocolException>(
             () => SpeculativeTurn.Restore(authoritative.State, definitions, slot: 0, document));
 
-        Assert.Contains("gang", failure.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal($"the saved draft {refusal}", failure.Message);
+    }
+
+    /// <summary>
+    /// A set this build cannot read is refused before any of it is applied: an invalid id late in
+    /// the set leaves neither the state nor the journal holding the slots and ops before it.
+    /// </summary>
+    [Fact]
+    public void RefusesAnUnreadableSealedSetBeforeApplyingAnyOfIt()
+    {
+        var (replay, _) = NewClient();
+        var valid = OrdersFor(replay.State, slot: 1);
+        var invalid = valid with
+        {
+            Ops = [.. valid.Ops, new SubmitCommandOp(1, 0, (int)GangAction.Hide, new GangTarget(-1), false, null, null, null)],
+        };
+        var fingerprint = MatchStateHasher.ComputeFingerprint(replay.State);
+        var steps = replay.Steps.Count;
+
+        Assert.Throws<MultiplayerProtocolException>(() => SealedTurnApplier.Apply(
+            replay, Sealed(1, (0, OrdersFor(replay.State, slot: 0)), (1, invalid))));
+
+        Assert.Equal(steps, replay.Steps.Count);
+        Assert.Equal(fingerprint, MatchStateHasher.ComputeFingerprint(replay.State));
     }
 
     /// <summary>
@@ -320,12 +343,45 @@ public sealed class MultiplayerSealedTurnTests
         return builder.Build();
     }
 
-    public static IEnumerable<object[]> InvalidCommandIds()
+    /// <summary>An op naming an id the core cannot construct, and the refusal that names its field.</summary>
+    public static TheoryData<OrderOp, string> InvalidOrderIds() => new()
     {
-        yield return [new SubmitCommandOp(0, -1, (int)GangAction.Hide, new NoneTarget(), false, null, null, null), "gang"];
-        yield return [new SubmitCommandOp(0, 0, (int)GangAction.Hide, new GangTarget(-1), false, null, null, null), "target gang"];
-        yield return [new SubmitCommandOp(0, 0, (int)GangAction.Hide, new SectorTarget(MatchLimits.SectorCount), false, null, null, null), "target sector"];
-        yield return [new SubmitCommandOp(0, 0, (int)GangAction.Hide, new SiteTarget(MatchLimits.SiteCount), false, null, null, null), "target site"];
-        yield return [new SubmitCommandOp(0, 0, (int)GangAction.Hide, new ItemTarget(MatchLimits.ItemSlots), false, null, null, null), "target item"];
-    }
+        { Submit(gang: -1), "names gang -1, which is not a valid gang identifier" },
+        { Submit(target: new GangTarget(-1)), "names target gang -1, which is not a valid gang identifier" },
+        { Submit(target: new SectorTarget(-1)), "names target sector -1, which is not a valid sector identifier" },
+        {
+            Submit(target: new SectorTarget(MatchLimits.SectorCount)),
+            $"names target sector {MatchLimits.SectorCount}, which is not a valid sector identifier"
+        },
+        {
+            Submit(target: new SiteTarget(MatchLimits.SiteCount)),
+            $"names target site {MatchLimits.SiteCount}, which is not a valid site identifier"
+        },
+        {
+            Submit(target: new ItemTarget(MatchLimits.ItemSlots)),
+            $"names target item {MatchLimits.ItemSlots}, which is not a valid item identifier"
+        },
+        {
+            Submit(secondary: new SectorTarget(MatchLimits.SectorCount)),
+            $"names secondaryTarget sector {MatchLimits.SectorCount}, which is not a valid sector identifier"
+        },
+        { Submit(tertiary: new GangTarget(-1)), "names tertiaryTarget gang -1, which is not a valid gang identifier" },
+        {
+            Submit(quaternary: new ItemTarget(-1)),
+            "names quaternaryTarget item -1, which is not a valid item identifier"
+        },
+        { new CancelCommandOp(0, -1), "names gang -1, which is not a valid gang identifier" },
+        {
+            new QueueHireOp(0, 0, MatchLimits.SectorCount),
+            $"names hire sector {MatchLimits.SectorCount}, which is not a valid sector identifier"
+        },
+    };
+
+    private static SubmitCommandOp Submit(
+        int gang = 0,
+        Rechaos.Multiplayer.Generated.CommandTarget? target = null,
+        Rechaos.Multiplayer.Generated.CommandTarget? secondary = null,
+        Rechaos.Multiplayer.Generated.CommandTarget? tertiary = null,
+        Rechaos.Multiplayer.Generated.CommandTarget? quaternary = null) =>
+        new(0, gang, (int)GangAction.Hide, target ?? new NoneTarget(), false, secondary, tertiary, quaternary);
 }

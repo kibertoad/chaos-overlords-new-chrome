@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
 using Rechaos.Multiplayer.Generated;
@@ -70,13 +71,15 @@ public static class SealedTurnApplier
                 + state.Coordinator.Turn);
         }
 
-        var bySlot = DocumentsBySlot(sealedOrders, state.Setup.Players.Count);
+        // Every document is read before any is applied, so a set this build cannot read is refused
+        // before the replay records a single step of it.
+        var bySlot = OrdersBySlot(sealedOrders, state.Setup.Players.Count);
         // Slot order, every slot, so the sequence of mutations is the same on every client even
         // though only some of them have documents.
         for (var slot = 0; slot < state.Setup.Players.Count; slot++)
         {
             var player = new PlayerId(slot);
-            if (bySlot.TryGetValue(slot, out var document)) ApplyDocument(replay, player, document);
+            if (bySlot.TryGetValue(slot, out var orders)) ApplyOrders(replay, player, orders);
             // An eliminated seat is skipped, as HeadlessMatchRunner.Advance skips it offline. The
             // planner produces no commands for a dead seat, but the hire placement draw still spends
             // the shared RNG, so planning it made online and offline runs of one seed diverge.
@@ -93,19 +96,20 @@ public static class SealedTurnApplier
     }
 
     /// <summary>
-    /// The set indexed by slot, refusing a shape no client could apply consistently.
+    /// The set decoded and indexed by slot, refusing a shape no client could apply consistently.
     /// </summary>
     /// <remarks>
     /// Two documents for one slot has no defined meaning — which of them the turn contains would
     /// come down to enumeration order — and a slot past the board cannot be applied at all. Both are
     /// protocol failures rather than exceptions out of a dictionary, so the session reports them as
-    /// the server having sent something it cannot act on.
+    /// the server having sent something it cannot act on. So is an op naming something the core
+    /// cannot construct, which is why every op is decoded here rather than as it is applied.
     /// </remarks>
-    private static Dictionary<int, OrderDocument> DocumentsBySlot(
+    private static Dictionary<int, DecodedOrderOp[]> OrdersBySlot(
         SealedOrdersView sealedOrders,
         int slotCount)
     {
-        var bySlot = new Dictionary<int, OrderDocument>(sealedOrders.Players.Count);
+        var bySlot = new Dictionary<int, DecodedOrderOp[]>(sealedOrders.Players.Count);
         foreach (var entry in sealedOrders.Players)
         {
             if (entry.Slot < 0 || entry.Slot >= slotCount)
@@ -113,11 +117,12 @@ public static class SealedTurnApplier
                 throw new MultiplayerProtocolException(
                     $"the sealed set names slot {entry.Slot}, which this match does not have");
             }
-            if (!bySlot.TryAdd(entry.Slot, entry.Orders))
+            if (bySlot.ContainsKey(entry.Slot))
             {
                 throw new MultiplayerProtocolException(
                     $"the sealed set carries two documents for slot {entry.Slot}");
             }
+            bySlot.Add(entry.Slot, OrderOpDecoder.Decode(entry.Orders.Ops, new PlayerId(entry.Slot), Document));
         }
         return bySlot;
     }
@@ -130,34 +135,32 @@ public static class SealedTurnApplier
     /// client runs the same one over the same state, so a refusal here is a refusal everywhere; the
     /// state hash is what says whether that held.
     /// </remarks>
-    private static void ApplyDocument(
+    private static void ApplyOrders(
         MatchReplayRecorder replay,
         PlayerId player,
-        OrderDocument document)
+        DecodedOrderOp[] orders)
     {
-        foreach (var op in document.Ops)
+        foreach (var op in orders)
         {
             switch (op)
             {
-                case SubmitCommandOp submit:
-                    replay.Submit(OrderOpDecoder.Command(submit, player, Document));
+                case DecodedOrderOp.Submit submit:
+                    replay.Submit(submit.Command);
                     break;
-                case CancelCommandOp cancel:
-                    replay.Cancel(player, OrderOpDecoder.Gang(cancel.Gang, Document, "gang"));
+                case DecodedOrderOp.Cancel cancel:
+                    replay.Cancel(player, cancel.Gang);
                     break;
-                case QueueHireOp hire:
-                    replay.QueueHire(
-                        player, OrderOpDecoder.GangDefinitionId(hire.GangDefinitionId, Document), hire.SectorId);
+                case DecodedOrderOp.QueueHire hire:
+                    replay.QueueHire(player, hire.GangDefinitionId, hire.SectorId);
                     break;
-                case SnubHireOfferOp snub:
-                    replay.SnubHireOffer(
-                        player, OrderOpDecoder.GangDefinitionId(snub.GangDefinitionId, Document));
+                case DecodedOrderOp.SnubHireOffer snub:
+                    replay.SnubHireOffer(player, snub.GangDefinitionId);
                     break;
-                case DismissNotificationOp:
+                case DecodedOrderOp.DismissNotification:
                     replay.TryDismissNotification(player, out _);
                     break;
                 default:
-                    throw OrderOpDecoder.Unsupported(op, Document);
+                    throw new UnreachableException($"a decoded op this applier does not handle: {op}");
             }
         }
     }

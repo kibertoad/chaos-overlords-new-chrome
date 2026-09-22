@@ -17,9 +17,12 @@ public readonly record struct GangId
 {
     public GangId(int value)
     {
-        if (value < 0) throw new ArgumentOutOfRangeException(nameof(value));
+        if (!IsValid(value)) throw new ArgumentOutOfRangeException(nameof(value));
         Value = value;
     }
+
+    /// <summary>Whether <paramref name="value"/> can name a gang, so a reader can refuse it by name.</summary>
+    public static bool IsValid(int value) => value >= 0;
 
     public int Value { get; }
     public override string ToString() => Value.ToString();
@@ -47,15 +50,45 @@ public readonly record struct CommandTarget
 
     public static CommandTarget None => new(CommandTargetKind.None, -1);
     public static CommandTarget Gang(GangId id) => new(CommandTargetKind.Gang, id.Value);
-    public static CommandTarget Sector(int id) => Create(CommandTargetKind.Sector, id, MatchLimits.SectorCount);
-    public static CommandTarget Site(int id) => Create(CommandTargetKind.Site, id, MatchLimits.SiteCount);
-    public static CommandTarget Item(int id) => Create(CommandTargetKind.Item, id, MatchLimits.ItemSlots);
+    public static CommandTarget Sector(int id) => Create(CommandTargetKind.Sector, id);
+    public static CommandTarget Site(int id) => Create(CommandTargetKind.Site, id);
+    public static CommandTarget Item(int id) => Create(CommandTargetKind.Item, id);
 
-    private static CommandTarget Create(CommandTargetKind kind, int id, int exclusiveMaximum)
+    /// <summary>
+    /// A target of <paramref name="kind"/>, or false when <paramref name="id"/> cannot name one.
+    /// </summary>
+    /// <remarks>
+    /// The same rule the factories enforce, for a reader that has to refuse an id by name rather
+    /// than surface an <see cref="ArgumentOutOfRangeException"/>. <see cref="CommandTargetKind.None"/>
+    /// carries no id and is always created.
+    /// </remarks>
+    public static bool TryCreate(CommandTargetKind kind, int id, out CommandTarget target)
     {
-        if (id < 0 || id >= exclusiveMaximum) throw new ArgumentOutOfRangeException(nameof(id));
-        return new CommandTarget(kind, id);
+        if (kind == CommandTargetKind.None)
+        {
+            target = None;
+            return true;
+        }
+        if (!IsValidId(kind, id))
+        {
+            target = default;
+            return false;
+        }
+        target = new CommandTarget(kind, id);
+        return true;
     }
+
+    private static CommandTarget Create(CommandTargetKind kind, int id) =>
+        TryCreate(kind, id, out var target) ? target : throw new ArgumentOutOfRangeException(nameof(id));
+
+    private static bool IsValidId(CommandTargetKind kind, int id) => kind switch
+    {
+        CommandTargetKind.Gang => GangId.IsValid(id),
+        CommandTargetKind.Sector => MatchLimits.IsSectorId(id),
+        CommandTargetKind.Site => id is >= 0 and < MatchLimits.SiteCount,
+        CommandTargetKind.Item => id is >= 0 and < MatchLimits.ItemSlots,
+        _ => false,
+    };
 }
 
 /// <summary>Player or AI intent. Resolution emits events separately.</summary>

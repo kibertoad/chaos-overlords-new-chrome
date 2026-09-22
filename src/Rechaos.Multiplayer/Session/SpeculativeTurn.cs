@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Rechaos.Core.Assets;
 using Rechaos.Core.GameModel;
 using Rechaos.Core.Persistence;
@@ -127,31 +128,34 @@ public sealed class SpeculativeTurn
                 + OrderDocumentBuilder.OrderDocumentSchemaVersion);
         }
         var turn = For(authoritative, definitions, slot);
-        foreach (var operation in document.Ops)
+        // Every op is read before any is applied, so a draft this build cannot read is refused whole.
+        var decoded = new DecodedOrderOp[document.Ops.Count];
+        for (var index = 0; index < decoded.Length; index++)
         {
+            var operation = document.Ops[index];
             if (operation.Player != slot)
             {
                 throw new MultiplayerProtocolException(
                     $"the saved draft attributes {operation.Op} to slot {operation.Player}, "
                     + $"not this client's slot {slot}");
             }
-            var accepted = operation switch
+            decoded[index] = OrderOpDecoder.Decode(operation, turn.Player, Document);
+        }
+        for (var index = 0; index < decoded.Length; index++)
+        {
+            var accepted = decoded[index] switch
             {
-                SubmitCommandOp submit =>
-                    turn.Submit(OrderOpDecoder.Command(submit, turn.Player, Document)).Accepted,
-                CancelCommandOp cancel => turn.Cancel(OrderOpDecoder.Gang(cancel.Gang, Document, "gang")).Accepted,
-                QueueHireOp hire => turn.QueueHire(
-                    OrderOpDecoder.GangDefinitionId(hire.GangDefinitionId, Document),
-                    hire.SectorId).Accepted,
-                SnubHireOfferOp snub => turn.SnubHireOffer(
-                    OrderOpDecoder.GangDefinitionId(snub.GangDefinitionId, Document)).Accepted,
-                DismissNotificationOp => turn.DismissNotification(),
-                _ => throw OrderOpDecoder.Unsupported(operation, Document),
+                DecodedOrderOp.Submit submit => turn.Submit(submit.Command).Accepted,
+                DecodedOrderOp.Cancel cancel => turn.Cancel(cancel.Gang).Accepted,
+                DecodedOrderOp.QueueHire hire => turn.QueueHire(hire.GangDefinitionId, hire.SectorId).Accepted,
+                DecodedOrderOp.SnubHireOffer snub => turn.SnubHireOffer(snub.GangDefinitionId).Accepted,
+                DecodedOrderOp.DismissNotification => turn.DismissNotification(),
+                var op => throw new UnreachableException($"a decoded op restore does not handle: {op}"),
             };
             if (!accepted)
             {
                 throw new MultiplayerProtocolException(
-                    $"the saved draft operation {operation.Op} is invalid for the resumed turn");
+                    $"the saved draft operation {document.Ops[index].Op} is invalid for the resumed turn");
             }
         }
         return turn;
