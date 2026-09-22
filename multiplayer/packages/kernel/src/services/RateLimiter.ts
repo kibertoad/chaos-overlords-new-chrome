@@ -6,9 +6,10 @@ import type { Clock } from '../ports/runtime'
  * `prune` only collects windows that have EXPIRED, at most once per window period, which is right
  * for a minute-long window and wrong for a day-long one: the bug-report budget's window is
  * twenty-four hours, so every address that ever posted stayed resident for a day or two on an
- * unauthenticated route. A Map iterates in insertion order, so the head is the oldest key and
- * evicting from there is one shift. Dropping a live window forgives that key's remaining budget,
- * which is the safe direction to fail on a memory bound.
+ * unauthenticated route. A Map iterates in window-start order because a window that rolls moves to
+ * the tail, so the head is the oldest window and evicting from there is one shift. Dropping a live
+ * window forgives that key's remaining budget, which is the safe direction to fail on a memory
+ * bound.
  */
 const MAX_KEYS = 50_000
 
@@ -36,6 +37,9 @@ export class RateLimiter {
     const now = this.clock.now().getTime()
     const entry = this.live(key, now)
     if (!entry) {
+      // Map#set preserves a key's old insertion position. A rolled window is new, so it must go
+      // back at the tail; otherwise the memory bound drops a fresh, possibly spent budget first.
+      this.windows.delete(key)
       this.windows.set(key, { windowStart: now, count: 1 })
       this.prune(now)
       this.evictOldest()
