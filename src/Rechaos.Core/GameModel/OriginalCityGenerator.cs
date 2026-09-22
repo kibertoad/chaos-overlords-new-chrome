@@ -208,20 +208,23 @@ public static class OriginalMatchFactory
         var starts = setup.Players.Select((player, index) => new MatchPlayerStart(
             player.Id, headquarters[index], ManualRules.MaximumForce,
             StandardStartingCash, Array.Empty<short>())).ToArray();
-        var bootstrapped = MatchBootstrap.Create(definitions, setup, sectors, starts);
-        AddNameModifierStartingGangs(bootstrapped);
+        // The name modifiers and the island rule finish the starting layout, so they work on the
+        // composed rosters and city rather than on a match built from them. Only the match returned
+        // here is ever constructed over these players, which is what lets it index their rosters.
+        var foundation = MatchBootstrap.Compose(definitions, setup, sectors, starts);
+        AddNameModifierStartingGangs(foundation.Players);
         if (setup.Players.Any(player => OriginalSetupNameRules.EnablesIslands(player.Name)))
-            foreach (var sector in bootstrapped.Sectors.Where(sector => sector.Owner is null))
+            foreach (var sector in foundation.Sectors.Where(sector => sector.Owner is null))
                 sector.CrackdownTurnsRemaining = 100;
         return new MatchState(
-            definitions, setup, bootstrapped.Players, bootstrapped.Sectors, random, aiStrategy);
+            definitions, setup, foundation.Players, foundation.Sectors, random, aiStrategy);
     }
 
-    private static void AddNameModifierStartingGangs(MatchState state)
+    private static void AddNameModifierStartingGangs(IReadOnlyList<MatchPlayerState> players)
     {
-        var nextGangId = state.Players.SelectMany(player => player.Gangs)
+        var nextGangId = players.SelectMany(player => player.Gangs)
             .Max(gang => gang.Id.Value) + 1;
-        foreach (var player in state.Players)
+        foreach (var player in players)
         {
             var extraRightHands = OriginalSetupNameRules.EnablesExtraRightHands(player.Setup.Name);
             var assaultTeam = OriginalSetupNameRules.EnablesAssaultTeam(player.Setup.Name);

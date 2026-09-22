@@ -300,12 +300,10 @@ public sealed class MultiplayerEventStreamTests
     {
         using var server = new FakeMultiplayerServer();
         using var http = new HttpClient(server);
-        using var stop = new CancellationTokenSource();
         var connected = 0;
         var stream = new MatchEventStream(Handle(http), onConnected: () => connected++);
-        await using var events = stream.ReadAsync(0, stop.Token).GetAsyncEnumerator(stop.Token);
+        await using var read = PendingRead.Start(stream);
 
-        var moving = events.MoveNextAsync();
         await Until(() => server.CallsTo(HttpMethod.Get, "/stream") == 1);
         Assert.Equal(0, connected);
         server.Events.Write(": keepalive\n\n");
@@ -315,10 +313,9 @@ public sealed class MultiplayerEventStreamTests
         Assert.Equal(0, connected);
         server.Events.Write(Frame("lobby.hostChanged", "{\"hostPlayerId\":\"p1\"}", "3"));
 
-        Assert.True(await moving);
-        Assert.Equal(3, events.Current.Seq);
+        Assert.True(await read.Step);
+        Assert.Equal(3, read.Current.Seq);
         Assert.Equal(1, connected);
-        await stop.CancelAsync();
     }
 
     /// <summary>
@@ -336,7 +333,6 @@ public sealed class MultiplayerEventStreamTests
     {
         using var server = new FakeMultiplayerServer();
         using var http = new HttpClient(server);
-        using var stop = new CancellationTokenSource();
         var attempts = new List<int>();
         var policy = new RetryPolicy(
             TimeSpan.FromMilliseconds(10),
@@ -347,16 +343,15 @@ public sealed class MultiplayerEventStreamTests
             MaxElapsed: TimeSpan.FromSeconds(5));
         var stream = new MatchEventStream(
             Handle(http), policy, onReconnect: (_, attempt) => attempts.Add(attempt));
-        await using var events = stream.ReadAsync(0, stop.Token).GetAsyncEnumerator(stop.Token);
-        var moving = events.MoveNextAsync();
+        await using var read = PendingRead.Start(stream);
 
         // Accept, write the keepalive a real server opens with, and drop — over and over.
-        for (var round = 0; round < 40 && !moving.IsCompleted; round++)
+        for (var round = 0; round < 40 && !read.Step.IsCompleted; round++)
         {
             // A closed retry window ends the read, and no further connection will come.
-            await Until(() => moving.IsCompleted
+            await Until(() => read.Step.IsCompleted
                 || server.CallsTo(HttpMethod.Get, "/stream") >= round + 1);
-            if (moving.IsCompleted) break;
+            if (read.Step.IsCompleted) break;
             server.Events.Write(": keepalive\n\n");
             await Task.Delay(5, TestContext.Current.CancellationToken);
             server.DropStream();
@@ -368,18 +363,71 @@ public sealed class MultiplayerEventStreamTests
         Assert.True(attempts.Count >= 4, $"attempts: {string.Join(",", attempts)}");
         Assert.Equal(attempts.Count, attempts.Distinct().Count());
         Assert.Equal(attempts.OrderBy(attempt => attempt), attempts);
+    }
 
-        // Settle the pending read before the enumerator is disposed; disposing one mid-step is
-        // what `NotSupportedException` from an async enumerator means.
-        await stop.CancelAsync();
-        try
+    /// <summary>
+    /// An event read together with the <c>MoveNextAsync</c> that is in flight on it.
+    /// </summary>
+    /// <remarks>
+    /// A test that watches how the client reconnects has to leave a step pending while it drives
+    /// the server and asserts against what the client did. Disposing an async enumerator while a
+    /// step on it has not completed throws <see cref="NotSupportedException"/> from the
+    /// compiler-generated <c>DisposeAsync</c>, and a throw from a disposal that runs while the
+    /// body is already unwinding <em>replaces</em> the failure being reported: an assertion that
+    /// missed on a slow runner arrived as "Specified method is not supported", naming the
+    /// disposal and saying nothing about the assertion, which is how a real failure here once
+    /// read.
+    ///
+    /// Holding the token source, the enumerator and the step in one place puts the order beyond
+    /// the body's reach -- the step is cancelled and settled first, and only then is the
+    /// enumerator disposed -- so a test that fails reports what it was asserting.
+    /// </remarks>
+    private sealed class PendingRead : IAsyncDisposable
+    {
+        private readonly IAsyncEnumerator<MatchEvent> events;
+        private readonly CancellationTokenSource stop;
+
+        private PendingRead(CancellationTokenSource stop, IAsyncEnumerator<MatchEvent> events)
         {
-            await moving;
+            this.stop = stop;
+            this.events = events;
+            // Held as a Task rather than the ValueTask `MoveNextAsync` returns: the body polls it
+            // and may await it, and disposal awaits it again to settle it, which a ValueTask does
+            // not allow.
+            Step = events.MoveNextAsync().AsTask();
         }
-        catch (Exception exception) when (exception is OperationCanceledException
-            or RetryExhaustedException)
+
+        /// <summary>The step started with the read, pollable and awaitable more than once.</summary>
+        public Task<bool> Step { get; }
+
+        /// <summary>The event a settled step yielded.</summary>
+        public MatchEvent Current => events.Current;
+
+        /// <summary>Starts a read of the whole log and the first step on it.</summary>
+        public static PendingRead Start(MatchEventStream stream)
         {
-            // Either end of a stream nobody is waiting for any more.
+            var stop = new CancellationTokenSource();
+            return new PendingRead(
+                stop, stream.ReadAsync(0, stop.Token).GetAsyncEnumerator(stop.Token));
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await stop.CancelAsync();
+            try
+            {
+                await Step;
+            }
+            catch
+            {
+                // However a read ends once nobody is waiting on it -- cancelled, or out of retry
+                // budget -- that is not the test's result; the body asserts on whatever outcome it
+                // came for. Disposal only has to leave the enumerator safe to dispose, and above
+                // all must not throw over the body's own failure.
+            }
+
+            await events.DisposeAsync();
+            stop.Dispose();
         }
     }
 

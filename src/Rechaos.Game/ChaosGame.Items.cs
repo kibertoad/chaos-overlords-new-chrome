@@ -149,7 +149,7 @@ public sealed partial class ChaosGame
         var items = RealItems(state);
         font.Draw(batch, "RESEARCH AND EQUIPMENT", new Vector2(18, 60), Color.Gold, 2);
         font.Draw(batch, gang is null ? "NO ACTIVE GANG" :
-            $"{state.Definitions.Gangs.Single(value => value.Id == gang.DefinitionId).Name}  CASH ${player.Cash}",
+            $"{state.Definitions.Gang(gang.DefinitionId).Name}  CASH ${player.Cash}",
             new Vector2(18, 86), PlayerColors[playerId.Value], 1);
         if (gang is not null)
         {
