@@ -36,6 +36,20 @@ const BEGIN = /^<!-- doc-index:begin ([a-z-]+)((?: [a-z]+=[^\s]+)*) -->$/;
 const END = "<!-- doc-index:end -->";
 
 /**
+ * Lines of a document without their terminators. A Windows checkout with
+ * core.autocrlf delivers CRLF, and a line that kept its `\r` would never match
+ * BEGIN or END, so every block would be skipped and `--check` would pass.
+ */
+function splitLines(text) {
+  return text.split(/\r?\n/);
+}
+
+/** The line terminator a document uses, so a rewrite keeps the checkout's endings. */
+function lineEnding(text) {
+  return text.includes("\r\n") ? "\r\n" : "\n";
+}
+
+/**
  * Subsystem labels for BIN-* finding families, keyed by the ID without its number.
  * A subsystem must live in exactly one document under docs/original-internals/, and
  * this order is the order the finding index prints, so keep it grouped by document.
@@ -171,7 +185,7 @@ function collectFindings() {
   const groups = new Map(FAMILY_ORDER.map((name) => [name, { document: null, findings: [] }]));
   const ids = new Set();
   for (const name of readdirSync(findingsDir).filter((n) => n.endsWith(".md")).sort()) {
-    const headings = parseHeadings(readFileSync(join(findingsDir, name), "utf8").split("\n"));
+    const headings = parseHeadings(splitLines(readFileSync(join(findingsDir, name), "utf8")));
     for (const h of headings) {
       if (h.level !== 3) continue;
       const m = pattern.exec(h.text);
@@ -273,7 +287,7 @@ function render(kind, attrs, headings, path) {
 
 function processFile(path) {
   const original = readFileSync(path, "utf8");
-  const lines = original.split("\n");
+  const lines = splitLines(original);
   const headings = parseHeadings(lines);
   const out = [];
   let blocks = 0;
@@ -293,7 +307,7 @@ function processFile(path) {
     i = end;
     blocks++;
   }
-  const updated = out.join("\n");
+  const updated = out.join(lineEnding(original));
   return { blocks, stale: updated !== original, updated };
 }
 
@@ -312,7 +326,7 @@ function documentPaths() {
 const anchorCache = new Map();
 function anchorsOf(path) {
   if (!anchorCache.has(path)) {
-    const headings = parseHeadings(readFileSync(path, "utf8").split("\n"));
+    const headings = parseHeadings(splitLines(readFileSync(path, "utf8")));
     anchorCache.set(path, new Set(headings.map((h) => h.anchor)));
   }
   return anchorCache.get(path);
@@ -330,7 +344,7 @@ function brokenLinks(paths) {
     const label = relative(repoDir, path).split(/[\\/]/).join("/");
     let inFence = false;
     let line = 0;
-    for (const text of readFileSync(path, "utf8").split("\n")) {
+    for (const text of splitLines(readFileSync(path, "utf8"))) {
       line++;
       if (/^(```|~~~)/.test(text)) inFence = !inFence;
       if (inFence) continue;

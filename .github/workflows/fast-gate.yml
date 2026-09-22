@@ -11,6 +11,11 @@
 # what the macOS runner minutes are worth spending on; Windows is here because the Windows-only
 # paths (DPAPI token storage above all) are otherwise never exercised by automation, and Windows is
 # the platform most players run.
+#
+# `Invoke-Validation.ps1` also checks the generated documentation indexes and the relative links
+# between documents (`tools/update-doc-indexes.mjs --check`) on both legs, with the runner's own
+# Node.js. Windows checks out with CRLF, so that leg also covers the script's line-ending handling.
+# A stale index fails the leg only after the build and tests have run, so it never hides them.
 name: Fast gate
 
 on:
@@ -47,18 +52,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-      # Generated documentation indexes and cross-document anchors are platform-independent, so
-      # one matrix leg is enough to make the check an enforced pull-request gate.
-      - name: Set up Node.js for documentation checks
-        if: matrix.name == 'Linux x64'
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 22
-
-      - name: Check generated documentation indexes
-        if: matrix.name == 'Linux x64'
-        run: node tools/update-doc-indexes.mjs --check
 
       - name: Set up .NET
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
