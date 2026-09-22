@@ -15,4 +15,9 @@ export {
   isReadableEvent,
 } from './sse/createSseResponse'
 export { type EventFrame, MatchLog } from './sse/MatchLog'
-export { DEFAULT_EVENT_HUB_LIMITS, type EventHubLimits, LocalEventHub } from './sse/LocalEventHub'
+export {
+  DEFAULT_EVENT_HUB_LIMITS,
+  type EventHubLimits,
+  type EventHubObserver,
+  LocalEventHub,
+} from './sse/LocalEventHub'
