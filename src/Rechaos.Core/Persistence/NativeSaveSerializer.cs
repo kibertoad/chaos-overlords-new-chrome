@@ -10,10 +10,12 @@ namespace Rechaos.Core.Persistence;
 /// <summary>Versioned recreation-native snapshots; this is not the original save format.</summary>
 public static class NativeSaveSerializer
 {
-    // 26 replaces the SHA-256 state fingerprint with the XxHash128 one and drops every older
-    // format: the phase-hash history a save carries is written in the fingerprint of its day, and
-    // there is no build in players' hands whose saves this would strand.
-    public const int CurrentFormatVersion = 26;
+    // 27 moves with the state-fingerprint encoding, which now folds the definition set in as a
+    // digest rather than inline (MatchStateHasher.FormatVersion 2), and drops every older format:
+    // the fingerprint and the phase-hash history a save carries are written in the encoding of
+    // their day, so a save from format 26 could only be restored on trust. There is no build in
+    // players' hands whose saves this would strand.
+    public const int CurrentFormatVersion = 27;
     public const int MaximumSaveBytes = 16 * 1024 * 1024;
 
     private static readonly JsonSerializerOptions JsonOptions = CreateOptions();
@@ -235,8 +237,10 @@ public static class NativeSaveSerializer
     /// </summary>
     /// <remarks>
     /// Older formats are refused rather than migrated. Their state fingerprint, and the whole
-    /// phase-hash history inside them, were written under the SHA-256 encoding that format 26
-    /// retired, so this build could restore one only by taking it on trust.
+    /// phase-hash history inside them, were written under an encoding this build has retired, so
+    /// it could restore one only by taking it on trust. See
+    /// <see cref="MatchStateHasher.FormatVersion"/> for the coupling that keeps the two moving
+    /// together.
     /// </remarks>
     private static InvalidDataException UnsupportedFormat(int declared) =>
         IncompatibleSave.Create(

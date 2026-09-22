@@ -144,8 +144,11 @@ public sealed class OriginalCityGeneratorTests
         var second = OriginalMatchFactory.Create(data, setup);
 
         Assert.Equal(MatchStateHasher.ComputeFingerprint(first), MatchStateHasher.ComputeFingerprint(second));
+        // The fingerprint half of this vector is pinned to the encoding as well as to the state,
+        // so a deliberate move of MatchStateHasher.FormatVersion re-pins it; the random state and
+        // the consumption count either side of it are what say the factory itself is unchanged.
         Assert.Equal(
-            "dbda1cf1ccdc1d95dea12c3546bf9a8b:160916660:936",
+            "c4bc677e2aed1cd30ebe4e3b0798d5e5:160916660:936",
             $"{MatchStateHasher.ComputeFingerprint(first)}:{first.Random.State}:{first.Random.ConsumptionCount}");
         Assert.Equal(MatchLimits.PlayerCount, first.Players.Count);
         Assert.Equal(
