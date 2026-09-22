@@ -56,6 +56,7 @@ public sealed class AiTournamentTests
             MatchStateHasher.ComputeFingerprint(first.State),
             MatchStateHasher.ComputeFingerprint(second.State));
         AssertReplayMatches(first);
+        AssertNativeSaveRoundTrips(first.State);
     }
 
     [Theory]
@@ -76,6 +77,7 @@ public sealed class AiTournamentTests
             MatchStateHasher.ComputeFingerprint(first.State),
             MatchStateHasher.ComputeFingerprint(second.State));
         AssertReplayMatches(first);
+        AssertNativeSaveRoundTrips(first.State);
     }
 
     [Theory]
@@ -100,6 +102,7 @@ public sealed class AiTournamentTests
             gameEvent => gameEvent.Kind == GameEventKind.HireResolved);
         AssertObjectiveProgress(campaign.State, scenario, 7717);
         AssertReplayMatches(campaign);
+        AssertNativeSaveRoundTrips(campaign.State);
     }
 
     [Fact]
@@ -111,6 +114,7 @@ public sealed class AiTournamentTests
         Assert.NotNull(campaign.State.Outcome);
         Assert.Equal(MatchEndReason.ObjectiveCompleted, campaign.State.Outcome!.Reason);
         AssertReplayMatches(campaign);
+        AssertNativeSaveRoundTrips(campaign.State);
     }
 
     [Theory]
@@ -131,6 +135,7 @@ public sealed class AiTournamentTests
             > MatchLimits.PlayerCount);
         AssertObjectiveProgress(campaign.State, scenario, seed);
         AssertReplayMatches(campaign);
+        AssertNativeSaveRoundTrips(campaign.State);
     }
 
     private static void AssertReplayMatches(MatchReplayRecorder recorder)
@@ -143,6 +148,24 @@ public sealed class AiTournamentTests
         Assert.Equal(
             MatchStateHasher.ComputeFingerprint(recorder.State),
             MatchStateHasher.ComputeFingerprint(replayed));
+    }
+
+    /// <summary>The state a campaign reached still writes a save that loads back.</summary>
+    /// <remarks>
+    /// A replay rebuilds a match by re-running it from its opening state, so it never re-checks the
+    /// construction invariants against what the match became; a save is the only thing that does. A
+    /// campaign whose sectors had absorbed enough gang deaths therefore produced a save nothing
+    /// could load while every replay assertion in this file passed, and the same bytes are what an
+    /// online bootstrap snapshot and a desync repair are built from.
+    /// </remarks>
+    private static void AssertNativeSaveRoundTrips(MatchState state)
+    {
+        using var save = new MemoryStream();
+        NativeSaveSerializer.Save(save, state);
+        save.Position = 0;
+        Assert.Equal(
+            MatchStateHasher.ComputeFingerprint(state),
+            MatchStateHasher.ComputeFingerprint(NativeSaveSerializer.Load(save, state.Definitions)));
     }
 
     private static void AssertObjectiveProgress(MatchState state, ScenarioId scenario, int seed)

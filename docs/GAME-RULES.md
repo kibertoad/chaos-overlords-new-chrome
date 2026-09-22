@@ -665,6 +665,11 @@ claim about original-game behavior.
   earlier one stays. The helper's defensive saturated-cycle branch routes a
   previously rewritten no-op through selector mode 0: a uniform all-sector draw
   followed by the usual horizontal-then-vertical capacity-checked one-step move.
+  Only an active gang occupies one of the six places. A gang killed in Combat or
+  by police, and one that Terminated, keeps the sector it died in on its inactive
+  record — that is the record the hire resolver later reuses in place — so a
+  contested sector accumulates more gang records than the bound over a long match
+  without ever breaking it.
 - Confidence: High static evidence for adjacency, submission capacity, phase
   precedence, projected-count construction, highest-sector selection, roster
   rewrite direction, repeated normalization, mode-0 fallback, and final Move
@@ -674,7 +679,9 @@ claim about original-game behavior.
 - Tests: `BoardResolutionTests` covers movement events, capacity at submission,
   reversed-submission runtime contention, native earlier-roster cancellation,
   successful no-op results, Terminate precedence, and notifications;
-  `OriginalAiSectorSelectionRulesTests` covers mode-0 fallback RNG and routing.
+  `OriginalAiSectorSelectionRulesTests` covers mode-0 fallback RNG and routing;
+  `NativeSaveSerializerTests` covers a save carrying inactive records beyond the
+  bound and still refusing a seventh active gang in one sector.
 
 ### RULE-CONTROL-001 — Cooperative sector control comparison
 

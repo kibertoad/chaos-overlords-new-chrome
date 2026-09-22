@@ -494,6 +494,49 @@ public sealed partial class NativeSaveSerializerTests
         }
     }
 
+    /// <summary>
+    /// A sector holding six live gangs plus the records of gangs that died there still saves.
+    /// </summary>
+    /// <remarks>
+    /// An eliminated gang keeps the sector it died in — the hire resolver reuses the record in
+    /// place — and every rule that enforces the six-gang bound counts only active gangs. A long
+    /// match therefore accumulates more records than the bound in a contested sector, and counting
+    /// them made the save the game had just written refuse to load.
+    /// </remarks>
+    [Fact]
+    public void RoundTripAcceptsInactiveGangRecordsBeyondSectorCapacity()
+    {
+        var match = CreateMatch();
+        var player = match.Players[1];
+        foreach (var index in Enumerable.Range(0, MatchLimits.FriendlyGangsPerSector))
+            player.AddGang(new MatchGangState(new GangId(30 + index), player.Id, 4, 62, 5));
+        foreach (var index in Enumerable.Range(0, 3))
+            player.AddGang(new MatchGangState(new GangId(40 + index), player.Id, 4, 62, 0));
+
+        var restored = RoundTrip(match);
+
+        Assert.Equal(MatchStateHasher.ComputeFingerprint(match), MatchStateHasher.ComputeFingerprint(restored));
+        Assert.Equal(MatchLimits.FriendlyGangsPerSector, restored.Players[1].Gangs
+            .Count(gang => gang.IsActive && gang.SectorId == 62));
+        Assert.Equal(3, restored.Players[1].Gangs.Count(gang => !gang.IsActive && gang.SectorId == 62));
+    }
+
+    /// <summary>A seventh LIVE gang in one sector is still a state no save may carry.</summary>
+    [Fact]
+    public void RoundTripStillRefusesMoreActiveGangsThanOneSectorHolds()
+    {
+        var match = CreateMatch();
+        var player = match.Players[1];
+        foreach (var index in Enumerable.Range(0, MatchLimits.FriendlyGangsPerSector))
+            player.AddGang(new MatchGangState(new GangId(30 + index), player.Id, 4, 62, 5));
+        var bytes = SaveBytes(match);
+        player.AddGang(new MatchGangState(new GangId(39), player.Id, 4, 62, 5));
+
+        Assert.NotEmpty(bytes);
+        var failure = Assert.Throws<InvalidDataException>(() => RoundTrip(match));
+        Assert.Contains("capacity", failure.InnerException!.Message, StringComparison.Ordinal);
+    }
+
     private static MatchState RoundTrip(MatchState match)
     {
         using var stream = new MemoryStream(SaveBytes(match));
