@@ -7,12 +7,18 @@ public static class CombatPanelLayout
 {
     public const int ForceBarHeight = 3;
 
+    /// <summary>
+    /// The paired beveled force tracks BIN-UI-001 records at local y=114 and y=121.
+    /// </summary>
+    public const int ForceBarTracks = 2;
+
     private const int LeftCombatantX = 150;
     private const int RightCombatantX = 223;
     private const int LeftAnimationX = 150;
     private const int RightAnimationX = 223;
     private const int AnimationY = 130;
     private const int ForceBarY = 114;
+    private const int ForceBarStride = 7;
     private const int ForceBarWidth = 60;
     private const int LeftItemX = 100;
     private const int RightItemX = 289;
@@ -61,10 +67,17 @@ public static class CombatPanelLayout
     public static Rectangle GangPortrait(bool right)
         => SharedPanelLayout.At(right ? RightCombatantX : LeftCombatantX, 48, 64, 64);
 
+    /// <summary>
+    /// The patrol car's aperture inside the police combatant's 64-by-64 portrait cell. It keeps
+    /// the source cell's own size so the sheet is copied one pixel per pixel, and is centered
+    /// horizontally against the top of the cell so the car clears the force tracks below it.
+    /// </summary>
     public static Rectangle PolicePortrait(bool right)
     {
         var portrait = GangPortrait(right);
-        return new Rectangle(portrait.X + 8, portrait.Y + 8, 48, 48);
+        var car = OriginalSpriteLayout.PolicePatrolCar;
+        return new Rectangle(portrait.X + (portrait.Width - car.Width) / 2, portrait.Y,
+            car.Width, car.Height);
     }
 
     public static Rectangle EquipmentItem(bool right, int slot)
@@ -77,10 +90,11 @@ public static class CombatPanelLayout
             ItemSize);
     }
 
-    public static Rectangle ForceBar(bool right)
+    public static Rectangle ForceBar(bool right, int track)
     {
+        if (track is < 0 or >= ForceBarTracks) throw new ArgumentOutOfRangeException(nameof(track));
         return SharedPanelLayout.At((right ? RightCombatantX : LeftCombatantX) + 2,
-            ForceBarY, ForceBarWidth, ForceBarHeight);
+            ForceBarY + track * ForceBarStride, ForceBarWidth, ForceBarHeight);
     }
 }
 
