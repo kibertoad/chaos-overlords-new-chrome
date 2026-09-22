@@ -110,9 +110,62 @@ public sealed partial class ChaosGame
     private static void DrawBorder(
         SpriteBatch batch, Texture2D pixel, Rectangle rectangle, Color color, int thickness)
     {
-        batch.Draw(pixel, new Rectangle(rectangle.X, rectangle.Y, rectangle.Width, thickness), color);
-        batch.Draw(pixel, new Rectangle(rectangle.X, rectangle.Bottom - thickness, rectangle.Width, thickness), color);
-        batch.Draw(pixel, new Rectangle(rectangle.X, rectangle.Y, thickness, rectangle.Height), color);
-        batch.Draw(pixel, new Rectangle(rectangle.Right - thickness, rectangle.Y, thickness, rectangle.Height), color);
+        Span<Rectangle> strips = stackalloc Rectangle[BorderGeometry.MaximumStrips];
+        var count = BorderGeometry.Strips(rectangle, thickness, strips);
+        for (var strip = 0; strip < count; strip++) batch.Draw(pixel, strips[strip], color);
+    }
+}
+
+/// <summary>
+/// The strips a hollow rectangle's outline is tiled from.
+/// </summary>
+/// <remarks>
+/// The obvious four rectangles — a full-width band top and bottom, a full-height bar down each
+/// side — cover the four corners twice. That is invisible while every border is opaque, because
+/// painting a pixel the same colour twice is painting it once, and it stops being invisible the
+/// moment a border carries alpha: the corners blend twice and read darker than the edges they
+/// join. Shortening the side bars to the rows between the bands costs nothing and makes the
+/// coverage exact, which is a property worth stating separately from the drawing code that
+/// consumes it.
+/// </remarks>
+internal static class BorderGeometry
+{
+    /// <summary>The most strips <see cref="Strips"/> can write.</summary>
+    public const int MaximumStrips = 4;
+
+    /// <summary>
+    /// Writes the non-overlapping strips covering <paramref name="rectangle"/>'s border, in top,
+    /// left, right, bottom order, and returns how many carry pixels. Degenerate rectangles
+    /// shorter or narrower than twice <paramref name="thickness"/> stay covered exactly once:
+    /// the bands absorb what is left rather than overlapping each other.
+    /// </summary>
+    public static int Strips(Rectangle rectangle, int thickness, Span<Rectangle> strips)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(thickness);
+        if (strips.Length < MaximumStrips) throw new ArgumentException(
+            $"Needs room for {MaximumStrips} strips.", nameof(strips));
+        // Each band is clamped to what the opposite band has not already taken, so a rectangle
+        // thinner than two thicknesses is filled solid rather than blended twice down its middle.
+        var topHeight = Math.Min(thickness, rectangle.Height);
+        var sidesTop = rectangle.Y + topHeight;
+        var bottomTop = Math.Max(sidesTop, rectangle.Bottom - thickness);
+        var sidesHeight = bottomTop - sidesTop;
+        var leftWidth = Math.Min(thickness, rectangle.Width);
+        var rightLeft = Math.Max(rectangle.X + leftWidth, rectangle.Right - thickness);
+        var rightWidth = rectangle.Right - rightLeft;
+        var count = 0;
+        if (topHeight > 0 && rectangle.Width > 0)
+            strips[count++] = new Rectangle(rectangle.X, rectangle.Y, rectangle.Width, topHeight);
+        if (sidesHeight > 0)
+        {
+            if (leftWidth > 0)
+                strips[count++] = new Rectangle(rectangle.X, sidesTop, leftWidth, sidesHeight);
+            if (rightWidth > 0)
+                strips[count++] = new Rectangle(rightLeft, sidesTop, rightWidth, sidesHeight);
+        }
+        if (bottomTop < rectangle.Bottom && rectangle.Width > 0)
+            strips[count++] = new Rectangle(
+                rectangle.X, bottomTop, rectangle.Width, rectangle.Bottom - bottomTop);
+        return count;
     }
 }
