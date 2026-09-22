@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Rechaos.Multiplayer.Generated;
 using Rechaos.Multiplayer.Http;
 using Rechaos.Multiplayer.Protocol;
@@ -333,7 +334,9 @@ public sealed class MultiplayerEventStreamTests
     {
         using var server = new FakeMultiplayerServer();
         using var http = new HttpClient(server);
-        var attempts = new List<int>();
+        // The stream reports attempts from its own reconnect loop, which keeps running while the
+        // assertions below read them, so the log has to be safe to read while it is written.
+        var attempts = new ConcurrentQueue<int>();
         var policy = new RetryPolicy(
             TimeSpan.FromMilliseconds(10),
             TimeSpan.FromMilliseconds(40),
@@ -342,7 +345,7 @@ public sealed class MultiplayerEventStreamTests
             // the loop below stops at four, so the test never waits it out.
             MaxElapsed: TimeSpan.FromSeconds(5));
         var stream = new MatchEventStream(
-            Handle(http), policy, onReconnect: (_, attempt) => attempts.Add(attempt));
+            Handle(http), policy, onReconnect: (_, attempt) => attempts.Enqueue(attempt));
         await using var read = PendingRead.Start(stream);
 
         // Accept, write the keepalive a real server opens with, and drop — over and over.
@@ -359,10 +362,12 @@ public sealed class MultiplayerEventStreamTests
         }
 
         // The attempt counter climbs instead of being reset by each keepalive, so the backoff
-        // widens and the outage budget can eventually close.
-        Assert.True(attempts.Count >= 4, $"attempts: {string.Join(",", attempts)}");
-        Assert.Equal(attempts.Count, attempts.Distinct().Count());
-        Assert.Equal(attempts.OrderBy(attempt => attempt), attempts);
+        // widens and the outage budget can eventually close. One snapshot, so every assertion
+        // judges the same attempts.
+        var observed = attempts.ToArray();
+        Assert.True(observed.Length >= 4, $"attempts: {string.Join(",", observed)}");
+        Assert.Equal(observed.Length, observed.Distinct().Count());
+        Assert.Equal(observed.OrderBy(attempt => attempt), observed);
     }
 
     /// <summary>
