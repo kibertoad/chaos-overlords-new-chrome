@@ -97,6 +97,22 @@ try {
     & (Join-Path $PSScriptRoot 'Verify-Repository.ps1') -RepositoryRoot $repositoryRoot
     if ($LASTEXITCODE -ne 0) { throw 'Repository policy verification failed.' }
 
+    # The generated documentation indexes and the links between documents. Checked before the
+    # build because it takes a second, but a failure is only raised after the tests, so a stale
+    # index never hides a build or test result. Node.js is optional on a developer machine;
+    # CI runners always have it, and there a missing `node` must not turn the check off.
+    $documentationCheckFailed = $false
+    if (Get-Command -Name 'node' -CommandType Application -ErrorAction SilentlyContinue) {
+        & node (Join-Path $PSScriptRoot 'update-doc-indexes.mjs') --check
+        $documentationCheckFailed = $LASTEXITCODE -ne 0
+    }
+    elseif ($env:CI) {
+        throw 'Node.js is required to check the generated documentation indexes.'
+    }
+    else {
+        Write-Warning 'Node.js was not found; skipping the generated documentation index check.'
+    }
+
     $msbuildArguments = @(
         "-maxCpuCount:$MaxCpuCount",
         '-nodeReuse:true',
@@ -149,6 +165,10 @@ try {
         )
     }
     Invoke-CheckedDotnet -Arguments $testArguments
+
+    if ($documentationCheckFailed) {
+        throw 'Documentation check failed; run node tools/update-doc-indexes.mjs and fix any broken link.'
+    }
 }
 finally {
     if ($ShutdownBuildServersAfterRun) {

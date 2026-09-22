@@ -1,7 +1,7 @@
 # Recreation validation procedure
 
 Status: maintained canonical procedure
-Last updated: 2026-09-20
+Last updated: 2026-09-22
 
 <!-- doc-index:begin toc depth=2 -->
 - [Validation layers](#validation-layers)
@@ -42,6 +42,13 @@ into a fresh GUID-named directory under the temporary root and deletes it
 afterwards, so no `obj` or `bin` from a previous run — or from an editor — takes
 part. A run killed before it can clean up leaves that tree behind; the next run
 for the same checkout removes any it finds while it holds the lock.
+
+It also runs `node tools/update-doc-indexes.mjs --check`, which fails on a stale
+generated index block or a relative link between documents that no longer
+resolves. The check runs before the build but its failure is raised only after
+the tests, so it never hides a build or test result. Without Node.js on the path
+it is skipped with a warning locally; when `CI` is set, a missing `node` fails the
+run instead.
 
 The default gate excludes only the 53-case `LongRunning` AI campaign category.
 At the current checkpoint it builds with zero warnings and runs about 2,550
