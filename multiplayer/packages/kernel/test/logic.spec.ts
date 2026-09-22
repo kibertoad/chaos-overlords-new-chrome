@@ -54,9 +54,30 @@ describe('canonicalJson', () => {
   })
 
   it('reports root, nested array, and nested object paths unchanged', () => {
-    expect(() => canonicalJson(undefined)).toThrow('cannot canonicalize value: unsupported type undefined')
-    expect(() => canonicalJson({ x: [{ y: undefined }] })).toThrow('cannot canonicalize x[0].y: unsupported type undefined')
-    expect(() => canonicalJson({ x: { y: -0 } })).toThrow('cannot canonicalize x.y: 0 is not a safe non-negative-zero integer')
+    expect(() => canonicalJson(undefined)).toThrow(
+      'cannot canonicalize value: unsupported type undefined',
+    )
+    expect(() => canonicalJson({ x: [{ y: undefined }] })).toThrow(
+      'cannot canonicalize x[0].y: unsupported type undefined',
+    )
+    expect(() => canonicalJson({ x: { y: -0 } })).toThrow(
+      'cannot canonicalize x.y: 0 is not a safe non-negative-zero integer',
+    )
+  })
+
+  /**
+   * The dot before a key is decided by whether anything has been rendered so far, not by how deep
+   * the segment sits -- which is what `CanonicalJson.WriteObject` in the C# mirror spells as
+   * `path.Length == 0`. An empty-string key is the only input that tells those two rules apart, so
+   * it is the only thing holding the two implementations' diagnostics to the same text.
+   */
+  it('spells a path under an empty-string key the way the C# mirror does', () => {
+    expect(() => canonicalJson({ '': { y: undefined } })).toThrow(
+      'cannot canonicalize y: unsupported type undefined',
+    )
+    expect(() => canonicalJson({ '': [{ y: -0 }] })).toThrow(
+      'cannot canonicalize [0].y: 0 is not a safe non-negative-zero integer',
+    )
   })
 
   /**
