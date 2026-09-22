@@ -363,14 +363,10 @@ public sealed class MultiplayerEventStreamTests
             if (attempts.Count >= 4) break;
         }
 
-        // The attempt counter climbs instead of being reset by each keepalive, so the backoff
-        // widens and the outage budget can eventually close.
-        Assert.True(attempts.Count >= 4, $"attempts: {string.Join(",", attempts)}");
-        Assert.Equal(attempts.Count, attempts.Distinct().Count());
-        Assert.Equal(attempts.OrderBy(attempt => attempt), attempts);
-
         // Settle the pending read before the enumerator is disposed; disposing one mid-step is
-        // what `NotSupportedException` from an async enumerator means.
+        // what `NotSupportedException` from an async enumerator means. It also has to come before
+        // the assertions: until the read has ended the stream keeps reconnecting on its own and
+        // adding to `attempts`, and enumerating the list under it throws "Collection was modified".
         await stop.CancelAsync();
         try
         {
@@ -381,6 +377,12 @@ public sealed class MultiplayerEventStreamTests
         {
             // Either end of a stream nobody is waiting for any more.
         }
+
+        // The attempt counter climbs instead of being reset by each keepalive, so the backoff
+        // widens and the outage budget can eventually close.
+        Assert.True(attempts.Count >= 4, $"attempts: {string.Join(",", attempts)}");
+        Assert.Equal(attempts.Count, attempts.Distinct().Count());
+        Assert.Equal(attempts.OrderBy(attempt => attempt), attempts);
     }
 
     private static MatchHandle Handle(HttpClient http) =>
