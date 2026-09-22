@@ -104,6 +104,27 @@ describe('displayNameInputSchema', () => {
     expect(safeParse(displayNameInputSchema, name).success).toBe(true)
   })
 
+  it.each([
+    ['ß', 'SS'],
+    ['ﬁ', 'FI'],
+    ['ŉ', 'ʼN'],
+  ])('keeps %s to one space-filled cell although JavaScript widens it to %s', (cell) => {
+    expect(originalPlayerNameProjection(`A${cell}B`)).toBe('A B')
+    // Widening would shift the record and let the tail spell a cheat the game never receives.
+    expect(originalPlayerNameProjection(`SMGKICKA${cell}`)).toBe('SMGKICKA')
+  })
+
+  it('accepts a name that only widening would turn into a cheat', () => {
+    expect(safeParse(displayNameInputSchema, 'SMGKICKAß').success).toBe(true)
+  })
+
+  it('projects the normalised name, not the typed one', () => {
+    // KELVIN SIGN composes to K under NFC, so the stored name is the cheat itself.
+    expect(safeParse(displayNameInputSchema, 'SMG\u212AIC\u212AASS').success).toBe(false)
+    // S with a combining dot below composes to Ṣ, which the native record cannot hold.
+    expect(safeParse(displayNameInputSchema, 'SMGISLANDS\u0323').success).toBe(true)
+  })
+
   /**
    * The length is measured after normalisation, not before.
    *

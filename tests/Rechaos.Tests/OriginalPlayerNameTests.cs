@@ -11,6 +11,10 @@ public sealed class OriginalPlayerNameTests
     [InlineData("\u738b", "")]
     [InlineData("\u017fMGISLANDS", "SMGISLANDS")]
     [InlineData("SMG\u0131SLANDS", "SMG SLANDS")]
+    [InlineData("A\u00dfB", "A B")]
+    [InlineData("A\ufb01B", "A B")]
+    [InlineData("A\u0149B", "A B")]
+    [InlineData("SMG\u212aICKASS", "SMG ICKASS")]
     public void ProjectMatchesTheNativeFixedNameRecord(string modernName, string expected)
     {
         Assert.Equal(expected, OriginalPlayerName.Project(modernName));
