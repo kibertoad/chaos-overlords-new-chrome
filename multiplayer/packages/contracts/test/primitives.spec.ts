@@ -92,6 +92,18 @@ describe('displayNameInputSchema', () => {
     expect(safeParse(displayNameInputSchema, 'SMGFUNDAGE THE THIRD').success).toBe(false)
   })
 
+  it('refuses a name whose long s folds into a native cheat', () => {
+    const name = 'ſMGISLANDS'
+    expect(originalPlayerNameProjection(name)).toBe('SMGISLANDS')
+    expect(safeParse(displayNameInputSchema, name).success).toBe(false)
+  })
+
+  it('leaves dotless i outside the native alphabet as the C# projection does', () => {
+    const name = 'SMGıSLANDS'
+    expect(originalPlayerNameProjection(name)).toBe('SMG SLANDS')
+    expect(safeParse(displayNameInputSchema, name).success).toBe(true)
+  })
+
   /**
    * The length is measured after normalisation, not before.
    *

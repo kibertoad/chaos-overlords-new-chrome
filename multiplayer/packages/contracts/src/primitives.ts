@@ -271,7 +271,11 @@ export function originalPlayerNameProjection(name: string): string {
   let output = ''
   for (let index = 0; index < name.length && index < ORIGINAL_PLAYER_NAME_MAX_LENGTH; index++) {
     const source = name[index] ?? ' '
-    const upper = source >= 'a' && source <= 'z' ? source.toUpperCase() : source
+    // The game maps each UTF-16 cell with char.ToUpperInvariant. JavaScript can widen one source
+    // cell (for example, ß becomes SS), so only a one-cell mapping can occupy this native record.
+    // JavaScript's full mapping folds dotless i, whereas .NET's invariant char mapping does not.
+    const folded = source === 'ı' ? source : source.toUpperCase()
+    const upper = folded.length === 1 ? folded : ' '
     output += upper >= ' ' && upper <= 'Z' ? upper : ' '
   }
   return output.trim()
