@@ -117,6 +117,49 @@ public sealed class MatchStateTests
     }
 
     [Fact]
+    public void GangLookupTracksRosterAdditionsAndSlotReplacements()
+    {
+        var match = CreateMatch();
+        var added = new MatchGangState(new GangId(30), new PlayerId(0), 1, 0, 5);
+        var replacement = new MatchGangState(new GangId(31), new PlayerId(0), 1, 0, 5);
+
+        match.Players[0].AddGang(added);
+        match.Players[0].ReplaceGang(2, replacement);
+
+        Assert.Same(replacement, match.FindGang(replacement.Id));
+        Assert.Null(match.FindGang(added.Id));
+    }
+
+    [Fact]
+    public void RosterAdditionRejectsDuplicateGangIdBeforeMutatingTheRoster()
+    {
+        var match = CreateMatch();
+        var original = match.FindGang(new GangId(10))!;
+
+        var error = Assert.Throws<ArgumentException>(() => match.Players[1].AddGang(
+            new MatchGangState(original.Id, new PlayerId(1), 3, 0, 5)));
+
+        Assert.Contains("unique", error.Message);
+        Assert.Same(original, match.FindGang(original.Id));
+        Assert.Single(match.Players[1].Gangs);
+    }
+
+    [Fact]
+    public void RosterReplacementRejectsDuplicateGangIdBeforeMutatingTheRoster()
+    {
+        var match = CreateMatch();
+        var original = match.FindGang(new GangId(10))!;
+        var replaced = match.FindGang(new GangId(11))!;
+
+        var error = Assert.Throws<ArgumentException>(() => match.Players[0].ReplaceGang(1,
+            new MatchGangState(original.Id, new PlayerId(0), 2, 0, 5)));
+
+        Assert.Contains("unique", error.Message);
+        Assert.Same(original, match.FindGang(original.Id));
+        Assert.Same(replaced, match.FindGang(replaced.Id));
+    }
+
+    [Fact]
     public void RejectedCommandDoesNotMutateQueueOrEventLog()
     {
         var match = CreateMatch();

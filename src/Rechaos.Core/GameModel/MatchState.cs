@@ -30,6 +30,8 @@ public sealed partial class MatchPlayerState
     private readonly Dictionary<short, int> _researchProgress;
     private readonly HashSet<short> _researchedItems;
     private readonly Dictionary<short, int> _inventory;
+    private Action<MatchGangState>? _onGangAdded;
+    private Action<MatchGangState, MatchGangState>? _onGangReplaced;
 
     public MatchPlayerState(
         MatchPlayerSetup setup,
@@ -118,14 +120,34 @@ public sealed partial class MatchPlayerState
         return remaining;
     }
 
-    internal void AddGang(MatchGangState gang) => _gangs.Add(gang);
+    internal void AddGang(MatchGangState gang)
+    {
+        ArgumentNullException.ThrowIfNull(gang);
+        _onGangAdded?.Invoke(gang);
+        _gangs.Add(gang);
+    }
+
     internal void ReplaceGang(int gangSlot, MatchGangState gang)
     {
         ArgumentNullException.ThrowIfNull(gang);
         if (gangSlot is < 0 || gangSlot >= _gangs.Count)
             throw new ArgumentOutOfRangeException(nameof(gangSlot));
+        _onGangReplaced?.Invoke(_gangs[gangSlot], gang);
         _gangs[gangSlot] = gang;
     }
+
+    internal void AttachGangIndex(
+        Action<MatchGangState> onGangAdded,
+        Action<MatchGangState, MatchGangState> onGangReplaced)
+    {
+        ArgumentNullException.ThrowIfNull(onGangAdded);
+        ArgumentNullException.ThrowIfNull(onGangReplaced);
+        if (_onGangAdded is not null || _onGangReplaced is not null)
+            throw new InvalidOperationException("A gang index is already attached to this player.");
+        _onGangAdded = onGangAdded;
+        _onGangReplaced = onGangReplaced;
+    }
+
     internal void AddPendingHire(PendingHireState hire) => _pendingHires.Add(hire);
     internal void ClearPendingHires() => _pendingHires.Clear();
 
@@ -323,6 +345,8 @@ public sealed partial class MatchState
     private readonly Dictionary<PlayerId, NotificationQueue> _notifications;
     private readonly Dictionary<PlayerId, long> _nextNotificationSequences;
     private readonly Dictionary<PlayerId, ComlinkInbox> _comlinkInboxes;
+    private readonly Dictionary<PlayerId, MatchPlayerState> _playersById;
+    private readonly Dictionary<GangId, MatchGangState> _gangsById;
     public MatchState(
         OriginalData definitions,
         MatchSetup setup,
@@ -364,6 +388,10 @@ public sealed partial class MatchState
         _phaseHashView = _phaseHashes.AsReadOnly();
         Players = players.ToArray();
         Sectors = sectors.ToArray();
+        _playersById = Players.ToDictionary(player => player.Id);
+        _gangsById = Players.SelectMany(player => player.Gangs).ToDictionary(gang => gang.Id);
+        foreach (var player in Players)
+            player.AttachGangIndex(AddGangToIndex, ReplaceGangInIndex);
         Coordinator = restore is null
             ? new TurnCoordinator(players.Count)
             : new TurnCoordinator(players.Count, restore.Turn, restore.Phase,
@@ -380,6 +408,27 @@ public sealed partial class MatchState
         _nextNotificationSequences = Players.ToDictionary(player => player.Id, _ => 0L);
         _comlinkInboxes = Players.ToDictionary(player => player.Id, _ => new ComlinkInbox());
         if (restore is not null) RestoreRuntime(restore);
+    }
+
+    private void AddGangToIndex(MatchGangState gang)
+    {
+        if (!_gangsById.TryAdd(gang.Id, gang))
+            throw new ArgumentException("Gang identifiers must be unique across the match.", nameof(gang));
+    }
+
+    private void ReplaceGangInIndex(MatchGangState replaced, MatchGangState replacement)
+    {
+        if (!_gangsById.TryGetValue(replaced.Id, out var indexed) || indexed != replaced)
+            throw new InvalidOperationException("The replaced gang is not indexed by this match.");
+        if (replaced.Id == replacement.Id)
+        {
+            _gangsById[replacement.Id] = replacement;
+            return;
+        }
+        if (_gangsById.ContainsKey(replacement.Id))
+            throw new ArgumentException("Gang identifiers must be unique across the match.", nameof(replacement));
+        _gangsById.Remove(replaced.Id);
+        _gangsById.Add(replacement.Id, replacement);
     }
     internal MatchState(
         OriginalData definitions,
