@@ -121,6 +121,72 @@ public sealed class CombatAnimationTests
     }
 
     [Fact]
+    public void SecondAttackOnTheSameGangStartsWhereTheFirstLeftIt()
+    {
+        var state = CreateState();
+        var target = state.FindGang(new GangId(20))!;
+        target.Force = 0;
+        var first = AttackEvent(new CommandResolutionDetails(
+            CommandResolutionCode.Resolved, [], 0, PreviousValue: 10, ResultValue: 0, Damage: 10));
+        var second = AttackEvent(new CommandResolutionDetails(
+            CommandResolutionCode.Resolved, [], 0, PreviousValue: 10, ResultValue: 0, Damage: 8)) with
+        {
+            Sequence = 2,
+            Gang = new GangId(11),
+        };
+        GameEvent[] events = [first, second];
+
+        var firstForces = CombatForceTimeline.For(state, events, first)
+            .Forces(first.Sequence, retaliation: false, new GangId(10), target.Id);
+        var secondForces = CombatForceTimeline.For(state, events, second)
+            .Forces(second.Sequence, retaliation: false, new GangId(11), target.Id);
+
+        Assert.Equal(new CombatClipForces(10, 0, 10), firstForces);
+        Assert.Equal((0, 0), (secondForces.DefenderBefore, secondForces.DefenderAfter));
+        Assert.Equal(0, secondForces.DefenderDamage);
+    }
+
+    [Fact]
+    public void ForcesFollowAttackThenRetaliationThenPoliceThroughThePhase()
+    {
+        var state = CreateState();
+        state.FindGang(new GangId(10))!.Force = 4;
+        state.FindGang(new GangId(20))!.Force = 3;
+        var attack = AttackEvent(new CommandResolutionDetails(
+            CommandResolutionCode.Resolved, [], 0, PreviousValue: 10, ResultValue: 3,
+            RetaliationRolls: [6], Damage: 5, RetaliationDamage: 6));
+        var police = new GameEvent(
+            2, 1, TurnPhase.Execution, ExecutionPhase.Combat,
+            GameEventKind.PoliceAttackResolved, new PlayerId(1), new GangId(20),
+            GangAction.None, CommandTarget.Sector(0),
+            PoliceAttack: new PoliceAttackResolutionDetails(0, 100, 1, true, 20, 0, [4, 4], 2, 2, 10, 3));
+        GameEvent[] events = [attack, police];
+        var timeline = CombatForceTimeline.For(state, events, attack);
+
+        Assert.Equal(new CombatClipForces(10, 5, 10),
+            timeline.Forces(1, retaliation: false, new GangId(10), new GangId(20)));
+        // The attacker entered with its current force plus every hit it took, since no event targets it.
+        Assert.Equal(new CombatClipForces(10, 4, 5),
+            timeline.Forces(1, retaliation: true, new GangId(20), new GangId(10)));
+        Assert.Equal(new CombatClipForces(5, 3, null),
+            timeline.Forces(2, retaliation: false, null, new GangId(20)));
+    }
+
+    [Fact]
+    public void RoutedClipsCarryTheirPlaceInThePhase()
+    {
+        var state = CreateState();
+        state.FindGang(new GangId(10))!.Force = 8;
+        state.FindGang(new GangId(20))!.Force = 7;
+        var clips = CombatAnimationRouting.ForEvent(state, AttackEvent(new CommandResolutionDetails(
+            CommandResolutionCode.Resolved, [], 0, PreviousValue: 10, ResultValue: 7,
+            RetaliationRolls: [6], Damage: 3, RetaliationDamage: 2)));
+
+        Assert.Equal(new CombatClipForces(10, 7, 10), clips[0].Forces);
+        Assert.Equal(new CombatClipForces(10, 8, 7), clips[1].Forces);
+    }
+
+    [Fact]
     public void FileGroupsAndFrameCoordinatesMatchRecoveredStrips()
     {
         Assert.Equal(166, CombatAnimationRouting.FrameMilliseconds);

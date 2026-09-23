@@ -12,7 +12,8 @@ public sealed record CombatAnimationClip(
     short? HitAnimation,
     bool Reversed,
     bool Police = false,
-    short? Sound = null);
+    short? Sound = null,
+    CombatClipForces? Forces = null);
 
 public static class CombatAnimationRouting
 {
@@ -39,9 +40,12 @@ public static class CombatAnimationRouting
             && gameEvent.PoliceAttack is { } police)
         {
             if (!police.Detected) return [];
+            var policeForces = CombatForceTimeline.For(state, gameEvent)
+                .Forces(gameEvent.Sequence, retaliation: false, null, policeTarget);
             return [new CombatAnimationClip(gameEvent.Sequence, null, policeTarget,
                 PoliceAttackAnimation, HitAnimation(PoliceHitAnimation, police.Damage),
-                Reversed: true, Police: true, Sound: AudioRouting.PoliceSound)];
+                Reversed: true, Police: true, Sound: AudioRouting.PoliceSound,
+                Forces: policeForces)];
         }
         if (gameEvent.Action != GangAction.Attack
             || gameEvent.Gang is not { } attacker
@@ -61,12 +65,14 @@ public static class CombatAnimationRouting
                 EvadedAnimation, 0, Reversed: false)];
         if (resolution.Code != CommandResolutionCode.Resolved) return [];
 
+        var timeline = CombatForceTimeline.For(state, gameEvent);
         var attack = AnimationPair(state, attacker, resolution.ItemId, resolution.Damage);
         var clips = new List<CombatAnimationClip>(2)
         {
             new(gameEvent.Sequence, attacker, defender, attack.Attack, attack.Hit,
                 Reversed: false,
-                Sound: AudioRouting.GangAttackSound(state, attacker, resolution.ItemId))
+                Sound: AudioRouting.GangAttackSound(state, attacker, resolution.ItemId),
+                Forces: timeline.Forces(gameEvent.Sequence, retaliation: false, attacker, defender))
         };
         if (resolution.RetaliationRolls is { Count: > 0 })
         {
@@ -76,7 +82,8 @@ public static class CombatAnimationRouting
                 gameEvent.Sequence, defender, attacker,
                 retaliation.Attack, retaliation.Hit, Reversed: true,
                 Sound: AudioRouting.GangAttackSound(
-                    state, defender, resolution.RetaliationItemId)));
+                    state, defender, resolution.RetaliationItemId),
+                Forces: timeline.Forces(gameEvent.Sequence, retaliation: true, defender, attacker)));
         }
         return clips;
     }
