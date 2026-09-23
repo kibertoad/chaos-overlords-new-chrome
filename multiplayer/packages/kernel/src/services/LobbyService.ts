@@ -378,8 +378,8 @@ export class LobbyService {
     // Only a host who is gone is replaced. `takeoverPending` is set on a player who is still
     // connected and merely missed one timed deadline, so treating it as absence would hand the role
     // to any former member who called `rejoin` at that moment — and the new host can kick the old
-    // one, which revokes their token for good. A pending host is still present; the takeover vote is
-    // the path that decides otherwise.
+    // one, which revokes their token for good. A pending host is still present; the takeover vote,
+    // or the pending host's own `leave`, is the path that decides otherwise.
     if (currentHost === undefined || VACANT_HOST_STATUSES.includes(currentHost.status)) {
       await this.handHostTo(match.id, player.id, this.deps.clock.now())
     }
@@ -507,8 +507,7 @@ export class LobbyService {
       payload: { playerId: targetPlayerId },
     })
     if (targetPlayerId === match.hostPlayerId) {
-      const successor = activePlayers(await this.deps.storage.players.listByMatch(match.id))[0]
-      if (successor) await this.handHostTo(match.id, successor.id, this.deps.clock.now())
+      await this.handHostToFirstActive(match.id, this.deps.clock.now())
     }
     await this.turns.reevaluate(match.id)
     await this.turns.resumeAfterTakeoverVotes(match.id)
@@ -600,9 +599,9 @@ export class LobbyService {
       // and turns the match into a 500 for everybody.
       if (!(await this.deps.storage.players.delete(target.id))) return
       await this.deps.storage.matches.releaseSeat(match.id)
-      // A kicked member's token is dead with the row, but a stream they already hold is never
-      // re-authenticated: without this it goes on delivering `match.started` with the seed and
-      // every seal, desync and roster change for the rest of the match.
+      // A kicked member's token is dead with the row, but a stream they already hold only re-checks
+      // its membership on the hub's catch-up heartbeat: without this it goes on delivering
+      // `match.started` with the seed and every seal, desync and roster change until then.
       if (reason === 'kicked') await this.hangUp(match.id, target.id)
       await this.publisher.publish(match.id, {
         type: 'lobby.playerLeft',
@@ -625,8 +624,8 @@ export class LobbyService {
     // controlled, but the person behind it must still lose the token and the streams either way.
     // Membership is the only thing the token ever proved, so it stops working here: a kicked player
     // keeps neither the event stream nor the sealed order sets of the turns that follow. The revoke
-    // closes the next request and the hang-up closes the streams already open, which are never
-    // re-authenticated and would otherwise outlive the membership for as long as the client liked.
+    // closes the next request and the hang-up closes the streams already open, which otherwise
+    // outlive the membership until the hub's periodic membership check catches up with them.
     if (reason === 'kicked') {
       await this.deps.storage.players.revokeToken(target.id)
       await this.hangUp(match.id, target.id)
@@ -647,7 +646,19 @@ export class LobbyService {
     // the turn waiting on a seat that could never answer, with the clock paused by its own prompt
     // and everyone present already ready. A `left` seat really is idle, and re-running the verdict
     // for it costs one query.
+    //
+    // A `takeoverPending` host who leaves is gone, not merely late, so the role moves on the way it
+    // does for an active host; otherwise it stayed with a departed seat until a takeover vote or a
+    // rejoin happened to move it. With nobody present to take it, the role stays put and the first
+    // former member to rejoin becomes host, as below.
     if (!claimed || !wasActive) {
+      if (
+        claimed &&
+        target.id === match.hostPlayerId &&
+        !(await this.handHostToFirstActive(match.id, now))
+      ) {
+        await this.turns.pauseAbandonedMatch(match.id)
+      }
       await this.turns.reevaluate(match.id)
       await this.retallyOpenPrompts(match)
       return
@@ -702,6 +713,17 @@ export class LobbyService {
       type: 'lobby.hostChanged',
       payload: { hostPlayerId: playerId },
     })
+  }
+
+  /**
+   * Hand the host role of a started match to its first active player, if it has one. Answers
+   * whether anybody was there to take it.
+   */
+  private async handHostToFirstActive(matchId: string, at: Date): Promise<boolean> {
+    const successor = activePlayers(await this.deps.storage.players.listByMatch(matchId))[0]
+    if (!successor) return false
+    await this.handHostTo(matchId, successor.id, at)
+    return true
   }
 
   /**

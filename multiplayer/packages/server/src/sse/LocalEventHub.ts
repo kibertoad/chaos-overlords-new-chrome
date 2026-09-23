@@ -39,8 +39,10 @@ export const DEFAULT_EVENT_HUB_LIMITS: EventHubLimits = {
   perProcess: 512,
 }
 
-/** What the hub tells its runtime about, so an operator can find out it happened. */
+/** Runtime hooks for stream diagnostics and membership checks. */
 export interface EventHubObserver {
+  /** A false result or failed lookup ends the stream. */
+  revalidate?(matchId: string, playerId: string): Promise<boolean>
   /** A stored event a stream had to skip because this build cannot read it. */
   unreadable?(matchId: string, seq: number): void
   /**
@@ -112,9 +114,9 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
   /**
    * End every stream a membership holds.
    *
-   * Revoking a token stops the next request; a stream that is already open is never authenticated
-   * again, so without this a kicked player keeps being handed every sealed set, every desync report
-   * (which names each player's state hash) and every host change until they choose to disconnect.
+   * Revoking a token stops the next request, and an open stream only re-checks its membership on
+   * the catch-up heartbeat; until then a kicked player keeps being handed every sealed set, every
+   * desync report (which names each player's state hash) and every host change.
    */
   async close(input: { matchId: string; playerId: string }): Promise<void> {
     // Snapshot deliberately: `close()` removes the subscription from the set being walked.
@@ -168,6 +170,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
     this.makeRoom(input.matchId, input.playerId, lobby)
     const log = this.logOf(input.matchId)
     let subscription: Subscription | undefined
+    const revalidate = this.observer.revalidate
     return createSseResponse(
       {
         page: async (afterSeq, force) => {
@@ -189,6 +192,7 @@ export class LocalEventHub implements EventNotifier, EventStreamOpener, StreamCl
         heartbeatMs: this.heartbeatMs,
         signal: input.signal,
         onUnreadable: (seq) => this.observer.unreadable?.(input.matchId, seq),
+        ...(revalidate ? { revalidate: () => revalidate(input.matchId, input.playerId) } : {}),
       },
     )
   }
