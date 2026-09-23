@@ -985,6 +985,36 @@ export function defineStorageConformance(harness: StorageConformanceHarness): vo
       expect(await storage.takeovers.hasOpenPrompts(match.id)).toBe(false)
     })
 
+    /**
+     * A vote on a seat nobody asked about yet opens the prompt itself and is then retried, so its
+     * `castAt` was read from the clock before the prompt's `openedAt`. It still answers that prompt.
+     */
+    it('counts a vote stamped before the prompt it answers was opened', async () => {
+      const match = matchFixture()
+      await storage.matches.create(match)
+      expect(
+        await storage.players.create(playerFixture(match, { id: 'gone', status: 'left' })),
+      ).toBe(true)
+      const castAt = new Date('2026-03-01T12:00:00.000Z')
+      const openedAt = new Date('2026-03-01T12:00:00.005Z')
+      expect(await storage.takeovers.openPrompt(match.id, 'gone', 1, openedAt)).toBe(true)
+      expect(
+        await storage.takeovers.castVote({
+          matchId: match.id,
+          targetPlayerId: 'gone',
+          voterPlayerId: 'voter',
+          decision: 'computer',
+          castAt,
+        }),
+      ).toBe(true)
+      expect(
+        (await storage.takeovers.listVotes(match.id, 'gone')).map((vote) => [
+          vote.voterPlayerId,
+          vote.decision,
+        ]),
+      ).toEqual([['voter', 'computer']])
+    })
+
     it('stores snapshots per turn, replacing on re-upload, and serves the latest', async () => {
       const match = matchFixture()
       await storage.matches.create(match)
