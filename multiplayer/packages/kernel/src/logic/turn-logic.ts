@@ -2,6 +2,7 @@ import {
   activePlayers,
   humanParticipants,
   type Player,
+  type Turn,
   type TurnOrders,
   type TurnReport,
 } from '../domain/entities'
@@ -16,6 +17,18 @@ export function allActiveReady(
   if (active.length === 0) return false
   const readyIds = new Set(orders.filter((row) => row.ready).map((row) => row.playerId))
   return active.every((player) => readyIds.has(player.id))
+}
+
+/**
+ * Whether the turn was sealed by its clock running out rather than by everyone being ready. Read
+ * from the stored row alone, so a sweep finishing an interrupted seal reaches the same answer as the
+ * call that sealed it: a deadline seal is refused until the deadline has passed, so its `sealedAt`
+ * is never earlier. A turn without a deadline (timer off, or paused by an absence vote) can only
+ * seal on readiness.
+ */
+export function sealedByDeadline(turn: Pick<Turn, 'deadlineAt' | 'sealedAt'>): boolean {
+  if (turn.deadlineAt === null || turn.sealedAt === null) return false
+  return turn.sealedAt.getTime() >= turn.deadlineAt.getTime()
 }
 
 export type Consensus =

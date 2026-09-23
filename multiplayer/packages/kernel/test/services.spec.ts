@@ -176,6 +176,10 @@ describe('the lobby, the roster and the turn barrier', () => {
   })
 
   async function lateJoinableMatch() {
+    return (await lateJoinableHost()).match.id
+  }
+
+  async function lateJoinableHost() {
     const host = await h.kernel.lobby.createMatch({
       settings: {
         name: 'Drop In',
@@ -194,7 +198,24 @@ describe('the lobby, the roster and the turn barrier', () => {
       body: 'AAAA',
       seatSummaries: [],
     })
-    return host.match.id
+    return host
+  }
+
+  /** A late seat whose orders row was never written: every top-up on its way in was lost. */
+  async function lateSeatWithoutRow(matchId: string) {
+    const originalOpen = h.storage.turns.open
+    h.storage.turns.open = async (turn) => !(await h.storage.turns.get(turn.matchId, turn.number))
+    try {
+      const joined = await h.kernel.lobby.joinRunning({
+        match: matchId,
+        displayName: 'Late',
+        slot: 3,
+      })
+      expect(await h.storage.turns.getOrderSummary(matchId, 1, joined.player.id)).toBeNull()
+      return joined
+    } finally {
+      h.storage.turns.open = originalOpen
+    }
   }
 
   it('tops up a late joiner when a new turn opens across the seat claim', async () => {
@@ -231,6 +252,44 @@ describe('the lobby, the roster and the turn barrier', () => {
     releaseOpen()
     await opening
     expect(await h.storage.turns.getOrderSummary(matchId, 2, joined.player.id)).not.toBeNull()
+  })
+
+  it('does not mark absent a seat topped up between the readiness read and a ready seal', async () => {
+    const host = await lateJoinableHost()
+    const matchId = host.match.id
+    const originalTransition = h.storage.turns.transition
+    let lateId: string | undefined
+    h.storage.turns.transition = async (id, number, from, patch) => {
+      if (number === 1 && patch.status === 'sealed' && lateId === undefined) {
+        // The ready check has read the roster and the rows; the late seat commits only now.
+        const joined = await h.kernel.lobby.joinRunning({ match: id, displayName: 'Late', slot: 3 })
+        lateId = joined.player.id
+      }
+      return originalTransition(id, number, from, patch)
+    }
+    await h.submit(await h.principalOf(host.token), 1, 1, true)
+    expect((await h.storage.turns.get(matchId, 1))?.status).toBe('sealed')
+    if (lateId === undefined) throw new Error('the late seat never joined')
+    expect((await h.storage.players.get(lateId))?.status).toBe('active')
+    expect(await h.storage.takeovers.listOpenPrompts(matchId)).toEqual([])
+    expect(await h.storage.turns.getOrderSummary(matchId, 2, lateId)).not.toBeNull()
+  })
+
+  it('lets a seat whose orders row was lost repair it by submitting', async () => {
+    const host = await lateJoinableHost()
+    const matchId = host.match.id
+    const joined = await lateSeatWithoutRow(matchId)
+    await h.submit(await h.principalOf(joined.token), 1, 1, true)
+    expect((await h.storage.turns.getOrderSummary(matchId, 1, joined.player.id))?.ready).toBe(true)
+    await h.submit(await h.principalOf(host.token), 1, 2, true)
+    expect((await h.storage.turns.get(matchId, 1))?.status).not.toBe('open')
+  })
+
+  it('repairs a lost orders row when an active seat rejoins', async () => {
+    const matchId = await lateJoinableMatch()
+    const joined = await lateSeatWithoutRow(matchId)
+    await h.kernel.lobby.rejoin(await h.principalOf(joined.token))
+    expect(await h.storage.turns.getOrderSummary(matchId, 1, joined.player.id)).not.toBeNull()
   })
 
   async function joinOrderOf(playerId: string) {

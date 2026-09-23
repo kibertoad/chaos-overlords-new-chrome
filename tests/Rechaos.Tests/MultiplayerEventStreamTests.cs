@@ -366,9 +366,11 @@ public sealed class MultiplayerEventStreamTests
             TimeSpan.FromMilliseconds(10),
             TimeSpan.FromMilliseconds(40),
             MaxAttempts: 0,
-            // Long enough that a slow runner still reaches four attempts before the window closes;
-            // the loop below stops at four, so the test never waits it out.
-            MaxElapsed: TimeSpan.FromSeconds(5));
+            // The window is not what is under test, only the attempt counter, so it is far wider
+            // than any runner needs: a loaded Windows runner once spent the whole of a five-second
+            // window on three attempts. The loop below stops at four, and `Until` bounds each
+            // round, so the test never waits it out.
+            MaxElapsed: TimeSpan.FromMinutes(1));
         var stream = new MatchEventStream(
             Handle(http), policy, onReconnect: (_, attempt) => attempts.Enqueue(attempt));
         await using var read = PendingRead.Start(stream);
@@ -376,9 +378,12 @@ public sealed class MultiplayerEventStreamTests
         // Accept, write the keepalive a real server opens with, and drop — over and over.
         for (var round = 0; round < 40 && !read.Step.IsCompleted; round++)
         {
-            // A closed retry window ends the read, and no further connection will come.
+            // A closed retry window ends the read, and no further connection will come. The server
+            // records a request before it hands out that connection's body, so the count alone can
+            // run ahead of `Events`, which would then still be the body just dropped: the keepalive
+            // and the drop below would go to it, and the new connection would never be dropped.
             await Until(() => read.Step.IsCompleted
-                || server.CallsTo(HttpMethod.Get, "/stream") >= round + 1);
+                || (server.CallsTo(HttpMethod.Get, "/stream") >= round + 1 && !server.Events.Ended));
             if (read.Step.IsCompleted) break;
             server.Events.Write(": keepalive\n\n");
             await Task.Delay(5, TestContext.Current.CancellationToken);

@@ -342,7 +342,12 @@ export class LobbyService {
       throw new ForbiddenError('A kicked player cannot rejoin', { reason: 'kicked' })
     }
     await this.refreshRetention(match.id)
-    if (player.status === 'active') return
+    if (player.status === 'active') {
+      // Nothing to reclaim, but a seat whose row an interrupted turn open never wrote is repaired
+      // here too, so the returning client is waited for instead of silently sealed past.
+      await this.topUpCurrentTurn(match.id, player.id)
+      return
+    }
     const replacedComputer = player.status === 'computer'
     if (
       !(await this.deps.storage.players.transitionStatus(
@@ -384,9 +389,7 @@ export class LobbyService {
   /** A seat claim can cross a seal, so use the turn current after the seat was committed. */
   private async topUpCurrentTurn(matchId: string, playerId: string): Promise<void> {
     const match = await this.deps.storage.matches.get(matchId)
-    if (!match) return
-    const turn = await this.deps.storage.turns.get(matchId, match.currentTurn)
-    if (turn?.status === 'open') await this.deps.storage.turns.open(turn, [playerId])
+    if (match) await this.turns.topUpSeat(matchId, match.currentTurn, playerId)
   }
 
   async updateSettings(principal: Principal, settings: MatchSettings): Promise<void> {

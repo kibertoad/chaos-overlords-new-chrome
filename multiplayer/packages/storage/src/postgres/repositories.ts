@@ -497,31 +497,22 @@ function postgresTurnRepository(db: PostgresDatabase): TurnRepository {
     ...postgresTurnOrderMethods(db),
     async open(turn, playerIds) {
       const created = await insertUnlessTaken(() => db.insert(turns).values(turn))
-      for (const playerId of playerIds) {
+      if (playerIds.length > 0) {
         // Topped up rather than assumed: a re-run of the open step (a repaired seal) fills any row
-        // an interrupted one never wrote. A shared lock keeps a concurrent seal behind this insert.
+        // an interrupted one never wrote. One statement for the whole roster, gated on the turn
+        // still being open; the shared lock keeps a concurrent seal behind this insert.
+        const seats = sql.join(
+          playerIds.map((playerId) => sql`(${playerId})`),
+          sql`, `,
+        )
         await db
           .insert(turnOrders)
           .select(
-            db
-              .select({
-                matchId: sql`${turn.matchId}`.as('match_id'),
-                turn: sql`${turn.number}`.as('turn'),
-                playerId: sql`${playerId}`.as('player_id'),
-                orders: sql`null`.as('orders'),
-                ordersHash: sql`null`.as('orders_hash'),
-                ready: sql`false`.as('ready'),
-                submittedAt: sql`null`.as('submitted_at'),
-              })
-              .from(turns)
-              .where(
-                and(
-                  eq(turns.matchId, turn.matchId),
-                  eq(turns.number, turn.number),
-                  eq(turns.status, 'open'),
-                ),
-              )
-              .for('share'),
+            sql`select ${turns.matchId}, ${turns.number}, seat.player_id, null, null, false, null
+              from ${turns} cross join (values ${seats}) as seat(player_id)
+              where ${turns.matchId} = ${turn.matchId} and ${turns.number} = ${turn.number}
+                and ${turns.status} = 'open'
+              for share of ${turns}`,
           )
           .onConflictDoNothing()
       }
