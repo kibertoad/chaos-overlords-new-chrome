@@ -93,6 +93,27 @@ public sealed partial class MultiplayerSessionTests
             { IsConnected: true });
     }
 
+    [Fact]
+    public async Task AnUnreadableAnswerAfterAnOutboxRetryRecoversTheConnectionLane()
+    {
+        var (session, server, http) = Running(callRetryPolicy: new RetryPolicy(
+            TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1),
+            MaxAttempts: 3, MaxElapsed: TimeSpan.FromSeconds(1)));
+        using var _ = http;
+        await using var __ = session;
+        var seen = new List<MultiplayerNotice>();
+        server.AnswerOnce(HttpMethod.Put, "/orders", null, HttpStatusCode.BadGateway);
+        server.AnswerOnce(HttpMethod.Put, "/orders", "not json", HttpStatusCode.OK);
+
+        session.QueueOrders(1, new OrderDocument(1, []), ready: true);
+        await WaitFor<MultiplayerNotice.OrdersRefused>(session, seen);
+
+        Assert.Contains(seen, notice => notice is MultiplayerNotice.ConnectionChanged
+            { IsConnected: false });
+        Assert.Contains(seen, notice => notice is MultiplayerNotice.ConnectionChanged
+            { IsConnected: true });
+    }
+
     /// <summary>
     /// A resync asked for from outside drops the connection and rebuilds from the durable log.
     /// </summary>

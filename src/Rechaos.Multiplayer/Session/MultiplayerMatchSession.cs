@@ -796,10 +796,12 @@ public sealed partial class MultiplayerMatchSession : IAsyncDisposable
             lane?.Recovered();
             return result;
         }
-        catch (MultiplayerApiException)
+        catch (Exception exception) when (exception is MultiplayerApiException
+            or MultiplayerProtocolException)
         {
-            // A refusal still proves the server answered. The caller decides what the refusal
-            // means for this operation, while the connection lane can stop reporting an outage.
+            // A refusal, or an answer this build cannot read, still proves the server answered.
+            // The caller decides what it means for this operation, while the connection lane can
+            // stop reporting an outage.
             lane?.Recovered();
             throw;
         }
