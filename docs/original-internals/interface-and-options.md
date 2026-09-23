@@ -764,8 +764,9 @@ still presents the final state.
 
 The recreation now uses a bounded 250 ms time-based horizontal entrance over
 the recovered per-screen 344- or 320-pixel travel. It intentionally avoids the
-original startup-speed dependency. Runtime capture must still validate close
-timing/interruption behavior.
+original startup-speed dependency. It deliberately does not animate the
+slide-out, as recorded in
+[Do not animate the panel slide-out](../DECISIONS.md#2026-09-23--do-not-animate-the-panel-slide-out).
 
 #### Planning timer
 

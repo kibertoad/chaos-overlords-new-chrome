@@ -292,7 +292,9 @@ record read through the authoritative path, matching the recovered per-record
 behavior and keeping the alert active while any retained record remains unread.
 Every routed panel transition plays the recovered slot-0/slot-1 entry and exit
 cues while Slide Panels is enabled; nested panel transitions close the old
-panel and open the new one. The idle-gang confirmation follows the same
+panel and open the new one. Without the original's slide-out between them, the
+open cue interrupts the close cue in the same frame, as recorded in
+[Do not animate the panel slide-out](../DECISIONS.md#2026-09-23--do-not-animate-the-panel-slide-out). The idle-gang confirmation follows the same
 preference gate.
 Equipped, unarmed, and detected-police combat events route their recovered
 sounds, while evasion remains silent. Combat and general effects share the

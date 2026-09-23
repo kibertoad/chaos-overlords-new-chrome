@@ -1,7 +1,7 @@
 # Project decisions
 
 Status: active
-Last updated: 2026-09-22
+Last updated: 2026-09-23
 
 This log records deliberate product and compatibility boundaries that affect the
 implementation plan.
@@ -18,6 +18,7 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 <!-- doc-index:begin decision-index -->
 | Date | Decision |
 |---|---|
+| 2026-09-23 | [Do not animate the panel slide-out](#2026-09-23--do-not-animate-the-panel-slide-out) |
 | 2026-09-22 | [Fold the definition set into a fingerprint as a digest](#2026-09-22--fold-the-definition-set-into-a-fingerprint-as-a-digest) |
 | 2026-09-21 | [Fingerprint match state with XxHash128, not SHA-256](#2026-09-21--fingerprint-match-state-with-xxhash128-not-sha-256) |
 | 2026-09-19 | [Order a ctrl-picked selection of gangs at once](#2026-09-19--order-a-ctrl-picked-selection-of-gangs-at-once) |
@@ -31,6 +32,40 @@ Generated from the `##` headings of this file by `node tools/update-doc-indexes.
 | 2026-09-10 | [Save compatibility scope](#2026-09-10--save-compatibility-scope) |
 | 2026-09-10 | [Networking scope](#2026-09-10--networking-scope) |
 <!-- doc-index:end -->
+
+## 2026-09-23 — Do not animate the panel slide-out
+
+**Decision.** With Slide Panels enabled, a panel slides in over the recovered
+344- or 320-pixel travel, but the recreation does not animate the matching
+slide-out. A closing panel disappears in the frame it closes. This is the only
+panel-motion or audio behavior where the recreation deliberately departs from
+the original. Every other effect cue keeps its recovered trigger, order and
+interruption: one effect voice, and each new cue stops the one before it
+(`BIN-SOUND-002`). Slide Panels stays off by default, a separate modern choice
+recorded in the Options parity row.
+
+**Reasoning.** The original's close helper `0x004196f5` plays slot 1 and then
+runs a blocking copy loop of about a quarter second before the next handler can
+open anything (see the interface-and-options panel slide evidence and
+`BIN-SOUND-001`). That delay adds no information and holds input on every panel
+change, including nested panel hops, and the entrance alone already shows where
+the panel came from.
+
+**Audio consequence.** The slide-out was also the gap between cues, so without
+it a cue that the original separated in time now starts in the same frame and
+cuts off the one before it. This is accepted rather than covered with delays or
+with overlapping voices, which would add behavior the original never had.
+Only the Slide Panels-gated cues are affected:
+
+- a panel-to-panel change plays slot 1 and then slot 0, and the slot-1 close cue
+  is not heard;
+- confirming the idle-gang warning plays slot 1 and then the turn-start slot 9.
+
+With Slide Panels off, the original plays neither slot 0 nor slot 1, and the
+recreation matches it exactly.
+
+**Rules out.** Adding a slide-out animation or a timed gap between cues to make
+up for it, and letting effects overlap. Each would need its own decision.
 
 ## 2026-09-22 — Fold the definition set into a fingerprint as a digest
 
